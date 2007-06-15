@@ -78,6 +78,13 @@ Remove the quota entirely and set the amount used to a really big number.
     >>> entitlement.is_valid
     True
 
+Calling incrementAmountUsed increases the value by one.
+
+    >>> entitlement.amount_used = 10
+    >>> entitlement.incrementAmountUsed()
+    >>> entitlement.amount_used
+    11
+    
 == Date range checking ==
 
 Remove the start and expiration dates and show the range is valid.
@@ -103,7 +110,7 @@ Set the start date to the past.
     >>> entitlement.is_valid
     True
 
-Set the start date to the future
+Set the start date to the future.
 
     >>> entitlement.date_starts = tomorrow
     >>> entitlement.in_date_range
@@ -129,6 +136,7 @@ Set the expires date to the future
     True
 
 Set the start date to the past and the expires date to the future.
+
     >>> entitlement.date_starts = yesterday
     >>> entitlement.date_expires = tomorrow
     >>> entitlement.in_date_range
@@ -136,4 +144,37 @@ Set the start date to the past and the expires date to the future.
     >>> entitlement.is_valid
     True
 
+Login as a non-privileged user and show that the entitlement values
+cannot be viewed.  Get a security-wrapped entitlement to test
+against. 
+
+    >>> entitlement = ubuntu_team.entitlements[0]
+    >>> entitlement.quota = 50
+    >>> logout()
+    >>> login(ANONYMOUS)
+    >>> entitlement.quota
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<Entitlement..., 'quota', 'launchpad.View')
+
+
+    >>> entitlement.quota=10
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<Entitlement..., 'quota', 'launchpad.Admin')
+
+Login as a member of the ubuntu team and test security settings.
+
+    >>> login('jeff.waugh@ubuntulinux.com')
+    >>> jeff_waugh = getUtility(ILaunchBag).user
+    >>> jeff_waugh in ubuntu_team.getDirectAdministrators()
+    True
+
+    >>> entitlement.quota
+    50
+
+    >>> entitlement.quota=10
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<Entitlement..., 'quota', 'launchpad.Admin')
     

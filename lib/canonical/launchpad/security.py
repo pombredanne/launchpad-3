@@ -923,7 +923,8 @@ class AdminDistroSeriesTranslations(OnlyRosettaExpertsAndAdmins):
 
 class ViewEntitlement(AuthorizationBase):
     permission = 'launchpad.View'
-    usedFor = IEntitlement
+    usedfor = IEntitlement
+
     def checkAuthenticated(self, user):
         """Allow the owner of the entitlement, the entitlement registrant,
         or any member of the team or any admin to view the entitlement."""
