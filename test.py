@@ -32,6 +32,12 @@ sys.path.insert(0, os.path.join(here, 'lib'))
 # Set PYTHONPATH environment variable for spawned processes
 os.environ['PYTHONPATH'] = ':'.join(sys.path)
 
+# Set a flag if this is the main testrunner process
+if len(sys.argv) > 1 and sys.argv[1] == '--resume-layer':
+    main_process = False
+else:
+    main_process = True
+
 # Install the import fascist import hook and atexit handler.
 import importfascist
 importfascist.install_import_fascist()
@@ -47,6 +53,11 @@ generate_overrides()
 # Tell canonical.config to use the test config section in launchpad.conf
 from canonical.config import config
 config.setDefaultSection('testrunner')
+
+# Initialize testsuite profiling information
+from canonical.testing.layers import setup_profiling
+if main_process:
+    setup_profiling()
 
 # Remove this module's directory from path, so that zope.testbrowser
 # can import pystone from test:
@@ -114,5 +125,9 @@ if __name__ == '__main__':
     result = testrunner.run(defaults)
     # Cribbed from sourcecode/zope/test.py - avoid spurious error during exit.
     logging.disable(999999999)
+
+    if main_process:
+        from canonical.testing.layers import report_profile_stats
+        report_profile_stats()
     sys.exit(result)
 
