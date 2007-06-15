@@ -903,6 +903,7 @@ is therefore Invalid also. In other words, conjoined again.
 
     >>> current_series_netapplet_task.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
+
     # XXX: We must make two transitions, see bug 112746
     #   -- Gavin Panella, 2007-06-06
     >>> current_series_netapplet_task.transitionToStatus(
