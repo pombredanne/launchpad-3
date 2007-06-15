@@ -2,7 +2,7 @@ import os
 
 import canonical.launchpad
 from canonical.launchpad.ftests._launchpadformharness import (
-    LaunchpadFormHarness)
+    LaunchpadFormHarness, OpenIDLaunchpadFormHarness)
 from canonical.launchpad.ftests._login import *
 from canonical.launchpad.ftests._sqlobject import syncUpdate
 from canonical.launchpad.ftests._tales import test_tales

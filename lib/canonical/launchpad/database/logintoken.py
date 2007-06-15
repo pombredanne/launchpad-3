@@ -129,22 +129,38 @@ The Launchpad Team"""
                         'Launchpad: Confirm your OpenPGP Key',
                         text)
 
+    def sendPasswordResetNeutralEmail(self):
+        """See ILoginToken."""
+        template = get_email_template('forgottenpassword-neutral.txt')
+        fromaddress = format_address(
+            "Login Service", config.noreply_from_address)
+        message = template % dict(token_url=canonical_url(self))
+        subject = "Login Service: Forgotten Password"
+        simple_sendmail(fromaddress, str(self.email), subject, message)
+
+    def sendNewUserNeutralEmail(self):
+        """See ILoginToken."""
+        template = get_email_template('newuser-email-neutral.txt')
+        replacements = {'token_url': canonical_url(self)}
+        message = template % dict(token_url=canonical_url(self))
+
+        fromaddress = format_address("Launchpad", config.noreply_from_address)
+        subject = "Login Service: Finish your registration"
+        simple_sendmail(fromaddress, str(self.email), subject, message)
+
     def sendPasswordResetEmail(self):
         """See ILoginToken."""
         template = get_email_template('forgottenpassword.txt')
-        fromaddress = format_address("Launchpad", config.noreply_from_address)
-        replacements = {'toaddress': self.email, 
-                        'token_url': canonical_url(self)}
-        message = template % replacements
-
-        subject = "Launchpad: Forgotten Password"
+        fromaddress = format_address(
+            "Login Service", config.noreply_from_address)
+        message = template % dict(token_url=canonical_url(self))
+        subject = "Login Service: Forgotten Password"
         simple_sendmail(fromaddress, str(self.email), subject, message)
 
     def sendNewUserEmail(self):
         """See ILoginToken."""
         template = get_email_template('newuser-email.txt')
-        replacements = {'token_url': canonical_url(self)}
-        message = template % replacements
+        message = template % dict(token_url=canonical_url(self))
 
         fromaddress = format_address("Launchpad", config.noreply_from_address)
         subject = "Finish your Launchpad registration"

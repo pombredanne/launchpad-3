@@ -1,0 +1,105 @@
+= The Launchpad login service =
+
+Launchpad's login service can be used as a standalone login form for
+Launchpad as well as an OpenID provider. When acting as an OpenID provider,
+it'll redirect the user back to the relying party that directed the user to
+Launchpad, and when acting as a standalone login form it'll redirect the
+user back to the page where (s)he was when asked to login. This form also
+allows users to create new accounts and reset the password of an existing
+account.
+
+    >>> from canonical.launchpad.ftests import OpenIDLaunchpadFormHarness
+    >>> from canonical.launchpad.browser.openidserver import (
+    ...     LoginServiceLoginView, LoginServiceAuthorizeView)
+    >>> from canonical.launchpad.webapp.publisher import rootObject
+    >>> from canonical.launchpad.webapp import LaunchpadFormView
+
+    # Create a fake LoginServiceLoginView which stubs out OpenID-related bits
+    # from its parent class.
+    >>> class OpenIDLessLoginServiceLoginView(LoginServiceLoginView):
+    ...     def setUpWidgets(self):
+    ...         self.nonce = 'foo'
+    ...         LaunchpadFormView.setUpWidgets(self)
+    ...     def createPositiveResponse(self):
+    ...         return True
+    ...     def renderOpenIdResponse(self, response):
+    ...         pass
+
+A valid email address is required for any operation available on this form.
+
+    >>> harness = OpenIDLaunchpadFormHarness(
+    ...     rootObject, OpenIDLessLoginServiceLoginView)
+
+    >>> harness.submit('continue', {'field.email': 'foo@'})
+    >>> for message in harness.getFormErrors():
+    ...     print message
+    Please enter a valid email address
+
+If the user doesn't enter the password or enters the wrong one when
+attempting to login, it'll also fail.
+
+    >>> harness.submit(
+    ...     'continue',
+    ...     {'field.email': 'mark@hbd.com', 'field.action': 'login'})
+    >>> for message in harness.getFormErrors():
+    ...     print message
+    Please enter your passphrase.
+
+    >>> harness.submit('continue', {'field.email': 'mark@hbd.com',
+    ...                             'field.action': 'login',
+    ...                             'field.password': 'foo'})
+    >>> for message in harness.getFormErrors():
+    ...     print message
+    The email address and passphrase do not match.
+
+A password with invalid characters is not allowed either.
+
+    >> harness.submit('continue', {'field.email': 'mark@hbd.com',
+    ..                             'field.action': 'login',
+    ..                             'field.password': u'\xa0blah'})
+    >> for message in harness.getFormErrors():
+    ..     print message
+    Incorrect passphrase given.
+
+Trying to create a new account with an email address that is registered and
+associated with a valid Launchpad account is not allowed.
+
+    >>> harness.submit('continue', {'field.email': 'test@canonical.com',
+    ...                             'field.action': 'createaccount'})
+    >>> for message in harness.getFormErrors():
+    ...     print message
+    Sorry, someone has already registered the test@canonical.com email ...
+
+If the email address is associated with an invalid Launchpad account (aka
+placeholder profile), though, we let the user continue the registration as if
+we've never heard about that email address.
+
+    >>> from canonical.launchpad.database import EmailAddress
+    >>> EmailAddress.selectOneBy(
+    ...     email='andrelop@debian.org').person.is_valid_person
+    False
+    >>> harness.submit('continue', {'field.email': 'andrelop@debian.org',
+    ...                             'field.action': 'createaccount'})
+    >>> print harness.getFormErrors()
+    []
+
+To recover the password of an existing account we obviously require a
+registered email address which doesn't belong to a team.
+
+    >>> harness.submit('continue', {'field.email': 'nobody@debian.org',
+    ...                             'field.action': 'resetpassword'})
+    >>> for message in harness.getFormErrors():
+    ...     print message
+    Your account details have not been found...
+
+    >>> harness.submit('continue', {'field.email': 'support@ubuntu.com',
+    ...                             'field.action': 'resetpassword'})
+    >>> for message in harness.getFormErrors():
+    ...     print message
+    The email address ... belongs to a team, and teams cannot log in.
+
+    >>> harness.submit('continue', {'field.email': 'andrelop@debian.org',
+    ...                             'field.action': 'resetpassword'})
+    >>> print harness.getFormErrors()
+    []
+

@@ -17,7 +17,6 @@ import pytz
 
 from zope.component import getUtility
 from zope.event import notify
-from zope.app.form.interfaces import WidgetsError
 from zope.app.event.objectevent import ObjectCreatedEvent
 
 from canonical.database.sqlbase import flush_database_updates
@@ -32,11 +31,11 @@ from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, GeneralFormView, GetitemNavigation,
+    action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadView, LaunchpadFormView)
 
 from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, ILaunchBag, ILoginTokenSet, IPerson,
+    IPersonSet, IEmailAddressSet, ILoginTokenSet, IPerson, ILoginToken,
     IGPGKeySet, IGPGHandler, GPGVerificationError, GPGKeyNotFoundError,
     ShipItConstants, UBUNTU_WIKI_URL)
 
@@ -130,14 +129,17 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
     field_names = ['displayname', 'hide_email_addresses', 'password']
     custom_widget('password', PasswordChangeWidget)
     label = 'Claim Launchpad profile'
+
     expected_token_types = (LoginTokenType.PROFILECLAIM,)
-    claimed_profile = None
 
     def initialize(self):
+        self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
+            self.context.email).person
+        LaunchpadFormView.initialize(self)
+
+    def render(self):
         if not self.redirectIfInvalidOrConsumedToken():
-            self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
-                self.context.email).person
-            LaunchpadFormView.initialize(self)
+            return LaunchpadFormView.render(self)
 
     @property
     def initial_values(self):
@@ -167,39 +169,40 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
         email.person.validateAndEnsurePreferredEmail(email)
         self.context.consume()
         self.logInPersonByEmail(email.email)
-        self.success(_("Profile claimed successfully"))
+        self.request.response.addInfoNotification(_(
+            "Profile claimed successfully"))
 
 
-class ResetPasswordView(BaseLoginTokenView, GeneralFormView):
+class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
+
+    schema = ILoginToken
+    field_names = ['email', 'password']
+    custom_widget('password', PasswordChangeWidget)
+    label = 'Reset password'
 
     def initialize(self):
-        self.email = None
+        LaunchpadFormView.initialize(self)
         self.expected_token_types = (LoginTokenType.PASSWORDRECOVERY,)
-        self.top_of_page_errors = []
-        self.redirectIfInvalidOrConsumedToken()
+
+    def render(self):
+        if not self.redirectIfInvalidOrConsumedToken():
+            return LaunchpadFormView.render(self)
 
     def validate(self, form_values):
         """Validate the email address."""
-        email = form_values.get("email").strip()
+        email = form_values.get("email", "").strip()
         # All operations with email addresses must be case-insensitive. We
         # enforce that in EmailAddressSet, but here we only do a comparison,
         # so we have to .lower() them first.
         if email.lower() != self.context.email.lower():
-            self.top_of_page_errors.append(
+            self.addError(_(
                 "The email address you provided didn't match the address "
-                "you provided when requesting the password reset.")
-            raise WidgetsError(self.top_of_page_errors)
+                "you provided when requesting the password reset."))
 
-    def assertNoErrors(self):
-        assert not self.top_of_page_errors and not self.errors, \
-               'token processing can not succeed with an error message set'
-
-    def nextURL(self):
-        return canonical_url(self.context.requester)
-
-    def process(self, password, email):
+    @action(_('Continue'), name='continue')
+    def continue_action(self, action, data):
         """Reset the user's password. When password is successfully changed,
-        the LoginToken (self.context) used is removed, so nobody can use
+        the LoginToken (self.context) used is consumed, so nobody can use
         it again.
         """
         emailset = getUtility(IEmailAddressSet)
@@ -222,13 +225,15 @@ class ResetPasswordView(BaseLoginTokenView, GeneralFormView):
         if naked_person.preferredemail != emailaddress:
             naked_person.validateAndEnsurePreferredEmail(emailaddress)
 
-        naked_person.password = password
+        naked_person.password = data.get('password')
         self.context.consume()
 
         if self.request.form.get('logmein'):
             self.logInPersonByEmail(self.context.email)
 
-        self.success(_('Your password has been reset successfully'))
+        self.next_url = canonical_url(self.context.requester)
+        self.request.response.addInfoNotification(
+            _('Your password has been reset successfully'))
 
 
 class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
@@ -536,7 +541,7 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
         return email
 
 
-class NewAccountView(BaseLoginTokenView, GeneralFormView):
+class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
     """Page to create a new Launchpad account.
 
     # This is just a small test to make sure
@@ -559,40 +564,46 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
 
     created_person = None
 
+    schema = IPerson
+    field_names = ['displayname', 'hide_email_addresses', 'password']
+    custom_widget('password', PasswordChangeWidget)
+    label = 'Complete your registration'
+
     def initialize(self):
-        self.expected_token_types = (
-            LoginTokenType.NEWACCOUNT, LoginTokenType.NEWPROFILE)
-        self.top_of_page_errors = []
-        self.redirectIfInvalidOrConsumedToken()
         self.email = getUtility(IEmailAddressSet).getByEmail(
             self.context.email)
+        self.expected_token_types = (
+            LoginTokenType.NEWACCOUNT, LoginTokenType.NEWPROFILE)
+        LaunchpadFormView.initialize(self)
 
-    def assertNoErrors(self):
-        assert not self.top_of_page_errors and not self.errors, (
-           'token processing can not succeed with an error message set')
+    def render(self):
+        if not self.redirectIfInvalidOrConsumedToken():
+            return LaunchpadFormView.render(self)
 
-    def nextURL(self):
+    # Use a method to set self.next_url rather than a property because we
+    # want to override self.next_url in a subclass of this.
+    def setNextUrl(self):
         if self.context.redirection_url:
-            return self.context.redirection_url
+            self.next_url = self.context.redirection_url
         elif self.user is not None:
             # User is logged in, redirect to his home page.
-            return canonical_url(self.user)
+            self.next_url = canonical_url(self.user)
         elif self.created_person is not None:
             # User is not logged in, redirect to the created person's home
             # page.
-            return canonical_url(self.created_person)
+            self.next_url = canonical_url(self.created_person)
         else:
-            return None
+            self.next_url = None
 
     def validate(self, form_values):
         """Verify if the email address is not used by an existing account."""
         if self.email is not None and self.email.person.is_valid_person:
-            self.top_of_page_errors.append(_(
+            self.addError(_(
                 'The email address %s is already registered.'
                 % self.context.email))
-            raise WidgetsError(self.top_of_page_errors)
 
-    def process(self, displayname, hide_email_addresses, password):
+    @action(_('Continue'), name='continue')
+    def continue_action(self, action, data):
         """Create a new Person with the context's email address and set a
         preferred email and password to it, or use an existing Person
         associated with the context's email address, setting it as the
@@ -620,20 +631,23 @@ class NewAccountView(BaseLoginTokenView, GeneralFormView):
             # -- Guilherme Salgado, 2006-09-27
             from zope.security.proxy import removeSecurityProxy
             naked_person = removeSecurityProxy(person)
-            naked_person.displayname = displayname
-            naked_person.hide_email_addresses = hide_email_addresses
-            naked_person.password = password
+            naked_person.displayname = data['displayname']
+            naked_person.hide_email_addresses = data['hide_email_addresses']
+            naked_person.password = data['password']
             naked_person.creation_rationale = self._getCreationRationale()
             naked_person.creation_comment = None
         else:
             person, email = self._createPersonAndEmail(
-                displayname, hide_email_addresses, password)
+                data['displayname'], data['hide_email_addresses'], 
+                data['password'])
 
         self.created_person = person
         person.validateAndEnsurePreferredEmail(email)
         self.context.consume()
         self.logInPersonByEmail(email.email)
-        self.success(_("Registration completed successfully"))
+        self.request.response.addInfoNotification(_(
+            "Registration completed successfully"))
+        self.setNextUrl()
 
     def _getCreationRationale(self):
         """Return the creation rationale that should be used for this person.

@@ -20,6 +20,13 @@
         classes="OpenIdApplicationNavigation"
         />
 
+    <browser:page
+        for="*"
+        permission="zope.Public"
+        name="main_template"
+        template="../templates/loginservice-main-template.pt"
+        layer="canonical.launchpad.layers.OpenIdLayer" />
+
     <!-- Root document -->
     <browser:page
         layer="canonical.launchpad.layers.OpenIdLayer"
@@ -41,6 +48,38 @@
         permission="zope.Public"
         name="+openid"
         class="canonical.launchpad.browser.openidserver.OpenIdView"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        permission="zope.Public"
+        name="+decide"
+        class="canonical.launchpad.browser.openidserver.LoginServiceAuthorizeView"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        permission="zope.Public"
+        name="+login-foo"
+        class="canonical.launchpad.browser.openidserver.LoginServiceLoginView"
+        />
+
+    <browser:page
+        layer="canonical.launchpad.layers.OpenIdLayer"
+        name="+newaccount"
+        for="canonical.launchpad.interfaces.ILoginToken"
+        class="canonical.launchpad.browser.openidserver.LoginServiceNewAccountView"
+        permission="zope.Public"
+        template="../templates/loginservice-newaccount.pt"
+        />
+
+    <browser:page
+        layer="canonical.launchpad.layers.OpenIdLayer"
+        for="canonical.launchpad.interfaces.ILoginToken"
+        name="+resetpassword"
+        permission="zope.Public"
+        class="canonical.launchpad.browser.openidserver.LoginServiceResetPasswordView"
+        template="../templates/logintoken-resetpassword.pt"
         />
 
     <content class="canonical.launchpad.database.OpenIdAuthorization">

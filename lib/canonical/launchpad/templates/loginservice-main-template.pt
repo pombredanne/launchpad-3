@@ -1,0 +1,16 @@
+<metal:page define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lpm="http://ns.launchpad.net/lpm" xml:lang="en" lang="en"
+    tal:attributes="lang default_language|default;
+                    xml:lang default_language|default;">
+  <head>
+    <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
+  </head>
+
+  <body>
+    <div id="maincontent">
+      <metal:block define-slot="main" />
+    </div>
+  </body>
+
+</html>
+</metal:page>
