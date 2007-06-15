@@ -210,9 +210,6 @@ class POFileMixIn(RosettaStats):
         the database, and whose in-memory caches are to be populated.
         """
 
-        for dummy in dummy_pomsgsets:
-            assert dummy.id is None
-
         all_pomsgsets = stored_pomsgsets + dummy_pomsgsets
         # We'll be mapping each POMsgSet from all_pomsgsets to a list of
         # submissions that may be relevant to it in some way, and that it will
