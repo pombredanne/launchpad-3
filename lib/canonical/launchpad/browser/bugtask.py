@@ -721,8 +721,7 @@ class BugTaskEditView(GeneralFormView):
             status_field = Choice(
                 __name__='status',
                 title=self.schema['status'].title,
-                vocabulary=status_vocab_factory(self.context),
-                default=self.schema['status'].default)
+                vocabulary=status_vocab_factory(self.context))
             setUpWidget(self, 'status', status_field, IInputWidget,
                         value=self.context.status)
 
