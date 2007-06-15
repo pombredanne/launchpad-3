@@ -922,12 +922,15 @@ class AdminDistroSeriesTranslations(OnlyRosettaExpertsAndAdmins):
     usedfor = IDistroSeries
 
 class ViewEntitlement(AuthorizationBase):
+    """Permissions to view IEntitlement objects.
+
+    Allow the owner of the entitlement, the entitlement registrant,
+    or any member of the team or any admin to view the entitlement.
+    """
     permission = 'launchpad.View'
     usedfor = IEntitlement
 
     def checkAuthenticated(self, user):
-        """Allow the owner of the entitlement, the entitlement registrant,
-        or any member of the team or any admin to view the entitlement."""
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.obj.person) or
                 user.inTeam(self.obj.registrant) or

@@ -1490,3 +1490,6 @@ COMMENT ON COLUMN Entitlement.entitlement_type IS 'The type of this entitlement 
 COMMENT ON COLUMN Entitlement.quota IS 'Number of this entitlement allowed.';
 COMMENT ON COLUMN Entitlement.amount_used IS 'Quantity of this entitlement allocation that is used.';
 COMMENT ON COLUMN Entitlement.whiteboard IS 'A place for administrator notes.';
+COMMENT ON COLUMN Entitlement.state IS 'The state (REQUESTED, ACTIVE, INACTIVE) of the entitlement.';
+
+

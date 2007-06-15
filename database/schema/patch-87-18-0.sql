@@ -18,7 +18,7 @@ CREATE TABLE Entitlement (
     approved_by int REFERENCES Person, -- NULL if autoapproved
     date_approved timestamp WITHOUT TIME ZONE, -- NULL if autoapproved
 
-    status integer DEFAULT 0 NOT NULL,
+    state integer DEFAULT 30 NOT NULL,
 
     whiteboard text
 );
@@ -36,9 +36,9 @@ CREATE INDEX entitlement__approved_by__idx ON Entitlement(approved_by)
 --   CURRENT_TIMESTAMP AT TIME ZONE 'UTC' BETWEEN date_starts AND date_expires
 --   AND entitlement_type=42
 --   AND person=69∆
---   AND status=0
+--   AND state=0
 CREATE INDEX entitlement_lookup_idx
-    ON Entitlement(date_starts, date_expires, entitlement_type, person, status);
+    ON Entitlement(date_starts, date_expires, entitlement_type, person, state);
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 18, 0);

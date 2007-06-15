@@ -14,7 +14,10 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import EntitlementQuota, IEntitlement
+from canonical.launchpad.interfaces import (
+    EntitlementInvalidError, EntitlementQuota, EntitlementQuotaExceededError,
+    IEntitlement)
+
 from canonical.lp.dbschema import EntitlementState, EntitlementType
 
 class Entitlement(SQLBase):
@@ -44,8 +47,8 @@ class Entitlement(SQLBase):
     approved_by = ForeignKey(
         dbName='approved_by', foreignKey='Person',
         default=None, notNull=False)
-    status = EnumCol(
-        dbName='status',
+    state = EnumCol(
+        dbName='state',
         notNull=True,
         schema=EntitlementState,
         default=EntitlementState.INACTIVE)
@@ -87,13 +90,20 @@ class Entitlement(SQLBase):
     @property
     def is_valid(self):
         """See IEntitlement."""
-        if self.status != EntitlementState.ACTIVE:
-            return False
-        elif not self.in_date_range or self.exceeded_quota:
+        if self.state != EntitlementState.ACTIVE:
             return False
         else:
-            return True
+            return self.in_date_range and not self.exceeded_quota
 
     def incrementAmountUsed(self):
         """See IEntitlement."""
+        if not self.is_valid:
+            raise EntitlementInvalidError(
+                "This entitlement is invalid and cannot be used.")
+
         self.amount_used += 1
+
+        if self.exceeded_quota:
+            self.amount_used -= 1
+            raise EntitlementQuotaExceededError(
+                "The quota for this entitlement has been exceeded.")

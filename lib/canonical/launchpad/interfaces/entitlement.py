@@ -5,15 +5,24 @@
 __metaclass__ = type
 
 __all__ = [
+    'EntitlementInvalidError',
     'EntitlementQuota',
+    'EntitlementQuotaExceededError',
     'IEntitlement',
     ]
 
+import sys
 from zope.interface import Attribute, Interface
 from zope.schema import Choice, Datetime, Int
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Whiteboard
+
+class EntitlementQuotaExceededError(Exception):
+    """The quota has been exceeded for the entitlement."""
+
+class EntitlementInvalidError(Exception):
+    """The entitlement is not valid."""
 
 class IEntitlement(Interface):
     """An entitlement the right to use a specific feature in Launchpad.
@@ -53,31 +62,33 @@ class IEntitlement(Interface):
         vocabulary='EntitlementType',
         description=_("Type of feature for this entitlement."),
         readonly=True)
-    # A quota is the number of a feature allowed by this entitlement, for
-    # instance 50 private bugs.
     quota = Int(
         title=_("Allocated quota."),
-        required=True)
-    # The amount used is the number of instances of a feature the person has
-    # used so far
+        required=True,
+        description=_(
+            "A quota is the number of a feature allowed by this entitlement, "
+            "for instance 50 private bugs."))
     amount_used = Int(
-        title=_("Amount used."))
+        title=_("Amount used."),
+        description=_(
+            "The amount used is the number of instances of a feature "
+            "the person has used so far."))
     registrant = Choice(
         title=_('Registrant'),
         vocabulary='ValidPersonOrTeam',
         description=_(
             "Person who registered the entitlement.  "
-            "May be null if imported."),
+            "May be null if imported from an external system."),
         readonly=True)
     approved_by = Choice(
         title=_('Approved By'),
         vocabulary='ValidPersonOrTeam',
         description=_(
             "Person who approved the entitlement.  "
-            "May be null if imported."),
+            "May be null if imported from an external system."),
         readonly=True)
-    status = Choice(
-        title=_("Status"),
+    state = Choice(
+        title=_("State"),
         required=True,
         vocabulary='EntitlementState',
         description = _("Current state of the entitlement."))
@@ -100,5 +111,4 @@ class IEntitlement(Interface):
 class EntitlementQuota:
     """This class stores constants for entitlements quotas."""
 
-    NONE = 0
-    UNLIMITED = -100
+    UNLIMITED = 0

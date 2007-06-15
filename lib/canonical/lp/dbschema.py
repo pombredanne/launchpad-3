@@ -3685,20 +3685,24 @@ class PersonCreationRationale(DBSchema):
         """)
 
 class EntitlementType(DBSchema):
-    """Special values for use as sentinels in the Entitlement table."""
+    """The set of features supported via entitlements.
 
-    PRIVATE_BRANCHES = Item(1, """
+    The listed features may be enabled by the granting of an entitlement.
+    """
+
+    PRIVATE_BRANCHES = Item(10, """
         Private Branches
 
         The ability to create branches which are only visible to the team.
         """)
 
-    PRIVATE_BUGS = Item(2, """
+    PRIVATE_BUGS = Item(20, """
         Private Bugs
 
         The ability to create private bugs which are only visible to the team.
         """)
-    PRIVATE_TEAMS = Item(3, """
+
+    PRIVATE_TEAMS = Item(30, """
         Private Teams
 
         The ability to create private teams which are only visible to parent
@@ -3706,21 +3710,26 @@ class EntitlementType(DBSchema):
         """)
 
 class EntitlementState(DBSchema):
-    """States for an entitlement."""
+    """States for an entitlement.
 
-    REQUESTED = Item(0, """
+    The entitlement may start life as a REQUEST that is then granted and
+    made ACTIVE.  At some point the entitlement may be revoked by marking
+    as INACTIVE.
+    """
+
+    REQUESTED = Item(10, """
         Entitlement has been requested.
 
         The entitlement is inactive in this state.
         """)
 
-    ACTIVE = Item(1, """
+    ACTIVE = Item(20, """
         The entitlement is active.
 
         The entitlement is approved in Launchpad or was imported in the
         active state.
         """)
-    INACTIVE = Item(2, """
+    INACTIVE = Item(30, """
         The entitlement is inactive.
 
         The entitlement has be deactivated.

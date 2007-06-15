@@ -22,26 +22,33 @@ Find a team with an entitlement.
     >>> personset = getUtility(IPersonSet)
     >>> ubuntu_team = personset.getByName('ubuntu-team')
 
-Create a new entitlement.
+An entitlement grants privilege to use a restricted feature.  The
+'quota' is the number of instances being granted and the
+entitlement_type is the feature being enabled.  The 'person' is the
+person or team being granted the right.  The state for a granted
+entitlement is ACTIVE and the expiration and start dates can be specified.
 
     >>> entitlement = Entitlement(
     ...     quota=5,
     ...     entitlement_type=EntitlementType.PRIVATE_BUGS,
     ...     person=ubuntu_team,
-    ...     status=EntitlementState.ACTIVE,
+    ...     state=EntitlementState.ACTIVE,
     ...     date_expires="2038-06-11 00:00:00")
 
     >>> verifyObject(IEntitlement, entitlement)
     True
 
-Ensure the date restrictions are met.
+Ensure the date restrictions are met since no start date was specified
+and the expiration date is well into the future.
 
     >>> entitlement.in_date_range
     True
 
 == Quota checking ==
 
-Set the quota to be unmet.
+Set the quota to be unmet, meaning the amount used is less than the
+quota.  Since we know the date range is met, the overall validity of
+the entitlement is true.
 
     >>> entitlement.quota = 100
     >>> entitlement.amount_used = 0
@@ -50,7 +57,9 @@ Set the quota to be unmet.
     >>> entitlement.is_valid
     True
 
-Set the amount used to be equal to the quota.
+Set the amount used to be equal to the quota.  Since the quota has not
+been exceeded, 'exceeded_quota' should still be false and 'is_valid'
+is still true.
 
     >>> entitlement.quota = 100
     >>> entitlement.amount_used = 100
@@ -59,7 +68,8 @@ Set the amount used to be equal to the quota.
     >>> entitlement.is_valid
     True
 
-Set the amount_used to exceed the quota.
+Set the amount_used to exceed the quota.  Now the quota constraint is
+false and the entitlement is no longer valid.
 
     >>> entitlement.quota = 100
     >>> entitlement.amount_used = 101
@@ -68,11 +78,13 @@ Set the amount_used to exceed the quota.
     >>> entitlement.is_valid
     False
 
-Remove the quota entirely and set the amount used to a really big number.
+Remove the quota entirely and set the amount used to a really big
+number to demonstrate the quota is not exceeded and the entitlement is
+valid. 
 
     >>> import sys
     >>> entitlement.quota = EntitlementQuota.UNLIMITED
-    >>> entitlement.amount_used = sys.maxint
+    >>> entitlement.amount_used = pow(10,9)
     >>> entitlement.exceeded_quota
     False
     >>> entitlement.is_valid
@@ -80,15 +92,35 @@ Remove the quota entirely and set the amount used to a really big number.
 
 Calling incrementAmountUsed increases the value by one.
 
-    >>> entitlement.amount_used = 10
+    >>> entitlement.quota = 10
+    >>> entitlement.amount_used = 9
     >>> entitlement.incrementAmountUsed()
     >>> entitlement.amount_used
-    11
+    10
+
+Attemting to increment past the quota will cause an error.
+
+    >>> entitlement.incrementAmountUsed()
+    Traceback (most recent call last):
+      ...
+    EntitlementQuotaExceededError: ...
+
+If the entitlement is invalid for any reason, attempting to increment
+the amount used will cause an error.
+
+    >>> entitlement.state = EntitlementState.INACTIVE
+    >>> entitlement.quota = 50
+    >>> entitlement.incrementAmountUsed()
+    Traceback (most recent call last):
+      ...
+    EntitlementInvalidError: ...
+
     
 == Date range checking ==
 
 Remove the start and expiration dates and show the range is valid.
 
+    >>> entitlement.state = EntitlementState.ACTIVE
     >>> entitlement.date_starts = None
     >>> entitlement.date_expires = None
     >>> entitlement.in_date_range
@@ -102,7 +134,7 @@ Remove the start and expiration dates and show the range is valid.
     >>> yesterday = now - timedelta(days = 1)
     >>> tomorrow = now + timedelta(days = 1)
 
-Set the start date to the past.
+Set the start date to the past and the date range is satisfied.
 
     >>> entitlement.date_starts = yesterday
     >>> entitlement.in_date_range
@@ -110,7 +142,7 @@ Set the start date to the past.
     >>> entitlement.is_valid
     True
 
-Set the start date to the future.
+Set the start date to the future and the date range is not satisfied.
 
     >>> entitlement.date_starts = tomorrow
     >>> entitlement.in_date_range
@@ -118,7 +150,8 @@ Set the start date to the future.
     >>> entitlement.is_valid
     False
 
-Set the expires date to the past.
+Set the expires date to the past and the entitlement is out of the
+date range.
 
     >>> entitlement.date_starts = None
     >>> entitlement.date_expires = yesterday
@@ -127,7 +160,7 @@ Set the expires date to the past.
     >>> entitlement.is_valid
     False
 
-Set the expires date to the future
+Set the expires date to the future and the date range is satisfied.
 
     >>> entitlement.date_expires = tomorrow
     >>> entitlement.in_date_range
@@ -135,7 +168,8 @@ Set the expires date to the future
     >>> entitlement.is_valid
     True
 
-Set the start date to the past and the expires date to the future.
+Set the start date to the past and the expires date to the future to
+again satisfy the date criteria.
 
     >>> entitlement.date_starts = yesterday
     >>> entitlement.date_expires = tomorrow
@@ -144,9 +178,10 @@ Set the start date to the past and the expires date to the future.
     >>> entitlement.is_valid
     True
 
-Login as a non-privileged user and show that the entitlement values
-cannot be viewed.  Get a security-wrapped entitlement to test
-against. 
+Login as an anonymous user and show that the entitlement values
+cannot be viewed as access to viewing attributes is restricted to the
+owner or members of the team, registrant, or Launchpad administrators.  
+Get a security-wrapped entitlement to test against. 
 
     >>> entitlement = ubuntu_team.entitlements[0]
     >>> entitlement.quota = 50
@@ -162,14 +197,38 @@ against.
     Traceback (most recent call last):
       ...
     Unauthorized: (<Entitlement..., 'quota', 'launchpad.Admin')
+    >>> logout()
 
-Login as a member of the ubuntu team and test security settings.
+Authenticated Launchpad users who are not the owner or team member are
+similarly restricted.
 
-    >>> login('jeff.waugh@ubuntulinux.com')
-    >>> jeff_waugh = getUtility(ILaunchBag).user
-    >>> jeff_waugh in ubuntu_team.getDirectAdministrators()
+    >>> login('no-priv@canonical.com')
+    >>> entitlement.quota
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<Entitlement..., 'quota', 'launchpad.View')
+
+
+    >>> entitlement.quota=10
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<Entitlement..., 'quota', 'launchpad.Admin')
+
+Now let's add the current user to the team and show that the user can
+now access attributes.  Since ubuntu-team is restricted, an
+administrator must be listed as a reviewer for the membership to go
+through. 
+
+    >>> from canonical.lp.dbschema import TeamMembershipStatus
+    >>> nopriv = getUtility(ILaunchBag).user
+    >>> sabdfl = personset.getByName('sabdfl')
+    >>> nopriv.join(ubuntu_team)
+    >>> ubuntu_team.setMembershipData(nopriv, TeamMembershipStatus.APPROVED, sabdfl)
+    >>> flush_database_updates()
+    >>> nopriv in ubuntu_team.activemembers
     True
-
+    >>> nopriv.inTeam(ubuntu_team)
+    True
     >>> entitlement.quota
     50
 
