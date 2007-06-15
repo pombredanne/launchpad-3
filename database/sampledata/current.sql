@@ -539,6 +539,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -1778,6 +1781,17 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (64, '
 
 
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
+
+
+ALTER TABLE entitlement DISABLE TRIGGER ALL;
+
+INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (1, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 1, 100, 0);
+INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (2, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 2, 200, 0);
+INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (4, 18, '2007-06-11 00:44:19.267601', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 1, 5, 0);
+INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (5, 18, '2007-06-11 01:02:48.538842', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 1, 3, 0);
+
+
+ALTER TABLE entitlement ENABLE TRIGGER ALL;
 
 
 
