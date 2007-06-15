@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Browser code for PO files."""
 
 __metaclass__ = type
@@ -251,22 +251,9 @@ class POFileTranslateView(BaseTranslationView):
 
     def _buildPOMsgSetViews(self, for_potmsgsets):
         """Build POMsgSet views for all POTMsgSets in for_potmsgsets."""
-        for_potmsgsets = list(for_potmsgsets)
-        translations = self.context.getMsgSetsForPOTMsgSets(for_potmsgsets)
+        po_to_pot_msg = self.context.getMsgSetsForPOTMsgSets(for_potmsgsets)
 
-        dummies = {}
-        for potmsgset in for_potmsgsets:
-            if not potmsgset in translations:
-                dummy = potmsgset.getDummyPOMsgSet(
-                    self.context.language.code, self.context.variant)
-                dummies[potmsgset] = dummy
-
-        cachable = self.context.getRelatedSubmissions(
-            translations.values(), dummies.values())
-
-        for potmsgset in for_potmsgsets:
-            pomsgset = translations.get(potmsgset, dummies.get(potmsgset))
-            pomsgset.initializeSubmissionsCaches(cachable[pomsgset])
+        for potmsgset, pomsgset in po_to_pot_msg.items():
             view = self._prepareView(
                 POMsgSetView, pomsgset, self.errors.get(potmsgset))
             self.pomsgset_views.append(view)

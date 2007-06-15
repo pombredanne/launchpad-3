@@ -9,5 +9,4 @@ __all__ = ('IPOMsgID', )
 class IPOMsgID(Interface):
     """A PO message ID."""
 
-    id = Attribute("This MsgID's identifier.")
     msgid = Attribute("A msgid string.")

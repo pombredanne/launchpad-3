@@ -19,8 +19,6 @@ class TranslationConflict(Exception):
 
 class IPOMsgSet(Interface):
 
-    id = Attribute("This MsgSet's identifier.")
-
     sequence = Attribute("The ordering of this set within its file.")
 
     pofile = Attribute("The PO file this set is associated with.")

@@ -154,7 +154,168 @@ def _can_edit_translations(pofile, person):
         person)
 
 
-class POFile(SQLBase, RosettaStats):
+class POFileMixIn(RosettaStats):
+
+    def getMsgSetsForPOTMsgSets(self, for_potmsgsets):
+        """See `IPOFile`."""
+
+        if for_potmsgsets is None:
+            return {}
+        for_potmsgsets = list(for_potmsgsets)
+        if not for_potmsgsets:
+            return {}
+
+        # Retrieve existing POMsgSets matching for_potmsgsets (one each).
+        # XXX: JeroenVermeulen 2007-06-15, why won't sqlvalues() work here?
+        ids = ','.join([quote(potmsgset.id) for potmsgset in for_potmsgsets])
+        existing_msgsets = []
+        if self.id is not None:
+            existing_msgsets = POMsgSet.select(
+                "potmsgset in (%s) AND pofile = %s" % (ids, quote(self)))
+
+        result = dict((pomsgset.potmsgset, pomsgset)
+                      for pomsgset in existing_msgsets)
+
+        dummies = {}
+        language_code = self.language.code
+        variant = self.variant
+        for potmsgset in for_potmsgsets:
+            if not potmsgset in result:
+                dummy = potmsgset.getDummyPOMsgSet(language_code, variant)
+                dummies[potmsgset] = dummy
+
+        cache = self._getRelatedSubmissions(result.values(), dummies.values())
+
+        result.update(dummies)
+
+        for pomsgset in result.values():
+            pomsgset.initializeSubmissionsCaches(cache[pomsgset])
+
+        return result
+
+    def _getRelatedSubmissions(self, stored_pomsgsets, dummy_pomsgsets):
+        """Find all POSubmissions that the listed POMsgSets may want to cache.
+
+        Result is a dict mapping each of these POMsgSets to a list of all
+        POSubmissions that are relevant to it.  Each of the lists is in
+        newest-to-oldest order.
+
+        :stored_pomsgsets: List of pomsgsets that are already present in the
+        database, and whose in-memory caches are to be populated.
+        :dummy_pomsgsets: List of pomsgsets that have not yet been stored in
+        the database, and whose in-memory caches are to be populated.
+        """
+
+        for dummy in dummy_pomsgsets:
+            assert dummy.id is None
+
+        all_pomsgsets = stored_pomsgsets + dummy_pomsgsets
+        # We'll be mapping each POMsgSet from all_pomsgsets to a list of
+        # submissions that may be relevant to it in some way, and that it will
+        # wish to cache.
+        result = dict((msgset, []) for msgset in all_pomsgsets)
+        if not all_pomsgsets:
+            return result
+
+        # For each primemsgid we see, remember which of our input msgsets were
+        # looking for suggestions on that primemsgid.
+        takers_for_primemsgid = dict(
+            (msgset.potmsgset.primemsgid_ID, [])
+            for msgset in all_pomsgsets)
+        for pomsgset in all_pomsgsets:
+            primemsgid = pomsgset.potmsgset.primemsgid_ID
+            takers_for_primemsgid[primemsgid].append(pomsgset)
+
+        # We work in three phases:
+        #
+        # 1. Retrieve from the database all ids of POSubmissions that might be
+        # relevant to our msgsets, and the primemsgids of their potmsgsets
+        # which will be essential to phase 3.
+        # are relevant to which msgsets.
+        #
+        # 2. Load all relevant submissions from the database.
+        #
+        # 3. Sort out which submissions are relevant to which pomsgsets from
+        # our parameters stored_pomsgsets and dummy_pomsgsets.  This depends
+        # on knowing the primemsgids of the potmsgsets they are attached to,
+        # but we don't want to retrieve all those potmsgsets just to get that
+        # information.
+
+        # XXX: JeroenVermeulen 2007-06-11, In theory we should be able to fold
+        # phase 2 into phase 1, so we have only a single query.  But how do we
+        # get SQLObject to return not just POSubmissions but also one extra
+        # column from the join?
+        parameters = sqlvalues(language=self.language,
+            wanted_primemsgids=takers_for_primemsgid.keys())
+
+        parameters['ids'] = 'false'
+        if stored_pomsgsets:
+            ids_list = sqlvalues(
+                [pomsgset.id for pomsgset in stored_pomsgsets])
+            parameters['ids'] = 'POMsgSet.id IN %s' % ids_list
+
+
+        # Phase 1.
+        # Find ids of all POSubmissions that might be relevant (either as
+        # suggestions for our all_pomsgsets or because they're already
+        # attached to our stored_pomsgsets) plus their potmsgsets'
+        # primemsgids.  We don't need to know about their POFiles, nor about
+        # the rest of their POTMsgSets.
+        # Note that a suggestion coming from a fuzzy pomsgset isn't relevant
+        # as a suggestion, but if it happens to be attached to a msgset from
+        # stored_pomsgsets, it will still be relevant to that msgset.
+        query = """
+            SELECT POSubmission.id, POTMsgSet.primemsgid
+            FROM POSubmission
+            JOIN POMsgSet ON POSubmission.pomsgset = POMsgSet.id
+            JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
+            JOIN POFile ON POMsgSet.pofile = POFile.id
+            WHERE
+                (%(ids)s OR NOT POMsgSet.isfuzzy) AND
+                POFile.language = %(language)s AND
+                POTMsgSet.primemsgid IN %(wanted_primemsgids)s
+            """ % parameters
+        cur = cursor()
+        cur.execute(query)
+        available = dict(cur.fetchall())
+        if not available:
+            return result
+
+        # Phase 2.
+        # Load all relevant POSubmissions from the database.  We'll keep these
+        # in newest-to-oldest order, because that's the way the POMsgSet's
+        # cache likes them.
+        relevant_submissions = POSubmission.select(
+            "id IN %s" % sqlvalues(available.keys()), orderBy="-datecreated")
+
+        # Phase 3.
+        # Figure out which of all_pomsgsets each submission is relevant to,
+        # and return our mapping from all_pomsgset to various subsets of
+        # load_submissions.
+        for submission in relevant_submissions:
+            of_pomsgset = submission.pomsgset
+            primemsgid = available[submission.id]
+            if of_pomsgset.isfuzzy:
+                # This submission belongs to a fuzzy msgset.  It only made it
+                # in here because it's attached to a pomsgset from
+                # stored_pomsgsets.  It's relevant to that pomsgset, but it's
+                # not a useful suggestion to anyone else.
+                assert of_pomsgset in takers_for_primemsgid[primemsgid]
+                assert of_pomsgset in result
+                result[of_pomsgset].append(submission)
+            else:
+                # Any other POSubmission we see here has to be non-fuzzy, and
+                # it's relevant to any POMsgSets that refer to the same
+                # primemsgid, including the POMsgSet it itself is attached to.
+                if of_pomsgset.id is not None:
+                    for recipient in takers_for_primemsgid[primemsgid]:
+                        result[recipient].append(submission)
+
+        return result
+
+
+
+class POFile(SQLBase, POFileMixIn):
     implements(IPOFile)
 
     _table = 'POFile'
@@ -227,14 +388,14 @@ class POFile(SQLBase, RosettaStats):
 
     @property
     def title(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         title = '%s translation of %s' % (
             self.language.displayname, self.potemplate.displayname)
         return title
 
     @property
     def translators(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         translators = set()
         for group in self.potemplate.translationgroups:
             translator = group.query_translator(self.language)
@@ -244,16 +405,16 @@ class POFile(SQLBase, RosettaStats):
 
     @property
     def translationpermission(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.potemplate.translationpermission
 
     @property
     def contributors(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return getUtility(IPersonSet).getPOFileContributors(self)
 
     def canEditTranslations(self, person):
-        """See IPOFile."""
+        """See `IPOFile`."""
         if _can_edit_translations(self, person):
             return True
         elif person is not None:
@@ -268,7 +429,7 @@ class POFile(SQLBase, RosettaStats):
             orderBy='sequence')
 
     def translated(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return iter(POMsgSet.select('''
             POMsgSet.pofile = %d AND
             POMsgSet.iscomplete=TRUE AND
@@ -278,15 +439,15 @@ class POFile(SQLBase, RosettaStats):
             ))
 
     def untranslated(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def __iter__(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return iter(self.currentMessageSets())
 
     def getPOMsgSet(self, msgid_text, only_current=False):
-        """See IPOFile."""
+        """See `IPOFile`."""
         query = 'potemplate = %d' % self.potemplate.id
         if only_current:
             query += ' AND sequence > 0'
@@ -312,126 +473,8 @@ class POFile(SQLBase, RosettaStats):
         return POMsgSet.selectOneBy(
             potmsgset=potmsgset, pofile=self)
 
-    def getMsgSetsForPOTMsgSets(self, potmsgsets):
-        """See IPOFile."""
-        if potmsgsets is None or len(potmsgsets) == 0:
-            return {}
-        ids = ','.join([quote(potmsgset.id) for potmsgset in potmsgsets])
-        existing = POMsgSet.select("potmsgset in (%s) AND pofile = %s"
-                                   % (ids, quote(self)))
-        return dict((pomsgset.potmsgset, pomsgset) for pomsgset in existing)
-
-    def getRelatedSubmissions(self, stored_pomsgsets, dummy_pomsgsets):
-        """See IPOFile."""
-        for dummy in dummy_pomsgsets:
-            assert dummy.id is None
-
-        all_pomsgsets = stored_pomsgsets + dummy_pomsgsets
-        # We'll be mapping each POMsgSet from all_pomsgsets to a list of
-        # submissions that may be relevant to it in some way, and that it will
-        # wish to cache.
-        result = dict((msgset, []) for msgset in all_pomsgsets)
-        if len(all_pomsgsets) == 0:
-            return result
-
-        # For each primemsgid we see, remember which of our input msgsets were
-        # looking for suggestions on that primemsgid.
-        takers_for_primemsgid = dict(
-            (msgset.potmsgset.primemsgid_ID, [])
-            for msgset in all_pomsgsets)
-        for pomsgset in all_pomsgsets:
-            primemsgid = pomsgset.potmsgset.primemsgid_ID
-            takers_for_primemsgid[primemsgid].append(pomsgset)
-
-        # We work in three phases:
-        #
-        # 1. Retrieve from the database all ids of POSubmissions that might be
-        # relevant to our msgsets, and the primemsgids of their potmsgsets
-        # which will be essential to phase 3.
-        # are relevant to which msgsets.
-        #
-        # 2. Load all relevant submissions from the database.
-        #
-        # 3. Sort out which submissions are relevant to which pomsgsets from
-        # our parameters stored_pomsgsets and dummy_pomsgsets.  This depends
-        # on knowing the primemsgids of the potmsgsets they are attached to,
-        # but we don't want to retrieve all those potmsgsets just to get that
-        # information.
-
-        # XXX: JeroenVermeulen 2007-06-11, In theory we should be able to fold
-        # phase 2 into phase 1, so we have only a single query.  But how do we
-        # get SQLObject to return not just POSubmissions but also one extra
-        # column from the join?
-        parameters = sqlvalues(language=self.language,
-            wanted_primemsgids=takers_for_primemsgid.keys())
-
-        parameters['ids'] = 'false'
-        if len(stored_pomsgsets) > 0:
-            ids_list = sqlvalues(
-                [pomsgset.id for pomsgset in stored_pomsgsets])
-            parameters['ids'] = 'POMsgSet.id IN %s' % ids_list
-
-
-        # Phase 1.
-        # Find ids of all POSubmissions that might be relevant (either as
-        # suggestions for our all_pomsgsets or because they're already
-        # attached to our stored_pomsgsets) plus their potmsgsets'
-        # primemsgids.  We don't need to know about their POFiles, nor about
-        # the rest of their POTMsgSets.
-        # Note that a suggestion coming from a fuzzy pomsgset isn't relevant
-        # as a suggestion, but if it happens to be attached to a msgset from
-        # stored_pomsgsets, it will still be relevant to that msgset.
-        query = """
-            SELECT POSubmission.id, POTMsgSet.primemsgid
-            FROM POSubmission
-            JOIN POMsgSet ON POSubmission.pomsgset = POMsgSet.id
-            JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
-            JOIN POFile ON POMsgSet.pofile = POFile.id
-            WHERE
-                (%(ids)s OR NOT POMsgSet.isfuzzy) AND
-                POFile.language = %(language)s AND
-                POTMsgSet.primemsgid IN %(wanted_primemsgids)s
-            """ % parameters
-        cur = cursor()
-        cur.execute(query)
-        available = dict(cur.fetchall())
-        if len(available) == 0:
-            return result
-
-        # Phase 2.
-        # Load all relevant POSubmissions from the database.  We'll keep these
-        # in newest-to-oldest order, because that's the way the POMsgSet's
-        # cache likes them.
-        relevant_submissions = POSubmission.select(
-            "id IN %s" % sqlvalues(available.keys()), orderBy="-datecreated")
-
-        # Phase 3.
-        # Figure out which of all_pomsgsets each submission is relevant to,
-        # and return our mapping from all_pomsgset to various subsets of
-        # load_submissions.
-        for submission in relevant_submissions:
-            of_pomsgset = submission.pomsgset
-            primemsgid = available[submission.id]
-            if of_pomsgset.isfuzzy:
-                # This submission belongs to a fuzzy msgset.  It only made it
-                # in here because it's attached to a pomsgset from
-                # stored_pomsgsets.  It's relevant to that pomsgset, but it's
-                # not a useful suggestion to anyone else.
-                assert of_pomsgset in takers_for_primemsgid[primemsgid]
-                assert of_pomsgset in result
-                result[of_pomsgset].append(submission)
-            else:
-                # Any other POSubmission we see here has to be non-fuzzy, and
-                # it's relevant to any POMsgSets that refer to the same
-                # primemsgid, including the POMsgSet it itself is attached to.
-                if not of_pomsgset.id is None:
-                    for recipient in takers_for_primemsgid[primemsgid]:
-                        result[recipient].append(submission)
-
-        return result
-
     def __getitem__(self, msgid_text):
-        """See IPOFile."""
+        """See `IPOFile`."""
         pomsgset = self.getPOMsgSet(msgid_text, only_current=True)
         if pomsgset is None:
             raise NotFoundError(msgid_text)
@@ -439,7 +482,7 @@ class POFile(SQLBase, RosettaStats):
             return pomsgset
 
     def getPOMsgSetsNotInTemplate(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return iter(POMsgSet.select('''
             POMsgSet.pofile = %d AND
             POMsgSet.potmsgset = POTMsgSet.id AND
@@ -449,7 +492,7 @@ class POFile(SQLBase, RosettaStats):
             clauseTables = ['POTMsgSet']))
 
     def getPOTMsgSetTranslated(self, slice=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         # A POT set is translated only if the PO message set has
         # POMsgSet.iscomplete = TRUE.
         results = POTMsgSet.select('''
@@ -469,7 +512,7 @@ class POFile(SQLBase, RosettaStats):
         return results
 
     def getPOTMsgSetFuzzy(self, slice=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         results = POTMsgSet.select('''
             POTMsgSet.potemplate = %s AND
             POTMsgSet.sequence > 0 AND
@@ -486,7 +529,7 @@ class POFile(SQLBase, RosettaStats):
         return results
 
     def getPOTMsgSetUntranslated(self, slice=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         # A POT set is not translated if the PO message set have
         # POMsgSet.iscomplete = FALSE or we don't have such POMsgSet.
         #
@@ -530,7 +573,7 @@ class POFile(SQLBase, RosettaStats):
         return results
 
     def getPOTMsgSetChangedInLaunchpad(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         # POT set has been changed in Launchpad if it contains active
         # translation which didn't come from a published package
         # (iow, it's different from a published translation: this only
@@ -559,7 +602,7 @@ class POFile(SQLBase, RosettaStats):
         return results
 
     def getPOTMsgSetWithErrors(self, slice=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         results = POTMsgSet.select('''
             POTMsgSet.potemplate = %s AND
             POTMsgSet.sequence > 0 AND
@@ -580,7 +623,7 @@ class POFile(SQLBase, RosettaStats):
         return results
 
     def hasMessageID(self, messageID):
-        """See IPOFile."""
+        """See `IPOFile`."""
         results = POMsgSet.select('''
             POMsgSet.pofile = %d AND
             POMsgSet.potmsgset = POTMsgSet.id AND
@@ -609,7 +652,7 @@ class POFile(SQLBase, RosettaStats):
 
     @property
     def fuzzy_count(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return POMsgSet.select("""
             pofile = %s AND
             isfuzzy IS TRUE AND
@@ -617,12 +660,12 @@ class POFile(SQLBase, RosettaStats):
             """ % sqlvalues(self.id)).count()
 
     def expireAllMessages(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         for msgset in self.currentMessageSets():
             msgset.sequence = 0
 
     def updateStatistics(self, tested=False):
-        """See IPOFile."""
+        """See `IPOFile`."""
         # make sure all the data is in the db
         flush_database_updates()
         current = POMsgSet.select('''
@@ -699,7 +742,7 @@ class POFile(SQLBase, RosettaStats):
         return (current, updates, rosetta, unreviewed)
 
     def createMessageSetFromMessageSet(self, potmsgset):
-        """See IPOFile."""
+        """See `IPOFile`."""
         pomsgset = POMsgSet(
             sequence=0,
             pofile=self,
@@ -712,7 +755,7 @@ class POFile(SQLBase, RosettaStats):
         return pomsgset
 
     def createMessageSetFromText(self, text):
-        """See IPOFile."""
+        """See `IPOFile`."""
         potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(text, only_current=False)
         if potmsgset is None:
             potmsgset = self.potemplate.createMessageSetFromText(text)
@@ -720,7 +763,7 @@ class POFile(SQLBase, RosettaStats):
         return self.createMessageSetFromMessageSet(potmsgset)
 
     def updateHeader(self, new_header):
-        """See IPOFile."""
+        """See `IPOFile`."""
         # check that the plural forms info is valid
         new_plural_form = new_header.get('Plural-Forms', None)
         if new_plural_form is None:
@@ -752,7 +795,7 @@ class POFile(SQLBase, RosettaStats):
         self.fuzzyheader = 'fuzzy' in new_header.flags
 
     def isPORevisionDateOlder(self, header):
-        """See IPOFile."""
+        """See `IPOFile`."""
         old_header = POHeader(msgstr=self.header)
         old_header.updateDict()
 
@@ -772,7 +815,7 @@ class POFile(SQLBase, RosettaStats):
             return True
 
     def getNextToImport(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         flush_database_updates()
         return TranslationImportQueueEntry.selectFirstBy(
                 pofile=self,
@@ -780,7 +823,7 @@ class POFile(SQLBase, RosettaStats):
                 orderBy='dateimported')
 
     def importFromQueue(self, logger=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         librarian_client = getUtility(ILibrarianClient)
 
         entry_to_import = self.getNextToImport()
@@ -917,7 +960,7 @@ class POFile(SQLBase, RosettaStats):
         self.updateStatistics()
 
     def validExportCache(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         if self.exportfile is None:
             return False
 
@@ -929,7 +972,7 @@ class POFile(SQLBase, RosettaStats):
         return not self.last_touched_pomsgset.isNewerThan(self.exporttime)
 
     def updateExportCache(self, contents):
-        """See IPOFile."""
+        """See `IPOFile`."""
         alias_set = getUtility(ILibraryFileAliasSet)
 
         if self.variant:
@@ -971,14 +1014,14 @@ class POFile(SQLBase, RosettaStats):
             return alias_set[self.exportfile.id].read()
 
     def uncachedExport(self, included_obsolete=True, force_utf8=False):
-        """See IPOFile."""
+        """See `IPOFile`."""
         exporter = IPOTemplateExporter(self.potemplate)
         exporter.force_utf8 = force_utf8
         return exporter.export_pofile(
             self.language, self.variant, included_obsolete)
 
     def export(self, included_obsolete=True):
-        """See IPOFile."""
+        """See `IPOFile`."""
         if self.validExportCache() and included_obsolete:
             # Only use the cache if the request includes obsolete messages,
             # without them, we always do a full export.
@@ -1017,17 +1060,17 @@ class POFile(SQLBase, RosettaStats):
         return contents
 
     def exportToFileHandle(self, filehandle, included_obsolete=True):
-        """See IPOFile."""
+        """See `IPOFile`."""
         exporter = IPOTemplateExporter(self.potemplate)
         exporter.export_pofile_to_file(filehandle, self.language,
             self.variant, included_obsolete)
 
     def invalidateCache(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         self.exportfile = None
 
 
-class DummyPOFile(RosettaStats):
+class DummyPOFile(POFileMixIn):
     """Represents a POFile where we do not yet actually HAVE a POFile for
     that language for this template.
     """
@@ -1070,7 +1113,7 @@ class DummyPOFile(RosettaStats):
             return pomsgset
 
     def __iter__(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return iter(self.currentMessageSets())
 
     def messageCount(self):
@@ -1078,7 +1121,7 @@ class DummyPOFile(RosettaStats):
 
     @property
     def title(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         title = '%s translation of %s' % (
             self.language.displayname, self.potemplate.displayname)
         return title
@@ -1095,15 +1138,15 @@ class DummyPOFile(RosettaStats):
 
     @property
     def translationpermission(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.potemplate.translationpermission
 
     def canEditTranslations(self, person):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return _can_edit_translations(self, person)
 
     def getPOMsgSet(self, key, only_current=False):
-        """See IPOFile."""
+        """See `IPOFile`."""
         query = 'potemplate = %d' % self.potemplate.id
         if only_current:
             query += ' AND sequence > 0'
@@ -1129,48 +1172,40 @@ class DummyPOFile(RosettaStats):
 
         return DummyPOMsgSet(self, potmsgset)
 
-    def getMsgSetsForPOTMsgSets(self, potmsgsets):
-        """See IPOFile."""
-        return {}
-
-    def getRelatedSubmissions(self, stored, dummy):
-        """See IPOFile."""
-        return dict((msgset, []) for msgset in stored + dummy)
-
     def emptySelectResults(self):
         return POFile.select("1=2")
 
     def getPOMsgSetsNotInTemplate(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.emptySelectResults()
 
     def getPOTMsgSetTranslated(self, slice=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.emptySelectResults()
 
     def getPOTMsgSetFuzzy(self, slice=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.emptySelectResults()
 
     def getPOTMsgSetUntranslated(self, slice=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.potemplate.getPOTMsgSets(slice)
 
     def getPOTMsgSetWithNewSuggestions(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.emptySelectResults()
 
     def getPOTMsgSetChangedInLaunchpad(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.emptySelectResults()
 
     def getPOTMsgSetWithErrors(self, slice=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.emptySelectResults()
 
 
     def hasMessageID(self, msgid):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def currentCount(self):
@@ -1197,7 +1232,7 @@ class DummyPOFile(RosettaStats):
 
     @property
     def fuzzy_count(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return 0
 
     def currentPercentage(self):
@@ -1219,67 +1254,67 @@ class DummyPOFile(RosettaStats):
         return 100.0
 
     def validExportCache(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return False
 
     def updateExportCache(self, contents):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def export(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def exportToFileHandle(self, filehandle, included_obsolete=True):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def uncachedExport(self, included_obsolete=True, export_utf8=False):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def invalidateCache(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def createMessageSetFromMessageSet(self, potmsgset):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def createMessageSetFromText(self, text):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def translated(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def untranslated(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def expireAllMessages(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def updateStatistics(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def updateHeader(self, new_header):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def isPORevisionDateOlder(self, header):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def getNextToImport(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def importFromQueue(self, logger=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
 
@@ -1287,7 +1322,7 @@ class POFileSet:
     implements(IPOFileSet)
 
     def getPOFilesPendingImport(self):
-        """See IPOFileSet."""
+        """See `IPOFileSet`."""
         results = POFile.selectBy(
             rawimportstatus=RosettaImportStatus.PENDING,
             orderBy='-daterawimport')
@@ -1300,7 +1335,7 @@ class POFileSet:
 
     def getPOFileByPathAndOrigin(self, path, productseries=None,
         distroseries=None, sourcepackagename=None):
-        """See IPOFileSet."""
+        """See `IPOFileSet`."""
         assert productseries is not None or distroseries is not None, (
             'Either productseries or sourcepackagename arguments must be'
             ' not None.')
@@ -1347,7 +1382,7 @@ class POFileSet:
 
 
 class POFileTranslator(SQLBase):
-    """See IPOFileTranslator."""
+    """See `IPOFileTranslator`."""
     implements(IPOFileTranslator)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
     person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)

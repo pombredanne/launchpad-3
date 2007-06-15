@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 from zope.schema import TextLine, Text, Field, Int, Choice
 from zope.interface import Interface, Attribute
@@ -128,20 +128,9 @@ class IPOFile(IRosettaStats):
         """Return mapping from each of potmsgsets to matching POMsgSet.
 
         The result is a dict.  Any POTMsgSets in potmsgsets that have no
-        translation in pofile are omitted.
-        """
-
-    def getRelatedSubmissions(stored_pomsgsets, dummy_pomsgsets):
-        """Find all POSubmissions that the listed POMsgSets may want to cache.
-
-        Result is a dict mapping each of these POMsgSets to a list of all
-        POSubmissions that are relevant to it.  Each of the lists is in
-        newest-to-oldest order.
-
-        :stored_pomsgsets: List of pomsgsets that are already present in the
-        database, and whose in-memory caches are to be populated.
-        :dummy_pomsgsets: List of pomsgsets that have not yet been stored in
-        the database, and whose in-memory caches are to be populated.
+        translation in pofile yet will come with matching DummyPOMsgSets.
+        Both dummy and pre-existing POMsgSets will have their submissions
+        caches populated.
         """
 
     def __getitem__(msgid_text):
