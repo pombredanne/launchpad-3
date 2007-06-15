@@ -16,7 +16,7 @@ import logging
 
 def reset_logging():
     """Reset the logging system back to defaults
-    
+
     Currently, defaults means 'the way the Z3 testrunner sets it up'
 
     XXX: We need isolation enforcement so that an error will be raised and

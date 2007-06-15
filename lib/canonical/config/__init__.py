@@ -8,9 +8,7 @@ environment variable, and defaults to 'default'
 
 __metaclass__ = type
 
-import sys
 import os
-import os.path
 import logging
 from urlparse import urlparse, urlunparse
 
@@ -292,6 +290,10 @@ class DatabaseConfig:
         self._config_section = section_name
 
     def _getConfigSections(self):
+        """Returns a list of sections to search for database configuration.
+
+        The first section in the list has highest priority.
+        """
         if self._config_section is None:
             return [config.database]
         overlay = config
