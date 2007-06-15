@@ -11,7 +11,6 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 
-from canonical.launchpad import _
 
 class IBuildQueue(Interface):
     """A Launchpad Auto Build queue entry.
@@ -79,7 +78,7 @@ class IBuildQueue(Interface):
 
     def updateBuild_BUILDING(slave, build_id, build_status,
                              logtail, filemap, dependencies, logger):
-        """Build still building, Simple collects the logtail"""
+        """Build still building, collect the logtail"""
 
     def updateBuild_ABORTING(slave, buildid, build_status,
                              logtail, filemap, dependencies, logger):

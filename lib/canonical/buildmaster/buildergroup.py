@@ -1,13 +1,18 @@
 # Copyright Canonical Limited 2004-2007
+"""Builder Group model.
 
-import tempfile
-import subprocess
+Implement methods to deal with builder and their results.
+"""
+
+__metaclass__ = type
+
+import datetime
 import os
+import pytz
+import socket
+import subprocess
 import time
 import xmlrpclib
-import socket
-import datetime
-import pytz
 
 from sqlobject import SQLObjectNotFound
 
@@ -20,12 +25,11 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.librarian.utils import copy_and_close
 from canonical.launchpad.interfaces import (
     BuildDaemonError, IBuildQueueSet, BuildJobMismatch, IBuildSet, IBuilderSet,
-    NotFoundError, ProtocolVersionMismatch, pocketsuffix
+    NotFoundError, pocketsuffix
     )
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import (
     flush_database_updates, clear_current_connection_cache, cursor)
-from canonical.launchpad.helpers import filenameToContentType
 from canonical.buildd.slave import BuilderStatus
 
 
@@ -41,7 +45,7 @@ class BuilderGroup:
 
     def checkAvailableSlaves(self, arch):
         """Iter through available builder-slaves for an given architecture."""
-        # available slaves
+        # Get available slaves for the context architecture.
         self.builders = getUtility(IBuilderSet).getBuildersByArch(arch)
 
         # Actualise the results because otherwise we get our exceptions
@@ -53,12 +57,13 @@ class BuilderGroup:
         self.logger.debug("Finding XMLRPC clients for the builders")
 
         for builder in self.builders:
-            # builders that are not 'ok' are not worth rechecking here for some
-            # currently undocumented reason - RBC 20070523.
+            # XXX RBC 20070523: builders that are not 'ok' are not worth
+            # rechecking here for some currently undocumented reason.
+            # See further information on bug #31546 and #30633
             if builder.builderok:
                 self.updateBuilderStatus(builder, arch)
 
-        # commit the updates made to the builders.
+        # Commit the updates made to the builders.
         self.commit()
         self.updateOkSlaves()
 
@@ -72,29 +77,34 @@ class BuilderGroup:
         try:
             builder.checkSlaveAlive()
             builder.checkCanBuildForDistroArchSeries(arch)
-        # catch only known exceptions
+        # Catch only known exceptions.
+        # XXX cprov 20070615: ValueError & TypeError catching is disturbing
+        # in this context. We should spend sometime sanitizing the exceptions
+        # raised in the Builder API since we already started the main
+        # refactoring of this area. See bug #120571.
         except (ValueError, TypeError, xmlrpclib.Fault,
                 socket.error, BuildDaemonError), reason:
-            # repr() is required for socket.error
+            # XXX cprov 20070615: repr() is required for socket.error, however
+            # it's not producing anything 'readable' on Builder.failurenotes.
+            # it need attention at some point.
             builder.failbuilder(repr(reason))
             self.logger.debug("Builder on %s marked as failed due to: %r",
                               builder.url, reason, exc_info=True)
         else:
-            # Update the successfully probed builder to OK state.
-            builder.builderok = True
-            builder.failnotes = None
-            # verify if the builder slave is working with sane information
+            # Verify if the builder slave is working with sane information.
             self.rescueBuilderIfLost(builder)
 
     def rescueBuilderIfLost(self, builder):
-        """Reset Builder slave if job information mismatch.
+        """Reset Builder slave if job information doesn't match with DB.
 
-        If builder is BUILDING or WAITING an unknown job clean it.
+        If builder is BUILDING or WAITING but has an information record
+        that doesn't match what is stored in the DB, we have to dismiss
+        the its current actions and let the slave free for another job.
         Assuming the XMLRPC is working properly at this point.
         """
         status_sentence = builder.slaveStatusSentence()
 
-        # ident_position dict relates the position of the job identifier
+        # 'ident_position' dict relates the position of the job identifier
         # token in the sentence received from status(), according the
         # two status we care about. See see lib/canonical/buildd/slave.py
         # for further information about sentence format.
@@ -103,23 +113,23 @@ class BuilderGroup:
             'BuilderStatus.WAITING': 2
             }
 
-        # isolate the BuilderStatus string, always the first token in
-        # status returned sentence, see lib/canonical/buildd/slave.py
+        # Isolate the BuilderStatus string, always the first token in
+        # status returned sentence, see lib/canonical/buildd/slave.py.
         status = status_sentence[0]
 
-        # if slave is not building nor waiting, it's not in need of rescuing.
+        # If slave is not building nor waiting, it's not in need of rescuing.
         if status not in ident_position.keys():
             return
 
-        # extract information from the identifier
+        # Extract information from the identifier.
         build_id, queue_item_id = status_sentence[
             ident_position[status]].split('-')
 
-        # check if build_id and queue_item_id exist
+        # Check if build_id and queue_item_id exist.
         try:
             build = getUtility(IBuildSet).getByBuildID(int(build_id))
             queue_item = getUtility(IBuildQueueSet).get(int(queue_item_id))
-            # also check it build and buildqueue are properly related
+            # Also check it build and buildqueue are properly related.
             if queue_item.build.id != build.id:
                 raise BuildJobMismatch('Job build entry mismatch')
 
@@ -239,7 +249,8 @@ class BuilderGroup:
         librarian = getUtility(ILibrarianClient)
 
         # XXX: dsilvers: 20050302: Confirm the builder has the right build?
-        assert build_status.startswith('BuildStatus.')
+        assert (build_status.startswith('BuildStatus.'),
+                'Malformed status string: %s' % build_status)
 
         buildstatus = build_status[len('BuildStatus.'):]
         method = getattr(self, 'buildStatus_' + buildstatus, None)
@@ -257,15 +268,17 @@ class BuilderGroup:
         Store Buildlog, datebuilt, duration, dependencies.
         """
         queueItem.build.buildlog = self.getLogFromSlave(queueItem)
+        queueItem.build.builder = queueItem.builder
+        queueItem.build.dependencies = dependencies
+        # XXX cprov 2060615: Currently buildduration includes the scanner
+        # latency, it should really be asking the slave for the duration
+        # spent building locally. See bug #120584
         queueItem.build.datebuilt = UTC_NOW
-        # XXX: This includes scanner latency in the measurement, it should
-        # really be asking the slave for the duration spent building.
-        # we need dynamic datetime.now() instance to be able to perform
+        # We need dynamic datetime.now() instance to be able to perform
         # the time operations for duration.
         RIGHT_NOW = datetime.datetime.now(pytz.timezone('UTC'))
         queueItem.build.buildduration = RIGHT_NOW - queueItem.buildstart
-        queueItem.build.builder = queueItem.builder
-        queueItem.build.dependencies = dependencies
+
 
     def buildStatus_OK(self, queueItem, librarian, buildid,
                        filemap=None, dependencies=None):
@@ -369,15 +382,21 @@ class BuilderGroup:
             'READ_COMMITTED_ISOLATION (not "%s")' % isolation_str)
 
         original_slave = queueItem.builder.slave
+
+        # XXX Robert Collins, Celso Providelo 20070526:
+        # 'Refreshing' objects  procedure  is forced on us by using a
+        # different process to do the upload, but as that process runs
+        # in the same unix account, it is simply double handling and we
+        # would be better off to do it within this process.
         flush_database_updates()
         clear_current_connection_cache()
-        # XXX: This is forced on us by sqlobject refreshing the builder
-        # object during the transaction cache clearing; that is forced
-        # on us by using a different process to do the upload, but as
-        # that process runs in the same unix account, it is simply double
-        # handling and we would be better off to do it within this process.
-        # Robert Collins, Celso Providelo 20070526.
-        queueItem.builder.setSlaveForTesting(removeSecurityProxy(original_slave))
+
+        # XXX cprov 20070615: Re-issuing removeSecurityProxy is forced on
+        # us by sqlobject refreshing the builder object during the
+        # transaction cache clearing. Once we sort the previous problem
+        # this step should probably not be required anymore.
+        queueItem.builder.setSlaveForTesting(
+            removeSecurityProxy(original_slave))
 
         # Store build information, build record was already updated during
         # the binary upload.
@@ -403,15 +422,19 @@ class BuilderGroup:
             # update builder
             queueItem.build.buildstate = dbschema.BuildStatus.FAILEDTOUPLOAD
             # Retrieve log file content.
-            possible_locations = [
-                'failed', 'failed-to-move', 'rejected', 'accepted']
+            possible_locations = (
+                'failed', 'failed-to-move', 'rejected', 'accepted')
             for location_dir in possible_locations:
                 upload_final_location = os.path.join(
                     root, location_dir, upload_leaf)
                 if os.path.exists(upload_final_location):
                     log_filepath = os.path.join(
                         upload_final_location, 'uploader.log')
-                    uploader_log_content = open(log_filepath).read()
+                    try:
+                        uploader_log_file = open(log_filepath)
+                        uploader_log_content = uploader_log_file.read()
+                    finally:
+                        uploader_log_file.close()
                     break
             else:
                 uploader_log_content = 'Could not find upload log file'

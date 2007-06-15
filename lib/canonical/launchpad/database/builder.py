@@ -118,7 +118,8 @@ class Builder(SQLBase):
 
     def checkCanBuildForDistroArchSeries(self, distro_arch_series):
         """See IBuilder."""
-        # XXX: This function currently depends on the operating system specific
+        # XXX cprov 20070615:
+        # This function currently depends on the operating system specific
         # details of the build slave to return a processor-family-name (the
         # architecturetag) which matches the distro_arch_series. In reality,
         # we should be checking the processor itself (e.g. amd64) as that is
@@ -127,7 +128,7 @@ class Builder(SQLBase):
         # distributions - its not the right thing to be comparing.
 
         # query the slave for its active details.
-        # XXX: mechanisms is ignored? -- kiko
+        # XXX cprov 20070615: why is 'mechanisms' ignored?
         builder_vers, builder_arch, mechanisms = self.slave.info()
         # we can only understand one version of slave today:
         if builder_vers != '1.0':
@@ -175,18 +176,16 @@ class Builder(SQLBase):
         resume_process = subprocess.Popen(
             resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         resume_process.communicate()
-        # XXX: If the reset command fails, we should raise an error rather than
-        # assuming it reset ok.
+        # XXX cprov 20070615: If the reset command fails, we should raise
+        # an error rather than assuming it reset ok.
 
     @property
     def slave(self):
-        """See IBuilder.
-
-        A cached attribute _slave is used to allow tests to replace the _slave
-        object, which is usually an XMLRPC client, with a stub object that
-        removes the need to actually create a buildd slave in various states -
-        which can be hard to create.
-        """
+        """See IBuilder."""
+        # A cached attribute _slave is used to allow tests to replace
+        # the _slave object, which is usually an XMLRPC client, with a
+        # stub object that removes the need to actually create a buildd
+        # slave in various states - which can be hard to create.
         if getattr(self, '_slave', None) is None:
             self._slave = BuilderSlave(self.url)
         return self._slave
@@ -201,9 +200,10 @@ class Builder(SQLBase):
                     build_queue_item.name, build_queue_item.version,
                     build_queue_item.build.pocket.title)
         if self.trusted:
-            assert build_queue_item.is_trusted, \
-                "attempt to build untrusted item on a trusted-only builder."
-        # ensure build has the need chroot
+            assert (
+                build_queue_item.is_trusted,
+                "attempt to build untrusted item on a trusted-only builder.")
+        # Ensure build has the needed chroot
         chroot = build_queue_item.archseries.getChroot(
             build_queue_item.build.pocket)
         if chroot is None:
@@ -218,8 +218,8 @@ class Builder(SQLBase):
         # lifecycle. These do not apply to PPA builds (which are untrusted).
         if build_queue_item.is_trusted:
             build = build_queue_item.build
-            # XXX: not an explicit CannotBuild exception yet because the callers
-            # have not been audited - Robert Collins 20070526.
+            # XXX Robert Collins 20070526: not an explicit CannotBuild
+            # exception yet because the callers have not been audited
             assert build.distroseries.canUploadToPocket(build.pocket), (
                 "%s (%s) can not be built for pocket %s: invalid pocket due "
                 "to the series status of %s."
@@ -228,14 +228,17 @@ class Builder(SQLBase):
         # If we are building untrusted source reset the entire machine.
         if not self.trusted:
             self.resetSlaveHost(logger)
+
         # Send chroot.
         self.cacheFileOnSlave(logger, chroot)
+
         # Build filemap structure with the files required in this build
         # and send them to the slave.
         filemap = {}
         for f in build_queue_item.files:
             filemap[f.libraryfile.filename] = f.libraryfile.content.sha1
             self.cacheFileOnSlave(logger, f.libraryfile)
+
         # Build extra arguments
         args = {}
         args["ogrecomponent"] = build_queue_item.component_name
@@ -272,7 +275,6 @@ class Builder(SQLBase):
             args['archives'] = [ppa_source_line, ubuntu_source_line]
         else:
             args['archives'] = []
-
 
         chroot_sha1 = chroot.content.sha1
         # store DB information
@@ -375,7 +377,7 @@ class Builder(SQLBase):
         try:
             slave_file = self.slave.getFile(file_sha1)
             copy_and_close(slave_file, out_file)
-            # if the requested file is the 'buildlog' compress it using gzip
+            # if the requested file is the 'buildlog' compress it using gzi;5Bp
             # before storing in Librarian
             if file_sha1 == 'buildlog':
                 # XXX cprov 20051010:

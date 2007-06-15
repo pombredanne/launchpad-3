@@ -101,8 +101,7 @@ class BuildQueue(SQLBase):
         return self.build.is_trusted
 
     def getLogFileName(self):
-        """Get the preferred filename for the buildlog of this build."""
-        # XXX Robert Collins 20070526: this should be directly tested.
+        """See IBuildQueue"""
         sourcename = self.build.sourcepackagerelease.name
         version = self.build.sourcepackagerelease.version
         # we rely on previous storage of current buildstate
@@ -128,8 +127,7 @@ class BuildQueue(SQLBase):
                          filemap, dependencies, logger):
         """See IBuildQueue."""
         logger.warn(
-            "Builder on %s is Dory AICMFP. Builder forgot about build %s "
-            "-- resetting buildqueue record"
+            "Builder %s forgot about build %s -- resetting buildqueue record"
             % (self.builder.url, self.build.title))
         self.builder = None
         self.buildstart = None

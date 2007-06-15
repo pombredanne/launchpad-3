@@ -10,13 +10,12 @@ cronscripts.
 
 __metaclass__ = type
 
-import operator
-import logging
-import xmlrpclib
-import socket
-import datetime
-import pytz
+
 import apt_pkg
+import datetime
+import logging
+import operator
+import pytz
 
 from zope.component import getUtility
 
@@ -117,9 +116,11 @@ class BuilddMaster:
     """Canonical autobuilder master, toolkit and algorithms.
 
     This class is in the process of being deprecated in favour of the regular
-    content classes. Please do not extend it except as required to move more
-    logic into the content classes.
+    content classes.
     """
+    # XXX cprov 20070615: Please do not extend this class except as
+    # required to move more logic into the content classes. A new feature
+    # should be modeled directly in IBuilder.
 
     def __init__(self, logger, tm):
         self._logger = logger

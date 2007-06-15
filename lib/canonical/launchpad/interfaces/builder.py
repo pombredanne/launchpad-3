@@ -134,7 +134,7 @@ class IBuilder(IHasOwner):
         """
 
     def checkCanBuildForDistroArchSeries(distro_arch_series):
-        """Check that the slave is able to compile for the supplied distro_arch_release.
+        """Check that the slave can compile for the given distro_arch_release.
 
         This will query the builder to determine its actual architecture (as
         opposed to what we expect it to be).
@@ -148,7 +148,7 @@ class IBuilder(IHasOwner):
 
     def checkSlaveAlive():
         """Check that the buildd slave is alive.
-    
+
         This pings the slave over the network via the echo method and looks
         for the sent message as the reply.
 
@@ -174,8 +174,8 @@ class IBuilder(IHasOwner):
 
         :param logger: A logger used for providing debug information.
         :raises CannotResetHost: Currently only virtual machine based builders
-            (those that are used to build untrusted source (not self.trusted) can
-            be reset.
+            (those that are used to build untrusted source (not self.trusted)
+            can be reset.
         """
 
     def setSlaveForTesting(new_slave):
