@@ -8,7 +8,7 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    StringCol, ForeignKey, IntervalCol)
+    StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, IN
 
 from canonical.config import config
@@ -124,6 +124,16 @@ class Build(SQLBase):
         return sorted(bpklist, key=lambda a: a.binarypackagename.name)
 
     @property
+    def distroarchseriesbinarypackages(self):
+        """See IBuild."""
+        # Avoid circular import by importing locally.
+        from canonical.launchpad.database.distroarchseriesbinarypackagerelease\
+            import (DistroArchSeriesBinaryPackageRelease)
+        return [DistroArchSeriesBinaryPackageRelease(
+            self.distroarchseries, bp) 
+            for bp in self.binarypackages]
+
+    @property
     def can_be_retried(self):
         """See IBuild."""
         # check if the build would be properly collected if it was
@@ -217,6 +227,8 @@ class Build(SQLBase):
         if not config.builddmaster.send_build_notification:
             return
 
+        recipients = set()
+
         fromaddress = format_address(
             config.builddmaster.default_sender_name,
             config.builddmaster.default_sender_address)
@@ -225,24 +237,45 @@ class Build(SQLBase):
             'X-Launchpad-Build-State': self.buildstate.name,
             }
 
-        buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
-        recipients = contactEmailAddresses(buildd_admins)
+        # XXX cprov 20061027: temporary extra debug info about the
+        # SPR.creator in context, to be used during the service quarantine,
+        # notify_owner will be disabled to avoid *spamming* Debian people.
+        creator = self.sourcepackagerelease.creator
+        extra_headers['X-Creator-Recipient'] = ",".join(
+            contactEmailAddresses(creator))
 
         # Currently there are 7038 SPR published in edgy which the creators
         # have no preferredemail. They are the autosync ones (creator = katie,
         # 3583 packages) and the untouched sources since we have migrated from
         # DAK (the rest). We should not spam Debian maintainers.
-        creator = self.sourcepackagerelease.creator
         if config.builddmaster.notify_owner:
             recipients = recipients.union(contactEmailAddresses(creator))
 
-        # XXX cprov 20061027: temporary extra debug info about the
-        # SPR.creator in context, to be used during the service quarantine,
-        # notify_owner will be disabled to avoid *spamming* Debian people.
-        extra_headers['X-Creator-Recipient'] = ",".join(
-            contactEmailAddresses(creator))
-
-        subject = "[Build #%d] %s" % (self.id, self.title)
+        # Modify notification contents according the targeted archive.
+        # 'Archive Tag', 'Subject' and 'Source URL' are customized for PPA.
+        # We only send build-notifications to 'buildd-admin' celebrity for
+        # main archive candidates.
+        # For PPA build notifications we include the archive.owner
+        # contact_address.
+        if self.is_trusted:
+            buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
+            recipients = recipients.union(
+                contactEmailAddresses(buildd_admins))
+            archive_tag = '%s main archive' % self.distribution.name
+            subject = "[Build #%d] %s" % (self.id, self.title)
+            source_url = canonical_url(self.distributionsourcepackagerelease)
+        else:
+            recipients = recipients.union(
+                contactEmailAddresses(self.archive.owner))
+            # For PPAs we run on risk to have no available contact_adress,
+            # for instance, when both, SPR.creator and Archive.owner have
+            # not enabled it.
+            if len(recipients) == 0:
+                return
+            archive_tag = '%s PPA' % self.archive.owner.name
+            subject = "[Build #%d] %s (%s)" % (
+                self.id, self.title, archive_tag)
+            source_url = 'not available'
 
         # XXX cprov 20060802: pending security recipients for SECURITY
         # pocket build. We don't build SECURITY yet :(
@@ -287,9 +320,9 @@ class Build(SQLBase):
             'builder_url': builder_url,
             'build_title': self.title,
             'build_url': canonical_url(self),
-            'source_url': canonical_url(
-                self.distributionsourcepackagerelease),
+            'source_url': source_url,
             'extra_info': extra_info,
+            'archive_tag': archive_tag,
             }
         message = template % replacements
 
@@ -315,7 +348,10 @@ class BuildSet:
 
     def getByBuildID(self, id):
         """See IBuildSet."""
-        return Build.get(id)
+        try:
+            return Build.get(id)
+        except SQLObjectNotFound, e:
+            raise NotFoundError(str(e))
 
     def getPendingBuildsForArchSet(self, archserieses):
         """See IBuildSet."""
