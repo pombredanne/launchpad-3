@@ -57,8 +57,8 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         if (self.context.distroseries.hide_all_translations and
             not check_permission('launchpad.Admin', sourcepackage_pots)):
             raise TranslationUnavailable(
-                'Translation updates in progress.  Only admins may view'
-                ' translations for this sourcepackage.')
+                'Translation updates are in progress.  Only administrators may view'
+                ' translations for this source package.')
 
         return sourcepackage_pots
 

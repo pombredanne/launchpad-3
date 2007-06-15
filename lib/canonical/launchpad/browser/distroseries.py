@@ -70,8 +70,8 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
         if (self.context.hide_all_translations and
             not check_permission('launchpad.Admin', distroserieslang)):
             raise TranslationUnavailable(
-                'Translation updates in progress.  Only admins may view'
-                ' translations for this distroseries.')
+                'Translation updates are in progress.  Only administrators may view'
+                ' translations for this distribution series.')
 
         return distroserieslang
 
