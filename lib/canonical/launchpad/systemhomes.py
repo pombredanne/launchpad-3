@@ -10,13 +10,13 @@ __metaclass__ = type
 
 from zope.component import getUtility
 from zope.interface import implements
+
 from canonical.launchpad.interfaces import (
-    IRegistryApplication, IMaloneApplication, IBazaarApplication,
-    IShipItApplication, IRosettaApplication, IProductSet, IDistroSeriesSet,
-    ITranslationGroupSet, ILaunchpadStatisticSet,
-    IBugSet, IBugWatchSet, IBugExternalRefSet,
-    IBugTaskSet, IBugTrackerSet, ILaunchBag, BugTaskSearchParams,
-    IBranchSet, ILanguageSet)
+    BugTaskSearchParams, IBazaarApplication, IBranchSet, IBugExternalRefSet,
+    IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet, IDistroSeriesSet,
+    ILanguageSet, ILaunchBag, ILaunchpadStatisticSet, IMaloneApplication,
+    IOpenIdApplication, IProductSet, IRegistryApplication,
+    IRosettaApplication, IShipItApplication, ITranslationGroupSet)
 
 
 class RegistryApplication:
@@ -84,6 +84,12 @@ class BazaarApplication:
 
     def __init__(self):
         self.title = 'The Open Source Bazaar'
+
+
+class OpenIdApplication:
+    implements(IOpenIdApplication)
+
+    title = 'Launchpad Login Service'
 
 
 class RosettaApplication:

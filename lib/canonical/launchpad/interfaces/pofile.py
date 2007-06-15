@@ -168,6 +168,10 @@ class IPOFile(IRosettaStats):
         Return the message sets using 'slice' or all of them if slice is None.
         """
 
+    def getPOTMsgSetWithNewSuggestions():
+        """Get pot message sets with suggestions submitted after last review.
+        """
+
     def getPOTMsgSetChangedInLaunchpad():
         """Get pot message sets changed through Launchpad in this PO file.
 
