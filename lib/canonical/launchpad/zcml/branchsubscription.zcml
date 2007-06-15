@@ -13,4 +13,27 @@
         />
     </content>
 
+    <browser:defaultView
+        for="canonical.launchpad.interfaces.IBranchSubscription"
+        name="+index" />
+
+  <adapter
+    for="canonical.launchpad.interfaces.IBranchSubscription"
+    provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+    factory="canonical.launchpad.browser.BranchSubscriptionSOP"
+    />
+
+  <browser:page
+    name="+index"
+    for="canonical.launchpad.interfaces.IBranchSubscription"
+    class="canonical.launchpad.browser.BranchSubscriptionEditView"
+    facet="branches"
+    permission="launchpad.Edit"
+    template="../templates/branchsubscription-edit.pt" />
+
+  <browser:url
+      for="canonical.launchpad.interfaces.IBranchSubscription"
+      path_expression="string:+subscription/${person/name}"
+      attribute_to_parent="branch"
+        rootsite="code" />
 </configure>

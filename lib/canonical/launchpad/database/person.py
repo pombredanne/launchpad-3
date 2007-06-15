@@ -64,6 +64,7 @@ from canonical.launchpad.database.bugtask import (
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
+from canonical.launchpad.database.pillar import PillarName
 from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
@@ -803,6 +804,43 @@ class Person(SQLBase, HasSpecificationsMixin):
         cur = cursor()
         cur.execute(query)
         return cur.fetchall()
+
+    def getOwnedOrDrivenPillars(self):
+        """See IPerson."""
+        query = """
+            SELECT name
+            FROM product, teamparticipation
+            WHERE teamparticipation.person = %(person)s
+                AND (driver = teamparticipation.team
+                     OR owner = teamparticipation.team)
+
+            UNION
+
+            SELECT name
+            FROM project, teamparticipation
+            WHERE teamparticipation.person = %(person)s
+                AND (driver = teamparticipation.team 
+                     OR owner = teamparticipation.team)
+
+            UNION
+
+            SELECT name
+            FROM distribution, teamparticipation
+            WHERE teamparticipation.person = %(person)s
+                AND (driver = teamparticipation.team
+                     OR owner = teamparticipation.team)
+            """ % sqlvalues(person=self)
+        cur = cursor()
+        cur.execute(query)
+        names = [sqlvalues(str(name)) for [name] in cur.fetchall()]
+        if not names:
+            return PillarName.select("1=2")
+        quoted_names = ','.join([name for [name] in names])
+        return PillarName.select(
+            "PillarName.name IN (%s) AND PillarName.active IS TRUE" %
+            quoted_names, prejoins=['distribution', 'project', 'product'],
+            orderBy=['PillarName.distribution', 'PillarName.project',
+                     'PillarName.product'])
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
