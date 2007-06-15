@@ -345,7 +345,7 @@ Testing a bunch of URL links.
     Foo Bar &lt;<a rel="nofollow" href="mailto:foo.bar@example.net">mailto:<wbr></wbr>foo.bar@<wbr></wbr>example.<wbr></wbr>net</a>&gt;</p>
 
 
-== regex helper functions ==
+== Regex helper functions ==
 
 The _substitute_matchgroup_for_spaces() static method is part of the
 fmt:text-to-html code.  It is a helper for writing regular expressions where

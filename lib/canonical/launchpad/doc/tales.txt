@@ -137,20 +137,20 @@ Add manual word breaks to long words in a string:
 Signatures and full-quoted parts of a message can be wrapped in markup
 to hide them:
 
-    >>> text = '\n'.join(['Top quoting is simply bad netiquette.',
-    ...                   'The words of the leading text should be displayed',
-    ...                   'normally--no markup to hide it from view.',
-    ...                   'Raise your hand if you can read this.',
-    ...                   ''])
-    >>> quoted_text = '\n'.join(['Somebody said sometime ago:',
-    ...                          '> 1. Remove the letters  c, j, q, x, w',
-    ...                          '>    from the English Language.',
-    ...                          '> 2. Remove the penny from US currency.',
-    ...                          ''])
-    >>> signature = '\n'.join(['-- ',
-    ...             '__C U R T I S  C.  H O V E Y_______',
-    ...             'sinzui.is@somewhere.org',
-    ...             'Guilty of stealing everything I am.'])
+    >>> text = ('Top quoting is simply bad netiquette.\n'
+    ...         'The words of the leading text should be displayed\n'
+    ...         'normally--no markup to hide it from view.\n'
+    ...         'Raise your hand if you can read this.\n'
+    ...         '\n')
+    >>> quoted_text = ('Somebody said sometime ago:\n'
+    ...                '> 1. Remove the letters  c, j, q, x, w\n'
+    ...                '>    from the English Language.\n'
+    ...                '> 2. Remove the penny from US currency.\n'
+    ...                '\n')
+    >>> signature = ('-- \n'
+    ...              '__C U R T I S  C.  H O V E Y_______\n'
+    ...              'sinzui.is@somewhere.org\n'
+    ...              'Guilty of stealing everything I am.\n')
     >>> # Print this without processing to check that we have a good start
     >>> print '\n'.join([text, quoted_text, signature])
     Top quoting is simply bad netiquette.
@@ -221,31 +221,32 @@ to hide them:
 Email addresses can be obfuscated:
 
     >>> test_tales('foo/fmt:obfuscate-email', foo='name.surname@company.com')
-    'person@domain.dom'
+    '<email address hidden>'
     >>> test_tales('foo/fmt:obfuscate-email', foo='name@organization.org.cc')
-    'person@domain.dom'
+    '<email address hidden>'
     >>> test_tales('foo/fmt:obfuscate-email',
     ...     foo='long_name@host.network.org.cc')
-    'person@domain.dom'
+    '<email address hidden>'
     >>> test_tales('foo/fmt:obfuscate-email',
     ...     foo='long-name@building.museum')
-    'person@domain.dom'
+    '<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email', foo='foo@staticmethod.com')
+    '<email address hidden>'
 
-    >>> # obfuscation must run before the address is changed by text-to-html
     >>> print test_tales('foo/fmt:obfuscate-email/fmt:text-to-html',
     ...     foo=signature)
     <p>--<br />
     __C U R T I S  C.  H O V E Y_______<br />
-    person@domain.dom<br />
+    &lt;email address hidden&gt;<br />
     Guilty of stealing everything I am.</p>
 
     >>> # Email addresses and credentials in a URL match.
     >>> test_tales('foo/fmt:obfuscate-email',
     ...     foo='mailto:long-name@very.long.dom.cc')
-    'mailto:person@domain.dom'
+    'mailto:<email address hidden>'
     >>> test_tales('foo/fmt:obfuscate-email',
     ...     foo='http://person:password@site.net')
-    'http://person:person@domain.dom'
+    'http://person:<email address hidden>'
 
     >>> # An Invalid email address does not match.
     >>> test_tales('foo/fmt:obfuscate-email', foo='name @ host.school.edu')

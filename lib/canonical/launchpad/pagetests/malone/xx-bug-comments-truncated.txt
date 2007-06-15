@@ -1,10 +1,10 @@
 = Bug comments truncated, obfuscated, and hidden =
 
 There are several scenarios where user messages are altered for
-presnetation. Messages originating from emails for example often
-have unwanted or unescessay content is included.
+presentation. Messages originating from emails for example often
+have unwanted or unnecessary content is included.
 
-== truncated text ==
+== Truncated text ==
 
 When displaying the comments on the main bug page they are truncated if
 they are too long. In order to show that, let's set the limit to a
@@ -68,9 +68,9 @@ The whole comment is visible on this page:
 
 == Obsucated email addresses and hidden content ==
 
-Let's have an No Priviliges Person create a message in the style of
-an email post to examine the markup rules for obsucations and
-hidding. This message contains a quoted passage, and a signature
+Let's have an No Privileges Person create a message in the style of
+an email post to examine the markup rules for obfuscations and
+hiding. This message contains a quoted passage, and a signature
 with an email address in it. Note: This set of tests is generally
 the same rules as xx-question-message.txt; changes here may require
 changes to that test.
@@ -94,7 +94,7 @@ changes to that test.
     ...     "Witty signatures rock!\n")
     >>> user_browser.getControl('Save Changes', index=-1).click()
 
-No Priviliges Person is authenticated in user_browser, so he can see
+No Privileges Person is authenticated in user_browser, so he can see
 email addresses in messages.
 
     >>> user_browser.title.decode('utf-8')
@@ -107,9 +107,9 @@ email addresses in messages.
     human@somewhere.org
     Witty signatures rock!
 
-Unautheticated users, such as a bot will see the mock email address
-of 'person@domain.dom'. Anon is unauthenticated, he will see the
-obfuscated email address.
+Unauthenticated users, such as a bot will see the obfuscated email
+address, '<email address hidden>'. The anonymous user is
+unauthenticated, so he will see the obfuscated email address.
 
     >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu-product/+bug/2')
     >>> anon_browser.title.decode('utf-8')
@@ -119,17 +119,17 @@ obfuscated email address.
     >>> print extract_text(text.findAll('p')[-1])
     --
     ______________________
-    person@domain.dom
+    &lt;email address hidden&gt;
     Witty signatures rock!
 
 The style and script in the user_browser control the display and behaviour
 of content inside tags with the class 'foldable'. The script adds a
-link to toggle the diplay of the foldable text between none and inline.
+link to toggle the display of the foldable text between none and inline.
 
 Signatures are identified by paragraphs with a starting line like '--'.
 The entire content of the paragraph is wrapped by a tag of 'foldable'
-class. Continuing the Anon since all users get the same markup, we can
-see
+class. Continuing the anonymous user since all users get the same
+markup, we can see:
 
     >>> # XXX sinzui 2007-06-14 bug 120425
     >>> # Pagetests cannot test CSS and JS behaviour.
@@ -137,16 +137,16 @@ see
     >>> # for the style and script.
     >>> print text.findAll('p')[-1]
     <p><span class="foldable">--...
-    person@domain.dom<br />
+    &lt;email address hidden&gt;<br />
     Witty signatures rock!
     </span></p>
 
-Quoted passages are indentified by lines that start with '>', '|', ':'.
+Quoted passages are identified by lines that start with '>', '|', ':'.
 The lines represents many paragraphs of quoted text, but we mark the
 block of content as a single paragraph. The quoted lines are often
-preceeded by a citation line. Only the quoted lines are wrapped with a
+preceded by a citation line. Only the quoted lines are wrapped with a
 tag of 'foldable' class, citation lines are always displayed. Again
-we can continue with Anon to see the markup.
+we can continue with the anonymous user to see the markup.
 
     >>> print text.findAll('p')[-2]
     <p>Somebody said sometime ago:<br />

@@ -1,8 +1,8 @@
 = Question messages =
 
-Question messages are plain text. They are formated as HTML for web
+Question messages are plain text. They are formatted as HTML for web
 pages. Many messages originate from emails where unwanted or
-unescessay content is included. Note: This set of tests is generally
+unnecessary content is included. Note: This set of tests is generally
 the same rules as xx-bug-comments-truncated.txt; changes here may
 require changes to that test.
 
@@ -34,9 +34,8 @@ quoted passage, and a signature with an email address in it.
 
 == Email addresses are only shown to authenticated users ==
 
-Email addresses are visible to authenitcated users. Sample Person is
-authenticated already, how else could he have created the message.
-He will see 'human@somewhere.org'
+Email addresses are visible to authenticated users. Sample Person is
+authenticated already, He will see 'human@somewhere.org'
 
     >>> browser.title.decode('utf-8')
     u'Ubuntu question #11: ...Continue playing after shutdown...'
@@ -47,9 +46,9 @@ He will see 'human@somewhere.org'
     human@somewhere.org
     Witty signatures rock!
 
-Unautheticated users, such as a bot will see the mock email address
-of 'person@domain.dom'. Anon is unauthenticated, he will see the
-obfuscated email address.
+Unauthenticated users, such as a bot will see the mock email address
+of 'person@domain.dom'. The anonymous user is unauthenticated, he will
+see the obfuscated email address (<email address hidden>).
 
     >>> anon_browser.open('http://answers.launchpad.dev/ubuntu/+question/11')
     >>> anon_browser.title.decode('utf-8')
@@ -59,20 +58,21 @@ obfuscated email address.
     >>> print extract_text(text.findAll('p')[-1])
     --
     ______________________
-    person@domain.dom
+    &lt;email address hidden&gt;
     Witty signatures rock!
 
 
 == Signatures and quoted passages are hidden ==
 
-The style and script in the user_browser control the display and behaviour
-of content inside tags with the class 'foldable'. The script adds a
-link to toggle the diplay of the foldable text between none and inline.
+The style and script in the user_browser control the display and
+behaviour of content inside tags with the class 'foldable'. The script
+adds a link to toggle the display of the foldable text between none
+and inline.
 
 Signatures are identified by paragraphs with a starting line like '--'.
 The entire content of the paragraph is wrapped by a tag of 'foldable'
-class. Continuing the Anon since all users get the same markup, we can
-see
+class. Continuing the anonymous user since all users get the same 
+markup, we can see:
 
     >>> # XXX sinzui 2007-06-14 bug 120425
     >>> # Pagetests cannot test CSS and JS behaviour.
@@ -80,16 +80,16 @@ see
     >>> # for the style and script.
     >>> print text.findAll('p')[-1]
     <p><span class="foldable">--...
-    person@domain.dom<br />
+    &lt;email address hidden&gt;<br />
     Witty signatures rock!
     </span></p>
 
-Quoted passages are indentified by lines that start with '>', '|', ':'.
+Quoted passages are identified by lines that start with '>', '|', ':'.
 The lines represents many paragraphs of quoted text, but we mark the
 block of content as a single paragraph. The quoted lines are often
-preceeded by a citation line. Only the quoted lines are wrapped with a
+preceded by a citation line. Only the quoted lines are wrapped with a
 tag of 'foldable' class, citation lines are always displayed. Again
-we can continue with Anon to see the markup.
+we can continue with the anonymous user to see the markup.
 
     >>> print text.findAll('p')[-2]
     <p>Somebody said sometime ago:<br />

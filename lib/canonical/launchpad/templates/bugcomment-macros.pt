@@ -24,7 +24,9 @@
           class="download">
         <a tal:attributes="href attachment/libraryfile/http_url"
            tal:content="attachment/title">foo.txt</a>
-        (<span tal:replace="attachment/libraryfile/content/filesize/fmt:bytes" />, <span tal:replace="attachment/libraryfile/mimetype" />)
+        (<span
+           tal:replace="attachment/libraryfile/content/filesize/fmt:bytes" />,
+        <span tal:replace="attachment/libraryfile/mimetype" />)
       </li>
     </ul>
 
@@ -36,7 +38,8 @@
 
     <div style="font-family: monospace;"
       tal:condition="not:view/user"
-      tal:content="structure comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">
+      tal:content="structure
+        comment/text_for_display/fmt:obfuscate-email/fmt:email-to-html">
       Comment text.
     </div>
     <p tal:condition="comment/was_truncated">
