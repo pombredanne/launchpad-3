@@ -67,7 +67,7 @@ class FileBugData:
             * The Subject header is the initial bug summary.
             * The Tags header specifies the initial bug tags.
             * The Private header sets the visibility of the bug.
-            * The Subscribe header specifies additional initial subscribers
+            * The Subscribers header specifies additional initial subscribers
             * The first inline part will be added to the description.
             * All other inline parts will be added as separate comments.
             * All attachment parts will be added as attachment.
@@ -87,7 +87,7 @@ class FileBugData:
                     # If the value is anything other than yes or no we just
                     # ignore it as we cannot currently give the user an error
                     pass
-            subscribers = mime_msg.get('Subscribe', '')
+            subscribers = mime_msg.get('Subscribers', '')
             self.subscribers = subscribers.split()
             for part in mime_msg.get_payload():
                 disposition_header = part.get('Content-Disposition', 'inline')
@@ -369,14 +369,15 @@ class FileBugViewBase(LaunchpadFormView):
                 try:
                     person = valid_person_vocabulary.getTermByToken(
                         subscriber).value
+                except LookupError:
+                    # We cannot currently pass this error up to the user, so
+                    # we'll just ignore it.
+                    pass
+                else:
                     bug.subscribe(person)
                     notifications.append(
                         '%s has been subscribed to this bug.' %
                         person.displayname)
-                except LookupError:
-                    # We cannot currently pass this error up to the user, so
-                    # we'll just ignore it
-                    pass
 
         # Give the user some feedback on the bug just opened.
         for notification in notifications:

@@ -350,7 +350,7 @@ identified by their Launchpad name or their e-mail address.
 
     >>> debug_data = """MIME-Version: 1.0 
     ... Content-type: multipart/mixed; boundary=boundary
-    ... Subscribe: ddaa test@canonical.com
+    ... Subscribers: ddaa test@canonical.com
     ...
     ... --boundary
     ... Content-disposition: inline
