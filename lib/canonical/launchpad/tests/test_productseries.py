@@ -14,22 +14,17 @@ from canonical.launchpad.ftests.harness import (
     LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
 from canonical.launchpad.database.productseries import (
     DatePublishedSyncError, ProductSeries, NoImportBranchError)
-from canonical.testing import ZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.interfaces import IProductSet
 from canonical.lp.dbschema import RevisionControlSystems
 
 
 class ImportdTestCase(TestCase):
 
-    layer = ZopelessLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
-        self._setup = LaunchpadZopelessTestSetup(
-            dbuser=config.importd.dbuser)
-        self._setup.setUp()
-
-    def tearDown(self):
-        self._setup.tearDown()
+        LaunchpadZopelessLayer.switchDbUser(config.importd.dbuser)
 
 
 class TestImportUpdated(ImportdTestCase):

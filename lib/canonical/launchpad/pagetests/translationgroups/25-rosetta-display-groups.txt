@@ -1,8 +1,8 @@
 The new groups should show up on the "Translation groups" page.
 
-  >>> anon_browser.open('http://translations.launchpad.dev/+translation-groups')
+  >>> anon_browser.open('http://translations.launchpad.dev/+groups')
   >>> print anon_browser.url
-  http://translations.launchpad.dev/+translation-groups
+  http://translations.launchpad.dev/+groups
   >>> groups_table = find_tag_by_id(anon_browser.contents, 'translation-groups')
   >>> groups = groups_table.find('tbody').findAll('tr')
   >>> for group_row in groups:

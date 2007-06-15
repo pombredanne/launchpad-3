@@ -8,8 +8,5 @@ means.
 
 Status
 ------
-Database patches can be landed at the moment. Beta code updates are
-blocked. If this is a problem, notify stub.
-
-Next DB freeze scheduled May 24th.
-
+Database is not frozen. Database freeze is expected to be reenabled in a
+few days.

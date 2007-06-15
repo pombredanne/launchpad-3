@@ -1,6 +1,8 @@
 = Managing team members =
 
-Any team administrator can manage the members of that team.
+On a team's +members page we can see all active members of that team, as
+well as the former members and the ones which proposed themselves or that
+have been invited.
 
     >>> def print_members(contents, type):
     ...     table = find_tag_by_id(contents, type)
@@ -8,9 +10,32 @@ Any team administrator can manage the members of that team.
     ...         if link.renderContents() != 'Edit' and not link.find('img'):
     ...             print link.renderContents()
 
+    >>> browser.open('http://launchpad.dev/~landscape-developers')
+    >>> browser.getLink('Show all members').click()
+    >>> browser.url
+    'http://launchpad.dev/~landscape-developers/+members'
+
+    >>> print_members(browser.contents, 'activemembers')
+    Guilherme Salgado
+    Sample Person
+
+    >>> print_members(browser.contents, 'invitedmembers')
+    Launchpad Developers
+
+    >>> print_members(browser.contents, 'proposedmembers')
+    Foo Bar
+
+    >>> print_members(browser.contents, 'inactivemembers')
+    Karl Tilbury
+    No Privileges Person
+
+
+Now we'll change some of the memberships of our newly created team (myemail).
+
 == Approving a proposed member ==
 
-We start by approving jblack's membership, which is not yet approved.
+James Blackwell wants to join the team and we know he made some contributions
+in the past, so we'll approve his membership.
 
     >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> browser.open('http://launchpad.dev/~myemail/+members')
