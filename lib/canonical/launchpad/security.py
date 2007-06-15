@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, IPackageUpload, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
     IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset,
-    IDistroSeriesLanguage)
+    IDistroSeriesLanguage, IEntitlement)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
@@ -920,3 +920,14 @@ class AdminDistroSeriesLanguage(OnlyRosettaExpertsAndAdmins):
 class AdminDistroSeriesTranslations(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistroSeries
+
+class ViewEntitlement(AuthorizationBase):
+    permission = 'launchpad.View'
+    usedFor = IEntitlement
+    def checkAuthenticated(self, user):
+        """Allow the owner of the entitlement, the entitlement registrant,
+        or any member of the team or any admin to view the entitlement."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.person) or
+                user.inTeam(self.obj.registrant) or
+                user.inTeam(admins))

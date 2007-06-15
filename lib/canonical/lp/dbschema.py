@@ -45,6 +45,7 @@ __all__ = (
 'CveStatus',
 'DistroSeriesStatus',
 'EmailAddressStatus',
+'EntitlementState',
 'EntitlementType',
 'GPGKeyAlgorithm',
 'ImportTestStatus',

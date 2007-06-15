@@ -16,7 +16,7 @@ __all__ = [
     'BranchReviewStatusVocabulary',
     'BranchSubscriptionDiffSizeVocabulary',
     'BranchSubscriptionNotificationLevelVocabulary',
-    'BranchVisibilityPolicyVocabulary', 
+    'BranchVisibilityPolicyVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugBranchStatusVocabulary',
@@ -26,6 +26,8 @@ __all__ = [
     'BugTrackerTypeVocabulary',
     'CveStatusVocabulary',
     'DistroSeriesStatusVocabulary',
+    'EntitlementStateVocabulary',
+    'EntitlementTypeVocabulary',
     'GPGKeyAlgorithmVocabulary',
     'InfestationStatusVocabulary',
     'MirrorContentVocabulary',
@@ -89,6 +91,8 @@ BugTrackerTypeVocabulary = vocab_factory(dbschema.BugTrackerType,
             dbschema.BugTrackerType.SOURCEFORGE])
 CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
 DistroSeriesStatusVocabulary = vocab_factory(dbschema.DistroSeriesStatus)
+EntitlementStateVocabulary = vocab_factory(dbschema.EntitlementState)
+EntitlementTypeVocabulary = vocab_factory(dbschema.EntitlementType)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 MirrorContentVocabulary = vocab_factory(dbschema.MirrorContent)
@@ -121,4 +125,3 @@ TeamSubscriptionPolicyVocabulary = vocab_factory(
 TextDirectionVocabulary =  vocab_factory(dbschema.TextDirection)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
 UpstreamFileTypeVocabulary = vocab_factory(dbschema.UpstreamFileType)
-

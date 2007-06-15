@@ -5,47 +5,135 @@ Launchpad users have been assigned.  The business model for these
 assignments is not important, but it could be through a commercial
 arrangement or through a grant that applies to everyone.
 
-    >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     EntitlementStatus, IPersonSet, IEntitlement)
+    ...     EntitlementQuota, IPersonSet, IEntitlement)
+    >>> from canonical.launchpad.database import Entitlement
     >>> from canonical.launchpad.ftests import login
+    >>> from canonical.lp.dbschema import EntitlementState, EntitlementType
     >>> from canonical.database.sqlbase import flush_database_updates
 
-Be an admin.
+Be an admin in order to change the quota.
 
-    >>> login("mark@hbd.com")
+    >>> login("foo.bar@canonical.com")
 
 Find a team with an entitlement.
 
     >>> personset = getUtility(IPersonSet)
     >>> ubuntu_team = personset.getByName('ubuntu-team')
-    >>> print ubuntu_team.name
-    ubuntu-team
 
-    >>> entitlements = ubuntu_team.entitlements
-    >>> entitlements.count() == 2
+Create a new entitlement.
+
+    >>> entitlement = Entitlement(
+    ...     quota=5,
+    ...     entitlement_type=EntitlementType.PRIVATE_BUGS,
+    ...     person=ubuntu_team,
+    ...     status=EntitlementState.ACTIVE,
+    ...     date_expires="2038-06-11 00:00:00")
+
+    >>> verifyObject(IEntitlement, entitlement)
     True
 
-    >>> entitlement = entitlements[0]
+Ensure the date restrictions are met.
+
+    >>> entitlement.in_date_range
+    True
+
+== Quota checking ==
+
+Set the quota to be unmet.
+
     >>> entitlement.quota = 100
     >>> entitlement.amount_used = 0
-    >>> entitlement.exceededQuota
+    >>> entitlement.exceeded_quota
     False
+    >>> entitlement.is_valid
+    True
+
+Set the amount used to be equal to the quota.
 
     >>> entitlement.quota = 100
     >>> entitlement.amount_used = 100
-    >>> entitlement.exceededQuota
+    >>> entitlement.exceeded_quota
     False
+    >>> entitlement.is_valid
+    True
+
+Set the amount_used to exceed the quota.
 
     >>> entitlement.quota = 100
     >>> entitlement.amount_used = 101
-    >>> entitlement.exceededQuota
+    >>> entitlement.exceeded_quota
     True
-
-    >>> import sys
-    >>> entitlement.quota = EntitlementStatus.UNLIMITED
-    >>> entitlement.amount_used = sys.maxint
-    >>> entitlement.exceededQuota
+    >>> entitlement.is_valid
     False
 
+Remove the quota entirely and set the amount used to a really big number.
+
+    >>> import sys
+    >>> entitlement.quota = EntitlementQuota.UNLIMITED
+    >>> entitlement.amount_used = sys.maxint
+    >>> entitlement.exceeded_quota
+    False
+    >>> entitlement.is_valid
+    True
+
+== Date range checking ==
+
+Remove the start and expiration dates and show the range is valid.
+
+    >>> entitlement.date_starts = None
+    >>> entitlement.date_expires = None
+    >>> entitlement.in_date_range
+    True
+    >>> entitlement.is_valid
+    True
+
+    >>> from datetime import datetime, timedelta
+    >>> from pytz import UTC
+    >>> now = datetime.now(UTC)
+    >>> yesterday = now - timedelta(days = 1)
+    >>> tomorrow = now + timedelta(days = 1)
+
+Set the start date to the past.
+
+    >>> entitlement.date_starts = yesterday
+    >>> entitlement.in_date_range
+    True
+    >>> entitlement.is_valid
+    True
+
+Set the start date to the future
+
+    >>> entitlement.date_starts = tomorrow
+    >>> entitlement.in_date_range
+    False
+    >>> entitlement.is_valid
+    False
+
+Set the expires date to the past.
+
+    >>> entitlement.date_starts = None
+    >>> entitlement.date_expires = yesterday
+    >>> entitlement.in_date_range
+    False
+    >>> entitlement.is_valid
+    False
+
+Set the expires date to the future
+
+    >>> entitlement.date_expires = tomorrow
+    >>> entitlement.in_date_range
+    True
+    >>> entitlement.is_valid
+    True
+
+Set the start date to the past and the expires date to the future.
+    >>> entitlement.date_starts = yesterday
+    >>> entitlement.date_expires = tomorrow
+    >>> entitlement.in_date_range
+    True
+    >>> entitlement.is_valid
+    True
+
+    
