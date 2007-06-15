@@ -1,6 +1,6 @@
 <tal:block condition="not: context/rcstype">
 <tal:block condition="not: context/user_branch">
-  <p>
+  <p id="no-rcs-details">
     No revision control details recorded for <span
     tal:replace="context/displayname">evolution MAIN</span>.
   </p>
@@ -51,7 +51,8 @@
         </tal:block>
         <tr tal:condition="context/importstatus">
           <th>Import status:</th>
-          <td tal:content="context/importstatus/title">Syncing</td>
+          <td id="import-status"
+              tal:content="context/importstatus/title">Syncing</td>
         </tr>
         <tal:has-import-success condition="view/hasVcsImportSuccessStatus">
           <tr class="secondary">

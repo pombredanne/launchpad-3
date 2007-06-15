@@ -64,7 +64,7 @@
                         <div class="three column right">
                           <h2>Preferred languages</h2>
                           <ul class="language">
-                            <li tal:repeat="language view/languages">
+                            <li tal:repeat="language view/translatable_languages">
                               <a
                                 tal:attributes="href language/fmt:url"
                                 tal:content="language/englishname">

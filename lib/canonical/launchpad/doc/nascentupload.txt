@@ -289,12 +289,11 @@ known ORIG file:
   >>> success
   True
 
-The notification message generated is described in more detail in 
+The notification message generated is described in more detail in
 doc/nascentupload-announcements.txt.
 
 Roll back everything related with ed_mixed_upload:
 
-  >>> import transaction
   >>> transaction.abort()
 
 
@@ -873,3 +872,124 @@ version stored in the binary control file:
   >>> bar_bpr = bar_bin_queue.builds[0].build.binarypackages[0]
   >>> bar_bpr.version
   u'1:6.6.6'
+
+Cleanup this change and carry on:
+
+XXX cprov 20070607: ZTM installed transaction is required for the next
+section otherwise the committed LFAs won't show up in Librarian
+Server. We already use this object here for a 'deep-cleanup'.
+
+  >>> from canonical.database.sqlbase import ZopelessTransactionManager
+  >>> local_transaction = ZopelessTransactionManager._installed
+  >>> local_transaction.abort()
+
+
+=== Publishing ACCEPTED Sources ===
+
+As recently requested in bug #77853, successfully source-only uploads,
+i.e, those uploads that only include a source package and were
+processed without errors, will be automatically published as PENDING.
+
+This aggregation of processes are intended to increase the building
+throughput, because the will allow the sources to be published on disk
+and built within the same publishing cycle. (previously Soyuz requires
+two publishing cycles, one for publish the source on disk and another
+to build it).
+
+Let's start a new series of ed (0.2-20) and publish it:
+
+  >>> ed_src = NascentUpload(
+  ...     datadir('split-upload-test/ed_0.2-20_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> ed_src.process()
+  >>> ed_src.is_rejected
+  False
+  >>> ed_src.do_accept()
+  True
+  >>> ed_src.queue_root.status.name
+  'NEW'
+
+  >>> ed_src.queue_root.setAccepted()
+  >>> syncUpdate(ed_src.queue_root)
+  >>> ed_src.queue_root.realiseUpload()
+
+Check if the publication is available through the Soyuz package stack:
+
+  >>> ed_sp = hoary.getSourcePackage('ed')
+  >>> ed_dsspr = ed_sp['0.2-20']
+  >>> ed_dsspr.publishing_history.count()
+  1
+  >>> ed_pub = ed_dsspr.publishing_history[0]
+
+  >>> ed_pub.sourcepackagerelease.title
+  u'ed - 0.2-20'
+
+  >>> ed_pub.distroseries.name
+  u'hoary'
+
+  >>> ed_pub.status.name
+  'PENDING'
+
+  >>> ed_pub.archive == hoary.main_archive
+  True
+
+Also check if the Soyuz archive file lookup can reach one of the
+just-published file:
+
+  >>> ubuntu.getFileByName('ed_0.2.orig.tar.gz', source=True, binary=False)
+  <LibraryFileAlias...>
+
+We have to commit in order to have new Librarian files available to
+server by Librarian Server:
+
+  >>> local_transaction.commit()
+
+Now let's submit a new source version of ed (0.2-21) which will be
+automatically accepted and published resulting in a PackageUpload
+record in 'DONE' state:
+
+  >>> ed21_src = NascentUpload(
+  ...     datadir('ed-0.2-21/ed_0.2-21_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> ed21_src.process()
+  >>> ed21_src.is_rejected
+  False
+  >>> ed21_src.do_accept()
+  True
+  >>> ed21_src.queue_root.status.name
+  'DONE'
+
+This is unfortunate, but we have to manually remove the file dumped
+from librarian into our tree, otherwise it will remain on disk causing
+problems to the next test run.
+
+  >>> import os
+  >>> os.remove(datadir('ed-0.2-21/ed_0.2.orig.tar.gz'))
+
+After the mentioned procedure-shortcut, since ed_0.2-21 was
+auto-accepted (i.e, published as PENDING), it should be immediately
+available via the package stack:
+
+  >>> ed21_dsspr = ed_sp['0.2-21']
+  >>> ed21_dsspr.publishing_history.count()
+  1
+  >>> ed21_pub = ed21_dsspr.publishing_history[0]
+
+  >>> ed21_pub.sourcepackagerelease.title
+  u'ed - 0.2-21'
+
+  >>> ed21_pub.distroseries.name
+  u'hoary'
+
+  >>> ed21_pub.status.name
+  'PENDING'
+
+  >>> ed21_pub.archive == hoary.main_archive
+  True
+
+Same happens for the archive file lookup:
+
+  >>> ubuntu.getFileByName('ed_0.2-21.dsc', source=True, binary=False)
+  <LibraryFileAlias...>
+
+

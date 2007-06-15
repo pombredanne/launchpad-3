@@ -161,3 +161,32 @@ certain person.
     ...         bugtask.bug.owner.displayname)
     #9 in thunderbird (Ubuntu) reported by Foo Bar
     #10 in linux-source-2.6.15 (Ubuntu) reported by Foo Bar
+
+== Searching for nominated bugs ==
+
+We can search for bugs nominated to a distribution series by using the
+nominated_for parameter.
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> warty = ubuntu.getSeries('warty')
+
+    >>> from canonical.launchpad.database import BugNomination
+    >>> print list(BugNomination.selectBy(distroseries=warty))
+    []
+
+    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> nominated_for_warty = BugTaskSearchParams(
+    ...     user=None, nominated_for=warty)
+    >>> list(ubuntu.searchTasks(nominated_for_warty))
+    []
+
+    >>> nominated_bug = ubuntu.createBug(
+    ...     CreateBugParams(owner=no_priv, title='Test nominated bug',
+    ...                     comment='Something'))
+    >>> BugNomination(
+    ...     owner=no_priv, distroseries=warty, bug=nominated_bug)
+    <BugNomination at ...>
+
+    >>> for bugtask in ubuntu.searchTasks(nominated_for_warty):
+    ...     print bugtask.bug.title
+    Test nominated bug

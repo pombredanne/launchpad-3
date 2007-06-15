@@ -32,8 +32,7 @@ from zope.publisher.browser import FileUpload
 
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
 
-from canonical.launchpad.helpers import (
-    browserLanguages, is_tar_filename, request_languages)
+from canonical.launchpad.helpers import browserLanguages, is_tar_filename
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
     ISourcePackageNameSet, IProductSeries,
@@ -41,7 +40,9 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation, DefaultShortLink
+from canonical.launchpad.browser.launchpad import (
+    StructuralObjectPresentation, DefaultShortLink)
+from canonical.launchpad.browser.rosetta import TranslationsMixin
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
     canonical_url, LaunchpadView, StandardLaunchpadFacets,
@@ -246,7 +247,7 @@ def get_series_branch_error(product, branch):
 # this becomes maintainable and form validation handled for us.
 # Currently, the pages just return 'System Error' as they trigger database
 # constraints. -- StuartBishop 20050502
-class ProductSeriesView(LaunchpadView):
+class ProductSeriesView(LaunchpadView, TranslationsMixin):
 
     def initialize(self):
         self.form = self.request.form
@@ -263,10 +264,6 @@ class ProductSeriesView(LaunchpadView):
 
         # Check the form submission.
         self.processForm()
-
-    @property
-    def languages(self):
-        return request_languages(self.request)
 
     def processForm(self):
         """Process a form if it was submitted."""
@@ -594,7 +591,10 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
             if self.context.syncCertified():
                 self.addError('Import has already been approved.')
 
-    def isAdmin(self):
+    def isAdmin(self, action=None):
+        # The optional action parameter is so this method can be
+        # supplied as the condition argument to an @action.  We treat
+        # all such actions the same though, so we ignore it.
         return check_permission('launchpad.Admin', self.context)
 
     @action(_('Update RCS Details'), name='update')
@@ -631,6 +631,31 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
         self.context.certifyForSync()
         self.request.response.addInfoNotification(
             'Source import certified for publication')
+
+    @action(_('Mark Import TESTFAILED'), name='testfailed',
+            condition=isAdmin)
+    def testfailed_action(self, action, data):
+        self.updateContextFromData(data)
+        self.context.markTestFailed()
+        self.request.response.addInfoNotification(
+            'Source import marked as TESTFAILED.')
+
+    @action(_('Mark Import DONTSYNC'), name='dontsync',
+            condition=isAdmin)
+    def dontsync_action(self, action, data):
+        self.updateContextFromData(data)
+        self.context.markDontSync()
+        self.request.response.addInfoNotification(
+            'Source import marked as DONTSYNC.')
+
+    @action(_('Delete Import'), name='delete',
+            condition=isAdmin)
+    def delete_action(self, action, data):
+        # No need to update the details from the submitted data when
+        # we're about to clear them all anyway.
+        self.context.deleteImport()
+        self.request.response.addInfoNotification(
+            'Source import deleted.')
 
     @property
     def next_url(self):

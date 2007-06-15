@@ -868,17 +868,9 @@ class BugSet:
         # make sure we did not get TOO MUCH information
         assert params.comment is None or params.msg is None, (
             "Expected either a comment or a msg, but got both")
-
-        celebs = getUtility(ILaunchpadCelebrities)
-        # XXX This list should be determined from a flag in the DB
-        # with a way for LP admins to set the flag when a project
-        # pays us for privacy features. -- elliot, 2007-04-19
-        private_bug_products = (celebs.landscape, celebs.redfish)
-
-        if params.product in private_bug_products:
-            # These bugs are always private, because details of the
-            # project, like bug reports, are not yet meant to be
-            # publically disclosed.
+        if params.product and params.product.private_bugs:
+            # If the private_bugs flag is set on a product, then
+            # force the new bug report to be private.
             params.private = True
 
         # Store binary package name in the description, because
@@ -915,15 +907,6 @@ class BugSet:
         if params.tags:
             bug.tags = params.tags
 
-        if params.product in private_bug_products:
-            # Subscribe the bugcontact to all bugs,
-            # because all their bugs are private by default
-            # otherwise only subscribe the bug reporter by default.
-            if params.product.bugcontact:
-                bug.subscribe(params.product.bugcontact)
-            else:
-                bug.subscribe(params.product.owner)
-
         if params.security_related:
             assert params.private, (
                 "A security related bug should always be private by default")
@@ -936,6 +919,20 @@ class BugSet:
                 bug.subscribe(context.security_contact)
             else:
                 bug.subscribe(context.owner)
+        # XXX: ElliotMurphy 2007-06-14, If we ever allow filing private
+        # non-security bugs, this test might be simplified to checking
+        # params.private.
+        elif params.product and params.product.private_bugs:
+            # Subscribe the bugcontact to all bugs,
+            # because all their bugs are private by default
+            # otherwise only subscribe the bug reporter by default.
+            if params.product.bugcontact:
+                bug.subscribe(params.product.bugcontact)
+            else:
+                bug.subscribe(params.product.owner)
+        else:
+            # nothing to do
+            pass
 
         # Subscribe other users.
         for subscriber in params.subscribers:
