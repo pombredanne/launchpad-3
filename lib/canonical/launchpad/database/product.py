@@ -29,7 +29,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.database.answercontact import AnswerContact
-from canonical.launchpad.database.branch import Branch, BranchSet
+from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -340,7 +340,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             unsupported_target = self
         else:
             unsupported_target = None
-            
+
         return QuestionTargetSearch(
             product=self,
             search_text=search_text, status=status,

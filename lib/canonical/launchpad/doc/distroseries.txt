@@ -582,12 +582,14 @@ Update a string in the children release.
     ...     carlos, { 0: u'humpy updated string' }, fuzzy=False,
     ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
 
-Let's update the statistics.
+Let's update the statistics, and print out the values for the number
+of translated, changed in Launchpad, newly translated in Launchpad,
+and with unreviewed suggestions.
 
     >>> pofile_es_hoary.updateStatistics()
-    (7, 2, 1)
+    (7, 2, 1, 1)
     >>> pofile_es_humpy.updateStatistics()
-    (7, 2, 0)
+    (7, 2, 0, 0)
 
 We can also see that the statistics show differences between each distribution
 release for the rosetta count of translations:
