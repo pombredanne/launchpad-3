@@ -41,6 +41,11 @@
     />
 
   <vocabulary
+    name="BranchVisibilityPolicy"
+    factory="canonical.launchpad.vocabularies.BranchVisibilityPolicyVocabulary"
+    />
+
+  <vocabulary
     name="Bug"
     factory="canonical.launchpad.vocabularies.BugVocabulary"
     />
@@ -343,6 +348,11 @@
   <vocabulary
     name="SprintSpecificationStatus"
     factory="canonical.launchpad.vocabularies.SprintSpecificationStatusVocabulary"
+    />
+
+  <vocabulary
+    name="TeamMembershipRenewalPolicy"
+    factory="canonical.launchpad.vocabularies.TeamMembershipRenewalPolicyVocabulary"
     />
 
   <vocabulary

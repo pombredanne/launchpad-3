@@ -1,0 +1,60 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="malone"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <h1
+        tal:condition="view/shouldShowAdvancedForm"
+        tal:content="view/getAdvancedSearchPageHeading"
+      >Bugs nominated for Fooix: Advanced search</h1>
+      <h1 tal:condition="not: view/shouldShowAdvancedForm">
+        Bugs nominated for
+        <tal:software replace="context/displayname">Fooix</tal:software>
+      </h1>
+    </metal:heading>
+
+    <style metal:fill-slot="head_epilogue" type="text/css">
+      label {font-weight: normal;}
+    </style>
+
+  <metal:leftportlets fill-slot="portlets_one">
+    <tal:do_not_show_portlets_advanced_form
+      condition="not: view/shouldShowAdvancedForm">
+      <tal:block content="structure context/@@+portlet-bugfilters" />
+      <tal:block content="structure context/@@+portlet-bugtags" />
+      <tal:releasecriticalbugs
+         tal:condition="view/shouldShowReleaseCriticalPortlet"
+         tal:content="structure context/@@+portlet-bugtasklist-seriesbugs" />
+     </tal:do_not_show_portlets_advanced_form>
+     <tal:show_portlets_advanced condition="view/shouldShowAdvancedForm">
+       <div tal:replace="structure context/@@+portlet-details" />
+     </tal:show_portlets_advanced>
+  </metal:leftportlets>
+
+  <div metal:fill-slot="main">
+      <tal:do_not_show_advanced_form
+        condition="not: view/shouldShowAdvancedForm">
+      <div tal:define="batch_navigator view/search">
+        <div style="float: right;">
+          <a href="+filebug">
+            <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
+          </a>
+        </div>
+
+        <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form" />
+        <tal:buglisting content="structure batch_navigator/@@+table-view" />
+      </div>
+      </tal:do_not_show_advanced_form>
+
+      <tal:show_advanced_form condition="view/shouldShowAdvancedForm">
+        <metal:advanced_form
+          use-macro="context/@@+bugtask-macros-tableview/advanced_search_form" />
+      </tal:show_advanced_form>
+    <div class="visualClear">&nbsp;</div>
+  </div>
+
+</body>
+
+</html>

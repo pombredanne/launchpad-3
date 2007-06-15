@@ -1,367 +1,214 @@
-= Retrieving and Searching for Bug Tasks =
+= Searching BugTasks =
 
-To retrieve a specific BugTask, use IBugTaskSet.get. As an example,
-interacting with the system as an anonymous (i.e. unauthenticated) user,
-let's fetch the BugTask with ID 2:
+BugTasks are usually searched through an IBugTarget's searchTasks()
+method, but they all delegate the search to IBugTaskSet.search(). That
+method accepts a single parameter; an BugTaskSearchParams instance.
 
-    >>> from canonical.launchpad.interfaces import IBugTaskSet
-    >>> def bugTaskInfo(bugtask):
-    ...     return '%i %i %s %s' % (
-    ...         bugtask.id, bugtask.bug.id, bugtask.targetname, 
-    ...         bugtask.bug.title)
-    >>> bugtaskset = getUtility(IBugTaskSet)
-    >>> bugtask = bugtaskset.get(2)
-    >>> print bugTaskInfo(bugtask)
-    2 1 firefox (upstream) Firefox does not support SVG
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskSearchParams, IBugTaskSet)
+    >>> bugtask_set = getUtility(IBugTaskSet)
+    >>> all_public = BugTaskSearchParams(user=None)
+    >>> found_bugtasks = bugtask_set.search(all_public)
 
-If you pass an ID for which no object exists, you'll get a
-canonical.launchpad.interfaces.NotFoundError:
+    >>> from canonical.launchpad.database import BugTask
+    >>> all_public_bugtasks = BugTask.select(
+    ...     "BugTask.bug = Bug.id AND Bug.private = false",
+    ...     clauseTables=['Bug'])
+    >>> found_bugtasks.count() == all_public_bugtasks.count()
+    True
 
-    >>> bugtaskset = getUtility(IBugTaskSet)
-    >>> bugtask = bugtaskset.get(-1)
-    Traceback (most recent call last):
-      ...
-    NotFoundError: 'BugTask with ID -1 does not exist'
+== Searching by bug contact ==
 
-To retrieve a set of bug tasks matching a set of search criteria, use
-the searchTasks method of the IBugTarget interface. Here's how you'd
-grab all the UNCONFIRMED and CONFIRMED tasks:
+The 'bug_contact' parameter allows you to search bugtasks that a certain
+person is responsible for. A person can be a bug contact for a product,
+a distribution, or a distribution source package. No Privileges Person
+isn't a bug contact, so no bugs are found for him:
 
-For upstream:
-
-    >>> from canonical.launchpad.searchbuilder import any
-    >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> from canonical.launchpad.interfaces import (BugTaskSearchParams,
-    ...     IProductSet)
-    >>> productset = getUtility(IProductSet)
-    >>> upstream_mozilla = productset.getByName('firefox')
-    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.UNCONFIRMED,
-    ...                                         BugTaskStatus.CONFIRMED),
-    ...                              orderby="id", user=None)
-    >>> bugtasks = upstream_mozilla.searchTasks(params)
-    >>> print bugtasks.count()
-    4
-    >>> for task in bugtasks:
-    ...  print bugTaskInfo(task), task.status.title
-     2 1 firefox (upstream) Firefox does not support SVG Unconfirmed
-    13 4 firefox (upstream) Reflow problems with complex page layouts
-         Unconfirmed
-    14 5 firefox (upstream) Firefox install instructions should be complete
-         Unconfirmed
-    15 6 firefox (upstream) Firefox crashes when Save As dialog for a
-         nonexistent window is closed Unconfirmed
-
-By project:
-
-    >>> from canonical.launchpad.interfaces import IProjectSet
-    >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
-    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.UNCONFIRMED,
-    ...                                         BugTaskStatus.CONFIRMED),
-    ...                              orderby="id", user=None)
-    >>> bugtasks = mozilla_project.searchTasks(params)
-    >>> print bugtasks.count()
-    4
-    >>> for task in bugtasks:
-    ...     print bugTaskInfo(task), task.product.project.name
-     2 1 firefox (upstream) Firefox does not support SVG mozilla
-    13 4 firefox (upstream) Reflow problems with complex page layouts mozilla
-    14 5 firefox (upstream) Firefox install instructions should be complete 
-         mozilla
-    15 6 firefox (upstream) Firefox crashes when Save As dialog for a 
-         nonexistent window is closed mozilla
-
-For a distribution:
-
-    >>> from canonical.launchpad.interfaces import (IDistributionSet,
-    ...     IPersonSet)
-    >>> distroset = getUtility(IDistributionSet)
-    >>> personset = getUtility(IPersonSet)
-    >>> debian = distroset.getByName('debian')
-    >>> sample_person = personset.getByEmail('test@canonical.com')
-    >>> params = BugTaskSearchParams(status=any(BugTaskStatus.UNCONFIRMED,
-    ...                                         BugTaskStatus.CONFIRMED),
-    ...                              orderby="id", user=None,
-    ...                              assignee=sample_person)
-    >>> bugtasks = debian.searchTasks(params)
-    >>> print bugtasks.count()
-    1
-    >>> task = bugtasks[0]
-    >>> print bugTaskInfo(task), task.distribution.name, task.assignee.name
-    5 2 mozilla-firefox (Debian) Blackhole Trash folder debian name12
-
-For a person:
-
-    >>> from canonical.launchpad.interfaces import (IBugSet,
-    ...     ISourcePackageNameSet)
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance)
-    >>> STATUS_UNCONFIRMED = BugTaskStatus.UNCONFIRMED
-    >>> IMPORTANCE_MEDIUM = BugTaskImportance.MEDIUM
-    >>> bugset = getUtility(IBugSet)
-    >>> bug_one = bugset.get(1)
-    >>> foobar = personset.getByEmail('foo.bar@canonical.com')
-    >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
-    >>> evolution_sourcepackage = sourcepackagenameset.queryByName('evolution')
-    >>> ubuntu = distroset.getByName('ubuntu')
-    >>> ubuntu_evolution_task = bugtaskset.createTask(
-    ...     bug=bug_one, distribution=ubuntu, owner=foobar,
-    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM,
-    ...     sourcepackagename=evolution_sourcepackage)
-    >>> flush_database_updates()
-    >>> params = BugTaskSearchParams(owner=foobar, user=None,
-    ...                              orderby='targetname')
-    >>> for task in foobar.searchTasks(params):
-    ...     print bugTaskInfo(task), task.owner.name, task.targetname
-    26  2 Ubuntu Blackhole Trash folder name16 Ubuntu
-    32  1 evolution (Ubuntu) Firefox does not support SVG name16 evolution 
-          (Ubuntu)
-    21  7 evolution (upstream) A test bug name16 evolution (upstream)
-    29  5 firefox 1.0 (upstream) Firefox install instructions should be 
-          complete name16 firefox 1.0 (upstream)
-    30 11 jokosher (upstream) Make Jokosher use autoaudiosink name16 jokosher 
-          (upstream)
-    31 12 jokosher (upstream) Copy, Cut and Delete operations should work on 
-          selections name16 jokosher (upstream)
-    25 10 linux-source-2.6.15 (Ubuntu) another test bug name16 
-          linux-source-2.6.15 (Ubuntu)
-     6  3 mozilla-firefox (Debian) Bug Title Test name16 mozilla-firefox 
-          (Debian)
-    17  1 mozilla-firefox (Ubuntu) Firefox does not support SVG name16 
-          mozilla-firefox (Ubuntu)
-    23  9 thunderbird (Ubuntu) Thunderbird crashes name16 thunderbird (Ubuntu)
-
-
-It's also possible to search bugs that a person is subscribed to:
-
-    >>> params = BugTaskSearchParams(user=None, subscriber=foobar, orderby="id")
-    >>> for task in foobar.searchTasks(params):
-    ...     print bugTaskInfo(task)
-    21  7 evolution (upstream) A test bug
-    27  7 evolution (Debian) A test bug
-    23  9 thunderbird (Ubuntu) Thunderbird crashes
-    24  9 thunderbird (upstream) Thunderbird crashes
-    25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    30 11 jokosher (upstream) Make Jokosher use autoaudiosink
-    31 12 jokosher (upstream) Copy, Cut and Delete operations should work
-          on selections
-
-
-We can even search bugs that a person reported OR that are assigned to that
-person.
-    
-    >>> params_assignee = BugTaskSearchParams(user=None, assignee=foobar)
-    >>> params_owner = BugTaskSearchParams(user=None, owner=foobar)
-
-    >>> for bugtask in foobar.searchTasks(params_assignee, params_owner):
-    ...     assignee = getattr(bugtask.assignee, 'name', None)
-    ...     owner = getattr(bugtask.owner, 'name', None)
-    ...     print  bugTaskInfo(bugtask), assignee, owner
-     6  3 mozilla-firefox (Debian) Bug Title Test None name16
-    17  1 mozilla-firefox (Ubuntu) Firefox does not support SVG None name16
-    21  7 evolution (upstream) A test bug name16 name16
-    22  8 mozilla-firefox (Debian) Printing doesn't work name16 name12
-    23  9 thunderbird (Ubuntu) Thunderbird crashes None name16
-    25 10 linux-source-2.6.15 (Ubuntu) another test bug None name16
-    26  2 Ubuntu Blackhole Trash folder None name16
-    29  5 firefox 1.0 (upstream) Firefox install instructions should be 
-          complete None name16
-    30 11 jokosher (upstream) Make Jokosher use autoaudiosink None name16
-    31 12 jokosher (upstream) Copy, Cut and Delete operations should work on 
-          selections None name16
-    32  1 evolution (Ubuntu) Firefox does not support SVG None name16
-
-
-How about the bugs reported by foobar, the ones he's subscribed to and the
-ones that are assigned to him -- all of them together. That makes a nice list
-for a person's +bugs page.
-
-    >>> params_subscriber = BugTaskSearchParams(user=None, subscriber=foobar)
-    >>> for bugtask in foobar.searchTasks(
-    ...         params_assignee, params_owner, params_subscriber):
-    ...     assignee = getattr(bugtask.assignee, 'name', None)
-    ...     owner = getattr(bugtask.owner, 'name', None)
-    ...     subscribed = ""
-    ...     if foobar in bugtask.bug.getDirectSubscribers():
-    ...         subscribed = "Subscribed"
-    ...     print bugTaskInfo(bugtask), assignee, owner, subscribed
-     6  3 mozilla-firefox (Debian) Bug Title Test None name16
-    17  1 mozilla-firefox (Ubuntu) Firefox does not support SVG None name16
-    21  7 evolution (upstream) A test bug name16 name16 Subscribed
-    22  8 mozilla-firefox (Debian) Printing doesn't work name16 name12
-    23  9 thunderbird (Ubuntu) Thunderbird crashes None name16 Subscribed
-    24  9 thunderbird (upstream) Thunderbird crashes None name12 Subscribed
-    25 10 linux-source-2.6.15 (Ubuntu) another test bug None name16 Subscribed
-    26  2 Ubuntu Blackhole Trash folder None name16
-    27  7 evolution (Debian) A test bug None name12 Subscribed
-    29  5 firefox 1.0 (upstream) Firefox install instructions should be 
-          complete None name16
-    30 11 jokosher (upstream) Make Jokosher use autoaudiosink None name16 
-          Subscribed
-    31 12 jokosher (upstream) Copy, Cut and Delete operations should work on
-          selections None name16 Subscribed
-    32  1 evolution (Ubuntu) Firefox does not support SVG None name16
-
-
-To provide null-matching search criteria, use
-canonical.launchpad.searchbuilder.NULL:
-
-    >>> from canonical.launchpad.searchbuilder import NULL
-    >>> params = BugTaskSearchParams(assignee=NULL, user=None)
-    >>> bugtasks = upstream_mozilla.searchTasks(params)
-    >>> print bugtasks.count()
-    2
-    >>> for task in bugtasks:
-    ...     print bugTaskInfo(task), getattr(task, 'assignee', None)
-    13 4 firefox (upstream) Reflow problems with complex page layouts None
-    15 6 firefox (upstream) Firefox crashes when Save As dialog for a 
-         nonexistent window is closed None
-
-    >>> params = BugTaskSearchParams(sourcepackagename=NULL, user=None)
-    >>> bugtasks = ubuntu.searchTasks(params)
-    >>> for task in bugtasks:
-    ...     print bugTaskInfo(task), getattr(task, 'sourcepackagename', None)
-    26 2 Ubuntu Blackhole Trash folder None
-
-
-For negating a search argument, use not_equals:
-
-    >>> from canonical.launchpad.searchbuilder import not_equals
-    >>> params = BugTaskSearchParams(
-    ...     importance=not_equals(BugTaskImportance.LOW), user=None)
-    >>> bugtasks = upstream_mozilla.searchTasks(params)
-
-    >>> print sorted(bugtask.bug.id for bugtask in bugtasks)
-    [4, 5, 6]
-    >>> for task in bugtasks:
-    ...     print bugTaskInfo(task), task.importance.title
-    13 4 firefox (upstream) Reflow problems with complex page layouts Medium
-    14 5 firefox (upstream) Firefox install instructions should be complete
-         Critical
-    15 6 firefox (upstream)  Firefox crashes when Save As dialog for a 
-         nonexistent window is closed High
-
-
-There's also support for searching tasks based on a string of text, e.g.:
-
-    >>> params = BugTaskSearchParams(searchtext="instructions", user=None)
-    >>> bugtasks = upstream_mozilla.searchTasks(params)
-    >>> print bugtasks.count()
-    1
-    >>> print bugTaskInfo(bugtasks[0])
-    14 5 firefox (upstream) Firefox install instructions should be complete
-
-searchtext is also used in a substring search against the target name:
-
-    >>> params = BugTaskSearchParams(searchtext="mozilla-firefoxX", user=None)
-    >>> bugtasks = debian.searchTasks(params)
-    >>> print bugtasks.count()
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv_bug_contact = BugTaskSearchParams(
+    ...     user=None, bug_contact=no_priv)
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
+    >>> found_bugtasks.count()
     0
-    >>> params = BugTaskSearchParams(
-    ...     searchtext="mozilla-firefox", user=None, orderby="id")
-    >>> bugtasks = debian.searchTasks(params)
-    >>> print bugtasks.count()
-    4
-    >>> for task in bugtasks:
-    ...     print bugTaskInfo(task)
-     4 1 mozilla-firefox (Debian) Firefox does not support SVG
-     5 2 mozilla-firefox (Debian) Blackhole Trash folder
-     6 3 mozilla-firefox (Debian) Bug Title Test
-    22 8 mozilla-firefox (Debian) Printing doesn't work
-    >>> params = BugTaskSearchParams(
-    ...     searchtext="mozilla-fire", user=None, orderby="id")
-    >>> bugtasks = debian.searchTasks(params)
-    >>> print bugtasks.count()
-    4
-    >>> for task in bugtasks:
-    ...     print bugTaskInfo(task)
-     4 1 mozilla-firefox (Debian) Firefox does not support SVG
-     5 2 mozilla-firefox (Debian) Blackhole Trash folder
-     6 3 mozilla-firefox (Debian) Bug Title Test
-    22 8 mozilla-firefox (Debian) Printing doesn't work
 
-When the IBugTarget is an IDistribution, IDistributionSourcePackage, or
-ISourcePackage, you may include a "component" argument to filter the
-search. Let's file some bugs on cnews, a universe package, to
-demonstrate how component filtering works.
+=== Product bug contact ===
 
-    >>> from canonical.launchpad.interfaces import CreateBugParams, ILaunchBag
+Firefox has a few bugs:
 
-    >>> cnews = ubuntu.getSourcePackage("cnews")
+    >>> from canonical.launchpad.interfaces import IProductSet
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox_bugs = firefox.searchTasks(all_public)
+    >>> firefox_bugs.count() > 0
+    True
 
-    >>> login("foo.bar@canonical.com")
+If No Privileges is specified as Firefox' bug contact, searching for his
+bugs return all of Firefox' bugs.
 
-    >>> launchbag = getUtility(ILaunchBag)
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.ftests import syncUpdate
+    >>> firefox.bugcontact = no_priv
+    >>> syncUpdate(firefox)
 
-    >>> params = CreateBugParams(
-    ...     owner=launchbag.user,
-    ...     title="a bug in a universe package",
-    ...     comment="test")
-    >>> cnews.createBug(params)
-    <Bug ...>
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
+    >>> found_bugtasks.count() == firefox_bugs.count()
+    True
 
-There are now two bugtasks open on packages in Ubuntu main.
+    >>> found_targets = set(
+    ...     bugtask.target.bugtargetname for bugtask in found_bugtasks)
+    >>> for target_name in sorted(found_targets):
+    ...     print target_name
+    firefox (upstream)
 
-    >>> from canonical.launchpad.interfaces import IComponentSet
-    >>> componentset = getUtility(IComponentSet)
-    >>> main = componentset["main"]
-    >>> universe = componentset["universe"]
+=== Package bug contact ===
 
-    >>> params = BugTaskSearchParams(component=main, user=None)
-    >>> main_tasks = ubuntu.searchTasks(params)
-    >>> for task in main_tasks:
-    ...     print bugTaskInfo(task)
-    25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    32 1 evolution (Ubuntu) Firefox does not support SVG
+Firefox in Ubuntu also has a few bugs:
 
-And there is the one bug on a "universe" package that we just added:
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IDistributionSourcePackage)
+    >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> ubuntu_firefox = ubuntu.getSourcePackage("mozilla-firefox")
+    >>> all_public = BugTaskSearchParams(user=None)
+    >>> ubuntu_firefox_bugs = ubuntu_firefox.searchTasks(all_public)
+    >>> ubuntu_firefox_bugs.count() > 0
+    True
 
-    >>> params = BugTaskSearchParams(component=universe, user=None)
-    >>> universe_tasks = ubuntu.searchTasks(params)
-    >>> for task in universe_tasks:
-    ...     print bugTaskInfo(task)
-    33 13 cnews (Ubuntu) a bug in a universe package
+If No Privileges Person is added as a bug contact for this package,
+searching for his bugs returns all bugs in this package, as well as the
+previous bugs (since he is also a bug contact for the Firefox product).
 
+    >>> ubuntu_firefox.addBugContact(no_priv)
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
+    >>> found_bugtasks.count() == (
+    ...     firefox_bugs.count() + ubuntu_firefox_bugs.count())
+    True
 
-Let's get all bugs on either main or universe:
+    >>> found_targets = set(
+    ...     bugtask.target.bugtargetname for bugtask in found_bugtasks)
+    >>> for target_name in sorted(found_targets):
+    ...     print target_name
+    firefox (upstream)
+    mozilla-firefox (Ubuntu)
 
-    >>> params = BugTaskSearchParams(
-    ...     component=any(main, universe), user=None)
-    >>> main_or_universe_tasks = ubuntu.searchTasks(params)
-    >>> sorted(bugtask.bug.id for bugtask in main_or_universe_tasks)
-    [1, 10, 13L]
-    >>> for task in main_or_universe_tasks:
-    ...     print bugTaskInfo(task)
-    25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    32 1 evolution (Ubuntu) Firefox does not support SVG
-    33 13 cnews (Ubuntu) a bug in a universe package
+=== Distribution bug contact ===
 
+If someone is bug contact for Firefox, Firefox in Ubuntu, and Ubuntu,
+all bugs in Firefox and Ubuntu are returned. Bugs in the Ubuntu Firefox
+package are included in the Ubuntu bugs, so they won't be returned
+twice.
 
-You can also filter your search on other bugtasks. Let's show only bugs
-where a bug watch is needed. This means that we should show only bugs
-where there is at least one other bugtask on the bug, on a target which
-doesn't use Malone, and which lacks a bug watch.
+    >>> all_public = BugTaskSearchParams(user=None)
+    >>> ubuntu_bugs = ubuntu.searchTasks(all_public)
+    >>> ubuntu_bugs.count() > 0
+    True
 
-    >>> from canonical.launchpad.ftests.test_bugtask import (
-    ...     BugTaskSearchBugsElsewhereTest)
-    >>> test_helper = BugTaskSearchBugsElsewhereTest(helper_only=True)
+    >>> ubuntu.bugcontact = no_priv
+    >>> syncUpdate(ubuntu)
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
+    >>> found_bugtasks.count() == firefox_bugs.count() + ubuntu_bugs.count()
+    True
 
-    >>> params = BugTaskSearchParams(
-    ...     pending_bugwatch_elsewhere=True, user=None)
-    >>> pending_bugwatch_elsewhere_tasks = ubuntu.searchTasks(params)
-    >>> for bugtask in pending_bugwatch_elsewhere_tasks:
-    ...     test_helper.assertBugTaskIsPendingBugWatchElsewhere(bugtask)
-    ...     print bugtask.bug.id, bugtask.bug.title
-    2 Blackhole Trash folder
+== Searching in comments ==
+
+By default, comments are also searched when specifying a search text.
+For example, no Firefox bugs are found when searching for
+'wordincomment'.
+
+    >>> comment_search = BugTaskSearchParams(
+    ...     user=None, searchtext='wordincomment')
+    >>> found_bugtasks = firefox.searchTasks(comment_search)
+    >>> found_bugtasks.count()
+    0
+
+If we add a comment containg the the search string to bug one, that bug
+will be returned by the search.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bug_one.newMessage(no_priv, 'No subject', 'some wordincomment')
+    <Message at ...>
+
+    # Add another comment to make sure that it won't cause the same
+    # bugtask to be returned twice.
+    >>> bug_one.newMessage(no_priv, 'No subject', 'another wordincomment')
+    <Message at ...>
+
+    >>> found_bugtasks = firefox.searchTasks(comment_search)
+    >>> for bugtask in found_bugtasks:
+    ...     print "#%s" % bugtask.bug.id
+    #1
+
+    # Of course, searching in a project not containing bug #1 doesn't
+    # return any matches.
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> found_bugtasks = evolution.searchTasks(comment_search)
+    >>> found_bugtasks.count()
+    0
+
+== Searching by bug reporter ==
+
+The 'bug_reporter' parameter allows you to search for bugs reported by a
+certain person.
+
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> reported_by_foo_bar = BugTaskSearchParams(
+    ...     user=None, bug_reporter=foo_bar)
+    >>> reported_by_foo_bar.setDistribution(ubuntu)
+    >>> found_bugtasks = bugtask_set.search(reported_by_foo_bar)
+    >>> for bugtask in found_bugtasks:
+    ...     print "#%s in %s reported by %s" % (
+    ...         bugtask.bug.id, bugtask.targetname,
+    ...         bugtask.bug.owner.displayname)
+    #9 in thunderbird (Ubuntu) reported by Foo Bar
+    #10 in linux-source-2.6.15 (Ubuntu) reported by Foo Bar
+
+== Searching for nominated bugs ==
+
+We can search for bugs nominated to a distribution series by using the
+nominated_for parameter.
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> warty = ubuntu.getSeries('warty')
+
+    >>> from canonical.launchpad.database import BugNomination
+    >>> print list(BugNomination.selectBy(distroseries=warty))
+    []
+
+    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> nominated_for_warty = BugTaskSearchParams(
+    ...     user=None, nominated_for=warty)
+    >>> list(ubuntu.searchTasks(nominated_for_warty))
+    []
+
+    >>> nominated_bug = ubuntu.createBug(
+    ...     CreateBugParams(owner=no_priv, title='Test nominated bug',
+    ...                     comment='Something'))
+    >>> BugNomination(
+    ...     owner=no_priv, distroseries=warty, bug=nominated_bug)
+    <BugNomination at ...>
+
+    >>> for bugtask in ubuntu.searchTasks(nominated_for_warty):
+    ...     print bugtask.bug.title
+    Test nominated bug
 
 == Filter by Upstream Status ==
 
 Add an Ubuntu bugtask for a bug that is confirmed upstream.
 
-    >>> bug_twelve = bugset.get(12)
-    >>> task_open_upstream = bugtaskset.createTask(
-    ...     bug=bug_twelve, distribution=ubuntu, owner=foobar,
-    ...     status=STATUS_UNCONFIRMED, importance=IMPORTANCE_MEDIUM)
-    ... test_helper.assertBugTaskIsOpenUpstream(task_open_upstream)
+    >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
+    >>> from canonical.launchpad.ftests.test_bugtask import (
+    ...     BugTaskSearchBugsElsewhereTest)
+    >>> def bugTaskInfo(bugtask):
+    ...     return '%i %i %s %s' % (
+    ...         bugtask.id, bugtask.bug.id, bugtask.targetname,
+    ...         bugtask.bug.title)
+    >>> test_helper = BugTaskSearchBugsElsewhereTest(helper_only=True)
+    >>> bug_twelve =  getUtility(IBugSet).get(12)
+    >>> task_open_upstream = bugtask_set.createTask(
+    ...     bug=bug_twelve, distribution=ubuntu, owner=foo_bar,
+    ...     status=BugTaskStatus.UNCONFIRMED, 
+    ...     importance=BugTaskImportance.MEDIUM)
+    >>> test_helper.assertBugTaskIsOpenUpstream(task_open_upstream)
 
 Pass the resolved_upstream flag to include only bugtasks linked to
 watches that are rejected, fixed committed or fix released, or bugtasks
@@ -376,7 +223,6 @@ committed or fix released.
     ...     test_helper.assertBugTaskIsResolvedUpstream(bugtask)
     ...     print bugTaskInfo(bugtask)
     17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
-    32 1 evolution (Ubuntu) Firefox does not support SVG
     26 2 Ubuntu Blackhole Trash folder
     23 9 thunderbird (Ubuntu) Thunderbird crashes
 
@@ -397,9 +243,8 @@ upstream" filter.
     ...     test_helper.assertBugTaskIsOpenUpstream(bugtask)
     ...     print bugTaskInfo(bugtask)
     17  1 mozilla-firefox (Ubuntu) Firefox does not support SVG
-    32  1 evolution (Ubuntu) Firefox does not support SVG
     26  2 Ubuntu Blackhole Trash folder
-    34 12 Ubuntu Copy, Cut and Delete operations should work on selections
+    33 12 Ubuntu Copy, Cut and Delete operations should work on selections
 
 
 We can also filter our search to include only bugs that are not known to
@@ -412,7 +257,7 @@ affect upstream, i.e., bugs that don't have an IUpstreamBugTask.
     ...     test_helper.assertShouldBeShownOnNoUpstreamTaskSearch(bugtask)
     ...     print bugTaskInfo(bugtask)
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    33 13 cnews (Ubuntu) a bug in a universe package
+    32 13 Ubuntu Test nominated bug
 
 If we combine upstream-related filters, we get the union of the results
 of the single filters.
@@ -424,11 +269,11 @@ of the single filters.
     >>> for bugtask in tasks_with_no_upstreams:
     ...     print bugTaskInfo(bugtask)
     17  1 mozilla-firefox (Ubuntu) Firefox does not support SVG
-    32  1 evolution (Ubuntu) Firefox does not support SVG
     26  2 Ubuntu Blackhole Trash folder
     23  9 thunderbird (Ubuntu) Thunderbird crashes
     25 10 linux-source-2.6.15 (Ubuntu) another test bug
-    33 13 cnews (Ubuntu) a bug in a universe package
+    32 13 Ubuntu Test nominated bug
+
 
     >>> test_helper.tearDownBugsElsewhereTests()
 
@@ -444,5 +289,4 @@ The search filter can also return bugs that are related to CVE reports:
     >>> for bugtask in tasks_with_cves:
     ...     print bugTaskInfo(bugtask), getCves(bugtask)
     17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG 1999-8979
-    32 1 evolution (Ubuntu) Firefox does not support SVG  1999-8979
     26 2 Ubuntu Blackhole Trash folder 1999-2345

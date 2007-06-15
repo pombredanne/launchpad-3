@@ -40,6 +40,7 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet,
     IDistributionSourcePackage,
     IDistroBugTask,
+    IDistroSeries,
     IDistroSeriesBugTask,
     ILaunchpadCelebrities,
     INullBugTask,
@@ -54,6 +55,7 @@ from canonical.launchpad.helpers import shortlist
 # XXX: see bug 49029 -- kiko, 2006-06-14
 
 from canonical.lp.dbschema import (
+    BugNominationStatus,
     BugTaskImportance,
     BugTaskStatus,
     PackagePublishingStatus,
@@ -1108,6 +1110,17 @@ class BugTaskSet:
                     params.bug_reporter))
             extra_clauses.append(bug_reporter_clause)
 
+        if params.nominated_for:
+            assert IDistroSeries.providedBy(params.nominated_for)
+            nominated_for_clause = """
+                BugNomination.bug = BugTask.bug AND
+                BugNomination.distrorelease = %s AND
+                BugNomination.status = %s
+                """ % sqlvalues(
+                    params.nominated_for, BugNominationStatus.PROPOSED)
+            extra_clauses.append(nominated_for_clause)
+            clauseTables.append('BugNomination')
+
         clause = get_bug_privacy_filter(params.user)
         if clause:
             extra_clauses.append(clause)
@@ -1388,3 +1401,5 @@ class BugTaskSet:
     def dangerousGetAllTasks(self):
         """DO NOT USE THIS METHOD. For details, see IBugTaskSet"""
         return BugTask.select()
+
+

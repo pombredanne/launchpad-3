@@ -29,7 +29,7 @@ If we try to create a new team with with the referrer set to
   >>> browser.open('http://launchpad.dev/people/+newteam')
   >>> browser.getControl('Name', index=0).value = 'team1'
   >>> browser.getControl('Display Name').value = 'Team 1'
-  >>> browser.getControl('Add').click()
+  >>> browser.getControl('Create').click()
   Traceback (most recent call last):
     ...
   OffsiteFormPostError: http://evil.people.com/
@@ -41,7 +41,7 @@ Similarly, posting with a garbage referer fails:
   >>> browser.open('http://launchpad.dev/people/+newteam')
   >>> browser.getControl('Name', index=0).value = 'team2'
   >>> browser.getControl('Display Name').value = 'Team 2'
-  >>> browser.getControl('Add').click()
+  >>> browser.getControl('Create').click()
   Traceback (most recent call last):
     ...
   OffsiteFormPostError: not a url
@@ -53,7 +53,7 @@ We do allow the post if there is no referrer:
   >>> browser.open('http://launchpad.dev/people/+newteam')
   >>> browser.getControl('Name', index=0).value = 'team3'
   >>> browser.getControl('Display Name').value = 'Team 3'
-  >>> browser.getControl('Add').click()
+  >>> browser.getControl('Create').click()
   >>> print browser.url
   http://launchpad.dev/~team3
 
@@ -64,6 +64,6 @@ Or if the referrer is from a site managed by launchpad:
   >>> browser.open('http://launchpad.dev/people/+newteam')
   >>> browser.getControl('Name', index=0).value = 'team4'
   >>> browser.getControl('Display Name').value = 'Team 4'
-  >>> browser.getControl('Add').click()
+  >>> browser.getControl('Create').click()
   >>> print browser.url
   http://launchpad.dev/~team4

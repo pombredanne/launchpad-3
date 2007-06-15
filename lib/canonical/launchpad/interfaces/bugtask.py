@@ -20,13 +20,13 @@ __all__ = [
     'IProductSeriesBugTask',
     'ISelectResultsSlicable',
     'IBugTaskSet',
+    'INominationsReviewTableBatchNavigator',
     'RESOLVED_BUGTASK_STATUSES',
     'UNRESOLVED_BUGTASK_STATUSES']
 
 from zope.interface import implements, Interface, Attribute
 from zope.schema import (
     Bool, Choice, Datetime, Int, Text, TextLine, List, Field)
-from zope.schema.interfaces import IContextSourceBinder
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from sqlos.interfaces import ISelectResults
@@ -38,6 +38,7 @@ from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 
 
 # XXX: Brad Bollenbach, 2005-12-02: In theory, NEEDSINFO belongs in
@@ -489,7 +490,7 @@ class BugTaskSearchParams:
                  component=None, pending_bugwatch_elsewhere=False,
                  resolved_upstream=False, open_upstream=False,
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
-                 bug_contact=None, bug_reporter=None):
+                 bug_contact=None, bug_reporter=None,nominated_for=None ):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -513,6 +514,7 @@ class BugTaskSearchParams:
         self.has_cve = has_cve
         self.bug_contact = bug_contact
         self.bug_reporter = bug_reporter
+        self.nominated_for = nominated_for
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -646,3 +648,6 @@ class IAddBugTaskForm(Interface):
         title=_('URL'), required=False,
         description=_("The URL of this bug in the remote bug tracker."))
 
+
+class INominationsReviewTableBatchNavigator(ITableBatchNavigator):
+    """Marker interface to render custom template for the bug nominations."""
