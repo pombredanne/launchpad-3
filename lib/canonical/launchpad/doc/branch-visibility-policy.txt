@@ -243,7 +243,24 @@ the IBranchSet utility.
     >>> stevea = person_set.getByName("stevea")
     >>> ddaa = person_set.getByName("ddaa")
 
-Foo Bar is a member of both Launchpad Developers and Ubuntu Gnome Team.
+When creating a branch, both the creator and owner need to be specified.  If
+the creator of the branch is a member of more than one team that has a
+specified policy then there is an ordering to what applies:
+
+  FORBIDDEN overrides all others
+  PRIVATE and PRIVATE_ONLY override PUBLIC
+
+The decision on whether or not the creator is able to create a branch at all,
+and what the default visibility for the branch will be, is based solely on team
+memberships of the creator.  If the creator is a member of more than one team
+that has PRIVATE or PRIVATE_ONLY set as the policy, then the branch is created
+private, and no team is subscribed to it as we can't guess which team the
+creator means to have the visibility.  If the creator and owner are different,
+then the creator has to get subscribed to the branch in order to have access to
+the branch, due to the current implementation of
+canonical.launchpad.security.AccessBranch (see branch-visibility.txt).
+
+Foo Bar is a member of all the teams.
 
     >>> foo_bar.inTeam(launchpad_team)
     True
@@ -252,10 +269,10 @@ Foo Bar is a member of both Launchpad Developers and Ubuntu Gnome Team.
     >>> foo_bar.inTeam(vcs_imports_team)
     True
 
-If Foo Bar is creating a branch for evolution, the branch would be created
-as a private branch, but since there are two teams that specify privacy,
-the branch is created so only Foo Bar can see it.  It is up to Foo Bar to
-subscribe the appropriate team at a later date.
+If Foo Bar is creating a branch for evolution, the branch would be created as a
+private branch, but since there are two teams that specify privacy, the branch
+is created so only Foo Bar can see it.  It is up to Foo Bar to subscribe the
+appropriate team at a later date.
 
     >>> branch = branch_set.new(
     ...     name="testing-1", creator=foo_bar, owner=foo_bar,
@@ -303,8 +320,8 @@ teams that have private branches, David's branch will be public.
     >>> branch.subscribers.count()
     0
 
-People that are not members of any of the specified teams get the
-base visibility policy, which is Forbidden.
+People that are not members of any of the specified teams get the base
+visibility policy, which for this product is Forbidden.
 
     >>> no_priv = person_set.getByEmail("no-priv@canonical.com")
 
