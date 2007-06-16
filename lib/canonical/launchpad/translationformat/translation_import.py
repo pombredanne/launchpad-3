@@ -26,8 +26,8 @@ from canonical.lp.dbschema import (
     PersonCreationRationale, RosettaImportStatus, TranslationFileFormat)
 
 importers = {
-    TranslationFileFormat.PO: GettextPoImporter,
-    TranslationFileFormat.XPI: MozillaXpiImporter,
+    TranslationFileFormat.PO: GettextPoImporter(),
+    TranslationFileFormat.XPI: MozillaXpiImporter(),
     }
 
 class TranslationImporter:
@@ -68,13 +68,6 @@ class TranslationImporter:
 
         return person
 
-    def _getImporterByFileFormat(self, file_format):
-        """Return an ITranslationFormatImporter that handles given file format.
-
-        Return None if there is no importer to handle it.
-        """
-        return importers.get(file_format, None)()
-
     @cachedproperty
     def file_extensions_with_importer(self):
         """See ITranslationImporter."""
@@ -86,21 +79,9 @@ class TranslationImporter:
 
         return file_extensions
 
-    def getContentTypeByFileExtension(self, file_extension):
-        """See ITranslationImporter."""
-        for importer_class in importers.itervalues():
-            importer = importer_class()
-            if importer.canHandleFileExtension(file_extension):
-                return importer.content_type
-
-        # We cannot handle that file_extension so we don't know its content
-        # type.
-        return None
-
     def getTranslationFileFormatByFileExtension(self, file_extension):
         """See ITranslationImporter."""
-        for importer_class in importers.itervalues():
-            importer = importer_class()
+        for importer in importers.itervalues():
             if importer.canHandleFileExtension(file_extension):
                 return importer.format
 
@@ -108,13 +89,9 @@ class TranslationImporter:
         # format.
         return None
 
-    def hasAlternativeMsgID(self, file_format):
-        """See ITranslationImporter."""
-        importer = importers.get(file_format, None)
-        assert importer is not None, (
-            "We don't know how to handle format %s" % file_format.name)
-
-        return importer.has_alternative_msgid
+    def getTranslationFileFormat(self, file_format):
+        """See `ITranslationImporter`."""
+        return importers.get(file_format, None)
 
     def importFile(self, translation_import_queue_entry, logger=None):
         """See ITranslationImporter."""

@@ -427,10 +427,6 @@ class MozillaXpiImporter:
 
         self.last_translator_text = parser.getLastTranslator()
 
-    def canHandleFileExtension(self, extension):
-        """See ITranslationFormatImporter."""
-        return extension in self.file_extensions
-
     def getLastTranslator(self):
         """See ITranslationFormatImporter."""
         # At this point we don't have a way to figure this information from

@@ -80,22 +80,18 @@ class ITranslationImporter(Interface):
     file_extensions_with_importer = Attribute(
         "List of file extension we have imports for.")
 
-    def getContentTypeByFileExtension(file_extension):
-        """Return content type for given file_extension.
-
-        If file_extension cannot be handled, return None.
-        """
-
     def getTranslationFileFormatByFileExtension(file_extension):
         """Return the translation file format for given file_extension.
 
-        If file_extension cannot be handled, return None.
+        :param file_extension: File extension.
+        :return: None if there is no handler for that file_extension.
         """
 
-    def hasAlternativeMsgID(file_format):
-        """Whether the given format uses alternative msgid instead of English.
+    def getTranslationFileFormat(file_format):
+        """Return the translation file format for give file_format.
 
-        :arg file_format: a TranslationFileFormat value.
+        :param file_format: A TranslationFileFormat entry.
+        :return: None if there is no handler for that file_format.
         """
 
     def importFile(translation_import_queue_entry):
@@ -143,17 +139,11 @@ class ITranslationFormatImporter(Interface):
     def parse(translation_import_queue_entry):
         """Parse given translation_import_queue_entry object.
 
-        :arg translation_import_queue: An ITranslationImportQueueEntry to
+        :param translation_import_queue: An ITranslationImportQueueEntry to
             import.
 
         Once the parse is done self.header and self.messages contain the
         elements parsed.
-        """
-
-    def canHandleFileExtension(extension):
-        """Whether this importer is able to handle the given file extension.
-
-        :param extension: File extension (starting with '.').
         """
 
     def getLastTranslator():

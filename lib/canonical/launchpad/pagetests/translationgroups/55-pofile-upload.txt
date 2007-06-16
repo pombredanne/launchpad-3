@@ -27,7 +27,7 @@ error message back.
   ...     print tag.renderContents()
   Ignored your upload because you didn't select a file to upload.
 
-Now let's upload one that is published.
+Uploading files with an unkown file format notifies the user that it cannot be handled.
 
   >>> from StringIO import StringIO
   >>> af_file = '''
@@ -55,6 +55,18 @@ Now let's upload one that is published.
   ... #, ycp-format
   ... msgid "This program is running as process number %1."
   ... msgstr "Hierdie program loop as prosesnommer %1."'''
+
+  >>> upload = admin_browser.getControl('File')
+  >>> upload.add_file(StringIO(af_file), 'application/msword', 'af.doc')
+  >>> admin_browser.getControl('Upload').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload
+  >>> for tag in find_tags_by_class(admin_browser.contents, 'error'):
+  ...     print tag.renderContents()
+  Ignored your upload because you didn't select a file to upload.
+
+Now let's upload one that is published.
+
 
   >>> upload = admin_browser.getControl('File')
   >>> upload.add_file(StringIO(af_file), 'application/x-po', 'af.po')

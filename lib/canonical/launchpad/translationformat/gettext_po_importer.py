@@ -71,10 +71,6 @@ class GettextPoImporter:
         self.header = parser.header
         self.messages = parser.messages
 
-    def canHandleFileExtension(self, extension):
-        """See ITranslationFormatImporter."""
-        return extension in self.file_extensions
-
     def getLastTranslator(self):
         """See ITranslationFormatImporter."""
         if self.header is None:
