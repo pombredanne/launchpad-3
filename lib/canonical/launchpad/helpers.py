@@ -354,7 +354,7 @@ def is_english_variant(language):
     >>> is_english_variant(Language('fr'))
     False
     >>> is_english_variant(Language('en'))
-    True
+    False
     >>> is_english_variant(Language('en_CA'))
     True
     >>> is_english_variant(Language('enm'))
