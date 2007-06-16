@@ -4,8 +4,7 @@ __metaclass__ = type
 
 import unittest
 
-from zope.publisher.browser import TestRequest
-from zope.component import getView
+from zope.component import getMultiAdapter
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import login
@@ -16,6 +15,7 @@ from canonical.launchpad.database import (
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer, setFirstLayer)
 from canonical.launchpad.interfaces import ShippingRequestPriority
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.lp.dbschema import (
     ShipItDistroSeries, ShipItFlavour, ShippingRequestStatus)
 
@@ -75,11 +75,11 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
                 'ordertype': str(standardoption.id),
                 'FORM_SUBMIT': 'Request',
                 }
-        request = TestRequest(form=form)
-        request.notifications = []
+        request = LaunchpadTestRequest(form=form)
         setFirstLayer(request, self.flavours_to_layers_mapping[flavour])
         login(user_email)
-        view = getView(ShipItApplication(), 'myrequest', request)
+        view = getMultiAdapter(
+            (ShipItApplication(), request), name='myrequest')
         if distroseries is not None:
             view.series = distroseries
         view.renderStandardrequestForm()

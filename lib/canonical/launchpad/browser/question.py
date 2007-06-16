@@ -142,7 +142,12 @@ class QuestionSetView(LaunchpadFormView):
         # XXX flacoste 2006/11/28 We should probably define a new
         # QuestionSort value allowing us to sort on dateanswered descending.
         return self.context.searchQuestions(
-            status=QuestionStatus.SOLVED, sort=QuestionSort.NEWEST_FIRST)[:10]
+            status=QuestionStatus.SOLVED, sort=QuestionSort.NEWEST_FIRST)[:5]
+
+    @property
+    def most_active_projects(self):
+        """Return the 5 most active projects."""
+        return self.context.getMostActiveProjects(limit=5)
 
 
 class QuestionSubscriptionView(LaunchpadView):
