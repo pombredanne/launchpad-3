@@ -9,27 +9,18 @@ __all__ = [
 import gettextpo
 import datetime
 import pytz
-from zope.component import getUtility
+from zope.component import getUtility, subscribers
 from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.translationformat.gettext_po_importer import (
-    GettextPoImporter)
-from canonical.launchpad.translationformat.mozilla_xpi_importer import (
-    MozillaXpiImporter)
 from canonical.launchpad.interfaces import (
-        IPersonSet, ITranslationImporter, NotExportedFromLaunchpad,
-        OldTranslationImported, TranslationConflict, TranslationConstants)
+        IPersonSet, ITranslationFormatImporter, ITranslationImporter,
+        NotExportedFromLaunchpad, OldTranslationImported,
+        TranslationConflict, TranslationConstants)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
     PersonCreationRationale, RosettaImportStatus, TranslationFileFormat)
-
-# Registered importers.
-importers = {
-    TranslationFileFormat.PO: GettextPoImporter,
-    TranslationFileFormat.XPI: MozillaXpiImporter,
-    }
 
 
 class TranslationImporter:
@@ -40,6 +31,11 @@ class TranslationImporter:
     def __init__(self):
         self.pofile = None
         self.potemplate = None
+
+        # Fill the dictionary of importers.
+        self.importers = {}
+        for importer in subscribers([], ITranslationFormatImporter):
+            self.importers[importer.format] = importer
 
     def _getPersonByEmail(self, email, name=None):
         """Return the person for given email.
@@ -75,22 +71,21 @@ class TranslationImporter:
 
         Return None if there is no importer to handle it.
         """
-        return importers.get(file_format, None)
+        return self.importers.get(file_format, None)
 
     @cachedproperty
     def file_extensions_with_importer(self):
         """See ITranslationImporter."""
         file_extensions = []
 
-        for importer_class in importers.itervalues():
-            file_extensions.extend(importer_class().file_extensions)
+        for importer in self.importers.itervalues():
+            file_extensions.extend(importer.file_extensions)
 
         return file_extensions
 
     def getContentTypeByFileExtension(self, file_extension):
         """See ITranslationImporter."""
-        for importer_class in importers.itervalues():
-            importer = importer_class()
+        for importer in self.importers.itervalues():
             if importer.canHandleFileExtension(file_extension):
                 return importer.content_type
 
@@ -100,8 +95,7 @@ class TranslationImporter:
 
     def getTranslationFileFormatByFileExtension(self, file_extension):
         """See ITranslationImporter."""
-        for importer_class in importers.itervalues():
-            importer = importer_class()
+        for importer in self.importers.itervalues():
             if importer.canHandleFileExtension(file_extension):
                 return importer.format
 
@@ -111,11 +105,11 @@ class TranslationImporter:
 
     def hasAlternativeMsgID(self, file_format):
         """See ITranslationImporter."""
-        importer_class = importers.get(file_format, None)
-        assert importer_class is not None, (
+        importer = self.importers.get(file_format, None)
+        assert importer is not None, (
             "We don't know how to handle format %s" % file_format.name)
 
-        return importer_class().has_alternative_msgid
+        return importer.has_alternative_msgid
 
     def importFile(self, translation_import_queue_entry, logger=None):
         """See ITranslationImporter."""
@@ -128,13 +122,13 @@ class TranslationImporter:
                 translation_import_queue_entry.pofile is not None), (
                 "The entry has not any import target.")
 
-        importer_class = self._getImporterByFileFormat(
+        importer = _getImporterByFileFormat(
             translation_import_queue_entry.format)
-        assert importer_class is not None, (
+
+        assert importer is not None, (
             'There is no importer available for %s files' % (
                 translation_import_queue_entry.format.name))
 
-        importer = importer_class(logger=logger)
         importer.parse(translation_import_queue_entry)
 
         # This var will hold an special IPOFile for 'English' which will have
