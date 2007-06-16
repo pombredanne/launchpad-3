@@ -82,7 +82,7 @@ class TranslationImporterTestCase(unittest.TestCase):
     def testFileExtensionsWithImporters(self):
         """Check whether we get the right list of file extensions handled."""
         self.assertEqual(
-            self.translation_importer.file_extensions_with_importers,
+            self.translation_importer.file_extensions_with_importer,
             ['.po', '.pot', '.xpi'])
 
 

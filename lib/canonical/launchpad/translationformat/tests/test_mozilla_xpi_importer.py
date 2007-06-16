@@ -8,10 +8,10 @@ import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 
-from canonical.launchpad.components.ftests.test_xpi_import import (
+from canonical.launchpad.translationformat.tests.test_xpi_import import (
     get_en_US_xpi_file_to_import)
-from canonical.launchpad.components.translationformats.mozilla_xpi_importer \
-    import MozillaXpiImporter
+from canonical.launchpad.translationformat.mozilla_xpi_importer import (
+    MozillaXpiImporter)
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, ITranslationFormatImporter,
     ITranslationImportQueue)
