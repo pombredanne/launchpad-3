@@ -154,10 +154,28 @@ directory.
     >>> dir_exp["group_executable"] = True
     >>> expected.append(dir_exp)
 
+We need a helper function to turn the returned and expected data into reliably
+sorted orders for comparison.
+
+    >>> from operator import itemgetter
+    >>> def sorted_listings(ls_infos):
+    ...     # ls_infos will be a sequence of dictionaries.  The inner
+    ...     # dictionaries will be sorted by key and then sorted within
+    ...     # the sequence by the 'name' key.
+    ...     sorted_infos = []
+    ...     for infos in sorted(ls_infos, key=itemgetter('name')):
+    ...         items = sorted(infos.items(), key=itemgetter(0))
+    ...         sorted_infos.append(items)
+    ...     return sorted_infos
+
     >>> expected.sort()
     >>> returned = ufs.ls(".")
     >>> returned.sort()
-    >>> expected == returned
+    >>> # XXX BarryWarsaw 15-Jun-2007: The way this test is written, it makes
+    >>> # failures very difficult to debug.  It should probably be rewritten
+    >>> # as an ndiff comparison against the expected results.  However,
+    >>> # that's 64 lines of output, which may make this test less readable.
+    >>> sorted_listings(expected) == sorted_listings(returned)
     True
 
 If `filter` is not None, include only those names for which `filter`
@@ -178,7 +196,7 @@ returns a true value.
     ...         filtered_expected = [i];
     >>> returned = ufs.ls(".", always_true_filter)
     >>> returned.sort()
-    >>> expected == returned
+    >>> sorted_listings(expected) == sorted_listings(returned)
     True
     >>> returned = ufs.ls(".", always_false_filter)
     >>> returned.sort()
@@ -186,7 +204,7 @@ returns a true value.
     True
     >>> returned = ufs.ls(".", arbitrary_filter)
     >>> returned.sort()
-    >>> filtered_expected == returned
+    >>> sorted_listings(filtered_expected) == sorted_listings(returned)
     True
     >>> for i in [ "foo", "bar" ]:
     ...     ufs.remove(i)
