@@ -28,6 +28,7 @@
     <browser:menus
         module="canonical.launchpad.browser.productseries"
         classes="ProductSeriesFacets ProductSeriesOverviewMenu
+                 ProductSeriesBugsMenu
                  ProductSeriesSpecificationsMenu
                  ProductSeriesTranslationMenu"
         />
@@ -278,6 +279,15 @@
       template="../templates/bugtask-portlet-seriesbugs.pt"
       />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IProductSeries"
+    name="+nominations"
+    class="canonical.launchpad.browser.BugNominationsView"
+    permission="zope.Public"
+    facet="bugs"
+    template="../templates/series-bug-nominations.pt"
+    />
 
   <browser:page
     name="+ask-a-question-button"

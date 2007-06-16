@@ -36,6 +36,7 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.queue import QueueItemsView
+from canonical.launchpad.browser.rosetta import TranslationsMixin
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp.authorization import check_permission
@@ -245,7 +246,7 @@ class DistroSeriesTranslationsMenu(ApplicationMenu):
         return Link('+admin', 'Edit translation options', icon='edit')
 
 
-class DistroSeriesView(BuildRecordsView, QueueItemsView):
+class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
 
     def initialize(self):
         self.text = self.request.form.get('text')
@@ -261,10 +262,6 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
         # +packaging hits this many times, so avoid redoing the query
         # multiple times, in particular because it's gnarly.
         return list(self.context.packagings)
-
-    @property
-    def languages(self):
-        return helpers.request_languages(self.request)
 
     def searchresults(self):
         """Try to find the packages in this distro series that match
@@ -282,7 +279,7 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
         language prefs indicate might be interesting.
         """
         distroserieslangs = []
-        for language in self.languages:
+        for language in self.translatable_languages:
             distroserieslang = self.context.getDistroSeriesLanguageOrDummy(language)
             distroserieslangs.append(distroserieslang)
         return distroserieslangs
@@ -311,7 +308,7 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
         # existing languages, and add a dummydistroserieslanguage for each
         # of them
         distroserieslangset = getUtility(IDistroSeriesLanguageSet)
-        for lang in self.languages:
+        for lang in self.translatable_languages:
             if lang not in existing_languages:
                 distroserieslang = distroserieslangset.getDummy(self.context, lang)
                 distroserieslangs.append(distroserieslang)

@@ -1,0 +1,63 @@
+= Private by default bugs =
+
+A product with private bugs by default must always have a bug contact
+(this is enforced by a DB constraint).
+
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, CreateBugParams, IProductSet)
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> name16 = getUtility(IPersonSet).get(16)
+    >>> landscape = getUtility(IProductSet).getByName('landscape')
+    >>> landscape.private_bugs
+    True
+
+    >>> login('foo.bar@canonical.com')
+    >>> landscape.security_contact = name16
+    >>> logout()
+    >>> login('no-priv@canonical.com')
+
+    >>> bug_params = CreateBugParams(
+    ...     owner=no_priv, title='Some bug', comment='I like monkeys.')
+
+    >>> bug = landscape.createBug(bug_params)
+    >>> [landscape_task] = bug.bugtasks
+    >>> landscape_task.bug.private
+    True
+
+    >>> landscape_task.bug.security_related
+    False
+
+    >>> landscape.bugcontact.name
+    u'landscape-developers'
+
+    >>> landscape.owner.name
+    u'name12'
+
+    >>> sorted(sub.name for sub in landscape_task.bug.getDirectSubscribers())
+    [u'landscape-developers', u'no-priv']
+
+The bug contact is always subscribed, except in the case of a security
+related bug.
+
+    >>> security_bug_params = CreateBugParams(
+    ...     owner=no_priv, title='Security bug', 
+    ...     comment='A monkey took my GPG keys.',
+    ...     security_related=True)
+    >>> security_bug = landscape.createBug(security_bug_params)
+    >>> [security_bug_task] = security_bug.bugtasks
+    >>> security_bug_task.bug.private
+    True
+
+For a security related bug, the security contact or the product owner 
+(if no security contact) is subscribed.
+
+    >>> security_bug_task.bug.security_related
+    True
+
+    >>> landscape.security_contact.name
+    u'name16'
+
+    >>> sorted(sub.name for sub in security_bug_task.bug.getDirectSubscribers())
+    [u'name16', u'no-priv']

@@ -33,11 +33,13 @@ from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.productseries import (
     ProductSeriesSOP, ProductSeriesFacets)
+from canonical.launchpad.browser.rosetta import TranslationsMixin
 from canonical.launchpad.browser.sourcepackage import (
     SourcePackageSOP, SourcePackageFacets)
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, IPOExportRequestSet,
-    IPOTemplateSubset, ITranslationImportQueue, IProductSeries, ISourcePackage)
+    IPOTemplateSubset, ITranslationImportQueue, IProductSeries, 
+    ISourcePackage)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
     GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
@@ -207,25 +209,19 @@ class POTemplateSubsetView:
         self.request.response.redirect('../+translations')
 
 
-class POTemplateView(LaunchpadView):
+class POTemplateView(LaunchpadView, TranslationsMixin):
 
     def initialize(self):
         self.description = self.context.description
         """Get the requested languages and submit the form."""
         self.submitForm()
 
-    @property
-    def request_languages(self):
-        # if this is accessed multiple times in a same request, consider
-        # changing this to a cachedproperty
-        return helpers.request_languages(self.request)
-
     def requestPoFiles(self):
         """Yield a POFile or DummyPOFile for each of the languages in the
         request, which includes country languages from the request IP,
         browser preferences, and/or personal Launchpad language prefs.
         """
-        for language in self._sortLanguages(self.request_languages):
+        for language in self._sortLanguages(self.translatable_languages):
             yield self._getPOFileOrDummy(language)
 
     def num_messages(self):
@@ -250,7 +246,7 @@ class POTemplateView(LaunchpadView):
         # canonical.launchpad.browser.potemplate.POTemplateSOP
         from canonical.launchpad.browser.pofile import POFileView
 
-        languages = self.request_languages
+        languages = self.translatable_languages
         if not preferred_only:
             # Union the languages the template has been translated into with
             # the user's selected languages.
@@ -265,7 +261,8 @@ class POTemplateView(LaunchpadView):
 
     @property
     def has_pofiles(self):
-        languages = set(self.context.languages()).union(self.request_languages)
+        languages = set(
+            self.context.languages()).union(self.translatable_languages)
         return len(languages) > 0
 
     def _sortLanguages(self, languages):
