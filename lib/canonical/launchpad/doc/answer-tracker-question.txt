@@ -214,6 +214,9 @@ question target are part of the indirect subscribers list.
     >>> [person.displayname
     ...     for person in firefox_question.getIndirectSubscribers()]
     []
+    >>> from canonical.launchpad.interfaces import ILanguageSet
+    >>> english = getUtility(ILanguageSet)['en']
+    >>> no_priv.addLanguage(english)
     >>> firefox.addAnswerContact(no_priv)
     True
 
@@ -225,7 +228,7 @@ question target are part of the indirect subscribers list.
     >>> indirect_subscribers.getReason(no_priv)
     (u'You received this question notification because you are an answer
       contact for Mozilla Firefox.',
-     u'Answer Contact (firefox)')
+     u'Answer Contact (Mozilla Firefox)')
 
 There is a special case for when the question's is associated to a
 source package. The answer contacts for both the distribution and the
@@ -238,6 +241,7 @@ source package are part of the indirect subscribers list.
     >>> list(evolution_in_ubuntu.answer_contacts)
     []
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> ubuntu_team.addLanguage(english)
     >>> ubuntu.addAnswerContact(ubuntu_team)
     True
     >>> evolution_in_ubuntu.addAnswerContact(no_priv)

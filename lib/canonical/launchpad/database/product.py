@@ -46,7 +46,8 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.question import (
-    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
+    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet,
+    QuestionTargetMixin)
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
@@ -55,7 +56,6 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    get_supported_languages,
     ICalendarOwner,
     IHasIcon,
     IHasLogo,
@@ -73,7 +73,8 @@ from canonical.launchpad.interfaces import (
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
-              KarmaContextMixin, BranchVisibilityPolicyMixin):
+              KarmaContextMixin, BranchVisibilityPolicyMixin,
+              QuestionTargetMixin):
     """A Product."""
 
     implements(IProduct, ICalendarOwner, IQuestionTarget,
@@ -312,10 +313,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See BugTargetBase."""
         return 'BugTask.product = %s' % sqlvalues(self)
 
-    def getSupportedLanguages(self):
-        """See IQuestionTarget."""
-        return get_supported_languages(self)
-
     def newQuestion(self, owner, title, description, language=None,
                     datecreated=None):
         """See IQuestionTarget."""
@@ -356,14 +353,9 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See IQuestionTarget."""
         return SimilarQuestionsSearch(title, product=self).getResults()
 
-    def addAnswerContact(self, person):
-        """See IQuestionTarget."""
-        if person in self.answer_contacts:
-            return False
-        AnswerContact(
-            product=self, person=person,
-            sourcepackagename=None, distribution=None)
-        return True
+    def _getTargetTypes(self):
+        """See QuestionTargetMixin."""
+        return {'product': self}
 
     def removeAnswerContact(self, person):
         """See IQuestionTarget."""

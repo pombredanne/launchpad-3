@@ -465,16 +465,10 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         languages = set()
         known_languages = shortlist(self.languages)
-        if len(known_languages):
+        if len(known_languages) != 0:
             for lang in known_languages:
-                # Ignore English and all its variants since we assume English
-                # is supported
                 if not is_english_variant(lang):
                     languages.add(lang)
-        elif ITeam.providedBy(self):
-            for member in self.activemembers:
-                languages |= member.getSupportedLanguages()
-        languages.add(getUtility(ILanguageSet)['en'])
         return languages
 
     def getQuestionLanguages(self):
