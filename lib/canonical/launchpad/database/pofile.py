@@ -40,7 +40,7 @@ from canonical.launchpad.interfaces import (
     TranslationFormatSyntaxError, TranslationFormatInvalidInputError,
     UnknownTranslationRevisionDate, ZeroLengthPOExportError
     )
-
+from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
@@ -448,7 +448,7 @@ class POFile(SQLBase, POFileMixIn):
         return POMsgSet.selectOneBy(
             potmsgset=potmsgset, pofile=self)
 
-    def getPOMsgSet(self, msgid_text, only_current=False):
+    def getPOMsgSet(self, key, only_current=False):
         """See `IPOFile`."""
         query = 'potemplate = %d' % self.potemplate.id
         if only_current:
