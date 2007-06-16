@@ -403,6 +403,11 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             # and we try to change it.
             force_suggestion = True
 
+        # Cache existing active submissions since we use them a lot
+        active_submissions = []
+        for pluralform in range(self.pluralforms):
+            active_submissions.append(self.getActiveSubmission(pluralform))
+
         # keep track of whether or not this msgset is complete. We assume
         # it's complete and then flag it during the process if it is not
         complete = True
@@ -422,9 +427,11 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             for pluralform in range(self.pluralforms)[new_translation_count:]:
                 if published:
                     self.setPublishedSubmission(pluralform, None)
-                elif self.getActiveSubmission(pluralform) is not None:
+                elif active_submissions[pluralform] is not None:
                     # Note that this submission did a change.
                     self.setActiveSubmission(pluralform, None)
+                    while pluralform >= len(active_submissions):
+                        active_submissions.append(None)
                     has_changed = True
 
         # now loop through the translations and submit them one by one
@@ -439,8 +446,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 complete = False
             # make the new sighting or submission. note that this may not in
             # fact create a whole new submission
-
-            old_active_submission = self.getActiveSubmission(index)
+            if index < len(active_submissions):
+                old_active_submission = active_submissions[index]
+            else:
+                old_active_submission = None
 
             new_submission = self._makeSubmission(
                 person=person,
@@ -450,10 +459,15 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                 published=published,
                 validation_status=validation_status,
                 force_edition_rights=is_editor,
-                force_suggestion=force_suggestion)
+                force_suggestion=force_suggestion,
+                active_submission=old_active_submission)
 
-            if new_submission != old_active_submission:
+            if (new_submission != old_active_submission and
+                new_submission and new_submission.active):
                 has_changed = True
+                while index >= len(active_submissions):
+                    active_submissions.append(None)
+                active_submissions[index] = new_submission
 
         if has_changed and is_editor:
             if published:
@@ -470,7 +484,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             # that the changes were saved as suggestions only.
             raise TranslationConflict(
                 'The new translations were saved as suggestions to avoid '
-                'possible conflicts. Please review them.') 
+                'possible conflicts. Please review them.')
 
         # We set the fuzzy flag first, and completeness flags as needed:
         if is_editor:
@@ -483,26 +497,46 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
                     # the status flags because we can get some improved
                     # information from upstream.
                     matches = 0
+                    updated = 0
                     for pluralform in range(self.pluralforms):
-                        if (self.getActiveSubmission(pluralform) ==
-                            self.getPublishedSubmission(pluralform)):
-                            matches += 1
-                    if matches == self.pluralforms:
+                        active = active_submissions[pluralform]
+                        published = self.getPublishedSubmission(pluralform)
+                        if active:
+                            if published and active != published:
+                                updated += 1
+                            else:
+                                matches += 1
+                    if matches == self.pluralforms and self.publishedcomplete:
                         # The active submission is exactly the same as the
-                        # published one, so the fuzzy and complete flags should be
-                        # also the same.
+                        # published one, so the fuzzy and complete flags
+                        # should be also the same.
                         self.isfuzzy = self.publishedfuzzy
                         self.iscomplete = self.publishedcomplete
+                    if updated > 0:
+                        # There are some active translations different from
+                        # published ones, so the message has been updated
+                        self.isupdated = True
+                active_count = 0
+                for pluralform in range(self.pluralforms):
+                    if active_submissions[pluralform]:
+                        active_count += 1
+                self.iscomplete = (active_count == self.pluralforms)
             else:
                 self.isfuzzy = fuzzy
                 self.iscomplete = complete
-
-        # update the pomsgset flags
-        self.updateFlags()
+                updated = 0
+                for pluralform in range(self.pluralforms):
+                    active = active_submissions[pluralform]
+                    published = self.getPublishedSubmission(pluralform)
+                    if active and published and active != published:
+                        updated += 1
+                if updated > 0:
+                    self.isupdated = True
 
     def _makeSubmission(self, person, text, is_fuzzy, pluralform, published,
             validation_status=TranslationValidationStatus.UNKNOWN,
-            force_edition_rights=False, force_suggestion=False):
+            force_edition_rights=False, force_suggestion=False,
+            active_submission=None):
         """Record a translation submission by the given person.
 
         :arg person: Who submitted this entry.
