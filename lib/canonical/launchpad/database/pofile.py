@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -23,7 +23,7 @@ from sqlobject import (
 from canonical.config import config
 
 from canonical.database.sqlbase import (
-    SQLBase, flush_database_updates, sqlvalues)
+    cursor, SQLBase, flush_database_updates, quote, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 
@@ -146,7 +146,169 @@ def _can_edit_translations(pofile, person):
         person)
 
 
-class POFile(SQLBase, RosettaStats):
+class POFileMixIn(RosettaStats):
+    """Base class for POFile and DummyPOFile.
+
+    Provides machinery for retrieving POMsgSets and populating their
+    submissions caches.  That machinery is needed even for DummyPOFiles."""
+
+    def getMsgSetsForPOTMsgSets(self, for_potmsgsets):
+        """See `IPOFile`."""
+
+        if for_potmsgsets is None:
+            return {}
+        for_potmsgsets = list(for_potmsgsets)
+        if not for_potmsgsets:
+            return {}
+
+        # Retrieve existing POMsgSets matching for_potmsgsets (one each).
+        # XXX: JeroenVermeulen 2007-06-15, why won't sqlvalues() work here?
+        ids = ','.join([quote(potmsgset.id) for potmsgset in for_potmsgsets])
+        existing_msgsets = []
+        if self.id is not None:
+            existing_msgsets = POMsgSet.select(
+                "potmsgset in (%s) AND pofile = %s" % (ids, quote(self)))
+
+        result = dict((pomsgset.potmsgset, pomsgset)
+                      for pomsgset in existing_msgsets)
+
+        dummies = {}
+        language_code = self.language.code
+        variant = self.variant
+        for potmsgset in for_potmsgsets:
+            if not potmsgset in result:
+                dummy = potmsgset.getDummyPOMsgSet(language_code, variant)
+                dummies[potmsgset] = dummy
+
+        cache = self._getRelatedSubmissions(result.values(), dummies.values())
+
+        result.update(dummies)
+
+        for pomsgset in result.values():
+            pomsgset.initializeSubmissionsCaches(cache[pomsgset])
+
+        return result
+
+    def _getRelatedSubmissions(self, stored_pomsgsets, dummy_pomsgsets):
+        """Find all POSubmissions that the listed POMsgSets may want to cache.
+
+        Result is a dict mapping each of these POMsgSets to a list of all
+        POSubmissions that are relevant to it.  Each of the lists is in
+        newest-to-oldest order.
+
+        :stored_pomsgsets: List of pomsgsets that are already present in the
+        database, and whose in-memory caches are to be populated.
+        :dummy_pomsgsets: List of pomsgsets that have not yet been stored in
+        the database, and whose in-memory caches are to be populated.
+        """
+
+        all_pomsgsets = stored_pomsgsets + dummy_pomsgsets
+        # We'll be mapping each POMsgSet from all_pomsgsets to a list of
+        # submissions that may be relevant to it in some way, and that it will
+        # wish to cache.
+        result = dict((msgset, []) for msgset in all_pomsgsets)
+        if not all_pomsgsets:
+            return result
+
+        # For each primemsgid we see, remember which of our input msgsets were
+        # looking for suggestions on that primemsgid.
+        takers_for_primemsgid = dict(
+            (msgset.potmsgset.primemsgid_ID, [])
+            for msgset in all_pomsgsets)
+        for pomsgset in all_pomsgsets:
+            primemsgid = pomsgset.potmsgset.primemsgid_ID
+            takers_for_primemsgid[primemsgid].append(pomsgset)
+
+        # We work in three phases:
+        #
+        # 1. Retrieve from the database all ids of POSubmissions that might be
+        # relevant to our msgsets, and the primemsgids of their potmsgsets
+        # which will be essential to phase 3.
+        # are relevant to which msgsets.
+        #
+        # 2. Load all relevant submissions from the database.
+        #
+        # 3. Sort out which submissions are relevant to which pomsgsets from
+        # our parameters stored_pomsgsets and dummy_pomsgsets.  This depends
+        # on knowing the primemsgids of the potmsgsets they are attached to,
+        # but we don't want to retrieve all those potmsgsets just to get that
+        # information.
+
+        # XXX: JeroenVermeulen 2007-06-11, In theory we should be able to fold
+        # phase 2 into phase 1, so we have only a single query.  But how do we
+        # get SQLObject to return not just POSubmissions but also one extra
+        # column from the join?
+        parameters = sqlvalues(language=self.language,
+            wanted_primemsgids=takers_for_primemsgid.keys())
+
+        parameters['ids'] = 'false'
+        if stored_pomsgsets:
+            ids_list = sqlvalues(
+                [pomsgset.id for pomsgset in stored_pomsgsets])
+            parameters['ids'] = 'POMsgSet.id IN %s' % ids_list
+
+
+        # Phase 1.
+        # Find ids of all POSubmissions that might be relevant (either as
+        # suggestions for our all_pomsgsets or because they're already
+        # attached to our stored_pomsgsets) plus their potmsgsets'
+        # primemsgids.  We don't need to know about their POFiles, nor about
+        # the rest of their POTMsgSets.
+        # Note that a suggestion coming from a fuzzy pomsgset isn't relevant
+        # as a suggestion, but if it happens to be attached to a msgset from
+        # stored_pomsgsets, it will still be relevant to that msgset.
+        query = """
+            SELECT POSubmission.id, POTMsgSet.primemsgid
+            FROM POSubmission
+            JOIN POMsgSet ON POSubmission.pomsgset = POMsgSet.id
+            JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
+            JOIN POFile ON POMsgSet.pofile = POFile.id
+            WHERE
+                (%(ids)s OR NOT POMsgSet.isfuzzy) AND
+                POFile.language = %(language)s AND
+                POTMsgSet.primemsgid IN %(wanted_primemsgids)s
+            """ % parameters
+        cur = cursor()
+        cur.execute(query)
+        available = dict(cur.fetchall())
+        if not available:
+            return result
+
+        # Phase 2.
+        # Load all relevant POSubmissions from the database.  We'll keep these
+        # in newest-to-oldest order, because that's the way the POMsgSet's
+        # cache likes them.
+        relevant_submissions = POSubmission.select(
+            "id IN %s" % sqlvalues(available.keys()), orderBy="-datecreated")
+
+        # Phase 3.
+        # Figure out which of all_pomsgsets each submission is relevant to,
+        # and return our mapping from all_pomsgset to various subsets of
+        # load_submissions.
+        for submission in relevant_submissions:
+            of_pomsgset = submission.pomsgset
+            primemsgid = available[submission.id]
+            if of_pomsgset.isfuzzy:
+                # This submission belongs to a fuzzy msgset.  It only made it
+                # in here because it's attached to a pomsgset from
+                # stored_pomsgsets.  It's relevant to that pomsgset, but it's
+                # not a useful suggestion to anyone else.
+                assert of_pomsgset in takers_for_primemsgid[primemsgid]
+                assert of_pomsgset in result
+                result[of_pomsgset].append(submission)
+            else:
+                # Any other POSubmission we see here has to be non-fuzzy, and
+                # it's relevant to any POMsgSets that refer to the same
+                # primemsgid, including the POMsgSet it itself is attached to.
+                if of_pomsgset.id is not None:
+                    for recipient in takers_for_primemsgid[primemsgid]:
+                        result[recipient].append(submission)
+
+        return result
+
+
+
+class POFile(SQLBase, POFileMixIn):
     implements(IPOFile)
 
     _table = 'POFile'
@@ -286,7 +448,8 @@ class POFile(SQLBase, RosettaStats):
         return POMsgSet.selectOneBy(
             potmsgset=potmsgset, pofile=self)
 
-    def getPOMsgSet(self, key, only_current=False):
+    def getPOMsgSet(self, msgid_text, only_current=False):
+        """See `IPOFile`."""
         query = 'potemplate = %d' % self.potemplate.id
         if only_current:
             query += ' AND sequence > 0'
@@ -924,7 +1087,7 @@ class POFile(SQLBase, RosettaStats):
         self.exportfile = None
 
 
-class DummyPOFile(RosettaStats):
+class DummyPOFile(POFileMixIn):
     """Represents a POFile where we do not yet actually HAVE a POFile for
     that language for this template.
     """
@@ -1009,10 +1172,6 @@ class DummyPOFile(RosettaStats):
 
     def getPOMsgSet(self, key, only_current=False):
         """See `IPOFile`."""
-        if not isinstance(key, POTMsgSet) and not isinstance(key, unicode):
-            raise AssertionError(
-                "Can't index with type %s. (Must be unicode or POTMsgSet.)" % type(key))
-
         query = 'potemplate = %d' % self.potemplate.id
         if only_current:
             query += ' AND sequence > 0'
@@ -1247,7 +1406,7 @@ class POFileSet:
 
 
 class POFileTranslator(SQLBase):
-    """See IPOFileTranslator."""
+    """See `IPOFileTranslator`."""
 
     implements(IPOFileTranslator)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
