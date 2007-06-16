@@ -422,6 +422,8 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     archive = Attribute(
         "The Archive owned by this person, his PPA.")
 
+    entitlements = Attribute("List of Entitlements for this person or team.")
+
     @invariant
     def personCannotHaveIcon(person):
         # XXX: This invariant is busted! The person parameter provided to this
@@ -1102,4 +1104,3 @@ class ITeamCreation(ITeam):
 
 class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""
-
