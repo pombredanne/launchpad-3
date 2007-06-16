@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -910,15 +910,15 @@ class POMsgSetView(LaunchpadView):
         # would cut the number of (expensive) queries per-page by an
         # order of 30. -- kiko, 2006-09-27
 
-        # XXX: to avoid the use of python in the view, we'd need objects
-        # to hold the data representing a pomsgset translation for a
-        # plural form. -- kiko, 2006-09-27
-
         # This code is where we hit the database collecting message IDs
         # and suggestions for this POMsgSet.
         self.msgids = helpers.shortlist(self.context.potmsgset.getPOMsgIDs())
         assert len(self.msgids) > 0, (
             'Found a POTMsgSet without any POMsgIDSighting')
+
+        # Collect posubmissions etc. that we need from the database in order
+        # to identify useful suggestions.
+        self.context.initializeSubmissionsCaches()
 
         # We store lists of POMsgSetSuggestions objects in a
         # suggestion_blocks dictionary, keyed on plural form index; this
@@ -932,7 +932,7 @@ class POMsgSetView(LaunchpadView):
             self.suggestion_blocks[index] = \
                 [non_editor, elsewhere, wiki, alt_lang_suggestions]
 
-        # Let's initialise the translation dictionaries used from the
+        # Initialise the translation dictionaries used from the
         # translation form.
         self.translation_dictionaries = []
 
@@ -1018,8 +1018,9 @@ class POMsgSetView(LaunchpadView):
                         if k not in pruners_merged)
 
         if self.message_must_be_hidden:
-            # We must hide all suggestions because it may have private
-            # info that we don't want to show to anoymous users.
+            # We must hide all suggestions because this message may contain
+            # private information that we don't want to show to anonymous
+            # users, such as email addresses.
             non_editor = self._buildSuggestions(None, [])
             elsewhere = self._buildSuggestions(None, [])
             wiki = self._buildSuggestions(None, [])
@@ -1032,7 +1033,7 @@ class POMsgSetView(LaunchpadView):
         current = self.context.getCurrentSubmissions(index)
         current_translations = build_dict(current)
 
-        non_editor = self.context.getSuggestedSubmissions(index)
+        non_editor = self.context.getNewSubmissions(index)
         non_editor_translations = build_dict(non_editor)
 
         # Use a set for pruning; this is a bit inconsistent with the
@@ -1266,3 +1267,4 @@ class POMsgSetSuggestions:
                 'person': submission.person,
                 'datecreated': submission.datecreated
                 })
+

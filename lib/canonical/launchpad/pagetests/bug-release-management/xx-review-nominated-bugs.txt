@@ -101,3 +101,31 @@ After approving the nominated bugs, the listing is empty.
     Traceback (most recent call last):
     ...
     LookupError: label 'Save changes'
+
+== Product Series ==
+
+A product series has the same nomination listing as a distro series.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/firefox/1.0')
+    >>> user_browser.getLink('Review nominations').click()
+    >>> print user_browser.title
+    Bugs nominated for 1.0
+
+    >>> print_bugtasks(user_browser.contents)
+    1  Firefox does not support SVG Low  Unconfirmed
+
+    >>> from canonical.launchpad.database import ProductSet
+    >>> firefox = ProductSet().getByName('firefox')
+    >>> firefox_1_0 = firefox.getSeries('1.0')
+    >>> bug_one = BugSet().get(1)
+    >>> firefox_nomination = bug_one.getNominationFor(firefox_1_0)
+
+    >>> admin_browser.open('http://bugs.launchpad.dev/firefox/1.0')
+    >>> admin_browser.getLink('Review nominations').click()
+    >>> nomination_control = admin_browser.getControl(
+    ...     name='field.review_action_%s' % firefox_nomination.id)
+    >>> nomination_control.getControl(value='Decline').click()
+    >>> admin_browser.getControl('Save changes').click()
+    >>> for message in get_feedback_messages(admin_browser):
+    ...     print message
+    1 nomination(s) declined

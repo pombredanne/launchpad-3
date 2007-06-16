@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 from zope.schema import TextLine, Text, Field, Int, Choice
 from zope.interface import Interface, Attribute
@@ -122,6 +122,15 @@ class IPOFile(IRosettaStats):
 
         :msgid_text: is an unicode string.
         :only_current: Whether we should look only on current entries.
+        """
+
+    def getMsgSetsForPOTMsgSets(potmsgsets):
+        """Return mapping from each of potmsgsets to matching POMsgSet.
+
+        The result is a dict.  Any POTMsgSets in potmsgsets that have no
+        translation in pofile yet will come with matching DummyPOMsgSets.
+        Both dummy and pre-existing POMsgSets will have their submissions
+        caches populated.
         """
 
     def __getitem__(msgid_text):
