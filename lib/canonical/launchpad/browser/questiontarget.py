@@ -186,7 +186,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
         This validation method sets the chosen_language attribute.
         """
-        if 'status' not in data:
+        if not data.get('status', []):
             self.setFieldError(
                 'status', _('You must choose at least one status.'))
 
