@@ -26,9 +26,8 @@ from canonical.launchpad.components.branch import BranchDelta
 from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
-    IBranch, IBugTask, IDistributionSourcePackage, IEmailAddressSet,
-    ILanguageSet, INotificationRecipientSet, IPerson, ISourcePackage,
-    ISpecification, ITeamMembershipSet, IUpstreamBugTask,
+    IBranch, IBugTask, IEmailAddressSet, INotificationRecipientSet, IPerson,
+    ISpecification, ITeamMembershipSet, IUpstreamBugTask, 
     UnknownRecipientError)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
@@ -344,7 +343,8 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     if references is not None:
         msg['References'] = ' '.join(references)
     msg['Sender'] = config.bounce_address
-    msg['Date'] = formatdate(rfc822.mktime_tz(email_date.utctimetuple() + (0,)))
+    msg['Date'] = formatdate(
+        rfc822.mktime_tz(email_date.utctimetuple() + (0,)))
     if msgid is not None:
         msg['Message-Id'] = msgid
     subject_prefix = "[Bug %d]" % bug.id
@@ -503,9 +503,9 @@ def send_process_error_notification(to_address, subject, error_msg,
 def notify_errors_list(message, file_alias_url):
     """Sends an error to the Launchpad errors list."""
     template = get_email_template('notify-unhandled-email.txt')
-    # We add the error message in as a header too (X-Launchpad-Unhandled-Email)
-    # so we can create filters in the Launchpad-Error-Reports Mailman
-    # mailing list.
+    # We add the error message in as a header too
+    # (X-Launchpad-Unhandled-Email) so we can create filters in the
+    # Launchpad-Error-Reports Mailman mailing list.
     simple_sendmail(
         get_bugmail_error_address(), [config.launchpad.errors_address],
         'Unhandled Email: %s' % file_alias_url,
@@ -539,7 +539,8 @@ def generate_bug_add_email(bug, new_recipients=False):
         if bugtask.assignee:
             # There's a person assigned to fix this task, so show that
             # information too.
-            bug_info.append(u"     Assignee: %s" % bugtask.assignee.displayname)
+            bug_info.append(
+                u"     Assignee: %s" % bugtask.assignee.displayname)
         bug_info.append(u"         Status: %s\n" % bugtask.status.title)
 
     if bug.tags:
@@ -662,7 +663,8 @@ def get_bug_edit_notification_texts(bug_delta):
 
     if bug_delta.security_related is not None:
         if bug_delta.security_related['new']:
-            changes.append(u"** This bug has been flagged as a security issue")
+            changes.append(
+                u"** This bug has been flagged as a security issue")
         else:
             changes.append(
                 u"** This bug is no longer flagged as a security issue")
@@ -779,7 +781,8 @@ def get_bug_edit_notification_texts(bug_delta):
                 assignee = added_bugtask.assignee
                 change_info += u"%13s: %s <%s>\n" % (
                     u"Assignee", assignee.name, assignee.preferredemail.email)
-            change_info += u"%13s: %s" % (u"Status", added_bugtask.status.title)
+            change_info += u"%13s: %s" % (
+                u"Status", added_bugtask.status.title)
             changes.append(change_info)
 
     return changes
@@ -865,7 +868,8 @@ def add_bug_change_notifications(bug_delta):
     """Generate bug notifications and add them to the bug."""
     changes = get_bug_edit_notification_texts(bug_delta)
     for text_change in changes:
-        bug_delta.bug.addChangeNotification(text_change, person=bug_delta.user)
+        bug_delta.bug.addChangeNotification(
+            text_change, person=bug_delta.user)
 
 
 def notify_bugtask_added(bugtask, event):
@@ -1081,7 +1085,7 @@ def notify_invitation_to_join_team(event):
 
 
 def notify_team_join(event):
-    """Notify team admins that a new person joined (or tried to join) the team.
+    """Notify team admins that a new person choose to join the team.
 
     If the team's policy is Moderated, the email will say that the membership
     is pending approval. Otherwise it'll say that the person has joined the
@@ -1135,7 +1139,8 @@ def notify_team_join(event):
 
     headers = {}
     if membership.status in [approved, admin]:
-        template = get_email_template('new-member-notification-for-admins.txt')
+        template = get_email_template(
+            'new-member-notification-for-admins.txt')
         subject = (
             'Launchpad: %s is now a member of %s' % (person.name, team.name))
     elif membership.status == proposed:
@@ -1331,7 +1336,8 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         new_messages = set(
             self.question.messages).difference(self.old_question.messages)
         assert len(new_messages) <= 1, (
-                "There shouldn't be more than one message for a notification.")
+                "There shouldn't be more than one message for a "
+                "notification.")
         if new_messages:
             self.new_message = new_messages.pop()
         else:
@@ -1595,17 +1601,18 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
         else:
             statusexplanation = ''
 
-        return get_email_template('question-linked-bug-status-updated.txt') % {
-            'bugtask_target_name': self.bugtask.target.displayname,
-            'question_id': self.question.id,
-            'question_title':self.question.title,
-            'question_url': canonical_url(self.question),
-            'bugtask_url':canonical_url(self.bugtask),
-            'bug_id': self.bugtask.bug.id,
-            'bugtask_title': self.bugtask.bug.title,
-            'old_status': self.old_bugtask.status.title,
-            'new_status': self.bugtask.status.title,
-            'statusexplanation': statusexplanation}
+        return get_email_template(
+            'question-linked-bug-status-updated.txt') % {
+                'bugtask_target_name': self.bugtask.target.displayname,
+                'question_id': self.question.id,
+                'question_title':self.question.title,
+                'question_url': canonical_url(self.question),
+                'bugtask_url':canonical_url(self.bugtask),
+                'bug_id': self.bugtask.bug.id,
+                'bugtask_title': self.bugtask.bug.title,
+                'old_status': self.old_bugtask.status.title,
+                'new_status': self.bugtask.status.title,
+                'statusexplanation': statusexplanation}
 
 
 def notify_specification_modified(spec, event):

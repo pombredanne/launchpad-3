@@ -12,6 +12,7 @@ __all__ = [
     'QuestionTargetMixin',
     ]
 
+import operator
 from email.Utils import make_msgid
 
 from zope.component import getUtility
