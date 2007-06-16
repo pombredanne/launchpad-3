@@ -172,9 +172,9 @@ class BuilderGroup:
         self.logger.debug("Resuming %s" % builder.url)
         hostname = builder.url.split(':')[1][2:].split('.')[0]
         host_url = '%s-host.ppa' % hostname
+        key_path = os.path.expanduser('~/.ssh/ppa-reset-builder')
         resume_argv = [
-            'ssh', '-i' , '/home/launchpad/.ssh/ppa-reset-builder',
-            'ppa@%s' % host_url]
+            'ssh', '-i' , key_path, 'ppa@%s' % host_url]
         self.logger.debug('Running: %s' % resume_argv)
         resume_process = subprocess.Popen(
             resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
