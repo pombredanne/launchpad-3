@@ -18,7 +18,6 @@ import warnings
 from StringIO import StringIO
 from difflib import unified_diff
 import sha
-from twisted.internet.error import TimeoutError
 
 from zope.component import getUtility
 
@@ -28,7 +27,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     ILaunchBag, IRequestPreferredLanguages,
     IRequestLocalLanguages, ITeam)
-from canonical.launchpad.components.poparser import POParser
+from canonical.launchpad.translationformat.gettext_po_parser import POParser
 
 
 def text_replaced(text, replacements, _cache={}):

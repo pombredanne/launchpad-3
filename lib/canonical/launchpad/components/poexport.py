@@ -25,7 +25,6 @@ __metaclass__ = type
 import codecs
 import datetime
 import gettextpo
-import logging
 import os
 import subprocess
 import tarfile
@@ -37,12 +36,11 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad import helpers
-
+from canonical.launchpad.translationformat.gettext_po_parser import (
+    POMessage, POHeader)
 from canonical.launchpad.interfaces import (
     IPOTemplateExporter, IDistroSeriesPOExporter, IPOFileOutput,
     IVPOExportSet, IVPOTExportSet, EXPORT_DATE_HEADER)
-
-from canonical.launchpad.components.poparser import POMessage, POHeader
 
 class RosettaWriteTarFile:
     """Convenience wrapper around the tarfile module.
@@ -249,15 +247,15 @@ class OutputMsgSet:
 
         message = POMessage(
             msgid=self.msgids[0],
-            msgidPlural=msgidPlural,
+            msgid_plural=msgidPlural,
             msgstr=msgstr,
-            msgstrPlurals=msgstrPlurals,
+            msgstr_plurals=msgstrPlurals,
             obsolete=self.obsolete,
             header=self.pofile.header,
             flags=self.flags,
-            commentText=self.commenttext,
-            sourceComment=self.sourcecomment,
-            fileReferences=self.filereferences)
+            comment=self.commenttext,
+            source_comment=self.sourcecomment,
+            file_references=self.filereferences)
 
         return unicode(message)
 
@@ -424,7 +422,7 @@ def export_rows(rows, pofile_output, force_utf8=False):
             if pofile is not None:
                 # Generate the header of the new PO file.
                 header = POHeader(
-                    commentText=row.potopcomment,
+                    comment=row.potopcomment,
                     msgstr=row.poheader)
 
                 if row.pofuzzyheader:

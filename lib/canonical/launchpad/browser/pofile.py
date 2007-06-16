@@ -176,7 +176,7 @@ class POFileUploadView(POFileView):
             self.request.response.addWarningNotification(
                 "Ignored your upload because the file you uploaded was not"
                 " recognised as a file that can be imported as it does not"
-                " ends with the '.po' suffix.")
+                " end with the '.po' suffix.")
             return
 
         # We only set the 'published' flag if the upload is marked as an
@@ -277,10 +277,10 @@ class POFileTranslateView(BaseTranslationView):
 
             # Get hold of an appropriate message set in the PO file,
             # creating it if necessary.
-            msgid_text = potmsgset.primemsgid_.msgid
-            pomsgset = self.pofile.getPOMsgSet(msgid_text, only_current=False)
+            pomsgset = self.pofile.getPOMsgSetFromPOTMsgSet(potmsgset,
+                                                            only_current=False)
             if pomsgset is None:
-                pomsgset = self.pofile.createMessageSetFromText(msgid_text)
+                pomsgset = self.pofile.createMessageSetFromMessageSet(potmsgset)
 
             error = self._storeTranslations(pomsgset)
             if error and pomsgset.sequence != 0:

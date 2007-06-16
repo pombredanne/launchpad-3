@@ -6203,6 +6203,7 @@ INSERT INTO potemplatename (id, name, title, description, translationdomain) VAL
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (6, 'alsa-utils', 'Alsa Utils', NULL, 'alsa-utils');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (7, 'man', 'man', NULL, 'man');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (8, 'disabled-template', 'disabled-template', NULL, 'disabled-template');
+INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (9, 'firefox', 'Firefox', NULL, 'firefox');
 
 
 ALTER TABLE potemplatename ENABLE TRIGGER ALL;

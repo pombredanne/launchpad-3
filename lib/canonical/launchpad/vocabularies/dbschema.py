@@ -54,6 +54,7 @@ __all__ = [
     'TeamMembershipRenewalPolicyVocabulary',
     'TeamSubscriptionPolicyVocabulary',
     'TextDirectionVocabulary',
+    'TranslationFileFormatVocabulary',
     'TranslationPermissionVocabulary',
     'UpstreamFileTypeVocabulary',
     ]
@@ -123,5 +124,6 @@ TeamMembershipRenewalPolicyVocabulary = vocab_factory(
 TeamSubscriptionPolicyVocabulary = vocab_factory(
     dbschema.TeamSubscriptionPolicy)
 TextDirectionVocabulary =  vocab_factory(dbschema.TextDirection)
+TranslationFileFormatVocabulary = vocab_factory(dbschema.TranslationFileFormat)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
 UpstreamFileTypeVocabulary = vocab_factory(dbschema.UpstreamFileType)

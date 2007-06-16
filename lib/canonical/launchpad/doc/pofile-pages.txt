@@ -110,8 +110,8 @@ And as it's the first entry, its sequence number is also the right one.
     >>> potmsgset.sequence
     1
 
-Test that the associated msgid is the one we want.  We initialize a view for
-it, which will be the last in the pofile_view's list.
+Test that the associated text to translate is the one we want. We initialize
+a view for it, which will be the last in the pofile_view's list.
 
     >>> len(pofile_view.pomsgset_views)
     10
@@ -120,12 +120,12 @@ it, which will be the last in the pofile_view's list.
     11
     >>> pomsgset_view = pofile_view.pomsgset_views[-1]
     >>> pomsgset_view.initialize()
-    >>> pomsgset_view.msgid
+    >>> pomsgset_view.singular_text
     u'evolution addressbook'
 
-It does not have a plural msgid.
+It does not have a plural form.
 
-    >>> pomsgset_view.msgid_plural is None
+    >>> pomsgset_view.plural_text is None
     True
 
 And thus, it only has one translation.
