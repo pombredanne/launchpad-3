@@ -4,8 +4,7 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.components.translationformats.mozilla_xpi_importer \
-    import DtdFile
+from canonical.launchpad.translationformat.mozilla_xpi_importer import DtdFile
 from canonical.launchpad.interfaces import TranslationFormatInvalidInputError
 
 

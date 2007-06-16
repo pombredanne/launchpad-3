@@ -5,8 +5,8 @@ __metaclass__ = type
 import unittest
 from textwrap import dedent
 
-from canonical.launchpad.components.translationformats.mozilla_xpi_importer \
-    import PropertyFile
+from canonical.launchpad.translationformat.mozilla_xpi_importer import (
+    PropertyFile)
 from canonical.launchpad.interfaces import TranslationFormatInvalidInputError
 
 class BaseEncodingPropertyFileTest(unittest.TestCase):
