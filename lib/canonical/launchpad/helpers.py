@@ -27,7 +27,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     ILaunchBag, IRequestPreferredLanguages,
     IRequestLocalLanguages, ITeam)
-from canonical.launchpad.components.translationformats.gettext_po_parser import POParser
+from canonical.launchpad.translationformat.gettext_po_parser import POParser
 
 
 def text_replaced(text, replacements, _cache={}):

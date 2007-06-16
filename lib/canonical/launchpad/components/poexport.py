@@ -36,8 +36,8 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad import helpers
-from canonical.launchpad.components import translationformats
-from translationformats.gettext_po_parser import POMessage, POHeader
+from canonical.launchpad.translationformat.gettext_po_parser import (
+    POMessage, POHeader)
 from canonical.launchpad.interfaces import (
     IPOTemplateExporter, IDistroSeriesPOExporter, IPOFileOutput,
     IVPOExportSet, IVPOTExportSet, EXPORT_DATE_HEADER)

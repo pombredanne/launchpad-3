@@ -395,7 +395,7 @@ The value at X-Rosetta-Export-Date cannot be tested directly because it would
 be a time bomb in our tests, so we parse the file again with our parser and
 try to get a datetime object of its value.
 
-  >>> from canonical.launchpad.components.translationformats.gettext_po_parser import (
+  >>> from canonical.launchpad.translationformat.gettext_po_parser import (
   ...     POParser)
   >>> parser = POParser()
   >>> parser.write(pofile)

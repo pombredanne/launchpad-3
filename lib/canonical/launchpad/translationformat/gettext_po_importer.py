@@ -12,8 +12,7 @@ from zope.interface import implements
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import ITranslationFormatImporter
-from canonical.launchpad.components.translationformats.gettext_po_parser import (
-    POParser)
+from canonical.launchpad.translationformat.gettext_po_parser import POParser
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lp.dbschema import TranslationFileFormat
 

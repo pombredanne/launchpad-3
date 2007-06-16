@@ -4,9 +4,6 @@
 #     written by Martin v. Loewis <loewis@informatik.hu-berlin.de>
 #     changed by Christian 'Tiran' Heimes <ch@comlounge.net>
 
-# XXX: Carlos Perello Marin 2005-04-15: This code will be "componentized"
-# soon. https://launchpad.ubuntu.com/malone/bugs/403
-
 __metaclass__ = type
 
 __all__ = [
@@ -63,6 +60,7 @@ class POMessage(object):
 
     @property
     def translations(self):
+        """See `ITranslationMessage`."""
         if self.msgstr_plurals:
             # There are plural forms.
             return self.msgstr_plurals
@@ -74,6 +72,7 @@ class POMessage(object):
             return []
 
     def _check(self, **kw):
+        """Log warning messages about non critical problems in the message."""
         if kw.get('msgstr_plurals'):
             if 'header' not in kw or type(kw['header'].nplurals) is not int:
                 logging.warning(POSyntaxWarning(

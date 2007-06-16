@@ -64,7 +64,7 @@ Get the set of POTMsgSets that are untranslated.
 
 Test that the header is updated.
 
->>> from canonical.launchpad.components.translationformats import POHeader
+>>> from canonical.launchpad.translationformat import POHeader
 
 This is the comment.
 

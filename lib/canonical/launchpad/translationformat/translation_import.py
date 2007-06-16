@@ -13,8 +13,8 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.config import config
-from canonical.launchpad.components.translationformats.gettext_po_importer \
-    import GettextPoImporter
+from canonical.launchpad.translationformat.gettext_po_importer import (
+    GettextPoImporter)
 from canonical.launchpad.interfaces import (
         IPersonSet, ITranslationImporter, NotExportedFromLaunchpad,
         OldTranslationImported, TranslationConflict, TranslationConstants)
@@ -29,6 +29,8 @@ importers = {
 
 
 class TranslationImporter:
+    """Handle translation resources imports."""
+
     implements(ITranslationImporter)
 
     def __init__(self):
@@ -38,12 +40,12 @@ class TranslationImporter:
     def _getPersonByEmail(self, email, name=None):
         """Return the person for given email.
 
-        :arg email: text that contains the email address.
-        :arg name: name of the owner of the give email address.
+        :param email: text that contains the email address.
+        :param name: name of the owner of the given email address.
 
         If email is None, return None.
         If the person is unknown in Launchpad, the account will be created but
-        it will not have password and thus, will be disabled.
+        it will not have a password and thus, will be disabled.
         """
         assert self.pofile is not None, 'self.pofile cannot be None'
 

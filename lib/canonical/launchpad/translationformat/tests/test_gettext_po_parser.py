@@ -4,7 +4,7 @@ import unittest
 import doctest
 import textwrap
 
-from canonical.launchpad.components.translationformats import gettext_po_parser as pofile
+from canonical.launchpad.translationformat import gettext_po_parser as pofile
 from canonical.launchpad.interfaces import (
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 
