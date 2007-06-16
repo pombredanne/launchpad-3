@@ -2,7 +2,7 @@
 
 from zope.interface import Interface, Attribute
 from zope.interface.common.mapping import IMapping
-from zope.schema import Choice, Field
+from zope.schema import Choice
 
 __metaclass__ = type
 
