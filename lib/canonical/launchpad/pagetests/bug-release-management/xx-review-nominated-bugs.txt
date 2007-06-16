@@ -112,7 +112,7 @@ A product series has the same nomination listing as a distro series.
     Bugs nominated for 1.0
 
     >>> print_bugtasks(user_browser.contents)
-    1  Firefox does not support SVG Low  Unconfirmed
+    1  Firefox does not support SVG Low  New
 
     >>> from canonical.launchpad.database import ProductSet
     >>> firefox = ProductSet().getByName('firefox')
