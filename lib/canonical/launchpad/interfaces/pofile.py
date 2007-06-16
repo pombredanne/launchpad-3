@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 from zope.schema import TextLine, Text, Field, Choice
 from zope.interface import Interface, Attribute
@@ -116,20 +116,27 @@ class IPOFile(IRosettaStats):
     def __iter__():
         """Return an iterator over Current IPOMessageSets in this PO file."""
 
-    def getPOMsgSet(msgid_text, onlyCurrent=False):
-        """Return the IPOMsgSet in this IPOFile identified by msgid_text or
-        None.
+    def getPOMsgSet(msgid_text, only_current=False):
+        """Return the IPOMsgSet in this IPOFile by msgid_text or None.
 
-        :msgid_text: is an unicode string.
-        :only_current: Whether we should look only on current entries.
+        :param msgid_text: is an unicode string.
+        :param only_current: Whether we should look only on current entries.
         """
 
-    def getPOMsgSetFromPOTMsgSet(potmsgset, onlyCurrent=False):
-        """Return the IPOMsgSet in this IPOFile identified by potmsgset or
-        None.
+    def getPOMsgSetFromPOTMsgSet(potmsgset, only_current=False):
+        """Return the IPOMsgSet in this IPOFile by potmsgset or None.
 
-        :potmsgset: is an instance of POTMsgSet.
-        :only_current: Whether we should look only on current entries.
+        :param potmsgset: is an instance of POTMsgSet.
+        :param only_current: Whether we should look only on current entries.
+        """
+
+    def getMsgSetsForPOTMsgSets(potmsgsets):
+        """Return mapping from each of potmsgsets to matching POMsgSet.
+
+        The result is a dict.  Any POTMsgSets in potmsgsets that have no
+        translation in pofile yet will come with matching DummyPOMsgSets.
+        Both dummy and pre-existing POMsgSets will have their submissions
+        caches populated.
         """
 
     def __getitem__(msgid_text):

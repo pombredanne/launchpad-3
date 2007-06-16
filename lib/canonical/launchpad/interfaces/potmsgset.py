@@ -1,7 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.schema import Field
+from zope.schema import Field, Int
 from canonical.launchpad import _
 
 __metaclass__ = type
@@ -18,6 +18,12 @@ class IPOTMsgSet(Interface):
     """A collection of message IDs."""
 
     id = Attribute("""An identifier for this POTMsgSet""")
+
+    # The primary message ID is the same as the message ID with plural
+    # form 0 -- i.e. it's redundant. However, it acts as a cached value.
+
+    primemsgid_ID = Int(title=u'Key of primary msgid for this set.',
+        required=True, readonly=True)
 
     sequence = Attribute("The ordering of this set within its file.")
 
@@ -98,16 +104,16 @@ class IPOTMsgSet(Interface):
         """Return 'unicode_text' with the u'\u2022' char exchanged with a
         normal space.
 
-        If the self.primemsgid contains that character, 'unicode_text' is
+        If the self.singular_text contains that character, 'unicode_text' is
         returned without changes as it's a valid char instead of our way to
         represent a normal space to the user.
         """
 
     def normalizeWhitespaces(unicode_text):
         """Return 'unicode_text' with the same trailing and leading whitespaces
-        that self.primemsgid has.
+        that self.singular_text has.
 
-        If 'unicode_text' has only whitespaces but self.primemsgid has other
+        If 'unicode_text' has only whitespaces but self.singular_text has other
         characters, the empty string (u'') is returned to note it as an
         untranslated string.
         """
