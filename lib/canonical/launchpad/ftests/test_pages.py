@@ -102,6 +102,18 @@ def find_main_content(content):
         return tag
     return soup.find(attrs={'id': 'singlecolumn'}) # single-column page
 
+def get_feedback_messages(browser):
+    """Find and return the feedback messages of the page."""
+    soup = BeautifulSoup(browser.contents)
+    feedback_messages = []
+    for div_tag in soup('div',
+        {'class': ['message',
+                   'informational message',
+                   'error message']}):
+        feedback_messages.append(div_tag.string)
+
+    return feedback_messages
+
 
 
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
@@ -175,6 +187,25 @@ def parse_relationship_section(content):
             print 'TEXT: "%s"' % content
 
 
+def print_tab_links(content):
+    """Print tabs url or 'Unavailable' if there isn't one."""
+    chooser = find_tag_by_id(content, 'applicationchooser')
+    tabs = chooser.findAll('li')
+    for tab in tabs:
+        if 'current' in tab['class']:
+            print '%s: %s' % (tab.a.string, tab.a['href'])
+        else:
+            print '%s: Unavailable' % (tab.string,)
+
+
+def print_action_links(content):
+    """Print action menu urls."""
+    actions = find_portlet(content, 'Actions')
+    entries = actions.findAll('li')
+    for entry in entries:
+        print '%s: %s' % (entry.a.string, entry.a['href'])
+
+
 def setUpGlobs(test):
     # Our tests report being on a different port.
     test.globs['http'] = UnstickyCookieHTTPCaller(port=9000)
@@ -188,6 +219,7 @@ def setUpGlobs(test):
             browser.addHeader("Authorization", auth)
         return browser
 
+    test.globs['setupBrowser'] = setupBrowser
     test.globs['browser'] = setupBrowser()
     test.globs['anon_browser'] = setupBrowser()
     test.globs['user_browser'] = setupBrowser(
@@ -199,8 +231,11 @@ def setUpGlobs(test):
     test.globs['find_tags_by_class'] = find_tags_by_class
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
+    test.globs['get_feedback_messages'] = get_feedback_messages
     test.globs['extract_text'] = extract_text
     test.globs['parse_relationship_section'] = parse_relationship_section
+    test.globs['print_tab_links'] = print_tab_links
+    test.globs['print_action_links'] = print_action_links
 
 
 class PageStoryTestCase(unittest.TestCase):

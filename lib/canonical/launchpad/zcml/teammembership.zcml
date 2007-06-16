@@ -17,8 +17,10 @@
         <require 
             permission="zope.Public"
             attributes="team person reviewer status datejoined dateexpires
-                        reviewercomment statusname is_admin is_owner
-                        isExpired sendExpirationWarningEmail" />
+                        reviewercomment statusname isExpired renewal_policy
+                        sendExpirationWarningEmail canBeRenewedByMember
+                        sendSelfRenewalNotification
+                        sendAutoRenewalNotification" />
         <require 
             permission="launchpad.Edit"
             attributes="setStatus" />
@@ -37,6 +39,13 @@
         for="canonical.launchpad.interfaces.ITeamMembership"
         name="+index" />
 
+    <adapter
+      provides="canonical.launchpad.interfaces.IStructuralHeaderPresentation"
+      for="canonical.launchpad.interfaces.ITeamMembership"
+      factory="canonical.launchpad.browser.TeamMembershipSHP"
+      permission="zope.Public"
+      />
+
     <browser:page
         name="+index"
         for="canonical.launchpad.interfaces.ITeamMembership"
@@ -45,5 +54,26 @@
         class="canonical.launchpad.browser.TeamMembershipEditView"
         template="../templates/teammembership-index.pt"
         />
+
+    <browser:page
+        name="+listing-simple"
+        for="canonical.launchpad.interfaces.ITeamMembership"
+        facet="overview"
+        permission="zope.Public"
+        template="../templates/teammembership-listing-simple.pt"
+        />
+
+    <content class="canonical.launchpad.browser.person.TeamInvitationView">
+        <allow 
+            interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
+        <allow attributes="__call__" />
+    </content>
+
+    <content
+        class="canonical.launchpad.browser.person.TeamMembershipSelfRenewalView">
+        <allow 
+            interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
+        <allow attributes="__call__" />
+    </content>
 
 </configure>

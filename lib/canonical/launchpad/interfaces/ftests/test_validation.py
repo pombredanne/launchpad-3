@@ -13,16 +13,16 @@ from canonical.launchpad.interfaces import (
     CreateBugParams, IOpenLaunchBag, IPersonSet, IProductSet)
 
 
-def test_can_be_nominated_for_releases(self):
-    """The can_be_nominated_for_releases() validator.
+def test_can_be_nominated_for_serieses(self):
+    """The can_be_nominated_for_serieses() validator.
 
         >>> from canonical.launchpad.interfaces import (
-        ...     can_be_nominated_for_releases)
+        ...     can_be_nominated_for_serieses)
 
     This validator is used to check if the bug in the launchbag can be
-    nominated for the given series or releases.
+    nominated for the given series.
 
-    If we create a new bug, all the target's releases can be nominated.
+    If we create a new bug, all the target's serieses can be nominated.
 
         >>> login('no-priv@canonical.com')
         >>> no_priv = getUtility(IPersonSet).getByEmail(
@@ -32,26 +32,26 @@ def test_can_be_nominated_for_releases(self):
         ...     CreateBugParams(no_priv, "New Bug", comment="New Bug."))
         >>> getUtility(IOpenLaunchBag).add(bug)
 
-        >>> can_be_nominated_for_releases(firefox.serieslist)
+        >>> can_be_nominated_for_serieses(firefox.serieses)
         True
 
     If we nominate the bug for one of the series, the validation will
     fail for that specific series.
 
-        >>> nomination = bug.addNomination(no_priv, firefox.serieslist[0])
-        >>> can_be_nominated_for_releases(firefox.serieslist)
+        >>> nomination = bug.addNomination(no_priv, firefox.serieses[0])
+        >>> can_be_nominated_for_serieses(firefox.serieses)
         Traceback (most recent call last):
         ...
         LaunchpadValidationError...
 
-        >>> can_be_nominated_for_releases([firefox.serieslist[0]])
+        >>> can_be_nominated_for_serieses([firefox.serieses[0]])
         Traceback (most recent call last):
         ...
         LaunchpadValidationError...
 
     It will pass for the rest of the series, though.
 
-        >>> can_be_nominated_for_releases(firefox.serieslist[1:])
+        >>> can_be_nominated_for_serieses(firefox.serieses[1:])
         True
 
     Of course, if we accept the nomination, the validation will still
@@ -61,7 +61,7 @@ def test_can_be_nominated_for_releases(self):
         >>> foo_bar =  getUtility(IPersonSet).getByEmail(
         ...     'foo.bar@canonical.com')
         >>> nomination.approve(foo_bar)
-        >>> can_be_nominated_for_releases([firefox.serieslist[0]])
+        >>> can_be_nominated_for_serieses([firefox.serieses[0]])
         Traceback (most recent call last):
         ...
         LaunchpadValidationError...
@@ -70,17 +70,17 @@ def test_can_be_nominated_for_releases(self):
     nominated.
 
         >>> trunk_nomination = bug.addNomination(
-        ...     no_priv, firefox.serieslist[1])
-        >>> can_be_nominated_for_releases(firefox.serieslist)
+        ...     no_priv, firefox.serieses[1])
+        >>> can_be_nominated_for_serieses(firefox.serieses)
         Traceback (most recent call last):
         ...
         LaunchpadValidationError:
-        This bug has already been nominated for these releases: 1.0, Trunk
+        This bug has already been nominated for these series: 1.0, Trunk
 
     The validation will still fail if a nomination is declined.
 
         >>> trunk_nomination.decline(foo_bar)
-        >>> can_be_nominated_for_releases([firefox.serieslist[1]])
+        >>> can_be_nominated_for_serieses([firefox.serieses[1]])
         Traceback (most recent call last):
         ...
         LaunchpadValidationError...

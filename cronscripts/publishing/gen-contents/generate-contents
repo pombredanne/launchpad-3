@@ -24,8 +24,10 @@ LPCONTENT="$LPPATH/cronscripts/publishing/gen-contents"
 APTCONF="apt-contents.conf"
 CONTENTHEADER="Contents.top"
 
+## XXX cprov 20070423: We need to retrieve 'development' distrorelease
+## from helper script. See bug # 49174
 # target suite
-suites='feisty'
+suites='gutsy'
 
 # target architectures
 archs='i386 amd64 hppa powerpc ia64 sparc'

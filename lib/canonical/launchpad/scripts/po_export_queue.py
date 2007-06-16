@@ -249,8 +249,7 @@ class ExportResult:
 
         for recipient in [str(recipient) for recipient in recipients]:
             simple_sendmail(
-                from_addr='Rosetta SWAT Team <%s>' % (
-                    config.rosetta.rosettaadmin.email),
+                from_addr=config.rosetta.rosettaadmin.email,
                 to_addrs=[recipient],
                 subject='Translation download request: %s' % self.name,
                 body=body)
@@ -270,8 +269,7 @@ class ExportResult:
                     person.browsername, self._getErrorLines())
 
             simple_sendmail(
-                from_addr='Rosetta SWAT Team <%s>' % (
-                    config.rosetta.rosettaadmin.email),
+                from_addr=config.rosetta.rosettaadmin.email,
                 to_addrs=[config.launchpad.errors_address],
                 subject='Translation download errors: %s' % self.name,
                 body=admins_email_body)

@@ -3,13 +3,16 @@
 By default, only questions written in English or one of the user
 preferred languages are listed and searched.
 
-For example, a user who isn't logged in will only see questions written
-in English, in one of the language configured in his browser,
+
+== Anonymous searching ==
+
+For example, a user who isn't logged in will only see questions
+written in English, in one of the language configured in his browser,
 or inferred from GeoIP information. In this example, only English
-questions will be shown.
+questions will be shown when the user has not provided language
+information.
 
     >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
-
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(anon_browser.contents)
     >>> for question in soup.fetch('td', 'question'):
@@ -27,20 +30,20 @@ questions will be shown.
     ...     print question.first('a').renderContents()
     Installation failed
 
-Since there are some question languages that are not displayed, a message
-is displayed to that effect.
+The questions match the languages inferred from by GeoIP
+127.0.0.1 is mapped to South Africa in the test suite. The language
+control shows the intersection of the the user's languages and the
+languages of the target's questions. In this example:
+set(['af', 'en', 'st', 'xh', 'zu']) & set(['en', 'es']) == set(en).
 
-    >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
-    ...     print message.renderContents()
-    Only questions in English are displayed. To see questions in other
-    languages, either
-    <a href="/+editmylanguages">change your preferred</a> languages
-    or select the &ldquo;All Languages&rdquo; option.
+    >>> sorted(anon_browser.getControl(name='field.language').options)
+    ['en']
 
-If the user selects the 'All Languages' option, then all questions,
-whatever the language they are written in are displayed:
+If the user unselects all the language options, then all questions,
+whatever the language they are written in are displayed. Doing so,
+the anonymous user will see a Spanish question.
 
-    >>> anon_browser.getControl('All Languages').selected = True
+    >>> anon_browser.getControl('English (en)').selected = False
     >>> anon_browser.getControl('Search').click()
     >>> soup = BeautifulSoup(anon_browser.contents)
     >>> for question in soup.fetch('td', 'question'):
@@ -59,28 +62,42 @@ whatever the language they are written in are displayed:
     'Slow system'
     'Installation failed'
 
-When that option is selected, no warning message will appear:
+When the project has no questions to search, we do not show the
+language controls.
 
-    >>> anon_browser.getControl('All Languages').selected
-    True
+    >>> anon_browser.open('http://launchpad.dev/kubuntu/+questions')
+    >>> anon_browser.getControl(name='field.language')
+    Traceback (most recent call last):
+      ...
+    LookupError: name 'field.language...
 
-    >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
-    ...     print message.renderContents()
+    >>> content = find_main_content(anon_browser.contents).first('p')
+    >>> print content.renderContents()
+    There are no questions for Kubuntu with the requested statuses.
 
-But if the user configures his browser to accept Spanish, then all
-languages will be displayed and no warning nor 'All Languages' control
-will appear:
+When the project has questions in only one language, and that language
+is among the users' languages, the language controls are not displayed.
+The mozilla-firefox sourcepackage only has English questions. When the
+anonymous user makes a request from a GeoIP that has no languages
+mapped, we assume he speaks the default language of English.
+
+    >>> anon_browser.addHeader('X_FORWARDED_FOR', '172.16.1.1')
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+questions')
+    >>> anon_browser.getControl(name='field.language')
+    Traceback (most recent call last):
+      ...
+    LookupError: name 'field.language...
+
+But if the user configures his browser to accept Spanish, then English
+and Spanish language questions will be displayed:
 
     >>> anon_browser.addHeader('Accept-Language', 'es')
     >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
-
-    >>> anon_browser.getControl('All Languages')
-    Traceback (most recent call last):
-      ...
-    LookupError...
-
-    >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
-    ...     print message.renderContents()
+    >>> anon_browser.getControl('English (en)').selected
+    True
+    >>> anon_browser.getControl('Spanish (es)').selected
+    True
 
     >>> soup = BeautifulSoup(anon_browser.contents)
     >>> for question in soup.fetch('td', 'question'):
@@ -98,6 +115,69 @@ will appear:
     ...     question.first('a').renderContents()
     'Slow system'
     'Installation failed'
+
+
+== Authenticated searching ==
+
+Authenticated users without preferred languages are assumed to have
+the languages determined by what their browser sends in the
+Accept-Languages request, or by their GeoIP, just as with anonymous
+users. In this example, No Privileges Person does not have preferred
+languages, nor is his browser configured with a language; we use GeoIP
+rules. As with the anonymous user, the intersection of the GeoIP
+languages and the target's question languages is 'en'.
+
+    >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
+    >>> sorted(user_browser.getControl(name='field.language').options)
+    ['en']
+
+When the project languages are just English, and the user speaks
+that language, we do not show the language controls.
+
+    >>> user_browser.addHeader('X_FORWARDED_FOR', '172.16.1.1')
+    >>> user_browser.open(
+    ...     'http://launchpad.dev/ubuntu/+source/mozilla-firefox/+questions')
+    >>> user_browser.getControl(name='field.language')
+    Traceback (most recent call last):
+      ...
+    LookupError: name 'field.language...
+
+When No Privileges Person adds Spanish to his browser, Spanish is added
+along with English to the language controls.
+
+    >>> user_browser.addHeader('Accept-Language', 'es')
+    >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
+    >>> sorted(user_browser.getControl(name='field.language').options)
+    ['en', 'es']
+
+Users that have configured their preferred languages may choose to
+see questions for any, some, all, or none of their languages by
+toggling the check box for each of their preferred languages. In
+this example, Carlos speaks two languages (Spanish and Catalan),
+and Answers adds English to the list of languages. There are no
+Catalan questions, so no Cataloan checkbox is displayed.
+
+    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/distros/ubuntu/+questions')
+    >>> language_control = browser.getControl(name='field.language')
+    >>> for label in language_control.displayOptions:
+    ...     # print the label without the leading non-breaking space.
+    ...     label[1:]
+    'English (en)'
+    'Spanish (es)'
+    >>> browser.getControl(name='field.language').options
+    ['en', 'es']
+
+By unchecking a checkbox, Carlos can exclude English questions from
+the search results.
+
+    >>> browser.getControl('English (en)').selected = False
+    >>> browser.getControl('Search').click()
+    >>> content = find_main_content(browser.contents)
+    >>> for question in content.fetch('td', 'question'):
+    ...     question.first('a').renderContents()
+    'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
+
 
 = Multiple Request Languages in Latest Questions =
 

@@ -128,7 +128,7 @@ class ProjectSetNavigation(Navigation):
     usedfor = IProjectSet
 
     def breadcrumb(self):
-        return 'Projects'
+        return 'Project Groups'
 
     def traverse(self, name):
         # Raise a 404 on an invalid project name
@@ -161,11 +161,11 @@ class ProjectSetContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Admin')
     def register(self):
-        text = 'Register a project'
+        text = 'Register a project group'
         return Link('+new', text, icon='add')
 
     def listall(self):
-        text = 'List all projects'
+        text = 'List all project groups'
         return Link('+all', text, icon='list')
 
 
@@ -190,8 +190,8 @@ class ProjectOverviewMenu(ApplicationMenu):
     usedfor = IProject
     facet = 'overview'
     links = [
-        'edit', 'branding', 'driver', 'reassign',
-        'top_contributors', 'administer', 'rdf']
+        'edit', 'branding', 'driver', 'reassign', 'top_contributors',
+        'mentorship', 'administer', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -211,12 +211,16 @@ class ProjectOverviewMenu(ApplicationMenu):
     @enabled_with_permission('launchpad.Edit')
     def driver(self):
         text = 'Appoint driver'
-        summary = 'Someone with permission to set goals for all products'
+        summary = 'Someone with permission to set goals for all projects'
         return Link('+driver', text, summary, icon='edit')
 
     def top_contributors(self):
         text = 'List top contributors'
         return Link('+topcontributors', text, icon='info')
+
+    def mentorship(self):
+        text = 'Mentoring available'
+        return Link('+mentoring', text, icon='info')
 
     def rdf(self):
         text = structured(
@@ -320,7 +324,7 @@ class ProjectEditView(LaunchpadEditFormView):
 
 class ProjectReviewView(ProjectEditView):
 
-    label = "Review upstream project details"
+    label = "Review upstream project group details"
     field_names = ['name', 'owner', 'active', 'reviewed']
 
 
@@ -345,7 +349,7 @@ class ProjectAddProductView(LaunchpadFormView):
         if not self.user:
             raise Unauthorized(
                 "Need to have an authenticated user in order to create a bug"
-                " on a product")
+                " on a project")
         # create the product
         self.product = getUtility(IProductSet).createProduct(
             name=data['name'],
@@ -372,17 +376,17 @@ class ProjectAddProductView(LaunchpadFormView):
 
 class ProjectSetView(object):
 
-    header = "Projects registered in Launchpad"
+    header = "Project groups registered in Launchpad"
 
     def __init__(self, context, request):
         self.context = context
         self.request = request
-        self.form = self.request.form
-        self.soyuz = self.form.get('soyuz', None)
-        self.rosetta = self.form.get('rosetta', None)
-        self.malone = self.form.get('malone', None)
-        self.bazaar = self.form.get('bazaar', None)
-        self.text = self.form.get('text', None)
+        self.form = self.request.form_ng
+        self.soyuz = self.form.getOne('soyuz', None)
+        self.rosetta = self.form.getOne('rosetta', None)
+        self.malone = self.form.getOne('malone', None)
+        self.bazaar = self.form.getOne('bazaar', None)
+        self.text = self.form.getOne('text', None)
         self.searchrequested = False
         if (self.text is not None or
             self.bazaar is not None or
@@ -415,7 +419,7 @@ class ProjectAddView(LaunchpadFormView):
     field_names = ['name', 'displayname', 'title', 'summary',
                    'description', 'homepageurl',]
     custom_widget('homepageurl', TextWidget, displayWidth=30)
-    label = _('Register a project with Launchpad')
+    label = _('Register a project group with Launchpad')
     project = None
 
     @action(_('Add'), name='add')
@@ -480,6 +484,25 @@ class ProjectAddQuestionView(QuestionAddView):
         # Add a 'product' field to the beginning of the form.
         QuestionAddView.setUpFields(self)
         self.form_fields = self.createProductField() + self.form_fields
+        
+    def setUpWidgets(self):
+        # Only setup the widgets that needs validation
+        if not self.add_action.submitted():
+            fields = self.form_fields.select(*self.search_field_names)
+        else:
+            fields = self.form_fields
+
+        # We need to initialize the widget in two phases because
+        # the language vocabulary factory will try to access the product
+        # widget to find the final context.        
+        self.widgets = form.setUpWidgets(
+            fields.select('product'),
+            self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=False)
+        self.widgets += form.setUpWidgets(
+            fields.omit('product'),
+            self.prefix, self.context, self.request,
+            data=self.initial_values, ignore_request=False)
 
     def createProductField(self):
         """Create a Choice field to select one of the project's products."""

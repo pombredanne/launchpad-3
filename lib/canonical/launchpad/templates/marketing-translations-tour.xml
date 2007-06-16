@@ -2,52 +2,48 @@
 <tour next="answers">
   <title>Translations</title>
   <screen>
-    <title>Translation status</title>
-    <summary>Projects can quickly see how much of their software has been
-      translated
+    <title>Translation for everyone</title>
+    <summary>Translators shouldn't have to be coders. Launchpad's simple web
+      interface makes it easy for anyone to translate software into their own
+      language.
     </summary>
     <screenshot>/+icing/translations-tour-screenshot1.png</screenshot>
-    <callout top="83" left="68">Launchpad can translate any language with an
-      ISO code.
-    </callout>
-    <callout top="75" left="236">Progress bars show are rich in information:
-      green, purple and blue represent translated strings.
+    <callout top="" left="">New contributors want to know where their work is
+      needed. Launchpad gives an overview of the translation status of each
+      application: purple, green and blue represent translated strings, red is
+      untranslated.
     </callout>
   </screen>
   <screen>
-    <title>Make a translation</title>
-    <summary>Translating software is easy with Launchpad. Translators can be
-      anyone who reads English and can write in any other language
+    <title>Automation and organisation</title>
+    <headline>Automating and organising translations</headline>
+    <summary>Launchpad helps you share the work of translating your software,
+      both within your own community and with other communities.
     </summary>
     <screenshot>/+icing/translations-tour-screenshot2.png</screenshot>
-    <callout top="-6" left="187">Launchpad displays the original English
-      string, from the translation template.
-    </callout>
-    <callout top="42" left="229">This string has been translated and reviewed
-      by the same person. Projects can choose what level of review to impose.
-    </callout>
-    <callout top="85" left="75">Launchpad knows that this string has already
-      been translated elsewhere and suggest them as alternatives to the
-      current translation.
-    </callout>
-    <callout top="205" left="86">If a translator is unsure of their work, they
-      can flag it for review.
-    </callout>
-  </screen>
-  <screen>
-    <title>Exporting translations</title>
-    <summary>Projects can download translation files whenever they need them
-    </summary>
-    <screenshot>/+icing/translations-tour-screenshot3.png</screenshot>
-    <callout top="59" left="63">A translation download provides a snapshot of
-      the translated strings for a specific language.
-    </callout>
-    <callout top="35" left="239">Launchpad offers both .po and .mo file
-      downloads, for use with GNU GetText.
-    </callout>
-    <callout top="103" left="214">Files are available to download in just a
-      few minutes.
-    </callout>
+    <transition>
+      <p>Maintaining the quality of your translations is
+        vital. Balancing quality with low barriers to entry can be difficult.
+        Launchpad offers you three translation policies, from fully open to
+        restricted.
+      </p>
+      <p>If you choose a fully open policy, anyone can make
+        a translation and anyone can review a translation. Alternatively, you
+        can appoint individuals or teams as trusted translators for each
+        language.
+      </p>
+      <p>Common phrases reoccur in the interfaces of many
+        applications. When you're translating a string, Launchpad finds other
+        places where it has already been translated and tells you how it
+        appears there. You're free to accept Launchpad's suggestion or to
+        enter your own translation.
+      </p>
+      <p >When you begin work on a new release of your
+        software, translators should be free to continue work on previous
+        releases. With Launchpad, you can maintain separate translation
+        efforts for each release.
+      </p>
+    </transition>
   </screen>
 
 </tour>

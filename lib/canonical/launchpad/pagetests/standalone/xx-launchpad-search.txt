@@ -127,3 +127,14 @@ instead.
     /@@/product Ubuntu
     /@@/project The Ubuntu Project
     ...
+
+== Robustness ==
+
+When multiple search strings are submitted, an UnexpectedFormData is
+raised:
+
+    >>> anon_browser.open(
+    ...     'http://launchpad.dev/projects/?text=foo&text=bar')
+    Traceback (most recent call last):
+      ...
+    UnexpectedFormData: ...

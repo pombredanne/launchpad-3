@@ -11,11 +11,11 @@ account into your existing Launchpad account.
 
     %(token_url)s
 
-If you did not make this request, in Rosetta or Malone or any
-other Launchpad system, then please ignore it or report it as
-a possible attempt at a security attack on your data.
+If you did not make this request, please ignore this message
+or report it as a possible attempt at a security attack on
+your data.
 
-Thanks,
+Thank you,
 
-The Launchpad Team 
+The Launchpad team
 

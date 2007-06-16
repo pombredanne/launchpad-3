@@ -29,20 +29,24 @@ the screenshot.
     ...       </screen>
     ...       <screen>
     ...         <title>Feature 2</title>
+    ...         <headline>Feature 2 is hot</headline>
     ...         <summary>Summary of feature 2</summary>
     ...         <screenshot>/+icing/marketing-screenshot2.png</screenshot>
     ...         <callout top="12" left="36">Item 1</callout>
-    ...         <callout top="50" left="10">A callout with <b>HTML</b> text
-    ...             in. Including a <a href="/">link</a>.
-    ...         </callout>
+    ...         <callout top="50" left="10">Item 2</callout>
+    ...         <callout top="" left="">Item 3</callout>
+    ...         <transition>Let's now look at <i>feature 3</i>.</transition>
     ...       </screen>
     ...       <screen>
     ...         <title>Feature 3</title>
-    ...         <summary>Summary of feature 3</summary>
+    ...         <summary><p>&lt;Summary of feature 3</p>
+    ...             <p>Other paragraph.</p></summary>
     ...         <screenshot>/+icing/marketing-screenshot3.png</screenshot>
     ...         <callout top="100" left="30">Item 1</callout>
-    ...         <callout top="5" left="5">Item 2</callout>
-    ...       </screen>5
+    ...         <callout top="5" left="5">A callout with <b>HTML</b> text
+    ...             in. Including a <a href="/">link</a>.
+    ...         </callout>
+    ...       </screen>
     ...     </tour>
     ...     ''')
 
@@ -108,7 +112,7 @@ Passing an invalid screen reference will raise UnexpectedFormData.
 
 The currently displayed screen is available in the current_screen
 attribute. The screen is described as a dict containing a title,
-summary, screenshot and callouts keys.
+headline, summary, screenshot and callouts keys.
 
     >>> request = LaunchpadTestRequest(form={'screen': '1'})
     >>> tour_view = LaunchpadTourView(request, request, tour_xml_file)
@@ -116,6 +120,8 @@ summary, screenshot and callouts keys.
     >>> screen = tour_view.current_screen
     >>> print screen['title']
     Feature 2
+    >>> print screen['headline']
+    Feature 2 is hot
     >>> print screen['summary']
     Summary of feature 2
 
@@ -124,23 +130,67 @@ The screenshot contains the URI to the screenshot.
     >>> print screen['screenshot']
     /+icing/marketing-screenshot2.png
 
-The callouts is a list of dicts containg keys for the callout text, and
-position on the screenshot.
+The callouts is a list of dicts containg keys for the callout text,
+callout number and top and left position on the screenshot.
 
     >>> len(screen['callouts'])
-    2
+    3
     >>> callout = screen['callouts'][0]
     >>> print callout['text']
     Item 1
+    >>> print callout['number']
+    1
     >>> print callout['top']
     12
     >>> print callout['left']
     36
 
-Note that the callout content is interpreted as a proper XHTML string.
+== Using HTML in summary and callout ==
+
+Note that the callout and summary content is interpreted as a proper XHTML
+string.
+
+    >>> request = LaunchpadTestRequest(form={'screen': '2'})
+    >>> tour_view = LaunchpadTourView(request, request, tour_xml_file)
+    >>> tour_view.initialize()
+    >>> screen = tour_view.current_screen
+
+    >>> print screen['summary']
+    <p>&lt;Summary of feature 3</p>
+    <p>Other paragraph.</p>
 
     >>> print screen['callouts'][1]['text']
     A callout with <b>HTML</b> text in. Including a <a href="/">link</a>.
+
+== Default headline ==
+
+If no headline element is present, the content of title is reused.
+
+    >>> print screen['title']
+    Feature 3
+    >>> print screen['headline']
+    Feature 3
+
+== Callouts layout ==
+
+The current_screen_callouts_layout return the screen callouts in a
+special order for layout. When there are three or four callouts, the third
+is returned before the second so that the callout #2 ends under #1. (It is
+layed out 1 3 2 4 but will look
+
+1 3
+2 4
+
+onscreen.
+
+    >>> request = LaunchpadTestRequest(form={'screen': '1'})
+    >>> tour_view = LaunchpadTourView(request, request, tour_xml_file)
+    >>> tour_view.initialize()
+    >>> for callout in tour_view.current_screen_callouts_layout:
+    ...     print callout['number']
+    1
+    3
+    2
 
 == Screen navigation ==
 
@@ -149,6 +199,12 @@ the tour.
 
     >>> tour_view.next_screen_index
     2
+
+The transition element can be used for text that will be displayed
+along the 'Next' button. It usually contain text about the next screen.
+
+    >>> print tour_view.current_screen['transition']
+    Let's now look at <i>feature 3</i>.
 
 It is None when the current screen is the last one.
 

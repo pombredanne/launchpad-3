@@ -18,11 +18,13 @@ from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
 
 from canonical.config import config
+from canonical.buildmaster.master import BuilddMaster
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
-    IBuilder, IBuilderSet, NotFoundError, IHasBuildRecords, IBuildSet,
-    IBuildQueueSet)
+    IBuilder, IBuilderSet, IDistroArchSeriesSet, NotFoundError,
+    IHasBuildRecords, IBuildSet, IBuildQueueSet)
 from canonical.launchpad.webapp import urlappend
+from canonical.lp.dbschema import BuildStatus
 
 
 class TimeoutHTTPConnection(httplib.HTTPConnection):
@@ -103,8 +105,12 @@ class Builder(SQLBase):
             return 'NOT OK : %s (%s)' % (self.failnotes, mode)
 
         if self.currentjob:
-            return 'BUILDING %s (%s)' % (self.currentjob.build.title,
-                                         mode)
+            current_build = self.currentjob.build
+            msg = 'BUILDING %s' % current_build.title
+            if not current_build.is_trusted:
+                archive_name = current_build.archive.owner.name
+                return '%s [%s] (%s)' % (msg, archive_name, mode)
+            return '%s (%s)' % (msg, mode)
 
         return 'IDLE (%s)' % mode
 
@@ -160,3 +166,32 @@ class BuilderSet(object):
                               % arch.processorfamily.id,
                               clauseTables=("Processor",))
 
+    def pollBuilders(self, logger, txn):
+        """See IBuilderSet."""
+        logger.info("Slave Scan Process Initiated.")
+
+        buildMaster = BuilddMaster(logger, txn)
+
+        logger.info("Setting Builders.")
+        # Put every distroarchseries we can find into the build master.
+        for archseries in getUtility(IDistroArchSeriesSet):
+            buildMaster.addDistroArchSeries(archseries)
+            buildMaster.setupBuilders(archseries)
+
+        logger.info("Scanning Builders.")
+        # Scan all the pending builds, update logtails and retrieve
+        # builds where they are completed
+        buildMaster.scanActiveBuilders()
+        return buildMaster
+
+    def dispatchBuilds(self, logger, buildMaster):
+        """See IBuilderSet."""
+        buildCandidatesSortedByProcessor = buildMaster.sortAndSplitByProcessor()
+
+        logger.info("Dispatching Jobs.")
+        # Now that we've gathered in all the builds, dispatch the pending ones
+        for candidate_proc in buildCandidatesSortedByProcessor.iteritems():
+            processor, buildCandidates = candidate_proc
+            buildMaster.dispatchByProcessor(processor, buildCandidates)
+
+        logger.info("Slave Scan Process Finished.")

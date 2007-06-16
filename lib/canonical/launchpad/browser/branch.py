@@ -14,6 +14,7 @@ __all__ = [
     'BranchInPersonView',
     'BranchInProductView',
     'BranchView',
+    'BranchSubscriptionsView',
     ]
 
 import cgi
@@ -23,19 +24,22 @@ import pytz
 from zope.event import notify
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+
+from canonical.lp import decorates
+
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
-    IBranch, IBranchSet, IBugSet)
+    IBranch, IBranchSet, IBranchSubscription, IBugSet, ILaunchpadCelebrities,
+    IPersonSet)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
-    LaunchpadEditFormView, action, custom_widget)
+    LaunchpadEditFormView, action)
 from canonical.launchpad.webapp.uri import URI
-from canonical.widgets import ContextWidget
 
 
 def quote(text):
@@ -59,13 +63,21 @@ class BranchNavigation(Navigation):
     def dotbzr(self):
         return BranchRef(self.context)
 
+    @stepthrough("+subscription")
+    def traverse_subscription(self, name):
+        """Traverses to an IBranchSubcription."""
+        person = getUtility(IPersonSet).getByName(name)
+
+        if person is not None:
+            return self.context.getSubscription(person)
+
 
 class BranchContextMenu(ContextMenu):
     """Context menu for branches."""
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'browse', 'reassign', 'subscription']
+    links = ['edit', 'browse', 'reassign', 'subscription', 'addsubscriber']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -88,7 +100,7 @@ class BranchContextMenu(ContextMenu):
     def subscription(self):
         if self.context.hasSubscription(self.user):
             url = '+edit-subscription'
-            text = 'Edit Subscription'
+            text = 'Edit subscription'
             icon = 'edit'
         else:
             url = '+subscribe'
@@ -96,10 +108,17 @@ class BranchContextMenu(ContextMenu):
             icon = 'add'
         return Link(url, text, icon=icon)
 
+    @enabled_with_permission('launchpad.AnyPerson')
+    def addsubscriber(self):
+        text = 'Subscribe someone else'
+        return Link('+addsubscriber', text, icon='add')
+
 
 class BranchView(LaunchpadView):
 
     __used_for__ = IBranch
+
+    MAXIMUM_STATUS_MESSAGE_LENGTH = 128
 
     def initialize(self):
         self.notices = []
@@ -166,6 +185,19 @@ class BranchView(LaunchpadView):
         """The URL the logged in user can use to upload to this branch."""
         return 'sftp://%s@bazaar.launchpad.net/%s' % (
             self.user.name, self.context.unique_name)
+
+    def is_hosted_branch(self):
+        """Whether this is a user-provided hosted branch."""
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        return self.context.url is None and self.context.owner != vcs_imports
+
+    def mirror_status_message(self):
+        """A message from a bad scan or pull, truncated for display."""
+        message = self.context.mirror_status_message
+        if len(message) <= self.MAXIMUM_STATUS_MESSAGE_LENGTH:
+            return message
+        return truncate_text(
+            message, self.MAXIMUM_STATUS_MESSAGE_LENGTH) + ' ...'
 
 
 class BranchInPersonView(BranchView):
@@ -374,3 +406,43 @@ class BranchReassignmentView(ObjectReassignmentView):
                    quote(branch.product.displayname),
                    branch.name))
             return False
+
+
+class DecoratedSubscription:
+    """Adds the editable attribute to a BranchSubscription."""
+    decorates(IBranchSubscription, 'subscription')
+
+    def __init__(self, subscription, editable):
+        self.subscription = subscription
+        self.editable = editable
+
+
+class BranchSubscriptionsView(LaunchpadView):
+    """The view for the branch subscriptions portlet.
+
+    The view is used to provide a decorated list of branch subscriptions
+    in order to provide links to be able to edit the subscriptions
+    based on whether or not the user is able to edit the subscription.
+    """
+
+    def isEditable(self, subscription):
+        """A subscription is editable by members of the subscribed team.
+
+        Launchpad Admins are special, and can edit anyone's subscription.
+        """
+        # We don't want to say editable if the logged in user
+        # is the same as the person of the subscription.
+        if self.user is None or self.user == subscription.person:
+            return False
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (self.user.inTeam(subscription.person) or
+                self.user.inTeam(admins))
+
+    def subscriptions(self):
+        """Return a decorated list of branch subscriptions."""
+        sorted_subscriptions = sorted(
+            self.context.subscriptions,
+            key=lambda subscription: subscription.person.browsername)
+        return [DecoratedSubscription(
+                    subscription, self.isEditable(subscription))
+                for subscription in sorted_subscriptions]

@@ -74,7 +74,6 @@ The Launchpad product itself.
   >>> celebs.launchpad == launchpad
   True
 
+
   TODO: add interface verification test.
         ask debonzi to add these in general.
-
-

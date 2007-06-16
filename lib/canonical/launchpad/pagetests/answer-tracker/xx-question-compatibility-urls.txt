@@ -8,7 +8,11 @@ terminology. We provide redirect from the old names to the new ones.
 
     >>> browser.open('http://launchpad.dev/support')
     >>> print browser.url
-    http://answers.launchpad.dev/
+    http://answers.launchpad.dev/questions
+
+    >>> browser.open('http://launchpad.dev/support/+tickets')
+    >>> print browser.url
+    http://answers.launchpad.dev/questions/+questions
 
 == Answer Contact Page ==
 

@@ -21,7 +21,8 @@ from canonical.launchpad.fields import (ContentNameField, Summary,
     Title)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces import IHasOwner, IProject
+from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
@@ -49,6 +50,10 @@ class SpecNameField(ContentNameField):
             # in the case of a form on the spec set, we need to validate at
             # a higher level, in the form validation routine
             return None
+        elif IProject.providedBy(self.context):
+            # the context is a Project, so we will validate this at a higher
+            # level, in the form validation routine
+            return None
         else:
             # the context is a Product or Distro which can tell us if there
             # are already specs with this name
@@ -71,7 +76,7 @@ class SpecURLField(TextLine):
             raise LaunchpadValidationError(self.errormessage % specurl)
 
 
-class ISpecification(IHasOwner):
+class ISpecification(IHasOwner, ICanBeMentored):
     """A Specification."""
 
     name = SpecNameField(
@@ -116,31 +121,50 @@ class ISpecification(IHasOwner):
         title=_('Date Created'), required=True, readonly=True)
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
+    # target
+    product = Choice(title=_('Project'), required=False,
+        vocabulary='Product')
+    distribution = Choice(title=_('Distribution'), required=False,
+        vocabulary='Distribution')
+
+    target = Choice(
+        title=_("For"),
+        description=_("The project for which this proposal is being made."),
+        required=True,
+        vocabulary='DistributionOrProduct')
+    projecttarget = Choice(
+        title=_("For"),
+        description=_("The project for which this proposal is being made."),
+        required=True,
+        vocabulary='ProjectProducts')
+
+
+    # series
+    productseries = Choice(title=_('Series Goal'), required=False,
+        vocabulary='FilteredProductSeries',
+        description=_(
+            "Choose a series in which you would like to deliver "
+            "this feature. Selecting '(no value)' will clear the goal."))
+    distroseries = Choice(title=_('Series Goal'), required=False,
+        vocabulary='FilteredDistroSeries',
+        description=_(
+            "Choose a series in which you would like to deliver "
+            "this feature. Selecting '(no value)' will clear the goal."))
+
+    # milestone
     milestone = Choice(
         title=_('Milestone'), required=False, vocabulary='Milestone',
         description=_(
             "The milestone in which we would like this feature to be "
             "delivered."))
-    productseries = Choice(title=_('Series Goal'), required=False,
-        vocabulary='FilteredProductSeries',
-        description=_(
-            "Choose a release series in which you would like to deliver "
-            "this feature. Selecting '(no value)' will clear the goal."))
-    distrorelease = Choice(title=_('Release Goal'), required=False,
-        vocabulary='FilteredDistroRelease',
-        description=_(
-            "Choose a release in which you would like to deliver "
-            "this feature. Selecting '(no value)' will clear the goal."))
 
     # nomination to a series for release management
-    goal = Attribute(
-        "The product series or distro release for which this feature "
-        "is a goal.")
+    goal = Attribute("The series for which this feature is a goal.")
     goalstatus = Choice(
         title=_('Goal Acceptance'), vocabulary='SpecificationGoalStatus',
         default=SpecificationGoalStatus.PROPOSED, description=_(
             "Whether or not the drivers have accepted this feature as "
-            "a goal for the targeted release or series."))
+            "a goal for the targeted series."))
     goal_proposer = Attribute("The person who nominated the spec for "
         "this series.")
     date_goal_proposed = Attribute("The date of the nomination.")
@@ -191,18 +215,6 @@ class ISpecification(IHasOwner):
         'superseded. Essentially, it is the state where no more work '
         'will be done on the feature.')
 
-    # other attributes
-    product = Choice(title=_('Product'), required=False,
-        vocabulary='Product')
-    distribution = Choice(title=_('Distribution'), required=False,
-        vocabulary='Distribution')
-
-    target = Choice(
-        title=_("For"),
-        description=_("The project for which this proposal is being made."),
-        required=True,
-        vocabulary='DistributionOrProduct')
-
     # joins
     subscriptions = Attribute('The set of subscriptions to this spec.')
     subscribers = Attribute('The set of subscribers to this spec.')
@@ -251,7 +263,7 @@ class ISpecification(IHasOwner):
 
     # goal management
     def proposeGoal(goal, proposer):
-        """Propose this spec for a series or distrorelease."""
+        """Propose this spec for a series or distroseries."""
 
     def acceptBy(decider):
         """Mark the spec as being accepted for its current series goal."""
@@ -259,10 +271,9 @@ class ISpecification(IHasOwner):
     def declineBy(decider):
         """Mark the spec as being declined as a goal for the proposed series."""
 
-    has_release_goal = Attribute('Is true if this specification has been '
-        'proposed as a goal for a specific distro release or product '
-        'series and the drivers of that release/series have accepted '
-        'the goal.')
+    has_accepted_goal = Attribute('Is true if this specification has been '
+        'proposed as a goal for a specific series, '
+        'and the drivers of that series have accepted the goal.')
 
     # lifecycle management
     def updateLifecycleStatus(user):
@@ -292,7 +303,7 @@ class ISpecification(IHasOwner):
     def subscription(person):
         """Return the subscription for this person to this spec, or None."""
 
-    def subscribe(person):
+    def subscribe(person, essential=False):
         """Subscribe this person to the feature specification."""
 
     def unsubscribe(person):
@@ -300,6 +311,15 @@ class ISpecification(IHasOwner):
 
     def getSubscriptionByName(name):
         """Return a subscription based on the person's name, or None."""
+
+    def isSubscribed(person):
+        """Is person subscribed to this spec?
+
+        Returns True if the user is explicitly subscribed to this spec
+        (no matter what the type of subscription), otherwise False.
+
+        If person is None, the return value is always False.
+        """
 
     # queue-related methods
     def queue(provider, requester, queuemsg=None):
@@ -370,7 +390,7 @@ class ISpecificationDelta(Interface):
     whiteboard = Attribute("The spec whiteboard or None.")
     specurl = Attribute("The URL to the spec home page (not in Launchpad).")
     productseries = Attribute("The product series.")
-    distrorelease = Attribute("The release to which this is targeted.")
+    distroseries = Attribute("The series to which this is targeted.")
     milestone = Attribute("The milestone to which the spec is targeted.")
     bugs_linked = Attribute("A list of new bugs linked to this spec.")
     bugs_unlinked = Attribute("A list of bugs unlinked from this spec.")

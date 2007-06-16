@@ -1,0 +1,14 @@
+<html metal:use-macro="view/macro:page/pillarindex" i18n:domain="launchpad">
+<body>
+  <h1 metal:fill-slot="heading">Meetings and Sprints</h1>
+  <div metal:fill-slot="main" tal:define="batch view/all_batched">
+    <h1>All sprints registered</h1>
+    <tal:navigation replace="structure batch/@@+navigation-links-upper" />
+    <table>
+      <tr tal:repeat="sprint batch/currentBatch"
+          tal:replace="structure sprint/@@+listing-detailed" />
+    </table>
+    <tal:navigation replace="structure batch/@@+navigation-links-upper" />
+  </div>
+</body>
+</html>

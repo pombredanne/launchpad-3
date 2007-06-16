@@ -69,4 +69,4 @@ Now let's try to create a productrelease with a dupe version.
   >>> for tag in find_tags_by_class(browser.contents, 'message'):
   ...     tag.renderContents()
   'An error occurred.'
-  '1.0.0 is already in use by another version in this product series.'
+  '1.0.0 is already in use by another version in this release series.'

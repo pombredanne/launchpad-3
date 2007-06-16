@@ -5,13 +5,13 @@
   </ul>
 
   <div id="home" metal:fill-slot="contents">
-    <h2>Make better software through collaboration</h2>
+    <h2>Collaboration, project management and code hosting for free software</h2>
     <ul id="tools">
       <li id="liCode"><a href="#"
                          tal:attributes="href string:${vhosts/code/rooturl}+about"
                          >Code</a>
-        <p>Attract new contributors by hosting your code publicly, on
-           Launchpad.net.
+        <p>Make all your project's code accessible, wherever it's hosted on
+           the internet.
         </p>
       </li>
       <li id="liBugs"><a href="#"
@@ -36,11 +36,12 @@
       <li id="liAnswers"><a href="#"
                          tal:attributes="href string:${vhosts/answers/rooturl}+about"
                          >Answers</a>
-        <p>Build a community support team to answer users questions.</p>
+        <p>Build a community support team and turn their answers
+           into a searchable knowledge-base.
+        </p>
       </li>
     </ul>
-    <h3 class="splash">Launchpad makes open source collaboration easy, both
-      within your team and with other projects.</h3>
+
     <div id="content">
       <div class="intro">
         <h3>About Launchpad</h3>
@@ -65,8 +66,12 @@
           takes just a few minutes to add your project and there's free
           migration support for open source projects.</p>
 
-        <h3>Free transfer offer</h3>
-        <p>Free migration support for open source projects.</p>
+        <h3>Migrating to Launchpad</h3>
+
+        <p>The Launchpad team offers a managed migration service for open
+          source projects using any Launchpad tool -
+          <a href="&#109;&#97;&#105;&#108;&#116;&#111;&#58;&#104;&#101;&#108;&#112;&#64;&#108;&#97;&#117;&#110;&#99;&#104;&#112;&#97;&#100;&#46;&#110;&#101;&#116;">contact us for
+            more details</a>
       </div>
     </div> <!-- content -->
   </div>

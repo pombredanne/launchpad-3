@@ -17,7 +17,7 @@ import bzrlib.branch
 import bzrlib.bzrdir
 import bzrlib.errors
 from bzrlib.revision import NULL_REVISION
-from bzrlib.tests import TestCaseInTempDir
+from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
 from bzrlib.transport import get_transport
@@ -125,47 +125,47 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
     def tearDown(self):
         self.authserver.tearDown()
         super(TestBranchToMirrorFormats, self).tearDown()
-        test_root = TestCaseInTempDir.TEST_ROOT
+        test_root = TestCaseWithMemoryTransport.TEST_ROOT
         if test_root is not None and os.path.exists(test_root):
             shutil.rmtree(test_root)
-        # Set the TEST_ROOT back to None, to tell TestCaseInTempDir we need it
-        # to create a new root when the next test is run.
-        # The TestCaseInTempDir is part of bzr's test infrastructure and the
-        # bzr test runner normally does this cleanup, but here we have to do
-        # that ourselves.
-        TestCaseInTempDir.TEST_ROOT = None
+        # Set the TEST_ROOT back to None, to tell TestCaseWithMemoryTransport
+        # we need it to create a new root when the next test is run.
+        # The TestCaseWithMemoryTransport is part of bzr's test infrastructure
+        # and the bzr test runner normally does this cleanup, but here we have
+        # to do that ourselves.
+        TestCaseWithMemoryTransport.TEST_ROOT = None
 
     def testMirrorKnitAsKnit(self):
         # Create a source branch in knit format, and check that the mirror is in
         # knit format.
         self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
-        self.repository_format = bzrlib.repository.RepositoryFormatKnit1()
+        self.repository_format = bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
         self._testMirrorFormat()
 
     def testMirrorMetaweaveAsMetaweave(self):
         # Create a source branch in metaweave format, and check that the mirror
         # is in metaweave format.
         self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
-        self.repository_format = bzrlib.repository.RepositoryFormat7()
+        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
         self._testMirrorFormat()
 
     def testMirrorWeaveAsWeave(self):
         # Create a source branch in weave format, and check that the mirror is
         # in weave format.
         self.bzrdir_format = bzrlib.bzrdir.BzrDirFormat6()
-        self.repository_format = bzrlib.repository.RepositoryFormat6()
+        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat6()
         self._testMirrorFormat()
 
     def testSourceFormatChange(self):
         # Create and mirror a branch in weave format.
         self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
-        self.repository_format = bzrlib.repository.RepositoryFormat7()
+        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
         self._createSourceBranch()
         self._mirror()
         
         # Change the branch to knit format.
         shutil.rmtree('src-branch')
-        self.repository_format = bzrlib.repository.RepositoryFormatKnit1()
+        self.repository_format = bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
         self._createSourceBranch()
 
         # Mirror again.  The mirrored branch should now be in knit format.
@@ -226,15 +226,15 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
     def tearDown(self):
         self.authserver.tearDown()
         TestCaseInTempDir.tearDown(self)
-        test_root = TestCaseInTempDir.TEST_ROOT
+        test_root = TestCaseWithMemoryTransport.TEST_ROOT
         if test_root is not None and os.path.exists(test_root):
             shutil.rmtree(test_root)
-        # Set the TEST_ROOT back to None, to tell TestCaseInTempDir we need it
-        # to create a new root when the next test is run.
-        # The TestCaseInTempDir is part of bzr's test infrastructure and the
-        # bzr test runner normally does this cleanup, but here we have to do
-        # that ourselves.
-        TestCaseInTempDir.TEST_ROOT = None
+        # Set the TEST_ROOT back to None, to tell TestCaseWithMemoryTransport
+        # we need it to create a new root when the next test is run.
+        # The TestCaseWithMemoryTransport is part of bzr's test infrastructure
+        # and the bzr test runner normally does this cleanup, but here we have
+        # to do that ourselves.
+        TestCaseWithMemoryTransport.TEST_ROOT = None
 
     def testUnopenableSourceDoesNotCreateMirror(self):
         non_existant_branch = os.path.abspath('nonsensedir')

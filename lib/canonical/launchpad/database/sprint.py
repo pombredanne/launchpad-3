@@ -45,11 +45,11 @@ class Sprint(SQLBase):
     home_page = StringCol(notNull=False, default=None)
     homepage_content = StringCol(default=None)
     icon = ForeignKey(
-        dbName='emblem', foreignKey='LibraryFileAlias', default=None)
+        dbName='icon', foreignKey='LibraryFileAlias', default=None)
     logo = ForeignKey(
-        dbName='gotchi_heading', foreignKey='LibraryFileAlias', default=None)
+        dbName='logo', foreignKey='LibraryFileAlias', default=None)
     mugshot = ForeignKey(
-        dbName='gotchi', foreignKey='LibraryFileAlias', default=None)
+        dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
     address = StringCol(notNull=False, default=None)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     time_zone = StringCol(notNull=True)
@@ -309,15 +309,19 @@ class SprintSet:
         """See ISprintSet."""
         return iter(Sprint.select("time_ends > 'NOW'", orderBy='time_starts'))
 
+    @property
+    def all(self):
+        return Sprint.select(orderBy='-time_starts')
+
     def new(self, owner, name, title, time_zone, time_starts, time_ends,
-            summary=None, driver=None, home_page=None, mugshot=None,
-            logo=None, icon=None):
+            summary=None, address=None, driver=None, home_page=None,
+            mugshot=None, logo=None, icon=None):
         """See ISprintSet."""
         return Sprint(owner=owner, name=name, title=title,
             time_zone=time_zone, time_starts=time_starts,
             time_ends=time_ends, summary=summary, driver=driver,
             home_page=home_page, mugshot=mugshot, icon=icon,
-            logo=logo)
+            logo=logo, address=address)
 
 
 class HasSprintsMixin:

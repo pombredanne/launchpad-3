@@ -1,0 +1,24 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:lp="http://launchpad.canonical.com"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+    <!-- Archive -->
+    <content class="canonical.launchpad.database.Archive">
+       <allow interface="canonical.launchpad.interfaces.IArchive"/>
+    </content>
+
+    <!-- ArchiveSet -->
+    <content class="canonical.launchpad.database.ArchiveSet">
+        <allow interface="canonical.launchpad.interfaces.IArchiveSet"/>
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.ArchiveSet"
+        provides="canonical.launchpad.interfaces.IArchiveSet">
+        <allow interface="canonical.launchpad.interfaces.IArchiveSet" />
+    </securedutility>
+
+</configure>

@@ -3,7 +3,7 @@
 __metaclass__ = type
 __all__ = ['TeamMembership', 'TeamMembershipSet', 'TeamParticipation']
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import itertools
 import pytz
 
@@ -18,14 +18,16 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.config import config
 
-from canonical.lp.dbschema import TeamMembershipStatus
+from canonical.lp.dbschema import (
+    TeamMembershipRenewalPolicy, TeamMembershipStatus)
 
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
-    ITeamMembership, ITeamParticipation, ITeamMembershipSet)
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ITeamMembership,
+    ITeamParticipation, ITeamMembershipSet)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
@@ -43,8 +45,8 @@ class TeamMembership(SQLBase):
     reviewer = ForeignKey(dbName='reviewer', foreignKey='Person', default=None)
     status = EnumCol(
         dbName='status', notNull=True, schema=TeamMembershipStatus)
-    datejoined = UtcDateTimeCol(dbName='datejoined', default=UTC_NOW,
-                                notNull=True)
+    datejoined = UtcDateTimeCol(
+        dbName='datejoined', default=UTC_NOW, notNull=True)
     dateexpires = UtcDateTimeCol(dbName='dateexpires', default=None)
     reviewercomment = StringCol(dbName='reviewercomment', default=None)
 
@@ -53,19 +55,73 @@ class TeamMembership(SQLBase):
         """See ITeamMembership"""
         return self.status.title
 
-    @property
-    def is_admin(self):
-        """See ITeamMembership"""
-        return self.status in [TeamMembershipStatus.ADMIN]
-
-    @property
-    def is_owner(self):
-        """See ITeamMembership"""
-        return self.person.id == self.team.teamowner.id
-
     def isExpired(self):
         """See ITeamMembership"""
         return self.status == TeamMembershipStatus.EXPIRED
+
+    def canBeRenewedByMember(self):
+        """See ITeamMembership"""
+        ondemand = TeamMembershipRenewalPolicy.ONDEMAND
+        admin = TeamMembershipStatus.APPROVED
+        approved = TeamMembershipStatus.ADMIN
+        date_limit = datetime.now(pytz.timezone('UTC')) + timedelta(
+            days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
+        return (self.status in (admin, approved)
+                and self.team.renewal_policy == ondemand
+                and self.dateexpires is not None
+                and self.dateexpires < date_limit)
+
+    def sendSelfRenewalNotification(self):
+        """See ITeamMembership"""
+        team = self.team
+        member = self.person
+        assert team.renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND
+
+        from_addr = format_address(
+            "Launchpad Team Membership Notifier", config.noreply_from_address)
+        replacements = {'member_name': member.unique_displayname,
+                        'team_name': team.unique_displayname,
+                        'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
+        subject = ('Launchpad: renewed %s as member of %s'
+                   % (member.name, team.name))
+        template = get_email_template('membership-member-renewed.txt')
+        msg = MailWrapper().format(template % replacements)
+        admins_addrs = self.team.getTeamAdminsEmailAddresses()
+        for address in admins_addrs:
+            simple_sendmail(from_addr, address, subject, msg)
+
+    def sendAutoRenewalNotification(self):
+        """See ITeamMembership"""
+        team = self.team
+        member = self.person
+        assert team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC
+
+        from_addr = format_address(
+            "Launchpad Team Membership Notifier", config.noreply_from_address)
+        replacements = {'member_name': member.unique_displayname,
+                        'team_name': team.unique_displayname,
+                        'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
+        subject = ('Launchpad: renewed %s as member of %s'
+                   % (member.name, team.name))
+
+        if member.isTeam():
+            member_addrs = contactEmailAddresses(member.teamowner)
+            template_name = 'membership-auto-renewed-impersonal.txt'
+        else:
+            template_name = 'membership-auto-renewed-personal.txt'
+            member_addrs = contactEmailAddresses(member)
+        template = get_email_template(template_name)
+        msg = MailWrapper().format(template % replacements)
+        for address in member_addrs:
+            simple_sendmail(from_addr, address, subject, msg)
+
+        template_name = 'membership-auto-renewed-impersonal.txt'
+        admins_addrs = self.team.getTeamAdminsEmailAddresses()
+        admins_addrs = set(admins_addrs).difference(member_addrs)
+        template = get_email_template(template_name)
+        msg = MailWrapper().format(template % replacements)
+        for address in admins_addrs:
+            simple_sendmail(from_addr, address, subject, msg)
 
     def sendExpirationWarningEmail(self):
         """See ITeamMembership"""
@@ -85,25 +141,31 @@ class TeamMembership(SQLBase):
         team = self.team
         subject = 'Launchpad: %s team membership about to expire' % team.name
 
-        admins_names = []
-        admins = team.getEffectiveAdministrators()
-        assert admins.count() >= 1
-        if admins.count() == 1:
-            admin = admins[0]
-            contact_admins_text = (
-                "To prevent this membership from expiring, you should "
-                "contact\nthe team's administrator, %s.\n<%s>"
-                % (admin.unique_displayname, canonical_url(admin)))
+        if team.renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND:
+            how_to_renew = (
+                "If you want, you can renew this membership at\n"
+                "<%s/+expiringmembership/%s>"
+                % (canonical_url(member), team.name))
         else:
-            for admin in admins:
-                admins_names.append(
-                    "%s <%s>"
+            admins_names = []
+            admins = team.getDirectAdministrators()
+            assert admins.count() >= 1
+            if admins.count() == 1:
+                admin = admins[0]
+                how_to_renew = (
+                    "To prevent this membership from expiring, you should "
+                    "contact\nthe team's administrator, %s.\n<%s>"
                     % (admin.unique_displayname, canonical_url(admin)))
+            else:
+                for admin in admins:
+                    admins_names.append(
+                        "%s <%s>"
+                        % (admin.unique_displayname, canonical_url(admin)))
 
-            contact_admins_text = (
-                "To prevent this membership from expiring, you should get "
-                "in touch\nwith one of the team's administrators:\n")
-            contact_admins_text += "\n".join(admins_names)
+                how_to_renew = (
+                    "To prevent this membership from expiring, you should get "
+                    "in touch\nwith one of the team's administrators:\n")
+                how_to_renew += "\n".join(admins_names)
 
         formatter = DurationFormatterAPI(
             self.dateexpires - datetime.now(pytz.timezone('UTC')))
@@ -111,9 +173,8 @@ class TeamMembership(SQLBase):
             'member_name': member.unique_displayname,
             'member_displayname': member.displayname,
             'team_url': canonical_url(team),
-            'contact_admins_text': contact_admins_text,
+            'how_to_renew': how_to_renew,
             'team_name': team.unique_displayname,
-            'team_admins': '\n'.join(admins_names),
             'expiration_date': self.dateexpires.strftime('%Y-%m-%d'),
             'approximate_duration': formatter.approximateduration()}
 
@@ -124,28 +185,34 @@ class TeamMembership(SQLBase):
 
     def setStatus(self, status, reviewer, reviewercomment=None):
         """See ITeamMembership"""
-        assert status != self.status, (
-            'New status (%s) is the same as the current one.' % status.name)
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
         expired = TeamMembershipStatus.EXPIRED
         declined = TeamMembershipStatus.DECLINED
         deactivated = TeamMembershipStatus.DEACTIVATED
         proposed = TeamMembershipStatus.PROPOSED
+        invited = TeamMembershipStatus.INVITED
+        invitation_declined = TeamMembershipStatus.INVITATION_DECLINED
 
         # Flush the cache used by the Person.inTeam method
         self.person._inTeam_cache = {}
 
-        # Make sure the transition from the current status to the given status
+        # Make sure the transition from the current status to the given one
         # is allowed. All allowed transitions are in the TeamMembership spec.
-        if self.status in [admin, approved]:
-            assert status in [admin, approved, expired, deactivated]
-        elif self.status in [deactivated, expired]:
-            assert status in [proposed, approved]
-        elif self.status in [proposed]:
-            assert status in [approved, admin, declined]
-        elif self.status in [declined]:
-            assert status in [proposed, approved]
+        state_transition = {
+            admin: [approved, expired, deactivated],
+            approved: [admin, expired, deactivated],
+            deactivated: [proposed, approved, invited],
+            expired: [proposed, approved, invited],
+            proposed: [approved, admin, declined],
+            declined: [proposed, approved],
+            invited: [approved, invitation_declined],
+            invitation_declined: [invited, approved, admin]}
+        assert self.status in state_transition, (
+            "Unknown status: %s" % self.status.name)
+        assert status in state_transition[self.status], (
+            "Bad state trasition from %s to %s"
+            % (self.status.name, status.name))
 
         old_status = self.status
         self.status = status
@@ -157,16 +224,14 @@ class TeamMembership(SQLBase):
             # Inactive member has become active; update datejoined
             self.datejoined = datetime.now(pytz.timezone('UTC'))
 
-        self.syncUpdate()
-
         if status in [admin, approved]:
             _fillTeamParticipation(self.person, self.team)
         else:
-            assert status in [proposed, declined, deactivated, expired]
             _cleanTeamParticipation(self.person, self.team)
 
         # When a member proposes himself, a more detailed notification is
-        # sent to the team admins; that's why we don't send anything here.
+        # sent to the team admins by a subscriber of JoinTeamEvent; that's
+        # why we don't send anything here.
         if self.person == self.reviewer and self.status == proposed:
             return
 
@@ -202,8 +267,6 @@ class TeamMembership(SQLBase):
         else:
             comment = ""
 
-        subject = ('Launchpad: Membership change: %(member)s in %(team)s'
-                   % {'member': self.person.name, 'team': self.team.name})
         replacements = {
             'member_name': member.unique_displayname,
             'team_name': team.unique_displayname,
@@ -212,9 +275,29 @@ class TeamMembership(SQLBase):
             'reviewer_name': reviewer_name,
             'comment': comment}
 
+        template_name = 'membership-statuschange'
+        subject = ('Launchpad: Membership change: %(member)s in %(team)s'
+                   % {'member': member.name, 'team': team.name})
+        if new_status == TeamMembershipStatus.EXPIRED:
+            template_name = 'membership-expired'
+            subject = (
+                'Launchpad: %s expired from %s' % (member.name, team.name))
+        elif (new_status == TeamMembershipStatus.APPROVED and
+              old_status != TeamMembershipStatus.ADMIN):
+            subject = 'Launchpad: %s added to %s' % (member.name, team.name)
+            if old_status == TeamMembershipStatus.INVITED:
+                template_name = 'membership-invitation-accepted'
+        elif new_status == TeamMembershipStatus.INVITATION_DECLINED:
+            subject = ('Launchpad: %s decline invitation to join %s'
+                       % (member.name, team.name))
+            template_name = 'membership-invitation-declined'
+        else:
+            # Use the default template and subject.
+            pass
+
         if admins_emails:
             admins_template = get_email_template(
-                'membership-statuschange-impersonal.txt')
+                "%s-impersonal.txt" % template_name)
             admins_msg = MailWrapper().format(admins_template % replacements)
             simple_sendmail(from_addr, admins_emails, subject, admins_msg)
 
@@ -222,9 +305,9 @@ class TeamMembership(SQLBase):
         # won't have a single email address to send this notification to.
         if member_email and self.reviewer != member:
             if member.isTeam():
-                template = 'membership-statuschange-impersonal.txt'
+                template = '%s-impersonal.txt' % template_name
             else:
-                template = 'membership-statuschange-personal.txt'
+                template = '%s-personal.txt' % template_name
             member_template = get_email_template(template)
             member_msg = MailWrapper().format(member_template % replacements)
             simple_sendmail(from_addr, member_email, subject, member_msg)
@@ -243,7 +326,8 @@ class TeamMembershipSet:
         proposed = TeamMembershipStatus.PROPOSED
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
-        assert status in [proposed, approved, admin]
+        invited = TeamMembershipStatus.INVITED
+        assert status in [proposed, approved, admin, invited]
         tm = TeamMembership(
             person=person, team=team, status=status, dateexpires=dateexpires,
             reviewer=reviewer, reviewercomment=reviewercomment)
@@ -253,12 +337,27 @@ class TeamMembershipSet:
 
         return tm
 
-    def getByPersonAndTeam(self, person, team, default=None):
+    def handleMembershipsExpiringToday(self, reviewer):
         """See ITeamMembershipSet"""
-        result = TeamMembership.selectOneBy(person=person, team=team)
-        if result is None:
-            return default
-        return result
+        memberships = self.getMembershipsToExpire()
+        for membership in memberships:
+            team = membership.team
+            if team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC:
+                # Keep the same status, change the expiration date and send a
+                # notification explaining the membership has been renewed.
+                assert (team.defaultrenewalperiod is not None
+                        and team.defaultrenewalperiod > 0), (
+                    'Teams with a renewal policy of AUTOMATIC must specify '
+                    'a default renewal period greater than 0.')
+                membership.dateexpires += timedelta(
+                    days=team.defaultrenewalperiod)
+                membership.sendAutoRenewalNotification()
+            else:
+                membership.setStatus(TeamMembershipStatus.EXPIRED, reviewer)
+
+    def getByPersonAndTeam(self, person, team):
+        """See ITeamMembershipSet"""
+        return TeamMembership.selectOneBy(person=person, team=team)
 
     def getMembershipsToExpire(self, when=None):
         """See ITeamMembershipSet"""
@@ -268,41 +367,6 @@ class TeamMembershipSet:
                  % sqlvalues(when, TeamMembershipStatus.ADMIN,
                              TeamMembershipStatus.APPROVED))
         return TeamMembership.select(query)
-
-    def getTeamMembersCount(self, team):
-        """See ITeamMembershipSet"""
-        return TeamMembership.selectBy(team=team).count()
-
-    def _getMembershipsByStatuses(self, team, statuses, orderBy=None):
-        if orderBy is None:
-            orderBy = self._defaultOrder
-        clauses = []
-        for status in statuses:
-            clauses.append("TeamMembership.status = %s" % sqlvalues(status))
-        clauses = " OR ".join(clauses)
-        query = ("(%s) AND Person.id = TeamMembership.person AND "
-                 "TeamMembership.team = %d" % (clauses, team.id))
-        return TeamMembership.select(query, clauseTables=['Person'],
-                                     orderBy=orderBy)
-
-    def getActiveMemberships(self, team, orderBy=None):
-        """See ITeamMembershipSet"""
-        statuses = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
-        return self._getMembershipsByStatuses(
-            team, statuses, orderBy=orderBy)
-
-    def getInactiveMemberships(self, team, orderBy=None):
-        """See ITeamMembershipSet"""
-        statuses = [TeamMembershipStatus.EXPIRED,
-                    TeamMembershipStatus.DEACTIVATED]
-        return self._getMembershipsByStatuses(
-            team, statuses, orderBy=orderBy)
-
-    def getProposedMemberships(self, team, orderBy=None):
-        """See ITeamMembershipSet"""
-        statuses = [TeamMembershipStatus.PROPOSED]
-        return self._getMembershipsByStatuses(
-            team, statuses, orderBy=orderBy)
 
 
 class TeamParticipation(SQLBase):

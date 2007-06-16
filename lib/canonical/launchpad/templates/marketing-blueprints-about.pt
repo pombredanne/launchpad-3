@@ -1,8 +1,11 @@
-<html metal:use-macro="context/@@marketing_about_template/master">
+<html metal:use-macro="context/@@marketing_template/master">
 <body>
-  <h2 metal:fill-slot="application">Blueprints</h2>
+  <div id="about" metal:fill-slot="contents">
+    <div id="primary">
+      <h2>Blueprints</h2>
+      <h3 class="byline">Overview</h3>
+    </div>
 
-  <metal:contents fill-slot="contents">
     <h2 class="headline">Collaborative feature development</h2>
 
     <table id="features">
@@ -55,6 +58,6 @@
          </p>
       </div>
     </div> <!-- content -->
-  </metal:contents>
+  </div>
 </body>
 </html>

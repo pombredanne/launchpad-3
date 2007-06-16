@@ -1,6 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-from zope.interface import Interface, Attribute
+from zope.interface import Attribute, Interface
+from zope.schema import Int
 
 __metaclass__ = type
 
@@ -21,6 +22,8 @@ class IPOTMsgSet(Interface):
     # form 0 -- i.e. it's redundant. However, it acts as a cached value.
 
     primemsgid_ = Attribute("The primary msgid for this set.")
+    primemsgid_ID = Int(title=u'Key of primary msgid for this set.',
+        required=True, readonly=True)
 
     sequence = Attribute("The ordering of this set within its file.")
 
@@ -116,3 +119,11 @@ class IPOTMsgSet(Interface):
 
     def normalizeNewLines(unicode_text):
         """Return 'unicode_text' with new lines chars in sync with the msgid."""
+
+
+    hide_translations_from_anonymous = Attribute(
+        """Whether the translations for this message should be hidden.
+
+        Messages that are likely to contain email addresses
+        are shown only to logged-in users, and not to anonymous users.
+        """)

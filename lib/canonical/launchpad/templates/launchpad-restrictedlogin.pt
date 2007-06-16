@@ -98,6 +98,12 @@
         </table>
       </form>
 
+      <p tal:define="non_restricted_url request/form/production|nothing"
+         tal:condition="non_restricted_url">
+        You may be able to access this page
+        <a tal:attributes="href non_restricted_url">on the main
+        Launchpad site</a> instead.
+      </p>
     </tal:block>
   </body>
 </html>

@@ -8,11 +8,12 @@ import os.path
 from zope.component import getUtility
 from zope.event import notify
 from zope.interface import implements, providedBy
+from zope.schema import ValidationError
 
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
-        IProduct, IDistribution, IDistroRelease, IPersonSet,
-        IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
+        IProduct, IDistribution, IDistroSeries, IPersonSet,
+        IBug, IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
         IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag, IBugTaskSet,
         BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
         IDistributionSourcePackage, EmailProcessingError, NotFoundError,
@@ -103,7 +104,7 @@ class EmailCommand:
                         num_arguments_expected=self._numberOfArguments,
                         num_arguments_got=num_arguments_got))
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """Converts the string argument to Python objects.
 
         Returns a dict with names as keys, and the Python objects as
@@ -167,7 +168,7 @@ class EditEmailCommand(EmailCommand):
     def execute(self, context, current_event):
         """See IEmailCommand."""
         self._ensureNumberOfArguments()
-        args = self.convertArguments()
+        args = self.convertArguments(context)
 
         edited_fields = set()
         if ISQLObjectModifiedEvent.providedBy(current_event):
@@ -202,7 +203,7 @@ class PrivateEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         private_arg = self.string_args[0]
         if private_arg == 'yes':
@@ -221,7 +222,7 @@ class SecurityEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         [security_flag] = self.string_args
         if security_flag == 'yes':
@@ -329,9 +330,35 @@ class SummaryEmailCommand(EditEmailCommand):
 
         return EditEmailCommand.execute(self, bug, current_event)
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         return {'title': self.string_args[0]}
+
+
+class DuplicateEmailCommand(EditEmailCommand):
+    """Marks a bug as a duplicate of another bug."""
+
+    implements(IBugEditEmailCommand)
+    _numberOfArguments = 1
+
+    def convertArguments(self, context):
+        """See EmailCommand."""
+        [bug_id] = self.string_args
+        if bug_id == 'no':
+            # 'no' is a special value for unmarking a bug as a duplicate.
+            return {'duplicateof': None}
+        try:
+            bug = getUtility(IBugSet).getByNameOrID(bug_id)
+        except NotFoundError:
+            raise EmailProcessingError(
+                get_error_message('no-such-bug.txt', bug_id=bug_id))
+        duplicate_field = IBug['duplicateof'].bind(context)
+        try:
+            duplicate_field.validate(bug)
+        except ValidationError, error:
+            raise EmailProcessingError(error.doc())
+
+        return {'duplicateof': bug}
 
 
 class CVEEmailCommand(EmailCommand):
@@ -412,8 +439,8 @@ class AffectsEmailCommand(EmailCommand):
             $product/$product_series
             $distribution
             $distribution/$source_package
-            $distribution/$distro_release
-            $distribution/$distro_release/$source_package
+            $distribution/$distro_series
+            $distribution/$distro_series/$source_package
         """
         path = cls._normalizePath(path)
         name, rest = cls._splitPath(path)
@@ -448,23 +475,23 @@ class AffectsEmailCommand(EmailCommand):
                 return product_series
         else:
             assert IDistribution.providedBy(pillar)
-            # The next step can be either a distro release or a source
+            # The next step can be either a distro series or a source
             # package.
-            release_name, rest = cls._splitPath(rest)
+            series_name, rest = cls._splitPath(rest)
             try:
-                release = pillar.getRelease(release_name)
+                series = pillar.getSeries(series_name)
             except NotFoundError:
-                package_name = release_name
+                package_name = series_name
             else:
                 if not rest:
-                    return release
+                    return series
                 else:
-                    pillar = release
+                    pillar = series
                     package_name, rest = cls._splitPath(rest)
             package = pillar.getSourcePackage(package_name)
             if package is None:
                 raise BugTargetNotFound(
-                    "%s doesn't have a release or source package named '%s'."
+                    "%s doesn't have a series or source package named '%s'."
                     % (pillar.displayname, package_name))
             elif not rest:
                 return package
@@ -485,12 +512,12 @@ class AffectsEmailCommand(EmailCommand):
         except BugTargetNotFound, error:
             raise EmailProcessingError(unicode(error))
         event = None
-        bugtask = self.getBugTask(bug, bug_target)
+        bugtask = bug.getBugTask(bug_target)
         if (bugtask is None and
             IDistributionSourcePackage.providedBy(bug_target)):
             # If there's a distribution task with no source package, use
             # that one.
-            bugtask = self.getBugTask(bug, bug_target.distribution)
+            bugtask = bug.getBugTask(bug_target.distribution)
             if bugtask is not None:
                 bugtask_before_edit = Snapshot(
                     bugtask, providing=IDistroBugTask)
@@ -504,51 +531,51 @@ class AffectsEmailCommand(EmailCommand):
 
         return bugtask, event
 
-    def _targetBug(self, user, bug, release, sourcepackagename=None):
-        """Try to target the bug the the given distrorelease.
+    def _targetBug(self, user, bug, series, sourcepackagename=None):
+        """Try to target the bug the the given distroseries.
 
         If the user doesn't have permission to target the bug directly,
         only a nomination will be created.
         """
         product = None
         distribution = None
-        if IDistroRelease.providedBy(release):
-            distribution = release.distribution
+        if IDistroSeries.providedBy(series):
+            distribution = series.distribution
             if sourcepackagename:
                 general_target = distribution.getSourcePackage(
                     sourcepackagename)
             else:
                 general_target = distribution
         else:
-            assert IProductSeries.providedBy(release), (
-                "Unknown release target: %r" % release)
+            assert IProductSeries.providedBy(series), (
+                "Unknown series target: %r" % series)
             assert sourcepackagename is None, (
                 "A product series can't have a source package.")
-            product = release.product
+            product = series.product
             general_target = product
-        general_task = self.getBugTask(bug, general_target)
+        general_task = bug.getBugTask(general_target)
         if general_task is None:
-            # A release task has to have a corresponding
+            # A series task has to have a corresponding
             # distribution/product task.
             general_task = getUtility(IBugTaskSet).createTask(
                 bug, user, distribution=distribution,
                 product=product, sourcepackagename=sourcepackagename)
-        if not bug.canBeNominatedFor(release):
+        if not bug.canBeNominatedFor(series):
             # A nomination has already been created.
-            nomination = bug.getNominationFor(release)
-            # Automatically approve an existing nomination if a release
+            nomination = bug.getNominationFor(series)
+            # Automatically approve an existing nomination if a series
             # manager targets it.
             if not nomination.isApproved() and nomination.canApprove(user):
                 nomination.approve(user)
         else:
-            nomination = bug.addNomination(target=release, owner=user)
+            nomination = bug.addNomination(target=series, owner=user)
 
         if nomination.isApproved():
             if sourcepackagename:
-                return self.getBugTask(
-                    bug, release.getSourcePackage(sourcepackagename))
+                return bug.getBugTask(
+                    series.getSourcePackage(sourcepackagename))
             else:
-                return self.getBugTask(bug, release)
+                return bug.getBugTask(series)
         else:
             # We can't return a nomination, so return the
             # distribution/product bugtask instead.
@@ -566,11 +593,11 @@ class AffectsEmailCommand(EmailCommand):
             return self._targetBug(user, bug, bug_target)
         elif IDistribution.providedBy(bug_target):
             return bugtaskset.createTask(bug, user, distribution=bug_target)
-        elif IDistroRelease.providedBy(bug_target):
+        elif IDistroSeries.providedBy(bug_target):
             return self._targetBug(user, bug, bug_target)
         elif ISourcePackage.providedBy(bug_target):
             return self._targetBug(
-                user, bug, bug_target.distrorelease,
+                user, bug, bug_target.distroseries,
                 bug_target.sourcepackagename)
         elif IDistributionSourcePackage.providedBy(bug_target):
             return bugtaskset.createTask(
@@ -580,19 +607,6 @@ class AffectsEmailCommand(EmailCommand):
             assert False, "Not a valid bug target: %r" % bug_target
 
 
-    #XXX: This method should be moved to helpers.py or BugTaskSet.
-    #     -- Bjorn Tillenius, 2005-06-10
-    def getBugTask(self, bug, target):
-        """Returns a bug task that has the path as a target.
-
-        Returns None if no such bugtask is found.
-        """
-        for bugtask in bug.bugtasks:
-            if bugtask.target == target:
-                return bugtask
-
-        return None
-
 class AssigneeEmailCommand(EditEmailCommand):
     """Assigns someone to the bug."""
 
@@ -600,7 +614,7 @@ class AssigneeEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         person_name_or_email = self.string_args[0]
 
@@ -640,7 +654,7 @@ class DBSchemaEditEmailCommand(EditEmailCommand):
 
     _numberOfArguments = 1
 
-    def convertArguments(self):
+    def convertArguments(self, context):
         """See EmailCommand."""
         item_name = self.string_args[0]
         dbschema = self.dbschema
@@ -701,6 +715,7 @@ class EmailCommands:
         'summary': SummaryEmailCommand,
         'subscribe': SubscribeEmailCommand,
         'unsubscribe': UnsubscribeEmailCommand,
+        'duplicate': DuplicateEmailCommand,
         'cve': CVEEmailCommand,
         'affects': AffectsEmailCommand,
         'assignee': AssigneeEmailCommand,

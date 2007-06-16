@@ -3,7 +3,7 @@ Your question #%(question_id)s on %(target_name)s changed:
 
 %(body)s
 
-_______________________________________________________________________
+-- 
 If this answers your question, please go to the following page to let us
 know that it is solved:
 %(question_url)s/+confirm?answer_id=%(new_message_id)s

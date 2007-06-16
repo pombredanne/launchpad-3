@@ -13,19 +13,18 @@ import sys
 
 from zope.component import getUtility
 
-from sourcerer.deb.version import Version
-
+from canonical.archivepublisher.debversion import Version
 from canonical.lp import READ_COMMITTED_ISOLATION
 from canonical.config import config
 from canonical.buildmaster.master import (
     BuilddMaster, builddmaster_lockfilename)
 
-from canonical.launchpad.interfaces import IDistroArchReleaseSet
-from canonical.launchpad.scripts.base import (LaunchpadScript,
+from canonical.launchpad.interfaces import IDistroArchSeriesSet
+from canonical.launchpad.scripts.base import (LaunchpadCronScript,
     LaunchpadScriptFailure)
 
 
-class QueueBuilder(LaunchpadScript):
+class QueueBuilder(LaunchpadCronScript):
 
     def add_my_options(self):
         self.parser.add_option(
@@ -44,7 +43,7 @@ class QueueBuilder(LaunchpadScript):
         if os.path.exists(config.builddmaster.crondaily_lockfile):
             sys.exit(0)
 
-        LaunchpadScript.lock_or_quit(self)
+        LaunchpadCronScript.lock_or_quit(self)
 
     def main(self):
         """Invoke rebuildQueue.
@@ -55,8 +54,6 @@ class QueueBuilder(LaunchpadScript):
         """
         if self.args:
             raise LaunchpadScriptFailure("Unhandled arguments %r" % self.args)
-
-        self.txn.set_isolation_level(READ_COMMITTED_ISOLATION)
 
         if self.options.dryrun:
             self.logger.info("Dry run: changes will not be committed.")
@@ -79,18 +76,18 @@ class QueueBuilder(LaunchpadScript):
 
         buildMaster = BuilddMaster(self.logger, self.txn)
 
-        # For every distroarchrelease we can find; put it into the build master
-        distroreleases = set()
-        for archrelease in getUtility(IDistroArchReleaseSet):
-            distroreleases.add(archrelease.distrorelease)
-            buildMaster.addDistroArchRelease(archrelease)
+        # For every distroarchseries we can find; put it into the build master
+        distroserieses = set()
+        for archseries in getUtility(IDistroArchSeriesSet):
+            distroserieses.add(archseries.distroseries)
+            buildMaster.addDistroArchSeries(archseries)
 
-        # For each distrorelease we care about; scan for sourcepackagereleases
-        # with no build associated with the distroarchreleases we're
+        # For each distroseries we care about; scan for sourcepackagereleases
+        # with no build associated with the distroarchserieses we're
         # interested in
-        for distrorelease in sorted(distroreleases,
+        for distroseries in sorted(distroserieses,
             key=lambda x: (x.distribution, Version(x.version))):
-            buildMaster.createMissingBuilds(distrorelease)
+            buildMaster.createMissingBuilds(distroseries)
 
         # Inspect depwaiting and look retry those which seems possible
         buildMaster.retryDepWaiting()
@@ -112,7 +109,7 @@ if __name__ == '__main__':
     script = QueueBuilder('queue-builder', dbuser=config.builddmaster.dbuser)
     script.lock_or_quit()
     try:
-        script.run()
+        script.run(isolation=READ_COMMITTED_ISOLATION)
     finally:
         script.unlock()
 

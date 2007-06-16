@@ -17,7 +17,7 @@ from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer, setFirstLayer)
 from canonical.launchpad.interfaces import ShippingRequestPriority
 from canonical.lp.dbschema import (
-    ShipItDistroRelease, ShipItFlavour, ShippingRequestStatus)
+    ShipItDistroSeries, ShipItFlavour, ShippingRequestStatus)
 
 
 class TestShippingRequestSet(LaunchpadFunctionalTestCase):
@@ -59,7 +59,7 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         return request
 
     def _make_new_request_through_web(
-            self, flavour, user_email=None, form=None, distrorelease=None):
+            self, flavour, user_email=None, form=None, distroseries=None):
         if user_email is None:
             user_email = 'guilherme.salgado@canonical.com'
         if form is None:
@@ -80,8 +80,8 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         setFirstLayer(request, self.flavours_to_layers_mapping[flavour])
         login(user_email)
         view = getView(ShipItApplication(), 'myrequest', request)
-        if distrorelease is not None:
-            view.release = distrorelease
+        if distroseries is not None:
+            view.series = distroseries
         view.renderStandardrequestForm()
         errors = getattr(view, 'errors', None)
         self.failUnlessEqual(errors, None)
@@ -151,17 +151,17 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         # when creating the previous account.
         request2 = self._make_new_request_through_web(
             flavour, user_email='foo.bar@canonical.com', form=form,
-            distrorelease=ShipItDistroRelease.GUTSY)
+            distroseries=ShipItDistroSeries.GUTSY)
         self.failUnless(request2.isApproved(), flavour)
-        self.failIfEqual(request.distrorelease, request2.distrorelease)
+        self.failIfEqual(request.distroseries, request2.distroseries)
         self.failUnlessEqual(
             request2.normalized_address, request.normalized_address)
 
         # Now when a second request for CDs of the same release are made using
         # the same address, it gets marked with the DUPLICATEDADDRESS status.
         request3 = self._make_new_request_through_web(
-            flavour, user_email='mark@hbd.com', form=form)
-        self.failUnlessEqual(request.distrorelease, request3.distrorelease)
+            flavour, user_email='karl@canonical.com', form=form)
+        self.failUnlessEqual(request.distroseries, request3.distroseries)
         self.failUnless(request3.isDuplicatedAddress(), flavour)
         self.failUnlessEqual(
             request3.normalized_address, request.normalized_address)
@@ -169,8 +169,8 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         # The same happens for any subsequent requests for that release with
         # the same address.
         request4 = self._make_new_request_through_web(
-            flavour, user_email='marilize@hbd.com', form=form)
-        self.failUnlessEqual(request.distrorelease, request3.distrorelease)
+            flavour, user_email='carlos@canonical.com', form=form)
+        self.failUnlessEqual(request.distroseries, request3.distroseries)
         self.failUnless(request4.isDuplicatedAddress(), flavour)
 
         # As we said, this happens because all requests are considered to have

@@ -26,13 +26,102 @@ body {
 	padding-bottom: 30px;
 }
 
+/* Begin definitions copied from style.css */
+
+/* All pages begin with a global header or a topline. */
+#globalheader {
+  position: relative;
+  width: 100%;
+  height: 21px;
+  overflow: hidden;
+  margin: 0;
+  background-color: #EEE;
+  background-image:  url(globalheader_bg.gif);
+  background-repeat: repeat-x;
+  background-position: top center;
+}
+/* Home icon and link. */
+#globalheader a.home {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+#globalheader .sitemessage a {
+  color: #FFF;
+  text-decoration: underline;
+}
+/* Site-specific message. */
+#globalheader .sitemessage {
+  position: absolute;
+  top: 2px;
+  left: 10px;
+  display: inline;
+  color: #FFF;
+  font-size: 13px;
+}
+/* Small launchpad icon and rasterized text. */
+#globalheader img.launchpad {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+/* End definitions copied from style.css */
+
 #breadcrumb {
-  height: 27px;
-  padding: 22px 10px 0 10px;
-  background: #A0D719 url(bg-breadcrumb.gif) top left repeat-x;
-  text-align: left;
-  margin-bottom: 20px;
-  font-size: 1.1em;
+    height: 27px;
+    background: #AFDB1F url(bg-breadcrumb.gif) top left repeat-x;
+    text-align: left;
+    margin-bottom: 20px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+#breadcrumb dl dt,
+#breadcrumb dl dd {
+    display: inline;
+    height: 27px;
+    line-height: 25px;
+}
+
+#breadcrumb dl dt {
+    float: left;
+    margin-right: 15px;
+    margin-left: 10px;
+    color: #fff;
+}
+
+#breadcrumb dl dd ul {
+    display: inline;
+}
+
+#breadcrumb dl dd ul li {
+    display: block;
+    white-space: nowrap;
+    float: left;
+}
+
+#breadcrumb dl dd ul li.current {
+    display: block;
+    height: 27px;
+    line-height: 25px;
+    padding: 0 25px 0 5px;
+    background: url(bread-a2i.gif) top right no-repeat;
+    color: #000;
+}
+
+#breadcrumb dl dd ul li a {
+    display: block;
+    height: 27px;
+    line-height: 25px;
+    padding: 0 25px 0 5px;
+    background: url(bread-i2a.gif) top right no-repeat;
+    color: #000;
+    text-decoration: none;
+}
+
+#breadcrumb dl dd ul li a:hover {
+  text-decoration: underline;
 }
 
 #wrapper {
@@ -75,76 +164,6 @@ body {
   background: url(bg-footer.gif) top left no-repeat;
   color: #fff;
 }
-
-#breadcrumb dl dt,
-#breadcrumb dl dd {
-  display: inline;
-  height: 27px;
-  line-height: 25px;
-}
-
-#breadcrumb dl dt {
-  float: left;
-  margin-right: 15px;
-  color: #fff;
-  font-weight: bold;
-  text-shadow: 0 0 0 #A2D815;
-}
-
-#breadcrumb dl dd ul {
-	margin-left: 0;
-	padding-left: 0;
-	display: inline;
-	border: none;
-}
-
-#breadcrumb dl dd ul li {
-	display: block;
-	white-space: nowrap;
-	float: left;
-}
-
-#breadcrumb dl dd ul li.current {
-  display: block;
-  height: 27px;
-  line-height: 25px;
-  padding: 0 25px 0 5px;
-  background: url(bread-a2i.gif) top right no-repeat;
-  color: #000;
-}
-
-#breadcrumb dl dd ul li a {
-  display: block;
-  height: 27px;
-  line-height: 25px;
-  padding: 0 25px 0 5px;
-  background: url(bread-i2a.gif) top right no-repeat;
-  color: #000;
-  text-decoration: none;
-}
-
-#breadcrumb dl dd ul li a:hover,
-#breadcrumb dl dd ul#home-breadcrumbs li a:hover {
-  text-decoration: underline;
-}
-
-#breadcrumb dl dd ul#home-breadcrumbs li a {
-  display: block;
-  height: 27px;
-  line-height: 25px;
-  padding: 0 25px 0 5px;
-  background: url(bread-i2i.gif) top right no-repeat;
-  color: #000;
-  text-decoration: none;
-}
-
-#breadcrumb dl dd ul li a:hover {
-  text-decoration: underline;
-}
-
-
-/* h1
-################################################ */
 
 #header h1 { float: left; }
 
@@ -195,7 +214,9 @@ padding-top: 27px;
   font-weight: bold;
 }
 
-#header dl#navigation ul li a:hover {
+#header dl#navigation ul li a:hover,
+#header dl#navigation ul li a.current
+ {
   background-position: top left;
   color: #454545;
 }
@@ -236,8 +257,8 @@ body#tour #header dl#navigation ul li#liTour a {
   display: block;
   float: left;
   height: 16px;
-  padding: 0 0 5px 20px;
-  margin: 0 25px 0 3px;
+  padding: 0 0 5px 15px;
+  margin: 0 15px 0 3px;
 /*  text-indent: -1000em;*/
   border-bottom: solid 1px #fff;
   background: url(bullet-arrow.gif) center left no-repeat;
@@ -261,6 +282,7 @@ body#tour #header dl#navigation ul li#liTour a {
 #header dl#sub-navigation ul#global {
   float: right;
   padding-right: 27px;
+  padding-left: 0px;
 }
 
 #header dl#sub-navigation ul#global li a {
@@ -280,7 +302,7 @@ body#tour #header dl#navigation ul li#liTour a {
 
 #header dl#sub-navigation ul#global li#liContact a {
   padding-left: 7px;
-  margin-left: 7px;
+  margin-left: 0px;
   background: url(globaldivide.gif) bottom left no-repeat;
 }
 
@@ -366,6 +388,14 @@ body#tour #header dl#navigation ul li#liTour a {
   margin-bottom: 25px;
 }
 
+#tour #secondary h4#tour-headline {
+  color: #159cc8;
+  font-size: 1.8em;
+  font-weight: normal;
+  line-height: 1.3em;
+  margin-bottom: 25px;
+}
+
 #home h2 {
   margin-left: 284px;
   color: #698022;
@@ -395,6 +425,10 @@ body#tour #header dl#navigation ul li#liTour a {
 #features th {
     width: 25%;
     text-align: center;
+    color: #526d00;
+    font-size: 1.4em;
+    font-weight: bold;
+    margin-bottom: 10px;
 }
 
 #features th, #features td {
@@ -441,38 +475,36 @@ body#tour #header dl#navigation ul li#liTour a {
   height: 160px;
   background-position: bottom left;
   background-repeat: no-repeat;
-  text-align: center;
-  text-decoration: none;
-  font-size: 1.45em;
+  text-indent: -1000em;
 }
 
 #main ul#tools li a:hover {
   text-decoration: underline;
 }
 
-#main ul#tools li#liBlueprints a {
-    background-image: url(app-blueprints.gif);
-    color: #57A3C6;
+#tools #liCode a {
+    background-image: url(app-code.gif);
+    color: #BE7A35;
 }
 
-#main ul#tools li#liBugs a {
+#tools #liBugs a {
     background-image: url(app-bugs.gif);
     color: #B43242;
 }
 
-#main ul#tools li#liAnswers a {
-    background-image: url(app-answers.gif);
-    color: #20209D;
+#tools #liBlueprints a {
+    background-image: url(app-blueprints.gif);
+    color: #57A3C6;
 }
 
-#main ul#tools li#liTranslations a {
+#tools #liTranslations a {
     background-image: url(app-translations.gif);
     color: #A32377;
 }
 
-#main ul#tools li#liCode a {
-    background-image: url(app-code.gif);
-    color: #BE7A35;
+#tools #liAnswers a {
+    background-image: url(app-answers.gif);
+    color: #20209D;
 }
 
 #main h3.splash {
@@ -502,8 +534,7 @@ body#tour #header dl#navigation ul li#liTour a {
   text-decoration: underline;
 }
 
-#main h3,
-#features th {
+#main h3 {
   color: #526d00;
   font-size: 1.5em;
   font-weight: normal;
@@ -564,12 +595,25 @@ body#tour #header dl#navigation ul li#liTour a {
 /* Screen and callouts for application tour */
 
 #main #secondary #pane {
-  width: 480px; height: 567px;
-  margin-left: -10px;
-  padding: 13px;
-  background: #dadada url(bg-pane.gif) top left no-repeat;
-  color: #000;
-  text-align: center;
+    width: 506px;
+    margin-left: -10px;
+    background: #dadada url(bg-pane-bottom.png) bottom left no-repeat;
+    padding-bottom: 15px;
+    color: #000;
+}
+
+#main #secondary #pane #summary {
+    background: #dadada url(bg-pane-top.png) top left no-repeat;
+    padding: 15px;
+}
+
+#main #secondary #pane #screen {
+    text-align: center;
+}
+
+#main #secondary #pane #transition {
+    clear: left;
+    padding: 15px;
 }
 
 #main #secondary #pane ol.callouts,
@@ -586,53 +630,66 @@ body#tour #header dl#navigation ul li#liTour a {
 #main #secondary #pane .callouts #p3 { background-image: url(marker-3.gif); }
 #main #secondary #pane .callouts #p4 { background-image: url(marker-4.gif); }
 
-#main #secondary #pane .callouts li.highlighted {
-  background-position: bottom left;
-}
-
 #main #secondary #pane ul.info {
-  margin: 20px 0 0 0;
-  text-align: left;
+    text-align: left;
+    margin: 15px;
 }
 
 #main #secondary #pane ul.info li {
-  float: left;
-  width: 178px; height: 85px;
-  padding-left: 55px;
-  background-position: top left;
-  background-repeat: no-repeat;
+    float: left;
+    width: 178px;
+    padding-left: 45px;
+    padding-bottom: 15px;
+    background-position: top left;
+    background-repeat: no-repeat;
 }
 
-#main #secondary #pane ul.info li.highlighted {
-  background-position: 0 -300px;
+#main #secondary #pane ul.info li.newline {
+    clear: left;
 }
 
 #main #secondary #pane ul.info li#point-1 {
-  background-image: url(pane-1.gif);
+  background-image: url(marker-1.gif);
 }
 
 #main #secondary #pane ul.info li#point-2 {
-  background-image: url(pane-2.gif);
+  background-image: url(marker-2.gif);
 }
 
 #main #secondary #pane ul.info li#point-3{
-  background-image: url(pane-3.gif);
+  background-image: url(marker-3.gif);
 }
 
 #main #secondary #pane ul.info li#point-4{
-  background-image: url(pane-4.gif);
+  background-image: url(marker-4.gif);
 }
 
 #main #secondary #pane a.button.next {
-  display: block;
-  float: right;
-  clear: both;
-  width: 84px; height: 27px;
-  background: url(button-next.gif) top left no-repeat;
-  text-indent: -1000em;
+    float: right;
+    display: block;
+    clear: both;
+    width: 84px; height: 27px;
+    background: url(button-next.gif) top left no-repeat;
+    text-indent: -1000em;
+    padding-right: 15px;
 }
 
 /* Footer */
+
+#applications-footer {
+    clear: both;
+    margin-top: 20px;
+    text-align: center;
+}
+
+#applications-footer a {
+    text-decoration: none;
+    font-size: 1.2em;
+}
+
+#applications-footer a:hover {
+    text-decoration: underline;
+}
 
 #footer { letter-spacing: 1px;}
 

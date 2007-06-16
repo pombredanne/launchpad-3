@@ -17,6 +17,11 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
+  
+  <div>
+    <img alt="" src="/@@/question" />
+    <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+  </div>
 
   <h1>History of this question</h1>
 

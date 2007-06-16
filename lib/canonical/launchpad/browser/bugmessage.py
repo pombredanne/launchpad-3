@@ -21,6 +21,7 @@ class BugMessageAddFormView(LaunchpadFormView):
     """Browser view class for adding a bug comment/attachment."""
 
     schema = IBugMessageAddForm
+    initial_focus_widget = None
 
     @property
     def initial_values(self):

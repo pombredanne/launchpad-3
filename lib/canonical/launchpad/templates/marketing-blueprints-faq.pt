@@ -1,6 +1,7 @@
-<html metal:use-macro="context/@@marketing_faq_template/master">
+<html metal:use-macro="context/@@marketing_template/master">
 <body>
- <metal:left-column fill-slot="left-column">
+<div id="faq" metal:fill-slot="contents">
+  <div id="primary">
     <h2>Blueprints</h2>
     <h3 class="byline">FAQs</h3>
 
@@ -12,8 +13,8 @@
          implemented.
       </p>
     </blockquote>
- </metal:left-column>
- <metal:right-column fill-slot="right-column">
+ </div>
+ <div id="secondary">
     <h4>Develop, implement and track the progress of your software's
         features.</h4>
     <ul id="faqs">
@@ -31,6 +32,7 @@
     </p>
     <p class="backtotop"><a href="#top" title="Back to top">Back to top</a></p>
 
-  </metal:right-column>
+  </div>
+</div>
 </body>
 </html>

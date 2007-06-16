@@ -11,14 +11,15 @@
       <h1 tal:content="context/title">Mozilla</h1>
 
       <div tal:content="context/summary">
-        This is the project Summary, which should be a single paragraph
-        summarising the project's purpose.
+        This is the project group Summary, which should be a single paragraph
+        summarising the project group's purpose.
       </div>
 
       <div tal:replace="structure context/description/fmt:text-to-html">
-        This is the Project Description,
-        which is a much more substantial description of the project. It should
-        be several paragraphs long, and give you a very clear insight into the
+        This is the Project Group Description,
+        which is a much more substantial description of the project group. 
+	It should be several paragraphs long, and give you a very clear 
+        insight into the
         work of the Project, and the people behind it. It should describe the
         project history, and organisation.
 
@@ -47,6 +48,16 @@
         <li>
           <a href="+translations">
             <img alt="Help translate" src="/+icing/but-sml-helptranslate.gif" />
+          </a>
+        </li>
+        <li tal:define="has_mentoring context/mentoring_offers/count">
+          <a href="+mentoring" tal:condition="has_mentoring">
+            <img alt="Mentoring available"
+                 src="/+icing/but-sml-mentoring.gif"/>
+          </a>
+          <a href="+mentoring" tal:condition="not: has_mentoring">
+            <img alt="No mentoring available"
+                 src="/+icing/but-sml-mentoring-off.gif" />
           </a>
         </li>
       </ul>

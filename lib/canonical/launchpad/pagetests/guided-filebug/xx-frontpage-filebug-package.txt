@@ -36,9 +36,9 @@ Selecting a valid package will take us to the next filebug step.
     ...     name='field.bugtarget.package').value = 'mozilla-firefox'
     >>> user_browser.getControl('Continue').click()
 
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print message.renderContents()
-    No similar bugs were found.
+    >>> from canonical.launchpad.ftests.bug import print_bugs_table
+    >>> print_bugs_table(user_browser.contents, "similar-bugs")
+    1 Firefox does not support SVG
 
 Entering a description and submitting the bug takes the user to the bug
 page.

@@ -27,7 +27,9 @@ schema: build
 newsampledata:
 	$(MAKE) -C database/schema newsampledata
 
-check_launchpad_on_merge: build dbfreeze_check check importdcheck hctcheck
+check_launchpad_on_merge: build dbfreeze_check check importdcheck check_sourcecode_dependencies
+
+check_sourcecode_dependencies:
 	# Use the check_for_launchpad rule which runs tests over a smaller
 	# set of libraries, for performance and reliability reasons.
 	$(MAKE) -C sourcecode check_for_launchpad PYTHON=${PYTHON} \
@@ -35,12 +37,13 @@ check_launchpad_on_merge: build dbfreeze_check check importdcheck hctcheck
 
 dbfreeze_check:
 	[ ! -f database-frozen.txt -o `PYTHONPATH= bzr status | \
-	    grep database/schema/ | grep -v pending | wc -l` -eq 0 ]
+	    grep database/schema/ | grep -v pending | grep -v security.cfg | \
+	    wc -l` -eq 0 ]
 
 check_not_a_ui_merge:
 	[ ! -f do-not-merge-to-mainline.txt ]
 
-check_merge: check_not_a_ui_merge build check importdcheck hctcheck
+check_merge: check_not_a_ui_merge build check importdcheck
 	# Work around the current idiom of 'make check' getting too long
 	# because of hct and related tests. note that this is a short
 	# term solution, the long term solution will need to be
@@ -50,7 +53,7 @@ check_merge: check_not_a_ui_merge build check importdcheck hctcheck
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-check_merge_ui: build check importdcheck hctcheck
+check_merge_ui: build check importdcheck
 	# Same as check_merge, except we don't need to do check_not_a_ui_merge.
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
@@ -63,11 +66,6 @@ check_merge_edge: check_no_dbupdates check_merge
 
 check_no_dbupdates:
 	[ `PYTHONPATH= bzr status | grep database/schema/ | wc -l` -eq 0 ]
-
-hctcheck: build
-	env PYTHONPATH=$(PYTHONPATH) \
-	    ${PYTHON} -t ./test_on_merge.py -vv \
-	        --dir hct --dir sourcerer
 
 importdcheck: build
 	env PYTHONPATH=$(PYTHONPATH) \
@@ -98,6 +96,10 @@ inplace: build
 build:
 	${SHHH} $(MAKE) -C sourcecode build PYTHON=${PYTHON} \
 	    PYTHON_VERSION=${PYTHON_VERSION} LPCONFIG=${LPCONFIG}
+
+mailman_instance: build
+	${SHHH} LPCONFIG=${LPCONFIG} PYTHONPATH=$(PYTHONPATH) \
+		 $(PYTHON) -t buildmailman.py
 
 runners:
 	echo "#!/bin/sh" > bin/runzope;
@@ -131,7 +133,7 @@ run: inplace stop bzr_version_info
 run_all: inplace stop bzr_version_info
 	rm -f thread*.request
 	LPCONFIG=${LPCONFIG} PYTHONPATH=$(TWISTEDPATH):$(Z3LIBPATH):$(PYTHONPATH) \
-		 $(PYTHON) -t $(STARTSCRIPT) -r librarian,buildsequencer,authserver,sftp \
+		 $(PYTHON) -t $(STARTSCRIPT) -r librarian,buildsequencer,authserver,sftp,mailman \
 		 -C $(CONFFILE)
 
 bzr_version_info:
@@ -203,5 +205,5 @@ tags:
 .PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
 		ftest_build ftest_inplace test_build test_inplace pagetests \
 		check importdcheck check_merge schema default launchpad.pot \
-		check_launchpad_on_merge hctcheck check_merge_ui
+		check_launchpad_on_merge check_merge_ui
 
