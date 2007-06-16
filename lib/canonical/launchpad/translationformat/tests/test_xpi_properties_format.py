@@ -9,23 +9,12 @@ from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     PropertyFile)
 from canonical.launchpad.interfaces import TranslationFormatInvalidInputError
 
-class BaseEncodingPropertyFileTest(unittest.TestCase):
-    """Test class for property file format.
+class PropertyFileFormatTestCase(unittest.TestCase):
+    """Test class for property file format."""
 
-    This is a base class to check different encodings.
-
-    Child class should define self.content like the following example, but
-    using the encoding that is being tested:
-
-    content = '''
-        default-first-title-mac=Introducci\u00F3n
-        default-last-title-mac=Conclusi\u00F3n
-        '''
-    """
-
-
-    def runTest(self):
-        property_file = PropertyFile('test.properties', dedent(self.content))
+    def _baseContentEncodingTest(self, content):
+        """This is a base function to check different encodings."""
+        property_file = PropertyFile('test.properties', dedent(content))
 
         count = 0
         for message in property_file.messages:
@@ -40,68 +29,49 @@ class BaseEncodingPropertyFileTest(unittest.TestCase):
         # passing.
         self.assertEqual(count, 2)
 
+    def test_UTF8PropertyFileTest(self):
+        """This test makes sure that we handle UTF-8 encoding files."""
+        content = '''
+            default-first-title-mac = Introducci\xc3\xb3n
+            default-last-title-mac = Conclusi\xc3\xb3n
+            '''
+        self._baseContentEncodingTest(content)
 
-class UTF8PropertyFileTest(BaseEncodingPropertyFileTest):
-    """Test class for utf-8 property file format.
+    def test_UnicodeEscapedPropertyFileTest(self):
+        """This test makes sure that we handle unicode escaped files."""
+        content = '''
+            default-first-title-mac=Introducci\u00F3n
+            default-last-title-mac=Conclusi\u00F3n
+            '''
+        self._baseContentEncodingTest(content)
 
-    This test makes sure that we handle UTF-8 encoding files.
-    """
-
-    content = '''
-        default-first-title-mac = Introducci\xc3\xb3n
-        default-last-title-mac = Conclusi\xc3\xb3n
-        '''
-
-
-class UnicodeEscapedPropertyFileTest(BaseEncodingPropertyFileTest):
-    """Test class for unicode-escaped property file format.
-
-    This test makes sure that we handle unicode escaped files.
-    """
-
-    content = '''
-        default-first-title-mac=Introducci\u00F3n
-        default-last-title-mac=Conclusi\u00F3n
-        '''
-
-
-class Latin1PropertyFileTest(unittest.TestCase):
-    """Test class for latin1 property file format.
-
-    This test makes sure that we detect bad encodings.
-    """
-
-    content = '''
-        default-first-title-mac = Introducci\xf3n
-        default-last-title-mac = Conclusi\xf3n
-        '''
-
-    def runTest(self):
+    def test_Latin1PropertyFileTest(self):
+        """This test makes sure that we detect bad encodings."""
+        content = '''
+            default-first-title-mac = Introducci\xf3n
+            default-last-title-mac = Conclusi\xf3n
+            '''
         detected = False
         try:
             property_file = PropertyFile(
-                'test.properties', dedent(self.content))
+                'test.properties', dedent(content))
         except TranslationFormatInvalidInputError:
             detected = True
 
         # Whether the unsupported encoding was detected.
         self.assertEqual(detected, True)
 
+    def test_TrailingBackslashPropertyFileTest(self):
+        """Test whether trailing backslashes are well handled.
 
-class TrailingBackslashPropertyFileTest(unittest.TestCase):
-    """Test class for property file format with trailing backslash.
-
-    A trailing backslash as last char in the line continue the string in the
-    following document line.
-    """
-
-    content = '''
+        A trailing backslash as last char in the line continue the string in
+        the following document line.
+        """
+        content = '''
 default-first-title-mac=Introd\
 ucci\u00F3n
 '''
-
-    def runTest(self):
-        property_file = PropertyFile('test.properties', dedent(self.content))
+        property_file = PropertyFile('test.properties', dedent(content))
 
         count = 0
         for message in property_file.messages:
@@ -113,17 +83,14 @@ ucci\u00F3n
         # passing.
         self.assertEqual(count, 1)
 
+    def test_EscapedQuotesPropertyFileTest(self):
+        """Test whether escaped quotes are well handled.
 
-class EscapedQuotesPropertyFileTest(unittest.TestCase):
-    """Test class for property file format with escaped quotes.
+        Escaped quotes must be stored unescaped.
+        """
+        content = 'default-first-title-mac = \\\'Something\\\' \\\"more\\\"'
 
-    Escaped quotes must be stored unescaped.
-    """
-
-    content = 'default-first-title-mac = \\\'Something\\\' \\\"more\\\"'
-
-    def runTest(self):
-        property_file = PropertyFile('test.properties', dedent(self.content))
+        property_file = PropertyFile('test.properties', dedent(content))
 
         count = 0
         for message in property_file.messages:
@@ -136,21 +103,18 @@ class EscapedQuotesPropertyFileTest(unittest.TestCase):
         # passing.
         self.assertEqual(count, 1)
 
+    def test_WholeLineCommentPropertyFileTest(self):
+        """Test whether whole line comments are well handled."""
+        content = '''
+            # Foo bar comment.
+            default-first-title-mac = blah
 
-class WholeLineCommentPropertyFileTest(unittest.TestCase):
-    """Test class for property file format with whole line comment."""
+            # This comment should be ignored.
 
-    content = '''
-        # Foo bar comment.
-        default-first-title-mac = blah
+            foo = bar
+            '''
 
-        # This comment should be ignored.
-
-        foo = bar
-        '''
-
-    def runTest(self):
-        property_file = PropertyFile('test.properties', dedent(self.content))
+        property_file = PropertyFile('test.properties', dedent(content))
 
         count = 0
         for message in property_file.messages:
@@ -167,19 +131,17 @@ class WholeLineCommentPropertyFileTest(unittest.TestCase):
         # passing.
         self.assertEqual(count, 2)
 
+    def test_EndOfLineCommentPropertyFileTest(self):
+        """Test whether end of line comments are well handled."""
 
-class EndOfLineCommentPropertyFileTest(unittest.TestCase):
-    """Test class for property file format with end of line comment."""
+        content = '''
+            default-first-title-mac = blah // Foo bar comment.
 
-    content = '''
-        default-first-title-mac = blah // Foo bar comment.
+            # This comment should be ignored.
+            foo = bar // Something
+            '''
 
-        # This comment should be ignored.
-        foo = bar // Something
-        '''
-
-    def runTest(self):
-        property_file = PropertyFile('test.properties', dedent(self.content))
+        property_file = PropertyFile('test.properties', dedent(content))
 
         count = 0
         for message in property_file.messages:
@@ -204,28 +166,25 @@ class EndOfLineCommentPropertyFileTest(unittest.TestCase):
         # passing.
         self.assertEqual(count, 2)
 
+    def test_MultiLineCommentPropertyFileTest(self):
+        """Test whether multiline comments are well handled."""
+        content = '''
+            /* single line comment */
+            default-first-title-mac = blah
 
-class MultiLineCommentPropertyFileTest(unittest.TestCase):
-    """Test class for property file format with end of line comment."""
+            /* Multi line comment
+               yeah, it's multiple! */
+            foo = bar
 
-    content = '''
-        /* single line comment */
-        default-first-title-mac = blah
+            /* Even with nested comment tags, we handle this as multiline comment:
+            # fooo
+            foos = bar
+            something = else // Comment me!
+            */
+            long_comment = foo
+            '''
 
-        /* Multi line comment
-           yeah, it's multiple! */
-        foo = bar
-
-        /* Even with nested comment tags, we handle this as multiline comment:
-        # fooo
-        foos = bar
-        something = else // Comment me!
-        */
-        long_comment = foo
-        '''
-
-    def runTest(self):
-        property_file = PropertyFile('test.properties', dedent(self.content))
+        property_file = PropertyFile('test.properties', dedent(content))
 
         count = 0
         for message in property_file.messages:
@@ -253,16 +212,5 @@ class MultiLineCommentPropertyFileTest(unittest.TestCase):
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(UTF8PropertyFileTest())
-    suite.addTest(UnicodeEscapedPropertyFileTest())
-    suite.addTest(Latin1PropertyFileTest())
-    suite.addTest(TrailingBackslashPropertyFileTest())
-    suite.addTest(EscapedQuotesPropertyFileTest())
-    suite.addTest(WholeLineCommentPropertyFileTest())
-    suite.addTest(EndOfLineCommentPropertyFileTest())
-    suite.addTest(MultiLineCommentPropertyFileTest())
+    suite.addTest(unittest.makeSuite(PropertyFileFormatTestCase))
     return suite
-
-if __name__ == '__main__':
-    runner = unittest.TextTestRunner()
-    runner.run(test_suite())

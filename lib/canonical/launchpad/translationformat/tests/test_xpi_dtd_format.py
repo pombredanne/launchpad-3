@@ -8,17 +8,16 @@ from canonical.launchpad.translationformat.mozilla_xpi_importer import DtdFile
 from canonical.launchpad.interfaces import TranslationFormatInvalidInputError
 
 
-class UTF8DtdFileTest(unittest.TestCase):
-    """Test class for dtd file format.
+class DtdFormatTestCase(unittest.TestCase):
+    """Test class for dtd file format."""
 
-    This test makes sure that we handle UTF-8 encoding files.
-    """
+    def test_UTF8DtdFileTest(self):
+        """This test makes sure that we handle UTF-8 encoding files."""
 
-    content = '<!ENTITY utf8.message "\xc2\xbfQuieres? \xc2\xa1S\xc3\xad!">'
+        content = (
+            '<!ENTITY utf8.message "\xc2\xbfQuieres? \xc2\xa1S\xc3\xad!">')
 
-
-    def runTest(self):
-        dtd_file = DtdFile('test.dtd', self.content)
+        dtd_file = DtdFile('test.dtd', content)
 
         count = 0
         for message in dtd_file.messages:
@@ -32,18 +31,14 @@ class UTF8DtdFileTest(unittest.TestCase):
         self.assertEqual(count, 1)
 
 
-class Latin1DtdFileTest(unittest.TestCase):
-    """Test class for dtd file format.
+    def test_Latin1DtdFileTest(self):
+        """This test makes sure that we detect bad encodings."""
 
-    This test makes sure that we detect bad encodings.
-    """
+        content = '<!ENTITY latin1.message "\xbfQuieres? \xa1S\xed!">\n'
 
-    content = '<!ENTITY latin1.message "\xbfQuieres? \xa1S\xed!">\n'
-
-    def runTest(self):
         detected = False
         try:
-            dtd_file = DtdFile('test.dtd', self.content)
+            dtd_file = DtdFile('test.dtd', content)
         except TranslationFormatInvalidInputError:
             detected = True
 
@@ -53,10 +48,5 @@ class Latin1DtdFileTest(unittest.TestCase):
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(UTF8DtdFileTest())
-    suite.addTest(Latin1DtdFileTest())
+    suite.addTest(unittest.makeSuite(DtdFormatTestCase))
     return suite
-
-if __name__ == '__main__':
-    runner = unittest.TextTestRunner()
-    runner.run(test_suite())
