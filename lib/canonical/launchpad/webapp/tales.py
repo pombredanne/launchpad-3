@@ -1412,7 +1412,7 @@ class FormattersAPI:
     # This is a regular expression that matches email address embedded in
     # text. It is not RFC 2882 compliant, nor does it need to be. This
     # expression strives to identify probable email addresses so that they
-    # can be obfuscated when viewed by unauthenticated users. see
+    # can be obfuscated when viewed by unauthenticated users. See
     # http://www.email-unlimited.com/stuff/email_address_validator.htm
     _re_email = re.compile(
         r"\b[-!#$%&'*+/0-9=?A-Z^_a-z{|}~](\.?[-!#$%&'*+/0-9=?A-Z^_a-z{|}~])*@"

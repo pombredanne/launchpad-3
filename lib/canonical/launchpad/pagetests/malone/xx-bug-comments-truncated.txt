@@ -2,7 +2,7 @@
 
 There are several scenarios where user messages are altered for
 presentation. Messages originating from emails for example often
-have unwanted or unnecessary content is included.
+have unwanted or unnecessary content included.
 
 == Truncated text ==
 
@@ -66,7 +66,7 @@ The whole comment is visible on this page:
 
     >>> config.malone.max_comment_size = OLD_COMMENT_SIZE
 
-== Obsucated email addresses and hidden content ==
+== Obfuscated email addresses and hidden content ==
 
 Let's have an No Privileges Person create a message in the style of
 an email post to examine the markup rules for obfuscations and
