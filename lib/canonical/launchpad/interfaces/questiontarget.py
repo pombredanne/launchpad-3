@@ -84,16 +84,19 @@ class IQuestionTarget(ISearchableByQuestionOwner):
     def getAnswerContactsForLanguage(language):
         """Return the list of Persons that provide support for a language.
 
-        An answer contact support squestions in his preferred languages.
+        An answer contact supports questions in his preferred languages.
         """
 
     def getAnswerContactRecipients(language):
         """Return an `INotificationRecipientSet` of answer contacts.
 
-        :language: an ILanguage or None.
+        :language: an ILanguage or None. When language is none, all
+                   answer contacts are returned.
 
-        Return the answer contacts for a specific language and the reason
-        they are recipients of an email.
+        Return an INotificationRecipientSet of the answer contacts and the 
+        reason they are recipients of an email. The answer contacts are
+        selected by their language and the fact that they are answer contacts
+        for the QuestionTarget.
         """
 
     def getSupportedLanguages():

@@ -922,14 +922,15 @@ with a warning appended to it.
 
 === Localized Questions and Teams ===
 
-we will notify the team only if the question language is in one of
+We will notify the team only if the question language is in one of
 the team's preferred languages. The languages spoken by the team
 members is unimportant.
 
 For example, the rosetta admins team becomes an Answer contact for
 English questions. Carlos speaks Spanish, and he is an answer contact
-for Ubuntu. The team wont receive emails because of his membership
-when they become answer contacts too.
+for Ubuntu. He is also a member of the rosetta admins team. The team
+wont receive emails because of his membership when they become answer
+contacts too.
 
     >>> rosetta_admins = getUtility(IPersonSet).getByName('rosetta-admins')
     >>> [lang.code for lang in rosetta_admins.languages]

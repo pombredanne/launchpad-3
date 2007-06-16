@@ -938,6 +938,8 @@ class QuestionTargetMixin:
 
     def getAnswerContactsForLanguage(self, language):
         """See IQuestionTarget."""
+        assert language is not None, (
+            "The language cannot be None when selecting answer contacts.")
         constraints = []
         targets = self._getTargetTypes()
         for column, target in targets.items():

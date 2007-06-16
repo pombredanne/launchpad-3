@@ -77,7 +77,7 @@ class UserSupportLanguagesMixin:
         This set includes the user's preferred languages, excluding all 
         English variants. If the user is not logged in, or doesn't have 
         any preferred languages set, the languages will be inferred 
-        from the request's (the Accept-Language header and GeoIP
+        from the request (the Accept-Language header and GeoIP
         information).
         """
         languages = set(
