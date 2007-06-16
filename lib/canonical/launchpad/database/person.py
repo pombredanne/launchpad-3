@@ -46,9 +46,9 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
-    IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo,
-    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
-    ILaunchpadCelebrities, ILaunchpadStatisticSet, ILanguageSet,
+    IEmailAddress, IEmailAddressSet, IEntitlement, IGPGKeySet, IHasIcon,
+    IHasLogo, IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet,
+    ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet, ILanguageSet,
     ILoginTokenSet, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
     IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey,
     ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
@@ -188,6 +188,7 @@ class Person(SQLBase, HasSpecificationsMixin):
                           default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
 
+    entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
 
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""
@@ -2597,4 +2598,3 @@ class IrcIDSet:
 
     def new(self, person, network, nickname):
         return IrcID(person=person, network=network, nickname=nickname)
-
