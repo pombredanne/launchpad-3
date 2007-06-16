@@ -5,7 +5,7 @@ external world importing files and exporting them.
 
 Let's import some needed objects...
 
-  >>> from canonical.launchpad.components.translationformats.gettext_po_parser import (
+  >>> from canonical.launchpad.translationformat.gettext_po_parser import (
   ...     POMessage, POHeader, POParser)
 
 
@@ -28,9 +28,9 @@ That first message has as the msgid the empty string ("") and as the
 translation of it some metadata.
 
 
-=== getTranslationRevisionDate ===
+=== getTranslationRevisionDate() ===
 
-This function gives you a datetime object representing PO-Revision-Date field.
+This method gives you a datetime object representing PO-Revision-Date field.
 
   >>> header = POHeader(msgstr="""
   ... Project-Id-Version: foo

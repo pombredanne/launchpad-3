@@ -194,7 +194,6 @@ And text_has_leading_or_trailing_space() determines ... well, you can guess.
 
     >>> import transaction
     >>> transaction.commit()
-    >>> flush_database_updates()
 
 
 Submitting translations
@@ -256,7 +255,6 @@ We do a new submit, but this time including a lock_timestamp field.
     >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
     >>> pomsgset_page_view.initialize()
     >>> transaction.commit()
-    >>> flush_database_updates()
 
 This time we didn't get any problem with the submission, and we can see that
 statistics were updated accordly.

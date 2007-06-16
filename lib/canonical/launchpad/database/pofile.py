@@ -48,7 +48,7 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 
 from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.components.translationformats import POHeader
+from canonical.launchpad.translationformat import POHeader
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 
@@ -219,14 +219,14 @@ class POFile(SQLBase, RosettaStats):
 
     @property
     def title(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         title = '%s translation of %s' % (
             self.language.displayname, self.potemplate.displayname)
         return title
 
     @property
     def translators(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         translators = set()
         for group in self.potemplate.translationgroups:
             translator = group.query_translator(self.language)
@@ -236,16 +236,16 @@ class POFile(SQLBase, RosettaStats):
 
     @property
     def translationpermission(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.potemplate.translationpermission
 
     @property
     def contributors(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return getUtility(IPersonSet).getPOFileContributors(self)
 
     def canEditTranslations(self, person):
-        """See IPOFile."""
+        """See `IPOFile`."""
         if _can_edit_translations(self, person):
             return True
         elif person is not None:
@@ -260,7 +260,7 @@ class POFile(SQLBase, RosettaStats):
             orderBy='sequence')
 
     def translated(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return iter(POMsgSet.select('''
             POMsgSet.pofile = %d AND
             POMsgSet.iscomplete=TRUE AND
@@ -270,15 +270,15 @@ class POFile(SQLBase, RosettaStats):
             ))
 
     def untranslated(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def __iter__(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return iter(self.currentMessageSets())
 
     def getPOMsgSetFromPOTMsgSet(self, potmsgset, only_current=False):
-        """See IPOFile."""
+        """See `IPOFile`."""
         if potmsgset is None or (only_current and potmsgset.sequence <= 0):
             # There is no IPOTMsgSet for this id.
             return None
@@ -315,7 +315,7 @@ class POFile(SQLBase, RosettaStats):
             potmsgset=potmsgset, pofile=self)
 
     def __getitem__(self, msgid_text):
-        """See IPOFile."""
+        """See `IPOFile`."""
         pomsgset = self.getPOMsgSet(msgid_text, only_current=True)
         if pomsgset is None:
             raise NotFoundError(msgid_text)
@@ -323,7 +323,7 @@ class POFile(SQLBase, RosettaStats):
             return pomsgset
 
     def getPOMsgSetsNotInTemplate(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return iter(POMsgSet.select('''
             POMsgSet.pofile = %d AND
             POMsgSet.potmsgset = POTMsgSet.id AND
@@ -333,7 +333,7 @@ class POFile(SQLBase, RosettaStats):
             clauseTables = ['POTMsgSet']))
 
     def getPOTMsgSetTranslated(self, slice=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         # A POT set is translated only if the PO message set has
         # POMsgSet.iscomplete = TRUE.
         results = POTMsgSet.select('''
@@ -353,7 +353,7 @@ class POFile(SQLBase, RosettaStats):
         return results
 
     def getPOTMsgSetFuzzy(self, slice=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         results = POTMsgSet.select('''
             POTMsgSet.potemplate = %s AND
             POTMsgSet.sequence > 0 AND
@@ -370,7 +370,7 @@ class POFile(SQLBase, RosettaStats):
         return results
 
     def getPOTMsgSetUntranslated(self, slice=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         # A POT set is not translated if the PO message set have
         # POMsgSet.iscomplete = FALSE or we don't have such POMsgSet.
         #
@@ -414,7 +414,7 @@ class POFile(SQLBase, RosettaStats):
         return results
 
     def getPOTMsgSetChangedInLaunchpad(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         # POT set has been changed in Launchpad if it contains active
         # translation which didn't come from a published package
         # (iow, it's different from a published translation: this only
@@ -443,7 +443,7 @@ class POFile(SQLBase, RosettaStats):
         return results
 
     def getPOTMsgSetWithErrors(self, slice=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         results = POTMsgSet.select('''
             POTMsgSet.potemplate = %s AND
             POTMsgSet.sequence > 0 AND
@@ -464,7 +464,7 @@ class POFile(SQLBase, RosettaStats):
         return results
 
     def hasMessageID(self, messageID):
-        """See IPOFile."""
+        """See `IPOFile`."""
         results = POMsgSet.select('''
             POMsgSet.pofile = %d AND
             POMsgSet.potmsgset = POTMsgSet.id AND
@@ -472,19 +472,19 @@ class POFile(SQLBase, RosettaStats):
         return results.count() > 0
 
     def messageCount(self):
-        """See IRosettaStats."""
+        """See `IRosettaStats`."""
         return self.potemplate.messageCount()
 
     def currentCount(self, language=None):
-        """See IRosettaStats."""
+        """See `IRosettaStats`."""
         return self.currentcount
 
     def updatesCount(self, language=None):
-        """See IRosettaStats."""
+        """See `IRosettaStats`."""
         return self.updatescount
 
     def rosettaCount(self, language=None):
-        """See IRosettaStats."""
+        """See `IRosettaStats`."""
         return self.rosettacount
 
     def unreviewedCount(self):
@@ -493,7 +493,7 @@ class POFile(SQLBase, RosettaStats):
 
     @property
     def fuzzy_count(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return POMsgSet.select("""
             pofile = %s AND
             isfuzzy IS TRUE AND
@@ -501,12 +501,12 @@ class POFile(SQLBase, RosettaStats):
             """ % sqlvalues(self.id)).count()
 
     def expireAllMessages(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         for msgset in self.currentMessageSets():
             msgset.sequence = 0
 
     def updateStatistics(self, tested=False):
-        """See IPOFile."""
+        """See `IPOFile`."""
         # make sure all the data is in the db
         flush_database_updates()
         current = POMsgSet.select('''
@@ -583,7 +583,7 @@ class POFile(SQLBase, RosettaStats):
         return (current, updates, rosetta, unreviewed)
 
     def createMessageSetFromMessageSet(self, potmsgset):
-        """See IPOFile."""
+        """See `IPOFile`."""
         pomsgset = POMsgSet(
             sequence=0,
             pofile=self,
@@ -596,7 +596,7 @@ class POFile(SQLBase, RosettaStats):
         return pomsgset
 
     def createMessageSetFromText(self, text):
-        """See IPOFile."""
+        """See `IPOFile`."""
         potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(text, only_current=False)
         if potmsgset is None:
             potmsgset = self.potemplate.createMessageSetFromText(text)
@@ -604,7 +604,7 @@ class POFile(SQLBase, RosettaStats):
         return self.createMessageSetFromMessageSet(potmsgset)
 
     def updateHeader(self, new_header):
-        """See IPOFile."""
+        """See `IPOFile`."""
         if not new_header:
             return
 
@@ -639,7 +639,7 @@ class POFile(SQLBase, RosettaStats):
         self.fuzzyheader = 'fuzzy' in new_header.flags
 
     def isPORevisionDateOlder(self, header):
-        """See IPOFile."""
+        """See `IPOFile`."""
         old_header = POHeader(msgstr=self.header)
         old_header.updateDict()
 
@@ -666,7 +666,7 @@ class POFile(SQLBase, RosettaStats):
             return True
 
     def getNextToImport(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         flush_database_updates()
         return TranslationImportQueueEntry.selectFirstBy(
                 pofile=self,
@@ -674,7 +674,7 @@ class POFile(SQLBase, RosettaStats):
                 orderBy='dateimported')
 
     def importFromQueue(self, logger=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         librarian_client = getUtility(ILibrarianClient)
 
         entry_to_import = self.getNextToImport()
@@ -724,6 +724,8 @@ class POFile(SQLBase, RosettaStats):
                 logger.warning('Got an old version for %s' % self.title)
             template_mail = 'poimport-got-old-version.txt'
             import_rejected = True
+
+        flush_database_updates()
 
         # Prepare the mail notification.
         msgsets_imported = POMsgSet.select(
@@ -812,7 +814,7 @@ class POFile(SQLBase, RosettaStats):
         self.updateStatistics()
 
     def validExportCache(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         if self.exportfile is None:
             return False
 
@@ -824,7 +826,7 @@ class POFile(SQLBase, RosettaStats):
         return not self.last_touched_pomsgset.isNewerThan(self.exporttime)
 
     def updateExportCache(self, contents):
-        """See IPOFile."""
+        """See `IPOFile`."""
         alias_set = getUtility(ILibraryFileAliasSet)
 
         if self.variant:
@@ -866,14 +868,14 @@ class POFile(SQLBase, RosettaStats):
             return alias_set[self.exportfile.id].read()
 
     def uncachedExport(self, included_obsolete=True, force_utf8=False):
-        """See IPOFile."""
+        """See `IPOFile`."""
         exporter = IPOTemplateExporter(self.potemplate)
         exporter.force_utf8 = force_utf8
         return exporter.export_pofile(
             self.language, self.variant, included_obsolete)
 
     def export(self, included_obsolete=True):
-        """See IPOFile."""
+        """See `IPOFile`."""
         if self.validExportCache() and included_obsolete:
             # Only use the cache if the request includes obsolete messages,
             # without them, we always do a full export.
@@ -912,13 +914,13 @@ class POFile(SQLBase, RosettaStats):
         return contents
 
     def exportToFileHandle(self, filehandle, included_obsolete=True):
-        """See IPOFile."""
+        """See `IPOFile`."""
         exporter = IPOTemplateExporter(self.potemplate)
         exporter.export_pofile_to_file(filehandle, self.language,
             self.variant, included_obsolete)
 
     def invalidateCache(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         self.exportfile = None
 
 
@@ -965,7 +967,7 @@ class DummyPOFile(RosettaStats):
             return pomsgset
 
     def __iter__(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return iter(self.currentMessageSets())
 
     def messageCount(self):
@@ -973,7 +975,7 @@ class DummyPOFile(RosettaStats):
 
     @property
     def title(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         title = '%s translation of %s' % (
             self.language.displayname, self.potemplate.displayname)
         return title
@@ -990,15 +992,15 @@ class DummyPOFile(RosettaStats):
 
     @property
     def translationpermission(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.potemplate.translationpermission
 
     def canEditTranslations(self, person):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return _can_edit_translations(self, person)
 
     def getPOMsgSetFromPOTMsgSet(self, potmsgset, only_current=False):
-        """See IPOFile."""
+        """See `IPOFile`."""
         if potmsgset is None or (only_current and potmsgset.sequence <= 0):
             # There is no IPOTMsgSet for this id.
             return None
@@ -1006,7 +1008,7 @@ class DummyPOFile(RosettaStats):
         return DummyPOMsgSet(self, potmsgset)
 
     def getPOMsgSet(self, key, only_current=False):
-        """See IPOFile."""
+        """See `IPOFile`."""
         if not isinstance(key, POTMsgSet) and not isinstance(key, unicode):
             raise AssertionError(
                 "Can't index with type %s. (Must be unicode or POTMsgSet.)" % type(key))
@@ -1039,36 +1041,36 @@ class DummyPOFile(RosettaStats):
         return POFile.select("1=2")
 
     def getPOMsgSetsNotInTemplate(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.emptySelectResults()
 
     def getPOTMsgSetTranslated(self, slice=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.emptySelectResults()
 
     def getPOTMsgSetFuzzy(self, slice=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.emptySelectResults()
 
     def getPOTMsgSetUntranslated(self, slice=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.potemplate.getPOTMsgSets(slice)
 
     def getPOTMsgSetWithNewSuggestions(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.emptySelectResults()
 
     def getPOTMsgSetChangedInLaunchpad(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.emptySelectResults()
 
     def getPOTMsgSetWithErrors(self, slice=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return self.emptySelectResults()
 
 
     def hasMessageID(self, msgid):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def currentCount(self):
@@ -1095,7 +1097,7 @@ class DummyPOFile(RosettaStats):
 
     @property
     def fuzzy_count(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return 0
 
     def currentPercentage(self):
@@ -1117,67 +1119,67 @@ class DummyPOFile(RosettaStats):
         return 100.0
 
     def validExportCache(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         return False
 
     def updateExportCache(self, contents):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def export(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def exportToFileHandle(self, filehandle, included_obsolete=True):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def uncachedExport(self, included_obsolete=True, export_utf8=False):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def invalidateCache(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def createMessageSetFromMessageSet(self, potmsgset):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def createMessageSetFromText(self, text):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def translated(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def untranslated(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def expireAllMessages(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def updateStatistics(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def updateHeader(self, new_header):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def isPORevisionDateOlder(self, header):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def getNextToImport(self):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
     def importFromQueue(self, logger=None):
-        """See IPOFile."""
+        """See `IPOFile`."""
         raise NotImplementedError
 
 
@@ -1185,7 +1187,7 @@ class POFileSet:
     implements(IPOFileSet)
 
     def getPOFilesPendingImport(self):
-        """See IPOFileSet."""
+        """See `IPOFileSet`."""
         results = POFile.selectBy(
             rawimportstatus=RosettaImportStatus.PENDING,
             orderBy='-daterawimport')
@@ -1198,7 +1200,7 @@ class POFileSet:
 
     def getPOFileByPathAndOrigin(self, path, productseries=None,
         distroseries=None, sourcepackagename=None):
-        """See IPOFileSet."""
+        """See `IPOFileSet`."""
         assert productseries is not None or distroseries is not None, (
             'Either productseries or sourcepackagename arguments must be'
             ' not None.')
@@ -1246,6 +1248,7 @@ class POFileSet:
 
 class POFileTranslator(SQLBase):
     """See IPOFileTranslator."""
+
     implements(IPOFileTranslator)
     pofile = ForeignKey(foreignKey='POFile', dbName='pofile', notNull=True)
     person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)

@@ -5,7 +5,7 @@
     i18n_domain="launchpad">
 
     <securedutility
-        class="canonical.launchpad.components.translationformats.TranslationImporter"
+        class="canonical.launchpad.translationformat.TranslationImporter"
         provides="canonical.launchpad.interfaces.ITranslationImporter">
         <allow
             interface="canonical.launchpad.interfaces.ITranslationImporter" />

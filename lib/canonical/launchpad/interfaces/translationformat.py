@@ -4,8 +4,6 @@ from zope.interface import Interface, Attribute
 from zope.interface.common.mapping import IMapping
 from zope.schema import Choice, Field
 
-from canonical.lp.dbschema import TranslationFileFormat
-
 __metaclass__ = type
 
 __all__ = [
@@ -35,9 +33,9 @@ class TranslationFormatBaseError(Exception):
     def __init__(self, filename='unknown', line_number=None, message=None):
         """Initialise the exception information.
 
-        :arg filename: The file name that is being parsed.
-        :arg line_number: The line number where the error was found.
-        :arg message: The concrete syntax error found.
+        :param filename: The file name that is being parsed.
+        :param line_number: The line number where the error was found.
+        :param message: The concrete syntax error found.
         """
         assert filename is not None, 'filename cannot be None'
 
@@ -100,21 +98,19 @@ class ITranslationImporter(Interface):
         :arg file_format: a TranslationFileFormat value.
         """
 
-    def importFile(translation_import_queue_entry, logger=None):
+    def importFile(translation_import_queue_entry):
         """Convert a translation resource into database objects.
 
-        :arg translation_import_queue_entry: An ITranslationImportQueueEntry
+        :param translation_import_queue_entry: An ITranslationImportQueueEntry
             entry.
-        :arg logger: A logger object or None.
 
-        If the entry is older than the previously imported file,
-        OldTranslationImported exception is raised.
+        :raise OldTranslationImported: If the entry is older than the
+            previously imported file.
+        :raise NotExportedFromLaunchpad: If the entry imported is not
+            published and doesn't have the tag added by Launchpad on export
+            time.
 
-        If the entry imported is not published and doesn't have the tag added
-        by Launchpad on export time, NotExportedFromLaunchpad exception is
-        raised.
-
-        Return a list of dictionaries with three keys:
+        :return: a list of dictionaries with three keys:
             - 'pomsgset': The database pomsgset with an error.
             - 'pomessage': The original POMessage object.
             - 'error-message': The error message as gettext names it.
@@ -126,7 +122,7 @@ class ITranslationFormatImporter(Interface):
 
     format = Choice(
         title=u'The file format of the import.',
-        values=TranslationFileFormat.items,
+        vocabulary='TranslationFileFormat',
         required=True)
 
     content_type = Attribute(
@@ -157,7 +153,7 @@ class ITranslationFormatImporter(Interface):
     def canHandleFileExtension(extension):
         """Whether this importer is able to handle the given file extension.
 
-        :arg extension: File extension (starting with '.').
+        :param extension: File extension (starting with '.').
         """
 
     def getLastTranslator():
