@@ -67,14 +67,16 @@ class TranslationImporterTestCase(unittest.TestCase):
 
     def testGetImporterByFileFormat(self):
         """Check whether we get the right importer from the file format."""
-        po_format_importer = self.translation_importer._getImporterByFileFormat(
-            TranslationFileFormat.PO)
+        po_format_importer = (
+            self.translation_importer.getTranslationFormatImporter(
+                TranslationFileFormat.PO))
 
         self.failUnless(po_format_importer is not None, (
             'There is no importer for PO file format!'))
 
-        xpi_format_importer = self.translation_importer._getImporterByFileFormat(
-            TranslationFileFormat.XPI)
+        xpi_format_importer = (
+            self.translation_importer.getTranslationFormatImporter(
+                TranslationFileFormat.XPI))
 
         self.failUnless(xpi_format_importer is not None, (
             'There is no importer for XPI file format!'))

@@ -73,23 +73,20 @@ class TranslationImporter:
         """See ITranslationImporter."""
         file_extensions = []
 
-        for importer_class in importers.itervalues():
-            importer = importer_class()
+        for importer in importers.itervalues():
             file_extensions.extend(importer.file_extensions)
 
         return file_extensions
 
     def getTranslationFileFormatByFileExtension(self, file_extension):
-        """See ITranslationImporter."""
+        """See `ITranslationImporter`."""
         for importer in importers.itervalues():
-            if importer.canHandleFileExtension(file_extension):
+            if file_extension in importer.file_extensions:
                 return importer.format
 
-        # We cannot handle that file_extension so we don't know its file
-        # format.
         return None
 
-    def getTranslationFileFormat(self, file_format):
+    def getTranslationFormatImporter(self, file_format):
         """See `ITranslationImporter`."""
         return importers.get(file_format, None)
 
@@ -104,7 +101,7 @@ class TranslationImporter:
                 translation_import_queue_entry.pofile is not None), (
                 "The entry has not any import target.")
 
-        importer = self._getImporterByFileFormat(
+        importer = self.getTranslationFormatImporter(
             translation_import_queue_entry.format)
 
         assert importer is not None, (

@@ -63,12 +63,6 @@ class MozillaXpiImporterTestCase(unittest.TestCase):
             'MozillaXpiImporter format expected XPI but got %s' % (
                 self.template_importer.format.name))
 
-    def testCanHandleFileExtension(self):
-        """Check whether MozillaXpiImporter handles .xpi extension."""
-        self.failUnless(
-            self.template_importer.canHandleFileExtension('.xpi'),
-            'MozillaXpiImporter should handle .xpi files!')
-
     def testGetLastTranslator(self):
         """Tests whether we extract last translator information correctly."""
         # Let's try with the translation file, it has valid Last Translator

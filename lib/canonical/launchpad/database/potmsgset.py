@@ -57,9 +57,10 @@ class POTMsgSet(SQLBase):
     @property
     def singular_text(self):
         """See IPOTMsgSet."""
-        translation_importer = getUtility(ITranslationImporter)
-        if translation_importer.hasAlternativeMsgID(
-            self.potemplate.source_file_format):
+        format_importer = getUtility(
+            ITranslationImporter).getTranslationFormatImporter(
+                self.potemplate.source_file_format)
+        if format_importer.has_alternative_msgid:
             # This format uses English translations as the way to store the
             # singular_text.
             pomsgset = self.getPOMsgSet('en')

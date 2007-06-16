@@ -559,14 +559,15 @@ class TranslationImportQueue:
             format = (
                 translation_importer.getTranslationFileFormatByFileExtension(
                     ext))
-
+        format_importer = translation_importer.getTranslationFormatImporter(
+            format)
         # Upload the file into librarian.
         size = len(content)
         file = StringIO(content)
         client = getUtility(ILibrarianClient)
-        content_type = translation_importer.getContentTypeByFileExtension(ext)
         alias = client.addFile(
-            name=filename, size=size, file=file, contentType=content_type)
+            name=filename, size=size, file=file,
+            contentType=format_importer.content_type)
 
         # Check if we got already this request from this user.
         if sourcepackagename is not None:

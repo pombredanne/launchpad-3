@@ -87,7 +87,7 @@ class ITranslationImporter(Interface):
         :return: None if there is no handler for that file_extension.
         """
 
-    def getTranslationFileFormat(file_format):
+    def getTranslationFormatImporter(file_format):
         """Return the translation file format for give file_format.
 
         :param file_format: A TranslationFileFormat entry.

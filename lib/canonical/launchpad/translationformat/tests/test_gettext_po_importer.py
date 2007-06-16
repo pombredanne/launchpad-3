@@ -83,16 +83,6 @@ class GettextPoImporterTestCase(unittest.TestCase):
             'GettextPoImporter format expected PO but got %s' % (
                 self.template_importer.format.name))
 
-    def testCanHandleFileExtension(self):
-        """Check whether GettextPoImporter handles .po and .pot extensions."""
-        # Gettext's file extesions are .po and .pot
-        self.failUnless(
-            self.template_importer.canHandleFileExtension('.po'),
-            'GettextPoImporter should handle .po files!')
-        self.failUnless(
-            self.template_importer.canHandleFileExtension('.pot'),
-            'GettextPoImporter should handle .pot files!')
-
     def testGetLastTranslator(self):
         """Tests whether we extract last translator information correctly."""
         # When it's the default one in Gettext (FULL NAME <EMAIL@ADDRESS>),
