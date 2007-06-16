@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -1017,8 +1017,6 @@ class POMsgSetView(LaunchpadView):
             return dict((k, v) for (k, v) in main.iteritems()
                         if k not in pruners_merged)
 
-        suggestions_list = self.context.getWikiSubmissions(index)
-
         if self.message_must_be_hidden:
             # We must hide all suggestions because this message may contain
             # private information that we don't want to show to anonymous
@@ -1029,7 +1027,8 @@ class POMsgSetView(LaunchpadView):
             alt_lang_suggestions = self._buildSuggestions(None, [])
             return non_editor, elsewhere, wiki, alt_lang_suggestions
 
-        wiki_translations = build_dict(suggestions_list)
+        wiki = self.context.getWikiSubmissions(index)
+        wiki_translations = build_dict(wiki)
 
         current = self.context.getCurrentSubmissions(index)
         current_translations = build_dict(current)
