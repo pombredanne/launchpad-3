@@ -454,6 +454,7 @@ class PackageUpload(SQLBase):
             "DISTRO": self.distroseries.distribution.title,
             "DISTROSERIES": self.distroseries.name,
             "ANNOUNCE": announce_list,
+            "STATUS": "Accepted",
             "SOURCE": self.displayname,
             "VERSION": self.displayversion,
             "ARCH": self.displayarchs,
@@ -481,6 +482,8 @@ class PackageUpload(SQLBase):
 
         if self.isPPA():
             # PPA uploads receive an acceptance message.
+            interpolations["STATUS"] = "[PPA %s] Accepted" % (
+                self.archive.owner.name)
             self._sendMail(accepted_template % interpolations)
             return
 
@@ -502,17 +505,18 @@ class PackageUpload(SQLBase):
 
         # Unapproved uploads coming from an insecure policy only sends
         # an acceptance message.
-        if self.status != PackageUploadStatus.ACCEPTED:
+        if self.status == PackageUploadStatus.UNAPPROVED:
             # Only send an acceptance message.
             interpolations["SUMMARY"] += (
                 "\nThis upload awaits approval by a distro manager\n")
+            interpolations["STATUS"] = "Waiting for approval:"
             self._sendMail(accepted_template % interpolations)
             return
 
         # Fallback, all the rest coming from insecure, secure and sync
         # policies should send an acceptance and an announcement message.
         self._sendMail(accepted_template % interpolations)
-        if announce_list: 
+        if announce_list:
             self._sendMail(announce_template % interpolations)
         return
 

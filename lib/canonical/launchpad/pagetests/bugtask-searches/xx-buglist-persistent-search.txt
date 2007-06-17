@@ -7,9 +7,9 @@ The bug listing pages save their search criteria.
 
 If, for example, you click on one of the canned search links:
 
-    >>> browser.getLink("Unconfirmed").click()
+    >>> browser.getLink("New").click()
 
-The result set is filtered to show only Unconfirmed bugs.
+The result set is filtered to show only New bugs.
 
     >>> '3 results' in browser.contents
     True

@@ -88,7 +88,7 @@ def make_pidfile(service_name):
         sys.exit(-1 * SIGTERM)
     signal(SIGTERM, remove_pidfile_handler)
 
-    fd, tempname = tempfile.mkstemp()
+    fd, tempname = tempfile.mkstemp(dir=os.path.dirname(pidfile))
     outf = os.fdopen(fd, 'w')
     outf.write(str(os.getpid())+'\n')
     outf.flush()

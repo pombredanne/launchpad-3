@@ -482,44 +482,212 @@ ITeamMembership.sendExpirationWarningEmail to do its job.
     Thanks for using Launchpad!
     <BLANKLINE>
 
+If the team's renewal policy is ONDEMAND, though, the member is invited to
+renew his own membership.
+
+    >>> from canonical.lp.dbschema import TeamMembershipRenewalPolicy
+    >>> ubuntu_team.renewal_policy = TeamMembershipRenewalPolicy.ONDEMAND
+    >>> ubuntu_team.defaultrenewalperiod = 365
+    >>> flush_database_updates()
+    >>> sabdfl_on_ubuntu_team.sendExpirationWarningEmail()
+    >>> transaction.commit()
+    >>> [notification] = pop_notifications()
+    >>> notification['To']
+    'Mark Shuttleworth <mark@hbd.com>'
+    >>> notification['Subject']
+    'Launchpad: ubuntu-team team membership about to expire'
+    >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Hi Mark Shuttleworth
+    <BLANKLINE>
+    On 2050-03-03, ... from now, your membership of the
+    Ubuntu Team (ubuntu-team) Launchpad team is due to expire.
+    <http://launchpad.dev/~ubuntu-team>
+    <BLANKLINE>
+    If you want, you can renew this membership at
+    <http://launchpad.dev/~sabdfl/+expiringmembership/ubuntu-team>
+    <BLANKLINE>
+    If your membership does expire, we'll send you one more message to let
+    you know it's happened.
+    <BLANKLINE>
+    Thanks for using Launchpad!
+    <BLANKLINE>
+
+    >>> guadamen.renewal_policy = TeamMembershipRenewalPolicy.ONDEMAND
+    >>> guadamen.defaultrenewalperiod = 365
+    >>> flush_database_updates()
+    >>> ubuntu_team_on_guadamen = membershipset.getByPersonAndTeam(
+    ...     ubuntu_team, guadamen)
+    >>> ubuntu_team_on_guadamen.sendExpirationWarningEmail()
+    >>> transaction.commit()
+    >>> [notification] = pop_notifications()
+    >>> notification['To']
+    'mark@hbd.com'
+    >>> notification['Subject']
+    'Launchpad: guadamen team membership about to expire'
+    >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Hi,
+    <BLANKLINE>
+    On 2049-02-03, ... from now, the membership of
+    Ubuntu Team (ubuntu-team) (which you are the owner of) in the
+    GuadaMen (guadamen) Launchpad team is due to expire.
+    <http://launchpad.dev/~guadamen>
+    <BLANKLINE>
+    If you want, you can renew this membership at
+    <http://launchpad.dev/~ubuntu-team/+expiringmembership/guadamen>
+    <BLANKLINE>
+    If the membership does expire, we'll send you one more message to let
+    you know it's happened.
+    <BLANKLINE>
+    Thanks for using Launchpad!
+    <BLANKLINE>
 
 == Membership expiration notification ==
 
-If a membership is not renewed before its expiration date it'll be flagged as expired and a notification is sent to the team admins and to the member whose membership expired.
+For teams with a renewal policy other than AUTOMATIC, if a membership is not
+renewed before its expiration date it'll be flagged as expired and a
+notification is sent to the team admins and to the member whose membership
+expired. If the renewal policy is AUTOMATIC, though, the memberships that
+should expire will retain their status and have their dateexpires update. A
+notification is also sent to the member and to team admins when a membership
+is automatically renewed.
 
-    >>> ubuntu_team_on_guadamen.setStatus(
-    ...     TeamMembershipStatus.EXPIRED, guadamen.teamowner)
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> from canonical.lp.dbschema import TeamMembershipRenewalPolicy
+    >>> utc_now = datetime.now(pytz.timezone('UTC'))
+    >>> lp_admins = personset.getByName('admins')
+    >>> lp_admins.renewal_policy
+    <Item NONE ...TeamMembershipRenewalPolicy...
+
+    >>> sabdfl_on_admins = membershipset.getByPersonAndTeam(sabdfl, lp_admins)
+    >>> sabdfl_on_admins.dateexpires = utc_now
+
+    >>> ubuntu_team = personset.getByName('ubuntu-team')
+    >>> ubuntu_team.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
+    >>> ubuntu_team.defaultrenewalperiod = 365
+    >>> jdub = personset.getByName('jdub')
+    >>> jdub_on_ubuntu_team = membershipset.getByPersonAndTeam(
+    ...     jdub, ubuntu_team)
+    >>> jdub_on_ubuntu_team.dateexpires = utc_now
+    >>> flush_database_updates()
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> membershipset.handleMembershipsExpiringToday(
+    ...     reviewer=getUtility(ILaunchpadCelebrities).team_membership_janitor)
+    >>> flush_database_updates()
+    >>> transaction.commit()
+
+    >>> len(stub.test_emails)
+    6
+
+The expiration/auto-renewal notifications are sent to each person
+individually rather than sending a single email to everybody, so we'll
+just show the recipients and the different messages we may send.
+
+    >>> def print_distinct_messages_and_recipients():
+    ...     """Pop all messages from stub.test_emails and print them with
+    ...      their recipients.
+    ...     
+    ...     Since the same message may be sent more than once (for different
+    ...     recipients), we print each distinct message only once and group
+    ...     all recipients of that message together.
+    ...     """
+    ...     distinct_messages = {}
+    ...     for message in pop_notifications():
+    ...         recipients = set(
+    ...             recipient.strip()
+    ...             for recipient in message['To'].split(','))
+    ...         body = message.get_payload()
+    ...         if body not in distinct_messages:
+    ...             distinct_messages[body] = recipients
+    ...         else:
+    ...             existing_recipients = distinct_messages[body]
+    ...             distinct_messages[body] = existing_recipients.union(
+    ...                 recipients)
+    ...     for message in sorted(distinct_messages):
+    ...         print 'To:', sorted(distinct_messages[message])
+    ...         print message #doctest: -NORMALIZE_WHITESPACE
+    ...         print "-"*40
+
+    >>> print_distinct_messages_and_recipients()
+    To: ['colin.watson@ubuntulinux.com', 'foo.bar@canonical.com', 'mark@hbd.com']
+    Hello,
+    <BLANKLINE>
+    The membership of Jeff Waugh (jdub) in the Ubuntu Team (ubuntu-team)
+    team has been automatically renewed until ...
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    To: ['foo.bar@canonical.com', 'guilherme.salgado@canonical.com']
+    Hello,
+    <BLANKLINE>
+    The membership of Mark Shuttleworth (sabdfl) in the Launchpad
+    Administrators (admins) team has expired.
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    To: ['mark@hbd.com']
+    Hello,
+    <BLANKLINE>
+    Your membership in the Launchpad Administrators (admins) team has
+    expired.
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+    To: ['jeff.waugh@ubuntulinux.com']
+    Hello,
+    <BLANKLINE>
+    Your membership in the Ubuntu Team (ubuntu-team) team has been
+    automatically renewed until ...
+    <BLANKLINE>
+    Regards,
+    The Launchpad team
+    ----------------------------------------
+
+
+== Memberships renewed by the members themselves ==
+
+Another possible renewal policy for teams is ONDEMAND, which means that team
+members are invited to renew their membership once it gets close to their
+expiration date. When a member renew his own membership, a notification is
+sent to all team admins.
+
+    >>> karl = personset.getByName('karl')
+    >>> mirror_admins = personset.getByName('ubuntu-mirror-admins')
+    >>> karl_on_mirroradmins = membershipset.getByPersonAndTeam(
+    ...     karl, mirror_admins)
+    >>> tomorrow = datetime.now(pytz.timezone('UTC')) + timedelta(days=1)
+    >>> print karl_on_mirroradmins.status.title
+    Approved
+    >>> print karl_on_mirroradmins.dateexpires
+    None
+
+    >>> login(mirror_admins.teamowner.preferredemail.email)
+    >>> karl_on_mirroradmins.dateexpires = tomorrow
+    >>> ondemand = TeamMembershipRenewalPolicy.ONDEMAND
+    >>> karl_on_mirroradmins.team.renewal_policy = ondemand
+    >>> mirror_admins.defaultrenewalperiod = 365
+    >>> flush_database_updates()
+
+    >>> login(karl.preferredemail.email)
+    >>> karl.renewTeamMembership(mirror_admins)
     >>> transaction.commit()
     >>> len(stub.test_emails)
-    2
-    >>> admins_notification, member_notification = pop_notifications()
+    1
 
-    >>> print member_notification['To']
-    support@ubuntu.com
-    >>> print member_notification['Subject']
-    Launchpad: ubuntu-team expired from guadamen
-    >>> print member_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    >>> print_distinct_messages_and_recipients()
+    To: ['mark@hbd.com']
     Hello,
     <BLANKLINE>
-    The membership of Ubuntu Team (ubuntu-team) in the GuadaMen (guadamen)
-    team has expired.
+    Karl Tilbury (karl) renewed his/her own membership in the Mirror
+    Administrators (ubuntu-mirror-admins) team until ...
     <BLANKLINE>
     Regards,
     The Launchpad team
-
-    >>> print admins_notification['To']
-    foo.bar@canonical.com
-    >>> print admins_notification['Subject']
-    Launchpad: ubuntu-team expired from guadamen
-    >>> print admins_notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hello,
-    <BLANKLINE>
-    The membership of Ubuntu Team (ubuntu-team) in the GuadaMen (guadamen)
-    team has expired.
-    <BLANKLINE>
-    Regards,
-    The Launchpad team
-
+    ----------------------------------------
 
 == Some special cases ==
 
@@ -541,6 +709,7 @@ notification.
 
     >>> cprov = personset.getByName('cprov')
     >>> cprov_membership = membershipset.getByPersonAndTeam(cprov, ubuntu_team)
+    >>> login('mark@hbd.com')
     >>> setStatus(
     ...     cprov_membership, TeamMembershipStatus.ADMIN, reviewer=sabdfl)
     >>> len(stub.test_emails)

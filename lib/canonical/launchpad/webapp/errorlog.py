@@ -177,7 +177,7 @@ class ErrorReport:
 class ErrorReportingUtility:
     implements(IErrorReportingUtility)
 
-    _ignored_exceptions = set(['Unauthorized'])
+    _ignored_exceptions = set(['Unauthorized', 'TranslationUnavailable'])
     copy_to_zlog = False
 
     lasterrordate = None
