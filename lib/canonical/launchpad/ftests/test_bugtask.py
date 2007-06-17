@@ -121,7 +121,10 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
             related_bugtask for related_bugtask in non_malone_using_bugtasks
             if related_bugtask.bugwatch is None
             ]
-        self.assert_(len(pending_bugwatch_bugtasks) > 0)
+        self.assert_(
+            len(pending_bugwatch_bugtasks) > 0,
+            'Bugtask %s on %s has no related bug watches elsewhere.' % (
+                bugtask.id, bugtask.target.displayname))
 
     def assertBugTaskIsResolvedUpstream(self, bugtask):
         """Make sure at least one of the related upstream tasks is resolved.
@@ -155,6 +158,47 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
             ]
 
         self.assert_(len(resolved_related_tasks) > 0)
+        self.assert_(
+            len(resolved_related_tasks) > 0,
+            'Bugtask %s on %s has no resolved related tasks.' % (
+                bugtask.id, bugtask.target.displayname))
+
+
+    def assertBugTaskIsOpenUpstream(self, bugtask):
+        """Make sure at least one of the related upstream tasks is open.
+        
+        "Open", for our purposes, means either that one of the related
+        tasks is an upstream task or a task with a bugwatch which has
+        one of the states listed in open_states.
+        """
+        open_states = [
+            BugTaskStatus.NEW,
+            BugTaskStatus.INCOMPLETE,
+            BugTaskStatus.CONFIRMED,
+            BugTaskStatus.INPROGRESS,
+            BugTaskStatus.UNKNOWN]
+
+        # Helper functions for the list comprehension below.
+        def _is_open_upstream_task(bugtask):
+            return (
+                IUpstreamBugTask.providedBy(bugtask) and
+                bugtask.status in open_states)
+
+        def _is_open_bugwatch_task(bugtask):
+            return (
+                bugtask.bugwatch and bugtask.status in
+                open_states)
+
+        open_related_tasks = [
+            related_task for related_task in bugtask.related_tasks
+            if (_is_open_upstream_task(related_task) or
+                _is_open_bugwatch_task(related_task))
+            ]
+
+        self.assert_(
+            len(open_related_tasks) > 0,
+            'Bugtask %s on %s has no open related tasks.' % (
+                bugtask.id, bugtask.target.displayname))
 
     def _hasUpstreamTask(self, bug):
         """Does this bug have an upstream task associated with it?
@@ -171,7 +215,10 @@ class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):
 
         Returns True if yes, otherwise False.
         """
-        self.assert_(not self._hasUpstreamTask(bugtask.bug))
+        self.assert_(
+            not self._hasUpstreamTask(bugtask.bug),
+            'Bugtask %s on %s has upstream tasks.' % (
+                bugtask.id, bugtask.target.displayname))
 
 
 def test_suite():

@@ -69,8 +69,9 @@ contains in short format the reason for the user to be contacted.
 Register the Ubuntu Team as Ubuntu's answer contact, so that they get
 notified about the changes as well:
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces import ILanguageSet, IPersonSet
     >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    >>> ubuntu_team.addLanguage(getUtility(ILanguageSet)['en'])
     >>> ubuntu.addAnswerContact(ubuntu_team)
     True
 
@@ -781,6 +782,7 @@ will receives only one notification:
     >>> [email_msg['To'] for email_msg in notifications]
     ['foo.bar@canonical.com', 'support@ubuntu.com', 'test@canonical.com']
 
+
 == Notifications and Localized Questions ==
 
 In general, only subscribers speaking the language of the question will
@@ -921,22 +923,20 @@ with a warning appended to it.
 
 === Localized Questions and Teams ===
 
-There are some tricky issues when sending notifications to teams about a
-question. There are some cases to consider.
+We will notify the team only if the question language is in one of
+the team's preferred languages. The languages spoken by the team
+members is unimportant.
 
-First, when the team has an explicit email address (which will be a
-mailing list usually), we will notify the team only if the question
-language is in one of the team spoken languages. The team spoken
-languages is either the list of languages associated to the team or
-the list of the languages spoken by the team members.
-
-For example, the rosetta admins team doesn't have any languages
-configured. But among its members, Carlos speaks Spanish. So, the team
-will be notified if a Spanish question is created.
+For example, the rosetta admins team becomes an Answer contact for
+English questions. Carlos speaks Spanish, and he is an answer contact
+for Ubuntu. He is also a member of the rosetta admins team. The team
+wont receive emails because of his membership when they become answer
+contacts too.
 
     >>> rosetta_admins = getUtility(IPersonSet).getByName('rosetta-admins')
     >>> [lang.code for lang in rosetta_admins.languages]
     []
+    >>> rosetta_admins.addLanguage(getUtility(ILanguageSet)['en'])
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> carlos.inTeam(rosetta_admins)
     True
@@ -944,6 +944,8 @@ will be notified if a Spanish question is created.
     >>> spanish in carlos.languages
     True
 
+    >>> ubuntu.addAnswerContact(carlos)
+    True
     >>> ubuntu.addAnswerContact(rosetta_admins)
     True
     >>> spanish_question = ubuntu.newQuestion(
@@ -953,11 +955,14 @@ will be notified if a Spanish question is created.
     >>> notify(SQLObjectCreatedEvent(spanish_question))
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
-    ['rosetta@launchpad.net', 'test@canonical.com']
+    ['carlos@canonical.com', 'test@canonical.com']
+
+    >>> ubuntu.removeAnswerContact(carlos)
+    True
 
 But if the team languages attribute is set, this set of languages will
 be used. So, if the team only officially speaks French, it will only
-receives notifications about French (and English) questions.
+receive notifications about French (and English) questions.
 
     >>> rosetta_admins.addLanguage(french)
     >>> notify(SQLObjectCreatedEvent(french_question))
@@ -965,8 +970,7 @@ receives notifications about French (and English) questions.
     >>> [email_msg['To'] for email_msg in notifications]
     ['rosetta@launchpad.net', 'test@canonical.com']
 
-The second case to consider is when the team doesn't use an explicit
-address. When the team has configured its supported languages, all
+When the team doesn't use an explicit address. All
 team members will be contacted if the question language is supported.
 For example, the Launchpad Developers team doesn't have any preferred
 email address set. Its only member, Foo Bar will receive a notification
@@ -985,62 +989,3 @@ if the team supported languages includes the question language:
     >>> notifications = pop_notifications()
     >>> [email_msg['To'] for email_msg in notifications]
     ['foo.bar@canonical.com', 'test@canonical.com']
-
-But when the team didn't configured its supported language set, only the
-team members that speaks the language of the question will be notified.
-For example, Carlos is a member of the admins team which doesn't have
-a preferred address. So, he'll be the only member of the admin team
-to be notified when a question in Spanish is posted.
-
-    >>> admins = getUtility(IPersonSet).getByName('admins')
-    >>> list(admins.languages)
-    []
-    >>> carlos.inTeam(admins)
-    True
-    >>> ubuntu.addAnswerContact(admins)
-    True
-
-    >>> notify(SQLObjectCreatedEvent(spanish_question))
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['carlos@canonical.com', 'foo.bar@canonical.com',
-     'test@canonical.com']
-
-When a team is a member of a team with no email address, these rules
-are applied recursively. So, if we make GuadaMen team a member of the
-admin team, its notification will be computed according to that
-team settings. That is a notification will be sent to its preferred
-address if Spanish is among its preferred languages:
-
-    >>> guadamen = getUtility(IPersonSet).getByName('guadamen')
-    >>> list(guadamen.languages)
-    []
-    >>> foobar = getUtility(IPersonSet).getByName('name16')
-
-    # This call also generates email notifications, so we'll clean up
-    # stub.test_emails after it
-    >>> admins.addMember(guadamen, reviewer=foobar)
-
-    # We need to accept the invitation sent by the addMember() call in
-    # order to make guadamen an actual member of admins.
-    >>> login(guadamen.teamowner.preferredemail.email)
-    >>> guadamen.acceptInvitationToBeMemberOf(admins, comment='something')
-
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-    >>> transaction.commit()
-    >>> from canonical.launchpad.mail import stub
-    >>> stub.test_emails = []
-
-    >>> guadamen.addLanguage(spanish)
-
-    >>> from canonical.launchpad.interfaces import IEmailAddressSet
-    >>> guadamen_email = getUtility(IEmailAddressSet).new(
-    ...     'maintainers@guadalinex.com', guadamen)
-    >>> guadamen.validateAndEnsurePreferredEmail(guadamen_email)
-
-    >>> notify(SQLObjectCreatedEvent(spanish_question))
-    >>> notifications = pop_notifications()
-    >>> [email_msg['To'] for email_msg in notifications]
-    ['carlos@canonical.com', 'foo.bar@canonical.com',
-     'maintainers@guadalinex.com', 'test@canonical.com']

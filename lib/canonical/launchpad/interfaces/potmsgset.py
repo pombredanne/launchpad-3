@@ -1,7 +1,8 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-from zope.interface import Attribute, Interface
-from zope.schema import Int
+from zope.interface import Interface, Attribute
+from zope.schema import Field, Int
+from canonical.launchpad import _
 
 __metaclass__ = type
 
@@ -21,7 +22,6 @@ class IPOTMsgSet(Interface):
     # The primary message ID is the same as the message ID with plural
     # form 0 -- i.e. it's redundant. However, it acts as a cached value.
 
-    primemsgid_ = Attribute("The primary msgid for this set.")
     primemsgid_ID = Int(title=u'Key of primary msgid for this set.',
         required=True, readonly=True)
 
@@ -37,6 +37,18 @@ class IPOTMsgSet(Interface):
 
     flagscomment = Attribute("The flags this set has.")
 
+    msgid = Field(
+        title=_("The singular id for this message."), readonly=True)
+
+    msgid_plural = Field(
+        title=_("The plural id for this message or None."), readonly=True)
+
+    singular_text = Field(
+        title=_("The singular text for this message."), readonly=True)
+
+    plural_text = Field(
+        title=_("The plural text for this message or None."), readonly=True)
+
     def getCurrentSubmissions(language, pluralform):
         """Return a selectresults for the submissions that are currently
         published or active in any PO file for the same language and
@@ -45,17 +57,6 @@ class IPOTMsgSet(Interface):
 
     def flags():
         """Return a list of flags on this set."""
-
-    def getPOMsgIDs():
-        """Return an iterator over this set's IPOMsgID.
-
-        The maximum number of items this iterator returns is 2.
-        """
-
-    def getPOMsgIDSighting(pluralForm):
-        """Return the IPOMsgIDSighting that is current and has the plural
-        form provided.
-        """
 
     def translationsForLanguage(language):
         """Return an iterator over the active translation strings for this
@@ -103,16 +104,16 @@ class IPOTMsgSet(Interface):
         """Return 'unicode_text' with the u'\u2022' char exchanged with a
         normal space.
 
-        If the self.primemsgid contains that character, 'unicode_text' is
+        If the self.singular_text contains that character, 'unicode_text' is
         returned without changes as it's a valid char instead of our way to
         represent a normal space to the user.
         """
 
     def normalizeWhitespaces(unicode_text):
         """Return 'unicode_text' with the same trailing and leading whitespaces
-        that self.primemsgid has.
+        that self.singular_text has.
 
-        If 'unicode_text' has only whitespaces but self.primemsgid has other
+        If 'unicode_text' has only whitespaces but self.singular_text has other
         characters, the empty string (u'') is returned to note it as an
         untranslated string.
         """

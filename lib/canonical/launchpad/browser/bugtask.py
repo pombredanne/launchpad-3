@@ -26,7 +26,6 @@ __all__ = [
     'get_buglisting_search_filter_url',
     'BugTargetTextView',
     'BugListingBatchNavigator',
-    'upstream_status_vocabulary_factory',
     'BugsBugTaskSearchListingView',
     'BugTaskSOP',
     ]
@@ -99,7 +98,7 @@ from canonical.widgets.bugtask import (
     AssigneeDisplayWidget, BugTaskBugWatchWidget,
     BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget, NominationReviewActionWidget)
-from canonical.widgets.itemswidgets import LaunchpadRadioWidget
+from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.widgets.project import ProjectScopeWidget
 
 
@@ -1249,26 +1248,6 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     return initial
 
 
-def upstream_status_vocabulary_factory(context):
-    """Create a vocabulary for filtering on upstream status.
-
-    This is used to show a radio widget on the advanced search form.
-    """
-    terms = [
-        SimpleTerm(
-            "pending_bugwatch",
-            title="Show only bugs that need to be forwarded to an upstream bug"
-                  "tracker"),
-        SimpleTerm(
-            "hide_upstream",
-            title="Show only bugs that are not known to affect upstream"),
-        SimpleTerm(
-            "only_resolved_upstream",
-            title="Show only bugs that are resolved upstream"),
-            ]
-    return SimpleVocabulary(terms)
-
-
 class BugTaskListingItem:
     """A decorated bug task.
 
@@ -1417,7 +1396,7 @@ class BugTaskSearchListingView(LaunchpadView):
 
         self.searchtext_widget = CustomWidgetFactory(NewLineToSpacesWidget)
         self.status_upstream_widget = CustomWidgetFactory(
-            LaunchpadRadioWidget, _messageNoValue="Doesn't matter")
+             LabeledMultiCheckBoxWidget)
         self.tag_widget = CustomWidgetFactory(BugTagsWidget)
         setUpWidgets(self, self.schema, IInputWidget)
         self.validateVocabulariesAdvancedForm()
@@ -1537,17 +1516,7 @@ class BugTaskSearchListingView(LaunchpadView):
             if has_no_package:
                 data["sourcepackagename"] = NULL
 
-        if 'status_upstream' in data:
-            # Convert the status_upstream value to parameters we can
-            # send to BugTaskSet.search().
-            status_upstream = data['status_upstream']
-            if status_upstream == 'pending_bugwatch':
-                data['pending_bugwatch_elsewhere'] = True
-            elif status_upstream == 'only_resolved_upstream':
-                data['only_resolved_upstream'] = True
-            elif status_upstream == 'hide_upstream':
-                data['has_no_upstream_bugtask'] = True
-            del data['status_upstream']
+        self._buildUpstreamStatusParams(data)
 
         # "Normalize" the form data into search arguments.
         form_values = {}
@@ -1562,6 +1531,22 @@ class BugTaskSearchListingView(LaunchpadView):
         for name, value in form_values.items():
             setattr(search_params, name, value)
         return search_params
+
+    def _buildUpstreamStatusParams(self, data):
+        """ Convert the status_upstream value to parameters we can
+        send to BugTaskSet.search().
+        """
+        if 'status_upstream' in data:
+            status_upstream = data['status_upstream']
+            if 'pending_bugwatch' in status_upstream:
+                data['pending_bugwatch_elsewhere'] = True
+            if 'resolved_upstream' in status_upstream:
+                data['resolved_upstream'] = True
+            if 'open_upstream' in status_upstream:
+                data['open_upstream'] = True
+            if 'hide_upstream' in status_upstream:
+                data['has_no_upstream_bugtask'] = True
+            del data['status_upstream']
 
     def _getBatchNavigator(self, tasks):
         """Return the batch navigator to be used to batch the bugtasks."""
@@ -1843,10 +1828,10 @@ class BugTaskSearchListingView(LaunchpadView):
     def getBugsFixedElsewhereInfo(self):
         """Return a dict with count and URL of bugs fixed elsewhere."""
         params = self._getDefaultSearchParams()
-        params.only_resolved_upstream = True
+        params.resolved_upstream = True
         fixed_elsewhere = self.context.searchTasks(params)
         search_url = (
-            "%s/+bugs?field.status_upstream=only_resolved_upstream" % 
+            "%s/+bugs?field.status_upstream=resolved_upstream" % 
                 canonical_url(self.context))
         return dict(count=fixed_elsewhere.count(), url=search_url)
 

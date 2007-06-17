@@ -67,12 +67,12 @@ Let's correct the spelling mistake we did and delete one of the tags:
 To make it easy editing the tags as a space separated text string, we
 use BugTagsWidget.
 
-    >>> from zope.publisher.browser import TestRequest
     >>> from canonical.launchpad.interfaces import IBug
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.widgets.bug import BugTagsWidget
     >>> bug_tags_field = IBug['tags'].bind(bug_one)
     >>> tag_field = bug_tags_field.value_type
-    >>> request = TestRequest()
+    >>> request = LaunchpadTestRequest()
     >>> tags_widget = BugTagsWidget(bug_tags_field, tag_field, request)
 
 Since we didn't provided a value in the request, the form value will be
@@ -91,7 +91,7 @@ string:
 If we pass in a value via the request, we'll be able to get the tags as
 a sorted list from getInputValue():
 
-    >>> request = TestRequest(form={'field.tags': u'svg sco'})
+    >>> request = LaunchpadTestRequest(form={'field.tags': u'svg sco'})
     >>> tags_widget = BugTagsWidget(bug_tags_field, tag_field, request)
     >>> tags_widget._getFormValue()
     u'sco svg'
@@ -110,7 +110,7 @@ When we have an input value, the widget can edit the bug tags.
 If a user enters an invalid tag, we get an error explaining what's
 wrong.
 
-    >>> request = TestRequest(form={'field.tags': u'!!!! foo $$$$'})
+    >>> request = LaunchpadTestRequest(form={'field.tags': u'!!!! foo $$$$'})
     >>> tags_widget = BugTagsWidget(bug_tags_field, tag_field, request)
     >>> tags_widget.getInputValue()
     Traceback (most recent call last):

@@ -8,8 +8,11 @@ __all__ = [
     'Question',
     'QuestionTargetSearch',
     'QuestionPersonSearch',
-    'QuestionSet']
+    'QuestionSet',
+    'QuestionTargetMixin',
+    ]
 
+import operator
 from email.Utils import make_msgid
 
 from zope.component import getUtility
@@ -38,6 +41,7 @@ from canonical.lp.dbschema import (
     QuestionAction, QuestionSort, QuestionStatus,
     QuestionParticipation, QuestionPriority)
 
+from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
@@ -48,7 +52,7 @@ from canonical.launchpad.database.questionsubscription import (
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.mailnotification import (
-    QuestionNotificationRecipientSet)
+    NotificationRecipientSet)
 from canonical.launchpad.webapp.enum import Item
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -424,7 +428,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getDirectSubscribers(self):
         """See IQuestion."""
-        subscribers = QuestionNotificationRecipientSet()
+        subscribers = NotificationRecipientSet()
         reason = ("You received this question notification because you are "
                   "a direct subscriber of the question.")
         subscribers.add(self.subscribers, reason, 'Subscriber')
@@ -432,8 +436,7 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getIndirectSubscribers(self):
         """See IQuestion."""
-        subscribers = QuestionNotificationRecipientSet()
-        subscribers.addAnswerContacts(self.target)
+        subscribers = self.target.getAnswerContactRecipients(self.language)
         if self.assignee:
             reason = ('You received this question notification because you '
                       'are the assignee for this question.')
@@ -933,3 +936,89 @@ class QuestionPersonSearch(QuestionSearch):
             constraints.append('(' + ' OR '.join(participations_filter) + ')')
 
         return constraints
+
+
+class QuestionTargetMixin:
+    """Mixin class for IQuestionTarget."""
+
+    def _getTargetTypes(self):
+        """Return a Dict of QuestionTargets representing this object.
+
+        :Return: a Dict with product, distribution, and soucepackagename
+                 as possible keys. Each value is a valid QuestionTarget
+                 or None.
+        """
+        return {}
+
+    def addAnswerContact(self, person):
+        """See IQuestionTarget."""
+        answer_contact = AnswerContact.selectOneBy(
+            person=person, **self._getTargetTypes())
+        if answer_contact is not None:
+            return False
+        # Person must speak a language to be an answer contact.
+        assert person.languages.count() > 0, (
+            "An Answer Contact must speak a language.")
+        params = dict(product=None, distribution=None, sourcepackagename=None)
+        params.update(self._getTargetTypes())
+        AnswerContact(person=person, **params)
+        return True
+
+    def _selectPersonFromAnswerContacts(self, constraints, clause_tables):
+        """Return the Persons or Teams who are AnswerContacts."""
+        answer_contacts = AnswerContact.select(
+            " AND ".join(constraints), clauseTables=clause_tables,
+            distinct=True)
+        return sorted(
+            [answer_contact.person for answer_contact in answer_contacts],
+            key=operator.attrgetter('displayname'))
+
+    def getAnswerContactsForLanguage(self, language):
+        """See IQuestionTarget."""
+        assert language is not None, (
+            "The language cannot be None when selecting answer contacts.")
+        constraints = []
+        targets = self._getTargetTypes()
+        for column, target in targets.items():
+            if target is None:
+                constraint = "AnswerContact." + column + " IS NULL"
+            else:
+                constraint = "AnswerContact." + column + " = %s" % sqlvalues(
+                    target)
+            constraints.append(constraint)
+
+        constraints.append("""
+            AnswerContact.person = PersonLanguage.person AND
+            PersonLanguage.language = %s""" % sqlvalues(language))
+        return set(self._selectPersonFromAnswerContacts(
+            constraints, ['PersonLanguage']))
+
+    def getAnswerContactRecipients(self, language):
+        """See IQuestionTarget."""
+        if language is None:
+            contacts = self.answer_contacts
+        else:
+            contacts = self.getAnswerContactsForLanguage(language)
+        recipients = NotificationRecipientSet()
+        for person in contacts:
+            reason_start = (
+                "You received this question notification because you are ")
+            if person.isTeam():
+                reason = reason_start + (
+                    'a member of %s, which is an answer contact for %s.' % (
+                        person.displayname, self.displayname))
+                header = 'Answer Contact (%s) @%s' % (self.name, person.name)
+            else:
+                reason = reason_start + (
+                    'an answer contact for %s.' % self.displayname)
+                header = 'Answer Contact (%s)' % self.displayname
+            recipients.add(person, reason, header)
+        return recipients
+
+    def getSupportedLanguages(self):
+        """See IQuestionTarget.getSupportedLanguages()."""
+        languages = set()
+        for contact in self.answer_contacts:
+            languages |= contact.getSupportedLanguages()
+        languages.add(getUtility(ILanguageSet)['en'])
+        return languages

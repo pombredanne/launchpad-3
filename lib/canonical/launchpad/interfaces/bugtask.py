@@ -25,9 +25,10 @@ __all__ = [
     'UNRESOLVED_BUGTASK_STATUSES',
     'BUG_CONTACT_BUGTASK_STATUSES']
 
-from zope.interface import Interface, Attribute
+from zope.interface import implements, Interface, Attribute
 from zope.schema import (
     Bool, Choice, Datetime, Int, Text, TextLine, List, Field)
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from sqlos.interfaces import ISelectResults
 
@@ -271,6 +272,22 @@ class INullBugTask(IBugTask):
     have tasks reported in your context.
     """
 
+UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
+    [SimpleTerm(
+        "pending_bugwatch",
+        title="Show bugs that need to be forwarded to an upstream bug"
+        "tracker"),
+    SimpleTerm(
+        "hide_upstream",
+        title="Show bugs that are not known to affect upstream"),
+    SimpleTerm(
+        "resolved_upstream",
+        title="Show bugs that are resolved upstream"),
+    SimpleTerm(
+        "open_upstream",
+        title="Show bugs that are open upstream"),
+    ])
+
 
 class IBugTaskSearchBase(Interface):
     """The basic search controls."""
@@ -306,9 +323,10 @@ class IBugTaskSearchBase(Interface):
     component = List(
         title=_('Component'), value_type=IComponent['name'], required=False)
     tag = List(title=_("Tag"), value_type=Tag(), required=False)
-    status_upstream = Choice(
-        title=_('Status Upstream'), required=False,
-        vocabulary="AdvancedBugTaskUpstreamStatus")
+    status_upstream = List(
+        title=_('Status Upstream'),
+        value_type=Choice(vocabulary=UPSTREAM_STATUS_VOCABULARY),
+        required=False)
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
     bug_contact = Choice(
@@ -324,9 +342,6 @@ class IBugTaskSearch(IBugTaskSearchBase):
     for status to be a List field on a search form, where more than
     one value can be selected.)
     """
-    status_upstream = Choice(
-        title=_('Status Upstream'), required=False,
-        vocabulary="AdvancedBugTaskUpstreamStatus")
     tag = List(
         title=_("Tags"), description=_("Separated by whitespace."),
         value_type=Tag(), required=False)
@@ -496,9 +511,9 @@ class BugTaskSearchParams:
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
-                 only_resolved_upstream=False, has_no_upstream_bugtask=False,
-                 tag=None, has_cve=False, bug_contact=None, bug_reporter=None,
-                 nominated_for=None):
+                 resolved_upstream=False, open_upstream=False,
+                 has_no_upstream_bugtask=False, tag=None, has_cve=False,
+                 bug_contact=None, bug_reporter=None,nominated_for=None ):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -515,7 +530,8 @@ class BugTaskSearchParams:
         self.subscriber = subscriber
         self.component = component
         self.pending_bugwatch_elsewhere = pending_bugwatch_elsewhere
-        self.only_resolved_upstream = only_resolved_upstream
+        self.resolved_upstream = resolved_upstream
+        self.open_upstream = open_upstream
         self.has_no_upstream_bugtask = has_no_upstream_bugtask
         self.tag = tag
         self.has_cve = has_cve
