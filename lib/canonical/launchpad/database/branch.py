@@ -576,16 +576,23 @@ class BranchSet:
         if visible_by_user is None:
             return '%sNOT Branch.private' % query
 
-        # Logged in people can see public branches and branches they
-        # are the owner of (first part of the union)
-        # and all branches they are subscribed to (second part).
+        # Logged in people can see public branches (first part of the union),
+        # branches owned by teams they are in (second part),
+        # and all branches they are subscribed to (third part).
         clause = ('''
             %sBranch.id IN (
                 SELECT Branch.id
                 FROM Branch
                 WHERE
                     NOT Branch.private
-                    OR Branch.owner = %d
+
+                UNION
+
+                SELECT Branch.id
+                FROM Branch, TeamParticipation
+                WHERE
+                    Branch.owner = TeamParticipation.team
+                AND TeamParticipation.person = %d
 
                 UNION
 
