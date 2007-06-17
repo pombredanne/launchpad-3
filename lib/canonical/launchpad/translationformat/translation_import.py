@@ -76,7 +76,7 @@ class TranslationImporter:
         for importer in importers.itervalues():
             file_extensions.extend(importer.file_extensions)
 
-        return file_extensions
+        return sorted(file_extensions)
 
     def getTranslationFileFormatByFileExtension(self, file_extension):
         """See `ITranslationImporter`."""

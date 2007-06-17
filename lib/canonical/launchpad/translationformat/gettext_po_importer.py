@@ -33,26 +33,26 @@ class GettextPoImporter:
 
     @property
     def format(self):
-        """See ITranslationFormatImporter."""
+        """See `ITranslationFormatImporter`."""
         return TranslationFileFormat.PO
 
     @property
     def content_type(self):
-        """See ITranslationFormatImporter."""
+        """See `ITranslationFormatImporter`."""
         return 'application/x-po'
 
     @property
     def file_extensions(self):
-        """See ITranslationFormatImporter."""
+        """See `ITranslationFormatImporter`."""
         return ['.po', '.pot']
 
     @property
     def has_alternative_msgid(self):
-        """See ITranslationFormatImporter."""
+        """See `ITranslationFormatImporter`."""
         return False
 
     def parse(self, translation_import_queue_entry):
-        """See ITranslationFormatImporter."""
+        """See `ITranslationFormatImporter`."""
         self.basepath = translation_import_queue_entry.path
         self.productseries = translation_import_queue_entry.productseries
         self.distroseries = translation_import_queue_entry.distroseries
@@ -72,7 +72,7 @@ class GettextPoImporter:
         self.messages = parser.messages
 
     def getLastTranslator(self):
-        """See ITranslationFormatImporter."""
+        """See `ITranslationFormatImporter`."""
         if self.header is None:
             # The file does not have a header field.
             return None, None

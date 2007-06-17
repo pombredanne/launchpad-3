@@ -21,6 +21,7 @@ from canonical.testing import LaunchpadZopelessLayer
 
 class MozillaXpiImporterTestCase(unittest.TestCase):
     """Class test for mozilla's .xpi file imports"""
+
     layer = LaunchpadZopelessLayer
 
     def setUp(self):
@@ -32,17 +33,19 @@ class MozillaXpiImporterTestCase(unittest.TestCase):
         importer = personset.getByName('carlos')
         productset = getUtility(IProductSet)
         firefox = productset.getByName('firefox')
-        productseries = firefox.getSeries('trunk')
+        trunk_series = firefox.getSeries('trunk')
         template_entry = self.translation_import_queue.addOrUpdateEntry(
             template_path, get_en_US_xpi_file_to_import().read(), is_published,
-            importer, productseries=productseries)
+            importer, productseries=trunk_series)
 
         # Add another one, a translation file.
         translation_path = 'es_ES.xpi'
         translation_entry = self.translation_import_queue.addOrUpdateEntry(
             translation_path, get_en_US_xpi_file_to_import().read(), is_published,
-            importer, productseries=productseries)
+            importer, productseries=trunk_series)
 
+        # We need to get back the librarian entry and thus, we need to do a
+        # commit first.
         transaction.commit()
         self.template_importer = MozillaXpiImporter()
         self.template_importer.parse(template_entry)
@@ -52,12 +55,10 @@ class MozillaXpiImporterTestCase(unittest.TestCase):
     def testInterface(self):
         """Check whether the object follows the interface."""
         self.failUnless(
-            verifyObject(ITranslationFormatImporter, self.template_importer),
-            "MozillaXpiImporter doesn't conform to ITranslationFormatImporter"
-                "interface.")
+            verifyObject(ITranslationFormatImporter, self.template_importer))
 
     def testFormat(self):
-        """Check whether MozillaXpiImporter say that handles XPI file format."""
+        """Check that MozillaXpiImporter handles the XPI file format."""
         self.failUnless(
             self.template_importer.format == TranslationFileFormat.XPI,
             'MozillaXpiImporter format expected XPI but got %s' % (
@@ -71,9 +72,13 @@ class MozillaXpiImporterTestCase(unittest.TestCase):
         self.assertEqual(name, u'Carlos Perell\xf3 Mar\xedn')
         self.assertEqual(email, u'carlos@canonical.com')
 
+    def testHasAlternativeMsgID(self):
+        """Check that MozillaXpiImporter has an alternative msgid."""
+        self.failUnless(
+            self.template_importer.has_alternative_msgid,
+            "MozillaXpiImporter format says it's not using alternative msgid"
+            " when it really does!")
+
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(MozillaXpiImporterTestCase))
-    return suite
-
+    return unittest.defaultTestLoader.loadTestsFromName(__name__)

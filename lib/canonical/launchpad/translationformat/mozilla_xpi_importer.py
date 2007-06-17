@@ -6,6 +6,7 @@ __all__ = [
     'MozillaXpiImporter',
     ]
 
+import logging
 import os
 import cElementTree
 from email.Utils import parseaddr
@@ -24,6 +25,8 @@ from canonical.lp.dbschema import TranslationFileFormat
 
 
 class XpiMessage:
+    """Mozilla XPI implementation for `ITranslationMessage`."""
+
     implements(ITranslationMessage)
 
     def __init__(self):
@@ -39,7 +42,7 @@ class XpiMessage:
         self.pluralExpr = None
 
     def flagsText(self, flags=None):
-        """See ITranslationMessage."""
+        """See `ITranslationMessage`."""
         if flags is not None:
             return flags
 
@@ -49,13 +52,11 @@ class XpiMessage:
 class MozillaZipFile:
     """Class for reading translatable messages from Mozilla XPI/JAR files.
 
-    It behaves as an iterator over all messages in the file, indexed by
-    msgid's.  It handles embedded jar, dtd and properties files.
+    It handles embedded jar, dtd and properties files.
     """
 
-    def __init__(self, filename, content, logger=None):
+    def __init__(self, filename, content):
         self.filename = filename
-        self.logger = logger
         self.header = None
         self.messages = []
         self._msgids = []
@@ -65,15 +66,15 @@ class MozillaZipFile:
         for entry in zip.namelist():
             if entry.endswith('.properties'):
                 data = zip.read(entry)
-                pf = PropertyFile(filename=entry, content=data, logger=logger)
+                pf = PropertyFile(filename=entry, content=data)
                 self.extend(pf.messages)
             elif entry.endswith('.dtd'):
                 data = zip.read(entry)
-                dtdf = DtdFile(filename=entry, content=data, logger=logger)
+                dtdf = DtdFile(filename=entry, content=data)
                 self.extend(dtdf.messages)
             elif entry.endswith('.jar'):
                 data = zip.read(entry)
-                jarf = MozillaZipFile(filename=entry, content=data, logger=logger)
+                jarf = MozillaZipFile(filename=entry, content=data)
                 self.extend(jarf.messages)
             elif entry == 'install.rdf':
                 data = zip.read(entry)
@@ -90,70 +91,84 @@ class MozillaZipFile:
         """Return a string representing last translator name and email."""
         return self.last_translator
 
+    def _updateMessageFileReferences(self, message):
+        """Update message's file_references with full path."""
+        if self.filename is not None:
+            # Include self.filename to this entry's file reference.
+            message.file_references_list = [
+                os.path.join(self.filename, file_reference)
+                for file_reference in message.file_references_list]
+        # Fill file_references field based on the list of files we
+        # found.
+        message.file_references = ', '.join(
+            message.file_references_list)
+
+    def _isKeyShortcutMessage(self, message):
+        """Whether the message represents a key shortcut."""
+        return (
+            self.filename is not None and
+            self.filename.startswith('en-US.xpi') and
+            message.translations and (
+                message.msgid.endswith('.accesskey') or
+                message.msgid.endswith('.commandkey')))
+
     def extend(self, newdata):
         """Append 'newdata' messages to self.messages."""
         for message in newdata:
-            if not message.msgid in self._msgids:
-                if self.filename is not None:
-                    # Include self.filename to this entry's file reference.
-                    message.file_references_list = [
-                        os.path.join(self.filename, file_reference)
-                        for file_reference in message.file_references_list]
-                # Fill file_references field based on the list of files we
-                # found.
-                message.file_references = ', '.join(
-                    message.file_references_list)
-                # Add an extra comment for some special msgid that refer to
-                # key shortcuts.
-                if (self.filename is not None and
-                    self.filename.startswith('en-US.xpi') and
-                    message.translations and (
-                        message.msgid.endswith('.accesskey') or
-                        message.msgid.endswith('.commandkey'))):
-                    # Special case accesskeys and commandkeys:
-                    # these are single letter messages, lets display
-                    # the value as a source comment.
-                    message.source_comment = u"Default key in en_US: '%s'" % (
-                        message.translations[
-                            TranslationConstants.SINGULAR_FORM])
-                    message.translations = []
-                self._msgids.append(message.msgid)
-                self.messages.append(message)
-            elif self.logger is not None:
-                self.logger.info("Duplicate message ID '%s'." % message.msgid)
+            if message.msgid in self._msgids:
+                logging.info("Duplicate message ID '%s'." % message.msgid)
+                continue
+
+            self._updateMessageFileReferences(message)
+
+            # Special case accesskeys and commandkeys:
+            # these are single letter messages, lets display
+            # the value as a source comment.
+            if self._isKeyShortcutMessage(message):
+                message.source_comment = u"Default key in en_US: '%s'" % (
+                    message.translations[TranslationConstants.SINGULAR_FORM])
+                message.translations = []
+
+            self._msgids.append(message.msgid)
+            self.messages.append(message)
 
 
 class MozillaDtdConsumer (xmldtd.WFCDTD):
     """Mozilla DTD translatable message parser.
 
-    Extracts all entities along with comments and source references.
+    msgids are stored as entities. This class extracts it along
+    with translations, comments and source references.
     """
     def __init__(self, parser, filename, messages):
         self.started = False
-        self.lastcomment = None
+        self.last_comment = None
         self.messages = messages
         self.filename = filename
         xmldtd.WFCDTD.__init__(self, parser)
 
     def dtd_start(self):
+        """See `xmldtd.WFCDTD`."""
         self.started = True
 
     def dtd_end(self):
+        """See `xmldtd.WFCDTD`."""
         self.started = False
 
     def handle_comment(self, contents):
+        """See `xmldtd.WFCDTD`."""
         if not self.started:
             return
 
         # Comments would be multiline.
         for line in contents.split(u'\n'):
             line = line.strip()
-            if self.lastcomment is not None:
-                self.lastcomment = u'%s %s' % (self.lastcomment, line)
+            if self.last_comment is not None:
+                self.last_comment = u'%s %s' % (self.last_comment, line)
             elif len(line) > 0:
-                self.lastcomment = line
+                self.last_comment = line
 
     def new_general_entity(self, name, value):
+        """See `xmldtd.WFCDTD`."""
         if not self.started:
             return
 
@@ -164,22 +179,20 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
         # don't have a way to show the line number with the source reference.
         message.file_references_list = ["%s(%s)" % (self.filename, name)]
         message.translations = [value]
-        message.source_comment = self.lastcomment
+        message.source_comment = self.last_comment
         self.messages.append(message)
         self.started += 1
-        self.lastcomment = None
+        self.last_comment = None
 
 
 class DtdFile:
     """Class for reading translatable messages from a .dtd file.
 
-    It behaves as an iterator over messages in the file, indexed by entity
-    names from the .dtd file.
+    It uses DTDParser which fills self.messages with parsed messages.
     """
-    def __init__(self, filename, content, logger=None):
+    def __init__(self, filename, content):
         self.messages = []
         self.filename = filename
-        self.logger = logger
 
         # .dtd files are supposed to be using UTF-8 encoding, if the file is
         # using another encoding, it's against the standard so we reject it
@@ -197,15 +210,16 @@ class DtdFile:
 
 
 def valid_property_msgid(msgid):
-    """Whether the given msgid follows the restrictions to be valid."""
-    # It cannot have white spaces.
+    """Whether the given msgid follows the restrictions to be valid.
+
+    Checks done are:
+        - It cannot have white spaces.
+    """
     return u' ' not in msgid
+
 
 class PropertyFile:
     """Class for reading translatable messages from a .properties file.
-
-    It behaves as an iterator over messages in the file, indexed by keys
-    from the .properties file.
 
     The file format is described at:
     http://www.mozilla.org/projects/l10n/mlp_chrome.html#text
@@ -213,16 +227,14 @@ class PropertyFile:
 
     license_block_text = u'END LICENSE BLOCK'
 
-    def __init__(self, filename, content, logger=None):
+    def __init__(self, filename, content):
         """Constructs a dictionary from a .properties file.
 
         :arg filename: The file name where the content came from.
         :arg content: The file content that we want to parse.
-        :arg logger: A logger object to log events, or None.
         """
         self.filename = filename
         self.messages = []
-        self.logger = logger
 
         # Parse the content.
         self.parse(content)
@@ -268,9 +280,9 @@ class PropertyFile:
                 if line.startswith(u'#'):
                     # It's a whole line comment.
                     ignore_comment = False
-                    line = line[2:]
+                    line = line[1:].strip()
                     if last_comment:
-                        last_comment = u'%s %s' % (last_comment, line)
+                        last_comment = u' '.join((last_comment, line))
                     else:
                         last_comment = line
                     last_comment_line_num = line_num
@@ -371,10 +383,10 @@ class PropertyFile:
 
 class MozillaXpiImporter:
     """Support class to import Mozilla .xpi files."""
+
     implements(ITranslationFormatImporter)
 
-    def __init__(self, logger=None):
-        self.logger = logger
+    def __init__(self):
         self.basepath = None
         self.productseries = None
         self.distroseries = None
@@ -387,28 +399,28 @@ class MozillaXpiImporter:
 
     @property
     def format(self):
-        """See ITranslationFormatImporter."""
+        """See `ITranslationFormatImporter`."""
         return TranslationFileFormat.XPI
 
     @property
     def content_type(self):
-        """See ITranslationFormatImporter."""
+        """See `ITranslationFormatImporter`."""
         # using "application/x-xpinstall" would trigger installation in
         # firefox.
         return 'application/zip'
 
     @property
     def file_extensions(self):
-        """See ITranslationFormatImporter."""
+        """See `ITranslationFormatImporter`."""
         return ['.xpi']
 
     @property
     def has_alternative_msgid(self):
-        """See ITranslationFormatImporter."""
+        """See `ITranslationFormatImporter`."""
         return True
 
     def parse(self, translation_import_queue_entry):
-        """See ITranslationFormatImporter."""
+        """See `ITranslationFormatImporter`."""
         self.basepath = translation_import_queue_entry.path
         self.productseries = translation_import_queue_entry.productseries
         self.distroseries = translation_import_queue_entry.distroseries
@@ -420,7 +432,7 @@ class MozillaXpiImporter:
         self.content = librarian_client.getFileByAlias(
             translation_import_queue_entry.content.id)
 
-        parser = MozillaZipFile(self.basepath, self.content.read(), self.logger)
+        parser = MozillaZipFile(self.basepath, self.content.read())
 
         self.header = parser.header
         self.messages = parser.messages
@@ -428,7 +440,7 @@ class MozillaXpiImporter:
         self.last_translator_text = parser.getLastTranslator()
 
     def getLastTranslator(self):
-        """See ITranslationFormatImporter."""
+        """See `ITranslationFormatImporter`."""
         # At this point we don't have a way to figure this information from
         # the XPI file format.
         if self.last_translator_text is None:

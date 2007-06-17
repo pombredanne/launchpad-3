@@ -19,34 +19,20 @@ class DtdFormatTestCase(unittest.TestCase):
 
         dtd_file = DtdFile('test.dtd', content)
 
-        count = 0
-        for message in dtd_file.messages:
-            if message.msgid == u'utf8.message':
-                self.assertEqual(
-                    message.translations, [u'\xbfQuieres? \xa1S\xed!'])
-                count += 1
+        # There is a single message.
+        self.assertEquals(len(dtd_file.messages), 1)
+        message = dtd_file.messages[0]
 
-        # Validate that we actually found the string so the test is really
-        # passing.
-        self.assertEqual(count, 1)
-
+        self.assertEquals(
+            [u'\xbfQuieres? \xa1S\xed!'], message.translations)
 
     def test_Latin1DtdFileTest(self):
         """This test makes sure that we detect bad encodings."""
 
         content = '<!ENTITY latin1.message "\xbfQuieres? \xa1S\xed!">\n'
 
-        detected = False
-        try:
-            dtd_file = DtdFile('test.dtd', content)
-        except TranslationFormatInvalidInputError:
-            detected = True
-
-        # Whether the unsupported encoding was detected.
-        self.assertEqual(detected, True)
+        self.assertRaises(TranslationFormatInvalidInputError, DtdFile, 'test.dtd', content)
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(DtdFormatTestCase))
-    return suite
+    return unittest.defaultTestLoader.loadTestsFromName(__name__)

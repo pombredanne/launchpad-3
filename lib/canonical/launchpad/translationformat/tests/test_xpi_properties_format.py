@@ -9,6 +9,7 @@ from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     PropertyFile)
 from canonical.launchpad.interfaces import TranslationFormatInvalidInputError
 
+
 class PropertyFileFormatTestCase(unittest.TestCase):
     """Test class for property file format."""
 
@@ -16,18 +17,11 @@ class PropertyFileFormatTestCase(unittest.TestCase):
         """This is a base function to check different encodings."""
         property_file = PropertyFile('test.properties', dedent(content))
 
-        count = 0
-        for message in property_file.messages:
-            if message.msgid == u'default-first-title-mac':
-                self.assertEqual(message.translations, [u'Introducci\xf3n'])
-                count += 1
-            elif message.msgid == u'default-last-title-mac':
-                self.assertEqual(message.translations, [u'Conclusi\xf3n'])
-                count += 1
-
-        # Validate that we actually found the strings so the test is really
-        # passing.
-        self.assertEqual(count, 2)
+        expected = {u'default-first-title-mac': [u'Introducci\xf3n'],
+                    u'default-last-title-mac': [u'Conclusi\xf3n']}
+        parsed = dict([(message.msgid, message.translations)
+                   for message in property_file.messages])
+        self.assertEquals(expected, parsed)
 
     def test_UTF8PropertyFileTest(self):
         """This test makes sure that we handle UTF-8 encoding files."""
@@ -51,15 +45,9 @@ class PropertyFileFormatTestCase(unittest.TestCase):
             default-first-title-mac = Introducci\xf3n
             default-last-title-mac = Conclusi\xf3n
             '''
-        detected = False
-        try:
-            property_file = PropertyFile(
-                'test.properties', dedent(content))
-        except TranslationFormatInvalidInputError:
-            detected = True
-
-        # Whether the unsupported encoding was detected.
-        self.assertEqual(detected, True)
+        self.assertRaises(
+            TranslationFormatInvalidInputError, PropertyFile,
+            'test.properties', content)
 
     def test_TrailingBackslashPropertyFileTest(self):
         """Test whether trailing backslashes are well handled.
@@ -73,15 +61,10 @@ ucci\u00F3n
 '''
         property_file = PropertyFile('test.properties', dedent(content))
 
-        count = 0
-        for message in property_file.messages:
-            if message.msgid == u'default-first-title-mac':
-                self.assertEqual(message.translations, [u'Introducci\xf3n'])
-                count += 1
-
-        # Validate that we actually found the strings so the test is really
-        # passing.
-        self.assertEqual(count, 1)
+        expected = {u'default-first-title-mac': [u'Introducci\xf3n']}
+        parsed = dict([(message.msgid, message.translations)
+                   for message in property_file.messages])
+        self.assertEquals(expected, parsed)
 
     def test_EscapedQuotesPropertyFileTest(self):
         """Test whether escaped quotes are well handled.
@@ -92,16 +75,10 @@ ucci\u00F3n
 
         property_file = PropertyFile('test.properties', dedent(content))
 
-        count = 0
-        for message in property_file.messages:
-            if message.msgid == u'default-first-title-mac':
-                self.assertEqual(
-                    message.translations, [u'\'Something\' \"more\"'])
-                count += 1
-
-        # Validate that we actually found the strings so the test is really
-        # passing.
-        self.assertEqual(count, 1)
+        expected = {u'default-first-title-mac': [u'\'Something\' \"more\"']}
+        parsed = dict([(message.msgid, message.translations)
+                   for message in property_file.messages])
+        self.assertEquals(expected, parsed)
 
     def test_WholeLineCommentPropertyFileTest(self):
         """Test whether whole line comments are well handled."""
@@ -115,21 +92,11 @@ ucci\u00F3n
             '''
 
         property_file = PropertyFile('test.properties', dedent(content))
-
-        count = 0
-        for message in property_file.messages:
-            if message.msgid == u'default-first-title-mac':
-                self.assertEqual(
-                    message.source_comment, u'Foo bar comment.')
-                count += 1
-            if message.msgid == u'foo':
-                self.assertEqual(
-                    message.source_comment, None)
-                count += 1
-
-        # Validate that we actually found the strings so the test is really
-        # passing.
-        self.assertEqual(count, 2)
+        expected = {u'default-first-title-mac': u'Foo bar comment.',
+                    u'foo': None}
+        parsed = dict([(message.msgid, message.source_comment)
+                   for message in property_file.messages])
+        self.assertEquals(expected, parsed)
 
     def test_EndOfLineCommentPropertyFileTest(self):
         """Test whether end of line comments are well handled."""
@@ -142,29 +109,23 @@ ucci\u00F3n
             '''
 
         property_file = PropertyFile('test.properties', dedent(content))
+        expected_comments = {
+            u'default-first-title-mac': u'Foo bar comment.',
+            u'foo': u'Something'
+            }
+        parsed_comments = dict([(message.msgid, message.source_comment)
+                   for message in property_file.messages])
 
-        count = 0
-        for message in property_file.messages:
-            if message.msgid == u'default-first-title-mac':
-                self.assertEqual(
-                    message.source_comment, u'Foo bar comment.')
-                # Also, the content should be only the text before the comment
-                # tag.
-                self.assertEqual(
-                    message.translations, [u'blah'])
-                count += 1
-            if message.msgid == u'foo':
-                self.assertEqual(
-                    message.source_comment, u'Something')
-                # Also, the content should be only the text before the comment
-                # tag.
-                self.assertEqual(
-                    message.translations, [u'bar'])
-                count += 1
+        self.assertEquals(expected_comments, parsed_comments)
 
-        # Validate that we actually found the strings so the test is really
-        # passing.
-        self.assertEqual(count, 2)
+        expected_translations = {
+            u'default-first-title-mac': [u'blah'],
+            u'foo': [u'bar']
+            }
+        parsed_translations = dict([(message.msgid, message.translations)
+                   for message in property_file.messages])
+
+        self.assertEquals(expected_translations, parsed_translations)
 
     def test_MultiLineCommentPropertyFileTest(self):
         """Test whether multiline comments are well handled."""
@@ -185,32 +146,18 @@ ucci\u00F3n
             '''
 
         property_file = PropertyFile('test.properties', dedent(content))
-
-        count = 0
-        for message in property_file.messages:
-            if message.msgid == u'default-first-title-mac':
-                self.assertEqual(
-                    message.source_comment, u' single line comment ')
-                count += 1
-            if message.msgid == u'foo':
-                self.assertEqual(
-                    message.source_comment,
-                    u" Multi line comment\n   yeah, it's multiple! ")
-                count += 1
-            if message.msgid == u'long_comment':
-                self.assertEqual(
-                    message.source_comment,
-                    u' Even with nested comment tags, we handle this as' +
-                        u' multiline comment:\n# fooo\nfoos = bar\n' +
-                        u'something = else // Comment me!')
-                count += 1
-
-        # Validate that we actually found the strings so the test is really
-        # passing.
-        self.assertEqual(count, 3)
+        expected = {
+            u'default-first-title-mac': u' single line comment ',
+            u'foo': u" Multi line comment\n   yeah, it's multiple! ",
+            u'long_comment': (
+                u' Even with nested comment tags, we handle this as' +
+                u' multiline comment:\n# fooo\nfoos = bar\n' +
+                u'something = else // Comment me!')
+            }
+        parsed = dict([(message.msgid, message.source_comment)
+                   for message in property_file.messages])
+        self.assertEquals(expected, parsed)
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(PropertyFileFormatTestCase))
-    return suite
+    return unittest.defaultTestLoader.loadTestsFromName(__name__)
