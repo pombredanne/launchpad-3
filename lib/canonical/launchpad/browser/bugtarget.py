@@ -46,6 +46,7 @@ from canonical.launchpad.webapp import (
 from canonical.lp.dbschema import BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
+from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 
 class FileBugData:
     """Extra data to be added to the bug."""
@@ -55,6 +56,7 @@ class FileBugData:
         self.initial_summary = None
         self.initial_tags = []
         self.private = None
+        self.subscribers = []
         self.extra_description = None
         self.comments = []
         self.attachments = []
@@ -65,6 +67,7 @@ class FileBugData:
             * The Subject header is the initial bug summary.
             * The Tags header specifies the initial bug tags.
             * The Private header sets the visibility of the bug.
+            * The Subscribers header specifies additional initial subscribers
             * The first inline part will be added to the description.
             * All other inline parts will be added as separate comments.
             * All attachment parts will be added as attachment.
@@ -84,6 +87,8 @@ class FileBugData:
                     # If the value is anything other than yes or no we just
                     # ignore it as we cannot currently give the user an error
                     pass
+            subscribers = mime_msg.get('Subscribers', '')
+            self.subscribers = subscribers.split()
             for part in mime_msg.get_payload():
                 disposition_header = part.get('Content-Disposition', 'inline')
                 # Get the type, excluding any parameters.
@@ -356,6 +361,23 @@ class FileBugViewBase(LaunchpadFormView):
                 notifications.append(
                     'The file "%s" was attached to the bug report.' % 
                         cgi.escape(attachment['filename']))
+
+        if extra_data.subscribers:
+            # Subscribe additional subscribers to this bug
+            for subscriber in extra_data.subscribers:
+                valid_person_vocabulary = ValidPersonOrTeamVocabulary()
+                try:
+                    person = valid_person_vocabulary.getTermByToken(
+                        subscriber).value
+                except LookupError:
+                    # We cannot currently pass this error up to the user, so
+                    # we'll just ignore it.
+                    pass
+                else:
+                    bug.subscribe(person)
+                    notifications.append(
+                        '%s has been subscribed to this bug.' %
+                        person.displayname)
 
         # Give the user some feedback on the bug just opened.
         for notification in notifications:

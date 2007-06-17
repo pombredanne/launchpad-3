@@ -23,7 +23,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     ISourcePackage, IHasBuildRecords, IQuestionTarget,
-    get_supported_languages, QUESTION_STATUS_DEFAULT_SEARCH)
+    QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.answercontact import AnswerContact
@@ -35,7 +35,8 @@ from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.question import (
-    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
+    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet,
+    QuestionTargetMixin)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
@@ -43,9 +44,10 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
 from canonical.launchpad.database.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
 from canonical.launchpad.database.build import Build
+from canonical.launchpad.mailnotification import NotificationRecipientSet
 
 
-class SourcePackageQuestionTargetMixin:
+class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
     """Implementation of IQuestionTarget for SourcePackage."""
 
     def newQuestion(self, owner, title, description, language=None,
@@ -93,20 +95,30 @@ class SourcePackageQuestionTargetMixin:
             title, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename).getResults()
 
-    def addAnswerContact(self, person):
-        """See IQuestionTarget."""
-        answer_contact = AnswerContact.selectOneBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename,
-            person=person)
-        if answer_contact:
-            return False
+    def _getTargetTypes(self):
+        """See QuestionTargetMixin."""
+        return {'distribution': self.distribution,
+                'sourcepackagename': self.sourcepackagename}
 
-        AnswerContact(
-            product=None, person=person,
-            sourcepackagename=self.sourcepackagename,
-            distribution=self.distribution)
-        return True
+    def getAnswerContactsForLanguage(self, language):
+        """See IQuestionTarget."""
+        # Sourcepackages are supported by their distribtions too.
+        persons = self.distribution.getAnswerContactsForLanguage(language)
+        persons.update(QuestionTargetMixin.getAnswerContactsForLanguage(
+            self, language))
+        return sorted(
+            [person for person in persons], key=attrgetter('displayname'))
+
+    def getAnswerContactRecipients(self, language):
+        """See IQuestionTarget."""
+        # We need to special case the source package case because some are
+        # contacts for the distro while others are only registered for the
+        # package. And we also want the name of the package in context in
+        # the header.
+        recipients = self.distribution.getAnswerContactRecipients(language)
+        recipients.update(QuestionTargetMixin.getAnswerContactRecipients(
+            self, language))
+        return recipients
 
     def removeAnswerContact(self, person):
         """See IQuestionTarget."""
@@ -137,10 +149,6 @@ class SourcePackageQuestionTargetMixin:
         return sorted(
             [contact.person for contact in answer_contacts],
             key=attrgetter('displayname'))
-
-    def getSupportedLanguages(self):
-        """See IQuestionTarget."""
-        return get_supported_languages(self)
 
     def getQuestionLanguages(self):
         """See IQuestionTarget."""

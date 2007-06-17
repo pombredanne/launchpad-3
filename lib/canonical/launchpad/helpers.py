@@ -353,13 +353,13 @@ def is_english_variant(language):
     >>> is_english_variant(Language('fr'))
     False
     >>> is_english_variant(Language('en'))
-    True
+    False
     >>> is_english_variant(Language('en_CA'))
     True
     >>> is_english_variant(Language('enm'))
     False
     """
-    return language.code[0:3] in ['en', 'en_']
+    return language.code[0:3] in ['en_']
 
 
 def check_po_syntax(s):

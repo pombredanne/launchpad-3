@@ -213,3 +213,103 @@ series.
     >>> for bugtask in firefox.searchTasks(nominated_for_trunk):
     ...     print bugtask.bug.title
     Bug to be fixed in trunk
+
+== Filter by Upstream Status ==
+
+Add an Ubuntu bugtask for a bug that is confirmed upstream.
+
+    >>> from canonical.lp.dbschema import BugTaskStatus, BugTaskImportance
+    >>> from canonical.launchpad.ftests.test_bugtask import (
+    ...     BugTaskSearchBugsElsewhereTest)
+    >>> def bugTaskInfo(bugtask):
+    ...     return '%i %i %s %s' % (
+    ...         bugtask.id, bugtask.bug.id, bugtask.targetname,
+    ...         bugtask.bug.title)
+    >>> test_helper = BugTaskSearchBugsElsewhereTest(helper_only=True)
+    >>> bug_twelve =  getUtility(IBugSet).get(12)
+    >>> task_open_upstream = bugtask_set.createTask(
+    ...     bug=bug_twelve, distribution=ubuntu, owner=foo_bar,
+    ...     status=BugTaskStatus.UNCONFIRMED, 
+    ...     importance=BugTaskImportance.MEDIUM)
+    >>> test_helper.assertBugTaskIsOpenUpstream(task_open_upstream)
+
+Pass the resolved_upstream flag to include only bugtasks linked to
+watches that are rejected, fixed committed or fix released, or bugtasks
+related to upstream bugtasks (i.e. filed on the same bug) that are fix
+committed or fix released.
+
+    >>> test_helper.setUpBugsResolvedUpstreamTests()
+    >>> params = BugTaskSearchParams(
+    ...     resolved_upstream=True, orderby='id', user=None)
+    >>> closed_elsewhere_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in closed_elsewhere_tasks:
+    ...     test_helper.assertBugTaskIsResolvedUpstream(bugtask)
+    ...     print bugTaskInfo(bugtask)
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG
+    26 2 Ubuntu Blackhole Trash folder
+    23 9 thunderbird (Ubuntu) Thunderbird crashes
+
+
+Pass the open_upstream flag to include only bugtasks linked to those
+watches or those upstream bugtasks that have the status "unconfirmed",
+"needs info", "confirmed", "in progress" or "unknown". Note that a bug
+may be associated with three or more bugtasks. If one upstream task
+has a state associated with "open upstream", and another upstream task
+has a state associated with "resolved upstream", the bug is included
+in the results of the "open upstream" filter as well as the "resolved
+upstream" filter.
+
+    >>> params = BugTaskSearchParams(
+    ...     open_upstream=True, orderby='id', user=None)
+    >>> open_elsewhere_tasks = ubuntu.searchTasks(params)
+    >>> for bugtask in open_elsewhere_tasks:
+    ...     test_helper.assertBugTaskIsOpenUpstream(bugtask)
+    ...     print bugTaskInfo(bugtask)
+    17  1 mozilla-firefox (Ubuntu) Firefox does not support SVG
+    26  2 Ubuntu Blackhole Trash folder
+    34 12 Ubuntu Copy, Cut and Delete operations should work on selections
+
+
+We can also filter our search to include only bugs that are not known to
+affect upstream, i.e., bugs that don't have an IUpstreamBugTask.
+
+    >>> params = BugTaskSearchParams(
+    ...     has_no_upstream_bugtask=True, orderby='id', user=None)
+    >>> tasks_with_no_upstreams = ubuntu.searchTasks(params)
+    >>> for bugtask in tasks_with_no_upstreams:
+    ...     test_helper.assertShouldBeShownOnNoUpstreamTaskSearch(bugtask)
+    ...     print bugTaskInfo(bugtask)
+    25 10 linux-source-2.6.15 (Ubuntu) another test bug
+    32 13 Ubuntu Test nominated bug
+
+If we combine upstream-related filters, we get the union of the results
+of the single filters.
+
+    >>> params = BugTaskSearchParams(
+    ...     has_no_upstream_bugtask=True, resolved_upstream=True,
+    ...     orderby='id', user=None)
+    >>> tasks_with_no_upstreams = ubuntu.searchTasks(params)
+    >>> for bugtask in tasks_with_no_upstreams:
+    ...     print bugTaskInfo(bugtask)
+    17  1 mozilla-firefox (Ubuntu) Firefox does not support SVG
+    26  2 Ubuntu Blackhole Trash folder
+    23  9 thunderbird (Ubuntu) Thunderbird crashes
+    25 10 linux-source-2.6.15 (Ubuntu) another test bug
+    32 13 Ubuntu Test nominated bug
+
+
+    >>> test_helper.tearDownBugsElsewhereTests()
+
+The search filter can also return bugs that are related to CVE reports:
+
+    >>> from canonical.launchpad.interfaces import ICveSet
+    >>> def getCves(bugtask):
+    ...     bugcve = getUtility(ICveSet).getBugCvesForBugTasks([bugtask])[0]
+    ...     return bugcve.cve.sequence
+    >>> params = BugTaskSearchParams(
+    ...     has_cve=True, orderby='id', user=None)
+    >>> tasks_with_cves = ubuntu.searchTasks(params)
+    >>> for bugtask in tasks_with_cves:
+    ...     print bugTaskInfo(bugtask), getCves(bugtask)
+    17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG 1999-8979
+    26 2 Ubuntu Blackhole Trash folder 1999-2345
