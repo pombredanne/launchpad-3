@@ -1,16 +1,15 @@
-StrippedTextLine Widget
-=======================
+= StrippedTextLine Widget =
 
 This custom widget is used to strip leading and trailing whitespaces.
 
   >>> from canonical.widgets.textwidgets import StrippedTextWidget
-  >>> from zope.publisher.browser import TestRequest
+  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
   >>> from canonical.launchpad.interfaces import IRemoteBug
 
 We pass a string with leading and trailing whitespaces to the widget
 
   >>> field = IRemoteBug['remotebug']
-  >>> request = TestRequest(
+  >>> request = LaunchpadTestRequest(
   ...     form={'field.remotebug':'    123456    '})
   >>> widget = StrippedTextWidget(field, request)
 
@@ -27,14 +26,14 @@ provided.
   ...     __name__='field', title=u'Title',  required=False)
   >>> non_required_field.missing_value is None
   True
-  >>> request = TestRequest(form={'field.field':'    \n    '})
+  >>> request = LaunchpadTestRequest(form={'field.field':'    \n    '})
   >>> widget = StrippedTextWidget(non_required_field, request)
   >>> widget.getInputValue() is None
   True
 
   >>> required_field = StrippedTextLine(
   ...     __name__='field', title=u'Title',  required=True)
-  >>> request = TestRequest(form={'field.field':'    \n    '})
+  >>> request = LaunchpadTestRequest(form={'field.field':'    \n    '})
   >>> widget = StrippedTextWidget(required_field, request)
   >>> widget.getInputValue()
   Traceback (most recent call last):
