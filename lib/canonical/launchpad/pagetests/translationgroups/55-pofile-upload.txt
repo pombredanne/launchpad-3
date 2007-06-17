@@ -27,7 +27,7 @@ error message back.
   ...     print tag.renderContents()
   Ignored your upload because you didn't select a file to upload.
 
-Now let's upload one that is published.
+Uploading files with an unkown file format notifies the user that it cannot be handled.
 
   >>> from StringIO import StringIO
   >>> af_file = '''
@@ -57,6 +57,18 @@ Now let's upload one that is published.
   ... msgstr "Hierdie program loop as prosesnommer %1."'''
 
   >>> upload = admin_browser.getControl('File')
+  >>> upload.add_file(StringIO(af_file), 'application/msword', 'af.doc')
+  >>> admin_browser.getControl('Upload').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload
+  >>> for tag in find_tags_by_class(admin_browser.contents, 'error'):
+  ...     print tag.renderContents()
+  Ignored your upload because the file you uploaded was not recognised as a file that can be imported.
+
+Now let's upload one that is published.
+
+
+  >>> upload = admin_browser.getControl('File')
   >>> upload.add_file(StringIO(af_file), 'application/x-po', 'af.po')
   >>> admin_browser.getControl(name='upload_type').value = ['upstream']
   >>> admin_browser.getControl('Upload').click()
@@ -64,7 +76,7 @@ Now let's upload one that is published.
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload
   >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
   ...     print tag.renderContents()
-  Thank you for your upload. The PO file content will be imported...
+  Thank you for your upload. The translation content will be imported...
 
 And one that is not published.
 
@@ -76,4 +88,4 @@ And one that is not published.
   http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload
   >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
   ...     print tag.renderContents()
-  Thank you for your upload. The PO file content will be imported...
+  Thank you for your upload. The translation content will be imported...

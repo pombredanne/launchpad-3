@@ -487,6 +487,7 @@ renew his own membership.
 
     >>> from canonical.lp.dbschema import TeamMembershipRenewalPolicy
     >>> ubuntu_team.renewal_policy = TeamMembershipRenewalPolicy.ONDEMAND
+    >>> ubuntu_team.defaultrenewalperiod = 365
     >>> flush_database_updates()
     >>> sabdfl_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
@@ -512,6 +513,7 @@ renew his own membership.
     <BLANKLINE>
 
     >>> guadamen.renewal_policy = TeamMembershipRenewalPolicy.ONDEMAND
+    >>> guadamen.defaultrenewalperiod = 365
     >>> flush_database_updates()
     >>> ubuntu_team_on_guadamen = membershipset.getByPersonAndTeam(
     ...     ubuntu_team, guadamen)
