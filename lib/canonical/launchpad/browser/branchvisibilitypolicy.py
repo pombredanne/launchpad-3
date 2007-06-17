@@ -5,8 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'AddBranchVisibilityPolicyItemView',
-    'RemoveBranchVisibilityPolicyItemView',
+    'AddBranchVisibilityTeamPolicyView',
+    'RemoveBranchVisibilityTeamPolicyView',
     'BranchVisibilityPolicyView',
     ]
 
@@ -18,28 +18,28 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IBranchVisibilityPolicyItem
+from canonical.launchpad.interfaces import IBranchVisibilityTeamPolicy
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
 from canonical.lp.dbschema import BranchVisibilityPolicy
 
 
-class BaseBranchVisibilityPolicyItemView(LaunchpadFormView):
+class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):
     """Used as a base class for the add and remove view."""
 
-    schema = IBranchVisibilityPolicyItem
+    schema = IBranchVisibilityTeamPolicy
 
     @property
     def adapters(self):
-        return {IBranchVisibilityPolicyItem: self.context}
+        return {IBranchVisibilityTeamPolicy: self.context}
 
     @property
     def next_url(self):
         return canonical_url(self.context) + '/+branchvisibility'
 
 
-class AddBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):
+class AddBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
     """Simple form view to add branch visibility policy items."""
 
     pagetitle = "Set branch visibility policy for team"
@@ -60,7 +60,7 @@ class AddBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):
             self.context.setTeamBranchVisibilityPolicy(team, policy)
 
 
-class RemoveBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):
+class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
     """The view to remove zero or more branch visibility policy items."""
 
     pagetitle = "Remove branch visibility policy for teams"
@@ -89,7 +89,7 @@ class RemoveBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):
         """
         terms = [SimpleTerm(item, self._policyToken(item),
                             self._policyDescription(item))
-                 for item in self.context.branch_visibility_policy_items]
+                 for item in self.context.branch_visibility_team_policies]
 
         return form.Fields(
             List(
@@ -116,7 +116,7 @@ class BranchVisibilityPolicyView(LaunchpadView):
 
     @cachedproperty
     def items(self):
-        return self.context.branch_visibility_policy_items
+        return self.context.branch_visibility_team_policies
 
     @property
     def can_remove_items(self):

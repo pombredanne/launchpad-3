@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'BranchVisibilityPolicyItem',
+    'BranchVisibilityTeamPolicy',
     'BranchVisibilityPolicyMixin',
     ]
 
@@ -22,13 +22,13 @@ from canonical.lp.dbschema import BranchVisibilityPolicy
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    IBranchVisibilityPolicyItem, IProduct, IProject)
+    IBranchVisibilityTeamPolicy, IProduct, IProject)
 
 
-class BranchVisibilityPolicyItem(SQLBase):
+class BranchVisibilityTeamPolicy(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
 
-    implements(IBranchVisibilityPolicyItem)
+    implements(IBranchVisibilityTeamPolicy)
     _table = 'BranchVisibilityPolicy'
 
     project = ForeignKey(dbName='project', foreignKey='Project')
@@ -60,16 +60,16 @@ class BranchVisibilityPolicyMixin:
 
     @property
     def _policy_items(self):
-        return BranchVisibilityPolicyItem.selectBy(
+        return BranchVisibilityTeamPolicy.selectBy(
             **self._policy_visibility_context)
 
     @property
-    def branch_visibility_policy_items(self):
+    def branch_visibility_team_policies(self):
         """See IHasBranchVisibilityPolicy."""
         # If we are using the inherited policy return the items
         # from the inherited context.
         if self.isUsingInheritedBranchVisibilityPolicy():
-            return self.project.branch_visibility_policy_items
+            return self.project.branch_visibility_team_policies
         # Use shortlist here for policy items as we don't expect
         # many items, and want a warning emitted if we start
         # getting many items being created for projects as it
@@ -77,19 +77,19 @@ class BranchVisibilityPolicyMixin:
         items = shortlist(self._policy_items)
         return sorted(items, key=policy_item_key)
 
-    def _selectOneBranchVisibilityPolicyItem(self, team):
+    def _selectOneBranchVisibilityTeamPolicy(self, team):
         """Finds one particular policy item."""
         if self.isUsingInheritedBranchVisibilityPolicy():
             policy_visibility_context = self.project._policy_visibility_context
         else:
             policy_visibility_context = self._policy_visibility_context
-        return BranchVisibilityPolicyItem.selectOneBy(
+        return BranchVisibilityTeamPolicy.selectOneBy(
                 team=team, **policy_visibility_context)
 
     @property
     def branch_visibility_base_policy(self):
         """See IHasBranchVisibilityPolicy."""
-        item = self._selectOneBranchVisibilityPolicyItem(None)
+        item = self._selectOneBranchVisibilityTeamPolicy(None)
         # If there is no explicit item set, then public is the default.
         if item is None:
             return BranchVisibilityPolicy.PUBLIC
@@ -98,7 +98,7 @@ class BranchVisibilityPolicyMixin:
 
     def getBranchVisibilityPolicyForTeam(self, team):
         """See IHasBranchVisibilityPolicy."""
-        item = self._selectOneBranchVisibilityPolicyItem(team)
+        item = self._selectOneBranchVisibilityTeamPolicy(team)
         if item is None:
             return None
         else:
@@ -116,17 +116,17 @@ class BranchVisibilityPolicyMixin:
 
     def setTeamBranchVisibilityPolicy(self, team, policy):
         """See IHasBranchVisibilityPolicy."""
-        item = BranchVisibilityPolicyItem.selectOneBy(
+        item = BranchVisibilityTeamPolicy.selectOneBy(
             team=team, **self._policy_visibility_context)
         if item is None:
-            item = BranchVisibilityPolicyItem(
+            item = BranchVisibilityTeamPolicy(
                 team=team, policy=policy, **self._policy_visibility_context)
         else:
             item.policy = policy
 
     def removeTeamFromBranchVisibilityPolicy(self, team):
         """See IHasBranchVisibilityPolicy."""
-        item = BranchVisibilityPolicyItem.selectOneBy(
+        item = BranchVisibilityTeamPolicy.selectOneBy(
             team=team, **self._policy_visibility_context)
         if item is not None:
-            BranchVisibilityPolicyItem.delete(item.id)
+            BranchVisibilityTeamPolicy.delete(item.id)

@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'IHasBranchVisibilityPolicy',
-    'IBranchVisibilityPolicyItem',
+    'IBranchVisibilityTeamPolicy',
     ]
 
 from zope.interface import Interface, Attribute
@@ -21,7 +21,7 @@ from canonical.launchpad import _
 class IHasBranchVisibilityPolicy(Interface):
     """Implemented by types that need to define default branch visibility."""
 
-    branch_visibility_policy_items = Attribute(
+    branch_visibility_team_policies = Attribute(
         "The branch visibility policy items.")
 
     branch_visibility_base_policy = Attribute(
@@ -57,8 +57,8 @@ class IHasBranchVisibilityPolicy(Interface):
         """
 
 
-class IBranchVisibilityPolicyItem(Interface):
-    """A branch visibility policy item is defined as a team and a policy.
+class IBranchVisibilityTeamPolicy(Interface):
+    """A branch visibility team policy is defined as a team and a policy.
 
     The team may be null, in which case the policy applies to everyone.
     """

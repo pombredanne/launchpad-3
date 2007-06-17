@@ -343,14 +343,12 @@ class BranchSet:
             else:
                 return PUBLIC_BRANCH
 
-        policy_items = product.branch_visibility_policy_items
-
         ratings = dict(
             [(item, []) for item in BranchVisibilityPolicy.items])
 
         # Initially we ignore the policy that applies to everyone and just
         # check the team policies for the owner.
-        for item in policy_items:
+        for item in product.branch_visibility_team_policies:
             if item.team is not None:
                 if owner.inTeam(item.team):
                     ratings[item.policy].append(item.team)
