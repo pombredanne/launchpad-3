@@ -856,8 +856,6 @@ class SpecificationNewView(LaunchpadFormView):
                     'name',
                     self.schema['name'].errormessage % name
                 )
-        # Perform normal validation.
-        LaunchpadFormView.validate(self, data)
 
     @action(_('Register Blueprint'), name='register')
     def register_action(self, action, data):
