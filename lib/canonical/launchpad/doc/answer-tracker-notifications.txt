@@ -225,7 +225,8 @@ of changes to the bug status:
     >>> from canonical.lp.dbschema import BugTaskStatus
     >>> bugtask = bug.bugtasks[0]
     >>> original_bugtask = Snapshot(bugtask, providing=providedBy(bugtask))
-    >>> bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> bugtask.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> bugtask.statusexplanation = 'This bug really happened to me.'
     >>> notify(SQLObjectModifiedEvent(
     ...     bugtask, original_bugtask, ['status', 'statusexplanation']))
@@ -241,7 +242,7 @@ of changes to the bug status:
     >>> print notification_body #doctest: -NORMALIZE_WHITESPACE
     Bug #... status changed in Ubuntu:
     <BLANKLINE>
-        Unconfirmed => Confirmed
+        New => Confirmed
     <BLANKLINE>
     Status change explanation given by No Privileges Person:
     <BLANKLINE>

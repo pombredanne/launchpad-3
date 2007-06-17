@@ -229,7 +229,7 @@ Add an Ubuntu bugtask for a bug that is confirmed upstream.
     >>> bug_twelve =  getUtility(IBugSet).get(12)
     >>> task_open_upstream = bugtask_set.createTask(
     ...     bug=bug_twelve, distribution=ubuntu, owner=foo_bar,
-    ...     status=BugTaskStatus.UNCONFIRMED, 
+    ...     status=BugTaskStatus.NEW,
     ...     importance=BugTaskImportance.MEDIUM)
     >>> test_helper.assertBugTaskIsOpenUpstream(task_open_upstream)
 

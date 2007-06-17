@@ -1,0 +1,69 @@
+= Keeping old bookmarks working =
+
+As part of the bug workflow spec various statuses are being changed
+but we need old bookmarks to keep working with the status names.
+
+    >>> url = (
+    ...     "http://bugs.launchpad.dev/ubuntu/+bugs?"
+    ...     "field.searchtext="
+    ...     "&orderby=-importance"
+    ...     "&search=Search"
+    ...     "&field.status%3Alist=Unconfirmed"
+    ...     "&field.status%3Alist=In+Progress"
+    ...     "&assignee_option=any"
+    ...     "&field.status_upstream-empty-marker=1"
+    ...     "&field.omit_dupes=on"
+    ...     "&field.has_patch.used="
+    ... )
+    >>> anon_browser.open(url)
+
+The user is redirected to a new url to make the change explicit, and
+to allow user agents (and users) to update bookmarks, etc.
+
+    >>> from canonical.launchpad.webapp.uri import URI
+    >>> uri = URI(anon_browser.url)
+    >>> print uri.path
+    /ubuntu/+bugs
+    >>> print uri.query.split('&')
+    ['field.searchtext=',
+     'orderby=-importance',
+     'search=Search',
+     'field.status%3Alist=New',
+     'field.status%3Alist=In+Progress',
+     'assignee_option=any',
+     'field.status_upstream-empty-marker=1',
+     'field.omit_dupes=on',
+     'field.has_patch.used=']
+
+    >>> from canonical.launchpad.ftests.bug import print_bugtasks
+    >>> print_bugtasks(anon_browser.contents)
+     1  Firefox does not support SVG  mozilla-firefox      Medium  New
+    10  another test bug              linux-source-2.6.15  Medium  New
+     2  Blackhole Trash folder        &mdash;              Medium  New
+
+Searching amongst all bugs also redirects to an updated location with
+the new status names in place of the old.
+
+    >>> url = (
+    ...     "http://bugs.launchpad.dev/bugs/+bugs?"
+    ...     "orderby=-importance&"
+    ...     "search=Search&"
+    ...     "field.status%3Alist=Unconfirmed&"
+    ...     "field.status%3Alist=Needs+Info&"
+    ...     "assignee_option=any&"
+    ...     "field.status_upstream-empty-marker=1&"
+    ...     "field.omit_dupes=on"
+    ...     )
+    >>> anon_browser.open(url)
+
+    >>> uri = URI(anon_browser.url)
+    >>> print uri.path
+    /bugs/+bugs
+    >>> print uri.query.split('&')
+    ['orderby=-importance',
+     'search=Search',
+     'field.status%3Alist=New',
+     'field.status%3Alist=Incomplete',
+     'assignee_option=any',
+     'field.status_upstream-empty-marker=1',
+     'field.omit_dupes=on']
