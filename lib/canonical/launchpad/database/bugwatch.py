@@ -86,7 +86,9 @@ class BugWatch(SQLBase):
         for linked_bugtask in self.bugtasks:
             old_bugtask = Snapshot(
                 linked_bugtask, providing=providedBy(linked_bugtask))
-            linked_bugtask.transitionToStatus(malone_status)
+            linked_bugtask.transitionToStatus(
+                malone_status,
+                getUtility(ILaunchpadCelebrities).bug_watch_updater)
             # We don't yet support updating the following values.
             linked_bugtask.importance = BugTaskImportance.UNKNOWN
             linked_bugtask.transitionToAssignee(None)

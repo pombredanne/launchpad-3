@@ -107,8 +107,8 @@ Let's download it and make sure the contents look ok.
 
 Let's try requesting an export in MO format:
 
-  >>> from canonical.lp.dbschema import RosettaFileFormat
-  >>> request_set.addRequest(person, None, [ca], RosettaFileFormat.MO)
+  >>> from canonical.lp.dbschema import TranslationFileFormat
+  >>> request_set.addRequest(person, None, [ca], TranslationFileFormat.MO)
   >>> process_queue(MockTransactionManager(), MockLogger())
   log> Exporting objects for Mark Shuttleworth, related to template pmount in
   Ubuntu Hoary package "pmount"

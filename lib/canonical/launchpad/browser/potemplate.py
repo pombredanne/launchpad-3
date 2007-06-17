@@ -22,7 +22,7 @@ __all__ = [
     ]
 
 import operator
-
+import os.path
 from zope.component import getUtility
 from zope.interface import implements
 from zope.publisher.browser import FileUpload
@@ -37,14 +37,14 @@ from canonical.launchpad.browser.rosetta import TranslationsMixin
 from canonical.launchpad.browser.sourcepackage import (
     SourcePackageSOP, SourcePackageFacets)
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFileSet, IPOExportRequestSet,
-    IPOTemplateSubset, ITranslationImportQueue, IProductSeries, 
-    ISourcePackage)
+    IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFile, IPOFileSet,
+    IPOExportRequestSet, IPOTemplateSubset, ITranslationImporter,
+    ITranslationImportQueue, IProductSeries, ISourcePackage)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
     GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
-from canonical.lp.dbschema import RosettaFileFormat
+from canonical.lp.dbschema import TranslationFileFormat
 
 
 class POTemplateNavigation(Navigation):
@@ -314,19 +314,12 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
             return
 
         translation_import_queue = getUtility(ITranslationImportQueue)
-
-        if filename.endswith('.pot') or filename.endswith('.po'):
+        root, ext = os.path.splitext(filename)
+        translation_importer = getUtility(ITranslationImporter)
+        if (ext in translation_importer.file_extensions_with_importer):
             # Add it to the queue.
-            if filename.endswith('.po'):
-                # It's a .po file attached to the template at self.context,
-                # we don't override its path.
-                path = filename
-            else:
-                # It's a template, we override it to have exactly the same
-                # path as the entry has in our database.
-                path = self.context.path
             translation_import_queue.addOrUpdateEntry(
-                path, content, True, self.user,
+                filename, content, True, self.user,
                 sourcepackagename=self.context.sourcepackagename,
                 distroseries=self.context.distroseries,
                 productseries=self.context.productseries,
@@ -421,7 +414,7 @@ class BaseExportView(LaunchpadView):
 
     def validateFileFormat(self, format_name):
         try:
-            return RosettaFileFormat.items[format_name]
+            return TranslationFileFormat.items[format_name]
         except KeyError:
             self.request.response.addErrorNotification(_(
                 'Please select a valid format for download.'))
@@ -431,23 +424,26 @@ class BaseExportView(LaunchpadView):
         """Return a list of formats available for translation exports."""
 
         class BrowserFormat:
-            def __init__(self, title, value):
+            def __init__(self, title, value, is_default=False):
                 self.title = title
                 self.value = value
-                self.is_default = False
-                if value == RosettaFileFormat.PO.name:
-                    # Right now, PO format is the default format with exports.
-                    # Once we add more formats support, the default will
-                    # depend on the kind of resource.
-                    self.is_default = True
+                self.is_default = is_default
 
         formats = [
-            RosettaFileFormat.PO,
-            RosettaFileFormat.MO,
+            TranslationFileFormat.PO,
+            TranslationFileFormat.MO,
         ]
 
         for format in formats:
-            yield BrowserFormat(format.title, format.name)
+            if IPOTemplate.providedBy(self.context):
+                source_file_format = self.context.source_file_format
+            elif IPOFile.providedBy(self.context):
+                source_file_format = (
+                    self.context.potemplate.source_file_format)
+            else:
+                raise AssertionError('Got an unknown object')
+            is_default = (source_file_format == format)
+            yield BrowserFormat(format.title, format.name, is_default)
 
 
 class POTemplateExportView(BaseExportView):
