@@ -14,7 +14,7 @@ All the basic bug details are displayed.
 
     >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
-    1  Firefox does not support SVG  mozilla-firefox  Medium  Unconfirmed
+    1  Firefox does not support SVG  mozilla-firefox  Medium  New
 
 There are no controls for approving/declining the nominations if the
 user don't have permissions to do it.
@@ -25,7 +25,7 @@ user don't have permissions to do it.
     Bugs nominated for Hoary
 
     >>> print_bugtasks(user_browser.contents)
-    1  Firefox does not support SVG  mozilla-firefox  Medium  Unconfirmed
+    1  Firefox does not support SVG  mozilla-firefox  Medium  New
 
     >>> bug_listing = find_tag_by_id(user_browser.contents, 'buglisting')
     >>> def print_which_items_have_widgets(bug_listing):
@@ -66,7 +66,7 @@ nominations.
     Bugs nominated for Hoary
 
     >>> print_bugtasks(admin_browser.contents)
-    1  Firefox does not support SVG  mozilla-firefox  Medium  Unconfirmed
+    1  Firefox does not support SVG  mozilla-firefox  Medium  New
 
     >>> bug_listing = find_tag_by_id(admin_browser.contents, 'buglisting')
     >>> print_which_items_have_widgets(bug_listing)
@@ -112,7 +112,7 @@ A product series has the same nomination listing as a distro series.
     Bugs nominated for 1.0
 
     >>> print_bugtasks(user_browser.contents)
-    1  Firefox does not support SVG Low  Unconfirmed
+    1  Firefox does not support SVG Low  New
 
     >>> from canonical.launchpad.database import ProductSet
     >>> firefox = ProductSet().getByName('firefox')

@@ -12,21 +12,23 @@ import pytz
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-from canonical.launchpad.translationformat.gettext_po_importer import (
-    GettextPoImporter)
 from canonical.launchpad.interfaces import (
         IPersonSet, ITranslationImporter, NotExportedFromLaunchpad,
         OldTranslationImported, TranslationConflict, TranslationConstants)
+from canonical.launchpad.translationformat.gettext_po_importer import (
+    GettextPoImporter)
+from canonical.launchpad.translationformat.mozilla_xpi_importer import (
+    MozillaXpiImporter)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
     PersonCreationRationale, RosettaImportStatus, TranslationFileFormat)
 
-# Registered importers.
 importers = {
-    TranslationFileFormat.PO: GettextPoImporter,
+    TranslationFileFormat.PO: GettextPoImporter(),
+    TranslationFileFormat.XPI: MozillaXpiImporter(),
     }
-
 
 class TranslationImporter:
     """Handle translation resources imports."""
@@ -66,14 +68,29 @@ class TranslationImporter:
 
         return person
 
-    def _getImporterByFileFormat(self, file_format):
-        """Return an ITranslationFormatImporter that handles given file format.
+    @cachedproperty
+    def file_extensions_with_importer(self):
+        """See ITranslationImporter."""
+        file_extensions = []
 
-        Return None if there is no importer to handle it.
-        """
+        for importer in importers.itervalues():
+            file_extensions.extend(importer.file_extensions)
+
+        return sorted(file_extensions)
+
+    def getTranslationFileFormatByFileExtension(self, file_extension):
+        """See `ITranslationImporter`."""
+        for importer in importers.itervalues():
+            if file_extension in importer.file_extensions:
+                return importer.format
+
+        return None
+
+    def getTranslationFormatImporter(self, file_format):
+        """See `ITranslationImporter`."""
         return importers.get(file_format, None)
 
-    def import_file(self, translation_import_queue_entry, logger=None):
+    def importFile(self, translation_import_queue_entry, logger=None):
         """See ITranslationImporter."""
         assert translation_import_queue_entry is not None, (
             "The translation import queue entry cannot be None.")
@@ -84,15 +101,18 @@ class TranslationImporter:
                 translation_import_queue_entry.pofile is not None), (
                 "The entry has not any import target.")
 
-        importer_class = self._getImporterByFileFormat(
+        importer = self.getTranslationFormatImporter(
             translation_import_queue_entry.format)
-        assert importer_class is not None, (
+
+        assert importer is not None, (
             'There is no importer available for %s files' % (
                 translation_import_queue_entry.format.name))
 
-        importer = importer_class(
-            translation_import_queue_entry, logger=logger)
+        importer.parse(translation_import_queue_entry)
 
+        # This var will hold an special IPOFile for 'English' which will have
+        # the English strings to show instead of arbitrary IDs.
+        english_pofile = None
         self.pofile = translation_import_queue_entry.pofile
         if translation_import_queue_entry.pofile is None:
             self.potemplate = translation_import_queue_entry.potemplate
@@ -103,6 +123,12 @@ class TranslationImporter:
             # We are importing a translation template.
             self.potemplate.source_file_format = (
                 translation_import_queue_entry.format)
+            if importer.has_alternative_msgid:
+                # We use the special 'en' language as the way to store the
+                # English strings to show instead of the msgids.
+                english_pofile = self.potemplate.getPOFileByLang('en')
+                if english_pofile is None:
+                    english_pofile = self.potemplate.newPOFile('en')
             # Expire old messages
             self.potemplate.expireAllMessages()
             if importer.header is not None:
@@ -235,6 +261,19 @@ class TranslationImporter:
                 # import.
                 self.potemplate.invalidateCache()
 
+                if english_pofile is not None:
+                    # The English strings for this template are stored inside
+                    # an IPOFile.
+                    pomsgset = potmsgset.getPOMsgSet(
+                        english_pofile.language.code)
+                    if pomsgset is None:
+                        # There is no such pomsgset, we need to create it.
+                        pomsgset = (
+                            english_pofile.createMessageSetFromMessageSet(
+                                potmsgset))
+
+                    pomsgset.sequence = count
+
                 # By default translation template uploads are done only by
                 # editors.
                 is_editor = True
@@ -267,8 +306,9 @@ class TranslationImporter:
                     translation_import_queue_entry.importer)
 
             # Store translations
-            if self.pofile is None:
-                # It's not an IPOFile.
+            if self.pofile is None and english_pofile is None:
+                # It's neither an IPOFile nor an IPOTemplate that needs to
+                # store English strings in an IPOFile.
                 continue
 
             if not message.translations:
