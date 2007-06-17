@@ -279,8 +279,7 @@ class UniqueField(TextLine):
         return self._getByAttribute(value) is not None
 
     def _validate(self, input):
-        """Raise a LaunchpadValidationError if the attribute is not
-        available.
+        """Raise a LaunchpadValidationError if the attribute is not available.
 
         A attribute is not available if it's already in use by another
         object of this same context. The 'input' should be valid as per
@@ -314,8 +313,7 @@ class ContentNameField(UniqueField):
         return self._getByName(name)
 
     def _validate(self, name):
-        """Check that the given name is valid (and by delegation,
-        unique)."""
+        """Check that the given name is valid (and by delegation, unique)."""
         name_validator(name)
         UniqueField._validate(self, name)
 
