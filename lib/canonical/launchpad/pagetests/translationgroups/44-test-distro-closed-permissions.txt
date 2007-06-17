@@ -1,7 +1,7 @@
 So now No Privileges Person is the Welsh translator for the PolyGlot
-translation group, and they are the translation group for Ubuntu, which has
-Closed translations. This means that No Privileges Person should be able to
-translate any strings in Ubuntu to Welsh. In other languages, he will
+translation group, and they are the translation group for Ubuntu, which uses
+the Closed translation mode. This means that No Privileges Person should be
+able to translate any strings in Ubuntu to Welsh. In other languages, he will
 not be able to add or change translations.
 
 Let's see if No Privileges Person can see the translated strings in Southern

@@ -868,19 +868,23 @@ class POMsgSetView(LaunchpadView):
     #   self.pluralform_indices
 
     def __init__(self, pomsgset, request, plural_indices_to_store,
-                 translations, is_fuzzy, error, second_lang_code):
+                 translations, is_fuzzy, error, second_lang_code,
+                 form_is_writeable):
         """Primes the view with information that is gathered by a parent view.
 
-        :arg plural_indices_to_store: A dictionary that indicates whether the
-            translation associated should be stored in our database or
+        :param plural_indices_to_store: A dictionary that indicates whether
+            the translation associated should be stored in our database or
             ignored. It's indexed by plural form.
-        :arg translations: A dictionary indexed by plural form index;
+        :param translations: A dictionary indexed by plural form index;
             BaseTranslationView constructed it based on form-submitted
             translations.
-        :arg is_fuzzy: A flag that notes current fuzzy flag overlaid with the
-            form-submitted.
-        :arg error: The error related to self.context submission or None.
-        :arg second_lang_code: The result of submiting field.alternative_value.
+        :param is_fuzzy: A flag that notes current fuzzy flag overlaid with
+            the form-submitted.
+        :param error: The error related to self.context submission or None.
+        :param second_lang_code: The result of submiting
+            field.alternative_value.
+        :param form_is_writeable: Whether the form should accept write
+            operations
         """
         LaunchpadView.__init__(self, pomsgset, request)
 
@@ -890,6 +894,7 @@ class POMsgSetView(LaunchpadView):
         self.is_fuzzy = is_fuzzy
         self.user_is_official_translator = (
             pomsgset.pofile.canEditTranslations(self.user))
+        self.form_is_writeable = form_is_writeable
 
         # Set up alternative language variables. XXX: This could be made
         # much simpler if we built suggestions externally in the parent
@@ -1156,12 +1161,6 @@ class POMsgSetView(LaunchpadView):
         return text_to_html(
             self.context.potmsgset.plural_text,
             self.context.potmsgset.flags())
-
-    @cachedproperty
-    def form_is_writeable(self):
-        """Whether the form should accept write operations."""
-        return (self.user is not None and
-                self.context.pofile.canAddSuggestions(self.user))
 
     # XXX 20060915 mpt: Detecting tabs, newlines, and leading/trailing spaces
     # is being done one way here, and another way in the functions above.
