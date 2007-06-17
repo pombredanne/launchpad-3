@@ -21,7 +21,7 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, IPackageUpload, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
     IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset,
-    IDistroSeriesLanguage, IBranchSubscription)
+    IBranchSubscription, IDistroSeriesLanguage, IEntitlement)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
@@ -934,3 +934,24 @@ class BranchSubscriptionEdit(AuthorizationBase):
         """
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(self.obj.person) or user.inTeam(admins)
+
+
+class ViewEntitlement(AuthorizationBase):
+    """Permissions to view IEntitlement objects.
+
+    Allow the owner of the entitlement, the entitlement registrant,
+    or any member of the team or any admin to view the entitlement.
+    """
+    permission = 'launchpad.View'
+    usedfor = IEntitlement
+
+    def checkAuthenticated(self, user):
+        """Is the user able to edit a branch subscription?
+
+        Any team member can edit a branch subscription for their team.
+        Launchpad Admins can also edit any branch subscription.
+        """
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.person) or
+                user.inTeam(self.obj.registrant) or
+                user.inTeam(admins))
