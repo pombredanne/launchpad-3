@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -557,7 +557,7 @@ class POTemplate(SQLBase, RosettaStats):
                 orderBy='dateimported')
 
     def importFromQueue(self, logger=None):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         entry_to_import = self.getNextToImport()
 
         if entry_to_import is None:
@@ -566,8 +566,10 @@ class POTemplate(SQLBase, RosettaStats):
 
         template_mail = None
         translation_importer = getUtility(ITranslationImporter)
+        import_rejected = True
         try:
             translation_importer.importFile(entry_to_import, logger)
+            import_rejected = False
         except (TranslationFormatSyntaxError,
                 TranslationFormatInvalidInputError):
             # The import failed, we mark it as failed so we could review it
@@ -577,35 +579,43 @@ class POTemplate(SQLBase, RosettaStats):
                     'We got an error importing %s', self.title, exc_info=1)
             template_mail = 'poimport-syntax-error.txt'
 
-            replacements = {
-                'importer': entry_to_import.importer.displayname,
-                'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
-                'elapsedtime': entry_to_import.getElapsedTimeText(),
-                'file_link': entry_to_import.content.http_url,
-                'import_title':
-                    'translation templates for %s' % self.displayname
-                }
+        replacements = {
+            'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
+            'elapsedtime': entry_to_import.getElapsedTimeText(),
+            'file_link': entry_to_import.content.http_url,
+            'import_title':
+                'translation templates for %s' % self.displayname,
+            'importer': entry_to_import.importer.displayname,
+            'template': self.displayname
+            }
 
+        if import_rejected:
             # We got an error that prevented us to import the template, we
             # need to notify the user and set the status to FAILED.
             subject = 'Import problem - %s' % self.displayname
+        else:
+            # The import was successful.
+            template_mail = 'poimport-template-confirmation.txt'
+            subject = 'Translation template import - %s' % self.displayname
 
-            # Send the email.
-            template = helpers.get_email_template(template_mail)
-            message = template % replacements
+        assert template_mail is not None
+        assert subject is not None
 
-            fromaddress = config.rosetta.rosettaadmin.email
-            toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
+        # Send the email.
+        template = helpers.get_email_template(template_mail)
+        message = template % replacements
 
-            simple_sendmail(fromaddress,
-                toaddress,
-                subject,
-                MailWrapper().format(message))
+        fromaddress = config.rosetta.rosettaadmin.email
+        toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
+        simple_sendmail(fromaddress,
+            toaddress,
+            subject,
+            MailWrapper().format(message))
+
+        if import_rejected:
+            # Give up on this file.
             entry_to_import.status = RosettaImportStatus.FAILED
-
-
-            # We don't have anything to do here...
             return
 
         # The import has been done, we mark it that way.
