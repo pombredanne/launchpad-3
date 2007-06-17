@@ -99,7 +99,7 @@ We test the validator using an invalid name.
   >>> browser.getControl(name='field.title').value = (
   ...   'Network Magic - Automatic Network Detection')
   >>> browser.getControl(name='field.specurl').value = (
-  ...   'http://wiki.ubuntu.com/NetworkMagic')
+  ...   'http://wiki.ubuntu.com/NetworkMagicExclamation')
   >>> browser.getControl(name='field.summary').value = (
   ...   "Users are increasingly using multiple networks.")
   >>> browser.getControl(name='field.status').value = ['Approved']
@@ -109,9 +109,11 @@ We test the validator using an invalid name.
   >>> browser.getControl('Register Blueprint').click()
   >>> browser.url
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
-  >>> 'Invalid name' in browser.contents
-  True
-
+  >>> for message in find_tags_by_class(browser.contents, 'message'):
+  ...      print message.renderContents()
+  There is 1 error.
+  <BLANKLINE>
+  Invalid name ...
 
 Some invalid names can be transformed into valid names. When it is clear that a
 valid name can be produced by removing trailing spaces or by converting upper
@@ -254,3 +256,17 @@ through.
   'http://blueprints.launchpad.dev/ubuntu/+spec/brandnewspec'
 
 
+= TODO =
+There are many specification doctests with the following type of test:
+
+"  >>> 'Invalid name' in browser.contents                              "
+
+If such tests fail, they can be a little difficult to debug, because the
+failure messages do not specify the resulting string. Instead, we could
+use the following pattern to get more information in case of failure:
+
+"  >>> for message in find_tags_by_class(browser.contents, 'message'): "
+"  ...     print message.renderContents()                              "
+"  There is 1 error.                                                   "
+"  <BLANKLINE>                                                         "
+"  Invalid name ...                                                    "
