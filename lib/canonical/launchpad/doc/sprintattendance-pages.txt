@@ -1,12 +1,11 @@
-Sprint Attendance Page
-======================
+= Sprint Attendance Page =
 
 SprintAttendanceAddView is the view that handles attendance to meetings.
 
-  >>> from zope.component import getView
-  >>> from zope.publisher.browser import TestRequest
+  >>> from zope.component import getMultiAdapter
   >>> from canonical.launchpad.ftests import login
   >>> from canonical.launchpad.interfaces import ISprintSet
+  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 First we define a helper function.
 
@@ -16,9 +15,9 @@ First we define a helper function.
   ...         'field.time_starts': time_starts,
   ...         'field.time_ends': time_ends,
   ...         'field.actions.register': 'Register'}
-  ...     request = TestRequest(form=form)
+  ...     request = LaunchpadTestRequest(form=form)
   ...     request.method = 'POST'
-  ...     view = getView(sprint, '+attend', request)
+  ...     view = getMultiAdapter((sprint, request), name='+attend')
   ...     return view
 
 Grab the sprint we'll need to test this view.

@@ -1790,6 +1790,17 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (64, '
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
 
 
+ALTER TABLE entitlement DISABLE TRIGGER ALL;
+
+INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (1, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 10, 100, 0);
+INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (2, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 20, 200, 0);
+INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (4, 18, '2007-06-11 00:44:19.267601', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 10, 5, 0);
+INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (5, 18, '2007-06-11 01:02:48.538842', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 10, 3, 0);
+
+
+ALTER TABLE entitlement ENABLE TRIGGER ALL;
+
+
 
 
 
@@ -2164,7 +2175,7 @@ INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralex
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (116, 'egy', 'Egyptian (Ancient)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (117, 'eka', 'Ekajuk', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (118, 'elx', 'Elamite', NULL, NULL, NULL, true, 0, NULL);
-INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (119, 'en', 'English', NULL, 2, 'n != 1', false, 0, NULL);
+INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (119, 'en', 'English', NULL, 2, 'n != 1', true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (120, 'enm', 'English, Middle (1100-1500)', NULL, NULL, NULL, true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (121, 'eo', 'Esperanto', NULL, 2, 'n != 1', true, 0, NULL);
 INSERT INTO "language" (id, code, englishname, nativename, pluralforms, pluralexpression, visible, direction, uuid) VALUES (122, 'et', 'Estonian', NULL, 2, 'n != 1', true, 0, NULL);
@@ -3319,6 +3330,11 @@ INSERT INTO personlanguage (id, person, "language", date_created) VALUES (3, 14,
 INSERT INTO personlanguage (id, person, "language", date_created) VALUES (4, 14, 449, '2006-10-16 18:31:44.538238');
 INSERT INTO personlanguage (id, person, "language", date_created) VALUES (5, 14, 479, '2006-10-16 18:31:44.538238');
 INSERT INTO personlanguage (id, person, "language", date_created) VALUES (6, 29, 521, '2006-10-16 18:31:44.538238');
+INSERT INTO personlanguage (id, person, "language", date_created) VALUES (7, 16, 119, '2007-06-05 12:06:39.881444');
+INSERT INTO personlanguage (id, person, "language", date_created) VALUES (8, 18, 119, '2007-06-05 12:06:39.881444');
+INSERT INTO personlanguage (id, person, "language", date_created) VALUES (9, 14, 119, '2007-06-05 18:33:02.179204');
+INSERT INTO personlanguage (id, person, "language", date_created) VALUES (10, 13, 119, '2007-06-05 18:33:45.890718');
+INSERT INTO personlanguage (id, person, "language", date_created) VALUES (11, 29, 119, '2007-06-05 18:34:52.127945');
 
 
 ALTER TABLE personlanguage ENABLE TRIGGER ALL;
@@ -6192,6 +6208,7 @@ INSERT INTO potemplatename (id, name, title, description, translationdomain) VAL
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (6, 'alsa-utils', 'Alsa Utils', NULL, 'alsa-utils');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (7, 'man', 'man', NULL, 'man');
 INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (8, 'disabled-template', 'disabled-template', NULL, 'disabled-template');
+INSERT INTO potemplatename (id, name, title, description, translationdomain) VALUES (9, 'firefox', 'Firefox', NULL, 'firefox');
 
 
 ALTER TABLE potemplatename ENABLE TRIGGER ALL;
