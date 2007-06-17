@@ -1,4 +1,4 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Browser code for PO files."""
 
 __metaclass__ = type
@@ -176,7 +176,7 @@ class POFileUploadView(POFileView):
             self.request.response.addWarningNotification(
                 "Ignored your upload because the file you uploaded was not"
                 " recognised as a file that can be imported as it does not"
-                " ends with the '.po' suffix.")
+                " end with the '.po' suffix.")
             return
 
         # We only set the 'published' flag if the upload is marked as an
@@ -247,8 +247,16 @@ class POFileTranslateView(BaseTranslationView):
 
     def _initializeMsgSetViews(self):
         """See BaseTranslationView._initializeMsgSetViews."""
-        for potmsgset in self.batchnav.currentBatch():
-            self.pomsgset_views.append(self._buildPOMsgSetView(potmsgset))
+        self._buildPOMsgSetViews(self.batchnav.currentBatch())
+
+    def _buildPOMsgSetViews(self, for_potmsgsets):
+        """Build POMsgSet views for all POTMsgSets in for_potmsgsets."""
+        po_to_pot_msg = self.context.getMsgSetsForPOTMsgSets(for_potmsgsets)
+
+        for potmsgset, pomsgset in po_to_pot_msg.items():
+            view = self._prepareView(
+                POMsgSetView, pomsgset, self.errors.get(potmsgset))
+            self.pomsgset_views.append(view)
 
     def _submitTranslations(self):
         """See BaseTranslationView._submitTranslations."""
@@ -269,10 +277,10 @@ class POFileTranslateView(BaseTranslationView):
 
             # Get hold of an appropriate message set in the PO file,
             # creating it if necessary.
-            msgid_text = potmsgset.primemsgid_.msgid
-            pomsgset = self.pofile.getPOMsgSet(msgid_text, only_current=False)
+            pomsgset = self.pofile.getPOMsgSetFromPOTMsgSet(potmsgset,
+                                                            only_current=False)
             if pomsgset is None:
-                pomsgset = self.pofile.createMessageSetFromText(msgid_text)
+                pomsgset = self.pofile.createMessageSetFromMessageSet(potmsgset)
 
             error = self._storeTranslations(pomsgset)
             if error and pomsgset.sequence != 0:
@@ -314,16 +322,6 @@ class POFileTranslateView(BaseTranslationView):
     #
     # Specific methods
     #
-
-    def _buildPOMsgSetView(self, potmsgset):
-        """Build a POMsgSetView for a given POTMsgSet."""
-        language = self.context.language
-        variant = self.context.variant
-        pomsgset = potmsgset.getPOMsgSet(language.code, variant)
-        if pomsgset is None:
-            pomsgset = potmsgset.getDummyPOMsgSet(language.code, variant)
-        return self._prepareView(POMsgSetView, pomsgset,
-                                 self.errors.get(pomsgset.potmsgset))
 
     def _initializeShowOption(self):
         # Get any value given by the user
