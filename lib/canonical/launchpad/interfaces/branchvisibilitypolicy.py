@@ -27,6 +27,12 @@ class IHasBranchVisibilityPolicy(Interface):
     branch_visibility_base_policy = Attribute(
         "The BranchVisibilityPolicy that applies to everyone.")
 
+    def getBranchVisibilityPolicyForTeam(team):
+        """Return the defined policy for the team.
+
+        If there is no explicit policy set for the team, return None.
+        """
+
     def isUsingInheritedBranchVisibilityPolicy():
         """Return True if using policy from the inherited context.
 

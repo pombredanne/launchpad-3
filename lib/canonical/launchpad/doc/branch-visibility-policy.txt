@@ -219,6 +219,20 @@ even be the same as the default policy.
     *everyone*: Public
 
 
+== Determining the defined policy for a team ==
+
+You can get the defined policy for any given team using the method
+getBranchVisibilityPolicyForTeam.  If there is not a policy explicity
+defined, then None is returned.
+
+    >>> mozilla.getBranchVisibilityPolicyForTeam(ubuntu_gnome_team)
+    <Item PRIVATE ...BranchVisibilityPolicy...
+    >>> mozilla.getBranchVisibilityPolicyForTeam(None)
+    <Item PRIVATE ...BranchVisibilityPolicy...
+    >>> print mozilla.getBranchVisibilityPolicyForTeam(launchpad_team)
+    None
+
+
 == Policy checks during branch creation ==
 
 The branch visibility policy is checked during branch creation through

@@ -49,8 +49,15 @@ class AddBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):
     @action(_('Set policy for team'), name='set_policy')
     def set_policy_action(self, action, data):
         "Set the branch policy for the team."
-        self.context.setTeamBranchVisibilityPolicy(
-            data['team'], data['policy'])
+        team = data['team']
+        policy = data['policy']
+        if team is not None and policy == BranchVisibilityPolicy.FORBIDDEN:
+            self.setFieldError(
+                'policy',
+                "Forbidden can only be chosen as a policy for everyone.")
+            self.next_url = None
+        else:
+            self.context.setTeamBranchVisibilityPolicy(team, policy)
 
 
 class RemoveBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):

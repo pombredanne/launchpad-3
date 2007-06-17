@@ -20,7 +20,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchSet, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
@@ -296,7 +297,8 @@ class BranchSet:
         PRIVATE: branches default to private for the team.
         PRIVATE_ONLY: branches are created private, and cannot be changed to
             public.
-        FORBIDDEN: members of that team cannot create branches for that prouct.
+        FORBIDDEN: users cannot create branches for that product. The forbidden
+            policy can only apply to all people, not specific teams.
 
         As well as specifying a policy for particular teams, there can be a
         policy that applies to everyone.  Since there is no team for everyone,
@@ -304,59 +306,70 @@ class BranchSet:
         no explicit policy set for everyone, then the default applies, which is
         for branches to be created PUBLIC.
 
-        If a user is a member of more than one team that has a specified policy
-        then there is an ordering to what applies:
-            FORBIDDEN overrides all others
-            PRIVATE and PRIVATE_ONLY override PUBLIC
+        The user must be in the team of the owner in order to create a branch
+        in the owner's namespace.
 
-        The decision on whether or not the user is able to create a branch at
-        all, and what the default visibility for the branch will be, is based
-        solely on team memberships of the user.  If the user is a member of
-        more than one team that has PRIVATE or PRIVATE_ONLY set as the policy,
-        then the branch is created private, and no team is subscribed to it as
-        we can't guess which team the user means to have the visibility.  If
-        the user is creating the branch with a different owner, then the user
-        has to get subscribed to the branch in order to have access to the
-        branch, due to the current implementation of
-        canonical.launchpad.security.AccessBranch.
+        If there is a policy that applies specificly to the owner of the
+        branch, then that policy is applied for the branch.  This is to handle
+        the situation where TeamA is a member of TeamB, TeamA has a PUBLIC
+        policy, and TeamB has a PRIVATE policy.  By pushing to TeamA's branch
+        area, the PUBLIC policy is used.
 
-        XXX thumper 2007-06-15
-        We should look at this and change the AccessBranch to allow access if
-        the user is *inTeam* of the owner rather than *is* the owner.  We could
-        then use the owner as well as the creator to determine the visibility
-        of the branch.
+        If a owner is a member of more than one team that has a specified
+        policy the PRIVATE and PRIVATE_ONLY override PUBLIC policies.
+
+        If the owner is a member of more than one team that has PRIVATE or
+        PRIVATE_ONLY set as the policy, then the branch is created private, and
+        no team is subscribed to it as we can't guess which team the user means
+        to have the visibility.
         """
+        PUBLIC_BRANCH = (False, None)
+        PRIVATE_BRANCH = (True, None)
+        # If the product is None, then the branch is a +junk branch.
+        # All junk branches are public.
+        if product is None:
+            return PUBLIC_BRANCH
+        # You are not allowed to specify an owner that you are not a member of.
+        if not creator.inTeam(owner):
+            raise BranchCreatorNotMemberOfOwnerTeam(
+                "%s is not a member of %s"
+                % (creator.displayname, owner.displayname))
+        # Short cut the membership checks if the owner has a defined policy.
+        policy = product.getBranchVisibilityPolicyForTeam(owner)
+        if policy is not None:
+            if policy in (BranchVisibilityPolicy.PRIVATE,
+                          BranchVisibilityPolicy.PRIVATE_ONLY):
+                return PRIVATE_BRANCH
+            else:
+                return PUBLIC_BRANCH
+
         policy_items = product.branch_visibility_policy_items
 
-        ratings = dict([(item, []) for item in BranchVisibilityPolicy.items])
+        ratings = dict(
+            [(item, []) for item in BranchVisibilityPolicy.items])
 
-        # Initially we ignore the policy that applies to everyone
-        # and just check the team policies for the creator.
+        # Initially we ignore the policy that applies to everyone and just
+        # check the team policies for the owner.
         for item in policy_items:
-            if item.team is not None and creator.inTeam(item.team):
-                ratings[item.policy].append(item.team)
+            if item.team is not None:
+                if owner.inTeam(item.team):
+                    ratings[item.policy].append(item.team)
 
-        # Forbidden trumps privacy.
-        if len(ratings[BranchVisibilityPolicy.FORBIDDEN]) > 0:
-            raise BranchCreationForbidden()
-        # Private trumps public.
         private_teams = (
             ratings[BranchVisibilityPolicy.PRIVATE] +
             ratings[BranchVisibilityPolicy.PRIVATE_ONLY])
+
+        # Private trumps public.
         if len(private_teams) == 1:
-            return (True, private_teams[0])
-        elif len(private_teams) > 1:
-            # If the creator is a member of multiple teams that have private
-            # branches enabled for them, then the branch is private, and only
-            # visible to the creator.
-            if owner == creator:
-                # If the logged in user is the owner of the branch then they
-                # can see the branch, so no implicit subscription is needed.
-                return (True, None)
+            private_team = private_teams[0]
+            if private_team == owner:
+                return PRIVATE_BRANCH
             else:
-                return (True, creator)
+                return (True, private_team)
+        elif len(private_teams) > 1:
+            return PRIVATE_BRANCH
         elif len(ratings[BranchVisibilityPolicy.PUBLIC]) > 0:
-            return (False, None)
+            return PUBLIC_BRANCH
 
         # Need to check the base branch visibility policy since there were no
         # team policies that matches the creator.
@@ -364,11 +377,9 @@ class BranchSet:
         if base_policy == BranchVisibilityPolicy.FORBIDDEN:
             raise BranchCreationForbidden()
         elif base_policy == BranchVisibilityPolicy.PUBLIC:
-            return (False, None)
-        elif owner == creator:
-            return (True, None)
+            return PUBLIC_BRANCH
         else:
-            return (True, creator)
+            return PRIVATE_BRANCH
 
     def new(self, name, creator, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
@@ -379,13 +390,8 @@ class BranchSet:
         if date_created is None:
             date_created = UTC_NOW
         # Check the policy for the person creating the branch.
-        # If the product is None, then the branch is +junk, and hence
-        # public.
-        private = False
-        implicit_subscription = None
-        if product is not None:
-            private, implicit_subscription = self._checkVisibilityPolicy(
-                creator, owner, product)
+        private, implicit_subscription = self._checkVisibilityPolicy(
+            creator, owner, product)
 
         branch = Branch(
             name=name, owner=owner, author=author, product=product, url=url,

@@ -341,8 +341,8 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             url_field.onchange = populate_name;
             url_field.onblur = populate_name;
             </script>'''
-            % {'name' : self.widgets['name'].name,
-               'url' : self.widgets['url'].name})
+            % {'name': self.widgets['name'].name,
+               'url': self.widgets['url'].name})
 
 
 class PersonBranchAddView(BranchAddView):
