@@ -725,14 +725,16 @@ COMMENT ON FUNCTION set_shipit_normalized_address() IS 'Store a normalized conca
 CREATE OR REPLACE FUNCTION set_openid_identifier() RETURNS trigger
 LANGUAGE plpythonu AS
 $$
-    # If someone is trying to explicitly set the openid_identifier, let them
+    # If someone is trying to explicitly set the openid_identifier, let them.
+    # This also causes openid_identifiers to be left alone if this is an
+    # UPDATE trigger.
     if TD['new']['openid_identifier'] is not None:
         return None
 
     from random import choice
 
     # Non display confusing characters
-    chars = '234678bcdefhkmnprstwxyzABCDEFGHJKLMNPQRTWXYZ'
+    chars = '34678bcdefhkmnprstwxyzABCDEFGHJKLMNPQRTWXY'
 
     # character length of tokens. Can be increased, decreased or even made
     # random - Launchpad does not care. 7 means it takes 40 bytes to store

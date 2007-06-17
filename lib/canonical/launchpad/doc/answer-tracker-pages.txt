@@ -503,14 +503,13 @@ is used in browser forms to create a vocabulary containing only the
 languages that are likely to interest the user.
 
 When the user has not configured his preferred languages, the vocabulary
-will contain 'English' (the default choice) and the most likely
-interesting languages based on GeoIP information and the request's
-languages.
+will contain languages from the HTTP request, or the most likely
+interesting languages based on GeoIP information.
 
 For example, if the user doesn't log in and his browser is configured
-to accept Brazilian Portuguese, the vocabulary will contain 'English'
-plus the languages spoken in South Africa (because the 127.0.0.1 IP
-address is mapped to South Africa in the tests).
+to accept brazilian Portuguese, the vocabulary will contain the
+languages spoken in South Africa (because the 127.0.0.1 IP address is
+mapped to South Africa in the tests).
 .
     >>> login(ANONYMOUS)
     >>> request = LaunchpadTestRequest(
@@ -520,40 +519,34 @@ address is mapped to South Africa in the tests).
     >>> view = getMultiAdapter((firefox, request), name='+addticket')
     >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]
-    >>> languages[0].code
-    u'en'
-    >>> sorted([lang.code for lang in languages[1:]])
-    [u'af', u'pt_BR', u'st', u'xh', u'zu']
+    >>> sorted([lang.code for lang in languages])
+    [u'af', u'en', u'pt_BR', u'st', u'xh', u'zu']
 
 If the user logs in but didn't configure his preferred languages, the
 same logic is used to find the languages:
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('test@canonical.com')
     >>> user = getUtility(ILaunchBag).user
     >>> user.languages.count()
     0
 
     >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]
-    >>> languages[0].code
-    u'en'
-    >>> sorted(lang.code for lang in languages[1:])
-    [u'af', u'pt_BR', u'st', u'xh', u'zu']
+    >>> sorted(lang.code for lang in languages)
+    [u'af', u'en', u'pt_BR', u'st', u'xh', u'zu']
 
 But if the user configured his preferred languages, only these
-are used (plus English):
+are used:
 
     >>> login('carlos@canonical.com')
     >>> user = getUtility(ILaunchBag).user
     >>> sorted(lang.code for lang in user.languages)
-    [u'ca', u'es']
+    [u'ca', u'en', u'es']
 
     >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]
-    >>> languages[0].code
-    u'en'
-    >>> sorted(lang.code for lang in languages[1:])
-    [u'ca', u'es']
+    >>> sorted(lang.code for lang in languages)
+    [u'ca', u'en', u'es']
 
 Note that all variants of English are always excluded from the
 vocabulary (since we don't want to confuse people by providing multiple
@@ -562,14 +555,12 @@ English options).
     >>> login('daf@canonical.com')
     >>> user = getUtility(ILaunchBag).user
     >>> sorted(lang.code for lang in user.languages)
-    [u'cy', u'en_GB', u'ja']
+    [u'cy', u'en', u'en_GB', u'ja']
 
     >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]
-    >>> languages[0].code
-    u'en'
-    >>> sorted(lang.code for lang in languages[1:])
-    [u'cy', u'ja']
+    >>> sorted(lang.code for lang in languages)
+    [u'cy', u'en', u'ja']
 
 Note also that the vocabulary will always contain the current question's
 language in the vocabulary, even if this language would not be selected
@@ -603,8 +594,7 @@ The set of languages to use for support is defined in the
 'user_support_languages' attribute.
 
 Like all operations involving languages in the Answer Tracker, we
-assume that the user is always interested in English and we ignore
-all other English variants.
+ignore all other English variants.
 
 When the user is not logged in, or didn't define his preferred
 languages, the set will be initialized from the request. That's the
@@ -617,9 +607,9 @@ GeoIP database.
     >>> login(ANONYMOUS)
     >>> view = UserSupportLanguagesView(None, request)
 
-For this request, the set of support languages contain English
-(default), French (from the request), and the languages spoken
-in South Africa (inferred from the GeoIP location of the request).
+For this request, the set of support languages contains French
+(from the request), and the languages spoken in South Africa
+(inferred from the GeoIP location of the request).
 
     >>> sorted(language.code for language in view.user_support_languages)
     [u'af', u'en', u'fr', u'st', u'xh', u'zu']
