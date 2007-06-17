@@ -4,8 +4,7 @@
     <div class="portletContent">
 
     <tal:block condition="context/relatives_by_name">
-    These templates share the same name, and hence translation domain, as
-    this one:
+    Same name and translation domain:
     <ul>
       <li tal:repeat="pot context/relatives_by_name">
         <a href=""
@@ -15,7 +14,7 @@
     </ul>
     </tal:block>
     <tal:block condition="context/relatives_by_source">
-    These templates came from the same source as this one:
+    Same source:
     <ul>
       <li tal:repeat="pot context/relatives_by_source">
         <a href=""
