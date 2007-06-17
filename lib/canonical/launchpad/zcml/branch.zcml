@@ -54,10 +54,15 @@
     <browser:page
         name="+portlet-specifications"
         template="../templates/branch-portlet-specifications.pt" />
-    <browser:page
-        name="+portlet-subscribers"
-        template="../templates/branch-portlet-subscribers.pt" />
   </browser:pages>
+
+  <browser:page
+    name="+portlet-subscribers"
+    for="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchSubscriptionsView"
+    facet="branches"
+    permission="zope.Public"
+    template="../templates/branch-portlet-subscribers.pt" />
 
   <browser:pages
       for="canonical.launchpad.interfaces.IBranch"
@@ -122,11 +127,19 @@
     permission="launchpad.AnyPerson"
     template="../templates/branch-subscription.pt" />
 
+  <browser:page
+    name="+addsubscriber"
+    for="canonical.launchpad.interfaces.IBranch"
+    class="canonical.launchpad.browser.BranchSubscriptionAddOtherView"
+    facet="branches"
+    permission="launchpad.AnyPerson"
+    template="../templates/branch-subscription.pt" />
+
   <!-- Edit subscription or unsubscribe from a branch -->
   <browser:page
     name="+edit-subscription"
     for="canonical.launchpad.interfaces.IBranch"
-    class="canonical.launchpad.browser.BranchSubscriptionEditView"
+    class="canonical.launchpad.browser.BranchSubscriptionEditOwnView"
     facet="branches"
     permission="launchpad.AnyPerson"
     template="../templates/branch-edit-subscription.pt" />

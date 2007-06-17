@@ -663,7 +663,6 @@ class BuilddMaster:
 
             # Build extra arguments
             args = {}
-            args["ogrecomponent"] = queueItem.component_name
             # turn 'arch_indep' ON only if build is archindep or if
             # the specific architecture is the nominatedarchindep for
             # this distroseries (in case it requires any archindep source)
@@ -672,7 +671,15 @@ class BuilddMaster:
             # isNominatedArchIndep. -- kiko, 2006-08-31
             args['arch_indep'] = (queueItem.archhintlist == 'all' or
                                   queueItem.archseries.isNominatedArchIndep)
-            # XXX cprov 20070523: Ogre should not be modelled here ...
+
+            # Ogre-Model: Determine which distroseries components should
+            # be available during the package build.  This should really be
+            # handled inside the builder rather than the build master."
+            args["ogrecomponent"] = queueItem.component_name
+
+            # XXX cprov 20070523: Ogre-Model should not be implemented here.
+            # Ideally it should be implemented by the builder itself or
+            # even be modelled properly on Build/BuildQueue content classes.
             if not queueItem.is_trusted:
                 ogre_map = {
                     'main': 'main',
@@ -701,7 +708,7 @@ class BuilddMaster:
                 builder, queueItem, filemap, "debian", pocket, args)
 
         except (xmlrpclib.Fault, socket.error), info:
-            # mark builder as 'failed'.
+            # Mark builder as 'failed'.
             self._logger.debug(
                 "Disabling builder: %s" % builder.url, exc_info=1)
             builders.failBuilder(

@@ -535,6 +535,11 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
                           the icons which represent that category.
         """
 
+    def getOwnedOrDrivenPillars():
+        """Return Distribution, Project Groups and Projects that this person
+        owns or drives.
+        """
+
     def assignKarma(action_name, product=None, distribution=None,
                     sourcepackagename=None):
         """Assign karma for the action named <action_name> to this person.

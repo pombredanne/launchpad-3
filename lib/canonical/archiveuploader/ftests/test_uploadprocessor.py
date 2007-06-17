@@ -442,9 +442,11 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = ["Subject: [PPA name16] Accepted bar 1.0-1 (source)"]
+        contents = [
+            "Subject: bar_1.0-1_source.changes Rejected",
+            "PPA uploads must be signed by an 'ubuntero'."]
         self.assertEmail(contents)
-        self.assertTrue(name16.archive is not None)
+        self.assertTrue(name16.archive is None)
 
     def testUploadSignedByBetaTesterMember(self):
         """Check if a non-member of launchpad-beta-testers can upload to PPA."""
