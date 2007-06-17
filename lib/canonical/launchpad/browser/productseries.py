@@ -7,6 +7,7 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesSOP',
            'ProductSeriesFacets',
            'ProductSeriesOverviewMenu',
+           'ProductSeriesBugsMenu',
            'ProductSeriesSpecificationsMenu',
            'ProductSeriesTranslationMenu',
            'ProductSeriesView',
@@ -31,7 +32,6 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
-
 from canonical.launchpad.helpers import browserLanguages, is_tar_filename
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
@@ -168,6 +168,19 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
     def review(self):
         text = 'Review details'
         return Link('+review', text, icon='edit')
+
+
+class ProductSeriesBugsMenu(ApplicationMenu):
+
+    usedfor = IProductSeries
+    facet = 'bugs'
+    links = ['new', 'nominations']
+
+    def new(self):
+        return Link('+filebug', 'Report a bug', icon='add')
+
+    def nominations(self):
+        return Link('+nominations', 'Review nominations', icon='bug')
 
 
 class ProductSeriesSpecificationsMenu(ApplicationMenu):

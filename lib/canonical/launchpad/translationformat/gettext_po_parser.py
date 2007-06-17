@@ -1,10 +1,16 @@
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+#
 # Contains code from msgfmt.py (available from python source code),
 #     written by Martin v. Loewis <loewis@informatik.hu-berlin.de>
 #     changed by Christian 'Tiran' Heimes <ch@comlounge.net>
 
+__metaclass__ = type
 
-# XXX: Carlos Perello Marin 2005-04-15: This code will be "componentized"
-# soon. https://launchpad.ubuntu.com/malone/bugs/403
+__all__ = [
+    'POMessage',
+    'POHeader',
+    'POParser',
+    ]
 
 import re
 import codecs
@@ -12,40 +18,14 @@ import logging
 import doctest
 import unittest
 
-from canonical.launchpad.interfaces import (
-    IPOMessage, IPOHeader, IPOParser, EXPORT_DATE_HEADER)
 from zope.interface import implements
 from zope.app import datetimeutils
 
-# Exceptions and warnings
+from canonical.launchpad.interfaces import (
+    ITranslationMessage, ITranslationHeader, IPOParser, EXPORT_DATE_HEADER,
+    TranslationFormatInvalidInputError, TranslationFormatSyntaxError,
+    UnknownTranslationRevisionDate)
 
-class POSyntaxError(Exception):
-    """ Syntax error in a po file """
-    def __init__(self, lno=None, msg=None):
-        self.lno = lno
-        self.msg = msg
-
-    def __str__(self):
-        if self.msg:
-            return self.msg
-        if self.lno is None:
-            return 'PO file: syntax error on an unknown line'
-        else:
-            return 'PO file: syntax error on entry at line %d' % self.lno
-
-class POInvalidInputError(Exception):
-    """ Syntax error in a po file """
-    def __init__(self, lno=None, msg=None):
-        self.lno = lno
-        self.msg = msg
-
-    def __str__(self):
-        if self.msg:
-            return self.msg
-        elif self.lno is None:
-            return 'PO file: invalid input on unknown line'
-        else:
-            return 'PO file: invalid input on entry at line %d' % self.lno
 
 class POSyntaxWarning(Warning):
     """ Syntax warning in a po file """
@@ -62,32 +42,44 @@ class POSyntaxWarning(Warning):
             return 'Po file: syntax warning on entry at line %d' % self.lno
 
 
-# classes
-
 class POMessage(object):
-    implements(IPOMessage)
+    implements(ITranslationMessage)
 
     def __init__(self, **kw):
-        self.check(**kw)
+        self._check(**kw)
         self.msgid = kw.get('msgid', '')
-        self.msgidPlural = kw.get('msgidPlural', '')
+        self.msgid_plural = kw.get('msgid_plural', '')
         self.msgstr = kw.get('msgstr', '')
-        self.commentText = kw.get('commentText', '')
-        self.sourceComment = kw.get('sourceComment', '')
-        self.fileReferences = kw.get('fileReferences', '').strip()
+        self.comment = kw.get('comment', '')
+        self.source_comment = kw.get('source_comment', '')
+        self.file_references = kw.get('file_references', '').strip()
         self.flags = kw.get('flags', set())
-        self.msgstrPlurals = kw.get('msgstrPlurals', [])
+        self.msgstr_plurals = kw.get('msgstr_plurals', [])
         self.obsolete = kw.get('obsolete', False)
         self._lineno = kw.get('_lineno')
 
-    def check(self, **kw):
-        if kw.get('msgstrPlurals'):
+    @property
+    def translations(self):
+        """See `ITranslationMessage`."""
+        if self.msgstr_plurals:
+            # There are plural forms.
+            return self.msgstr_plurals
+        elif self.msgstr:
+            # There is a single form translation.
+            return [self.msgstr]
+        else:
+            # There are no translations.
+            return []
+
+    def _check(self, **kw):
+        """Log warning messages about non critical problems in the message."""
+        if kw.get('msgstr_plurals'):
             if 'header' not in kw or type(kw['header'].nplurals) is not int:
                 logging.warning(POSyntaxWarning(
                     msg="File has plural forms, but plural-forms header entry"
                         " is missing or invalid."
                     ))
-            if len(kw['msgstrPlurals']) > kw['header'].nplurals:
+            if len(kw['msgstr_plurals']) > kw['header'].nplurals:
                 logging.warning(POSyntaxWarning(
                     lno=kw.get('_lineno'),
                     msg="Bad number of plural-forms in entry '%s' (line %s)."
@@ -142,7 +134,9 @@ class POMessage(object):
         u'#, fuzzy\n#~ msgid "foo"\n#~ msgstr "bar"'
 
         plural forms automatically trigger the correct syntax
-        >>> unicode(POMessage(header=header, msgid="foo", msgidPlural="foos", msgstrPlurals=["bar", "bars"]))
+        >>> unicode(
+        ...     POMessage(header=header, msgid="foo", msgid_plural="foos",
+        ...               msgstr_plurals=["bar", "bars"]))
         u'msgid "foo"\nmsgid_plural "foos"\nmsgstr[0] "bar"\nmsgstr[1] "bars"'
 
         backslashes are escaped (doubled) and quotes are backslashed
@@ -167,7 +161,7 @@ class POMessage(object):
 
         >>> unicode(POMessage(msgid="foo", msgstr="bar",flags=("fuzzy",)))
         u'#, fuzzy\nmsgid "foo"\nmsgstr "bar"'
-        >>> unicode(POMessage(msgid="a", msgstr="b", commentText=" blah\n"))
+        >>> unicode(POMessage(msgid="a", msgstr="b", comment=" blah\n"))
         u'# blah\nmsgid "a"\nmsgstr "b"'
         >>> unicode(POMessage(msgid="%d foo", msgstr="%d bar", flags=('fuzzy', 'c-format')))
         u'#, fuzzy, c-format\nmsgid "%d foo"\nmsgstr "%d bar"'
@@ -175,19 +169,19 @@ class POMessage(object):
         '(this single-quote is here to appease emacs)
         '''
         text = []
-        # commentText and sourceComment always end in a newline, so
+        # comment and source_comment always end in a newline, so
         # splitting by \n always results in an empty last element
-        if self.commentText:
-            for line in self.commentText.split('\n')[:-1]:
+        if self.comment:
+            for line in self.comment.split('\n')[:-1]:
                 text.append(u'#' + line)
-        if self.sourceComment and not self.obsolete:
+        if self.source_comment and not self.obsolete:
             # If it's an obsolete entry, the source comments are not exported.
-            for line in self.sourceComment.split('\n')[:-1]:
+            for line in self.source_comment.split('\n')[:-1]:
                 text.append(u'#. ' + line)
         # not so for references - we strip() it
-        if self.fileReferences and not self.obsolete:
+        if self.file_references and not self.obsolete:
             # If it's an obsolete entry, the references are not exported.
-            for line in self.fileReferences.split('\n'):
+            for line in self.file_references.split('\n'):
                 text.append(u'#: ' + line)
         if self.flags:
             text.append(self.flagsText())
@@ -195,19 +189,19 @@ class POMessage(object):
 
     def _msgids_representation(self, wrap_width):
         text = self._wrap(self.msgid, u'msgid', wrap_width)
-        if self.msgidPlural:
+        if self.msgid_plural:
             text.extend(
-                self._wrap(self.msgidPlural, u'msgid_plural', wrap_width))
+                self._wrap(self.msgid_plural, u'msgid_plural', wrap_width))
         if self.obsolete:
             text = ['#~ ' + l for l in text]
         return u'\n'.join(text)
 
     def _msgstrs_representation(self, wrap_width):
         text = []
-        if self.msgstrPlurals:
-            for i, s in enumerate(self.msgstrPlurals):
+        if self.msgstr_plurals:
+            for i, s in enumerate(self.msgstr_plurals):
                 text.extend(self._wrap(s, u'msgstr[%s]' % i, wrap_width))
-        elif self.msgidPlural:
+        elif self.msgid_plural:
             # It's a plural form but we don't have any translation for it.
             text = ([u'msgstr[0] ""', u'msgstr[1] ""'])
         else:
@@ -407,8 +401,9 @@ class POMessage(object):
                 wrapped_lines.append(u'"%s"' % (local_escape(line)))
         return wrapped_lines
 
+
 class POHeader(dict, POMessage):
-    implements(IPOHeader, IPOMessage)
+    implements(ITranslationHeader, ITranslationMessage)
 
     def __init__(self, **kw):
         dict.__init__(self)
@@ -423,7 +418,7 @@ class POHeader(dict, POMessage):
         if self.charset == 'CHARSET':
             self.charset = 'US-ASCII'
 
-        for attr in ['msgid', 'msgstr', 'commentText', 'sourceComment']:
+        for attr in ('msgid', 'msgstr', 'comment', 'source_comment'):
             if attr in kw:
                 if isinstance(kw[attr], str):
                     kw[attr] = unicode(kw[attr], self.charset, 'replace')
@@ -444,7 +439,7 @@ class POHeader(dict, POMessage):
             # Remove any previous dict entry.
             dict.__delitem__(self, key)
 
-        for attr in ('msgidPlural', 'msgstrPlurals', 'fileReferences'):
+        for attr in ('msgid_plural', 'msgstr_plurals', 'file_references'):
             if getattr(self, attr):
                 logging.warning(POSyntaxWarning(
                     msg='PO file header entry should have no %s' % attr))
@@ -465,8 +460,8 @@ class POHeader(dict, POMessage):
                 try:
                     self.__setitem__(field, value, False)
                 except ValueError:
-                    raise POInvalidInputError(
-                            msg='Malformed plural-forms header entry')
+                    raise TranslationFormatInvalidInputError(
+                            message='Malformed plural-forms header entry')
             else:
                 self.__setitem__(field, value, False)
         if 'content-type' not in self:
@@ -484,7 +479,8 @@ class POHeader(dict, POMessage):
                 ))
             v = unicode(v, self.charset, 'replace')
         except LookupError:
-            raise POInvalidInputError(msg='Unknown charset %r' % self.charset)
+            raise TranslationFormatInvalidInputError(
+                message='Unknown charset %r' % self.charset)
 
         return v
 
@@ -505,6 +501,8 @@ class POHeader(dict, POMessage):
         return v
 
     def __getitem__(self, item):
+        # XXX CarlosPerelloMarin 20070613: Instead of an empty list we should
+        # raise NotFoundException.
         return self.get(item, [])
 
     def has_key(self, item):
@@ -534,7 +532,7 @@ class POHeader(dict, POMessage):
                 else:
                     self.charset = 'ASCII'
             # Convert attributes to unicode
-            for attr in ('msgid', 'msgstr', 'commentText', 'sourceComment'):
+            for attr in ('msgid', 'msgstr', 'comment', 'source_comment'):
                 v = getattr(self, attr)
                 if type(v) is str:
                     v = self._decode(v)
@@ -656,24 +654,22 @@ class POHeader(dict, POMessage):
     def __nonzero__(self):
         return bool(self.keys())
 
-    def getPORevisionDate(self):
-        """See IPOHeader."""
+    def getTranslationRevisionDate(self):
+        """See ITranslationHeader."""
 
         date_string = self.get('PO-Revision-Date')
         if date_string is None:
-            date = None
-            date_string = 'Missing header'
-        else:
-            try:
-                date = datetimeutils.parseDatetimetz(date_string)
-            except datetimeutils.DateTimeError:
-                # invalid date format
-                date = None
+            raise UnknownTranslationRevisionDate, (
+                'There is no revision date information available.')
 
-        return (date_string, date)
+        try:
+            return datetimeutils.parseDatetimetz(date_string)
+        except datetimeutils.DateTimeError:
+            raise UnknownTranslationRevisionDate, (
+                'Found an invalid date representation: %r' % date_string)
 
-    def getRosettaExportDate(self):
-        """See IPOHeader."""
+    def getLaunchpadExportDate(self):
+        """See ITranslationHeader."""
 
         date_string = self.get(EXPORT_DATE_HEADER, None)
         if date_string is None:
@@ -688,7 +684,7 @@ class POHeader(dict, POMessage):
         return date
 
     def getPluralFormExpression(self):
-        """See IPOHeader."""
+        """See ITranslationHeader."""
         plural = self.get('Plural-Forms')
         if not plural:
             return None
@@ -697,6 +693,10 @@ class POHeader(dict, POMessage):
             return parts["plural"]
         else:
             return None
+
+    def getRawContent(self):
+        """See ITranslationHeader."""
+        return self.msgstr
 
 
 class POParser(object):
@@ -738,9 +738,10 @@ class POParser(object):
             # encodings we need to support, but it shouldn't be more
             # than 10 bytes ...
             if len(self._pending_chars) - exc.start > 10:
-                raise POInvalidInputError(self._lineno,
-                                          "could not decode input from %s"
-                                          % self.header.charset)
+                raise TranslationFormatInvalidInputError(
+                    line_number=self._lineno,
+                    message="could not decode input from %s" % (
+                        self.header.charset))
             newchars, length = decode(self._pending_chars[:exc.start],
                                       'strict')
         self._pending_unichars += newchars
@@ -800,13 +801,13 @@ class POParser(object):
     def _make_dataholder(self):
         self._partial_transl = {}
         self._partial_transl['msgid'] = ''
-        self._partial_transl['msgidPlural'] = ''
+        self._partial_transl['msgid_plural'] = ''
         self._partial_transl['msgstr'] = ''
-        self._partial_transl['commentText'] = ''
-        self._partial_transl['sourceComment'] = ''
-        self._partial_transl['fileReferences'] = ''
+        self._partial_transl['comment'] = ''
+        self._partial_transl['source_comment'] = ''
+        self._partial_transl['file_references'] = ''
         self._partial_transl['flags'] = set()
-        self._partial_transl['msgstrPlurals'] = []
+        self._partial_transl['msgstr_plurals'] = []
         self._partial_transl['obsolete'] = False
         self._partial_transl['_lineno'] = self._lineno
 
@@ -818,14 +819,16 @@ class POParser(object):
                 # because the original %d returned "<unprintable
                 # instance object>" in a traceback in bug 2896
                 #    -- kiko, 2005-10-06
-                raise POInvalidInputError('Po file: duplicate msgid '
-                                          'ending on line %r' % lineno)
+                raise TranslationFormatInvalidInputError(
+                    message='Po file: duplicate msgid ending on line %r' % (
+                        lineno))
             try:
                 transl = self.translation_factory(header=self.header,
                                                   **self._partial_transl)
-            except (POSyntaxError, POInvalidInputError), e:
-                if e.lno is None:
-                    e.lno = self._partial_transl['_lineno']
+            except (TranslationFormatSyntaxError,
+                    TranslationFormatInvalidInputError), e:
+                if e.line_number is None:
+                    e.line_number = self._partial_transl['_lineno']
                 raise
             self.messages.append(transl)
             self._messageids[self._partial_transl['msgid']] = True
@@ -836,9 +839,10 @@ class POParser(object):
             self.header = self.header_factory(messages=self.messages, 
                                               **self._partial_transl)
             self.header.updateDict()
-        except (POSyntaxError, POInvalidInputError), e:
-            if e.lno is None:
-                e.lno = self._partial_transl['_lineno']
+        except (TranslationFormatSyntaxError,
+                TranslationFormatInvalidInputError), e:
+            if e.line_number is None:
+                e.line_number = self._partial_transl['_lineno']
             raise
         if self.messages:
             logging.warning(POSyntaxWarning(self._lineno,
@@ -866,12 +870,12 @@ class POParser(object):
           this method.
 
           We don't know the encoding of the escaped characters and cannot be
-          just recoded as Unicode so it's a POInvalidInputError
+          just recoded as Unicode so it's a TranslationFormatInvalidInputError
           >>> utf8_string = u'"view \\302\\253${version_title}\\302\\273"'
           >>> parser._parse_quoted_string(utf8_string)
           Traceback (most recent call last):
           ...
-          POInvalidInputError: could not decode escaped string: (\302\253)
+          TranslationFormatInvalidInputError: could not decode escaped string: (\302\253)
 
           Now, we note the original encoding so we get the right Unicode
           string.
@@ -882,7 +886,7 @@ class POParser(object):
           >>> parser._parse_quoted_string(utf8_string)
           u'view \xab${version_title}\xbb'
 
-          Let's see that we raise a POInvalidInputError exception when we
+          Let's see that we raise a TranslationFormatInvalidInputError exception when we
           have an escaped char that is not valid in the declared encoding
           of the original string:
 
@@ -890,7 +894,7 @@ class POParser(object):
           >>> parser._parse_quoted_string(iso8859_1_string)
           Traceback (most recent call last):
           ...
-          POInvalidInputError: could not decode escaped string as UTF-8: (\xf9)
+          TranslationFormatInvalidInputError: could not decode escaped string as UTF-8: (\xf9)
 
           An error will be raised if the entire string isn't contained in
           quotes properly:
@@ -898,18 +902,19 @@ class POParser(object):
           >>> parser._parse_quoted_string(u'abc')
           Traceback (most recent call last):
             ...
-          POSyntaxError: string is not quoted
+          TranslationFormatSyntaxError: string is not quoted
           >>> parser._parse_quoted_string(u'\"ab')
           Traceback (most recent call last):
             ...
-          POSyntaxError: string not terminated
+          TranslationFormatSyntaxError: string not terminated
           >>> parser._parse_quoted_string(u'\"ab\"x')
           Traceback (most recent call last):
             ...
-          POSyntaxError: extra content found after string: (x)
+          TranslationFormatSyntaxError: extra content found after string: (x)
         """
         if string[0] != '"':
-            raise POSyntaxError(self._lineno, "string is not quoted")
+            raise TranslationFormatSyntaxError(
+                line_number=self._lineno, message="string is not quoted")
 
         escape_map = {
             'a': '\a',
@@ -948,8 +953,9 @@ class POParser(object):
                 # if there is any non-string data afterwards, raise an
                 # exception
                 if string and not string.isspace():
-                    raise POSyntaxError(self._lineno,
-                        "extra content found after string: (%s)" % string)
+                    raise TranslationFormatSyntaxError(
+                        line_number=self._lineno,
+                        message="extra content found after string: (%s)" % string)
                 break
             elif string[0] == '\\' and string[1] in escape_map:
                 # We got one of the special escaped chars we know about, we
@@ -983,9 +989,9 @@ class POParser(object):
                     # It's part of our mapping table, we ignore it here.
                     break
                 else:
-                    raise POSyntaxError(self._lineno,
-                                        "unknown escape sequence %s"
-                                        % string[:2])
+                    raise TranslationFormatSyntaxError(
+                        line_number=self._lineno,
+                        message="unknown escape sequence %s" % string[:2])
             if escaped_string:
                 # We found some text escaped that should be recoded to
                 # Unicode.
@@ -998,9 +1004,11 @@ class POParser(object):
                     try:
                         output += unescaped_string.decode(self.header.charset)
                     except UnicodeDecodeError:
-                        raise POInvalidInputError(self._lineno,
-                            "could not decode escaped string as %s: (%s)" %
-                                (self.header.charset, escaped_string))
+                        raise TranslationFormatInvalidInputError(
+                            line_number=self._lineno,
+                            message=(
+                                "could not decode escaped string as %s: (%s)"
+                                    % (self.header.charset, escaped_string)))
                 else:
                     # We don't know the original encoding of the imported file
                     # so we cannot get the right values. We store the string
@@ -1008,9 +1016,11 @@ class POParser(object):
                     try:
                         output += unescaped_string.decode('ascii')
                     except UnicodeDecodeError:
-                        raise POInvalidInputError(self._lineno,
-                            "could not decode escaped string: (%s)" %
-                                escaped_string)
+                        raise TranslationFormatInvalidInputError(
+                            line_number=self._lineno,
+                            message=(
+                                "could not decode escaped string: (%s)" % (
+                                    escaped_string)))
             else:
                 # It's a normal char, we just store it and jump to next one.
                 output += string[0]
@@ -1018,7 +1028,8 @@ class POParser(object):
         else:
             # We finished parsing the string without finding the ending quote
             # char.
-            raise POSyntaxError(self._lineno, "string not terminated")
+            raise TranslationFormatSyntaxError(
+                line_number=self._lineno, message="string not terminated")
 
         return output
 
@@ -1062,24 +1073,24 @@ class POParser(object):
                 return
             # Record file references
             if l[:2] == '#:':
-                self._partial_transl['fileReferences'] += l[2:].strip() + '\n'
+                self._partial_transl['file_references'] += l[2:].strip() + '\n'
                 return
             # Record source comments
             if l[:2] == '#.':
-                self._partial_transl['sourceComment'] += l[2:].strip() + '\n'
+                self._partial_transl['source_comment'] += l[2:].strip() + '\n'
                 return
             # Record comments
-            self._partial_transl['commentText'] += l[1:] + '\n'
+            self._partial_transl['comment'] += l[1:] + '\n'
             return
         # Now we are in a msgid section, output previous section
         if l.startswith('msgid_plural'):
             if self._section != 'msgid':
-                raise POSyntaxError(self._lineno)
+                raise TranslationFormatSyntaxError(line_number=self._lineno)
             self._section = 'msgid_plural'
             l = l[12:]
         elif l.startswith('msgid'):
             if self._section and self._section.startswith('msgid'):
-                raise POSyntaxError(self._lineno)
+                raise TranslationFormatSyntaxError(line_number=self._lineno)
             self._section = 'msgid'
             l = l[5:]
             self._plural_case = None
@@ -1098,7 +1109,7 @@ class POParser(object):
                     logging.warning(POSyntaxWarning(self._lineno,
                                                   'bad plural case number'))
                 if new_plural_case != self._plural_case:
-                    self._partial_transl['msgstrPlurals'].append('')
+                    self._partial_transl['msgstr_plurals'].append('')
                     self._plural_case = new_plural_case
                 else:
                     logging.warning(POSyntaxWarning(
@@ -1119,14 +1130,14 @@ class POParser(object):
         if self._section == 'msgid':
             self._partial_transl['msgid'] += l
         elif self._section == 'msgid_plural':
-            self._partial_transl['msgidPlural'] += l
+            self._partial_transl['msgid_plural'] += l
         elif self._section == 'msgstr':
             if self._plural_case is None:
                 self._partial_transl['msgstr'] += l
             else:
-                self._partial_transl['msgstrPlurals'][-1] += l
+                self._partial_transl['msgstr_plurals'][-1] += l
         else:
-            raise POSyntaxError(self._lineno)
+            raise TranslationFormatSyntaxError(line_number=self._lineno)
 
     def finish(self):
         """Indicate that the PO data has come to an end.
@@ -1135,9 +1146,10 @@ class POParser(object):
         # handle remaining buffered data:
         if self.header:
             if self._pending_chars:
-                raise POInvalidInputError(self._lineno,
-                                          'could not decode input from %s'
-                                          % self.header.charset)
+                raise TranslationFormatInvalidInputError(
+                    line_number=self._lineno,
+                    message='could not decode input from %s' % (
+                        self.header.charset))
             if self._pending_unichars:
                 logging.warning(POSyntaxWarning(
                     self._lineno, 'No newline at end of file'))
@@ -1149,21 +1161,22 @@ class POParser(object):
                 self.parse_line(self._pending_chars)
 
         if self._section and self._section.startswith('msgid'):
-            raise POSyntaxError(self._lineno)
+            raise TranslationFormatSyntaxError(line_number=self._lineno)
 
         if self._partial_transl and self._partial_transl['msgid']:
             self.append()
         elif self._partial_transl is not None:
             if self._partial_transl and (self._section is None):
                 # input ends in a comment -- should this always be an error?
-                raise POSyntaxError(self._lineno)
+                raise TranslationFormatSyntaxError(line_number=self._lineno)
             elif not self.header:
                 # header is last entry... in practice this should
                 # only happen when the file is empty
                 self._make_header()
 
         if not self.header:
-            raise POSyntaxError(msg='No header found in this pofile')
+            raise TranslationFormatSyntaxError(
+                message='No header found in this pofile')
 
 
 # convenience function to parse "assignment" expressions like

@@ -474,9 +474,4 @@
 
   </facet>
 
-  <vocabulary
-    name="AdvancedBugTaskUpstreamStatus"
-    factory="canonical.launchpad.browser.upstream_status_vocabulary_factory"
-    />
-
 </configure>

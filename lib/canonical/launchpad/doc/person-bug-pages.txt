@@ -1,5 +1,4 @@
-Person Pages
-============
+= Person Pages =
 
 In every person page, the 'Bugs' facet has a series of bug listings for
 that person. These pages provide simple and advanced search forms.
@@ -9,15 +8,15 @@ that person. These pages provide simple and advanced search forms.
 
 Let's define a helper function to make it easier to construct a view.
 
-    >>> from zope.component import getView
-    >>> from zope.publisher.browser import TestRequest
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> def create_view(context, name, form=None):
-    ...     view = getView(context, name, TestRequest(form=form))
+    ...     view = getMultiAdapter(
+    ...         (context, LaunchpadTestRequest(form=form)), name=name)
     ...     view.initialize()
     ...     return view
 
-Assigned bugs
--------------
+== Assigned bugs ==
 
 All bug tasks assigned to this person.
 
@@ -44,8 +43,7 @@ Using the advanced form we can query for closed bugs.
     ...     for bugtask in closed_bugtasks]
     [(8, 'FIXRELEASED')]
 
-Reported bugs
--------------
+== Reported bugs ==
 
 All bug tasks reported by someone. By default we'll get assigned and
 unassigned bug tasks.
@@ -124,8 +122,7 @@ And now we query for it.
     >>> flush_database_updates()
 
 
-Subscribed bugs
----------------
+== Subscribed bugs ==
 
 All bug tasks someone is subscribed to. By default we'll get bug tasks
 with any importance.
@@ -159,8 +156,8 @@ Using the advanced form we can query for closed bugs someone is subscribed to.
     ...         for bugtask in closed_subscribed_bugtasks])
     [(8, 'FIXRELEASED', u'name16')]
 
-Bugs for Bug Contact
---------------------
+
+== Bugs for Bug Contact ==
 
 Malone can generate bug reports for packages on which a user is a bug
 contact. The Person context is used only to get a list of packages that

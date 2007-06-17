@@ -44,6 +44,7 @@ from canonical.launchpad.interfaces import (
     IDistroSeriesBugTask,
     ILaunchpadCelebrities,
     INullBugTask,
+    IProductSeries,
     IProductSeriesBugTask,
     ISourcePackage,
     IUpstreamBugTask,
@@ -883,6 +884,22 @@ class BugTaskSet:
         "date_last_updated": "Bug.date_last_updated",
         "date_closed": "BugTask.date_closed"}
 
+    _open_resolved_upstream = """
+                EXISTS (
+                    SELECT TRUE FROM BugTask AS RelatedBugTask
+                    WHERE RelatedBugTask.bug = BugTask.bug
+                        AND RelatedBugTask.id != BugTask.id
+                        AND ((
+                            RelatedBugTask.bugwatch IS NOT NULL AND
+                            RelatedBugTask.status %s)
+                            OR (
+                            RelatedBugTask.product IS NOT NULL AND
+                            RelatedBugTask.bugwatch IS NULL AND
+                            RelatedBugTask.status %s))
+                    )
+                """
+
+
     title = "A set of bug tasks"
 
     def get(self, task_id):
@@ -1059,76 +1076,9 @@ class BugTaskSet:
             """ % sqlvalues(distroseries, distroseries.main_archive,
                             component_ids, PackagePublishingStatus.PUBLISHED)])
 
-        if params.pending_bugwatch_elsewhere:
-            # Include only bugtasks that have other bugtasks on targets
-            # not using Malone, which are not Rejected, and have no bug
-            # watch.
-            pending_bugwatch_elsewhere_clause = """
-                EXISTS (
-                    SELECT TRUE FROM BugTask AS RelatedBugTask
-                    LEFT OUTER JOIN Distribution AS OtherDistribution
-                        ON RelatedBugTask.distribution = OtherDistribution.id
-                    LEFT OUTER JOIN Product AS OtherProduct
-                        ON RelatedBugTask.product = OtherProduct.id
-                    WHERE RelatedBugTask.bug = BugTask.bug
-                        AND RelatedBugTask.id != BugTask.id
-                        AND RelatedBugTask.bugwatch IS NULL
-                        AND (
-                            OtherDistribution.official_malone IS FALSE
-                            OR OtherProduct.official_malone IS FALSE
-                            )
-                        AND RelatedBugTask.status != %s
-                    )
-                """ % sqlvalues(BugTaskStatus.REJECTED)
-
-            extra_clauses.append(pending_bugwatch_elsewhere_clause)
-
-        if params.has_no_upstream_bugtask:
-            has_no_upstream_bugtask_clause = """
-                BugTask.bug NOT IN (
-                    SELECT DISTINCT bug FROM BugTask
-                    WHERE product IS NOT NULL)
-            """
-            extra_clauses.append(has_no_upstream_bugtask_clause)
-
-        # Our definition of "resolved upstream" means:
-        #
-        # * bugs with bugtasks linked to watches that are rejected,
-        #   fixed committed or fix released
-        #
-        # * bugs with upstream bugtasks that are fix committed or fix released
-        #
-        # This definition of "resolved upstream" should address the use
-        # cases we gathered at UDS Paris (and followup discussions with
-        # seb128, sfllaw, et al.)
-        if params.only_resolved_upstream:
-            statuses_for_watch_tasks = [
-                BugTaskStatus.REJECTED,
-                BugTaskStatus.FIXCOMMITTED,
-                BugTaskStatus.FIXRELEASED]
-            statuses_for_upstream_tasks = [
-                BugTaskStatus.FIXCOMMITTED,
-                BugTaskStatus.FIXRELEASED]
-
-            only_resolved_upstream_clause = """
-                EXISTS (
-                    SELECT TRUE FROM BugTask AS RelatedBugTask
-                    WHERE RelatedBugTask.bug = BugTask.bug
-                        AND RelatedBugTask.id != BugTask.id
-                        AND ((
-                            RelatedBugTask.bugwatch IS NOT NULL AND
-                            RelatedBugTask.status %s)
-                            OR (
-                            RelatedBugTask.product IS NOT NULL AND
-                            RelatedBugTask.bugwatch IS NULL AND
-                            RelatedBugTask.status %s))
-                    )
-                """ % (
-                    search_value_to_where_condition(
-                        any(*statuses_for_watch_tasks)),
-                    search_value_to_where_condition(
-                        any(*statuses_for_upstream_tasks)))
-            extra_clauses.append(only_resolved_upstream_clause)
+        upstream_clause = self._buildUpstreamClause(params)
+        if upstream_clause:
+            extra_clauses.append(upstream_clause)
 
         if params.tag:
             tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
@@ -1162,13 +1112,21 @@ class BugTaskSet:
             extra_clauses.append(bug_reporter_clause)
 
         if params.nominated_for:
-            assert IDistroSeries.providedBy(params.nominated_for)
+            mappings = sqlvalues(
+                target=params.nominated_for,
+                nomination_status=BugNominationStatus.PROPOSED)
+            if IDistroSeries.providedBy(params.nominated_for):
+                mappings['target_column'] = 'distrorelease'
+            elif IProductSeries.providedBy(params.nominated_for):
+                mappings['target_column'] = 'productseries'
+            else:
+                raise AssertionError(
+                    'Unknown nomination target: %r' % params.nominated_for)
             nominated_for_clause = """
                 BugNomination.bug = BugTask.bug AND
-                BugNomination.distrorelease = %s AND
-                BugNomination.status = %s
-                """ % sqlvalues(
-                    params.nominated_for, BugNominationStatus.PROPOSED)
+                BugNomination.%(target_column)s = %(target)s AND
+                BugNomination.status = %(nomination_status)s
+                """ % mappings
             extra_clauses.append(nominated_for_clause)
             clauseTables.append('BugNomination')
 
@@ -1180,6 +1138,84 @@ class BugTaskSet:
 
         query = " AND ".join(extra_clauses)
         return query, clauseTables, orderby_arg
+
+    def _buildUpstreamClause(self, params):
+        upstream_clauses = []
+        if params.pending_bugwatch_elsewhere:
+            # Include only bugtasks that have other bugtasks on targets
+            # not using Malone, which are not Rejected, and have no bug
+            # watch.
+            pending_bugwatch_elsewhere_clause = """
+                EXISTS (
+                    SELECT TRUE FROM BugTask AS RelatedBugTask
+                    LEFT OUTER JOIN Distribution AS OtherDistribution
+                        ON RelatedBugTask.distribution = OtherDistribution.id
+                    LEFT OUTER JOIN Product AS OtherProduct
+                        ON RelatedBugTask.product = OtherProduct.id
+                    WHERE RelatedBugTask.bug = BugTask.bug
+                        AND RelatedBugTask.id != BugTask.id
+                        AND RelatedBugTask.bugwatch IS NULL
+                        AND (
+                            OtherDistribution.official_malone IS FALSE
+                            OR OtherProduct.official_malone IS FALSE
+                            )
+                        AND RelatedBugTask.status != %s
+                    )
+                """ % sqlvalues(BugTaskStatus.REJECTED)
+
+            upstream_clauses.append(pending_bugwatch_elsewhere_clause)
+
+        if params.has_no_upstream_bugtask:
+            has_no_upstream_bugtask_clause = """
+                BugTask.bug NOT IN (
+                    SELECT DISTINCT bug FROM BugTask
+                    WHERE product IS NOT NULL)
+            """
+            upstream_clauses.append(has_no_upstream_bugtask_clause)
+
+        # Our definition of "resolved upstream" means:
+        #
+        # * bugs with bugtasks linked to watches that are rejected,
+        #   fixed committed or fix released
+        #
+        # * bugs with upstream bugtasks that are fix committed or fix released
+        #
+        # This definition of "resolved upstream" should address the use
+        # cases we gathered at UDS Paris (and followup discussions with
+        # seb128, sfllaw, et al.)
+        if params.resolved_upstream:
+            statuses_for_watch_tasks = [
+                BugTaskStatus.REJECTED,
+                BugTaskStatus.FIXCOMMITTED,
+                BugTaskStatus.FIXRELEASED]
+            statuses_for_upstream_tasks = [
+                BugTaskStatus.FIXCOMMITTED,
+                BugTaskStatus.FIXRELEASED]
+
+            only_resolved_upstream_clause = self._open_resolved_upstream % (
+                    search_value_to_where_condition(
+                        any(*statuses_for_watch_tasks)),
+                    search_value_to_where_condition(
+                        any(*statuses_for_upstream_tasks)))
+            upstream_clauses.append(only_resolved_upstream_clause)
+        if params.open_upstream:
+            statuses_for_open_tasks = [
+                BugTaskStatus.UNCONFIRMED,
+                BugTaskStatus.NEEDSINFO,
+                BugTaskStatus.CONFIRMED,
+                BugTaskStatus.INPROGRESS,
+                BugTaskStatus.UNKNOWN]
+            only_open_upstream_clause = self._open_resolved_upstream % (
+                    search_value_to_where_condition(
+                        any(*statuses_for_open_tasks)),
+                    search_value_to_where_condition(
+                        any(*statuses_for_open_tasks)))
+            upstream_clauses.append(only_open_upstream_clause)
+
+        if upstream_clauses:
+            upstream_clause = " OR ".join(upstream_clauses)
+            return '(%s)' % upstream_clause
+        return None
 
     def search(self, params, *args):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
