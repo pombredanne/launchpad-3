@@ -122,11 +122,15 @@ defaults = [
     ]
 
 if __name__ == '__main__':
+
+    # Extract so we can see them too
+    options = testrunner.get_options(args=None, defaults=defaults)
+
     result = testrunner.run(defaults)
     # Cribbed from sourcecode/zope/test.py - avoid spurious error during exit.
     logging.disable(999999999)
 
-    if main_process:
+    if main_process and options.verbose >= 3:
         from canonical.testing.layers import report_profile_stats
         report_profile_stats()
     sys.exit(result)
