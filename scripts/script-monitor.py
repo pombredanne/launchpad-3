@@ -31,10 +31,10 @@ def check_script(con, log, hostname, scriptname, completed_from, completed_to):
         """ % (hostname, scriptname, completed_from, completed_to))
     try:
         script_id = cur.fetchone()[0]
-        log.info("Script ID %s found for %s on %s" % (script_id, scriptname, hostname))
+        # log.info("Script ID %s found for %s on %s" % (script_id, scriptname, hostname))
         return script_id
     except TypeError:
-        log.fatal("Script not found %s on %s" % (scriptname, hostname))
+        log.fatal("Script not found %s on %s between %s and %s" % (scriptname, hostname, completed_from, completed_to))
         return False
 
 def main():
