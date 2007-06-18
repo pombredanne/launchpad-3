@@ -35,15 +35,6 @@ def split_with_padding(a_string, splitter, num_fields, padding=None):
     return tokens
 
 
-def _jml_log(*msg):
-    import os
-    msg = [os.getpid()] + list(msg)
-    fd = open('/home/jml/Desktop/jml.log', 'a')
-    fd.write(' '.join(map(str, msg)))
-    fd.write('\n')
-    fd.close()
-
-
 # XXX: JonathanLange 2007-06-13, This should probably be part of bzrlib.
 # See https://launchpad.net/bugs/120135.
 def makedirs(base_transport, path, mode=None):
@@ -117,8 +108,6 @@ class LaunchpadServer(Server):
         #
         # See https://launchpad.net/bugs/120949.
         branch_id, path = self._get_branch_and_path(virtual_path)
-        if branch_id not in self._dirty_branch_ids:
-            _jml_log("Marking branch as dirty", branch_id)
         self._dirty_branch_ids.add(branch_id)
 
     def _iter_branches(self):

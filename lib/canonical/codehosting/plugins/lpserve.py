@@ -10,7 +10,6 @@ __metaclass__ = type
 __all__ = ['cmd_launchpad_server']
 
 
-import atexit
 import signal
 import sys
 import thread
@@ -21,20 +20,10 @@ from bzrlib.option import Option
 from bzrlib import urlutils, ui
 
 from bzrlib.smart import medium, server
-from bzrlib import trace
 from bzrlib.transport import chroot, get_transport, remote
 
 from canonical.config import config
 from canonical.codehosting import transport
-
-
-def _jml_log(*msg):
-    import os
-    msg = [os.getpid()] + list(msg)
-    fd = open('/home/jml/Desktop/jml.log', 'a')
-    fd.write(' '.join(map(str, msg)))
-    fd.write('\n')
-    fd.close()
 
 
 class cmd_launchpad_server(Command):
@@ -124,8 +113,6 @@ class cmd_launchpad_server(Command):
 
     def run(self, user_id, port=None, directory=None, read_only=False,
             authserver_url=None, inet=False):
-        _jml_log('* Running smartserver')
-        atexit.register(lambda: _jml_log('* Exiting process'))
         if directory is None:
             directory = config.codehosting.branches_root
         if authserver_url is None:
@@ -146,7 +133,6 @@ class cmd_launchpad_server(Command):
             # authserver of modified branches. This signal handler runs the
             # operations we need to run (i.e. lp_server.tearDown) and does its
             # best to trigger 'finally' blocks across the rest of bzrlib.
-            _jml_log('* Running signal handler')
             lp_server.tearDown()
             thread.interrupt_main()
         signal.signal(signal.SIGHUP, clean_up)
@@ -156,7 +142,6 @@ class cmd_launchpad_server(Command):
             self.run_server(smart_server)
         finally:
             signal.signal(signal.SIGHUP, signal.SIG_DFL)
-            _jml_log('* Running finally')
             lp_server.tearDown()
 
 
