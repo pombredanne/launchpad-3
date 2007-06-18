@@ -312,8 +312,9 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
 
 # Information about known trust roots
 # XXX: 2007-06-14 jamesh
-# Include more information about the trust roots, such as an icon.
-# Should we maintain this data elsewhere?
+# Include more information about the trust roots, such as an icon.  We
+# should really maintain this data elsewhere, but this should be fine
+# for phase 1 of the implementation.
 KNOWN_TRUST_ROOTS = {
     'http://localhost.localdomain:8001/':
         dict(title="OpenID Consumer Example"),
