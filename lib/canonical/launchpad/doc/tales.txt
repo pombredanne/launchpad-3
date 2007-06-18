@@ -151,7 +151,7 @@ to hide them:
     ...                '> 2. Remove the penny from US currency.\n'
     ...                '\n')
     >>> quoted_text_all = ('> continuing from a previous thought.\n'
-    ...                    '> 3. Get new handwritting.\n'
+    ...                    '> 3. Get new handwriting.\n'
     ...                    '> 4. Add Year Zero to the calendar.\n'
     ...                    '\n')
     >>> signature = ('-- \n'
@@ -218,16 +218,16 @@ wrapped with the foldable span.
     &gt; 2. Remove the penny from US currency.
     </span></p>
     <p><span class="foldable">&gt; continuing from a previous thought.<br />
-    &gt; 3. Get new handwritting.<br />
+    &gt; 3. Get new handwriting.<br />
     &gt; 4. Add Year Zero to the calendar.
     </span></p>
 
-The reverse order works to:
+The reverse order works too:
 
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo='\n'.join([quoted_text_all, quoted_text, text]))
     <p><span class="foldable">&gt; continuing from a previous thought.<br />
-    &gt; 3. Get new handwritting.<br />
+    &gt; 3. Get new handwriting.<br />
     &gt; 4. Add Year Zero to the calendar.
     </span></p>
     <p>Somebody said sometime ago:<br />
