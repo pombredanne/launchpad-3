@@ -41,13 +41,13 @@ def utf8(x):
 
 def read_only_transaction(function):
     def transacted(*args, **kwargs):
+        transaction.begin()
         login(ANONYMOUS)
-        begin()
         try:
             return function(*args, **kwargs)
         finally:
-            abort()
             logout()
+            transaction.abort()
     return mergeFunctionMetadata(function, transacted)
 
 
