@@ -75,7 +75,7 @@ check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database..
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./test_on_merge.py -vv
+	${PYTHON} -t ./test_on_merge.py -vvv
 
 lint:
 	@bash ./utilities/lint.sh
