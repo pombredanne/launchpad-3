@@ -10,17 +10,23 @@ import cPickle as pickle
 import os
 import time
 
+enabled = False # Needs to be set to True for profiling to be switched on.
+
 _profile_stats_filename = '/tmp/launchpad_profile_stats.pickle'
 _profiling_setup_time = None
 
 def profiled(func):
     """Decorator that automatically profiles invokations of the method."""
     def profiled_func(cls, *args, **kw):
-        start_time = time.time()
-        try:
+        global enabled
+        if enabled:
+            start_time = time.time()
+            try:
+                return func(cls, *args, **kw)
+            finally:
+                _update_profile_stats(cls, func, time.time() - start_time)
+        else:
             return func(cls, *args, **kw)
-        finally:
-            _update_profile_stats(cls, func, time.time() - start_time)
     return profiled_func
 
 def setup_profiling():

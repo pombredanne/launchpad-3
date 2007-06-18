@@ -54,11 +54,6 @@ generate_overrides()
 from canonical.config import config
 config.setDefaultSection('testrunner')
 
-# Initialize testsuite profiling information
-from canonical.testing.profiled import setup_profiling
-if main_process:
-    setup_profiling()
-
 # Remove this module's directory from path, so that zope.testbrowser
 # can import pystone from test:
 sys.path[:] = [p for p in sys.path if os.path.abspath(p) != here]
@@ -126,12 +121,21 @@ if __name__ == '__main__':
     # Extract so we can see them too
     options = testrunner.get_options(args=None, defaults=defaults)
 
+    # Turn on Layer profiling if requested.
+    from canonical.testing import profiled
+    if options.verbose >= 3:
+        profiled.enabled = True
+        if main_process:
+            profiled.setup_profiling()
+    else:
+        profiled.enabled = False
+
     result = testrunner.run(defaults)
     # Cribbed from sourcecode/zope/test.py - avoid spurious error during exit.
     logging.disable(999999999)
 
+    # Print Layer profiling report if requested.
     if main_process and options.verbose >= 3:
-        from canonical.testing.profiled import report_profile_stats
-        report_profile_stats()
+        profiled.report_profile_stats()
     sys.exit(result)
 
