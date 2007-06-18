@@ -107,8 +107,3 @@ submission:
   u'abcdef'
   >>> context.number
   42
-
-
-== Using a Request Layer ==
-
-
