@@ -422,6 +422,8 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     archive = Attribute(
         "The Archive owned by this person, his PPA.")
 
+    entitlements = Attribute("List of Entitlements for this person or team.")
+
     @invariant
     def personCannotHaveIcon(person):
         # XXX: This invariant is busted! The person parameter provided to this
@@ -790,9 +792,11 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     def getSupportedLanguages():
         """Return a set containing the languages in which support is provided.
 
-        For a person, this is equal to the list of known languages.
+        For a person, this is equal to the list of known languages minus
+        the dialects.
         For a team that doesn't have any explicit known languages set, this
-        will be equal to union of all the languages known by its members.
+        will be equal to union of all the languages known by its members
+        minus dialects.
         """
 
     def getDirectAnswerQuestionTargets():
@@ -1102,4 +1106,3 @@ class ITeamCreation(ITeam):
 
 class JoinNotAllowed(Exception):
     """User is not allowed to join a given team."""
-

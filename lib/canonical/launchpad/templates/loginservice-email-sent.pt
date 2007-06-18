@@ -8,12 +8,12 @@
     <div metal:fill-slot="main">
       <h1>Launchpad Login Service</h1>
 
-      <h2 tal:content="view/heading" />
+      <h2 tal:content="view/email_heading" />
 
       <p>
         We've sent you an email message to <strong>
-        <code tal:content="view/email">email</code></strong> (from
-        noreply@launchpad.net) <span tal:replace="view/reason" />
+        <code tal:content="view/token/email">email</code></strong> (from
+        noreply@launchpad.net) <span tal:replace="view/email_reason" />
       </p>
       <p>
         To continue, follow the link in that message.

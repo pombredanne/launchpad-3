@@ -11,7 +11,7 @@ from StringIO import StringIO
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.lp.dbschema import RosettaFileFormat
+from canonical.lp.dbschema import TranslationFileFormat
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.components.poexport import (
@@ -123,8 +123,8 @@ class MOFormatHandler(Handler):
             return alias.http_url
 
 format_handlers = {
-    RosettaFileFormat.PO: POFormatHandler,
-    RosettaFileFormat.MO: MOFormatHandler,
+    TranslationFileFormat.PO: POFormatHandler,
+    TranslationFileFormat.MO: MOFormatHandler,
 }
 
 class UnsupportedExportObject(Exception):

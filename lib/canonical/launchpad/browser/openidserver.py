@@ -3,7 +3,9 @@
 """OpenID server."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = [
+    'OpenIdMixin',
+    ]
 
 import cgi
 from datetime import datetime
@@ -24,8 +26,6 @@ from openid import oidutil
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.lp.dbschema import LoginTokenType
-from canonical.launchpad.browser.logintoken import (
-    NewAccountView, ResetPasswordView)
 from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, ILoginTokenSet, IOpenIdApplication,
@@ -55,12 +55,12 @@ def null_log(message, level=0):
 oidutil.log = null_log
 
 
-class OpenIDMixinView:
+class OpenIdMixin:
 
     openid_request = None
 
     def __init__(self, context, request):
-        super(OpenIDMixinView, self).__init__(context, request)
+        super(OpenIdMixin, self).__init__(context, request)
         store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
         self.openid_server = Server(store_factory())
         self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
@@ -90,7 +90,7 @@ class OpenIDMixinView:
           ...     'y': (11000, 'bar'),
           ...     'z': (100, 'baz')
           ...     }
-          >>> OpenIDMixinView._sweep(now, session)
+          >>> OpenIdMixin._sweep(now, session)
           >>> for key in sorted(session):
           ...     print key, session[key]
           x (9999, 'foo')
@@ -193,47 +193,7 @@ class OpenIDMixinView:
         return response
 
 
-# XXX: 2007-06-15 jamesh
-# We should consider killing this class and the next and rolling the
-# changes into the existing logintoken classes.
-
-class LoginServiceNewAccountView(OpenIDMixinView, NewAccountView):
-    """A wrapper around NewAccountView which doesn't expect a
-    hide_email_addresses from the form and sends an OpenID response in case
-    there is an OpenID request in the user's session.
-    """
-
-    label = 'Nearly done ...'
-    field_names = ['displayname', 'password']
-
-    @action(_('Continue'), name='continue')
-    def continue_action(self, action, data):
-        # Our form doesn't include the hide_email_addresses field, so we have
-        # to cheat and manually include it here.
-        data['hide_email_addresses'] = True
-        super(LoginServiceNewAccountView, self).continue_action.success(data)
-
-        self.restoreRequestFromSession('token' + self.context.token)
-        self.next_url = None
-        return self.renderOpenIdResponse(self.createPositiveResponse())
-
-
-class LoginServiceResetPasswordView(OpenIDMixinView, ResetPasswordView):
-    """A wrapper around ResetPasswordView which sends an OpenID response in
-    case there is an OpenID request in the user's session.
-    """
-
-    @action(_('Finish & Sign In'), name='continue')
-    def continue_action(self, action, data):
-        super(LoginServiceResetPasswordView, self).continue_action.success(
-            data)
-
-        self.restoreRequestFromSession('token' + self.context.token)
-        self.next_url = None
-        return self.renderOpenIdResponse(self.createPositiveResponse())
-
-
-class OpenIdView(OpenIDMixinView, LaunchpadView):
+class OpenIdView(OpenIdMixin, LaunchpadView):
     """An OpenID Provider endpoint for Launchpad.
 
     This class implemnts an OpenID endpoint using the python-openid
@@ -352,8 +312,9 @@ class OpenIdView(OpenIDMixinView, LaunchpadView):
 
 # Information about known trust roots
 # XXX: 2007-06-14 jamesh
-# Include more information about the trust roots, such as an icon.
-# Should we maintain this data elsewhere?
+# Include more information about the trust roots, such as an icon.  We
+# should really maintain this data elsewhere, but this should be fine
+# for phase 1 of the implementation.
 KNOWN_TRUST_ROOTS = {
     'http://localhost.localdomain:8001/':
         dict(title="OpenID Consumer Example"),
@@ -372,7 +333,7 @@ KNOWN_TRUST_ROOTS = {
     }
 
 
-class LoginServiceBaseView(OpenIDMixinView, LaunchpadFormView):
+class LoginServiceBaseView(OpenIdMixin, LaunchpadFormView):
     """Common functionality for the OpenID login and authorize forms."""
 
     def __init__(self, context, request, nonce=None):
@@ -461,6 +422,9 @@ class LoginServiceLoginView(LoginServiceBaseView):
     template = ViewPageTemplateFile("../templates/loginservice-login.pt")
     custom_widget('action', LaunchpadRadioWidget)
 
+    email_sent_template = ViewPageTemplateFile(
+        "../templates/loginservice-email-sent.pt")
+
     @property
     def initial_values(self):
         values = super(LoginServiceLoginView, self).initial_values
@@ -473,7 +437,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
         password = data.get('password')
         person = getUtility(IPersonSet).getByEmail(email)
         if email is None or not valid_email(email):
-            self.addError('Please enter a valid email address')
+            self.addError('Please enter a valid email address.')
             return
 
         if action == 'login':
@@ -556,10 +520,9 @@ class LoginServiceLoginView(LoginServiceBaseView):
             tokentype=LoginTokenType.NEWACCOUNT)
         self.token.sendNewUserNeutralEmail()
         self.saveRequestInSession('token' + self.token.token)
-        heading = 'Registration mail sent'
-        reason = 'to confirm your address.'
-        return LoginServiceEmailSentView(
-            self.context, self.request, email, heading, reason)()
+        self.email_heading = 'Registration mail sent'
+        self.email_reason = 'to confirm your address.'
+        return self.email_sent_template()
 
     def process_password_recovery(self, email):
         person = getUtility(IPersonSet).getByEmail(email)
@@ -568,21 +531,9 @@ class LoginServiceLoginView(LoginServiceBaseView):
             person, email, email, LoginTokenType.PASSWORDRECOVERY)
         self.token.sendPasswordResetNeutralEmail()
         self.saveRequestInSession('token' + self.token.token)
-        heading = 'Forgotten your passphrase?'
-        reason = 'with instructions on resetting your passphrase.'
-        return LoginServiceEmailSentView(
-            self.context, self.request, email, heading, reason)()
-
-
-class LoginServiceEmailSentView(LaunchpadView):
-
-    template = ViewPageTemplateFile("../templates/loginservice-email-sent.pt")
-
-    def __init__(self, context, request, email, heading, reason):
-        self.email = email
-        self.heading = heading
-        self.reason = reason
-        LaunchpadView.__init__(self, context, request)
+        self.email_heading = 'Forgotten your passphrase?'
+        self.email_reason = 'with instructions on resetting your passphrase.'
+        return self.email_sent_template()
 
 
 class OpenIdApplicationNavigation(Navigation):

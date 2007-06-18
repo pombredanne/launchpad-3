@@ -21,7 +21,7 @@
           </td>
           <td width="50%">
 
-      <form action="/+login-foo" method="post" accept-charset="UTF-8">
+      <form action="/+login-register" method="post" accept-charset="UTF-8">
         <tal:widget replace="structure view/widgets/nonce/hidden" />
 
         <p class="error message"

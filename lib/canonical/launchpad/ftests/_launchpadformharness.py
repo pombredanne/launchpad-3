@@ -4,9 +4,6 @@
 
 __metaclass__ = type
 
-from zope.interface import implements
-
-from canonical.launchpad.layers import OpenIdLayer
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 
@@ -18,7 +15,8 @@ class LaunchpadFormHarness:
         self._render(form_values)
 
     def _render(self, form_values=None, method='GET'):
-        self.request = LaunchpadTestRequest(method=method, form=form_values)
+        self.request = LaunchpadTestRequest(method=method, form=form_values,
+                                            PATH_INFO='/')
         self.view = self.view_class(self.context, self.request)
         self.view.initialize()
 
@@ -42,17 +40,3 @@ class LaunchpadFormHarness:
 
     def redirectionTarget(self):
         return self.request.response.getHeader('location')
-
-
-# XXX: How can we avoid this?
-class OpenIDTestRequest(LaunchpadTestRequest):
-    implements(OpenIdLayer)
-
-
-class OpenIDLaunchpadFormHarness(LaunchpadFormHarness):
-
-    def _render(self, form_values=None, method='GET'):
-        self.request = OpenIDTestRequest(method=method, form=form_values)
-        self.view = self.view_class(self.context, self.request)
-        self.view.initialize()
-
