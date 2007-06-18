@@ -51,6 +51,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
+    BUG_CONTACT_BUGTASK_STATUSES,
     )
 from canonical.launchpad.helpers import shortlist
 # XXX: see bug 49029 -- kiko, 2006-06-14
@@ -310,7 +311,7 @@ class BugTask(SQLBase, BugTaskMixin):
         "status", "importance", "assignee", "milestone",
         "date_assigned", "date_confirmed", "date_inprogress",
         "date_closed")
-    _NON_CONJOINED_STATUSES = (BugTaskStatus.REJECTED,)
+    _NON_CONJOINED_STATUSES = (BugTaskStatus.WONTFIX,)
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
@@ -334,7 +335,7 @@ class BugTask(SQLBase, BugTaskMixin):
     status = EnumCol(
         dbName='status', notNull=True,
         schema=BugTaskStatus,
-        default=BugTaskStatus.UNCONFIRMED)
+        default=BugTaskStatus.NEW)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     importance = EnumCol(
         dbName='importance', notNull=True,
@@ -610,13 +611,26 @@ class BugTask(SQLBase, BugTaskMixin):
             raise ValueError('Unknown debbugs severity "%s"' % severity)
         return self.importance
 
-    def transitionToStatus(self, new_status):
+    def canTransitionToStatus(self, new_status, user):
+        """See `IBugTask`."""
+        if (user.inTeam(self.pillar.bugcontact) or
+            user.inTeam(self.pillar.owner)):
+            return True
+        else:
+            return new_status not in BUG_CONTACT_BUGTASK_STATUSES
+
+    def transitionToStatus(self, new_status, user):
         """See canonical.launchpad.interfaces.IBugTask."""
         if not new_status:
             # This is mainly to facilitate tests which, unlike the
             # normal status form, don't always submit a status when
             # testing the edit form.
             return
+
+        if not self.canTransitionToStatus(new_status, user):
+            raise AssertionError(
+                "Only Bug Contacts may change status to %s" % (
+                    new_status.title,))
 
         if self.status == new_status:
             # No change in the status, so nothing to do.
@@ -663,7 +677,7 @@ class BugTask(SQLBase, BugTaskMixin):
         # Ensure that we don't have dates recorded for state
         # transitions, if the bugtask has regressed to an earlier
         # workflow state. We want to ensure that, for example, a
-        # bugtask that went Unconfirmed => Confirmed => Unconfirmed
+        # bugtask that went New => Confirmed => New
         # has a dateconfirmed value of None.
         if new_status in UNRESOLVED_BUGTASK_STATUSES:
             self.date_closed = None
@@ -898,7 +912,6 @@ class BugTaskSet:
                             RelatedBugTask.status %s))
                     )
                 """
-
 
     title = "A set of bug tasks"
 
@@ -1143,7 +1156,7 @@ class BugTaskSet:
         upstream_clauses = []
         if params.pending_bugwatch_elsewhere:
             # Include only bugtasks that have other bugtasks on targets
-            # not using Malone, which are not Rejected, and have no bug
+            # not using Malone, which are not Invalid, and have no bug
             # watch.
             pending_bugwatch_elsewhere_clause = """
                 EXISTS (
@@ -1161,7 +1174,7 @@ class BugTaskSet:
                             )
                         AND RelatedBugTask.status != %s
                     )
-                """ % sqlvalues(BugTaskStatus.REJECTED)
+                """ % sqlvalues(BugTaskStatus.INVALID)
 
             upstream_clauses.append(pending_bugwatch_elsewhere_clause)
 
@@ -1175,7 +1188,7 @@ class BugTaskSet:
 
         # Our definition of "resolved upstream" means:
         #
-        # * bugs with bugtasks linked to watches that are rejected,
+        # * bugs with bugtasks linked to watches that are invalid,
         #   fixed committed or fix released
         #
         # * bugs with upstream bugtasks that are fix committed or fix released
@@ -1185,7 +1198,7 @@ class BugTaskSet:
         # seb128, sfllaw, et al.)
         if params.resolved_upstream:
             statuses_for_watch_tasks = [
-                BugTaskStatus.REJECTED,
+                BugTaskStatus.INVALID,
                 BugTaskStatus.FIXCOMMITTED,
                 BugTaskStatus.FIXRELEASED]
             statuses_for_upstream_tasks = [
@@ -1200,8 +1213,8 @@ class BugTaskSet:
             upstream_clauses.append(only_resolved_upstream_clause)
         if params.open_upstream:
             statuses_for_open_tasks = [
-                BugTaskStatus.UNCONFIRMED,
-                BugTaskStatus.NEEDSINFO,
+                BugTaskStatus.NEW,
+                BugTaskStatus.INCOMPLETE,
                 BugTaskStatus.CONFIRMED,
                 BugTaskStatus.INPROGRESS,
                 BugTaskStatus.UNKNOWN]

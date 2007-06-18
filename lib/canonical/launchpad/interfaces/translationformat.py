@@ -77,7 +77,24 @@ class UnknownTranslationRevisionDate(Exception):
 class ITranslationImporter(Interface):
     """Importer of translation files."""
 
-    def import_file(translation_import_queue_entry):
+    file_extensions_with_importer = Attribute(
+        "List of file extension we have imports for.")
+
+    def getTranslationFileFormatByFileExtension(file_extension):
+        """Return the translation file format for given file_extension.
+
+        :param file_extension: File extension.
+        :return: None if there is no handler for that file_extension.
+        """
+
+    def getTranslationFormatImporter(file_format):
+        """Return the translation file format for give file_format.
+
+        :param file_format: A TranslationFileFormat entry.
+        :return: None if there is no handler for that file_format.
+        """
+
+    def importFile(translation_import_queue_entry):
         """Convert a translation resource into database objects.
 
         :param translation_import_queue_entry: An ITranslationImportQueueEntry
@@ -104,15 +121,29 @@ class ITranslationFormatImporter(Interface):
         vocabulary='TranslationFileFormat',
         required=True)
 
+    content_type = Attribute(
+        "Content type string for this file format.")
+
+    file_extensions = Attribute(
+        "Set of file extensions handlable by this importer.")
+
     header = Attribute("An ITranslationHeader for the parsed file.")
 
     messages = Attribute(
         "The list of ITranslationMessage included in the parsed file.")
 
-    def canHandleFileExtension(extension):
-        """Whether this importer is able to handle the given file extension.
+    has_alternative_msgid = Attribute("""
+        Whether this file format importer uses ids to identify strings
+        instead of English strings.""")
 
-        :param extension: File extension (starting with '.').
+    def parse(translation_import_queue_entry):
+        """Parse given translation_import_queue_entry object.
+
+        :param translation_import_queue: An ITranslationImportQueueEntry to
+            import.
+
+        Once the parse is done self.header and self.messages contain the
+        elements parsed.
         """
 
     def getLastTranslator():

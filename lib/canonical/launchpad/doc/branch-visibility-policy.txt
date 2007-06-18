@@ -88,10 +88,14 @@ implicit policy you need to explicitly define a policy for everyone, and
 this is done by specifying None for the team.
 
     >>> print_policy_items(evolution)
+    >>> evolution.branch_visibility_base_policy
+    <Item PUBLIC ...BranchVisibilityPolicy...
     >>> evolution.setTeamBranchVisibilityPolicy(
     ...     None, BranchVisibilityPolicy.PUBLIC)
     >>> print_policy_items(evolution)
     *everyone*: Public
+    >>> evolution.branch_visibility_base_policy
+    <Item PUBLIC ...BranchVisibilityPolicy...
 
 
 == Setting the policy for teams ==
@@ -120,6 +124,8 @@ Setting the policy for *everyone* is done by passing None for the team.
     >>> print_policy_items(evolution)
     *everyone*: Forbidden
     Launchpad Developers: Private
+    >>> evolution.branch_visibility_base_policy
+    <Item FORBIDDEN ...BranchVisibilityPolicy...
 
 
 == Removing teams from the policy object ==

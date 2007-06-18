@@ -187,9 +187,16 @@ class LaunchpadView(UserAttributeCache):
         """
         return self.template()
 
+    def _isRedirected(self):
+        """Return True if a redirect was requested.
+
+        Check if the response status is one of 301, 302, 303 or 307.
+        """
+        return self.request.response.getStatus() in [301, 302, 303, 307]
+
     def __call__(self):
         self.initialize()
-        if self.request.response.getStatus() in [301, 302, 303, 307]:
+        if self._isRedirected():
             # Don't render the page on redirects.
             return u''
         else:

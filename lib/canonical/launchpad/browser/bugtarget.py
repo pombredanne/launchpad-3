@@ -35,11 +35,11 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IDistroSeriesSet,
-    IProduct, IProject, IDistributionSourcePackage, NotFoundError,
-    CreateBugParams, IBugAddForm, ILaunchpadCelebrities, IProductSeries,
-    ITemporaryStorageManager, IMaloneApplication, IFrontPageBugAddForm,
-    IProjectBugAddForm)
+    IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IProduct,
+    IProject, IDistributionSourcePackage, NotFoundError,
+    CreateBugParams, IBugAddForm, ILaunchpadCelebrities,
+    IProductSeries, ITemporaryStorageManager, IMaloneApplication,
+    IFrontPageBugAddForm, IProjectBugAddForm)
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
     safe_action, urlappend)
@@ -769,21 +769,21 @@ class BugTargetBugsView(BugTaskSearchListingView):
     #      unique color for each status in the pie chart
     #      -- Bjorn Tillenius, 2007-02-13
     status_color = {
-        BugTaskStatus.UNCONFIRMED: '#993300',
-        BugTaskStatus.NEEDSINFO: 'red',
+        BugTaskStatus.NEW: '#993300',
+        BugTaskStatus.INCOMPLETE: 'red',
         BugTaskStatus.CONFIRMED: 'orange',
         BugTaskStatus.INPROGRESS: 'blue',
         BugTaskStatus.FIXCOMMITTED: 'green',
         BugTaskStatus.FIXRELEASED: 'magenta',
-        BugTaskStatus.REJECTED: 'yellow',
+        BugTaskStatus.INVALID: 'yellow',
         BugTaskStatus.UNKNOWN: 'purple',
     }
 
     def initialize(self):
         BugTaskSearchListingView.initialize(self)
         bug_statuses_to_show = [
-            BugTaskStatus.UNCONFIRMED,
-            BugTaskStatus.NEEDSINFO,
+            BugTaskStatus.NEW,
+            BugTaskStatus.INCOMPLETE,
             BugTaskStatus.CONFIRMED,
             BugTaskStatus.INPROGRESS,
             BugTaskStatus.FIXCOMMITTED,
