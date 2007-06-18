@@ -159,9 +159,7 @@ class PackageUpload(SQLBase):
                 'Queue item already accepted')
 
         for source in self.sources:
-            # Perform overall checks on accepted source.
-            source.verifyAccepted()
-
+            source.verifyBeforeAccept()
             # if something goes wrong we will raise an exception
             # (QueueSourceAcceptError) before setting any value.
             # Mask the error with state-machine default exception
@@ -302,6 +300,7 @@ class PackageUpload(SQLBase):
         # the publishing tables, then the binaries, then we attempt
         # to publish the custom objects.
         for queue_source in self.sources:
+            queue_source.verifyBeforePublish()
             queue_source.publish(logger)
         for queue_build in self.builds:
             queue_build.publish(logger)
@@ -713,12 +712,10 @@ class PackageUploadSource(SQLBase):
         foreignKey='SourcePackageRelease'
         )
 
-    def verifyAccepted(self):
+    def verifyBeforeAccept(self):
         """See IPackageUploadSource."""
-        distribution = self.packageupload.distroseries.distribution
-
-        # Check for duplicated source version accross all distroseries.
-        for distroseries in distribution:
+        # Check for duplicate source version across all distroseries.
+        for distroseries in self.packageupload.distroseries.distribution:
             if distroseries.getQueueItems(
                 status=[PackageUploadStatus.ACCEPTED,
                         PackageUploadStatus.DONE],
@@ -730,30 +727,37 @@ class PackageUploadSource(SQLBase):
                     'This sourcepackagerelease is already accepted in %s.'
                     % self.packageupload.distroseries.name)
 
-        # Check for duplicates filenames currently present in the archive.
+    def verifyBeforePublish(self):
+        """See IPackageUploadSource."""
+        distribution = self.packageupload.distroseries.distribution
+        # Check for duplicate filenames currently present in the archive.
         for source_file in self.sourcepackagerelease.files:
             try:
                 published_file = distribution.getFileByName(
                     source_file.libraryfile.filename, binary=False)
             except NotFoundError:
+                # NEW files are *OK*.
                 continue
 
             filename = source_file.libraryfile.filename
             proposed_sha1 = source_file.libraryfile.content.sha1
             published_sha1 = published_file.content.sha1
 
-            # Multiple ORIGs with the same content are fine.
+            # Multiple orig(s) with the same content are fine.
             if source_file.filetype == SourcePackageFileType.ORIG:
                 if proposed_sha1 == published_sha1:
                     continue
+                raise QueueInconsistentStateError(
+                    '%s is already published in archive for %s with a different '
+                    'SHA1 hash (%s != %s)' % (
+                    filename, self.packageupload.distroseries.name,
+                    proposed_sha1, published_sha1))
 
-            # Multiple DIFFs, DSCs, TARGZs and ORIGs with different contents
+            # Any dsc(s), targz(s) and diff(s) already present
             # are a very big problem.
             raise QueueInconsistentStateError(
-                '%s is already published in archive for %s with a different '
-                'content (%s != %s)' % (
-                filename, self.packageupload.distroseries.name,
-                proposed_sha1, published_sha1))
+                '%s is already published in archive for %s' % (
+                filename, self.packageupload.distroseries.name))
 
     def checkComponentAndSection(self):
         """See IPackageUploadSource."""

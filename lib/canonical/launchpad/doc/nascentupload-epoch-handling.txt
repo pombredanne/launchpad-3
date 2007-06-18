@@ -1,0 +1,246 @@
+= NascentUpload Epoch Handling =
+
+NascentUpload class supports 'epoch' on versions as specified by:
+
+http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Version
+
+
+== Test Setup ==
+
+We need to be logged into the security model in order to get any further
+
+  >>> login('foo.bar@canonical.com')
+
+For the purpose of this test, hoary needs to be an open (development)
+distroseries so that we can upload to it.
+
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+  >>> hoary = ubuntu['hoary']
+  >>> from canonical.lp.dbschema import DistroSeriesStatus
+  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
+
+Uploading support functions and policy.
+
+  >>> from canonical.archiveuploader.nascentupload import NascentUpload
+  >>> from canonical.archiveuploader.tests import (
+  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
+  >>> from canonical.launchpad.ftests import syncUpdate
+
+  >>> sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
+
+Use the 'zopeless' transaction.
+
+  >>> from canonical.database.sqlbase import ZopelessTransactionManager
+  >>> local_transaction = ZopelessTransactionManager._installed
+
+
+== Epoch Version Conflicts ==
+
+Debian-like archives don't include epochs in the version specified in
+the filename of pool files.
+
+This makes it possible for packages with different versions to include
+the same filename, for instance:
+
+ * source 'bar' version '1.0-1' uses 'bar_1.0-1.diff.gz'
+ * source 'bar' version 1:1.0-1' also uses 'bar_1.0-1.diff.gz'
+
+Because of this, we need to be careful when publishing to the archive
+to ensure that published files don't get overwritten.
+
+In Soyuz we try to catch such situations by performing a file lookup in the
+archive against the proposed source files before 'accepting' it.
+
+
+=== Collision in Upload-Time ===
+
+When the 'non-epoched' version is already PENDING publication before
+uploading the candidate, we need to detect collisions at upload-time,
+returning a rejection email to the user.
+
+Upload and publish 'non-epoched' version:
+
+  >>> bar_src_upload = NascentUpload(
+  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src_upload.process()
+  >>> success = bar_src_upload.do_accept()
+  >>> bar_src_queue_noepoch = bar_src_upload.queue_root
+  >>> bar_src_queue_noepoch.displayversion
+  u'1.0-1'
+  >>> bar_src_queue_noepoch.status.name
+  'NEW'
+  >>> bar_src_queue_noepoch.setAccepted()
+  >>> bar_src_queue_noepoch.realiseUpload()
+  >>> bar_src_queue_noepoch.status.name
+  'DONE'
+
+Upload 'epoched' bar version:
+
+  >>> bar_src_upload = NascentUpload(
+  ...     datadir('suite/bar_1.0-1_epoched/bar_1.0-1_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src_upload.process()
+
+  >>> print bar_src_upload.rejection_message
+  MD5 sum of uploaded file does not match existent file in archive
+  Files specified in DSC are broken or missing, skipping package unpack verification.
+
+We relly on uploadprocessor to abort the transaction at this point not
+storing the respective SourcePackageRelease.
+
+Clean up this change and carry on:
+
+  >>> local_transaction.abort()
+
+
+=== Collision in queue DONE ===
+
+When the 'non-epoched' version is at least PENDING publication, we need to
+identify collisions when 'publishing' the new candidate:
+
+Upload 'non-epoched' bar source:
+
+  >>> bar_src_upload = NascentUpload(
+  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src_upload.process()
+  >>> success = bar_src_upload.do_accept()
+  >>> bar_src_queue_noepoch = bar_src_upload.queue_root
+  >>> bar_src_queue_noepoch.status.name
+  'NEW'
+
+Upload 'epoched' bar source :
+
+  >>> bar_src_upload = NascentUpload(
+  ...     datadir('suite/bar_1.0-1_epoched/bar_1.0-1_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src_upload.process()
+  >>> success = bar_src_upload.do_accept()
+  >>> bar_src_queue_epoch = bar_src_upload.queue_root
+  >>> bar_src_queue_epoch.status.name
+  'NEW'
+
+Accept and Publish 'non-epoched' bar source:
+
+  >>> bar_src_queue_noepoch.displayversion
+  u'1.0-1'
+  >>> bar_src_queue_noepoch.setAccepted()
+  >>> bar_src_queue_noepoch.realiseUpload()
+  >>> bar_src_queue_noepoch.status.name
+  'DONE'
+
+When publishing the 'epoched' bar source the collision is detected:
+
+  >>> bar_src_queue_epoch.displayversion
+  u'1:1.0-1'
+  >>> bar_src_queue_epoch.setAccepted()
+  >>> bar_src_queue_epoch.realiseUpload()
+  Traceback (most recent call last):
+  ...
+  QueueInconsistentStateError: bar_1.0-1.diff.gz is already published in archive for hoary
+  >>> bar_src_queue_epoch.status.name
+  'ACCEPTED'
+
+At this point the archive-admins can 'reject' the record manually or
+it will be ignored (with the error message below) every cron.daily cycle.
+
+  >>> bar_src_queue_epoch.setRejected()
+  >>> bar_src_queue_epoch.status.name
+  'REJECTED'
+
+Clean up this change and carry on:
+
+  >>> local_transaction.abort()
+
+
+== Dealing with Epochs and diverging binary versions ==
+
+Let's process an source upload and ensure that the resulting
+SourcePackageRelease record store a propoer 'version':
+
+  >>> bar_src_upload = NascentUpload(
+  ...     datadir('suite/bar_1.0-9/bar_1.0-9_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src_upload.process()
+  >>> bar_src_upload.is_rejected
+  False
+  >>> success = bar_src_upload.do_accept()
+
+For source uploads, Changes.version == DSC.version == SPR.version:
+
+  >>> bar_src_upload.changes.version
+  '1:1.0-9'
+
+  >>> bar_src_upload.changes.dsc.dsc_version
+  '1:1.0-9'
+
+  >>> bar_src_queue = bar_src_upload.queue_root
+  >>> bar_spr = bar_src_queue.sources[0].sourcepackagerelease
+  >>> bar_spr.version
+  u'1:1.0-9'
+
+Let's accept the source and claim 'build from accepted' to process the
+respective binary:
+
+  >>> bar_src_queue.status.name
+  'NEW'
+  >>> bar_src_queue.setAccepted()
+  >>> bar_src_queue.status.name
+  'ACCEPTED'
+  >>> syncUpdate(bar_src_queue)
+
+We will use a modified Sync upload policy to upload unsigned binaries:
+
+  >>> binary_sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
+  >>> binary_sync_policy.can_upload_binaries = True
+  >>> binary_sync_policy.can_upload_mixed = True
+
+For a binary upload we expect the same, a BinaryPackageRelease
+'version' that includes 'epoch':
+
+  >>> bar_bin_upload = NascentUpload(
+  ...     datadir('suite/bar_1.0-9_binary/bar_1.0-9_i386.changes'),
+  ...     binary_sync_policy, mock_logger_quiet)
+  >>> bar_bin_upload.process()
+  >>> bar_bin_upload.is_rejected
+  False
+  >>> success = bar_bin_upload.do_accept()
+  >>> bar_bin_queue = bar_bin_upload.queue_root
+  >>> bar_bin_queue.status.name
+  'NEW'
+
+The Changesfile version always refers to the source version and the
+binary versions included in the upload can diverge between themselves
+and from the source version.
+
+  >>> bar_bin_upload.changes.version
+  '1:1.0-9'
+
+  >>> deb_file = bar_bin_upload.changes.files[0]
+  >>> deb_file.filename
+  'bar_6.6.6_i386.deb'
+
+  >>> deb_file.version
+  '1:1.0-9'
+
+  >>> deb_file.source_version
+  '1:1.0-9'
+
+  >>> deb_file.control_version
+  '1:6.6.6'
+
+Anyway, the proper value for BinaryPackageRelease.version is the
+version stored in the binary control file:
+
+  >>> bar_bpr = bar_bin_queue.builds[0].build.binarypackages[0]
+  >>> bar_bpr.version
+  u'1:6.6.6'
+
+
+
+
+

@@ -235,6 +235,11 @@ special = {
             setUp=uploaderSetUp, tearDown=uploaderTearDown,
             layer=LaunchpadZopelessLayer, optionflags=default_optionflags
             ),
+    'nascentupload-epoch-handling.txt': LayeredDocFileSuite(
+            '../doc/nascentupload-epoch-handling.txt',
+            setUp=uploaderSetUp, tearDown=uploaderTearDown,
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
+            ),
     'build-notification.txt': LayeredDocFileSuite(
             '../doc/build-notification.txt',
             setUp=builddmasterSetUp,
