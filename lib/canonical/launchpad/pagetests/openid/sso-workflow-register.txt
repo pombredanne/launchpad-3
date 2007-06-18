@@ -14,15 +14,26 @@ The authentication process is started by the relying party issuing a
 checkid_setup request, sending the user to Launchpad:
 
     >>> from urllib import urlencode
+    >>> trust_root = 'http://launchpad.dev/+openid-consumer'
     >>> args = urlencode({
     ...     'openid.mode': 'checkid_setup',
     ...     'openid.identity':
     ...         'http://specs.openid.net/auth/2.0/identifier_select',
     ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
-    ...     'openid.trust_root': 'http://launchpad.dev/+openid-consumer',
+    ...     'openid.trust_root': trust_root,
     ...     })
     >>> setup_url = 'http://openid.launchpad.dev/+openid?%s' % args
     >>> browser.open(setup_url)
+
+When a new account is created we'll use the creation rationale specified for
+the trust_root given by the relying party. Since we don't have any trust root
+to which we can redirect to we'll need to manually change our list of known
+trust roots during this test.
+
+    >>> from canonical.launchpad.browser.openidserver import KNOWN_TRUST_ROOTS
+    >>> orig_trust_roots = dict(**KNOWN_TRUST_ROOTS)
+    >>> shop_url = 'https://shop.canonical.com/'
+    >>> KNOWN_TRUST_ROOTS[trust_root] = KNOWN_TRUST_ROOTS[shop_url]
 
 At this point, we are at the login page.  Lets try to create a new
 account for an email address that has already been registered:
@@ -94,8 +105,17 @@ directed back to the original site:
     openid.return_to:http://launchpad.dev/+openid-consumer
     ...
 
+And the creation rationale for the new account has been set.
+
+    >>> from canonical.launchpad.database import Person
+    >>> Person.selectOneBy(name='new-user').creation_rationale
+    <Item OWNER_CREATED_UBUNTU_SHOP...PersonCreationRationale'>>
+
 
 == Cleanup ==
 
+    >>> KNOWN_TRUST_ROOTS = orig_trust_roots
+    >>> from canonical.launchpad.browser import openidserver
+    >>> openidserver.KNOWN_TRUST_ROOTS = orig_trust_roots
     >>> uninstall_consumer()
 

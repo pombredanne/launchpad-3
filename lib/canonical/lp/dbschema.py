@@ -3675,6 +3675,21 @@ class PersonCreationRationale(DBSchema):
         he created this "placeholder" profile.
         """)
 
+    OWNER_CREATED_UBUNTU_SHOP = Item(12, """
+        Created by the owner himself, coming from the Ubuntu Shop.
+
+        Somebody went to the Ubuntu Shop and was directed to Launchpad to
+        create an account.
+        """)
+
+    OWNER_CREATED_UNKNOWN_TRUSTROOT = Item(13, """
+        Created by the owner himself, coming from unknown OpenID consumer.
+
+        Somebody went to an OpenID consumer we don't know about and was
+        directed to Launchpad to create an account.
+        """)
+
+
 class EntitlementType(DBSchema):
     """The set of features supported via entitlements.
 

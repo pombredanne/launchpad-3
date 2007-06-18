@@ -34,7 +34,8 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadView, LaunchpadFormView)
 
-from canonical.launchpad.browser.openidserver import OpenIdMixin
+from canonical.launchpad.browser.openidserver import (
+    KNOWN_TRUST_ROOTS, OpenIdMixin)
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, ILoginTokenSet, IPerson, ILoginToken,
     IGPGKeySet, IGPGHandler, GPGVerificationError, GPGKeyNotFoundError,
@@ -661,18 +662,30 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         return self.maybeCompleteOpenIDRequest()
 
     def _getCreationRationale(self):
-        """Return the creation rationale that should be used for this person.
+        """Return the creation rationale that should be used for this account.
 
-        If there's a rationale for the logintoken's redirection_url, then use
-        it, otherwise uses PersonCreationRationale.OWNER_CREATED_LAUNCHPAD.
+        If there's an OpenID request in the session we use the given
+        trust_root to find out the creation rationale. If there's no OpenID
+        request but there is a rationale for the logintoken's redirection_url,
+        then use that, otherwise uses
+        PersonCreationRationale.OWNER_CREATED_LAUNCHPAD.
         """
-        # XXX: 20070618 jamesh
-        # Need to handle creation rationale for accounts created via
-        # https://login.launchpad.net/.  Should probably match by the
-        # trust_root of the OpenID request.
-        rationale = self.urls_and_rationales.get(self.context.redirection_url)
-        if rationale is None:
-            rationale = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
+        try:
+            self.restoreRequestFromSession('token' + self.context.token)
+        except UnexpectedFormData:
+            # There is no OpenIDRequest in the session, so we'll try to infer
+            # the creation rationale from the token's redirection_url.
+            rationale = self.urls_and_rationales.get(
+                self.context.redirection_url)
+            if rationale is None:
+                rationale = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
+        else:
+            root = KNOWN_TRUST_ROOTS.get(self.openid_request.trust_root)
+            if root is not None and 'creation_rationale' in root:
+                rationale = root['creation_rationale']
+            else:
+                rationale = (
+                    PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT)
         return rationale
 
     def _createPersonAndEmail(
