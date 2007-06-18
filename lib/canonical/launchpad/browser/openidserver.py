@@ -401,7 +401,9 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
         self.trashRequest()
         return self.renderOpenIdResponse(self.createFailedResponse())
 
-    @action("No, I'm not this person", name='logout')
+    @action("No, I'm Someone Else", name='logout')
+    # XXX 20070618 mpt: "I'm" should use a typographical apostrophe
+    # XXX 20070618 mpt: "Someone Else" should be "Not" then the person's name
     def logout_action(self, action, data):
         # Log the user out and render the login page again.
         session = ISession(self.request)

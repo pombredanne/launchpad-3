@@ -1,16 +1,8 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
-
+<html metal:use-macro="context/@@main_template/master" i18n:domain="launchpad">
   <body>
+    <div metal:fill-slot="main" tal:define="rp_title view/relying_party_title">
+      <div id="rp">
 
-    <div metal:fill-slot="main">
-      <h1>Launchpad Login Service</h1>
-
-      <table width="100%" tal:define="rp_title view/relying_party_title">
-        <tr>
-          <td width="50%">
             <p class="warning message" tal:condition="not:view/isSaneTrustRoot">
               <strong>Warning:</strong>
               <em tal:content="view/openid_request/trust_root" /> does not look
@@ -20,10 +12,11 @@
 
             <p>To continue with <tal:title replace="rp_title" />, you
             need to sign in.</p>
-          </td>
-          <td width="50%">
 
-      <h3>Sign in as <span tal:replace="view/user/displayname" /></h3>
+      </div>
+      <div id="auth">
+
+        <h2>Sign in as <span tal:replace="view/user/displayname" />?</h2>
 
       <form action="/+decide" method="post" accept-charset="UTF-8">
         <tal:widget replace="structure view/widgets/nonce/hidden" />
@@ -32,9 +25,13 @@
           <tal:submit replace="structure view/logout_action/render" />
         </div>
 
-        <br />
         <div>
-          <h4>These details will be sent to <tal:title replace="rp_title" /></h4>
+
+            <h2>
+              These details will be sent to
+              <tal:title replace="rp_title" />:
+            </h2>
+
           <ul>
             <li tal:content="view/user/displayname">
               My name
@@ -45,16 +42,15 @@
           </ul>
         </div>
 
-        <br />
         <div>
           <tal:submit replace="structure view/auth_action/render" />
-          <tal:submit replace="structure view/deny_action/render" />
+          <tal:submit replace="structure view/deny_action/render"
+          condition="nothing">hidden until we determine its need</tal:submit>
         </div>
 
       </form>
 
-      </td></tr></table>
-
+      </div>
     </div>
   </body>
 </html>
