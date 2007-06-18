@@ -23,6 +23,13 @@ from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 
 
+def _jml_log(*msg):
+    fd = open('/home/jml/Desktop/jml.log', 'a')
+    fd.write(' '.join(map(str, msg)))
+    fd.write('\n')
+    fd.close()
+
+
 class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
     """Acceptance tests for the Launchpad codehosting service's Bazaar support.
 
@@ -90,6 +97,16 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
             relpath = ''
         return self.server.get_url(username) + relpath
 
+    def getHostedBranch(self, personName, productName, branchName):
+        """Look up and return the specified branch from the database."""
+        owner = database.Person.byName('testuser')
+        if productName is None:
+            product = None
+        else:
+            product = database.Product.selectOneBy(name=productName)
+        return database.Branch.selectOneBy(
+            owner=owner, product=product, name=branchName)
+
     @deferToThread
     def test_bzr_sftp(self):
         """
@@ -101,6 +118,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         (and/or their bzrlib equivalents) and so on should work, so long as the
         user has permission to read or write to those URLs.
         """
+        _jml_log(self.id())
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(remote_url)
         remote_revision = self.getLastRevision(remote_url)
@@ -114,6 +132,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         test_1_bzr_sftp tests that the initial push works. Here we test that
         pushing further revisions to an existing branch works as well.
         """
+        _jml_log(self.id())
         # Initial push.
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(remote_url)
@@ -137,6 +156,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         Also, the renames may happen in the database for other reasons, e.g. if
         the DBA running a one-off script.
         """
+        _jml_log(self.id())
 
         # Push the local branch to the server
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
@@ -144,9 +164,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
 
         # Rename branch in the database
         LaunchpadZopelessTestSetup().txn.begin()
-        testuser = database.Person.byName('testuser')
-        branch = database.Branch.selectOneBy(
-            ownerID=testuser.id, name='test-branch')
+        branch = self.getHostedBranch('testuser', None, 'test-branch')
         self.branch_id = branch.id
         branch.name = 'renamed-branch'
         LaunchpadZopelessTestSetup().txn.commit()
@@ -191,6 +209,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         A mapping file for use with Apache's mod_rewrite should be generated
         correctly.
         """
+        _jml_log(self.id())
         # We already test that the mapping file is correctly generated from the
         # database in
         # lib/canonical/launchpad/scripts/ftests/test_supermirror_rewritemap.py,
@@ -200,11 +219,8 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         # Push branch to sftp server
         self.push(self.getTransportURL('~testuser/+junk/test-branch'))
 
-        # Retrieve the branch from the database.  selectOne will fail if the
-        # branch does not exist (or if somehow multiple branches match!).
-        branch = database.Branch.selectOne(
-            "owner = %s AND product IS NULL AND name = %s"
-            % sqlvalues(database.Person.byName('testuser').id, 'test-branch'))
+        # Retrieve the branch from the database.
+        branch = self.getHostedBranch('testuser', None, 'test-branch')
 
         self.assertEqual(None, branch.url)
         # If we get this far, the branch has been correctly inserted into the
@@ -212,6 +228,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
 
     @deferToThread
     def test_push_team_branch(self):
+        _jml_log(self.id())
         remote_url = self.getTransportURL('~testteam/firefox/a-new-branch')
         self.push(remote_url)
         remote_revision = self.getLastRevision(remote_url)
@@ -220,15 +237,14 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
 
     @deferToThread
     def test_push_new_branch_creates_branch_in_database(self):
+        _jml_log(self.id())
         remote_url = self.getTransportURL('~testuser/+junk/totally-new-branch')
         self.push(remote_url)
 
-        # Retrieve the branch from the database. selectOne will fail if the
-        # branch does not exist (or if somehow multiple branches match!).
-        branch = database.Branch.selectOne(
-            "owner = %s AND product IS NULL AND name = %s"
-            % sqlvalues(database.Person.byName('testuser').id,
-                        'totally-new-branch'))
+        # Retrieve the branch from the database.
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = self.getHostedBranch('testuser', None, 'totally-new-branch')
+        LaunchpadZopelessTestSetup().txn.abort()
 
         self.assertEqual(
             '~testuser/+junk/totally-new-branch', branch.unique_name)
@@ -236,17 +252,15 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
     @deferToThread
     def test_push_triggers_mirror_request(self):
         # Pushing new data to a branch should trigger a mirror request.
+        _jml_log(self.id())
         remote_url = self.getTransportURL('~testuser/+junk/totally-new-branch')
         self.push(remote_url)
 
-        # Retrieve the branch from the database. selectOne will fail if the
-        # branch does not exist (or if somehow multiple branches match!).
+        # Retrieve the branch from the database.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = database.Branch.selectOne(
-            "owner = %s AND product IS NULL AND name = %s"
-            % sqlvalues(database.Person.byName('testuser').id,
-                        'totally-new-branch'))
-
+        branch = self.getHostedBranch('testuser', None, 'totally-new-branch')
+        # Confirm that the branch hasn't had a mirror requested yet. Not core
+        # to the test, but helpful for checking internal state.
         self.assertNotEqual(None, branch.mirror_request_time)
         branch.mirror_request_time = None
         LaunchpadZopelessTestSetup().txn.commit()
@@ -258,13 +272,9 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         # Push the new revision.
         self.push(remote_url)
 
-        # Retrieve the branch from the database. selectOne will fail if the
-        # branch does not exist (or if somehow multiple branches match!).
+        # Retrieve the branch from the database.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = database.Branch.selectOne(
-            "owner = %s AND product IS NULL AND name = %s"
-            % sqlvalues(database.Person.byName('testuser').id,
-                        'totally-new-branch'))
+        branch = self.getHostedBranch('testuser', None, 'totally-new-branch')
         self.assertNotEqual(None, branch.mirror_request_time)
         LaunchpadZopelessTestSetup().txn.abort()
 
