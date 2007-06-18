@@ -42,7 +42,7 @@ class ListTeamMembersTestCase(unittest.TestCase):
         """Test the default option."""
         self.assertEqual(
             listteammembers.process_team('ubuntu-team'), ubuntuteam_default)
-    
+
     def test_listteammembers_email_only(self):
         """Test the email only option."""
         self.assertEqual(
@@ -57,7 +57,7 @@ class ListTeamMembersTestCase(unittest.TestCase):
         """Test unknown team."""
         self.assertRaises(
             listteammembers.NoSuchTeamError, listteammembers.process_team, 'nosuchteam-matey')
-        
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

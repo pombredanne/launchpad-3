@@ -10,7 +10,8 @@ from zope.component import getUtility
 from canonical.lp import initZopeless
 from canonical.launchpad.interfaces import IPersonSet
 
-output_templates = {
+
+OUTPUT_TEMPLATES = {
    'simple': '%(name)s, %(email)s',
    'email': '%(email)s',
    'full': '%(teamname)s|%(id)s|%(name)s|%(email)s|%(displayname)s|%(ubuntite)s'
@@ -19,7 +20,7 @@ output_templates = {
 
 class NoSuchTeamError(Exception): 
     """Used if non-existent team name is specified."""
-    pass
+
 
 def process_team(teamname, display_option='simple'):
     output = []
@@ -28,6 +29,7 @@ def process_team(teamname, display_option='simple'):
     if memberset == None:
         raise NoSuchTeamError
 
+    template = OUTPUT_TEMPLATES[display_option]
     for member in memberset.allmembers:
         # Email
         if member.preferredemail is not None:
@@ -35,13 +37,12 @@ def process_team(teamname, display_option='simple'):
         else:
             email = '--none--'
         # Ubuntite
+        ubuntite = "no"
         if member.signedcocs:
             for i in member.signedcocs:
                 if i.active:
                     ubuntite = "yes"
                     break
-        else:
-            ubuntite = "no"
         params = dict(
             email=email, 
             name=member.name,
@@ -50,10 +51,10 @@ def process_team(teamname, display_option='simple'):
             displayname=member.displayname,
             ubuntite=ubuntite
             )
-        output.append(output_templates[display_option] % params)
+        output.append(template % params)
     # If we're only looking at email, remove --none-- entries
     # as we're only interested in emails
     if display_option == 'email':
-        output = [x for x in output if x != '--none--']
+        output = [line for line in output if line != '--none--']
     return sorted(output)
 
