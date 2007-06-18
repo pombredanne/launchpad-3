@@ -10,7 +10,7 @@ __all__ = [
 
 import os
 
-from transaction import abort, begin
+import transaction
 
 from zope.component import getUtility
 from zope.interface import implements
