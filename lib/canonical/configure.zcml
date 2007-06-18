@@ -145,11 +145,6 @@
         />
 
     <!-- virtual host: openid -->
-    <browser:defaultView
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
-        name="+openid"
-        layer="canonical.launchpad.layers.OpenIdLayer"
-        />
     <browser:page
         name=""
         for="canonical.launchpad.interfaces.ILaunchpadRoot"
