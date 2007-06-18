@@ -55,7 +55,7 @@ from canonical.config import config
 config.setDefaultSection('testrunner')
 
 # Initialize testsuite profiling information
-from canonical.testing.layers import setup_profiling
+from canonical.testing.profiled import setup_profiling
 if main_process:
     setup_profiling()
 
@@ -131,7 +131,7 @@ if __name__ == '__main__':
     logging.disable(999999999)
 
     if main_process and options.verbose >= 3:
-        from canonical.testing.layers import report_profile_stats
+        from canonical.testing.profiled import report_profile_stats
         report_profile_stats()
     sys.exit(result)
 
