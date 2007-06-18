@@ -106,7 +106,17 @@ class LaunchpadServer(Server):
 
     def dirty(self, virtual_path):
         """Mark the branch containing virtual_path as dirty."""
-        branch_id, path = self._get_branch_path(virtual_path)
+        # XXX: JonathanLange 2007-06-18, Note that we only mark branches as
+        # dirty if they end up calling VFS (i.e. Transport) methods. If a
+        # client does a writing smart operation that doesn't use VFS, we won't
+        # catch it. (e.g. Branch.set_last_revision). This problem will become
+        # more severe in Bazaar 0.18 and later.
+        #
+        # Instead we should register our own smart request handlers to override
+        # the builtin ones.
+        #
+        # See https://launchpad.net/bugs/120949.
+        branch_id, path = self._get_branch_and_path(virtual_path)
         if branch_id not in self._dirty_branch_ids:
             _jml_log("Marking branch as dirty", branch_id)
         self._dirty_branch_ids.add(branch_id)
@@ -187,7 +197,15 @@ class LaunchpadServer(Server):
         self._branches[(user, product, branch)] = branch_id
         return branch_id
 
-    def _get_branch_path(self, virtual_path):
+    def _get_branch_and_path(self, virtual_path):
+        """Return a tuple of branch id and a trailing path for the given
+        virtual path.
+
+        'virtual_path' is a path that points to a branch or a path within a
+        branch. This method returns the id of the branch and the path relative
+        to that branch so that other methods can calculate the real path for
+        the given virtual path.
+        """
         # We can safely pad with '' because we can guarantee that no product or
         # branch name is the empty string. (Mapping '' to '+junk' happens
         # in _iter_branches). 'user' is checked later.
@@ -219,7 +237,7 @@ class LaunchpadServer(Server):
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
         # a branch'.
-        branch_id, path = self._get_branch_path(virtual_path)
+        branch_id, path = self._get_branch_and_path(virtual_path)
         return '/'.join([branch_id_to_path(branch_id), path])
 
     def _factory(self, url):
@@ -251,8 +269,9 @@ class LaunchpadServer(Server):
         if not self._is_set_up:
             return
         self._is_set_up = False
-        while self._dirty_branch_ids:
-            self.authserver.requestMirror(self._dirty_branch_ids.pop())
+        for branch_id in self._dirty_branch_ids:
+            self.authserver.requestMirror(branch_id)
+        self._dirty_branch_ids.clear()
         unregister_transport(self.scheme, self._factory)
 
 
