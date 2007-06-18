@@ -1378,6 +1378,9 @@ class FormattersAPI:
     # commonly used for quoting passages from another email.
     _re_quoted = re.compile('^([:|]|&gt;)')
 
+    # Match blocks that start as signatures or quoted passages.
+    _re_block_include = re.compile('^<p>(--<br />|&gt;)')
+
     def email_to_html(self):
         """text_to_html and hide signatures and full-quoted emails.
 
@@ -1391,8 +1394,8 @@ class FormattersAPI:
         output = []
         in_fold = False
         for line in self.text_to_html().split('\n'):
-            if not in_fold and line.startswith('<p>--<br />'):
-                # Start a foldable section for a signature.
+            if not in_fold and self._re_block_include.match(line) is not None:
+                # Start a foldable paragraph for a signature or quote.
                 in_fold = True
                 line = '<p>%s%s' % (start_fold_markup, line[3:])
             elif not in_fold and self._re_quoted.match(line) is not None:
