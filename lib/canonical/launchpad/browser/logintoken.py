@@ -34,10 +34,11 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadView, LaunchpadFormView)
 
+from canonical.launchpad.browser.openidserver import OpenIdMixin
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, ILoginTokenSet, IPerson, ILoginToken,
     IGPGKeySet, IGPGHandler, GPGVerificationError, GPGKeyNotFoundError,
-    ShipItConstants, UBUNTU_WIKI_URL)
+    ShipItConstants, UBUNTU_WIKI_URL, UnexpectedFormData)
 
 UTC = pytz.timezone('UTC')
 
@@ -80,7 +81,7 @@ class LoginTokenView(LaunchpadView):
             return LaunchpadView.render(self)
 
 
-class BaseLoginTokenView:
+class BaseLoginTokenView(OpenIdMixin):
     """A view class to be used by other LoginToken views."""
 
     expected_token_types = ()
@@ -121,6 +122,23 @@ class BaseLoginTokenView:
         loginsource = getUtility(IPlacelessLoginSource)
         principal = loginsource.getPrincipalByLogin(email)
         logInPerson(self.request, principal, email)
+
+    def maybeCompleteOpenIDRequest(self):
+        """Respond to a pending OpenID request if one is found.
+
+        The OpenIDRequest is looked up in the session based on the
+        login token ID.  If a request exists, the rendered OpenID
+        response is returned.
+
+        If no OpenID request is found, None is returned.
+        """
+        try:
+            self.restoreRequestFromSession('token' + self.context.token)
+        except UnexpectedFormData:
+            # There is no OpenIDRequest in the session
+            return None
+        self.next_url = None
+        return self.renderOpenIdResponse(self.createPositiveResponse())
 
 
 class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
@@ -228,6 +246,8 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         self.next_url = canonical_url(self.context.requester)
         self.request.response.addInfoNotification(
             _('Your password has been reset successfully'))
+
+        return self.maybeCompleteOpenIDRequest()
 
 
 class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
@@ -638,12 +658,18 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             "Registration completed successfully"))
         self.setNextUrl()
 
+        return self.maybeCompleteOpenIDRequest()
+
     def _getCreationRationale(self):
         """Return the creation rationale that should be used for this person.
 
         If there's a rationale for the logintoken's redirection_url, then use
         it, otherwise uses PersonCreationRationale.OWNER_CREATED_LAUNCHPAD.
         """
+        # XXX: 20070618 jamesh
+        # Need to handle creation rationale for accounts created via
+        # https://login.launchpad.net/.  Should probably match by the
+        # trust_root of the OpenID request.
         rationale = self.urls_and_rationales.get(self.context.redirection_url)
         if rationale is None:
             rationale = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
