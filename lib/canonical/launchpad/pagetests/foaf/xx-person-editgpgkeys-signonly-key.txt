@@ -119,7 +119,7 @@ Below is a clear-signed version signed with a different key (DFD20543):
 The key validation does not succeed with this key:
 
   >>> browser.getControl(name="signedcontent").value = signedcontent
-  >>> browser.getControl('Confirm').click()
+  >>> browser.getControl('Continue').click()
 
   >>> message = (
   ...     'The key used to sign the content '
@@ -145,7 +145,7 @@ this case, a truncated signature):
 The key validation does not succeed with this key:
 
   >>> browser.getControl(name="signedcontent").value = signedcontent
-  >>> browser.getControl('Confirm').click()
+  >>> browser.getControl('Continue').click()
 
   >>> message = (
   ...     'Launchpad could not verify your signature: No data')
@@ -175,7 +175,7 @@ Confirm the OpenPGP key by proving that we can sign the given phrase with
 the key:
 
   >>> browser.getControl(name="signedcontent").value = signedcontent
-  >>> browser.getControl('Confirm').click()
+  >>> browser.getControl('Continue').click()
 
 On success, redirect to Sample Person's home page.
 
