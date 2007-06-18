@@ -246,14 +246,16 @@ fi
 grep -q "canonical\/lp-branches" ~/.bazaar/locations.conf
 if [ $? -ne 0 ]; then
   branchloc=$(eval echo "~/canonical/lp-branches")
-  echo "[${branchloc}]
+  echo "
+[${branchloc}]
 pqm_email = Canonical PQM <pqm@pqm.ubuntu.com>
 pqm_branch = sftp://devpad.canonical.com/code/rocketfuel/launchpad/devel
 public_branch = bzr+ssh://devpad.canonical.com/code/${whoami}/launchpad
 public_branch:policy = appendpath
 smtp_server = localhost
 push_location = bzr+ssh://devpad.canonical.com/code/${whoami}/launchpad
-push_location:policy = appendpath" | tee -a ~/.bazaar/locations.conf > /dev/null
+push_location:policy = appendpath
+" | tee -a ~/.bazaar/locations.conf > /dev/null
   echo "Bazaar branch configuration updated. You may need to set smtp_server
 in ~/.bazaar/locations.conf to something other than localhost"
 fi
@@ -289,6 +291,14 @@ fi
 ls -l rocketfuel-setup | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
 if [ $? -ne 0 ]; then
   echo "WARNING: /usr/local/bin/rocketfuel-setup should be deleted so I can
+         recreate it."
+fi
+if [ ! -e rocketfuel-status ]; then
+  sudo ln -s ~/canonical/lp-branches/trunk/utilities/rocketfuel-status
+fi
+ls -l rocketfuel-status | cut -d">" -f2 | grep -q "trunk\/utilities\/rocketfuel"
+if [ $? -ne 0 ]; then
+  echo "WARNING: /usr/local/bin/rocketfuel-status should be deleted so I can
          recreate it."
 fi
 

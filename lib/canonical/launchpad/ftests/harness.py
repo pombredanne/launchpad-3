@@ -11,17 +11,15 @@ __metaclass__ = type
 import unittest
 from zope.component import getUtility
 from zope.component.exceptions import ComponentLookupError
-from zope.component.servicenames import Utilities
-from zope.component import getService
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from sqlos.interfaces import IConnectionName
 
 from canonical.testing import (
         BaseLayer, LibrarianLayer, FunctionalLayer, LaunchpadZopelessLayer,
         )
-from canonical.ftests.pgsql import PgTestSetup, ConnectionWrapper
+from canonical.ftests.pgsql import PgTestSetup
 from canonical.functional import FunctionalTestSetup
-from canonical.config import config, dbconfig
+from canonical.config import dbconfig
 from canonical.database.revision import confirm_dbrevision
 from canonical.database.sqlbase import (
         cursor, SQLBase, ZopelessTransactionManager,
@@ -29,7 +27,6 @@ from canonical.database.sqlbase import (
 from canonical.lp import initZopeless
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
-from canonical.testing import reset_logging
 
 import sqlos
 from sqlos.connection import connCache

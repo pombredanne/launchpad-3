@@ -36,10 +36,11 @@ from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.queue import QueueItemsView
+from canonical.launchpad.browser.rosetta import TranslationsMixin
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import TranslationUnavailableError
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -62,16 +63,16 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
         if distroserieslang is None:
             # There is no IDistroSeriesLanguage yet for this IDistroSeries,
             # but we still need to list it as an available language, so we
-            # generate a dummy one so users have a chance to get it in the
+            # generate a dummy one so users have a chance to get to it in the
             # navigation and start adding translations for it.
             distroserieslangset = getUtility(IDistroSeriesLanguageSet)
             distroserieslang = distroserieslangset.getDummy(self.context, lang)
 
         if (self.context.hide_all_translations and
             not check_permission('launchpad.Admin', distroserieslang)):
-            raise TranslationUnavailableError(
-                'Translation updates in progress.  Only admins may view'
-                ' translations for this distroseries.')
+            raise TranslationUnavailable(
+                'Translation updates are in progress.  Only administrators may view'
+                ' translations for this distribution series.')
 
         return distroserieslang
 
@@ -183,13 +184,16 @@ class DistroSeriesBugsMenu(ApplicationMenu):
 
     usedfor = IDistroSeries
     facet = 'bugs'
-    links = ['new', 'cve']
+    links = ['new', 'cve', 'nominations']
 
     def new(self):
         return Link('+filebug', 'Report a bug', icon='add')
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
+
+    def nominations(self):
+        return Link('+nominations', 'Review nominations', icon='bug')
 
 
 class DistroSeriesSpecificationsMenu(ApplicationMenu):
@@ -239,10 +243,10 @@ class DistroSeriesTranslationsMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def admin(self):
-        return Link('+admin', 'Edit translation options', icon='edit')
+        return Link('+admin', 'Admin translation options', icon='edit')
 
 
-class DistroSeriesView(BuildRecordsView, QueueItemsView):
+class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
 
     def initialize(self):
         self.text = self.request.form.get('text')
@@ -258,10 +262,6 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
         # +packaging hits this many times, so avoid redoing the query
         # multiple times, in particular because it's gnarly.
         return list(self.context.packagings)
-
-    @property
-    def languages(self):
-        return helpers.request_languages(self.request)
 
     def searchresults(self):
         """Try to find the packages in this distro series that match
@@ -279,7 +279,7 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
         language prefs indicate might be interesting.
         """
         distroserieslangs = []
-        for language in self.languages:
+        for language in self.translatable_languages:
             distroserieslang = self.context.getDistroSeriesLanguageOrDummy(language)
             distroserieslangs.append(distroserieslang)
         return distroserieslangs
@@ -308,7 +308,7 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView):
         # existing languages, and add a dummydistroserieslanguage for each
         # of them
         distroserieslangset = getUtility(IDistroSeriesLanguageSet)
-        for lang in self.languages:
+        for lang in self.translatable_languages:
             if lang not in existing_languages:
                 distroserieslang = distroserieslangset.getDummy(self.context, lang)
                 distroserieslangs.append(distroserieslang)
@@ -396,6 +396,4 @@ class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
 
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
+        self.next_url = canonical_url(self.context)

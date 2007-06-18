@@ -48,7 +48,7 @@ Show that there are no active translations and no suggestions.
   [None]
   >>> upstream_pomsgset.published_texts
   [None]
-  >>> list(upstream_pomsgset.getSuggestedSubmissions(0))
+  >>> upstream_pomsgset.getNewSubmissions(0)
   []
 
 And the fuzzy flags should also be disabled
@@ -113,8 +113,8 @@ the translation submitted already exist from another translator.
 
 We check that there are no suggested translations yet.
 
-  >>> suggested = pomsgset.getSuggestedSubmissions(0)
-  >>> suggested.count()
+  >>> suggested = pomsgset.getNewSubmissions(0)
+  >>> len(suggested)
   0
 
 The one submitting the string will be the No Privileges User. He's not an
@@ -127,8 +127,8 @@ editor for this POFile.
 
 Now, we should have one extra suggestion.
 
-  >>> suggested = pomsgset.getSuggestedSubmissions(0)
-  >>> suggested.count()
+  >>> suggested = pomsgset.getNewSubmissions(0)
+  >>> len(suggested)
   1
 
 That is the one that no_priv submitted.
@@ -155,8 +155,8 @@ suggestion.
 
 We don't have any suggestion newer than the new active translation
 
-  >>> suggested = pomsgset.getSuggestedSubmissions(0)
-  >>> suggested.count()
+  >>> suggested = pomsgset.getNewSubmissions(0)
+  >>> len(suggested)
   0
 
 And the active translation is now the one from no-priv user.
@@ -187,8 +187,8 @@ We get a POMsgSet and verify it's a singular form:
 
   >>> pt_BR_dummypomsgset = pt_BR_dummypofile.getPOMsgSet(
   ...     u'evolution addressbook')
-  >>> pt_BR_dummypomsgset.potmsgset.getPOMsgIDs().count()
-  1
+  >>> pt_BR_dummypomsgset.potmsgset.msgid_plural is None
+  True
 
   >>> pt_BR_dummypomsgset.pluralforms
   1
@@ -249,8 +249,7 @@ same msgid as the given IPOMsgSet across the whole system.
   >>> pomsgset_translated = POMsgSet.get(752)
   >>> print pomsgset_translated.pofile.title
   Spanish (es) translation of man in Ubuntu Hoary package "evolution"
-  >>> pomsgid = pomsgset_translated.potmsgset.getPOMsgIDs()[0]
-  >>> print pomsgid.msgid
+  >>> print pomsgset_translated.potmsgset.msgid
   test man page
   >>> pomsgset_translated.active_texts
   [u'just a translation']
@@ -261,7 +260,7 @@ space is for any submission done outside that IPOMsgSet.
   # There is no other message with the same msgid in our system that has a non
   # active submission.
   >>> wiki_submissions = pomsgset_translated.getWikiSubmissions(0)
-  >>> wiki_submissions.count()
+  >>> len(wiki_submissions)
   0
 
   # Now, we get a dummy message that has the same msgid as the previous one.
@@ -271,8 +270,7 @@ space is for any submission done outside that IPOMsgSet.
   >>> pomsgset_untranslated = potmsgset.getDummyPOMsgSet('es')
   >>> print pomsgset_untranslated.pofile.title
   Spanish (es) translation of man in Ubuntu Hoary package "pmount"
-  >>> pomsgid = potmsgset.getPOMsgIDs()[0]
-  >>> print pomsgid.msgid
+  >>> print potmsgset.msgid
   test man page
 
   # As expected, is not translated.
@@ -284,7 +282,7 @@ pomsgset_translated as it's another context.
 
   # And we get as a suggestions submissions for previous message.
   >>> wiki_submissions = pomsgset_untranslated.getWikiSubmissions(0)
-  >>> wiki_submissions.count()
+  >>> len(wiki_submissions)
   3
   >>> for submission in wiki_submissions:
   ...     assert submission.pomsgset == pomsgset_translated, (

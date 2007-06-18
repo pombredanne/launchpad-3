@@ -15,12 +15,13 @@ from zope.interface import implements
 from sqlobject import (
     StringCol, ForeignKey, BoolCol, IntCol, SQLObjectNotFound)
 
+from canonical import encoding
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     IBuildQueue, IBuildQueueSet, NotFoundError)
-
+from canonical.lp.dbschema import BuildStatus
 
 class BuildQueue(SQLBase):
     implements(IBuildQueue)
@@ -98,6 +99,57 @@ class BuildQueue(SQLBase):
     def is_trusted(self):
         """See IBuildQueue"""
         return self.build.is_trusted
+
+    def getLogFileName(self):
+        """See IBuildQueue"""
+        sourcename = self.build.sourcepackagerelease.name
+        version = self.build.sourcepackagerelease.version
+        # we rely on previous storage of current buildstate
+        # in the state handling methods.
+        state = self.build.buildstate.name
+
+        dar = self.build.distroarchseries
+        distroname = dar.distroseries.distribution.name
+        distroseriesname = dar.distroseries.name
+        archname = dar.architecturetag
+
+        # logfilename format:
+        # buildlog_<DISTRIBUTION>_<DISTROSeries>_<ARCHITECTURE>_\
+        # <SOURCENAME>_<SOURCEVERSION>_<BUILDSTATE>.txt
+        # as:
+        # buildlog_ubuntu_dapper_i386_foo_1.0-ubuntu0_FULLYBUILT.txt
+        # it fix request from bug # 30617
+        return ('buildlog_%s-%s-%s.%s_%s_%s.txt' % (
+            distroname, distroseriesname, archname, sourcename, version, state
+            ))
+
+    def updateBuild_IDLE(self, build_id, build_status, logtail,
+                         filemap, dependencies, logger):
+        """See IBuildQueue."""
+        logger.warn(
+            "Builder %s forgot about build %s -- resetting buildqueue record"
+            % (self.builder.url, self.build.title))
+        self.builder = None
+        self.buildstart = None
+        self.build.buildstate = BuildStatus.NEEDSBUILD
+
+    def updateBuild_BUILDING(self, build_id, build_status,
+                             logtail, filemap, dependencies, logger):
+        """See IBuildQueue"""
+        self.logtail = encoding.guess(str(logtail))
+
+    def updateBuild_ABORTING(self, buildid, build_status,
+                             logtail, filemap, dependencies, logger):
+        """See IBuildQueue"""
+        self.logtail = "Waiting for slave process to be terminated"
+
+    def updateBuild_ABORTED(self, buildid, build_status,
+                            logtail, filemap, dependencies, logger):
+        """See IBuildQueue"""
+        self.builder.cleanSlave()
+        self.builder = None
+        self.buildstart = None
+        self.build.buildstate = BuildStatus.BUILDING
 
 
 class BuildQueueSet(object):
