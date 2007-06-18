@@ -69,10 +69,11 @@ def main():
                 'scriptname': arg.split(",")[1]
                 })
 
+        error_found = 0
         for hs in hosts_scripts:
             if not check_script(con, log, hs['hostname'], hs['scriptname'], completed_from, completed_to):
-                return 1
-        return 0
+                error_found = 1
+        return error_found
     except:
         log.exception("Unhandled exception")
         return 1
