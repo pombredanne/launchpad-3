@@ -1,5 +1,9 @@
 SET client_min_messages=ERROR;
 
+UPDATE person 
+SET defaultrenewalperiod = NULL 
+WHERE defaultrenewalperiod = 0;
+
 -- Note a team has a sticky defaultrenewalperiod across changes in
 -- renewal_policy
 ALTER TABLE Person
