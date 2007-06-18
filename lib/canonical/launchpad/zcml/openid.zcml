@@ -60,7 +60,7 @@
     <browser:page
         for="canonical.launchpad.interfaces.IOpenIdApplication"
         permission="zope.Public"
-        name="+login-foo"
+        name="+login-register"
         class="canonical.launchpad.browser.openidserver.LoginServiceLoginView"
         />
 
