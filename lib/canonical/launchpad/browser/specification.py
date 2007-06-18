@@ -27,7 +27,6 @@ import cgi
 from subprocess import Popen, PIPE
 from operator import attrgetter
 
-from zope.interface import implements
 from zope.component import getUtility
 from zope.app.form.browser.itemswidgets import DropdownWidget
 
@@ -59,7 +58,6 @@ from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import (
     AppFrontPageSearchView, StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.widgets.project import ProjectScopeWidget
 
 from canonical.lp.dbschema import SpecificationStatus
 
@@ -280,6 +278,11 @@ class SpecificationView(LaunchpadView, CanBeMentoredView):
     @cachedproperty
     def has_dep_tree(self):
         return self.context.dependencies or self.context.blocked_specs
+
+    @cachedproperty
+    def branch_links(self):
+        return [branch_link for branch_link in self.context.branch_links
+                if check_permission('launchpad.View', branch_link.branch)]
 
 
 class SpecificationEditView(SQLObjectEditView):
