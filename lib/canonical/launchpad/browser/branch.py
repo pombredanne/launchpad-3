@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BranchSOP',
     'PersonBranchAddView',
     'ProductBranchAddView',
     'BranchContextMenu',
@@ -29,6 +30,7 @@ from canonical.config import config
 from canonical.lp import decorates
 
 from canonical.launchpad.browser.branchref import BranchRef
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import truncate_text
@@ -44,6 +46,21 @@ from canonical.launchpad.webapp.uri import URI
 
 def quote(text):
     return cgi.escape(text, quote=True)
+
+
+class BranchSOP(StructuralObjectPresentation):
+    """Provides the structural heading for IBranch."""
+
+    def getMainHeading(self):
+        """See IStructuralHeaderPresentation."""
+        return self.context.displayname
+
+    def getIntroHeading(self):
+        """See IStructuralHeaderPresentation."""
+        if self.context.product is None:
+            return "Junk branch for %s" % self.context.owner.displayname
+        else:
+            return "Branch for %s" % self.context.product.displayname
 
 
 class BranchNavigation(Navigation):
@@ -349,7 +366,7 @@ class ProductBranchAddView(BranchAddView):
     """See BranchAddView."""
 
     initial_focus_widget = 'url'
-    
+
     @property
     def field_names(self):
         fields = list(BranchAddView.field_names)

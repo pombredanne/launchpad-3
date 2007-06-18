@@ -149,3 +149,40 @@ empty.
   <...
   ...Recent revisions...
   ...This branch is empty...
+
+
+== Structural object presentation ==
+
+The structural object presentation of a branch is the heading that appears
+in the top left hand corner of the browser.
+
+When a branch is being looked at, the words shown there are the title of
+the branch.  If there is no title set for the branch, the unique name of
+the branch is shown.  As well as the major heading for the branch title,
+there is also a minor heading that says the object is a branch of the
+project.
+
+    >>> browser = setupBrowser('Basic test@canonical.com:test')
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, "structuralobjectheading"))
+    Branch for GNOME Terminal
+    ~name12/gnome-terminal/scanned
+
+    >>> browser.getLink('Change branch details').click()
+    >>> browser.getControl('Title').value = 'A branch title'
+    >>> browser.getControl('Change Branch').click()
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, "structuralobjectheading"))
+    Branch for GNOME Terminal
+    A branch title
+
+If the branch is a junk branch, then there is no project to mention.  In
+this case the user is told it is a junk branch of the branch owner.
+
+    >>> browser.open('http://code.launchpad.dev/~name12/+junk/junk.dev')
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, "structuralobjectheading"))
+    Junk branch for Sample Person
+    Ubuntu Junk Code
