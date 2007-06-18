@@ -85,8 +85,8 @@ def report_profile_stats():
             duration = 'negligable time'
         else:
             duration = '%0.1fs' % duration
-        print '%-38s called %4d times taking %s.' % (
-                key[:38], hits, duration)
+        print '%-45s %4d calls taking %s.' % (
+                key[:45], hits, duration)
 
     print
     print "Total duration of profiled methods %0.1f seconds." % (
