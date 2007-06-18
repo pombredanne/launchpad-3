@@ -436,7 +436,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
         password = data.get('password')
         person = getUtility(IPersonSet).getByEmail(email)
         if email is None or not valid_email(email):
-            self.addError('Please enter a valid email address')
+            self.addError('Please enter a valid email address.')
             return
 
         if action == 'login':

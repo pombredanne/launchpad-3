@@ -41,7 +41,7 @@ receive an error:
     Launchpad Login Service
     >>> for tag in find_tags_by_class(browser.contents, 'error'):
     ...     print extract_text(tag)
-    Please enter a valid email address
+    Please enter a valid email address.
 
 If the user provides a non-ASCII password, they receive an incorrect
 passphrase error.

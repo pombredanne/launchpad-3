@@ -1,22 +1,30 @@
-= The Launchpad login service =
+= The Launchpad Login Service =
 
-Launchpad's login service can be used as a standalone login form for
-Launchpad as well as an OpenID provider. When acting as an OpenID provider,
-it'll redirect the user back to the relying party that directed the user to
-Launchpad, and when acting as a standalone login form it'll redirect the
-user back to the page where (s)he was when asked to login. This form also
-allows users to create new accounts and reset the password of an existing
-account.
+The Launchpad login service is an OpenID Provider intended for use by
+various Canonical and Ubuntu web sites participating in Launchpad
+Single Signon.
 
-    >>> from canonical.launchpad.ftests import OpenIDLaunchpadFormHarness
+
+== Login Form ==
+
+If the user has not yet authenticated to Launchpad, they are provided
+with a form that allows them to do one of three things:
+ * Create a new account.
+ * Recover a forgotten passphrase.
+ * Log in using their email address and passphrase.
+
+As well as these actions, there are a number of error handling code paths:
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import LaunchpadFormHarness
     >>> from canonical.launchpad.browser.openidserver import (
     ...     LoginServiceLoginView, LoginServiceAuthorizeView)
-    >>> from canonical.launchpad.webapp.publisher import rootObject
+    >>> from canonical.launchpad.interfaces import IOpenIdApplication
     >>> from canonical.launchpad.webapp import LaunchpadFormView
 
     # Create a fake LoginServiceLoginView which stubs out OpenID-related bits
     # from its parent class.
-    >>> class OpenIDLessLoginServiceLoginView(LoginServiceLoginView):
+    >>> class TestingLoginServiceLoginView(LoginServiceLoginView):
     ...     def setUpWidgets(self):
     ...         self.nonce = 'foo'
     ...         LaunchpadFormView.setUpWidgets(self)
@@ -27,13 +35,13 @@ account.
 
 A valid email address is required for any operation available on this form.
 
-    >>> harness = OpenIDLaunchpadFormHarness(
-    ...     rootObject, OpenIDLessLoginServiceLoginView)
+    >>> harness = LaunchpadFormHarness(
+    ...     getUtility(IOpenIdApplication), TestingLoginServiceLoginView)
 
     >>> harness.submit('continue', {'field.email': 'foo@'})
     >>> for message in harness.getFormErrors():
     ...     print message
-    Please enter a valid email address
+    Please enter a valid email address.
 
 If the user doesn't enter the password or enters the wrong one when
 attempting to login, it'll also fail.
@@ -43,14 +51,14 @@ attempting to login, it'll also fail.
     ...     {'field.email': 'mark@hbd.com', 'field.action': 'login'})
     >>> for message in harness.getFormErrors():
     ...     print message
-    Please enter your passphrase.
+    Incorrect passphrase for the provided email address.
 
     >>> harness.submit('continue', {'field.email': 'mark@hbd.com',
     ...                             'field.action': 'login',
     ...                             'field.password': 'foo'})
     >>> for message in harness.getFormErrors():
     ...     print message
-    The email address and passphrase do not match.
+    Incorrect passphrase for the provided email address.
 
 A password with invalid characters is not allowed either.
 
@@ -96,7 +104,8 @@ registered email address which doesn't belong to a team.
     ...                             'field.action': 'resetpassword'})
     >>> for message in harness.getFormErrors():
     ...     print message
-    The email address ... belongs to a team, and teams cannot log in.
+    The email address ... can not be used to log in as it belongs to a
+    team.
 
     >>> harness.submit('continue', {'field.email': 'andrelop@debian.org',
     ...                             'field.action': 'resetpassword'})
