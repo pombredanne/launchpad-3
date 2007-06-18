@@ -22,6 +22,7 @@ from sqlobject import (
 
 from canonical.config import config
 
+from canonical.database.postgresql import allow_sequential_scans
 from canonical.database.sqlbase import (
     cursor, SQLBase, flush_database_updates, quote, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -161,6 +162,11 @@ class POFileMixIn(RosettaStats):
         if not for_potmsgsets:
             return {}
 
+        # For some reason postgres can revert to sequential scans on POMsgSet
+        # here, which is obviously insane.  We get much faster results when we
+        # prohibit that.
+        allow_sequential_scans(cursor(), False)
+
         # Retrieve existing POMsgSets matching for_potmsgsets (one each).
         # XXX: JeroenVermeulen 2007-06-15, why won't sqlvalues() work here?
         ids = ','.join([quote(potmsgset.id) for potmsgset in for_potmsgsets])
@@ -257,6 +263,7 @@ class POFileMixIn(RosettaStats):
         # Note that a suggestion coming from a fuzzy pomsgset isn't relevant
         # as a suggestion, but if it happens to be attached to a msgset from
         # stored_pomsgsets, it will still be relevant to that msgset.
+
         query = """
             SELECT POSubmission.id, POTMsgSet.primemsgid
             FROM POSubmission
@@ -269,6 +276,8 @@ class POFileMixIn(RosettaStats):
                 POTMsgSet.primemsgid IN %(wanted_primemsgids)s
             """ % parameters
         cur = cursor()
+
+        # XXX: JeroenVermeulen 2007-06-17, pre-join potranslations
         cur.execute(query)
         available = dict(cur.fetchall())
         if not available:
