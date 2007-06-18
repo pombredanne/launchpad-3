@@ -646,8 +646,8 @@ class TranslationImportQueue:
             # For now we're only interested in PO and POT files.
             looks_useful = (
                 tarinfo.isfile() and
-                (filename.endswith('.pot') or filename.endswith('.po')) and
-                filename[0]!='.')
+                not filename.startswith('.') and
+                (filename.endswith('.pot') or filename.endswith('.po')))
             if looks_useful:
                 file_content = tarball.extractfile(tarinfo).read()
                 if len(file_content) > 0:
