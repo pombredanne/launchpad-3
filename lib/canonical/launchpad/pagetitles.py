@@ -136,6 +136,10 @@ def branch_index(context, view):
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
 
+def branchsubscription_edit(context, view):
+    return smartquote(
+        'Edit subscription to branch "%s"' % context.branch.displayname)
+
 branchtarget_branchlisting = ContextDisplayName('Details of Branches for %s')
 
 bug_activity = ContextBugId('Bug #%s - Activity log')
@@ -319,6 +323,8 @@ debug_root_index = 'Launchpad Debug Home Page'
 
 default_editform = 'Default "Edit" Page'
 
+distributionmirror_delete = ContextTitle('Delete mirror %s')
+
 distributionmirror_edit = ContextTitle('Edit mirror %s')
 
 distributionmirror_index = ContextTitle('Mirror %s')
@@ -402,7 +408,7 @@ distroseries_search = ContextDisplayName('Search packages in %s')
 
 distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 
-distroseries_translationsadmin = ContextTitle('Admin translation options of %s')
+distroseries_translationsadmin = ContextTitle('Admin translation options for %s')
 
 distroseries_builds = ContextTitle('Builds for %s')
 
@@ -509,9 +515,10 @@ launchpad_librarianfailure = "Sorry, you can't do this right now"
 
 launchpadstatisticset_index = 'Launchpad statistics'
 
-# XXX: Fixme!!!
-def loginservice_allow_relying_party(context, view):
-    return 'Authenticate to %s' % 'XXX' # view.openid_request.trust_root
+loginservice_email_sent = 'Launchpad Login Service - Email sent'
+
+def loginservice_authorize(context, view):
+    return 'Authenticate to %s' % view.relying_party_title
 
 loginservice_login = 'Launchpad Login Service'
 
@@ -702,7 +709,9 @@ person_packagebugs_overview = person_packagebugs
 
 person_packagebugs_search = person_packagebugs
 
-person_participation = ContextTitle("Team partipation by %s")
+person_participation = ContextTitle("Team participation by %s")
+
+person_projects = ContextTitle("Projects %s is involved with")
 
 person_review = ContextDisplayName("Review %s")
 
@@ -932,6 +941,8 @@ questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
 
 securitycontact_edit = ContextDisplayName("Edit %s security contact")
 
+series_bug_nominations = ContextDisplayName('Bugs nominated for %s')
+
 shipit_adminrequest = 'ShipIt admin request'
 
 shipit_index = 'ShipIt'
@@ -1134,6 +1145,10 @@ def teammembership_index(context, view):
 
 def teammembership_invitation(context, view):
     return "Make %s a member of %s" % (
+        context.person.browsername, context.team.browsername)
+
+def teammembership_self_renewal(context, view):
+    return "Renew membership of %s in %s" % (
         context.person.browsername, context.team.browsername)
 
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')

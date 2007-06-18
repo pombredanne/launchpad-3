@@ -6,19 +6,20 @@ __metaclass__ = type
 import threading
 import xmlrpclib
 
-from zope.publisher.browser import BrowserRequest, BrowserResponse, TestRequest
-from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
+from zope.app.form.browser.widget import SimpleInputWidget
+from zope.app.form.browser.itemswidgets import  MultiDataHelper
 from zope.app.session.interfaces import ISession
-from zope.interface import implements
 from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
 from zope.app.publication.interfaces import IRequestPublicationFactory
-from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
-from zope.server.http.commonaccesslogger import CommonAccessLogger
-import zope.publisher.publish
-from zope.publisher.interfaces import IRequest
+from zope.interface import implements
+from zope.publisher.browser import (
+    BrowserRequest, BrowserResponse, TestRequest)
+from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
 from zope.security.proxy import isinstance as zope_isinstance
+from zope.server.http.commonaccesslogger import CommonAccessLogger
+from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
 
 from canonical.cachedproperty import cachedproperty
 
@@ -214,7 +215,6 @@ class LaunchpadRequestPublicationFactory:
 
     def canHandle(self, environment):
         """Only configured domains are handled."""
-        from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
         if 'HTTP_HOST' not in environment:
             self._thread_local.host = self.USE_DEFAULTS
             return True
@@ -380,6 +380,53 @@ class BrowserFormNG:
         return value
 
 
+class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
+    """Make Zope3 widgets use IBrowserFormNG.
+
+    Replace the SimpleInputWidget._getFormInput method with one using
+    `IBrowserFormNG`.
+    """
+
+    installed = False
+    
+    @classmethod
+    def install(cls):
+        """Install the monkey patch."""
+        assert not cls.installed, "Monkey patch is already installed."
+        def _getFormInput_single(self):
+            """Return the submitted form value.
+
+            :raises UnexpectedFormData: If more than one value is submitted.
+            """
+            return self.request.form_ng.getOne(self.name)
+
+        def _getFormInput_multi(self):
+            """Return the submitted form values.
+            """
+            return self.request.form_ng.getAll(self.name)
+
+        # Save the original method and replace it with fixed ones.
+        # We don't save MultiDataHelper._getFormInput because it doesn't
+        # override the one in SimpleInputWidget.
+        cls._original__getFormInput = SimpleInputWidget._getFormInput
+        SimpleInputWidget._getFormInput = _getFormInput_single
+        MultiDataHelper._getFormInput = _getFormInput_multi
+        cls.installed = True
+        
+    @classmethod
+    def uninstall(cls):
+        """Uninstall the monkey patch."""
+        assert cls.installed, "Monkey patch is not installed."
+
+        # Restore saved method.
+        SimpleInputWidget._getFormInput = cls._original__getFormInput
+        del MultiDataHelper._getFormInput
+        cls.installed = False
+
+
+Zope3WidgetsUseIBrowserFormNGMonkeyPatch.install()
+
+
 class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
 
     # Note that NotificationResponse defines a 'redirect' method which
@@ -436,8 +483,11 @@ class LaunchpadTestRequest(TestRequest):
     >>> isinstance(request, TestRequest)
     True
 
-    It adds a mock INotificationRequest implementation
+    It provides LaunchpadLayer and adds a mock INotificationRequest
+    implementation.
 
+    >>> canonical.launchpad.layers.LaunchpadLayer.providedBy(request)
+    True
     >>> INotificationRequest.providedBy(request)
     True
     >>> request.uuid == request.response.uuid
@@ -452,13 +502,16 @@ class LaunchpadTestRequest(TestRequest):
     >>> verifyObject(IBrowserFormNG, request.form_ng)
     True
     """
-    implements(INotificationRequest)
+    implements(INotificationRequest, IBasicLaunchpadRequest,
+               canonical.launchpad.layers.LaunchpadLayer)
 
     def __init__(self, body_instream=None, environ=None, form=None,
                  skin=None, outstream=None, method='GET', **kw):
         super(LaunchpadTestRequest, self).__init__(
             body_instream=body_instream, environ=environ, form=form,
             skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
+        self.breadcrumbs = []
+        self.traversed_objects = []
 
     @property
     def uuid(self):
@@ -466,7 +519,17 @@ class LaunchpadTestRequest(TestRequest):
 
     @property
     def notifications(self):
+        """See INotificationRequest."""
         return self.response.notifications
+
+    @property
+    def stepstogo(self):
+        """See IBasicLaunchpadRequest."""
+        return StepsToGo(self)
+
+    def getNearest(self, *some_interfaces):
+        """See IBasicLaunchpadRequest."""
+        return None, None
 
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""

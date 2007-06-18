@@ -1,0 +1,9 @@
+Hello!
+
+Thank you for registering. To complete your registration, please follow
+the instructions here:
+
+   %(token_url)s
+
+Thanks
+The Launchpad Login Service team

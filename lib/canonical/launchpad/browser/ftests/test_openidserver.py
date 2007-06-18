@@ -2,11 +2,11 @@
 
 import unittest, doctest
 
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.testing import LaunchpadFunctionalLayer
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.layer = LaunchpadZopelessLayer
+    suite.layer = LaunchpadFunctionalLayer
     suite.addTest(doctest.DocTestSuite(
         'canonical.launchpad.browser.openidserver'
         ))

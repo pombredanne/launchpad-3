@@ -34,10 +34,11 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadView, LaunchpadFormView)
 
+from canonical.launchpad.browser.openidserver import OpenIdMixin
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, ILoginTokenSet, IPerson, ILoginToken,
     IGPGKeySet, IGPGHandler, GPGVerificationError, GPGKeyNotFoundError,
-    ShipItConstants, UBUNTU_WIKI_URL)
+    ShipItConstants, UBUNTU_WIKI_URL, UnexpectedFormData)
 
 UTC = pytz.timezone('UTC')
 
@@ -80,7 +81,7 @@ class LoginTokenView(LaunchpadView):
             return LaunchpadView.render(self)
 
 
-class BaseLoginTokenView:
+class BaseLoginTokenView(OpenIdMixin):
     """A view class to be used by other LoginToken views."""
 
     expected_token_types = ()
@@ -122,6 +123,23 @@ class BaseLoginTokenView:
         principal = loginsource.getPrincipalByLogin(email)
         logInPerson(self.request, principal, email)
 
+    def maybeCompleteOpenIDRequest(self):
+        """Respond to a pending OpenID request if one is found.
+
+        The OpenIDRequest is looked up in the session based on the
+        login token ID.  If a request exists, the rendered OpenID
+        response is returned.
+
+        If no OpenID request is found, None is returned.
+        """
+        try:
+            self.restoreRequestFromSession('token' + self.context.token)
+        except UnexpectedFormData:
+            # There is no OpenIDRequest in the session
+            return None
+        self.next_url = None
+        return self.renderOpenIdResponse(self.createPositiveResponse())
+
 
 class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
 
@@ -133,13 +151,10 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
     expected_token_types = (LoginTokenType.PROFILECLAIM,)
 
     def initialize(self):
+        self.redirectIfInvalidOrConsumedToken()
         self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
             self.context.email).person
         LaunchpadFormView.initialize(self)
-
-    def render(self):
-        if not self.redirectIfInvalidOrConsumedToken():
-            return LaunchpadFormView.render(self)
 
     @property
     def initial_values(self):
@@ -179,18 +194,15 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
     field_names = ['email', 'password']
     custom_widget('password', PasswordChangeWidget)
     label = 'Reset password'
+    expected_token_types = (LoginTokenType.PASSWORDRECOVERY,)
 
     def initialize(self):
+        self.redirectIfInvalidOrConsumedToken()
         LaunchpadFormView.initialize(self)
-        self.expected_token_types = (LoginTokenType.PASSWORDRECOVERY,)
-
-    def render(self):
-        if not self.redirectIfInvalidOrConsumedToken():
-            return LaunchpadFormView.render(self)
 
     def validate(self, form_values):
         """Validate the email address."""
-        email = form_values.get("email").strip()
+        email = form_values.get("email", "").strip()
         # All operations with email addresses must be case-insensitive. We
         # enforce that in EmailAddressSet, but here we only do a comparison,
         # so we have to .lower() them first.
@@ -198,10 +210,6 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
             self.addError(_(
                 "The email address you provided didn't match the address "
                 "you provided when requesting the password reset."))
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context.requester)
 
     @action(_('Continue'), name='continue')
     def continue_action(self, action, data):
@@ -235,27 +243,28 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         if self.request.form.get('logmein'):
             self.logInPersonByEmail(self.context.email)
 
+        self.next_url = canonical_url(self.context.requester)
         self.request.response.addInfoNotification(
             _('Your password has been reset successfully'))
+
+        return self.maybeCompleteOpenIDRequest()
 
 
 class ValidateEmailView(BaseLoginTokenView, LaunchpadView):
 
+    expected_token_types = (LoginTokenType.VALIDATEEMAIL,
+                            LoginTokenType.VALIDATETEAMEMAIL,
+                            LoginTokenType.VALIDATEGPG,
+                            LoginTokenType.VALIDATESIGNONLYGPG)
+
     def initialize(self):
-        self.expected_token_types = (LoginTokenType.VALIDATEEMAIL,
-                                     LoginTokenType.VALIDATETEAMEMAIL,
-                                     LoginTokenType.VALIDATEGPG,
-                                     LoginTokenType.VALIDATESIGNONLYGPG)
+        self.redirectIfInvalidOrConsumedToken()
 
     def success(self, message):
         # We're not a GeneralFormView, so we need to do the redirect
         # ourselves.
         BaseLoginTokenView.success(self, message)
         self.request.response.redirect(canonical_url(self.context.requester))
-
-    def render(self):
-        if not self.redirectIfInvalidOrConsumedToken():
-            return LaunchpadView.render(self)
 
     def processForm(self):
         """Process the action specified by the LoginToken.
@@ -571,31 +580,29 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
     field_names = ['displayname', 'hide_email_addresses', 'password']
     custom_widget('password', PasswordChangeWidget)
     label = 'Complete your registration'
+    expected_token_types = (
+        LoginTokenType.NEWACCOUNT, LoginTokenType.NEWPROFILE)
 
     def initialize(self):
+        self.redirectIfInvalidOrConsumedToken()
         self.email = getUtility(IEmailAddressSet).getByEmail(
             self.context.email)
-        self.expected_token_types = (
-            LoginTokenType.NEWACCOUNT, LoginTokenType.NEWPROFILE)
         LaunchpadFormView.initialize(self)
 
-    def render(self):
-        if not self.redirectIfInvalidOrConsumedToken():
-            return LaunchpadFormView.render(self)
-
-#     @property
-#     def next_url(self):
-#         if self.context.redirection_url:
-#             return self.context.redirection_url
-#         elif self.user is not None:
-#             # User is logged in, redirect to his home page.
-#             return canonical_url(self.user)
-#         elif self.created_person is not None:
-#             # User is not logged in, redirect to the created person's home
-#             # page.
-#             return canonical_url(self.created_person)
-#         else:
-#             return None
+    # Use a method to set self.next_url rather than a property because we
+    # want to override self.next_url in a subclass of this.
+    def setNextUrl(self):
+        if self.context.redirection_url:
+            self.next_url = self.context.redirection_url
+        elif self.user is not None:
+            # User is logged in, redirect to his home page.
+            self.next_url = canonical_url(self.user)
+        elif self.created_person is not None:
+            # User is not logged in, redirect to the created person's home
+            # page.
+            self.next_url = canonical_url(self.created_person)
+        else:
+            self.next_url = None
 
     def validate(self, form_values):
         """Verify if the email address is not used by an existing account."""
@@ -649,6 +656,9 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         self.logInPersonByEmail(email.email)
         self.request.response.addInfoNotification(_(
             "Registration completed successfully"))
+        self.setNextUrl()
+
+        return self.maybeCompleteOpenIDRequest()
 
     def _getCreationRationale(self):
         """Return the creation rationale that should be used for this person.
@@ -656,6 +666,10 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         If there's a rationale for the logintoken's redirection_url, then use
         it, otherwise uses PersonCreationRationale.OWNER_CREATED_LAUNCHPAD.
         """
+        # XXX: 20070618 jamesh
+        # Need to handle creation rationale for accounts created via
+        # https://login.launchpad.net/.  Should probably match by the
+        # trust_root of the OpenID request.
         rationale = self.urls_and_rationales.get(self.context.redirection_url)
         if rationale is None:
             rationale = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
@@ -684,14 +698,12 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
 
 class MergePeopleView(BaseLoginTokenView, LaunchpadView):
 
-    def initialize(self):
-        self.expected_token_types = (LoginTokenType.ACCOUNTMERGE,)
-        self.mergeCompleted = False
-        self.dupe = getUtility(IPersonSet).getByEmail(self.context.email)
+    expected_token_types = (LoginTokenType.ACCOUNTMERGE,)
+    mergeCompleted = False
 
-    def render(self):
-        if not self.redirectIfInvalidOrConsumedToken():
-            return LaunchpadView.render(self)
+    def initialize(self):
+        self.redirectIfInvalidOrConsumedToken()
+        self.dupe = getUtility(IPersonSet).getByEmail(self.context.email)
 
     def success(self, message):
         # We're not a GeneralFormView, so we need to do the redirect

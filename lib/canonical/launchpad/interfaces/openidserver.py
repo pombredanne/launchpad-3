@@ -11,11 +11,13 @@ __all__ = [
         'ILoginServiceLoginForm',
         ]
 
-from zope.schema import Int, TextLine, Datetime
-from zope.interface import Interface, Attribute
+from zope.schema import Choice, Datetime, Int, TextLine
+from zope.interface import Attribute, implements, Interface
+from zope.schema.interfaces import IContextSourceBinder
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
+from canonical.launchpad import _
 from canonical.launchpad.fields import PasswordField
-
 
 class IOpenIdAuthorization(Interface):
     id = Int(title=u'ID', required=True)
@@ -53,7 +55,7 @@ class IOpenIdAuthorizationSet(Interface):
         (person, trust_root, client_id).
         """
 
- 
+
 class ILaunchpadOpenIdStoreFactory(Interface):
     """Factory to create LaunchpadOpenIdStore instances."""
 
@@ -69,14 +71,26 @@ class ILoginServiceAuthorizeForm(Interface):
                      description=u'Unique value')
 
 
+class LoginServiceActionsVocabularyFactory:
+
+    implements(IContextSourceBinder)
+
+    def __call__(self, context):
+        """See IContextSourceBinder."""
+        terms = [
+            SimpleTerm('createaccount', 'createaccount',
+                       'No, I want to create an account now'),
+            SimpleTerm('resetpassword', 'resetpassword',
+                       "I've forgotten my passphrase"),
+            SimpleTerm('login', 'login', 'Yes, my passphrase is:')]
+        return SimpleVocabulary(terms)
+
+
 class ILoginServiceLoginForm(ILoginServiceAuthorizeForm):
     """A schema used for the login/register form showed to
     unauthenticated users."""
 
     email = TextLine(title=u'What is your e-mail address?', required=True)
-    password = PasswordField(
-            title=u'password', required=True,
-            description=u"The password you use to log into Launchpad.")
-
-    #password
-    #action - register/login/reset-password
+    password = PasswordField(title=u'passphrase', required=False)
+    action = Choice(title=_('Action'), required=True,
+                    source=LoginServiceActionsVocabularyFactory())
