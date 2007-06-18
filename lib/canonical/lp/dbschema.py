@@ -20,6 +20,7 @@ __metaclass__ = type
 # work properly, and the thing/lp:SchemaClass will not work properly.
 __all__ = (
 'ArchArchiveType',
+'ArchivePurpose',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
 'BountyDifficulty',
@@ -3681,3 +3682,34 @@ class PersonCreationRationale(DBSchema):
         A user wanted to reference a person which is not a Launchpad user, so
         he created this "placeholder" profile.
         """)
+
+
+class ArchivePurpose(DBSchema):
+    """The purpose, or type, of an archive.
+
+    A distribution can be associated with different archives and this 
+    schema item enumerates the different archive types and their purpose.
+    For example, old distro releases may need to be obsoleted so their
+    archive would be OBSOLETE_ARCHIVE.
+    """
+
+    MAIN_ARCHIVE = Item(1, """
+        This is the main Ubuntu archive.
+        """)
+
+    PPA_ARCHIVE = Item(2, """
+        This is a Personal Package Archive.
+        """)
+
+    SECURITY_ARCHIVE = Item(3, """
+        This is the archive for security-related packages.
+        """)
+
+    COMMERCIAL_ARCHIVE = Item(4, """
+        This is the archive for commercial packages.
+        """)
+
+    OBSOLETE_ARCHIVE = Item(5, """
+        This is the archive for obsolete packages.
+        """)
+

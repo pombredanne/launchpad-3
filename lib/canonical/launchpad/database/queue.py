@@ -38,7 +38,8 @@ from canonical.encoding import (
 from canonical.config import config
 from canonical.lp.dbschema import (
     PackageUploadStatus, PackageUploadCustomFormat,
-    PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingPocket, PackagePublishingStatus,
+    ArchivePurpose)
 
 from canonical.launchpad.interfaces import (
     IPackageUpload, IPackageUploadBuild, IPackageUploadSource,
@@ -355,7 +356,7 @@ class PackageUpload(SQLBase):
 
     def isPPA(self):
         """See IPackageUpload."""
-        return self.archive.id != self.distroseries.main_archive.id
+        return self.archive.purpose = ArchivePurpose.PPA
 
     def _getChangesDict(self, changes_file_object=None):
         """Return a dictionary with changes file tags in it."""

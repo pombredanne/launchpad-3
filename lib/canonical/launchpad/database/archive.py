@@ -28,6 +28,11 @@ class Archive(SQLBase):
     owner = ForeignKey(
         foreignKey='Person', dbName='owner', notNull=False)
     description = StringCol(dbName='description', notNull=False, default=None)
+    path = StringCol()
+    distribution = ForeignKey(
+        foreignKey='distribution', dbName='distribution', notNull=False)
+    purpose = EnumCol(dbName='purpose', unique=False, notNull=True,
+        schema=ArchivePurpose)
 
     def getPubConfig(self, distribution):
         """See IArchive."""
@@ -65,15 +70,18 @@ class ArchiveSet:
         """See canonical.launchpad.interfaces.IArchiveSet."""
         return Archive.get(archive_id)
 
-    def new(self, owner=None):
-        """See canonical.launchpad.interfaces.IArchiveSet."""
-        return Archive(owner=owner)
+    def getByDistroPurpose(self, distribution, purpose):
+        return Archive.selectOneBy(distribution=distribution, purpose=purpose)
 
-    def ensure(self, owner):
+    def new(self, owner=None, purpose):
+        """See canonical.launchpad.interfaces.IArchiveSet."""
+        return Archive(owner=owner, purpose=purpose)
+
+    def ensure(self, owner, purpose):
         """See canonical.launchpad.interfaces.IArchiveSet."""
         archive = owner.archive
         if archive is None:
-            archive = self.new(owner=owner)
+            archive = self.new(owner=owner, purpose=purpose)
         return archive
 
     def getAllPPAs(self):

@@ -29,7 +29,7 @@ from canonical.archiveuploader.nascentuploadfile import (
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
     NotFoundError, IDistributionSet)
-from canonical.lp.dbschema import PackagePublishingPocket
+from canonical.lp.dbschema import (PackagePublishingPocket, ArchivePurpose)
 
 
 class FatalUploadError(Exception):
@@ -173,6 +173,9 @@ class NascentUpload:
         if not self.is_new:
             # check rights for OLD packages, the NEW ones goes straight to queue
             self.verify_acl(signer_components)
+
+        # Check to see if the archive location should be over-ridden.
+        self.overrideArchive()
 
         # Perform policy checks
         self.policy.checkUpload(self)
@@ -392,9 +395,7 @@ class NascentUpload:
         if not self.policy.distroseries:
             # Greasy hack until above bug is fixed.
             return False
-        if self.policy.archive.id != self.policy.distroseries.main_archive.id:
-            return True
-        return False
+        return self.policy.archive.purpose == ArchivePurpose.PPA
 
     def reject(self, msg):
         """Add the provided message to the rejection message."""
@@ -915,4 +916,31 @@ class NascentUpload:
                 self.logger.debug("Setting it to UNAPPROVED")
                 self.queue_root.setUnapproved()
 
+    def overrideArchive(self):
+        """Override the archive set on the policy as necessary.
+
+        In some circumstances we may wish to change the archive that the
+        uploaded package is placed into based on various criteria.  This
+        includes decisions such as moving the package to the commercial
+        archive if the package's component is 'commercial'.
+        """
+
+        # Firstly, we don't want to override PPAs:
+        if is_ppa():
+            return
+
+        # There needs to be some files in the package if we're going to
+        # override the component.
+        if len(self.changes.files) == 0:
+            return
+
+        # Is this a commercial package?  Check the component on the first
+        # file in the package (they all have the same component so checking
+        # just the first is fine).
+        if self.changes.files[0].component_name == "commercial":
+            # Reset the archive in the policy to the commercial archive.
+            self.policy.archive = getUtility(IArchiveSet).getByDistroPurpose(
+                self.policy.distroseries.distribution, 
+                ArchivePurpose.COMMERCIAL
+                )
 
