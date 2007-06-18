@@ -49,8 +49,8 @@ def main():
     if len(args) == 0:
         parser.error("Must specify at least one host and script")
 
-    seconds_since, args = int(args[0]), args[1:]
-    start_date = datetime.now() - timedelta(seconds=seconds_since)
+    minutes_since, args = int(args[0]), args[1:]
+    start_date = datetime.now() - timedelta(minutes=minutes_since)
     end_date = datetime.now()
 
     completed_from = strftime("%Y-%m-%d %H:%M:%S", start_date.timetuple())
