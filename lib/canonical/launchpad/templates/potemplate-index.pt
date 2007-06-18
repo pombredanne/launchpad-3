@@ -7,8 +7,6 @@
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-for" />
-  <div tal:replace="structure context/@@+portlet-relateds" />
   <div tal:replace="structure context/@@+portlet-preflangs" />
 </metal:leftportlets>
 
@@ -32,6 +30,40 @@
     <p tal:condition="not: context/description">
       This template has no description, you can <a href="+edit">create
       one</a> now.
+    </p>
+    <p tal:condition="context/relatives_by_source">
+      Other templates from the same source:
+      <span tal:repeat="pot context/relatives_by_source">
+        <a href=""
+          tal:attributes="href pot/fmt:url"
+          tal:content="pot/name">A POTemplate
+        </a>.
+      </span>
+    </p>
+    <p tal:condition="context/relatives_by_name">
+      See the same template in:
+      <span tal:repeat="pot context/relatives_by_name">
+        <span tal:condition="pot/productseries">
+          <a href=""
+            tal:attributes="href pot/fmt:url">
+            <span tal:content="pot/productseries/product/displayname">
+              A Product
+            </span>
+            <span tal:content="pot/productseries/displayname">
+              and ProductSeries
+            </span>
+          </a>.
+        </span>
+         <span tal:condition="pot/distroseries">
+          <a href=""
+            tal:attributes="href pot/fmt:url">
+            <span tal:content="pot/distroseries/distribution/displayname">
+              A Distribution
+            </span>
+            <span tal:content="pot/distroseries/displayname">
+              and DistroSeries</span></a>.
+        </span>
+      </span>
     </p>
 
     <div tal:replace="structure context/@@+chart" />
