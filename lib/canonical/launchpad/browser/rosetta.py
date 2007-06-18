@@ -37,7 +37,7 @@ class TranslationsMixin:
         english = getUtility(ILanguageSet)['en']
         languages = helpers.request_languages(self.request)
         if english in languages:
-            languages.remove(english)
+            return [lang for lang in languages if lang != english]
         return languages
 
 

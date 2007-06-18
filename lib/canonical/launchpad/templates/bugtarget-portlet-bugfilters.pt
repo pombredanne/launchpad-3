@@ -21,9 +21,9 @@
     </tr>
     <tr>
       <td>
-        <a tal:attributes="href view/getUnconfirmedBugsURL">Unconfirmed</a>
+        <a tal:attributes="href view/getNewBugsURL">New</a>
       </td>
-      <td tal:content="context/unconfirmed_bugtasks/count">42</td>
+      <td tal:content="context/new_bugtasks/count">42</td>
     </tr>
     <tr>
       <td>

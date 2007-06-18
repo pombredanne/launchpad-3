@@ -142,7 +142,12 @@ class QuestionSetView(LaunchpadFormView):
         # XXX flacoste 2006/11/28 We should probably define a new
         # QuestionSort value allowing us to sort on dateanswered descending.
         return self.context.searchQuestions(
-            status=QuestionStatus.SOLVED, sort=QuestionSort.NEWEST_FIRST)[:10]
+            status=QuestionStatus.SOLVED, sort=QuestionSort.NEWEST_FIRST)[:5]
+
+    @property
+    def most_active_projects(self):
+        """Return the 5 most active projects."""
+        return self.context.getMostActiveProjects(limit=5)
 
 
 class QuestionSubscriptionView(LaunchpadView):
@@ -211,13 +216,15 @@ class QuestionLanguageVocabularyFactory:
         for lang in request_languages(self.view.request):
             if not is_english_variant(lang):
                 languages.add(lang)
-        if (context is not None and IQuestion.providedBy(context) and
-            context.language.code != 'en'):
+        if context is not None and IQuestion.providedBy(context):
             languages.add(context.language)
         languages = list(languages)
 
         # Insert English as the first element, to make it the default one.
-        languages.insert(0, getUtility(ILanguageSet)['en'])
+        english = getUtility(ILanguageSet)['en']
+        if english in languages:
+            languages.remove(english)
+        languages.insert(0, english)
 
         # The vocabulary indicates which languages are supported.
         if context is not None and not IProject.providedBy(context):

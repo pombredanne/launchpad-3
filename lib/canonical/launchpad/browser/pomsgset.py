@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -858,7 +858,6 @@ class POMsgSetView(LaunchpadView):
     #   self.error
     #   self.sec_lang
     #   self.second_lang_potmsgset
-    #   self.msgids
     #   self.suggestion_blocks
     #   self.pluralform_indices
 
@@ -896,9 +895,10 @@ class POMsgSetView(LaunchpadView):
             second_lang_pofile = potemplate.getPOFileByLang(second_lang_code)
             if second_lang_pofile:
                 self.sec_lang = second_lang_pofile.language
-                msgid = self.context.potmsgset.primemsgid_.msgid
+                singular_text = self.context.potmsgset.singular_text
                 try:
-                    self.second_lang_potmsgset = second_lang_pofile[msgid].potmsgset
+                    self.second_lang_potmsgset = (
+                        second_lang_pofile[singular_text].potmsgset)
                 except NotFoundError:
                     pass
 
@@ -910,11 +910,8 @@ class POMsgSetView(LaunchpadView):
         # would cut the number of (expensive) queries per-page by an
         # order of 30. -- kiko, 2006-09-27
 
-        # This code is where we hit the database collecting message IDs
-        # and suggestions for this POMsgSet.
-        self.msgids = helpers.shortlist(self.context.potmsgset.getPOMsgIDs())
-        assert len(self.msgids) > 0, (
-            'Found a POTMsgSet without any POMsgIDSighting')
+        # This code is where we hit the database collecting suggestions for
+        # this IPOMsgSet.
 
         # Collect posubmissions etc. that we need from the database in order
         # to identify useful suggestions.
@@ -947,8 +944,8 @@ class POMsgSetView(LaunchpadView):
                 translation = active
             is_multi_line = (count_lines(active) > 1 or
                              count_lines(translation) > 1 or
-                             count_lines(self.msgid) > 1 or
-                             count_lines(self.msgid_plural) > 1)
+                             count_lines(self.singular_text) > 1 or
+                             count_lines(self.plural_text) > 1)
             active_submission = self.context.getActiveSubmission(index)
             is_same_translator = active_submission is not None and (
                 active_submission.person.id == self.context.reviewer.id)
@@ -1017,8 +1014,6 @@ class POMsgSetView(LaunchpadView):
             return dict((k, v) for (k, v) in main.iteritems()
                         if k not in pruners_merged)
 
-        suggestions_list = self.context.getWikiSubmissions(index)
-
         if self.message_must_be_hidden:
             # We must hide all suggestions because this message may contain
             # private information that we don't want to show to anonymous
@@ -1029,7 +1024,8 @@ class POMsgSetView(LaunchpadView):
             alt_lang_suggestions = self._buildSuggestions(None, [])
             return non_editor, elsewhere, wiki, alt_lang_suggestions
 
-        wiki_translations = build_dict(suggestions_list)
+        wiki = self.context.getWikiSubmissions(index)
+        wiki_translations = build_dict(wiki)
 
         current = self.context.getCurrentSubmissions(index)
         current_translations = build_dict(current)
@@ -1087,8 +1083,8 @@ class POMsgSetView(LaunchpadView):
 
         translation = self.context.active_texts[index]
         # We store newlines as '\n', '\r' or '\r\n', depending on the
-        # msgid but forms should have them as '\r\n' so we need to change
-        # them before showing them.
+        # text to translate but forms should have them as '\r\n' so we need
+        # to change them before showing them.
         if translation is not None:
             return convert_newlines_to_web_form(translation)
         else:
@@ -1102,8 +1098,8 @@ class POMsgSetView(LaunchpadView):
 
         translation = self.translations[index]
         # We store newlines as '\n', '\r' or '\r\n', depending on the
-        # msgid but forms should have them as '\r\n' so we need to change
-        # them before showing them.
+        # text to translate but forms should have them as '\r\n' so we need
+        # to change them before showing them.
         if translation is not None:
             return convert_newlines_to_web_form(translation)
         else:
@@ -1116,7 +1112,7 @@ class POMsgSetView(LaunchpadView):
     @cachedproperty
     def is_plural(self):
         """Return whether there are plural forms."""
-        return len(self.msgids) > 1
+        return self.context.potmsgset.plural_text is not None
 
     @cachedproperty
     def message_must_be_hidden(self):
@@ -1138,47 +1134,47 @@ class POMsgSetView(LaunchpadView):
         """Return the position number of this potmsgset in the pofile."""
         return self.context.potmsgset.sequence
 
-    @cachedproperty
-    def msgid(self):
-        """Return a msgid string prepared to render in a web page."""
-        msgid = self.msgids[TranslationConstants.SINGULAR_FORM].msgid
-        return text_to_html(msgid, self.context.potmsgset.flags())
+    @property
+    def singular_text(self):
+        """Return the singular form prepared to render in a web page."""
+        return text_to_html(
+            self.context.potmsgset.singular_text,
+            self.context.potmsgset.flags())
 
     @property
-    def msgid_plural(self):
-        """Return a msgid plural string prepared to render as a web page.
+    def plural_text(self):
+        """Return a plural form prepared to render in a web page.
 
         If there is no plural form, return None.
         """
-        if self.is_plural:
-            msgid = self.msgids[TranslationConstants.PLURAL_FORM].msgid
-            return text_to_html(msgid, self.context.potmsgset.flags())
-        else:
-            return None
+        return text_to_html(
+            self.context.potmsgset.plural_text,
+            self.context.potmsgset.flags())
 
     # XXX 20060915 mpt: Detecting tabs, newlines, and leading/trailing spaces
     # is being done one way here, and another way in the functions above.
     @property
-    def msgid_has_tab(self):
-        """Determine whether any of the messages contain tab characters."""
-        for msgid in self.msgids:
-            if '\t' in msgid.msgid:
-                return True
-        return False
+    def text_has_tab(self):
+        """Whether the text to translate contain tab chars."""
+        return ('\t' in self.context.potmsgset.singular_text or
+            (self.context.potmsgset.plural_text is not None and
+             '\t' in self.context.potmsgset.plural_text))
 
     @property
-    def msgid_has_newline(self):
-        """Determine whether any of the messages contain newline characters."""
-        for msgid in self.msgids:
-            if '\n' in msgid.msgid:
-                return True
-        return False
+    def text_has_newline(self):
+        """Whether the text to translate contain newline chars."""
+        return ('\n' in self.context.potmsgset.singular_text or
+            (self.context.potmsgset.plural_text is not None and
+             '\n' in self.context.potmsgset.plural_text))
 
     @property
-    def msgid_has_leading_or_trailing_space(self):
-        """Determine whether any messages contain leading or trailing spaces."""
-        for msgid in self.msgids:
-            for line in msgid.msgid.splitlines():
+    def text_has_leading_or_trailing_space(self):
+        """Whether the text to translate contain leading/trailing spaces."""
+        texts = [self.context.potmsgset.singular_text]
+        if self.context.potmsgset.plural_text is not None:
+            texts.append(self.context.potmsgset.plural_text)
+        for text in texts:
+            for line in text.splitlines():
                 if line.startswith(' ') or line.endswith(' '):
                     return True
         return False
