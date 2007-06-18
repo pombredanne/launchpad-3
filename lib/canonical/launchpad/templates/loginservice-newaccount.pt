@@ -11,7 +11,7 @@
 
       <p metal:fill-slot="extra_info">
         To complete your registration, enter your name and choose a
-        passphrase.
+        password.
       </p>
 
     </div>

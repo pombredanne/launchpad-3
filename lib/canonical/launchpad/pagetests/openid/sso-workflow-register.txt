@@ -49,8 +49,8 @@ account for an email address that has already been registered:
     >>> for tag in find_tags_by_class(browser.contents, 'error'):
     ...     print extract_text(tag)
     Sorry, someone has already registered the test@canonical.com email
-    address.  If this is you and you've forgotten your passphrase,
-    just choose the 'I've forgotten my passphrase' option below and
+    address.  If this is you and you've forgotten your password,
+    just choose the 'I've forgotten my password' option below and
     we'll allow you to change it.
 
 If we instead pick a new email address, we can register an account:
