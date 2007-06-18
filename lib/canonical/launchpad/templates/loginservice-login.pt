@@ -4,11 +4,8 @@
     i18n:domain="launchpad">
   <body>
     <div metal:fill-slot="main">
-      <h1>Launchpad Login Service</h1>
+      <div id="rp" tal:define="rp_title view/relying_party_title">
 
-      <table width="100%" tal:define="rp_title view/relying_party_title">
-        <tr>
-          <td width="50%">
             <p class="warning message" tal:condition="not:view/isSaneTrustRoot">
               <strong>Warning:</strong>
               <em tal:content="view/openid_request/trust_root" /> does not look
@@ -18,8 +15,9 @@
 
             <p>To continue with <tal:title replace="rp_title" />, you
             need to sign in to Launchpad.</p>
-          </td>
-          <td width="50%">
+
+      </div>
+      <div id="auth">
 
       <form action="/+login-foo" method="post" accept-charset="UTF-8">
         <tal:widget replace="structure view/widgets/nonce/hidden" />
@@ -30,32 +28,31 @@
           Schema validation errors.
         </p>
 
-        <div>
-          <label tal:attributes="for view/widgets/email/name"
-            >What is your email address?</label>
-        </div>
+          <div>
+            <h2>What is your e-mail address?</h2>
+
         <div>
           <tal:widget replace="structure view/widgets/email" />
         </div>
 
-        <br />
-        <div>
-          <label>Do you have a Launchpad passphrase?</label>
-        </div>
+          </div>
+          <div>
+            <h2>Do you have a Launchpad passphrase?</h2>
+
         <div>
           <tal:widget replace="structure view/widgets/action" />
           <tal:widget replace="structure view/widgets/password" />
         </div>
 
-        <br />
-        <div>
-          <tal:submit replace="structure view/continue_action/render" />
-        </div>
+          <div>
+            <tal:submit replace="structure view/continue_action/render" />
+          </div>
+
+          </div>
 
       </form>
 
-      </td></tr></table>
-
+      </div>
     </div>
   </body>
 </html>

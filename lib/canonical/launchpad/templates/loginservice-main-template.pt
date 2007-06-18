@@ -4,12 +4,50 @@
                     xml:lang default_language|default;">
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
+    <tal:x condition="nothing">Style is inline for maximum reliability.</tal:x>
+    <style type="text/css">
+      html {background: #dbdbdb; font-family: "Optima", sans-serif;}
+      body {margin: 0 1em 1em;}
+      h1, address {
+        background: #999;
+        color: #fff;
+        font-style: normal;
+        max-width: auto;
+        padding: 0.25em;
+        text-align: center;
+        width: 600px;
+      }
+      h1 {margin: 0 auto 1em;}
+      h1, h2 {font-size: 1.2em; font-weight: normal;}
+      h2 {color: #666;}
+      address {clear: both; font-size: smaller; margin: 1em auto 0;}
+      #rp {
+        width: 49%;
+        float: left;
+      }
+      #auth {
+        background: #eee;
+        padding: 2% 1em;
+        width: 45%;
+        float: right;
+      }
+      #auth h2 {margin: 0 0 0.25em; padding: 0;}
+      form div div {margin: 0 0 1em;}
+      #auth input[type="text"], #auth input[type="password"] {
+        display: block;
+        margin-left: 2em;
+      }
+      input[type="radio"] {margin-left: 0; margin-top: 0.5em;}
+      #auth label {display: inline-block; margin-bottom: 0.25em;}
+    </style>
   </head>
 
   <body>
+    <h1>Launchpad Login Service</h1>
     <div id="maincontent">
       <metal:block define-slot="main" />
     </div>
+    <address>Copyright &copy; 2007 Canonical Ltd.</address>
   </body>
 
 </html>
