@@ -643,7 +643,11 @@ class TranslationImportQueue:
         for tarinfo in tarball:
             filename = tarinfo.name
             # XXX: JeroenVermeulen 2007-06-18, Work multi-format support in
-            # For now we're only interested in PO and POT files.
+            # For now we're only interested in PO and POT files.  We skip
+            # "dotfiles," i.e. files whose names start with a dot, and we
+            # ignore anything that isn't a file (such as directories,
+            # symlinks, and above all, device files which could cause some
+            # serious security headaches).
             looks_useful = (
                 tarinfo.isfile() and
                 not filename.startswith('.') and
