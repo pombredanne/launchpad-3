@@ -38,7 +38,7 @@
                    tal:attributes="href record/pofile/fmt:url">foo bar in package bla</a>
             </td>
             <td tal:content="record/pofile/language/englishname">Spanish</td>
-            <td tal:content="pomsgset/potmsgset/primemsgid_/msgid" />
+            <td tal:content="pomsgset/potmsgset/singular_text" />
             <td tal:condition="python:not(view.should_display_message(pomsgset))">
               To prevent privacy issues, this translation is not
               available to anonymous users, if you want to see it,

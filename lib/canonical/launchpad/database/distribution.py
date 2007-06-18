@@ -28,7 +28,8 @@ from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.question import (
-    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
+    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet,
+    QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
@@ -65,7 +66,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
     ILaunchpadCelebrities, ISourcePackageName, IQuestionTarget, NotFoundError,
-    get_supported_languages, QUESTION_STATUS_DEFAULT_SEARCH,\
+    QUESTION_STATUS_DEFAULT_SEARCH,\
     IHasLogo, IHasMugshot, IHasIcon)
 
 from canonical.archivepublisher.debversion import Version
@@ -74,7 +75,7 @@ from canonical.launchpad.validators.name import valid_name, sanitize_name
 
 
 class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                   HasSprintsMixin, KarmaContextMixin):
+                   HasSprintsMixin, KarmaContextMixin, QuestionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
         IDistribution, IHasBuildRecords, IQuestionTarget,
@@ -351,9 +352,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See IDistribution."""
         counts = []
 
-        severities = [BugTaskStatus.UNCONFIRMED,
+        severities = [BugTaskStatus.NEW,
                       BugTaskStatus.CONFIRMED,
-                      BugTaskStatus.REJECTED,
+                      BugTaskStatus.INVALID,
                       BugTaskStatus.FIXRELEASED]
 
         querystr = ("BugTask.distribution = %s AND "
@@ -504,10 +505,6 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See ISpecificationTarget."""
         return Specification.selectOneBy(distribution=self, name=name)
 
-    def getSupportedLanguages(self):
-        """See IQuestionTarget."""
-        return get_supported_languages(self)
-
     def newQuestion(self, owner, title, description, language=None,
                   datecreated=None):
         """See IQuestionTarget."""
@@ -535,7 +532,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             unsupported_target = self
         else:
             unsupported_target = None
-            
+
         return QuestionTargetSearch(
             distribution=self,
             search_text=search_text, status=status,
@@ -548,14 +545,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See IQuestionTarget."""
         return SimilarQuestionsSearch(title, distribution=self).getResults()
 
-    def addAnswerContact(self, person):
-        """See IQuestionTarget."""
-        if person in self.answer_contacts:
-            return False
-        AnswerContact(
-            product=None, person=person,
-            sourcepackagename=None, distribution=self)
-        return True
+    def _getTargetTypes(self):
+        """See QuestionTargetMixin."""
+        return {'distribution': self,
+                'sourcepackagename': None}
 
     def removeAnswerContact(self, person):
         """See IQuestionTarget."""

@@ -39,6 +39,7 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
     currentcount = IntCol(notNull=True, default=0)
     updatescount = IntCol(notNull=True, default=0)
     rosettacount = IntCol(notNull=True, default=0)
+    unreviewed_count = IntCol(notNull=True, default=0)
     contributorcount = IntCol(notNull=True, default=0)
     dateupdated = UtcDateTimeCol(dbName='dateupdated', default=DEFAULT)
 
@@ -118,17 +119,24 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
     def rosettaCount(self, language=None):
         return self.rosettacount
 
+    def unreviewedCount(self):
+        """See `IRosettaStats`."""
+        return self.unreviewed_count
+
     def updateStatistics(self, ztm):
         current = 0
         updates = 0
         rosetta = 0
+        unreviewed = 0
         for pofile in self.pofiles:
             current += pofile.currentCount()
             updates += pofile.updatesCount()
             rosetta += pofile.rosettaCount()
+            unreviewed += pofile.unreviewedCount()
         self.currentcount = current
         self.updatescount = updates
         self.rosettacount = rosetta
+        self.unreviewed_count = unreviewed
 
         personset = getUtility(IPersonSet)
         contributors = personset.getPOFileContributorsByDistroSeries(
