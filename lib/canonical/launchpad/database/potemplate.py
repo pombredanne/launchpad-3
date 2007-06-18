@@ -583,8 +583,7 @@ class POTemplate(SQLBase, RosettaStats):
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
             'elapsedtime': entry_to_import.getElapsedTimeText(),
             'file_link': entry_to_import.content.http_url,
-            'import_title':
-                'translation templates for %s' % self.displayname,
+            'import_title': 'translation templates for %s' % self.displayname,
             'importer': entry_to_import.importer.displayname,
             'template': self.displayname
             }
@@ -598,8 +597,7 @@ class POTemplate(SQLBase, RosettaStats):
             template_mail = 'poimport-template-confirmation.txt'
             subject = 'Translation template import - %s' % self.displayname
 
-        assert template_mail is not None
-        assert subject is not None
+        assert template_mail is not None, "No mail template chosen"
 
         # Send the email.
         template = helpers.get_email_template(template_mail)

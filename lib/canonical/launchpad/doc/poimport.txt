@@ -118,7 +118,7 @@ to make sure it's stored properly.
 
     >>> transaction.commit()
 
-We go through an import run.  But since we haven't approved our entry yet,
+Since we haven't approved our entry yet, if we go through an import run now,
 nothing happens.
 
     >>> original_import_status = entry.status
@@ -126,18 +126,16 @@ nothing happens.
     >>> entry.status == original_import_status
     True
 
-We also did not get an email about the import, though we will later.
+That also means we do not get an email about the import, though we will later.
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
     0
 
-Now the entry gets approved, so it'll be imported next time
+Now the entry gets approved, so it'll be imported next time.
 
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> flush_database_updates()
-
-Store current date
 
     >>> import datetime
     >>> import pytz
@@ -159,7 +157,7 @@ The last update date is the one we got.
     >>> potemplate.date_last_updated > saved_date
     True
 
-We've received a confirmation email about the successful import.
+A successful import is confirmed by email.
 
     >>> transaction.commit()
     >>> len(stub.test_emails)
