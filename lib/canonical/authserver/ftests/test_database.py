@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 """Tests for lib/canonical/authserver/database.py"""
 
@@ -8,7 +8,7 @@ import unittest
 
 from zope.interface.verify import verifyObject
 
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
@@ -22,8 +22,11 @@ from canonical.lp import dbschema
 
 from canonical.launchpad.ftests.harness import LaunchpadTestCase
 
+from canonical.testing.layers import LaunchpadScriptLayer
+
 
 class TestDatabaseSetup(LaunchpadTestCase):
+
     def setUp(self):
         super(TestDatabaseSetup, self).setUp()
         self.connection = self.connect()
@@ -35,7 +38,18 @@ class TestDatabaseSetup(LaunchpadTestCase):
         super(TestDatabaseSetup, self).tearDown()
 
 
-class DatabaseStorageTestCase(TestDatabaseSetup):
+class DatabaseStorageTestCase(unittest.TestCase):
+
+    layer = LaunchpadScriptLayer
+
+    def setUp(self):
+        LaunchpadScriptLayer.switchDbConfig('authserver')
+        super(DatabaseStorageTestCase, self).setUp()
+        self.cursor = cursor()
+
+    def tearDown(self):
+        self.cursor.close()
+        super(DatabaseStorageTestCase, self).tearDown()
 
     def test_verifyInterface(self):
         self.failUnless(verifyObject(IUserDetailsStorage,
@@ -156,11 +170,11 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
 
     def test_fetchProductID(self):
         storage = DatabaseUserDetailsStorageV2(None)
-        productID = storage._fetchProductIDInteraction(self.cursor, 'firefox')
+        productID = storage._fetchProductIDInteraction('firefox')
         self.assertEqual(4, productID)
     
         # Invalid product names are signalled by a return value of ''
-        productID = storage._fetchProductIDInteraction(self.cursor, 'xxxxx')
+        productID = storage._fetchProductIDInteraction('xxxxx')
         self.assertEqual('', productID)
 
     def test_getBranchesForUser(self):
@@ -215,7 +229,8 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
             SELECT owner, product, name, title, summary, author FROM Branch
             WHERE id = %d"""
             % branchID)
-        self.assertEqual((12, 6, 'foo', None, None, 12), self.cursor.fetchone())
+        self.assertEqual(
+            [12, 6, 'foo', None, None, 12], self.cursor.fetchone())
 
         # Create a branch with NULL product too:
         branchID = storage._createBranchInteraction(self.cursor, 1, None, 'foo')
@@ -223,8 +238,8 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
             SELECT owner, product, name, title, summary, author FROM Branch
             WHERE id = %d"""
             % branchID)
-        self.assertEqual((1, None, 'foo', None, None, 1),
-                         self.cursor.fetchone())
+        self.assertEqual(
+            [1, None, 'foo', None, None, 1], self.cursor.fetchone())
         
 
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
