@@ -81,7 +81,7 @@
   <p>Answer contacts must speak a language. If you have not already set your
     <a
       tal:attributes="href string:${request/lp:person/fmt:url}/+editlanguages"
-      >preferred languages</a>, your they will be automatically set to your
+      >preferred languages</a>, they will be automatically set to your
       request languages. In the case of a team, English will be set as 
       the preferred language.
   </p>

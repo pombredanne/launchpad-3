@@ -171,9 +171,9 @@ languages. He must add Spanish to the team's preferred languages.
 
 Sample Person may be surprised to see English is already selected.
 Per the notification issued in the first test above, English was added
-to the team's preferred languages. We did not see the not this time
-the languages are set. Sample Person unselects English, and selects
-Spanish.
+to the team's preferred languages. We did not see the notification
+this time since the languages are set. Sample Person unselects
+English, and selects Spanish.
 
     >>> browser.getControl('English', index=0).selected
     True
