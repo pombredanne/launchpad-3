@@ -19,6 +19,8 @@ import threading
 from bzrlib.transport import get_transport, sftp, ssh, Server
 
 from twisted.conch.ssh import keys
+from twisted.internet import defer, protocol
+from twisted.protocols import basic
 from twisted.python.util import sibpath
 
 from canonical.config import config
@@ -98,7 +100,7 @@ class Authserver(Server):
         self.authserver.startService()
 
     def tearDown(self):
-        self.authserver.stopService()
+        return self.authserver.stopService()
 
     def get_url(self):
         return config.codehosting.authserver
@@ -144,6 +146,7 @@ class AuthserverOutOfProcess(Server):
 
     def tearDown(self):
         self.tachandler.tearDown()
+        return defer.succeed(None)
 
     def get_url(self):
         return config.codehosting.authserver
@@ -229,8 +232,8 @@ class CodeHostingServer(Server):
         self.authserver.setUp()
 
     def tearDown(self):
-        self.authserver.tearDown()
         shutil.rmtree(self._branches_root)
+        return self.authserver.tearDown()
 
     def getTransport(self, relpath):
         """Return a new transport for 'relpath', adding necessary cleanup."""
@@ -280,11 +283,12 @@ class SSHCodeHostingServer(CodeHostingServer):
 
     def tearDown(self):
         self.closeAllConnections()
-        self.server.stopService()
+        deferred1 = self.server.stopService()
         os.environ['HOME'] = self._real_home
-        CodeHostingServer.tearDown(self)
+        deferred2 = CodeHostingServer.tearDown(self)
         shutil.rmtree(self._fake_home)
         ssh._ssh_vendor_manager._cached_ssh_vendor = self._old_vendor_manager
+        return defer.gatherResults([deferred1, deferred2])
 
     def get_url(self, user=None):
         if user is None:
@@ -316,20 +320,80 @@ class SFTPCodeHostingServer(SSHCodeHostingServer):
                 done.wait()
 
 
+LPSERVE_TERMINATED = 'lpserve terminated'
+
+
+class UnrecognizedLine(Exception):
+    """Raised when the _DisconnectNotifyProtocol receives an unrecognized line.
+    """
+
+
+class _DisconnectNotifyProtocol(basic.LineOnlyReceiver):
+    """Protocol that listens for notification of disconnect from a subprocess.
+    """
+
+    def __init__(self, disconnectEvent):
+        self._disconnectEvent = disconnectEvent
+
+    def lineReceived(self, line):
+        if line.strip() == LPSERVE_TERMINATED:
+            # set the event
+            self._disconnectEvent.set()
+        else:
+            raise UnrecognizedLine(line)
+
+
+class _DisconnectNotifyServerFactory(protocol.ServerFactory):
+    """Factory to launch a server that listens for notification of disconnect.
+    """
+
+    def __init__(self):
+        self._disconnectEvent = None
+
+    def buildProtocol(self, address):
+        return _DisconnectNotifyServerFactory(self._disconnectEvent)
+
+
 class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
 
     def __init__(self, authserver, branches_root):
         SSHCodeHostingServer.__init__(
             self, 'bzr+ssh', authserver, branches_root)
+        self._factory = _DisconnectNotifyServerFactory()
+
+    def setUp(self):
+        SSHCodeHostingServer.setUp(self)
+        from twisted.internet import reactor
+        self._listening = reactor.listenTCP(0, self._factory)
+
+    def tearDown(self):
+        deferred1 = self._listening.stopListening()
+        deferred2 = SSHCodeHostingServer.tearDown(self)
+        return defer.gatherResults([deferred1, deferred2])
+
+    # Register an adapter that sets an environment variable containing the host
+    # and port that the test process is listening on.
+
+    # Need to re-set that environment variable for each call to
+    # runAndWaitForDisconnect OR re-set the thread event variables.
+
+    # Make sure that the child process gets the environment variable
+
+    # Send an event from the child process if the environment variable is set.
 
     def runAndWaitForDisconnect(self, func, *args, **kwargs):
         """Run the given function, close all connections, and wait for the
         server to acknowledge the end of the session.
         """
+##         done = threading.Event()
+##         self._factory.setConnectionLostEvent(done)
+##         port = listening.getHost().port
+##         _jml_log('LISTENING ON ', port)
         try:
             return func(*args, **kwargs)
         finally:
             self.closeAllConnections()
+##            done.wait()
 
 
 class _TestSSHService(SSHService):

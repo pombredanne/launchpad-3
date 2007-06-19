@@ -83,9 +83,10 @@ class ServerTestCase(TrialTestCase):
         self.server.setUp()
 
     def tearDown(self):
-        self.server.tearDown()
+        deferred1 = self.server.tearDown()
         signal.signal(signal.SIGCHLD, self._oldSigChld)
-        super(ServerTestCase, self).tearDown()
+        deferred2 = defer.maybeDeferred(super(ServerTestCase, self).tearDown)
+        return defer.gatherResults([deferred1, deferred2])
 
     def __str__(self):
         return self.id()
