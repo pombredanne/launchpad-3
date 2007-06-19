@@ -77,6 +77,7 @@ class LoginServiceActionsVocabularyFactory:
 
     def __call__(self, context):
         """See IContextSourceBinder."""
+        # XXX 20070618 mpt: Order should be createaccount, login, resetpassword
         terms = [
             SimpleTerm('createaccount', 'createaccount',
                        'No, I want to create an account now'),

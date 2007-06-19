@@ -1,25 +1,16 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
-
+<html metal:use-macro="context/@@main_template/master" i18n:domain="launchpad">
   <body>
-
     <div metal:fill-slot="main">
-      <h1>Launchpad Login Service</h1>
-
-      <h2 tal:content="view/email_heading" />
-
+      <h1 tal:content="view/email_heading" />
       <p>
-        We've sent you an email message to <strong>
-        <code tal:content="view/token/email">email</code></strong> (from
+        We&rsquo;ve just e-mailed
+        <code tal:content="view/token/email">email</code> (from
         noreply@launchpad.net) <span tal:replace="view/email_reason" />
       </p>
       <p>
         To continue, follow the link in that message.
       </p>
-
-      <h3>Haven't received it?</h3>
+      <h2>Haven&rsquo;t received it?</h2>
       <p>
         If you don&rsquo;t receive the message within a few
         minutes, it might be because:
@@ -50,7 +41,6 @@
           </p>
         </li>
       </ul>
-
     </div>
   </body>
 </html>

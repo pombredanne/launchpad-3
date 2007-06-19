@@ -4,13 +4,67 @@
                     xml:lang default_language|default;">
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
+    <tal:x condition="nothing">Style is inline for maximum reliability.</tal:x>
+    <style type="text/css">
+      html {background: #dbdbdb; font-family: "Optima", sans-serif;}
+      :link {background: none; color: #00c;} 
+      html, body {height: 100%; margin: 0; padding: 0;} /* pushes footer down */
+      body {margin: 0 1em 0;}
+      #nonfooter {position: relative; min-height: 100%;}
+      * html #nonfooter {height: 100%;}
+      #footer {
+        clear: both;
+        position: relative;
+        margin: -2em auto 0;
+        height: 2em;
+      }
+
+      address, #footer {
+        background: #999;
+        color: #fff;
+        font-style: normal;
+        max-width: auto;
+        text-align: center;
+        width: 600px;
+      }
+
+      address {margin: 0 auto 1em; padding: 0.25em;}
+      address, h2 {font-size: 1.2em;}
+      h1, h2 {color: #666; font-weight: normal;}
+      #footer {font-size: smaller;}
+      #rp {
+        width: 49%;
+        float: left;
+      }
+      #auth {
+        background: #eee;
+        padding: 1em 2%;
+        width: 45%;
+        float: right;
+      }
+      #auth h2 {margin: 0 0 0.25em; padding: 0;}
+      #auth div {margin: 0 0 1em;}
+      #auth div div {margin: 0;}
+      #auth input[type="text"], #auth input[type="password"] {
+        display: block;
+        margin-left: 2em;
+      }
+      input[type="radio"] {margin-left: 0; margin-top: 0.5em;}
+      #auth input[type="submit"] {margin-top: 1em;}
+      #auth label {display: inline-block; margin-bottom: 0.25em;}
+      code {font-weight: bold;}
+    </style>
   </head>
 
   <body>
-    <div id="maincontent">
-      <metal:block define-slot="main" />
+    <div id="nonfooter">
+      <address>Launchpad Login Service</address>
+      <div id="maincontent">
+        <metal:block define-slot="main" />
+      </div>
+      <div style="clear: both;">&nbsp;</div>
     </div>
+    <div id="footer">Copyright &copy; 2007 Canonical Ltd.</div>
   </body>
-
 </html>
 </metal:page>

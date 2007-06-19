@@ -1,10 +1,9 @@
-Hello!
+Hello
 
-Thank you for registering. To complete your registration, please follow
-the instructions here:
+Thank you for registering with the Launchpad Login Service.
 
-   %(token_url)s
+To complete your registration:
+%(token_url)s
 
-Thanks,
 
-The Launchpad Login Service team
+If you don't know what this is about, then someone has probably entered your e-mail address by mistake at the Launchpad Login Service Web site. Sorry about that. You don't need to do anything further, just delete this message.
