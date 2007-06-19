@@ -154,9 +154,9 @@
 
         /*
          * On-load, make sure that the 'No' stuff is displayed correctly.
-         * Some browsers (e.g. Firefox) will refill the form when a page is
-         * refreshed so we must always work from the data, not just from
-         * events.
+         * We must always work from the data in the form, not just from
+         * events. Some browsers (e.g. Firefox) refill the form when a page
+         * is refreshed and you don't get onchange/onkeypress events.
          */
         connect(window, 'onload', $('bug-already-reported-no'),
           function(e) {
