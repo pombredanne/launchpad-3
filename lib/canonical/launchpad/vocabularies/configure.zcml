@@ -351,6 +351,11 @@
     />
 
   <vocabulary
+    name="TeamMembershipRenewalPolicy"
+    factory="canonical.launchpad.vocabularies.TeamMembershipRenewalPolicyVocabulary"
+    />
+
+  <vocabulary
     name="TeamSubscriptionPolicy"
     factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
     />
@@ -383,6 +388,11 @@
   <vocabulary
     name="TimezoneName"
     factory="canonical.launchpad.vocabularies.TimezoneNameVocabulary"
+    />
+
+  <vocabulary
+    name="TranslationFileFormat"
+    factory="canonical.launchpad.vocabularies.TranslationFileFormatVocabulary"
     />
 
   <vocabulary

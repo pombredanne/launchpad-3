@@ -10,7 +10,7 @@ from sqlobject import (
     StringCol, IntCol, BoolCol, SQLRelatedJoin, SQLObjectNotFound, OR,
     CONTAINSSTRING)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues, cursor
+from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
 from canonical.lp.dbschema import TextDirection
 from canonical.launchpad.interfaces import (
@@ -24,6 +24,7 @@ class Language(SQLBase):
 
     code = StringCol(
         dbName='code', notNull=True, unique=True, alternateID=True)
+    uuid = StringCol(dbName='uuid', notNull=False, default=None)
     nativename = StringCol(dbName='nativename')
     englishname = StringCol(dbName='englishname')
     pluralforms = IntCol(dbName='pluralforms')

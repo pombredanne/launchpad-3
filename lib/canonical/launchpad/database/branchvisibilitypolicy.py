@@ -77,6 +77,22 @@ class BranchVisibilityPolicyMixin:
         items = shortlist(self._policy_items)
         return sorted(items, key=policy_item_key)
 
+    @property
+    def branch_visibility_base_policy(self):
+        """See IHasBranchVisibilityPolicy."""
+        if self.isUsingInheritedBranchVisibilityPolicy():
+            item = BranchVisibilityPolicyItem.selectOneBy(
+                team=None, **self.project._policy_visibility_context)
+        else:
+            item = BranchVisibilityPolicyItem.selectOneBy(
+                team=None, **self._policy_visibility_context)
+
+        # If there is no explicit item set, then public is the default.
+        if item is None:
+            return BranchVisibilityPolicy.PUBLIC
+        else:
+            return item.policy
+
     def isUsingInheritedBranchVisibilityPolicy(self):
         """See IHasBranchVisibilityPolicy."""
         # If there is no project to inherit a policy from,

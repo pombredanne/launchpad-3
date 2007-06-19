@@ -25,7 +25,7 @@ from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
     ApplicationMenu, canonical_url, enabled_with_permission,
-    Link, Navigation, stepto)
+    LaunchpadView, Link, Navigation, stepto)
 from canonical.launchpad.webapp.batching import BatchNavigator
 import canonical.launchpad.layers
 
@@ -43,12 +43,11 @@ class BazaarBranchesMenu(ApplicationMenu):
         return Link(target, text, summary, icon='branch')
 
 
-class BazaarApplicationView:
+class BazaarApplicationView(LaunchpadView):
 
-    def __init__(self, context, request):
-        self.context = context
-        self.request = request
-        self.seriesset = getUtility(IProductSeriesSet)
+    @cachedproperty
+    def series_set(self):
+        return getUtility(IProductSeriesSet)
 
     def branch_count(self):
         return getUtility(IBranchSet).count()
@@ -60,40 +59,43 @@ class BazaarApplicationView:
         return getUtility(IBranchSet).countBranchesWithAssociatedBugs()
 
     def import_count(self):
-        return self.seriesset.importcount()
+        return self.series_set.importcount()
 
     def testing_count(self):
-        return self.seriesset.importcount(ImportStatus.TESTING.value)
+        return self.series_set.importcount(ImportStatus.TESTING.value)
 
     def autotested_count(self):
-        return self.seriesset.importcount(ImportStatus.AUTOTESTED.value)
+        return self.series_set.importcount(ImportStatus.AUTOTESTED.value)
 
     def testfailed_count(self):
-        return self.seriesset.importcount(ImportStatus.TESTFAILED.value)
+        return self.series_set.importcount(ImportStatus.TESTFAILED.value)
 
     def processing_count(self):
-        return self.seriesset.importcount(ImportStatus.PROCESSING.value)
+        return self.series_set.importcount(ImportStatus.PROCESSING.value)
 
     def syncing_count(self):
-        return self.seriesset.importcount(ImportStatus.SYNCING.value)
+        return self.series_set.importcount(ImportStatus.SYNCING.value)
 
     def stopped_count(self):
-        return self.seriesset.importcount(ImportStatus.STOPPED.value)
+        return self.series_set.importcount(ImportStatus.STOPPED.value)
 
     @cachedproperty
     def recently_changed_branches(self):
         """Return the five most recently changed branches."""
-        return list(getUtility(IBranchSet).getRecentlyChangedBranches(5))
+        return list(getUtility(IBranchSet).getRecentlyChangedBranches(
+            5, self.user))
 
     @cachedproperty
     def recently_imported_branches(self):
         """Return the five most recently imported branches."""
-        return list(getUtility(IBranchSet).getRecentlyImportedBranches(5))
+        return list(getUtility(IBranchSet).getRecentlyImportedBranches(
+            5, self.user))
 
     @cachedproperty
     def recently_registered_branches(self):
         """Return the five most recently registered branches."""
-        return list(getUtility(IBranchSet).getRecentlyRegisteredBranches(5))
+        return list(getUtility(IBranchSet).getRecentlyRegisteredBranches(
+            5, self.user))
 
 
 class BazaarApplicationNavigation(Navigation):
@@ -105,10 +107,10 @@ class BazaarApplicationNavigation(Navigation):
     @stepto('series')
     def series(self):
         return getUtility(IProductSeriesSet)
- 
+
 
 class ProductInfo:
-    
+
     decorates(IProduct, 'product')
 
     def __init__(self, product, num_branches, branch_size, elapsed):

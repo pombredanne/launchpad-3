@@ -26,19 +26,14 @@ class ImportProcess:
         # Get the queue.
         translation_import_queue = getUtility(ITranslationImportQueue)
 
-        # Get the list of each product or distroseries with pending imports
+        # Get the list of each product or distroseries with pending imports.
         importqueues = (
             translation_import_queue.getPillarObjectsWithApprovedImports() )
-        queues_empty = (len(importqueues) == 0)
-
-        while not queues_empty:
-            queues_empty = True
+        while importqueues:
             for queue in importqueues:
                 entry_to_import = queue.getFirstEntryToImport()
                 if entry_to_import is None:
                     continue
-                elif queues_empty:
-                    queues_empty = False
 
                 assert entry_to_import.import_into is not None, (
                     "Broken entry, it's Approved but lacks the place where it"
@@ -89,6 +84,9 @@ class ImportProcess:
                                       ' committing the transaction', exc_info=1)
                     self.ztm.abort()
                     self.ztm.begin()
+            # Refresh the list of objects with pending imports.
+            importqueues = (
+                translation_import_queue.getPillarObjectsWithApprovedImports())
 
 class AutoApproveProcess:
     """Attempt to approve some PO/POT imports without human intervention."""
