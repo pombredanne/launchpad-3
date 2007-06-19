@@ -65,8 +65,8 @@ def main():
         hosts_scripts = []
         for arg in args:
             hosts_scripts.append({
-                'hostname': arg.split(",")[0],
-                'scriptname': arg.split(",")[1]
+                'hostname': arg.split(":")[0],
+                'scriptname': arg.split(":")[1]
                 })
 
         error_found = 0
