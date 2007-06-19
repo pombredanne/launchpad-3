@@ -50,7 +50,7 @@
               </td>
               <td>
                 <label for="bug-already-reported-yes">
-                  Yes, it's one of the following:
+                  Yes, it's one of these:
                 </label>
               </td>
             </tr>
@@ -95,11 +95,11 @@
                     <label style="font-weight: normal">
                       <input type="radio" name="field.bug_already_reported_as"
                              tal:attributes="value string:${bug/id};" />
-                      <span tal:replace="string:#${bug/id}">#1</span>:
-                      <span tal:replace="bug/title">Firefox does not support SVG</span>
+                      <a tal:attributes="href bug/fmt:url" href="#"
+                         tal:content="string:#${bug/id}: ${bug/title}">
+                        #1: Firefox does not support SVG
+                      </a>
                     </label>
-                    &mdash;
-                    <a href="#" tal:attributes="href bug/fmt:url">view details...</a>
                   </li>
                 </ul>
 

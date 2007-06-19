@@ -419,9 +419,7 @@ class IBugAddForm(IBug):
             description=_("""The package you found this bug in,
             which was installed via apt-get, rpm, emerge or similar."""),
             vocabulary="BinaryAndSourcePackageName")
-    title = Title(
-        title=IBug.getDescriptionFor('title').title,
-        required=IBug.getDescriptionFor('title').required)
+    title = Title(title=_('Summary'), required=True)
     distribution = Choice(
             title=_("Linux Distribution"), required=True,
             description=_(
