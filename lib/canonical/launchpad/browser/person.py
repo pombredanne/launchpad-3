@@ -833,7 +833,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
              'add_member', 'memberships', 'received_invitations', 'mugshots',
-             'editemail', 'polls', 'add_poll',
+             'editemail', 'editlanguages', 'polls', 'add_poll',
              'joinleave', 'mentorships', 'reassign', 'common_packages',
              'related_projects']
 
@@ -912,6 +912,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             self.context.browsername)
         return Link(target, text, summary, icon='mail')
 
+    @enabled_with_permission('launchpad.Edit')
+    def editlanguages(self):
+        target = '+editlanguages'
+        text = 'Set preferred languages'
+        return Link(target, text, icon='edit')
+        
     def joinleave(self):
         team = self.context
         enabled = True
@@ -1525,11 +1531,12 @@ class PersonLanguagesView(LaunchpadView):
         return IRequestPreferredLanguages(self.request).getPreferredLanguages()
 
     def visible_checked_languages(self):
-        return self.user.languages
+        return self._personOrTeam().languages
 
     def visible_unchecked_languages(self):
         common_languages = getUtility(ILanguageSet).common_languages
-        return sorted(set(common_languages) - set(self.user.languages),
+        person_languages = self._personOrTeam().languages
+        return sorted(set(common_languages) - set(person_languages),
                       key=lambda x: x.englishname)
 
     def getRedirectionURL(self):
@@ -1548,30 +1555,43 @@ class PersonLanguagesView(LaunchpadView):
         '''
 
         all_languages = getUtility(ILanguageSet)
-        old_languages = self.user.languages
+        old_languages = self._personOrTeam().languages
         new_languages = []
 
         for key in all_languages.keys():
             if self.request.has_key(key) and self.request.get(key) == u'on':
                 new_languages.append(all_languages[key])
 
+        person_or_team = self._personOrTeam()
+        if person_or_team.isTeam():
+            subject = "%s's" % person_or_team.displayname
+        else:
+            subject = "your"
+
         # Add languages to the user's preferences.
         for language in set(new_languages) - set(old_languages):
-            self.user.addLanguage(language)
+            person_or_team.addLanguage(language)
             self.request.response.addInfoNotification(
-                "Added %(language)s to your preferred languages." %
-                {'language' : language.englishname})
+                "Added %(language)s to %(subject)s preferred languages." %
+                {'language' : language.englishname, 'subject' : subject})
 
         # Remove languages from the user's preferences.
         for language in set(old_languages) - set(new_languages):
-            self.user.removeLanguage(language)
+            person_or_team.removeLanguage(language)
             self.request.response.addInfoNotification(
-                "Removed %(language)s from your preferred languages." %
-                {'language' : language.englishname})
+                "Removed %(language)s from %(subject)s preferred languages." %
+                {'language' : language.englishname, 'subject' : subject})
 
         redirection_url = self.request.get('redirection_url')
         if redirection_url:
             self.request.response.redirect(redirection_url)
+
+    def _personOrTeam(self):
+        """Return the Person or team based on the context of the request."""
+        if self.context.isTeam():
+            return self.context
+        else:
+            return self.user
 
 
 class PersonView(LaunchpadView):

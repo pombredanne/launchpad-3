@@ -531,10 +531,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         response = self.request.response
         replacements = {'context': self.context.displayname}
         if want_to_be_answer_contact:
-            # a person must speak a language to be an answer contact.
-            if self.user.languages.count() == 0:
-                for language in self.user_support_languages:
-                    self.user.addLanguage(language)
+            self._updatePreferredLanguages(self.user)
             if self.context.addAnswerContact(self.user):
                 response.addNotification(
                     _('You have been added as an answer contact for '
@@ -548,8 +545,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         for team in self.administrated_teams:
             replacements['teamname'] = team.displayname
             if team in answer_contact_teams:
-                if team.languages.count() == 0:
-                    team.addLanguage(getUtility(ILanguageSet)['en'])
+                self._updatePreferredLanguages(team)
                 if self.context.addAnswerContact(team):
                     response.addNotification(
                         _('$teamname has been added as an answer contact '
@@ -562,6 +558,33 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
 
         self.next_url = canonical_url(self.context, rootsite='answers')
 
+    def _updatePreferredLanguages(self, person_or_team):
+        """Check or update the Person's preferred languages as needed.
+
+        Answer contacts must speak a language. If the Person does not speak
+        a language, his preferred languages are set to his request languages.
+        In the case of a team without languages, English is added to the
+        preferred languages. When languages are added, a notification is
+        added to the response.
+        """
+        if person_or_team.languages.count() > 0:
+            return
+
+        response = self.request.response
+        if person_or_team.isTeam():
+            person_or_team.addLanguage(getUtility(ILanguageSet)['en'])
+            team_mapping = {'name' : person_or_team.name,
+                            'displayname' : person_or_team.displayname}
+            response.addNotification(
+                _("English was added to ${displayname}'s "
+                  '<a href="/~${name}/+editlanguages">Preferred '
+                  'languages</a>.', mapping=team_mapping))
+        else:
+            for language in self.user_support_languages:
+                person_or_team.addLanguage(language)
+            response.addNotification(
+                _('<a href="/people/+me/+editlanguages">Your Preferred '
+                  'languages</a> were set to your request languages.'))
 
 class QuestionTargetFacetMixin:
     """Mixin for questiontarget facet definition."""

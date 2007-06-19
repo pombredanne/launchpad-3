@@ -24,7 +24,7 @@
     <p metal:fill-slot="extra_top">
     An <em>answer contact</em> is implicitly subscribed to all
     questions. By checking the box below, you will receive changes
-    related to all questions (written in English or one of your <a
+    related to all questions (written in one of your <a
     tal:attributes="href string:${request/lp:person/fmt:url}/+editlanguages"
     >preferred languages</a>) opened on <span
     tal:replace="context/displayname">Mozilla Firefox</span>, and thus
@@ -77,6 +77,13 @@
   <p>If you don't want to receive notifications anymore, simply remove
     yourself and/or your teams as answer contact by unchecking the
     appropriate checkbox.
+  </p>
+  <p>Answer contacts must speak a language. If you have not already set your
+    <a
+      tal:attributes="href string:${request/lp:person/fmt:url}/+editlanguages"
+      >preferred languages</a>, your they will be automatically set to your
+      request languages. In the case of a team, English will be set as 
+      the preferred language.
   </p>
 </metal:help>
 </body>
