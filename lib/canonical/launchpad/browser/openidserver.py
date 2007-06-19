@@ -396,7 +396,7 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
         self.trashRequest()
         return self.renderOpenIdResponse(self.createPositiveResponse())
 
-    @action('Cancel', name='deny')
+    @action("I Don't Want To Sign In", name='deny')
     def deny_action(self, action, data):
         self.trashRequest()
         return self.renderOpenIdResponse(self.createFailedResponse())

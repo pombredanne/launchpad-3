@@ -33,7 +33,7 @@ As the user already has an account, they can enter their email address
 and password.  The user must enter a valid email address, or they will
 receive an error:
 
-    >>> browser.getControl('email address?').value = 'not an email address'
+    >>> browser.getControl(name='field.email').value = 'not an email address'
     >>> browser.getControl(name='field.password').value = 'test'
     >>> browser.getControl('Continue').click()
 
@@ -46,7 +46,7 @@ receive an error:
 If the user provides a non-ASCII password, they receive an incorrect
 passphrase error.
 
-    >>> browser.getControl('email address?').value = 'mark@hbd.com'
+    >>> browser.getControl(name='field.email').value = 'mark@hbd.com'
     >>> browser.getControl(name='field.password').value = '\xc2\xa0blah'
     >>> browser.getControl('Continue').click()
     >>> print browser.title
@@ -58,7 +58,7 @@ passphrase error.
 If the password does not match the given email address, an error is
 shown:
 
-    >>> browser.getControl('email address?').value = 'mark@hbd.com'
+    >>> browser.getControl(name='field.email').value = 'mark@hbd.com'
     >>> browser.getControl(name='field.password').value = 'not the password'
     >>> browser.getControl('Continue').click()
     >>> print browser.title

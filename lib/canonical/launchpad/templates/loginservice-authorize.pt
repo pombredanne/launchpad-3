@@ -44,8 +44,7 @@
 
         <div>
           <tal:submit replace="structure view/auth_action/render" />
-          <tal:submit replace="structure view/deny_action/render"
-          condition="nothing">hidden until we determine its need</tal:submit>
+          <tal:submit replace="structure view/deny_action/render" />
         </div>
 
       </form>

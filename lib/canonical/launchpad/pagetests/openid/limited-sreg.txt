@@ -40,7 +40,7 @@ Now perform an OpenID authentication request:
 
     >>> sabdfl_browser = setupBrowser('Basic mark@hbd.com:test')
     >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
-    >>> sabdfl_browser.getControl('Sign In').click()
+    >>> sabdfl_browser.getControl('Sign In', index=0).click()
     >>> print sabdfl_browser.url
     http://launchpad.dev/+openid-consumer?...
     >>> print sabdfl_browser.contents
@@ -66,7 +66,7 @@ We now see the user's full name, nickname, email address and time zone.
     >>> config.launchpad.openid_sreg_trustroots.append(
     ...     'http://launchpad.dev/+openid-consumer')
     >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
-    >>> sabdfl_browser.getControl('Sign In').click()
+    >>> sabdfl_browser.getControl('Sign In', index=0).click()
     >>> print sabdfl_browser.url
     http://launchpad.dev/+openid-consumer?...
     >>> print sabdfl_browser.contents

@@ -29,7 +29,7 @@ response and do further validation as normal.
     >>> sabdfl_browser.open(setup_url)
     >>> print sabdfl_browser.title
     Launchpad Login Service
-    >>> sabdfl_browser.getControl('email address?').value = 'mark@hbd.com'
+    >>> sabdfl_browser.getControl(name='field.email').value = 'mark@hbd.com'
     >>> sabdfl_browser.getControl(name='field.password').value = 'test'
     >>> sabdfl_browser.getControl('Continue').click()
 
@@ -50,7 +50,7 @@ presented with an authorization screen instead:
     >>> sabdfl_browser.open(setup_url)
     >>> print sabdfl_browser.title
     Authenticate to http://launchpad.dev/+openid-consumer
-    >>> sabdfl_browser.getControl('Sign In').click()
+    >>> sabdfl_browser.getControl('Sign In', index=0).click()
 
     >>> print sabdfl_browser.url
     http://launchpad.dev/+openid-consumer?...

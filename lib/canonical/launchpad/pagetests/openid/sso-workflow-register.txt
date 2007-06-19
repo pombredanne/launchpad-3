@@ -29,7 +29,7 @@ account for an email address that has already been registered:
 
     >>> print browser.title
     Launchpad Login Service
-    >>> browser.getControl('email address?').value = 'test@canonical.com'
+    >>> browser.getControl(name='field.email').value = 'test@canonical.com'
     >>> browser.getControl('No, I want to create an account now').click()
     >>> browser.getControl('Continue').click()
 
@@ -44,11 +44,11 @@ account for an email address that has already been registered:
 
 If we instead pick a new email address, we can register an account:
 
-    >>> browser.getControl('email address?').value = 'new-user@example.com'
+    >>> browser.getControl(name='field.email').value = 'new-user@example.com'
     >>> browser.getControl('Continue').click()
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
-    >>> print soup.find('h2').renderContents()
+    >>> print soup.find('h1').renderContents()
     Registration mail sent
 
 The user would then check their email, and find a message:
@@ -63,8 +63,23 @@ The user would then check their email, and find a message:
     bounces@canonical.com
     >>> print to_addrs
     ['new-user@example.com']
-    >>> print msg.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Need input from Matthew to fix this email; we're currently using :
+    >>> print msg.get_payload(decode=True) #doctest: -NORMALIZE_WHITESPACE
+    Hello
+    <BLANKLINE>
+    Thank you for registering with the Launchpad Login Service.
+    <BLANKLINE>
+    To complete your registration:
+    <BLANKLINE>
+        http://openid.launchpad.dev/token/...
+    <BLANKLINE>
+    If you don't know what this is about, then someone has probably
+    entered your e-mail address by mistake at the Launchpad Login Service
+    Web site. Sorry about that. You don't need to do anything further,
+    just delete this message.
+    <BLANKLINE>
+    Regards,
+    The Launchpad Login Service team
+    <BLANKLINE>
 
 Let's extract the URL from the email and follow the link:
 

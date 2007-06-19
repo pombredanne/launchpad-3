@@ -177,7 +177,7 @@ to the consumer, completing the OpenID request:
     http://openid.launchpad.dev/+openid?...
     >>> print sabdfl_browser.title
     Launchpad Login Service
-    >>> sabdfl_browser.getControl('email address?').value = 'mark@hbd.com'
+    >>> sabdfl_browser.getControl(name='field.email').value = 'mark@hbd.com'
     >>> sabdfl_browser.getControl(name='field.password').value = 'test'
     >>> sabdfl_browser.getControl('Continue').click()
 
@@ -205,7 +205,7 @@ This can be seen using the existing browser session:
     >>> sabdfl_browser.open(setup_url)
     >>> print sabdfl_browser.title
     Authenticate to http://launchpad.dev/+openid-consumer
-    >>> sabdfl_browser.getControl('Cancel').click()
+    >>> sabdfl_browser.getControl("I Don't Want To Sign In").click()
 
     >>> print sabdfl_browser.url
     http://launchpad.dev/+openid-consumer?openid.mode=cancel
@@ -248,7 +248,7 @@ Mode.
     ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
     ...     })
     >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
-    >>> sabdfl_browser.getControl('Sign In').click()
+    >>> sabdfl_browser.getControl('Sign In', index=0).click()
     >>> print sabdfl_browser.contents
     Consumer received GET
     openid.assoc_handle:...
@@ -289,7 +289,7 @@ them to a particular consumer.
 
 #    >>> sabdfl_browser.open(setup_url)
 #    >>> sabdfl_browser.getControl(name='allow_duration').value=['3600']
-#    >>> sabdfl_browser.getControl('Sign In').click()
+#    >>> sabdfl_browser.getControl('Sign In', index=0).click()
 #    >>> print sabdfl_browser.contents
 #    Consumer received GET
 #    ...

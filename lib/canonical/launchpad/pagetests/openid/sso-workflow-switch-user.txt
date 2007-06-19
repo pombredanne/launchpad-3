@@ -26,7 +26,7 @@ We will first authenticate as Mark Shuttleworth:
     >>> browser.open(setup_url)
     >>> print browser.title
     Launchpad Login Service
-    >>> browser.getControl('email address?').value = 'mark@hbd.com'
+    >>> browser.getControl(name='field.email').value = 'mark@hbd.com'
     >>> browser.getControl(name='field.password').value = 'test'
     >>> browser.getControl('Continue').click()
     >>> print browser.url
@@ -39,20 +39,22 @@ they want to authenticate as Mark Shuttleworth:
     >>> browser.open(setup_url)
     >>> print browser.title
     Authenticate to http://launchpad.dev/+openid-consumer
-    >>> print extract_text(find_main_content(browser.contents).find('h3'))
-    Sign in as Mark Shuttleworth
+    >>> print extract_text(find_main_content(browser.contents).findAll(
+    ...     'h2')[1])
+    Sign in as Mark Shuttleworth?
+
 
 At this point, the user says that they are not Mark Shuttleworth,
 which presents them with a login page:
 
-    >>> browser.getControl("No, I'm not this person").click()
+    >>> browser.getControl("No, I'm Someone Else").click()
     >>> print browser.title
     Launchpad Login Service
 
 They can now log in as test@canonical.com, and the appropriate
 identity URL will be sent to the relying party:
 
-    >>> browser.getControl('email address?').value = 'test@canonical.com'
+    >>> browser.getControl(name='field.email').value = 'test@canonical.com'
     >>> browser.getControl(name='field.password').value = 'test'
     >>> browser.getControl('Continue').click()
     >>> print browser.url
