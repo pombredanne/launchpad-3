@@ -9,7 +9,7 @@ lower case:
 
   >>> from canonical.launchpad.interfaces import IBug
   >>> from canonical.widgets.textwidgets import LowerCaseTextWidget
-  >>> from zope.publisher.browser import TestRequest
+  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
   >>> field = IBug['description']
   >>> request = LaunchpadTestRequest(form={'field.description':'Foo'})
   >>> widget = LowerCaseTextWidget(field, request)
