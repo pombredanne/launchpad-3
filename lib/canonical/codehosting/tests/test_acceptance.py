@@ -59,14 +59,13 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         tree.add('foo')
         tree.commit('Added foo', rev_id='rev1')
 
-    def runAndWaitForDisconnect(self, func, *args, **kwargs):
+    def runInChdir(self, func, *args, **kwargs):
         old_dir = os.getcwdu()
         os.chdir(local_path_from_url(self.local_branch.base))
         try:
-            result = self.server.runAndWaitForDisconnect(func, *args, **kwargs)
+            return func(*args, **kwargs)
         finally:
             os.chdir(old_dir)
-        return result
 
     def push(self, remote_url):
         """Push the local branch to the given URL.
@@ -78,7 +77,8 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         the SFTP server, which is running in the Twisted reactor in the main
         thread.
         """
-        self.runAndWaitForDisconnect(
+        self.runInChdir(
+            self.server.runAndWaitForDisconnect,
             self.run_bzr_captured, ['push', remote_url], retcode=None)
 
     def getLastRevision(self, remote_url):
@@ -88,7 +88,8 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         the SFTP server, which is running in the Twisted reactor in the main
         thread.
         """
-        return self.runAndWaitForDisconnect(
+        return self.runInChdir(
+            self.server.runAndWaitForDisconnect,
             lambda: bzrlib.branch.Branch.open(remote_url).last_revision())
 
     def getTransportURL(self, relpath=None, username=None):
@@ -182,7 +183,8 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
 
         self.assertRaises(
             NotBranchError,
-            self.runAndWaitForDisconnect,
+            self.runInChdir,
+            self.server.runAndWaitForDisconnect,
             bzrlib.branch.Branch.open,
             self.getTransportURL('~testuser/+junk/renamed-branch'))
 
