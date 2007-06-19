@@ -4,6 +4,9 @@ NascentUpload class supports 'epoch' on versions as specified by:
 
 http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Version
 
+Note that for this tests we already have getUploadFor{Source, Binary}
+helper functions added in the globals by test_nascentupload_documentation.py.
+
 
 == Epoch Version Conflicts ==
 
@@ -31,7 +34,8 @@ a rejection email to the user.
 
 Upload and publish 'non-epoched' version:
 
-  >>> bar_src_upload = getUploadBarSourceNoEpoch()
+  >>> bar_src_upload = getUploadForSource(
+  ...     'suite/bar_1.0-1/bar_1.0-1_source.changes')
   >>> bar_src_upload.process()
   >>> success = bar_src_upload.do_accept()
   >>> bar_src_queue_noepoch = bar_src_upload.queue_root
@@ -46,7 +50,8 @@ Upload and publish 'non-epoched' version:
 
 Upload 'epoched' bar version:
 
-  >>> bar_src_upload = getUploadBarSourceEpoch()
+  >>> bar_src_upload = getUploadForSource(
+  ...     'suite/bar_1.0-1_epoched/bar_1.0-1_source.changes')
   >>> bar_src_upload.process()
   >>> print bar_src_upload.rejection_message
   MD5 sum of uploaded file does not match existing file in archive
@@ -68,7 +73,8 @@ collisions when publishing the new candidate:
 
 Upload 'non-epoched' bar source:
 
-  >>> bar_src_upload = getUploadBarSourceNoEpoch()
+  >>> bar_src_upload = getUploadForSource(
+  ...     'suite/bar_1.0-1/bar_1.0-1_source.changes')
   >>> bar_src_upload.process()
   >>> success = bar_src_upload.do_accept()
   >>> bar_src_queue_noepoch = bar_src_upload.queue_root
@@ -77,7 +83,8 @@ Upload 'non-epoched' bar source:
 
 Upload 'epoched' bar source :
 
-  >>> bar_src_upload = getUploadBarSourceEpoch()
+  >>> bar_src_upload = getUploadForSource(
+  ...     'suite/bar_1.0-1_epoched/bar_1.0-1_source.changes')
   >>> bar_src_upload.process()
   >>> success = bar_src_upload.do_accept()
   >>> bar_src_queue_epoch = bar_src_upload.queue_root
@@ -128,7 +135,8 @@ Clean up this change and carry on:
 Let's process an source upload and ensure that the resulting
 SourcePackageRelease record store a proper 'version':
 
-  >>> bar_src_upload = getUploadBarSourceForBinary()
+  >>> bar_src_upload = getUploadForSource(
+  ...     'suite/bar_1.0-9/bar_1.0-9_source.changes')
   >>> bar_src_upload.process()
   >>> bar_src_upload.is_rejected
   False
@@ -162,7 +170,8 @@ respective binary:
 For a binary upload we expect the same, a BinaryPackageRelease
 'version' that includes 'epoch':
 
-  >>> bar_bin_upload = getUploadBarBinary()
+  >>> bar_bin_upload = getUploadForBinary(
+  ...     'suite/bar_1.0-9_binary/bar_1.0-9_i386.changes')
   >>> bar_bin_upload.process()
   >>> bar_bin_upload.is_rejected
   False

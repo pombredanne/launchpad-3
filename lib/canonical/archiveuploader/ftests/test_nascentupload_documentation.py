@@ -20,35 +20,17 @@ from canonical.lp.dbschema import DistroSeriesStatus
 from canonical.testing import LaunchpadZopelessLayer
 
 
-def getUploadBarSourceNoEpoch():
+def getUploadForSource(upload_path):
     """Return a NascentUpload object for bar 1.0-1 source."""
     policy = getPolicy(name='sync', distro='ubuntu', distroseries='hoary')
-    return NascentUpload(
-        datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-        policy, mock_logger_quiet)
+    return NascentUpload(datadir(upload_path), policy, mock_logger_quiet)
 
-def getUploadBarSourceEpoch():
-    """Return a NascentUpload object for bar 1:1.0-1 source."""
-    policy = getPolicy(name='sync', distro='ubuntu', distroseries='hoary')
-    return NascentUpload(
-        datadir('suite/bar_1.0-1_epoched/bar_1.0-1_source.changes'),
-        policy, mock_logger_quiet)
-
-def getUploadBarSourceForBinary():
-    """Return a NascentUpload object for bar 1:1.0-9 source."""
-    policy = getPolicy(name='sync', distro='ubuntu', distroseries='hoary')
-    return NascentUpload(
-        datadir('suite/bar_1.0-9/bar_1.0-9_source.changes'),
-        policy, mock_logger_quiet)
-
-def getUploadBarBinary():
+def getUploadForBinary(upload_path):
     """Return a NascentUpload object for binaries of bar 1:1.0-9 source."""
     policy = getPolicy(name='sync', distro='ubuntu', distroseries='hoary')
     policy.can_upload_binaries = True
     policy.can_upload_mixed = True
-    return NascentUpload(
-        datadir('suite/bar_1.0-9_binary/bar_1.0-9_i386.changes'),
-        policy, mock_logger_quiet)
+    return NascentUpload(datadir(upload_path), policy, mock_logger_quiet)
 
 def testGlobalsSetup(test):
     """Inject useful helper functions in tests globals.
@@ -56,10 +38,8 @@ def testGlobalsSetup(test):
     We can use the getUpload* without unnecessary imports.
     """
     standard_setup(test)
-    test.globs['getUploadBarSourceNoEpoch'] = getUploadBarSourceNoEpoch
-    test.globs['getUploadBarSourceEpoch'] = getUploadBarSourceEpoch
-    test.globs['getUploadBarSourceForBinary'] = getUploadBarSourceForBinary
-    test.globs['getUploadBarBinary'] = getUploadBarBinary
+    test.globs['getUploadForSource'] = getUploadForSource
+    test.globs['getUploadForBinary'] = getUploadForBinary
 
 def prepareHoaryForUploads(test):
     """Prepare ubuntu/hoary to receive uploads.
