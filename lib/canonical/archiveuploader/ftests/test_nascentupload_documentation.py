@@ -25,12 +25,14 @@ def getUploadForSource(upload_path):
     policy = getPolicy(name='sync', distro='ubuntu', distroseries='hoary')
     return NascentUpload(datadir(upload_path), policy, mock_logger_quiet)
 
+
 def getUploadForBinary(upload_path):
     """Return a NascentUpload object for binaries of bar 1:1.0-9 source."""
     policy = getPolicy(name='sync', distro='ubuntu', distroseries='hoary')
     policy.can_upload_binaries = True
     policy.can_upload_mixed = True
     return NascentUpload(datadir(upload_path), policy, mock_logger_quiet)
+
 
 def testGlobalsSetup(test):
     """Inject useful helper functions in tests globals.
@@ -41,6 +43,7 @@ def testGlobalsSetup(test):
     test.globs['getUploadForSource'] = getUploadForSource
     test.globs['getUploadForBinary'] = getUploadForBinary
 
+
 def prepareHoaryForUploads(test):
     """Prepare ubuntu/hoary to receive uploads.
 
@@ -50,8 +53,9 @@ def prepareHoaryForUploads(test):
     ubuntu = getUtility(IDistributionSet)['ubuntu']
     hoary = ubuntu['hoary']
     hoary.status = DistroSeriesStatus.DEVELOPMENT
-    test.globs['ubunt'] = ubuntu
+    test.globs['ubuntu'] = ubuntu
     test.globs['hoary'] = hoary
+
 
 def setUp(test):
     """Setup a typical nascentupload test environment.
@@ -65,16 +69,19 @@ def setUp(test):
     testGlobalsSetup(test)
     prepareHoaryForUploads(test)
 
+
 def tearDown(test):
     logout()
 
+
 def test_suite():
     suite = LayeredDocFileSuite(
-        '../../archiveuploader/ftests/nascentupload-epoch-handling.txt',
+        'nascentupload-epoch-handling.txt', package=__name__,
         setUp=setUp, tearDown=tearDown,
         layer=LaunchpadZopelessLayer,
         optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS)
     return suite
+
 
 if __name__ == '__main__':
     unittest.main(defaultTest='test_suite')

@@ -7,6 +7,15 @@ http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Version
 Note that for this tests we already have getUploadFor{Source, Binary}
 helper functions added in the globals by test_nascentupload_documentation.py.
 
+Test loader also prepares ubuntu/hoary in sampledata to receive upload
+in RELEASE pocket, 'ubuntu' & 'hoary' objects are also part of the
+globals:
+
+ >>> ubuntu.name
+ u'ubuntu'
+ >>> hoary.status.name
+ 'DEVELOPMENT'
+
 
 == Epoch Version Conflicts ==
 
