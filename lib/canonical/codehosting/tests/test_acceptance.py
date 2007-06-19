@@ -256,9 +256,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         # Pushing new data to a branch should trigger a mirror request.
         _jml_log(self.id())
         remote_url = self.getTransportURL('~testuser/+junk/totally-new-branch')
-        self.runInChdir(
-            self.server.runAndWaitForSignal,
-            self.run_bzr_captured, ['push', remote_url], retcode=None)
+        self.push(remote_url)
 
         # Retrieve the branch from the database.
         LaunchpadZopelessTestSetup().txn.begin()
@@ -274,9 +272,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         tree.commit('Empty commit', rev_id='rev2')
 
         # Push the new revision.
-        self.runInChdir(
-            self.server.runAndWaitForSignal,
-            self.run_bzr_captured, ['push', remote_url], retcode=None)
+        self.push(remote_url)
 
         # Retrieve the branch from the database.
         LaunchpadZopelessTestSetup().txn.begin()

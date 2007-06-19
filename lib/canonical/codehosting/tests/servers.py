@@ -42,13 +42,13 @@ def make_launchpad_server():
 def make_sftp_server():
     authserver = AuthserverWithKeys('testuser', 'testteam')
     branches_root = '/tmp/sftp-test'
-    return SSHCodeHostingServer('sftp', authserver, branches_root)
+    return SFTPCodeHostingServer(authserver, branches_root)
 
 
 def make_bzr_ssh_server():
     authserver = AuthserverWithKeys('testuser', 'testteam')
     branches_root = '/tmp/sftp-test'
-    return SSHCodeHostingServer('bzr+ssh', authserver, branches_root)
+    return BazaarSSHCodeHostingServer(authserver, branches_root)
 
 
 class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
@@ -291,6 +291,12 @@ class SSHCodeHostingServer(CodeHostingServer):
             user = self.authserver.testUser
         return '%s://%s@localhost:22222/' % (self._schema, user)
 
+
+class SFTPCodeHostingServer(SSHCodeHostingServer):
+
+    def __init__(self, authserver, branches_root):
+        SSHCodeHostingServer.__init__(self, 'sftp', authserver, branches_root)
+
     def runAndWaitForDisconnect(self, func, *args, **kwargs):
         """Run the given function, close all SFTP connections, and wait for the
         server to acknowledge the end of the session.
@@ -309,23 +315,22 @@ class SSHCodeHostingServer(CodeHostingServer):
             if ever_connected.isSet():
                 done.wait()
 
-    def runAndWaitForSignal(self, func, *args, **kwargs):
+
+class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
+
+    def __init__(self, authserver, branches_root):
+        SSHCodeHostingServer.__init__(
+            self, 'bzr+ssh', authserver, branches_root)
+
+    def runAndWaitForDisconnect(self, func, *args, **kwargs):
         """Run the given function, close all connections, and wait for the
         server to acknowledge the end of the session.
         """
-        ever_connected = threading.Event()
-        done = threading.Event()
-        self.server.setConnectionMadeEvent(ever_connected)
-        self.server.setConnectionLostEvent(done)
         try:
             return func(*args, **kwargs)
         finally:
             self.closeAllConnections()
-            # done.wait() can block forever if func() never actually
-            # connects, so only wait if we are sure that the client
-            # connected.
-            if ever_connected.isSet():
-                done.wait()
+
 
 class _TestSSHService(SSHService):
     """SSH service that uses the the _TestLaunchpadAvatar and installs the test
