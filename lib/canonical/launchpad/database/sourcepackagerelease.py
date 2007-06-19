@@ -278,7 +278,7 @@ class SourcePackageRelease(SQLBase):
 
     def getBuildByArch(self, distroarchseries, archive):
         """See ISourcePackageRelease."""
-	# Look for a published build
+        # Look for a published build
         query = """
         Build.id = BinaryPackageRelease.build AND
         BinaryPackageRelease.id =
@@ -315,6 +315,11 @@ class SourcePackageRelease(SQLBase):
             self.section = section
         if urgency is not None:
             self.urgency = urgency
+
+    @property
+    def change_summary(self):
+        """See ISourcePackageRelease"""
+        return self.changelog
 
     def attachTranslationFiles(self, tarball_alias, is_published,
         importer=None):

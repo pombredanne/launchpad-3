@@ -46,6 +46,11 @@
       facet="overview"
       template="../templates/distributionsourcepackagerelease-portlet-details.pt"
       />
+    <browser:page
+      name="+changes"
+      facet="overview"
+      template="../templates/distrosourcepackagerelease-changes.pt"
+      />
   </browser:pages>
 
   <browser:page

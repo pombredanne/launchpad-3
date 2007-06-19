@@ -1,0 +1,7 @@
+<h2>
+  <span tal:replace="context/version">2.0.39</span> (source)
+  in <span tal:replace="context/distribution/displayname">Ubuntu</span>
+</h2>
+
+<pre tal:content="context/sourcepackagerelease/change_summary" />
+
