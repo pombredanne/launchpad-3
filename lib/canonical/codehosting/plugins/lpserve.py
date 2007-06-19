@@ -11,6 +11,7 @@ __all__ = ['cmd_launchpad_server']
 
 
 import signal
+import socket
 import sys
 import thread
 import xmlrpclib
@@ -24,15 +25,6 @@ from bzrlib.transport import chroot, get_transport, remote
 
 from canonical.config import config
 from canonical.codehosting import transport
-
-
-def _jml_log(*msg):
-    import os
-    msg = [os.getpid()] + list(msg)
-    fd = open('/home/jml/Desktop/jml.log', 'a')
-    fd.write(' '.join(map(str, msg)))
-    fd.write('\n')
-    fd.close()
 
 
 class cmd_launchpad_server(Command):
@@ -67,6 +59,32 @@ class cmd_launchpad_server(Command):
         ]
 
     takes_args = ['user_id']
+
+    _sent_termination_signal = False
+
+    def _send_line(self, destination, line):
+        """Send a line of bytes to server at 'destination', where destination is
+        of the form host:port.
+        """
+        if self._sent_termination_signal:
+            return
+        self._sent_termination_signal = True
+        host, port = destination.split(':')
+        port = int(port)
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.connect((host, port))
+        try:
+            s.sendall(line.strip() + '\r\n')
+        finally:
+            s.close()
+
+    def _send_termination_notice_to_test(self):
+        """If we are running inside a test_acceptance test environment, tell
+        the test that we are finished.
+        """
+        test_service = os.environ.get('TEST_SERVICE', None)
+        if test_service is not None:
+            self._send_line(test_service, 'lpserve terminated')
 
     def get_lp_server(self, authserver, user_id, url):
         """Create a Launchpad smart server.
@@ -122,7 +140,6 @@ class cmd_launchpad_server(Command):
 
     def run(self, user_id, port=None, directory=None, read_only=False,
             authserver_url=None, inet=False):
-        import os
         if directory is None:
             directory = config.codehosting.branches_root
         if authserver_url is None:
@@ -143,12 +160,10 @@ class cmd_launchpad_server(Command):
             # authserver of modified branches. This signal handler runs the
             # operations we need to run (i.e. lp_server.tearDown) and does its
             # best to trigger 'finally' blocks across the rest of bzrlib.
-            _jml_log('* Running signal handler')
             lp_server.tearDown()
-            test_service = os.environ.get('TEST_SERVICE', None)
-            if test_service is not None:
-                _jml_log('TODO: Send a line to test service here.', test_service)
+            self._send_termination_notice_to_test()
             thread.interrupt_main()
+
         signal.signal(signal.SIGHUP, clean_up)
         try:
             transport = get_transport(lp_server.get_url())
@@ -156,7 +171,7 @@ class cmd_launchpad_server(Command):
             self.run_server(smart_server)
         finally:
             signal.signal(signal.SIGHUP, signal.SIG_DFL)
-            _jml_log('* Running finally')
+            self._send_termination_notice_to_test()
             lp_server.tearDown()
 
 

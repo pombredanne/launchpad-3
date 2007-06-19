@@ -358,7 +358,7 @@ class _DisconnectNotifyServerFactory(protocol.ServerFactory):
         self._disconnectEvent = event
 
     def buildProtocol(self, address):
-        return _DisconnectNotifyServerFactory(self._disconnectEvent)
+        return _DisconnectNotifyProtocol(self._disconnectEvent)
 
 
 class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
@@ -400,6 +400,7 @@ class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
             return func(*args, **kwargs)
         finally:
             self.closeAllConnections()
+            done.wait()
             self._factory.setConnectionLostEvent(None)
             if old_adapter is not None:
                 components.registerAdapter(
