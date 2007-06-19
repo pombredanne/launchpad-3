@@ -100,7 +100,17 @@ Upload 'epoched' bar source :
   >>> bar_src_queue_epoch.status.name
   'NEW'
 
-Accept both, 'non-epoched' and 'epoched' bar sources:
+Upload a newer'epoched' bar source :
+
+  >>> bar_src_upload = getUploadForSource(
+  ...     'suite/bar_1.0-2_epoched/bar_1.0-2_source.changes')
+  >>> bar_src_upload.process()
+  >>> success = bar_src_upload.do_accept()
+  >>> bar_src_queue_epoch2 = bar_src_upload.queue_root
+  >>> bar_src_queue_epoch2.status.name
+  'NEW'
+
+Accept all bar sources:
 
   >>> bar_src_queue_noepoch.displayversion
   u'1.0-1'
@@ -114,11 +124,20 @@ Accept both, 'non-epoched' and 'epoched' bar sources:
   >>> bar_src_queue_epoch.status.name
   'ACCEPTED'
 
-When publishing the 'epoched' bar source the collision is detected:
+  >>> bar_src_queue_epoch2.displayversion
+  u'1:1.0-2'
+  >>> bar_src_queue_epoch2.setAccepted()
+  >>> bar_src_queue_epoch2.status.name
+  'ACCEPTED'
+
+
+Published the 'non-epoched' bar source version as the base package:
 
   >>> bar_src_queue_noepoch.realiseUpload()
   >>> bar_src_queue_noepoch.status.name
   'DONE'
+
+When publishing the 'epoched' bar source the collision is detected:
 
   >>> bar_src_queue_epoch.realiseUpload()
   Traceback (most recent call last):
@@ -133,6 +152,26 @@ it will be ignored (with the error message below) every cron.daily cycle.
   >>> bar_src_queue_epoch.setRejected()
   >>> bar_src_queue_epoch.status.name
   'REJECTED'
+
+We also detect a collision when publishing the newer 'epoched' version
+containing a orig file with diferent contents than the one already
+published in 'non-epoched' version:
+
+  >>> bar_src_queue_epoch2.realiseUpload()
+  Traceback (most recent call last):
+  ...
+  QueueInconsistentStateError: bar_1.0.orig.tar.gz is already published in archive for hoary with a different SHA1 hash (e918d6f5ec2184ae1d795a130da36c9a82c4beaf != 73a04163fee97fd2257ab266bd48f1d3d528e012)
+
+  >>> bar_src_queue_epoch2.status.name
+  'ACCEPTED'
+
+Similar to what happens to the 'epoched' version, the ignored queue
+item should be rejected:
+
+  >>> bar_src_queue_epoch2.setRejected()
+  >>> bar_src_queue_epoch2.status.name
+  'REJECTED'
+
 
 Clean up this change and carry on:
 
