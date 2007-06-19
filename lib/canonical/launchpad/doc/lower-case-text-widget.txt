@@ -11,18 +11,18 @@ lower case:
   >>> from canonical.widgets.textwidgets import LowerCaseTextWidget
   >>> from zope.publisher.browser import TestRequest
   >>> field = IBug['description']
-  >>> request = TestRequest(form={'field.description':'FooBar'})
+  >>> request = LaunchpadTestRequest(form={'field.description':'Foo'})
   >>> widget = LowerCaseTextWidget(field, request)
   >>> widget.getInputValue()
-  u'foobar'
+  u'foo'
 
 However, strings without lower case characters are left unchanged:
 
   >>> field = IBug['description']
-  >>> request = TestRequest(form={'field.description':'wibble123'})
+  >>> request = LaunchpadTestRequest(form={'field.description':'foo1'})
   >>> widget = LowerCaseTextWidget(field, request)
   >>> widget.getInputValue()
-  u'wibble123'
+  u'foo1'
 
 In addition, the widget also renders itself with a CSS style that causes
 characters to be rendered in lower case as they are typed in by the
