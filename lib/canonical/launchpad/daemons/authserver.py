@@ -93,4 +93,4 @@ class AuthserverService(service.Service):
     def stopService(self):
         service.Service.stopService(self)
         self.dbpool.close()
-        self.service.stopService()
+        return self.service.stopService()
