@@ -33,10 +33,24 @@ def check_script(con, log, hostname, scriptname, completed_from, completed_to):
         script_id = cur.fetchone()[0]
         return script_id
     except TypeError:
-        log.fatal(
-            "Script not found %s on %s between %s and %s" 
-                % (scriptname, hostname, completed_from, completed_to)
-            )
+        try:
+            cur.execute("""
+                SELECT date_completed
+                FROM ScriptActivity
+                WHERE hostname='%s' AND name='%s'
+                ORDER BY date_completed DESC
+                LIMIT 1
+            """ % (hostname, scriptname))
+            date_last_seen = cur.fetchone()[0]
+            log.fatal(
+                "Script not found %s on %s between %s and %s (last seen %s)"
+                    % (scriptname, hostname, completed_from, completed_to, date_last_seen)
+                )
+        except:
+            log.fatal(
+                "Script not found %s on %s between %s and %s" 
+                    % (scriptname, hostname, completed_from, completed_to)
+                )
         return False
 
 def main():
