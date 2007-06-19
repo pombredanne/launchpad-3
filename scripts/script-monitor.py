@@ -31,10 +31,12 @@ def check_script(con, log, hostname, scriptname, completed_from, completed_to):
         """ % (hostname, scriptname, completed_from, completed_to))
     try:
         script_id = cur.fetchone()[0]
-        # log.info("Script ID %s found for %s on %s" % (script_id, scriptname, hostname))
         return script_id
     except TypeError:
-        log.fatal("Script not found %s on %s between %s and %s" % (scriptname, hostname, completed_from, completed_to))
+        log.fatal(
+            "Script not found %s on %s between %s and %s" 
+                % (scriptname, hostname, completed_from, completed_to)
+            )
         return False
 
 def main():
@@ -49,12 +51,13 @@ def main():
     if len(args) == 0:
         parser.error("Must specify at least one host and script")
 
-    minutes_since, args = int(args[0]), args[1:]
-    start_date = datetime.now() - timedelta(minutes=minutes_since)
-    end_date = datetime.now()
+    # First argument is the number of minutes into the past
+    # we want to look for the scripts on the specified hosts
+    minutes_ago, args = int(args[0]), args[1:]
+    start_date = datetime.now() - timedelta(minutes=minutes_ago)
 
     completed_from = strftime("%Y-%m-%d %H:%M:%S", start_date.timetuple())
-    completed_to = strftime("%Y-%m-%d %H:%M:%S", end_date.timetuple())
+    completed_to = strftime("%Y-%m-%d %H:%M:%S", datetime.now().timetuple())
 
     log = logger(options)
 
