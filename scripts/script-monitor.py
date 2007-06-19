@@ -43,12 +43,12 @@ def check_script(con, log, hostname, scriptname, completed_from, completed_to):
             """ % (hostname, scriptname))
             date_last_seen = cur.fetchone()[0]
             log.fatal(
-                "Script not found %s on %s between %s and %s (last seen %s)"
+                "The script '%s' didn't run on '%s' between %s and %s (last seen %s)"
                     % (scriptname, hostname, completed_from, completed_to, date_last_seen)
                 )
         except:
             log.fatal(
-                "Script not found %s on %s between %s and %s" 
+                "The script '%s' didn't run on '%s' between %s and %s" 
                     % (scriptname, hostname, completed_from, completed_to)
                 )
         return False
