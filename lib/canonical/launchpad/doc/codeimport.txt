@@ -8,6 +8,7 @@ populates the import branch, and updates it regularly.
 
 We can import code from CVS or Subversion.
 
+
 == Code import set utility ==
 
 CodeImports are created and found using the ICodeImportSet interface,
@@ -27,18 +28,19 @@ Person.
 
     >>> login("no-priv@canonical.com")
     >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-    >>> user = getUtility(ILaunchBag).user
+    >>> nopriv = getUtility(ILaunchBag).user
 
 CodeImports are associated with a Branch when they are created; this is
 how they are linked to a Product.  A helper function makes the tests
 below much easier to read.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IBranchSet, ILaunchpadCelebrities, IProductSet)
+    ...     IBranchSet, ILaunchpadCelebrities, IPersonSet, IProductSet)
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+    >>> test_user = getUtility(IPersonSet).getByName('test')
     >>> def import_branch_for_new_product(name):
     ...     product = getUtility(IProductSet).createProduct(
-    ...         user, name, name, name, name, name)
+    ...         test_user, name, name, name, name, name)
     ...     return getUtility(IBranchSet).new(
     ...         'trunk', vcs_imports, product, None, 'Import branch')
 
@@ -61,10 +63,11 @@ in the repository, known as the "module".
     >>> cvs_module = 'hello'
     >>> cvs_branch = import_branch_for_new_product("cvs-using-product")
     >>> cvs_import = code_import_set.new(
-    ...     registrant=user, branch=cvs_branch,
+    ...     registrant=nopriv, branch=cvs_branch,
     ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module)
     >>> verifyObject(ICodeImport, removeSecurityProxy(cvs_import))
     True
+
 
 === Import from Subversion ===
 
@@ -75,16 +78,11 @@ retrieve the tree to import.
     >>> svn_url = 'svn://svn.example.com/trunk'
     >>> svn_branch = import_branch_for_new_product("svn-using-project")
     >>> svn_import = code_import_set.new(
-    ...     registrant=user, branch=svn_branch,
+    ...     registrant=nopriv, branch=svn_branch,
     ...     rcs_type=svn, svn_branch_url=svn_url)
     >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
     True
 
-Write the new code imports to the database, so we can use it to test
-ICodeImportSet.get() and friends.
-
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
 
 == Retreiving CodeImports ==
 

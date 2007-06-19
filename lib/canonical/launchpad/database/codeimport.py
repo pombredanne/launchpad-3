@@ -11,6 +11,8 @@ __all__ = [
 
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, StringCol)
+
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import DEFAULT
@@ -56,6 +58,7 @@ class CodeImportSet:
     def new(self, registrant, branch, rcs_type, svn_branch_url=None,
             cvs_root=None, cvs_module=None):
         """See ICodeImportSet."""
+        assert branch.owner == getUtility(ILaunchpadCelebrities).vcs_imports
         return CodeImport(registrant=registrant, branch=branch,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)

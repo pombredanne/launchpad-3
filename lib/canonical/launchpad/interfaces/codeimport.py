@@ -53,7 +53,7 @@ class ICodeImport(Interface):
     svn_branch_url = URIField(title=_("Branch"), required=False,
         description=_("The URL of a Subversion branch, starting with svn:// or"
             " http(s)://. Only trunk branches are imported."),
-        allowed_schemes=["http", "https", "svn", "svn+ssh"],
+        allowed_schemes=["http", "https", "svn"],
         allow_userinfo=False, # Only anonymous access is supported.
         allow_port=True,
         allow_query=False,    # Query makes no sense in Subversion.
