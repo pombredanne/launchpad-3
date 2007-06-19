@@ -1531,13 +1531,13 @@ class PersonLanguagesView(LaunchpadView):
         return IRequestPreferredLanguages(self.request).getPreferredLanguages()
 
     def visible_checked_languages(self):
-        return self._personOrTeam().languages
+        return self.context.languages
 
     def visible_unchecked_languages(self):
         common_languages = getUtility(ILanguageSet).common_languages
-        person_languages = self._personOrTeam().languages
+        person_languages = self.context.languages
         return sorted(set(common_languages) - set(person_languages),
-                      key=lambda x: x.englishname)
+                      key=attrgetter('englishname'))
 
     def getRedirectionURL(self):
         request = self.request
@@ -1555,29 +1555,28 @@ class PersonLanguagesView(LaunchpadView):
         '''
 
         all_languages = getUtility(ILanguageSet)
-        old_languages = self._personOrTeam().languages
+        old_languages = self.context.languages
         new_languages = []
 
         for key in all_languages.keys():
             if self.request.has_key(key) and self.request.get(key) == u'on':
                 new_languages.append(all_languages[key])
 
-        person_or_team = self._personOrTeam()
-        if person_or_team.isTeam():
-            subject = "%s's" % person_or_team.displayname
+        if self.context.isTeam():
+            subject = "%s's" % self.context.displayname
         else:
             subject = "your"
 
         # Add languages to the user's preferences.
         for language in set(new_languages) - set(old_languages):
-            person_or_team.addLanguage(language)
+            self.context.addLanguage(language)
             self.request.response.addInfoNotification(
                 "Added %(language)s to %(subject)s preferred languages." %
                 {'language' : language.englishname, 'subject' : subject})
 
         # Remove languages from the user's preferences.
         for language in set(old_languages) - set(new_languages):
-            person_or_team.removeLanguage(language)
+            self.context.removeLanguage(language)
             self.request.response.addInfoNotification(
                 "Removed %(language)s from %(subject)s preferred languages." %
                 {'language' : language.englishname, 'subject' : subject})
@@ -1585,13 +1584,6 @@ class PersonLanguagesView(LaunchpadView):
         redirection_url = self.request.get('redirection_url')
         if redirection_url:
             self.request.response.redirect(redirection_url)
-
-    def _personOrTeam(self):
-        """Return the Person or team based on the context of the request."""
-        if self.context.isTeam():
-            return self.context
-        else:
-            return self.user
 
 
 class PersonView(LaunchpadView):

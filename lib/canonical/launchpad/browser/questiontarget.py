@@ -561,11 +561,11 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
     def _updatePreferredLanguages(self, person_or_team):
         """Check or update the Person's preferred languages as needed.
 
-        Answer contacts must speak a language. If the Person does not speak
-        a language, his preferred languages are set to his request languages.
-        In the case of a team without languages, English is added to the
-        preferred languages. When languages are added, a notification is
-        added to the response.
+        Answer contacts must tell Launchpad in which languages they provide
+        help. If the Person has not already set his preferred languages, they
+        are set to his browser languages. In the case of a team without
+        languages, only English is added to the preferred languages. When
+        languages are added, a notification is added to the response.
         """
         if person_or_team.languages.count() > 0:
             return
@@ -577,14 +577,14 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                             'displayname' : person_or_team.displayname}
             response.addNotification(
                 _("English was added to ${displayname}'s "
-                  '<a href="/~${name}/+editlanguages">Preferred '
+                  '<a href="/~${name}/+editlanguages">preferred '
                   'languages</a>.', mapping=team_mapping))
         else:
             for language in self.user_support_languages:
                 person_or_team.addLanguage(language)
             response.addNotification(
-                _('<a href="/people/+me/+editlanguages">Your Preferred '
-                  'languages</a> were set to your request languages.'))
+                _('<a href="/people/+me/+editlanguages">Your preferred '
+                  'languages</a> were set to your browser languages.'))
 
 class QuestionTargetFacetMixin:
     """Mixin for questiontarget facet definition."""

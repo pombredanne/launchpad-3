@@ -45,13 +45,15 @@ Developers team.
     >>> browser.getControl('Continue').click()
 
 Confirmation of the answer contact registrations are displayed and the
-new answer contacts appear in the 'Answer Contacts' portlet:
+new answer contacts appear in the 'Answer Contacts' portlet. In this
+example Sample Person sees two additional notifications about preferred
+languages (more on this below).
 
     >>> for message in find_tags_by_class(browser.contents, 'message'):
     ...     print extract_text(message)
-    Your Preferred languages were set to your request languages.
+    Your preferred languages were set to your browser languages.
     You have been added as an answer contact for Ubuntu.
-    English was added to Landscape Developers's Preferred languages.
+    English was added to Landscape Developers's preferred languages.
     Landscape Developers has been added as an answer contact for Ubuntu.
 
     >>> print extract_text(
@@ -60,15 +62,15 @@ new answer contacts appear in the 'Answer Contacts' portlet:
     Landscape Developers
     Sample Person
 
-Answer contacts must speak a language. As a convenience, the Answer
-Tracker will set the Person's preferred languages for him.
-The request languages are used for a Person. In the case of a Team,
-English is added. Sample Person reads the notice that his preferred
-languages were set, and uses the link to in the notice to review the
-changes. Sample person's requests, and thus languages are mapped to
-South Africa in the test environment.
+Answer contacts must tell Launchpad which languages they provide
+help in. As a convenience, the Answer Tracker will set the Person's
+preferred languages for him. The browser languages are used for a
+Person. In the case of a Team, only English is added. Sample Person
+reads the notice that his preferred languages were set, and uses the
+link to in the notice to review the changes. Sample Person's browser
+languages are mapped to South Africa in the test environment.
 
-    >>> browser.getLink('Your Preferred languages').click()
+    >>> browser.getLink('Your preferred languages').click()
     >>> browser.title
     "Sample Person's preferred languages"
 
@@ -147,11 +149,6 @@ the email traffic to a manageable volume.
     'Questions for Ubuntu'
 
     >>> browser.getLink('Set answer contact').click()
-    >>> description = find_main_content(browser.contents).p
-    >>> print extract_text(description)
-    An answer contact...will receive changes related to all questions
-    (written in one of your preferred languages)...
-
     >>> browser.getControl("Landscape Developers").selected = True
     >>> browser.getControl('Continue').click()
     >>> for message in find_tags_by_class(browser.contents, 'message'):
@@ -170,10 +167,10 @@ languages. He must add Spanish to the team's preferred languages.
     "Landscape Developers's preferred languages"
 
 Sample Person may be surprised to see English is already selected.
-Per the notification issued in the first test above, English was added
-to the team's preferred languages. We did not see the notification
-this time since the languages are set. Sample Person unselects
-English, and selects Spanish.
+Per the notification issued in the first example above, English was
+added to the team's preferred languages. We did not see the
+notification this time since the languages are set. Sample Person
+unselects English, and selects Spanish.
 
     >>> browser.getControl('English', index=0).selected
     True
@@ -195,8 +192,8 @@ subscribed to Spanish questions.
     Ubuntu question #10:...Play DVDs in Totem...
 
     >>> portlet = find_portlet(browser.contents, 'Ubuntu question #10')
-    >>> language = portlet.findAll('b')[1]
-    >>> print extract_text(language), language.nextSibling
+    >>> language = portlet.find('b', text='Language:')
+    >>> print language, language.next.strip()
     Language: English
 
     >>> portlet = find_tag_by_id(browser.contents, 'question-subscribers')
@@ -206,17 +203,16 @@ subscribed to Spanish questions.
     Also notified:
     Sample Person
 
-    >>> browser.getLink('Answers').click()
-    >>> browser.title
-    'Questions for Ubuntu'
+The English question is correct, so Sample Person locates a Spanish
+Question:
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu/+question/12')
     >>> browser.title
     'Ubuntu question #12:...Problema al recompilar kernel con soporte smp...'
 
     >>> portlet = find_portlet(browser.contents, 'Ubuntu question #12')
-    >>> language = portlet.findAll('b')[1]
-    >>> print extract_text(language), language.nextSibling
+    >>> language = portlet.find('b', text='Language:')
+    >>> print language, language.next.strip()
     Language: Spanish
 
     >>> portlet = find_tag_by_id(browser.contents, 'question-subscribers')

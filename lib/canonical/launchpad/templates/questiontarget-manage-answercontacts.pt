@@ -78,11 +78,12 @@
     yourself and/or your teams as answer contact by unchecking the
     appropriate checkbox.
   </p>
-  <p>Answer contacts must speak a language. If you have not already set your
+  <p>Answer contacts must tell Launchpad in which languages they provide help.
+     If you have not already set your
     <a
       tal:attributes="href string:${request/lp:person/fmt:url}/+editlanguages"
       >preferred languages</a>, they will be automatically set to your
-      request languages. In the case of a team, English will be set as 
+      browser languages. In the case of a team, only English will be set as 
       the preferred language.
   </p>
 </metal:help>
