@@ -69,49 +69,58 @@ fi
 
 grep -q "^Host .*chinstrap" ~/.ssh/config
 if [ $? -ne 0 ]; then
-  echo "Host chinstrap chinstrap.canonical.com chinstrap.ubuntu.com
+  echo "Please add the following directives to your ~/.ssh/config:
+------------------------------------------------------------
+Host chinstrap chinstrap.canonical.com chinstrap.ubuntu.com
     ForwardAgent yes
     Hostname chinstrap.canonical.com
     ProxyCommand none
     User ${whoami}
-
-" | tee -a ~/.ssh/config > /dev/null
-  echo "Added chinstrap to ~/.ssh/config"
+------------------------------------------------------------
+"
+read
 fi
 
 grep -q "^Host.*\*\.canonical.com" ~/.ssh/config
 if [ $? -ne 0 ]; then
-  echo "Host *.canonical.com *.ubuntu.com
+  echo "Please add the following directives to your ~/.ssh/config:
+------------------------------------------------------------
+Host *.canonical.com *.ubuntu.com
     ForwardAgent yes
     ProxyCommand ssh chinstrap.canonical.com nc -q0 %h %p
     User ${whoami}
-
-" | tee -a ~/.ssh/config > /dev/null
-  echo "Added *.canonical.com to ~/.ssh/config"
+------------------------------------------------------------
+"
+read
 fi
 
 grep -q "^Host .*devpad" ~/.ssh/config
 if [ $? -ne 0 ]; then
-  echo "Host devpad devpad.canonical.com
+  echo "Please add the following directives to your ~/.ssh/config:
+------------------------------------------------------------
+Host devpad devpad.canonical.com
     ForwardAgent yes
     Hostname devpad.canonical.com
     ProxyCommand ssh chinstrap.canonical.com nc -q0 %h %p
     User ${whoami}
-
-" | tee -a ~/.ssh/config > /dev/null
-  echo "Added devpad to ~/.ssh/config"
+------------------------------------------------------------
+"
+read
 fi
 
 grep -q "^Host .*bazaar.launchpad.dev" ~/.ssh/config
 if [ $? -ne 0 ]; then
-  echo "Host bazaar.launchpad.dev
+  echo "Please add the following directives to your ~/.ssh/config:
+------------------------------------------------------------
+Host bazaar.launchpad.dev
     Hostname localhost
     HostKeyAlias bazaar.launchpad.dev
     User sabdfl
     Port 5022
     IdentityFile ~/.ssh/launchpad_id_dsa
-" | tee -a ~/.ssh/config > /dev/null
-  echo "Added bazaar.launchpad.dev to ~/.ssh/config"
+------------------------------------------------------------
+"
+read
 fi
 
 echo "Testing ssh to devpad..."
