@@ -3,7 +3,7 @@ Uploading templates
 
 An upstream maintainer can use Rosetta to submit their initial template uploads.
 
-  >>> from zope.testbrowser.testing import Browser
+    >>> from zope.testbrowser.testing import Browser
 
     >>> ff_owner_browser = Browser()
     >>> ff_owner_browser.addHeader('Authorization', 'Basic test@canonical.com:test')
@@ -12,7 +12,7 @@ An upstream maintainer can use Rosetta to submit their initial template uploads.
     >>> 'Upload either a single file' in ff_owner_browser.contents
     True
 
-Time to do the upload...
+The upload consists of a tarball containing templates and/or translations.
 
     >>> import canonical.launchpad
     >>> import os.path
@@ -32,21 +32,40 @@ Time to do the upload...
     >>> 'Thank you for your upload. 1 files from the tarball will be reviewed' in ff_owner_browser.contents
     True
 
-We check now that the upload is available from the translation import queue page
-and the status is static as we are not logged in.
+Once the upload has completed, its templates and translations show up on the
+translation import queue page.  If we're not logged in, status is shown as
+static HTML.
 
-  >>> anon_browser.open('http://launchpad.dev/translations/imports')
-  >>> anon_browser.url
-  'http://launchpad.dev/translations/imports'
-  >>> 'po/es.po' in anon_browser.contents
-  True
-  >>> 'Mozilla Firefox Series' in anon_browser.contents
-  True
-  >>> '<td>Needs Review</td>' in anon_browser.contents
-  True
+    >>> anon_browser.open('http://launchpad.dev/translations/imports')
+    >>> anon_browser.url
+    'http://launchpad.dev/translations/imports'
+    >>> 'po/es.po' in anon_browser.contents
+    True
+    >>> 'Mozilla Firefox Series' in anon_browser.contents
+    True
+    >>> '<td>Needs Review</td>' in anon_browser.contents
+    True
 
-As an admin, the same page should give us extra rights to edit imports and
-thus, the link should appear.
+Some tarballs contain files whose names look like PO or POT files, but that are
+really editor backups whose name begin with a dot.  These are ignored, as well
+as empty files, and things whose names end in .po or .pot that aren't regular
+files such as directories or devices.
+
+    >>> 'device.po' in anon_browser.contents
+    False
+    >>> '.dotfile.po' in anon_browser.contents
+    False
+    >>> 'po/.nested-dotfile.po' in anon_browser.contents
+    False
+    >>> 'empty.po' in anon_browser.contents
+    False
+    >>> 'directory.po' in anon_browser.contents
+    False
+    >>> 'directory.po/.another-dotfile.po' in anon_browser.contents
+    False
+
+If we are logged in as an administrator, the same page provides a link to where
+we can edit imports.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open('http://launchpad.dev/translations/imports')
