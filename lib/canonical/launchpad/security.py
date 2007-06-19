@@ -7,6 +7,9 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
+# XXX: thumper 2007-05-25
+# This import should really be tidied up. Made into alphabetical
+# order ideally.
 from canonical.launchpad.interfaces import (
     IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
     IDistribution, ITeamMembership, IMilestone, IBug, ITranslator,
@@ -21,7 +24,7 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, IPackageUpload, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
     IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset,
-    IBranchSubscription, IDistroSeriesLanguage, IEntitlement)
+    IDistroSeriesLanguage, IBranch, IBranchSubscription, IEntitlement)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
@@ -905,6 +908,29 @@ class AdminLanguageSet(OnlyRosettaExpertsAndAdmins):
 class AdminLanguage(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ILanguage
+
+
+class AccessBranch(AuthorizationBase):
+    """Controls visibility of branches.
+
+    A person can see the branch if the branch is public or they are the owner
+    of the branch, subscribed to the branch, or a launchpad administrator.
+    """
+    permission = 'launchpad.View'
+    usedfor = IBranch
+
+    def checkAuthenticated(self, user):
+        if not self.obj.private:
+            return True
+        if user == self.obj.owner:
+            return True
+        for subscriber in self.obj.subscribers:
+            if user.inTeam(subscriber):
+                return True
+        return user.inTeam(getUtility(ILaunchpadCelebrities).admin)
+
+    def checkUnauthenticated(self):
+        return not self.obj.private
 
 
 class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
