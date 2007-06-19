@@ -23,6 +23,7 @@ from twisted.python.util import sibpath
 
 from canonical.config import config
 from canonical.database.sqlbase import commit, cursor
+from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.daemons.sftp import SSHService
 from canonical.launchpad.daemons.authserver import AuthserverService
 
@@ -103,16 +104,62 @@ class Authserver(Server):
         return config.codehosting.authserver
 
 
-class AuthserverWithKeys(Authserver):
+class AuthserverTac(TacTestSetup):
+    """Handler for running the Authserver .tac file.
+
+    Used to run the authserver out-of-process.
+    """
+    def setUpRoot(self):
+        pass
+
+    @property
+    def root(self):
+        return ''
+
+    @property
+    def tacfile(self):
+        import canonical
+        return os.path.abspath(os.path.join(
+            os.path.dirname(canonical.__file__), os.pardir, os.pardir,
+            'daemons/authserver.tac'
+            ))
+
+    @property
+    def pidfile(self):
+        return '/tmp/authserver.pid'
+
+    @property
+    def logfile(self):
+        return '/tmp/authserver.log'
+
+
+class AuthserverOutOfProcess(Server):
+    """Server to run the authserver out-of-process."""
+
+    def __init__(self):
+        self.tachandler = AuthserverTac()
+
+    def setUp(self):
+        self.tachandler.setUp()
+
+    def tearDown(self):
+        self.tachandler.tearDown()
+
+    def get_url(self):
+        return config.codehosting.authserver
+
+
+class AuthserverWithKeys(AuthserverOutOfProcess):
+    """Server to run the authserver, setting up SSH key configuration."""
 
     def __init__(self, testUser, testTeam):
-        Authserver.__init__(self)
+        AuthserverOutOfProcess.__init__(self)
         self.testUser = testUser
         self.testTeam = testTeam
 
     def setUp(self):
         self.setUpTestUser()
-        Authserver.setUp(self)
+        AuthserverOutOfProcess.setUp(self)
 
     def setUpTestUser(self):
         """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a known
