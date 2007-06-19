@@ -458,8 +458,8 @@ class LoginServiceLoginView(LoginServiceBaseView):
                 self.addError(_(
                     "Sorry, someone has already registered the %s email "
                     "address.  If this is you and you've forgotten your "
-                    "passphrase, just choose the 'I've forgotten my "
-                    "passphrase' option below and we'll allow you to "
+                    "password, just choose the 'I've forgotten my "
+                    "password' option below and we'll allow you to "
                     "change it." % cgi.escape(email)))
             else:
                 # This is either an email address we've never seen or it's
@@ -494,7 +494,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
                 # processor or manual changes by the DBA.
                 self.addError(_("This account cannot be used."))
         else:
-            self.addError(_("Incorrect passphrase for the provided "
+            self.addError(_("Incorrect password for the provided "
                             "email address."))
 
     @action('Continue', name='continue')
@@ -533,8 +533,8 @@ class LoginServiceLoginView(LoginServiceBaseView):
             person, email, email, LoginTokenType.PASSWORDRECOVERY)
         self.token.sendPasswordResetNeutralEmail()
         self.saveRequestInSession('token' + self.token.token)
-        self.email_heading = 'Forgotten your passphrase?'
-        self.email_reason = 'with instructions on resetting your passphrase.'
+        self.email_heading = 'Forgotten your password?'
+        self.email_reason = 'with instructions on resetting your password.'
         return self.email_sent_template()
 
 

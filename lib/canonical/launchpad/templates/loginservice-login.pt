@@ -37,7 +37,7 @@
 
           </div>
           <div>
-            <h2>Do you have a Launchpad passphrase?</h2>
+            <h2>Do you have a Launchpad password?</h2>
 
         <div>
           <tal:widget replace="structure view/widgets/action" />

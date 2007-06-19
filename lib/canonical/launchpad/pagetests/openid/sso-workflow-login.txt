@@ -44,7 +44,7 @@ receive an error:
     Please enter a valid email address.
 
 If the user provides a non-ASCII password, they receive an incorrect
-passphrase error.
+password error.
 
     >>> browser.getControl(name='field.email').value = 'mark@hbd.com'
     >>> browser.getControl(name='field.password').value = '\xc2\xa0blah'
@@ -53,7 +53,7 @@ passphrase error.
     Launchpad Login Service
     >>> for tag in find_tags_by_class(browser.contents, 'error'):
     ...     print extract_text(tag)
-    Incorrect passphrase for the provided email address.
+    Incorrect password for the provided email address.
 
 If the password does not match the given email address, an error is
 shown:
@@ -65,7 +65,7 @@ shown:
     Launchpad Login Service
     >>> for tag in find_tags_by_class(browser.contents, 'error'):
     ...     print extract_text(tag)
-    Incorrect passphrase for the provided email address.
+    Incorrect password for the provided email address.
 
 Finally, if the email address and password match, the user is logged
 in and returned to the relying party, with the user's identity URL:
