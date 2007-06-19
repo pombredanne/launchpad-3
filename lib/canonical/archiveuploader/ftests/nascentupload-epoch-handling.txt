@@ -5,35 +5,9 @@ NascentUpload class supports 'epoch' on versions as specified by:
 http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Version
 
 
-== Test Setup ==
-
-We need to be logged into the security model in order to get any further
-
-  >>> login('foo.bar@canonical.com')
-
-For the purpose of this test, hoary needs to be an open (development)
-distroseries so that we can upload to it.
-
-  >>> from canonical.launchpad.interfaces import IDistributionSet
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
-  >>> from canonical.lp.dbschema import DistroSeriesStatus
   >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
-
-Uploading support functions and policy.
-
-  >>> from canonical.archiveuploader.nascentupload import NascentUpload
-  >>> from canonical.archiveuploader.tests import (
-  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
-  >>> from canonical.launchpad.ftests import syncUpdate
-
-  >>> sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distroseries='hoary')
-
-Use the 'zopeless' transaction.
-
-  >>> from canonical.database.sqlbase import ZopelessTransactionManager
-  >>> local_transaction = ZopelessTransactionManager._installed
 
 
 == Epoch Version Conflicts ==
@@ -56,15 +30,13 @@ archive against the proposed source files before 'accepting' it.
 
 === Collision in Upload-Time ===
 
-When the 'non-epoched' version is already PENDING publication before
-uploading the candidate, we need to detect collisions at upload-time,
-returning a rejection email to the user.
+When the 'non-epoched' version is already published before uploading
+the candidate, we need to detect collisions at upload-time, returning
+a rejection email to the user.
 
 Upload and publish 'non-epoched' version:
 
-  >>> bar_src_upload = NascentUpload(
-  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src_upload = getUploadBarSourceNoEpoch()
   >>> bar_src_upload.process()
   >>> success = bar_src_upload.do_accept()
   >>> bar_src_queue_noepoch = bar_src_upload.queue_root
@@ -79,33 +51,29 @@ Upload and publish 'non-epoched' version:
 
 Upload 'epoched' bar version:
 
-  >>> bar_src_upload = NascentUpload(
-  ...     datadir('suite/bar_1.0-1_epoched/bar_1.0-1_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src_upload = getUploadBarSourceEpoch()
   >>> bar_src_upload.process()
-
   >>> print bar_src_upload.rejection_message
-  MD5 sum of uploaded file does not match existent file in archive
+  MD5 sum of uploaded file does not match existing file in archive
   Files specified in DSC are broken or missing, skipping package unpack verification.
 
-We relly on uploadprocessor to abort the transaction at this point not
+We rely on uploadprocessor to abort the transaction at this point not
 storing the respective SourcePackageRelease.
 
 Clean up this change and carry on:
 
-  >>> local_transaction.abort()
+  >>> from canonical.database.sqlbase import rollback
+  >>> rollback()
 
 
 === Collision in queue DONE ===
 
-When the 'non-epoched' version is at least PENDING publication, we need to
-identify collisions when 'publishing' the new candidate:
+When the 'non-epoched' version is still in queue, we need to identify
+collisions when publishing the new candidate:
 
 Upload 'non-epoched' bar source:
 
-  >>> bar_src_upload = NascentUpload(
-  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src_upload = getUploadBarSourceNoEpoch()
   >>> bar_src_upload.process()
   >>> success = bar_src_upload.do_accept()
   >>> bar_src_queue_noepoch = bar_src_upload.queue_root
@@ -114,29 +82,33 @@ Upload 'non-epoched' bar source:
 
 Upload 'epoched' bar source :
 
-  >>> bar_src_upload = NascentUpload(
-  ...     datadir('suite/bar_1.0-1_epoched/bar_1.0-1_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src_upload = getUploadBarSourceEpoch()
   >>> bar_src_upload.process()
   >>> success = bar_src_upload.do_accept()
   >>> bar_src_queue_epoch = bar_src_upload.queue_root
   >>> bar_src_queue_epoch.status.name
   'NEW'
 
-Accept and Publish 'non-epoched' bar source:
+Accept both, 'non-epoched' and 'epoched' bar sources:
 
   >>> bar_src_queue_noepoch.displayversion
   u'1.0-1'
   >>> bar_src_queue_noepoch.setAccepted()
-  >>> bar_src_queue_noepoch.realiseUpload()
   >>> bar_src_queue_noepoch.status.name
-  'DONE'
-
-When publishing the 'epoched' bar source the collision is detected:
+  'ACCEPTED'
 
   >>> bar_src_queue_epoch.displayversion
   u'1:1.0-1'
   >>> bar_src_queue_epoch.setAccepted()
+  >>> bar_src_queue_epoch.status.name
+  'ACCEPTED'
+
+When publishing the 'epoched' bar source the collision is detected:
+
+  >>> bar_src_queue_noepoch.realiseUpload()
+  >>> bar_src_queue_noepoch.status.name
+  'DONE'
+
   >>> bar_src_queue_epoch.realiseUpload()
   Traceback (most recent call last):
   ...
@@ -153,17 +125,15 @@ it will be ignored (with the error message below) every cron.daily cycle.
 
 Clean up this change and carry on:
 
-  >>> local_transaction.abort()
+  >>> rollback()
 
 
 == Dealing with Epochs and diverging binary versions ==
 
 Let's process an source upload and ensure that the resulting
-SourcePackageRelease record store a propoer 'version':
+SourcePackageRelease record store a proper 'version':
 
-  >>> bar_src_upload = NascentUpload(
-  ...     datadir('suite/bar_1.0-9/bar_1.0-9_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src_upload = getUploadBarSourceForBinary()
   >>> bar_src_upload.process()
   >>> bar_src_upload.is_rejected
   False
@@ -190,21 +160,14 @@ respective binary:
   >>> bar_src_queue.setAccepted()
   >>> bar_src_queue.status.name
   'ACCEPTED'
+
+  >>> from canonical.launchpad.ftests import syncUpdate
   >>> syncUpdate(bar_src_queue)
-
-We will use a modified Sync upload policy to upload unsigned binaries:
-
-  >>> binary_sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distroseries='hoary')
-  >>> binary_sync_policy.can_upload_binaries = True
-  >>> binary_sync_policy.can_upload_mixed = True
 
 For a binary upload we expect the same, a BinaryPackageRelease
 'version' that includes 'epoch':
 
-  >>> bar_bin_upload = NascentUpload(
-  ...     datadir('suite/bar_1.0-9_binary/bar_1.0-9_i386.changes'),
-  ...     binary_sync_policy, mock_logger_quiet)
+  >>> bar_bin_upload = getUploadBarBinary()
   >>> bar_bin_upload.process()
   >>> bar_bin_upload.is_rejected
   False

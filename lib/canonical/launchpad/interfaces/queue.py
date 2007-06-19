@@ -251,11 +251,11 @@ class IPackageUploadSource(Interface):
     def verifyBeforePublish():
         """Perform overall checks before publishing a source queue record.
 
-        Also check if the source package files do not collide with the
+        Check if the source package files do not collide with the
         ones already published in the archive. We need this to catch
         inaccurate  *epoched* versions, which would pass the upload version
-        check but would collide with DIFFs or DSCs previously published in
-        the disk. This inconsistency is well known in debian-like archive
+        check but would collide with diff(s) or dsc(s) previously published
+        on disk. This inconsistency is well known in debian-like archives
         and happens because filenames do not contain epoch. For further
         information see bug #119753.
         """

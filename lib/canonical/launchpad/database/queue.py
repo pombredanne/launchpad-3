@@ -21,14 +21,10 @@ from sqlobject import (
     ForeignKey, SQLMultipleJoin, SQLObjectNotFound)
 
 from canonical.archivepublisher.customupload import CustomUploadError
-from canonical.archiveuploader.nascentuploadfile import (
-    splitComponentAndSection)
-from canonical.archiveuploader.tagfiles import (
-    parse_tagfile_lines, TagFileParseError)
+from canonical.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.archiveuploader.template_messages import (
     rejection_template, new_template, accepted_template, announce_template)
-from canonical.archiveuploader.utils import (
-    safe_fix_maintainer, re_issource, re_isadeb)
+from canonical.archiveuploader.utils import safe_fix_maintainer
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
@@ -43,8 +39,7 @@ from canonical.launchpad.interfaces import (
     IPackageUpload, IPackageUploadBuild, IPackageUploadSource,
     IPackageUploadCustom, NotFoundError, QueueStateWriteProtectedError,
     QueueInconsistentStateError, QueueSourceAcceptError, IPackageUploadQueue,
-    QueueBuildAcceptError, IPackageUploadSet, pocketsuffix, IPersonSet,
-    ISourcePackageNameSet)
+    QueueBuildAcceptError, IPackageUploadSet, pocketsuffix, IPersonSet)
 from canonical.launchpad.mail import format_address, sendmail
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
@@ -713,7 +708,7 @@ class PackageUploadSource(SQLBase):
         )
 
     def verifyBeforeAccept(self):
-        """See IPackageUploadSource."""
+        """See `IPackageUploadSource`."""
         # Check for duplicate source version across all distroseries.
         for distroseries in self.packageupload.distroseries.distribution:
             if distroseries.getQueueItems(
@@ -728,7 +723,7 @@ class PackageUploadSource(SQLBase):
                     % self.packageupload.distroseries.name)
 
     def verifyBeforePublish(self):
-        """See IPackageUploadSource."""
+        """See `IPackageUploadSource`."""
         distribution = self.packageupload.distroseries.distribution
         # Check for duplicate filenames currently present in the archive.
         for source_file in self.sourcepackagerelease.files:
