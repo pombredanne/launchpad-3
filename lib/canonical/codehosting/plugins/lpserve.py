@@ -26,6 +26,15 @@ from canonical.config import config
 from canonical.codehosting import transport
 
 
+def _jml_log(*msg):
+    import os
+    msg = [os.getpid()] + list(msg)
+    fd = open('/home/jml/Desktop/jml.log', 'a')
+    fd.write(' '.join(map(str, msg)))
+    fd.write('\n')
+    fd.close()
+
+
 class cmd_launchpad_server(Command):
     """Run a Bazaar server that maps Launchpad branch URLs to the internal
     file-system format.
@@ -113,6 +122,7 @@ class cmd_launchpad_server(Command):
 
     def run(self, user_id, port=None, directory=None, read_only=False,
             authserver_url=None, inet=False):
+        import os
         if directory is None:
             directory = config.codehosting.branches_root
         if authserver_url is None:
@@ -133,7 +143,11 @@ class cmd_launchpad_server(Command):
             # authserver of modified branches. This signal handler runs the
             # operations we need to run (i.e. lp_server.tearDown) and does its
             # best to trigger 'finally' blocks across the rest of bzrlib.
+            _jml_log('* Running signal handler')
             lp_server.tearDown()
+            test_service = os.environ.get('TEST_SERVICE', None)
+            if test_service is not None:
+                _jml_log('TODO: Send a line to test service here.', test_service)
             thread.interrupt_main()
         signal.signal(signal.SIGHUP, clean_up)
         try:
@@ -142,6 +156,7 @@ class cmd_launchpad_server(Command):
             self.run_server(smart_server)
         finally:
             signal.signal(signal.SIGHUP, signal.SIG_DFL)
+            _jml_log('* Running finally')
             lp_server.tearDown()
 
 

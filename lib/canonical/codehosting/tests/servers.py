@@ -18,9 +18,11 @@ import threading
 
 from bzrlib.transport import get_transport, sftp, ssh, Server
 
+from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import keys
 from twisted.internet import defer, protocol
 from twisted.protocols import basic
+from twisted.python import components
 from twisted.python.util import sibpath
 
 from canonical.config import config
@@ -29,6 +31,7 @@ from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.daemons.sftp import SSHService
 from canonical.launchpad.daemons.authserver import AuthserverService
 
+from canonical.codehosting.smartserver import launch_smart_server
 from canonical.codehosting.sshserver import (
     BazaarFileTransferServer, LaunchpadAvatar)
 from canonical.codehosting.transport import LaunchpadServer
@@ -321,6 +324,7 @@ class SFTPCodeHostingServer(SSHCodeHostingServer):
 
 
 LPSERVE_TERMINATED = 'lpserve terminated'
+LPSERVE_SOCKET_VARIABLE = 'TEST_SERVICE'
 
 
 class UnrecognizedLine(Exception):
@@ -350,6 +354,9 @@ class _DisconnectNotifyServerFactory(protocol.ServerFactory):
     def __init__(self):
         self._disconnectEvent = None
 
+    def setConnectionLostEvent(self, event):
+        self._disconnectEvent = event
+
     def buildProtocol(self, address):
         return _DisconnectNotifyServerFactory(self._disconnectEvent)
 
@@ -371,29 +378,33 @@ class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
         deferred2 = SSHCodeHostingServer.tearDown(self)
         return defer.gatherResults([deferred1, deferred2])
 
-    # Register an adapter that sets an environment variable containing the host
-    # and port that the test process is listening on.
-
-    # Need to re-set that environment variable for each call to
-    # runAndWaitForDisconnect OR re-set the thread event variables.
-
-    # Make sure that the child process gets the environment variable
-
     # Send an event from the child process if the environment variable is set.
 
     def runAndWaitForDisconnect(self, func, *args, **kwargs):
         """Run the given function, close all connections, and wait for the
         server to acknowledge the end of the session.
         """
-##         done = threading.Event()
-##         self._factory.setConnectionLostEvent(done)
-##         port = listening.getHost().port
-##         _jml_log('LISTENING ON ', port)
+        done = threading.Event()
+        self._factory.setConnectionLostEvent(done)
+        def make_test_launchpad_server(avatar):
+            server = launch_smart_server(avatar)
+            address = self._listening.getHost()
+            server.environment[LPSERVE_SOCKET_VARIABLE] = '%s:%s' % (address.host, address.port)
+            return server
+        components.ALLOW_DUPLICATES, ALLOW_DUPLICATES = True, components.ALLOW_DUPLICATES
+        old_adapter = components.getAdapterFactory(
+            LaunchpadAvatar, ISession, None)
+        components.registerAdapter(
+            make_test_launchpad_server, LaunchpadAvatar, ISession)
         try:
             return func(*args, **kwargs)
         finally:
             self.closeAllConnections()
-##            done.wait()
+            self._factory.setConnectionLostEvent(None)
+            if old_adapter is not None:
+                components.registerAdapter(
+                    old_adapter, LaunchpadAvatar, ISession)
+            components.ALLOW_DUPLICATES = ALLOW_DUPLICATES
 
 
 class _TestSSHService(SSHService):
