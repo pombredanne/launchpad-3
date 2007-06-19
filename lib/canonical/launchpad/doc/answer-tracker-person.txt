@@ -199,18 +199,20 @@ answer questions.
     >>> def language_codes(languages):
     ...     return sorted(str(language.code) for language in languages)
 
-For a person, it is the same list than its list of known languages,
-with the addition that English is always assumed to be supported:
+For a person without list of known languages doe not support any languages:
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> language_codes(sample_person.languages)
     []
     >>> language_codes(sample_person.getSupportedLanguages())
-    ['en']
+    []
+
+Otherwise, the list of supported languages matches the list of
+known languages:
 
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
     >>> language_codes(carlos.languages)
-    ['ca', 'es']
+    ['ca', 'en', 'es']
     >>> language_codes(carlos.getSupportedLanguages())
     ['ca', 'en', 'es']
 
@@ -218,7 +220,7 @@ Also, note that all English variants will be excluded.
 
     >>> daf = getUtility(IPersonSet).getByName('daf')
     >>> language_codes(daf.languages)
-    ['cy', 'en_GB', 'ja']
+    ['cy', 'en', 'en_GB', 'ja']
     >>> language_codes(daf.getSupportedLanguages())
     ['cy', 'en', 'ja']
 
@@ -232,50 +234,8 @@ For team with a list of known languages set, the same rule applies:
     >>> language_codes(ubuntu_team.languages)
     ['eo']
     >>> language_codes(ubuntu_team.getSupportedLanguages())
-    ['en', 'eo']
+    ['eo']
 
-But when the list of known languages is not set, the list of supported
-languages will be the union of all the members supported languages.
-
-    >>> rosetta_admins = getUtility(IPersonSet).getByName(
-    ...     'rosetta-admins')
-
-    >>> carlos.inTeam(rosetta_admins)
-    True
-    >>> daf.inTeam(rosetta_admins)
-    True
-
-    >>> language_codes(rosetta_admins.languages)
-    []
-    >>> language_codes(rosetta_admins.getSupportedLanguages())
-    ['ca', 'cy', 'en', 'es', 'ja']
-
-These rules are applied recursively when teams are nested one inside
-the other. For example, the 'Guadamen' team includes the Ubuntu Team
-and doesn't have its list of known languages set, so it will be the
-languages of the Ubuntu Team that will be used.
-
-    >>> celso = getUtility(IPersonSet).getByName('cprov')
-    >>> celso.inTeam(ubuntu_team)
-    True
-    >>> celso.addLanguage(getUtility(ILanguageSet)['es'])
-    >>> language_codes(celso.languages)
-    ['es']
-
-    >>> guadamen_team = getUtility(IPersonSet).getByName('guadamen')
-    >>> ubuntu_team.inTeam(guadamen_team)
-    True
-
-    >>> language_codes(guadamen_team.languages)
-    []
-    >>> language_codes(guadamen_team.getSupportedLanguages())
-    ['en', 'eo']
-
-    # Empty the list of known languages to use the list of the
-    # Ubuntu team members.
-    >>> ubuntu_team.removeLanguage(esperanto)
-    >>> language_codes(guadamen_team.getSupportedLanguages())
-    ['en', 'es']
 
 == getQuestionLanguages() ==
 
@@ -338,6 +298,8 @@ answer contact.
 
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> firefox = getUtility(IProductSet).getByName("firefox")
+    >>> # Answer contacts must speak a language
+    >>> no_priv.addLanguage(english)
     >>> firefox.addAnswerContact(no_priv)
     True
 
@@ -359,6 +321,7 @@ answer contact through his team membership.
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
+    >>> landscape_team.addLanguage(english)
     >>> ubuntu.addAnswerContact(landscape_team)
     True
 
@@ -385,6 +348,7 @@ Person's supported IQuestionTargets:
     >>> no_priv.hasParticipationEntryFor(translator_team)
     True
     >>> evolution_package = ubuntu.getSourcePackage('evolution')
+    >>> translator_team.addLanguage(english)
     >>> evolution_package.addAnswerContact(translator_team)
     True
     >>> sorted([target.name

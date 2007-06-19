@@ -349,6 +349,13 @@ special = {
             tearDown=uploadQueueTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
+    'bug-private-by-default.txt': LayeredDocFileSuite(
+            '../doc/bug-private-by-default.txt',
+            setUp=setUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadZopelessLayer
+            ),
     }
 
 

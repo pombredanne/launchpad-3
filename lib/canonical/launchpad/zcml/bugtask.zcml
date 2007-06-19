@@ -27,7 +27,7 @@
     <content class="canonical.launchpad.database.BugTask">
         <allow attributes="id bug bugID target date_assigned datecreated
                            date_confirmed date_inprogress date_closed
-                           bug_subscribers is_complete
+                           bug_subscribers is_complete canTransitionToStatus
                            isMentor canMentor isSubscribed" />
         <require
             permission="launchpad.View"
@@ -35,7 +35,7 @@
                         distroseries milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
                         title related_tasks other_affected_pillars
-                        asEmailHeaderValue getDelta
+                        asEmailHeaderValue getDelta pillar
                         target_uses_malone bugtask_branches
                         conjoined_master conjoined_slave subscribe" />
         <require
@@ -473,10 +473,5 @@
     </content>
 
   </facet>
-
-  <vocabulary
-    name="AdvancedBugTaskUpstreamStatus"
-    factory="canonical.launchpad.browser.upstream_status_vocabulary_factory"
-    />
 
 </configure>
