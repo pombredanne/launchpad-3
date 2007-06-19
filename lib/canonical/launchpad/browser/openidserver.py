@@ -320,16 +320,20 @@ KNOWN_TRUST_ROOTS = {
         dict(title="OpenID Consumer Example"),
     'http://pdl-dev.co.uk':
         dict(title="PDL Demo OSCommerce shop"),
-    'https://shop.ubuntu.com/':
-        dict(title="Ubuntu Shop"),
-    'https://shipit.ubuntu.com/':
-        dict(title="Ubuntu Shipit"),
-    'https://shipit.kubuntu.org/':
-        dict(title="Kubuntu Shipit"),
-    'https://shipit.edubuntu.org/':
-        dict(title="Edubuntu Shipit"),
-    'https://wiki.ubuntu.com/':
-        dict(title="Ubuntu Wiki"),
+    'http://www.mmania.biz':
+        dict(title="Demo Canonical Shop"),
+    'http://www.mmania.biz/ubuntu/':
+        dict(title="Demo Canonical Shop"),
+    #'https://shop.ubuntu.com/':
+    #    dict(title="Ubuntu Shop"),
+    #'https://shipit.ubuntu.com/':
+    #    dict(title="Ubuntu Shipit"),
+    #'https://shipit.kubuntu.org/':
+    #    dict(title="Kubuntu Shipit"),
+    #'https://shipit.edubuntu.org/':
+    #    dict(title="Edubuntu Shipit"),
+    #'https://wiki.ubuntu.com/':
+    #    dict(title="Ubuntu Wiki"),
     }
 
 
