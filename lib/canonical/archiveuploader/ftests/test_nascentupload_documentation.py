@@ -14,7 +14,7 @@ from canonical.archiveuploader.tests import (
     datadir, getPolicy, mock_logger_quiet)
 from canonical.launchpad.ftests import login, logout
 from canonical.launchpad.ftests.test_system_documentation import (
-    LayeredDocFileSuite)
+    LayeredDocFileSuite, setUp as standard_setup)
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.lp.dbschema import DistroSeriesStatus
 from canonical.testing import LaunchpadZopelessLayer
@@ -50,26 +50,40 @@ def getUploadBarBinary():
         datadir('suite/bar_1.0-9_binary/bar_1.0-9_i386.changes'),
         policy, mock_logger_quiet)
 
+def testGlobalsSetup(test):
+    """Inject useful helper functions in tests globals.
+
+    We can use the getUpload* without unnecessary imports.
+    """
+    standard_setup(test)
+    test.globs['getUploadBarSourceNoEpoch'] = getUploadBarSourceNoEpoch
+    test.globs['getUploadBarSourceEpoch'] = getUploadBarSourceEpoch
+    test.globs['getUploadBarSourceForBinary'] = getUploadBarSourceForBinary
+    test.globs['getUploadBarBinary'] = getUploadBarBinary
+
+def prepareHoaryForUploads(test):
+    """Prepare ubuntu/hoary to receive uploads.
+
+    Ensure ubuntu/hoary is ready to receive uploads in pocket
+    RELEASE (DEVELOPMENT releasestate).
+    """
+    ubuntu = getUtility(IDistributionSet)['ubuntu']
+    hoary = ubuntu['hoary']
+    hoary.status = DistroSeriesStatus.DEVELOPMENT
+    test.globs['ubunt'] = ubuntu
+    test.globs['hoary'] = hoary
+
 def setUp(test):
     """Setup a typical nascentupload test environment.
 
     Use 'uploader' datebase user in a LaunchpadZopelessLayer transaction.
-
     Log in as a Launchpad admin (foo.bar@canonical.com).
-
-    Include this module invironment in the test environment, so it can use
-    the getUpload* helper functions.
-
-    Finally, ensure ubuntu/hoary is ready to receive uploads in pocket
-    RELEASE (DEVELOPMENT releasestate).
+    Setup test globals and prepare hoary for uploads
     """
     LaunchpadZopelessLayer.switchDbUser('uploader')
     login('foo.bar@canonical.com')
-    test.globs.update(globals())
-
-    ubuntu = getUtility(IDistributionSet)['ubuntu']
-    hoary = ubuntu['hoary']
-    hoary.status = DistroSeriesStatus.DEVELOPMENT
+    testGlobalsSetup(test)
+    prepareHoaryForUploads(test)
 
 def tearDown(test):
     logout()

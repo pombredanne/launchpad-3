@@ -5,11 +5,6 @@ NascentUpload class supports 'epoch' on versions as specified by:
 http://www.debian.org/doc/debian-policy/ch-controlfields.html#s-f-Version
 
 
-  >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
-  >>> hoary = ubuntu['hoary']
-  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
-
-
 == Epoch Version Conflicts ==
 
 Debian-like archives don't include epochs in the version specified in
