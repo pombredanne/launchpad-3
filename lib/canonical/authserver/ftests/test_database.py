@@ -8,7 +8,7 @@ import unittest
 
 from zope.interface.verify import verifyObject
 
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
@@ -38,7 +38,18 @@ class TestDatabaseSetup(LaunchpadTestCase):
         super(TestDatabaseSetup, self).tearDown()
 
 
-class DatabaseStorageTestCase(TestDatabaseSetup):
+class DatabaseStorageTestCase(unittest.TestCase):
+
+    layer = LaunchpadScriptLayer
+
+    def setUp(self):
+        LaunchpadScriptLayer.switchDbConfig('authserver')
+        super(DatabaseStorageTestCase, self).setUp()
+        self.cursor = cursor()
+
+    def tearDown(self):
+        self.cursor.close()
+        super(DatabaseStorageTestCase, self).tearDown()
 
     layer = LaunchpadScriptLayer
 
@@ -224,7 +235,8 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
             SELECT owner, product, name, title, summary, author FROM Branch
             WHERE id = %d"""
             % branchID)
-        self.assertEqual((12, 6, 'foo', None, None, 12), self.cursor.fetchone())
+        self.assertEqual(
+            [12, 6, 'foo', None, None, 12], self.cursor.fetchone())
 
         # Create a branch with NULL product too:
         branchID = storage._createBranchInteraction(self.cursor, 1, None, 'foo')
@@ -232,8 +244,8 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
             SELECT owner, product, name, title, summary, author FROM Branch
             WHERE id = %d"""
             % branchID)
-        self.assertEqual((1, None, 'foo', None, None, 1),
-                         self.cursor.fetchone())
+        self.assertEqual(
+            [1, None, 'foo', None, None, 1], self.cursor.fetchone())
 
     def test_getBranchInformation_owned(self):
         # When we get the branch information for one of our own branches (i.e.

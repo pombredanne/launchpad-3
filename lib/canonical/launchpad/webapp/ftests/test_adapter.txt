@@ -56,16 +56,16 @@ the Postgres statement timeout (a value of zero means no timeout):
     >>> da.disconnect()
 
 
-Using the custom sleep_for_testing() function, we can trigger the
+Using the builtin pg_sleep() function, we can trigger the
 timeout by sleeping for 200ms with a 100ms statement timeout:
 
     >>> config.launchpad.db_statement_timeout = 100
     >>> conn = da()
     >>> cursor = conn.cursor()
-    >>> cursor.execute('SELECT sleep_for_testing(0.200)')
+    >>> cursor.execute('SELECT pg_sleep(0.200)')
     Traceback (most recent call last):
       ...
-    RequestStatementTimedOut: SELECT sleep_for_testing(0.200)
+    RequestStatementTimedOut: SELECT pg_sleep(0.200)
     >>> da.disconnect()
 
 

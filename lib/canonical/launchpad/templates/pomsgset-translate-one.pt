@@ -39,7 +39,7 @@
     </tal:logged-in>
   </td>
   <td>
-    <div tal:content="structure view/msgid"
+    <div tal:content="structure view/singular_text"
          tal:attributes="id string:msgset_${context/potmsgset/id}_singular">
       The original text.
     </div>
@@ -63,14 +63,14 @@
     </tal:logged-in>
   </td>
   <td>
-    <div tal:content="structure view/msgid_plural"
+    <div tal:content="structure view/plural_text"
          tal:attributes="id string:msgset_${context/potmsgset/id}_plural">
       plural source
     </div>
   </td>
 </tr>
 <tr
-  tal:condition="view/msgid_has_tab"
+  tal:condition="view/text_has_tab"
   class="discreet secondary translation">
   <td colspan="3" />
   <th class="icon left right">
@@ -83,7 +83,7 @@
   </td>
 </tr>
 <tr
-  tal:condition="view/msgid_has_newline"
+  tal:condition="view/text_has_newline"
   class="discreet secondary translation"
 >
   <td colspan="3" />
@@ -100,7 +100,7 @@
   </td>
 </tr>
 <tr
-  tal:condition="view/msgid_has_leading_or_trailing_space"
+  tal:condition="view/text_has_leading_or_trailing_space"
   class="discreet secondary translation"
 >
   <td colspan="3" />

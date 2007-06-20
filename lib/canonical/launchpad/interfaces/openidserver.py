@@ -46,6 +46,7 @@ class IOpenIdAuthorizationSet(Interface):
         This method overrides any existing authorization for the given
         (person, trust_root, client_id).
         """
+
  
 class ILaunchpadOpenIdStoreFactory(Interface):
     """Factory to create LaunchpadOpenIdStore instances."""

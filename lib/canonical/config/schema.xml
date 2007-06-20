@@ -17,7 +17,7 @@
     <!-- First we define all the section types. -->
 
     <sectiontype name="database_options">
-	<key name="dbhost" datatype="ipaddr-or-hostname" required="no" />
+        <key name="dbhost" datatype="ipaddr-or-hostname" required="no" />
         <key name="dbname" datatype="string" required="no" />
         <key name="db_statement_timeout" datatype="integer" required="no">
             <description>

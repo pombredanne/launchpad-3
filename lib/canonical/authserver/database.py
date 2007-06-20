@@ -33,6 +33,9 @@ from canonical.authserver.interfaces import (
 from twisted.internet.threads import deferToThread
 from twisted.python.util import mergeFunctionMetadata
 
+from twisted.internet.threads import deferToThread
+from twisted.python.util import mergeFunctionMetadata
+
 
 def utf8(x):
     if isinstance(x, unicode):

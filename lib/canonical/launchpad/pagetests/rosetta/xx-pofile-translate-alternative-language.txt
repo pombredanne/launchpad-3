@@ -11,13 +11,59 @@ And open the translation form:
     >>> browser.open(
     ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
     ...     '+pots/evolution-2.2/es/+translate')
-    >>> browser.url
-    'http://.../+source/evolution/+pots/evolution-2.2/es/+translate'
+    >>> print browser.title
+    Translating evolution-2.2 in Ubuntu Hoary package "evolution" into Spanish
 
-    >>> browser.getControl(name='field.alternative_language').value = ['ja']
+The 'Make suggestions from' control lists the translatable languages.
+Japanese is a translatable language, English is included because many
+English dialects may want to use the source English.
+
+    >>> browser.getControl(
+    ...     name='field.alternative_language').displayOptions[:4]
+    ['(no value)', 'Abkhazian (ab)', 'Achinese (ace)', 'Acoli (ach)']
+    >>> browser.getControl('English (en)', index=0).selected
+    False
+
+    >>> browser.getControl(name='field.alternative_language').value
+    ['']
+
+    >>> browser.getControl('Japanese (ja)').selected = True
     >>> browser.getControl(name='select_alternate_language').click()
+    >>> print browser.title
+    Translating evolution-2.2 in Ubuntu Hoary package "evolution" into Spanish
+
+    >>> browser.getControl(name='field.alternative_language', index=0).value
+    ['ja']
+
+This page also allows the user to filter the translatable strings to
+show only the strings he is interested in.
+
+    >>> browser.getControl('Show').displayOptions
+    ['all', 'untranslated', 'need review', 'translated', 
+     'with new suggestions', 'changed in Launchpad']
+
+Let's do a translation submit with an alternative language selected
+to see whether the final url is correct. We don't need to change any
+translation, just a submitting is enough. We can also set the filter
+to display only the untranslated strings.
+
+    >>> browser.getControl('untranslated').selected = True
+    >>> browser.getControl('Filter').click()
     >>> browser.url
-    '.../+translate?...alternative_language=ja...'
+    '...+translate?field.alternative_language=ja...show=untranslated'
+
+The navigation indicates are seeing only the first page of results.
+
+    >>> navigation = find_tags_by_class(browser.contents, 'results')[0].td
+    >>> print extract_text(navigation)
+    1 ... 10  of 13 results ...
+
+We can see the next page of results using the 'Save & Continue' button.
+
+    >>> browser.getControl('Save & Continue').click()
+    >>> navigation = find_tags_by_class(browser.contents, 'results')[0].td
+    >>> print extract_text(navigation)
+    11 ... 13  of 13 results ...
 
 If we specify more than one alternative language in the URL, we get an
 UnexpectedFormData exception:
@@ -29,17 +75,3 @@ UnexpectedFormData exception:
     Traceback (most recent call last):
     ...
     UnexpectedFormData: You specified...
-
-Let's do a translation submit with an alternative language selected
-to see whether the final url is correct. We don't need to change any
-translation, just a submit is enough.
-
-    >>> browser.open(
-    ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
-    ...     '+pots/evolution-2.2/es/+translate'
-    ...     '?field.alternative_language=ja&show=untranslated')
-    >>> browser.url
-    '...+translate?field.alternative_language=ja&show=untranslated'
-    >>> browser.getControl(name='submit_translations').click()
-    >>> browser.url
-    '...+translate?field.alternative_language=ja&show=untranslated&start=10'
