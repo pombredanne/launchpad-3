@@ -43,6 +43,23 @@ class ITeamMembership(Interface):
     def isExpired():
         """Return True if this membership's status is EXPIRED."""
 
+    def canChangeExpirationDate(person):
+        """Can the given person change this membership's expiration date?
+        
+        A membership's expiration date can be changed by the team owner, by a
+        Launchpad admin or by a team admin. In the latter case, though, the
+        expiration date can only be changed if the admin is not changing his
+        own membership.
+        """
+
+    def setExpirationDate(date, user):
+        """Set this membership's expiration date.
+
+        The given date must be None or in the future and the given user must
+        be allowed to change this membership's expiration date as per the
+        rules defined in canChangeExpirationDate().
+        """
+
     def canBeRenewedByMember():
         """Can this membership be renewed by the member himself?
 
