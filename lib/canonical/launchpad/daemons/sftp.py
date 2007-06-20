@@ -13,7 +13,6 @@ import os
 from twisted.cred.portal import Portal
 from twisted.conch.ssh import keys
 from twisted.application import service, strports
-from twisted.internet import defer
 
 from canonical.config import config
 from canonical.authserver.client.twistedclient import TwistedAuthServer

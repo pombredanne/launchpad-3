@@ -20,8 +20,7 @@ from bzrlib.transport import get_transport, sftp, ssh, Server
 
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import keys
-from twisted.internet import defer, process, protocol
-from twisted.protocols import basic
+from twisted.internet import defer, process
 from twisted.python import components
 from twisted.python.util import sibpath
 
@@ -155,17 +154,12 @@ class AuthserverOutOfProcess(Server):
         return config.codehosting.authserver
 
 
-class AuthserverWithKeys(AuthserverOutOfProcess):
+class AuthserverWithKeysMixin:
     """Server to run the authserver, setting up SSH key configuration."""
 
     def __init__(self, testUser, testTeam):
-        AuthserverOutOfProcess.__init__(self)
         self.testUser = testUser
         self.testTeam = testTeam
-
-    def setUp(self):
-        self.setUpTestUser()
-        AuthserverOutOfProcess.setUp(self)
 
     def setUpTestUser(self):
         """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a known
@@ -198,6 +192,28 @@ class AuthserverWithKeys(AuthserverOutOfProcess):
             data=open(sibpath(__file__, 'id_dsa.pub'), 'rb').read())
 
 
+class AuthserverWithKeys(AuthserverOutOfProcess, AuthserverWithKeysMixin):
+
+    def __init__(self, testUser, testTeam):
+        AuthserverOutOfProcess.__init__(self)
+        AuthserverWithKeysMixin.__init__(self, testUser, testTeam)
+
+    def setUp(self):
+        self.setUpTestUser()
+        AuthserverOutOfProcess.setUp(self)
+
+
+class AuthserverWithKeysInProcess(Authserver, AuthserverWithKeysMixin):
+
+    def __init__(self, testUser, testTeam):
+        Authserver.__init__(self)
+        AuthserverWithKeysMixin.__init__(self, testUser, testTeam)
+
+    def setUp(self):
+        self.setUpTestUser()
+        Authserver.setUp(self)
+
+
 class FakeLaunchpadServer(LaunchpadServer):
 
     def __init__(self, user_id):
@@ -216,6 +232,10 @@ class FakeLaunchpadServer(LaunchpadServer):
         self.backing_transport = MemoryTransport()
         self.authserver = FakeLaunchpad()
         LaunchpadServer.setUp(self)
+
+    def tearDown(self):
+        LaunchpadServer.tearDown(self)
+        return defer.succeed(None)
 
 
 class CodeHostingServer(Server):
