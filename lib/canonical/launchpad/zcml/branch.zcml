@@ -94,16 +94,10 @@
   </browser:pages>
 
   <browser:page
-      for="*"
-      name="branch-filtering-macros"
+      for="canonical.launchpad.interfaces.IBranch"
+      name="+macros"
       permission="zope.Public"
-      template="../templates/branch-filtering-macros.pt" />
-
-  <browser:page
-      for="*"
-      name="branch-badges"
-      permission="zope.Public"
-      template="../templates/branch-badge-macros.pt" />
+      template="../templates/branch-macros.pt" />
 
   <browser:page
       for="*"

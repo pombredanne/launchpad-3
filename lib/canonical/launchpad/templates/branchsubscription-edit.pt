@@ -13,11 +13,9 @@
 </metal:leftportlets>
 
 <metal:heading fill-slot="pageheading">
-  <div>
-    <img alt="branch icon" src="/@@/branch" />
-    <a tal:attributes="href context/branch/fmt:url"
-       tal:content="context/branch/displayname" />
-  </div>
+  <tal:branch-link define="branch context/branch">
+    <metal:branch-link use-macro="context/branch/@@+macros/branch-heading-link"/>
+  </tal:branch-link>
   <h1>
     Edit subscription to branch for
     <tal:person replace="context/person/displayname">Person</tal:person>

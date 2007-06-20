@@ -53,14 +53,7 @@ class BranchSOP(StructuralObjectPresentation):
 
     def getMainHeading(self):
         """See IStructuralHeaderPresentation."""
-        return self.context.displayname
-
-    def getIntroHeading(self):
-        """See IStructuralHeaderPresentation."""
-        if self.context.product is None:
-            return "Junk branch for %s" % self.context.owner.displayname
-        else:
-            return "Branch for %s" % self.context.product.displayname
+        return self.context.owner.browsername
 
 
 class BranchNavigation(Navigation):

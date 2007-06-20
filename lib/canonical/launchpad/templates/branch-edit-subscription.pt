@@ -7,10 +7,9 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <div>
-        <img alt="branch icon" src="/@@/branch" />
-        <a tal:attributes="href context/fmt:url" tal:content="context/displayname" />
-      </div>
+      <tal:branch-link define="branch context">
+        <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
+      </tal:branch-link>
       <h1>Edit subscription to branch</h1>
     </metal:heading>
 

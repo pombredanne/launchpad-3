@@ -1,11 +1,18 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
-  <body>
-    <metal:heading fill-slot="pageheading">
-    </metal:heading>
+      i18n:domain="launchpad">
+<body>
+
+<metal:heading fill-slot="pageheading"
+               tal:define="branch_index python:True">
+  <tal:branch-link define="branch context">
+    <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
+  </tal:branch-link>
+  <h1><tal:branch replace="context/displayname" /></h1>
+</metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -14,8 +21,6 @@
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
-
-  <h1>&#8220;<tal:branch replace="context/displayname" />&#8221; branch</h1>
 
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">

@@ -28,8 +28,7 @@ class BranchSubscriptionSOP(StructuralObjectPresentation):
 
     def getMainHeading(self):
         """See IStructuralHeaderPresentation."""
-        subscription = self.context
-        return _('Subscription to %s' % subscription.branch.displayname)
+        return self.context.branch.owner.browsername
 
 
 class _BranchSubscriptionView(LaunchpadFormView):
