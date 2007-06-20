@@ -60,7 +60,7 @@ Now we'll do the same thing, but with the trust root added to
 config.launchpad.openid_sreg_trustroots.  We can use the association
 handle and login session from the previous test.
 
-We now see the user's full name, nickname, email address and time zone.
+We now see the user's full name, nickname and email address.
 
     >>> from canonical.config import config
     >>> config.launchpad.openid_sreg_trustroots.append(
@@ -76,11 +76,10 @@ We now see the user's full name, nickname, email address and time zone.
     openid.mode:id_res
     openid.return_to:http://launchpad.dev/+openid-consumer
     openid.sig:...
-    openid.signed:return_to,mode,identity,sreg.email,sreg.fullname,sreg.nickname,sreg.timezone
+    openid.signed:return_to,mode,identity,sreg.email,sreg.fullname,sreg.nickname
     openid.sreg.email:mark@hbd.com
     openid.sreg.fullname:Mark Shuttleworth
     openid.sreg.nickname:sabdfl
-    openid.sreg.timezone:UTC
     <BLANKLINE>
 
 

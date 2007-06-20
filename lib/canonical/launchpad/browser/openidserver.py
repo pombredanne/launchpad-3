@@ -177,8 +177,11 @@ class OpenIdMixin:
                               self.user.displayname, signed=True)
             response.addField('sreg', 'nickname',
                               self.user.name, signed=True)
-            response.addField('sreg', 'timezone',
-                              self.user.timezone, signed=True)
+            # XXX: 2007-06-20 jamesh
+            # Disable sending of data not needed by the shop, so we
+            # don't get people relying on this feature.
+            #response.addField('sreg', 'timezone',
+            #                  self.user.timezone, signed=True)
         return response
 
     def createFailedResponse(self):
