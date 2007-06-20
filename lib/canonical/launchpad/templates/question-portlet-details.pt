@@ -26,7 +26,12 @@
     <br />
 
     <b>For:</b>
-    <span tal:replace="context/target/name">Firefox</span>
+    <span tal:condition="context/product"
+          tal:replace="context/product/name">Firefox</span>
+    <span tal:condition="context/distribution"
+          tal:replace="context/distribution/name">ubuntu</span>
+    <span tal:condition="context/sourcepackagename"
+          tal:replace="context/sourcepackagename/name">moz-ff</span>
     <br />
 
     <tal:block condition="context/datedue">
