@@ -509,6 +509,7 @@ And run the cronscript.
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
+    INFO    Import requests completed.
     <BLANKLINE>
 
 Now the auto-approval script runs.  This can happen anytime, since it's
@@ -626,6 +627,7 @@ script picks them up and processes them.
     INFO    creating lockfile
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
+    INFO    Import requests completed.
     <BLANKLINE>
     >>> transaction.commit()
 
