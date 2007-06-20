@@ -108,15 +108,12 @@ class TeamMembershipEditView:
 
     def canChangeExpirationDate(self):
         """Return True if the logged in user can change the expiration date of
-        this membership. Team administrators can't change the expiration date
-        of their own membership."""
-        if self.userIsTeamOwnerOrLPAdmin():
-            return True
-
-        if self.user.id == self.context.person.id:
-            return False
-        else:
-            return True
+        this membership.
+        
+        Team administrators can't change the expiration date of their own
+        membership.
+        """
+        return self.context.canChangeExpirationDate(self.user)
 
     def membershipExpires(self):
         """Return True if this membership is scheduled to expire one day."""
@@ -237,11 +234,9 @@ class TeamMembershipEditView:
         else:
             expires = self.context.dateexpires
 
-        team = self.context.team
-        member = self.context.person
-        comment = self.request.form.get('comment')
-        team.setMembershipData(member, status, reviewer=self.user,
-                               expires=expires, comment=comment)
+        self.context.setExpirationDate(expires, self.user)
+        self.context.setStatus(
+            status, self.user, self.request.form_ng.getOne('comment'))
         return True
 
     def _getExpirationDate(self):
