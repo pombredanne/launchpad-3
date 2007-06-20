@@ -29,15 +29,15 @@ bug listing.
     'Search all bug reports'
     >>> print_bugtasks(anon_browser.contents)
     3 Bug Title Test
-      mozilla-firefox (Debian) Unknown Unconfirmed
+      mozilla-firefox (Debian) Unknown New
     3 Bug Title Test
-      mozilla-firefox (Debian Woody) Medium Unconfirmed
+      mozilla-firefox (Debian Woody) Medium New
     3 Bug Title Test
-      mozilla-firefox (Debian Sarge) Medium Unconfirmed
+      mozilla-firefox (Debian Sarge) Medium New
     7 A test bug
-      evolution (upstream) Medium Unconfirmed
+      evolution (upstream) Medium New
     10 another test bug
-       linux-source-2.6.15 (Ubuntu) Medium Unconfirmed
+       linux-source-2.6.15 (Ubuntu) Medium New
 
 Even if a product is specified in the bug target widget, all bug reports
 will be searched.
@@ -138,7 +138,7 @@ project.
     'http://bugs.launchpad.dev/evolution/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)
     7 A test bug
-      Medium Unconfirmed
+      Medium New
 
 === Searching a project ===
 
@@ -153,7 +153,7 @@ project.
     'http://bugs.launchpad.dev/gnome/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)
     7 A test bug
-      evolution Medium Unconfirmed
+      evolution Medium New
 
 === Searching a distribution ===
 
@@ -168,7 +168,7 @@ project.
     'http://bugs.launchpad.dev/ubuntu/+bugs?field.searchtext=test+bug...'
     >>> print_bugtasks(anon_browser.contents)
     10 another test bug
-       linux-source-2.6.15  Medium  Unconfirmed
+       linux-source-2.6.15  Medium  New
 
 === Jumping to a bug ===
 

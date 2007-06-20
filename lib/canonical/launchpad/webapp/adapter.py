@@ -21,13 +21,14 @@ import psycopg
 import sqlos.connection
 from sqlos.interfaces import IConnectionName
 
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.database.interfaces import IRequestExpired
 from canonical.database.sqlbase import AUTOCOMMIT_ISOLATION, cursor
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
 from canonical.launchpad.webapp.opstats import OpStats
 
 __all__ = [
+    'DisconnectionError',
     'LaunchpadDatabaseAdapter',
     'SessionDatabaseAdapter',
     'RequestExpired',
@@ -91,7 +92,7 @@ class RetryPsycopgIntegrityError(psycopg.IntegrityError, Retry):
         psycopg.IntegrityError.__init__(self, *integrity_error.args)
 
 
-class DisconnectedConnectionError(Exception):
+class DisconnectionError(Exception):
     """Attempt was made to access the database after a disconnection."""
 
 
@@ -110,24 +111,22 @@ class ReconnectingConnection:
         """Ensure that we are connected to the database.
 
         If the connection is marked as dead, or if we can't reconnect,
-        then raise DisconnectedConnectionError.
+        then raise DisconnectionError.
 
         If we need to reconnect, the connection generation number is
         incremented.
         """
         if self._is_dead:
-            raise Retry((DisconnectedConnectionError,
-                         DisconnectedConnectionError('Already disconnected'),
-                         None))
+            raise DisconnectionError('Already disconnected')
         if self._connection is not None:
             return
         try:
             self._connection = self._connection_factory()
             self._generation += 1
-        except psycopg.OperationalError:
-            self._handleDisconnection()
+        except psycopg.OperationalError, exc:
+            self._handleDisconnection(exc)
 
-    def _handleDisconnection(self):
+    def _handleDisconnection(self, exc):
         """Note that we were disconnected from the database.
 
         This resets the internal _connection attribute, and marks the
@@ -138,7 +137,7 @@ class ReconnectingConnection:
         """
         self._is_dead = True
         self._connection = None
-        raise Retry(sys.exc_info())
+        raise DisconnectionError(str(exc))
 
     def _checkDisconnect(self, _function, *args, **kwargs):
         """Call a function, checking for database disconnections."""
@@ -158,7 +157,7 @@ class ReconnectingConnection:
             raise RetryPsycopgIntegrityError(sys.exc_info())
         except psycopg.Error, exc:
             if exc.args and _wasDisconnected(exc.args[0]):
-                self._handleDisconnection()
+                self._handleDisconnection(exc)
             else:
                 raise
 
@@ -233,6 +232,17 @@ class ReconnectingCursor:
     fetchall = _handle_disconnections('fetchall')
 
 
+class ReconnectingPsycopgConnection(PsycopgConnection):
+    """A PsycopgConnection subclass that joins the Zope transaction
+    when cursor() is called.
+    """
+
+    def cursor(self):
+        """See IZopeConnection"""
+        self.registerForTxn()
+        return super(ReconnectingPsycopgConnection, self).cursor()
+
+
 class ReconnectingDatabaseAdapter(PsycopgAdapter):
     """A Postgres database adapter that can reconnect to the database."""
 
@@ -241,7 +251,7 @@ class ReconnectingDatabaseAdapter(PsycopgAdapter):
     def connect(self):
         if not self.isConnected():
             try:
-                self._v_connection = PsycopgConnection(
+                self._v_connection = ReconnectingPsycopgConnection(
                     self.Connection(self._connection_factory), self)
             except psycopg.Error, error:
                 raise DatabaseException(str(error))
@@ -361,12 +371,12 @@ def _check_expired(timeout):
 
 def hard_timeout_expired():
     """Returns True if the hard request timeout been reached."""
-    return _check_expired(config.launchpad.db_statement_timeout)
+    return _check_expired(dbconfig.db_statement_timeout)
 
 
 def soft_timeout_expired():
     """Returns True if the soft request timeout been reached."""
-    return _check_expired(config.launchpad.soft_request_timeout)
+    return _check_expired(dbconfig.soft_request_timeout)
 
 
 class RequestExpired(RuntimeError):
@@ -477,19 +487,19 @@ class LaunchpadDatabaseAdapter(ReconnectingDatabaseAdapter):
         """
         dbuser = getattr(self._local, 'dbuser', None)
         self.setDSN('dbi://%s@%s/%s' % (
-            dbuser or config.launchpad.dbuser,
-            config.dbhost or '',
-            config.dbname
+            dbuser or dbconfig.dbuser,
+            dbconfig.dbhost or '',
+            dbconfig.dbname
             ))
 
         flags = _get_dirty_commit_flags()
         connection = super(LaunchpadDatabaseAdapter,
                            self)._connection_factory()
 
-        if config.launchpad.db_statement_timeout is not None:
+        if dbconfig.db_statement_timeout is not None:
             cursor = connection.cursor()
             cursor.execute('SET statement_timeout TO %d' %
-                           config.launchpad.db_statement_timeout)
+                           dbconfig.db_statement_timeout)
             connection.commit()
 
         _reset_dirty_commit_flags(*flags)

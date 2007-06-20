@@ -206,7 +206,8 @@ class ProductOverviewMenu(ApplicationMenu):
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
-        'series_add', 'launchpad_usage', 'administer', 'rdf']
+        'series_add', 'launchpad_usage', 'administer', 'branch_visibility',
+        'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -272,6 +273,11 @@ class ProductOverviewMenu(ApplicationMenu):
     def administer(self):
         text = 'Administer'
         return Link('+review', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def branch_visibility(self):
+        text = 'Define branch visibility'
+        return Link('+branchvisibility', text, icon='edit')
 
 
 class ProductBugsMenu(ApplicationMenu):
@@ -564,6 +570,10 @@ class ProductView(LaunchpadView):
         url = canonical_url(series) + '/+bugs'
         return get_buglisting_search_filter_url(url, status=status)
 
+    def getLatestBranches(self):
+        return self.context.getLatestBranches(visible_by_user=self.user)
+
+
 class ProductDownloadFilesView(LaunchpadView):
 
     __used_for__ = IProduct
@@ -663,7 +673,8 @@ class ProductChangeTranslatorsView(ProductEditView):
 
 class ProductReviewView(ProductEditView):
     label = "Administer project details"
-    field_names = ["name", "owner", "active", "autoupdate", "reviewed"]
+    field_names = ["name", "owner", "active", "autoupdate", "reviewed",
+                   "private_bugs"]
 
 
 class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
@@ -1009,7 +1020,7 @@ class ProductBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, self.selected_lifecycle_status)
+            self.context, self.selected_lifecycle_status, self.user)
 
     @property
     def no_branch_message(self):

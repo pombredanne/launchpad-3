@@ -29,7 +29,7 @@ class IFAQTarget(Interface):
         :param date_created: The creation time of the document.
             Defaults to now.
 
-        Either content or url must be prrovided. It is an error to specify
+        Either content or url must be provided. It is an error to specify
         both.
         """
 

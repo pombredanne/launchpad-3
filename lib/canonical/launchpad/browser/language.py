@@ -72,6 +72,7 @@ class LanguageSetView:
         else:
             return 0
 
+
 # There is no easy way to remove an ILanguage from the database due all the
 # dependencies that ILanguage would have. That's the reason why we don't have
 # such functionality here.
@@ -170,3 +171,4 @@ class LanguageAdminView(LaunchpadEditFormView):
         if language_set.getLanguageByCode(new_code) is not None:
             self.setFieldError(
                 'code', 'There is already a language with that code.')
+

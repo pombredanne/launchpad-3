@@ -60,6 +60,7 @@
     <include file="distroarchseriesbinarypackagerelease.zcml" />
     <include file="driver.zcml" />
     <include file="emailaddress.zcml" />
+    <include file="entitlement.zcml" />
     <include file="faq.zcml" />
     <include file="files.zcml" />
     <include file="gpgkey.zcml" />
@@ -123,6 +124,7 @@
     <include file="teamparticipation.zcml" />
     <include file="team-subscriptions.zcml" />
     <include file="temporaryblobstorage.zcml" />
+    <include file="translationimportexport.zcml" />
     <include file="question.zcml" />
     <include file="question-events.zcml" />
     <include file="questionreopening.zcml" />

@@ -22,6 +22,7 @@ from zope.app.form.utility import setUpWidget
 
 from canonical.launchpad.interfaces import IBugWatch, ILaunchBag, NotFoundError
 from canonical.launchpad.webapp import canonical_url
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -485,3 +486,17 @@ class NewLineToSpacesWidget(StrippedTextWidget):
             lines = value.splitlines()
             value = ' '.join(lines)
         return value
+
+
+class NominationReviewActionWidget(LaunchpadRadioWidget):
+    """Widget for choosing a nomination review action.
+
+    It renders a radio box with no label for each option.
+    """
+    orientation = "horizontal"
+
+    # The label will always be the empty string.
+    _joinButtonToMessageTemplate = '%s%s'
+
+    def textForValue(self, term):
+        return u''

@@ -29,15 +29,14 @@ from openid.server.server import (
 from openid.server.trustroot import TrustRoot
 from openid import oidutil
 
+from canonical.config import config
 from canonical.launchpad.interfaces import (
-        IEmailAddressSet, ILaunchBag, IOpenIdAuthorizationSet,
-        ILaunchpadOpenIdStoreFactory, IPersonSet, NotFoundError,
-        UnexpectedFormData,
-        )
+        IEmailAddressSet, ILaunchBag, ILaunchpadOpenIdStoreFactory,
+        IOpenIdApplication, IOpenIdAuthorizationSet, IPersonSet,
+        NotFoundError, UnexpectedFormData)
 from canonical.launchpad.webapp import LaunchpadView, canonical_url
 from canonical.launchpad.webapp.publisher import (
-        stepthrough, Navigation, RedirectionView,
-        )
+        stepthrough, Navigation, RedirectionView)
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.uuid import generate_uuid
 
@@ -57,12 +56,6 @@ class IOpenIdView(Interface):
 class OpenIdView(LaunchpadView):
     implements(IOpenIdView)
 
-    def publishTraverse(self, request, name):
-        # XXX: Argh! Navigation doesn't seem to be hooked into view traversal
-        # -- StuartBishop 20070428
-        nav = OpenIdViewNavigation(self, request)
-        return nav.publishTraverse(request, name)
-
     openid_request = None
 
     default_template = ViewPageTemplateFile("../templates/openid-index.pt")
@@ -75,6 +68,7 @@ class OpenIdView(LaunchpadView):
         LaunchpadView.__init__(self, context, request)
         store_factory = getUtility(ILaunchpadOpenIdStoreFactory)
         self.openid_server = Server(store_factory())
+        self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
 
     def render(self):
         """Handle all OpenId requests and form submissions
@@ -116,10 +110,9 @@ class OpenIdView(LaunchpadView):
             self.login = self.getPersonNameByIdentity(
                     self.openid_request.identity)
             if self.isAuthorized():
-                openid_response = self.openid_request.answer(True)
+                openid_response = self.createPositiveResponse()
             else:
-                openid_response = self.openid_request.answer(
-                    False, allvhosts.configs['openid'].rooturl)
+                openid_response = self.createFailedResponse()
 
         # Handle checkid_setup requests.
         elif self.openid_request.mode == 'checkid_setup':
@@ -135,7 +128,7 @@ class OpenIdView(LaunchpadView):
                     'http://specs.openid.net/auth/2.0/identifier_select'):
                 # Magic identity indicating that we need to determine it.
                 self.login = self.user.name
-                self.openid_request.identity = '%s+openid/+id/%s' % (
+                self.openid_request.identity = '%s+id/%s' % (
                         allvhosts.configs['openid'].rooturl,
                         self.user.openid_identifier)
 
@@ -158,7 +151,7 @@ class OpenIdView(LaunchpadView):
 
             elif self.isAuthorized():
                 # User is logged in and the site is authorized.
-                openid_response = self.openid_request.answer(True)
+                openid_response = self.createPositiveResponse()
 
             else:
                 # We have an interactive id check request (checkid_setup).
@@ -191,20 +184,20 @@ class OpenIdView(LaunchpadView):
 
         >>> view = OpenIdView(None, None)
         >>> view.getPersonByIdentity(
-        ...     'http://openid.launchpad.dev/+openid/+id/temp1').name
+        ...     'http://openid.launchpad.dev/+id/sabdfl_oid').name
         u'sabdfl'
         >>> view.getPersonByIdentity(
-        ...     'http://openid.launchpad.dev/+openid/+id/temp1/').name
+        ...     'http://openid.launchpad.dev/+id/sabdfl_oid/').name
         u'sabdfl'
         >>> view.getPersonByIdentity('foo')
-        >>> view.getPersonByIdentity('http://example.com/+openid/+id/temp1')
+        >>> view.getPersonByIdentity('http://example.com/+id/sabdfl_oid')
         """
         assert allvhosts.configs['openid'].rooturl.endswith('/'), \
                 'rooturl does not end with trailing slash.'
 
         url_match_string = re.escape(
                 allvhosts.configs['openid'].rooturl
-                + '+openid/+id/'
+                + '+id/'
                 )
 
         match = re.search(r'^\s*%s(\w+)/?\s*$' % url_match_string, identity)
@@ -228,7 +221,7 @@ class OpenIdView(LaunchpadView):
         >>> view = OpenIdView(None, None)
         >>> view.getPersonNameByIdentity('foo')
         >>> view.getPersonNameByIdentity(
-        ...     'http://openid.launchpad.dev/+openid/+id/temp1')
+        ...     'http://openid.launchpad.dev/+id/sabdfl_oid')
         u'sabdfl'
         """
         person = self.getPersonByIdentity(identity)
@@ -282,6 +275,40 @@ class OpenIdView(LaunchpadView):
         for key in to_delete:
             del session[key]
 
+    def createPositiveResponse(self):
+        """Create a positive assertion OpenIDResponse.
+
+        This method should be called to create the response to
+        successful checkid requests.
+
+        If the trust root for the request is in openid_sreg_trustroots,
+        then additional user information is included with the
+        response.
+        """
+        response = self.openid_request.answer(True)
+        # If this is a trust root we know about and trust, send some
+        # user details.
+        if (self.openid_request.trust_root in
+            config.launchpad.openid_sreg_trustroots):
+            response.addField('sreg', 'email',
+                              self.user.preferredemail.email, signed=True)
+            response.addField('sreg', 'fullname',
+                              self.user.displayname, signed=True)
+            response.addField('sreg', 'nickname',
+                              self.user.name, signed=True)
+            response.addField('sreg', 'timezone',
+                              self.user.timezone, signed=True)
+        return response
+
+    def createFailedResponse(self):
+        """Create a failed assertion OpenIDResponse.
+
+        This method should be called to create the response to
+        unsuccessful checkid requests.
+        """
+        response = self.openid_request.answer(False, self.server_url)
+        return response
+
     def isIdentityOwner(self):
         """Returns True if we are logged in as the owner of the identity."""
         assert self.user is not None, "user should be logged in by now."
@@ -327,7 +354,6 @@ class OpenIdView(LaunchpadView):
             raise Unauthorized(
             "You are no longer logged in as the identity owner.")
 
-
     def trashSessionOpenIdRequest(self):
         """Remove the OpenIdRequest from the session using the nonce in the
         request.
@@ -372,7 +398,7 @@ class OpenIdView(LaunchpadView):
             auth_set.authorize(
                     self.user, self.openid_request.trust_root, expires)
 
-        return self.openid_request.answer(True)
+        return self.createPositiveResponse()
 
     def deny(self):
         """Handle "Deny" choice from the decide page.
@@ -381,7 +407,7 @@ class OpenIdView(LaunchpadView):
         the session immediately.
         """
         try:
-            return self.openid_request.answer(False)
+            return self.createFailedResponse()
         finally:
             self.trashSessionOpenIdRequest()
 
@@ -389,25 +415,8 @@ class OpenIdView(LaunchpadView):
         return ISession(self.request)[SESSION_PKG_KEY]
 
 
-class OpenIdViewNavigation(Navigation):
-    usedfor = IOpenIdView
-
-    # XXX: Bug #118215 -- email traversal should go -- StuartBishop 20070601
-    @stepthrough('+email')
-    def traverse_email(self, name):
-        # Allow traversal to email addresses, redirecting to the
-        # user's permanent OpenID URL.
-        email = getUtility(IEmailAddressSet).getByEmail(name)
-        if email is not None:
-            person = getUtility(IPersonSet).get(email.personID)
-            if not person.is_openid_enabled:
-                return None
-            target = '%s+openid/+id/%s' % (
-                    allvhosts.configs['openid'].rooturl,
-                    person.openid_identifier)
-            return RedirectionView(target, self.request, 303)
-        else:
-            return None
+class OpenIdApplicationNavigation(Navigation):
+    usedfor = IOpenIdApplication
 
     @stepthrough('+id')
     def traverse_id(self, name):
@@ -422,7 +431,7 @@ class OpenIdViewNavigation(Navigation):
         # or other services that cannot cope with name changes.
         person = getUtility(IPersonSet).getByName(name)
         if person is not None and person.is_openid_enabled:
-            target = '%s+openid/+id/%s' % (
+            target = '%s+id/%s' % (
                     allvhosts.configs['openid'].rooturl,
                     person.openid_identifier)
             return RedirectionView(target, self.request, 303)
@@ -456,8 +465,8 @@ class OpenIdIdentityView:
 
     def __call__(self):
         # Setup variables to pass to the template
-        self.server_url = allvhosts.configs['openid'].rooturl
-        self.identity_url = '%s+openid/+id/%s' % (
+        self.server_url = allvhosts.configs['openid'].rooturl + '+openid'
+        self.identity_url = '%s+id/%s' % (
                 self.server_url, self.context.openid_identifier)
         self.person_url = canonical_url(self.context, rootsite='mainsite')
         self.meta_refresh_content = "1; URL=%s" % self.person_url
