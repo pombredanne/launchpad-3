@@ -469,7 +469,7 @@ class LinkFAQTestCase(BaseAnswerTrackerWorkflowTestCase):
             self.admin, 'Generic HowTo', 'Describe how to do anything.',
             url='http://www.everythingyouwantedtoknowbutwereafraidtoask.com')
 
-        # Logs back as owner.
+        # Logs in as owner.
         login(self.owner.preferredemail.email)
 
     def test_linkFAQ(self):

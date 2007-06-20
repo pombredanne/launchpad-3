@@ -73,7 +73,7 @@ class FAQ(SQLBase):
             date_created=None, product=None, distribution=None):
         """Factory method to create a new FAQ.
 
-        It makes sure that only of url or content, and product or
+        Ensure that only one of url or content, and product or
         distribution is given.
         """
         if not IPerson.providedBy(owner):
@@ -102,7 +102,7 @@ class FAQ(SQLBase):
 
         See `IFAQTarget.findSimilarFAQs` for details.
         """
-        assert not(product and distribution), (
+        assert not (product and distribution), (
             'only one of product or distribution should be provided')
         if product:
             target_constraint = 'product = %s' % sqlvalues(product)

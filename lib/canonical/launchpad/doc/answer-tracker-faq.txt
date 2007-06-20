@@ -2,7 +2,7 @@
 
 == IFAQTarget ==
 
-The Answer Tracker offers feature to manage answers to commonly asked
+The Answer Tracker offers features to manage answers to frequently asked
 questions (also called FAQ). Like the regular questions, FAQ documents
 are associated to distributions or products. The IFAQTarget interface
 is provided by objects that can host FAQs.
