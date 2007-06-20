@@ -23,7 +23,6 @@ from canonical.authserver.xmlrpc import (
 from canonical.authserver.database import (
     DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
     DatabaseBranchDetailsStorage)
-from canonical.launchpad.daemons.tachandler import ReadyService
 from canonical.config import config
 
 

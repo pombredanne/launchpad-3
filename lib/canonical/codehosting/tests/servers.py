@@ -20,8 +20,7 @@ from bzrlib.transport import get_transport, sftp, ssh, Server
 
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import keys
-from twisted.internet import defer, process, protocol
-from twisted.protocols import basic
+from twisted.internet import defer, process
 from twisted.python import components
 from twisted.python.util import sibpath
 
