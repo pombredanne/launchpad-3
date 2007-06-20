@@ -159,7 +159,7 @@ class AcceptanceTests(SSHTestCase):
         # Rename branch in the database
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.getHostedBranch('testuser', None, 'test-branch')
-        self.branch_id = branch.id
+        branch_id = branch.id
         branch.name = 'renamed-branch'
         LaunchpadZopelessTestSetup().txn.commit()
 
