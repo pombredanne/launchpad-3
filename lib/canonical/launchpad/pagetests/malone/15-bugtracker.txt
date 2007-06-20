@@ -28,10 +28,10 @@ and SourceForge because there is only one instance (SourceForge.net).
   Trac
 
 
-We're not allowed to enter a name with uppercase characters, if we do so, we
+We're not allowed to enter a name with invalid characters, if we do so, we
 get a nice error message.
 
-  >>> user_browser.getControl('Name').value = 'TestTTrac'
+  >>> user_browser.getControl('Name').value = 'testttrac!'
   >>> user_browser.getControl('Bug Tracker Type').getControl('Trac').click()
   >>> user_browser.getControl('Title').value = 'Test Trac Tracker'
   >>> user_browser.getControl('Summary').value = 'This is a test TRAC tracker.'
@@ -43,7 +43,7 @@ get a nice error message.
   >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(user_browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
-  Invalid name 'TestTTrac'. Names must start with a letter or
+  Invalid name 'testttrac!'. Names must start with a letter or
   number and be lowercase. The characters <samp>+</samp>,
   <samp>-</samp> and <samp>.</samp> are also allowed after the
   first character.
@@ -81,7 +81,7 @@ If we try to add a bugtracker with the same name of a existing one, we'll get
 a nice error message.
 
   >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/+newbugtracker')
- 
+
   >>> user_browser.getControl('Name').value = 'testtrac'
   >>> user_browser.getControl('Bug Tracker Type').getControl('Trac').click()
   >>> user_browser.getControl('Title').value = 'Test Trac Tracker'

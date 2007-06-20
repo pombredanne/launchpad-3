@@ -76,17 +76,20 @@
   <tal:block define="spr sourcepackagerelease;
                      distroseries spr/uploaddistroseries">
     <td>
-      <a tal:attributes="href string:${distroseries/fmt:url}/+source/${spr/name}"
+      <a tal:attributes="href string:${distroseries/distribution/fmt:url}/+source/${spr/name}"
+         class="distrosrcpackage"
          tal:content="spr/sourcepackagename/name">
       </a>
     </td>
     <td>
-      <a tal:attributes="href distroseries/fmt:url"
+      <a tal:attributes="href string:${distroseries/fmt:url}/+source/${spr/name}"
+         class="distroseriessrcpackage"
          tal:content="distroseries/fullseriesname">
       </a>
     </td>
     <td>
-      <a tal:attributes="href string:${distroseries/fmt:url}/+source/${spr/name}/${spr/version}"
+      <a tal:attributes="href string:${distroseries/distribution/fmt:url}/+source/${spr/name}/${spr/version}"
+         class="distrosrcpackagerelease"
          tal:content="spr/version">
       </a>
     </td>
@@ -110,12 +113,12 @@
       </tal:block>
     </td>
     <td style="text-align: right">
-      <a tal:attributes="href string: ${spr/distrosourcepackage/fmt:url}/+bugs"
+      <a tal:attributes="href string:${spr/distrosourcepackage/fmt:url}/+bugs"
          tal:content="python: spr.countOpenBugsInUploadedDistro(view.user)">
       </a>
     </td>
     <td style="text-align: right">
-      <a tal:attributes="href string: ${spr/sourcepackage/fmt:url}/+questions"
+      <a tal:attributes="href string:${spr/sourcepackage/fmt:url}/+questions"
          tal:content="spr/@@+open_questions_count">
       </a>
     </td>

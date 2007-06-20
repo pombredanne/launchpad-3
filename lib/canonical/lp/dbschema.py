@@ -45,6 +45,8 @@ __all__ = (
 'CveStatus',
 'DistroSeriesStatus',
 'EmailAddressStatus',
+'EntitlementState',
+'EntitlementType',
 'GPGKeyAlgorithm',
 'ImportTestStatus',
 'ImportStatus',
@@ -70,7 +72,6 @@ __all__ = (
 'QuestionSort',
 'QuestionStatus',
 'RevisionControlSystems',
-'RosettaFileFormat',
 'RosettaImportStatus',
 'RosettaTranslationOrigin',
 'ShipItArchitecture',
@@ -95,6 +96,7 @@ __all__ = (
 'TeamMembershipRenewalPolicy',
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
+'TranslationFileFormat',
 'TranslationPriority',
 'TranslationPermission',
 'TranslationValidationStatus',
@@ -643,14 +645,14 @@ class TeamMembershipRenewalPolicy(DBSchema):
     """
 
     NONE = Item(10, """
-        None
+        invite them to apply for renewal
 
         Memberships can be renewed only by team administrators or by going
         through the normal workflow for joining the team.
         """)
 
     ONDEMAND = Item(20, """
-        On demand
+        invite them to renew their own membership
 
         Memberships can be renewed by the members themselves a few days before
         it expires. After it expires the member has to go through the normal
@@ -658,7 +660,7 @@ class TeamMembershipRenewalPolicy(DBSchema):
         """)
 
     AUTOMATIC = Item(30, """
-        Automatic
+        renew their membership automatically, also notifying the admins
 
         Memberships are automatically renewed when they expire and a note is
         sent to the member and to team admins.
@@ -2682,32 +2684,48 @@ class BugTaskStatus(DBSchema):
     The various possible states for a bugfix in a specific place.
     """
 
-    UNCONFIRMED = Item(10, """
-        Unconfirmed
+    NEW = Item(10, """
+        New
 
         This is a new bug and has not yet been confirmed by the maintainer of
         this product or source package.
         """)
 
-    NEEDSINFO = Item(15, """
-        Needs Info
+    INCOMPLETE = Item(15, """
+        Incomplete
 
         More info is required before making further progress on this bug, likely
         from the reporter. E.g. the exact error message the user saw, the URL
         the user was visiting when the bug occurred, etc.
         """)
 
-    REJECTED = Item(17, """
-        Rejected
+    INVALID = Item(17, """
+        Invalid
 
-        This bug has been rejected, e.g. in cases of operator-error.
+        This is not a bug. It could be a support request, spam, or a misunderstanding.
+        """)
+
+    WONTFIX = Item(18, """
+        Won't Fix
+
+        This will not be fixed. For example, this might be a bug but it's not considered worth
+        fixing, or it might not be fixed in this release.
         """)
 
     CONFIRMED = Item(20, """
         Confirmed
 
         This bug has been reviewed, verified, and confirmed as something needing
-        fixing.
+        fixing. Anyone can set this status.
+        """)
+
+    TRIAGED = Item(21, """
+        Triaged
+
+        This bug has been reviewed, verified, and confirmed as
+        something needing fixing. The user must be a bug contact to
+        set this status, so it carries more weight than merely
+        Confirmed.
         """)
 
     INPROGRESS = Item(22, """
@@ -3355,11 +3373,11 @@ class PollAlgorithm(DBSchema):
         """)
 
 
-class RosettaFileFormat(DBSchema):
-    """Rosetta File Format
+class TranslationFileFormat(DBSchema):
+    """Translation File Format
 
-    This is an enumeration of the different sorts of file that Rosetta can
-    export.
+    This is an enumeration of the different sorts of file that Launchpad
+    Translations knows about.
     """
 
     PO = Item(1, """
@@ -3374,35 +3392,10 @@ class RosettaFileFormat(DBSchema):
         Gettext's standard binary file format.
         """)
 
-    XLIFF = Item(3, """
-        XLIFF
+    XPI = Item(3, """
+        Mozilla XPI format
 
-        OASIS's XML Localisation Interchange File Format.
-        """)
-
-    CSHARP_DLL = Item(4, """
-        .NET DLL
-
-        The dynamic link library format as used by programs that use the .NET
-        framework.
-        """)
-
-    CSHARP_RESOURCES = Item(5, """
-        .NET resource file
-
-        The resource file format used by programs that use the .NET framework.
-        """)
-
-    TCL = Item(6, """
-        TCL format
-
-        The .msg format as used by TCL/msgcat.
-        """)
-
-    QT = Item(7, """
-        QT format
-
-        The .qm format as used by programs using the QT toolkit.
+        The .xpi format as used by programs from Mozilla foundation.
         """)
 
 
@@ -3680,4 +3673,55 @@ class PersonCreationRationale(DBSchema):
 
         A user wanted to reference a person which is not a Launchpad user, so
         he created this "placeholder" profile.
+        """)
+
+class EntitlementType(DBSchema):
+    """The set of features supported via entitlements.
+
+    The listed features may be enabled by the granting of an entitlement.
+    """
+
+    PRIVATE_BRANCHES = Item(10, """
+        Private Branches
+
+        The ability to create branches which are only visible to the team.
+        """)
+
+    PRIVATE_BUGS = Item(20, """
+        Private Bugs
+
+        The ability to create private bugs which are only visible to the team.
+        """)
+
+    PRIVATE_TEAMS = Item(30, """
+        Private Teams
+
+        The ability to create private teams which are only visible to parent
+        teams.
+        """)
+
+class EntitlementState(DBSchema):
+    """States for an entitlement.
+
+    The entitlement may start life as a REQUEST that is then granted and
+    made ACTIVE.  At some point the entitlement may be revoked by marking
+    as INACTIVE.
+    """
+
+    REQUESTED = Item(10, """
+        Entitlement has been requested.
+
+        The entitlement is inactive in this state.
+        """)
+
+    ACTIVE = Item(20, """
+        The entitlement is active.
+
+        The entitlement is approved in Launchpad or was imported in the
+        active state.
+        """)
+    INACTIVE = Item(30, """
+        The entitlement is inactive.
+
+        The entitlement has be deactivated.
         """)

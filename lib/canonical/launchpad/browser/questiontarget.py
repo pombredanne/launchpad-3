@@ -34,12 +34,12 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import is_english_variant, request_languages
 from canonical.launchpad.interfaces import (
-    IDistribution, ILanguageSet, IProject, IQuestionCollection,
+    IDistribution, ILanguageSet, IProject, IQuestionCollection, IQuestionSet,
     IQuestionTarget, ISearchableByQuestionOwner, ISearchQuestionsForm,
     NotFoundError)
 from canonical.launchpad.webapp import (
-    action, canonical_url, custom_widget, stepto, stepthrough, urlappend,
-    ApplicationMenu, LaunchpadFormView, Link, safe_action)
+    action, ApplicationMenu, canonical_url, custom_widget, LaunchpadFormView,
+    Link, safe_action, stepto, stepthrough, urlappend)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import QuestionStatus
 from canonical.widgets import LabeledMultiCheckBoxWidget
@@ -74,19 +74,16 @@ class UserSupportLanguagesMixin:
     def user_support_languages(self):
         """The set of user support languages.
 
-        This set includes English and the user's preferred languages,
-        excluding all English variants. If the user is not logged in, or
-        doesn't have any preferred languages set, the languages will be
-        inferred from the request's (the Accept-Language header and GeoIP
+        This set includes the user's preferred languages, excluding all 
+        English variants. If the user is not logged in, or doesn't have 
+        any preferred languages set, the languages will be inferred 
+        from the request (the Accept-Language header and GeoIP
         information).
         """
-        en = getUtility(ILanguageSet)['en']
         languages = set(
             language for language in request_languages(self.request)
-            if not is_english_variant(language)
-            and language is not en)
+            if not is_english_variant(language))
         languages = list(languages)
-        languages.insert(0, en)
         return languages
 
 
@@ -186,7 +183,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
         This validation method sets the chosen_language attribute.
         """
-        if 'status' not in data:
+        if not data.get('status', []):
             self.setFieldError(
                 'status', _('You must choose at least one status.'))
 
@@ -471,7 +468,7 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
         return dict(language=None, unsupported=True)
 
 
-class ManageAnswerContactView(LaunchpadFormView):
+class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
     """View class for managing answer contacts."""
 
     label = _("Manage answer contacts")
@@ -534,6 +531,10 @@ class ManageAnswerContactView(LaunchpadFormView):
         response = self.request.response
         replacements = {'context': self.context.displayname}
         if want_to_be_answer_contact:
+            # a person must speak a language to be an answer contact.
+            if self.user.languages.count() == 0:
+                for language in self.user_support_languages:
+                    self.user.addLanguage(language)
             if self.context.addAnswerContact(self.user):
                 response.addNotification(
                     _('You have been added as an answer contact for '
@@ -547,6 +548,8 @@ class ManageAnswerContactView(LaunchpadFormView):
         for team in self.administrated_teams:
             replacements['teamname'] = team.displayname
             if team in answer_contact_teams:
+                if team.languages.count() == 0:
+                    team.addLanguage(getUtility(ILanguageSet)['en'])
                 if self.context.addAnswerContact(team):
                     response.addNotification(
                         _('$teamname has been added as an answer contact '
@@ -581,7 +584,16 @@ class QuestionTargetTraversalMixin:
             question_id = int(name)
         except ValueError:
             raise NotFoundError(name)
-        return self.context.getQuestion(question_id)
+        question = self.context.getQuestion(question_id)
+        if question is not None:
+            return question
+
+        # Try to find the question in another context, since it may have
+        # been retargeted.
+        question = getUtility(IQuestionSet).get(question_id)
+        if question is None:
+            raise NotFoundError(name)
+        return self.redirectSubTree(canonical_url(question))
 
 
     @stepto('+ticket')

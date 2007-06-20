@@ -17,10 +17,10 @@ from canonical.archiveuploader.uploadpolicy import AbstractUploadPolicy
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import (
-    import_public_test_keys, syncUpdate)
+from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IDistroSeriesSet, IPersonSet, IArchiveSet)
+    IDistributionSet, IDistroSeriesSet, IPersonSet, IArchiveSet,
+    ILaunchpadCelebrities)
 from canonical.launchpad.mail import stub
 from canonical.lp.dbschema import (
     PackageUploadStatus, DistroSeriesStatus, PackagePublishingStatus,
@@ -261,6 +261,16 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         """
         TestUploadProcessorBase.setUp(self)
 
+        # Let's make 'name16' person member of 'launchpad-beta-tester'
+        # team only in the context of this test.
+        beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
+        admin = getUtility(ILaunchpadCelebrities).admin
+        name16 = getUtility(IPersonSet).getByName("name16")
+        beta_testers.addMember(name16, admin)
+        # Pop the two messages notifying the team modification.
+        unused = stub.test_emails.pop()
+        unused = stub.test_emails.pop()
+
         # Extra setup for breezy
         self.setupBreezy()
         self.layer.txn.commit()
@@ -282,7 +292,9 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         if not recipients:
             recipients = self.default_recipients
 
-        self.assertTrue(len(stub.test_emails) == 1)
+        self.assertEqual(
+            len(stub.test_emails), 1,
+            'Unexpected number of emails sent: %s' % len(stub.test_emails))
 
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
 
@@ -311,7 +323,8 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = ["Subject: Accepted bar 1.0-1 (source)"]
+        contents = [
+            "Subject: [PPA name16] Accepted bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
         self.assertNotEqual(name16.archive, None)
@@ -347,7 +360,8 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "bar_1.0-1", "~name16/ubuntu/hoary")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = ["Subject: Accepted bar 1.0-1 (source)"]
+        contents = [
+            "Subject: [PPA name16] Accepted bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
         self.assertNotEqual(name16.archive, None)
@@ -375,7 +389,8 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~ubuntu-team/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = ["Subject: Accepted bar 1.0-1 (source)"]
+        contents = [
+            "Subject: [PPA ubuntu-team] Accepted bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
         self.assertNotEqual(ubuntu_team.archive, None)
@@ -417,7 +432,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.assertEmail(contents)
 
     def testUploadSignedByNonUbuntero(self):
-        """ """
+        """Check if a non-ubuntero can upload to his PPA."""
         name16 = getUtility(IPersonSet).getByName("name16")
         self.assertEqual(name16.archive, None)
 
@@ -431,7 +446,26 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "Subject: bar_1.0-1_source.changes Rejected",
             "PPA uploads must be signed by an 'ubuntero'."]
         self.assertEmail(contents)
+        self.assertTrue(name16.archive is None)
 
+    def testUploadSignedByBetaTesterMember(self):
+        """Check if a non-member of launchpad-beta-testers can upload to PPA."""
+        name16 = getUtility(IPersonSet).getByName("name16")
+        self.assertEqual(name16.archive, None)
+
+        beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
+        name16.leave(beta_testers)
+        # Pop the message notifying the membership modification.
+        unused = stub.test_emails.pop()
+
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes Rejected",
+            "PPA is only allowed for members of launchpad-beta-testers team."]
+        self.assertEmail(contents)
+        self.assertEqual(name16.archive, None)
 
     def testUploadToUnknownDistribution(self):
         """Upload to unknown distribution gets proper rejection email."""
