@@ -138,3 +138,72 @@ questions are written in Launchpad.
     >>> sorted([language.code
     ...         for language in question_set.getQuestionLanguages()])
     [u'en', u'es', u'pt_BR']
+
+== getActiveProjects() ==
+
+This method can be used to retrieve the projects that are the most
+actively using the Answer Tracker in the last 60 days. By active, we
+mean that the project is registered as officially using Answers and
+had some questions asked in the period. The projects are ordered
+by the number of questions asked during the period.
+
+Sample data should not contain any questions more recent than
+two months, so no projects are initially returned:
+
+    >>> for project in question_set.getMostActiveProjects():
+    ...     print project.displayname
+
+Create recent questions on a number of projects.
+
+    >>> from canonical.launchpad.ftests.answertracker import (
+    ...     QuestionFactory)
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, ILaunchBag, IProductSet)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> landscape = getUtility(IProductSet).getByName('landscape')
+    >>> launchpad = getUtility(IProductSet).getByName('launchpad')
+
+    >>> login('no-priv@canonical.com')
+    >>> no_priv = getUtility(ILaunchBag).user
+    >>> QuestionFactory.createManyByProject([
+    ...     ('ubuntu', 3),
+    ...     ('firefox', 2),
+    ...     ('landscape', 1)])
+
+Create a question just before the time limit on Launchpad.
+
+    >>> from datetime import datetime, timedelta
+    >>> from pytz import UTC
+    >>> question = launchpad.newQuestion(
+    ...     no_priv, 'Launchpad question', 'A question',
+    ...     datecreated=datetime.now(UTC) - timedelta(days=61))
+    >>> login(ANONYMOUS)
+
+The method returns only projects which officially use the Answer
+Tracker. The order of the returned projects is based on the number of
+questions asked during the period.
+
+    >>> ubuntu.official_answers
+    True
+    >>> firefox.official_answers
+    True
+    >>> landscape.official_answers
+    False
+    >>> launchpad.official_answers
+    True
+
+    >>> for project in question_set.getMostActiveProjects():
+    ...     print project.displayname
+    Ubuntu
+    Mozilla Firefox
+
+(Launchpad is not returned because the question was not asked in
+the last 60 days.)
+
+The method accepts an optional limit parameter limiting the number of
+project returned:
+
+    >>> for project in question_set.getMostActiveProjects(limit=1):
+    ...     print project.displayname
+    Ubuntu

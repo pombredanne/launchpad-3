@@ -18,7 +18,7 @@ from canonical.lp.dbschema import RosettaTranslationOrigin
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.interfaces import (
-    IProductSet, IDistributionSet, IDistroReleaseSet, ISourcePackageNameSet,
+    IProductSet, IDistributionSet, IDistroSeriesSet, ISourcePackageNameSet,
     IPOTemplateSet, ILaunchpadCelebrities)
 
 logger_name = 'remove-upstream-translations'
@@ -36,8 +36,8 @@ def parse_options(args):
         help="The product series where we should look for translations.")
     parser.add_option("-d", "--distro", dest="distro",
         help="The distribution where we should look for translations.")
-    parser.add_option("-r", "--distrorelease", dest="distrorelease",
-        help="The distribution release where we should look for translations."
+    parser.add_option("-r", "--distroseries", dest="distroseries",
+        help="The distribution series where we should look for translations."
         )
     parser.add_option("-n", "--sourcepackagename", dest="sourcepackagename",
         help="The distribution where we should look for translations.")
@@ -136,7 +136,7 @@ def main(argv):
     product = None
     series = None
     distro = None
-    distrorelease = None
+    distroseries = None
     sourcepackagename = None
     potemplatename = None
     language_code = None
@@ -174,23 +174,23 @@ def main(argv):
                 'The %s distribution does not exist.' % options.distro)
             return 1
 
-    if options.distrorelease is not None:
+    if options.distroseries is not None:
         if distro is None:
             logger_object.error(
                 'You need to specify a distribution if you want to select a'
                 ' sourcepackagename.')
-        distroreleaseset = getUtility(IDistroReleaseSet)
-        distrorelease = distroreleaseset.queryByName(
-            distro, options.distrorelease)
-        if distrorelease is None:
+        distroseriesset = getUtility(IDistroSeriesSet)
+        distroseries = distroseriesset.queryByName(
+            distro, options.distroseries)
+        if distroseries is None:
             logger_object.error(
-                'The %s distribution does not exist.' % options.distrorelease)
+                'The %s distribution does not exist.' % options.distroseries)
             return 1
 
     if options.sourcepackagename is not None:
-        if distrorelease is None:
+        if distroseries is None:
             logger_object.error(
-                'You need to specify a distribution release if you want to'
+                'You need to specify a distribution series if you want to'
                 ' select a sourcepackagename.')
             return 1
         sourcepackagenameset = getUtility(ISourcePackageNameSet)
@@ -203,7 +203,7 @@ def main(argv):
             return 1
 
     potemplateset = getUtility(IPOTemplateSet)
-    if series is None and distrorelease is None:
+    if series is None and distroseries is None:
         if options.potemplatename is None:
             logger_object.warning('Nothing to do. Exiting...')
             return 0
@@ -212,7 +212,7 @@ def main(argv):
                 options.potemplatename)
     else:
         potemplate_subset = potemplateset.getSubset(
-            distrorelease=distrorelease, sourcepackagename=sourcepackagename,
+            distroseries=distroseries, sourcepackagename=sourcepackagename,
             productseries=series)
         if options.potemplatename is not None:
             potemplate = potemplate_subset.getPOTemplateByName(

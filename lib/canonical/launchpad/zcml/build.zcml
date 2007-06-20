@@ -21,7 +21,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.IBuild"
         path_expression="string:+build/${id}"
-        parent_utility="canonical.launchpad.interfaces.IBuilderSet"
+        attribute_to_parent="distributionsourcepackagerelease"
         />
 
     <browser:menus

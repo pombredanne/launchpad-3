@@ -14,9 +14,8 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound, AND)
-from sqlobject.sqlbuilder import SQLConstant
 
-from canonical.database.sqlbase import quote, SQLBase, sqlvalues, cursor
+from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -30,7 +29,9 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.database.answercontact import AnswerContact
-from canonical.launchpad.database.branch import Branch
+from canonical.launchpad.database.branch import Branch, BranchSet
+from canonical.launchpad.database.branchvisibilitypolicy import (
+    BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
@@ -45,7 +46,8 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.question import (
-    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
+    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet,
+    QuestionTargetMixin)
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
@@ -54,7 +56,6 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    get_supported_languages,
     ICalendarOwner,
     IHasIcon,
     IHasLogo,
@@ -72,7 +73,8 @@ from canonical.launchpad.interfaces import (
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
-              KarmaContextMixin):
+              KarmaContextMixin, BranchVisibilityPolicyMixin,
+              QuestionTargetMixin):
     """A Product."""
 
     implements(IProduct, ICalendarOwner, IQuestionTarget,
@@ -131,6 +133,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         dbName='official_rosetta', notNull=True, default=False)
     active = BoolCol(dbName='active', notNull=True, default=True)
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
+    private_bugs = BoolCol(
+        dbName='private_bugs', notNull=True, default=False)
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
     freshmeatproject = StringCol(notNull=False, default=None)
     sourceforgeproject = StringCol(notNull=False, default=None)
@@ -183,7 +187,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     branches = SQLMultipleJoin('Branch', joinColumn='product',
         orderBy='id')
-    serieslist = SQLMultipleJoin('ProductSeries', joinColumn='product',
+    serieses = SQLMultipleJoin('ProductSeries', joinColumn='product',
         orderBy='name')
 
     @property
@@ -241,12 +245,12 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
                     """ % sqlvalues(self.id)
         clauseTables = ['ProductSeries']
         ret = Packaging.select(clause, clauseTables,
-            prejoins=["sourcepackagename", "distrorelease.distribution"])
+            prejoins=["sourcepackagename", "distroseries.distribution"])
         sps = [SourcePackage(sourcepackagename=r.sourcepackagename,
-                             distrorelease=r.distrorelease) for r in ret]
+                             distroseries=r.distroseries) for r in ret]
         return sorted(sps, key=lambda x:
-            (x.sourcepackagename.name, x.distrorelease.name,
-             x.distrorelease.distribution.name))
+            (x.sourcepackagename.name, x.distroseries.name,
+             x.distroseries.distribution.name))
 
     @property
     def distrosourcepackages(self):
@@ -257,11 +261,11 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
                     """ % sqlvalues(self.id)
         clauseTables = ['ProductSeries']
         ret = Packaging.select(clause, clauseTables,
-            prejoins=["sourcepackagename", "distrorelease.distribution"])
+            prejoins=["sourcepackagename", "distroseries.distribution"])
         distros = set()
         dsps = []
         for packaging in ret:
-            distro = packaging.distrorelease.distribution
+            distro = packaging.distroseries.distribution
             if distro in distros:
                 continue
             distros.add(distro)
@@ -276,22 +280,21 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See IBugTarget."""
         return '%s (upstream)' % self.name
 
-    def getLatestBranches(self, quantity=5):
+    def getLatestBranches(self, quantity=5, visible_by_user=None):
         """See IProduct."""
-        # XXX Should use Branch.date_created. See bug 38598.
-        # -- David Allouche 2006-04-11
-        return shortlist(Branch.selectBy(product=self,
-            orderBy='-id').limit(quantity))
+        return shortlist(
+            BranchSet().getLatestBranchesForProduct(
+                self, quantity, visible_by_user))
 
-    def getPackage(self, distrorelease):
+    def getPackage(self, distroseries):
         """See IProduct."""
-        if isinstance(distrorelease, Distribution):
-            distrorelease = distrorelease.currentrelease
+        if isinstance(distroseries, Distribution):
+            distroseries = distroseries.currentrelease
         for pkg in self.sourcepackages:
-            if pkg.distrorelease == distrorelease:
+            if pkg.distroseries == distroseries:
                 return pkg
         else:
-            raise NotFoundError(distrorelease)
+            raise NotFoundError(distroseries)
 
     def getMilestone(self, name):
         """See IProduct."""
@@ -308,10 +311,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def _getBugTaskContextClause(self):
         """See BugTargetBase."""
         return 'BugTask.product = %s' % sqlvalues(self)
-
-    def getSupportedLanguages(self):
-        """See IQuestionTarget."""
-        return get_supported_languages(self)
 
     def newQuestion(self, owner, title, description, language=None,
                     datecreated=None):
@@ -340,7 +339,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             unsupported_target = self
         else:
             unsupported_target = None
-            
+
         return QuestionTargetSearch(
             product=self,
             search_text=search_text, status=status,
@@ -353,14 +352,9 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See IQuestionTarget."""
         return SimilarQuestionsSearch(title, product=self).getResults()
 
-    def addAnswerContact(self, person):
-        """See IQuestionTarget."""
-        if person in self.answer_contacts:
-            return False
-        AnswerContact(
-            product=self, person=person,
-            sourcepackagename=None, distribution=None)
-        return True
+    def _getTargetTypes(self):
+        """See QuestionTargetMixin."""
+        return {'product': self}
 
     def removeAnswerContact(self, person):
         """See IQuestionTarget."""
@@ -396,8 +390,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See IProduct."""
         packages = set(package for package in self.sourcepackages
                        if len(package.currentpotemplates) > 0)
-        # Sort packages by distrorelease.name and package.name
-        return sorted(packages, key=lambda p: (p.distrorelease.name, p.name))
+        # Sort packages by distroseries.name and package.name
+        return sorted(packages, key=lambda p: (p.distroseries.name, p.name))
 
     @property
     def translatable_series(self):
@@ -415,14 +409,14 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See IProduct."""
         packages = self.translatable_packages
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        targetrelease = ubuntu.currentrelease
+        targetseries = ubuntu.currentseries
         # First, go with the latest product series that has templates:
         series = self.translatable_series
         if series:
             return series[0]
-        # Otherwise, look for an Ubuntu package in the current distrorelease:
+        # Otherwise, look for an Ubuntu package in the current distroseries:
         for package in packages:
-            if package.distrorelease == targetrelease:
+            if package.distroseries == targetseries:
                 return package
         # now let's make do with any ubuntu package
         for package in packages:
@@ -612,6 +606,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def newBranch(self, name, title, url, home_page, lifecycle_status,
                   summary, whiteboard):
         """See IProduct."""
+        # XXX thumper-angry - FIX THIS!!!!
+        # use BranchSet
         from canonical.launchpad.database import Branch
         return Branch(
             product=self, name=name, title=title, url=url, home_page=home_page,

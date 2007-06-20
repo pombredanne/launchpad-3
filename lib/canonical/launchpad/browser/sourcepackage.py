@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import TranslationUnavailableError
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -34,6 +34,7 @@ from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
+from canonical.launchpad.browser.rosetta import TranslationsMixin
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
@@ -51,14 +52,14 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
     def pots(self):
         potemplateset = getUtility(IPOTemplateSet)
         sourcepackage_pots = potemplateset.getSubset(
-            distrorelease=self.context.distrorelease,
+            distroseries=self.context.distroseries,
             sourcepackagename=self.context.sourcepackagename)
 
-        if (self.context.distrorelease.hide_all_translations and
+        if (self.context.distroseries.hide_all_translations and
             not check_permission('launchpad.Admin', sourcepackage_pots)):
-            raise TranslationUnavailableError(
-                'Translation updates in progress.  Only admins may view'
-                ' translations for this sourcepackage.')
+            raise TranslationUnavailable(
+                'Translation updates are in progress.  Only administrators may view'
+                ' translations for this source package.')
 
         return sourcepackage_pots
 
@@ -90,7 +91,7 @@ class SourcePackageSOP(StructuralObjectPresentation):
 
     def getIntroHeading(self):
         return self.context.distribution.displayname + ' ' + \
-               self.context.distrorelease.version + ' source package:'
+               self.context.distroseries.version + ' source package:'
 
     def getMainHeading(self):
         return self.context.sourcepackagename
@@ -171,7 +172,7 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
         return Link('+potemplatenames', 'Edit template names', icon='edit')
 
 
-class SourcePackageView(BuildRecordsView):
+class SourcePackageView(BuildRecordsView, TranslationsMixin):
 
     def initialize(self):
         # lets add a widget for the product series to which this package is
@@ -186,10 +187,6 @@ class SourcePackageView(BuildRecordsView):
         self.status_message = None
         self.processForm()
 
-    @property
-    def languages(self):
-        return helpers.request_languages(self.request)
-
     def processForm(self):
         # look for an update to any of the things we track
         form = self.request.form
@@ -201,7 +198,7 @@ class SourcePackageView(BuildRecordsView):
                 self.productseries_widget.setRenderedValue(new_ps)
                 self.status_message = 'Upstream link updated, thank you!'
             else:
-                self.status_message = 'Invalid release series given.'
+                self.status_message = 'Invalid series given.'
 
     def published_by_pocket(self):
         """This morfs the results of ISourcePackage.published_by_pocket into
@@ -220,14 +217,14 @@ class SourcePackageView(BuildRecordsView):
         """Format binary packages into binarypackagename and archtags"""
         results = {}
         all_arch = sorted([arch.architecturetag for arch in
-                           self.context.distrorelease.architectures])
+                           self.context.distroseries.architectures])
         for bin in self.context.currentrelease.binaries:
-            distroarchrelease = bin.build.distroarchrelease
+            distroarchseries = bin.build.distroarchseries
             if bin.name not in results:
                 results[bin.name] = []
 
             if bin.architecturespecific:
-                results[bin.name].append(distroarchrelease.architecturetag)
+                results[bin.name].append(distroarchseries.architecturetag)
             else:
                 results[bin.name] = all_arch
             results[bin.name].sort()
@@ -238,9 +235,9 @@ class SourcePackageView(BuildRecordsView):
         """Wrap the relationship_builder for SourcePackages.
 
         Define apt_pkg.ParseSrcDep as a relationship 'parser' and
-        IDistroRelease.getBinaryPackage as 'getter'.
+        IDistroSeries.getBinaryPackage as 'getter'.
         """
-        getter = self.context.distrorelease.getBinaryPackage
+        getter = self.context.distroseries.getBinaryPackage
         parser = ParseSrcDepends
         return relationship_builder(content, parser=parser, getter=getter)
 

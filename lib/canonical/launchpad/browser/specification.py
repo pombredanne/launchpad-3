@@ -27,7 +27,6 @@ import cgi
 from subprocess import Popen, PIPE
 from operator import attrgetter
 
-from zope.interface import implements
 from zope.component import getUtility
 from zope.app.form.browser.itemswidgets import DropdownWidget
 
@@ -59,7 +58,6 @@ from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import (
     AppFrontPageSearchView, StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.widgets.project import ProjectScopeWidget
 
 from canonical.lp.dbschema import SpecificationStatus
 
@@ -145,9 +143,9 @@ class SpecificationContextMenu(ContextMenu):
         if self.context.goal is not None:
             text = 'Modify goal'
         if self.context.distribution is not None:
-            link = '+setrelease'
+            link = '+setdistroseries'
         elif self.context.product is not None:
-            link = '+setseries'
+            link = '+setproductseries'
         else:
             raise AssertionError(
                 'Unknown target on specification "%s".' % self.context.name)
@@ -281,6 +279,11 @@ class SpecificationView(LaunchpadView, CanBeMentoredView):
     def has_dep_tree(self):
         return self.context.dependencies or self.context.blocked_specs
 
+    @cachedproperty
+    def branch_links(self):
+        return [branch_link for branch_link in self.context.branch_links
+                if check_permission('launchpad.View', branch_link.branch)]
+
 
 class SpecificationEditView(SQLObjectEditView):
 
@@ -301,22 +304,22 @@ class SpecificationGoalProposeView(GeneralFormView):
     def initial_values(self):
         return {
             'productseries': self.context.productseries,
-            'distrorelease': self.context.distrorelease,
+            'distroseries': self.context.distroseries,
             'whiteboard': self.context.whiteboard,
             }
 
-    def process(self, productseries=None, distrorelease=None,
+    def process(self, productseries=None, distroseries=None,
         whiteboard=None):
-        # this can accept either distrorelease or productseries but the menu
+        # this can accept either distroseries or productseries but the menu
         # system will only link to the relevant page for that type of spec
         # target (distro or upstream)
-        if productseries and distrorelease:
-            return 'Please choose a series OR a release, not both.'
+        if productseries and distroseries:
+            return 'Please choose a product OR distro series, not both.'
         goal = None
         if productseries is not None:
             goal = productseries
-        if distrorelease is not None:
-            goal = distrorelease
+        if distroseries is not None:
+            goal = distroseries
         self.context.whiteboard = whiteboard
         self.context.proposeGoal(goal, self.user)
         # Now we want to auto-approve the goal if the person making
@@ -328,9 +331,9 @@ class SpecificationGoalProposeView(GeneralFormView):
 
 
 class SpecificationGoalDecideView(LaunchpadView):
-    """View used to allow the drivers of a series or distrorelease to accept
-    or decline the spec as a goal for that release. Typically they would use
-    the multi-select goalset view on their series or release, but it's also
+    """View used to allow the drivers of a series to accept
+    or decline the spec as a goal for that series. Typically they would use
+    the multi-select goalset view on their series, but it's also
     useful for them to have this one-at-a-time view on the spec itself.
     """
 

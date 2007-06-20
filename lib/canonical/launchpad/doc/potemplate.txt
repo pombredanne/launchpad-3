@@ -197,7 +197,7 @@ IPOTemplateName:
 == relatives_by_source ==
 
 This property gives us an iterator of IPOTemplate objects that are in the
-same context IProductSeries or IDistroRelease/ISourcePackageName and are
+same context IProductSeries or IDistroSeries/ISourcePackageName and are
 'current'.
 
 First, we can see the relatives in a IProductSeries context.
@@ -207,7 +207,7 @@ First, we can see the relatives in a IProductSeries context.
   ...     print relative_potemplate.title
   Template "evolution-2.2-test" in Evolution trunk
 
-Let's get a new IPOTemplate that belongs to an IDistroRelease:
+Let's get a new IPOTemplate that belongs to an IDistroSeries:
 
   >>> potemplate = POTemplate.get(4)
   >>> print potemplate.title
@@ -226,7 +226,7 @@ But we can see that there is a third template in this context:
   >>> not_current_template = POTemplate.get(9)
   >>> not_current_template.productseries == potemplate.productseries
   True
-  >>> not_current_template.distrorelease == potemplate.distrorelease
+  >>> not_current_template.distroseries == potemplate.distroseries
   True
   >>> not_current_template.sourcepackagename == potemplate.sourcepackagename
   True

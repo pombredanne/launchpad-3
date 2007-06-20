@@ -89,7 +89,7 @@ it also checks input data sanity (bug # 44240):
 Also handles attempts to rescore a build in the wrong state:
 
   >>> print http(r"""
-  ... POST /+builds/+build/13/+rescore HTTP/1.1
+  ... POST /ubuntu/+source/netapplet/0.99.6-1/+build/13/+rescore HTTP/1.1
   ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
   ... Content-Length: 9
   ...

@@ -143,7 +143,7 @@ class ProductSOP(StructuralObjectPresentation):
 
     def listChildren(self, num):
         # product series, most recent first
-        return list(self.context.serieslist[:num])
+        return list(self.context.serieses[:num])
 
     def listAltChildren(self, num):
         return None
@@ -205,7 +205,8 @@ class ProductOverviewMenu(ApplicationMenu):
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
-        'series_add', 'launchpad_usage', 'administer', 'rdf']
+        'series_add', 'launchpad_usage', 'administer', 'branch_visibility',
+        'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -249,7 +250,7 @@ class ProductOverviewMenu(ApplicationMenu):
         return Link('+download', text, icon='info')
 
     def series_add(self):
-        text = 'Register a release series'
+        text = 'Register a series'
         return Link('+addseries', text, icon='add')
 
     def branch_add(self):
@@ -271,6 +272,11 @@ class ProductOverviewMenu(ApplicationMenu):
     def administer(self):
         text = 'Administer'
         return Link('+review', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def branch_visibility(self):
+        text = 'Define branch visibility'
+        return Link('+branchvisibility', text, icon='edit')
 
 
 class ProductBugsMenu(ApplicationMenu):
@@ -464,7 +470,7 @@ class ProductView(LaunchpadView):
                     'potemplates': sourcepackage.currentpotemplates,
                     'base_url': '/distros/%s/%s/+sources/%s' % (
                         sourcepackage.distribution.name,
-                        sourcepackage.distrorelease.name,
+                        sourcepackage.distroseries.name,
                         sourcepackage.name)
                     }
 
@@ -509,22 +515,22 @@ class ProductView(LaunchpadView):
         distros = {}
         # first get a list of all relevant packagings
         all_packagings = []
-        for series in self.context.serieslist:
+        for series in self.context.serieses:
             for packaging in series.packagings:
                 all_packagings.append(packaging)
         # we sort it so that the packagings will always be displayed in the
-        # distrorelease version, then productseries name order
-        all_packagings.sort(key=lambda a: (a.distrorelease.version,
+        # distroseries version, then productseries name order
+        all_packagings.sort(key=lambda a: (a.distroseries.version,
             a.productseries.name, a.id))
         for packaging in all_packagings:
-            if distros.has_key(packaging.distrorelease.distribution.name):
-                distro = distros[packaging.distrorelease.distribution.name]
+            if distros.has_key(packaging.distroseries.distribution.name):
+                distro = distros[packaging.distroseries.distribution.name]
             else:
                 distro = {}
-                distro['name'] = packaging.distrorelease.distribution.name
-                distro['title'] = packaging.distrorelease.distribution.title
+                distro['name'] = packaging.distroseries.distribution.name
+                distro['title'] = packaging.distroseries.distribution.title
                 distro['packagings'] = []
-                distros[packaging.distrorelease.distribution.name] = distro
+                distros[packaging.distroseries.distribution.name] = distro
             distro['packagings'].append(packaging)
         # now we sort the resulting set of "distro" objects, and return that
         result = distros.values()
@@ -542,15 +548,15 @@ class ProductView(LaunchpadView):
     def potemplatenames(self):
         potemplatenames = set([])
 
-        for series in self.context.serieslist:
+        for series in self.context.serieses:
             for potemplate in series.potemplates:
                 potemplatenames.add(potemplate.potemplatename)
 
         return sorted(potemplatenames, key=lambda item: item.name)
 
-    def sorted_serieslist(self):
+    def sorted_serieses(self):
         """Return the series list from the product with the dev focus first."""
-        series_list = list(self.context.serieslist)
+        series_list = list(self.context.serieses)
         series_list.remove(self.context.development_focus)
         # now sort the list by name with newer versions before older
         series_list = sorted_version_numbers(series_list,
@@ -562,6 +568,10 @@ class ProductView(LaunchpadView):
         status = [status.title for status in RESOLVED_BUGTASK_STATUSES]
         url = canonical_url(series) + '/+bugs'
         return get_buglisting_search_filter_url(url, status=status)
+
+    def getLatestBranches(self):
+        return self.context.getLatestBranches(visible_by_user=self.user)
+
 
 class ProductDownloadFilesView(LaunchpadView):
 
@@ -595,7 +605,7 @@ class ProductDownloadFilesView(LaunchpadView):
         del_keys = [int(v) for k,v in data.items()
                     if k.startswith('checkbox')]
         del_count = 0
-        for series in self.product.serieslist:
+        for series in self.product.serieses:
             for release in series.releases:
                 for f in release.files:
                     if f.libraryfile.id in del_keys:
@@ -613,7 +623,7 @@ class ProductDownloadFilesView(LaunchpadView):
     def milestones(self):
         """Compute a mapping between series and releases that are milestones."""
         result = dict()
-        for series in self.product.serieslist:
+        for series in self.product.serieses:
             result[series] = dict()
             milestone_list = [m.name for m in series.milestones]
             for release in series.releases:
@@ -662,7 +672,8 @@ class ProductChangeTranslatorsView(ProductEditView):
 
 class ProductReviewView(ProductEditView):
     label = "Administer project details"
-    field_names = ["name", "owner", "active", "autoupdate", "reviewed"]
+    field_names = ["name", "owner", "active", "autoupdate", "reviewed",
+                   "private_bugs"]
 
 
 class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
@@ -684,8 +695,9 @@ class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
     def adapters(self):
         return {self.schema: self.context}
 
+
 class ProductAddSeriesView(LaunchpadFormView):
-    """A form to add new product release series"""
+    """A form to add new product series"""
 
     schema = IProductSeries
     field_names = ['name', 'summary', 'user_branch', 'releasefileglob']
@@ -984,7 +996,7 @@ class ProductReassignmentView(ObjectReassignmentView):
 
         """
         import_queue = getUtility(ITranslationImportQueue)
-        for series in product.serieslist:
+        for series in product.serieses:
             for entry in import_queue.getEntryByProductSeries(series):
                 if entry.importer == oldOwner:
                     entry.importer = newOwner
@@ -1007,7 +1019,7 @@ class ProductBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, self.selected_lifecycle_status)
+            self.context, self.selected_lifecycle_status, self.user)
 
     @property
     def no_branch_message(self):

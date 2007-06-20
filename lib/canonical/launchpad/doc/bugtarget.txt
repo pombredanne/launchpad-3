@@ -41,8 +41,10 @@ values to have some sample data for examples following.
     >>> bug_one_in_debian_firefox = getUtility(IBugTaskSet).get(4)
     >>> bug_two_in_debian_firefox = getUtility(IBugTaskSet).get(5)
     >>> bug_one_in_debian_firefox.importance = BugTaskImportance.CRITICAL
-    >>> bug_one_in_debian_firefox.transitionToStatus(BugTaskStatus.INPROGRESS)
-    >>> bug_two_in_debian_firefox.transitionToStatus(BugTaskStatus.INPROGRESS)
+    >>> bug_one_in_debian_firefox.transitionToStatus(
+    ...     BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
+    >>> bug_two_in_debian_firefox.transitionToStatus(
+    ...     BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
@@ -74,7 +76,7 @@ display in bug-related pages.
 
     >>> firefox = getUtility(IProductSet).getByName("firefox")
     >>> firefox_1_0 = firefox.getSeries("1.0")
-    >>> debian_woody = debian.getRelease("woody")
+    >>> debian_woody = debian.getSeries("woody")
     >>> debian_woody_firefox = debian_woody.getSourcePackage("mozilla-firefox")
 
     >>> IBugTarget.providedBy(firefox)

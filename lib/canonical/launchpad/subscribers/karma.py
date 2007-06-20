@@ -3,7 +3,6 @@
 """ karma.py -- handles all karma assignments done in the launchpad
 application."""
 
-from canonical.launchpad.interfaces import IDistroBugTask, IDistroReleaseBugTask
 from canonical.launchpad.mailnotification import get_bug_delta
 from canonical.lp.dbschema import BugTaskStatus, QuestionAction
 
@@ -17,10 +16,10 @@ def bug_created(bug, event):
 def _assign_karma_using_bugtask_context(person, bugtask, actionname):
     """Extract the right context from the bugtask and assign karma."""
     distribution = bugtask.distribution
-    if bugtask.distrorelease is not None:
-        # This is a Distro Release Task, so distribution is None and we
-        # have to get it from the distrorelease.
-        distribution = bugtask.distrorelease.distribution
+    if bugtask.distroseries is not None:
+        # This is a DistroSeries Task, so distribution is None and we
+        # have to get it from the distroseries.
+        distribution = bugtask.distroseries.distribution
     product = bugtask.product
     if bugtask.productseries is not None:
         product = bugtask.productseries.product
@@ -39,7 +38,7 @@ def _assignKarmaUsingBugContext(person, bug, actionname):
     actionname to the given person.
     """
     for task in bug.bugtasks:
-        if task.status == BugTaskStatus.REJECTED:
+        if task.status == BugTaskStatus.INVALID:
             continue
         _assign_karma_using_bugtask_context(person, task, actionname)
 
@@ -90,7 +89,7 @@ def bugtask_modified(bugtask, event):
 
     actionname_status_mapping = {
         BugTaskStatus.FIXRELEASED: 'bugfixed',
-        BugTaskStatus.REJECTED: 'bugrejected',
+        BugTaskStatus.INVALID: 'bugrejected',
         BugTaskStatus.CONFIRMED: 'bugaccepted'}
 
     if task_delta.status:
@@ -124,7 +123,7 @@ def spec_modified(spec, event):
         'specurl': 'specurlchanged',
         'priority': 'specpriority',
         'productseries': 'specseries',
-        'distrorelease': 'specrelease',
+        'distroseries': 'specseries',
         'milestone': 'specmilestone',
         }
 
