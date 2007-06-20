@@ -154,17 +154,12 @@ class AuthserverOutOfProcess(Server):
         return config.codehosting.authserver
 
 
-class AuthserverWithKeys(AuthserverOutOfProcess):
+class AuthserverWithKeysMixin:
     """Server to run the authserver, setting up SSH key configuration."""
 
     def __init__(self, testUser, testTeam):
-        AuthserverOutOfProcess.__init__(self)
         self.testUser = testUser
         self.testTeam = testTeam
-
-    def setUp(self):
-        self.setUpTestUser()
-        AuthserverOutOfProcess.setUp(self)
 
     def setUpTestUser(self):
         """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a known
@@ -195,6 +190,28 @@ class AuthserverWithKeys(AuthserverOutOfProcess):
         """Return the public key string used by 'testuser' for auth."""
         return keys.getPublicKeyString(
             data=open(sibpath(__file__, 'id_dsa.pub'), 'rb').read())
+
+
+class AuthserverWithKeys(AuthserverOutOfProcess, AuthserverWithKeysMixin):
+
+    def __init__(self, testUser, testTeam):
+        AuthserverOutOfProcess.__init__(self)
+        AuthserverWithKeysMixin.__init__(self, testUser, testTeam)
+
+    def setUp(self):
+        self.setUpTestUser()
+        AuthserverOutOfProcess.setUp(self)
+
+
+class AuthserverWithKeysInProcess(Authserver, AuthserverWithKeysMixin):
+
+    def __init__(self, testUser, testTeam):
+        Authserver.__init__(self)
+        AuthserverWithKeysMixin.__init__(self, testUser, testTeam)
+
+    def setUp(self):
+        self.setUpTestUser()
+        Authserver.setUp(self)
 
 
 class FakeLaunchpadServer(LaunchpadServer):
