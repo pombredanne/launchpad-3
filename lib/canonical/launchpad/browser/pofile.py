@@ -253,9 +253,11 @@ class POFileTranslateView(BaseTranslationView):
 
     def _buildPOMsgSetViews(self, for_potmsgsets):
         """Build POMsgSet views for all POTMsgSets in for_potmsgsets."""
+        for_potmsgsets = list(for_potmsgsets)
         po_to_pot_msg = self.context.getMsgSetsForPOTMsgSets(for_potmsgsets)
 
-        for potmsgset, pomsgset in po_to_pot_msg.items():
+        for potmsgset in for_potmsgsets:
+            pomsgset = po_to_pot_msg[potmsgset]
             view = self._prepareView(
                 POMsgSetView, pomsgset, self.errors.get(potmsgset))
             self.pomsgset_views.append(view)
