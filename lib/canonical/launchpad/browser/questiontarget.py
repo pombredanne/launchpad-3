@@ -32,7 +32,8 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.helpers import is_english_variant, request_languages
+from canonical.launchpad.helpers import (
+    browserLanguages, is_english_variant, request_languages)
 from canonical.launchpad.interfaces import (
     IDistribution, ILanguageSet, IProject, IQuestionCollection, IQuestionSet,
     IQuestionTarget, ISearchableByQuestionOwner, ISearchQuestionsForm,
@@ -580,11 +581,17 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                   '<a href="/~${name}/+editlanguages">preferred '
                   'languages</a>.', mapping=team_mapping))
         else:
-            for language in self.user_support_languages:
+            if len(browserLanguages(self.request)) > 0:
+                languages = browserLanguages(self.request)
+            else:
+                languages = self.user_support_languages
+            for language in languages:
                 person_or_team.addLanguage(language)
+            language_str = ', '.join([lang.displayname for lang in languages])
             response.addNotification(
                 _('<a href="/people/+me/+editlanguages">Your preferred '
-                  'languages</a> were set to your browser languages.'))
+                  'languages</a> were set to your browser languages: '
+                  '$languages.', mapping={'languages' : language_str}))
 
 class QuestionTargetFacetMixin:
     """Mixin for questiontarget facet definition."""

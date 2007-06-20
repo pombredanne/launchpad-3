@@ -19,6 +19,8 @@ his +editlanguages page.
     >>> browser.getLink('Select Languages...').click()
     >>> browser.url
     'http://launchpad.dev/~carlos/+editlanguages'
+    >>> print extract_text(find_main_content(browser.contents).find('h1'))
+    Your language preferences
 
 So far, he has Spanish selected as one of his preferred languages, but
 not Welsh. English is checked but it is not a translatable language.
