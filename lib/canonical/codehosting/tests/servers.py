@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = [
     'Authserver', 'AuthserverWithKeys', 'CodeHostingServer',
     'SSHCodeHostingServer', 'make_bzr_ssh_server', 'make_launchpad_server',
-    'make_sftp_server', 'UnrecognizedLine']
+    'make_sftp_server']
 
 
 import gc
@@ -328,7 +328,6 @@ class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
     def __init__(self, authserver, branches_root):
         SSHCodeHostingServer.__init__(
             self, 'bzr+ssh', authserver, branches_root)
-        self._factory = _DisconnectNotifyServerFactory()
 
     def setUp(self):
         SSHCodeHostingServer.setUp(self)
@@ -373,40 +372,6 @@ class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
                 components.registerAdapter(
                     old_adapter, LaunchpadAvatar, ISession)
             components.ALLOW_DUPLICATES = old_allow_duplicates
-
-
-class UnrecognizedLine(Exception):
-    """Raised when the _DisconnectNotifyProtocol receives an unrecognized line.
-    """
-
-
-class _DisconnectNotifyServerFactory(protocol.ServerFactory):
-    """Factory to launch a server that listens for notification of disconnect.
-    """
-
-    def __init__(self):
-        self._disconnectEvent = None
-
-    def setConnectionLostEvent(self, event):
-        self._disconnectEvent = event
-
-    def buildProtocol(self, address):
-        return _DisconnectNotifyProtocol(self._disconnectEvent)
-
-
-class _DisconnectNotifyProtocol(basic.LineOnlyReceiver):
-    """Protocol that listens for notification of disconnect from a subprocess.
-    """
-
-    def __init__(self, disconnectEvent):
-        self._disconnectEvent = disconnectEvent
-
-    def lineReceived(self, line):
-        if line.strip() == LPSERVE_TERMINATED:
-            # set the event
-            self._disconnectEvent.set()
-        else:
-            raise UnrecognizedLine(line)
 
 
 class _TestSSHService(SSHService):
