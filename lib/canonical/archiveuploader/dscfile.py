@@ -323,7 +323,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 # bug # 38636 and friends.
                 if sub_dsc_file.digest != library_file.content.md5:
                     yield UploadError(
-                        "MD5 sum of uploaded file does not match existent "
+                        "MD5 sum of uploaded file does not match existing "
                         "file in archive")
                     files_missing = True
                     continue

@@ -106,7 +106,6 @@ and therefore check if it matches what is described in the changesfiles:
   >>> quodlibet.archindep
   True
 
-
 The same happens for source uploads, where we can identify if a source
 is 'native' (only a TARBALL, no diff + orig) or 'has_orig' (uses ORIG
 + DIFF source form).
@@ -289,12 +288,11 @@ known ORIG file:
   >>> success
   True
 
-The notification message generated is described in more detail in 
+The notification message generated is described in more detail in
 doc/nascentupload-announcements.txt.
 
 Roll back everything related with ed_mixed_upload:
 
-  >>> import transaction
   >>> transaction.abort()
 
 
@@ -316,6 +314,7 @@ First up, construct an upload of just the ed source...
   >>> success = ed_src.do_accept()
   >>> success
   True
+
 
 === SourcePackageRelease Details ===
 
@@ -461,9 +460,7 @@ A build was created to represent the relationship between ed_src
   'FULLYBUILT'
 
 
-
 === Staged Source and Binary upload with multiple binaries ===
-
 
 As we could see both, sources and binaries, get into Launchpad via
 nascent-upload infrastructure, i.e., both are processed as 'uploads'.
@@ -511,7 +508,6 @@ Once we have a new queue entry we are able to accept it, step 2:
   >>> syncUpdate(multibar_src_queue)
   >>> multibar_src_queue.status.name
   'ACCEPTED'
-
 
 We can just assume the source was published by step 3 and 4 for
 simplicity and claim 'build from ACCEPTED' feature.
@@ -644,6 +640,7 @@ Check the uploader behaviour against a missing orig.tar.gz file,
   Files specified in DSC are broken or missing, skipping package unpack verification.
   END
 
+
 == Installer source uploads doesn't contain 'Standards-Version' ==
 
 Check if we can accept a installer-source upload which doesn't have
@@ -682,6 +679,7 @@ content, it should have all the required fields except the
 Chuck it all away again
 
   >>> transaction.abort()
+
 
 == Insecure Policy ==
 
@@ -783,93 +781,119 @@ that constraint.
   >>> print foo_failed.rejection_message
   foo_1.0-1_i386.deb uses bzip2 compression but pre-depends on an old version of dpkg: 1.10.20
 
+Clean up zopeless transaction:
 
-== Dealing with Epochs and diverging binary versions ==
+  >>> from canonical.database.sqlbase import ZopelessTransactionManager
+  >>> local_transaction = ZopelessTransactionManager._installed
+  >>> local_transaction.abort()
 
-Versions stored in Launchpad should include 'epoch'.
 
-Let's process an source upload and ensure that the resulting
-SourcePackageRelease record store a propoer 'version':
+=== Publishing ACCEPTED Sources ===
 
-  >>> bar_src_upload = NascentUpload(
-  ...     datadir('suite/bar_1.0-9/bar_1.0-9_source.changes'),
+As recently requested in bug #77853, successfully source-only uploads,
+i.e, those uploads that only include a source package and were
+processed without errors, will be automatically published as PENDING.
+
+This aggregation of processes are intended to increase the building
+throughput, because the will allow the sources to be published on disk
+and built within the same publishing cycle. (previously Soyuz requires
+two publishing cycles, one for publish the source on disk and another
+to build it).
+
+Let's start a new series of ed (0.2-20) and publish it:
+
+  >>> ed_src = NascentUpload(
+  ...     datadir('split-upload-test/ed_0.2-20_source.changes'),
   ...     sync_policy, mock_logger_quiet)
-  >>> bar_src_upload.process()
-  >>> bar_src_upload.is_rejected
+  >>> ed_src.process()
+  >>> ed_src.is_rejected
   False
-  >>> success = bar_src_upload.do_accept()
-
-For source uploads, Changes.version == DSC.version == SPR.version:
-
-  >>> bar_src_upload.changes.version
-  '1:1.0-9'
-
-  >>> bar_src_upload.changes.dsc.dsc_version
-  '1:1.0-9'
-
-  >>> bar_src_queue = bar_src_upload.queue_root
-  >>> bar_spr = bar_src_queue.sources[0].sourcepackagerelease
-  >>> bar_spr.version
-  u'1:1.0-9'
-
-
-Let's accept the source and claim 'build from accepted' to process the
-respective binary:
-
-  >>> bar_src_queue.status.name
-  'NEW'
-  >>> bar_src_queue.setAccepted()
-  >>> bar_src_queue.status.name
-  'ACCEPTED'
-  >>> syncUpdate(bar_src_queue)
-
-
-We will use a modified Sync upload policy to upload unsigned binaries:
-
-  >>> binary_sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distroseries='hoary')
-  >>> binary_sync_policy.can_upload_binaries = True
-  >>> binary_sync_policy.can_upload_mixed = True
-
-
-For a binary upload we expect the same, a BinaryPackageRelease
-'version' that includes 'epoch':
-
-  >>> bar_bin_upload = NascentUpload(
-  ...     datadir('suite/bar_1.0-9_binary/bar_1.0-9_i386.changes'),
-  ...     binary_sync_policy, mock_logger_quiet)
-  >>> bar_bin_upload.process()
-  >>> bar_bin_upload.is_rejected
-  False
-  >>> success = bar_bin_upload.do_accept()
-  >>> bar_bin_queue = bar_bin_upload.queue_root
-  >>> bar_bin_queue.status.name
+  >>> ed_src.do_accept()
+  True
+  >>> ed_src.queue_root.status.name
   'NEW'
 
+  >>> ed_src.queue_root.setAccepted()
+  >>> syncUpdate(ed_src.queue_root)
+  >>> ed_src.queue_root.realiseUpload()
 
-The Changesfile version always refers to the source version and the
-binary versions included in the upload can diverge between themselves
-and from the source version.
+Check if the publication is available through the Soyuz package stack:
 
-  >>> bar_bin_upload.changes.version
-  '1:1.0-9'
+  >>> ed_sp = hoary.getSourcePackage('ed')
+  >>> ed_dsspr = ed_sp['0.2-20']
+  >>> ed_dsspr.publishing_history.count()
+  1
+  >>> ed_pub = ed_dsspr.publishing_history[0]
 
-  >>> deb_file = bar_bin_upload.changes.files[0]
-  >>> deb_file.filename
-  'bar_6.6.6_i386.deb'
+  >>> ed_pub.sourcepackagerelease.title
+  u'ed - 0.2-20'
 
-  >>> deb_file.version
-  '1:1.0-9'
+  >>> ed_pub.distroseries.name
+  u'hoary'
 
-  >>> deb_file.source_version
-  '1:1.0-9'
+  >>> ed_pub.status.name
+  'PENDING'
 
-  >>> deb_file.control_version
-  '1:6.6.6'
+  >>> ed_pub.archive == hoary.main_archive
+  True
 
-Anyway, the proper value for BinaryPackageRelease.version is the
-version stored in the binary control file:
+Also check if the Soyuz archive file lookup can reach one of the
+just-published file:
 
-  >>> bar_bpr = bar_bin_queue.builds[0].build.binarypackages[0]
-  >>> bar_bpr.version
-  u'1:6.6.6'
+  >>> ubuntu.getFileByName('ed_0.2.orig.tar.gz', source=True, binary=False)
+  <LibraryFileAlias...>
+
+We have to commit in order to have new Librarian files available to
+server by Librarian Server:
+
+  >>> local_transaction.commit()
+
+Now let's submit a new source version of ed (0.2-21) which will be
+automatically accepted and published resulting in a PackageUpload
+record in 'DONE' state:
+
+  >>> ed21_src = NascentUpload(
+  ...     datadir('ed-0.2-21/ed_0.2-21_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> ed21_src.process()
+  >>> ed21_src.is_rejected
+  False
+  >>> ed21_src.do_accept()
+  True
+  >>> ed21_src.queue_root.status.name
+  'DONE'
+
+This is unfortunate, but we have to manually remove the file dumped
+from librarian into our tree, otherwise it will remain on disk causing
+problems to the next test run.
+
+  >>> import os
+  >>> os.remove(datadir('ed-0.2-21/ed_0.2.orig.tar.gz'))
+
+After the mentioned procedure-shortcut, since ed_0.2-21 was
+auto-accepted (i.e, published as PENDING), it should be immediately
+available via the package stack:
+
+  >>> ed21_dsspr = ed_sp['0.2-21']
+  >>> ed21_dsspr.publishing_history.count()
+  1
+  >>> ed21_pub = ed21_dsspr.publishing_history[0]
+
+  >>> ed21_pub.sourcepackagerelease.title
+  u'ed - 0.2-21'
+
+  >>> ed21_pub.distroseries.name
+  u'hoary'
+
+  >>> ed21_pub.status.name
+  'PENDING'
+
+  >>> ed21_pub.archive == hoary.main_archive
+  True
+
+Same happens for the archive file lookup:
+
+  >>> ubuntu.getFileByName('ed_0.2-21.dsc', source=True, binary=False)
+  <LibraryFileAlias...>
+
+

@@ -29,7 +29,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.database.answercontact import AnswerContact
-from canonical.launchpad.database.branch import Branch
+from canonical.launchpad.database.branch import Branch, BranchSet
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -47,7 +47,8 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.question import (
-    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
+    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet,
+    QuestionTargetMixin)
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
@@ -56,7 +57,6 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    get_supported_languages,
     ICalendarOwner,
     IFAQTarget,
     IHasIcon,
@@ -75,7 +75,8 @@ from canonical.launchpad.interfaces import (
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
-              KarmaContextMixin, BranchVisibilityPolicyMixin):
+              KarmaContextMixin, BranchVisibilityPolicyMixin,
+              QuestionTargetMixin):
     """A Product."""
 
     implements(IProduct, ICalendarOwner, IFAQTarget, IQuestionTarget,
@@ -134,6 +135,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         dbName='official_rosetta', notNull=True, default=False)
     active = BoolCol(dbName='active', notNull=True, default=True)
     reviewed = BoolCol(dbName='reviewed', notNull=True, default=False)
+    private_bugs = BoolCol(
+        dbName='private_bugs', notNull=True, default=False)
     autoupdate = BoolCol(dbName='autoupdate', notNull=True, default=False)
     freshmeatproject = StringCol(notNull=False, default=None)
     sourceforgeproject = StringCol(notNull=False, default=None)
@@ -279,12 +282,11 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See IBugTarget."""
         return '%s (upstream)' % self.name
 
-    def getLatestBranches(self, quantity=5):
+    def getLatestBranches(self, quantity=5, visible_by_user=None):
         """See IProduct."""
-        # XXX Should use Branch.date_created. See bug 38598.
-        # -- David Allouche 2006-04-11
-        return shortlist(Branch.selectBy(product=self,
-            orderBy='-id').limit(quantity))
+        return shortlist(
+            BranchSet().getLatestBranchesForProduct(
+                self, quantity, visible_by_user))
 
     def getPackage(self, distroseries):
         """See IProduct."""
@@ -311,10 +313,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def _getBugTaskContextClause(self):
         """See BugTargetBase."""
         return 'BugTask.product = %s' % sqlvalues(self)
-
-    def getSupportedLanguages(self):
-        """See IQuestionTarget."""
-        return get_supported_languages(self)
 
     def newQuestion(self, owner, title, description, language=None,
                     datecreated=None):
@@ -343,7 +341,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             unsupported_target = self
         else:
             unsupported_target = None
-            
+
         return QuestionTargetSearch(
             product=self,
             search_text=search_text, status=status,
@@ -356,14 +354,9 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See IQuestionTarget."""
         return SimilarQuestionsSearch(title, product=self).getResults()
 
-    def addAnswerContact(self, person):
-        """See IQuestionTarget."""
-        if person in self.answer_contacts:
-            return False
-        AnswerContact(
-            product=self, person=person,
-            sourcepackagename=None, distribution=None)
-        return True
+    def _getTargetTypes(self):
+        """See QuestionTargetMixin."""
+        return {'product': self}
 
     def removeAnswerContact(self, person):
         """See IQuestionTarget."""
@@ -630,6 +623,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     def newBranch(self, name, title, url, home_page, lifecycle_status,
                   summary, whiteboard):
         """See IProduct."""
+        # XXX thumper-angry - FIX THIS!!!!
+        # use BranchSet
         from canonical.launchpad.database import Branch
         return Branch(
             product=self, name=name, title=title, url=url, home_page=home_page,

@@ -56,9 +56,9 @@ accepted_template="""From: %(SENDER)s
 To: %(RECIPIENT)s
 Bcc: %(DEFAULT_RECIPIENT)s
 Precedence: bulk
-Subject: Accepted %(SOURCE)s %(VERSION)s (%(ARCH)s)
+Subject: %(STATUS)s %(SOURCE)s %(VERSION)s (%(ARCH)s)
 
-Accepted:
+%(STATUS)s:
 %(SUMMARY)s
 
 %(CHANGESFILE)s

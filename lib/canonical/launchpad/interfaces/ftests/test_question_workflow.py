@@ -24,8 +24,8 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, ILaunchBag, InvalidQuestionStateError, IPersonSet,
-    IQuestion, IQuestionMessage)
+    IDistributionSet, ILanguageSet, ILaunchBag, InvalidQuestionStateError,
+    IPersonSet, IQuestion, IQuestionMessage)
 from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.ftests.event import TestEventListener
 from canonical.lp.dbschema import QuestionAction, QuestionStatus
@@ -744,6 +744,8 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
         valid_statuses = [status.name for status in QuestionStatus.items
                           if status.name != 'INVALID']
         # Reject user must be an answer contact, (or admin, or product owner).
+        # Answer contacts must speak a language
+        self.answerer.addLanguage(getUtility(ILanguageSet)['en'])
         self.ubuntu.addAnswerContact(self.answerer)
         login(self.answerer.preferredemail.email)
         self._testInvalidTransition(
@@ -756,6 +758,8 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
         """
         # Reject user must be an answer contact, (or admin, or product owner).
         login(self.answerer.preferredemail.email)
+        # Answer contacts must speak a language
+        self.answerer.addLanguage(getUtility(ILanguageSet)['en'])
         self.ubuntu.addAnswerContact(self.answerer)
         valid_statuses = [status for status in QuestionStatus.items
                           if status.name != 'INVALID']
@@ -793,6 +797,8 @@ class RejectTestCase(BaseAnswerTrackerWorkflowTestCase):
         login(self.answerer.preferredemail.email)
         self.assertRaises(Unauthorized, getattr, self.question, 'reject')
 
+        # Answer contacts must speak a language
+        self.answerer.addLanguage(getUtility(ILanguageSet)['en'])
         self.question.target.addAnswerContact(self.answerer)
         getattr(self.question, 'reject')
 

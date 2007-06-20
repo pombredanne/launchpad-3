@@ -15,14 +15,12 @@ CREATE TABLE FAQ (
             'now'::text)::timestamp(6) with time zone) NOT NULL,
     last_updated_by INTEGER REFERENCES Person,
     date_last_updated TIMESTAMP WITHOUT TIME ZONE,
-    fti ts2.tsvector,
     CONSTRAINT product_or_distro
         CHECK (((product IS NULL) <> (distribution IS NULL))),
     CONSTRAINT content_or_url
         CHECK (((content IS NULL) <> (url IS NULL)))
 );
 
-CREATE INDEX faq__fti ON FAQ USING gist (fti ts2.gist_tsvector_ops);
 CREATE INDEX faq__product__idx ON FAQ (product);
 CREATE INDEX faq__distribution__idx ON FAQ (distribution);
 

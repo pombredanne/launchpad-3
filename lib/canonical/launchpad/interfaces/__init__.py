@@ -63,6 +63,7 @@ from canonical.launchpad.interfaces.distroserieslanguage import *
 from canonical.launchpad.interfaces.distroseriespackagecache import *
 from canonical.launchpad.interfaces.distroseriessourcepackagerelease import *
 from canonical.launchpad.interfaces.emailaddress import *
+from canonical.launchpad.interfaces.entitlement import *
 from canonical.launchpad.interfaces.externalbugtracker import *
 from canonical.launchpad.interfaces.faq import *
 from canonical.launchpad.interfaces.faqtarget import *
@@ -99,7 +100,7 @@ from canonical.launchpad.interfaces.poll import *
 from canonical.launchpad.interfaces.pomsgid import *
 from canonical.launchpad.interfaces.pomsgidsighting import *
 from canonical.launchpad.interfaces.pomsgset import *
-from canonical.launchpad.interfaces.poparser import *
+from canonical.launchpad.interfaces.gettext_po_parser import *
 from canonical.launchpad.interfaces.potemplate import *
 from canonical.launchpad.interfaces.potemplatename import *
 from canonical.launchpad.interfaces.potmsgset import *
@@ -138,6 +139,7 @@ from canonical.launchpad.interfaces.sprintspecification import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.teammembership import *
 from canonical.launchpad.interfaces.temporaryblobstorage import *
+from canonical.launchpad.interfaces.translationformat import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *
 from canonical.launchpad.interfaces.questioncollection import *
