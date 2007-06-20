@@ -256,7 +256,10 @@ class POFileTranslateView(BaseTranslationView):
         for_potmsgsets = list(for_potmsgsets)
         po_to_pot_msg = self.context.getMsgSetsForPOTMsgSets(for_potmsgsets)
 
+        last = None
         for potmsgset in for_potmsgsets:
+            assert last is None or potmsgset.sequence >= last.sequence, (
+                "POTMsgSets on page not in ascending sequence order")
             pomsgset = po_to_pot_msg[potmsgset]
             view = self._prepareView(
                 POMsgSetView, pomsgset, self.errors.get(potmsgset))
