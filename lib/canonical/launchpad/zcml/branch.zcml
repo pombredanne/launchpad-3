@@ -49,6 +49,9 @@
         <browser:page
             name="+series-reference"
             template="../templates/branch-series-reference.pt" />
+        <browser:page
+            name="+associations"
+            template="../templates/branch-associations.pt" />
     </browser:pages>
 
   <browser:pages

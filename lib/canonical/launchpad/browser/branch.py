@@ -77,7 +77,8 @@ class BranchContextMenu(ContextMenu):
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'browse', 'reassign', 'subscription', 'addsubscriber']
+    links = ['edit', 'browse', 'reassign', 'subscription', 'addsubscriber',
+             'associations']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -112,6 +113,10 @@ class BranchContextMenu(ContextMenu):
     def addsubscriber(self):
         text = 'Subscribe someone else'
         return Link('+addsubscriber', text, icon='add')
+
+    def associations(self):
+        text = 'View branch associations'
+        return Link('+associations', text)
 
 
 class BranchView(LaunchpadView):

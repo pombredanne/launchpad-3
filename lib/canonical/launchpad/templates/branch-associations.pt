@@ -1,0 +1,93 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad"
+>
+  <body>
+    <metal:heading fill-slot="pageheading">
+      <div>
+        <img alt="branch icon" src="/@@/branch" />
+        <a tal:attributes="href context/fmt:url"
+           tal:content="context/displayname" />
+      </div>
+      <h1>Branch associations</h1>
+    </metal:heading>
+
+<metal:leftportlets fill-slot="portlets_one">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:leftportlets>
+
+
+<style metal:fill-slot="head_epilogue" type="text/css">
+  div.indented {padding-left: 2em}
+</style>
+
+<div metal:fill-slot="main">
+
+  <tal:not-junk condition="context/product">
+    <h2>Project</h2>
+    <div class="indented">
+      <img src="/@@/project"
+           tal:replace="structure context/product/image:icon" />
+      <a tal:attributes="href context/product/fmt:url"
+         tal:content="context/product/displayname" />
+    </div>
+  </tal:not-junk>
+
+  <h2>Bugs</h2>
+
+  <tal:has-bugs condition="context/related_bugs">
+    <div tal:repeat="bug context/related_bugs" class="indented">
+      <img src="/@@/bug" />
+      <a tal:attributes="href bug/fmt:url"
+         tal:content="bug/title" />
+    </div>
+  </tal:has-bugs>
+  <tal:has-bugs condition="not: context/related_bugs">
+    <p>This branch is not associated with any bugs at this time.</p>
+  </tal:has-bugs>
+
+  <h2>Blueprints</h2>
+
+  <tal:has-blueprints condition="context/spec_links">
+    <div tal:repeat="spec_link context/spec_links" class="indented">
+      <img src="/@@/blueprint"
+           tal:replace="structure spec_link/specification/image:icon" />
+      <a tal:attributes="href spec_link/specification/fmt:url"
+         tal:content="spec_link/specification/title" />
+    </div>
+  </tal:has-blueprints>
+  <tal:has-blueprints condition="not: context/spec_links">
+    <p>This branch is not associated with any blueprints at this time.</p>
+  </tal:has-blueprints>
+
+  <h2>Subscribers</h2>
+
+  <tal:has-subscribers condition="context/subscribers">
+    <div tal:repeat="subscriber context/subscribers" class="indented">
+      <img src="/@@/person"
+           tal:replace="structure subscriber/image:icon" />
+      <a tal:attributes="href subscriber/fmt:url"
+         tal:content="subscriber/browsername" />
+    </div>
+  </tal:has-subscribers>
+  <tal:has-subscribers condition="not: context/subscribers">
+    <p>This branch has no subscribers at this time.</p>
+  </tal:has-subscribers>
+
+</div>
+
+<metal:block fill-slot="help">
+
+   <p>Branches can be associated with many other entities
+   in Launchpad.</p>
+
+   <p>This page shows all the associations that a branch has.</p>
+
+</metal:block>
+
+</body>
+</html>
+<!-- 1-0 done -->
