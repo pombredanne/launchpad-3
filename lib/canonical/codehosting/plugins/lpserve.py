@@ -28,6 +28,17 @@ from canonical.config import config
 from canonical.codehosting import transport
 
 
+# A name of an environment variable. If this environment variable is set then
+# Launchpad server will send a line to the host and port in the variable,
+# indicating that the Launchpad server has finished its cleanup.
+# Used as a signal to tests. See
+# tests.servers.BazaarSSHCodeHostingServer.runAndWaitForDisconnect
+TEST_SERVICE_VARIABLE = 'TEST_SERVICE'
+
+# The line to send to the server defined in LPSERVE_SOCKET.
+LPSERVE_TERMINATED = 'lpserve terminated'
+
+
 class cmd_launchpad_server(Command):
     """Run a Bazaar server that maps Launchpad branch URLs to the internal
     file-system format.
@@ -64,8 +75,8 @@ class cmd_launchpad_server(Command):
     _sent_termination_signal = False
 
     def _send_line(self, destination, line):
-        """Send a line of bytes to server at 'destination', where destination is
-        of the form host:port.
+        """Send a line of bytes to server at 'destination', where destination
+        is of the form host:port.
         """
         if self._sent_termination_signal:
             return
@@ -83,9 +94,9 @@ class cmd_launchpad_server(Command):
         """If we are running inside a test_acceptance test environment, tell
         the test that we are finished.
         """
-        test_service = os.environ.get('TEST_SERVICE', None)
+        test_service = os.environ.get(TEST_SERVICE_VARIABLE, None)
         if test_service is not None:
-            self._send_line(test_service, 'lpserve terminated')
+            self._send_line(test_service, LPSERVE_TERMINATED)
 
     def get_lp_server(self, authserver, user_id, url):
         """Create a Launchpad smart server.
