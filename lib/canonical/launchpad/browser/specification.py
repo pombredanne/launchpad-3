@@ -28,7 +28,11 @@ from subprocess import Popen, PIPE
 from operator import attrgetter
 
 from zope.component import getUtility
+from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import DropdownWidget
+from zope.formlib import form
+from zope.schema import Choice, List
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -53,7 +57,7 @@ from canonical.launchpad.browser.specificationtarget import (
 from canonical.launchpad.webapp import (
     ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
     Link, Navigation, action, canonical_url, enabled_with_permission,
-    safe_action, stepthrough, stepto)
+    safe_action, stepthrough, stepto, custom_widget)
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import (
     AppFrontPageSearchView, StructuralHeaderPresentation)
@@ -61,6 +65,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 
 from canonical.lp.dbschema import SpecificationStatus
 
+from canonical.launchpad.database.specification import Specification
 
 class SpecificationNavigation(Navigation):
 
@@ -393,7 +398,24 @@ class SpecificationRetargetingView(LaunchpadFormView):
         return self._nextURL
 
 
-class SpecificationSupersedingView(GeneralFormView):
+class SupersededByWidget(DropdownWidget):
+    """Custom select widget for specification superseding.
+
+    This is just a standard DropdownWidget with the (no value) text
+    rendered as something meaningful to the user, as per Bug #4116.
+
+    TODO: This should be replaced with something more scalable as there
+    is no upper limit to the number of specifications.
+    -- StuartBishop 20060704
+    """
+    _messageNoValue = _("(Not Superseded)")
+
+
+class SpecificationSupersedingView(LaunchpadFormView):
+    schema = ISpecification
+    field_names = ['superseded_by']
+    label =_('Mark specification superseded')
+    custom_widget('superseded_by', SupersededByWidget)
 
     @property
     def initial_values(self):
@@ -401,9 +423,32 @@ class SpecificationSupersedingView(GeneralFormView):
             'superseded_by': self.context.superseded_by,
             }
 
-    def process(self, superseded_by=None):
-        self.context.superseded_by = superseded_by
-        if superseded_by is not None:
+    def setUpFields(self):
+        """Override the setup to define own fields."""
+        terms = [SimpleTerm(spec, spec.name, spec.title)
+                 for spec
+                 in sorted(self.context.product.specifications(),
+                           key=attrgetter('name'))
+                 if spec != self.context]
+
+        self.form_fields = form.Fields(
+            Choice(
+                   __name__='superseded_by',
+                   title=_("Superseded by"),
+                   vocabulary=SimpleVocabulary(terms),
+                   required=False,
+                   description=_(
+                     "The specification "
+                     "which supersedes this one. Note that selecting a specification "
+                     "here and pressing Continue will change the specification "
+                     "status to Superseded.")),
+            render_context=self.render_context,
+            custom_widget=self.custom_widgets['superseded_by'])
+
+    @action(_('Continue'), name='supersede')
+    def supersede_action(self, action, data):
+        self.context.superseded_by = data['superseded_by']
+        if data['superseded_by'] is not None:
             # set the state to superseded
             self.context.status = SpecificationStatus.SUPERSEDED
         else:
@@ -417,20 +462,10 @@ class SpecificationSupersedingView(GeneralFormView):
             self.request.response.addNotification(
                 'Specification is now considered "%s".' % newstate.title)
         self.request.response.redirect(canonical_url(self.context))
-        return 'Done.'
-
-
-class SupersededByWidget(DropdownWidget):
-    """Custom select widget for specification superseding.
-
-    This is just a standard DropdownWidget with the (no value) text
-    rendered as something meaningful to the user, as per Bug #4116.
-
-    TODO: This should be replaced with something more scalable as there
-    is no upper limit to the number of specifications.
-    -- StuartBishop 20060704
-    """
-    _messageNoValue = _("(Not Superseded)")
+        
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class SpecGraph:
