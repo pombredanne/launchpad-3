@@ -218,6 +218,10 @@ class FakeLaunchpadServer(LaunchpadServer):
         self._branches = dict(self._iter_branches())
         LaunchpadServer.setUp(self)
 
+    def tearDown(self):
+        LaunchpadServer.tearDown(self)
+        return defer.succeed(None)
+
 
 class CodeHostingServer(Server):
 
