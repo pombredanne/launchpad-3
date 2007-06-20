@@ -10,9 +10,7 @@ __metaclass__ = type
 __all__ = ['cmd_launchpad_server']
 
 
-import os
 import signal
-import socket
 import sys
 import thread
 import xmlrpclib
@@ -26,17 +24,6 @@ from bzrlib.transport import chroot, get_transport, remote
 
 from canonical.config import config
 from canonical.codehosting import transport
-
-
-# A name of an environment variable. If this environment variable is set then
-# Launchpad server will send a line to the host and port in the variable,
-# indicating that the Launchpad server has finished its cleanup.
-# Used as a signal to tests. See
-# tests.servers.BazaarSSHCodeHostingServer.runAndWaitForDisconnect
-TEST_SERVICE_VARIABLE = 'TEST_SERVICE'
-
-# The line to send to the server defined in LPSERVE_SOCKET.
-LPSERVE_TERMINATED = 'lpserve terminated'
 
 
 class cmd_launchpad_server(Command):
@@ -71,32 +58,6 @@ class cmd_launchpad_server(Command):
         ]
 
     takes_args = ['user_id']
-
-    _sent_termination_signal = False
-
-    def _send_line(self, destination, line):
-        """Send a line of bytes to server at 'destination', where destination
-        is of the form host:port.
-        """
-        if self._sent_termination_signal:
-            return
-        self._sent_termination_signal = True
-        host, port = destination.split(':')
-        port = int(port)
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.connect((host, port))
-        try:
-            s.sendall(line.strip() + '\r\n')
-        finally:
-            s.close()
-
-    def _send_termination_notice_to_test(self):
-        """If we are running inside a test_acceptance test environment, tell
-        the test that we are finished.
-        """
-        test_service = os.environ.get(TEST_SERVICE_VARIABLE, None)
-        if test_service is not None:
-            self._send_line(test_service, LPSERVE_TERMINATED)
 
     def get_lp_server(self, authserver, user_id, url):
         """Create a Launchpad smart server.
@@ -173,7 +134,6 @@ class cmd_launchpad_server(Command):
             # operations we need to run (i.e. lp_server.tearDown) and does its
             # best to trigger 'finally' blocks across the rest of bzrlib.
             lp_server.tearDown()
-            self._send_termination_notice_to_test()
             thread.interrupt_main()
 
         signal.signal(signal.SIGHUP, clean_up)
@@ -183,7 +143,6 @@ class cmd_launchpad_server(Command):
             self.run_server(smart_server)
         finally:
             signal.signal(signal.SIGHUP, signal.SIG_DFL)
-            self._send_termination_notice_to_test()
             lp_server.tearDown()
 
 

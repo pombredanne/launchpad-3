@@ -31,8 +31,6 @@ from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.daemons.sftp import SSHService
 from canonical.launchpad.daemons.authserver import AuthserverService
 
-from canonical.codehosting.plugins.lpserve import (
-    LPSERVE_TERMINATED, TEST_SERVICE_VARIABLE)
 from canonical.codehosting.smartserver import launch_smart_server
 from canonical.codehosting.sshserver import (
     BazaarFileTransferServer, LaunchpadAvatar)
