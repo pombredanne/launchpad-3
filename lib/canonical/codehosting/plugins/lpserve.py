@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = ['cmd_launchpad_server']
 
 
+import os
 import signal
 import socket
 import sys
