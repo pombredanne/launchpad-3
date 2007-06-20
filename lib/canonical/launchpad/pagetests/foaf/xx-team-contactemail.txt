@@ -81,7 +81,7 @@
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... field.actions.continue_team_email=Continue""" % path)
+  ... field.actions.continue=Continue""" % path)
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/~ubuntu-team
@@ -167,7 +167,7 @@
   ... Content-Length: ...
   ... Content-Type: application/x-www-form-urlencoded
   ... 
-  ... field.actions.continue_team_email=Continue""" % path)
+  ... field.actions.continue=Continue""" % path)
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/~ubuntu-team
@@ -294,7 +294,7 @@ Person validates the email address using the token.
   >>> print http(r"""
   ... POST %s HTTP/1.1
   ... Content-Type: application/x-www-form-urlencoded
-  ... field.actions.continue_user_email=Continue""" % path)
+  ... field.actions.continue=Continue""" % path)
   HTTP/1.1 303 See Other
   ...
   Location: http://localhost:9000/~name16
@@ -329,7 +329,7 @@ We get an error message
   ... POST %s HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... Content-Type: application/x-www-form-urlencoded
-  ... field.actions.continue_team_email=Continue""" % path)
+  ... field.actions.continue=Continue""" % path)
   HTTP/1.1 200 Ok
   ...
   ...This email address is already registered for another Launchpad user account...

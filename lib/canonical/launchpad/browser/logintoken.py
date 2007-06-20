@@ -10,6 +10,7 @@ __all__ = [
     'NewAccountView',
     'MergePeopleView',
     'ClaimProfileView',
+    'ValidateGPGKeyView',
     ]
 
 import urllib
@@ -40,7 +41,7 @@ from canonical.launchpad.browser.openidserver import (
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, ILoginTokenSet, IPerson, ILoginToken,
     IGPGKeySet, IGPGHandler, GPGVerificationError, GPGKeyNotFoundError,
-    ShipItConstants, UBUNTU_WIKI_URL, UnexpectedFormData)
+    ShipItConstants, UBUNTU_WIKI_URL, UnexpectedFormData, IGPGKeyValidation)
 
 UTC = pytz.timezone('UTC')
 
@@ -150,7 +151,7 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
         self.redirectIfInvalidOrConsumedToken()
         self.claimed_profile = getUtility(IEmailAddressSet).getByEmail(
             self.context.email).person
-        LaunchpadFormView.initialize(self)
+        super(ClaimProfileView, self).initialize()
 
     @property
     def initial_values(self):
@@ -194,7 +195,7 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
 
     def initialize(self):
         self.redirectIfInvalidOrConsumedToken()
-        LaunchpadFormView.initialize(self)
+        super(ResetPasswordView, self).initialize()
 
     def validate(self, form_values):
         """Validate the email address."""
@@ -246,146 +247,44 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         return self.maybeCompleteOpenIDRequest()
 
 
-class ValidateEmailView(BaseLoginTokenView, LaunchpadFormView):
+class ValidateGPGKeyView(BaseLoginTokenView, LaunchpadFormView):
 
-    schema = Interface
+    schema = IGPGKeyValidation
     field_names = []
-    expected_token_types = (LoginTokenType.VALIDATEEMAIL,
-                            LoginTokenType.VALIDATETEAMEMAIL,
-                            LoginTokenType.VALIDATEGPG,
+    expected_token_types = (LoginTokenType.VALIDATEGPG,
                             LoginTokenType.VALIDATESIGNONLYGPG)
 
     def initialize(self):
         self.redirectIfInvalidOrConsumedToken()
-        LaunchpadFormView.initialize(self)
+        if self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
+            self.field_names = ['signed_text']
+        super(ValidateGPGKeyView, self).initialize()
 
     def validate(self, data):
-        token_type = self.context.tokentype
-        if token_type == LoginTokenType.VALIDATEEMAIL:
-            self._checkIfEmailCanBeUsed()
-        elif token_type == LoginTokenType.VALIDATETEAMEMAIL:
-            self._checkIfEmailCanBeUsed()
-        elif token_type == LoginTokenType.VALIDATEGPG:
-            self.gpg_key = self._getGPGKey()
-        elif token_type == LoginTokenType.VALIDATESIGNONLYGPG:
-            self.gpg_key = self._getGPGKey()
-            self._validateSignOnlyGPGKey()
-        else:
-            raise UnexpectedFormData("Unexpected action")
+        self.gpg_key = self._getGPGKey()
+        if self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
+            self._validateSignOnlyGPGKey(data)
 
     @action(_('Cancel'), name='cancel')
     def cancel_action(self, action, data):
         self.next_url = canonical_url(self.context.requester)
         self.context.consume()
 
-    def isUserEmail(self, action):
-        return self.context.tokentype == LoginTokenType.VALIDATEEMAIL
-
-    @action(_('Continue'), name='continue_user_email', condition=isUserEmail)
-    def continue_action_user_email(self, action, data):
-        """Mark the new email address as VALIDATED in the database.
-
-        If this is the first validated email of this person, it'll be marked
-        as the preferred one.
-        """
-        self.next_url = canonical_url(self.context.requester)
-        email = self._ensureEmail()
-        requester = self.context.requester
-        if email is not None:
-            requester.validateAndEnsurePreferredEmail(email)
-        self.context.consume()
-        self.request.response.addInfoNotification(
-            _('Email address successfully confirmed'))
-        return self.maybeCompleteOpenIDRequest()
-
-    def isTeamEmail(self, action):
-        return self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL
-
-    @action(_('Continue'), name='continue_team_email', condition=isTeamEmail)
-    def continue_action_team_email(self, action, data):
-        """Set the new email address as the team's contact email address.
-
-        Make sure that the new email address is owned by the team, if it
-        already exists, set it as the team's contact address (removing any
-        previous contact address) and remove the logintoken used to validate
-        this email address.
-        """
-        self.next_url = canonical_url(self.context.requester)
-        email = self._ensureEmail()
-        requester = self.context.requester
-        if email is not None:
-            if requester.preferredemail is not None:
-                requester.preferredemail.destroySelf()
-            requester.setPreferredEmail(email)
-        self.context.consume()
-        self.request.response.addInfoNotification(
-            _('Contact email address validated successfully'))
-
-    def isGPGKey(self, action):
-        return self.context.tokentype == LoginTokenType.VALIDATEGPG
-
-    @action(_('Continue'), name='continue_gpg', condition=isGPGKey)
+    @action(_('Continue'), name='continue')
     def continue_action_gpg(self, action, data):
         self.next_url = canonical_url(self.context.requester)
         assert self.gpg_key is not None
-        self._activateGPGKey(self.gpg_key, can_encrypt=True)
+        can_encrypt = True
+        if self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG:
+            can_encrypt = False
+        self._activateGPGKey(self.gpg_key, can_encrypt=can_encrypt)
 
-    def isGPGSignOnlyKey(self, action):
-        return self.context.tokentype == LoginTokenType.VALIDATESIGNONLYGPG
-
-    @action(_('Continue'), name='continue_gpg_signonly',
-            condition=isGPGSignOnlyKey)
-    def continue_action_gpg_signonly(self, action, data):
-        self.next_url = canonical_url(self.context.requester)
-        assert self.gpg_key is not None
-        self._activateGPGKey(self.gpg_key, can_encrypt=False)
-
-    def _checkIfEmailCanBeUsed(self):
-        """Make sure the email address this token refers too is not in use."""
-        validated = (EmailAddressStatus.VALIDATED, EmailAddressStatus.PREFERRED)
-        requester = self.context.requester
-
-        emailset = getUtility(IEmailAddressSet)
-        email = emailset.getByEmail(self.context.email)
-        if email is not None:
-            if email.person.id != requester.id:
-                dupe = email.person
-                # Yes, hardcoding an autogenerated field name is an evil 
-                # hack, but if it fails nothing will happen.
-                # -- Guilherme Salgado 2005-07-09
-                url = '/people/+requestmerge?field.dupeaccount=%s' % dupe.name
-                self.addError(_(
-                    'This email address is already registered for another '
-                    'Launchpad user account. This account can be a '
-                    'duplicate of yours, created automatically, and in this '
-                    'case you should be able to <a href="%s">merge them</a> '
-                    'into a single one.' % url))
-            elif email.status in validated:
-                self.addError(_(
-                    "This email address is already registered and validated "
-                    "for your Launchpad account. There's no need to validate "
-                    "it again."))
-            else:
-                # Yay, email is not used by anybody else and is not yet
-                # validated.
-                pass
-
-    def _ensureEmail(self):
-        """Make sure self.requester has this token's email address as one of
-        its email addresses and return it.
-        """
-        emailset = getUtility(IEmailAddressSet)
-        email = emailset.getByEmail(self.context.email)
-        if email is None:
-            email = emailset.new(self.context.email, self.context.requester)
-        return email
-
-    def _validateSignOnlyGPGKey(self):
+    def _validateSignOnlyGPGKey(self, data):
         gpghandler = getUtility(IGPGHandler)
         fingerprint = self.context.fingerprint
 
         # Verify the signed content.
-        signedcontent = self.request.form.get('signedcontent', '')
+        signedcontent = data['signed_text']
         try:
             signature = gpghandler.getVerifiedSignature(
                 signedcontent.encode('ASCII'))
@@ -552,6 +451,101 @@ class ValidateEmailView(BaseLoginTokenView, LaunchpadFormView):
         return key
 
 
+class ValidateEmailView(BaseLoginTokenView, LaunchpadFormView):
+
+    schema = Interface
+    field_names = []
+    expected_token_types = (LoginTokenType.VALIDATEEMAIL,
+                            LoginTokenType.VALIDATETEAMEMAIL)
+
+    def initialize(self):
+        self.redirectIfInvalidOrConsumedToken()
+        super(ValidateEmailView, self).initialize()
+
+    def validate(self, data):
+        token_type = self.context.tokentype
+        if token_type in (LoginTokenType.VALIDATEEMAIL,
+                          LoginTokenType.VALIDATETEAMEMAIL):
+            self._checkIfEmailCanBeUsed()
+        else:
+            raise UnexpectedFormData("Unexpected action")
+
+    @action(_('Cancel'), name='cancel')
+    def cancel_action(self, action, data):
+        self.next_url = canonical_url(self.context.requester)
+        self.context.consume()
+
+    @action(_('Continue'), name='continue')
+    def continue_action(self, action, data):
+        """Mark the new email address as VALIDATED in the database.
+
+        If this is the first validated email of this person, it'll be marked
+        as the preferred one.
+
+        If the requester is a team, the team's contact address is removed (if
+        any) and this becomes the team's contact address.
+        """
+        self.next_url = canonical_url(self.context.requester)
+        email = self._ensureEmail()
+        requester = self.context.requester
+
+        if self.context.tokentype == LoginTokenType.VALIDATETEAMEMAIL:
+            if requester.preferredemail is not None:
+                requester.preferredemail.destroySelf()
+            requester.setPreferredEmail(email)
+        elif self.context.tokentype == LoginTokenType.VALIDATEEMAIL:
+            requester.validateAndEnsurePreferredEmail(email)
+        else:
+            raise AssertionError(
+                "We don't know how to process this token (%s) and this error "
+                "should've been caught earlier" % self.context.tokentype)
+
+        self.context.consume()
+        self.request.response.addInfoNotification(
+            _('Email address successfully confirmed.'))
+        return self.maybeCompleteOpenIDRequest()
+
+    def _checkIfEmailCanBeUsed(self):
+        """Make sure the email address this token refers to is not in use."""
+        validated = (EmailAddressStatus.VALIDATED, EmailAddressStatus.PREFERRED)
+        requester = self.context.requester
+
+        emailset = getUtility(IEmailAddressSet)
+        email = emailset.getByEmail(self.context.email)
+        if email is not None:
+            if email.person.id != requester.id:
+                dupe = email.person
+                # Yes, hardcoding an autogenerated field name is an evil 
+                # hack, but if it fails nothing will happen.
+                # -- Guilherme Salgado 2005-07-09
+                url = '/people/+requestmerge?field.dupeaccount=%s' % dupe.name
+                self.addError(_(
+                    'This email address is already registered for another '
+                    'Launchpad user account. This account can be a '
+                    'duplicate of yours, created automatically, and in this '
+                    'case you should be able to <a href="%s">merge them</a> '
+                    'into a single one.' % url))
+            elif email.status in validated:
+                self.addError(_(
+                    "This email address is already registered and validated "
+                    "for your Launchpad account. There's no need to validate "
+                    "it again."))
+            else:
+                # Yay, email is not used by anybody else and is not yet
+                # validated.
+                pass
+
+    def _ensureEmail(self):
+        """Make sure self.requester has this token's email address as one of
+        its email addresses and return it.
+        """
+        emailset = getUtility(IEmailAddressSet)
+        email = emailset.getByEmail(self.context.email)
+        if email is None:
+            email = emailset.new(self.context.email, self.context.requester)
+        return email
+
+
 class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
     """Page to create a new Launchpad account.
 
@@ -586,7 +580,7 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
         self.redirectIfInvalidOrConsumedToken()
         self.email = getUtility(IEmailAddressSet).getByEmail(
             self.context.email)
-        LaunchpadFormView.initialize(self)
+        super(NewAccountView, self).initialize()
 
     # Use a method to set self.next_url rather than a property because we
     # want to override self.next_url in a subclass of this.

@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'ILoginToken',
     'ILoginTokenSet',
+    'IGPGKeyValidation',
     ]
 
 from zope.schema import Datetime, Int, Text, TextLine
@@ -208,4 +209,10 @@ class ILoginTokenSet(Interface):
 
         Returns the default value if there is no such LoginToken.
         """
+
+
+class IGPGKeyValidation(Interface):
+    """The schema used by ILoginToken's +validategpg form."""
+
+    signed_text = Text(title=_('Signed text'), required=True)
 

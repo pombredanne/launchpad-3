@@ -18,9 +18,9 @@
         <tal:name replace="context/requester/displayname">Foo Bar</tal:name>
       </p>
 
-      <div metal:fill-slot="extra_bottom">
+      <div metal:fill-slot="extra_top">
         <p>Please paste a clear-signed copy of the following phrase
-        into the text box below.  This can be achieved by saving the
+        into the box below.  This can be achieved by saving the
         phrase to a file and running <kbd>gpg --clearsign
         FILENAME</kbd>.</p>
 
@@ -28,8 +28,6 @@
           Please register ABCDEF... to the Launchpad user joe
           2005-04-01 10:30:42 UTC
         </pre>
-
-        <textarea name="signedcontent" rows="14" cols="70"></textarea>
       </div>
     </div>
 

@@ -118,7 +118,7 @@ Below is a clear-signed version signed with a different key (DFD20543):
 
 The key validation does not succeed with this key:
 
-  >>> browser.getControl(name="signedcontent").value = signedcontent
+  >>> browser.getControl("Signed text").value = signedcontent
   >>> browser.getControl('Continue').click()
 
   >>> message = (
@@ -144,7 +144,7 @@ this case, a truncated signature):
 
 The key validation does not succeed with this key:
 
-  >>> browser.getControl(name="signedcontent").value = signedcontent
+  >>> browser.getControl("Signed text").value = signedcontent
   >>> browser.getControl('Continue').click()
 
   >>> message = (
@@ -174,7 +174,7 @@ sign, signed with the correct key:
 Confirm the OpenPGP key by proving that we can sign the given phrase with
 the key:
 
-  >>> browser.getControl(name="signedcontent").value = signedcontent
+  >>> browser.getControl("Signed text").value = signedcontent
   >>> browser.getControl('Continue').click()
 
 On success, redirect to Sample Person's home page.
