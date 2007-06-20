@@ -299,12 +299,15 @@ class UploadProcessor:
             # When bug #29744 is fixed (zopeless mails should only be sent
             # when transaction is committed) this will cause any emails sent
             # sent by do_reject to be lost.
+            notify = True
+            if self.options.dryrun or self.options.nomails:
+                notify = False
             if upload.is_rejected:
                 result = UploadStatusEnum.REJECTED
-                upload.do_reject()
+                upload.do_reject(notify)
                 self.ztm.abort()
             else:
-                successful = upload.do_accept()
+                successful = upload.do_accept(notify=notify)
                 if not successful:
                     result = UploadStatusEnum.REJECTED
                     self.log.info("Rejection during accept. "

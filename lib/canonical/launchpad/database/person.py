@@ -20,7 +20,7 @@ from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.config import config
 from canonical.database import postgresql
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -46,9 +46,9 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
-    IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo,
-    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
-    ILaunchpadCelebrities, ILaunchpadStatisticSet, ILanguageSet,
+    IEmailAddress, IEmailAddressSet, IEntitlement, IGPGKeySet, IHasIcon,
+    IHasLogo, IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet,
+    ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet, ILanguageSet,
     ILoginTokenSet, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
     IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey,
     ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
@@ -64,6 +64,7 @@ from canonical.launchpad.database.bugtask import (
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
+from canonical.launchpad.database.pillar import PillarName
 from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
@@ -118,6 +119,9 @@ class Person(SQLBase, HasSpecificationsMixin):
         dbName='logo', foreignKey='LibraryFileAlias', default=None)
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
+    openid_identifier = StringCol(
+            dbName='openid_identifier', alternateID=True, notNull=True,
+            default=DEFAULT)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -184,6 +188,7 @@ class Person(SQLBase, HasSpecificationsMixin):
                           default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
 
+    entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
 
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""
@@ -460,16 +465,10 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         languages = set()
         known_languages = shortlist(self.languages)
-        if len(known_languages):
+        if len(known_languages) != 0:
             for lang in known_languages:
-                # Ignore English and all its variants since we assume English
-                # is supported
                 if not is_english_variant(lang):
                     languages.add(lang)
-        elif ITeam.providedBy(self):
-            for member in self.activemembers:
-                languages |= member.getSupportedLanguages()
-        languages.add(getUtility(ILanguageSet)['en'])
         return languages
 
     def getQuestionLanguages(self):
@@ -800,6 +799,43 @@ class Person(SQLBase, HasSpecificationsMixin):
         cur.execute(query)
         return cur.fetchall()
 
+    def getOwnedOrDrivenPillars(self):
+        """See IPerson."""
+        query = """
+            SELECT name
+            FROM product, teamparticipation
+            WHERE teamparticipation.person = %(person)s
+                AND (driver = teamparticipation.team
+                     OR owner = teamparticipation.team)
+
+            UNION
+
+            SELECT name
+            FROM project, teamparticipation
+            WHERE teamparticipation.person = %(person)s
+                AND (driver = teamparticipation.team 
+                     OR owner = teamparticipation.team)
+
+            UNION
+
+            SELECT name
+            FROM distribution, teamparticipation
+            WHERE teamparticipation.person = %(person)s
+                AND (driver = teamparticipation.team
+                     OR owner = teamparticipation.team)
+            """ % sqlvalues(person=self)
+        cur = cursor()
+        cur.execute(query)
+        names = [sqlvalues(str(name)) for [name] in cur.fetchall()]
+        if not names:
+            return PillarName.select("1=2")
+        quoted_names = ','.join([name for [name] in names])
+        return PillarName.select(
+            "PillarName.name IN (%s) AND PillarName.active IS TRUE" %
+            quoted_names, prejoins=['distribution', 'project', 'product'],
+            orderBy=['PillarName.distribution', 'PillarName.project',
+                     'PillarName.product'])
+
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
         for name, karmavalue in self._getProjectsWithTheMostKarma(limit=limit):
@@ -895,17 +931,6 @@ class Person(SQLBase, HasSpecificationsMixin):
             return True
 
         return False
-
-    @property
-    def openid_identifier(self):
-        # XXX: This should be a value stored in the database. Calculating
-        # using a hash for now so we can test during database freeze.
-        # Bug #118200
-        # -- StuartBishop 20070528
-        if self.isTeam():
-            return None
-        else:
-            return 'temp%d' % self.id
 
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None):
@@ -1723,18 +1748,18 @@ class PersonSet:
         return Person.selectOne(query)
 
     def getByOpenIdIdentifier(self, openid_identifier):
-        """Returns a Person with the given openid_identifier, or None."""
-        # XXX: This should be a value stored in the database. Calculating
-        # using a hash for now so we can test during database freeze.
-        # Bug #118200
-        # -- StuartBishop 20070528
-        if openid_identifier.startswith('temp'):
-            try:
-                id = int(openid_identifier[4:])
-            except ValueError:
-                return None
-            return self.get(id)
-        return None
+        """Returns a Person with the given openid_identifier, or None.
+       
+        None is returned if the person is not enabled for OpenID usage
+        (see Person.is_openid_enabled).
+        """
+        person = Person.selectOne(
+                Person.q.openid_identifier == openid_identifier
+                )
+        if person is not None and person.is_openid_enabled:
+            return person
+        else:
+            return None
 
     def updateStatistics(self, ztm):
         """See IPersonSet."""
@@ -2567,4 +2592,3 @@ class IrcIDSet:
 
     def new(self, person, network, nickname):
         return IrcID(person=person, network=network, nickname=nickname)
-

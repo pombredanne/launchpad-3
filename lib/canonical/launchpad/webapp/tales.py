@@ -1374,6 +1374,71 @@ class FormattersAPI:
                     % cgi.escape(self._stringtoformat)
                     )
 
+    # Match lines that start with the ':', '|', and '>' symbols
+    # commonly used for quoting passages from another email.
+    _re_quoted = re.compile('^([:|]|&gt;)')
+
+    # Match blocks that start as signatures or quoted passages.
+    _re_block_include = re.compile('^<p>(--<br />|&gt;)')
+
+    def email_to_html(self):
+        """text_to_html and hide signatures and full-quoted emails.
+
+        This method wraps signatures and quoted passages with
+        <span class="foldable"></span> tags to identify them in presentation
+        layer. CSS and and JavaScript may use this markup to control the
+        content's display behavior.
+        """
+        start_fold_markup = '<span class="foldable">'
+        end_fold_markup = '%s\n</span></p>'
+        output = []
+        in_fold = False
+        for line in self.text_to_html().split('\n'):
+            if not in_fold and self._re_block_include.match(line) is not None:
+                # Start a foldable paragraph for a signature or quote.
+                in_fold = True
+                line = '<p>%s%s' % (start_fold_markup, line[3:])
+            elif not in_fold and self._re_quoted.match(line) is not None:
+                # Start a foldable section for a quoted passage.
+                in_fold = True
+                output.append(start_fold_markup)
+            elif in_fold and line.endswith('</p>'):
+                # End the foldable section
+                in_fold = False
+                line = end_fold_markup % line[0:-4]
+            else:
+                # This line is not extraordinary.
+                pass
+            output.append(line)
+        return '\n'.join(output)
+
+    # This is a regular expression that matches email address embedded in
+    # text. It is not RFC 2882 compliant, nor does it need to be. This
+    # expression strives to identify probable email addresses so that they
+    # can be obfuscated when viewed by unauthenticated users. See
+    # http://www.email-unlimited.com/stuff/email_address_validator.htm
+    _re_email = re.compile(
+        r"\b[-!#$%&'*+/0-9=?A-Z^_a-z{|}~](\.?[-!#$%&'*+/0-9=?A-Z^_a-z{|}~])*@"
+        r"[a-zA-Z](-?[a-zA-Z0-9])*(\.[a-zA-Z](-?[a-zA-Z0-9])*)+\b")
+
+    def obfuscate_email(self):
+        """Obfuscate an email address as '<email address hidden>'.
+
+        This formatter is intended to hide possible email addresses from
+        unauthenticated users who view this text on the Web. Run this before
+        the text is converted to html because text-to-html and email-to-html
+        will insert markup into the address. eg.
+        foo/fmt:obfuscate-email/fmt:email-to-html
+
+        The pattern used to identify an email address is not 2822. It strives
+        to match any possible email address embedded in the text. For example,
+        mailto:person@domain.dom and http://person:password@domain.dom both
+        match, though the http match is in fact not an email address.
+        """
+        text = self._re_email.sub(
+            r'<email address hidden>', self._stringtoformat)
+        return text
+
     def shorten(self, maxlength):
         """Use like tal:content="context/foo/fmt:shorten/60"."""
         if len(self._stringtoformat) > maxlength:
@@ -1390,6 +1455,10 @@ class FormattersAPI:
             return self.text_to_html()
         elif name == 'nice_pre':
             return self.nice_pre()
+        elif name == 'email-to-html':
+            return self.email_to_html()
+        elif name == 'obfuscate-email':
+            return self.obfuscate_email()
         elif name == 'shorten':
             if len(furtherPath) == 0:
                 raise TraversalError(

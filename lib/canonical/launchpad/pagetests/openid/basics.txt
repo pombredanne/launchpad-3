@@ -47,10 +47,10 @@ be contacted.
     <...
     <head>
     ...
-    <link rel="openid.server" href="http://openid.launchpad.dev/" />
+    <link rel="openid.server" href="http://openid.launchpad.dev/+openid" />
     <link
         rel="openid.delegate"
-        href="http://openid.launchpad.dev/+openid/+id/temp1" />
+        href="http://openid.launchpad.dev/+id/sabdfl_oid" />
     </head>
     ...
 
@@ -64,21 +64,22 @@ Teams do not have this tag of course.
 
 The standard person homepage delegates to a permanent identity URL
 
-    >>> anon_browser.open('http://openid.launchpad.dev/+openid/+id/temp1')
+    >>> anon_browser.open('http://openid.launchpad.dev/+id/sabdfl_oid')
     >>> print anon_browser.contents
     <html>
     <head>
-    <link rel="openid.server" href="http://openid.launchpad.dev/" />
+    <link rel="openid.server" href="http://openid.launchpad.dev/+openid" />
     ...
     >>> 'openid.delegate' in anon_browser.contents
     False
 
+
 If a permanent, human memorable, identity URL is needed we have that too.
 It is just a redirect to the above permanent identity URL.
 
-    >>> anon_browser.open('http://openid.launchpad.dev/+openid/sabdfl')
+    >>> anon_browser.open('http://openid.launchpad.dev/sabdfl')
     >>> anon_browser.url
-    'http://openid.launchpad.dev/+openid/+id/temp1'
+    'http://openid.launchpad.dev/+id/sabdfl_oid'
 
 
 == associate Mode ==
@@ -90,10 +91,10 @@ needs to do is associate with the server and get a shared secret via a
 POST request.
 
     >>> from urllib import urlencode
-    >>> anon_browser.open('http://openid.launchpad.dev/', data=urlencode({
-    ...     'openid.mode': 'associate',
-    ...     'openid.assoc_type': 'HMAC-SHA1',
-    ...     }))
+    >>> anon_browser.open(
+    ...     'http://openid.launchpad.dev/+openid', data=urlencode({
+    ...         'openid.mode': 'associate',
+    ...         'openid.assoc_type': 'HMAC-SHA1'}))
     >>> print anon_browser.headers
     Status: 200 Ok
     ...
@@ -105,6 +106,7 @@ POST request.
     expires_in:1209...
     mac_key:...
     <BLANKLINE>
+
 
 Get the association handle, which we will need for later tests.
 
@@ -122,15 +124,16 @@ will currently return "can't say" as we are not yet logged into Launchpad.
 
     >>> args = urlencode({
     ...     'openid.mode': 'checkid_immediate',
-    ...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/temp1',
+    ...     'openid.identity':
+    ...         'http://openid.launchpad.dev/+id/sabdfl_oid',
     ...     'openid.assoc_handle': assoc_handle,
     ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
     ...     })
-    >>> anon_browser.open('http://openid.launchpad.dev/?%s' % args)
+    >>> anon_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> print anon_browser.contents
     Consumer received GET
     openid.mode:id_res
-    openid.user_setup_url:http://openid.launchpad.dev/?...
+    openid.user_setup_url:http://openid.launchpad.dev/+openid?...
     <BLANKLINE>
 
 
@@ -139,15 +142,15 @@ user.
 
     >>> args = urlencode({
     ...     'openid.mode': 'checkid_immediate',
-    ...     'openid.identity': 'http://launchpad.dev/+openid/+id/temp10',
+    ...     'openid.identity': 'http://launchpad.dev/+id/limi_oid',
     ...     'openid.assoc_handle': assoc_handle,
     ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
     ...     })
-    >>> user_browser.open('http://openid.launchpad.dev/?%s' % args)
+    >>> user_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> print user_browser.contents
     Consumer received GET
     openid.mode:id_res
-    openid.user_setup_url:http://openid.launchpad.dev/?...
+    openid.user_setup_url:http://openid.launchpad.dev/+openid?...
     <BLANKLINE>
 
 We test a success below in the 'Sticky Authorization' section.
@@ -183,7 +186,7 @@ to allow authorization or decline.
 
     >>> print find_main_content(sabdfl_browser.contents)
     <...
-    <form method="post" action=".">
+    <form method="post" action="http://openid.launchpad.dev/+openid">
         <input type="hidden" name="nonce"
             value="..." />
         <select name="allow_duration">
@@ -222,29 +225,32 @@ informing it that the request is valid.
     >>> print sabdfl_browser.contents
     Consumer received GET
     openid.assoc_handle:...
-    openid.identity:http://openid.launchpad.dev/+openid/+id/temp1
+    openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
     openid.mode:id_res
     openid.return_to:http://launchpad.dev/+openid-consumer
     openid.sig:...
     openid.signed:return_to,mode,identity
     <BLANKLINE>
 
+
 Grab some results for the later check_authentication tests.
 
     >>> [sig] = re.findall('sig:(.*)', sabdfl_browser.contents)
+
 
 Note that the return_to URL must be in the trust_root, or an error is
 returned.
 
     >>> args = urlencode({
     ...     'openid.mode': 'checkid_setup',
-    ...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/temp1',
+    ...     'openid.identity':
+    ...         'http://openid.launchpad.dev/+id/sabdfl_oid',
     ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
     ...     'openid.trust_root': 'http://com',
     ...     'whatever': 'blah',
     ...     })
     >>> sabdfl_browser.handleErrors = True
-    >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+    >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> print sabdfl_browser.contents
     Consumer received GET
     openid.error:...
@@ -257,7 +263,6 @@ returned.
 Ask an Identity Provider if a message is valid. For dumb, stateless
 Consumers or when verifying an invalidate_handle response.
 
-
 If an association handle is stateful (genereted using the associate Mode),
 check_authentication will fail.
 
@@ -266,10 +271,11 @@ check_authentication will fail.
     ...     'openid.assoc_handle': assoc_handle,
     ...     'openid.sig': sig,
     ...     'openid.signed':  'return_to,mode,identity',
-    ...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/temp1',
+    ...     'openid.identity':
+    ...         'http://openid.launchpad.dev/+id/sabdfl_oid',
     ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
     ...     })
-    >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+    >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> print sabdfl_browser.contents
     is_valid:false
     <BLANKLINE>
@@ -280,15 +286,16 @@ Mode.
 
     >>> args = urlencode({
     ...     'openid.mode': 'checkid_setup',
-    ...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/temp1',
+    ...     'openid.identity':
+    ...         'http://openid.launchpad.dev/+id/sabdfl_oid',
     ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
     ...     })
-    >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+    >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> sabdfl_browser.getControl('Allow').click()
     >>> print sabdfl_browser.contents
     Consumer received GET
     openid.assoc_handle:...
-    openid.identity:http://openid.launchpad.dev/+openid/+id/temp1
+    openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
     openid.mode:id_res
     openid.return_to:http://launchpad.dev/+openid-consumer
     openid.sig:...
@@ -305,9 +312,10 @@ Mode.
     ...     'openid.sig': sig,
     ...     'openid.signed': 'return_to,mode,identity',
     ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
-    ...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/temp1',
+    ...     'openid.identity':
+    ...         'http://openid.launchpad.dev/+id/sabdfl_oid',
     ...     })
-    >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+    >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> print sabdfl_browser.contents
     is_valid:true
     <BLANKLINE>
@@ -324,10 +332,11 @@ them to a particular consumer.
     >>> print sabdfl_browser.contents
     Consumer received GET
     ...
-    openid.identity:http://openid.launchpad.dev/+openid/+id/temp1
+    openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
     openid.mode:id_res
     openid.return_to:http://launchpad.dev/+openid-consumer
     ...
+
 
 Now that we have authorized for 1 hour, further auth requests
 automatically succeed without user intervention.
@@ -336,7 +345,7 @@ automatically succeed without user intervention.
     >>> print sabdfl_browser.contents
     Consumer received GET
     ...
-    openid.identity:http://openid.launchpad.dev/+openid/+id/temp1
+    openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
     openid.mode:id_res
     openid.return_to:http://launchpad.dev/+openid-consumer
     ...
@@ -351,16 +360,18 @@ Immediate mode:
 
     >>> args = urlencode({
     ...     'openid.mode': 'checkid_immediate',
-    ...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/temp22',
+    ...     'openid.identity':
+    ...         'http://openid.launchpad.dev/+id/stub_oid',
     ...     'openid.assoc_handle': assoc_handle,
     ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
     ...     })
-    >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+    >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> print sabdfl_browser.contents
     Consumer received GET
     openid.mode:id_res
-    openid.user_setup_url:http://openid.launchpad.dev/?...
+    openid.user_setup_url:http://openid.launchpad.dev/+openid?...
     <BLANKLINE>
+
 
 Interactive mode:
 
@@ -374,6 +385,7 @@ Interactive mode:
     Unauthorized: You are not authorized to use this OpenID identifier.
     >>> sabdfl_browser.handleErrors = True
 
+
 == Invalid identities ==
 
 If you attempt interactive authentication with an invalid OpenID
@@ -381,11 +393,12 @@ identifier, you get a nice error page.
 
     >>> args = urlencode({
     ...     'openid.mode': 'checkid_immediate',
-    ...     'openid.identity': 'http://openid.launchpad.dev/+openid/+id/temp10',
+    ...     'openid.identity':
+    ...         'http://openid.launchpad.dev/+id/limi_oid',
     ...     'openid.assoc_handle': assoc_handle,
     ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
     ...     })
-    >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+    >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> [setup_url] = re.findall(
     ...     '(?m)^openid.user_setup_url:(.*)$', sabdfl_browser.contents
     ...     )
@@ -401,6 +414,7 @@ identifier, you get a nice error page.
     </form>
     ...
 
+
 == Broken Consumers ==
 
 Really bad requests might trigger a protocol error
@@ -409,11 +423,12 @@ Really bad requests might trigger a protocol error
     ...     'openid.mode': 'whoops',
     ...     })
     >>> sabdfl_browser.handleErrors = True
-    >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+    >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> print sabdfl_browser.contents
     error:No decoder for mode 'whoops'
     mode:error
     <BLANKLINE>
+
 
 If there is a valid return_to, then the consumer gets notified.
 
@@ -421,7 +436,7 @@ If there is a valid return_to, then the consumer gets notified.
     ...     'openid.mode': 'whoops',
     ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
     ...     })
-    >>> sabdfl_browser.open('http://openid.launchpad.dev/?%s' % args)
+    >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> print sabdfl_browser.contents
     Consumer received GET
     openid.error:No decoder for mode 'whoops'
