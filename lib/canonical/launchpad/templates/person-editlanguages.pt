@@ -15,12 +15,12 @@
 
 <div metal:fill-slot="main" >
  
-  <h1 tal:condition="python:view.user != context">
+  <h1 tal:condition="not: view/is_current_user">
     <span tal:replace="context/displayname">Someone</span>'s
     language preferences
   </h1>
 
-  <h1 tal:condition="python:view.user == context">
+  <h1 tal:condition="view/is_current_user">
     Your language preferences
   </h1>
 

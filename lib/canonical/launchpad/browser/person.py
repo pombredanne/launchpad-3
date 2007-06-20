@@ -1547,6 +1547,11 @@ class PersonLanguagesView(LaunchpadView):
         else:
             return ''
 
+    @property
+    def is_current_user(self):
+        """Return True when the Context is also the User."""
+        return self.user == self.context
+
     def submitLanguages(self):
         '''Process a POST request to the language preference form.
 
@@ -1562,10 +1567,10 @@ class PersonLanguagesView(LaunchpadView):
             if self.request.has_key(key) and self.request.get(key) == u'on':
                 new_languages.append(all_languages[key])
 
-        if self.context.isTeam():
-            subject = "%s's" % self.context.displayname
-        else:
+        if self.is_current_user:
             subject = "your"
+        else:
+            subject = "%s's" % self.context.displayname
 
         # Add languages to the user's preferences.
         for language in set(new_languages) - set(old_languages):

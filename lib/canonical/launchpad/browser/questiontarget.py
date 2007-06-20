@@ -584,7 +584,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
             if len(browserLanguages(self.request)) > 0:
                 languages = browserLanguages(self.request)
             else:
-                languages = self.user_support_languages
+                languages = [getUtility(ILanguageSet)['en']]
             for language in languages:
                 person_or_team.addLanguage(language)
             language_str = ', '.join([lang.displayname for lang in languages])
@@ -592,6 +592,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                 _('<a href="/people/+me/+editlanguages">Your preferred '
                   'languages</a> were set to your browser languages: '
                   '$languages.', mapping={'languages' : language_str}))
+
 
 class QuestionTargetFacetMixin:
     """Mixin for questiontarget facet definition."""
