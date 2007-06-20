@@ -1286,6 +1286,9 @@ class POMsgSetSuggestions:
                     submission.pomsgset.potmsgset.flags()),
                 'pomsgset': submission.pomsgset,
                 'person': submission.person,
-                'datecreated': submission.datecreated
+                'datecreated': submission.datecreated,
+                'html_id': submission.suggestion_htmlid(pomsgset),
+                'translation_html_id':
+                    submission.suggestion_htmlid(pomsgset, 'translation')
                 })
 

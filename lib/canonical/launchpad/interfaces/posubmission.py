@@ -1,4 +1,4 @@
-# Copyright 2005-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
 from zope.schema import Object, Datetime, Bool
@@ -44,4 +44,13 @@ class IPOSubmission(Interface):
         """Remove this object.
 
         It should not be referenced by any other object.
+        """
+
+    def suggestion_htmlid(for_pomsgset, description='suggestion'):
+        """Unique identifier for self as suggestion for POMsgSet.
+
+        Constructs an identifier suitable for use in HTML.
+
+        :description: a keyword to be embedded in the id string.  Must be
+        suitable for use in an HTML element id.
         """
