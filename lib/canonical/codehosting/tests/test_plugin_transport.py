@@ -63,6 +63,8 @@ class TestLaunchpadServer(TestCaseInTempDir):
             ('00/00/00/04/', WRITABLE),
             self.server.translate_virtual_path('/~testteam/firefox/qux'))
 
+        # The '+junk' product doesn't actually exist. It is used for branches
+        # which don't have a product assigned to them.
         self.assertEqual(
             ('00/00/00/05/', READ_ONLY),
             self.server.translate_virtual_path('/~name12/+junk/junk.dev'))
@@ -102,18 +104,27 @@ class TestLaunchpadServer(TestCaseInTempDir):
         self.addCleanup(self.server.tearDown)
         self.assertEqual('lp-%d:///' % id(self.server), self.server.get_url())
 
-    def test_mark_as_dirty(self):
-        # If a given file is flagged as modified then the branch owning that
-        # file should be flagged as dirty.
+    def test_nothing_dirty_by_default(self):
+        # If a server is set up then torn down without any operations, then no
+        # branches should be marked as dirty.
         self.server.setUp()
         self.server.tearDown()
         self.assertEqual([], self.server.authserver._request_mirror_log)
 
+    def test_mark_as_dirty(self):
+        # If a given file is flagged as modified then the branch owning that
+        # file should be flagged as dirty.
         self.server.setUp()
         self.server.dirty('/~testuser/firefox/baz/.bzr')
         self.server.tearDown()
         self.assertEqual([1], self.server.authserver._request_mirror_log)
 
+    def test_tearDown_clears_dirty_flags(self):
+        # After a server has been set up and torn down, any branches marked as
+        # dirty should be cleaned up.
+        self.server.setUp()
+        self.server.dirty('/~testuser/firefox/baz/.bzr')
+        self.server.tearDown()
         self.server.setUp()
         self.server.tearDown()
         self.assertEqual([1], self.server.authserver._request_mirror_log)

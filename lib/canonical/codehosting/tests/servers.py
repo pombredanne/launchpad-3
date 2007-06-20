@@ -18,7 +18,11 @@ import threading
 
 from bzrlib.transport import get_transport, sftp, ssh, Server
 
+from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import keys
+from twisted.internet import defer, process, protocol
+from twisted.protocols import basic
+from twisted.python import components
 from twisted.python.util import sibpath
 
 from canonical.config import config
@@ -27,6 +31,7 @@ from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.daemons.sftp import SSHService
 from canonical.launchpad.daemons.authserver import AuthserverService
 
+from canonical.codehosting.smartserver import launch_smart_server
 from canonical.codehosting.sshserver import (
     BazaarFileTransferServer, LaunchpadAvatar)
 from canonical.codehosting.transport import LaunchpadServer
@@ -42,13 +47,13 @@ def make_launchpad_server():
 def make_sftp_server():
     authserver = AuthserverWithKeys('testuser', 'testteam')
     branches_root = '/tmp/sftp-test'
-    return SSHCodeHostingServer('sftp', authserver, branches_root)
+    return SFTPCodeHostingServer(authserver, branches_root)
 
 
 def make_bzr_ssh_server():
     authserver = AuthserverWithKeys('testuser', 'testteam')
     branches_root = '/tmp/sftp-test'
-    return SSHCodeHostingServer('bzr+ssh', authserver, branches_root)
+    return BazaarSSHCodeHostingServer(authserver, branches_root)
 
 
 class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
@@ -98,7 +103,7 @@ class Authserver(Server):
         self.authserver.startService()
 
     def tearDown(self):
-        self.authserver.stopService()
+        return self.authserver.stopService()
 
     def get_url(self):
         return config.codehosting.authserver
@@ -144,6 +149,7 @@ class AuthserverOutOfProcess(Server):
 
     def tearDown(self):
         self.tachandler.tearDown()
+        return defer.succeed(None)
 
     def get_url(self):
         return config.codehosting.authserver
@@ -228,8 +234,8 @@ class CodeHostingServer(Server):
         self.authserver.setUp()
 
     def tearDown(self):
-        self.authserver.tearDown()
         shutil.rmtree(self._branches_root)
+        return self.authserver.tearDown()
 
     def getTransport(self, relpath):
         """Return a new transport for 'relpath', adding necessary cleanup."""
@@ -279,16 +285,23 @@ class SSHCodeHostingServer(CodeHostingServer):
 
     def tearDown(self):
         self.closeAllConnections()
-        self.server.stopService()
+        deferred1 = self.server.stopService()
         os.environ['HOME'] = self._real_home
-        CodeHostingServer.tearDown(self)
+        deferred2 = CodeHostingServer.tearDown(self)
         shutil.rmtree(self._fake_home)
         ssh._ssh_vendor_manager._cached_ssh_vendor = self._old_vendor_manager
+        return defer.gatherResults([deferred1, deferred2])
 
     def get_url(self, user=None):
         if user is None:
             user = self.authserver.testUser
         return '%s://%s@localhost:22222/' % (self._schema, user)
+
+
+class SFTPCodeHostingServer(SSHCodeHostingServer):
+
+    def __init__(self, authserver, branches_root):
+        SSHCodeHostingServer.__init__(self, 'sftp', authserver, branches_root)
 
     def runAndWaitForDisconnect(self, func, *args, **kwargs):
         """Run the given function, close all SFTP connections, and wait for the
@@ -307,6 +320,57 @@ class SSHCodeHostingServer(CodeHostingServer):
             # connected.
             if ever_connected.isSet():
                 done.wait()
+
+
+class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
+
+    def __init__(self, authserver, branches_root):
+        SSHCodeHostingServer.__init__(
+            self, 'bzr+ssh', authserver, branches_root)
+
+    def setUp(self):
+        SSHCodeHostingServer.setUp(self)
+        self._reapAllProcesses = process.reapAllProcesses
+        process.reapAllProcesses = lambda: None
+
+    def tearDown(self):
+        process.reapAllProcesses = self._reapAllProcesses
+        return SSHCodeHostingServer.tearDown(self)
+
+    def runAndWaitForDisconnect(self, func, *args, **kwargs):
+        """Run the given function, close all connections, and wait for the
+        server to acknowledge the end of the session.
+        """
+        pids = []
+
+        def make_test_launchpad_server(avatar):
+            server = launch_smart_server(avatar)
+            real_exec_command = server.execCommand
+            def execCommand(protocol, command):
+                real_exec_command(protocol, command)
+                pids.append(server._transport.pid)
+            server.execCommand = execCommand
+            return server
+
+        old_allow_duplicates = components.ALLOW_DUPLICATES
+        components.ALLOW_DUPLICATES = True
+        old_adapter = components.getAdapterFactory(
+            LaunchpadAvatar, ISession, None)
+        components.registerAdapter(
+            make_test_launchpad_server, LaunchpadAvatar, ISession)
+        try:
+            return func(*args, **kwargs)
+        finally:
+            self.closeAllConnections()
+            for pid in pids:
+                try:
+                    os.waitpid(pid, 0)
+                except OSError:
+                    """Process has already been killed."""
+            if old_adapter is not None:
+                components.registerAdapter(
+                    old_adapter, LaunchpadAvatar, ISession)
+            components.ALLOW_DUPLICATES = old_allow_duplicates
 
 
 class _TestSSHService(SSHService):

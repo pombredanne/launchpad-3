@@ -51,12 +51,6 @@ class DatabaseStorageTestCase(unittest.TestCase):
         self.cursor.close()
         super(DatabaseStorageTestCase, self).tearDown()
 
-    layer = LaunchpadScriptLayer
-
-    def setUp(self):
-        LaunchpadScriptLayer.switchDbConfig('authserver')
-        super(DatabaseStorageTestCase, self).setUp()
-
     def test_verifyInterface(self):
         self.failUnless(verifyObject(IUserDetailsStorage,
                                      DatabaseUserDetailsStorage(None)))

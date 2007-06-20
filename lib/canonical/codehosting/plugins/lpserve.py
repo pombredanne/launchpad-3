@@ -128,13 +128,14 @@ class cmd_launchpad_server(Command):
 
         def clean_up(signal, frames):
             # XXX: JonathanLange 2007-06-15, The lpserve process is interrupted
-            # using SIGHUP as a matter of course. When this happens, we still
-            # want to perform cleanup operations -- in particular, notifying
-            # the authserver of modified branches. This signal handler runs the
+            # by SIGHUP as a matter of course. When this happens, we still want
+            # to perform cleanup operations -- in particular, notifying the
+            # authserver of modified branches. This signal handler runs the
             # operations we need to run (i.e. lp_server.tearDown) and does its
-            # best to trigger 'finally' blocks across the rest of Launchpad.
+            # best to trigger 'finally' blocks across the rest of bzrlib.
             lp_server.tearDown()
             thread.interrupt_main()
+
         signal.signal(signal.SIGHUP, clean_up)
         try:
             transport = get_transport(lp_server.get_url())
