@@ -20,7 +20,7 @@ from bzrlib.transport import get_transport, sftp, ssh, Server
 
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import keys
-from twisted.internet import defer, protocol
+from twisted.internet import defer, process, protocol
 from twisted.protocols import basic
 from twisted.python import components
 from twisted.python.util import sibpath
@@ -334,27 +334,28 @@ class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
 
     def setUp(self):
         SSHCodeHostingServer.setUp(self)
-        from twisted.internet import reactor
-        self._listening = reactor.listenTCP(0, self._factory)
+        self._reapAllProcesses = process.reapAllProcesses
+        process.reapAllProcesses = lambda: None
 
     def tearDown(self):
-        deferred1 = self._listening.stopListening()
-        deferred2 = SSHCodeHostingServer.tearDown(self)
-        return defer.gatherResults([deferred1, deferred2])
+        process.reapAllProcesses = self._reapAllProcesses
+        return SSHCodeHostingServer.tearDown(self)
 
     def runAndWaitForDisconnect(self, func, *args, **kwargs):
         """Run the given function, close all connections, and wait for the
         server to acknowledge the end of the session.
         """
+        pids = []
+
         def make_test_launchpad_server(avatar):
             server = launch_smart_server(avatar)
-            address = self._listening.getHost()
-            destination = '%s:%s' % (address.host, address.port)
-            server.environment[TEST_SERVICE_VARIABLE] = destination
+            real_exec_command = server.execCommand
+            def execCommand(protocol, command):
+                real_exec_command(protocol, command)
+                pids.append(server._transport.pid)
+            server.execCommand = execCommand
             return server
 
-        done = threading.Event()
-        self._factory.setConnectionLostEvent(done)
         old_allow_duplicates = components.ALLOW_DUPLICATES
         components.ALLOW_DUPLICATES = True
         old_adapter = components.getAdapterFactory(
@@ -365,8 +366,11 @@ class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
             return func(*args, **kwargs)
         finally:
             self.closeAllConnections()
-            done.wait()
-            self._factory.setConnectionLostEvent(None)
+            for pid in pids:
+                try:
+                    os.waitpid(pid, 0)
+                except OSError:
+                    """Process has already been killed."""
             if old_adapter is not None:
                 components.registerAdapter(
                     old_adapter, LaunchpadAvatar, ISession)
