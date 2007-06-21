@@ -1,18 +1,13 @@
 <metal:branch-link define-macro="branch-heading-link">
-  <img src="/@@/branch" />
-  <tal:branch define="hide_url branch_index|nothing">
-    <tal:branch-link condition="not: hide_url">
-      <a tal:attributes="href branch/fmt:url"
-         tal:content="branch/displayname" />
-    </tal:branch-link>
-    <tal:no-branch-link condition="hide_url">
-      <tal:branch-name replace="branch/displayname"/>
-    </tal:no-branch-link>
-  </tal:branch>
-  <tal:not-junk condition="branch/product">
-    for the
-    <a tal:attributes="href branch/product/fmt:url"
-       tal:content="branch/product/displayname" />
-    project
-  </tal:not-junk>
+  <div id="branch-back-link">
+    <img src="/@@/branch" />
+    <a tal:attributes="href branch/fmt:url"
+       tal:content="branch/displayname" />
+    <tal:not-junk condition="branch/product">
+      for the
+      <a tal:attributes="href branch/product/fmt:url"
+         tal:content="branch/product/displayname" />
+      project
+    </tal:not-junk>
+  </div>
 </metal:branch-link>
