@@ -71,20 +71,13 @@ class ILoginServiceAuthorizeForm(Interface):
                      description=u'Unique value')
 
 
-class LoginServiceActionsVocabularyFactory:
-
-    implements(IContextSourceBinder)
-
-    def __call__(self, context):
-        """See IContextSourceBinder."""
-        # XXX 20070618 mpt: Order should be createaccount, login, resetpassword
-        terms = [
-            SimpleTerm('login', 'login', 'Yes, my password is:'),
-            SimpleTerm('createaccount', 'createaccount',
-                       'No, I want to create an account now'),
-            SimpleTerm('resetpassword', 'resetpassword',
-                       "I've forgotten my password")]
-        return SimpleVocabulary(terms)
+login_actions_vocabulary = SimpleVocabulary([
+    SimpleTerm('login', 'login', 'Yes, my password is:'),
+    SimpleTerm('createaccount', 'createaccount',
+               'No, I want to create an account now'),
+    SimpleTerm('resetpassword', 'resetpassword',
+               "I've forgotten my password"),
+    ])
 
 
 class ILoginServiceLoginForm(ILoginServiceAuthorizeForm):
@@ -94,4 +87,4 @@ class ILoginServiceLoginForm(ILoginServiceAuthorizeForm):
     email = TextLine(title=u'What is your e-mail address?', required=True)
     password = PasswordField(title=u'Password', required=False)
     action = Choice(title=_('Action'), required=True,
-                    source=LoginServiceActionsVocabularyFactory())
+                    vocabulary=login_actions_vocabulary)
