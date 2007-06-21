@@ -159,22 +159,15 @@ sorted orders for comparison.
 
     >>> from operator import itemgetter
     >>> def sorted_listings(ls_infos):
-    ...     # ls_infos will be a sequence of dictionaries.  The inner
-    ...     # dictionaries will be sorted by key and then sorted within
-    ...     # the sequence by the 'name' key.
-    ...     sorted_infos = []
-    ...     for infos in sorted(ls_infos, key=itemgetter('name')):
-    ...         items = sorted(infos.items(), key=itemgetter(0))
-    ...         sorted_infos.append(items)
-    ...     return sorted_infos
+    ...     # ls_infos will be a sequence of dictionaries.  They need to be
+    ...     # sorted for the sequences to compare equal, so do that on the
+    ...     # dictionary's 'name' key.  The equality test used here
+    ...     # doesn't care about the sort order of the dictionaries.
+    ...     return sorted(ls_infos, key=itemgetter('name'))
 
     >>> expected.sort()
     >>> returned = ufs.ls(".")
     >>> returned.sort()
-    >>> # XXX BarryWarsaw 15-Jun-2007: The way this test is written, it makes
-    >>> # failures very difficult to debug.  It should probably be rewritten
-    >>> # as an ndiff comparison against the expected results.  However,
-    >>> # that's 64 lines of output, which may make this test less readable.
     >>> sorted_listings(expected) == sorted_listings(returned)
     True
 
