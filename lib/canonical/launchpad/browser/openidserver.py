@@ -328,10 +328,10 @@ KNOWN_TRUST_ROOTS = {
         dict(title="PDL Demo OSCommerce shop",
              logo="/+icing/canonical-logo.png"),
     'http://www.mmania.biz':
-        dict(title="Demo Canonical Shop",
+        dict(title="The Ubuntu Store from Canonical",
              logo="/+icing/canonical-logo.png"),
     'http://www.mmania.biz/ubuntu/':
-        dict(title="Demo Canonical Shop",
+        dict(title="The Ubuntu Store from Canonical",
              logo="/+icing/canonical-logo.png"),
     #'https://shop.ubuntu.com/':
     #    dict(title="Ubuntu Shop"),
