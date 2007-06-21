@@ -1442,6 +1442,27 @@ class BugTaskSearchListingView(LaunchpadView):
         An UnexpectedFormData exception is raised if the user submitted a URL
         that could not have been created from the UI itself.
         """
+        # Before Launchpad version 1.1.6 (build 4412), the upstream parameter
+        # in the requets was a single string value, coming from a set of
+        # radio buttons. From that version on, the user can select multiple
+        # values in the web UI. In order to keep old booksmarks working,
+        # convert the old string parameter into a list.
+        old_upstream_status_values_to_new_values = {
+            'pending_bugwatch': 'pending_bugwatch',
+            'hide_upstream': 'hide_upstream',
+            'only_resolved_upstream': 'resolved_upstream'}
+        status_upstream = self.request.get('field.status_upstream')
+        if status_upstream in old_upstream_status_values_to_new_values.keys():
+            self.request.form['field.status_upstream'] = [
+                old_upstream_status_values_to_new_values[status_upstream]]
+        elif status_upstream == '':
+            del self.request.form['field.status_upstream']
+        else:
+            # The value of status_upstream is either correct, so nothing to
+            # do, or it has some other error, which is handled in the "for"
+            # loop below
+            pass
+
         # The only way the user should get these field values incorrect is
         # through a stale bookmark or a hand-hacked URL.
         for field_name in ("status", "importance", "milestone", "component",
@@ -1452,7 +1473,6 @@ class BugTaskSearchListingView(LaunchpadView):
                 raise UnexpectedFormData(
                     "Unexpected value for field '%s'. Perhaps your bookmarks "
                     "are out of date or you changed the URL by hand?" % field_name)
-
 
         try:
             getWidgetsData(self, schema=self.schema, names=['tag'])

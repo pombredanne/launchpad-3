@@ -139,6 +139,157 @@ the union of the results for the individual filters.
     2 Blackhole Trash folder
       &mdash; Medium New
 
+Before Launchpad version 1.1.6, users could selected only one upstream
+status. Bookmarks of such searches work nevertheless.
+
+The user opens a bookmark for "upstream status doesn't matter"
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+bugs?'
+    ...     'field.status_upstream=&'
+    ...     'field.status_upstream-empty-marker=1&'
+    ...     'field.searchtext=&orderby=-importance&'
+    ...     'field.status%3Alist=Unconfirmed&'
+    ...     'field.status%3Alist=Needs+Info&'
+    ...     'field.status%3Alist=Confirmed&'
+    ...     'field.status%3Alist=In+Progress&'
+    ...     'field.status%3Alist=Fix+Committed&'
+    ...     'assignee_option=any&'
+    ...     'field.assignee=&'
+    ...     'field.bug_reporter=&'
+    ...     'field.bug_contact=&'
+    ...     'field.component-empty-marker=1&'
+    ...     'field.omit_dupes.used=&'
+    ...     'field.omit_dupes=on&'
+    ...     'field.has_patch.used=&'
+    ...     'field.tag=&'
+    ...     'field.has_cve.used=&'
+    ...     'field.has_no_package.used=&'
+    ...     'search=Search')
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG
+      mozilla-firefox Medium New
+    9 Thunderbird crashes
+      thunderbird Medium Confirmed
+    10 another test bug
+       linux-source-2.6.15 Medium New
+    2 Blackhole Trash folder
+      &mdash; Medium New
+ 
+The user opens a bookmark for "upstream status: Show only bugs that need 
+to be forwarded to an upstream bugtracker".
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+bugs?'
+    ...     'field.status_upstream=pending_bugwatch&'
+    ...     'field.status_upstream-empty-marker=1&'
+    ...     'field.searchtext=&orderby=-importance&'
+    ...     'field.status%3Alist=Unconfirmed&'
+    ...     'field.status%3Alist=Needs+Info&'
+    ...     'field.status%3Alist=Confirmed&'
+    ...     'field.status%3Alist=In+Progress&'
+    ...     'field.status%3Alist=Fix+Committed&'
+    ...     'assignee_option=any&'
+    ...     'field.assignee=&'
+    ...     'field.bug_reporter=&'
+    ...     'field.bug_contact=&'
+    ...     'field.component-empty-marker=1&'
+    ...     'field.omit_dupes.used=&'
+    ...     'field.omit_dupes=on&'
+    ...     'field.has_patch.used=&'
+    ...     'field.tag=&'
+    ...     'field.has_cve.used=&'
+    ...     'field.has_no_package.used=&'
+    ...     'search=Search')
+    >>> print_bugtasks(anon_browser.contents)
+
+The user opens a bookmark for "upstream status: Show only bugs that are
+not known to affect upstream".
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+bugs?'
+    ...     'field.status_upstream=hide_upstream&'
+    ...     'field.status_upstream-empty-marker=1&'
+    ...     'field.searchtext=&orderby=-importance&'
+    ...     'field.status%3Alist=Unconfirmed&'
+    ...     'field.status%3Alist=Needs+Info&'
+    ...     'field.status%3Alist=Confirmed&'
+    ...     'field.status%3Alist=In+Progress&'
+    ...     'field.status%3Alist=Fix+Committed&'
+    ...     'assignee_option=any&'
+    ...     'field.assignee=&'
+    ...     'field.bug_reporter=&'
+    ...     'field.bug_contact=&'
+    ...     'field.component-empty-marker=1&'
+    ...     'field.omit_dupes.used=&'
+    ...     'field.omit_dupes=on&'
+    ...     'field.has_patch.used=&'
+    ...     'field.tag=&'
+    ...     'field.has_cve.used=&'
+    ...     'field.has_no_package.used=&'
+    ...     'search=Search')
+    >>> print_bugtasks(anon_browser.contents)
+    10 another test bug
+       linux-source-2.6.15 Medium New
+
+The user opens a bookmark for "upstream status: Show only bugs that are
+resolved upstream".
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+bugs?'
+    ...     'field.status_upstream=only_resolved_upstream&'
+    ...     'field.status_upstream-empty-marker=1&'
+    ...     'field.searchtext=&orderby=-importance&'
+    ...     'field.status%3Alist=Unconfirmed&'
+    ...     'field.status%3Alist=Needs+Info&'
+    ...     'field.status%3Alist=Confirmed&'
+    ...     'field.status%3Alist=In+Progress&'
+    ...     'field.status%3Alist=Fix+Committed&'
+    ...     'assignee_option=any&'
+    ...     'field.assignee=&'
+    ...     'field.bug_reporter=&'
+    ...     'field.bug_contact=&'
+    ...     'field.component-empty-marker=1&'
+    ...     'field.omit_dupes.used=&'
+    ...     'field.omit_dupes=on&'
+    ...     'field.has_patch.used=&'
+    ...     'field.tag=&'
+    ...     'field.has_cve.used=&'
+    ...     'field.has_no_package.used=&'
+    ...     'search=Search')
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG
+      mozilla-firefox Medium New
+    9 Thunderbird crashes
+      thunderbird Medium Confirmed
+    2 Blackhole Trash folder
+      &mdash; Medium New
+
+Other values for status_upstream lead to an error.#
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+bugs?'
+    ...     'field.status_upstream=invalid&'
+    ...     'field.status_upstream-empty-marker=1&'
+    ...     'field.searchtext=&orderby=-importance&'
+    ...     'field.status%3Alist=Unconfirmed&'
+    ...     'field.status%3Alist=Needs+Info&'
+    ...     'field.status%3Alist=Confirmed&'
+    ...     'field.status%3Alist=In+Progress&'
+    ...     'field.status%3Alist=Fix+Committed&'
+    ...     'assignee_option=any&'
+    ...     'field.assignee=&'
+    ...     'field.bug_reporter=&'
+    ...     'field.bug_contact=&'
+    ...     'field.component-empty-marker=1&'
+    ...     'field.omit_dupes.used=&'
+    ...     'field.omit_dupes=on&'
+    ...     'field.has_patch.used=&'
+    ...     'field.tag=&'
+    ...     'field.has_cve.used=&'
+    ...     'field.has_no_package.used=&'
+    ...     'search=Search')
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: Unexpected value for field 'status_upstream'. 
+    Perhaps your bookmarks are out of date or you changed the URL by hand?
+
+
 Let's reset the statuses we set.
 
     >>> login('test@canonical.com')
