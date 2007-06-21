@@ -42,10 +42,13 @@ class cmd_launchpad_server(Command):
                     'result in a dynamically allocated port. Default port is '
                     '4155.',
                type=str),
-        Option('directory',
-               help='serve contents of directory. Defaults to '
+        Option('upload-directory',
+               help='upload branches to this directory. Defaults to '
                     'config.codehosting.branches_root.',
                type=unicode),
+        Option('mirror-directory',
+               help='serve branches from this directory. Defaults to '
+                    'config.supermirror.branchesdest.'),
         Option('authserver_url',
                help='the url of the internal XML-RPC server. Defaults to '
                     'config.codehosting.authserver.',
@@ -59,24 +62,27 @@ class cmd_launchpad_server(Command):
 
     takes_args = ['user_id']
 
-    def get_lp_server(self, authserver, user_id, url):
+    def _get_chrooted_transport(self, url):
+        chroot_server = chroot.ChrootServer(get_transport(url))
+        chroot_server.setUp()
+        return get_transport(chroot_server.get_url())
+
+    def get_lp_server(self, authserver, user_id, hosted_url, mirror_url):
         """Create a Launchpad smart server.
 
         :param authserver: An `xmlrpclib.ServerProxy` (or equivalent) for the
             Launchpad authserver.
         :param user_id: The database ID of the user whose branches are being
             served.
-        :param url: The base URL where the branches actually live.
+        :param hosted_url: Where the branches are uploaded to.
+        :param mirror_url: Where all Launchpad branches are mirrored.
         :return: A `LaunchpadTransport`.
         """
         # XXX: JonathanLange 2007-05-29, The 'chroot' lines lack unit tests.
-        chroot_server = chroot.ChrootServer(get_transport(url))
-        chroot_server.setUp()
-        backing_transport = get_transport(chroot_server.get_url())
+        hosted_transport = self._get_chrooted_transport(hosted_url)
+        mirror_transport = self._get_chrooted_transport(mirror_url)
         lp_server = transport.LaunchpadServer(
-            authserver,
-            user_id,
-            backing_transport)
+            authserver, user_id, hosted_transport, mirror_transport)
         return lp_server
 
     def get_smart_server(self, transport, port, inet):
@@ -111,30 +117,36 @@ class cmd_launchpad_server(Command):
         finally:
             ui.ui_factory = old_factory
 
-    def run(self, user_id, port=None, directory=None, read_only=False,
-            authserver_url=None, inet=False):
-        if directory is None:
-            directory = config.codehosting.branches_root
+    def run(self, user_id, port=None, upload_directory=None,
+            mirror_directory=None, read_only=False, authserver_url=None,
+            inet=False):
+        if upload_directory is None:
+            upload_directory = config.codehosting.branches_root
+        if mirror_directory is None:
+            mirror_directory = config.supermirror.branchesdest
         if authserver_url is None:
             authserver_url = config.codehosting.authserver
 
-        url = urlutils.local_path_to_url(directory)
+        upload_url = urlutils.local_path_to_url(upload_directory)
         if read_only:
-            url = 'readonly+' + url
+            upload_url = 'readonly+' + upload_url
+        mirror_url = urlutils.local_path_to_url(mirror_directory)
         authserver = xmlrpclib.ServerProxy(authserver_url)
 
-        lp_server = self.get_lp_server(authserver, user_id, url)
+        lp_server = self.get_lp_server(
+            authserver, user_id, upload_url, mirror_url)
         lp_server.setUp()
 
         def clean_up(signal, frames):
             # XXX: JonathanLange 2007-06-15, The lpserve process is interrupted
-            # using SIGHUP as a matter of course. When this happens, we still
-            # want to perform cleanup operations -- in particular, notifying
-            # the authserver of modified branches. This signal handler runs the
+            # by SIGHUP as a matter of course. When this happens, we still want
+            # to perform cleanup operations -- in particular, notifying the
+            # authserver of modified branches. This signal handler runs the
             # operations we need to run (i.e. lp_server.tearDown) and does its
-            # best to trigger 'finally' blocks across the rest of Launchpad.
+            # best to trigger 'finally' blocks across the rest of bzrlib.
             lp_server.tearDown()
             thread.interrupt_main()
+
         signal.signal(signal.SIGHUP, clean_up)
         try:
             transport = get_transport(lp_server.get_url())

@@ -20,7 +20,7 @@ from twisted.trial.unittest import TestCase as TrialTestCase
 
 from canonical.authserver.client.twistedclient import TwistedAuthServer
 from canonical.codehosting import sshserver
-from canonical.codehosting.tests.servers import AuthserverWithKeys
+from canonical.codehosting.tests.servers import AuthserverWithKeysInProcess
 from canonical.config import config
 from canonical.testing.layers import TwistedLayer
 
@@ -212,7 +212,8 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
 
     def setUp(self):
         self.valid_login = 'testuser'
-        self.authserver = AuthserverWithKeys(self.valid_login, 'testteam')
+        self.authserver = AuthserverWithKeysInProcess(
+            self.valid_login, 'testteam')
         self.authserver.setUp()
         self.authserver_client = TwistedAuthServer(
             config.codehosting.authserver)
@@ -227,7 +228,7 @@ class TestPublicKeyFromLaunchpadChecker(TrialTestCase):
             self.authserver.getPrivateKey(), self.sigData)
 
     def tearDown(self):
-        self.authserver.tearDown()
+        return self.authserver.tearDown()
 
     def test_successful(self):
         # We should be able to login with the correct public and private

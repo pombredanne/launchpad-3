@@ -40,7 +40,7 @@ from canonical.launchpad.browser.rosetta import TranslationsMixin
 
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import TranslationUnavailableError
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 
 
 class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -63,16 +63,16 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
         if distroserieslang is None:
             # There is no IDistroSeriesLanguage yet for this IDistroSeries,
             # but we still need to list it as an available language, so we
-            # generate a dummy one so users have a chance to get it in the
+            # generate a dummy one so users have a chance to get to it in the
             # navigation and start adding translations for it.
             distroserieslangset = getUtility(IDistroSeriesLanguageSet)
             distroserieslang = distroserieslangset.getDummy(self.context, lang)
 
         if (self.context.hide_all_translations and
             not check_permission('launchpad.Admin', distroserieslang)):
-            raise TranslationUnavailableError(
-                'Translation updates in progress.  Only admins may view'
-                ' translations for this distroseries.')
+            raise TranslationUnavailable(
+                'Translation updates are in progress.  Only administrators may view'
+                ' translations for this distribution series.')
 
         return distroserieslang
 
@@ -243,7 +243,7 @@ class DistroSeriesTranslationsMenu(ApplicationMenu):
 
     @enabled_with_permission('launchpad.TranslationsAdmin')
     def admin(self):
-        return Link('+admin', 'Edit translation options', icon='edit')
+        return Link('+admin', 'Admin translation options', icon='edit')
 
 
 class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
@@ -396,6 +396,4 @@ class DistroSeriesTranslationsAdminView(LaunchpadEditFormView):
         self.request.response.addInfoNotification(
             'Your changes have been applied.')
 
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
+        self.next_url = canonical_url(self.context)

@@ -288,4 +288,3 @@ class LaunchpadScriptTestCase(BaseTestCase):
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-    

@@ -9,7 +9,7 @@ import unittest
 
 from bzrlib import errors
 from bzrlib.transport import get_transport, _get_protocol_handlers
-from bzrlib.transport.memory import MemoryTransport
+from bzrlib.transport.memory import MemoryServer, MemoryTransport
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 
 from canonical.authserver.interfaces import READ_ONLY, WRITABLE
@@ -27,8 +27,10 @@ class TestLaunchpadServer(TestCaseInTempDir):
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         self.backing_transport = MemoryTransport()
+        self.mirror_transport = MemoryTransport()
         self.server = LaunchpadServer(
-            self.authserver, self.user_id, self.backing_transport)
+            self.authserver, self.user_id, self.backing_transport,
+            self.mirror_transport)
 
     def test_construct(self):
         self.assertEqual(self.backing_transport, self.server.backing_transport)
@@ -63,6 +65,8 @@ class TestLaunchpadServer(TestCaseInTempDir):
             ('00/00/00/04/', WRITABLE),
             self.server.translate_virtual_path('/~testteam/firefox/qux'))
 
+        # The '+junk' product doesn't actually exist. It is used for branches
+        # which don't have a product assigned to them.
         self.assertEqual(
             ('00/00/00/05/', READ_ONLY),
             self.server.translate_virtual_path('/~name12/+junk/junk.dev'))
@@ -102,18 +106,27 @@ class TestLaunchpadServer(TestCaseInTempDir):
         self.addCleanup(self.server.tearDown)
         self.assertEqual('lp-%d:///' % id(self.server), self.server.get_url())
 
-    def test_mark_as_dirty(self):
-        # If a given file is flagged as modified then the branch owning that
-        # file should be flagged as dirty.
+    def test_nothing_dirty_by_default(self):
+        # If a server is set up then torn down without any operations, then no
+        # branches should be marked as dirty.
         self.server.setUp()
         self.server.tearDown()
         self.assertEqual([], self.server.authserver._request_mirror_log)
 
+    def test_mark_as_dirty(self):
+        # If a given file is flagged as modified then the branch owning that
+        # file should be flagged as dirty.
         self.server.setUp()
         self.server.dirty('/~testuser/firefox/baz/.bzr')
         self.server.tearDown()
         self.assertEqual([1], self.server.authserver._request_mirror_log)
 
+    def test_tearDown_clears_dirty_flags(self):
+        # After a server has been set up and torn down, any branches marked as
+        # dirty should be cleaned up.
+        self.server.setUp()
+        self.server.dirty('/~testuser/firefox/baz/.bzr')
+        self.server.tearDown()
         self.server.setUp()
         self.server.tearDown()
         self.assertEqual([1], self.server.authserver._request_mirror_log)
@@ -128,8 +141,10 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         self.backing_transport = self.get_transport()
+        self.mirror_transport = MemoryTransport()
         self.server = LaunchpadServer(
-            self.authserver, self.user_id, self.backing_transport)
+            self.authserver, self.user_id, self.backing_transport,
+            self.mirror_transport)
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
         self.backing_transport.mkdir_multi(
@@ -266,11 +281,17 @@ class TestLaunchpadTransportReadOnly(TestCaseWithMemoryTransport):
 
     def setUp(self):
         TestCaseWithMemoryTransport.setUp(self)
+        _memory_server = MemoryServer()
+        _memory_server.setUp()
+        self.addCleanup(_memory_server.tearDown)
+        mirror_transport = get_transport(_memory_server.get_url())
+
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         self.backing_transport = self.get_transport()
         self.server = LaunchpadServer(
-            self.authserver, self.user_id, self.backing_transport)
+            self.authserver, self.user_id, self.backing_transport,
+            mirror_transport)
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
         self.transport = get_transport(self.server.get_url())
@@ -278,9 +299,13 @@ class TestLaunchpadTransportReadOnly(TestCaseWithMemoryTransport):
         makedirs(self.backing_transport, path)
         self.backing_transport.put_bytes(
             os.path.join(path, 'hello.txt'), 'Hello World!')
-        makedirs(
-            self.backing_transport,
-            self.server.translate_virtual_path('/~name12/+junk/junk.dev/')[0])
+        path = self.server.translate_virtual_path(
+            '/~name12/+junk/junk.dev/')[0]
+        makedirs(self.backing_transport, path)
+        t = self.backing_transport.clone(path)
+        t.put_bytes('README', 'Hello World!')
+        makedirs(mirror_transport, path)
+        mirror_transport.clone(path).put_bytes('README', 'Goodbye World!')
 
     def test_mkdir_readonly(self):
         # If we only have READ_ONLY access to a branch then we should not be
@@ -297,6 +322,15 @@ class TestLaunchpadTransportReadOnly(TestCaseWithMemoryTransport):
             errors.TransportNotPossible,
             self.transport.rename, '/~testuser/firefox/baz/hello.txt',
             '/~name12/+junk/junk.dev/goodbye.txt')
+
+    def test_readonly_refers_to_mirror(self):
+        # Read-only operations should get their data from the mirror, not the
+        # primary backing transport.
+        # XXX: JonathanLange 2007-06-21, Explain more of this.
+        transport = get_transport(self.server.get_url())
+        self.assertEqual(
+            'Goodbye World!',
+            transport.get_bytes('/~name12/+junk/junk.dev/README'))
 
 
 def test_suite():

@@ -20,7 +20,6 @@ from canonical.codehosting.tests.helpers import (
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting.transport import branch_id_to_path
-from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 
@@ -53,10 +52,6 @@ class SSHTestCase(ServerTestCase, TestCaseWithRepository):
         finally:
             os.chdir(old_dir)
 
-    def runAndWaitForDisconnect(self, func, *args, **kwargs):
-        return self.runInChdir(
-            self.server.runAndWaitForDisconnect, func, *args, **kwargs)
-
     def push(self, remote_url):
         """Push the local branch to the given URL.
 
@@ -67,7 +62,8 @@ class SSHTestCase(ServerTestCase, TestCaseWithRepository):
         the SFTP server, which is running in the Twisted reactor in the main
         thread.
         """
-        self.runAndWaitForDisconnect(
+        self.runInChdir(
+            self.server.runAndWaitForDisconnect,
             self.run_bzr_captured, ['push', remote_url], retcode=None)
 
     def getLastRevision(self, remote_url):
@@ -77,7 +73,8 @@ class SSHTestCase(ServerTestCase, TestCaseWithRepository):
         the SFTP server, which is running in the Twisted reactor in the main
         thread.
         """
-        return self.runAndWaitForDisconnect(
+        return self.runInChdir(
+            self.server.runAndWaitForDisconnect,
             lambda: bzrlib.branch.Branch.open(remote_url).last_revision())
 
     def getTransportURL(self, relpath=None, username=None):
@@ -85,6 +82,16 @@ class SSHTestCase(ServerTestCase, TestCaseWithRepository):
         if relpath is None:
             relpath = ''
         return self.server.get_url(username) + relpath
+
+    def getHostedBranch(self, personName, productName, branchName):
+        """Look up and return the specified branch from the database."""
+        owner = database.Person.byName('testuser')
+        if productName is None:
+            product = None
+        else:
+            product = database.Product.selectOneBy(name=productName)
+        return database.Branch.selectOneBy(
+            owner=owner, product=product, name=branchName)
 
 
 class AcceptanceTests(SSHTestCase):
@@ -150,9 +157,7 @@ class AcceptanceTests(SSHTestCase):
 
         # Rename branch in the database
         LaunchpadZopelessTestSetup().txn.begin()
-        testuser = database.Person.byName('testuser')
-        branch = database.Branch.selectOneBy(
-            ownerID=testuser.id, name='test-branch')
+        branch = self.getHostedBranch('testuser', None, 'test-branch')
         branch_id = branch.id
         branch.name = 'renamed-branch'
         LaunchpadZopelessTestSetup().txn.commit()
@@ -170,7 +175,8 @@ class AcceptanceTests(SSHTestCase):
 
         self.assertRaises(
             NotBranchError,
-            self.runAndWaitForDisconnect,
+            self.runInChdir,
+            self.server.runAndWaitForDisconnect,
             bzrlib.branch.Branch.open,
             self.getTransportURL('~testuser/+junk/renamed-branch'))
 
@@ -206,11 +212,8 @@ class AcceptanceTests(SSHTestCase):
         # Push branch to sftp server
         self.push(self.getTransportURL('~testuser/+junk/test-branch'))
 
-        # Retrieve the branch from the database.  selectOne will fail if the
-        # branch does not exist (or if somehow multiple branches match!).
-        branch = database.Branch.selectOne(
-            "owner = %s AND product IS NULL AND name = %s"
-            % sqlvalues(database.Person.byName('testuser').id, 'test-branch'))
+        # Retrieve the branch from the database.
+        branch = self.getHostedBranch('testuser', None, 'test-branch')
 
         self.assertEqual(None, branch.url)
         # If we get this far, the branch has been correctly inserted into the
@@ -229,12 +232,10 @@ class AcceptanceTests(SSHTestCase):
         remote_url = self.getTransportURL('~testuser/+junk/totally-new-branch')
         self.push(remote_url)
 
-        # Retrieve the branch from the database. selectOne will fail if the
-        # branch does not exist (or if somehow multiple branches match!).
-        branch = database.Branch.selectOne(
-            "owner = %s AND product IS NULL AND name = %s"
-            % sqlvalues(database.Person.byName('testuser').id,
-                        'totally-new-branch'))
+        # Retrieve the branch from the database.
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = self.getHostedBranch('testuser', None, 'totally-new-branch')
+        LaunchpadZopelessTestSetup().txn.abort()
 
         self.assertEqual(
             '~testuser/+junk/totally-new-branch', branch.unique_name)
@@ -245,14 +246,11 @@ class AcceptanceTests(SSHTestCase):
         remote_url = self.getTransportURL('~testuser/+junk/totally-new-branch')
         self.push(remote_url)
 
-        # Retrieve the branch from the database. selectOne will fail if the
-        # branch does not exist (or if somehow multiple branches match!).
+        # Retrieve the branch from the database.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = database.Branch.selectOne(
-            "owner = %s AND product IS NULL AND name = %s"
-            % sqlvalues(database.Person.byName('testuser').id,
-                        'totally-new-branch'))
-
+        branch = self.getHostedBranch('testuser', None, 'totally-new-branch')
+        # Confirm that the branch hasn't had a mirror requested yet. Not core
+        # to the test, but helpful for checking internal state.
         self.assertNotEqual(None, branch.mirror_request_time)
         branch.mirror_request_time = None
         LaunchpadZopelessTestSetup().txn.commit()
@@ -264,13 +262,9 @@ class AcceptanceTests(SSHTestCase):
         # Push the new revision.
         self.push(remote_url)
 
-        # Retrieve the branch from the database. selectOne will fail if the
-        # branch does not exist (or if somehow multiple branches match!).
+        # Retrieve the branch from the database.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = database.Branch.selectOne(
-            "owner = %s AND product IS NULL AND name = %s"
-            % sqlvalues(database.Person.byName('testuser').id,
-                        'totally-new-branch'))
+        branch = self.getHostedBranch('testuser', None, 'totally-new-branch')
         self.assertNotEqual(None, branch.mirror_request_time)
         LaunchpadZopelessTestSetup().txn.abort()
 
@@ -290,7 +284,7 @@ class SmartserverTests(SSHTestCase):
         sabdfl_id = authserver.getUser('sabdfl')['id']
         ro_branch_id = authserver.createBranch(sabdfl_id, '', 'ro-branch')
         ro_branch_url = 'file://' + os.path.abspath(
-            os.path.join(self.server._branches_root, 'branches',
+            os.path.join(self.server._mirror_root,
                          branch_id_to_path(ro_branch_id)))
         self.runInChdir(
             self.run_bzr_captured, ['push', '--create-prefix', ro_branch_url],
@@ -308,7 +302,7 @@ class SmartserverTests(SSHTestCase):
         sabdfl_id = authserver.getUser('sabdfl')['id']
         ro_branch_id = authserver.createBranch(sabdfl_id, '', 'ro-branch')
         ro_branch_url = 'file://' + os.path.abspath(
-            os.path.join(self.server._branches_root, 'branches',
+            os.path.join(self.server._mirror_root,
                          branch_id_to_path(ro_branch_id)))
         self.runInChdir(
             self.run_bzr_captured, ['push', '--create-prefix', ro_branch_url],

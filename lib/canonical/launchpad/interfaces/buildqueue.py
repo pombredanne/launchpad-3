@@ -11,7 +11,6 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 
-from canonical.launchpad import _
 
 class IBuildQueue(Interface):
     """A Launchpad Auto Build queue entry.
@@ -66,6 +65,34 @@ class IBuildQueue(Interface):
 
     def destroySelf():
         """Delete this entry from the database."""
+
+    def getLogFileName():
+        """Get the preferred filename for the buildlog of this build."""
+
+    def updateBuild_IDLE(slave, build_id, build_status, logtail,
+                         filemap, dependencies, logger):
+        """Somehow the builder forgot about the build job.
+
+        Log this and reset the record.
+        """
+
+    def updateBuild_BUILDING(slave, build_id, build_status,
+                             logtail, filemap, dependencies, logger):
+        """Build still building, collect the logtail"""
+
+    def updateBuild_ABORTING(slave, buildid, build_status,
+                             logtail, filemap, dependencies, logger):
+        """Build was ABORTED.
+
+        Master-side should wait until the slave finish the process correctly.
+        """
+
+    def updateBuild_ABORTED(slave, buildid, build_status,
+                            logtail, filemap, dependencies, logger):
+        """ABORTING process has successfully terminated.
+
+        Clean the builder for another jobs.
+        """
 
 
 class IBuildQueueSet(Interface):

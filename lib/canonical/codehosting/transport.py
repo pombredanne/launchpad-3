@@ -75,25 +75,40 @@ class LaunchpadServer(Server):
     See LaunchpadTransport for more information.
     """
 
-    def __init__(self, authserver, user_id, transport):
+    def __init__(self, authserver, user_id, hosting_transport,
+                 mirror_transport):
         """
         Construct a LaunchpadServer.
 
         :param authserver: An xmlrpclib.ServerProxy that points to the
             authserver.
         :param user_id: A login ID for the user who is accessing branches.
-        :param transport: A Transport pointing to the root of where the
+        :param hosting_transport: A Transport pointing to the root of where the
             branches are actually stored.
+        :param mirror_transport: A Transport pointing to the root of where
+            branches are mirrored to.
         """
         self.authserver = authserver
         self.user_dict = self.authserver.getUser(user_id)
         self.user_id = self.user_dict['id']
         self.user_name = self.user_dict['name']
-        self.backing_transport = transport
+        self.backing_transport = hosting_transport
+        self.mirror_transport = get_transport(
+            'readonly+' + mirror_transport.base)
         self._is_set_up = False
 
     def dirty(self, virtual_path):
         """Mark the branch containing virtual_path as dirty."""
+        # XXX: JonathanLange 2007-06-18, Note that we only mark branches as
+        # dirty if they end up calling VFS (i.e. Transport) methods. If a
+        # client does a writing smart operation that doesn't use VFS, we won't
+        # catch it. (e.g. Branch.set_last_revision). This problem will become
+        # more severe in Bazaar 0.18 and later.
+        #
+        # Instead we should register our own smart request handlers to override
+        # the builtin ones.
+        #
+        # See https://launchpad.net/bugs/120949.
         branch_id, ignored, path = self._get_branch_info(virtual_path)
         self._dirty_branch_ids.add(branch_id)
 
@@ -160,6 +175,15 @@ class LaunchpadServer(Server):
         return self.authserver.createBranch(user_id, product_id, branch)
 
     def _get_branch_info(self, virtual_path):
+        """Return a tuple of branch id, permissions and a trailing path for the
+        given virtual path.
+
+        'virtual_path' is a path that points to a branch or a path within a
+        branch. This method returns the id of the branch, the permissions that
+        the user running the server has for that branch and the path relative
+        to that branch. In short, everything you need to be able to access a
+        file in a branch.
+        """
         # We can safely pad with '' because we can guarantee that no product or
         # branch name is the empty string. (Mapping '' to '+junk' happens
         # in _iter_branches). 'user' is checked later.
@@ -225,8 +249,9 @@ class LaunchpadServer(Server):
         if not self._is_set_up:
             return
         self._is_set_up = False
-        while self._dirty_branch_ids:
-            self.authserver.requestMirror(self._dirty_branch_ids.pop())
+        for branch_id in self._dirty_branch_ids:
+            self.authserver.requestMirror(branch_id)
+        self._dirty_branch_ids.clear()
         unregister_transport(self.scheme, self._factory)
 
 
@@ -265,8 +290,7 @@ class LaunchpadTransport(Transport):
         """
         path, permissions = self._translate_virtual_path(relpath)
         if permissions == READ_ONLY:
-            transport = get_transport(
-                'readonly+' + self.server.backing_transport.base)
+            transport = self.server.mirror_transport
         else:
             transport = self.server.backing_transport
         method = getattr(transport, methodname)

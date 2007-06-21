@@ -76,4 +76,4 @@ class SSHService(service.Service):
     def stopService(self):
         """Stop the SFTP service."""
         service.Service.stopService(self)
-        self.service.stopService()
+        return self.service.stopService()
