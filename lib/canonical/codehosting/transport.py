@@ -93,7 +93,8 @@ class LaunchpadServer(Server):
         self.user_id = self.user_dict['id']
         self.user_name = self.user_dict['name']
         self.backing_transport = hosting_transport
-        self.mirror_transport = mirror_transport
+        self.mirror_transport = get_transport(
+            'readonly+' + mirror_transport.base)
         self._is_set_up = False
 
     def dirty(self, virtual_path):
@@ -289,8 +290,7 @@ class LaunchpadTransport(Transport):
         """
         path, permissions = self._translate_virtual_path(relpath)
         if permissions == READ_ONLY:
-            transport = get_transport(
-                'readonly+' + self.server.mirror_transport.base)
+            transport = self.server.mirror_transport
         else:
             transport = self.server.backing_transport
         method = getattr(transport, methodname)
