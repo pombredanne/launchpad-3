@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="2000"
+   height="13"
+   id="svg2"
+   sodipodi:version="0.32"
+   inkscape:version="0.45"
+   version="1.0"
+   sodipodi:docbase="/home/mpt/hacking/lpsrc/2007-06-openid/lib/canonical/launchpad/icing/source"
+   sodipodi:docname="login-header-se.svg"
+   inkscape:output_extension="org.inkscape.output.svg.inkscape"
+   inkscape:export-filename="/home/mpt/hacking/lpsrc/2007-06-openid/lib/canonical/launchpad/icing/login-header-se.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90"
+   sodipodi:modified="true">
+  <defs
+     id="defs4" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#cccccc"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     gridtolerance="10000"
+     guidetolerance="10"
+     objecttolerance="10"
+     inkscape:pageopacity="1"
+     inkscape:pageshadow="2"
+     inkscape:zoom="8.8020652"
+     inkscape:cx="1979.2866"
+     inkscape:cy="14.104429"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     width="2000px"
+     height="13px"
+     showgrid="true"
+     gridempspacing="4"
+     inkscape:grid-points="true"
+     inkscape:window-width="872"
+     inkscape:window-height="624"
+     inkscape:window-x="69"
+     inkscape:window-y="90" />
+  <metadata
+     id="metadata7">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       id="path8958"
+       d="M 1987.4688,-10 C 1987.3014,-10 1987.1345,-9.976881 1986.9688,-9.970105 C 1986.9378,-9.968839 1986.906,-9.971605 1986.875,-9.970105 L -1.0312,-9.970105 L -1.0312,12.032605 L 1986.875,12.032605 C 1986.906,12.034105 1986.9378,12.031339 1986.9688,12.032605 C 1987.1345,12.039381 1987.3014,12.0625 1987.4688,12.0625 C 1993.8279,12.0625 1999.0001,7.1145451 1999,1.03125 C 1999,-5.052045 1993.8279,-10 1987.4688,-10 z "
+       style="fill:#eeeeee;fill-opacity:1;stroke:#999999;stroke-width:2;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1" />
+    <path
+       style="fill:#eeeeee;fill-opacity:1;stroke:#cccccc;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M 1987,-11.5625 C 1986.8326,-11.5625 1986.6657,-11.538333 1986.5,-11.53125 C 1986.469,-11.529926 1986.4372,-11.532818 1986.4062,-11.53125 L -1.5,-11.53125 L -1.5,11.46875 L 1986.4062,11.46875 C 1986.4372,11.470318 1986.469,11.467426 1986.5,11.46875 C 1986.6657,11.475833 1986.8326,11.5 1987,11.5 C 1993.3591,11.5 1998.5313,6.3277754 1998.5312,-0.03125 C 1998.5312,-6.390275 1993.3591,-11.5625 1987,-11.5625 z "
+       id="path3139" />
+    <rect
+       style="fill:#999999;fill-opacity:1;stroke:none;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.94117647"
+       id="rect2167"
+       width="1"
+       height="1"
+       x="1999"
+       y="17" />
+    <rect
+       style="fill:#cccccc;fill-opacity:1;stroke:#999999;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="rect3139"
+       width="1.0001202"
+       height="1"
+       x="1998"
+       y="17" />
+    <rect
+       style="fill:#eeeeee;fill-opacity:1;stroke:#999999;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="rect3141"
+       width="44.625"
+       height="0"
+       x="2001.7501"
+       y="1" />
+    <rect
+       style="fill:#eeeeee;fill-opacity:1;stroke:#999999;stroke-width:0;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       id="rect2163"
+       width="1997.9991"
+       height="1"
+       x="0"
+       y="17" />
+  </g>
+</svg>

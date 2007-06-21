@@ -3,10 +3,13 @@
     tal:attributes="lang default_language|default;
                     xml:lang default_language|default;">
   <head>
-    <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
+    <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad Login Service</title>
     <tal:x condition="nothing">Style is inline for maximum reliability.</tal:x>
     <style type="text/css">
-      html {background: #dbdbdb; font-family: "Optima", sans-serif;}
+      html {
+        background: #f6f6f6 url(/+icing/login-background.png) top repeat-x;
+        font-family: "Optima", "DejaVu Sans Condensed", sans-serif;
+      }
       :link {background: none; color: #00c;} 
       html, body {height: 100%; margin: 0; padding: 0;} /* pushes footer down */
       body {margin: 0 1em 0;}
@@ -18,26 +21,38 @@
         margin: -2em auto 0;
         height: 2em;
       }
-
       address, #footer {
-        background: #999;
-        color: #fff;
+        color: #888;
         font-style: normal;
         max-width: auto;
         text-align: center;
-        width: 600px;
+        width: 100%;
+        max-width: 100%;
       }
-
-      address {margin: 0 auto 1em; padding: 0.25em;}
-      address, h2 {font-size: 1.2em;}
-      h1, h2 {color: #666; font-weight: normal;}
-      #footer {font-size: smaller;}
+      address {
+        background: url(/+icing/login-header-e.png) right repeat-y;
+        font-size: 1.2em;
+        font-weight: bold;
+        margin: 0 auto 1em;
+        padding-top: 6px;
+        text-shadow: 1px 1px 0.083em #fff;
+      }
+      address::after {
+        display: block;
+        line-height: 0;
+        background: url(/+icing/login-header-se.png) bottom right no-repeat;
+        content: url(/+icing/login-header-sw.png);
+        text-align: left;
+      }
+      h2 {font-size: 1em;}
+      h1, h2 {color: #666;}
       #rp {
         width: 49%;
         float: left;
       }
       #auth {
         background: #eee;
+        border: 1px solid #aaa;
         padding: 1em 2%;
         width: 45%;
         float: right;
