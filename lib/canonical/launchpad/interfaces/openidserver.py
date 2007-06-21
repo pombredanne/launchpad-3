@@ -12,12 +12,12 @@ __all__ = [
         ]
 
 from zope.schema import Choice, Datetime, Int, TextLine
-from zope.interface import Attribute, implements, Interface
-from zope.schema.interfaces import IContextSourceBinder
+from zope.interface import Attribute, Interface
 from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import PasswordField
+
 
 class IOpenIdAuthorization(Interface):
     id = Int(title=u'ID', required=True)
