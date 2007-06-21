@@ -322,13 +322,17 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
 # for phase 1 of the implementation.
 KNOWN_TRUST_ROOTS = {
     'http://localhost.localdomain:8001/':
-        dict(title="OpenID Consumer Example"),
+        dict(title="OpenID Consumer Example",
+             logo=None),
     'http://pdl-dev.co.uk':
-        dict(title="PDL Demo OSCommerce shop"),
+        dict(title="PDL Demo OSCommerce shop",
+             logo="/+icing/canonical-logo.png"),
     'http://www.mmania.biz':
-        dict(title="Demo Canonical Shop"),
+        dict(title="Demo Canonical Shop",
+             logo="/+icing/canonical-logo.png"),
     'http://www.mmania.biz/ubuntu/':
-        dict(title="Demo Canonical Shop"),
+        dict(title="Demo Canonical Shop",
+             logo="/+icing/canonical-logo.png"),
     #'https://shop.ubuntu.com/':
     #    dict(title="Ubuntu Shop"),
     #'https://shipit.ubuntu.com/':
@@ -370,21 +374,21 @@ class LoginServiceBaseView(OpenIdMixin, LaunchpadFormView):
         self.trashRequestInSession('nonce' + self.nonce)
 
     @property
-    def relying_party_title(self):
-        """Return a display name for the relying party.
+    def rp_info(self):
+        """Return a dictionary of information about the relying party.
 
-        The relying party is looked up in the list of known RPs by its
-        trust root to find its title.
+        The dictionary contains 'title' and 'logo' entries.
 
-        If the relying party is not known, its trust root URL is returned.
+        If the relying party is not known, the title will be the same
+        as the trust root.
         """
         assert self.openid_request is not None, (
             'Could not find the OpenID request')
         rp_info = KNOWN_TRUST_ROOTS.get(self.openid_request.trust_root)
-        if rp_info is not None:
-            return rp_info['title']
-        else:
-            return self.openid_request.trust_root
+        if rp_info is None:
+            return dict(title=self.openid_request.trust_root,
+                        logo=None)
+        return rp_info
 
     def isSaneTrustRoot(self):
         """Return True if the RP's trust root looks sane."""
