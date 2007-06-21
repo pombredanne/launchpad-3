@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+<svg
+   xmlns:dc="http://purl.org/dc/elements/1.1/"
+   xmlns:cc="http://web.resource.org/cc/"
+   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+   xmlns:svg="http://www.w3.org/2000/svg"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   width="11"
+   height="13"
+   id="svg9947"
+   sodipodi:version="0.32"
+   inkscape:version="0.45"
+   version="1.0"
+   sodipodi:docbase="/home/mpt/hacking/lpsrc/2007-06-openid/lib/canonical/launchpad/icing/source"
+   sodipodi:docname="login-header-sw.svg"
+   inkscape:output_extension="org.inkscape.output.svg.inkscape"
+   inkscape:export-filename="/home/mpt/hacking/lpsrc/2007-06-openid/lib/canonical/launchpad/icing/login-header-sw.png"
+   inkscape:export-xdpi="90"
+   inkscape:export-ydpi="90"
+   sodipodi:modified="true">
+  <defs
+     id="defs9949" />
+  <sodipodi:namedview
+     id="base"
+     pagecolor="#f6f6f6"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     gridtolerance="10000"
+     guidetolerance="10"
+     objecttolerance="10000"
+     inkscape:pageopacity="1"
+     inkscape:pageshadow="2"
+     inkscape:zoom="15.653846"
+     inkscape:cx="5.9999998"
+     inkscape:cy="10.858753"
+     inkscape:document-units="px"
+     inkscape:current-layer="layer1"
+     width="11px"
+     height="13px"
+     showgrid="true"
+     gridempspacing="4"
+     inkscape:object-bbox="true"
+     inkscape:object-points="true"
+     inkscape:object-nodes="false"
+     showguides="true"
+     inkscape:guide-bbox="true"
+     inkscape:window-width="872"
+     inkscape:window-height="624"
+     inkscape:window-x="0"
+     inkscape:window-y="49" />
+  <metadata
+     id="metadata9952">
+    <rdf:RDF>
+      <cc:Work
+         rdf:about="">
+        <dc:format>image/svg+xml</dc:format>
+        <dc:type
+           rdf:resource="http://purl.org/dc/dcmitype/StillImage" />
+      </cc:Work>
+    </rdf:RDF>
+  </metadata>
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <path
+       id="path13848"
+       d="M 0.5,0.53125 L 0.5,6.5 L 0.53125,6.5 C 0.5178612,6.656843 0.5,6.8396992 0.5,7 C 0.5,10.044137 2.964,12.5 6,12.5 C 6.1687315,12.5 6.3351268,12.483687 6.5,12.46875 L 6.5,12.5 L 12.5,12.5 L 12.5,6.5 L 12.5,1.5 L 12.5,0.53125 L 0.5,0.53125 z "
+       style="fill:#eeeeee;fill-opacity:1;stroke:#999999;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.94117647" />
+    <path
+       style="fill:#eeeeee;fill-opacity:1;stroke:#cccccc;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
+       d="M -0.5,-0.46875 L -0.5,5.5 L -0.46875,5.5 C -0.48213884,5.656843 -0.5,5.8396992 -0.5,6 C -0.5,9.0441374 1.964,11.5 5,11.5 C 5.1687315,11.5 5.3351268,11.483687 5.5,11.46875 L 5.5,11.5 L 11.5,11.5 L 11.5,5.5 L 11.5,0.5 L 11.5,-0.46875 L -0.5,-0.46875 z "
+       id="path9955" />
+  </g>
+</svg>

@@ -16,29 +16,37 @@
       #nonfooter {position: relative; min-height: 100%;}
       * html #nonfooter {height: 100%;}
       #footer {
+        background: #eee;
         clear: both;
         position: relative;
         margin: -2em auto 0;
         height: 2em;
       }
       address, #footer {
-        background: #ccc;
-        color: #555;
+        color: #888;
         font-style: normal;
         max-width: auto;
         text-align: center;
         text-shadow: 1px 1px 0.083em #fff;
-        width: auto;
+        width: 100%;
+        max-width: 100%;
       }
       address {
+        background: url(/+icing/login-header-e.png) right repeat-y;
         font-size: 1.2em;
         font-weight: bold;
         margin: 0 auto 1em;
-        padding: 0.25em;
+        padding-top: 6px;
+      }
+      address::after {
+        display: block;
+        line-height: 0;
+        background: url(/+icing/login-header-se.png) bottom right no-repeat;
+        content: url(/+icing/login-header-sw.png);
+        text-align: left;
       }
       h2 {font-size: 1em;}
       h1, h2 {color: #666;}
-      #footer {font-size: smaller;}
       #rp {
         width: 49%;
         float: left;
