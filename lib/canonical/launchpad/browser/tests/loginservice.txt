@@ -10,8 +10,8 @@ Single Signon.
 If the user has not yet authenticated to Launchpad, they are provided
 with a form that allows them to do one of three things:
  * Create a new account.
- * Recover a forgotten passphrase.
- * Log in using their email address and passphrase.
+ * Recover a forgotten password.
+ * Log in using their email address and password.
 
 As well as these actions, there are a number of error handling code paths:
 
@@ -51,14 +51,14 @@ attempting to login, it'll also fail.
     ...     {'field.email': 'mark@hbd.com', 'field.action': 'login'})
     >>> for message in harness.getFormErrors():
     ...     print message
-    Incorrect passphrase for the provided email address.
+    Incorrect password for the provided email address.
 
     >>> harness.submit('continue', {'field.email': 'mark@hbd.com',
     ...                             'field.action': 'login',
     ...                             'field.password': 'foo'})
     >>> for message in harness.getFormErrors():
     ...     print message
-    Incorrect passphrase for the provided email address.
+    Incorrect password for the provided email address.
 
 A password with invalid characters is not allowed either.
 
@@ -67,7 +67,7 @@ A password with invalid characters is not allowed either.
     ..                             'field.password': u'\xa0blah'})
     >> for message in harness.getFormErrors():
     ..     print message
-    Incorrect passphrase given.
+    Incorrect password given.
 
 Trying to create a new account with an email address that is registered and
 associated with a valid Launchpad account is not allowed.

@@ -177,8 +177,11 @@ class OpenIdMixin:
                               self.user.displayname, signed=True)
             response.addField('sreg', 'nickname',
                               self.user.name, signed=True)
-            response.addField('sreg', 'timezone',
-                              self.user.timezone, signed=True)
+            # XXX: 2007-06-20 jamesh
+            # Disable sending of data not needed by the shop, so we
+            # don't get people relying on this feature.
+            #response.addField('sreg', 'timezone',
+            #                  self.user.timezone, signed=True)
         return response
 
     def createFailedResponse(self):
@@ -320,16 +323,20 @@ KNOWN_TRUST_ROOTS = {
         dict(title="OpenID Consumer Example"),
     'http://pdl-dev.co.uk':
         dict(title="PDL Demo OSCommerce shop"),
-    'https://shop.ubuntu.com/':
-        dict(title="Ubuntu Shop"),
-    'https://shipit.ubuntu.com/':
-        dict(title="Ubuntu Shipit"),
-    'https://shipit.kubuntu.org/':
-        dict(title="Kubuntu Shipit"),
-    'https://shipit.edubuntu.org/':
-        dict(title="Edubuntu Shipit"),
-    'https://wiki.ubuntu.com/':
-        dict(title="Ubuntu Wiki"),
+    'http://www.mmania.biz':
+        dict(title="Demo Canonical Shop"),
+    'http://www.mmania.biz/ubuntu/':
+        dict(title="Demo Canonical Shop"),
+    #'https://shop.ubuntu.com/':
+    #    dict(title="Ubuntu Shop"),
+    #'https://shipit.ubuntu.com/':
+    #    dict(title="Ubuntu Shipit"),
+    #'https://shipit.kubuntu.org/':
+    #    dict(title="Kubuntu Shipit"),
+    #'https://shipit.edubuntu.org/':
+    #    dict(title="Edubuntu Shipit"),
+    #'https://wiki.ubuntu.com/':
+    #    dict(title="Ubuntu Wiki"),
     }
 
 
@@ -396,7 +403,7 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
         self.trashRequest()
         return self.renderOpenIdResponse(self.createPositiveResponse())
 
-    @action('Cancel', name='deny')
+    @action("I Don't Want To Sign In", name='deny')
     def deny_action(self, action, data):
         self.trashRequest()
         return self.renderOpenIdResponse(self.createFailedResponse())
@@ -458,8 +465,8 @@ class LoginServiceLoginView(LoginServiceBaseView):
                 self.addError(_(
                     "Sorry, someone has already registered the %s email "
                     "address.  If this is you and you've forgotten your "
-                    "passphrase, just choose the 'I've forgotten my "
-                    "passphrase' option below and we'll allow you to "
+                    "password, just choose the 'I've forgotten my "
+                    "password' option below and we'll allow you to "
                     "change it." % cgi.escape(email)))
             else:
                 # This is either an email address we've never seen or it's
@@ -494,7 +501,7 @@ class LoginServiceLoginView(LoginServiceBaseView):
                 # processor or manual changes by the DBA.
                 self.addError(_("This account cannot be used."))
         else:
-            self.addError(_("Incorrect passphrase for the provided "
+            self.addError(_("Incorrect password for the provided "
                             "email address."))
 
     @action('Continue', name='continue')
@@ -533,8 +540,8 @@ class LoginServiceLoginView(LoginServiceBaseView):
             person, email, email, LoginTokenType.PASSWORDRECOVERY)
         self.token.sendPasswordResetNeutralEmail()
         self.saveRequestInSession('token' + self.token.token)
-        self.email_heading = 'Forgotten your passphrase?'
-        self.email_reason = 'with instructions on resetting your passphrase.'
+        self.email_heading = 'Forgotten your password?'
+        self.email_reason = 'with instructions on resetting your password.'
         return self.email_sent_template()
 
 

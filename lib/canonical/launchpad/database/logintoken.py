@@ -141,7 +141,6 @@ The Launchpad Team"""
     def sendNewUserNeutralEmail(self):
         """See ILoginToken."""
         template = get_email_template('newuser-email-neutral.txt')
-        replacements = {'token_url': canonical_url(self)}
         message = template % dict(token_url=canonical_url(self))
 
         fromaddress = format_address("Launchpad", config.noreply_from_address)

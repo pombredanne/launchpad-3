@@ -36,7 +36,7 @@ to authenticate to the relying party
 By clicking the "Sign In" button, the user is returned to the relying
 party with their identity URL:
 
-    >>> browser.getControl('Sign In').click()
+    >>> browser.getControl('Sign In', index=0).click()
     >>> print browser.url
     http://launchpad.dev/+openid-consumer?...
     >>> print browser.contents
@@ -56,7 +56,7 @@ time, we will cancel the authentication request:
     >>> browser.open(setup_url)
     >>> print browser.title
     Authenticate to http://launchpad.dev/+openid-consumer
-    >>> browser.getControl('Cancel').click()
+    >>> browser.getControl("I Don't Want To Sign In").click()
     >>> print browser.url
     http://launchpad.dev/+openid-consumer?...
     >>> print browser.contents

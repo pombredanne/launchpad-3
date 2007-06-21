@@ -82,8 +82,8 @@ class LoginServiceActionsVocabularyFactory:
             SimpleTerm('createaccount', 'createaccount',
                        'No, I want to create an account now'),
             SimpleTerm('resetpassword', 'resetpassword',
-                       "I've forgotten my passphrase"),
-            SimpleTerm('login', 'login', 'Yes, my passphrase is:')]
+                       "I've forgotten my password"),
+            SimpleTerm('login', 'login', 'Yes, my password is:')]
         return SimpleVocabulary(terms)
 
 
@@ -92,6 +92,6 @@ class ILoginServiceLoginForm(ILoginServiceAuthorizeForm):
     unauthenticated users."""
 
     email = TextLine(title=u'What is your e-mail address?', required=True)
-    password = PasswordField(title=u'passphrase', required=False)
+    password = PasswordField(title=u'Password', required=False)
     action = Choice(title=_('Action'), required=True,
                     source=LoginServiceActionsVocabularyFactory())

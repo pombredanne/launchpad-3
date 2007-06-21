@@ -140,6 +140,11 @@ def branchsubscription_edit(context, view):
     return smartquote(
         'Edit subscription to branch "%s"' % context.branch.displayname)
 
+branch_visibility = ContextDisplayName('Set branch visibility policy for %s')
+
+def branch_visibility_edit(context, view):
+    return view.pagetitle
+
 branchtarget_branchlisting = ContextDisplayName('Details of Branches for %s')
 
 bug_activity = ContextBugId('Bug #%s - Activity log')
