@@ -20,7 +20,7 @@ from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
 from canonical.config import config
 from canonical.database import postgresql
-from canonical.database.constants import UTC_NOW
+from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
@@ -46,9 +46,9 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
-    IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo,
-    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
-    ILaunchpadCelebrities, ILaunchpadStatisticSet, ILanguageSet,
+    IEmailAddress, IEmailAddressSet, IEntitlement, IGPGKeySet, IHasIcon,
+    IHasLogo, IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet,
+    ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet, ILanguageSet,
     ILoginTokenSet, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
     IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey,
     ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
@@ -64,6 +64,7 @@ from canonical.launchpad.database.bugtask import (
 from canonical.launchpad.database.emailaddress import EmailAddress
 from canonical.launchpad.database.karma import KarmaCache, KarmaTotalCache
 from canonical.launchpad.database.logintoken import LoginToken
+from canonical.launchpad.database.pillar import PillarName
 from canonical.launchpad.database.pofile import POFileTranslator
 from canonical.launchpad.database.karma import KarmaAction, Karma
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
@@ -118,6 +119,9 @@ class Person(SQLBase, HasSpecificationsMixin):
         dbName='logo', foreignKey='LibraryFileAlias', default=None)
     mugshot = ForeignKey(
         dbName='mugshot', foreignKey='LibraryFileAlias', default=None)
+    openid_identifier = StringCol(
+            dbName='openid_identifier', alternateID=True, notNull=True,
+            default=DEFAULT)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -184,6 +188,7 @@ class Person(SQLBase, HasSpecificationsMixin):
                           default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
 
+    entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
 
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""
@@ -460,16 +465,10 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         languages = set()
         known_languages = shortlist(self.languages)
-        if len(known_languages):
+        if len(known_languages) != 0:
             for lang in known_languages:
-                # Ignore English and all its variants since we assume English
-                # is supported
                 if not is_english_variant(lang):
                     languages.add(lang)
-        elif ITeam.providedBy(self):
-            for member in self.activemembers:
-                languages |= member.getSupportedLanguages()
-        languages.add(getUtility(ILanguageSet)['en'])
         return languages
 
     def getQuestionLanguages(self):
@@ -698,7 +697,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             "is not a participant in any direct member of %(team)s"
             % dict(person=self.name, team=team.name))
         return member
-            
+
     def isTeam(self):
         """See IPerson."""
         return self.teamowner is not None
@@ -799,6 +798,43 @@ class Person(SQLBase, HasSpecificationsMixin):
         cur = cursor()
         cur.execute(query)
         return cur.fetchall()
+
+    def getOwnedOrDrivenPillars(self):
+        """See IPerson."""
+        query = """
+            SELECT name
+            FROM product, teamparticipation
+            WHERE teamparticipation.person = %(person)s
+                AND (driver = teamparticipation.team
+                     OR owner = teamparticipation.team)
+
+            UNION
+
+            SELECT name
+            FROM project, teamparticipation
+            WHERE teamparticipation.person = %(person)s
+                AND (driver = teamparticipation.team 
+                     OR owner = teamparticipation.team)
+
+            UNION
+
+            SELECT name
+            FROM distribution, teamparticipation
+            WHERE teamparticipation.person = %(person)s
+                AND (driver = teamparticipation.team
+                     OR owner = teamparticipation.team)
+            """ % sqlvalues(person=self)
+        cur = cursor()
+        cur.execute(query)
+        names = [sqlvalues(str(name)) for [name] in cur.fetchall()]
+        if not names:
+            return PillarName.select("1=2")
+        quoted_names = ','.join([name for [name] in names])
+        return PillarName.select(
+            "PillarName.name IN (%s) AND PillarName.active IS TRUE" %
+            quoted_names, prejoins=['distribution', 'project', 'product'],
+            orderBy=['PillarName.distribution', 'PillarName.project',
+                     'PillarName.product'])
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
@@ -1059,7 +1095,7 @@ class Person(SQLBase, HasSpecificationsMixin):
                 "be added as a member of '%s'"
                 % (self.name, person.name, person.name, self.name))
             # By default, teams can only be invited as members, meaning that
-            # one of the team's admins will have to accept the invitation 
+            # one of the team's admins will have to accept the invitation
             # before the team is made a member. If force_team_add is True,
             # though, then we'll add a team as if it was a person.
             if not force_team_add:
@@ -1082,13 +1118,13 @@ class Person(SQLBase, HasSpecificationsMixin):
                 reviewercomment=comment)
             notify(event(person, self))
 
-    # The two methods below are not in the IPerson interface because we want
+    # The three methods below are not in the IPerson interface because we want
     # to protect them with a launchpad.Edit permission. We could do that by
     # defining explicit permissions for all IPerson methods/attributes in
     # the zcml but that's far from optimal given the size of IPerson.
     def acceptInvitationToBeMemberOf(self, team, comment):
         """Accept an invitation to become a member of the given team.
-        
+
         There must be a TeamMembership for this person and the given team with
         the INVITED status. The status of this TeamMembership will be changed
         to APPROVED.
@@ -1102,7 +1138,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     def declineInvitationToBeMemberOf(self, team, comment):
         """Decline an invitation to become a member of the given team.
-        
+
         There must be a TeamMembership for this person and the given team with
         the INVITED status. The status of this TeamMembership will be changed
         to INVITATION_DECLINED.
@@ -1113,6 +1149,26 @@ class Person(SQLBase, HasSpecificationsMixin):
         tm.setStatus(
             TeamMembershipStatus.INVITATION_DECLINED,
             getUtility(ILaunchBag).user, reviewercomment=comment)
+
+    def renewTeamMembership(self, team):
+        """Renew the TeamMembership for this person on the given team.
+
+        The given team's renewal policy must be ONDEMAND and the membership
+        must be active (APPROVED or ADMIN) and set to expire in less than
+        DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT days.
+        """
+        tm = TeamMembership.selectOneBy(person=self, team=team)
+        assert tm.canBeRenewedByMember(), (
+            "This membership can't be renewed by the member himself.")
+
+        assert (team.defaultrenewalperiod is not None
+                and team.defaultrenewalperiod > 0), (
+            'Teams with a renewal policy of ONDEMAND must specify '
+            'a default renewal period greater than 0.')
+        # Keep the same status, change the expiration date and send a
+        # notification explaining the membership has been renewed.
+        tm.dateexpires += timedelta(days=team.defaultrenewalperiod)
+        tm.sendSelfRenewalNotification()
 
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
@@ -1588,6 +1644,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         return Archive.selectOneBy(owner=self)
 
+
 class PersonSet:
     """The set of persons."""
     implements(IPersonSet)
@@ -1689,6 +1746,20 @@ class PersonSet:
         if ignore_merged:
             query = AND(query, Person.q.mergedID==None)
         return Person.selectOne(query)
+
+    def getByOpenIdIdentifier(self, openid_identifier):
+        """Returns a Person with the given openid_identifier, or None.
+       
+        None is returned if the person is not enabled for OpenID usage
+        (see Person.is_openid_enabled).
+        """
+        person = Person.selectOne(
+                Person.q.openid_identifier == openid_identifier
+                )
+        if person is not None and person.is_openid_enabled:
+            return person
+        else:
+            return None
 
     def updateStatistics(self, ztm):
         """See IPersonSet."""
@@ -2521,4 +2592,3 @@ class IrcIDSet:
 
     def new(self, person, network, nickname):
         return IrcID(person=person, network=network, nickname=nickname)
-

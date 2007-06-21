@@ -273,7 +273,7 @@ are set to the default values.
     >>> alsa_task.target.official_malone
     False
     >>> alsa_task.status.title
-    'Unconfirmed'
+    'New'
     >>> alsa_task.importance.title
     'Undecided'
 

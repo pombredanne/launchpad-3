@@ -131,8 +131,7 @@ class TestCopyPackage(LaunchpadZopelessTestCase):
         target_binary = from_binaries[0]
         self.assertEqual(
             target_binary.title,
-            u'Binary Package "mozilla-firefox" in The Warty Warthog '
-            'Release for i386 (x86)')
+            u'mozilla-firefox 0.9 (i386 binary) in ubuntu warty')
 
         # Check stored results.  The copied_source should be valid and
         # the number of binaries copied should be one.

@@ -193,6 +193,19 @@ class FTPArchiveHandler:
                 for comp in components:
                     self.createEmptyPocketRequest(distroseries, suffix, comp)
 
+    def requestReleaseFile(self, suite_name, component_name, arch_name):
+        """Request Release file generation for given context.
+
+        'suite_name', 'component_name' and 'arch_name' will be organised as
+        a dictionary (self.release_files_needed) keyed by 'suite_name' which
+        value will be another dictionary keyed by 'component_name' and
+        containing a set of 'arch_name's as value.
+        """
+        suite_special = self.release_files_needed.setdefault(
+            suite_name, {})
+        suite_component_special = suite_special.setdefault(component_name, set())
+        suite_component_special.add(arch_name)
+
     def createEmptyPocketRequest(self, distroseries, suffix, comp):
         """Creates empty files for a release pocket and distroseries"""
         full_distroseries_name = distroseries.name + suffix
@@ -241,6 +254,39 @@ class FTPArchiveHandler:
     #
     # Override Generation
     #
+
+    def getSourcesForOverrides(self, distroseries, pocket):
+        """Return SelectResults containing SourcePackagePublishingHistory."""
+        return SourcePackagePublishingHistory.select(
+            """
+            SourcePackagePublishingHistory.distrorelease = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.pocket = %s AND
+            SourcePackagePublishingHistory.status = %s
+            """ % sqlvalues(distroseries,
+                            distroseries.main_archive,
+                            pocket,
+                            PackagePublishingStatus.PUBLISHED),
+            prejoins=["sourcepackagerelease.sourcepackagename"],
+            orderBy="id")
+
+    def getBinariesForOverrides(self, distroseries, pocket):
+        """Return SelectResults containing BinaryPackagePublishingHistory."""
+        return BinaryPackagePublishingHistory.select(
+            """
+            BinaryPackagePublishingHistory.distroarchrelease =
+            DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.pocket = %s AND
+            BinaryPackagePublishingHistory.status = %s
+            """ % sqlvalues(distroseries,
+                            distroseries.main_archive,
+                            pocket,
+                            PackagePublishingStatus.PUBLISHED),
+            prejoins=["binarypackagerelease.binarypackagename"],
+            orderBy="id", clauseTables=["DistroArchRelease"])
+
     def generateOverrides(self, fullpublish=False):
         """Collect packages that need overrides generated, and generate them."""
         for distroseries in self.distro.serieses:
@@ -252,32 +298,8 @@ class FTPArchiveHandler:
                     if not self.publisher.isAllowed(distroseries, pocket):
                         continue
 
-                spphs = SourcePackagePublishingHistory.select(
-                    """
-                    SourcePackagePublishingHistory.distrorelease = %s AND
-                    SourcePackagePublishingHistory.archive = %s AND
-                    SourcePackagePublishingHistory.pocket = %s AND
-                    SourcePackagePublishingHistory.status = %s
-                    """ % sqlvalues(distroseries,
-                                    distroseries.main_archive,
-                                    pocket,
-                                    PackagePublishingStatus.PUBLISHED),
-                    prejoins=["sourcepackagerelease.sourcepackagename"],
-                    orderBy="id")
-                bpphs = BinaryPackagePublishingHistory.select(
-                    """
-                    BinaryPackagePublishingHistory.distroarchrelease =
-                    DistroArchRelease.id AND
-                    BinaryPackagePublishingHistory.archive = %s AND
-                    DistroArchRelease.distrorelease = %s AND
-                    BinaryPackagePublishingHistory.pocket = %s AND
-                    BinaryPackagePublishingHistory.status = %s
-                    """ % sqlvalues(distroseries,
-                                    distroseries.main_archive,
-                                    pocket,
-                                    PackagePublishingStatus.PUBLISHED),
-                    prejoins=["binarypackagerelease.binarypackagename"],
-                    orderBy="id", clauseTables=["DistroArchRelease"])
+                spphs = self.getSourcesForOverrides(distroseries, pocket)
+                bpphs = self.getBinariesForOverrides(distroseries, pocket)
                 self.publishOverrides(spphs, bpphs)
 
     def publishOverrides(self, source_publications, binary_publications):

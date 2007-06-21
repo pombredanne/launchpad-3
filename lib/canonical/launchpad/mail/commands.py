@@ -12,18 +12,17 @@ from zope.schema import ValidationError
 
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
-        IProduct, IDistribution, IDistroSeries, IPersonSet,
-        IBug, IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
-        IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag, IBugTaskSet,
-        BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
-        IDistributionSourcePackage, EmailProcessingError, NotFoundError,
-        CreateBugParams, IPillarNameSet, BugTargetNotFound, IProject,
-        ISourcePackage, IProductSeries)
+        IProduct, IDistribution, IDistroSeries, IBug,
+        IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
+        IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag,
+        IBugTaskSet, IMessageSet, IDistroBugTask,
+        IDistributionSourcePackage, EmailProcessingError,
+        NotFoundError, CreateBugParams, IPillarNameSet,
+        BugTargetNotFound, IProject, ISourcePackage, IProductSeries)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
-from canonical.launchpad.searchbuilder import NULL
 
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -684,7 +683,15 @@ class StatusEmailCommand(DBSchemaEditEmailCommand):
 
     def setAttributeValue(self, context, attr_name, attr_value):
         """See EmailCommand."""
-        context.transitionToStatus(attr_value)
+        user = getUtility(ILaunchBag).user
+
+        if not context.canTransitionToStatus(attr_value, user):
+            raise EmailProcessingError(
+                'The status cannot be changed to %s because you are not '
+                'the registrant or a bug contact for %s.' % (
+                    attr_value.name.lower(), context.pillar.displayname))
+
+        context.transitionToStatus(attr_value, user)
 
 
 class ImportanceEmailCommand(DBSchemaEditEmailCommand):

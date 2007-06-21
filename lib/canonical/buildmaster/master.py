@@ -10,20 +10,19 @@ cronscripts.
 
 __metaclass__ = type
 
-import operator
-import logging
-import xmlrpclib
-import socket
-import datetime
-import pytz
+
 import apt_pkg
+import datetime
+import logging
+import operator
+import pytz
 
 from zope.component import getUtility
 
 from canonical.librarian.interfaces import ILibrarianClient
 
 from canonical.launchpad.interfaces import (
-    IBuildQueueSet, IBuildSet
+    CannotBuild, BuildSlaveFailure, IBuildQueueSet, IBuildSet
     )
 
 from canonical.lp import dbschema
@@ -76,16 +75,17 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
     instance.
     """
     hint_string = pubrec.sourcepackagerelease.architecturehintlist
-    assert hint_string
+    assert hint_string, 'Missing arch_hint_list'
 
-    legal_arch_tags = set(arch.architecturetag 
+    legal_arch_tags = set(arch.architecturetag
                           for arch in legal_archserieses)
 
     if hint_string == 'any':
         package_tags = legal_arch_tags
     elif hint_string == 'all':
         nominated_arch = distroseries.nominatedarchindep
-        assert nominated_arch in legal_archserieses
+        assert nominated_arch in legal_archserieses, (
+            'nominatedarchindep is not present in legal_archseries')
         package_tags = set([nominated_arch.architecturetag])
     else:
         my_archs = hint_string.split()
@@ -116,22 +116,13 @@ def determineArchitecturesToBuild(pubrec, legal_archserieses,
 class BuilddMaster:
     """Canonical autobuilder master, toolkit and algorithms.
 
-    Attempt to '_archserieses'  attribute, a dictionary which contains a
-    chain of verified DistroArchSerieses (by addDistroArchSeries) followed
-    by another dictionary containing the available builder-slaver for this
-    DistroArchSeries, like :
-
-    # associate  specific processor family to a group of available
-    # builder-slaves
-    notes[archseries.processorfamily]['builders'] = builderGroup
-
-    # just to consolidate we have a collapsed information
-    buildersByProcessor = notes[archseries.processorfamily]['builders']
-
-    # associate the extended builderGroup reference to a given
-    # DistroArchSeries
-    self._archserieses[DAR]['builders'] = buildersByProcessor
+    This class is in the process of being deprecated in favour of the regular
+    content classes.
     """
+    # XXX cprov 20070615: Please do not extend this class except as
+    # required to move more logic into the content classes. A new feature
+    # should be modeled directly in IBuilder.
+
     def __init__(self, logger, tm):
         self._logger = logger
         self._tm = tm
@@ -151,7 +142,7 @@ class BuilddMaster:
                              distroarchseries.distroseries.name,
                              distroarchseries.architecturetag))
 
-        # check ARCHRELEASE across available pockets
+        # check ARCHSERIES across available pockets
         for pocket in dbschema.PackagePublishingPocket.items:
             if distroarchseries.getChroot(pocket):
                 # Fill out the contents
@@ -179,12 +170,6 @@ class BuilddMaster:
                    archseries.architecturetag))
             return
 
-        builders = self._archserieses[archseries].get("builders")
-
-        # if annotation for builders was already done, return
-        if builders:
-            return
-
         # query the global annotation registry and verify if
         # we have already done the builder checks for the
         # processor family in question. if it's already done
@@ -204,10 +189,10 @@ class BuilddMaster:
             # label 'builders'
             notes[archseries.processorfamily]["builders"] = builderGroup
 
-        # consolidate the annotation for the architecture series
-        # in the private attribute _archserieses
-        builders = notes[archseries.processorfamily]["builders"]
-        self._archserieses[archseries]["builders"] = builders
+        # consolidate the annotation for the architecture release
+        # in the private attribute _archreleases
+        self._archserieses[archseries]["builders"] = \
+            notes[archseries.processorfamily]["builders"]
 
     def createMissingBuilds(self, distroseries):
         """Ensure that each published package is completly built."""
@@ -263,7 +248,8 @@ class BuilddMaster:
                   (pubrec.sourcepackagerelease.name,
                    pubrec.sourcepackagerelease.version,
                    pubrec.sourcepackagerelease.architecturehintlist))
-        assert pubrec.sourcepackagerelease.architecturehintlist
+        assert pubrec.sourcepackagerelease.architecturehintlist, (
+            'Empty architecture hint list')
         for archseries in build_archs:
             if not archseries.processors:
                 self._logger.debug(
@@ -324,7 +310,7 @@ class BuilddMaster:
                 builders = notes[proc]["builders"]
             except KeyError:
                 continue
-            builders.updateBuild(job, self.librarian)
+            builders.updateBuild(job)
 
     def getLogger(self, subname=None):
         """Return the logger instance with specific prefix"""
@@ -618,6 +604,7 @@ class BuilddMaster:
             if (spr.publishings and spr.publishings[0].status <=
                 dbschema.PackagePublishingStatus.PUBLISHED):
                 self.startBuild(builders, builder, build_candidate)
+                self.commit()
             else:
                 self._logger.debug(
                     "Build %s SUPERSEDED, queue item %s REMOVED"
@@ -630,75 +617,12 @@ class BuilddMaster:
 
     def startBuild(self, builders, builder, queueItem):
         """Find the list of files and give them to the builder."""
-        pocket = queueItem.build.pocket
-
-        self._logger.info("startBuild(%s, %s, %s, %s)"
-                           % (builder.url, queueItem.name,
-                              queueItem.version, pocket.title))
-
-        # ensure build has the need chroot
-        chroot = queueItem.archseries.getChroot(pocket)
-        if chroot is None:
-            self._logger.debug(
-                "Missing CHROOT for %s/%s/%s/%s"
-                % (queueItem.build.distroseries.distribution.name,
-                   queueItem.build.distroseries.name,
-                   queueItem.build.distroarchseries.architecturetag,
-                   queueItem.build.pocket.name))
-            return
-
         try:
-            # Resume build XEN-images
-            builders.resumeBuilder(builder)
-            # Send chroot.
-            builders.giveToBuilder(builder, chroot, self.librarian)
-
-            # Build filemap structure with the files required in this build
-            # and send them to the builder.
-            filemap = {}
-            for f in queueItem.files:
-                fname = f.libraryfile.filename
-                filemap[fname] = f.libraryfile.content.sha1
-                builders.giveToBuilder(builder, f.libraryfile, self.librarian)
-
-            # Build extra arguments
-            args = {}
-            args["ogrecomponent"] = queueItem.component_name
-            # turn 'arch_indep' ON only if build is archindep or if
-            # the specific architecture is the nominatedarchindep for
-            # this distroseries (in case it requires any archindep source)
-            # XXX: there is no point in checking if archhintlist ==
-            # 'all' here, because it's redundant with the check for
-            # isNominatedArchIndep. -- kiko, 2006-08-31
-            args['arch_indep'] = (queueItem.archhintlist == 'all' or
-                                  queueItem.archseries.isNominatedArchIndep)
-
-            if not queueItem.is_trusted:
-                components_map = {
-                    'main': 'main',
-                    'restricted': 'main restricted',
-                    'universe': 'main restricted universe',
-                    'multiverse': 'main restricted universe multiverse',
-                    }
-                allowed_components = components_map[queueItem.component_name]
-                ppa_archive_url = queueItem.build.archive.archive_url
-                args['archives'] = [
-                    'http://archive.ubuntu.com/ubuntu %s' % allowed_components,
-                    '%s/ubuntu %s' % (ppa_archive_url, allowed_components)
-                    ]
-            else:
-                args['archives'] = []
-
-            # Request start of the process.
-            builders.startBuild(
-                builder, queueItem, filemap, "debian", pocket, args)
-
-        except (xmlrpclib.Fault, socket.error), info:
-            # mark builder as 'failed'.
-            self._logger.debug(
-                "Disabling builder: %s" % builder.url, exc_info=1)
-            builders.failBuilder(
-                builder, "Exception (%s) when setting up to new job" % info)
-
-        self.commit()
-
+            builder.startBuild(queueItem,  self._logger)
+        except BuildSlaveFailure:
+            # keep old mirrored-from-db-data in sync.
+            builders.updateOkSlaves()
+        except CannotBuild:
+            # Ignore the exception - this code is being refactored and the
+            # caller of startBuild expects it to never fail.
+            pass
