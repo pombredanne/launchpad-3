@@ -17,6 +17,7 @@ import tempfile
 import threading
 
 from bzrlib.transport import get_transport, sftp, ssh, Server
+from bzrlib.transport.memory import MemoryServer
 
 from twisted.conch.interfaces import ISession
 from twisted.conch.ssh import keys
@@ -46,13 +47,13 @@ def make_launchpad_server():
 def make_sftp_server():
     authserver = AuthserverWithKeys('testuser', 'testteam')
     branches_root = '/tmp/sftp-test'
-    return SFTPCodeHostingServer(authserver, branches_root)
+    return SFTPCodeHostingServer(authserver, branches_root, branches_root)
 
 
 def make_bzr_ssh_server():
     authserver = AuthserverWithKeys('testuser', 'testteam')
     branches_root = '/tmp/sftp-test'
-    return BazaarSSHCodeHostingServer(authserver, branches_root)
+    return BazaarSSHCodeHostingServer(authserver, branches_root, branches_root)
 
 
 class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
@@ -218,7 +219,12 @@ class FakeLaunchpadServer(LaunchpadServer):
 
     def __init__(self, user_id):
         authserver = FakeLaunchpad()
-        LaunchpadServer.__init__(self, authserver, user_id, None, None)
+        server = MemoryServer()
+        server.setUp()
+        # The backing transport is supplied during FakeLaunchpadServer.setUp.
+        mirror_transport = get_transport(server.get_url())
+        LaunchpadServer.__init__(
+            self, authserver, user_id, None, mirror_transport)
         self._schema = 'lp'
 
     def getTransport(self, path=None):
@@ -240,9 +246,10 @@ class FakeLaunchpadServer(LaunchpadServer):
 
 class CodeHostingServer(Server):
 
-    def __init__(self, authserver, branches_root):
+    def __init__(self, authserver, branches_root, mirror_root):
         self.authserver = authserver
         self._branches_root = branches_root
+        self._mirror_root = mirror_root
 
     def setUp(self):
         if os.path.isdir(self._branches_root):
@@ -264,9 +271,10 @@ class CodeHostingServer(Server):
 
 class SSHCodeHostingServer(CodeHostingServer):
 
-    def __init__(self, schema, authserver, branches_root):
+    def __init__(self, schema, authserver, branches_root, mirror_root):
         self._schema = schema
-        CodeHostingServer.__init__(self, authserver, branches_root)
+        CodeHostingServer.__init__(
+            self, authserver, branches_root, mirror_root)
 
     def setUpFakeHome(self):
         user_home = os.path.abspath(tempfile.mkdtemp())
@@ -320,8 +328,9 @@ class SSHCodeHostingServer(CodeHostingServer):
 
 class SFTPCodeHostingServer(SSHCodeHostingServer):
 
-    def __init__(self, authserver, branches_root):
-        SSHCodeHostingServer.__init__(self, 'sftp', authserver, branches_root)
+    def __init__(self, authserver, branches_root, mirror_root):
+        SSHCodeHostingServer.__init__(
+            self, 'sftp', authserver, branches_root, mirror_root)
 
     def runAndWaitForDisconnect(self, func, *args, **kwargs):
         """Run the given function, close all SFTP connections, and wait for the
@@ -344,9 +353,9 @@ class SFTPCodeHostingServer(SSHCodeHostingServer):
 
 class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
 
-    def __init__(self, authserver, branches_root):
+    def __init__(self, authserver, branches_root, mirror_root):
         SSHCodeHostingServer.__init__(
-            self, 'bzr+ssh', authserver, branches_root)
+            self, 'bzr+ssh', authserver, branches_root, mirror_root)
 
     def setUp(self):
         SSHCodeHostingServer.setUp(self)
