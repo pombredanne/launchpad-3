@@ -8,12 +8,12 @@
           src view/zoom_icon;" /></a>
   </td>
   <td style="text-align: right;">
-    <div tal:attributes="id string:msgset_${context/potmsgset/id}">
+    <div tal:attributes="id string:${view/html_id}">
       <span tal:replace="view/sequence">1</span>.
       <input
         type="hidden"
         tal:condition="request/lp:person"
-        tal:attributes="name string:msgset_${context/potmsgset/id}"
+        tal:attributes="name string:${view/html_id}"
         />
     </div>
   </td>
@@ -31,16 +31,16 @@
        tal:attributes="
          onClick string:
            javascript:copyInnerHTMLById(
-             'msgset_${context/potmsgset/id}_singular',
-             'msgset_${context/potmsgset/id}_${language_code}_translation_0_new');;
-           selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_0_new_select', event);;
+             '${view/html_id}_singular',
+             '${view/html_id_0}_new');;
+           selectWidget('${view/html_id_0}_new_select', event);;
            return false;;
        "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
     </tal:logged-in>
   </td>
   <td>
     <div tal:content="structure view/singular_text"
-         tal:attributes="id string:msgset_${context/potmsgset/id}_singular">
+         tal:attributes="id string:${view/html_id}_singular">
       The original text.
     </div>
   </td>
@@ -55,8 +55,8 @@
        tal:attributes="
          onClick string:
            javascript:writeTextIntoPluralTranslationFields(
-             'msgset_${context/potmsgset/id}_plural',
-             'msgset_${context/potmsgset/id}_${language_code}_translation_',
+             '${view/html_id}_plural',
+             '${view/html_id}_${language_code}_translation_',
              ${context/pluralforms});;
            return false;;
       "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
@@ -64,7 +64,7 @@
   </td>
   <td>
     <div tal:content="structure view/plural_text"
-         tal:attributes="id string:msgset_${context/potmsgset/id}_plural">
+         tal:attributes="id string:${view/html_id}_plural">
       plural source
     </div>
   </td>
@@ -161,13 +161,13 @@
               type="radio"
               checked="true"
               tal:attributes="
-                name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton;
-                id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton;
-                value string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index};
+                name string:${translation_dictionary/html_id_translation}_radiobutton;
+                id string:${translation_dictionary/html_id_translation}_radiobutton;
+                value string:${translation_dictionary/html_id_translation};
                 onClick string:
                   javascript:copyInnerHTMLById(
-                    'msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}',
-                    'msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new')
+                    '${translation_dictionary/html_id_translation}',
+                    '${translation_dictionary/html_id_translation}_new')
               " />
           </tal:user-is-official-translator>
           <tal:is-not-editor condition="not:view/user_is_official_translator">
@@ -175,9 +175,9 @@
                tal:attributes="
                  onClick string:
                    javascript:copyInnerHTMLById(
-                     'msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}',
-                     'msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new');;
-                   selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_select', event);;
+                     '${translation_dictionary/html_id_translation}',
+                     '${translation_dictionary/html_id_translation}_new');;
+                   selectWidget('${translation_dictionary/html_id_translation}_new_select', event);;
                    return false;;
                "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
           </tal:is-not-editor>
@@ -189,7 +189,7 @@
                tal:attributes="
                  lang context/pofile/language/dashedcode;
                  dir context/pofile/language/abbreviated_text_dir;
-                 id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}">
+                 id string:${translation_dictionary/html_id_translation}">
             current translation
           </div>
           <label
@@ -199,8 +199,8 @@
             tal:attributes="
               lang context/pofile/language/dashedcode;
               dir context/pofile/language/abbreviated_text_dir;
-              id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index};
-              for string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton">
+              id string:${translation_dictionary/html_id_translation};
+              for string:${translation_dictionary/html_id_translation}_radiobutton">
             current translation
           </label>
         </td>
@@ -213,22 +213,22 @@
               type="radio"
               checked="true"
               tal:attributes="
-                name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton;
-                id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton;
-                value string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}
+                name string:${translation_dictionary/html_id_translation}_radiobutton;
+                id string:${translation_dictionary/html_id_translation}_radiobutton;
+                value string:${translation_dictionary/html_id_translation}
             " />
           </tal:user-is-official-translator>
         </td>
         <td>
           <div tal:condition="not: view/user_is_official_translator"
                tal:attributes="
-                 id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}">
+                 id string:${translation_dictionary/html_id_translation}">
             (no translation yet)
           </div>
           <label tal:condition="view/user_is_official_translator"
                  tal:attributes="
-                   id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index};
-                   for string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton">
+                   id string:${translation_dictionary/html_id_translation};
+                   for string:${translation_dictionary/html_id_translation}_radiobutton">
             (no translation yet)
           </label>
         </td>
@@ -290,12 +290,12 @@
         <label
           tal:condition="not:view/user_is_official_translator"
           tal:attributes="
-            for string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_select;
+            for string:${translation_dictionary/html_id_translation}_new_select;
             " >New suggestion:</label>
         <label
           tal:condition="view/user_is_official_translator"
           tal:attributes="
-            for string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_select;
+            for string:${translation_dictionary/html_id_translation}_new_select;
             " >New translation:</label>
       </th>
       <td class="icon left right">
@@ -303,10 +303,10 @@
           <input
             type="radio"
             tal:attributes="
-              name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_radiobutton;
-              id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_select;
-              value string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new;
-              onClick string:javascript:setFocusByName('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new');
+              name string:${translation_dictionary/html_id_translation}_radiobutton;
+              id string:${translation_dictionary/html_id_translation}_new_select;
+              value string:${translation_dictionary/html_id_translation}_new;
+              onClick string:javascript:setFocusByName('${translation_dictionary/html_id_translation}_new');
             " />
         </tal:user-is-official-translator>
         <tal:user-is-not-official-translator condition="not:view/user_is_official_translator">
@@ -314,9 +314,9 @@
             type="checkbox"
             tal:attributes="
               checked translation_dictionary/store_flag;
-              name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_checkbox;
-              id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_select;
-              onClick string:javascript:setFocusByName('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new');
+              name string:${translation_dictionary/html_id_translation}_new_checkbox;
+              id string:${translation_dictionary/html_id_translation}_new_select;
+              onClick string:javascript:setFocusByName('${translation_dictionary/html_id_translation}_new');
             " />
         </tal:user-is-not-official-translator>
       </td>
@@ -326,20 +326,20 @@
           type="text"
           tal:condition="not:translation_dictionary/is_multi_line"
           tal:attributes="
-            name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new;
-            id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new;
+            name string:${translation_dictionary/html_id_translation}_new;
+            id string:${translation_dictionary/html_id_translation}_new;
             lang context/pofile/language/dashedcode;
             dir context/pofile/language/abbreviated_text_dir;
             value translation_dictionary/translation;
-            onKeyPress string:javascript:selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_select', event);
-            onChange string:javascript:selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_select', event);
+            onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
+            onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
             " />
         <input type="button" value='Add more lines' title="Let's you add more than one line"
           tal:condition="not:translation_dictionary/is_multi_line"
           tal:attributes="
-            name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_to_textarea;
-            id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_to_textarea;
-            onClick string:javascript:upgradeToTextAreaForTranslation('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new');"
+            name string:${translation_dictionary/html_id_translation}_new_to_textarea;
+            id string:${translation_dictionary/html_id_translation}_new_to_textarea;
+            onClick string:javascript:upgradeToTextAreaForTranslation('${translation_dictionary/html_id_translation}_new');"
           />
         <tal:multi-line condition="translation_dictionary/is_multi_line">
           <tal:with-content
@@ -348,12 +348,12 @@
               style="width: 100%;"
               rows=6
               tal:attributes="
-                id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new;
-                name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new;
+                id string:${translation_dictionary/html_id_translation}_new;
+                name string:${translation_dictionary/html_id_translation}_new;
                 lang context/pofile/language/dashedcode;
                 dir context/pofile/language/abbreviated_text_dir;
-                onKeyPress string:javascript:selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_select', event);
-                onChange string:javascript:selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_select', event);
+                onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
+                onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
               ">
 <tal:content replace="translation_dictionary/translation" /></textarea>
           </tal:with-content>
@@ -363,12 +363,12 @@
               style="width: 100%;"
               rows=6
               tal:attributes="
-                id string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new;
-                name string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new;
+                id string:${translation_dictionary/html_id_translation}_new;
+                name string:${translation_dictionary/html_id_translation}_new;
                 lang context/pofile/language/dashedcode;
                 dir context/pofile/language/abbreviated_text_dir;
-                onKeyPress string:javascript:selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_select', event);
-                onChange string:javascript:selectWidget('msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}_new_select', event);
+                onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
+                onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
               "></textarea>
           </tal:without-content>
         </tal:multi-line>
@@ -386,7 +386,7 @@
             value="fuzzy"
             tal:attributes="
               checked view/is_fuzzy;
-              name string:msgset_${context/potmsgset/id}_${language_code}_needsreview"
+              name string:${view/html_id}_${language_code}_needsreview"
             />
           <tal:block condition="not:view/is_plural">
             Someone should review this translation

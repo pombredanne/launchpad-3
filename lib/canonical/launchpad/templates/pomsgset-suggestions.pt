@@ -15,11 +15,11 @@
           type="radio"
           tal:attributes="
             name string:${submission/translation_html_id}_radiobutton;
-            id string:${submission/html_id}_radiobutton;
-            value string:${submission/html_id};
+            id string:${submission/suggestion_html_id}_radiobutton;
+            value string:${submission/suggestion_html_id};
             onClick string:
               javascript:copyInnerHTMLById(
-                '${submission/html_id}',
+                '${submission/suggestion_html_id}',
                 '${submission/translation_html_id}_new')
             " />
       </tal:user-is-official-translator>
@@ -28,7 +28,7 @@
           tal:attributes="
             onClick string:
               javascript:copyInnerHTMLById(
-                '${submission/html_id}',
+                '${submission/suggestion_html_id}',
                 '${submission/translation_html_id}_new');;
               selectWidget('${submission/translation_html_id}_new_select', event);;
             return false;;
@@ -42,7 +42,7 @@
         tal:attributes="
           lang submission/language/dashedcode;
           dir submission/language/abbreviated_text_dir;
-          id string:${submission/html_id}"
+          id string:${submission/suggestion_html_id}"
         tal:content="structure submission/suggestion_text">
         suggestion
       </div>
@@ -52,8 +52,8 @@
         tal:attributes="
           lang submission/language/dashedcode;
           dir submission/language/abbreviated_text_dir;
-          id string:${submission/html_id};
-          for string:${submission/html_id}_radiobutton;"
+          id string:${submission/suggestion_html_id};
+          for string:${submission/suggestion_html_id}_radiobutton;"
         tal:content="structure submission/suggestion_text">
         suggestion
       </label>

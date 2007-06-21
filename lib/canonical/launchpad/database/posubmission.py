@@ -7,7 +7,6 @@ __all__ = [
     ]
 
 from zope.interface import implements
-from zope.security.proxy import removeSecurityProxy
 
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound)
@@ -55,12 +54,17 @@ class POSubmission(SQLBase):
     active = BoolCol(notNull=True, default=False)
     published = BoolCol(notNull=True, default=False)
 
-    def suggestion_htmlid(self, for_pomsgset, description='suggestion'):
+    def makeHtmlId(self, description, for_pomsgset=None):
         """See `IPOSubmission`."""
-        return 'msgset_%d_%s_%s_%d_%d' % (
-            removeSecurityProxy(for_pomsgset).id,
-            self.pomsgset.pofile.language.code, description, self.id,
-            self.pluralform)
+        if for_pomsgset is None:
+            for_pomsgset = self.pomsgset
+        suffix = '_'.join([
+            description,
+            str(self.id),
+            str(self.pluralform)])
+        return for_pomsgset.makeHtmlId(
+            suffix, language_code=self.pomsgset.pofile.language.code)
+
 
 # XXX do we want to indicate the difference between a from-scratch
 # submission and an editorial decision (for example, when someone is

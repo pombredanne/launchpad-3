@@ -246,8 +246,8 @@ And we can see that we didn't get errors.
     >>> pofile_view.errors
     {}
 
-The view will have pre-populated the internal relevant submissions caches of
-the POMsgSets it shows.  We pick one with a nice list of POSubmissions and see
+The view pre-populates the internal "relevant submissions" caches of the
+POMsgSets it shows.  We pick one with a nice list of POSubmissions and see
 what's inside.
 
     >>> pomsgset = POMsgSet.get(604)

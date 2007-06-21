@@ -156,6 +156,17 @@ class POMsgSetMixIn:
             return []
         return suggestions
 
+    def makeHtmlId(self, suffix=None, language_code=None):
+        """See `IPOMsgSet`."""
+        elements = ['msgset', str(self.potmsgset.id)]
+        if language_code is not None:
+            if language_code == '':
+                language_code = self.pofile.language.code
+            elements.append(language_code)
+        if suffix is not None:
+            elements.append(suffix)
+        return '_'.join(elements)
+
 
 class DummyPOMsgSet(POMsgSetMixIn):
     """Represents a POMsgSet where we do not yet actually HAVE a POMsgSet for
