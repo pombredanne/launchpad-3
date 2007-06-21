@@ -135,7 +135,7 @@ if __name__ == '__main__':
     # Turn on Layer profiling if requested.
     from canonical.testing import profiled
     if options.verbose >= 3 and main_process:
-            profiled.setup_profiling()
+        profiled.setup_profiling()
 
     result = testrunner.run(defaults)
     # Cribbed from sourcecode/zope/test.py - avoid spurious error during exit.

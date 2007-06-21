@@ -28,6 +28,7 @@ def profiled(func):
             return func(cls, *args, **kw)
     return profiled_func
 
+
 def setup_profiling():
     """Initialize our profiling information.
 
@@ -39,7 +40,8 @@ def setup_profiling():
 
     _profiling_setup_time = time.time()
 
-    outf, _profile_stats_filename = tempfile.mkstemp('.pickle','lp_layer_prof')
+    outf, _profile_stats_filename = tempfile.mkstemp(
+            '.pickle', 'lp_layer_prof')
     os.close(outf)
 
     outf = open(_profile_stats_filename, 'wb')
@@ -51,6 +53,7 @@ def setup_profiling():
     # Store filename in the environment so subprocesses can find it.
     os.environ['lp_layer_profile_filename'] = _profile_stats_filename
 
+
 def _update_profile_stats(cls, func, duration):
     """Update the profile statistics with new information about a method call.
     """
@@ -61,7 +64,7 @@ def _update_profile_stats(cls, func, duration):
     # Load stats from disk. We can't store in RAM as it needs to persist
     # across processes.
     stats = pickle.load(open(_profile_stats_filename, 'rb'))
-    hits, total_duration = stats.setdefault(key, (0,0))
+    hits, total_duration = stats.setdefault(key, (0, 0))
 
     # Update stats
     stats[key] = (hits + 1, total_duration + duration)
@@ -70,6 +73,7 @@ def _update_profile_stats(cls, func, duration):
     outf = open(_profile_stats_filename, 'wb')
     pickle.dump(stats, outf, pickle.HIGHEST_PROTOCOL)
     outf.close() # and flush
+
 
 def report_profile_stats():
     """Print a report about our collected statistics to stdout."""
