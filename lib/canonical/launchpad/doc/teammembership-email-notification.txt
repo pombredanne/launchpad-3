@@ -553,6 +553,7 @@ is automatically renewed.
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
+    >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.lp.dbschema import TeamMembershipRenewalPolicy
     >>> utc_now = datetime.now(pytz.timezone('UTC'))
     >>> lp_admins = personset.getByName('admins')
@@ -560,7 +561,10 @@ is automatically renewed.
     <Item NONE ...TeamMembershipRenewalPolicy...
 
     >>> sabdfl_on_admins = membershipset.getByPersonAndTeam(sabdfl, lp_admins)
-    >>> sabdfl_on_admins.dateexpires = utc_now
+
+    # Need to cheat here and set the expiry date manually because the expiry
+    # date given to setExpirationDate() must be in the future.
+    >>> removeSecurityProxy(sabdfl_on_admins).dateexpires = utc_now
 
     >>> ubuntu_team = personset.getByName('ubuntu-team')
     >>> ubuntu_team.renewal_policy = TeamMembershipRenewalPolicy.AUTOMATIC
@@ -568,7 +572,7 @@ is automatically renewed.
     >>> jdub = personset.getByName('jdub')
     >>> jdub_on_ubuntu_team = membershipset.getByPersonAndTeam(
     ...     jdub, ubuntu_team)
-    >>> jdub_on_ubuntu_team.dateexpires = utc_now
+    >>> removeSecurityProxy(jdub_on_ubuntu_team).dateexpires = utc_now
     >>> flush_database_updates()
 
     >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
@@ -666,7 +670,8 @@ sent to all team admins.
     None
 
     >>> login(mirror_admins.teamowner.preferredemail.email)
-    >>> karl_on_mirroradmins.dateexpires = tomorrow
+    >>> karl_on_mirroradmins.setExpirationDate(
+    ...     tomorrow, mirror_admins.teamowner)
     >>> ondemand = TeamMembershipRenewalPolicy.ONDEMAND
     >>> karl_on_mirroradmins.team.renewal_policy = ondemand
     >>> mirror_admins.defaultrenewalperiod = 365
