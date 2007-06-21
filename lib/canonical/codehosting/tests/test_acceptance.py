@@ -20,7 +20,6 @@ from canonical.codehosting.tests.helpers import (
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting.transport import branch_id_to_path
-from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 
