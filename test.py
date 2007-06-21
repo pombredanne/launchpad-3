@@ -118,17 +118,24 @@ defaults = [
 
 if __name__ == '__main__':
 
-    # Extract so we can see them too
-    options = testrunner.get_options(args=None, defaults=defaults)
+    # Extract arguments so we can see them too. We need to strip --resume-layer
+    # and --default stuff if found as get_options can't handle it.
+    if len(sys.argv) > 1 and sys.argv[1] == '--resume-layer':
+        args = list(sys.argv)
+        args.pop(1) # --resume-layer
+        args.pop(1) # The layer name
+        while len(args) > 1 and args[1] == '--default':
+            args.pop(1) # --default
+            args.pop(1) # The default value
+        args.insert(0, sys.argv[0])
+    else:
+        args = sys.argv
+    options = testrunner.get_options(args=args, defaults=defaults)
 
     # Turn on Layer profiling if requested.
     from canonical.testing import profiled
-    if options.verbose >= 3:
-        profiled.enabled = True
-        if main_process:
+    if options.verbose >= 3 and main_process:
             profiled.setup_profiling()
-    else:
-        profiled.enabled = False
 
     result = testrunner.run(defaults)
     # Cribbed from sourcecode/zope/test.py - avoid spurious error during exit.

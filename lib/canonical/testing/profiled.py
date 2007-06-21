@@ -8,18 +8,17 @@ __all__ = ['profiled', 'setup_profiling']
 import atexit
 import cPickle as pickle
 import os
+import tempfile
 import time
 
-enabled = False # Needs to be set to True for profiling to be switched on.
-
-_profile_stats_filename = '/tmp/launchpad_profile_stats.pickle'
+_profile_stats_filename = os.environ.get('lp_layer_profile_filename', None)
 _profiling_setup_time = None
 
 def profiled(func):
-    """Decorator that automatically profiles invokations of the method."""
+    """Decorator that automatically profiles invocations of the method."""
     def profiled_func(cls, *args, **kw):
-        global enabled
-        if enabled:
+        global _profile_stats_filename
+        if _profile_stats_filename is not None:
             start_time = time.time()
             try:
                 return func(cls, *args, **kw)
@@ -40,11 +39,17 @@ def setup_profiling():
 
     _profiling_setup_time = time.time()
 
+    outf, _profile_stats_filename = tempfile.mkstemp('.pickle','lp_layer_prof')
+    os.close(outf)
+
     outf = open(_profile_stats_filename, 'wb')
     pickle.dump({}, outf, pickle.HIGHEST_PROTOCOL)
     outf.close()
 
     atexit.register(os.remove, _profile_stats_filename)
+
+    # Store filename in the environment so subprocesses can find it.
+    os.environ['lp_layer_profile_filename'] = _profile_stats_filename
 
 def _update_profile_stats(cls, func, duration):
     """Update the profile statistics with new information about a method call.
@@ -56,10 +61,7 @@ def _update_profile_stats(cls, func, duration):
     # Load stats from disk. We can't store in RAM as it needs to persist
     # across processes.
     stats = pickle.load(open(_profile_stats_filename, 'rb'))
-    try:
-        hits, total_duration = stats[key]
-    except KeyError:
-        hits, total_duration = 0,0
+    hits, total_duration = stats.setdefault(key, (0,0))
 
     # Update stats
     stats[key] = (hits + 1, total_duration + duration)
