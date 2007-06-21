@@ -46,14 +46,22 @@ def make_launchpad_server():
 
 def make_sftp_server():
     authserver = AuthserverWithKeys('testuser', 'testteam')
-    branches_root = '/tmp/sftp-test'
-    return SFTPCodeHostingServer(authserver, branches_root, branches_root)
+    branches_root = config.codehosting.branches_root
+    mirror_root = config.supermirror.branchesdest
+    return SFTPCodeHostingServer(authserver, branches_root, mirror_root)
 
 
 def make_bzr_ssh_server():
     authserver = AuthserverWithKeys('testuser', 'testteam')
-    branches_root = '/tmp/sftp-test'
-    return BazaarSSHCodeHostingServer(authserver, branches_root, branches_root)
+    branches_root = config.codehosting.branches_root
+    mirror_root = config.supermirror.branchesdest
+    return BazaarSSHCodeHostingServer(authserver, branches_root, mirror_root)
+
+
+def _make_clean_directory(dirpath, mode=0700):
+    if os.path.isdir(dirpath):
+        shutil.rmtree(dirpath)
+    os.makedirs(dirpath, mode)
 
 
 class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
@@ -162,6 +170,13 @@ class AuthserverWithKeysMixin:
         self.testUser = testUser
         self.testTeam = testTeam
 
+    def setUpKeys(self):
+        if os.path.isdir(config.codehosting.host_key_pair_path):
+            shutil.rmtree(config.codehosting.host_key_pair_path)
+        shutil.copytree(
+            sibpath(__file__, 'keys'),
+            os.path.join(config.codehosting.host_key_pair_path))
+
     def setUpTestUser(self):
         """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a known
         SSH key.
@@ -181,6 +196,7 @@ class AuthserverWithKeysMixin:
             'testuser');
             """)
         commit()
+        self.setUpKeys()
 
     def getPrivateKey(self):
         """Return the private key object used by 'testuser' for auth."""
@@ -255,9 +271,9 @@ class CodeHostingServer(Server):
         if os.path.isdir(self._branches_root):
             shutil.rmtree(self._branches_root)
         os.makedirs(self._branches_root, 0700)
-        shutil.copytree(
-            sibpath(__file__, 'keys'),
-            os.path.join(self._branches_root, 'keys'))
+        if os.path.isdir(self._mirror_root):
+            shutil.rmtree(self._mirror_root)
+        os.makedirs(self._mirror_root, 0700)
         self.authserver.setUp()
 
     def tearDown(self):

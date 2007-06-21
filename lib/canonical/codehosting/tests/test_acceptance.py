@@ -285,7 +285,7 @@ class SmartserverTests(SSHTestCase):
         sabdfl_id = authserver.getUser('sabdfl')['id']
         ro_branch_id = authserver.createBranch(sabdfl_id, '', 'ro-branch')
         ro_branch_url = 'file://' + os.path.abspath(
-            os.path.join(self.server._branches_root, 'branches',
+            os.path.join(self.server._mirror_root,
                          branch_id_to_path(ro_branch_id)))
         self.runInChdir(
             self.run_bzr_captured, ['push', '--create-prefix', ro_branch_url],
@@ -303,7 +303,7 @@ class SmartserverTests(SSHTestCase):
         sabdfl_id = authserver.getUser('sabdfl')['id']
         ro_branch_id = authserver.createBranch(sabdfl_id, '', 'ro-branch')
         ro_branch_url = 'file://' + os.path.abspath(
-            os.path.join(self.server._branches_root, 'branches',
+            os.path.join(self.server._mirror_root,
                          branch_id_to_path(ro_branch_id)))
         self.runInChdir(
             self.run_bzr_captured, ['push', '--create-prefix', ro_branch_url],
