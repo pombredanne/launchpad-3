@@ -917,8 +917,35 @@ class NascentUpload:
                     (self.queue_root.customfiles.count() == 0)):
                     self.logger.debug("Creating PENDING publishing record.")
                     self.queue_root.realiseUpload()
+                    self.closeBugs()
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
                 self.queue_root.setUnapproved()
 
 
+    def closeBugs(self):
+        """ """
+        from canonical.launchpad.scripts.processaccepted import (
+            get_bugs_from_changes_file)
+        from canonical.lp.dbschema import BugTaskStatus
+
+        changes_file_object = open(self.changes.filepath, "r")
+        bugs_to_close = get_bugs_from_changes_file(changes_file_object)
+        changes_file_object.close()
+
+        if not bugs_to_close:
+            return
+
+        source_release = self.queue_root.sourcepackagerelease
+        for bug in bugs_to_close:
+            edited_task = bug.setStatus(
+                target=source_release.sourcepackage,
+                status=BugTaskStatus.FIXRELEASED,
+                user=source_release.creator)
+            if edited_task is not None:
+                assert source_release.changelog is not None, (
+                    "New source uploads should have a changelog.")
+                bug.newMessage(
+                    owner=source_release.creator,
+                    subject=bug.followup_subject(),
+                    content=source_release.changelog)
