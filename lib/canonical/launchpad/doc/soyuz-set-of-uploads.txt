@@ -268,7 +268,7 @@ Inspect the uploader log to find the rejection message.
   DEBUG       Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   DEBUG       Body:
   DEBUG    Rejected:
-  DEBUG    MD5 sum of uploaded file does not match existent file in archive
+  DEBUG    MD5 sum of uploaded file does not match existing file in archive
   ...
   <BLANKLINE>
 

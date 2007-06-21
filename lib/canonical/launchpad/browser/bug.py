@@ -733,7 +733,8 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         if not target.official_malone and taskadded.bugwatch is not None:
             # A remote bug task gets its from a bug watch, so we want
             # its status to be None when created.
-            taskadded.transitionToStatus(BugTaskStatus.UNKNOWN)
+            taskadded.transitionToStatus(
+                BugTaskStatus.UNKNOWN, self.user)
             taskadded.importance = BugTaskImportance.UNKNOWN
 
         notify(SQLObjectCreatedEvent(taskadded))

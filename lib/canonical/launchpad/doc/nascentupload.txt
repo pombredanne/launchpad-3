@@ -106,7 +106,6 @@ and therefore check if it matches what is described in the changesfiles:
   >>> quodlibet.archindep
   True
 
-
 The same happens for source uploads, where we can identify if a source
 is 'native' (only a TARBALL, no diff + orig) or 'has_orig' (uses ORIG
 + DIFF source form).
@@ -316,6 +315,7 @@ First up, construct an upload of just the ed source...
   >>> success
   True
 
+
 === SourcePackageRelease Details ===
 
 Retrive the just-inserted SourcePackageRelease correspondent to 'ed'
@@ -460,9 +460,7 @@ A build was created to represent the relationship between ed_src
   'FULLYBUILT'
 
 
-
 === Staged Source and Binary upload with multiple binaries ===
-
 
 As we could see both, sources and binaries, get into Launchpad via
 nascent-upload infrastructure, i.e., both are processed as 'uploads'.
@@ -510,7 +508,6 @@ Once we have a new queue entry we are able to accept it, step 2:
   >>> syncUpdate(multibar_src_queue)
   >>> multibar_src_queue.status.name
   'ACCEPTED'
-
 
 We can just assume the source was published by step 3 and 4 for
 simplicity and claim 'build from ACCEPTED' feature.
@@ -643,6 +640,7 @@ Check the uploader behaviour against a missing orig.tar.gz file,
   Files specified in DSC are broken or missing, skipping package unpack verification.
   END
 
+
 == Installer source uploads doesn't contain 'Standards-Version' ==
 
 Check if we can accept a installer-source upload which doesn't have
@@ -681,6 +679,7 @@ content, it should have all the required fields except the
 Chuck it all away again
 
   >>> transaction.abort()
+
 
 == Insecure Policy ==
 
@@ -782,102 +781,7 @@ that constraint.
   >>> print foo_failed.rejection_message
   foo_1.0-1_i386.deb uses bzip2 compression but pre-depends on an old version of dpkg: 1.10.20
 
-
-== Dealing with Epochs and diverging binary versions ==
-
-Versions stored in Launchpad should include 'epoch'.
-
-Let's process an source upload and ensure that the resulting
-SourcePackageRelease record store a propoer 'version':
-
-  >>> bar_src_upload = NascentUpload(
-  ...     datadir('suite/bar_1.0-9/bar_1.0-9_source.changes'),
-  ...     sync_policy, mock_logger_quiet)
-  >>> bar_src_upload.process()
-  >>> bar_src_upload.is_rejected
-  False
-  >>> success = bar_src_upload.do_accept()
-
-For source uploads, Changes.version == DSC.version == SPR.version:
-
-  >>> bar_src_upload.changes.version
-  '1:1.0-9'
-
-  >>> bar_src_upload.changes.dsc.dsc_version
-  '1:1.0-9'
-
-  >>> bar_src_queue = bar_src_upload.queue_root
-  >>> bar_spr = bar_src_queue.sources[0].sourcepackagerelease
-  >>> bar_spr.version
-  u'1:1.0-9'
-
-
-Let's accept the source and claim 'build from accepted' to process the
-respective binary:
-
-  >>> bar_src_queue.status.name
-  'NEW'
-  >>> bar_src_queue.setAccepted()
-  >>> bar_src_queue.status.name
-  'ACCEPTED'
-  >>> syncUpdate(bar_src_queue)
-
-
-We will use a modified Sync upload policy to upload unsigned binaries:
-
-  >>> binary_sync_policy = getPolicy(
-  ...     name='sync', distro='ubuntu', distroseries='hoary')
-  >>> binary_sync_policy.can_upload_binaries = True
-  >>> binary_sync_policy.can_upload_mixed = True
-
-
-For a binary upload we expect the same, a BinaryPackageRelease
-'version' that includes 'epoch':
-
-  >>> bar_bin_upload = NascentUpload(
-  ...     datadir('suite/bar_1.0-9_binary/bar_1.0-9_i386.changes'),
-  ...     binary_sync_policy, mock_logger_quiet)
-  >>> bar_bin_upload.process()
-  >>> bar_bin_upload.is_rejected
-  False
-  >>> success = bar_bin_upload.do_accept()
-  >>> bar_bin_queue = bar_bin_upload.queue_root
-  >>> bar_bin_queue.status.name
-  'NEW'
-
-
-The Changesfile version always refers to the source version and the
-binary versions included in the upload can diverge between themselves
-and from the source version.
-
-  >>> bar_bin_upload.changes.version
-  '1:1.0-9'
-
-  >>> deb_file = bar_bin_upload.changes.files[0]
-  >>> deb_file.filename
-  'bar_6.6.6_i386.deb'
-
-  >>> deb_file.version
-  '1:1.0-9'
-
-  >>> deb_file.source_version
-  '1:1.0-9'
-
-  >>> deb_file.control_version
-  '1:6.6.6'
-
-Anyway, the proper value for BinaryPackageRelease.version is the
-version stored in the binary control file:
-
-  >>> bar_bpr = bar_bin_queue.builds[0].build.binarypackages[0]
-  >>> bar_bpr.version
-  u'1:6.6.6'
-
-Cleanup this change and carry on:
-
-XXX cprov 20070607: ZTM installed transaction is required for the next
-section otherwise the committed LFAs won't show up in Librarian
-Server. We already use this object here for a 'deep-cleanup'.
+Clean up zopeless transaction:
 
   >>> from canonical.database.sqlbase import ZopelessTransactionManager
   >>> local_transaction = ZopelessTransactionManager._installed
@@ -960,7 +864,7 @@ record in 'DONE' state:
   'DONE'
 
 This is unfortunate, but we have to manually remove the file dumped
-from librarian into our tree, otherwise it will remain in disk causing
+from librarian into our tree, otherwise it will remain on disk causing
 problems to the next test run.
 
   >>> import os

@@ -46,9 +46,9 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
-    IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo,
-    IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag,
-    ILaunchpadCelebrities, ILaunchpadStatisticSet, ILanguageSet,
+    IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon,
+    IHasLogo, IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet,
+    ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
     ILoginTokenSet, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
     IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey,
     ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
@@ -188,6 +188,7 @@ class Person(SQLBase, HasSpecificationsMixin):
                           default=None, forceDBName=True)
     timezone = StringCol(dbName='timezone', default='UTC')
 
+    entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
 
     def _init(self, *args, **kw):
         """Marks the person as a team when created or fetched from database."""
@@ -464,16 +465,10 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         languages = set()
         known_languages = shortlist(self.languages)
-        if len(known_languages):
+        if len(known_languages) != 0:
             for lang in known_languages:
-                # Ignore English and all its variants since we assume English
-                # is supported
                 if not is_english_variant(lang):
                     languages.add(lang)
-        elif ITeam.providedBy(self):
-            for member in self.activemembers:
-                languages |= member.getSupportedLanguages()
-        languages.add(getUtility(ILanguageSet)['en'])
         return languages
 
     def getQuestionLanguages(self):
@@ -1022,8 +1017,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             # Ok, we're done. You are not an active member and still not being.
             return
 
-        team.setMembershipData(
-            self, TeamMembershipStatus.DEACTIVATED, self, tm.dateexpires)
+        tm.setStatus(TeamMembershipStatus.DEACTIVATED, self)
 
     def join(self, team):
         """See IPerson."""
@@ -1113,10 +1107,11 @@ class Person(SQLBase, HasSpecificationsMixin):
         if tm is not None:
             old_status = tm.status
             tm.reviewer = reviewer
+            # We can't use tm.setExpirationDate() here because the reviewer
+            # here will be the member themselves when they join an OPEN team.
             tm.dateexpires = expires
             tm.reviewercomment = comment
-            if old_status != status:
-                tm.setStatus(status, reviewer)
+            tm.setStatus(status, reviewer)
         else:
             TeamMembershipSet().new(
                 person, self, status, dateexpires=expires, reviewer=reviewer,
@@ -1180,18 +1175,8 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         tm = TeamMembership.selectOneBy(person=person, team=self)
         assert tm is not None
-
-        if expires is not None:
-            now = datetime.now(pytz.timezone('UTC'))
-            assert expires > now, expires
-
-        tm.dateexpires = expires
-        # Only call setStatus() if there was an actual status change.
-        if status != tm.status:
-            tm.setStatus(status, reviewer, reviewercomment=comment)
-        else:
-            tm.reviewer = reviewer
-            tm.comment = comment
+        tm.setExpirationDate(expires, reviewer)
+        tm.setStatus(status, reviewer, reviewercomment=comment)
 
     def getAdministratedTeams(self):
         """See IPerson."""
@@ -2597,4 +2582,3 @@ class IrcIDSet:
 
     def new(self, person, network, nickname):
         return IrcID(person=person, network=network, nickname=nickname)
-

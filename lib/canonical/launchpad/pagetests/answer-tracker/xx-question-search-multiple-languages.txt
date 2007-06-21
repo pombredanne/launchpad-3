@@ -89,10 +89,10 @@ mapped, we assume he speaks the default language of English.
       ...
     LookupError: name 'field.language...
 
-But if the user configures his browser to accept Spanish, then English
-and Spanish language questions will be displayed:
+But if the user configures his browser to accept Spanish and English
+then questions with those language will be displayed:
 
-    >>> anon_browser.addHeader('Accept-Language', 'es')
+    >>> anon_browser.addHeader('Accept-Language', 'es, en')
     >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
     >>> anon_browser.getControl('English (en)').selected
     True
@@ -142,10 +142,10 @@ that language, we do not show the language controls.
       ...
     LookupError: name 'field.language...
 
-When No Privileges Person adds Spanish to his browser, Spanish is added
-along with English to the language controls.
+When No Privileges Person adds Spanish and English to his browser, they
+are added to the language controls.
 
-    >>> user_browser.addHeader('Accept-Language', 'es')
+    >>> user_browser.addHeader('Accept-Language', 'es, en')
     >>> user_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
     >>> sorted(user_browser.getControl(name='field.language').options)
     ['en', 'es']
