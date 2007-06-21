@@ -43,6 +43,18 @@ receive an error:
     ...     print extract_text(tag)
     Please enter a valid email address.
 
+Leaving the email address field blank results in the same error:
+
+    >>> browser.getControl(name='field.email').value = ''
+    >>> browser.getControl(name='field.password').value = 'test'
+    >>> browser.getControl('Continue').click()
+
+    >>> print browser.title
+    Launchpad Login Service
+    >>> for tag in find_tags_by_class(browser.contents, 'error'):
+    ...     print extract_text(tag)
+    Please enter a valid email address.
+
 If the user provides a non-ASCII password, they receive an incorrect
 password error.
 

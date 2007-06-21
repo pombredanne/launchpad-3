@@ -459,11 +459,11 @@ class LoginServiceLoginView(LoginServiceBaseView):
         email = data.get('email')
         action = data.get('action')
         password = data.get('password')
-        person = getUtility(IPersonSet).getByEmail(email)
         if email is None or not valid_email(email):
             self.addError('Please enter a valid email address.')
             return
 
+        person = getUtility(IPersonSet).getByEmail(email)
         if action == 'login':
             self.validateEmailAndPassword(email, password)
         elif action == 'resetpassword':
