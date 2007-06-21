@@ -58,12 +58,6 @@ def make_bzr_ssh_server():
     return BazaarSSHCodeHostingServer(authserver, branches_root, mirror_root)
 
 
-def _make_clean_directory(dirpath, mode=0700):
-    if os.path.isdir(dirpath):
-        shutil.rmtree(dirpath)
-    os.makedirs(dirpath, mode)
-
-
 class ConnectionTrackingParamikoVendor(ssh.ParamikoVendor):
     """Wrapper for ParamikoVendor that tracks connections.
 
