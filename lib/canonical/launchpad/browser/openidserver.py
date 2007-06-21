@@ -11,6 +11,8 @@ import cgi
 from datetime import datetime
 from time import time
 
+from BeautifulSoup import BeautifulSoup
+
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.session.interfaces import ISession, IClientIdManager
 from zope.component import getUtility
@@ -439,6 +441,15 @@ class LoginServiceLoginView(LoginServiceBaseView):
         values = super(LoginServiceLoginView, self).initial_values
         values['action'] = 'login'
         return values
+
+    def setUpWidgets(self):
+        super(LoginServiceLoginView, self).setUpWidgets()
+        # Dissect the action radio button group into three buttons.
+        soup = BeautifulSoup(self.widgets['action']())
+        [login, createaccount, resetpassword] = soup.findAll('label')
+        self.login_radio_button = str(login)
+        self.createaccount_radio_button = str(createaccount)
+        self.resetpassword_radio_button = str(resetpassword)
 
     def validate(self, data):
         email = data.get('email')

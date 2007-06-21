@@ -40,8 +40,16 @@
             <h2>Do you have a Launchpad password?</h2>
 
         <div>
-          <tal:widget replace="structure view/widgets/action" />
-          <tal:widget replace="structure view/widgets/password" />
+          <div>
+            <tal:widget replace="structure view/login_radio_button" /><br>
+            <tal:widget replace="structure view/widgets/password" />
+          <div>
+          <div>
+            <tal:widget replace="structure view/createaccount_radio_button" />
+          </div>
+          <div>
+            <tal:widget replace="structure view/resetpassword_radio_button" />
+          </div>
         </div>
 
           <div>

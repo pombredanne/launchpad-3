@@ -79,11 +79,11 @@ class LoginServiceActionsVocabularyFactory:
         """See IContextSourceBinder."""
         # XXX 20070618 mpt: Order should be createaccount, login, resetpassword
         terms = [
+            SimpleTerm('login', 'login', 'Yes, my password is:'),
             SimpleTerm('createaccount', 'createaccount',
                        'No, I want to create an account now'),
             SimpleTerm('resetpassword', 'resetpassword',
-                       "I've forgotten my password"),
-            SimpleTerm('login', 'login', 'Yes, my password is:')]
+                       "I've forgotten my password")]
         return SimpleVocabulary(terms)
 
 
