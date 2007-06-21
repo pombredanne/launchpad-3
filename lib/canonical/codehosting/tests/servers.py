@@ -218,7 +218,7 @@ class FakeLaunchpadServer(LaunchpadServer):
 
     def __init__(self, user_id):
         authserver = FakeLaunchpad()
-        LaunchpadServer.__init__(self, authserver, user_id, None)
+        LaunchpadServer.__init__(self, authserver, user_id, None, None)
         self._schema = 'lp'
 
     def getTransport(self, path=None):

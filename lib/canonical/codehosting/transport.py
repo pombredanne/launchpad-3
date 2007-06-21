@@ -75,21 +75,25 @@ class LaunchpadServer(Server):
     See LaunchpadTransport for more information.
     """
 
-    def __init__(self, authserver, user_id, transport):
+    def __init__(self, authserver, user_id, hosting_transport,
+                 mirror_transport):
         """
         Construct a LaunchpadServer.
 
         :param authserver: An xmlrpclib.ServerProxy that points to the
             authserver.
         :param user_id: A login ID for the user who is accessing branches.
-        :param transport: A Transport pointing to the root of where the
+        :param hosting_transport: A Transport pointing to the root of where the
             branches are actually stored.
+        :param mirror_transport: A Transport pointing to the root of where
+            branches are mirrored to.
         """
         self.authserver = authserver
         self.user_dict = self.authserver.getUser(user_id)
         self.user_id = self.user_dict['id']
         self.user_name = self.user_dict['name']
-        self.backing_transport = transport
+        self.backing_transport = hosting_transport
+        self.mirror_transport = mirror_transport
         self._is_set_up = False
 
     def dirty(self, virtual_path):
@@ -286,7 +290,7 @@ class LaunchpadTransport(Transport):
         path, permissions = self._translate_virtual_path(relpath)
         if permissions == READ_ONLY:
             transport = get_transport(
-                'readonly+' + self.server.backing_transport.base)
+                'readonly+' + self.server.mirror_transport.base)
         else:
             transport = self.server.backing_transport
         method = getattr(transport, methodname)
