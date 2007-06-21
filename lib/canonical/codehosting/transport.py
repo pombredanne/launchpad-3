@@ -136,7 +136,7 @@ class LaunchpadServer(Server):
         # XML-RPC's way of saying None.
         if product == '+junk':
             if user_id == self.user_id:
-                product_id = ''
+                product = '+junk'
             else:
                 # XXX: JonathanLange 2007-06-04, This should perhaps be
                 # 'PermissionDenied', not 'NoSuchFile'. However bzrlib doesn't
