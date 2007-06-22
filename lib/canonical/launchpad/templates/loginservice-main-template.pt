@@ -11,7 +11,7 @@
         color: #000;
         font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
       }
-      :link {background: none; color: #00c;} 
+      :link {background: none; color: #00c;}
       html, body {height: 100%; margin: 0; padding: 0;} /* pushes footer down */
       #nonfooter {position: relative; min-height: 100%;}
       * html #nonfooter {height: 100%;}
@@ -22,7 +22,7 @@
         height: 2em;
       }
       address, #footer {
-        font-size: 11px;
+        font-size: 14px;
         font-style: normal;
         text-align: center;
       }
@@ -30,10 +30,9 @@
         background: #afdb1f;
         border: solid #9bc11b;
         border-width: 1px 0;
-        color: #fff;
         font-weight: bold;
         margin: 0 0 24px;
-        padding: 6px 10px;
+        padding: 4px 10px;
       }
       #maincontent {margin: 0 auto; padding: 0 2em; max-width: 60em;}
       h2 {font-size: 1em;}
