@@ -277,19 +277,32 @@ class SmartserverTests(SSHTestCase):
     def getDefaultServer(self):
         return make_bzr_ssh_server()
 
+    def pushNewBranch(self, user, product, branch, creator=None,
+                      branch_root=None):
+        """Create a new branch in the database and push our test branch there.
+
+        Used to create branches that the test user is not able to create, and
+        might not even be able to view.
+        """
+        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
+        if creator is None:
+            creator_id = authserver.getUser(user)['id']
+        else:
+            creator_id = authserver.getUser(creator)['id']
+        if branch_root is None:
+            branch_root = self.server._mirror_root
+        branch_id = authserver.createBranch(creator_id, user, product, branch)
+        branch_url = 'file://' + os.path.abspath(
+            os.path.join(branch_root, branch_id_to_path(branch_id)))
+        self.runInChdir(
+            self.run_bzr_captured, ['push', '--create-prefix', branch_url],
+            retcode=None)
+        return branch_url
+
     @deferToThread
     def test_can_read_readonly_branch(self):
         # We can get information from a read-only branch.
-        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
-        sabdfl_id = authserver.getUser('sabdfl')['id']
-        ro_branch_id = authserver.createBranch(sabdfl_id, '', 'ro-branch')
-        ro_branch_url = 'file://' + os.path.abspath(
-            os.path.join(self.server._mirror_root,
-                         branch_id_to_path(ro_branch_id)))
-        self.runInChdir(
-            self.run_bzr_captured, ['push', '--create-prefix', ro_branch_url],
-            retcode=None)
-
+        ro_branch_url = self.pushNewBranch('sabdfl', '+junk', 'ro-branch')
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
         remote_revision = self.getLastRevision(
             self.getTransportURL('~sabdfl/+junk/ro-branch'))
@@ -298,16 +311,7 @@ class SmartserverTests(SSHTestCase):
     @deferToThread
     def test_cant_write_to_readonly_branch(self):
         # We can't write to a read-only branch.
-        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
-        sabdfl_id = authserver.getUser('sabdfl')['id']
-        ro_branch_id = authserver.createBranch(sabdfl_id, '', 'ro-branch')
-        ro_branch_url = 'file://' + os.path.abspath(
-            os.path.join(self.server._mirror_root,
-                         branch_id_to_path(ro_branch_id)))
-        self.runInChdir(
-            self.run_bzr_captured, ['push', '--create-prefix', ro_branch_url],
-            retcode=None)
-
+        ro_branch_url = self.pushNewBranch('sabdfl', '+junk', 'ro-branch')
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
 
         # Create a new revision on the local branch.
