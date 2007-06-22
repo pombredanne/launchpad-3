@@ -3,8 +3,7 @@
 As part of the bug workflow spec various statuses are being changed
 but we need old bookmarks to keep working with the status names.
 
-    >>> url = (
-    ...     "http://bugs.launchpad.dev/ubuntu/+bugs?"
+    >>> query = (
     ...     "field.searchtext="
     ...     "&orderby=-importance"
     ...     "&search=Search"
@@ -15,25 +14,28 @@ but we need old bookmarks to keep working with the status names.
     ...     "&field.omit_dupes=on"
     ...     "&field.has_patch.used="
     ... )
+    >>> url = "http://bugs.launchpad.dev/ubuntu/+bugs?" + query
     >>> anon_browser.open(url)
 
 The user is redirected to a new url to make the change explicit, and
 to allow user agents (and users) to update bookmarks, etc.
 
+    >>> def print_query_changes(a, b):
+    ...     from cgi import parse_qsl
+    ...     ap = parse_qsl(a, keep_blank_values=True, strict_parsing=False)
+    ...     bp = parse_qsl(b, keep_blank_values=True, strict_parsing=False)
+    ...     for ae, be in zip(ap, bp):
+    ...         if ae != be:
+    ...             print '%s --> %s' % ('='.join(ae), '='.join(be))
+
     >>> from canonical.launchpad.webapp.uri import URI
     >>> uri = URI(anon_browser.url)
+
     >>> print uri.path
     /ubuntu/+bugs
-    >>> print uri.query.split('&')
-    ['field.searchtext=',
-     'orderby=-importance',
-     'search=Search',
-     'field.status%3Alist=New',
-     'field.status%3Alist=In+Progress',
-     'assignee_option=any',
-     'field.status_upstream-empty-marker=1',
-     'field.omit_dupes=on',
-     'field.has_patch.used=']
+
+    >>> print_query_changes(query, uri.query)
+    field.status:list=Unconfirmed --> field.status:list=New
 
     >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
@@ -44,8 +46,7 @@ to allow user agents (and users) to update bookmarks, etc.
 Searching amongst all bugs also redirects to an updated location with
 the new status names in place of the old.
 
-    >>> url = (
-    ...     "http://bugs.launchpad.dev/bugs/+bugs?"
+    >>> query = (
     ...     "orderby=-importance&"
     ...     "search=Search&"
     ...     "field.status%3Alist=Unconfirmed&"
@@ -54,16 +55,77 @@ the new status names in place of the old.
     ...     "field.status_upstream-empty-marker=1&"
     ...     "field.omit_dupes=on"
     ...     )
+    >>> url = "http://bugs.launchpad.dev/bugs/+bugs?" + query
     >>> anon_browser.open(url)
 
     >>> uri = URI(anon_browser.url)
     >>> print uri.path
     /bugs/+bugs
-    >>> print uri.query.split('&')
-    ['orderby=-importance',
-     'search=Search',
-     'field.status%3Alist=New',
-     'field.status%3Alist=Incomplete',
-     'assignee_option=any',
-     'field.status_upstream-empty-marker=1',
-     'field.omit_dupes=on']
+
+    >>> print_query_changes(query, uri.query)
+    field.status:list=Unconfirmed --> field.status:list=New
+    field.status:list=Needs Info  --> field.status:list=Incomplete
+
+== Assigned, Reported and Subscribed Bugs ==
+
+Bugs searched for in the context of a person or team are redirected
+too.
+
+    >>> query = (
+    ...     "field.searchtext="
+    ...     "&orderby=-importance"
+    ...     "&search=Search"
+    ...     "&field.status%3Alist=Unconfirmed"
+    ...     "&field.status%3Alist=In+Progress"
+    ...     "&field.status%3Alist=Rejected"
+    ...     "&assignee_option=any"
+    ...     "&field.status_upstream-empty-marker=1"
+    ...     "&field.omit_dupes=on"
+    ...     "&field.has_patch.used="
+    ... )
+
+Assigned bugs:
+
+    >>> url = "http://bugs.launchpad.dev/~sabdfl/+assignedbugs?" + query
+    >>> anon_browser.open(url)
+
+    >>> uri = URI(anon_browser.url)
+    >>> print uri.path
+    /~sabdfl/+assignedbugs
+
+    >>> print_query_changes(query, uri.query)
+    field.status:list=Unconfirmed --> field.status:list=New
+    field.status:list=Rejected --> field.status:list=Invalid
+
+    >>> print_bugtasks(anon_browser.contents)
+     1  Firefox does not support SVG  firefox (upstream)  Low  New
+
+Reported bugs:
+
+    >>> url = "http://bugs.launchpad.dev/~sabdfl/+reportedbugs?" + query
+    >>> anon_browser.open(url)
+
+    >>> uri = URI(anon_browser.url)
+    >>> print uri.path
+    /~sabdfl/+reportedbugs
+
+    >>> print_query_changes(query, uri.query)
+    field.status:list=Unconfirmed --> field.status:list=New
+    field.status:list=Rejected --> field.status:list=Invalid
+
+    >>> print_bugtasks(anon_browser.contents)
+
+Subscribed bugs:
+
+    >>> url = "http://bugs.launchpad.dev/~sabdfl/+subscribedbugs?" + query
+    >>> anon_browser.open(url)
+
+    >>> uri = URI(anon_browser.url)
+    >>> print uri.path
+    /~sabdfl/+subscribedbugs
+
+    >>> print_query_changes(query, uri.query)
+    field.status:list=Unconfirmed --> field.status:list=New
+    field.status:list=Rejected --> field.status:list=Invalid
+
+    >>> print_bugtasks(anon_browser.contents)
