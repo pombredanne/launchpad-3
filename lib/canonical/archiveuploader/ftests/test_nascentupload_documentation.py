@@ -74,12 +74,25 @@ def tearDown(test):
     logout()
 
 
+special = {
+    'epoch-handling': LayeredDocFileSuite(
+       'nascentupload-epoch-handling.txt', package=__name__,
+       setUp=setUp, tearDown=tearDown, layer=LaunchpadZopelessLayer,
+       optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS),
+
+    'closing-bugs': LayeredDocFileSuite(
+       'nascentupload-closing-bugs.txt', package=__name__,
+       setUp=setUp, tearDown=tearDown, layer=LaunchpadZopelessLayer,
+       optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS),
+    }
+
 def test_suite():
-    suite = LayeredDocFileSuite(
-        'nascentupload-epoch-handling.txt', package=__name__,
-        setUp=setUp, tearDown=tearDown,
-        layer=LaunchpadZopelessLayer,
-        optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS)
+    suite = unittest.TestSuite()
+    keys = special.keys()
+    keys.sort()
+    for key in keys:
+        special_suite = special[key]
+        suite.addTest(special_suite)
     return suite
 
 
