@@ -84,6 +84,11 @@ special = {
        'nascentupload-closing-bugs.txt', package=__name__,
        setUp=setUp, tearDown=tearDown, layer=LaunchpadZopelessLayer,
        optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS),
+
+    'publishing-accepted-sources': LayeredDocFileSuite(
+       'nascentupload-publishing-accepted-sources.txt', package=__name__,
+       setUp=setUp, tearDown=tearDown, layer=LaunchpadZopelessLayer,
+       optionflags=doctest.NORMALIZE_WHITESPACE | doctest.ELLIPSIS),
     }
 
 def test_suite():
