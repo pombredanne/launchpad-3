@@ -2976,13 +2976,13 @@ class PersonSearchQuestionsView(SearchQuestionsView):
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('Questions involving $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('No questions  involving $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
@@ -2994,18 +2994,18 @@ class SearchAnsweredQuestionsView(SearchQuestionsView):
     display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(participation=QuestionParticipation.ANSWERER)
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('Questions answered by $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('No questions answered by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
@@ -3017,18 +3017,18 @@ class SearchAssignedQuestionsView(SearchQuestionsView):
     display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(participation=QuestionParticipation.ASSIGNEE)
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('Questions assigned to $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('No questions assigned to $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
@@ -3040,18 +3040,18 @@ class SearchCommentedQuestionsView(SearchQuestionsView):
     display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(participation=QuestionParticipation.COMMENTER)
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('Questions commented on by $name ',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('No questions commented on by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
@@ -3063,18 +3063,18 @@ class SearchCreatedQuestionsView(SearchQuestionsView):
     display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(participation=QuestionParticipation.OWNER)
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('Questions asked by $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('No questions asked by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
@@ -3086,18 +3086,18 @@ class SearchNeedAttentionQuestionsView(SearchQuestionsView):
     display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(needs_attention=True)
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _("Questions needing $name's attention",
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _("No questions need $name's attention.",
                  mapping=dict(name=self.context.displayname))
 
@@ -3108,18 +3108,18 @@ class SearchSubscribedQuestionsView(SearchQuestionsView):
     display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(participation=QuestionParticipation.SUBSCRIBER)
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('Questions $name is subscribed to',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('No questions subscribed to by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
