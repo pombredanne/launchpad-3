@@ -137,9 +137,12 @@ Add manual word breaks to long words in a string:
 
 == The fmt: namespace to get strings (hiding and obfuscation) ==
 
-Signatures and full-quoted parts of a message can be wrapped in markup
-to hide them:
+PGP blocks, Signatures and full-quoted parts of a message can be
+wrapped in markup to hide them:
 
+    >>> pgp_open = ('-----BEGIN PGP SIGNED MESSAGE-----\n'
+    ...              'Hash: SHA1\n'
+    ...              '\n')
     >>> text = ('Top quoting is simply bad netiquette.\n'
     ...         'The words of the leading text should be displayed\n'
     ...         'normally--no markup to hide it from view.\n'
@@ -150,6 +153,14 @@ to hide them:
     ...                '>    from the English Language.\n'
     ...                '> 2. Remove the penny from US currency.\n'
     ...                '\n')
+    >>> command = ('dpkg -l libdvdread3\n'
+    ...            'Desired=Unknown/Install/Remove/Purge/Hold\n'
+    ...            '| Status=Not/Installed/Config-files/Unpacked/Failed-co\n'
+    ...            '|/ Err?=(none)/Hold/Reinst-required/X=both-problems\n'
+    ...            '||/ Name Version Description\n'
+    ...            '+++-==============-==============-====================\n'
+    ...            'ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs\n'
+    ...            '\n')
     >>> quoted_text_all = ('> continuing from a previous thought.\n'
     ...                    '> 3. Get new handwriting.\n'
     ...                    '> 4. Add Year Zero to the calendar.\n'
@@ -157,7 +168,16 @@ to hide them:
     >>> signature = ('-- \n'
     ...              '__C U R T I S  C.  H O V E Y_______\n'
     ...              'sinzui.is@somewhere.org\n'
-    ...              'Guilty of stealing everything I am.\n')
+    ...              'Guilty of stealing everything I am.\n'
+    ...              '\n')
+    >>> pgp_close = ('-----BEGIN PGP SIGNATURE-----\n'
+    ...              'Version: GnuPG v1.4.1 (GNU/Linux)\n'
+    ...              'Comment: Using GnuPG with Thunderbird\n'
+    ...              '\n'
+    ...              'iD8DBQFED60Y0F+nu1YWqI0RAqrNAJ9hTww5vqDbxp4xJS8ek58W\n'
+    ...              'T2PIWy0CUJsX8RXSt/M51WE=\n'
+    ...              '=J2S5\n'
+    ...              '-----END PGP SIGNATURE-----\n')
 
 The email-to-html formatter marks up text as html using the
 text-to-html formatter, then adds additional markup to identify
@@ -170,18 +190,54 @@ When given simple paragraphs it behaves just as the text-to-html
 formatter.
 
     >>> print test_tales('foo/fmt:email-to-html',
-    ...                  foo=text)
+    ...                  foo='\n'.join([text, command]))
     <p>Top quoting is simply bad netiquette.<br />
     The words of the leading text should be displayed<br />
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
+    <p>dpkg -l libdvdread3<br />
+    Desired=<wbr></wbr>Unknown/<wbr></wbr>Install/<wbr></wbr>...
+    | Status=<wbr></wbr>Not/Installed/<wbr></wbr>Config-<wbr></wbr>...
+    |/ Err?=(none)<wbr></wbr>/Hold/Reinst-<wbr></wbr>required/...
+    ||/ Name Version Description<br />
+    +++-===<wbr></wbr>=======<wbr></wbr>====-==<wbr></wbr>=======...
+    ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs</p>
 
     >>> print test_tales('foo/fmt:text-to-html',
-    ...                  foo=text)
+    ...                  foo='\n'.join([text, command]))
     <p>Top quoting is simply bad netiquette.<br />
     The words of the leading text should be displayed<br />
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
+    <p>dpkg -l libdvdread3<br />
+    Desired=<wbr></wbr>Unknown/<wbr></wbr>Install/<wbr></wbr>...
+    | Status=<wbr></wbr>Not/Installed/<wbr></wbr>Config-<wbr></wbr>...
+    |/ Err?=(none)<wbr></wbr>/Hold/Reinst-<wbr></wbr>required/...
+    ||/ Name Version Description<br />
+    +++-===<wbr></wbr>=======<wbr></wbr>====-==<wbr></wbr>=======...
+    ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs</p>
+
+PGP signed messages have and opening and closing blocks that are
+wrapped in a foldable span.
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([pgp_open, text, pgp_close]))
+    <p><span class="foldable">-----BEGIN PGP SIGNED MESSAGE-----<br />
+    Hash: SHA1
+    </span></p>
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p><span class="foldable">-----BEGIN PGP SIGNATURE-----<br />
+    Version: GnuPG v1.4.1 (GNU/Linux)<br />
+    Comment: Using GnuPG with Thunderbird<br />
+    <br />
+    iD8DBQFED60Y0F+nu1YWqI0RAqrNAJ9hTww5vqDbxp4xJS8ek58W<br />
+    T2PIWy0CUJsX8RXSt/M51WE=<br />
+    =J2S5<br />
+    -----END PGP SIGNATURE-----
+    </span></p>
 
 In this example, we see the main paragraph and the signature marked
 up as HTML. All the text inside the signature is wrapped with the
