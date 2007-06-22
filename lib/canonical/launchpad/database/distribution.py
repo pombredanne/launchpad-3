@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+"""Database classes for implementing distribution items."""
 
 __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet']
@@ -109,8 +110,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     mirror_admin = ForeignKey(
         dbName='mirror_admin', foreignKey='Person', notNull=True)
     translationgroup = ForeignKey(
-        dbName='translationgroup', foreignKey='TranslationGroup', notNull=False,
-        default=None)
+        dbName='translationgroup', foreignKey='TranslationGroup',
+        notNull=False, default=None)
     translationpermission = EnumCol(
         dbName='translationpermission', notNull=True,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
@@ -119,7 +120,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     upload_sender = StringCol(
         dbName='upload_sender', notNull=False, default=None)
     upload_admin = ForeignKey(
-        dbName='upload_admin', foreignKey='Person', default=None, notNull=False)
+        dbName='upload_admin', foreignKey='Person', default=None,
+        notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
@@ -454,7 +456,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status', 'Specification.name']
+            order = (
+                ['-priority', 'Specification.status', 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 

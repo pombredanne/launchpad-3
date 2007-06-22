@@ -29,7 +29,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.helpers import shortlist
 
 from canonical.launchpad.database.answercontact import AnswerContact
-from canonical.launchpad.database.branch import Branch, BranchSet
+from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -117,8 +117,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     downloadurl = StringCol(dbName='downloadurl', notNull=False, default=None)
     lastdoap = StringCol(dbName='lastdoap', notNull=False, default=None)
     translationgroup = ForeignKey(
-        dbName='translationgroup', foreignKey='TranslationGroup', notNull=False,
-        default=None)
+        dbName='translationgroup', foreignKey='TranslationGroup',
+        notNull=False, default=None)
     translationpermission = EnumCol(
         dbName='translationpermission', notNull=True,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
@@ -431,19 +431,19 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     @property
     def mentoring_offers(self):
         """See `IProduct`"""
-        via_specs = MentoringOffer.select('''
+        via_specs = MentoringOffer.select("""
             Specification.product = %s AND
             Specification.id = MentoringOffer.specification
-            ''' % sqlvalues(self.id) + """ AND NOT
+            """ % sqlvalues(self.id) + """ AND NOT
             (""" + Specification.completeness_clause +")",
             clauseTables=['Specification'],
             distinct=True)
-        via_bugs = MentoringOffer.select('''
+        via_bugs = MentoringOffer.select("""
             BugTask.product = %s AND
             BugTask.bug = MentoringOffer.bug AND
             BugTask.bug = Bug.id AND
             Bug.private IS FALSE
-            ''' % sqlvalues(self.id) + """ AND NOT (
+            """ % sqlvalues(self.id) + """ AND NOT (
             """ + BugTask.completeness_clause + ")",
             clauseTables=['BugTask', 'Bug'],
             distinct=True)
@@ -515,7 +515,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status', 'Specification.name']
+            order = (
+                ['-priority', 'Specification.status', 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -610,9 +611,9 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         # use BranchSet
         from canonical.launchpad.database import Branch
         return Branch(
-            product=self, name=name, title=title, url=url, home_page=home_page,
-            lifecycle_status=lifecycle_status, summary=summary,
-            whiteboard=whiteboard)
+            product=self, name=name, title=title, url=url,
+            home_page=home_page, lifecycle_status=lifecycle_status,
+            summary=summary, whiteboard=whiteboard)
 
     def getFirstEntryToImport(self):
         """See `IHasTranslationImports`."""
@@ -652,7 +653,8 @@ class ProductSet:
 
     @property
     def all_active(self):
-        results = Product.selectBy(active=True, orderBy="-Product.datecreated")
+        results = Product.selectBy(
+            active=True, orderBy="-Product.datecreated")
         # The main product listings include owner, so we prejoin it in
         return results.prejoin(["owner"])
 
@@ -770,7 +772,7 @@ class ProductSet:
             distinct=True)
 
         results = list(randomresults[:maximumproducts])
-        results.sort(lambda a,b: cmp(a.title, b.title))
+        results.sort(lambda a, b: cmp(a.title, b.title))
         return results
 
     @cachedproperty

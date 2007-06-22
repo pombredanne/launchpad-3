@@ -574,7 +574,7 @@ class QuestionSet:
         projects = []
         product_set = getUtility(IProductSet)
         distribution_set = getUtility(IDistributionSet)
-        for product_id, distribution_id, count in cur.fetchall():
+        for product_id, distribution_id, ignored in cur.fetchall():
             if product_id:
                 projects.append(product_set.get(product_id))
             elif distribution_id:

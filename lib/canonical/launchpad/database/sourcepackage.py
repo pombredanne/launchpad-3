@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+"""Database classes that implement SourcePacakge items."""
 
 __metaclass__ = type
 __all__ = [
@@ -44,7 +45,6 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
 from canonical.launchpad.database.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
 from canonical.launchpad.database.build import Build
-from canonical.launchpad.mailnotification import NotificationRecipientSet
 
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):

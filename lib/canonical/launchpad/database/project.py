@@ -45,7 +45,8 @@ from canonical.launchpad.database.question import QuestionTargetSearch
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
-              HasSprintsMixin, KarmaContextMixin, BranchVisibilityPolicyMixin):
+              HasSprintsMixin, KarmaContextMixin,
+              BranchVisibilityPolicyMixin):
     """A Project"""
 
     implements(IProject, ICalendarOwner, ISearchableByQuestionOwner,
@@ -117,27 +118,27 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         for curr_bounty in self.bounties:
             if bounty.id == curr_bounty.id:
                 return None
-        linker = ProjectBounty(project=self, bounty=bounty)
+        ProjectBounty(project=self, bounty=bounty)
         return None
 
     @property
     def mentoring_offers(self):
         """See `IProject`"""
-        via_specs = MentoringOffer.select('''
+        via_specs = MentoringOffer.select("""
             Product.project = %s AND
             Specification.product = Product.id AND
             Specification.id = MentoringOffer.specification
-            ''' % sqlvalues(self.id) + """ AND NOT
+            """ % sqlvalues(self.id) + """ AND NOT
             (""" + Specification.completeness_clause +")",
             clauseTables=['Product', 'Specification'],
             distinct=True)
-        via_bugs = MentoringOffer.select('''
+        via_bugs = MentoringOffer.select("""
             Product.project = %s AND
             BugTask.product = Product.id AND
             BugTask.bug = MentoringOffer.bug AND
             BugTask.bug = Bug.id AND
             Bug.private IS FALSE
-            ''' % sqlvalues(self.id) + """ AND NOT (
+            """ % sqlvalues(self.id) + """ AND NOT (
             """ + BugTask.completeness_clause + ")",
             clauseTables=['Product', 'BugTask', 'Bug'],
             distinct=True)
@@ -189,7 +190,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status', 'Specification.name']
+            order = (
+                ['-priority', 'Specification.status', 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
