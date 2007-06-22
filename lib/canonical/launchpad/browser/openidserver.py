@@ -10,6 +10,7 @@ __all__ = [
 import cgi
 from datetime import datetime
 from time import time
+import urllib
 
 from BeautifulSoup import BeautifulSoup
 
@@ -25,6 +26,7 @@ from openid.server.server import CheckIDRequest, ENCODE_URL, Server
 from openid.server.trustroot import TrustRoot
 from openid import oidutil
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.lp.dbschema import LoginTokenType
@@ -78,6 +80,15 @@ class OpenIdMixin:
         return self.openid_request.identity in (
             IDENTIFIER_SELECT_URI, self.user_identity_url)
 
+    @cachedproperty('_openid_parameters')
+    def openid_parameters(self):
+        """A dictionary of OpenID query parameters from request."""
+        query = {}
+        for key, value in self.request.form.items():
+            if key.startswith('openid.'):
+                query[key.encode('US-ASCII')] = value.encode('US-ASCII')
+        return query
+
     def getSession(self):
         return ISession(self.request)[SESSION_PKG_KEY]
 
@@ -110,15 +121,25 @@ class OpenIdMixin:
         """Get the OpenIDRequest from our session using the given key."""
         session = self.getSession()
         try:
-            timestamp, self.openid_request = session[key]
+            timestamp, serialised_request = session[key]
         except KeyError:
             raise UnexpectedFormData("Invalid or expired nonce")
 
+        # Decode the request, saving it in the cache variable for
+        # self.openid_parameters, and create the request object.
+        self._openid_parameters = dict(cgi.parse_qsl(serialised_request))
+        self.openid_request = self.openid_server.decodeRequest(
+            self._openid_parameters)
         assert zisinstance(self.openid_request, CheckIDRequest), (
             'Invalid OpenIDRequest in session')
 
     def saveRequestInSession(self, key):
         """Save the OpenIDRequest in our session using the given key."""
+        query = self.openid_parameters
+        assert 'openid.mode' in query, 'No openid request to serialise'
+        assert query['openid.mode'] == 'checkid_setup', (
+            'Can only serialise checkid_setup OpenID requests')
+
         session = self.getSession()
         # We also store the time with the openid_request so we can clear
         # out old requests after some time, say 1 hour.
@@ -126,7 +147,8 @@ class OpenIdMixin:
         self._sweep(now, session)
         # Store nonce with a distinct prefix to ensure malicious requests
         # can't trick our code into retrieving something that isn't a nonce.
-        session[key] = (now, self.openid_request)
+        serialised_request = urllib.urlencode(query)
+        session[key] = (now, serialised_request)
 
     def trashRequestInSession(self, key):
         """Remove the OpenIdRequest from the session using the given key."""
@@ -216,12 +238,9 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
         Returns the page contents after setting all relevant headers in
         self.request.response
         """
-        args = {}
-        for key, value in self.request.form.items():
-            if key.startswith('openid.'):
-                args[key.encode('US-ASCII')] = value.encode('US-ASCII')
         # NB: Will be None if there are no parameters in the request.
-        self.openid_request = self.openid_server.decodeRequest(args)
+        self.openid_request = self.openid_server.decodeRequest(
+            self.openid_parameters)
 
         # Not an OpenID request, so display a message explaining what this
         # is to nosy users.
@@ -371,7 +390,14 @@ class LoginServiceBaseView(OpenIdMixin, LaunchpadFormView):
 
     def trashRequest(self):
         """Remove the OpenID request from the session."""
-        self.trashRequestInSession('nonce' + self.nonce)
+        # XXX: 2007-06-22 jamesh
+        # Removing the OpenID request from the session leads to an
+        # UnexpectedFormData exception if the user hits back and
+        # submits the form again.  Not deleting the request allows
+        # this behaviour (although a well designed RP will then
+        # complain about an unexpected OpenID response ...).
+
+        #self.trashRequestInSession('nonce' + self.nonce)
 
     @property
     def rp_info(self):
