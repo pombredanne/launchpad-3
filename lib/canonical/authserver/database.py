@@ -466,7 +466,8 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
                 product = getUtility(IProductSet).getByName(productName)
 
             person_set = getUtility(IPersonSet)
-            creator = self._getPerson(cursor(), loginID)
+            creator_id = self._getPerson(cursor(), loginID)[0]
+            creator = person_set.get(creator_id)
             owner = person_set.getByName(personName)
 
             branch_set = getUtility(IBranchSet)
