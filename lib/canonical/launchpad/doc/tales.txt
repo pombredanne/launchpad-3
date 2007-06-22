@@ -337,9 +337,14 @@ is replaced with the message '<email address hidden>'.
     '<email address hidden>'
     >>> test_tales('foo/fmt:obfuscate-email', foo='name@organization.org.cc')
     '<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email', foo='name+sub@domain.org')
+    '<email address hidden>'
     >>> test_tales('foo/fmt:obfuscate-email',
     ...     foo='long_name@host.long-network.org.cc')
     '<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email',
+    ...     foo='"long/name="@organization.org')
+    '"<email address hidden>'
     >>> test_tales('foo/fmt:obfuscate-email',
     ...     foo='long-name@building.museum')
     '<email address hidden>'

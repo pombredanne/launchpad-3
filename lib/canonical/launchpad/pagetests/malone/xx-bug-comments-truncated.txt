@@ -140,7 +140,7 @@ class.
     Witty signatures rock!
     </span></p>
 
-Quoted passages are identified by lines that start with '>', '|', ':'.
+Quoted passages are identified by lines that start with '>' or ':'.
 The lines represents many paragraphs of quoted text, but we mark the
 block of content as a single paragraph. The quoted lines are often
 preceded by a citation line. Only the quoted lines are wrapped with a
