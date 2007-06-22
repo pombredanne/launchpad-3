@@ -1374,14 +1374,14 @@ class FormattersAPI:
                     % cgi.escape(self._stringtoformat)
                     )
 
-    # Match lines that start with the ':', '|' and '>' symbols
+    # Match lines that start with the ':', '|', and '>' symbols
     # commonly used for quoting passages from another email.
     # the dpkg version is used for exceptional cases where it
     # is better to not assume '|' is a start of a quoted passage.
     _re_quoted = re.compile('^([:|]|&gt;|-----BEGIN PGP)')
     _re_dpkg_quoted = re.compile('^([:]|&gt;|-----BEGIN PGP)')
 
-    # Match blocks that start as signatures or quoted passages.
+    # Match blocks that start as signatures quoted passages, or PGP.
     _re_block_include = re.compile('^<p>(--<br />|&gt;|-----BEGIN PGP)')
 
     def email_to_html(self):
@@ -1401,7 +1401,7 @@ class FormattersAPI:
         for line in self.text_to_html().split('\n'):
             if not in_fold and 'dpkg' in line:
                 # dpkg is important in bug reports. It is better to show
-                # lines starting with '|' in case it is dpkg oout
+                # lines starting with '|' in case it is dpkg out
                 re_quoted = self._re_dpkg_quoted
 
             if not in_fold and self._re_block_include.match(line) is not None:
