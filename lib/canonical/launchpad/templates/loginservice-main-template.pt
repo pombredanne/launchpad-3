@@ -74,9 +74,30 @@
   <body>
     <div id="nonfooter">
       <address>Launchpad Login Service</address>
-      <div id="maincontent">
-        <metal:block define-slot="main" />
-      </div>
+      <div id="maincontent"><metal:block define-slot="main">
+        <div id="rp"><metal:block define-slot="rp" tal:define="rp_info view/rp_info">
+
+          <p class="warning message" tal:condition="not:view/isSaneTrustRoot">
+            <strong>Warning:</strong>
+            <em tal:content="view/openid_request/trust_root" /> does not look
+            like a trustworthy URL.
+          </p>
+          <div tal:condition="rp_info/logo">
+            <img tal:attributes="src rp_info/logo" alt="" />
+          </div>
+          <h2 tal:content="rp_info/title">Ubuntu Shop</h2>
+
+          <p>To continue with <tal:title replace="rp_info/title" />, you
+          need to sign in to Launchpad.</p>
+
+          <tal:signin_reason condition="rp_info/reason">
+            <h2>Why do we ask you to sign in?</h2>
+            <p tal:content="rp_info/reason">Reason</p>
+          </tal:signin_reason>
+        </metal:block></div>
+        <div id="auth"><metal:block define-slot="auth">
+        </metal:block></div>
+      </metal:block></div>
       <div style="clear: both;">&nbsp;</div>
     </div>
     <div id="footer">Copyright &copy; 2007 Canonical Ltd.</div>

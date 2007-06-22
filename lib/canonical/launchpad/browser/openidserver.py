@@ -342,16 +342,17 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
 KNOWN_TRUST_ROOTS = {
     'http://localhost.localdomain:8001/':
         dict(title="OpenID Consumer Example",
-             logo=None),
+             logo=None,
+             reason="This is a localhost server.  Make your own judgement."),
     'http://pdl-dev.co.uk':
         dict(title="PDL Demo OSCommerce shop",
-             logo="/+icing/canonical-logo.png"),
+             logo="/+icing/canonical-logo.png", reason=None),
     'http://www.mmania.biz':
         dict(title="The Ubuntu Store from Canonical",
-             logo="/+icing/canonical-logo.png"),
-    'http://www.mmania.biz/ubuntu/':
-        dict(title="The Ubuntu Store from Canonical",
-             logo="/+icing/canonical-logo.png"),
+             logo="/+icing/canonical-logo.png",
+             reason=("For the Ubuntu Store, you need a Launchpad account "
+                     "so we can remember your order details and keep in "
+                     "in touch with you about your orders.")),
     #'https://shop.ubuntu.com/':
     #    dict(title="Ubuntu Shop"),
     #'https://shipit.ubuntu.com/':
@@ -413,7 +414,7 @@ class LoginServiceBaseView(OpenIdMixin, LaunchpadFormView):
         rp_info = KNOWN_TRUST_ROOTS.get(self.openid_request.trust_root)
         if rp_info is None:
             return dict(title=self.openid_request.trust_root,
-                        logo=None)
+                        logo=None, reason=None)
         return rp_info
 
     def isSaneTrustRoot(self):

@@ -1,25 +1,7 @@
 <html metal:use-macro="context/@@main_template/master" i18n:domain="launchpad">
   <body>
-    <div metal:fill-slot="main" tal:define="rp_info view/rp_info">
-      <div id="rp">
-
-            <p class="warning message" tal:condition="not:view/isSaneTrustRoot">
-              <strong>Warning:</strong>
-              <em tal:content="view/openid_request/trust_root" /> does not look
-              like a trustworthy URL.
-            </p>
-            <div tal:condition="rp_info/logo">
-              <img tal:attributes="src rp_info/logo" alt="" />
-            </div>
-            <h2 tal:content="rp_info/title">Ubuntu Shop</h2>
-
-            <p>To continue with <tal:title replace="rp_info/title" />, you
-            need to sign in.</p>
-
-      </div>
-      <div id="auth">
-
-        <h2>Sign in as <span tal:replace="view/user/displayname" />?</h2>
+    <metal:block fill-slot="auth" tal:define="rp_info view/rp_info">
+      <h2>Sign in as <span tal:replace="view/user/displayname" />?</h2>
 
       <form action="/+decide" method="post" accept-charset="UTF-8">
         <tal:widget replace="structure view/widgets/nonce/hidden" />
@@ -51,8 +33,6 @@
         </div>
 
       </form>
-
-      </div>
-    </div>
+    </metal:block>
   </body>
 </html>
