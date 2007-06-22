@@ -52,7 +52,6 @@ import shutil
 
 from zope.component import getUtility
 
-from canonical.encoding import ascii_smash
 from canonical.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError)
 from canonical.archiveuploader.uploadpolicy import (

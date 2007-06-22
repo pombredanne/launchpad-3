@@ -25,7 +25,7 @@ Rejected:
 If you don't understand why your files were rejected, or if the
 override file requires editing, reply to this email.
 
---
+-- 
 You are receiving this email because you are the uploader, maintainer or
 signer of the above package.
 """
@@ -47,7 +47,7 @@ packages are usually added to the overrides about once a week.
 You may have gotten the distroseries wrong.  If so, you may get warnings
 above if files already exist in other distroseries.
 
---
+-- 
 You are receiving this email because you are the uploader, maintainer or
 signer of the above package.
 """
@@ -69,7 +69,7 @@ Announcing to %(ANNOUNCE)s
 
 Thank you for your contribution to %(DISTRO)s.
 
---
+-- 
 You are receiving this email because you are the uploader, maintainer or
 signer of the above package.
 """

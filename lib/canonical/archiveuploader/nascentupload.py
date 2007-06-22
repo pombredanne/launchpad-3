@@ -28,7 +28,7 @@ from canonical.archiveuploader.nascentuploadfile import (
     BaseBinaryUploadFile)
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
-    NotFoundError, IDistributionSet)
+    NotFoundError, IDistributionSet, QueueInconsistentStateError)
 from canonical.launchpad.scripts.processaccepted import closeBugsForQueueItem
 from canonical.lp.dbschema import PackagePublishingPocket
 
