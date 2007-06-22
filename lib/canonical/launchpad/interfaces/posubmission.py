@@ -46,7 +46,7 @@ class IPOSubmission(Interface):
         It should not be referenced by any other object.
         """
 
-    def makeHtmlId(description, for_pomsgset=None):
+    def makeHtmlId(description, for_potmsgset=None):
         """Unique identifier for self, suitable for use in HTML element ids.
 
         Constructs an identifier for use in HTML.  This identifier matches the
@@ -56,10 +56,10 @@ class IPOSubmission(Interface):
         "suggestion" or "translation."  Must be suitable for use in an HTML
         element id.
 
-        :for_pomsgset: the `POMsgSet` that this is a suggestion or translation
-        for.  In the case of a suggestion, that will be a different one than
-        this submission is attached to.  For a translation, on the other hand,
-        it will be the same `POMsgSet` this `POSubmission` belongs to.  If no
+        :for_potmsgset: the `POTMsgSet` that this is a suggestion or
+        translation for.  In the case of a suggestion, that will be a
+        different one than this submission's `POMsgSet` is attached to.  For a
+        translation, on the other hand, it *will* be that `POTMsgSet`.  If no
         value is given, the latter is assumed.
         """
 

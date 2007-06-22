@@ -128,3 +128,16 @@ class IPOTMsgSet(Interface):
         Messages that are likely to contain email addresses
         are shown only to logged-in users, and not to anonymous users.
         """)
+
+    def makeHtmlId(suffix=None):
+        """Unique name for this `POTMsgSet` for use in HTML element ids.
+
+        The name is an underscore-separated sequence of:
+         * "msgset"
+         * unpadded, numerical `id`
+         * optional caller-supplied suffix.
+
+        :suffix: an identifier to be appended.  Must be suitable for use in
+        HTML element ids.
+        """
+

@@ -211,7 +211,7 @@ class IPOMsgSet(Interface):
             - self.date_reviewed: To note when was done last review.
         """
 
-    def makeHtmlId(suffix=None, language_code=None):
+    def makeHtmlId(suffix=None):
         """Unique name for this `POMsgSet` for use in HTML element ids.
 
         The name is an underscore-separated sequence of:
@@ -222,9 +222,6 @@ class IPOMsgSet(Interface):
 
         :suffix: an identifier to be appended.  Must be suitable for use in
         HTML element ids.
-
-        :language_code: a language code to embed in the identifier, if given.
-        If language_code is the empty string, our own language will be used.
         """
 
 

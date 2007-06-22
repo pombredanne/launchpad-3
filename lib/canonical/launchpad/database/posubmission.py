@@ -54,16 +54,16 @@ class POSubmission(SQLBase):
     active = BoolCol(notNull=True, default=False)
     published = BoolCol(notNull=True, default=False)
 
-    def makeHtmlId(self, description, for_pomsgset=None):
+    def makeHtmlId(self, description, for_potmsgset=None):
         """See `IPOSubmission`."""
-        if for_pomsgset is None:
-            for_pomsgset = self.pomsgset
+        if for_potmsgset is None:
+            for_potmsgset = self.pomsgset.potmsgset
         suffix = '_'.join([
+            self.pomsgset.pofile.language.code,
             description,
             str(self.id),
             str(self.pluralform)])
-        return for_pomsgset.makeHtmlId(
-            suffix, language_code=self.pomsgset.pofile.language.code)
+        return for_potmsgset.makeHtmlId(suffix)
 
 
 # XXX do we want to indicate the difference between a from-scratch

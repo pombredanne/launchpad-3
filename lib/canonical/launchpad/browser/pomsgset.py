@@ -988,12 +988,8 @@ class POMsgSetView(LaunchpadView):
                 'same_translator_and_reviewer': (is_same_translator and
                                                  is_same_date),
                 'html_id_translation':
-                    self.context.makeHtmlId('translation_%d' % index, ''),
+                    self.context.makeHtmlId('translation_%d' % index),
                 }
-
-            if active_submission is not None:
-                translation_entry['html_id'] = active_submission.makeHtmlId(
-                    'translation')
 
             if self.message_must_be_hidden:
                 # We must hide the translation because it may have private
@@ -1006,8 +1002,8 @@ class POMsgSetView(LaunchpadView):
 
             self.translation_dictionaries.append(translation_entry)
 
-        self.html_id = self.context.makeHtmlId()
-        self.html_id_0 = self.context.makeHtmlId('translation_0', '')
+        self.html_id = self.context.potmsgset.makeHtmlId()
+        self.html_id_0 = self.context.makeHtmlId('translation_0')
 
     def _buildAllSuggestions(self, index):
         """Builds all suggestions for a certain plural form index.
@@ -1301,10 +1297,7 @@ class POMsgSetSuggestions:
                 'person': submission.person,
                 'datecreated': submission.datecreated,
                 'suggestion_html_id':
-                    submission.makeHtmlId('suggestion', pomsgset),
-                'translation_html_id':
-                    pomsgset.makeHtmlId(
-                        'translation',
-                        language_code=pomsgset.pofile.language.code)
+                    submission.makeHtmlId('suggestion', pomsgset.potmsgset),
+                'translation_html_id': pomsgset.makeHtmlId('translation')
                 })
 
