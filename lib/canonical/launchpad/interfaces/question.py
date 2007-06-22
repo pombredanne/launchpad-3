@@ -464,9 +464,8 @@ class IQuestionLinkFAQForm(Interface):
         title=_('Which is the relevant FAQ?'),
         description=_(
             'Select the FAQ that is the most relevant for this question.'),
-        vocabulary=SimpleVocabulary([
-            SimpleTerm(None, 'none', 'No existing FAQs are relevant')]),
-        required=True,
+        vocabulary=SimpleVocabulary([]),
+        required=False,
         default=None)
 
     message = Text(

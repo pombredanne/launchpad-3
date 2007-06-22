@@ -940,7 +940,8 @@ class QuestionLinkFAQView(LaunchpadFormView):
 
     schema = IQuestionLinkFAQForm
 
-    custom_widget('faq', LaunchpadRadioWidget)
+    custom_widget('faq', LaunchpadRadioWidget,
+                  _messageNoValue=_( 'No existing FAQs are relevant'))
 
     label = _('Is this a FAQ?')
 
