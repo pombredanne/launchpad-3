@@ -113,7 +113,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return Product.selectOneBy(project=self, name=name)
 
     def ensureRelatedBounty(self, bounty):
-        """See IProject."""
+        """See `IProject`."""
         for curr_bounty in self.bounties:
             if bounty.id == curr_bounty.id:
                 return None
@@ -122,7 +122,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def mentoring_offers(self):
-        """See IProject"""
+        """See `IProject`"""
         via_specs = MentoringOffer.select('''
             Product.project = %s AND
             Specification.product = Product.id AND
@@ -144,7 +144,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     def translatables(self):
-        """See IProject."""
+        """See `IProject`."""
         return Product.select('''
             Product.project = %s AND
             Product.official_rosetta = TRUE AND
@@ -166,7 +166,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def has_any_specifications(self):
-        """See IHasSpecifications."""
+        """See `IHasSpecifications`."""
         return self.all_specifications.count()
 
     @property
@@ -178,7 +178,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return self.specifications(filter=[SpecificationFilter.VALID])
 
     def specifications(self, sort=None, quantity=None, filter=None):
-        """See IHasSpecifications."""
+        """See `IHasSpecifications`."""
 
         # Make a new list of the filter, so that we do not mutate what we
         # were passed as a filter
@@ -242,12 +242,12 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
     bugtargetname = None
 
     def searchTasks(self, search_params):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         search_params.setProject(self)
         return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         if not self.products:
             return []
         product_ids = sqlvalues(*self.products)
@@ -255,7 +255,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             "BugTask.product IN (%s)" % ",".join(product_ids))
 
     def getUsedBugTagsWithOpenCounts(self, user):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         if not self.products:
             return []
         product_ids = sqlvalues(*self.products)
@@ -263,7 +263,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             "BugTask.product IN (%s)" % ",".join(product_ids), user)
 
     def createBug(self, bug_params):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         raise NotImplementedError('Cannot file bugs against a project')
 
     def _getBugTaskContextClause(self):
@@ -275,7 +275,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
                         needs_attention_from=None, unsupported=False):
-        """See IQuestionCollection."""
+        """See `IQuestionCollection`."""
         if unsupported:
             unsupported_target = self
         else:
@@ -289,7 +289,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             unsupported_target=unsupported_target).getResults()
 
     def getQuestionLanguages(self):
-        """See IQuestionCollection."""
+        """See `IQuestionCollection`."""
         return set(Language.select("""
             Language.id = Question.language AND
             Question.product = Product.id AND
