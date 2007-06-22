@@ -1092,35 +1092,31 @@ class POMsgSetView(LaunchpadView):
             title, self.context, submissions[:self.max_entries],
             self.user_is_official_translator)
 
+    def getOfficialTranslation(self, index, published = False):
+         """Return active or published translation for pluralform 'index'."""
+         assert index in self.pluralform_indices, (
+             'There is no plural form #%d for %s language' % (
+                 index, self.context.pofile.language.displayname))
+
+         if published:
+             translation = self.context.published_texts[index]
+         else:
+             translation = self.context.active_texts[index]
+         # We store newlines as '\n', '\r' or '\r\n', depending on the
+         # msgid but forms should have them as '\r\n' so we need to change
+         # them before showing them.
+         if translation is not None:
+             return convert_newlines_to_web_form(translation)
+         else:
+             return None
+
     def getActiveTranslation(self, index):
         """Return the active translation for the pluralform 'index'."""
-        assert index in self.pluralform_indices, (
-            'There is no plural form #%d for %s language' % (
-                index, self.context.pofile.language.displayname))
-
-        translation = self.context.active_texts[index]
-        # We store newlines as '\n', '\r' or '\r\n', depending on the
-        # msgid but forms should have them as '\r\n' so we need to change
-        # them before showing them.
-        if translation is not None:
-            return convert_newlines_to_web_form(translation)
-        else:
-            return None
+        return self.getOfficialTranslation(index)
 
     def getPublishedTranslation(self, index):
         """Return the published translation for the pluralform 'index'."""
-        assert index in self.pluralform_indices, (
-            'There is no plural form #%d for %s language' % (
-                index, self.context.pofile.language.displayname))
-
-        translation = self.context.published_texts[index]
-        # We store newlines as '\n', '\r' or '\r\n', depending on the
-        # msgid but forms should have them as '\r\n' so we need to change
-        # them before showing them.
-        if translation is not None:
-            return convert_newlines_to_web_form(translation)
-        else:
-            return None
+        return self.getOfficialTranslation(index, published=True)
 
     def getTranslation(self, index):
         """Return the translation submitted for the pluralform 'index'."""
@@ -1278,6 +1274,11 @@ class POMsgSetZoomedView(POMsgSetView):
 class POMsgSetSuggestions:
     """See IPOMsgSetSuggestions."""
     implements(IPOMsgSetSuggestions)
+
+    def isFromSamePOFile(self, submission):
+        """Return if submission is from the same PO file as a POMsgSet."""
+        return self.pomsgset.pofile == submission['pomsgset'].pofile
+
     def __init__(self, title, pomsgset, submissions,
                  user_is_official_translator):
         self.title = title

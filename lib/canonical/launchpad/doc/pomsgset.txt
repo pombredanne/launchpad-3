@@ -194,6 +194,8 @@ We get a POMsgSet and verify it's a singular form:
   1
   >>> pt_BR_dummypomsgset.active_texts
   [None]
+  >>> pt_BR_dummypomsgset.published_texts
+  [None]
 
 Using another dummy pofile we'll get a POMsgset that's not a
 singular form: 
@@ -277,6 +279,8 @@ space is for any submission done outside that IPOMsgSet.
 
   # As expected, is not translated.
   >>> pomsgset_untranslated.active_texts
+  [None]
+  >>> pomsgset_untranslated.published_texts
   [None]
 
 This other IPOMsgSet though, will get all submissions done in

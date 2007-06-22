@@ -70,6 +70,19 @@
   </td>
 </tr>
 <tr
+  tal:condition="view/source_comment"
+  class="discreet secondary translation"
+>
+  <td colspan="3" />
+  <th class="icon left right">
+    <img alt="Developer note:" src="/@@/info"
+         title="This is a note to translators by the software developer" />
+  </th>
+  <td tal:content="view/source_comment">
+      This refers to the content type.
+  </td>
+</tr>
+<tr
   tal:condition="view/msgid_has_tab"
   class="discreet secondary translation">
   <td colspan="3" />
@@ -114,19 +127,6 @@
     />
     represents a space character.
     Enter a space in the equivalent position in the translation.
-  </td>
-</tr>
-<tr
-  tal:condition="view/source_comment"
-  class="discreet secondary translation"
->
-  <td colspan="3" />
-  <th class="icon left right">
-    <img alt="Developer note:" src="/@@/info"
-         title="This is a note to translators by the software developer" />
-  </th>
-  <td tal:content="view/source_comment">
-      This refers to the content type.
   </td>
 </tr>
 <tr class="error translation" tal:condition="view/error">
@@ -241,11 +241,9 @@
       <tr tal:condition=
             "not:translation_dictionary/same_translator_and_reviewer"
           class="discreet secondary translation">
-        <th colspan="3" id="translated_by">
-          Translated by:
-        </th>
-        <td class="icon left right" />
-        <td style="overflow: auto;">
+	<td colspan="4" />
+        <td id="translated_by" style="overflow: auto;">
+          Translated by
           <a tal:content="active_submission/person/browsername"
              tal:attributes="href active_submission/person/fmt:url">Foo Bar</a>
           <span
@@ -257,17 +255,24 @@
       </tr>
       <tr class="discreet secondary translation"
           tal:condition="context/reviewer">
-        <th tal:condition="translation_dictionary/same_translator_and_reviewer"
-            colspan="3" id="translated_and_reviewed_by">
-          Translated and reviewed by:
-        </th>
-        <th tal:condition=
+	<td colspan="4">
+        <td tal:condition="translation_dictionary/same_translator_and_reviewer"
+            id="translated_and_reviewed_by"
+            style="overflow: auto">
+          Translated and reviewed by
+          <a tal:content="context/reviewer/browsername"
+             tal:attributes="href context/reviewer/fmt:url">Foo Bar</a>
+          <span
+            tal:attributes="title context/date_reviewed/fmt:datetime"
+            tal:content="context/date_reviewed/fmt:displaydate">
+            on 2006-08-05
+          </span>
+        </td>
+        <td tal:condition=
               "not:translation_dictionary/same_translator_and_reviewer"
-            colspan="3" id="reviewed_by">
-          Reviewed by:
-        </th>
-        <td class="icon left right" />
-        <td style="overflow: auto">
+            id="reviewed_by"
+            style="overflow: auto">
+          Reviewed by
           <a tal:content="context/reviewer/browsername"
              tal:attributes="href context/reviewer/fmt:url">Foo Bar</a>
           <span
@@ -281,7 +286,7 @@
     <tal:published-submission
       define="submission translation_dictionary/published_submission"
       condition="submission">
-  <tr class="suggestion secondary"
+  <tr class="secondary"
     tal:attributes="id string:msgset_${context/potmsgset/id}_packaged">
     <th colspan="3">
       Packaged:
@@ -338,7 +343,7 @@
       </label>
     </td>
   </tr>
-  <tr class="discreet suggestion secondary"
+  <tr class="discreet secondary"
     tal:attributes="id string:msgset_${context/potmsgset/id}_packaged_origin">
     <td colspan="4" class="icon left right" />
     <td style="overflow: auto;">
@@ -356,7 +361,7 @@
     </tal:published-submission>
     <tal:suggestions-title
        condition="translation_dictionary/has_suggestions">
-    <tr class="suggestion secondary">
+    <tr class="secondary">
       <th colspan="3">Suggestions:</th>
     </tr>
     </tal:suggestions-title>
@@ -490,7 +495,6 @@
       </div>
     </td>
   </tr>
-</tal:language-code>
 <tr tal:condition="view/comment" class="secondary">
   <th colspan="3"><label>Translator note:</label></th>
   <td />
@@ -499,11 +503,12 @@
   </td>
 </tr>
 <tr class="discreet secondary">
-  <th colspan="3" style="padding-bottom: 1em;">
-    Located in:
-  </th>
-  <td class="icon left right" />
-  <td style="overflow: auto;" tal:content="view/file_references">
-    ./plone_forms/discussion_reply_form.pt
+  <td colspan="4">
+  <td style="padding-bottom: 1em; overflow: auto;">
+    Located in
+    <tal:location content="view/file_references">
+      ./plone_forms/discussion_reply_form.pt
+    </tal:location>
   </td>
 </tr>
+</tal:language-code>
