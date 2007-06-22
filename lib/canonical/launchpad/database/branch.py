@@ -29,7 +29,7 @@ from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.lp.dbschema import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
-    BranchRelationships, BranchLifecycleStatus, BranchVisibilityPolicy)
+    BranchRelationships, BranchLifecycleStatus, BranchVisibilityRule)
 
 
 class Branch(SQLBase):
@@ -290,7 +290,7 @@ class BranchSet:
         This method checks the branch visibility policy of the product.  The
         product can define any number of policies that apply to particular
         teams.  Each team can have only one policy, and that policy is defined
-        by the enumerated type BranchVisibilityPolicy.  The possibilities are
+        by the enumerated type BranchVisibilityRule.  The possibilities are
         PUBLIC, PRIVATE, PRIVATE_ONLY, and FORBIDDEN.
 
         PUBLIC: branches default to public for the team.
@@ -334,47 +334,61 @@ class BranchSet:
             raise BranchCreatorNotMemberOfOwnerTeam(
                 "%s is not a member of %s"
                 % (creator.displayname, owner.displayname))
-        # Short cut the membership checks if the owner has a defined policy.
-        policy = product.getBranchVisibilityPolicyForTeam(owner)
+        # First check if the owner has a defined visibility rule.
+        policy = product.getBranchVisibilityRuleForTeam(owner)
         if policy is not None:
-            if policy in (BranchVisibilityPolicy.PRIVATE,
-                          BranchVisibilityPolicy.PRIVATE_ONLY):
+            if policy in (BranchVisibilityRule.PRIVATE,
+                          BranchVisibilityRule.PRIVATE_ONLY):
                 return PRIVATE_BRANCH
             else:
                 return PUBLIC_BRANCH
 
-        ratings = dict(
-            [(item, []) for item in BranchVisibilityPolicy.items])
+        rule_memberships = dict(
+            [(item, []) for item in BranchVisibilityRule.items])
 
-        # Initially we ignore the policy that applies to everyone and just
-        # check the team policies for the owner.
-        for item in product.branch_visibility_team_policies:
-            if item.team is not None:
-                if owner.inTeam(item.team):
-                    ratings[item.policy].append(item.team)
+        # Here we ignore the team policy that applies to everyone as
+        # that is the base visibility rule and it is checked only if there
+        # are no team policies that apply to the owner.
+        for item in product.getBranchVisibilityTeamPolicies():
+            if item.team is not None and owner.inTeam(item.team):
+                rule_memberships[item.policy].append(item.team)
 
         private_teams = (
-            ratings[BranchVisibilityPolicy.PRIVATE] +
-            ratings[BranchVisibilityPolicy.PRIVATE_ONLY])
+            rule_memberships[BranchVisibilityRule.PRIVATE] +
+            rule_memberships[BranchVisibilityRule.PRIVATE_ONLY])
 
         # Private trumps public.
         if len(private_teams) == 1:
-            private_team = private_teams[0]
-            if private_team == owner:
-                return PRIVATE_BRANCH
-            else:
-                return (True, private_team)
+            # The owner is a member of only one team that has private branches
+            # enabled.  The case where the private_team is the same as the
+            # owner of the branch is caught above where a check is done for a
+            # defined policy for the owner.  So if we get to here, the owner
+            # of the branch is a member of another team that has private
+            # branches enabled, so subscribe the private_team to the branch.
+            return (True, private_teams[0])
         elif len(private_teams) > 1:
+            # If the owner is a member of multiple teams that specify private
+            # branches, then we cannot guess which team should get subscribed
+            # automatically, so subscribe no-one.
             return PRIVATE_BRANCH
-        elif len(ratings[BranchVisibilityPolicy.PUBLIC]) > 0:
+        elif len(rule_memberships[BranchVisibilityRule.PUBLIC]) > 0:
+            # If the owner is not a member of any teams that specify private
+            # branches, but is a member of a team that is allowed public
+            # branches, then the branch is created as a public branch.
             return PUBLIC_BRANCH
+        else:
+            membership_teams = rule_memberships.itervalues()
+            owner_membership = reduce(lambda x,y: x+y, membership_teams)
+            assert len(owner_membership) == 0, (
+                'The owner should not be a member of any team that has '
+                'a specified team policy.')
 
         # Need to check the base branch visibility policy since there were no
-        # team policies that matches the creator.
-        base_policy = product.branch_visibility_base_policy
-        if base_policy == BranchVisibilityPolicy.FORBIDDEN:
+        # team policies that matches the owner.
+        base_visibility_rule = product.getBaseBranchVisibilityRule()
+        if base_visibility_rule == BranchVisibilityRule.FORBIDDEN:
             raise BranchCreationForbidden()
-        elif base_policy == BranchVisibilityPolicy.PUBLIC:
+        elif base_visibility_rule == BranchVisibilityRule.PUBLIC:
             return PUBLIC_BRANCH
         else:
             return PRIVATE_BRANCH

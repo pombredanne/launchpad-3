@@ -12,9 +12,9 @@ This table effectively creates tuples of (Project or Product, Team,
 Policy).  Since there is no team that is used to define everyone, the
 non-specifying of a team means *everyone*.
 
-The Policy is defined by the enumerated type BranchVisibilityPolicy.
+The Policy is defined by the enumerated type BranchVisibilityRule.
 
-    >>> from canonical.lp.dbschema import BranchVisibilityPolicy
+    >>> from canonical.lp.dbschema import BranchVisibilityRule
 
 There are currently four visibility policies:
  * Public - branches are public by default for the specified team.
@@ -26,7 +26,7 @@ There are currently four visibility policies:
      that applies to everyone, and cannot be used as a selective
      discriminator against certain teams.
 
-    >>> for item in BranchVisibilityPolicy.items:
+    >>> for item in BranchVisibilityRule.items:
     ...     print repr(item)
     <Item PUBLIC (1) from ...>
     <Item PRIVATE (2) from ...>
@@ -77,7 +77,7 @@ products can set branch visibility policies.
     ...         return team.displayname
 
     >>> def print_team_policies(context):
-    ...     for item in context.branch_visibility_team_policies:
+    ...     for item in context.getBranchVisibilityTeamPolicies():
     ...         print "%s: %s" % (teamname(item.team), item.policy.title)
 
 
@@ -90,14 +90,14 @@ implicit policy you need to explicitly define a policy for everyone, and
 this is done by specifying None for the team.
 
     >>> print_team_policies(evolution)
-    >>> evolution.branch_visibility_base_policy
-    <Item PUBLIC ...BranchVisibilityPolicy...
-    >>> evolution.setTeamBranchVisibilityPolicy(
-    ...     None, BranchVisibilityPolicy.PUBLIC)
+    >>> evolution.getBaseBranchVisibilityRule()
+    <Item PUBLIC ...BranchVisibilityRule...
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     None, BranchVisibilityRule.PUBLIC)
     >>> print_team_policies(evolution)
     *everyone*: Public
-    >>> evolution.branch_visibility_base_policy
-    <Item PUBLIC ...BranchVisibilityPolicy...
+    >>> evolution.getBaseBranchVisibilityRule()
+    <Item PUBLIC ...BranchVisibilityRule...
 
 
 == Setting the policy for teams ==
@@ -105,29 +105,29 @@ this is done by specifying None for the team.
 Setting the policy for a team overrides any existing policy that may
 exist for that team.
 
-    >>> evolution.setTeamBranchVisibilityPolicy(
-    ...     launchpad_team, BranchVisibilityPolicy.PUBLIC)
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     launchpad_team, BranchVisibilityRule.PUBLIC)
     >>> print_team_policies(evolution)
     *everyone*: Public
     Launchpad Developers: Public
 
 Setting again replaces the policy.
 
-    >>> evolution.setTeamBranchVisibilityPolicy(
-    ...     launchpad_team, BranchVisibilityPolicy.PRIVATE)
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     launchpad_team, BranchVisibilityRule.PRIVATE)
     >>> print_team_policies(evolution)
     *everyone*: Public
     Launchpad Developers: Private
 
 Setting the policy for *everyone* is done by passing None for the team.
 
-    >>> evolution.setTeamBranchVisibilityPolicy(
-    ...     None, BranchVisibilityPolicy.FORBIDDEN)
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     None, BranchVisibilityRule.FORBIDDEN)
     >>> print_team_policies(evolution)
     *everyone*: Forbidden
     Launchpad Developers: Private
-    >>> evolution.branch_visibility_base_policy
-    <Item FORBIDDEN ...BranchVisibilityPolicy...
+    >>> evolution.getBaseBranchVisibilityRule()
+    <Item FORBIDDEN ...BranchVisibilityRule...
 
 
 == Removing teams from the policy object ==
@@ -155,16 +155,16 @@ the team name.
 Team policies are listed in alphabetical order of the team display name
 with the policy for *everybody* being first.
 
-    >>> evolution.setTeamBranchVisibilityPolicy(
-    ...     ubuntu_gnome_team, BranchVisibilityPolicy.PRIVATE)
-    >>> evolution.setTeamBranchVisibilityPolicy(
-    ...     launchpad_team, BranchVisibilityPolicy.PRIVATE)
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     ubuntu_gnome_team, BranchVisibilityRule.PRIVATE)
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     launchpad_team, BranchVisibilityRule.PRIVATE)
     >>> print_team_policies(evolution)
     Launchpad Developers: Private
     Ubuntu Gnome Team: Private
 
-    >>> evolution.setTeamBranchVisibilityPolicy(
-    ...     None, BranchVisibilityPolicy.PUBLIC)
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     None, BranchVisibilityRule.PUBLIC)
     >>> print_team_policies(evolution)
     *everyone*: Public
     Launchpad Developers: Private
@@ -196,10 +196,10 @@ Adding a team to the mozilla project will also affect products
 associated with the mozilla project that are inheriting the project's
 branch policy.
 
-    >>> mozilla.setTeamBranchVisibilityPolicy(
-    ...     ubuntu_gnome_team, BranchVisibilityPolicy.PRIVATE)
-    >>> mozilla.setTeamBranchVisibilityPolicy(
-    ...     None, BranchVisibilityPolicy.PRIVATE)
+    >>> mozilla.setBranchVisibilityTeamPolicy(
+    ...     ubuntu_gnome_team, BranchVisibilityRule.PRIVATE)
+    >>> mozilla.setBranchVisibilityTeamPolicy(
+    ...     None, BranchVisibilityRule.PRIVATE)
 
     >>> print_team_policies(mozilla)
     *everyone*: Private
@@ -213,8 +213,8 @@ In order to avoid inheriting the policy of the project, there just needs
 to be an explicit team policy for the product.  This explicit team
 policy could even be the same as the default policy.
 
-    >>> thunderbird.setTeamBranchVisibilityPolicy(
-    ...     None, BranchVisibilityPolicy.PUBLIC)
+    >>> thunderbird.setBranchVisibilityTeamPolicy(
+    ...     None, BranchVisibilityRule.PUBLIC)
     >>> print thunderbird.isUsingInheritedBranchVisibilityPolicy()
     False
     >>> print_team_policies(thunderbird)
@@ -224,14 +224,14 @@ policy could even be the same as the default policy.
 == Determining the defined policy for a team ==
 
 You can get the defined policy for any given team using the method
-getBranchVisibilityPolicyForTeam.  If there is not a policy explicity
+getBranchVisibilityRuleForTeam.  If there is not a policy explicity
 defined, then None is returned.
 
-    >>> mozilla.getBranchVisibilityPolicyForTeam(ubuntu_gnome_team)
-    <Item PRIVATE ...BranchVisibilityPolicy...
-    >>> mozilla.getBranchVisibilityPolicyForTeam(None)
-    <Item PRIVATE ...BranchVisibilityPolicy...
-    >>> print mozilla.getBranchVisibilityPolicyForTeam(launchpad_team)
+    >>> mozilla.getBranchVisibilityRuleForTeam(ubuntu_gnome_team)
+    <Item PRIVATE ...BranchVisibilityRule...
+    >>> mozilla.getBranchVisibilityRuleForTeam(None)
+    <Item PRIVATE ...BranchVisibilityRule...
+    >>> print mozilla.getBranchVisibilityRuleForTeam(launchpad_team)
     None
 
 
@@ -244,11 +244,11 @@ the IBranchSet utility.
     >>> login('foo.bar@canonical.com')
     >>> from canonical.launchpad.interfaces import IBranchSet
     >>> branch_set = getUtility(IBranchSet)
-    >>> evolution.setTeamBranchVisibilityPolicy(
-    ...     None, BranchVisibilityPolicy.FORBIDDEN)
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     None, BranchVisibilityRule.FORBIDDEN)
     >>> vcs_imports_team = person_set.getByName('vcs-imports')
-    >>> evolution.setTeamBranchVisibilityPolicy(
-    ...     vcs_imports_team, BranchVisibilityPolicy.PUBLIC)
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     vcs_imports_team, BranchVisibilityRule.PUBLIC)
     >>> print_team_policies(evolution)
     *everyone*: Forbidden
     Launchpad Developers: Private

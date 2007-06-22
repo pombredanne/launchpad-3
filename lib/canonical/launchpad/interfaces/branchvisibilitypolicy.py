@@ -13,7 +13,7 @@ from zope.interface import Interface, Attribute
 
 from zope.schema import Choice
 
-from canonical.lp.dbschema import BranchVisibilityPolicy
+from canonical.lp.dbschema import BranchVisibilityRule
 
 from canonical.launchpad import _
 
@@ -21,30 +21,33 @@ from canonical.launchpad import _
 class IHasBranchVisibilityPolicy(Interface):
     """Implemented by types that need to define default branch visibility."""
 
-    branch_visibility_team_policies = Attribute(
-        "The branch visibility policy items.")
+    def getBranchVisibilityTeamPolicies():
+        """The branch visibility team policy items."""
 
-    branch_visibility_base_policy = Attribute(
-        "The BranchVisibilityPolicy that applies to everyone.")
+    def getBaseBranchVisibilityRule():
+        """Return the BranchVisibilityRule that applies to everyone."""
 
-    def getBranchVisibilityPolicyForTeam(team):
-        """Return the defined policy for the team.
+    def getBranchVisibilityRuleForTeam(team):
+        """Return the defined visibility rule for the team.
 
-        If there is no explicit policy set for the team, return None.
+        If there is no explicit team policy set for the team, return None.
         """
 
     def isUsingInheritedBranchVisibilityPolicy():
         """Return True if using policy from the inherited context.
 
-        BranchVisibilityPolicy objects for products are constructed with the
-        BranchVisibilityPolicy objects of their projects if they have a
-        project.  Projects can't have inherited policies.
+        Products that don't have any explicitly defined team policies, use
+        the team policies defined for the project if the product has an
+        associated project.  Projects can't have inherited policies.
         """
 
-    def setTeamBranchVisibilityPolicy(team, policy):
+    def setBranchVisibilityTeamPolicy(team, rule):
         """Set the policy for the team.
 
         Each team can only have one policy.
+
+        :param team: The team to associate with the rule.
+        :param rule: A value of the BranchVisibilityRule enumerated type.
         """
 
     def removeTeamFromBranchVisibilityPolicy(team):
@@ -69,8 +72,8 @@ class IBranchVisibilityTeamPolicy(Interface):
                       "If None then the policy applies to everyone."))
 
     policy = Choice(
-        title=_('Policy'), vocabulary='BranchVisibilityPolicy',
-        default=BranchVisibilityPolicy.PUBLIC,
+        title=_('Policy'), vocabulary='BranchVisibilityRule',
+        default=BranchVisibilityRule.PUBLIC,
         description=_(
         "The policy defines the default branch visibility for members of the "
         "team specified."))

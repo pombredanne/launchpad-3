@@ -18,7 +18,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
-from canonical.lp.dbschema import BranchVisibilityPolicy
+from canonical.lp.dbschema import BranchVisibilityRule
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
@@ -35,8 +35,8 @@ class BranchVisibilityTeamPolicy(SQLBase):
     product = ForeignKey(dbName='product', foreignKey='Product')
     team = ForeignKey(dbName='team', foreignKey='Person', default=None)
     policy = EnumCol(
-        schema=BranchVisibilityPolicy, notNull=True,
-        default=BranchVisibilityPolicy.PUBLIC)
+        schema=BranchVisibilityRule, notNull=True,
+        default=BranchVisibilityRule.PUBLIC)
 
 
 def policy_item_key(item):
@@ -63,13 +63,12 @@ class BranchVisibilityPolicyMixin:
         return BranchVisibilityTeamPolicy.selectBy(
             **self._policy_visibility_context)
 
-    @property
-    def branch_visibility_team_policies(self):
+    def getBranchVisibilityTeamPolicies(self):
         """See IHasBranchVisibilityPolicy."""
         # If we are using the inherited policy return the items
         # from the inherited context.
         if self.isUsingInheritedBranchVisibilityPolicy():
-            return self.project.branch_visibility_team_policies
+            return self.project.getBranchVisibilityTeamPolicies()
         # Use shortlist here for policy items as we don't expect
         # many items, and want a warning emitted if we start
         # getting many items being created for projects as it
@@ -86,17 +85,16 @@ class BranchVisibilityPolicyMixin:
         return BranchVisibilityTeamPolicy.selectOneBy(
                 team=team, **policy_visibility_context)
 
-    @property
-    def branch_visibility_base_policy(self):
+    def getBaseBranchVisibilityRule(self):
         """See IHasBranchVisibilityPolicy."""
         item = self._selectOneBranchVisibilityTeamPolicy(None)
         # If there is no explicit item set, then public is the default.
         if item is None:
-            return BranchVisibilityPolicy.PUBLIC
+            return BranchVisibilityRule.PUBLIC
         else:
             return item.policy
 
-    def getBranchVisibilityPolicyForTeam(self, team):
+    def getBranchVisibilityRuleForTeam(self, team):
         """See IHasBranchVisibilityPolicy."""
         item = self._selectOneBranchVisibilityTeamPolicy(team)
         if item is None:
@@ -114,15 +112,15 @@ class BranchVisibilityPolicyMixin:
         # inherited policy.
         return self._policy_items.count() == 0
 
-    def setTeamBranchVisibilityPolicy(self, team, policy):
+    def setBranchVisibilityTeamPolicy(self, team, rule):
         """See IHasBranchVisibilityPolicy."""
         item = BranchVisibilityTeamPolicy.selectOneBy(
             team=team, **self._policy_visibility_context)
         if item is None:
             item = BranchVisibilityTeamPolicy(
-                team=team, policy=policy, **self._policy_visibility_context)
+                team=team, policy=rule, **self._policy_visibility_context)
         else:
-            item.policy = policy
+            item.policy = rule
 
     def removeTeamFromBranchVisibilityPolicy(self, team):
         """See IHasBranchVisibilityPolicy."""

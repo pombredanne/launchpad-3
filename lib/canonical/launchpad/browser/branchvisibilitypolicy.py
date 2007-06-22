@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import IBranchVisibilityTeamPolicy
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from canonical.lp.dbschema import BranchVisibilityPolicy
+from canonical.lp.dbschema import BranchVisibilityRule
 
 
 class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):
@@ -44,20 +44,20 @@ class AddBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
 
     pagetitle = "Set branch visibility policy for team"
 
-    initial_values = {'policy': BranchVisibilityPolicy.PRIVATE}
+    initial_values = {'policy': BranchVisibilityRule.PRIVATE}
 
     @action(_('Set policy for team'), name='set_policy')
     def set_policy_action(self, action, data):
         "Set the branch policy for the team."
         team = data['team']
-        policy = data['policy']
-        if team is not None and policy == BranchVisibilityPolicy.FORBIDDEN:
+        rule = data['policy']
+        if team is not None and rule == BranchVisibilityRule.FORBIDDEN:
             self.setFieldError(
                 'policy',
                 "Forbidden can only be chosen as a policy for everyone.")
             self.next_url = None
         else:
-            self.context.setTeamBranchVisibilityPolicy(team, policy)
+            self.context.setBranchVisibilityTeamPolicy(team, rule)
 
 
 class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
@@ -89,7 +89,7 @@ class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
         """
         terms = [SimpleTerm(item, self._policyToken(item),
                             self._policyDescription(item))
-                 for item in self.context.branch_visibility_team_policies]
+                 for item in self.context.getBranchVisibilityTeamPolicies()]
 
         return form.Fields(
             List(
@@ -116,7 +116,11 @@ class BranchVisibilityPolicyView(LaunchpadView):
 
     @cachedproperty
     def items(self):
-        return self.context.branch_visibility_team_policies
+        return self.context.getBranchVisibilityTeamPolicies()
+
+    @property
+    def base_visibility_rule(self):
+        return self.context.getBaseBranchVisibilityRule()
 
     @property
     def can_remove_items(self):
