@@ -19,7 +19,7 @@ __call__ method.
     >>> class StubRequest:
     ...     def __init__(self, response): self.response = response
 
-When the response status is not 302 or 303, the page is rendered
+When the response status is not 301, 302 or 303, the page is rendered
 normally:
 
     >>> request = StubRequest(StubResponse())
@@ -57,8 +57,18 @@ returned. Let's set the status to 303 this time:
 
     >>> class RedirectAttributePage(AttributePage):
     ...     def update(self):
-    ...         self.request.response._status = 303
+    ...         self.request.response._status = self.status
+
     >>> request = StubRequest(StubResponse())
-    >>> page = RedirectPage(None, request)
+    >>> page = RedirectAttributePage(None, request)
+    >>> page.status = 303 # 'See Other'
+    >>> page()
+    u''
+
+And 301:
+
+    >>> request = StubRequest(StubResponse())
+    >>> page = RedirectAttributePage(None, request)
+    >>> page.status = 301 # 'Moved Permanently'
     >>> page()
     u''
