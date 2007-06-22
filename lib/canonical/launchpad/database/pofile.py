@@ -271,7 +271,8 @@ class POFileMixIn(RosettaStats):
             """ % parameters
         cur = cursor()
 
-        # XXX: JeroenVermeulen 2007-06-17, pre-join potranslations
+        # XXX: JeroenVermeulen 2007-06-17, pre-join the potranslations we'll
+        # be needing to prevent piecemeal retrieval.  (See bug 30602)
         cur.execute(query)
         available = dict(cur.fetchall())
         if not available:
