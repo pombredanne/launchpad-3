@@ -155,7 +155,7 @@ class FakeLaunchpad:
             if user_info['name'] == user:
                 break
         else:
-            raise ValueError("Couldn't find user %r" % (user,))
+            return ''
         product_id = self.fetchProductID(product)
         if product_id is None:
             return ''
