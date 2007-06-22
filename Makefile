@@ -5,8 +5,9 @@ PYTHON_VERSION=2.4
 PYTHON=python${PYTHON_VERSION}
 IPYTHON=$(PYTHON) $(shell which ipython)
 PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
+VERBOSITY=-vv
 
-TESTFLAGS=-p -v
+TESTFLAGS=-p $(VERBOSITY)
 TESTOPTS=
 
 SHHH=${PYTHON} utilities/shhh.py
@@ -75,13 +76,7 @@ check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database..
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./test_on_merge.py -vv
-
-profiled_check: build
-	# Run all tests with profiling turned on.
-	# test_on_merge.py takes care of setting up the database..
-	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./test_on_merge.py -vvv
+	${PYTHON} -t ./test_on_merge.py $(VERBOSITY)
 
 lint:
 	@bash ./utilities/lint.sh
