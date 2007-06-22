@@ -647,7 +647,7 @@ class TranslationImportQueue:
             # "dotfiles," i.e. files whose names start with a dot, and we
             # ignore anything that isn't a file (such as directories,
             # symlinks, and above all, device files which could cause some
-            # serious security headaches).
+            # serious security headaches).  (see bug 121798)
             looks_useful = (
                 tarinfo.isfile() and
                 not filename.startswith('.') and

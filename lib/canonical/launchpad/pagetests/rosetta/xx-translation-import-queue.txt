@@ -51,16 +51,32 @@ really editor backups whose name begin with a dot.  These are ignored, as well
 as empty files, and things whose names end in .po or .pot that aren't regular
 files such as directories or devices.
 
+    >>> import tarfile
+    >>> tarball = tarfile.open(test_file_name)
+    >>> 'device.po' in tarball.getnames()
+    True
     >>> 'device.po' in anon_browser.contents
     False
+    >>> '.dotfile.po' in tarball.getnames()
+    True
     >>> '.dotfile.po' in anon_browser.contents
     False
+    >>> 'po/.nested-dotfile.po' in tarball.getnames()
+    True
     >>> 'po/.nested-dotfile.po' in anon_browser.contents
     False
+    >>> 'empty.po' in tarball.getnames()
+    True
     >>> 'empty.po' in anon_browser.contents
+    False
+    >>> 'directory.po/' in tarball.getnames()
+    True
+    >>> 'directory.po/' in anon_browser.contents
     False
     >>> 'directory.po' in anon_browser.contents
     False
+    >>> 'directory.po/.another-dotfile.po' in tarball.getnames()
+    True
     >>> 'directory.po/.another-dotfile.po' in anon_browser.contents
     False
 
