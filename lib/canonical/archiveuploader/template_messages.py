@@ -14,6 +14,7 @@ To: %(RECIPIENT)s
 Bcc: %(DEFAULT_RECIPIENT)s
 Precedence: bulk
 Subject: %(CHANGES)s Rejected
+X-Katie: Launchpad actually
 
 Rejected:
 %(SUMMARY)s
@@ -25,7 +26,7 @@ Rejected:
 If you don't understand why your files were rejected, or if the
 override file requires editing, reply to this email.
 
--- 
+--
 You are receiving this email because you are the uploader, maintainer or
 signer of the above package.
 """
@@ -35,6 +36,7 @@ To: %(RECIPIENT)s
 Bcc: %(DEFAULT_RECIPIENT)s
 Precedence: bulk
 Subject: %(CHANGES)s is NEW
+X-Katie: Launchpad actually
 
 %(SUMMARY)s
 
@@ -47,7 +49,7 @@ packages are usually added to the overrides about once a week.
 You may have gotten the distroseries wrong.  If so, you may get warnings
 above if files already exist in other distroseries.
 
--- 
+--
 You are receiving this email because you are the uploader, maintainer or
 signer of the above package.
 """
@@ -57,6 +59,7 @@ To: %(RECIPIENT)s
 Bcc: %(DEFAULT_RECIPIENT)s
 Precedence: bulk
 Subject: %(STATUS)s %(SOURCE)s %(VERSION)s (%(ARCH)s)
+X-Katie: Launchpad actually
 
 %(STATUS)s:
 %(SUMMARY)s
@@ -69,7 +72,7 @@ Announcing to %(ANNOUNCE)s
 
 Thank you for your contribution to %(DISTRO)s.
 
--- 
+--
 You are receiving this email because you are the uploader, maintainer or
 signer of the above package.
 """
@@ -81,6 +84,7 @@ announce_template="""From: %(MAINTAINERFROM)s
 To: %(ANNOUNCE)s
 Bcc: %(DEFAULT_RECIPIENT)s, %(SOURCE)s_derivatives@packages.qa.debian.org
 Subject: Accepted %(SOURCE)s %(VERSION)s (%(ARCH)s)
+X-Katie: Launchpad actually
 
 Accepted:
 %(SUMMARY)s
