@@ -91,8 +91,8 @@
           need to sign in to Launchpad.</p>
 
           <p tal:condition="view/openid_parameters/openid.sreg.policy_url|nothing">
-           <a tal:attributes="href view/openid_parameters/openid.sreg.policy_url"
-              tal:content="string:Privacy information for {rp_info/title}" />
+            <a tal:attributes="href view/openid_parameters/openid.sreg.policy_url"
+               tal:content="string:Privacy information for ${rp_info/title}" />
           </p>
 
           <tal:signin_reason condition="rp_info/reason">
