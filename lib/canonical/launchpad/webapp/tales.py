@@ -1379,7 +1379,7 @@ class FormattersAPI:
     _re_quoted = re.compile('^([:]|&gt;)')
 
     # Match blocks that start as signatures or quoted passages.
-    _re_block_include = re.compile('^<p>(--<br />|&gt;)')
+    _re_block_include = re.compile('^<p>(--<br />|&gt;|-----BEGIN PGP)')
 
     def email_to_html(self):
         """text_to_html and hide signatures and full-quoted emails.
@@ -1393,19 +1393,30 @@ class FormattersAPI:
         end_fold_markup = '%s\n</span></p>'
         output = []
         in_fold = False
+        in_false_paragraph = False
         for line in self.text_to_html().split('\n'):
             if not in_fold and self._re_block_include.match(line) is not None:
                 # Start a foldable paragraph for a signature or quote.
                 in_fold = True
+                if 'PGP SIGNATURE' in line:
+                    in_false_paragraph = True
                 line = '<p>%s%s' % (start_fold_markup, line[3:])
             elif not in_fold and self._re_quoted.match(line) is not None:
                 # Start a foldable section for a quoted passage.
                 in_fold = True
                 output.append(start_fold_markup)
             elif in_fold and line.endswith('</p>'):
-                # End the foldable section
-                in_fold = False
-                line = end_fold_markup % line[0:-4]
+                if not in_false_paragraph:
+                    # End the foldable section.
+                    in_fold = False
+                    line = end_fold_markup % line[0:-4]
+                else:
+                    # Restore the line break to join with the next parapgrah.
+                    line = '%s<br />\n<br />' %  line[0:-4]
+            elif in_false_paragraph and line.startswith('<p>'):
+                # Remove the paragraph to join with the previous paragraph.
+                in_false_paragraph = False
+                line = line[3:]
             else:
                 # This line is not extraordinary.
                 pass

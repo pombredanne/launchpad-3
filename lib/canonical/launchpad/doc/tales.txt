@@ -233,8 +233,8 @@ wrapped in a foldable span.
     Version: GnuPG v1.4.1 (GNU/Linux)<br />
     Comment: Using GnuPG with Thunderbird<br />
     <br />
-    iD8DBQFED60Y0F+nu1YWqI0RAqrNAJ9hTww5vqDbxp4xJS8ek58W<br />
-    T2PIWy0CUJsX8RXSt/M51WE=<br />
+    iD8DBQFED60Y0F+<wbr></wbr>nu1YWqI0RAqrNAJ<wbr></wbr>...
+    T2PIWy0CUJsX8RX<wbr></wbr>St/M51WE=<br />
     =J2S5<br />
     -----END PGP SIGNATURE-----
     </span></p>
