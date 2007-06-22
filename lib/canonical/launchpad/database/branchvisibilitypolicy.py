@@ -34,8 +34,8 @@ class BranchVisibilityTeamPolicy(SQLBase):
     project = ForeignKey(dbName='project', foreignKey='Project')
     product = ForeignKey(dbName='product', foreignKey='Product')
     team = ForeignKey(dbName='team', foreignKey='Person', default=None)
-    policy = EnumCol(
-        schema=BranchVisibilityRule, notNull=True,
+    rule = EnumCol(
+        dbName="policy", schema=BranchVisibilityRule, notNull=True,
         default=BranchVisibilityRule.PUBLIC)
 
 
@@ -92,7 +92,7 @@ class BranchVisibilityPolicyMixin:
         if item is None:
             return BranchVisibilityRule.PUBLIC
         else:
-            return item.policy
+            return item.rule
 
     def getBranchVisibilityRuleForTeam(self, team):
         """See IHasBranchVisibilityPolicy."""
@@ -100,7 +100,7 @@ class BranchVisibilityPolicyMixin:
         if item is None:
             return None
         else:
-            return item.policy
+            return item.rule
 
     def isUsingInheritedBranchVisibilityPolicy(self):
         """See IHasBranchVisibilityPolicy."""
@@ -118,9 +118,9 @@ class BranchVisibilityPolicyMixin:
             team=team, **self._policy_visibility_context)
         if item is None:
             item = BranchVisibilityTeamPolicy(
-                team=team, policy=rule, **self._policy_visibility_context)
+                team=team, rule=rule, **self._policy_visibility_context)
         else:
-            item.policy = rule
+            item.rule = rule
 
     def removeTeamFromBranchVisibilityPolicy(self, team):
         """See IHasBranchVisibilityPolicy."""

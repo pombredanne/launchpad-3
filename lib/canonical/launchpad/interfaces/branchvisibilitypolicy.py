@@ -61,9 +61,9 @@ class IHasBranchVisibilityPolicy(Interface):
 
 
 class IBranchVisibilityTeamPolicy(Interface):
-    """A branch visibility team policy is defined as a team and a policy.
+    """A branch visibility team policy is defined as a team and a rule.
 
-    The team may be null, in which case the policy applies to everyone.
+    The team may be null, in which case the rule applies to everyone.
     """
 
     team = Choice(
@@ -71,9 +71,9 @@ class IBranchVisibilityTeamPolicy(Interface):
         description=_("Specifies the team that the policy applies to. "
                       "If None then the policy applies to everyone."))
 
-    policy = Choice(
-        title=_('Policy'), vocabulary='BranchVisibilityRule',
+    rule = Choice(
+        title=_('Rule'), vocabulary='BranchVisibilityRule',
         default=BranchVisibilityRule.PUBLIC,
         description=_(
-        "The policy defines the default branch visibility for members of the "
-        "team specified."))
+        "The visibility rule defines the default branch visibility for "
+        "members of the team specified."))

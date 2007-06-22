@@ -351,7 +351,7 @@ class BranchSet:
         # are no team policies that apply to the owner.
         for item in product.getBranchVisibilityTeamPolicies():
             if item.team is not None and owner.inTeam(item.team):
-                rule_memberships[item.policy].append(item.team)
+                rule_memberships[item.rule].append(item.team)
 
         private_teams = (
             rule_memberships[BranchVisibilityRule.PRIVATE] +

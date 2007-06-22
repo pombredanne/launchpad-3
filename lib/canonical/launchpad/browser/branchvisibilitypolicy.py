@@ -44,17 +44,17 @@ class AddBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
 
     pagetitle = "Set branch visibility policy for team"
 
-    initial_values = {'policy': BranchVisibilityRule.PRIVATE}
+    initial_values = {'rule': BranchVisibilityRule.PRIVATE}
 
-    @action(_('Set policy for team'), name='set_policy')
-    def set_policy_action(self, action, data):
-        "Set the branch policy for the team."
+    @action(_('Set team policy'), name='set_team_policy')
+    def set_team_policy_action(self, action, data):
+        "Set the branch visibility rule for the team."
         team = data['team']
-        rule = data['policy']
+        rule = data['rule']
         if team is not None and rule == BranchVisibilityRule.FORBIDDEN:
             self.setFieldError(
-                'policy',
-                "Forbidden can only be chosen as a policy for everyone.")
+                'rule',
+                "Forbidden can only be chosen as a rule for everyone.")
             self.next_url = None
         else:
             self.context.setBranchVisibilityTeamPolicy(team, rule)
@@ -72,7 +72,7 @@ class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
         else:
             teamname = item.team.displayname
 
-        return "%s: %s" % (teamname, item.policy.title)
+        return "%s: %s" % (teamname, item.rule.title)
 
     def _policyToken(self, item):
         """The text used as the value of the widget."""

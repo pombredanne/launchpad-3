@@ -78,7 +78,7 @@ products can set branch visibility policies.
 
     >>> def print_team_policies(context):
     ...     for item in context.getBranchVisibilityTeamPolicies():
-    ...         print "%s: %s" % (teamname(item.team), item.policy.title)
+    ...         print "%s: %s" % (teamname(item.team), item.rule.title)
 
 
 == Default policy ==

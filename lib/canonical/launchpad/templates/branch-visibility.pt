@@ -42,7 +42,7 @@
         <tal:team replace="item/team/displayname"
                   condition="item/team">Team Name</tal:team>:
         <tal:team condition="not: item/team">Everyone</tal:team>
-        <tal:policy replace="item/policy/title">Public</tal:policy>
+        <tal:policy replace="item/rule/title">Public</tal:policy>
       </li>
     </ul>
 
