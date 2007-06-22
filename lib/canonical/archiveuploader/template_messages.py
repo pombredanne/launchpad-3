@@ -12,7 +12,6 @@ __all__ = [
 rejection_template = """From: %(SENDER)s
 To: %(RECIPIENT)s
 Bcc: %(DEFAULT_RECIPIENT)s
-Precedence: bulk
 Subject: %(CHANGES)s Rejected
 X-Katie: Launchpad actually
 
@@ -34,7 +33,6 @@ signer of the above package.
 new_template = """From: %(SENDER)s
 To: %(RECIPIENT)s
 Bcc: %(DEFAULT_RECIPIENT)s
-Precedence: bulk
 Subject: %(CHANGES)s is NEW
 X-Katie: Launchpad actually
 
@@ -57,7 +55,6 @@ signer of the above package.
 accepted_template="""From: %(SENDER)s
 To: %(RECIPIENT)s
 Bcc: %(DEFAULT_RECIPIENT)s
-Precedence: bulk
 Subject: %(STATUS)s %(SOURCE)s %(VERSION)s (%(ARCH)s)
 X-Katie: Launchpad actually
 
