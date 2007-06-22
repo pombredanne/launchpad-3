@@ -25,7 +25,8 @@ same product.
   HTTP/1.1 200 Ok
   ...
   Other templates from the same source:
-  ...
-  ...<a href="/evolution/trunk/+pots/evolution-2.2">evolution-2.2</a>.
+  <BLANKLINE>
+  <a href="/evolution/trunk/+pots/evolution-2.2">evolution-2.2</a>.
+  <BLANKLINE>
   ...
 

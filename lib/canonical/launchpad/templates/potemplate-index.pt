@@ -14,7 +14,7 @@
   <h1>
     Translation status for
     <tal:title replace="context/name">
-      foo-dev in Evolution trunk
+      foo-dev
     </tal:title>
   </h1>
 </metal:heading>
@@ -22,8 +22,8 @@
 <div metal:fill-slot="main">
 
     <p tal:condition="context/description">
-      <span tal:content="context/description">A brief paragraph describing
-      the potemplate would go here.</span>
+      <tal:description content="context/description">A brief paragraph
+        describing the potemplate would go here.</tal:description>
       <a href="+edit"><img src="/@@/edit" title="Update this description"
         /></a>
     </p>
@@ -33,37 +33,34 @@
     </p>
     <p tal:condition="context/relatives_by_source">
       Other templates from the same source:
-      <span tal:repeat="pot context/relatives_by_source">
+      <tal:relatives_by_source repeat="pot context/relatives_by_source">
         <a href=""
           tal:attributes="href pot/fmt:url"
           tal:content="pot/name">A POTemplate
         </a>.
-      </span>
+      </tal:relatives_by_source>
     </p>
     <p tal:condition="context/relatives_by_name">
       See the same template in:
-      <span tal:repeat="pot context/relatives_by_name">
-        <span tal:condition="pot/productseries">
+      <tal:relatives_by_name repeat="pot context/relatives_by_name">
+        <tal:product condition="pot/productseries">
           <a href=""
             tal:attributes="href pot/fmt:url">
-            <span tal:content="pot/productseries/product/displayname">
-              A Product
-            </span>
-            <span tal:content="pot/productseries/displayname">
-              and ProductSeries
-            </span>
+            content="string:${pot/productseries/product/displayname}
+                            ${pot/productseries/displayname}">
+              A Product and ProductSeries
           </a>.
-        </span>
-         <span tal:condition="pot/distroseries">
+        </tal:product>
+         <tal:distro condition="pot/distroseries">
           <a href=""
             tal:attributes="href pot/fmt:url">
-            <span tal:content="pot/distroseries/distribution/displayname">
+            <tal:distro_name content="pot/distroseries/distribution/displayname">
               A Distribution
-            </span>
-            <span tal:content="pot/distroseries/displayname">
-              and DistroSeries</span></a>.
-        </span>
-      </span>
+            </tal:distro_name>
+            <tal:distroseries_name content="pot/distroseries/displayname">
+              and DistroSeries</tal:distroseries_name></a>.
+        </tal:distro>
+      </tal:relatives_by_name>
     </p>
 
     <div tal:replace="structure context/@@+chart" />
