@@ -438,8 +438,8 @@ Kamion is an admin of the Ubuntu team, but team admins can't change the
 expiration date of their own memberships, so he still has to contact one of
 the other team admins.
 
-    >>> kamion in ubuntu_team.adminmembers
-    True
+    >>> kamion_on_ubuntu_team.status.name
+    'ADMIN' 
     >>> kamion_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
     >>> [notification] = pop_notifications()
@@ -467,6 +467,11 @@ the other team admins.
     <BLANKLINE>
     Thanks for using Launchpad!
     <BLANKLINE>
+
+In the case of the beta-testers team, the email is sent only to the
+team's owner, which doesn't have the necessary rights to renew the
+membership of his team, so he's instructed to contact one of the
+ubuntu-team's admins.
 
     >>> beta_testers = personset.getByName('launchpad-beta-testers')
     >>> beta_testers_on_ubuntu_team = membershipset.getByPersonAndTeam(
