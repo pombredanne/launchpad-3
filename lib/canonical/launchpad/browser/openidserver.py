@@ -10,7 +10,6 @@ __all__ = [
 import cgi
 from datetime import datetime
 from time import time
-import urllib
 
 from BeautifulSoup import BeautifulSoup
 
@@ -121,23 +120,20 @@ class OpenIdMixin:
         """Get the OpenIDRequest from our session using the given key."""
         session = self.getSession()
         try:
-            timestamp, serialised_request = session[key]
+            timestamp, self._openid_parameters = session[key]
         except KeyError:
             raise UnexpectedFormData("Invalid or expired nonce")
 
-        # Decode the request, saving it in the cache variable for
-        # self.openid_parameters, and create the request object.
-        self._openid_parameters = dict(cgi.parse_qsl(serialised_request))
+        # Decode the request parameters and create the request object.
         self.openid_request = self.openid_server.decodeRequest(
-            self._openid_parameters)
+            self.openid_parameters)
         assert zisinstance(self.openid_request, CheckIDRequest), (
             'Invalid OpenIDRequest in session')
 
     def saveRequestInSession(self, key):
         """Save the OpenIDRequest in our session using the given key."""
         query = self.openid_parameters
-        assert 'openid.mode' in query, 'No openid request to serialise'
-        assert query['openid.mode'] == 'checkid_setup', (
+        assert query.get('openid.mode') == 'checkid_setup', (
             'Can only serialise checkid_setup OpenID requests')
 
         session = self.getSession()
@@ -145,10 +141,7 @@ class OpenIdMixin:
         # out old requests after some time, say 1 hour.
         now = time()
         self._sweep(now, session)
-        # Store nonce with a distinct prefix to ensure malicious requests
-        # can't trick our code into retrieving something that isn't a nonce.
-        serialised_request = urllib.urlencode(query)
-        session[key] = (now, serialised_request)
+        session[key] = (now, query)
 
     def trashRequestInSession(self, key):
         """Remove the OpenIdRequest from the session using the given key."""
