@@ -1,10 +1,10 @@
 = Closing Bugs when Publishing Accepted Source =
 
 We have implemented 'premature publication of accepted sources' in
-NascentUpload to increase the publishing throughtput (see
+NascentUpload to increase the publishing throughput (see
 launchpad/doc/nascentupload.txt).
 
-Therefore we also use the available infraestructure to close bugs
+Therefore we also use the available infrastructure to close bugs
 mentioned in the source changelog (see close-bugs-from-changelog).
 
 Starting a new series of package, upload and publish the first version
