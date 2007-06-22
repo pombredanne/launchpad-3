@@ -21,6 +21,15 @@ class StrippedTextWidget(TextWidget):
         return TextWidget._toFieldValue(self, input.strip())
 
 
+class LowerCaseTextWidget(StrippedTextWidget):
+    """A widget that converts text to lower case."""
+
+    cssClass = 'lowerCaseText'
+
+    def _toFieldValue(self, input):
+        return StrippedTextWidget._toFieldValue(self, input.lower())
+
+
 class LocalDateTimeWidget(TextWidget):
     """A datetime widget that uses a particular time zone."""
 
