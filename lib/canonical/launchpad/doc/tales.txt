@@ -141,8 +141,8 @@ PGP blocks, Signatures and full-quoted parts of a message can be
 wrapped in markup to hide them:
 
     >>> pgp_open = ('-----BEGIN PGP SIGNED MESSAGE-----\n'
-    ...              'Hash: SHA1\n'
-    ...              '\n')
+    ...             'Hash: SHA1\n'
+    ...             '\n')
     >>> text = ('Top quoting is simply bad netiquette.\n'
     ...         'The words of the leading text should be displayed\n'
     ...         'normally--no markup to hide it from view.\n'
@@ -153,6 +153,9 @@ wrapped in markup to hide them:
     ...                '>    from the English Language.\n'
     ...                '> 2. Remove the penny from US currency.\n'
     ...                '\n')
+    >>> bar_quoted_text = ('Someone said sometime ago:\n'
+    ...                    '| Quote passages are folded.\n'
+    ...                    '\n')
     >>> command = ('dpkg -l libdvdread3\n'
     ...            'Desired=Unknown/Install/Remove/Purge/Hold\n'
     ...            '| Status=Not/Installed/Config-files/Unpacked/Failed-co\n'
@@ -190,32 +193,18 @@ When given simple paragraphs it behaves just as the text-to-html
 formatter.
 
     >>> print test_tales('foo/fmt:email-to-html',
-    ...                  foo='\n'.join([text, command]))
+    ...                  foo=text)
     <p>Top quoting is simply bad netiquette.<br />
     The words of the leading text should be displayed<br />
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
-    <p>dpkg -l libdvdread3<br />
-    Desired=<wbr></wbr>Unknown/<wbr></wbr>Install/<wbr></wbr>...
-    | Status=<wbr></wbr>Not/Installed/<wbr></wbr>Config-<wbr></wbr>...
-    |/ Err?=(none)<wbr></wbr>/Hold/Reinst-<wbr></wbr>required/...
-    ||/ Name Version Description<br />
-    +++-===<wbr></wbr>=======<wbr></wbr>====-==<wbr></wbr>=======...
-    ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs</p>
 
     >>> print test_tales('foo/fmt:text-to-html',
-    ...                  foo='\n'.join([text, command]))
+    ...                  foo=text)
     <p>Top quoting is simply bad netiquette.<br />
     The words of the leading text should be displayed<br />
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
-    <p>dpkg -l libdvdread3<br />
-    Desired=<wbr></wbr>Unknown/<wbr></wbr>Install/<wbr></wbr>...
-    | Status=<wbr></wbr>Not/Installed/<wbr></wbr>Config-<wbr></wbr>...
-    |/ Err?=(none)<wbr></wbr>/Hold/Reinst-<wbr></wbr>required/...
-    ||/ Name Version Description<br />
-    +++-===<wbr></wbr>=======<wbr></wbr>====-==<wbr></wbr>=======...
-    ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs</p>
 
 PGP signed messages have and opening and closing blocks that are
 wrapped in a foldable span.
@@ -296,6 +285,36 @@ The reverse order works too:
     The words of the leading text should be displayed<br />
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
+
+
+Dpkg generates lines that start with a '|' that will be confused with
+quoted text. Dpkg is common in messages, and when it is, we do not
+fold lines that start with a '|'.
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([text, bar_quoted_text]))
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p>Someone said sometime ago:<br />
+    <span class="foldable">
+    | Quote passages are folded.
+    </span></p>
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([text, command]))
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p>dpkg -l libdvdread3<br />
+    Desired=<wbr></wbr>Unknown/<wbr></wbr>Install/<wbr></wbr>...
+    | Status=<wbr></wbr>Not/Installed/<wbr></wbr>Config-<wbr></wbr>...
+    |/ Err?=(none)<wbr></wbr>/Hold/Reinst-<wbr></wbr>required/...
+    ||/ Name Version Description<br />
+    +++-===<wbr></wbr>=======<wbr></wbr>====-==<wbr></wbr>=======...
+    ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs</p>
 
 The formatter is indifferent to the number and kinds of paragraphs
 it must markup. We can format the three examples at the same time.

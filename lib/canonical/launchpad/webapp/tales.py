@@ -1374,9 +1374,12 @@ class FormattersAPI:
                     % cgi.escape(self._stringtoformat)
                     )
 
-    # Match lines that start with the ':', and '>' symbols
+    # Match lines that start with the ':', '|' and '>' symbols
     # commonly used for quoting passages from another email.
-    _re_quoted = re.compile('^([:]|&gt;)')
+    # the dpkg version is used for exceptional cases where it
+    # is better to not assume '|' is a start of a quoted passage.
+    _re_quoted = re.compile('^([:|]|&gt;|-----BEGIN PGP)')
+    _re_dpkg_quoted = re.compile('^([:]|&gt;|-----BEGIN PGP)')
 
     # Match blocks that start as signatures or quoted passages.
     _re_block_include = re.compile('^<p>(--<br />|&gt;|-----BEGIN PGP)')
@@ -1391,21 +1394,31 @@ class FormattersAPI:
         """
         start_fold_markup = '<span class="foldable">'
         end_fold_markup = '%s\n</span></p>'
+        re_quoted = self._re_quoted
         output = []
         in_fold = False
         in_false_paragraph = False
         for line in self.text_to_html().split('\n'):
+            if not in_fold and 'dpkg' in line:
+                # dpkg is important in bug reports. It is better to show
+                # lines starting with '|' in case it is dpkg oout
+                re_quoted = self._re_dpkg_quoted
+
             if not in_fold and self._re_block_include.match(line) is not None:
                 # Start a foldable paragraph for a signature or quote.
                 in_fold = True
-                if 'PGP SIGNATURE' in line:
-                    in_false_paragraph = True
                 line = '<p>%s%s' % (start_fold_markup, line[3:])
-            elif not in_fold and self._re_quoted.match(line) is not None:
+            elif not in_fold and re_quoted.match(line) is not None:
                 # Start a foldable section for a quoted passage.
                 in_fold = True
                 output.append(start_fold_markup)
-            elif in_fold and line.endswith('</p>'):
+            else:
+                # The start of this line is not extraordinary.
+                pass
+
+            # We must test line starts and ends in separate blocks to
+            # close the rare single line that is foldable.
+            if in_fold and line.endswith('</p>'):
                 if not in_false_paragraph:
                     # End the foldable section.
                     in_fold = False
@@ -1413,13 +1426,22 @@ class FormattersAPI:
                 else:
                     # Restore the line break to join with the next parapgrah.
                     line = '%s<br />\n<br />' %  line[0:-4]
-            elif in_false_paragraph and line.startswith('<p>'):
+            elif (in_false_paragraph
+            and line.startswith('<p>')):
                 # Remove the paragraph to join with the previous paragraph.
                 in_false_paragraph = False
                 line = line[3:]
             else:
-                # This line is not extraordinary.
+                # The end of this line is not extraordinary.
                 pass
+
+            if in_fold and 'PGP SIGNATURE' in line:
+                # PGP signature blocks are split into two paragrpahs
+                # by the text_to_html. The foldable feature works with
+                # a single paragraph, so we merge this paragraph with
+                # the next one.
+                in_false_paragraph = True
+
             output.append(line)
         return '\n'.join(output)
 
