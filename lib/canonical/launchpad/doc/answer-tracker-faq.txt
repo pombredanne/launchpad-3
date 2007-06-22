@@ -133,9 +133,15 @@ again:
 
     >>> message = other_question.linkFAQ(
     ...     no_priv, None, "This has nothing to do with Fnords.")
-
     >>> print other_question.faq
     None
+
+After this, only the original question will remain linked to the FAQ.
+
+    >>> syncUpdate(other_question)
+    >>> for question in firefox_faq.related_questions:
+    ...     print question.title
+    Are there Fnords on the web?
 
 That change is also considered an answer:
 
