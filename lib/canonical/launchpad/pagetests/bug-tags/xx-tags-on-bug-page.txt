@@ -93,5 +93,5 @@ to the list of all bugs having that tag in this context.
     >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder 
-      &mdash; Medium Unconfirmed
+      &mdash; Medium New
 

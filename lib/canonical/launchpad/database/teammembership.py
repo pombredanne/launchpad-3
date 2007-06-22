@@ -3,10 +3,11 @@
 __metaclass__ = type
 __all__ = ['TeamMembership', 'TeamMembershipSet', 'TeamParticipation']
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import itertools
 import pytz
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import ForeignKey, StringCol
@@ -18,20 +19,22 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.config import config
 
-from canonical.lp.dbschema import TeamMembershipStatus
+from canonical.lp.dbschema import (
+    TeamMembershipRenewalPolicy, TeamMembershipStatus)
 
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
     ITeamMembership, ITeamParticipation, ITeamMembershipSet)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
 
 class TeamMembership(SQLBase):
-    """See ITeamMembership"""
+    """See `ITeamMembership`."""
 
     implements(ITeamMembership)
 
@@ -43,22 +46,113 @@ class TeamMembership(SQLBase):
     reviewer = ForeignKey(dbName='reviewer', foreignKey='Person', default=None)
     status = EnumCol(
         dbName='status', notNull=True, schema=TeamMembershipStatus)
-    datejoined = UtcDateTimeCol(dbName='datejoined', default=UTC_NOW,
-                                notNull=True)
+    datejoined = UtcDateTimeCol(
+        dbName='datejoined', default=UTC_NOW, notNull=True)
     dateexpires = UtcDateTimeCol(dbName='dateexpires', default=None)
     reviewercomment = StringCol(dbName='reviewercomment', default=None)
 
     @property
     def statusname(self):
-        """See ITeamMembership"""
+        """See `ITeamMembership`."""
         return self.status.title
 
     def isExpired(self):
-        """See ITeamMembership"""
+        """See `ITeamMembership`."""
         return self.status == TeamMembershipStatus.EXPIRED
 
+    def canBeRenewedByMember(self):
+        """See `ITeamMembership`."""
+        ondemand = TeamMembershipRenewalPolicy.ONDEMAND
+        admin = TeamMembershipStatus.APPROVED
+        approved = TeamMembershipStatus.ADMIN
+        date_limit = datetime.now(pytz.timezone('UTC')) + timedelta(
+            days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
+        return (self.status in (admin, approved)
+                and self.team.renewal_policy == ondemand
+                and self.dateexpires is not None
+                and self.dateexpires < date_limit)
+
+    def sendSelfRenewalNotification(self):
+        """See `ITeamMembership`."""
+        team = self.team
+        member = self.person
+        assert team.renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND
+
+        from_addr = format_address(
+            "Launchpad Team Membership Notifier", config.noreply_from_address)
+        replacements = {'member_name': member.unique_displayname,
+                        'team_name': team.unique_displayname,
+                        'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
+        subject = ('Launchpad: renewed %s as member of %s'
+                   % (member.name, team.name))
+        template = get_email_template('membership-member-renewed.txt')
+        msg = MailWrapper().format(template % replacements)
+        admins_addrs = self.team.getTeamAdminsEmailAddresses()
+        for address in admins_addrs:
+            simple_sendmail(from_addr, address, subject, msg)
+
+    def sendAutoRenewalNotification(self):
+        """See `ITeamMembership`."""
+        team = self.team
+        member = self.person
+        assert team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC
+
+        from_addr = format_address(
+            "Launchpad Team Membership Notifier", config.noreply_from_address)
+        replacements = {'member_name': member.unique_displayname,
+                        'team_name': team.unique_displayname,
+                        'dateexpires': self.dateexpires.strftime('%Y-%m-%d')}
+        subject = ('Launchpad: renewed %s as member of %s'
+                   % (member.name, team.name))
+
+        if member.isTeam():
+            member_addrs = contactEmailAddresses(member.teamowner)
+            template_name = 'membership-auto-renewed-impersonal.txt'
+        else:
+            template_name = 'membership-auto-renewed-personal.txt'
+            member_addrs = contactEmailAddresses(member)
+        template = get_email_template(template_name)
+        msg = MailWrapper().format(template % replacements)
+        for address in member_addrs:
+            simple_sendmail(from_addr, address, subject, msg)
+
+        template_name = 'membership-auto-renewed-impersonal.txt'
+        admins_addrs = self.team.getTeamAdminsEmailAddresses()
+        admins_addrs = set(admins_addrs).difference(member_addrs)
+        template = get_email_template(template_name)
+        msg = MailWrapper().format(template % replacements)
+        for address in admins_addrs:
+            simple_sendmail(from_addr, address, subject, msg)
+
+    def canChangeExpirationDate(self, person):
+        """See `ITeamMembership`."""
+        person_is_admin = self.team in person.getAdministratedTeams()
+        if (person.inTeam(self.team.teamowner) or
+                person.inTeam(getUtility(ILaunchpadCelebrities).admin)):
+            # The team owner and Launchpad admins can change the expiration
+            # date of anybody's membership.
+            return True
+        elif person_is_admin and person != self.person:
+            # A team admin can only change other member's expiration date.
+            return True
+        else:
+            return False
+
+    def setExpirationDate(self, date, user):
+        """See `ITeamMembership`."""
+        if date == self.dateexpires:
+            return
+
+        assert self.canChangeExpirationDate(user), (
+            "This user can't change this membership's expiration date.")
+        assert date is None or date > datetime.now(pytz.timezone('UTC')), (
+            "The given expiration date must be None or be in the future: %s"
+            % date.strftime('%Y-%m-%d'))
+        self.dateexpires = date
+        self.reviewer = user
+
     def sendExpirationWarningEmail(self):
-        """See ITeamMembership"""
+        """See `ITeamMembership`."""
         assert self.dateexpires is not None, (
             'This membership has no expiration date')
         assert self.dateexpires > datetime.now(pytz.timezone('UTC')), (
@@ -75,25 +169,31 @@ class TeamMembership(SQLBase):
         team = self.team
         subject = 'Launchpad: %s team membership about to expire' % team.name
 
-        admins_names = []
-        admins = team.getDirectAdministrators()
-        assert admins.count() >= 1
-        if admins.count() == 1:
-            admin = admins[0]
-            contact_admins_text = (
-                "To prevent this membership from expiring, you should "
-                "contact\nthe team's administrator, %s.\n<%s>"
-                % (admin.unique_displayname, canonical_url(admin)))
+        if team.renewal_policy == TeamMembershipRenewalPolicy.ONDEMAND:
+            how_to_renew = (
+                "If you want, you can renew this membership at\n"
+                "<%s/+expiringmembership/%s>"
+                % (canonical_url(member), team.name))
         else:
-            for admin in admins:
-                admins_names.append(
-                    "%s <%s>"
+            admins_names = []
+            admins = team.getDirectAdministrators()
+            assert admins.count() >= 1
+            if admins.count() == 1:
+                admin = admins[0]
+                how_to_renew = (
+                    "To prevent this membership from expiring, you should "
+                    "contact\nthe team's administrator, %s.\n<%s>"
                     % (admin.unique_displayname, canonical_url(admin)))
+            else:
+                for admin in admins:
+                    admins_names.append(
+                        "%s <%s>"
+                        % (admin.unique_displayname, canonical_url(admin)))
 
-            contact_admins_text = (
-                "To prevent this membership from expiring, you should get "
-                "in touch\nwith one of the team's administrators:\n")
-            contact_admins_text += "\n".join(admins_names)
+                how_to_renew = (
+                    "To prevent this membership from expiring, you should get "
+                    "in touch\nwith one of the team's administrators:\n")
+                how_to_renew += "\n".join(admins_names)
 
         formatter = DurationFormatterAPI(
             self.dateexpires - datetime.now(pytz.timezone('UTC')))
@@ -101,9 +201,8 @@ class TeamMembership(SQLBase):
             'member_name': member.unique_displayname,
             'member_displayname': member.displayname,
             'team_url': canonical_url(team),
-            'contact_admins_text': contact_admins_text,
+            'how_to_renew': how_to_renew,
             'team_name': team.unique_displayname,
-            'team_admins': '\n'.join(admins_names),
             'expiration_date': self.dateexpires.strftime('%Y-%m-%d'),
             'approximate_duration': formatter.approximateduration()}
 
@@ -113,7 +212,10 @@ class TeamMembership(SQLBase):
         simple_sendmail(from_addr, to_addrs, subject, msg)
 
     def setStatus(self, status, reviewer, reviewercomment=None):
-        """See ITeamMembership"""
+        """See `ITeamMembership`."""
+        if status == self.status:
+            return
+
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
         expired = TeamMembershipStatus.EXPIRED
@@ -243,7 +345,7 @@ class TeamMembership(SQLBase):
 
 
 class TeamMembershipSet:
-    """See ITeamMembershipSet"""
+    """See `ITeamMembershipSet`."""
 
     implements(ITeamMembershipSet)
 
@@ -251,7 +353,7 @@ class TeamMembershipSet:
 
     def new(self, person, team, status, dateexpires=None, reviewer=None,
             reviewercomment=None):
-        """See ITeamMembershipSet"""
+        """See `ITeamMembershipSet`."""
         proposed = TeamMembershipStatus.PROPOSED
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
@@ -266,15 +368,30 @@ class TeamMembershipSet:
 
         return tm
 
-    def getByPersonAndTeam(self, person, team, default=None):
-        """See ITeamMembershipSet"""
-        result = TeamMembership.selectOneBy(person=person, team=team)
-        if result is None:
-            return default
-        return result
+    def handleMembershipsExpiringToday(self, reviewer):
+        """See `ITeamMembershipSet`."""
+        memberships = self.getMembershipsToExpire()
+        for membership in memberships:
+            team = membership.team
+            if team.renewal_policy == TeamMembershipRenewalPolicy.AUTOMATIC:
+                # Keep the same status, change the expiration date and send a
+                # notification explaining the membership has been renewed.
+                assert (team.defaultrenewalperiod is not None
+                        and team.defaultrenewalperiod > 0), (
+                    'Teams with a renewal policy of AUTOMATIC must specify '
+                    'a default renewal period greater than 0.')
+                membership.dateexpires += timedelta(
+                    days=team.defaultrenewalperiod)
+                membership.sendAutoRenewalNotification()
+            else:
+                membership.setStatus(TeamMembershipStatus.EXPIRED, reviewer)
+
+    def getByPersonAndTeam(self, person, team):
+        """See `ITeamMembershipSet`."""
+        return TeamMembership.selectOneBy(person=person, team=team)
 
     def getMembershipsToExpire(self, when=None):
-        """See ITeamMembershipSet"""
+        """See `ITeamMembershipSet`."""
         if when is None:
             when = datetime.now(pytz.timezone('UTC'))
         query = ("dateexpires <= %s AND status IN (%s, %s)"

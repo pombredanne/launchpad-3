@@ -230,6 +230,9 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
         this project has been reviewed."""))
 
+    private_bugs = Bool(title=_('Private bugs'), description=_("""Whether
+        or not bugs reported into this project are private by default"""))
+
     def getExternalBugTracker():
         """Return the external bug tracker used by this bug tracker.
 

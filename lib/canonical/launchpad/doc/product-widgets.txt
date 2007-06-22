@@ -1,5 +1,4 @@
-Choosing a Product Bugtracker
-----------------------------
+= Choosing a Product Bugtracker =
 
 When choosing which bug tracker a Product uses, there are three possible
 options. A product can choose to use Launchpad as its bug tracker, an external
@@ -21,13 +20,14 @@ Let's take Firefox as an example, it uses Launchpad as its bug tracker.
 If we render the widget, it will have the 'No bug tracker' option
 selected, since that's what the custom field's missing value represent.
 
-    >>> from zope.publisher.browser import TestRequest
-    >>> from canonical.launchpad.interfaces import IProductLaunchpadUsageForm
+    >>> from canonical.launchpad.interfaces import IProductLaunchpadUsageForm 
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.widgets.product import ProductBugTrackerWidget
     >>> product_bugtracker = IProductLaunchpadUsageForm['bugtracker'].bind(
     ...     firefox)
     >>> widget = ProductBugTrackerWidget(
-    ...     product_bugtracker, product_bugtracker.vocabulary, TestRequest())
+    ...     product_bugtracker, product_bugtracker.vocabulary,
+    ...     LaunchpadTestRequest())
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> def print_items(html):
@@ -112,7 +112,7 @@ affect what getInputValue() returns.
     ...     'field.bugtracker': 'malone', 'field.bugtracker.bugtracker': '3'}
     >>> widget = ProductBugTrackerWidget(
     ...     product_bugtracker, product_bugtracker.vocabulary,
-    ...     TestRequest(form=form))
+    ...     LaunchpadTestRequest(form=form))
     >>> widget.getInputValue() is product_bugtracker.malone_marker
     True
 
@@ -132,7 +132,7 @@ passed as well.
     >>> form['field.bugtracker'] = 'external'
     >>> widget = ProductBugTrackerWidget(
     ...     product_bugtracker, product_bugtracker.vocabulary,
-    ...     TestRequest(form=form))
+    ...     LaunchpadTestRequest(form=form))
     >>> debbugs = widget.getInputValue()
     >>> debbugs.name
     u'debbugs'
@@ -149,7 +149,7 @@ tracker at all, using 'project', None will be returned.
     >>> form['field.bugtracker'] = 'project'
     >>> widget = ProductBugTrackerWidget(
     ...     product_bugtracker, product_bugtracker.vocabulary,
-    ...     TestRequest(form=form))
+    ...     LaunchpadTestRequest(form=form))
     >>> widget.getInputValue() is None
     True
 

@@ -260,13 +260,13 @@ class Bugzilla(ExternalBugTracker):
             # SUSPENDED, WAITING: http://gcc.gnu.org/bugzilla
             #   though SUSPENDED applies to something pending discussion
             #   in a larger/separate context.
-            malone_status = BugTaskStatus.NEEDSINFO
+            malone_status = BugTaskStatus.INCOMPLETE
         elif remote_status in ['PENDINGUPLOAD', 'MODIFIED', 'RELEASE_PENDING', 'ON_QA']:
             # RELEASE_PENDING, MODIFIED, ON_QA: bugzilla.redhat.com
             malone_status = BugTaskStatus.FIXCOMMITTED
         elif remote_status in ['REJECTED']:
             # REJECTED: bugzilla.kernel.org
-            malone_status = BugTaskStatus.REJECTED
+            malone_status = BugTaskStatus.INVALID
         elif remote_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:
             if resolution in ['FIXED', 'CURRENTRELEASE', 'RAWHIDE',
@@ -277,12 +277,12 @@ class Bugzilla(ExternalBugTracker):
                 #XXX: Which are the valid resolutions? We should fail
                 #     if we don't know of the resolution. Bug 31745.
                 #     -- Bjorn Tillenius, 2005-02-03
-                malone_status = BugTaskStatus.REJECTED
+                malone_status = BugTaskStatus.INVALID
         elif remote_status in ['REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED']:
             # DEFERRED: bugzilla.redhat.com
             malone_status = BugTaskStatus.CONFIRMED
         elif remote_status in ['UNCONFIRMED']:
-            malone_status = BugTaskStatus.UNCONFIRMED
+            malone_status = BugTaskStatus.NEW
         else:
             log.warning(
                 "Unknown Bugzilla status '%s' at %s" % (
@@ -412,7 +412,7 @@ class Bugzilla(ExternalBugTracker):
             raise BugNotFound(bug_id)
 
 
-debbugsstatusmap = {'open':      BugTaskStatus.UNCONFIRMED,
+debbugsstatusmap = {'open':      BugTaskStatus.NEW,
                     'forwarded': BugTaskStatus.CONFIRMED,
                     'done':      BugTaskStatus.FIXRELEASED}
 
@@ -481,7 +481,7 @@ class DebBugs(ExternalBugTracker):
                 'help', 'confirmed', 'upstream', 'fixed-upstream', 'wontfix']
             fix_committed_tags = ['pending', 'fixed', 'fixed-in-experimental']
             if 'moreinfo' in tags:
-                malone_status = BugTaskStatus.NEEDSINFO
+                malone_status = BugTaskStatus.INCOMPLETE
             for confirmed_tag in confirmed_tags:
                 if confirmed_tag in tags:
                     malone_status = BugTaskStatus.CONFIRMED
