@@ -18,8 +18,9 @@ with the ids between 130 and 151 and, by default, the batch are of 10 items.
   ...
   ...     soup = BeautifulSoup(browser.contents)
   ...     for tag in soup.findAll('label'):
-  ...         if tag.get('id') is not None:
-  ...             match = re.match(match_translation_id, tag.get('id'))
+  ...         id = tag.get('id')
+  ...         if id is not None:
+  ...             match = re.match(match_translation_id, id)
   ...             if match:
   ...                 translations[int(match.group(1))] = tag
   ...
