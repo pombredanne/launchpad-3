@@ -1374,9 +1374,9 @@ class FormattersAPI:
                     % cgi.escape(self._stringtoformat)
                     )
 
-    # Match lines that start with the ':', '|', and '>' symbols
+    # Match lines that start with the ':', and '>' symbols
     # commonly used for quoting passages from another email.
-    _re_quoted = re.compile('^([:|]|&gt;)')
+    _re_quoted = re.compile('^([:]|&gt;)')
 
     # Match blocks that start as signatures or quoted passages.
     _re_block_include = re.compile('^<p>(--<br />|&gt;)')
