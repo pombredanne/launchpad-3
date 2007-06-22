@@ -72,18 +72,19 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
                     % (productName,))
 
             self.putChild(productName,
-                          SFTPServerProductDir(avatar, lpid, productID,
+                          SFTPServerProductDir(avatar, lpname, productID,
                                                productName, branches, self))
 
         # Make sure +junk exists if this is a user dir, even if there are no
         # branches in there yet.
         if junkAllowed and not self.exists('+junk'):
             self.putChild('+junk',
-                          SFTPServerProductDir(avatar, lpid, None, '+junk',
+                          SFTPServerProductDir(avatar, lpname, None, '+junk',
                                                [], self))
 
         self.avatar = avatar
         self.userID = lpid
+        self.userName = lpname
         self.junkAllowed = junkAllowed
 
     def rename(self, newName):
@@ -109,9 +110,8 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
                     "after a product name registered in Launchpad "
                     "<https://launchpad.net/>.")
             productID = str(productID)
-            productDir = SFTPServerProductDir(self.avatar, self.userID,
-                                              productID, childName, [],
-                                              self)
+            productDir = SFTPServerProductDir(
+                self.avatar, self.userName, productID, childName, [], self)
             self.putChild(childName, productDir)
             return productDir
         deferred.addCallback(cb)
@@ -141,11 +141,11 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
     Inside a product dir there can only be directories, which will be
     SFTPServerBranch instances.
     """
-    def __init__(self, avatar, userID, productID, productName, branches,
+    def __init__(self, avatar, userName, productID, productName, branches,
                  parent):
         adhoc.AdhocDirectory.__init__(self, name=productName, parent=parent)
         self.avatar = avatar
-        self.userID = userID
+        self.userName = userName
         self.productID = productID
         self.productName = productName
 
@@ -167,12 +167,12 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
             # "mkdir failed" is the magic string that bzrlib will interpret to
             # mean "already exists".
             raise VFSError("mkdir failed")
-        deferred = self.avatar.createBranch(self.userID, self.productID,
-                                            childName)
+        deferred = self.avatar.createBranch(
+            self.avatar.avatarId, self.userName, self.productName, childName)
         def cb(branchID):
             branchID = str(branchID)
-            branchDirectory = SFTPServerBranch(self.avatar, branchID, childName,
-                                               self)
+            branchDirectory = SFTPServerBranch(
+                self.avatar, branchID, childName, self)
             self.putChild(childName, branchDirectory)
             return branchDirectory
         return deferred.addCallback(cb)

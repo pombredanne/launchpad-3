@@ -93,12 +93,13 @@ class LaunchpadAvatar(avatar.ConchUser):
         deferred.addCallback(self._cbRememberProductID, productName)
         return deferred
 
-    def createBranch(self, userID, productID, branchName):
+    def createBranch(self, loginID, userName, productName, branchName):
         """Register a new branch in Launchpad.
 
         Returns a Deferred with the new branch ID.
         """
-        return self._launchpad.createBranch(userID, productID, branchName)
+        return self._launchpad.createBranch(
+            loginID, userName, productName, branchName)
 
     def _cbRememberProductID(self, productID, productName):
         if productID is None:

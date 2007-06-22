@@ -22,7 +22,7 @@ from canonical.launchpad.interfaces import (
     UBUNTU_WIKI_URL, BranchCreationForbidden, IBranchSet, IPersonSet,
     IProductSet)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import cursor, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.lp import dbschema
 from canonical.config import config
@@ -466,7 +466,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
                 product = getUtility(IProductSet).getByName(productName)
 
             person_set = getUtility(IPersonSet)
-            creator = person_set.get(loginID)
+            creator = self._getPerson(cursor(), loginID)
             owner = person_set.getByName(personName)
 
             branch_set = getUtility(IBranchSet)

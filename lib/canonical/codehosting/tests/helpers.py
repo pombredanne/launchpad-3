@@ -132,11 +132,11 @@ class FakeLaunchpad:
             2: dict(name='thunderbird'),
             }
         self._branch_set = {}
-        self.createBranch(1, 1, 'baz')
-        self.createBranch(1, 1, 'qux')
-        self.createBranch(1, '', 'random')
-        self.createBranch(2, 1, 'qux')
-        self.createBranch(3, '', 'junk.dev')
+        self.createBranch(None, 'testuser', 'firefox', 'baz')
+        self.createBranch(None, 'testuser', 'firefox', 'qux')
+        self.createBranch(None, 'testuser', '+junk', 'random')
+        self.createBranch(None, 'testteam', 'firefox', 'qux')
+        self.createBranch(None, 'name12', '+junk', 'junk.dev')
         self._request_mirror_log = []
 
     def _lookup(self, item_set, item_id):
@@ -149,8 +149,16 @@ class FakeLaunchpad:
         item_set[new_id] = item_dict
         return new_id
 
-    def createBranch(self, user_id, product_id, branch_name):
+    def createBranch(self, login_id, user, product, branch_name):
         """See IHostedBranchStorage.createBranch."""
+        for user_id, user_info in self._person_set.iteritems():
+            if user_info['name'] == user:
+                break
+        else:
+            raise ValueError("Couldn't find user %r" % (user,))
+        product_id = self.fetchProductID(product)
+        if product_id is None:
+            return ''
         new_branch = dict(
             name=branch_name, user_id=user_id, product_id=product_id)
         for branch in self._branch_set.values():
