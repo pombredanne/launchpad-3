@@ -576,7 +576,8 @@ class POFile(SQLBase, POFileMixIn):
               POSubmission.active IS NOT TRUE))
             ''' % sqlvalues(self.potemplate, self),
             clauseTables=['POMsgSet', 'POSubmission'],
-            orderBy='POTmsgSet.sequence')
+            orderBy='POTmsgSet.sequence',
+            distinct=True)
 
         return results
 
