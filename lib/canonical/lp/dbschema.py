@@ -3693,23 +3693,33 @@ class ArchivePurpose(DBSchema):
     archive would be OBSOLETE_ARCHIVE.
     """
 
-    MAIN_ARCHIVE = Item(1, """
-        This is the main Ubuntu archive.
+    PRIMARY = Item(1, """
+        Primary Archive.
+
+        This is the primary Ubuntu archive.
         """)
 
-    PPA_ARCHIVE = Item(2, """
+    PPA = Item(2, """
+        PPA Archive.
+
         This is a Personal Package Archive.
         """)
 
-    SECURITY_ARCHIVE = Item(3, """
+    EMBARGOED = Item(3, """
+        Security Archive.
+
         This is the archive for security-related packages.
         """)
 
-    COMMERCIAL_ARCHIVE = Item(4, """
+    COMMERCIAL = Item(4, """
+        Commercial Archive.
+
         This is the archive for commercial packages.
         """)
 
-    OBSOLETE_ARCHIVE = Item(5, """
+    OBSOLETE = Item(5, """
+        Obsolete Archive.
+
         This is the archive for obsolete packages.
         """)
 

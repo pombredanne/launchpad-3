@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Text
+from zope.schema import Int, Text
 
 from canonical.launchpad import _
 
@@ -27,11 +27,6 @@ class IArchive(Interface):
         description=_("A short description of contents of this Archive."))
 
     archive_url = Attribute("External archive URL.")
-
-    path = TextLine(
-        title=_('The on-disk location of this archive.'), required=True, 
-        readonly=True
-        )
 
     distribution = Attribute("The distribution that uses this archive.")
 
@@ -54,10 +49,10 @@ class IArchiveSet(Interface):
 
     title = Attribute('Title')
 
-    def new(owner=None, purpose):
+    def new(owner, distribution, purpose):
         """Create a new archive."""
 
-    def ensure(owner=None, purpose):
+    def ensure(owner, distribution, purpose):
         """Ensure the owner has an valid archive."""
 
     def get(archive_id):

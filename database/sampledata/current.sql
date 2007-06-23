@@ -566,15 +566,17 @@ ALTER TABLE archconfigentry ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, "owner", description) VALUES (1, NULL, NULL);
-INSERT INTO archive (id, "owner", description) VALUES (2, NULL, NULL);
-INSERT INTO archive (id, "owner", description) VALUES (3, NULL, NULL);
-INSERT INTO archive (id, "owner", description) VALUES (4, NULL, NULL);
-INSERT INTO archive (id, "owner", description) VALUES (5, NULL, NULL);
-INSERT INTO archive (id, "owner", description) VALUES (7, NULL, NULL);
-INSERT INTO archive (id, "owner", description) VALUES (8, NULL, NULL);
-INSERT INTO archive (id, "owner", description) VALUES (9, 28, 'packages to help my friends.');
-INSERT INTO archive (id, "owner", description) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)');
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (1, NULL, NULL, true, NULL, NULL, NULL, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (2, NULL, NULL, true, NULL, NULL, NULL, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (3, NULL, NULL, true, NULL, NULL, NULL, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (4, NULL, NULL, true, NULL, NULL, NULL, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (5, NULL, NULL, true, NULL, NULL, NULL, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (7, NULL, NULL, true, NULL, NULL, NULL, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (8, NULL, NULL, true, NULL, NULL, NULL, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (9, 28, 'packages to help my friends.', true, NULL, NULL, NULL, 2);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, NULL, NULL, NULL, 2);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (11, NULL, 'Commercial archive', true, NULL, NULL, 1, 4);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (12, NULL, 'Commercial archive', true, NULL, NULL, 8, 4);
 
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
@@ -1167,10 +1169,11 @@ ALTER TABLE calendarsubscription ENABLE TRIGGER ALL;
 
 ALTER TABLE component DISABLE TRIGGER ALL;
 
-INSERT INTO component (id, name) VALUES (1, 'main');
-INSERT INTO component (id, name) VALUES (2, 'restricted');
-INSERT INTO component (id, name) VALUES (3, 'universe');
-INSERT INTO component (id, name) VALUES (4, 'multiverse');
+INSERT INTO component (id, name, description) VALUES (1, 'main', NULL);
+INSERT INTO component (id, name, description) VALUES (2, 'restricted', NULL);
+INSERT INTO component (id, name, description) VALUES (3, 'universe', NULL);
+INSERT INTO component (id, name, description) VALUES (4, 'multiverse', NULL);
+INSERT INTO component (id, name, description) VALUES (5, 'commercial', 'This component contains commercial packages only, which are not in the main Ubuntu archive.');
 
 
 ALTER TABLE component ENABLE TRIGGER ALL;

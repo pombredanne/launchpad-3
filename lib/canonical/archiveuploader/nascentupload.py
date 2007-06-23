@@ -28,7 +28,7 @@ from canonical.archiveuploader.nascentuploadfile import (
     BaseBinaryUploadFile)
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
-    NotFoundError, IDistributionSet)
+    NotFoundError, IDistributionSet, IArchiveSet)
 from canonical.lp.dbschema import (PackagePublishingPocket, ArchivePurpose)
 
 
@@ -926,7 +926,7 @@ class NascentUpload:
         """
 
         # Firstly, we don't want to override PPAs:
-        if is_ppa():
+        if self.is_ppa:
             return
 
         # There needs to be some files in the package if we're going to
@@ -943,4 +943,8 @@ class NascentUpload:
                 self.policy.distroseries.distribution, 
                 ArchivePurpose.COMMERCIAL
                 )
+            # Check for data problems:
+            assert (self.policy.archive, 
+                "Commercial archive for distro '%s' not found" % (
+                    self.policy.distroseries.distribution.name))
 

@@ -356,7 +356,7 @@ class PackageUpload(SQLBase):
 
     def isPPA(self):
         """See IPackageUpload."""
-        return self.archive.purpose = ArchivePurpose.PPA
+        return self.archive.purpose == ArchivePurpose.PPA
 
     def _getChangesDict(self, changes_file_object=None):
         """Return a dictionary with changes file tags in it."""

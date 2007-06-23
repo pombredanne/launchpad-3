@@ -13,11 +13,12 @@ from zope.interface import implements
 
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import IArchive, IArchiveSet
 from canonical.launchpad.webapp.url import urlappend
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackageUploadStatus)
+    ArchivePurpose, PackagePublishingStatus, PackageUploadStatus)
 
 
 class Archive(SQLBase):
@@ -28,7 +29,6 @@ class Archive(SQLBase):
     owner = ForeignKey(
         foreignKey='Person', dbName='owner', notNull=False)
     description = StringCol(dbName='description', notNull=False, default=None)
-    path = StringCol()
     distribution = ForeignKey(
         foreignKey='distribution', dbName='distribution', notNull=False)
     purpose = EnumCol(dbName='purpose', unique=False, notNull=True,
@@ -73,20 +73,22 @@ class ArchiveSet:
     def getByDistroPurpose(self, distribution, purpose):
         return Archive.selectOneBy(distribution=distribution, purpose=purpose)
 
-    def new(self, owner=None, purpose):
+    def new(self, owner=None, distribution=None,
+            purpose=ArchivePurpose.PRIMARY):
         """See canonical.launchpad.interfaces.IArchiveSet."""
-        return Archive(owner=owner, purpose=purpose)
+        return Archive(owner=owner, distribution=distribution, purpose=purpose)
 
-    def ensure(self, owner, purpose):
+    def ensure(self, owner, distribution, purpose):
         """See canonical.launchpad.interfaces.IArchiveSet."""
         archive = owner.archive
         if archive is None:
-            archive = self.new(owner=owner, purpose=purpose)
+            archive = self.new(owner=owner, distribution=distribution, 
+                purpose=purpose)
         return archive
 
     def getAllPPAs(self):
         """See canonical.launchpad.interfaces.IArchiveSet."""
-        return Archive.select("owner is not NULL")
+        return Archive.selectBy(purpose=ArchivePurpose.PPA)
 
     def getPendingAcceptancePPAs(self):
         """See canonical.launchpad.interfaces.IArchiveSet."""

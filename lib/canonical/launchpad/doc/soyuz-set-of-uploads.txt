@@ -763,6 +763,63 @@ So, check the MTIME has changed for hoary-test/Release.
   >>> new_release_timestamp == release_timestamp
   False
 
+Upload a commercial source package that is targetted to the commercial repo by
+virtue of its commercial component:
+
+  >>> expect_okays('foocomm_1.0-1', upload_policy='sync', is_new=True)
+  >>> print open(uploader_log).read()
+  INFO    creating lockfile
+  ...
+  DEBUG   Sent a mail:
+  DEBUG       Subject: foocomm_1.0-1_source.changes is NEW
+  DEBUG       Recipients: Foo Bar <foo.bar@canonical.com>
+  DEBUG       Body:
+  DEBUG   NEW: foocomm_1.0.orig.tar.gz
+  DEBUG   NEW: foocomm_1.0-1.diff.gz
+  DEBUG   NEW: foocomm_1.0-1.dsc
+  ...
+
+  >>> from canonical.launchpad.database import (
+  ...     SourcePackageRelease, SourcePackageName)
+  >>> import pdb; pdb.set_trace()
+  >>> foocomm_name = SourcePackageName.selectOneBy(name="foocomm")
+  >>> foocomm_spr = SourcePackageRelease.selectOneBy(
+  ...     sourcepackagenameID=foocomm_name.id)
+  >>> foocomm_spr.component.name
+  u'commercial'
+  >>> foocomm_spr.upload_archive.id
+  12
+  >>> from canonical.launchpad.database.publishing import (
+  ...     SourcePackagePublishingHistory)
+  >>> foocomm_spph = SourcePackagePublishingHistory.selectOneBy(
+  ...     sourcepackagerelease=foocomm_spr)
+  >>> foocomm_spph.archive.id
+  12
+  >>> foocomm_spph.component.name
+  'commercial'
+
+Upload a commcercial binary package targetted to the commercial repo:
+
+  >>> expect_okays('foocomm_1.0-1_binary',
+  ...     is_new=True)
+  >>> print open(uploader_log).read()
+  INFO    creating lockfile
+
+  >>> from canonical.launchpad.database.publishing import (
+  ...     BinaryPackagePublishingHistory)
+  >>> from canonical.launchpad.database.binarypackagename import (
+  ...     BinaryPackageName)
+  >>> foocomm_binname = BinaryPackageName.selectOneBy(name="foocomm")
+  >>> foocomm_bpr = BinaryPackageRelease.selectOneBy(
+  ...     binarypackagenameID=foocomm_binname.id)
+  >>> foocomm_bpr.component.name
+  'commercial'
+  >>> foocomm_bpph = BinaryPackagePublishingHistory.selectOneBy(
+  ...     binarypackagereleaseID=foocomm_bpr.id)
+  >>> foocomm_bpph.archive.id
+  12
+  >>> foocomm_bpph.component.name
+  'commercial'
 
 
 Nice! That's enough for now.. let's kill the process and clean
