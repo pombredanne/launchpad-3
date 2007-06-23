@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+"""Database classes that implement SourcePacakge items."""
 
 __metaclass__ = type
 __all__ = [
@@ -44,7 +45,6 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
 from canonical.launchpad.database.distroseriessourcepackagerelease import (
     DistroSeriesSourcePackageRelease)
 from canonical.launchpad.database.build import Build
-from canonical.launchpad.mailnotification import NotificationRecipientSet
 
 
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
@@ -52,14 +52,14 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
     def newQuestion(self, owner, title, description, language=None,
                     datecreated=None):
-        """See IQuestionTarget."""
+        """See `IQuestionTarget`."""
         return QuestionSet.new(
             title=title, description=description, owner=owner,
             language=language, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename, datecreated=datecreated)
 
     def getQuestion(self, question_id):
-        """See IQuestionTarget."""
+        """See `IQuestionTarget`."""
         try:
             question = Question.get(question_id)
         except SQLObjectNotFound:
@@ -75,7 +75,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
                         needs_attention_from=None, unsupported=False):
-        """See IQuestionCollection."""
+        """See `IQuestionCollection`."""
         if unsupported:
             unsupported_target = self
         else:
@@ -90,7 +90,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
             unsupported_target=unsupported_target).getResults()
 
     def findSimilarQuestions(self, title):
-        """See IQuestionTarget."""
+        """See `IQuestionTarget`."""
         return SimilarQuestionsSearch(
             title, distribution=self.distribution,
             sourcepackagename=self.sourcepackagename).getResults()
@@ -101,7 +101,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
                 'sourcepackagename': self.sourcepackagename}
 
     def getAnswerContactsForLanguage(self, language):
-        """See IQuestionTarget."""
+        """See `IQuestionTarget`."""
         # Sourcepackages are supported by their distribtions too.
         persons = self.distribution.getAnswerContactsForLanguage(language)
         persons.update(QuestionTargetMixin.getAnswerContactsForLanguage(
@@ -110,7 +110,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
             [person for person in persons], key=attrgetter('displayname'))
 
     def getAnswerContactRecipients(self, language):
-        """See IQuestionTarget."""
+        """See `IQuestionTarget`."""
         # We need to special case the source package case because some are
         # contacts for the distro while others are only registered for the
         # package. And we also want the name of the package in context in
@@ -121,7 +121,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
         return recipients
 
     def removeAnswerContact(self, person):
-        """See IQuestionTarget."""
+        """See `IQuestionTarget`."""
         answer_contact = AnswerContact.selectOneBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename,
@@ -134,7 +134,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
     @property
     def answer_contacts(self):
-        """See IQuestionTarget."""
+        """See `IQuestionTarget`."""
         answer_contacts = set()
         answer_contacts.update(self.direct_answer_contacts)
         answer_contacts.update(self.distribution.answer_contacts)
@@ -142,7 +142,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
 
     @property
     def direct_answer_contacts(self):
-        """See IQuestionTarget."""
+        """See `IQuestionTarget`."""
         answer_contacts = AnswerContact.selectBy(
             distribution=self.distribution,
             sourcepackagename=self.sourcepackagename)
@@ -151,7 +151,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
             key=attrgetter('displayname'))
 
     def getQuestionLanguages(self):
-        """See IQuestionTarget."""
+        """See `IQuestionTarget`."""
         return set(Language.select(
             'Language.id = Question.language AND '
             'Question.distribution = %s AND '
@@ -249,7 +249,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
             return None
 
     def __getitem__(self, version):
-        """See ISourcePackage."""
+        """See `ISourcePackage`."""
         latest_package = self._getFirstPublishingHistory(
                      version=version,
                      exclude_status=[PackagePublishingStatus.REMOVED])
@@ -266,7 +266,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
 
     @property
     def bugtargetname(self):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         return "%s (%s)" % (self.name, self.distroseries.fullseriesname)
 
     @property
@@ -299,7 +299,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
 
     @property
     def releases(self):
-        """See ISourcePackage."""
+        """See `ISourcePackage`."""
         order_const = "debversion_sort_key(SourcePackageRelease.version)"
         packages = self._getPublishingHistory(
                      exclude_status=[PackagePublishingStatus.REMOVED],
@@ -373,7 +373,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
 
     @property
     def direct_packaging(self):
-        """See ISourcePackage."""
+        """See `ISourcePackage`."""
         # get any packagings matching this sourcepackage
         return Packaging.selectFirstBy(
             sourcepackagename=self.sourcepackagename,
@@ -382,7 +382,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
 
     @property
     def packaging(self):
-        """See ISourcePackage.packaging"""
+        """See `ISourcePackage`"""
         # First we look to see if there is packaging data for this
         # distroseries and sourcepackagename. If not, we look up through
         # parent distroserieses, and when we hit Ubuntu, we look backwards in
@@ -431,7 +431,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
 
     @property
     def published_by_pocket(self):
-        """See ISourcePackage."""
+        """See `ISourcePackage`."""
         result = self._getPublishingHistory(
             include_status=[PackagePublishingStatus.PUBLISHED])
         # create the dictionary with the set of pockets as keys
@@ -450,11 +450,11 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         return self.distroseries.getUsedBugTags()
 
     def getUsedBugTagsWithOpenCounts(self, user):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         return get_bug_tags_open_count(
             "BugTask.distrorelease = %s" % sqlvalues(self.distroseries),
             user,
@@ -509,7 +509,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         return not self.__eq__(other)
 
     def getBuildRecords(self, status=None, name=None, pocket=None):
-        """See IHasBuildRecords"""
+        """See `IHasBuildRecords`"""
         clauseTables = ['SourcePackageRelease',
                         'SourcePackagePublishingHistory']
 

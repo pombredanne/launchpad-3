@@ -14,12 +14,18 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main" >
+ 
+  <h1 tal:condition="not: view/is_current_user">
+    <span tal:replace="context/displayname">Someone</span>'s
+    language preferences
+  </h1>
 
-  <h1>Your language preferences</h1>
+  <h1 tal:condition="view/is_current_user">
+    Your language preferences
+  </h1>
 
   <p class="documentDescription">
-    Your preferred languages will be used for translations and support
-    requests.
+    Preferred languages will be used for translations and support requests.
   </p>
 
   <form action="" method="post">

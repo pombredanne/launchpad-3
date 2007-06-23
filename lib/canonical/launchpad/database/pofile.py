@@ -257,8 +257,9 @@ class POFileMixIn(RosettaStats):
         # Note that a suggestion coming from a fuzzy pomsgset isn't relevant
         # as a suggestion, but if it happens to be attached to a msgset from
         # stored_pomsgsets, it will still be relevant to that msgset.
+
         query = """
-            SELECT POSubmission.id, POTMsgSet.primemsgid
+            SELECT DISTINCT POSubmission.id, POTMsgSet.primemsgid
             FROM POSubmission
             JOIN POMsgSet ON POSubmission.pomsgset = POMsgSet.id
             JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
@@ -269,6 +270,9 @@ class POFileMixIn(RosettaStats):
                 POTMsgSet.primemsgid IN %(wanted_primemsgids)s
             """ % parameters
         cur = cursor()
+
+        # XXX: JeroenVermeulen 2007-06-17, pre-join the potranslations we'll
+        # be needing to prevent piecemeal retrieval.  (See bug 30602)
         cur.execute(query)
         available = dict(cur.fetchall())
         if not available:
