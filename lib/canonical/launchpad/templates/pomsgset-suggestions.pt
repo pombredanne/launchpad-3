@@ -1,7 +1,6 @@
 <tal:block condition="context/submissions">
   <tal:submission repeat="submission context/submissions">
   <tr class="secondary">
-    <td colspan="3" />
     <td class="icon left right">
       <tal:logged-in condition="request/lp:person">
       <tal:user-is-official-translator
@@ -56,7 +55,7 @@
   </tr>
   <tr class="discreet secondary"
     tal:attributes="id string:msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}_origin">
-    <td colspan="4" class="icon left right" />
+    <td class="icon left right" />
     <td style="overflow: auto;"
         tal:condition="python:context.isFromSamePOFile(submission)">
       Suggested by

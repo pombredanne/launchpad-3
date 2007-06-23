@@ -922,17 +922,16 @@ class POMsgSetView(LaunchpadView):
         # allows us later to just iterate over them in the view code
         # using a generic template.
         self.suggestion_blocks = {}
-        self.has_suggestions = {}
+        self.suggestions_count = {}
         self.pluralform_indices = range(self.context.pluralforms)
         for index in self.pluralform_indices:
             non_editor, elsewhere, wiki, alt_lang_suggestions = \
                 self._buildAllSuggestions(index)
             self.suggestion_blocks[index] = \
                 [non_editor, elsewhere, wiki, alt_lang_suggestions]
-            self.has_suggestions[index] = (non_editor.submissions or
-                                           elsewhere.submissions or
-                                           wiki.submissions or
-                                           alt_lang_suggestions.submissions)
+            self.suggestions_count[index] = (
+                len(non_editor.submissions) + len(elsewhere.submissions) +
+                len(wiki.submissions) + len(alt_lang_suggestions.submissions))
 
         # Let's initialise the translation dictionaries used from the
         # translation form.
@@ -972,7 +971,7 @@ class POMsgSetView(LaunchpadView):
                     published, self.context.potmsgset.flags()),
                 'published_submission': published_submission,
                 'suggestion_block': self.suggestion_blocks[index],
-                'has_suggestions': self.has_suggestions[index],
+                'suggestions_count': self.suggestions_count[index],
                 'store_flag': index in self.plural_indices_to_store,
                 'is_multi_line': is_multi_line,
                 'same_translator_and_reviewer': (is_same_translator and
