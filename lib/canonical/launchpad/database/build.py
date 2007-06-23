@@ -478,8 +478,10 @@ class BuildSet:
             Build.distroarchrelease = DistroArchRelease.id AND
             DistroArchRelease.distrorelease = DistroRelease.id AND
             DistroRelease.distribution = Distribution.id AND
-            Distribution.main_archive = Build.archive
-            """)
+            Distribution.id = Archive.distribution AND
+            Archive.purpose = %s
+            Archive.id = Build.archive
+            """ % ArchivePurpose.PRIMARY)
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,

@@ -137,8 +137,12 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
-    main_archive = ForeignKey(dbName='main_archive',
-        foreignKey='Archive', notNull=True)
+
+    @cachedproperty(self):
+    def main_archive(self):
+        """See IDistribution."""
+        return Archive.selectOneBy(distribution=self,
+                                   purpose=ArchivePurpose.PRIMARY)
 
     @property
     def all_milestones(self):
