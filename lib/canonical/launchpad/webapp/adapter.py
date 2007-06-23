@@ -162,6 +162,8 @@ class ReconnectingConnection:
                 raise
 
     def __getattr__(self, name):
+        if name.startswith('_'):
+            raise AttributeError(name)
         self._ensureConnected()
         return getattr(self._connection, name)
 
@@ -222,6 +224,8 @@ class ReconnectingCursor:
             self._generation = self.connection._generation
 
     def __getattr__(self, name):
+        if name.startswith('_'):
+            raise AttributeError(name)
         self._ensureCursor()
         return getattr(self._cursor, name)
 
