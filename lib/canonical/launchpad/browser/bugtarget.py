@@ -415,11 +415,18 @@ class FileBugViewBase(LaunchpadFormView):
             failure=handleSubmitBugFailure)
     def this_is_my_bug_action(self, action, data):
         """"""
-        bug_already_reported_as = data.get('bug_already_reported_as')
+        bug = data.get('bug_already_reported_as')
 
-        if bug_already_reported_as:
-            self.request.response.redirect(
-                canonical_url(bug_already_reported_as.bugtasks[0]))
+        if bug.isSubscribed(self.user):
+            self.request.response.addNotification(
+                "You are already subscribed to this bug.")
+        else:
+            bug.subscribe(self.user)
+            self.request.response.addNotification(
+                "You have been subscribed to this bug.")
+
+        self.request.response.redirect(
+            canonical_url(bug.bugtasks[0]))
 
     def showFileBugForm(self):
         """Override this method in base classes to show the filebug form."""
