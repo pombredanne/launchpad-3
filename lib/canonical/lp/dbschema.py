@@ -42,6 +42,7 @@ __all__ = (
 'BugTaskImportance',
 'BuildStatus',
 'CodereleaseRelationships',
+'CodeImportReviewStatus',
 'CveStatus',
 'DistroSeriesStatus',
 'EmailAddressStatus',
@@ -2309,6 +2310,30 @@ class CodereleaseRelationships(DBSchema):
         in a different distribution, and this relationship captures that
         concept.
         """)
+
+
+class CodeImportReviewStatus(DBSchema):
+    """CodeImport review status.
+
+    Before a code import is performed, it is reviewed. Only reviewed imports
+    are processed.
+    """
+
+    NEW = Item(1, """Pending Review
+
+    This code import request has recently been filed an has not been reviewed
+    yet.
+    """)
+
+    INVALID = Item(10, """Invalid
+
+    This code import will not be processed.
+    """)
+
+    REVIEWED = Item(20, """Reviewed
+
+    This code import has been approved and will be processed.
+    """)
 
 
 class BugInfestationStatus(DBSchema):

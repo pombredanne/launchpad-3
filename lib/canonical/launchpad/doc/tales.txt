@@ -150,6 +150,10 @@ to hide them:
     ...                '>    from the English Language.\n'
     ...                '> 2. Remove the penny from US currency.\n'
     ...                '\n')
+    >>> quoted_text_all = ('> continuing from a previous thought.\n'
+    ...                    '> 3. Get new handwriting.\n'
+    ...                    '> 4. Add Year Zero to the calendar.\n'
+    ...                    '\n')
     >>> signature = ('-- \n'
     ...              '__C U R T I S  C.  H O V E Y_______\n'
     ...              'sinzui.is@somewhere.org\n'
@@ -202,24 +206,32 @@ lines that start with the quote identifier ('>' in this case) are
 wrapped with the foldable span.
 
     >>> print test_tales('foo/fmt:email-to-html',
-    ...                  foo='\n'.join([text, quoted_text]))
+    ...                  foo='\n'.join([text, quoted_text, quoted_text_all]))
     <p>Top quoting is simply bad netiquette.<br />
     The words of the leading text should be displayed<br />
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
     <p>Somebody said sometime ago:<br />
-    <span class="foldable"...>
+    <span class="foldable">
     &gt; 1. Remove the letters  c, j, q, x, w<br />
     &gt;    from the English Language.<br />
     &gt; 2. Remove the penny from US currency.
     </span></p>
+    <p><span class="foldable">&gt; continuing from a previous thought.<br />
+    &gt; 3. Get new handwriting.<br />
+    &gt; 4. Add Year Zero to the calendar.
+    </span></p>
 
-The reverse order works to:
+The reverse order works too:
 
     >>> print test_tales('foo/fmt:email-to-html',
-    ...                  foo='\n'.join([quoted_text, text]))
+    ...                  foo='\n'.join([quoted_text_all, quoted_text, text]))
+    <p><span class="foldable">&gt; continuing from a previous thought.<br />
+    &gt; 3. Get new handwriting.<br />
+    &gt; 4. Add Year Zero to the calendar.
+    </span></p>
     <p>Somebody said sometime ago:<br />
-    <span class="foldable"...>
+    <span class="foldable">
     &gt; 1. Remove the letters  c, j, q, x, w<br />
     &gt;    from the English Language.<br />
     &gt; 2. Remove the penny from US currency.

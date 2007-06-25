@@ -328,7 +328,7 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
 
         The Launchpad admins also have launchpad.Edit on all teams.
         """
-        return can_admin_team(self.obj, user)
+        return can_edit_team(self.obj, user)
 
 
 class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
@@ -336,7 +336,7 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     usedfor = ITeamMembership
 
     def checkAuthenticated(self, user):
-        return can_admin_team(self.obj.team, user)
+        return can_edit_team(self.obj.team, user)
 
 
 class EditPersonBySelfOrAdmins(AuthorizationBase):
@@ -378,7 +378,7 @@ class EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     usedfor = IPollOption
 
     def checkAuthenticated(self, user):
-        return can_admin_team(self.obj.poll.team, user)
+        return can_edit_team(self.obj.poll.team, user)
 
 
 class AdminDistribution(AdminByAdminsTeam):
@@ -892,8 +892,8 @@ class QuestionOwner(AuthorizationBase):
         return user.inTeam(self.obj.owner)
 
 
-def can_admin_team(team, user):
-    """Return True if the given user has admin rights for the given team."""
+def can_edit_team(team, user):
+    """Return True if the given user has edit rights for the given team."""
     if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
         return True
     else:

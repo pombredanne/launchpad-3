@@ -294,7 +294,7 @@ def main():
     Options.distro = getUtility(IDistributionSet)[Options.distro]
 
     if not Options.distrorelease:
-        Options.distrorelease = Options.distro.currentrelease.name
+        Options.distrorelease = Options.distro.currentseries.name
     Options.distrorelease = Options.distro.getRelease(Options.distrorelease)
 
     (nbs, asba) = cruft_check(Options.distrorelease)

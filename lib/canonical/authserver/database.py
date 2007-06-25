@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -10,12 +10,17 @@ __all__ = [
 
 import os
 
+import transaction
+
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
-from canonical.launchpad.interfaces import UBUNTU_WIKI_URL
+from canonical.launchpad.interfaces import (
+    UBUNTU_WIKI_URL, IBranchSet, IPersonSet, IProductSet)
+from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.database.sqlbase import sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.lp import dbschema
@@ -23,13 +28,29 @@ from canonical.config import config
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
-    IUserDetailsStorageV2)
+    IUserDetailsStorageV2, READ_ONLY, WRITABLE)
+
+from twisted.internet.threads import deferToThread
+from twisted.python.util import mergeFunctionMetadata
 
 
 def utf8(x):
     if isinstance(x, unicode):
         x = x.encode('utf-8')
     return x
+
+
+def read_only_transaction(function):
+    """Decorate 'function' by wrapping it in a transaction and Zope session."""
+    def transacted(*args, **kwargs):
+        transaction.begin()
+        login(ANONYMOUS)
+        try:
+            return function(*args, **kwargs)
+        finally:
+            logout()
+            transaction.abort()
+    return mergeFunctionMetadata(function, transacted)
 
 
 class UserDetailsStorageMixin:
@@ -402,22 +423,16 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
     def fetchProductID(self, productName):
         """See IHostedBranchStorage."""
-        ri = self.connectionPool.runInteraction
-        return ri(self._fetchProductIDInteraction, productName)
+        return deferToThread(self._fetchProductIDInteraction, productName)
 
-    def _fetchProductIDInteraction(self, transaction, productName):
+    @read_only_transaction
+    def _fetchProductIDInteraction(self, productName):
         """The interaction for fetchProductID."""
-        transaction.execute(utf8('''
-            SELECT id FROM Product WHERE name = %s'''
-            % sqlvalues(productName))
-        )
-        row = transaction.fetchone()
-        if row is None:
-            # No product by that name in the DB.
-            productID = ''
+        product = getUtility(IProductSet).getByName(productName)
+        if product is None:
+            return ''
         else:
-            (productID,) = row
-        return productID
+            return product.id
 
     def createBranch(self, personID, productID, branchName):
         """See IHostedBranchStorage."""
@@ -459,6 +474,25 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         """ % sqlvalues(branchID))
         # xmlrpc doesn't let us return None. True is an acceptable substitute.
         return True
+
+    def getBranchInformation(self, loginID, userName, productName, branchName):
+        """See IHostedBranchStorage."""
+        return deferToThread(
+            self._getBranchInformationInteraction, loginID, userName,
+            productName, branchName)
+
+    @read_only_transaction
+    def _getBranchInformationInteraction(self, loginID, userName, productName,
+                                         branchName):
+        branch = getUtility(IBranchSet).getByUniqueName(
+            '~%s/%s/%s' % (userName, productName, branchName))
+        if branch is None:
+            return '', ''
+        requester = getUtility(IPersonSet).get(loginID)
+        if requester.inTeam(branch.owner):
+            return branch.id, WRITABLE
+        else:
+            return branch.id, READ_ONLY
 
 
 class DatabaseBranchDetailsStorage:
