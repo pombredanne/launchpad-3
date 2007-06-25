@@ -36,7 +36,7 @@ def main():
                       dest="suite_name", metavar="DISTRORELEASE",
                       default=None,
                       help=("Which distrorelease to look in, defaults "
-                            "to distribution 'currentrelease'."))
+                            "to distribution 'currentseries'."))
 
     parser.add_option("-N", "--dry-run", action="store_true",
                       dest="dryrun", metavar="DRY_RUN", default=False,
