@@ -413,7 +413,7 @@ class SupersededByWidget(DropdownWidget):
 class SpecificationSupersedingView(LaunchpadFormView):
     schema = ISpecification
     field_names = ['superseded_by']
-    label =_('Mark specification superseded')
+    label = _('Mark specification superseded')
     custom_widget('superseded_by', SupersededByWidget)
 
     @property
@@ -424,23 +424,22 @@ class SpecificationSupersedingView(LaunchpadFormView):
 
     def setUpFields(self):
         """Override the setup to define own fields."""
+        specs = sorted(self.context.product.specifications(),
+                       key=attrgetter('name'))
         terms = [SimpleTerm(spec, spec.name, spec.title)
-                 for spec
-                 in sorted(self.context.product.specifications(),
-                           key=attrgetter('name'))
-                 if spec != self.context]
+                 for spec in specs if spec != self.context]
 
         self.form_fields = form.Fields(
             Choice(
-                   __name__='superseded_by',
-                   title=_("Superseded by"),
-                   vocabulary=SimpleVocabulary(terms),
-                   required=False,
-                   description=_(
-                     "The specification "
-                     "which supersedes this one. Note that selecting a specification "
-                     "here and pressing Continue will change the specification "
-                     "status to Superseded.")),
+                __name__='superseded_by',
+                title=_("Superseded by"),
+                vocabulary=SimpleVocabulary(terms),
+                required=False,
+                description=_(
+                    "The specification which supersedes this one. Note "
+                    "that selecting a specification here and pressing "
+                    "Continue will change the specification status "
+                    "to Superseded.")),
             render_context=self.render_context,
             custom_widget=self.custom_widgets['superseded_by'])
 
