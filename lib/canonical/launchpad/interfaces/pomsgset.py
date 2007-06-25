@@ -82,11 +82,11 @@ class IPOMsgSet(Interface):
     submissions = Attribute(
         """All IPOSubmissions associated with this IPOMsgSet.""")
 
-    date_for_latest_change = Attribute(
-        """Return a date for the latest change in the POMsgSet.""")
+    latest_change_date = Attribute(
+        """Return the date of the latest change in the `IPOMsgSet`.""")
 
-    person_for_latest_change = Attribute(
-        """Return a person who did the latest change in the POMsgSet.""")
+    latest_change_person = Attribute(
+        """Return the person who did the latest change in the `IPOMsgSet`.""")
 
     def isNewerThan(timestamp):
         """Whether the active translations are newer than the given timestamp.
