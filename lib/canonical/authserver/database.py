@@ -15,6 +15,7 @@ import transaction
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.launchpad.security import AccessBranch
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
@@ -512,6 +513,8 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         if branch is None:
             return '', ''
         requester = getUtility(IPersonSet).get(loginID)
+        if not AccessBranch(branch).checkAuthenticated(requester):
+            return '', ''
         if requester.inTeam(branch.owner):
             return branch.id, WRITABLE
         else:

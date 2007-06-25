@@ -305,6 +305,19 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         self.assertEqual(13, branch_id)
         self.assertEqual(READ_ONLY, permissions)
 
+    def test_getBranchInformation_private(self):
+        # When we get the branch information for a private branch that is
+        # hidden to us, it is an if the branch doesn't exist at all.
+        store = DatabaseUserDetailsStorageV2(None)
+        store._createBranchInteraction(
+            'landscape-developers', 'landscape-developers', 'landscape',
+            'some-branch')
+        # 23 == ddaa, not an admin, not a Landscape developer.
+        branch_id, permissions = store._getBranchInformationInteraction(
+            23, 'landscape-developers', 'landscape', 'some-branch')
+        self.assertEqual('', branch_id)
+        self.assertEqual('', permissions)
+
     def test_initialMirrorRequest(self):
         # The default 'mirror_request_time' for a newly created hosted branch
         # should be None.
