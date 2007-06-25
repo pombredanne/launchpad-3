@@ -54,8 +54,8 @@ review status and the URL of the Subversion branch the import is from:
 
 There is also a link to the associated branch:
 
-    >>> browser.getLink('GNOME Terminal Mainline').url
-    'http://code.launchpad.dev/~name12/gnome-terminal/main'
+    >>> browser.getLink('GNOME Terminal Import Branch').url
+    'http://code.launchpad.dev/~vcs-imports/gnome-terminal/import'
 
 There's a similar page for the other import, which uses CVS:
 
@@ -68,7 +68,7 @@ There's a similar page for the other import, which uses CVS:
     u'Pending Review'
     >>> extract_text(
     ...     find_tag_by_id(browser.contents, 'cvs-root'))
-    u':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'
+    u':pserver:anonymous@anoncvs.example.org:/cvs/gnome'
     >>> extract_text(
     ...     find_tag_by_id(browser.contents, 'cvs-module'))
     u'evolution'
