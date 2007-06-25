@@ -13,6 +13,8 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -21,6 +23,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
@@ -58,12 +61,12 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    BugTaskStatus, DistroSeriesStatus, MirrorContent,
+    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, MirrorContent,
     TranslationPermission, SpecificationSort, SpecificationFilter,
     SpecificationStatus, PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
-    IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
+    IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
     ILaunchpadCelebrities, ISourcePackageName, IQuestionTarget, NotFoundError,
     get_supported_languages, QUESTION_STATUS_DEFAULT_SEARCH,\
     IHasLogo, IHasMugshot, IHasIcon)
@@ -138,7 +141,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                             prejoins=['sourcepackagename'])
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
 
-    @cachedproperty(self):
+    @cachedproperty
     def main_archive(self):
         """See IDistribution."""
         return Archive.selectOneBy(distribution=self,
@@ -962,9 +965,10 @@ class DistributionSet:
             return None
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, main_archive, mugshot=None, logo=None, icon=None):
+            members, owner, mugshot=None, logo=None, icon=None):
         """See IDistributionSet."""
-        return Distribution(
+        archive = getUtility(IArchiveSet).new(purpose=ArchivePurpose.PRIMARY)
+        distro = Distribution(
             name=name,
             displayname=displayname,
             title=title,
@@ -974,7 +978,9 @@ class DistributionSet:
             members=members,
             mirror_admin=owner,
             owner=owner,
-            main_archive=main_archive,
+            main_archive=archive,
             mugshot=mugshot,
             logo=logo,
             icon=icon)
+        archive.distribution = distro
+        return distro

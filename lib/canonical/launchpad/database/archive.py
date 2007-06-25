@@ -9,13 +9,14 @@ __all__ = ['Archive', 'ArchiveSet']
 import os
 
 from sqlobject import StringCol, ForeignKey
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.interfaces import IArchive, IArchiveSet
+from canonical.launchpad.interfaces import IArchive, IArchiveSet, IDistributionSet
 from canonical.launchpad.webapp.url import urlappend
 from canonical.lp.dbschema import (
     ArchivePurpose, PackagePublishingStatus, PackageUploadStatus)
@@ -30,7 +31,7 @@ class Archive(SQLBase):
         foreignKey='Person', dbName='owner', notNull=False)
     description = StringCol(dbName='description', notNull=False, default=None)
     distribution = ForeignKey(
-        foreignKey='distribution', dbName='distribution', notNull=False)
+        foreignKey='Distribution', dbName='distribution', notNull=False)
     purpose = EnumCol(dbName='purpose', unique=False, notNull=True,
         schema=ArchivePurpose)
 
@@ -74,8 +75,11 @@ class ArchiveSet:
         return Archive.selectOneBy(distribution=distribution, purpose=purpose)
 
     def new(self, owner=None, distribution=None,
-            purpose=ArchivePurpose.PRIMARY):
+            purpose=ArchivePurpose.PPA):
         """See canonical.launchpad.interfaces.IArchiveSet."""
+        # The default action is to make a PPA for Ubuntu.
+        if distribution is None:
+            distribution = getUtility(IDistributionSet)['ubuntu']
         return Archive(owner=owner, distribution=distribution, purpose=purpose)
 
     def ensure(self, owner, distribution, purpose):

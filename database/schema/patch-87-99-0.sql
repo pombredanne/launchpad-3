@@ -32,10 +32,13 @@ ALTER TABLE component ADD COLUMN description TEXT;
 
 -- Some existing archive rows are PPA
 UPDATE Archive SET purpose = 2 where OWNER IS NOT NULL;
+UPDATE Archive SET distribution = 1 where OWNER IS NOT NULL;
 -- The other archive rows are the main archive
+UPDATE Archive SET distribution = id where OWNER IS NULL;
 UPDATE Archive SET purpose = 1 where OWNER IS NULL;
 ALTER TABLE archive ALTER COLUMN purpose SET NOT NULL;
 
+-- uncomment this before landing in PQM
 -- Add commercial archive for Ubuntu
 --INSERT INTO Archive (description, distribution, purpose)
 --    VALUES ('Commercial archive', '1', 4);
@@ -43,5 +46,6 @@ ALTER TABLE archive ALTER COLUMN purpose SET NOT NULL;
 -- New commercial component
 --INSERT INTO component (name, description)
 --    VALUES ('commercial', 'This component contains commercial packages only, which are not in the main Ubuntu archive.');
+
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);

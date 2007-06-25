@@ -566,15 +566,15 @@ ALTER TABLE archconfigentry ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (1, NULL, NULL, true, NULL, NULL, NULL, 1);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (2, NULL, NULL, true, NULL, NULL, NULL, 1);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (3, NULL, NULL, true, NULL, NULL, NULL, 1);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (4, NULL, NULL, true, NULL, NULL, NULL, 1);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (5, NULL, NULL, true, NULL, NULL, NULL, 1);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (7, NULL, NULL, true, NULL, NULL, NULL, 1);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (8, NULL, NULL, true, NULL, NULL, NULL, 1);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (9, 28, 'packages to help my friends.', true, NULL, NULL, NULL, 2);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, NULL, NULL, NULL, 2);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (1, NULL, NULL, true, NULL, NULL, 1, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (2, NULL, NULL, true, NULL, NULL, 2, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (3, NULL, NULL, true, NULL, NULL, 3, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (4, NULL, NULL, true, NULL, NULL, 4, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (5, NULL, NULL, true, NULL, NULL, 5, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (7, NULL, NULL, true, NULL, NULL, 7, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (8, NULL, NULL, true, NULL, NULL, 8, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (9, 28, 'packages to help my friends.', true, NULL, NULL, 1, 2);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, NULL, NULL, 1, 2);
 INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (11, NULL, 'Commercial archive', true, NULL, NULL, 1, 4);
 INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (12, NULL, 'Commercial archive', true, NULL, NULL, 8, 4);
 
@@ -1193,6 +1193,8 @@ INSERT INTO componentselection (id, distrorelease, component, date_created) VALU
 INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (10, 3, 2, '2006-10-16 18:31:43.261385');
 INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (11, 1, 1, '2006-10-16 18:31:43.261717');
 INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (12, 1, 3, '2006-10-16 18:31:43.262049');
+INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (13, 10, 5, '2007-06-24 13:12:05.04436');
+INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (14, 11, 5, '2007-06-24 13:12:10.692827');
 
 
 ALTER TABLE componentselection ENABLE TRIGGER ALL;

@@ -124,11 +124,11 @@ And we need a way to process the accepted queue
 
   >>> login("foo.bar@canonical.com")
 
-  >>> def process_accepted(distro):
+  >>> def process_accepted(distro, archive=None):
   ...     distribution = getUtility(IDistributionSet)[distro]
   ...     for series in distribution.serieses:
   ...         items = series.getQueueItems(
-  ...            status=PackageUploadStatus.ACCEPTED)
+  ...            status=PackageUploadStatus.ACCEPTED, archive=archive)
   ...         for item in items:
   ...             item.realiseUpload()
   ...             syncUpdate(item)
@@ -137,16 +137,16 @@ And we need a way to process the accepted queue
 If an upload of ours ends up in the NEW queue, we need a way to process
 it into the accepted queue
 
-  >>> def process_new(distro, series):
+  >>> def process_new(distro, series, archive=None):
   ...     distribution = getUtility(IDistributionSet)[distro]
   ...     if series is None:
   ...         series = "breezy"
   ...     dr, pocket = distribution.getDistroSeriesAndPocket(series)
-  ...     items = dr.getQueueItems(status=PackageUploadStatus.NEW)
+  ...     items = dr.getQueueItems(status=PackageUploadStatus.NEW, archive=archive)
   ...     for item in items:
   ...         item.setAccepted()
   ...         syncUpdate(item)
-  ...     items = dr.getQueueItems(status=PackageUploadStatus.UNAPPROVED)
+  ...     items = dr.getQueueItems(status=PackageUploadStatus.UNAPPROVED, archive=archive)
   ...     for item in items:
   ...         item.setAccepted()
   ...         syncUpdate(item)
@@ -197,7 +197,7 @@ process_new and simple_publish we are in a position to run the tests.
 We can also define another helper function...
 
   >>> def expect_okays(leafname, is_new=False, upload_policy='anything',
-  ...                  build_id=None, series=None, distro="ubuntutest"):
+  ...                  build_id=None, series=None, distro="ubuntutest", archive=None):
   ...     transaction.commit()
   ...     punt_upload_into_queue(leafname, distro=distro)
   ...     assert (process_uploads(upload_policy, build_id, series),
@@ -206,8 +206,8 @@ We can also define another helper function...
   ...     assert len(os.listdir(rejected_dir)) == 0, "Rejected should be empty: %s" % os.listdir(rejected_dir)
   ...     assert len(os.listdir(failed_dir)) == 0, "Failed should be empty: %s" % os.listdir(failed_dir)
   ...     if is_new:
-  ...         process_new(distro=distro, series=series)
-  ...     process_accepted(distro=distro)
+  ...         process_new(distro=distro, series=series, archive=archive)
+  ...     process_accepted(distro=distro, archive=archive)
   ...     assert (simple_publish(distro=distro),
   ...             "Should publish at least one item")
   ...     transaction.commit()
@@ -763,10 +763,22 @@ So, check the MTIME has changed for hoary-test/Release.
   >>> new_release_timestamp == release_timestamp
   False
 
-Upload a commercial source package that is targetted to the commercial repo by
-virtue of its commercial component:
+Commercial source packages are targetted to the commercial repo by
+virtue of them having a component  of 'commercial'.  We need to retrieve 
+the commercial archive to be able to process and publish the upload:
 
-  >>> expect_okays('foocomm_1.0-1', upload_policy='sync', is_new=True)
+  >>> from canonical.launchpad.interfaces import IArchiveSet, IDistributionSet
+  >>> from canonical.lp.dbschema import ArchivePurpose
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+  >>> commercial_archive = getUtility(IArchiveSet).getByDistroPurpose(
+  ...     ubuntutest, ArchivePurpose.COMMERCIAL)
+  >>> commercial_archive is not None
+  True
+
+Now upload a commercial source package:
+
+  >>> expect_okays('foocomm_1.0-1', upload_policy='sync', is_new=True, 
+  ...     archive=commercial_archive)
   >>> print open(uploader_log).read()
   INFO    creating lockfile
   ...
@@ -779,47 +791,65 @@ virtue of its commercial component:
   DEBUG   NEW: foocomm_1.0-1.dsc
   ...
 
+The sourcepackagerelease is linked to the commercial archive:
+
   >>> from canonical.launchpad.database import (
   ...     SourcePackageRelease, SourcePackageName)
-  >>> import pdb; pdb.set_trace()
   >>> foocomm_name = SourcePackageName.selectOneBy(name="foocomm")
   >>> foocomm_spr = SourcePackageRelease.selectOneBy(
-  ...     sourcepackagenameID=foocomm_name.id)
+  ...     sourcepackagename=foocomm_name)
   >>> foocomm_spr.component.name
   u'commercial'
-  >>> foocomm_spr.upload_archive.id
-  12
+  >>> foocomm_spr.upload_archive.description
+  u'Commercial archive'
+
+The source package publishing record is also linked to the commercial archive:
+
   >>> from canonical.launchpad.database.publishing import (
   ...     SourcePackagePublishingHistory)
   >>> foocomm_spph = SourcePackagePublishingHistory.selectOneBy(
   ...     sourcepackagerelease=foocomm_spr)
-  >>> foocomm_spph.archive.id
-  12
+  >>> foocomm_spph.archive.description
+  u'Commercial archive'
   >>> foocomm_spph.component.name
-  'commercial'
+  u'commercial'
 
-Upload a commcercial binary package targetted to the commercial repo:
+Upload a commercial binary package:
 
-  >>> expect_okays('foocomm_1.0-1_binary',
-  ...     is_new=True)
+  >>> expect_okays('foocomm_1.0-1_binary', is_new=True, 
+  ...     archive=commercial_archive)
   >>> print open(uploader_log).read()
   INFO    creating lockfile
+  ...
+  DEBUG   Sent a mail:
+  DEBUG       Subject: foocomm_1.0-1_i386.changes is NEW
+  DEBUG       Recipients: Foo Bar <foo.bar@canonical.com>
+  DEBUG       Body:
+  DEBUG  NEW: foocomm_1.0-1_i386.deb
+  ...
+
+The binarypackagerelease is linked to the commercial archive:
 
   >>> from canonical.launchpad.database.publishing import (
   ...     BinaryPackagePublishingHistory)
   >>> from canonical.launchpad.database.binarypackagename import (
   ...     BinaryPackageName)
+  >>> from canonical.launchpad.database.binarypackagerelease import (
+  ...     BinaryPackageRelease)
   >>> foocomm_binname = BinaryPackageName.selectOneBy(name="foocomm")
   >>> foocomm_bpr = BinaryPackageRelease.selectOneBy(
-  ...     binarypackagenameID=foocomm_binname.id)
+  ...     binarypackagename=foocomm_binname)
   >>> foocomm_bpr.component.name
-  'commercial'
+  u'commercial'
+
+The binary publishing record is also linked to the commercial archive:
+
   >>> foocomm_bpph = BinaryPackagePublishingHistory.selectOneBy(
-  ...     binarypackagereleaseID=foocomm_bpr.id)
-  >>> foocomm_bpph.archive.id
-  12
+  ...     binarypackagerelease=foocomm_bpr)
+  >>> foocomm_bpph.archive.description
+  u'Commercial archive'
   >>> foocomm_bpph.component.name
-  'commercial'
+  u'commercial'
 
 
 Nice! That's enough for now.. let's kill the process and clean

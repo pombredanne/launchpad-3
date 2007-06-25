@@ -22,6 +22,12 @@ A new Archive can be created by passing a name and an owner
   >>> sandbox_archive.owner == name16
   True
 
+An archive is also associated with a distribution.  This can be queried on
+the distribution property.  The default distribution is "ubuntu":
+
+  >> sandbox_archive.distribution.name
+  u'ubuntu'
+
 An Archive can be retrieved via IPerson.archive SingleJoin:
 
   >>> name16.archive == sandbox_archive
@@ -89,6 +95,16 @@ IArchiveSet.getAllPPAs provides all present *personal* archive:
   [u'cprov', u'sabdfl', u'name16']
 
 
+IArchiveSet.getByDistroPurpose retrieves an IArchive given a distribution
+and an ArchivePurpose:
+
+  >>> from canonical.lp.dbschema import ArchivePurpose
+  >>> commercial_archive = getUtility(IArchiveSet).getByDistroPurpose(
+  ...     ubuntutest, ArchivePurpose.COMMERCIAL)
+  >>> commercial_archive.description
+  u'Commercial archive'
+
+
 Iteration over the own utility is performed against all archives,
 including the *main_archives*:
 
@@ -100,4 +116,5 @@ including the *main_archives*:
   ...     else:
   ...          ppas += 1
   >>> main_archives, ppas
-  (7, 3)
+  (9, 3)
+

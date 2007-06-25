@@ -448,7 +448,7 @@ class UploadProcessor:
                     "Could not find distribution '%s'" % distribution_name)
 
             archive = getUtility(IArchiveSet).ensure(owner=person, 
-                distribution=None, purpose=ArchivePurpose.PPA)
+                distribution=distribution, purpose=ArchivePurpose.PPA)
             if archive is None:
                 raise UploadPathError(
                     "Could not find PPA for '%s'" % person_name)

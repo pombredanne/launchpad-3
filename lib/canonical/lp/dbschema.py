@@ -3706,9 +3706,9 @@ class ArchivePurpose(DBSchema):
         """)
 
     EMBARGOED = Item(3, """
-        Security Archive.
+        Embargoed Archive.
 
-        This is the archive for security-related packages.
+        This is the archive for embargoed packages.
         """)
 
     COMMERCIAL = Item(4, """

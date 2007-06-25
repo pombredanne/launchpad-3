@@ -16,10 +16,9 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.config import config
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IPersonSet)
+    IArchiveSet, IDistributionSet, IPersonSet)
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket,
-    DistroSeriesStatus)
+    ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket, PackagePublishingStatus)
 
 
 class TestPublisher(TestNativePublishingBase):
@@ -269,11 +268,12 @@ class TestPublisher(TestNativePublishingBase):
         """
         archive_set = getUtility(IArchiveSet)
         person_set = getUtility(IPersonSet)
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
 
         cprov = person_set.getByName('cprov')
-        cprov_archive = archive_set.ensure(cprov)
+        cprov_archive = archive_set.ensure(cprov, ubuntu, ArchivePurpose.PPA)
         name16 = person_set.getByName('name16')
-        name16_archive = archive_set.ensure(name16)
+        name16_archive = archive_set.ensure(name16, ubuntu, ArchivePurpose.PPA)
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
