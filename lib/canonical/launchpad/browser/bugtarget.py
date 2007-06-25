@@ -22,7 +22,7 @@ from cStringIO import StringIO
 import email
 import urllib
 
-from zope.app.form.browser import BooleanRadioWidget, TextWidget
+from zope.app.form.browser import TextWidget
 from zope.app.form.interfaces import InputErrors
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
@@ -129,8 +129,6 @@ class FileBugViewBase(LaunchpadFormView):
 
     implements(IBrowserPublisher)
 
-    custom_widget('bug_already_reported', BooleanRadioWidget)
-
     extra_data_token = None
     advanced_form = False
 
@@ -160,7 +158,7 @@ class FileBugViewBase(LaunchpadFormView):
         """Return the list of field names to display."""
         context = self.context
         field_names = ['title', 'comment', 'tags', 'security_related',
-                       'bug_already_reported', 'bug_already_reported_as']
+                       'bug_already_reported_as']
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
