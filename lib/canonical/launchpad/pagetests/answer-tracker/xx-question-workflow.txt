@@ -158,7 +158,7 @@ The confirmed answer is also highlighted.
 
     >>> bestAnswer = soup.fetch('div', 'boardComment')[-2]
     >>> print bestAnswer.first('img')
-    <img src="/@@/favourite-yes" alt="Best" title="Marked as best answer" />
+    <img src="/@@/favourite-yes" ... title="Marked as best answer" />
     >>> print soup.first(
     ...     'div', 'boardCommentBody highlighted').renderContents()
     <p>New version of the firefox package are available with SVG support
@@ -255,7 +255,7 @@ It also records the owner as the answerer and marks his answer with the
 
     >>> bestAnswer = soup.fetch('div', 'boardComment')[-1]
     >>> print bestAnswer.first('img')
-    <img src="/@@/favourite-yes" alt="Best" title="Marked as best answer" />
+    <img src="/@@/favourite-yes" ... title="Marked as best answer" />
     >>> print soup.first(
     ...     'div', 'boardCommentBody highlighted').renderContents()
     <p>OK, this example requires some SVG features that will only be available

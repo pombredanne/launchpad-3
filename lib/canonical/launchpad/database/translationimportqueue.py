@@ -641,16 +641,27 @@ class TranslationImportQueue:
 
         num_files = 0
         for tarinfo in tarball:
-            if tarinfo.name.endswith('.pot') or tarinfo.name.endswith('.po'):
-                # Only the .pot and .po files are interested here, ignore the
-                # others as we don't support any other file format.
+            filename = tarinfo.name
+            # XXX: JeroenVermeulen 2007-06-18, Work multi-format support in
+            # For now we're only interested in PO and POT files.  We skip
+            # "dotfiles," i.e. files whose names start with a dot, and we
+            # ignore anything that isn't a file (such as directories,
+            # symlinks, and above all, device files which could cause some
+            # serious security headaches).  (see bug 121798)
+            looks_useful = (
+                tarinfo.isfile() and
+                not filename.startswith('.') and
+                (filename.endswith('.pot') or filename.endswith('.po')))
+            if looks_useful:
                 file_content = tarball.extractfile(tarinfo).read()
-                self.addOrUpdateEntry(
-                    tarinfo.name, file_content, is_published, importer,
-                    sourcepackagename=sourcepackagename,
-                    distroseries=distroseries, productseries=productseries,
-                    potemplate=potemplate)
-                num_files += 1
+                if len(file_content) > 0:
+                    self.addOrUpdateEntry(
+                        tarinfo.name, file_content, is_published, importer,
+                        sourcepackagename=sourcepackagename,
+                        distroseries=distroseries,
+                        productseries=productseries,
+                        potemplate=potemplate)
+                    num_files += 1
 
         tarball.close()
 

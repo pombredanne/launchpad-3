@@ -134,4 +134,12 @@
         permission="zope.Public"
         />
 
+     <view
+        type="zope.publisher.interfaces.browser.IBrowserRequest"
+        for="canonical.launchpad.fields.ContentNameField"
+        provides="zope.app.form.interfaces.IInputWidget"
+        factory="canonical.widgets.textwidgets.LowerCaseTextWidget"
+        permission="zope.Public"
+        />
+
 </configure>

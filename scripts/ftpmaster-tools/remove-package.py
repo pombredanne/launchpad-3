@@ -267,7 +267,7 @@ def init():
     Options.distro = getUtility(IDistributionSet)[Options.distro]
 
     if not Options.suite:
-        Options.suite = Options.distro.currentrelease.name
+        Options.suite = Options.distro.currentseries.name
 
     Options.architecture = dak_utils.split_args(Options.architecture)
     Options.component = dak_utils.split_args(Options.component)

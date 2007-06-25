@@ -186,7 +186,7 @@ form.primary.search {
   .notforscreen {display:none;}
 }
 
-.highlighted, tr.highlight {background: #eee; border: 1px solid #ddd;}
+.highlighted, tr.highlight {background: #ddd; border: 1px solid #ddd;}
 .highlighted {padding: 0.5em;}
 .highlighted h3 {margin-top: 0;}
 .unhighlighted {padding: 0 0.5em;}
@@ -1581,3 +1581,7 @@ th.descending {
 
 .vcsimportSUCCESS {} /* inherited text color */
 .vcsimportFAILURE {color: Red;}
+
+.lowerCaseText {
+  text-transform: lowercase
+}
