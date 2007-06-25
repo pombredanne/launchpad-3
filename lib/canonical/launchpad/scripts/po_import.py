@@ -20,13 +20,14 @@ class ImportProcess:
 
         Arguments:
 
-        :ztm: transaction manager to commit our individual imports.
+        :param ztm: transaction manager to commit our individual imports.
 
-        :logger: logging object to log informational messages and errors to.
+        :param logger: logging object to log informational messages and errors
+        to.
 
-        :max_seconds: "alarm clock": after this many seconds, the job should
-        finish up even if there is more work for it to do.  This is a mere
-        guideline; actual processing time may be longer.
+        :param max_seconds: "alarm clock": after this many seconds, the job
+        should finish up even if there is more work for it to do.  This is a
+        mere guideline; actual processing time may be longer.
         """
         self.ztm = ztm
         self.logger = logger
@@ -40,7 +41,6 @@ class ImportProcess:
         # Get the list of each product or distroseries with pending imports.
         # We'll serve these queues in turn, one request each, until either the
         # queue is drained or our time is up.
-        # 
         importqueues = (
             translation_import_queue.getPillarObjectsWithApprovedImports() )
 

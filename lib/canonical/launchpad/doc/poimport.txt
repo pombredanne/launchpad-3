@@ -510,7 +510,6 @@ And run the cronscript.
     WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     INFO    Import requests completed.
-    <BLANKLINE>
 
 Now the auto-approval script runs.  This can happen anytime, since it's
 asynchronous to the po-import script.  The script tries to approve any entries
