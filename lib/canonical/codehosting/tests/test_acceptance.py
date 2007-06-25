@@ -357,17 +357,8 @@ class SmartserverTests(SSHTestCase):
     @deferToThread
     def test_can_read_readonly_branch(self):
         # We can get information from a read-only branch.
-        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
-        sabdfl_id = authserver.getUser('sabdfl')['id']
-        ro_branch_id = authserver.createBranch(sabdfl_id, '', 'ro-branch')
-        ro_branch_url = 'file://' + os.path.abspath(
-            os.path.join(self.server._mirror_root,
-                         branch_id_to_path(ro_branch_id)))
-        self.runInChdir(
-            self.run_bzr_captured, ['push', '--create-prefix', ro_branch_url],
-            retcode=None)
-
-        revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
+        url = self.pushNewBranch('sabdfl', '+junk', 'ro-branch')
+        revision = bzrlib.branch.Branch.open(url).last_revision()
         remote_revision = self.getLastRevision(
             self.getTransportURL('~sabdfl/+junk/ro-branch'))
         self.assertEqual(revision, remote_revision)
@@ -375,17 +366,8 @@ class SmartserverTests(SSHTestCase):
     @deferToThread
     def test_cant_write_to_readonly_branch(self):
         # We can't write to a read-only branch.
-        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
-        sabdfl_id = authserver.getUser('sabdfl')['id']
-        ro_branch_id = authserver.createBranch(sabdfl_id, '', 'ro-branch')
-        ro_branch_url = 'file://' + os.path.abspath(
-            os.path.join(self.server._mirror_root,
-                         branch_id_to_path(ro_branch_id)))
-        self.runInChdir(
-            self.run_bzr_captured, ['push', '--create-prefix', ro_branch_url],
-            retcode=None)
-
-        revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
+        url = self.pushNewBranch('sabdfl', '+junk', 'ro-branch')
+        revision = bzrlib.branch.Branch.open(url).last_revision()
 
         # Create a new revision on the local branch.
         tree = WorkingTree.open(self.local_branch.base)
