@@ -74,9 +74,9 @@ it does note a person which last changed it.
   None
   >>> print upstream_pomsgset.date_reviewed
   None
-  >>> upstream_pomsgset.person_for_latest_change.displayname
+  >>> upstream_pomsgset.latest_change_person.displayname
   u'Carlos Perell\xf3 Mar\xedn'
-  >>> upstream_pomsgset.date_for_latest_change is None
+  >>> upstream_pomsgset.latest_change_date is None
   False
 
 Now it should appear as active and as published.
