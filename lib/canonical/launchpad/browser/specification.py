@@ -28,10 +28,9 @@ from subprocess import Popen, PIPE
 from operator import attrgetter
 
 from zope.component import getUtility
-from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.formlib import form
-from zope.schema import Choice, List
+from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
