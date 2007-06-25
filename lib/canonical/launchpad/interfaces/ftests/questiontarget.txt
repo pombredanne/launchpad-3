@@ -442,26 +442,24 @@ language for support when there are no answer contacts.
 
 Let's add some answer contacts which speak different languages.
 
-    >>> login('daf@canonical.com')
-    >>> daf = getUtility(IPersonSet).getByName('daf')
-    >>> target.addAnswerContact(daf)
-    True
-
     >>> login('carlos@canonical.com')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
+    >>> [lang.code for lang in carlos.languages]
+    [u'ca', u'en', u'es']
     >>> target.addAnswerContact(carlos)
     True
 
-    >>> [lang.code for lang in carlos.languages]
-    [u'ca', u'en', u'es']
-
 Note that daf has en_GB as one of his preferred languages...
 
+    >>> login('daf@canonical.com')
+    >>> daf = getUtility(IPersonSet).getByName('daf')
     >>> [lang.code for lang in daf.languages]
-    [u'en', u'en_GB', u'ja', u'cy']
+    [u'en_GB', u'ja', u'cy']
+    >>> target.addAnswerContact(daf)
+    True
 
 ... but en_GB is not included in the target's supported languages,
-because we ignore all English variants.
+because we convert all English variants to English.
 
     >>> import operator
     >>> [lang.code for lang in sorted(target.getSupportedLanguages(),
@@ -473,7 +471,10 @@ because we ignore all English variants.
 
 Continuing from the previous section with Carlos and Daf, the
 getAnswerContactsForLanguage() method returns a list of answer contacts
-who support the specified language in their preferred languages.
+who support the specified language in their preferred languages. Daf
+will not be in the list because he speaks an English variant, not
+English. The View is responsible for adding English to the person
+when he knows an English variant, but not English
 
     >>> spanish = getUtility(ILanguageSet)['es']
     >>> answer_contacts = target.getAnswerContactsForLanguage(spanish)
@@ -482,7 +483,7 @@ who support the specified language in their preferred languages.
 
     >>> answer_contacts = target.getAnswerContactsForLanguage(english)
     >>> sorted([person.name for person in answer_contacts])
-    [u'carlos', u'daf']
+    [u'carlos']
 
 
 == getQuestionLanguages() ==

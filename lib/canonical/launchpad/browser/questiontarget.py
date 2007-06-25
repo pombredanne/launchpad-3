@@ -570,14 +570,24 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
         help. If the Person has not already set his preferred languages, they
         are set to his browser languages. In the case of a team without
         languages, only English is added to the preferred languages. When
-        languages are added, a notification is added to the response.
+        languages are added, a notification is added to the response. There
+        is a special case when we add English to the person's languages
+        because the knows an English variant but not English.
         """
+        english = getUtility(ILanguageSet)['en']
+        variants = []
         if person_or_team.languages.count() > 0:
-            return
+            # We do not need to add languages to persons that speak
+            # a language, but we must add English when the person
+            # knows an English variant.
+            variants = [lang for lang in person_or_team.languages
+                        if is_english_variant(lang)]
+            if len(variants) == 0:
+                return
 
         response = self.request.response
         if person_or_team.isTeam():
-            person_or_team.addLanguage(getUtility(ILanguageSet)['en'])
+            person_or_team.addLanguage(english)
             team_mapping = {'name' : person_or_team.name,
                             'displayname' : person_or_team.displayname}
             response.addNotification(
@@ -585,17 +595,21 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                   '<a href="/~${name}/+editlanguages">preferred '
                   'languages</a>.', mapping=team_mapping))
         else:
-            if len(browserLanguages(self.request)) > 0:
+            if (len(browserLanguages(self.request)) > 0
+                and len(variants) == 0):
                 languages = browserLanguages(self.request)
             else:
-                languages = [getUtility(ILanguageSet)['en']]
+                # A person who speak an English variant or his browser
+                # does not have languages is considered to speak English.
+                languages = [english]
             for language in languages:
                 person_or_team.addLanguage(language)
             language_str = ', '.join([lang.displayname for lang in languages])
             response.addNotification(
                 _('<a href="/people/+me/+editlanguages">Your preferred '
-                  'languages</a> were set to your browser languages: '
-                  '$languages.', mapping={'languages' : language_str}))
+                  'languages</a> were updated to include your browser '
+                  'languages: $languages.',
+                  mapping={'languages' : language_str}))
 
 
 class QuestionTargetFacetMixin:
