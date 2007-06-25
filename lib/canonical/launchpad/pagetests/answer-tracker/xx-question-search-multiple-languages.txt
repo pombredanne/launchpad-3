@@ -155,7 +155,7 @@ see questions for any, some, all, or none of their languages by
 toggling the check box for each of their preferred languages. In
 this example, Carlos speaks two languages (Spanish and Catalan),
 and Answers adds English to the list of languages. There are no
-Catalan questions, so no Cataloan checkbox is displayed.
+Catalan questions, so no Catalan checkbox is displayed.
 
     >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+questions')
@@ -178,6 +178,34 @@ the search results.
     ...     question.first('a').renderContents()
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
 
+Some users, translators in particular, speak an English variant.
+English variants are considered to be English in the Answers,
+so English is displayed among the languages. Daf is a translator for
+en_GB, Japanese, and Welsh. knowing en_GB, he will be shown English
+questions. As there are no Japanese or Welsh questions, there will
+not be any controls present for those two languages when searching
+Ubuntu.
+
+    >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:daf')
+    >>> daf_browser.open('http://launchpad.dev/~daf/+editlanguages')
+    >>> daf_browser.getControl('English (United Kingdom)').selected
+    True
+    >>> daf_browser.getControl('Japanese').selected
+    True
+    >>> daf_browser.getControl('Welsh').selected
+    True
+    >>> daf_browser.getControl('English', index=0).selected
+    False
+    
+    >>> daf_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
+    >>> language_control = daf_browser.getControl(name='field.language')
+    >>> for label in language_control.displayOptions:
+    ...     # print the label without the leading non-breaking space.
+    ...     label[1:]
+    'English (en)'
+
+    >>> daf_browser.getControl(name='field.language').options
+    ['en']
 
 = Multiple Request Languages in Latest Questions =
 

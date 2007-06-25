@@ -216,11 +216,11 @@ known languages:
     >>> language_codes(carlos.getSupportedLanguages())
     ['ca', 'en', 'es']
 
-Also, note that all English variants will be excluded.
+Also, note that all English variants are considered to be English.
 
     >>> daf = getUtility(IPersonSet).getByName('daf')
     >>> language_codes(daf.languages)
-    ['cy', 'en', 'en_GB', 'ja']
+    ['cy', 'en_GB', 'ja']
     >>> language_codes(daf.getSupportedLanguages())
     ['cy', 'en', 'ja']
 
