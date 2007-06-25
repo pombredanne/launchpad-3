@@ -183,7 +183,7 @@ class QuestionSubscriptionView(LaunchpadView):
 
     @property
     def subscription(self):
-        """establish if this user has a subscription"""
+        """Establish if this user has a subscription"""
         if self.user is None:
             return False
         return self.context.isSubscribed(self.user)
@@ -573,7 +573,7 @@ class QuestionRejectView(LaunchpadFormView):
 
 
     def initialize(self):
-        """See LaunchpadFormView.
+        """See `LaunchpadFormView`.
 
         Abort early if the question is already rejected.
         """
@@ -596,13 +596,13 @@ class QuestionWorkflowView(LaunchpadFormView):
     initial_focus_widget = None
 
     def setUpFields(self):
-        """See LaunchpadFormView."""
+        """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpFields(self)
         if self.context.isSubscribed(self.user):
             self.form_fields = self.form_fields.omit('subscribe_me')
 
     def setUpWidgets(self):
-        """See LaunchpadFormView."""
+        """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpWidgets(self)
         alsoProvides(self.widgets['message'], IAlwaysSubmittedWidget)
 
@@ -835,7 +835,7 @@ class SearchAllQuestionsView(SearchQuestionsView):
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _('Questions matching "${search_text}"',
                      mapping=dict(search_text=self.search_text))
@@ -844,7 +844,7 @@ class SearchAllQuestionsView(SearchQuestionsView):
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _("There are no questions matching "
                      '"${search_text}" with the requested statuses.',
@@ -875,7 +875,7 @@ class QuestionSOP(StructuralObjectPresentation):
     """Provides the structural heading for IQuestion."""
 
     def getMainHeading(self):
-        """See IStructuralHeaderPresentation."""
+        """See ```IStructuralHeaderPresentation`."""
         question = self.context
         return _('Question #${id} in ${target}',
                  mapping=dict(

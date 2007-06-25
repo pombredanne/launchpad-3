@@ -69,7 +69,6 @@ def expand_rosetta_escapes(unicode_text):
 def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
                newline=TranslationConstants.NEWLINE_CHAR):
     """Convert a unicode text to a HTML representation."""
-
     if text is None:
         return None
 
@@ -125,8 +124,13 @@ def text_to_html(text, flags, space=TranslationConstants.SPACE_CHAR,
 
 
 def convert_newlines_to_web_form(unicode_text):
-    """Convert an Unicode text from any newline style to the one used on web
-    forms, that's the Windows style ('\r\n')."""
+    """Convert Unicode string to CR/LF line endings as used in web forms.
+
+    Any style of line endings is accepted: MacOS-style CR, MS-DOS-style
+    CR/LF, or rest-of-world-style LF.
+    """
+    if unicode_text is None:
+        return None
 
     assert isinstance(unicode_text, unicode), (
         "The given text must be unicode instead of %s" % type(unicode_text))
@@ -141,10 +145,12 @@ def convert_newlines_to_web_form(unicode_text):
     else:
         return helpers.text_replaced(unicode_text, {u'\r': u'\r\n'})
 
+
 def count_lines(text):
     """Count the number of physical lines in a string.
 
-    This is always at least as large as the number of logical lines in a string.
+    This is always at least as large as the number of logical lines in a
+    string.
     """
     if text is None:
         return 0
@@ -160,17 +166,24 @@ def count_lines(text):
 
     return count
 
-def parse_cformat_string(string):
-    """Parse a printf()-style format string into a sequence of interpolations
-    and non-interpolations."""
 
+def parse_cformat_string(string):
+    """Parse C-style format string into sequence of segments.
+
+    The result is a sequence of tuples (type, content), where ``type`` is
+    either "string" (for a plain piece of string) or "interpolation" (for a
+    printf()-style substitution).  The other part of the tuple, ``content``,
+    will be the part of the input string that makes up the given element, so
+    either plain text or a printf substitution such as ``%s`` or ``%.3d``.
+
+    As in printf(), the double parenthesis (%%) is taken as plain text.
+    """
     # The sequence '%%' is not counted as an interpolation. Perhaps splitting
     # into 'special' and 'non-special' sequences would be better.
 
     # This function works on the basis that s can be one of three things: an
     # empty string, a string beginning with a sequence containing no
     # interpolations, or a string beginning with an interpolation.
-
     segments = []
     end = string
     plain_re = re.compile('(%%|[^%])+')
@@ -178,9 +191,7 @@ def parse_cformat_string(string):
 
     while end:
         # Check for a interpolation-less prefix.
-
         match = plain_re.match(end)
-
         if match:
             segment = match.group(0)
             segments.append(('string', segment))
@@ -188,9 +199,7 @@ def parse_cformat_string(string):
             continue
 
         # Check for an interpolation sequence at the beginning.
-
         match = interpolation_re.match(end)
-
         if match:
             segment = match.group(0)
             segments.append(('interpolation', segment))
@@ -202,13 +211,14 @@ def parse_cformat_string(string):
 
     return segments
 
+
 #
 # Exceptions and helper classes
 #
 
+
 class UnrecognisedCFormatString(ValueError):
-    """Exception raised when a string containing C format sequences can't be
-    parsed."""
+    """Exception: C-style format string fails to parse."""
 
 
 class POTMsgSetBatchNavigator(BatchNavigator):
@@ -273,6 +283,7 @@ class CustomDropdownWidget(DropdownWidget):
         """Render the select widget without the div tag."""
         return contents
 
+
 #
 # Standard UI classes
 #
@@ -310,9 +321,11 @@ class POMsgSetAppMenus(ApplicationMenu):
         text = 'Download'
         return Link('../+export', text, icon='download')
 
+
 #
 # Views
 #
+
 
 class POMsgSetIndexView:
     """A view to forward to the translation form."""
@@ -477,7 +490,8 @@ class BaseTranslationView(LaunchpadView):
         _storeTranslations() for each of those, check for errors that
         may have occurred during that (displaying them using
         addErrorNotification), and otherwise call _redirectToNextPage if
-        everything went fine."""
+        everything went fine.
+        """
         raise NotImplementedError
 
     #
@@ -572,18 +586,20 @@ class BaseTranslationView(LaunchpadView):
         initial_values = {}
         second_lang_code = self.request.form.get("field.alternative_language")
 
-        if not second_lang_code and self.pofile.language.alt_suggestion_language:
-            # If there's a standard alternative language and no
-            # user-specified language was provided, preselect it.
-            second_lang_code = self.pofile.language.alt_suggestion_language.code
+        fallback_language = self.pofile.language.alt_suggestion_language
+        if second_lang_code is None and fallback_language is not None:
+            # If there's a standard alternative language and no user-specified
+            # language was provided, preselect it.
+            second_lang_code = fallback_language.code
 
         if second_lang_code:
             if isinstance(second_lang_code, list):
-                raise UnexpectedFormData("You specified more than one alternative "
-                                         "languages; only one is currently "
-                                         "supported.")
+                raise UnexpectedFormData(
+                    "You specified more than one alternative language; "
+                    "only one is currently supported.")
             try:
-                alternative_language = getUtility(ILanguageSet)[second_lang_code]
+                alternative_language = getUtility(ILanguageSet)[
+                    second_lang_code]
             except NotFoundError:
                 # Oops, a bogus code was provided! XXX: should this be
                 # UnexpectedFormData too?
@@ -591,7 +607,8 @@ class BaseTranslationView(LaunchpadView):
             else:
                 initial_values['alternative_language'] = alternative_language
 
-        self.alternative_language_widget = CustomWidgetFactory(CustomDropdownWidget)
+        self.alternative_language_widget = CustomWidgetFactory(
+            CustomDropdownWidget)
         setUpWidgets(
             self, IPOFileAlternativeLanguage, IInputWidget,
             names=['alternative_language'], initial=initial_values)
@@ -615,23 +632,23 @@ class BaseTranslationView(LaunchpadView):
         return self.pofile.canEditTranslations(self.user)
 
     def _extractFormPostedTranslations(self, pomsgset):
-        """Look for translations for this POMsgSet in the form submitted.
+        """Look for translations for this `POMsgSet` in the form submitted.
 
         Store the new translations at self.form_posted_translations and its
-        fuzzy status at self.form_posted_needsreview, keyed on the POMsgSet.
+        fuzzy status at self.form_posted_needsreview, keyed on the `POMsgSet`.
 
         In this method, we look for various keys in the form, and use them as
         follows:
 
-        - 'msgset_ID' to know if self is part of the submitted form. If it
+        * 'msgset_ID' to know if self is part of the submitted form. If it
           isn't found, we stop parsing the form and return.
-        - 'msgset_ID_LANGCODE_translation_PLURALFORM': Those will be the
+        * 'msgset_ID_LANGCODE_translation_PLURALFORM': Those will be the
           submitted translations and we will have as many entries as plural
           forms the language self.context.language has.
-        - 'msgset_ID_LANGCODE_needsreview': If present, will note that the
+        * 'msgset_ID_LANGCODE_needsreview': If present, will note that the
           'needs review' flag has been set for the given translations.
 
-        In all those form keys, 'ID' is the ID of the POTMsgSet.
+        In all those form keys, 'ID' is the ID of the `POTMsgSet`.
         """
         form = self.request.form
         potmsgset_ID = pomsgset.potmsgset.id
@@ -692,7 +709,8 @@ class BaseTranslationView(LaunchpadView):
                     # Let's override 'value' with the selected suggestion
                     # value.
                     if 'suggestion' in selected_translation_key:
-                        value = _getSuggestionFromFormId(selected_translation_key)
+                        value = _getSuggestionFromFormId(
+                            selected_translation_key)
                     elif pomsgset.active_texts[pluralform] is not None:
                         # It's current translation.
                         value = pomsgset.active_texts[pluralform]
@@ -708,10 +726,11 @@ class BaseTranslationView(LaunchpadView):
                 # Note whether this translation should be stored in our
                 # database as a new suggestion.
                 msgset_ID_LANGCODE_translation_PLURALFORM_new_checkbox = (
-                    '%s_checkbox' % msgset_ID_LANGCODE_translation_PLURALFORM_new)
+                    '%s_checkbox'
+                    % msgset_ID_LANGCODE_translation_PLURALFORM_new)
                 store = (
-                    msgset_ID_LANGCODE_translation_PLURALFORM_new_checkbox in form
-                    )
+                    msgset_ID_LANGCODE_translation_PLURALFORM_new_checkbox
+                    in form)
 
             if not self.form_posted_translations.has_key(pomsgset):
                 self.form_posted_translations[pomsgset] = {}
@@ -724,8 +743,8 @@ class BaseTranslationView(LaunchpadView):
                 self.form_posted_translations_has_store_flag[pomsgset].append(
                     pluralform)
         else:
-            raise AssertionError('More than %d plural forms were submitted!' %
-                self.MAX_PLURAL_FORMS)
+            raise AssertionError('More than %d plural forms were submitted!'
+                                 % self.MAX_PLURAL_FORMS)
 
     #
     # Redirection
@@ -755,7 +774,8 @@ class BaseTranslationView(LaunchpadView):
         if '?' in new_url:
             # Get current query string
             base_url, old_query_string = new_url.split('?')
-            query_parts = cgi.parse_qsl(old_query_string, strict_parsing=False)
+            query_parts = cgi.parse_qsl(
+                old_query_string, strict_parsing=False)
 
             # Override whatever current query string values we have with the
             # ones added by _buildRedirectParams.
@@ -800,15 +820,16 @@ class BaseTranslationView(LaunchpadView):
 class POMsgSetPageView(BaseTranslationView):
     """A view for the page that renders a single translation.
 
-    See BaseTranslationView for details on how this works."""
+    See `BaseTranslationView` for details on how this works.
+    """
 
     def initialize(self):
         self.pofile = self.context.pofile
 
-        # Since we are only displaying a single message, we only hold on
-        # to one error for it. The variable is set to the failing
-        # POMsgSet (a device of BaseTranslationView._storeTranslations)
-        # via _submitTranslations.
+        # Since we are only displaying a single message, we only hold on to
+        # one error for it. The variable is set to the failing POMsgSet (a
+        # device of BaseTranslationView._storeTranslations) via
+        # _submitTranslations.
         self.error = None
         self.pomsgset_view = None
 
@@ -819,17 +840,17 @@ class POMsgSetPageView(BaseTranslationView):
     #
 
     def _buildBatchNavigator(self):
-        """See BaseTranslationView._buildBatchNavigator."""
+        """See `BaseTranslationView._buildBatchNavigator`."""
         return POTMsgSetBatchNavigator(self.pofile.potemplate.getPOTMsgSets(),
                                        self.request, size=1)
 
     def _initializeMsgSetViews(self):
-        """See BaseTranslationView._initializeMsgSetViews."""
+        """See `BaseTranslationView._initializeMsgSetViews`."""
         self.pomsgset_view = self._prepareView(POMsgSetZoomedView,
                                                self.context, self.error)
 
     def _submitTranslations(self):
-        """See BaseTranslationView._submitTranslations."""
+        """See `BaseTranslationView._submitTranslations`."""
         self.error = self._storeTranslations(self.context)
         if self.error:
             self.request.response.addErrorNotification(
@@ -849,8 +870,8 @@ class POMsgSetView(LaunchpadView):
     same information at self.form.
     """
 
-    # Instead of registering in ZCML, we indicate the template here and
-    # avoid the adapter lookup when constructing these subviews.
+    # Instead of registering in ZCML, we indicate the template here and avoid
+    # the adapter lookup when constructing these subviews.
     template = ViewPageTemplateFile('../templates/pomsgset-translate-one.pt')
 
     # Relevant instance variables:
@@ -1067,7 +1088,10 @@ class POMsgSetView(LaunchpadView):
         return non_editor, elsewhere, wiki, alt_lang_suggestions
 
     def _buildSuggestions(self, title, submissions):
-        """Return a POMsgSetSuggestions object for the provided submissions."""
+        """Return `POMsgSetSuggestions` for the provided submissions.
+
+        Creates and returns a single `POMsgSetSuggestions` object.
+        """
         submissions = sorted(submissions,
                              key=operator.attrgetter("datecreated"),
                              reverse=True)
@@ -1082,13 +1106,10 @@ class POMsgSetView(LaunchpadView):
                 index, self.context.pofile.language.displayname))
 
         translation = self.context.active_texts[index]
-        # We store newlines as '\n', '\r' or '\r\n', depending on the
-        # text to translate but forms should have them as '\r\n' so we need
-        # to change them before showing them.
-        if translation is not None:
-            return convert_newlines_to_web_form(translation)
-        else:
-            return None
+        # We store newlines as '\n', '\r' or '\r\n', depending on the text to
+        # translate; but forms should have them as '\r\n' so we need to change
+        # line endings before showing them.
+        return convert_newlines_to_web_form(translation)
 
     def getTranslation(self, index):
         """Return the translation submitted for the pluralform 'index'."""
@@ -1097,13 +1118,10 @@ class POMsgSetView(LaunchpadView):
                 index, self.context.pofile.language.displayname))
 
         translation = self.translations[index]
-        # We store newlines as '\n', '\r' or '\r\n', depending on the
-        # text to translate but forms should have them as '\r\n' so we need
-        # to change them before showing them.
-        if translation is not None:
-            return convert_newlines_to_web_form(translation)
-        else:
-            return None
+        # We store newlines as '\n', '\r' or '\r\n', depending on the text to
+        # translate; but forms should have them as '\r\n' so we need to change
+        # line endings before showing them.
+        return convert_newlines_to_web_form(translation)
 
     #
     # Display-related methods
@@ -1116,12 +1134,11 @@ class POMsgSetView(LaunchpadView):
 
     @cachedproperty
     def message_must_be_hidden(self):
-        """Whether the message must be hidden.
+        """Whether this message must be hidden from anonymous viewers.
 
-        Messages are always shown to logged-in users.
-
-        Messages that are likely to contain email addresses
-        are shown only to logged-in users, and not to anonymous users.
+        Messages are always shown to logged-in users.  However, messages that
+        are likely to contain email addresses must not be shown to anonymous
+        visitors in order to keep them out of search engines, spam lists etc.
         """
         if self.user is not None:
             # Always show messages to logged-in users.
@@ -1218,7 +1235,10 @@ class POMsgSetView(LaunchpadView):
 
 
 class POMsgSetZoomedView(POMsgSetView):
-    """A view that displays a POMsgSet, but zoomed in. See POMsgSetPageView."""
+    """A view that displays a `POMsgSet`, but zoomed in.
+
+    See `POMsgSetPageView`.
+    """
     @property
     def zoom_url(self):
         # We are viewing this class directly from an IPOMsgSet, we should
@@ -1239,13 +1259,17 @@ class POMsgSetZoomedView(POMsgSetView):
     def max_entries(self):
         return None
 
+
 #
 # Pseudo-content class
 #
 
+
 class POMsgSetSuggestions:
-    """See IPOMsgSetSuggestions."""
+    """See `IPOMsgSetSuggestions`."""
+
     implements(IPOMsgSetSuggestions)
+
     def __init__(self, title, pomsgset, submissions,
                  user_is_official_translator):
         self.title = title

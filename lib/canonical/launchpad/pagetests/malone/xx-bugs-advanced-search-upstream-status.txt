@@ -139,6 +139,94 @@ the union of the results for the individual filters.
     2 Blackhole Trash folder
       &mdash; Medium New
 
+== Backward-compatibility for old bookmars ==
+
+Before Launchpad version 1.1.6, users could selected only one upstream
+status. Bookmarks of such searches work nevertheless.
+
+The user opens a bookmark for "upstream status doesn't matter"
+
+    >>> from urllib import urlencode
+    >>> bookmark_params = {
+    ...     'field.status_upstream': '',
+    ...     'field.status_upstream-empty-marker': '1',
+    ...     'field.searchtext': '',
+    ...     'orderby': '-importance',
+    ...     'field.status:list': [
+    ...          'Unconfirmed', 'Needs Info', 'Confirmed', 'In Progress',
+    ...          'Fix Committed'],
+    ...     'assignee_option': 'any',
+    ...     'field.assignee': '',
+    ...     'field.bug_reporter': '',
+    ...     'field.bug_contact': '',
+    ...     'field.component-empty-marker': '1',
+    ...     'field.omit_dupes.used': '',
+    ...     'field.omit_dupes': 'on',
+    ...     'field.has_patch.used=':'',
+    ...     'field.tag': '',
+    ...     'field.has_cve.used': '',
+    ...     'field.has_no_package.used': '',
+    ...     'search': 'Search'}
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+bugs?' + urlencode(
+    ...         bookmark_params, True))
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG
+      mozilla-firefox Medium New
+    9 Thunderbird crashes
+      thunderbird Medium Confirmed
+    10 another test bug
+       linux-source-2.6.15 Medium New
+    2 Blackhole Trash folder
+      &mdash; Medium New
+ 
+The user opens a bookmark for "upstream status: Show only bugs that need 
+to be forwarded to an upstream bugtracker".
+
+    >>> bookmark_params['field.status_upstream'] = 'pending_bugwatch'
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+bugs?' + urlencode(
+    ...         bookmark_params, True))
+    >>> print_bugtasks(anon_browser.contents)
+
+The user opens a bookmark for "upstream status: Show only bugs that are
+not known to affect upstream".
+
+    >>> bookmark_params['field.status_upstream'] = 'hide_upstream'
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+bugs?' + urlencode(
+    ...         bookmark_params, True))
+    >>> print_bugtasks(anon_browser.contents)
+    10 another test bug
+       linux-source-2.6.15 Medium New
+
+The user opens a bookmark for "upstream status: Show only bugs that are
+resolved upstream".
+
+    >>> bookmark_params['field.status_upstream'] = 'only_resolved_upstream'
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+bugs?' + urlencode(
+    ...         bookmark_params, True))
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG
+      mozilla-firefox Medium New
+    9 Thunderbird crashes
+      thunderbird Medium Confirmed
+    2 Blackhole Trash folder
+      &mdash; Medium New
+
+Other values for status_upstream lead to an error.
+
+    >>> bookmark_params['field.status_upstream'] = 'invalid'
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+bugs?' + urlencode(
+    ...         bookmark_params, True))
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: Unexpected value for field 'status_upstream'. 
+    Perhaps your bookmarks are out of date or you changed the URL by hand?
+
+
 Let's reset the statuses we set.
 
     >>> login('test@canonical.com')
