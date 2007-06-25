@@ -256,8 +256,8 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         date_updated = self.date_reviewed
         for pluralform in range(self.pluralforms):
             submission = self.getActiveSubmission(pluralform)
-            if submission and (not date_updated or
-                               submission.datecreated > date_updated):
+            if submission is not None and (
+                not date_updated or submission.datecreated > date_updated):
                 date_updated = submission.datecreated
 
         if (date_updated is not None and date_updated > timestamp):
@@ -275,7 +275,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         current_active = self.getActiveSubmission(pluralform)
         if current_active is not None:
             current_active.active = False
-            del(self.active_submissions[pluralform])
+            del self.active_submissions[pluralform]
             # We need this syncUpdate so if the next submission.active change
             # is done we are sure that we will store this change first in the
             # database. This is because we can only have an IPOSubmission with
