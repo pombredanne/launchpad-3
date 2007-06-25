@@ -64,8 +64,6 @@ from canonical.launchpad.webapp.authorization import check_permission
 
 from canonical.lp.dbschema import SpecificationStatus
 
-from canonical.launchpad.database.specification import Specification
-
 class SpecificationNavigation(Navigation):
 
     usedfor = ISpecification
