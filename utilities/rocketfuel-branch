@@ -15,13 +15,13 @@ if [ "x$1" == "x" ]; then
 fi
 
 if [ -e "${LPBRANCHES}/$1" ]; then
-    echo "Error: '$1' alreeady exists"
+    echo "Error: '$1' already exists"
     exit 1
 fi
 
 cd ${LPBRANCHES}
 echo "Ensuring we are up to date..."
-trunk/rocketfuel-get
+trunk/utilities/rocketfuel-get
 bzr branch trunk $1
 cd $1
 utilities/link-external-sourcecode.sh ../../lp-sourcedeps

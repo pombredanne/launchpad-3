@@ -40,7 +40,7 @@ the Ubuntu Team that owns the distribution.
     >>> login('no-priv@canonical.com')
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistributionSet, IPersonSet)
+    ...     IDistributionSet, ILanguageSet, IPersonSet)
 
     >>> personset = getUtility(IPersonSet)
     >>> sample_person = personset.getByEmail('test@canonical.com')
@@ -49,6 +49,8 @@ the Ubuntu Team that owns the distribution.
     >>> stub = personset.getByName('stub')
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> english = getUtility(ILanguageSet)['en']
+    >>> sample_person.addLanguage(english)
     >>> ubuntu.addAnswerContact(sample_person)
     True
 

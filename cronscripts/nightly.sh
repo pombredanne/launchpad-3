@@ -7,6 +7,23 @@
 # Note that http/ftp proxies are needed by the product 
 # release finder
 
+# Only run this script on gangotri
+THISHOST=`uname -n`
+if [ "gangotri" != "$THISHOST" ]
+then
+        echo "This script must be run on gangotri."
+        exit 1
+fi
+
+# Only run this as the launchpad user
+USER=`whoami`
+if [ "launchpad" != "$USER" ]
+then
+        echo "Must be launchpad user to run this script."
+        exit 1
+fi
+
+
 export LPCONFIG=lpnet1
 export http_proxy=http://squid.internal:3128/
 export ftp_proxy=http://squid.internal:3128/
@@ -54,7 +71,7 @@ python distributionmirror-prober.py --content-type=archive --force --no-owner-no
 
 echo '== Distribution mirror prober (release)' `date` ==
 # Force beause we know we are only running this once a day
-python distributionmirror-prober.py --content-type=release --force --no-owner-notification
+python distributionmirror-prober.py --content-type=cdimage --force --no-owner-notification
 
 
 rm -f $LOCK

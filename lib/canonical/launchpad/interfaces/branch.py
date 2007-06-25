@@ -113,6 +113,11 @@ class IBranch(IHasOwner):
         title=_('The last message we got when mirroring this branch '
                 'into supermirror.'), required=False, readonly=False)
 
+    private = Bool(
+        title=_("Keep branch confidential"), required=False,
+        description=_("Make this branch visible only to its subscribers"),
+        default=False)
+
     # People attributes
     """Product owner, it can either a valid Person or Team
             inside Launchpad context."""
@@ -264,24 +269,13 @@ class IBranch(IHasOwner):
         script.
         """
 
-    def getAttributeNotificationAddresses():
-        """Return a list of email addresses of interested subscribers.
+    def getNotificationRecipients():
+        """Return a complete INotificationRecipientSet instance.
 
-        Only branch subscriptions that specified an interest in
-        attribute notifications will have specified email addresses added.
+        The INotificationRecipientSet instance contains the subscribers
+        and their subscriptions.
         """
 
-    def getRevisionNotificationDetails():
-        """Return a map of max diff size to a list of email addresses.
-        
-        Only branch subscriptions that specified an interest in
-        revision notifications will have their specified email addresses added.
-
-        If a user has subscribed to a branch directly, the settings
-        that the user specifies overrides the settings of a team that the
-        user is a member of.
-        """
-        
     def getScannerData():
         """Retrieve the full ancestry of a branch for the branch scanner.
 
@@ -312,10 +306,16 @@ class IBranchSet(Interface):
         """Return an iterator that will go through all branches."""
 
     def count():
-        """Return the number of branches in the database."""
+        """Return the number of branches in the database.
+
+        Only counts public branches.
+        """
 
     def countBranchesWithAssociatedBugs():
-        """Return the number of branches that have bugs associated."""
+        """Return the number of branches that have bugs associated.
+
+        Only counts public branches.
+        """
 
     def get(branch_id, default=None):
         """Return the branch with the given id.
@@ -360,24 +360,45 @@ class IBranchSet(Interface):
         and only non import branches are counted.
         """
 
-    def getRecentlyChangedBranches(branch_count):
+    def getRecentlyChangedBranches(branch_count, visible_by_user=None):
         """Return a list of branches that have been recently updated.
 
         The list will contain at most branch_count items, and excludes
         branches owned by the vcs-imports user.
+
+        The visible_by_user parameter is used to filter out the branches
+        that the user is not entitled to see.  Private branches are
+        only visible by the owner, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
         """
 
-    def getRecentlyImportedBranches(branch_count):
+    def getRecentlyImportedBranches(branch_count, visible_by_user=None):
         """Return a list of branches that have been recently imported.
 
         The list will contain at most branch_count items, and only
         has branches owned by the vcs-imports user.
+
+        The visible_by_user parameter is used to filter out the branches
+        that the user is not entitled to see.  Private branches are
+        only visible by the owner, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
         """
 
-    def getRecentlyRegisteredBranches(branch_count):
+    def getRecentlyRegisteredBranches(branch_count, visible_by_user=None):
         """Return a list of branches that have been recently registered.
 
         The list will contain at most branch_count items.
+
+        The visible_by_user parameter is used to filter out the branches
+        that the user is not entitled to see.  Private branches are
+        only visible by the owner, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
         """
 
     def getLastCommitForBranches(branches):
@@ -387,7 +408,8 @@ class IBranchSet(Interface):
         """Return the branches that are owned by the people specified."""
 
     def getBranchesForPerson(
-        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
         """Branches associated with person with appropriate lifecycle.
 
         XXX: thumper 2007-03-23
@@ -408,10 +430,18 @@ class IBranchSet(Interface):
         of any lifecycle_status are returned, otherwise only branches
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
+
+        The visible_by_user parameter is used to filter out the branches
+        that the user is not entitled to see.  Private branches are
+        only visible by the owner, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
         """
-        
+
     def getBranchesAuthoredByPerson(
-        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
         """Branches authored by person with appropriate lifecycle.
 
         Only branches that are authored by the person are returned.
@@ -420,10 +450,18 @@ class IBranchSet(Interface):
         of any lifecycle_status are returned, otherwise only branches
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
+
+        The visible_by_user parameter is used to filter out the branches
+        that the user is not entitled to see.  Private branches are
+        only visible by the owner, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
         """
-        
+
     def getBranchesRegisteredByPerson(
-        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None ):
         """Branches registered by person with appropriate lifecycle.
 
         Only branches registered by the person but *NOT* authored by
@@ -433,10 +471,18 @@ class IBranchSet(Interface):
         of any lifecycle_status are returned, otherwise only branches
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
+
+        The visible_by_user parameter is used to filter out the branches
+        that the user is not entitled to see.  Private branches are
+        only visible by the owner, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
         """
-        
+
     def getBranchesSubscribedByPerson(
-        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        person, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
         """Branches subscribed by person with appropriate lifecycle.
 
         All branches where the person has subscribed to the branch
@@ -446,16 +492,44 @@ class IBranchSet(Interface):
         of any lifecycle_status are returned, otherwise only branches
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
+
+        The visible_by_user parameter is used to filter out the branches
+        that the user is not entitled to see.  Private branches are
+        only visible by the owner, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
         """
-        
+
     def getBranchesForProduct(
-        product, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING):
+        product, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
         """Branches associated with product with appropriate lifecycle.
 
         If lifecycle_statuses evaluates to False then branches
         of any lifecycle_status are returned, otherwise only branches
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
+
+        The visible_by_user parameter is used to filter out the branches
+        that the user is not entitled to see.  Private branches are
+        only visible by the owner, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
+        """
+
+    def getLatestBranchesForProduct(product, quantity, visible_by_user=None):
+        """Return the most recently created branches for the product.
+
+        At most quantity branches are returned.
+
+        The visible_by_user parameter is used to filter out the branches
+        that the user is not entitled to see.  Private branches are
+        only visible by the owner, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
         """
 
 
