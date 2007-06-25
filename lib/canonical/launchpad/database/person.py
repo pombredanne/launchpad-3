@@ -48,7 +48,7 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
     IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon,
     IHasLogo, IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet,
-    ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
+    ILanguageSet, ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
     ILoginTokenSet, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
     IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey,
     ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
@@ -464,11 +464,13 @@ class Person(SQLBase, HasSpecificationsMixin):
     def getSupportedLanguages(self):
         """See `IPerson`."""
         languages = set()
-        known_languages = shortlist(self.languages)
-        if len(known_languages) != 0:
+        english = getUtility(ILanguageSet)['en']
+        known_languages = self.languages
+        if known_languages.count() != 0:
             for lang in known_languages:
-                if not is_english_variant(lang):
-                    languages.add(lang)
+                if is_english_variant(lang):
+                    lang = english
+                languages.add(lang)
         return languages
 
     def getQuestionLanguages(self):

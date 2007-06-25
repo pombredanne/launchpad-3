@@ -542,6 +542,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -1792,10 +1795,10 @@ ALTER TABLE emailaddress ENABLE TRIGGER ALL;
 
 ALTER TABLE entitlement DISABLE TRIGGER ALL;
 
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (1, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 10, 100, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (2, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 20, 200, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (4, 18, '2007-06-11 00:44:19.267601', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 10, 5, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (5, 18, '2007-06-11 01:02:48.538842', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 10, 3, 0);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (1, 17, 10, 100, 0, '2007-06-11 12:00:00', '2008-06-11 12:00:00', NULL, '2007-06-10 12:00:00', NULL, NULL, 30, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (2, 17, 20, 200, 0, '2007-06-11 12:00:00', '2008-06-11 12:00:00', NULL, '2007-06-10 12:00:00', NULL, NULL, 30, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (4, 18, 10, 5, 0, '2007-06-11 12:00:00', '2007-06-11 00:00:00', NULL, '2007-06-11 00:44:19.267601', NULL, NULL, 30, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (5, 18, 10, 3, 0, '2007-06-11 12:00:00', '2007-06-11 00:00:00', NULL, '2007-06-11 01:02:48.538842', NULL, NULL, 30, NULL);
 
 
 ALTER TABLE entitlement ENABLE TRIGGER ALL;
@@ -3332,7 +3335,6 @@ INSERT INTO personlanguage (id, person, "language", date_created) VALUES (5, 14,
 INSERT INTO personlanguage (id, person, "language", date_created) VALUES (6, 29, 521, '2006-10-16 18:31:44.538238');
 INSERT INTO personlanguage (id, person, "language", date_created) VALUES (7, 16, 119, '2007-06-05 12:06:39.881444');
 INSERT INTO personlanguage (id, person, "language", date_created) VALUES (8, 18, 119, '2007-06-05 12:06:39.881444');
-INSERT INTO personlanguage (id, person, "language", date_created) VALUES (9, 14, 119, '2007-06-05 18:33:02.179204');
 INSERT INTO personlanguage (id, person, "language", date_created) VALUES (10, 13, 119, '2007-06-05 18:33:45.890718');
 INSERT INTO personlanguage (id, person, "language", date_created) VALUES (11, 29, 119, '2007-06-05 18:34:52.127945');
 

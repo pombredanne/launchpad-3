@@ -81,9 +81,13 @@ class UserSupportLanguagesMixin:
         from the request (the Accept-Language header and GeoIP
         information).
         """
-        languages = set(
-            language for language in request_languages(self.request)
-            if not is_english_variant(language))
+        english = getUtility(ILanguageSet)['en']
+        languages = set()
+        for language in request_languages(self.request):
+            if is_english_variant(language):
+                languages.add(english)
+            else:
+                languages.add(language)
         languages = list(languages)
         return languages
 

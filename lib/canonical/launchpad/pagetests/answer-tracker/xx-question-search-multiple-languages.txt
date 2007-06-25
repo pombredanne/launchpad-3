@@ -180,11 +180,11 @@ the search results.
 
 Some users, translators in particular, speak an English variant.
 English variants are considered to be English in the Answers,
-so English is displayed among the languages. Daf is a translator for
-en_GB, Japanese, and Welsh. knowing en_GB, he will be shown English
-questions. As there are no Japanese or Welsh questions, there will
-not be any controls present for those two languages when searching
-Ubuntu.
+so English is displayed among the languages. Dafydd is a translator
+for en_GB, Japanese, and Welsh. knowing en_GB, he will be shown
+English questions. As there are no Japanese or Welsh questions, there
+will not be any controls present for those two languages when
+searching Ubuntu.
 
     >>> daf_browser = setupBrowser(auth='Basic daf@canonical.com:daf')
     >>> daf_browser.open('http://launchpad.dev/~daf/+editlanguages')
@@ -194,7 +194,7 @@ Ubuntu.
     True
     >>> daf_browser.getControl('Welsh').selected
     True
-    >>> daf_browser.getControl('English', index=0).selected
+    >>> daf_browser.getControl('English', index=1).selected
     False
     
     >>> daf_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
