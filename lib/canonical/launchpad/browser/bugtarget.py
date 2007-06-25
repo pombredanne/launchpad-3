@@ -193,13 +193,18 @@ class FileBugViewBase(LaunchpadFormView):
 
     def validate(self, data):
         """Make sure the package name, if provided, exists in the distro."""
-        # If the user has chosen to select an existing bug and has
-        # been presented with a list of bugs to choose from then check
-        # that he's actually chosen one of the bugs.
-        if (data.get('bug_already_reported') and
-            not data.get('bug_already_reported_as')):
-            self.setFieldError('bug_already_reported_as', "Please choose a bug")
-            return
+
+        # The comment field is only required if filing a new bug.
+        if self.submit_bug_action.submitted():
+            if not data.get('comment'):
+                self.setFieldError('comment', "Required input is missing.")
+        # Check a bug has been selected when the user wants to
+        # subscribe to an existing bug.
+        elif self.this_is_my_bug_action.submitted():
+            if not data.get('bug_already_reported_as'):
+                self.setFieldError('bug_already_reported_as', "Please choose a bug")
+        else:
+            pass
 
         # We have to poke at the packagename value directly in the
         # request, because if validation failed while getting the
@@ -408,15 +413,13 @@ class FileBugViewBase(LaunchpadFormView):
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 
-    @action("This Is My Bug", name="this_is_my_bug",
+    @action("Subscribe To This Bug", name="this_is_my_bug",
             failure=handleSubmitBugFailure)
     def this_is_my_bug_action(self, action, data):
         """"""
         bug_already_reported_as = data.get('bug_already_reported_as')
 
         if bug_already_reported_as:
-            if bug_already_reported == 'off':
-                data['bug_already_reported'] = 'on'
             self.request.response.redirect(
                 canonical_url(bug_already_reported_as.bugtasks[0]))
 

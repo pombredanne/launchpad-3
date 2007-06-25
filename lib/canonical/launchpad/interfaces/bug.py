@@ -431,7 +431,7 @@ class IBugAddForm(IBug):
     comment = Text(
         title=_('Further information, steps to reproduce,'
                 ' version information, etc.'),
-        required=True)
+        required=False)
     bug_already_reported = Bool(
         title=_("This bug has already been reported"),
         required=False, default=True)
