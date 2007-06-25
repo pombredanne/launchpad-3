@@ -17,7 +17,6 @@ ubuntuteam_default = [
 ubuntuteam_email = [
     u'celso.providelo@canonical.com',
     u'colin.watson@ubuntulinux.com',
-    u'cprov@ubuntu.com',
     u'daniel.silverstone@canonical.com',
     u'foo.bar@canonical.com',
     u'jeff.waugh@ubuntulinux.com',

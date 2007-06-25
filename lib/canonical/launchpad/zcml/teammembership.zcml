@@ -17,14 +17,16 @@
         <require 
             permission="zope.Public"
             attributes="team person reviewer status datejoined dateexpires
-                        reviewercomment statusname is_admin is_owner
-                        isExpired sendExpirationWarningEmail" />
+                        reviewercomment statusname isExpired
+                        sendExpirationWarningEmail canBeRenewedByMember
+                        sendSelfRenewalNotification canChangeExpirationDate
+                        sendAutoRenewalNotification" />
         <require 
             permission="launchpad.Edit"
-            attributes="setStatus" />
+            attributes="setStatus setExpirationDate" />
         <require 
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.ITeamMembership" />
+            set_attributes="reviewer datejoined reviewercomment" />
     </content>
 
     <browser:url
@@ -60,5 +62,18 @@
         permission="zope.Public"
         template="../templates/teammembership-listing-simple.pt"
         />
+
+    <content class="canonical.launchpad.browser.person.TeamInvitationView">
+        <allow 
+            interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
+        <allow attributes="__call__" />
+    </content>
+
+    <content
+        class="canonical.launchpad.browser.person.TeamMembershipSelfRenewalView">
+        <allow 
+            interface="zope.publisher.interfaces.browser.IBrowserPublisher" />
+        <allow attributes="__call__" />
+    </content>
 
 </configure>

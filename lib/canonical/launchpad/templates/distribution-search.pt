@@ -47,7 +47,7 @@
              tal:content="dsp/title"/>
           <ul tal:condition="view/detailed">
             <li tal:repeat="pubrec dsp/current_publishing_records">
-              <a tal:content="pubrec/distrorelease/name"
+              <a tal:content="pubrec/distroseries/name"
                  tal:attributes="href pubrec/meta_sourcepackage/fmt:url;
                                  title pubrec/meta_sourcepackage/title" />
               (<span tal:replace="pubrec/section/name"/>):
@@ -57,7 +57,7 @@
 
               <div style="font-size: 80%;"
                    tal:define="meta_binaries 
-                               pubrec/meta_distroreleasesourcepackagerelease/meta_binaries">
+                               pubrec/meta_distroseriessourcepackagerelease/meta_binaries">
 
                 <tal:has_bin condition="meta_binaries">
                    Binary Packages:

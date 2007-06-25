@@ -23,6 +23,7 @@ class IEmailAddress(Interface):
     email = TextLine(title=_('Email Address'), required=True, readonly=False)
     status = Int(title=_('Email Address Status'), required=True, readonly=False)
     person = Int(title=_('Person'), required=True, readonly=False)
+    personID = Int(title=_('PersonID'), required=True, readonly=True)
     statusname = Attribute("StatusName")
 
     def destroySelf():

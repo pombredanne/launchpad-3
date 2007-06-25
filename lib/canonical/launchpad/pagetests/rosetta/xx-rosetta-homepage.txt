@@ -1,57 +1,56 @@
-The Translations front page
+= Translations front page =
 
-  >>> browser.open('http://translations.launchpad.dev/')
-  >>> browser.url
-  'http://translations.launchpad.dev/'
+    >>> browser.open('http://translations.launchpad.dev/')
+    >>> print browser.title
+    Launchpad Translations
 
-includes a list of translatable distribution releases,
+The page includes a list of translatable distribution series
+in the left column.
 
-  >>> '>Translatable operating systems</h2>' in browser.contents
-  True
-  >>> '5.04' in browser.contents
-  True
-  >>> '4.10' in browser.contents
-  False
+    >>> left_column = find_tags_by_class(
+    ...     browser.contents, 'three column left')[0]
+    >>> print extract_text(left_column)
+    Translatable operating systems
+    Ubuntu 5.04
 
-products,
+The middle lists translatable products, ALSA is listed in the page
+among featured projects.
 
-  >>> '>Translatable projects</h2>' in browser.contents
-  True
+    >>> middle_column = find_tags_by_class(
+    ...     browser.contents, 'three column middle')[0]
+    >>> print extract_text(middle_column)
+    Translatable projects
+    ALSA utilities
+    The Evolution Groupware Application
+    ...
+    List all translatable projects...
 
-ALSA is listed in the page among featured projects:
+The translation front page list of the user's translatable languages.
+in the right column
 
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(browser.contents)
-  >>> projects = soup.fetchText('Translatable projects')[0].parent.parent
-  >>> projects.find(text='ALSA utilities')
-  u'ALSA utilities'
+    >>> right_column = find_tags_by_class(
+    ...     browser.contents, 'three column right')[0]
+    >>> print extract_text(right_column)
+    Preferred languages
+    Afrikaans
+    Sotho, Southern
+    Xhosa
+    Zulu
+    ...
+    Change your preferred language...
 
-Homepage also includes a list of languages.
+    >>> right_column.findAll('a')[-1]
+    <a href="/+editmylanguages">
+    ...Change your preferred language...
 
-
-  >>> preferred_languages_column = find_tags_by_class(
-  ...     browser.contents, 'three column right')[0]
-  >>> print preferred_languages_column
-  <...
-  ...Preferred languages...
-  <a href="/+languages/af">Afrikaans</a>
-  ...
-  <a href="/+languages/st">Sotho, Southern</a>
-  ...
-  <a href="/+languages/xh">Xhosa</a>
-  ...
-  <a href="/+languages/zu">Zulu</a>
-  ...
-  <a href="/+editmylanguages">
-  ...Change your preferred language...
-
-There is also an "About" page that talks about how Launchpad 
+There is also an "About" page that talks about how Launchpad
 Translations works.
 
-  >>> print http(r"""
-  ... GET /translations/+about HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...gettext...
-  ...
+    >>> browser.getLink('Launchpad Translations').click()
+    >>> print browser.title
+    About Launchpad Translations
+
+    >>> print extract_text(find_main_content(browser.contents))
+    About Launchpad Translations ...
+    How do I get my software translated in Launchpad?
+    ... gettext ...

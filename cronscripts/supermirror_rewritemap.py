@@ -25,12 +25,12 @@ import _pythonpath
 import logging
 
 from canonical.launchpad.scripts import supermirror_rewritemap
-from canonical.launchpad.scripts.base import (LaunchpadScript,
+from canonical.launchpad.scripts.base import (LaunchpadCronScript,
     LaunchpadScriptFailure)
 from canonical.config import config
 
 
-class SupermirrorRewriteMap(LaunchpadScript):
+class SupermirrorRewriteMap(LaunchpadCronScript):
     loglevel = logging.WARNING
     def main(self):
         if len(self.args) != 1:

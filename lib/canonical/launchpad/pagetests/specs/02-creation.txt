@@ -88,18 +88,18 @@ Seeing that we were redirected again to the addspec page is a good sign
 (something prevented the spec from being registered) however better make sure
 this happened due to the right reason.
 
-  >>> 'is already in use by another specification' in browser.contents
+  >>> 'is already in use by another blueprint' in browser.contents
   True
 
-And we test again the validator using a invalid name.
+We test the validator using an invalid name.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
-  >>> browser.getControl(name='field.name').value = 'NetworkMagic'
+  >>> browser.getControl(name='field.name').value = 'NetworkMagic!'
   >>> browser.getControl(name='field.title').value = (
   ...   'Network Magic - Automatic Network Detection')
   >>> browser.getControl(name='field.specurl').value = (
-  ...   'http://wiki.ubuntu.com/NetworkMagic')
+  ...   'http://wiki.ubuntu.com/NetworkMagicExclamation')
   >>> browser.getControl(name='field.summary').value = (
   ...   "Users are increasingly using multiple networks.")
   >>> browser.getControl(name='field.status').value = ['Approved']
@@ -109,7 +109,34 @@ And we test again the validator using a invalid name.
   >>> browser.getControl('Register Blueprint').click()
   >>> browser.url
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
-  >>> "Invalid name 'NetworkMagic'" in browser.contents
+  >>> for message in find_tags_by_class(browser.contents, 'message'):
+  ...      print message.renderContents()
+  There is 1 error.
+  <BLANKLINE>
+  Invalid name ...
+
+Some invalid names can be transformed into valid names. When it is clear that a
+valid name can be produced by removing trailing spaces or by converting upper
+case characters to their lower case equivalents, this is done automatically for
+the user:
+
+  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
+  >>> browser.getControl(name='field.name').value = ' RecoverableNetworkMagic '
+  >>> browser.getControl(name='field.title').value = (
+  ...   'Network Magic - Automatic Network Detection')
+  >>> browser.getControl(name='field.specurl').value = (
+  ...   'http://wiki.ubuntu.com/RecoverableNetworkMagic')
+  >>> browser.getControl(name='field.summary').value = (
+  ...   "Users are increasingly using multiple networks.")
+  >>> browser.getControl(name='field.status').value = ['Approved']
+  >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+  >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
+  >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+  >>> browser.getControl('Register Blueprint').click()
+  >>> browser.url
+  'http://blueprints.launchpad.dev/ubuntu/+spec/recoverablenetworkmagic'
+  >>> "Blueprint overview" in browser.contents
   True
 
 
@@ -131,7 +158,7 @@ URL.
   >>> browser.getControl('Register Blueprint').click()
   >>> browser.url
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
-  >>> "is already registered by another specification" in browser.contents
+  >>> "is already registered by another blueprint" in browser.contents
   True
 
 
@@ -199,7 +226,7 @@ First, we try to create a spec that has the same name as an existing one.
 So, we were not redirected to the spec page, because the spec was not
 created. Let's check that this happened because the name is taken:
 
-  >>> 'There is already a blueprint with this name' in browser.contents
+  >>> 'is already in use by another blueprint' in browser.contents
   True
 
 
@@ -229,3 +256,17 @@ through.
   'http://blueprints.launchpad.dev/ubuntu/+spec/brandnewspec'
 
 
+= TODO =
+There are many specification doctests with the following type of test:
+
+"  >>> 'Invalid name' in browser.contents                              "
+
+If such tests fail, they can be a little difficult to debug, because the
+failure messages do not specify the resulting string. Instead, we could
+use the following pattern to get more information in case of failure:
+
+"  >>> for message in find_tags_by_class(browser.contents, 'message'): "
+"  ...     print message.renderContents()                              "
+"  There is 1 error.                                                   "
+"  <BLANKLINE>                                                         "
+"  Invalid name ...                                                    "

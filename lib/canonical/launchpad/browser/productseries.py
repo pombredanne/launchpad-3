@@ -7,6 +7,7 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesSOP',
            'ProductSeriesFacets',
            'ProductSeriesOverviewMenu',
+           'ProductSeriesBugsMenu',
            'ProductSeriesSpecificationsMenu',
            'ProductSeriesTranslationMenu',
            'ProductSeriesView',
@@ -20,28 +21,27 @@ __all__ = ['ProductSeriesNavigation',
            'get_series_branch_error']
 
 import cgi
-from datetime import datetime
+import os.path
 import pytz
-
+from datetime import datetime
 from BeautifulSoup import BeautifulSoup
-
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
-
-from canonical.launchpad.helpers import (
-    browserLanguages, is_tar_filename, request_languages)
+from canonical.launchpad.helpers import browserLanguages, is_tar_filename
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
-    ISourcePackageNameSet, IProductSeries,
+    ISourcePackageNameSet, IProductSeries, ITranslationImporter,
     ITranslationImportQueue, IProductSeriesSet, NotFoundError)
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation, DefaultShortLink
+from canonical.launchpad.browser.launchpad import (
+    StructuralObjectPresentation, DefaultShortLink)
+from canonical.launchpad.browser.rosetta import TranslationsMixin
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
     canonical_url, LaunchpadView, StandardLaunchpadFacets,
@@ -169,6 +169,19 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         return Link('+review', text, icon='edit')
 
 
+class ProductSeriesBugsMenu(ApplicationMenu):
+
+    usedfor = IProductSeries
+    facet = 'bugs'
+    links = ['new', 'nominations']
+
+    def new(self):
+        return Link('+filebug', 'Report a bug', icon='add')
+
+    def nominations(self):
+        return Link('+nominations', 'Review nominations', icon='bug')
+
+
 class ProductSeriesSpecificationsMenu(ApplicationMenu):
     """Specs menu for ProductSeries.
 
@@ -246,7 +259,7 @@ def get_series_branch_error(product, branch):
 # this becomes maintainable and form validation handled for us.
 # Currently, the pages just return 'System Error' as they trigger database
 # constraints. -- StuartBishop 20050502
-class ProductSeriesView(LaunchpadView):
+class ProductSeriesView(LaunchpadView, TranslationsMixin):
 
     def initialize(self):
         self.form = self.request.form
@@ -258,15 +271,11 @@ class ProductSeriesView(LaunchpadView):
         # let's find out what source package is associated with this
         # productseries in the current release of ubuntu
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.curr_ubuntu_release = ubuntu.currentrelease
+        self.curr_ubuntu_series = ubuntu.currentseries
         self.setUpPackaging()
 
         # Check the form submission.
         self.processForm()
-
-    @property
-    def languages(self):
-        return request_languages(self.request)
 
     def processForm(self):
         """Process a form if it was submitted."""
@@ -301,18 +310,18 @@ class ProductSeriesView(LaunchpadView):
         self.curr_ubuntu_package = None
         self.curr_ubuntu_pkgname = ''
         try:
-            cr = self.curr_ubuntu_release
+            cr = self.curr_ubuntu_series
             self.curr_ubuntu_package = self.context.getPackage(cr)
             cp = self.curr_ubuntu_package
             self.curr_ubuntu_pkgname = cp.sourcepackagename.name
         except NotFoundError:
             pass
-        ubuntu = self.curr_ubuntu_release.distribution
+        ubuntu = self.curr_ubuntu_series.distribution
         self.ubuntu_history = self.context.getPackagingInDistribution(ubuntu)
 
     def setCurrentUbuntuPackage(self):
         """Set the Packaging record for this product series in the current
-        Ubuntu distrorelease to be for the source package name that is given
+        Ubuntu distroseries to be for the source package name that is given
         in the form.
         """
         form = self.form
@@ -337,8 +346,8 @@ class ProductSeriesView(LaunchpadView):
             self.has_errors = True
             return
         # set the packaging record for this productseries in the current
-        # ubuntu release. if none exists, one will be created
-        self.context.setPackaging(self.curr_ubuntu_release, spn, self.user)
+        # ubuntu series. if none exists, one will be created
+        self.context.setPackaging(self.curr_ubuntu_series, spn, self.user)
         self.setUpPackaging()
 
     def requestCountry(self):
@@ -381,7 +390,9 @@ class ProductSeriesView(LaunchpadView):
 
         translation_import_queue_set = getUtility(ITranslationImportQueue)
 
-        if filename.endswith('.pot') or filename.endswith('.po'):
+        root, ext = os.path.splitext(filename)
+        translation_importer = getUtility(ITranslationImporter)
+        if (ext in translation_importer.file_extensions_with_importer):
             # Add it to the queue.
             translation_import_queue_set.addOrUpdateEntry(
                 filename, content, True, self.user,
@@ -594,7 +605,10 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
             if self.context.syncCertified():
                 self.addError('Import has already been approved.')
 
-    def isAdmin(self):
+    def isAdmin(self, action=None):
+        # The optional action parameter is so this method can be
+        # supplied as the condition argument to an @action.  We treat
+        # all such actions the same though, so we ignore it.
         return check_permission('launchpad.Admin', self.context)
 
     @action(_('Update RCS Details'), name='update')
@@ -631,6 +645,31 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
         self.context.certifyForSync()
         self.request.response.addInfoNotification(
             'Source import certified for publication')
+
+    @action(_('Mark Import TESTFAILED'), name='testfailed',
+            condition=isAdmin)
+    def testfailed_action(self, action, data):
+        self.updateContextFromData(data)
+        self.context.markTestFailed()
+        self.request.response.addInfoNotification(
+            'Source import marked as TESTFAILED.')
+
+    @action(_('Mark Import DONTSYNC'), name='dontsync',
+            condition=isAdmin)
+    def dontsync_action(self, action, data):
+        self.updateContextFromData(data)
+        self.context.markDontSync()
+        self.request.response.addInfoNotification(
+            'Source import marked as DONTSYNC.')
+
+    @action(_('Delete Import'), name='delete',
+            condition=isAdmin)
+    def delete_action(self, action, data):
+        # No need to update the details from the submitted data when
+        # we're about to clear them all anyway.
+        self.context.deleteImport()
+        self.request.response.addInfoNotification(
+            'Source import deleted.')
 
     @property
     def next_url(self):

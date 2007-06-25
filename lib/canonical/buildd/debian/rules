@@ -17,7 +17,8 @@ pytarget = $(targetshare)/canonical/buildd
 
 pyfiles = debian.py slave.py utils.py __init__.py slave_chroot_tool.py
 slavebins = unpack-chroot mount-chroot update-debian-chroot sbuild-package \
-scan-for-processes umount-chroot remove-build apply-ogre-model
+scan-for-processes umount-chroot remove-build apply-ogre-model \
+override-sources-list
 
 BUILDDUID=65500
 BUILDDGID=65500

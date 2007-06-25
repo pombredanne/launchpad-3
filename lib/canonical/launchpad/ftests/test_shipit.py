@@ -4,8 +4,7 @@ __metaclass__ = type
 
 import unittest
 
-from zope.publisher.browser import TestRequest
-from zope.component import getView
+from zope.component import getMultiAdapter
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import login
@@ -16,8 +15,9 @@ from canonical.launchpad.database import (
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer, setFirstLayer)
 from canonical.launchpad.interfaces import ShippingRequestPriority
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.lp.dbschema import (
-    ShipItDistroRelease, ShipItFlavour, ShippingRequestStatus)
+    ShipItDistroSeries, ShipItFlavour, ShippingRequestStatus)
 
 
 class TestShippingRequestSet(LaunchpadFunctionalTestCase):
@@ -59,7 +59,7 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         return request
 
     def _make_new_request_through_web(
-            self, flavour, user_email=None, form=None, distrorelease=None):
+            self, flavour, user_email=None, form=None, distroseries=None):
         if user_email is None:
             user_email = 'guilherme.salgado@canonical.com'
         if form is None:
@@ -75,13 +75,13 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
                 'ordertype': str(standardoption.id),
                 'FORM_SUBMIT': 'Request',
                 }
-        request = TestRequest(form=form)
-        request.notifications = []
+        request = LaunchpadTestRequest(form=form)
         setFirstLayer(request, self.flavours_to_layers_mapping[flavour])
         login(user_email)
-        view = getView(ShipItApplication(), 'myrequest', request)
-        if distrorelease is not None:
-            view.release = distrorelease
+        view = getMultiAdapter(
+            (ShipItApplication(), request), name='myrequest')
+        if distroseries is not None:
+            view.series = distroseries
         view.renderStandardrequestForm()
         errors = getattr(view, 'errors', None)
         self.failUnlessEqual(errors, None)
@@ -151,9 +151,9 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         # when creating the previous account.
         request2 = self._make_new_request_through_web(
             flavour, user_email='foo.bar@canonical.com', form=form,
-            distrorelease=ShipItDistroRelease.GUTSY)
+            distroseries=ShipItDistroSeries.GUTSY)
         self.failUnless(request2.isApproved(), flavour)
-        self.failIfEqual(request.distrorelease, request2.distrorelease)
+        self.failIfEqual(request.distroseries, request2.distroseries)
         self.failUnlessEqual(
             request2.normalized_address, request.normalized_address)
 
@@ -161,7 +161,7 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         # the same address, it gets marked with the DUPLICATEDADDRESS status.
         request3 = self._make_new_request_through_web(
             flavour, user_email='karl@canonical.com', form=form)
-        self.failUnlessEqual(request.distrorelease, request3.distrorelease)
+        self.failUnlessEqual(request.distroseries, request3.distroseries)
         self.failUnless(request3.isDuplicatedAddress(), flavour)
         self.failUnlessEqual(
             request3.normalized_address, request.normalized_address)
@@ -170,7 +170,7 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         # the same address.
         request4 = self._make_new_request_through_web(
             flavour, user_email='carlos@canonical.com', form=form)
-        self.failUnlessEqual(request.distrorelease, request3.distrorelease)
+        self.failUnlessEqual(request.distroseries, request3.distroseries)
         self.failUnless(request4.isDuplicatedAddress(), flavour)
 
         # As we said, this happens because all requests are considered to have

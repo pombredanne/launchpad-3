@@ -8,7 +8,9 @@ __all__ = [
     'Question',
     'QuestionTargetSearch',
     'QuestionPersonSearch',
-    'QuestionSet']
+    'QuestionSet',
+    'QuestionTargetMixin',
+    ]
 
 import operator
 from email.Utils import make_msgid
@@ -23,12 +25,13 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, IDistribution, IDistributionSourcePackage, 
-    InvalidQuestionStateError, ILanguage, ILanguageSet, ILaunchpadCelebrities,
-    IMessage, IPerson, IProduct, IQuestion, IQuestionSet, IQuestionTarget, 
-    ISourcePackage, QUESTION_STATUS_DEFAULT_SEARCH)
+    IBugLinkTarget, IDistribution, IDistributionSet,
+    IDistributionSourcePackage, InvalidQuestionStateError, ILanguage,
+    ILanguageSet, ILaunchpadCelebrities, IMessage, IPerson, IProduct,
+    IProductSet, IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
+    QUESTION_STATUS_DEFAULT_SEARCH)
 
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
@@ -38,6 +41,7 @@ from canonical.lp.dbschema import (
     QuestionAction, QuestionSort, QuestionStatus,
     QuestionParticipation, QuestionPriority)
 
+from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.message import Message, MessageChunk
@@ -47,6 +51,8 @@ from canonical.launchpad.database.questionsubscription import (
     QuestionSubscription)
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.mailnotification import (
+    NotificationRecipientSet)
 from canonical.launchpad.webapp.enum import Item
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -103,7 +109,8 @@ class Question(SQLBase, BugLinkTargetMixin):
     status = EnumCol(
         schema=QuestionStatus, notNull=True, default=QuestionStatus.OPEN)
     priority = EnumCol(
-        schema=QuestionPriority, notNull=True, default=QuestionPriority.NORMAL)
+        schema=QuestionPriority, notNull=True,
+        default=QuestionPriority.NORMAL)
     assignee = ForeignKey(
         dbName='assignee', notNull=False, foreignKey='Person', default=None)
     answerer = ForeignKey(
@@ -150,7 +157,7 @@ class Question(SQLBase, BugLinkTargetMixin):
                 self.sourcepackagename.name)
         else:
             return self.distribution
-            
+
     def _settarget(self, question_target):
         """See IQuestion.target."""
         assert IQuestionTarget.providedBy(question_target), (
@@ -415,24 +422,26 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     def getSubscribers(self):
         """See IQuestion."""
-        direct = set(self.getDirectSubscribers())
-        indirect = set(self.getIndirectSubscribers())
-        return sorted(
-            direct.union(indirect), key=operator.attrgetter('displayname'))
+        subscribers = self.getDirectSubscribers()
+        subscribers.update(self.getIndirectSubscribers())
+        return subscribers
 
     def getDirectSubscribers(self):
         """See IQuestion."""
-        return sorted(
-            self.subscribers, key=operator.attrgetter('displayname'))
+        subscribers = NotificationRecipientSet()
+        reason = ("You received this question notification because you are "
+                  "a direct subscriber of the question.")
+        subscribers.add(self.subscribers, reason, 'Subscriber')
+        return subscribers
 
     def getIndirectSubscribers(self):
         """See IQuestion."""
-        subscribers = set(self.target.answer_contacts)
-
+        subscribers = self.target.getAnswerContactRecipients(self.language)
         if self.assignee:
-            subscribers.add(self.assignee)
-
-        return sorted(subscribers, key=operator.attrgetter('displayname'))
+            reason = ('You received this question notification because you '
+                      'are the assignee for this question.')
+            subscribers.add(self.assignee, reason, 'Assignee')
+        return subscribers
 
     def _newMessage(self, owner, content, action, new_status, subject=None,
                     datecreated=None, update_question_dates=True):
@@ -467,7 +476,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             msg = Message(
                 owner=owner, rfc822msgid=make_msgid('lpquestions'),
                 subject=subject, datecreated=datecreated)
-            chunk = MessageChunk(message=msg, content=content, sequence=1)
+            MessageChunk(message=msg, content=content, sequence=1)
 
         tktmsg = QuestionMessage(
             question=self, message=msg, action=action, new_status=new_status)
@@ -539,6 +548,42 @@ class QuestionSet:
         return set(Language.select('Language.id = Question.language',
             clauseTables=['Question'], distinct=True))
 
+    def getMostActiveProjects(self, limit=5):
+        """See `IQuestionSet`."""
+        cur = cursor()
+        cur.execute('''
+            SELECT product, distribution, count(*) AS "question_count"
+            FROM (
+                SELECT product, distribution
+                FROM Question
+                    LEFT OUTER JOIN Product ON (Question.product = Product.id)
+                    LEFT OUTER JOIN Distribution ON (
+                        Question.distribution = Distribution.id)
+                WHERE
+                    (Product.official_answers is True
+                    OR Distribution.official_answers is TRUE)
+                    AND Question.datecreated > (
+                        current_timestamp -interval '60 days')
+                LIMIT 5000
+            ) AS "RecentQuestions"
+            GROUP BY product, distribution
+            ORDER BY question_count DESC
+            LIMIT %s
+            ''' % sqlvalues(limit))
+
+        projects = []
+        product_set = getUtility(IProductSet)
+        distribution_set = getUtility(IDistributionSet)
+        for product_id, distribution_id, count in cur.fetchall():
+            if product_id:
+                projects.append(product_set.get(product_id))
+            elif distribution_id:
+                projects.append(distribution_set.get(distribution_id))
+            else:
+                raise AssertionError(
+                    'product_id and distribution_id are NULL')
+        return projects
+
     @staticmethod
     def new(title=None, description=None, owner=None,
             product=None, distribution=None, sourcepackagename=None,
@@ -575,7 +620,7 @@ class QuestionSearch:
     """
 
     def __init__(self, search_text=None, needs_attention_from=None, sort=None,
-                 status=QUESTION_STATUS_DEFAULT_SEARCH, language=None, 
+                 status=QUESTION_STATUS_DEFAULT_SEARCH, language=None,
                  product=None, distribution=None, sourcepackagename=None,
                  project=None):
         self.search_text = search_text
@@ -639,10 +684,11 @@ class QuestionSearch:
         """Create the joins needed to select constraints on the messages by a
         particular person."""
         joins = [
-            ('LEFT OUTER JOIN QuestionMessage '
-             'ON QuestionMessage.question = Question.id'),
-            ('LEFT OUTER JOIN Message ON QuestionMessage.message = Message.id '
-             'AND Message.owner = %s' % sqlvalues(person))]
+            ("""LEFT OUTER JOIN QuestionMessage
+                ON QuestionMessage.question = Question.id"""),
+            ("""LEFT OUTER JOIN Message
+                ON QuestionMessage.message = Message.id
+                AND Message.owner = %s""" % sqlvalues(person))]
         if self.project:
             joins.extend(self.getProductJoins())
 
@@ -709,7 +755,7 @@ class QuestionSearch:
         return []
 
     def getOrderByClause(self):
-        """Return the ORDER BY clause to use to order this search's results."""
+        """Return the ORDER BY clause to use for this search's results."""
         sort = self.sort
         if sort is None:
             if self.search_text:
@@ -758,18 +804,19 @@ class QuestionTargetSearch(QuestionSearch):
     Used to implement IQuestionTarget.searchQuestions().
     """
 
-    def __init__(self, search_text=None, status=QUESTION_STATUS_DEFAULT_SEARCH,
+    def __init__(self, search_text=None,
+                 status=QUESTION_STATUS_DEFAULT_SEARCH,
                  language=None, sort=None, owner=None,
-                 needs_attention_from=None, unsupported_target=None,  
-                 project=None, product=None, distribution=None, 
+                 needs_attention_from=None, unsupported_target=None,
+                 project=None, product=None, distribution=None,
                  sourcepackagename=None):
         assert (product is not None or distribution is not None or
             project is not None), ("Missing a product, distribution or "
                                    "project context.")
         QuestionSearch.__init__(
             self, search_text=search_text, status=status, language=language,
-            needs_attention_from=needs_attention_from, sort=sort, 
-            project=project, product=product, 
+            needs_attention_from=needs_attention_from, sort=sort,
+            project=project, product=product,
             distribution=distribution, sourcepackagename=sourcepackagename)
 
         if owner:
@@ -784,10 +831,10 @@ class QuestionTargetSearch(QuestionSearch):
         if self.owner:
             constraints.append('Question.owner = %s' % self.owner.id)
         if self.unsupported_target is not None:
-            langs = [str(lang.id) 
+            langs = [str(lang.id)
                      for lang in (
                         self.unsupported_target.getSupportedLanguages())]
-            constraints.append('Question.language NOT IN (%s)' % 
+            constraints.append('Question.language NOT IN (%s)' %
                                ', '.join(langs))
 
         return constraints
@@ -889,3 +936,89 @@ class QuestionPersonSearch(QuestionSearch):
             constraints.append('(' + ' OR '.join(participations_filter) + ')')
 
         return constraints
+
+
+class QuestionTargetMixin:
+    """Mixin class for IQuestionTarget."""
+
+    def _getTargetTypes(self):
+        """Return a Dict of QuestionTargets representing this object.
+
+        :Return: a Dict with product, distribution, and soucepackagename
+                 as possible keys. Each value is a valid QuestionTarget
+                 or None.
+        """
+        return {}
+
+    def addAnswerContact(self, person):
+        """See IQuestionTarget."""
+        answer_contact = AnswerContact.selectOneBy(
+            person=person, **self._getTargetTypes())
+        if answer_contact is not None:
+            return False
+        # Person must speak a language to be an answer contact.
+        assert person.languages.count() > 0, (
+            "An Answer Contact must speak a language.")
+        params = dict(product=None, distribution=None, sourcepackagename=None)
+        params.update(self._getTargetTypes())
+        AnswerContact(person=person, **params)
+        return True
+
+    def _selectPersonFromAnswerContacts(self, constraints, clause_tables):
+        """Return the Persons or Teams who are AnswerContacts."""
+        answer_contacts = AnswerContact.select(
+            " AND ".join(constraints), clauseTables=clause_tables,
+            distinct=True)
+        return sorted(
+            [answer_contact.person for answer_contact in answer_contacts],
+            key=operator.attrgetter('displayname'))
+
+    def getAnswerContactsForLanguage(self, language):
+        """See IQuestionTarget."""
+        assert language is not None, (
+            "The language cannot be None when selecting answer contacts.")
+        constraints = []
+        targets = self._getTargetTypes()
+        for column, target in targets.items():
+            if target is None:
+                constraint = "AnswerContact." + column + " IS NULL"
+            else:
+                constraint = "AnswerContact." + column + " = %s" % sqlvalues(
+                    target)
+            constraints.append(constraint)
+
+        constraints.append("""
+            AnswerContact.person = PersonLanguage.person AND
+            PersonLanguage.language = %s""" % sqlvalues(language))
+        return set(self._selectPersonFromAnswerContacts(
+            constraints, ['PersonLanguage']))
+
+    def getAnswerContactRecipients(self, language):
+        """See IQuestionTarget."""
+        if language is None:
+            contacts = self.answer_contacts
+        else:
+            contacts = self.getAnswerContactsForLanguage(language)
+        recipients = NotificationRecipientSet()
+        for person in contacts:
+            reason_start = (
+                "You received this question notification because you are ")
+            if person.isTeam():
+                reason = reason_start + (
+                    'a member of %s, which is an answer contact for %s.' % (
+                        person.displayname, self.displayname))
+                header = 'Answer Contact (%s) @%s' % (self.name, person.name)
+            else:
+                reason = reason_start + (
+                    'an answer contact for %s.' % self.displayname)
+                header = 'Answer Contact (%s)' % self.displayname
+            recipients.add(person, reason, header)
+        return recipients
+
+    def getSupportedLanguages(self):
+        """See IQuestionTarget.getSupportedLanguages()."""
+        languages = set()
+        for contact in self.answer_contacts:
+            languages |= contact.getSupportedLanguages()
+        languages.add(getUtility(ILanguageSet)['en'])
+        return languages

@@ -40,20 +40,24 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet,
     IDistributionSourcePackage,
     IDistroBugTask,
-    IDistroReleaseBugTask,
+    IDistroSeries,
+    IDistroSeriesBugTask,
     ILaunchpadCelebrities,
     INullBugTask,
+    IProductSeries,
     IProductSeriesBugTask,
     ISourcePackage,
     IUpstreamBugTask,
     NotFoundError,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
+    BUG_CONTACT_BUGTASK_STATUSES,
     )
 from canonical.launchpad.helpers import shortlist
 # XXX: see bug 49029 -- kiko, 2006-06-14
 
 from canonical.lp.dbschema import (
+    BugNominationStatus,
     BugTaskImportance,
     BugTaskStatus,
     PackagePublishingStatus,
@@ -73,7 +77,7 @@ def bugtask_sort_key(bugtask):
     """A sort key for a set of bugtasks. We want:
 
           - products first, followed by their productseries tasks
-          - distro tasks, followed by their distrorelease tasks
+          - distro tasks, followed by their distroseries tasks
           - ubuntu first among the distros
     """
     if bugtask.product:
@@ -91,11 +95,11 @@ def bugtask_sort_key(bugtask):
     else:
         distribution_name = None
 
-    if bugtask.distrorelease:
-        distrorelease_name = bugtask.distrorelease.version
-        distribution_name = bugtask.distrorelease.distribution.name
+    if bugtask.distroseries:
+        distroseries_name = bugtask.distroseries.version
+        distribution_name = bugtask.distroseries.distribution.name
     else:
-        distrorelease_name = None
+        distroseries_name = None
 
     if bugtask.sourcepackagename:
         sourcepackage_name = bugtask.sourcepackagename.name
@@ -108,7 +112,7 @@ def bugtask_sort_key(bugtask):
 
     return (
         bugtask.bug.id, distribution_name, product_name, productseries_name,
-        distrorelease_name, sourcepackage_name)
+        distroseries_name, sourcepackage_name)
 
 
 class BugTaskDelta:
@@ -162,12 +166,12 @@ class BugTaskMixin:
                     self.sourcepackagename)
             else:
                 return self.distribution
-        elif self.distrorelease:
+        elif self.distroseries:
             if self.sourcepackagename:
-                return self.distrorelease.getSourcePackage(
+                return self.distroseries.getSourcePackage(
                     self.sourcepackagename)
             else:
-                return self.distrorelease
+                return self.distroseries
         else:
             raise AssertionError("Unable to determine bugtask target")
 
@@ -189,7 +193,7 @@ class BugTaskMixin:
         elif self.distribution is not None:
             return self.distribution
         else:
-            return self.distrorelease.distribution
+            return self.distroseries.distribution
 
     @property
     def other_affected_pillars(self):
@@ -247,13 +251,13 @@ class NullBugTask(BugTaskMixin):
 
     def __init__(self, bug, product=None, productseries=None,
                  sourcepackagename=None, distribution=None,
-                 distrorelease=None):
+                 distroseries=None):
         self.bug = bug
         self.product = product
         self.productseries = productseries
         self.sourcepackagename = sourcepackagename
         self.distribution = distribution
-        self.distrorelease = distrorelease
+        self.distroseries = distroseries
 
         # Mark the task with the correct interface, depending on its
         # context.
@@ -261,8 +265,8 @@ class NullBugTask(BugTaskMixin):
             alsoProvides(self, IUpstreamBugTask)
         elif self.distribution:
             alsoProvides(self, IDistroBugTask)
-        elif self.distrorelease:
-            alsoProvides(self, IDistroReleaseBugTask)
+        elif self.distroseries:
+            alsoProvides(self, IDistroSeriesBugTask)
 
         # Set a bunch of attributes to None, because it doesn't make
         # sense for these attributes to have a value when there is no
@@ -307,7 +311,7 @@ class BugTask(SQLBase, BugTaskMixin):
         "status", "importance", "assignee", "milestone",
         "date_assigned", "date_confirmed", "date_inprogress",
         "date_closed")
-    _NON_CONJOINED_STATUSES = (BugTaskStatus.REJECTED,)
+    _NON_CONJOINED_STATUSES = (BugTaskStatus.WONTFIX,)
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
@@ -322,8 +326,8 @@ class BugTask(SQLBase, BugTaskMixin):
     distribution = ForeignKey(
         dbName='distribution', foreignKey='Distribution',
         notNull=False, default=None)
-    distrorelease = ForeignKey(
-        dbName='distrorelease', foreignKey='DistroRelease',
+    distroseries = ForeignKey(
+        dbName='distrorelease', foreignKey='DistroSeries',
         notNull=False, default=None)
     milestone = ForeignKey(
         dbName='milestone', foreignKey='Milestone',
@@ -331,7 +335,7 @@ class BugTask(SQLBase, BugTaskMixin):
     status = EnumCol(
         dbName='status', notNull=True,
         schema=BugTaskStatus,
-        default=BugTaskStatus.UNCONFIRMED)
+        default=BugTaskStatus.NEW)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     importance = EnumCol(
         dbName='importance', notNull=True,
@@ -394,10 +398,10 @@ class BugTask(SQLBase, BugTaskMixin):
         """See IBugTask."""
         conjoined_master = None
         if (IDistroBugTask.providedBy(self) and
-            self.distribution.currentrelease is not None):
-            current_release = self.distribution.currentrelease
+            self.distribution.currentseries is not None):
+            current_series = self.distribution.currentseries
             for bt in shortlist(self.bug.bugtasks):
-                if (bt.distrorelease == current_release and
+                if (bt.distroseries == current_series and
                     bt.sourcepackagename == self.sourcepackagename):
                     conjoined_master = bt
                     break
@@ -419,10 +423,10 @@ class BugTask(SQLBase, BugTaskMixin):
     def conjoined_slave(self):
         """See IBugTask."""
         conjoined_slave = None
-        if IDistroReleaseBugTask.providedBy(self):
-            distribution = self.distrorelease.distribution
-            if self.distrorelease != distribution.currentrelease:
-                # Only current release tasks are conjoined.
+        if IDistroSeriesBugTask.providedBy(self):
+            distribution = self.distroseries.distribution
+            if self.distroseries != distribution.currentseries:
+                # Only current series tasks are conjoined.
                 return None
             sourcepackagename = self.sourcepackagename
             for bt in shortlist(self.bug.bugtasks):
@@ -473,19 +477,19 @@ class BugTask(SQLBase, BugTaskMixin):
     def _syncSourcePackages(self, prev_sourcepackagename):
         """Synchronize changes to source packages with other distrotasks.
 
-        If one distroreleasetask's source package is changed, all the
-        other distroreleasetasks with the same distribution and source
+        If one distroseriestask's source package is changed, all the
+        other distroseriestasks with the same distribution and source
         package has to be changed, as well as the corresponding
         distrotask.
         """
-        if self.distrorelease is not None:
-            distribution = self.distrorelease.distribution
+        if self.distroseries is not None:
+            distribution = self.distroseries.distribution
         else:
             distribution = self.distribution
         if distribution is not None:
             for bugtask in self.related_tasks:
-                if bugtask.distrorelease:
-                    related_distribution = bugtask.distrorelease.distribution
+                if bugtask.distroseries:
+                    related_distribution = bugtask.distroseries.distribution
                 else:
                     related_distribution = bugtask.distribution
                 if (related_distribution == distribution and
@@ -557,8 +561,8 @@ class BugTask(SQLBase, BugTaskMixin):
             alsoProvides(self, IUpstreamBugTask)
         elif self.productseriesID is not None:
             alsoProvides(self, IProductSeriesBugTask)
-        elif self.distroreleaseID is not None:
-            alsoProvides(self, IDistroReleaseBugTask)
+        elif self.distroseriesID is not None:
+            alsoProvides(self, IDistroSeriesBugTask)
         elif self.distributionID is not None:
             # If nothing else, this is a distro task.
             alsoProvides(self, IDistroBugTask)
@@ -572,8 +576,8 @@ class BugTask(SQLBase, BugTaskMixin):
             root_target = self.product
         elif IProductSeriesBugTask.providedBy(self):
             root_target = self.productseries.product
-        elif IDistroReleaseBugTask.providedBy(self):
-            root_target = self.distrorelease.distribution
+        elif IDistroSeriesBugTask.providedBy(self):
+            root_target = self.distroseries.distribution
         elif IDistroBugTask.providedBy(self):
             root_target = self.distribution
         else:
@@ -607,13 +611,26 @@ class BugTask(SQLBase, BugTaskMixin):
             raise ValueError('Unknown debbugs severity "%s"' % severity)
         return self.importance
 
-    def transitionToStatus(self, new_status):
+    def canTransitionToStatus(self, new_status, user):
+        """See `IBugTask`."""
+        if (user.inTeam(self.pillar.bugcontact) or
+            user.inTeam(self.pillar.owner)):
+            return True
+        else:
+            return new_status not in BUG_CONTACT_BUGTASK_STATUSES
+
+    def transitionToStatus(self, new_status, user):
         """See canonical.launchpad.interfaces.IBugTask."""
         if not new_status:
             # This is mainly to facilitate tests which, unlike the
             # normal status form, don't always submit a status when
             # testing the edit form.
             return
+
+        if not self.canTransitionToStatus(new_status, user):
+            raise AssertionError(
+                "Only Bug Contacts may change status to %s" % (
+                    new_status.title,))
 
         if self.status == new_status:
             # No change in the status, so nothing to do.
@@ -660,7 +677,7 @@ class BugTask(SQLBase, BugTaskMixin):
         # Ensure that we don't have dates recorded for state
         # transitions, if the bugtask has regressed to an earlier
         # workflow state. We want to ensure that, for example, a
-        # bugtask that went Unconfirmed => Confirmed => Unconfirmed
+        # bugtask that went New => Confirmed => New
         # has a dateconfirmed value of None.
         if new_status in UNRESOLVED_BUGTASK_STATUSES:
             self.date_closed = None
@@ -747,14 +764,14 @@ class BugTask(SQLBase, BugTaskMixin):
                 {'distroname': self.distribution.name,
                  'sourcepackagename': sourcepackagename_value,
                  'componentname': component})
-        elif IDistroReleaseBugTask.providedBy(self):
+        elif IDistroSeriesBugTask.providedBy(self):
             header_value = ((
                 'distribution=%(distroname)s; '
-                'distrorelease=%(distroreleasename)s; '
+                'distroseries=%(distroseriesname)s; '
                 'sourcepackage=%(sourcepackagename)s; '
                 'component=%(componentname)s;') %
-                {'distroname': self.distrorelease.distribution.name,
-                 'distroreleasename': self.distrorelease.name,
+                {'distroname': self.distroseries.distribution.name,
+                 'distroseriesname': self.distroseries.name,
                  'sourcepackagename': sourcepackagename_value,
                  'componentname': component})
         else:
@@ -782,8 +799,8 @@ class BugTask(SQLBase, BugTaskMixin):
                 changes["product"]["new"] = self.product
         elif ((IDistroBugTask.providedBy(old_task) and
                IDistroBugTask.providedBy(self)) or
-              (IDistroReleaseBugTask.providedBy(old_task) and
-               IDistroReleaseBugTask.providedBy(self))):
+              (IDistroSeriesBugTask.providedBy(old_task) and
+               IDistroSeriesBugTask.providedBy(self))):
             if old_task.sourcepackagename != self.sourcepackagename:
                 changes["sourcepackagename"] = {}
                 changes["sourcepackagename"]["old"] = old_task.sourcepackagename
@@ -881,6 +898,21 @@ class BugTaskSet:
         "date_last_updated": "Bug.date_last_updated",
         "date_closed": "BugTask.date_closed"}
 
+    _open_resolved_upstream = """
+                EXISTS (
+                    SELECT TRUE FROM BugTask AS RelatedBugTask
+                    WHERE RelatedBugTask.bug = BugTask.bug
+                        AND RelatedBugTask.id != BugTask.id
+                        AND ((
+                            RelatedBugTask.bugwatch IS NOT NULL AND
+                            RelatedBugTask.status %s)
+                            OR (
+                            RelatedBugTask.product IS NOT NULL AND
+                            RelatedBugTask.bugwatch IS NULL AND
+                            RelatedBugTask.status %s))
+                    )
+                """
+
     title = "A set of bug tasks"
 
     def get(self, task_id):
@@ -940,7 +972,7 @@ class BugTaskSet:
             'importance': params.importance,
             'product': params.product,
             'distribution': params.distribution,
-            'distrorelease': params.distrorelease,
+            'distrorelease': params.distroseries,
             'productseries': params.productseries,
             'milestone': params.milestone,
             'assignee': params.assignee,
@@ -1031,14 +1063,14 @@ class BugTaskSet:
         if params.component:
             clauseTables += ["SourcePackagePublishingHistory",
                              "SourcePackageRelease"]
-            distrorelease = None
+            distroseries = None
             if params.distribution:
-                distrorelease = params.distribution.currentrelease
-            elif params.distrorelease:
-                distrorelease = params.distrorelease
-            assert distrorelease, (
+                distroseries = params.distribution.currentseries
+            elif params.distroseries:
+                distroseries = params.distroseries
+            assert distroseries, (
                 "Search by component requires a context with a distribution "
-                "or distrorelease")
+                "or distroseries")
 
             if zope_isinstance(params.component, any):
                 component_ids = sqlvalues(*params.component.query_values)
@@ -1054,79 +1086,12 @@ class BugTaskSet:
             SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.component IN %s AND
             SourcePackagePublishingHistory.status = %s
-            """ % sqlvalues(distrorelease, distrorelease.main_archive,
+            """ % sqlvalues(distroseries, distroseries.main_archive,
                             component_ids, PackagePublishingStatus.PUBLISHED)])
 
-        if params.pending_bugwatch_elsewhere:
-            # Include only bugtasks that have other bugtasks on targets
-            # not using Malone, which are not Rejected, and have no bug
-            # watch.
-            pending_bugwatch_elsewhere_clause = """
-                EXISTS (
-                    SELECT TRUE FROM BugTask AS RelatedBugTask
-                    LEFT OUTER JOIN Distribution AS OtherDistribution
-                        ON RelatedBugTask.distribution = OtherDistribution.id
-                    LEFT OUTER JOIN Product AS OtherProduct
-                        ON RelatedBugTask.product = OtherProduct.id
-                    WHERE RelatedBugTask.bug = BugTask.bug
-                        AND RelatedBugTask.id != BugTask.id
-                        AND RelatedBugTask.bugwatch IS NULL
-                        AND (
-                            OtherDistribution.official_malone IS FALSE
-                            OR OtherProduct.official_malone IS FALSE
-                            )
-                        AND RelatedBugTask.status != %s
-                    )
-                """ % sqlvalues(BugTaskStatus.REJECTED)
-
-            extra_clauses.append(pending_bugwatch_elsewhere_clause)
-
-        if params.has_no_upstream_bugtask:
-            has_no_upstream_bugtask_clause = """
-                BugTask.bug NOT IN (
-                    SELECT DISTINCT bug FROM BugTask
-                    WHERE product IS NOT NULL)
-            """
-            extra_clauses.append(has_no_upstream_bugtask_clause)
-
-        # Our definition of "resolved upstream" means:
-        #
-        # * bugs with bugtasks linked to watches that are rejected,
-        #   fixed committed or fix released
-        #
-        # * bugs with upstream bugtasks that are fix committed or fix released
-        #
-        # This definition of "resolved upstream" should address the use
-        # cases we gathered at UDS Paris (and followup discussions with
-        # seb128, sfllaw, et al.)
-        if params.only_resolved_upstream:
-            statuses_for_watch_tasks = [
-                BugTaskStatus.REJECTED,
-                BugTaskStatus.FIXCOMMITTED,
-                BugTaskStatus.FIXRELEASED]
-            statuses_for_upstream_tasks = [
-                BugTaskStatus.FIXCOMMITTED,
-                BugTaskStatus.FIXRELEASED]
-
-            only_resolved_upstream_clause = """
-                EXISTS (
-                    SELECT TRUE FROM BugTask AS RelatedBugTask
-                    WHERE RelatedBugTask.bug = BugTask.bug
-                        AND RelatedBugTask.id != BugTask.id
-                        AND ((
-                            RelatedBugTask.bugwatch IS NOT NULL AND
-                            RelatedBugTask.status %s)
-                            OR (
-                            RelatedBugTask.product IS NOT NULL AND
-                            RelatedBugTask.bugwatch IS NULL AND
-                            RelatedBugTask.status %s))
-                    )
-                """ % (
-                    search_value_to_where_condition(
-                        any(*statuses_for_watch_tasks)),
-                    search_value_to_where_condition(
-                        any(*statuses_for_upstream_tasks)))
-            extra_clauses.append(only_resolved_upstream_clause)
+        upstream_clause = self._buildUpstreamClause(params)
+        if upstream_clause:
+            extra_clauses.append(upstream_clause)
 
         if params.tag:
             tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
@@ -1159,6 +1124,25 @@ class BugTaskSet:
                     params.bug_reporter))
             extra_clauses.append(bug_reporter_clause)
 
+        if params.nominated_for:
+            mappings = sqlvalues(
+                target=params.nominated_for,
+                nomination_status=BugNominationStatus.PROPOSED)
+            if IDistroSeries.providedBy(params.nominated_for):
+                mappings['target_column'] = 'distrorelease'
+            elif IProductSeries.providedBy(params.nominated_for):
+                mappings['target_column'] = 'productseries'
+            else:
+                raise AssertionError(
+                    'Unknown nomination target: %r' % params.nominated_for)
+            nominated_for_clause = """
+                BugNomination.bug = BugTask.bug AND
+                BugNomination.%(target_column)s = %(target)s AND
+                BugNomination.status = %(nomination_status)s
+                """ % mappings
+            extra_clauses.append(nominated_for_clause)
+            clauseTables.append('BugNomination')
+
         clause = get_bug_privacy_filter(params.user)
         if clause:
             extra_clauses.append(clause)
@@ -1167,6 +1151,84 @@ class BugTaskSet:
 
         query = " AND ".join(extra_clauses)
         return query, clauseTables, orderby_arg
+
+    def _buildUpstreamClause(self, params):
+        upstream_clauses = []
+        if params.pending_bugwatch_elsewhere:
+            # Include only bugtasks that have other bugtasks on targets
+            # not using Malone, which are not Invalid, and have no bug
+            # watch.
+            pending_bugwatch_elsewhere_clause = """
+                EXISTS (
+                    SELECT TRUE FROM BugTask AS RelatedBugTask
+                    LEFT OUTER JOIN Distribution AS OtherDistribution
+                        ON RelatedBugTask.distribution = OtherDistribution.id
+                    LEFT OUTER JOIN Product AS OtherProduct
+                        ON RelatedBugTask.product = OtherProduct.id
+                    WHERE RelatedBugTask.bug = BugTask.bug
+                        AND RelatedBugTask.id != BugTask.id
+                        AND RelatedBugTask.bugwatch IS NULL
+                        AND (
+                            OtherDistribution.official_malone IS FALSE
+                            OR OtherProduct.official_malone IS FALSE
+                            )
+                        AND RelatedBugTask.status != %s
+                    )
+                """ % sqlvalues(BugTaskStatus.INVALID)
+
+            upstream_clauses.append(pending_bugwatch_elsewhere_clause)
+
+        if params.has_no_upstream_bugtask:
+            has_no_upstream_bugtask_clause = """
+                BugTask.bug NOT IN (
+                    SELECT DISTINCT bug FROM BugTask
+                    WHERE product IS NOT NULL)
+            """
+            upstream_clauses.append(has_no_upstream_bugtask_clause)
+
+        # Our definition of "resolved upstream" means:
+        #
+        # * bugs with bugtasks linked to watches that are invalid,
+        #   fixed committed or fix released
+        #
+        # * bugs with upstream bugtasks that are fix committed or fix released
+        #
+        # This definition of "resolved upstream" should address the use
+        # cases we gathered at UDS Paris (and followup discussions with
+        # seb128, sfllaw, et al.)
+        if params.resolved_upstream:
+            statuses_for_watch_tasks = [
+                BugTaskStatus.INVALID,
+                BugTaskStatus.FIXCOMMITTED,
+                BugTaskStatus.FIXRELEASED]
+            statuses_for_upstream_tasks = [
+                BugTaskStatus.FIXCOMMITTED,
+                BugTaskStatus.FIXRELEASED]
+
+            only_resolved_upstream_clause = self._open_resolved_upstream % (
+                    search_value_to_where_condition(
+                        any(*statuses_for_watch_tasks)),
+                    search_value_to_where_condition(
+                        any(*statuses_for_upstream_tasks)))
+            upstream_clauses.append(only_resolved_upstream_clause)
+        if params.open_upstream:
+            statuses_for_open_tasks = [
+                BugTaskStatus.NEW,
+                BugTaskStatus.INCOMPLETE,
+                BugTaskStatus.CONFIRMED,
+                BugTaskStatus.INPROGRESS,
+                BugTaskStatus.UNKNOWN]
+            only_open_upstream_clause = self._open_resolved_upstream % (
+                    search_value_to_where_condition(
+                        any(*statuses_for_open_tasks)),
+                    search_value_to_where_condition(
+                        any(*statuses_for_open_tasks)))
+            upstream_clauses.append(only_open_upstream_clause)
+
+        if upstream_clauses:
+            upstream_clause = " OR ".join(upstream_clauses)
+            return '(%s)' % upstream_clause
+        return None
 
     def search(self, params, *args):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
@@ -1214,7 +1276,7 @@ class BugTaskSet:
         return joins
 
     def createTask(self, bug, owner, product=None, productseries=None,
-                   distribution=None, distrorelease=None,
+                   distribution=None, distroseries=None,
                    sourcepackagename=None,
                    status=IBugTask['status'].default,
                    importance=IBugTask['importance'].default,
@@ -1235,7 +1297,7 @@ class BugTaskSet:
             elif distribution and distribution.security_contact:
                 bug.subscribe(distribution.security_contact)
 
-        assert (product or productseries or distribution or distrorelease), (
+        assert (product or productseries or distribution or distroseries), (
             'Got no bugtask target')
 
         non_target_create_params = dict(
@@ -1249,7 +1311,7 @@ class BugTaskSet:
             product=product,
             productseries=productseries,
             distribution=distribution,
-            distrorelease=distrorelease,
+            distroseries=distroseries,
             sourcepackagename=sourcepackagename,
             **non_target_create_params)
 
@@ -1260,8 +1322,8 @@ class BugTaskSet:
                 nomination for nomination in bug.getNominations(distribution)
                 if nomination.isApproved()]
             for nomination in accepted_nominations:
-                accepted_release_task = BugTask(
-                    distrorelease=nomination.distrorelease,
+                accepted_series_task = BugTask(
+                    distroseries=nomination.distroseries,
                     sourcepackagename=sourcepackagename,
                     **non_target_create_params)
 
@@ -1325,7 +1387,7 @@ class BugTaskSet:
         # Bug ID is unique within bugs on a product or source package.
         if (params.product or
             (params.distribution and params.sourcepackagename) or
-            (params.distrorelease and params.sourcepackagename)):
+            (params.distroseries and params.sourcepackagename)):
             in_unique_context = True
         else:
             in_unique_context = False

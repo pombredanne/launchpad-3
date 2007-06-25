@@ -416,8 +416,8 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
 
     def _getUpstream(self, distro_package):
         """Return the upstream if there is a packaging link."""
-        for distrorelease in distro_package.distribution.releases:
-            source_package = distrorelease.getSourcePackage(
+        for distroseries in distro_package.distribution.serieses:
+            source_package = distroseries.getSourcePackage(
                 distro_package.sourcepackagename)
             if source_package.direct_packaging is not None:
                 return source_package.direct_packaging.productseries.product
@@ -432,9 +432,9 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
         elif IDistributionSourcePackage.providedBy(bugtask.target):
             upstream = self._getUpstream(bugtask.target)
             if upstream is None:
-                distrorelease = bugtask.distribution.currentrelease
-                if distrorelease is not None:
-                    sourcepackage = distrorelease.getSourcePackage(
+                distroseries = bugtask.distribution.currentseries
+                if distroseries is not None:
+                    sourcepackage = distroseries.getSourcePackage(
                         bugtask.sourcepackagename)
                     self.request.response.addInfoNotification(
                         'Please select the appropriate upstream project.'
@@ -733,7 +733,8 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         if not target.official_malone and taskadded.bugwatch is not None:
             # A remote bug task gets its from a bug watch, so we want
             # its status to be None when created.
-            taskadded.transitionToStatus(BugTaskStatus.UNKNOWN)
+            taskadded.transitionToStatus(
+                BugTaskStatus.UNKNOWN, self.user)
             taskadded.importance = BugTaskImportance.UNKNOWN
 
         notify(SQLObjectCreatedEvent(taskadded))

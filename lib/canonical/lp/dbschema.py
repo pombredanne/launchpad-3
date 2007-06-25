@@ -30,6 +30,7 @@ __all__ = (
 'BranchReviewStatus',
 'BranchSubscriptionDiffSize',
 'BranchSubscriptionNotificationLevel',
+'BranchVisibilityPolicy',
 'BugBranchStatus',
 'BugNominationStatus',
 'BugTaskStatus',
@@ -41,9 +42,12 @@ __all__ = (
 'BugTaskImportance',
 'BuildStatus',
 'CodereleaseRelationships',
+'CodeImportReviewStatus',
 'CveStatus',
-'DistributionReleaseStatus',
+'DistroSeriesStatus',
 'EmailAddressStatus',
+'EntitlementState',
+'EntitlementType',
 'GPGKeyAlgorithm',
 'ImportTestStatus',
 'ImportStatus',
@@ -69,11 +73,10 @@ __all__ = (
 'QuestionSort',
 'QuestionStatus',
 'RevisionControlSystems',
-'RosettaFileFormat',
 'RosettaImportStatus',
 'RosettaTranslationOrigin',
 'ShipItArchitecture',
-'ShipItDistroRelease',
+'ShipItDistroSeries',
 'ShipItFlavour',
 'ShippingRequestStatus',
 'ShippingService',
@@ -94,6 +97,7 @@ __all__ = (
 'TeamMembershipRenewalPolicy',
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
+'TranslationFileFormat',
 'TranslationPriority',
 'TranslationPermission',
 'TranslationValidationStatus',
@@ -642,14 +646,14 @@ class TeamMembershipRenewalPolicy(DBSchema):
     """
 
     NONE = Item(10, """
-        None
+        invite them to apply for renewal
 
         Memberships can be renewed only by team administrators or by going
         through the normal workflow for joining the team.
         """)
 
     ONDEMAND = Item(20, """
-        On demand
+        invite them to renew their own membership
 
         Memberships can be renewed by the members themselves a few days before
         it expires. After it expires the member has to go through the normal
@@ -657,7 +661,7 @@ class TeamMembershipRenewalPolicy(DBSchema):
         """)
 
     AUTOMATIC = Item(30, """
-        Automatic
+        renew their membership automatically, also notifying the admins
 
         Memberships are automatically renewed when they expire and a note is
         sent to the member and to team admins.
@@ -707,6 +711,20 @@ class TeamMembershipStatus(DBSchema):
         Declined
 
         Your proposed subscription to this team has been declined.
+        """)
+
+    INVITED = Item(7, """
+        Invited
+
+        You have been invited as a member of this team. In order to become an
+        actual member, you have to accept the invitation.
+        """)
+
+    INVITATION_DECLINED = Item(8, """
+        Invitation declined
+
+        You have been invited as a member of this team but the invitation has
+        been declined.
         """)
 
 
@@ -764,21 +782,21 @@ class ProjectRelationship(DBSchema):
         """)
 
 
-class DistributionReleaseStatus(DBSchema):
+class DistroSeriesStatus(DBSchema):
     """Distribution Release Status
 
-    A DistroRelease (warty, hoary, or grumpy for example) changes state
+    A DistroSeries (warty, hoary, or grumpy for example) changes state
     throughout its development. This schema describes the level of
-    development of the distrorelease. The typical sequence for a
-    distrorelease is to progress from experimental to development to
+    development of the distroseries. The typical sequence for a
+    distroseries is to progress from experimental to development to
     frozen to current to supported to obsolete, in a linear fashion.
     """
 
     EXPERIMENTAL = Item(1, """
         Experimental
 
-        This distrorelease contains code that is far from active
-        release planning or management. Typically, distroreleases
+        This distroseries contains code that is far from active
+        release planning or management. Typically, distroseriess
         that are beyond the current "development" release will be
         marked as "experimental". We create those so that people
         have a place to upload code which is expected to be part
@@ -789,7 +807,7 @@ class DistributionReleaseStatus(DBSchema):
     DEVELOPMENT = Item(2, """
         Active Development
 
-        The distrorelease that is under active current development
+        The distroseries that is under active current development
         will be tagged as "development". Typically there is only
         one active development release at a time. When that freezes
         and releases, the next release along switches from "experimental"
@@ -799,7 +817,7 @@ class DistributionReleaseStatus(DBSchema):
     FROZEN = Item(3, """
         Pre-release Freeze
 
-        When a distrorelease is near to release the administrators
+        When a distroseries is near to release the administrators
         will freeze it, which typically means that new package uploads
         require significant review before being accepted into the
         release.
@@ -815,15 +833,15 @@ class DistributionReleaseStatus(DBSchema):
     SUPPORTED = Item(5, """
         Supported
 
-        This distrorelease is still supported, but it is no longer
+        This distroseries is still supported, but it is no longer
         the current stable release. In Ubuntu we normally support
-        a distrorelease for 2 years from release.
+        a distroseries for 2 years from release.
         """)
 
     OBSOLETE = Item(6, """
         Obsolete
 
-        This distrorelease is no longer supported, it is considered
+        This distroseries is no longer supported, it is considered
         obsolete and should not be used on production systems.
         """)
 
@@ -1196,14 +1214,14 @@ class SpecificationFilter(DBSchema):
         Declined
 
         This indicates that the list should include specifications that were
-        declined as goals for the underlying productseries or distrorelease.
+        declined as goals for the underlying productseries or distroseries.
         """)
 
     ACCEPTED = Item(50, """
         Accepted
 
         This indicates that the list should include specifications that were
-        accepted as goals for the underlying productseries or distrorelease.
+        accepted as goals for the underlying productseries or distroseries.
         """)
 
     VALID = Item(55, """
@@ -1853,9 +1871,9 @@ class PackageUploadStatus(DBSchema):
     """Distro Release Queue Status
 
     An upload has various stages it must pass through before becoming part
-    of a DistroRelease. These are managed via the Upload table
+    of a DistroSeries. These are managed via the Upload table
     and related tables and eventually (assuming a successful upload into the
-    DistroRelease) the effects are published via the PackagePublishing and
+    DistroSeries) the effects are published via the PackagePublishing and
     SourcePackagePublishing tables.  """
 
     NEW = Item(0, """
@@ -1863,7 +1881,7 @@ class PackageUploadStatus(DBSchema):
 
         This upload is either a brand-new source package or contains a
         binary package with brand new debs or similar. The package must sit
-        here until someone with the right role in the DistroRelease checks
+        here until someone with the right role in the DistroSeries checks
         and either accepts or rejects the upload. If the upload is accepted
         then entries will be made in the overrides tables and further
         uploads will bypass this state """)
@@ -1871,11 +1889,11 @@ class PackageUploadStatus(DBSchema):
     UNAPPROVED = Item(1, """
         Unapproved
 
-        If a DistroRelease is frozen or locked out of ordinary updates then
+        If a DistroSeries is frozen or locked out of ordinary updates then
         this state is used to mean that while the package is correct from a
         technical point of view; it has yet to be approved for inclusion in
-        this DistroRelease. One use of this state may be for security
-        releases where you want the security team of a DistroRelease to
+        this DistroSeries. One use of this state may be for security
+        releases where you want the security team of a DistroSeries to
         approve uploads.  """)
 
     ACCEPTED = Item(2, """
@@ -1888,7 +1906,7 @@ class PackageUploadStatus(DBSchema):
         Done
 
         An upload in this state has had its publishing records created if it
-        needs them and is fully processed into the DistroRelease. This state
+        needs them and is fully processed into the DistroSeries. This state
         exists so that a logging and/or auditing tool can pick up accepted
         uploads and create entries in a journal or similar before removing
         the queue item.  """)
@@ -1898,7 +1916,7 @@ class PackageUploadStatus(DBSchema):
 
         An upload which reaches this state has, for some reason or another
         not passed the requirements (technical or human) for entry into the
-        DistroRelease it was targetting. As for the 'done' state, this state
+        DistroSeries it was targetting. As for the 'done' state, this state
         is present to allow logging tools to record the rejection and then
         clean up any subsequently unnecessary records.  """)
 
@@ -1946,18 +1964,18 @@ class PackageUploadCustomFormat(DBSchema):
 class PackagePublishingStatus(DBSchema):
     """Package Publishing Status
 
-     A package has various levels of being published within a DistroRelease.
+     A package has various levels of being published within a DistroSeries.
      This is important because of how new source uploads dominate binary
      uploads bit-by-bit. Packages (source or binary) enter the publishing
      tables as 'Pending', progress through to 'Published' eventually become
      'Superseded' and then become 'PendingRemoval'. Once removed from the
-     DistroRelease the publishing record is also removed.
+     DistroSeries the publishing record is also removed.
      """
 
     PENDING = Item(1, """
         Pending
 
-        This [source] package has been accepted into the DistroRelease and
+        This [source] package has been accepted into the DistroSeries and
         is now pending the addition of the files to the published disk area.
         In due course, this source package will be published.
         """)
@@ -1966,7 +1984,7 @@ class PackagePublishingStatus(DBSchema):
         Published
 
         This package is currently published as part of the archive for that
-        distrorelease. In general there will only ever be one version of any
+        distroseries. In general there will only ever be one version of any
         source/binary package published at any one time. Once a newer
         version becomes published the older version is marked as superseded.
         """)
@@ -1993,7 +2011,7 @@ class PackagePublishingStatus(DBSchema):
         Once a package is removed from the archive, its publishing record
         is set to this status. This means it won't show up in the SPP view
         and thus will not be considered in most queries about source
-        packages in distroreleases. """)
+        packages in distroseriess. """)
 
 
 class PackagePublishingPriority(DBSchema):
@@ -2048,9 +2066,9 @@ class PackagePublishingPriority(DBSchema):
 class PackagePublishingPocket(DBSchema):
     """Package Publishing Pocket
 
-    A single distrorelease can at its heart be more than one logical
-    distrorelease as the tools would see it. For example there may be a
-    distrorelease called 'hoary' and a SECURITY pocket subset of that would
+    A single distroseries can at its heart be more than one logical
+    distroseries as the tools would see it. For example there may be a
+    distroseries called 'hoary' and a SECURITY pocket subset of that would
     be referred to as 'hoary-security' by the publisher and the distro side
     tools.
     """
@@ -2292,6 +2310,30 @@ class CodereleaseRelationships(DBSchema):
         in a different distribution, and this relationship captures that
         concept.
         """)
+
+
+class CodeImportReviewStatus(DBSchema):
+    """CodeImport review status.
+
+    Before a code import is performed, it is reviewed. Only reviewed imports
+    are processed.
+    """
+
+    NEW = Item(1, """Pending Review
+
+    This code import request has recently been filed an has not been reviewed
+    yet.
+    """)
+
+    INVALID = Item(10, """Invalid
+
+    This code import will not be processed.
+    """)
+
+    REVIEWED = Item(20, """Reviewed
+
+    This code import has been approved and will be processed.
+    """)
 
 
 class BugInfestationStatus(DBSchema):
@@ -2604,6 +2646,35 @@ class BranchSubscriptionNotificationLevel(DBSchema):
         """)
 
 
+class BranchVisibilityPolicy(DBSchema):
+    """Branch Visibility Policy"""
+
+    PUBLIC = Item(1, """
+        Public
+
+        Branches are public by default.
+        """)
+
+    PRIVATE = Item(2, """
+        Private
+
+        Branches are private by default.
+        """)
+
+    PRIVATE_ONLY = Item (3, """
+        Private only
+
+        Branches are private by default. Branch owners are not able
+        to change the visibility of the branches to public.
+        """)
+
+    FORBIDDEN = Item(4, """
+        Forbidden
+
+        Users are not able to create branches in the context.
+        """)
+
+
 class BugNominationStatus(DBSchema):
     """Bug Nomination Status
 
@@ -2638,32 +2709,48 @@ class BugTaskStatus(DBSchema):
     The various possible states for a bugfix in a specific place.
     """
 
-    UNCONFIRMED = Item(10, """
-        Unconfirmed
+    NEW = Item(10, """
+        New
 
         This is a new bug and has not yet been confirmed by the maintainer of
         this product or source package.
         """)
 
-    NEEDSINFO = Item(15, """
-        Needs Info
+    INCOMPLETE = Item(15, """
+        Incomplete
 
         More info is required before making further progress on this bug, likely
         from the reporter. E.g. the exact error message the user saw, the URL
         the user was visiting when the bug occurred, etc.
         """)
 
-    REJECTED = Item(17, """
-        Rejected
+    INVALID = Item(17, """
+        Invalid
 
-        This bug has been rejected, e.g. in cases of operator-error.
+        This is not a bug. It could be a support request, spam, or a misunderstanding.
+        """)
+
+    WONTFIX = Item(18, """
+        Won't Fix
+
+        This will not be fixed. For example, this might be a bug but it's not considered worth
+        fixing, or it might not be fixed in this release.
         """)
 
     CONFIRMED = Item(20, """
         Confirmed
 
         This bug has been reviewed, verified, and confirmed as something needing
-        fixing.
+        fixing. Anyone can set this status.
+        """)
+
+    TRIAGED = Item(21, """
+        Triaged
+
+        This bug has been reviewed, verified, and confirmed as
+        something needing fixing. The user must be a bug contact to
+        set this status, so it carries more weight than merely
+        Confirmed.
         """)
 
     INPROGRESS = Item(22, """
@@ -3113,7 +3200,7 @@ class MirrorContent(DBSchema):
         """)
 
     RELEASE = Item(2, """
-        Release
+        CD Image
 
         Mirror containing released installation images for a given
         distribution.
@@ -3311,11 +3398,11 @@ class PollAlgorithm(DBSchema):
         """)
 
 
-class RosettaFileFormat(DBSchema):
-    """Rosetta File Format
+class TranslationFileFormat(DBSchema):
+    """Translation File Format
 
-    This is an enumeration of the different sorts of file that Rosetta can
-    export.
+    This is an enumeration of the different sorts of file that Launchpad
+    Translations knows about.
     """
 
     PO = Item(1, """
@@ -3330,35 +3417,10 @@ class RosettaFileFormat(DBSchema):
         Gettext's standard binary file format.
         """)
 
-    XLIFF = Item(3, """
-        XLIFF
+    XPI = Item(3, """
+        Mozilla XPI format
 
-        OASIS's XML Localisation Interchange File Format.
-        """)
-
-    CSHARP_DLL = Item(4, """
-        .NET DLL
-
-        The dynamic link library format as used by programs that use the .NET
-        framework.
-        """)
-
-    CSHARP_RESOURCES = Item(5, """
-        .NET resource file
-
-        The resource file format used by programs that use the .NET framework.
-        """)
-
-    TCL = Item(6, """
-        TCL format
-
-        The .msg format as used by TCL/msgcat.
-        """)
-
-    QT = Item(7, """
-        QT format
-
-        The .qm format as used by programs using the QT toolkit.
+        The .xpi format as used by programs from Mozilla foundation.
         """)
 
 
@@ -3496,7 +3558,7 @@ class ShipItArchitecture(DBSchema):
         """)
 
 
-class ShipItDistroRelease(DBSchema):
+class ShipItDistroSeries(DBSchema):
     """The Distro Release, used only to link with ShippingRequest."""
 
     BREEZY = Item(1, """
@@ -3636,4 +3698,55 @@ class PersonCreationRationale(DBSchema):
 
         A user wanted to reference a person which is not a Launchpad user, so
         he created this "placeholder" profile.
+        """)
+
+class EntitlementType(DBSchema):
+    """The set of features supported via entitlements.
+
+    The listed features may be enabled by the granting of an entitlement.
+    """
+
+    PRIVATE_BRANCHES = Item(10, """
+        Private Branches
+
+        The ability to create branches which are only visible to the team.
+        """)
+
+    PRIVATE_BUGS = Item(20, """
+        Private Bugs
+
+        The ability to create private bugs which are only visible to the team.
+        """)
+
+    PRIVATE_TEAMS = Item(30, """
+        Private Teams
+
+        The ability to create private teams which are only visible to parent
+        teams.
+        """)
+
+class EntitlementState(DBSchema):
+    """States for an entitlement.
+
+    The entitlement may start life as a REQUEST that is then granted and
+    made ACTIVE.  At some point the entitlement may be revoked by marking
+    as INACTIVE.
+    """
+
+    REQUESTED = Item(10, """
+        Entitlement has been requested.
+
+        The entitlement is inactive in this state.
+        """)
+
+    ACTIVE = Item(20, """
+        The entitlement is active.
+
+        The entitlement is approved in Launchpad or was imported in the
+        active state.
+        """)
+    INACTIVE = Item(30, """
+        The entitlement is inactive.
+
+        The entitlement has be deactivated.
         """)

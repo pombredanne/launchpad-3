@@ -49,7 +49,7 @@ Now, is time to create the new potemplate
   >>> release.productseries.product.name
   u'firefox'
   >>> series = release.productseries
-  >>> ptn = getUtility(IPOTemplateNameSet).new('firefox', 'Whatever')
+  >>> ptn = getUtility(IPOTemplateNameSet)['firefox']
   >>> subset = POTemplateSubset(productseries=series)
   >>> potemplate = subset.new(
   ...     potemplatename=ptn,

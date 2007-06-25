@@ -24,6 +24,7 @@ from canonical.launchpad.interfaces.branch import *
 from canonical.launchpad.interfaces.branchref import *
 from canonical.launchpad.interfaces.branchrevision import *
 from canonical.launchpad.interfaces.branchsubscription import *
+from canonical.launchpad.interfaces.branchvisibilitypolicy import *
 from canonical.launchpad.interfaces.bugactivity import *
 from canonical.launchpad.interfaces.bugattachment import *
 from canonical.launchpad.interfaces.bugextref import *
@@ -42,6 +43,7 @@ from canonical.launchpad.interfaces.bugwatch import *
 from canonical.launchpad.interfaces.build import *
 from canonical.launchpad.interfaces.builder import *
 from canonical.launchpad.interfaces.buildqueue import *
+from canonical.launchpad.interfaces.codeimport import *
 from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
@@ -53,15 +55,16 @@ from canonical.launchpad.interfaces.distributionmirror import *
 from canonical.launchpad.interfaces.distributionsourcepackage import *
 from canonical.launchpad.interfaces.distributionsourcepackagecache import *
 from canonical.launchpad.interfaces.distributionsourcepackagerelease import *
-from canonical.launchpad.interfaces.distroarchrelease import *
-from canonical.launchpad.interfaces.distroarchreleasebinarypackage import *
-from canonical.launchpad.interfaces.distroarchreleasebinarypackagerelease import *
-from canonical.launchpad.interfaces.distrorelease import *
-from canonical.launchpad.interfaces.distroreleasebinarypackage import *
-from canonical.launchpad.interfaces.distroreleaselanguage import *
-from canonical.launchpad.interfaces.distroreleasepackagecache import *
-from canonical.launchpad.interfaces.distroreleasesourcepackagerelease import *
+from canonical.launchpad.interfaces.distroarchseries import *
+from canonical.launchpad.interfaces.distroarchseriesbinarypackage import *
+from canonical.launchpad.interfaces.distroarchseriesbinarypackagerelease import *
+from canonical.launchpad.interfaces.distroseries import *
+from canonical.launchpad.interfaces.distroseriesbinarypackage import *
+from canonical.launchpad.interfaces.distroserieslanguage import *
+from canonical.launchpad.interfaces.distroseriespackagecache import *
+from canonical.launchpad.interfaces.distroseriessourcepackagerelease import *
 from canonical.launchpad.interfaces.emailaddress import *
+from canonical.launchpad.interfaces.entitlement import *
 from canonical.launchpad.interfaces.externalbugtracker import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.geoip import *
@@ -96,7 +99,7 @@ from canonical.launchpad.interfaces.poll import *
 from canonical.launchpad.interfaces.pomsgid import *
 from canonical.launchpad.interfaces.pomsgidsighting import *
 from canonical.launchpad.interfaces.pomsgset import *
-from canonical.launchpad.interfaces.poparser import *
+from canonical.launchpad.interfaces.gettext_po_parser import *
 from canonical.launchpad.interfaces.potemplate import *
 from canonical.launchpad.interfaces.potemplatename import *
 from canonical.launchpad.interfaces.potmsgset import *
@@ -135,6 +138,7 @@ from canonical.launchpad.interfaces.sprintspecification import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.teammembership import *
 from canonical.launchpad.interfaces.temporaryblobstorage import *
+from canonical.launchpad.interfaces.translationformat import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *
 from canonical.launchpad.interfaces.questioncollection import *

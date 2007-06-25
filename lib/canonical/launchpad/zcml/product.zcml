@@ -32,22 +32,23 @@
       for further discussion - stub 20070411 -->
     <require
       permission="launchpad.Admin"
-      set_attributes="name active reviewed autoupdate"
+      set_attributes="name active reviewed autoupdate private_bugs"
       />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getSupportedLanguages
-      getQuestionLanguages"
+      getQuestionLanguages getAnswerContactsForLanguage
+      getAnswerContactRecipients"
       />
-    <require 
+    <require
       permission="launchpad.AnyPerson"
-      attributes="newQuestion addAnswerContact removeAnswerContact" 
+      attributes="newQuestion addAnswerContact removeAnswerContact"
       />
   </content>
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IProduct"
-    name="+index" 
+    name="+index"
     />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IProduct"
@@ -67,12 +68,12 @@
   <browser:defaultView
     for="canonical.launchpad.interfaces.IProduct"
     layer="canonical.launchpad.layers.BugsLayer"
-    name="+bugs-index" 
+    name="+bugs-index"
     />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IProduct"
     layer="canonical.launchpad.layers.TranslationsLayer"
-    name="+translations" 
+    name="+translations"
     />
 
   <browser:menus
@@ -113,6 +114,17 @@
     facet="bugs"
     template="../templates/bugtarget-bugs.pt"
     />
+
+  <browser:pages
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.BugTargetBugListingView"
+    facet="bugs"
+    permission="zope.Public">
+    <browser:page
+      name="+portlet-bugtasklist-seriesbugs"
+      template="../templates/bugtask-portlet-seriesbugs.pt"
+      />
+  </browser:pages>
 
     <browser:page
         for="canonical.launchpad.interfaces.IProduct"
@@ -218,17 +230,12 @@
       />
     <browser:page
       name="+portlet-aboutcve"
-      template="../templates/portlet-aboutcve.pt" 
+      template="../templates/portlet-aboutcve.pt"
       />
-  </browser:pages>
-
-  <browser:pages
-    for="canonical.launchpad.interfaces.IProduct"
-    permission="zope.Public">
-      <browser:page
-        name="+portlet-latestbranches"
-        template="../templates/product-portlet-latestbranches.pt" 
-        />
+    <browser:page
+      name="+portlet-latestbranches"
+      template="../templates/product-portlet-latestbranches.pt"
+      />
   </browser:pages>
 
   <browser:page
@@ -237,7 +244,7 @@
     facet="branches"
     permission="zope.Public"
     name="+branches"
-    template="../templates/product-branches.pt" 
+    template="../templates/product-branches.pt"
     />
 
   <browser:page
@@ -254,7 +261,7 @@
     permission="zope.Public"
     name="+cve"
     facet="bugs"
-    template="../templates/product-cvereport.pt" 
+    template="../templates/product-cvereport.pt"
     />
 
   <browser:pages
@@ -295,7 +302,7 @@
     facet="overview"
     class="canonical.launchpad.browser.ProductEditView"
     permission="launchpad.Edit"
-    template="../templates/product-edit.pt" 
+    template="../templates/product-edit.pt"
     />
 
   <browser:page
@@ -304,7 +311,7 @@
     facet="overview"
     class="canonical.launchpad.browser.ProductBrandingView"
     permission="launchpad.Edit"
-    template="../templates/object-branding.pt" 
+    template="../templates/object-branding.pt"
     />
 
   <browser:editform
@@ -358,7 +365,7 @@
     template="../templates/bounty-link.pt" >
     <browser:widget
       field="product"
-      class="canonical.widgets.ContextWidget" 
+      class="canonical.widgets.ContextWidget"
       />
   </browser:addform>
 
@@ -389,7 +396,7 @@
     class="canonical.launchpad.browser.ProductBranchAddView"
     facet="branches"
     permission="launchpad.AnyPerson"
-    template="../templates/product-branch-add.pt" 
+    template="../templates/product-branch-add.pt"
     />
 
   <!-- ProductSet-->
@@ -412,7 +419,7 @@
 
   <browser:defaultView
     for="canonical.launchpad.interfaces.IProductSet"
-    name="+index" 
+    name="+index"
     />
 
   <browser:navigation
@@ -423,7 +430,7 @@
   <browser:url
     for="canonical.launchpad.interfaces.IProductSet"
     path_expression="string:projects"
-    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot" 
+    parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
 
   <browser:page
@@ -441,15 +448,15 @@
     class="canonical.launchpad.browser.ProductSetView" >
     <browser:page
       name="+index"
-      template="../templates/products-index.pt" 
+      template="../templates/products-index.pt"
       />
     <browser:page
       name="+portlet-details"
-      template="../templates/products-portlet-details.pt" 
+      template="../templates/products-portlet-details.pt"
       />
     <browser:page
       name="+all"
-      template="../templates/products-all.pt" 
+      template="../templates/products-all.pt"
       />
   </browser:pages>
 
