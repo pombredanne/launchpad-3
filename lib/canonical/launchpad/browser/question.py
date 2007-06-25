@@ -619,6 +619,16 @@ class QuestionWorkflowView(LaunchpadFormView):
             if not data.get('message'):
                 self.setFieldError('message', _('Please enter a message.'))
 
+    @property
+    def lang(self):
+        """The Question's language for the lang and xml:lang attributes."""
+        return self.context.language.direction
+
+    @property
+    def dir(self):
+        """The Question's language direction for the dir attribute."""
+        return self.context.language.abbreviated_text_dir
+
     def hasActions(self):
         """Return True if some actions are possible for this user."""
         for action in self.actions:
