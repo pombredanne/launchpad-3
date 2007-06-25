@@ -6,6 +6,7 @@ __metaclass__ = type
 
 import os
 import unittest
+import xmlrpclib
 
 import bzrlib.branch
 from bzrlib.errors import NotBranchError
@@ -18,31 +19,23 @@ from canonical.codehosting.tests.helpers import (
     adapt_suite, deferToThread, ServerTestCase, TwistedBzrlibLayer)
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
+from canonical.codehosting.transport import branch_id_to_path
 from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 
 
-class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
-    """Acceptance tests for the Launchpad codehosting service's Bazaar support.
-
-    Originally converted from the English at
-    https://launchpad.canonical.com/SupermirrorTaskList
-    """
+class SSHTestCase(ServerTestCase, TestCaseWithRepository):
 
     layer = TwistedBzrlibLayer
-
     server = None
 
-    def getDefaultServer(self):
-        return make_sftp_server()
-
     def installServer(self, server):
-        super(AcceptanceTests, self).installServer(server)
+        super(SSHTestCase, self).installServer(server)
         self.default_user = server.authserver.testUser
         self.default_team = server.authserver.testTeam
 
     def setUp(self):
-        super(AcceptanceTests, self).setUp()
+        super(SSHTestCase, self).setUp()
 
         # Create a local branch with one revision
         tree = self.make_branch_and_tree('.')
@@ -100,6 +93,17 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         return database.Branch.selectOneBy(
             owner=owner, product=product, name=branchName)
 
+
+class AcceptanceTests(SSHTestCase):
+    """Acceptance tests for the Launchpad codehosting service's Bazaar support.
+
+    Originally converted from the English at
+    https://launchpad.canonical.com/SupermirrorTaskList
+    """
+
+    def getDefaultServer(self):
+        return make_sftp_server()
+
     @deferToThread
     def test_bzr_sftp(self):
         """
@@ -114,8 +118,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(remote_url)
         remote_revision = self.getLastRevision(remote_url)
-        self.assertEqual(self.local_branch.last_revision(),
-                         remote_revision)
+        self.assertEqual(self.local_branch.last_revision(), remote_revision)
 
     @deferToThread
     def test_bzr_push_again(self):
@@ -147,6 +150,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         Also, the renames may happen in the database for other reasons, e.g. if
         the DBA running a one-off script.
         """
+
         # Push the local branch to the server
         remote_url = self.getTransportURL('~testuser/+junk/test-branch')
         self.push(remote_url)
@@ -154,7 +158,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         # Rename branch in the database
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.getHostedBranch('testuser', None, 'test-branch')
-        self.branch_id = branch.id
+        branch_id = branch.id
         branch.name = 'renamed-branch'
         LaunchpadZopelessTestSetup().txn.commit()
 
@@ -165,7 +169,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         # Assign to a different product in the database. This is
         # effectively a Rename as far as bzr is concerned: the URL changes.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = database.Branch.get(self.branch_id)
+        branch = database.Branch.get(branch_id)
         branch.product = database.Product.byName('firefox')
         LaunchpadZopelessTestSetup().txn.commit()
 
@@ -184,7 +188,7 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         # Rename person in the database. Again, the URL changes (and so
         # does the username we have to connect as!).
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = database.Branch.get(self.branch_id)
+        branch = database.Branch.get(branch_id)
         branch.owner.name = 'renamed-user'
         LaunchpadZopelessTestSetup().txn.commit()
 
@@ -247,7 +251,6 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         branch = self.getHostedBranch('testuser', None, 'totally-new-branch')
         # Confirm that the branch hasn't had a mirror requested yet. Not core
         # to the test, but helpful for checking internal state.
-        self.assertEqual(31, branch.id)
         self.assertNotEqual(None, branch.mirror_request_time)
         branch.mirror_request_time = None
         LaunchpadZopelessTestSetup().txn.commit()
@@ -264,6 +267,60 @@ class AcceptanceTests(ServerTestCase, TestCaseWithRepository):
         branch = self.getHostedBranch('testuser', None, 'totally-new-branch')
         self.assertNotEqual(None, branch.mirror_request_time)
         LaunchpadZopelessTestSetup().txn.abort()
+
+
+class SmartserverTests(SSHTestCase):
+    """Acceptance tests for the smartserver component of Launchpad codehosting
+    service's Bazaar support.
+    """
+
+    def getDefaultServer(self):
+        return make_bzr_ssh_server()
+
+    @deferToThread
+    def test_can_read_readonly_branch(self):
+        # We can get information from a read-only branch.
+        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
+        sabdfl_id = authserver.getUser('sabdfl')['id']
+        ro_branch_id = authserver.createBranch(sabdfl_id, '', 'ro-branch')
+        ro_branch_url = 'file://' + os.path.abspath(
+            os.path.join(self.server._mirror_root,
+                         branch_id_to_path(ro_branch_id)))
+        self.runInChdir(
+            self.run_bzr_captured, ['push', '--create-prefix', ro_branch_url],
+            retcode=None)
+
+        revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
+        remote_revision = self.getLastRevision(
+            self.getTransportURL('~sabdfl/+junk/ro-branch'))
+        self.assertEqual(revision, remote_revision)
+
+    @deferToThread
+    def test_cant_write_to_readonly_branch(self):
+        # We can't write to a read-only branch.
+        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
+        sabdfl_id = authserver.getUser('sabdfl')['id']
+        ro_branch_id = authserver.createBranch(sabdfl_id, '', 'ro-branch')
+        ro_branch_url = 'file://' + os.path.abspath(
+            os.path.join(self.server._mirror_root,
+                         branch_id_to_path(ro_branch_id)))
+        self.runInChdir(
+            self.run_bzr_captured, ['push', '--create-prefix', ro_branch_url],
+            retcode=None)
+
+        revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
+
+        # Create a new revision on the local branch.
+        tree = WorkingTree.open(self.local_branch.base)
+        tree.commit('Empty commit', rev_id='rev2')
+
+        # Push the local branch to the remote url
+        remote_url = self.getTransportURL('~sabdfl/+junk/ro-branch')
+        self.push(remote_url)
+        remote_revision = self.getLastRevision(remote_url)
+
+        # UNCHANGED!
+        self.assertEqual(revision, remote_revision)
 
 
 def make_repository_tests(base_suite):
@@ -293,13 +350,12 @@ def make_repository_tests(base_suite):
     return adapt_suite(adapter, base_suite)
 
 
-def make_server_tests(base_suite):
+def make_server_tests(base_suite, servers):
     from bzrlib.repository import RepositoryFormat
     from canonical.codehosting.tests.helpers import (
         CodeHostingRepositoryTestProviderAdapter)
     repository_format = RepositoryFormat.get_default_format()
 
-    servers = [make_sftp_server(), make_bzr_ssh_server()]
     adapter = CodeHostingRepositoryTestProviderAdapter(
         repository_format, servers)
     return adapt_suite(adapter, base_suite)
@@ -309,5 +365,8 @@ def test_suite():
     base_suite = unittest.makeSuite(AcceptanceTests)
     suite = unittest.TestSuite()
     suite.addTest(make_repository_tests(base_suite))
-    suite.addTest(make_server_tests(base_suite))
+    suite.addTest(make_server_tests(
+        base_suite, [make_sftp_server(), make_bzr_ssh_server()]))
+    suite.addTest(make_server_tests(
+        unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server()]))
     return suite

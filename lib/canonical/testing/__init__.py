@@ -46,6 +46,7 @@ def reset_logging():
     import zope.testing.testrunner
     zope.testing.testrunner.configure_logging()
 
+
 # Imported here to avoid circular import issues
 from canonical.testing.layers import (
     BaseLayer, DatabaseLayer, LibrarianLayer, FunctionalLayer,

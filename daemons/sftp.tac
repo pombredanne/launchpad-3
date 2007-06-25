@@ -12,7 +12,7 @@ from canonical.launchpad.daemons.sftp import SSHService
 
 # Construct an Application that includes a supermirror SFTP service. 
 application = service.Application('sftponly')
-svc = SFTPService()
+svc = SSHService()
 svc.setServiceParent(application)
 
 # Service that announces when the daemon is ready

@@ -9,11 +9,14 @@ __all__ = ['branch_id_to_path', 'LaunchpadServer', 'LaunchpadTransport',
 from bzrlib.errors import BzrError, NoSuchFile, TransportNotPossible
 from bzrlib import urlutils
 from bzrlib.transport import (
+    get_transport,
     register_transport,
     Server,
     Transport,
     unregister_transport,
     )
+
+from canonical.authserver.interfaces import READ_ONLY
 
 
 def branch_id_to_path(branch_id):
@@ -72,27 +75,26 @@ class LaunchpadServer(Server):
     See LaunchpadTransport for more information.
     """
 
-    def __init__(self, authserver, user_id, transport):
+    def __init__(self, authserver, user_id, hosting_transport,
+                 mirror_transport):
         """
         Construct a LaunchpadServer.
 
         :param authserver: An xmlrpclib.ServerProxy that points to the
             authserver.
         :param user_id: A login ID for the user who is accessing branches.
-        :param transport: A Transport pointing to the root of where the
+        :param hosting_transport: A Transport pointing to the root of where the
             branches are actually stored.
+        :param mirror_transport: A Transport pointing to the root of where
+            branches are mirrored to.
         """
         self.authserver = authserver
         self.user_dict = self.authserver.getUser(user_id)
         self.user_id = self.user_dict['id']
         self.user_name = self.user_dict['name']
-        self.backing_transport = transport
-        # XXX: JonathanLange 2007-05-29, Instead of fetching branch information
-        # as needed, we load it all when the server is started. This mimics the
-        # behaviour of the SFTP server, and is the path of least resistance
-        # given the authserver's present API. However, in the future, we will
-        # want to get branch information as required.
-        self._branches = dict(self._iter_branches())
+        self.backing_transport = hosting_transport
+        self.mirror_transport = get_transport(
+            'readonly+' + mirror_transport.base)
         self._is_set_up = False
 
     def dirty(self, virtual_path):
@@ -107,18 +109,8 @@ class LaunchpadServer(Server):
         # the builtin ones.
         #
         # See https://launchpad.net/bugs/120949.
-        branch_id, path = self._translate_path(virtual_path)
+        branch_id, ignored, path = self._translate_path(virtual_path)
         self._dirty_branch_ids.add(branch_id)
-
-    def _iter_branches(self):
-        for team_dict in self.user_dict['teams']:
-            products = self.authserver.getBranchesForUser(team_dict['id'])
-            for product_id, product_name, branches in products:
-                if product_name == '':
-                    product_name = '+junk'
-                for branch_id, branch_name in branches:
-                    yield ((team_dict['name'], product_name, branch_name),
-                           branch_id)
 
     def mkdir(self, virtual_path):
         """Make a new directory for the given virtual path.
@@ -180,34 +172,31 @@ class LaunchpadServer(Server):
                     "Directories directly under a user directory must be "
                     "named after a product name registered in Launchpad "
                     "<https://launchpad.net/>.")
-        branch_id = self.authserver.createBranch(user_id, product_id, branch)
-        # Maintain the local cache of branch information. Alternatively, we
-        # could do: self._branches = dict(self._iter_branches())
-        self._branches[(user, product, branch)] = branch_id
-        return branch_id
+        return self.authserver.createBranch(user_id, product_id, branch)
 
     def _translate_path(self, virtual_path):
-        """Translate a virtual path into an internal branch id and relative
-        path.
+        """Translate a virtual path into an internal branch id, permissions and
+        relative path.
 
         'virtual_path' is a path that points to a branch or a path within a
-        branch. This method returns the id of the branch and the path relative
-        to that branch so that other methods can calculate the real path for
-        the given virtual path.
+        branch. This method returns the id of the branch, the permissions that
+        the user running the server has for that branch and the path relative
+        to that branch. In short, everything you need to be able to access a
+        file in a branch.
         """
         # We can safely pad with '' because we can guarantee that no product or
         # branch name is the empty string. (Mapping '' to '+junk' happens
         # in _iter_branches). 'user' is checked later.
-        user, product, branch, path = split_with_padding(
+        user_dir, product, branch, path = split_with_padding(
             virtual_path.lstrip('/'), '/', 4, padding='')
-        if not user.startswith('~'):
+        if not user_dir.startswith('~'):
             raise TransportNotPossible(
-                'Path must start with user or team directory: %r' % (user,))
-        user = user[1:]
-        try:
-            return self._branches[(user, product, branch)], path
-        except KeyError:
-            raise UntranslatablePath(path=virtual_path, user=self.user_name)
+                'Path must start with user or team directory: %r'
+                % (user_dir,))
+        user = user_dir[1:]
+        branch_id, permissions = self.authserver.getBranchInformation(
+            self.user_id, user, product, branch)
+        return branch_id, permissions, path
 
     def translate_virtual_path(self, virtual_path):
         """Translate an absolute virtual path into the real path on the backing
@@ -226,8 +215,10 @@ class LaunchpadServer(Server):
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
         # a branch'.
-        branch_id, path = self._translate_path(virtual_path)
-        return '/'.join([branch_id_to_path(branch_id), path])
+        branch_id, permissions, path = self._translate_path(virtual_path)
+        if branch_id == '':
+            raise UntranslatablePath(path=virtual_path, user=self.user_name)
+        return '/'.join([branch_id_to_path(branch_id), path]), permissions
 
     def _factory(self, url):
         """Construct a transport for the given URL. Used by the registry."""
@@ -289,10 +280,21 @@ class LaunchpadTransport(Transport):
         """Call a method on the backing transport, translating relative,
         virtual paths to filesystem paths.
 
+        If 'relpath' translates to a path that we only have read-access to,
+        then the method will be called on the backing transport decorated with
+        'readonly+'.
+
         :raise NoSuchFile: If the path cannot be translated.
+        :raise TransportNotPossible: If trying to do a write operation on a
+            read-only path.
         """
-        method = getattr(self.server.backing_transport, methodname)
-        return method(self._translate_virtual_path(relpath), *args, **kwargs)
+        path, permissions = self._translate_virtual_path(relpath)
+        if permissions == READ_ONLY:
+            transport = self.server.mirror_transport
+        else:
+            transport = self.server.backing_transport
+        method = getattr(transport, methodname)
+        return method(path, *args, **kwargs)
 
     def _writing_call(self, methodname, relpath, *args, **kwargs):
         """As for _call but mark the branch being written to as dirty."""
@@ -337,8 +339,8 @@ class LaunchpadTransport(Transport):
         return self._call('has', relpath)
 
     def iter_files_recursive(self):
-        backing_transport = self.server.backing_transport.clone(
-            self._translate_virtual_path('.'))
+        path, ignored = self._translate_virtual_path('.')
+        backing_transport = self.server.backing_transport.clone(path)
         return backing_transport.iter_files_recursive()
 
     def listable(self):
@@ -366,14 +368,16 @@ class LaunchpadTransport(Transport):
         try:
             return self._writing_call('mkdir', relpath, mode)
         except NoSuchFile:
-            return self.server.mkdir(self._abspath(relpath))
+            return self.server.mkdir(abspath)
 
     def put_file(self, relpath, f, mode=None):
         return self._writing_call('put_file', relpath, f, mode)
 
     def rename(self, rel_from, rel_to):
-        return self._writing_call(
-            'rename', rel_from, self._translate_virtual_path(rel_to))
+        path, permissions = self._translate_virtual_path(rel_to)
+        if permissions == READ_ONLY:
+            raise TransportNotPossible('readonly transport')
+        return self._writing_call('rename', rel_from, path)
 
     def rmdir(self, relpath):
         virtual_path = self._abspath(relpath)
