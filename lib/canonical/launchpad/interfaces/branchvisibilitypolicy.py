@@ -22,7 +22,10 @@ class IHasBranchVisibilityPolicy(Interface):
     """Implemented by types that need to define default branch visibility."""
 
     branch_visibility_policy_items = Attribute(
-        'The branch visibility policy items.')
+        "The branch visibility policy items.")
+
+    branch_visibility_base_policy = Attribute(
+        "The BranchVisibilityPolicy that applies to everyone.")
 
     def isUsingInheritedBranchVisibilityPolicy():
         """Return True if using policy from the inherited context.

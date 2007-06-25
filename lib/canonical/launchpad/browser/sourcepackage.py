@@ -1,5 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+"""Browser views for sourcepackages."""
+
 __metaclass__ = type
 
 __all__ = [
@@ -26,7 +28,7 @@ from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import TranslationUnavailableError
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -57,9 +59,9 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
         if (self.context.distroseries.hide_all_translations and
             not check_permission('launchpad.Admin', sourcepackage_pots)):
-            raise TranslationUnavailableError(
-                'Translation updates in progress.  Only admins may view'
-                ' translations for this sourcepackage.')
+            raise TranslationUnavailable(
+                'Translation updates are in progress. Only administrators '
+                'may view translations for this source package.')
 
         return sourcepackage_pots
 

@@ -25,15 +25,13 @@ import re
 import logging
 import datetime
 import pytz
-import urlparse
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, IDistributionSet, IBugSet,
-    IBugTaskSet, IBugTrackerSet, IBugExternalRefSet,
-    IBugAttachmentSet, IMessageSet, ILibraryFileAliasSet, ICveSet,
-    IBugWatchSet, ILaunchpadCelebrities, IMilestoneSet, NotFoundError,
-    CreateBugParams)
+    IPersonSet, IEmailAddressSet, IBugSet, IBugTaskSet,
+    IBugExternalRefSet, IBugAttachmentSet, IMessageSet,
+    ILibraryFileAliasSet, ICveSet, IBugWatchSet,
+    ILaunchpadCelebrities, NotFoundError, CreateBugParams)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, BugAttachmentType,
@@ -240,20 +238,28 @@ class Bug:
         Additional information about the bugzilla status is appended
         to the bug task's status explanation.
         """
+        bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
+        
         if self.bug_status == 'ASSIGNED':
-            bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
+            bugtask.transitionToStatus(
+                BugTaskStatus.CONFIRMED, bug_importer)
         elif self.bug_status == 'NEEDINFO':
-            bugtask.transitionToStatus(BugTaskStatus.NEEDSINFO)
+            bugtask.transitionToStatus(
+                BugTaskStatus.INCOMPLETE, bug_importer)
         elif self.bug_status == 'PENDINGUPLOAD':
-            bugtask.transitionToStatus(BugTaskStatus.FIXCOMMITTED)
+            bugtask.transitionToStatus(
+                BugTaskStatus.FIXCOMMITTED, bug_importer)
         elif self.bug_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:
             if self.resolution == 'FIXED':
-                bugtask.transitionToStatus(BugTaskStatus.FIXRELEASED)
+                bugtask.transitionToStatus(
+                    BugTaskStatus.FIXRELEASED, bug_importer)
             else:
-                bugtask.transitionToStatus(BugTaskStatus.REJECTED)
+                bugtask.transitionToStatus(
+                    BugTaskStatus.INVALID, bug_importer)
         else:
-            bugtask.transitionToStatus(BugTaskStatus.UNCONFIRMED)
+            bugtask.transitionToStatus(
+                BugTaskStatus.NEW, bug_importer)
 
         # add the status to the notes section, to account for any lost
         # information

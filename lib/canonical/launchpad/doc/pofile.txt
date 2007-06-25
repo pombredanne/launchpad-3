@@ -64,7 +64,7 @@ Get the set of POTMsgSets that are untranslated.
 
 Test that the header is updated.
 
->>> from canonical.launchpad.components.poparser import POHeader
+>>> from canonical.launchpad.translationformat import POHeader
 
 This is the comment.
 
@@ -85,7 +85,7 @@ This is the new header.
 
 Now, get a POHeader object with that information.
 
->>> new_header = POHeader(commentText=comment, msgstr=msgstr)
+>>> new_header = POHeader(comment=comment, msgstr=msgstr)
 >>> new_header.updateDict()
 
 We check that the plural forms expression is correctly parsed:
@@ -160,8 +160,6 @@ This test is to be sure that the date comparation is working and that two
 headers with the same date will always be set as newer because lazy
 translators forget to update that field from time to time and sometimes we
 were losing translations because we were ignoring those imports too.
-
-    >>> from canonical.launchpad.components.poparser import POHeader
 
     >>> print pofile.header.encode('utf-8')
     Project-Id-Version: es
@@ -392,7 +390,7 @@ Is time to create it.
 
 As we can see, is the msgid we were looking for.
 
-  >>> pomsgset.potmsgset.primemsgid_.msgid == msgid
+  >>> pomsgset.potmsgset.msgid == msgid
   True
 
 This entry is in fact one that is not used anymore, that means, its sequence
@@ -698,7 +696,7 @@ Lets get a single untranslated POTMsgSet.
   >>> untranslated = list(pofile_changed.getPOTMsgSetUntranslated())[0]
   >>> untranslated is None
   False
-  >>> pomsgset = pofile_changed.getPOMsgSet(untranslated.primemsgid_.msgid)
+  >>> pomsgset = pofile_changed.getPOMsgSet(untranslated.msgid)
   >>> pomsgset is None
   False
 
@@ -841,6 +839,17 @@ new suggestions.
   >>> stats = evolution_es.updateStatistics()
   >>> print evolution_es.unreviewedCount()
   3
+
+And if we've got two new suggestions for the same message, POTMsgSet
+will not be listed twice in the returned result.
+
+  >>> pomsgset.updateTranslationSet(noneditor, {0: 'another'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
+  3
+  >>> len(set(evolution_es.getPOTMsgSetWithNewSuggestions()))
+  3
+
 
 = POFile Security tests =
 

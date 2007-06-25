@@ -323,8 +323,14 @@ files in the respective PPA location.
   DEBUG: signer of the above package.
 
   >>> transaction.commit()
+
+The upload task requires that the umask be 022, otherwise things will end up
+with the wrong permission.
+
+  >>> old_mask = os.umask(022)
   >>> ppa_upload.queue_root.realiseUpload(mock_logger)
   DEBUG: Publishing custom dist-upgrader_20060302.0120_all.tar.gz to ubuntutest/breezy-autotest
+  >>> ignore = os.umask(old_mask)
 
   >>> ppa_root = config.personalpackagearchive.root
   >>> ppa_dir = os.path.join(ppa_root, 'name16')

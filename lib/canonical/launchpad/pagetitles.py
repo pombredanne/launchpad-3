@@ -136,6 +136,15 @@ def branch_index(context, view):
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
 
+def branchsubscription_edit(context, view):
+    return smartquote(
+        'Edit subscription to branch "%s"' % context.branch.displayname)
+
+branch_visibility = ContextDisplayName('Set branch visibility policy for %s')
+
+def branch_visibility_edit(context, view):
+    return view.pagetitle
+
 branchtarget_branchlisting = ContextDisplayName('Details of Branches for %s')
 
 bug_activity = ContextBugId('Bug #%s - Activity log')
@@ -402,8 +411,6 @@ distroseries_edit = ContextTitle('Edit details of %s')
 def distroseries_index(context, view):
     return '%s %s in Launchpad' % (context.distribution.title, context.version)
 
-distroseries_nominations = ContextDisplayName('Bugs nominated for %s')
-
 distroseries_packaging = ContextDisplayName('Mapping packages to upstream '
     'for %s')
 
@@ -411,7 +418,7 @@ distroseries_search = ContextDisplayName('Search packages in %s')
 
 distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 
-distroseries_translationsadmin = ContextTitle('Admin translation options of %s')
+distroseries_translationsadmin = ContextTitle('Admin translation options for %s')
 
 distroseries_builds = ContextTitle('Builds for %s')
 
@@ -932,6 +939,8 @@ questions_index = 'Launchpad Answers'
 questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
 
 securitycontact_edit = ContextDisplayName("Edit %s security contact")
+
+series_bug_nominations = ContextDisplayName('Bugs nominated for %s')
 
 shipit_adminrequest = 'ShipIt admin request'
 

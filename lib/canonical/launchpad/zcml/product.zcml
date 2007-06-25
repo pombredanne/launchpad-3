@@ -32,12 +32,13 @@
       for further discussion - stub 20070411 -->
     <require
       permission="launchpad.Admin"
-      set_attributes="name active reviewed autoupdate"
+      set_attributes="name active reviewed autoupdate private_bugs"
       />
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getSupportedLanguages
-      getQuestionLanguages"
+      getQuestionLanguages getAnswerContactsForLanguage
+      getAnswerContactRecipients"
       />
     <require
       permission="launchpad.AnyPerson"
@@ -231,15 +232,10 @@
       name="+portlet-aboutcve"
       template="../templates/portlet-aboutcve.pt"
       />
-  </browser:pages>
-
-  <browser:pages
-    for="canonical.launchpad.interfaces.IProduct"
-    permission="zope.Public">
-      <browser:page
-        name="+portlet-latestbranches"
-        template="../templates/product-portlet-latestbranches.pt"
-        />
+    <browser:page
+      name="+portlet-latestbranches"
+      template="../templates/product-portlet-latestbranches.pt"
+      />
   </browser:pages>
 
   <browser:page

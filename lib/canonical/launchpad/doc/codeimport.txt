@@ -33,18 +33,20 @@ are done by 'No Privileges Person'.
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
 
-CodeImports are associated with a Branch when they are created; this is
-how they are linked to a Product.  A helper function makes the tests
-below much easier to read.
+CodeImports are associated with a Branch when they are created; this
+is how they are linked to a Product.  For the basic tests, we
+associate the imports with a new branch for the FireFox project
+(arbitrarily many imports can be created for a project).  A helper
+function to create these branches the tests below easier to read.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IBranchSet, ILaunchpadCelebrities, IProductSet)
+    ...     IBranchSet, ILaunchpadCelebrities, IPersonSet, IProductSet)
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-    >>> def import_branch_for_new_product(name):
-    ...     product = getUtility(IProductSet).createProduct(
-    ...         nopriv, name, name, name, name, name)
+    >>> def new_import_branch(name):
+    ...     product = getUtility(IProductSet).getByName('firefox')
     ...     return getUtility(IBranchSet).new(
-    ...         'trunk', vcs_imports, product, None, 'Import branch')
+    ...         name, vcs_imports, product,
+    ...         None, 'Import branch')
 
 
 == Supported source systems ==
@@ -63,7 +65,7 @@ in the repository, known as the "module".
     >>> cvs = RevisionControlSystems.CVS
     >>> cvs_root = ':pserver:anonymous@cvs.example.com:/cvsroot'
     >>> cvs_module = 'hello'
-    >>> cvs_branch = import_branch_for_new_product("cvs-using-product")
+    >>> cvs_branch = new_import_branch("trunk-cvs")
     >>> cvs_import = code_import_set.new(
     ...     registrant=nopriv, branch=cvs_branch,
     ...     rcs_type=cvs, cvs_root=cvs_root, cvs_module=cvs_module)
@@ -77,18 +79,37 @@ retrieve the tree to import.
 
     >>> svn = RevisionControlSystems.SVN
     >>> svn_url = 'svn://svn.example.com/trunk'
-    >>> svn_branch = import_branch_for_new_product("svn-using-project")
+    >>> svn_branch = new_import_branch("trunk-svn")
     >>> svn_import = code_import_set.new(
     ...     registrant=nopriv, branch=svn_branch,
     ...     rcs_type=svn, svn_branch_url=svn_url)
     >>> verifyObject(ICodeImport, removeSecurityProxy(svn_import))
     True
 
-Write the new code imports to the database, so we can use it to test
-ICodeImportSet.get() and friends.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
+== Creating a CodeImport from existing data ==
+
+The first production code that creates CodeImports will be a sync
+script that creates CodeImports from the existing information in the
+ProductSeries table.  The only ProductSeries with such information in
+the sample data is evolution/main.
+
+    >>> from canonical.launchpad.interfaces import IProductSeriesSet
+    >>> from canonical.lp.dbschema import ImportStatus
+    >>> [series] = getUtility(IProductSeriesSet).search(
+    ...     importstatus=ImportStatus.PROCESSING.value)
+    >>> series.cvsroot
+    u':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'
+    >>> series.cvsmodule
+    u'evolution'
+
+Once we've found the series, creating a new CodeImport with the same
+source details is a fairly simple matter.
+
+    >>> from_existing_import = code_import_set.new(
+    ...     registrant=vcs_imports, branch=series.import_branch, rcs_type=cvs,
+    ...     cvs_root=series.cvsroot, cvs_module=series.cvsmodule)
+
 
 == Retreiving CodeImports ==
 
@@ -105,6 +126,7 @@ present the import's details on the page of the branch.
     u'svn://svn.example.com/trunk'
     >>> code_import_set.getByBranch(cvs_branch).cvs_root
     u':pserver:anonymous@cvs.example.com:/cvsroot'
+
 
 == Canonical URLs ==
 
