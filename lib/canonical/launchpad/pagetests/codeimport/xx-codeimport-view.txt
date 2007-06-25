@@ -33,14 +33,14 @@ the page:
     >>> rows = table.tbody('tr')
     >>> ids = [extract_text(tr.td) for tr in rows]
     >>> sorted(ids) # XXX argh
-    [u'5', u'6']
+    [u'1', u'2']
 
 If we click on the code import's name, we go to the page for that
 import:
 
-    >>> browser.getLink('5').click()
+    >>> browser.getLink('1').click()
     >>> browser.url
-    'http://code.launchpad.dev/+code-imports/5'
+    'http://code.launchpad.dev/+code-imports/1'
 
 It displays some information about the code import, for example the
 review status and the URL of the Subversion branch the import is from:
@@ -60,9 +60,9 @@ There is also a link to the associated branch:
 There's a similar page for the other import, which uses CVS:
 
     >>> browser.getLink('Code Imports').click()
-    >>> browser.getLink('6').click()
+    >>> browser.getLink('2').click()
     >>> browser.url
-    'http://code.launchpad.dev/+code-imports/6'
+    'http://code.launchpad.dev/+code-imports/2'
     >>> extract_text(
     ...     find_tag_by_id(browser.contents, 'review-status'))
     u'Pending Review'
