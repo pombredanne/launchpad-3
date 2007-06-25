@@ -460,7 +460,6 @@ class SpecificationSupersedingView(LaunchpadFormView):
         if newstate is not None:
             self.request.response.addNotification(
                 'Specification is now considered "%s".' % newstate.title)
-        self.next_url = canonical_url(self.context)
         
     @property
     def next_url(self):
