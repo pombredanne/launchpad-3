@@ -107,7 +107,7 @@ class LaunchpadServer(Server):
         # the builtin ones.
         #
         # See https://launchpad.net/bugs/120949.
-        branch_id, path = self._get_branch_and_path(virtual_path)
+        branch_id, path = self._translate_path(virtual_path)
         self._dirty_branch_ids.add(branch_id)
 
     def _iter_branches(self):
@@ -186,9 +186,9 @@ class LaunchpadServer(Server):
         self._branches[(user, product, branch)] = branch_id
         return branch_id
 
-    def _get_branch_and_path(self, virtual_path):
-        """Return a tuple of branch id and a trailing path for the given
-        virtual path.
+    def _translate_path(self, virtual_path):
+        """Translate a virtual path into an internal branch id and relative
+        path.
 
         'virtual_path' is a path that points to a branch or a path within a
         branch. This method returns the id of the branch and the path relative
@@ -226,7 +226,7 @@ class LaunchpadServer(Server):
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
         # a branch'.
-        branch_id, path = self._get_branch_and_path(virtual_path)
+        branch_id, path = self._translate_path(virtual_path)
         return '/'.join([branch_id_to_path(branch_id), path])
 
     def _factory(self, url):
@@ -260,7 +260,7 @@ class LaunchpadServer(Server):
         self._is_set_up = False
         for branch_id in self._dirty_branch_ids:
             self.authserver.requestMirror(branch_id)
-        self._dirty_branch_ids.clear()
+        self._dirty_branch_ids = None
         unregister_transport(self.scheme, self._factory)
 
 

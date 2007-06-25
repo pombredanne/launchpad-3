@@ -109,8 +109,9 @@ class TestLaunchpadServer(TestCaseInTempDir):
         self.assertEqual([1], self.server.authserver._request_mirror_log)
 
     def test_tearDown_clears_dirty_flags(self):
-        # After a server has been set up and torn down, any branches marked as
-        # dirty should be cleaned up.
+        # A branch is marked as dirty only for as long as the server is set up.
+        # Once tearDown requests mirrors for all the dirty branches, the
+        # branches are considered clean again, and thus not mirrored.
         self.server.setUp()
         self.server.dirty('/~testuser/firefox/baz/.bzr')
         self.server.tearDown()

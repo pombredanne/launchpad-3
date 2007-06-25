@@ -351,12 +351,32 @@ class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
 
     def setUp(self):
         SSHCodeHostingServer.setUp(self)
+        # XXX: JonathanLange 2007-06-25, Twisted definitely does not expect us
+        # to be calling waitpid in a child thread. The reactor's process
+        # cleanup goes a little haywire. Monkey-patching reapAllProcess
+        # disables the guts of Twisted's process monitoring / cleanup.
         self._reapAllProcesses = process.reapAllProcesses
         process.reapAllProcesses = lambda: None
 
     def tearDown(self):
         process.reapAllProcesses = self._reapAllProcesses
         return SSHCodeHostingServer.tearDown(self)
+
+    def runWithFakeAdapter(self, (new_adapter, original, interface), function,
+                           *args, **kwargs):
+        """Run function with new_adapter as the adapter from original to
+        interface.
+        """
+        old_allow_duplicates = components.ALLOW_DUPLICATES
+        components.ALLOW_DUPLICATES = True
+        old_adapter = components.getAdapterFactory(original, interface, None)
+        components.registerAdapter(new_adapter, original, interface)
+        try:
+            return function(*args, **kwargs)
+        finally:
+            if old_adapter is not None:
+                components.registerAdapter(old_adapter, original, interface)
+            components.ALLOW_DUPLICATES = old_allow_duplicates
 
     def runAndWaitForDisconnect(self, func, *args, **kwargs):
         """Run the given function, close all connections, and wait for the
@@ -373,14 +393,10 @@ class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
             server.execCommand = execCommand
             return server
 
-        old_allow_duplicates = components.ALLOW_DUPLICATES
-        components.ALLOW_DUPLICATES = True
-        old_adapter = components.getAdapterFactory(
-            LaunchpadAvatar, ISession, None)
-        components.registerAdapter(
-            make_test_launchpad_server, LaunchpadAvatar, ISession)
         try:
-            return func(*args, **kwargs)
+            return self.runWithFakeAdapter(
+                (make_test_launchpad_server, LaunchpadAvatar, ISession),
+                func, *args, **kwargs)
         finally:
             self.closeAllConnections()
             for pid in pids:
@@ -388,10 +404,6 @@ class BazaarSSHCodeHostingServer(SSHCodeHostingServer):
                     os.waitpid(pid, 0)
                 except OSError:
                     """Process has already been killed."""
-            if old_adapter is not None:
-                components.registerAdapter(
-                    old_adapter, LaunchpadAvatar, ISession)
-            components.ALLOW_DUPLICATES = old_allow_duplicates
 
 
 class _TestSSHService(SSHService):
