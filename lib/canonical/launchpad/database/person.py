@@ -46,9 +46,9 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
-    IEmailAddress, IEmailAddressSet, IEntitlement, IGPGKeySet, IHasIcon,
+    IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon,
     IHasLogo, IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet,
-    ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet, ILanguageSet,
+    ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
     ILoginTokenSet, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
     IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey,
     ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
@@ -1017,8 +1017,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             # Ok, we're done. You are not an active member and still not being.
             return
 
-        team.setMembershipData(
-            self, TeamMembershipStatus.DEACTIVATED, self, tm.dateexpires)
+        tm.setStatus(TeamMembershipStatus.DEACTIVATED, self)
 
     def join(self, team):
         """See IPerson."""
@@ -1108,10 +1107,11 @@ class Person(SQLBase, HasSpecificationsMixin):
         if tm is not None:
             old_status = tm.status
             tm.reviewer = reviewer
+            # We can't use tm.setExpirationDate() here because the reviewer
+            # here will be the member themselves when they join an OPEN team.
             tm.dateexpires = expires
             tm.reviewercomment = comment
-            if old_status != status:
-                tm.setStatus(status, reviewer)
+            tm.setStatus(status, reviewer)
         else:
             TeamMembershipSet().new(
                 person, self, status, dateexpires=expires, reviewer=reviewer,
@@ -1175,18 +1175,8 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See IPerson."""
         tm = TeamMembership.selectOneBy(person=person, team=self)
         assert tm is not None
-
-        if expires is not None:
-            now = datetime.now(pytz.timezone('UTC'))
-            assert expires > now, expires
-
-        tm.dateexpires = expires
-        # Only call setStatus() if there was an actual status change.
-        if status != tm.status:
-            tm.setStatus(status, reviewer, reviewercomment=comment)
-        else:
-            tm.reviewer = reviewer
-            tm.comment = comment
+        tm.setExpirationDate(expires, reviewer)
+        tm.setStatus(status, reviewer, reviewercomment=comment)
 
     def getAdministratedTeams(self):
         """See IPerson."""

@@ -1581,3 +1581,7 @@ th.descending {
 
 .vcsimportSUCCESS {} /* inherited text color */
 .vcsimportFAILURE {color: Red;}
+
+.lowerCaseText {
+  text-transform: lowercase
+}

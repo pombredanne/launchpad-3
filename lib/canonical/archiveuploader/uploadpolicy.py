@@ -199,13 +199,13 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         """Insecure policy allows PPA upload."""
         return False
 
-    def checksignerIsUbuntero(self, upload):
+    def checkSignerIsUbuntero(self, upload):
         """Reject the upload if the upload signer is not an 'ubuntero'."""
         if not upload.changes.signer.is_ubuntero:
             upload.reject(
                 "PPA uploads must be signed by an 'ubuntero'.")
 
-    def checksignerIsBetaTester(self, upload):
+    def checkSignerIsBetaTester(self, upload):
         """Reject the upload if the upload signer is not a 'beta-tester'.
 
         For being a 'beta-tester' a person must be a valid member of
@@ -230,8 +230,8 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
             # Either in a specific team or having a ubuntero (or similar
             # flag). This code will be revisited before releasing PPA
             # publicly.
-            self.checksignerIsUbuntero(upload)
-            self.checksignerIsBetaTester(upload)
+            self.checkSignerIsUbuntero(upload)
+            self.checkSignerIsBetaTester(upload)
         else:
             if self.pocket == PackagePublishingPocket.SECURITY:
                 upload.reject(
