@@ -27,15 +27,15 @@
           <span class="sortkey"
             tal:condition="pf/last_touched_pomsgset"
             tal:content="
-              pf/last_touched_pomsgset/date_reviewed/fmt:datetime">
+              pf/last_touched_pomsgset/date_for_latest_change/fmt:datetime">
             time sort key
           </span>
           <span
             tal:condition="pf/last_touched_pomsgset"
             tal:attributes="
-              title pf/last_touched_pomsgset/date_reviewed/fmt:datetime"
+              title pf/last_touched_pomsgset/date_for_latest_change/fmt:datetime"
             tal:content="
-              pf/last_touched_pomsgset/date_reviewed/fmt:approximatedate"
+              pf/last_touched_pomsgset/date_for_latest_change/fmt:approximatedate"
             >
             2007-02-10
           </span>
@@ -49,8 +49,9 @@
               as in distroserieslanguage-index.pt
           </tal:comment>
           <tal:block condition="pf/last_touched_pomsgset">
-            <a tal:attributes="href pf/last_touched_pomsgset/reviewer/fmt:url"
-               tal:content="pf/last_touched_pomsgset/reviewer/browsername/fmt:shorten/25"></a>
+            <a tal:attributes="
+                 href pf/last_touched_pomsgset/person_for_latest_change/fmt:url"
+               tal:content="pf/last_touched_pomsgset/person_for_latest_change/browsername/fmt:shorten/25"></a>
           </tal:block>
           <tal:block condition="not: pf/last_touched_pomsgset">
               &mdash;

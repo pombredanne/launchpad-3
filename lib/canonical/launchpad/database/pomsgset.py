@@ -263,6 +263,34 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         else:
             return False
 
+    def latestChange(self):
+        """Returns a tuple of person, date for the latest change to POMsgSet."""
+        if self.reviewer and self.date_reviewed:
+            return (self.reviewer, self.date_reviewed)
+
+        last_submission = None
+        for pluralform in range(self.pluralforms):
+            submission = self.getActiveSubmission(pluralform)
+            if (not last_submission or
+                submission.datecreated > last_submission.datecreated):
+                last_submission = submission
+        if last_submission:
+            return (last_submission.person, last_submission.datecreated)
+
+        return (None, None)
+
+    @property
+    def date_for_latest_change(self):
+        """See `IPOMsgSet`."""
+        person, date = self.latestChange()
+        return date
+
+    @property
+    def person_for_latest_change(self):
+        """See `IPOMsgSet`."""
+        person, date = self.latestChange()
+        return person
+
     def setActiveSubmission(self, pluralform, submission):
         """See `IPOMsgSet`."""
         assert submission is None or submission.pomsgset == self, (

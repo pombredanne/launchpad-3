@@ -67,6 +67,18 @@ Let's add a fuzzy translation.
   ...     carlos, {0: u'foo'}, fuzzy=True, published=True,
   ...     lock_timestamp=datetime.datetime.now(UTC))
 
+Since this message came from upstream, it doesn't have a reviewer, but
+it does note a person which last changed it.
+
+  >>> print upstream_pomsgset.reviewer
+  None
+  >>> print upstream_pomsgset.date_reviewed
+  None
+  >>> upstream_pomsgset.person_for_latest_change.displayname
+  u'Carlos Perell\xf3 Mar\xedn'
+  >>> upstream_pomsgset.date_for_latest_change is None
+  False
+
 Now it should appear as active and as published.
 
   >>> upstream_pomsgset.active_texts
