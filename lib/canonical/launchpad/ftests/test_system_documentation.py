@@ -14,7 +14,6 @@ from zope.component import getUtility
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.testing.doctest import DocFileSuite
-import sqlos.connection
 
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 from canonical.config import config
@@ -22,13 +21,11 @@ from canonical.database.sqlbase import (
     flush_database_updates, READ_COMMITTED_ISOLATION)
 from canonical.functional import FunctionalDocFileSuite, StdoutHandler
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
-from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag
-from canonical.launchpad.mail import stub
+from canonical.launchpad.interfaces import ILaunchBag
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import (
-        LaunchpadZopelessLayer, LaunchpadFunctionalLayer, LibrarianLayer,
-        DatabaseLayer, ZopelessLayer, FunctionalLayer, LaunchpadLayer,
-        )
+        LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
+        FunctionalLayer)
 
 here = os.path.dirname(os.path.realpath(__file__))
 
@@ -343,6 +340,13 @@ special = {
             setUp=uploadQueueSetUp,
             tearDown=uploadQueueTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
+    'bug-private-by-default.txt': LayeredDocFileSuite(
+            '../doc/bug-private-by-default.txt',
+            setUp=setUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadZopelessLayer
             ),
     }
 

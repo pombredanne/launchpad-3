@@ -28,7 +28,8 @@ from canonical.archiveuploader.nascentuploadfile import (
     BaseBinaryUploadFile)
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
-    NotFoundError, IDistributionSet, IArchiveSet)
+    NotFoundError, IDistributionSet, IArchiveSet, QueueInconsistentStateError)
+from canonical.launchpad.scripts.processaccepted import closeBugsForQueueItem
 from canonical.lp.dbschema import (PackagePublishingPocket, ArchivePurpose)
 
 
@@ -167,7 +168,13 @@ class NascentUpload:
             # Apply the overrides from the database. This needs to be done
             # before doing component verifications because the component
             # actually comes from overrides for packages that are not NEW.
-            self.find_and_apply_overrides()
+            # XXX cprov 20070611: temporally disabling 'auto-overrides' for
+            # PPAs, because users can't perform post-publications overrides
+            # by themselves yet. It's better to assume that they will get
+            # the attributes right when packaging the source then to block
+            # them on immutable state.
+            if not self.is_ppa:
+                self.find_and_apply_overrides()
 
         signer_components = self.getAutoAcceptedComponents()
         if not self.is_new:
@@ -912,6 +919,11 @@ class NascentUpload:
                     (self.queue_root.customfiles.count() == 0)):
                     self.logger.debug("Creating PENDING publishing record.")
                     self.queue_root.realiseUpload()
+                    # Closing bugs.
+                    changesfile_object = open(self.changes.filepath, 'r')
+                    closeBugsForQueueItem(
+                        self.queue_root, changesfile_object=changesfile_object)
+                    changesfile_object.close()
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
                 self.queue_root.setUnapproved()

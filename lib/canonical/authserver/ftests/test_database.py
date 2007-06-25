@@ -1,4 +1,4 @@
-# Copyright 2006 Canonical Ltd.  All rights reserved.
+# Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 """Tests for lib/canonical/authserver/database.py"""
 
@@ -8,13 +8,13 @@ import unittest
 
 from zope.interface.verify import verifyObject
 
-from canonical.database.sqlbase import sqlvalues
+from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
-    IUserDetailsStorageV2)
+    IUserDetailsStorageV2, READ_ONLY, WRITABLE)
 from canonical.authserver.database import (
     DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
     DatabaseBranchDetailsStorage)
@@ -22,8 +22,11 @@ from canonical.lp import dbschema
 
 from canonical.launchpad.ftests.harness import LaunchpadTestCase
 
+from canonical.testing.layers import LaunchpadScriptLayer
+
 
 class TestDatabaseSetup(LaunchpadTestCase):
+
     def setUp(self):
         super(TestDatabaseSetup, self).setUp()
         self.connection = self.connect()
@@ -35,7 +38,18 @@ class TestDatabaseSetup(LaunchpadTestCase):
         super(TestDatabaseSetup, self).tearDown()
 
 
-class DatabaseStorageTestCase(TestDatabaseSetup):
+class DatabaseStorageTestCase(unittest.TestCase):
+
+    layer = LaunchpadScriptLayer
+
+    def setUp(self):
+        LaunchpadScriptLayer.switchDbConfig('authserver')
+        super(DatabaseStorageTestCase, self).setUp()
+        self.cursor = cursor()
+
+    def tearDown(self):
+        self.cursor.close()
+        super(DatabaseStorageTestCase, self).tearDown()
 
     def test_verifyInterface(self):
         self.failUnless(verifyObject(IUserDetailsStorage,
@@ -99,7 +113,7 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
         userDict2 = storage._getUserInteraction(self.cursor,
                                                 'stuart.bishop@canonical.com')
         self.assertEqual(userDict, userDict2)
-        
+
     def test_preferredEmailFirst(self):
         # If there's a PREFERRED address, it should be first in the
         # emailaddresses list.  Let's make stuart@stuartbishop.net PREFERRED
@@ -156,11 +170,11 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
 
     def test_fetchProductID(self):
         storage = DatabaseUserDetailsStorageV2(None)
-        productID = storage._fetchProductIDInteraction(self.cursor, 'firefox')
+        productID = storage._fetchProductIDInteraction('firefox')
         self.assertEqual(4, productID)
-    
+
         # Invalid product names are signalled by a return value of ''
-        productID = storage._fetchProductIDInteraction(self.cursor, 'xxxxx')
+        productID = storage._fetchProductIDInteraction('xxxxx')
         self.assertEqual('', productID)
 
     def test_getBranchesForUser(self):
@@ -215,7 +229,8 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
             SELECT owner, product, name, title, summary, author FROM Branch
             WHERE id = %d"""
             % branchID)
-        self.assertEqual((12, 6, 'foo', None, None, 12), self.cursor.fetchone())
+        self.assertEqual(
+            [12, 6, 'foo', None, None, 12], self.cursor.fetchone())
 
         # Create a branch with NULL product too:
         branchID = storage._createBranchInteraction(self.cursor, 1, None, 'foo')
@@ -223,9 +238,39 @@ class DatabaseStorageTestCase(TestDatabaseSetup):
             SELECT owner, product, name, title, summary, author FROM Branch
             WHERE id = %d"""
             % branchID)
-        self.assertEqual((1, None, 'foo', None, None, 1),
-                         self.cursor.fetchone())
-        
+        self.assertEqual(
+            [1, None, 'foo', None, None, 1], self.cursor.fetchone())
+
+    def test_getBranchInformation_owned(self):
+        # When we get the branch information for one of our own branches (i.e.
+        # owned by us or by a team we are on), we get the database id of the
+        # branch, and a flag saying that we can write to that branch.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'name12', 'gnome-terminal', 'pushed')
+        self.assertEqual(25, branch_id)
+        self.assertEqual(WRITABLE, permissions)
+
+    def test_getBranchInformation_nonexistent(self):
+        # When we get the branch information for a non-existent branch, we get
+        # a tuple of two empty strings (the empty string being an approximation
+        # of 'None').
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'name12', 'gnome-terminal', 'doesnt-exist')
+        self.assertEqual('', branch_id)
+        self.assertEqual('', permissions)
+
+    def test_getBranchInformation_unowned(self):
+        # When we get the branch information for a branch that we don't own, we
+        # get the database id and a flag saying that we can only read that
+        # branch.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'sabdfl', 'firefox', 'release-0.8')
+        self.assertEqual(13, branch_id)
+        self.assertEqual(READ_ONLY, permissions)
+
 
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
     # Tests that do some database writes (but makes sure to roll them back)
@@ -299,7 +344,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         # In fact, it should return the same dict as getUser
         goodDict = storage._getUserInteraction(self.cursor, 'sabdfl')
         self.assertEqual(goodDict, userDict)
-        
+
         # And it should be the same as returned by looking them up by email
         # address.
         goodDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
@@ -401,7 +446,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         #    b) no wikiname for http://www.ubuntulinux.com/wiki/
         # (even though in the long run we want to make sure these situations can
         # never happen, until then the authserver should be robust).
-        
+
         # First, make sure that the sample user has no wikiname.
         self.cursor.execute("""
             DELETE FROM WikiName
@@ -429,7 +474,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         userDict2 = storage._getUserInteraction(self.cursor,
                                                 'test@canonical.com')
         self.assertEqual(userDict, userDict2)
-        
+
     def testTeamDict(self):
         # The user dict from a V2 storage should include a 'teams' element with
         # a list of team dicts, one for each team the user is in, including
@@ -451,7 +496,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
               'id': 25, 'name': u'admins'},
              {'displayname': u'testing Spanish team',
               'id': 53, 'name': u'testing-spanish-team'},
-             {'displayname': u'Mirror Administrators', 
+             {'displayname': u'Mirror Administrators',
               'id': 59, 'name': u'ubuntu-mirror-admins'},
              {'displayname': u'Registry Administrators', 'id': 60,
               'name': u'registry'},

@@ -21,41 +21,31 @@ from sqlobject import (
     ForeignKey, SQLMultipleJoin, SQLObjectNotFound)
 
 from canonical.archivepublisher.customupload import CustomUploadError
-from canonical.archiveuploader.nascentuploadfile import (
-    splitComponentAndSection)
-from canonical.archiveuploader.tagfiles import (
-    parse_tagfile_lines, TagFileParseError)
+from canonical.archiveuploader.tagfiles import parse_tagfile_lines
 from canonical.archiveuploader.template_messages import (
     rejection_template, new_template, accepted_template, announce_template)
-from canonical.archiveuploader.utils import (
-    safe_fix_maintainer, re_issource, re_isadeb)
+from canonical.archiveuploader.utils import safe_fix_maintainer
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 from canonical.encoding import (
     guess as guess_encoding, ascii_smash)
-from canonical.config import config
-from canonical.lp.dbschema import (
-    PackageUploadStatus, PackageUploadCustomFormat,
-    PackagePublishingPocket, PackagePublishingStatus,
-    ArchivePurpose)
-
+from canonical.launchpad.database.publishing import (
+    SecureSourcePackagePublishingHistory,
+    SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     IPackageUpload, IPackageUploadBuild, IPackageUploadSource,
     IPackageUploadCustom, NotFoundError, QueueStateWriteProtectedError,
     QueueInconsistentStateError, QueueSourceAcceptError, IPackageUploadQueue,
-    QueueBuildAcceptError, IPackageUploadSet, pocketsuffix, IPersonSet,
-    ISourcePackageNameSet)
-from canonical.launchpad.database.publishing import (
-    SecureSourcePackagePublishingHistory,
-    SecureBinaryPackagePublishingHistory)
+    QueueBuildAcceptError, IPackageUploadSet, pocketsuffix, IPersonSet)
 from canonical.launchpad.mail import format_address, sendmail
 from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from canonical.lp.dbschema import (
-    PackageUploadStatus, PackageUploadCustomFormat,
-    PackagePublishingPocket, PackagePublishingStatus)
+    PackageUploadStatus, PackageUploadCustomFormat, PackagePublishingPocket,
+    PackagePublishingStatus, SourcePackageFileType, ArchivePurpose)
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -164,22 +154,7 @@ class PackageUpload(SQLBase):
                 'Queue item already accepted')
 
         for source in self.sources:
-            # If two queue items have the same (name, version) pair,
-            # then there is an inconsistency.  Check the accepted & done
-            # queue items for each distro series for such duplicates
-            # and raise an exception if any are found.
-            # See bug #31038 & #62976 for details.
-            for distroseries in self.distroseries.distribution:
-                if distroseries.getQueueItems(
-                    status=[PackageUploadStatus.ACCEPTED,
-                            PackageUploadStatus.DONE],
-                    name=source.sourcepackagerelease.name,
-                    version=source.sourcepackagerelease.version,
-                    archive=self.archive, exact_match=True).count() > 0:
-                    raise QueueInconsistentStateError(
-                        'This sourcepackagerelease is already accepted in %s.'
-                        % distroseries.name)
-
+            source.verifyBeforeAccept()
             # if something goes wrong we will raise an exception
             # (QueueSourceAcceptError) before setting any value.
             # Mask the error with state-machine default exception
@@ -320,6 +295,7 @@ class PackageUpload(SQLBase):
         # the publishing tables, then the binaries, then we attempt
         # to publish the custom objects.
         for queue_source in self.sources:
+            queue_source.verifyBeforePublish()
             queue_source.publish(logger)
         for queue_build in self.builds:
             queue_build.publish(logger)
@@ -634,6 +610,9 @@ class PackageUpload(SQLBase):
 
     def _sendMail(self, mail_text):
         mail_message = message_from_string(ascii_smash(mail_text))
+        assert 'X-Katie' in mail_message.keys(), (
+            "Upload notification does not contain the mandatory"
+            "'X-Katie' header.")
         debug(self.logger, "Sent a mail:")
         debug(self.logger, "    Subject: %s" % mail_message['Subject'])
         debug(self.logger, "    Recipients: %s" % mail_message['To'])
@@ -730,6 +709,53 @@ class PackageUploadSource(SQLBase):
         dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease'
         )
+
+    def verifyBeforeAccept(self):
+        """See `IPackageUploadSource`."""
+        # Check for duplicate source version across all distroseries.
+        for distroseries in self.packageupload.distroseries.distribution:
+            if distroseries.getQueueItems(
+                status=[PackageUploadStatus.ACCEPTED,
+                        PackageUploadStatus.DONE],
+                name=self.sourcepackagerelease.name,
+                version=self.sourcepackagerelease.version,
+                archive=self.packageupload.archive,
+                exact_match=True).count() > 0:
+                raise QueueInconsistentStateError(
+                    'This sourcepackagerelease is already accepted in %s.'
+                    % self.packageupload.distroseries.name)
+
+    def verifyBeforePublish(self):
+        """See `IPackageUploadSource`."""
+        distribution = self.packageupload.distroseries.distribution
+        # Check for duplicate filenames currently present in the archive.
+        for source_file in self.sourcepackagerelease.files:
+            try:
+                published_file = distribution.getFileByName(
+                    source_file.libraryfile.filename, binary=False)
+            except NotFoundError:
+                # NEW files are *OK*.
+                continue
+
+            filename = source_file.libraryfile.filename
+            proposed_sha1 = source_file.libraryfile.content.sha1
+            published_sha1 = published_file.content.sha1
+
+            # Multiple orig(s) with the same content are fine.
+            if source_file.filetype == SourcePackageFileType.ORIG:
+                if proposed_sha1 == published_sha1:
+                    continue
+                raise QueueInconsistentStateError(
+                    '%s is already published in archive for %s with a different '
+                    'SHA1 hash (%s != %s)' % (
+                    filename, self.packageupload.distroseries.name,
+                    proposed_sha1, published_sha1))
+
+            # Any dsc(s), targz(s) and diff(s) already present
+            # are a very big problem.
+            raise QueueInconsistentStateError(
+                '%s is already published in archive for %s' % (
+                filename, self.packageupload.distroseries.name))
 
     def checkComponentAndSection(self):
         """See IPackageUploadSource."""

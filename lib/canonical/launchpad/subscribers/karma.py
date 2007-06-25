@@ -3,7 +3,6 @@
 """ karma.py -- handles all karma assignments done in the launchpad
 application."""
 
-from canonical.launchpad.interfaces import IDistroBugTask, IDistroSeriesBugTask
 from canonical.launchpad.mailnotification import get_bug_delta
 from canonical.lp.dbschema import BugTaskStatus, QuestionAction
 
@@ -39,7 +38,7 @@ def _assignKarmaUsingBugContext(person, bug, actionname):
     actionname to the given person.
     """
     for task in bug.bugtasks:
-        if task.status == BugTaskStatus.REJECTED:
+        if task.status == BugTaskStatus.INVALID:
             continue
         _assign_karma_using_bugtask_context(person, task, actionname)
 
@@ -90,7 +89,7 @@ def bugtask_modified(bugtask, event):
 
     actionname_status_mapping = {
         BugTaskStatus.FIXRELEASED: 'bugfixed',
-        BugTaskStatus.REJECTED: 'bugrejected',
+        BugTaskStatus.INVALID: 'bugrejected',
         BugTaskStatus.CONFIRMED: 'bugaccepted'}
 
     if task_delta.status:

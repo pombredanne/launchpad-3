@@ -137,7 +137,8 @@ team's renewal policy is ONDEMAND.
     ...     landscape_devs, mirror_admins.teamowner, force_team_add=True)
     >>> membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
     ...     landscape_devs, mirror_admins)
-    >>> membership.dateexpires = now + timedelta(days=1)
+    >>> membership.setExpirationDate(
+    ...     now + timedelta(days=1), mirror_admins.teamowner)
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> logout()
