@@ -9,6 +9,7 @@ __all__ = [
     'EntitlementQuota',
     'EntitlementQuotaExceededError',
     'IEntitlement',
+    'IEntitlementSet',
     ]
 
 import sys
@@ -109,6 +110,49 @@ class IEntitlement(Interface):
 
     def incrementAmountUsed():
         """Add one to the amount used."""
+
+
+class IEntitlementSet(Interface):
+    """Interface representing a set of Entitlements."""
+
+    def __getitem__(entitlement_id):
+        """Return the entitlement with the given id.
+
+        Raise NotFoundError if there is no such entitlement.
+        """
+
+    def __iter__():
+        """Return an iterator that will go through all entitlements."""
+
+    def count():
+        """Return the number of entitlements in the database.
+
+        Only counts public entitlementes.
+        """
+
+    def get(entitlement_id, default=None):
+        """Return the entitlement with the given id.
+
+        Return the default value if there is no such entitlement.
+        """
+
+    def getForPerson(person):
+        """Return the entitlements for the person or team.
+
+        Get all entitlements for a person.
+        """
+
+    def getValidForPerson(person):
+        """Return a list of valid entitlements for the person or team.
+
+        Get all valid entitlements for a person.  None is returned if no valid
+        entitlements are found.
+        """
+
+    def new(entitlement_id, person, quota, entitlement_type,
+            state, date_created=None, date_expires=None, date_starts=None,
+            amount_used=None, registrant=None, approved_by=None):
+        """Create a new entitlement."""
 
 
 class EntitlementQuota:

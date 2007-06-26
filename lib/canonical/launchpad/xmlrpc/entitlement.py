@@ -20,18 +20,47 @@ from canonical.lp.dbschema import EntitlementStatus
 class IEntitlementAPI(Interface):
     """An XMLRPC interface for dealing with entitlements."""
 
-    def get_entitlements_for_person(
-    def register_branch(branch_url, branch_name, branch_title,
-                        branch_description, author_email, product_name):
-        """Register a new branch in Launchpad."""
+    def create_entitlement(person_id, entitlement_id, entitlement_type,
+                           quota, state):
+        """Create a new entitlement in Launchpad."""
 
-    def link_branch_to_bug(branch_url, bug_id, whiteboard):
-        """Link the branch to the bug."""
+    def update_entitlement(person_id, entitlement_id,
+                           entitlement_type=None,
+                           quota=None,
+                           amount_used=None,
+                           state=None):
+        """Update an entitlement in Launchpad."""
 
 
-class BranchSetAPI(LaunchpadXMLRPCView):
+class IEntitlementAPI(LaunchpadXMLRPCView):
 
-    implements(IBranchSetAPI)
+    implements(IEntitlementAPI)
+
+    def create_entitlement(self, person_id, external_id,
+                           entitlement_type, quota,
+                           state):
+        """See IEntitlementAPI."""
+        user = getUtility(ILaunchBag).user
+        assert user is not None, (
+            "Creating an entitlement is not accessible to "
+            "unathenticated requests.")
+
+        owner = getUtility(IPersonSet).get(person_id)
+        if owner is None:
+            return faults.NoSuchPersonOrTeam(name=person_id)
+
+        if external_id is None:
+            return faults.RequiredParameterMissing(
+                parameter_name="external_id")
+
+        if quota is None:
+            return faults.RequiredParameterMissing(
+                parameter_name="quota")
+
+        if state is None:
+            return faults.RequiredParameterMissing(
+                parameter_name="state")
+
 
     def register_branch(self, branch_url, branch_name, branch_title,
                         branch_description, author_email, product_name):

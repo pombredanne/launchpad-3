@@ -11,6 +11,7 @@ __all__ = [
     'NoSuchPackage',
     'NoSuchProduct',
     'NoSuchPerson',
+    'NoSuchPersonOrTeam',
     'NoSuchBranch',
     'NoSuchBug',
     'RequiredParameterMissing',
@@ -65,6 +66,18 @@ class NoSuchPerson(LaunchpadFault):
 
     def __init__(self, email_address, type="user"):
         LaunchpadFault.__init__(self, type=type, email_address=email_address)
+
+
+class NoSuchPersonOrTeam(LaunchpadFault):
+    """There's no Person or Team with the specified name in Launchpad."""
+
+    error_code = 20
+    msg_template = (
+        'Invalid Person or Team: No person or team with the name '
+        '"%(name)s" was found')
+
+    def __init__(self, name):
+        LaunchpadFault.__init__(self, name=name)
 
 
 class NoSuchBranch(LaunchpadFault):

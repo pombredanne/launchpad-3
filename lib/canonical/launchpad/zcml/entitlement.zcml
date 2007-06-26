@@ -11,8 +11,18 @@
         />
     <require
         permission="launchpad.Admin"
-        set_attributes="quota amount_used status whiteboard"
+        set_attributes="quota amount_used state whiteboard date_starts date_expires"
         />
   </content>
 
+  <!-- EntitlementSet -->
+  <content class="canonical.launchpad.database.EntitlementSet">
+    <allow interface="canonical.launchpad.interfaces.IEntitlementSet" />
+  </content>
+
+  <securedutility
+      class="canonical.launchpad.database.EntitlementSet"
+      provides="canonical.launchpad.interfaces.IEntitlementSet" >
+    <allow interface="canonical.launchpad.interfaces.IEntitlementSet" />
+  </securedutility>
 </configure>

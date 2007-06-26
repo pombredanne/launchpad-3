@@ -1,7 +1,7 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Entitlement']
+__all__ = ['Entitlement', 'EntitlementSet']
 
 from datetime import datetime
 import pytz
@@ -13,10 +13,10 @@ from sqlobject import ForeignKey, IntCol, StringCol
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import quote, SQLBase
 from canonical.launchpad.interfaces import (
     EntitlementInvalidError, EntitlementQuota, EntitlementQuotaExceededError,
-    IEntitlement)
+    IEntitlement, IEntitlementSet)
 
 from canonical.lp.dbschema import EntitlementState, EntitlementType
 
@@ -24,8 +24,8 @@ class Entitlement(SQLBase):
     """A table recording the entitlements for a person or team."""
 
     implements(IEntitlement)
-
     _table = 'Entitlement'
+    _defaultOrder = ['person', '-date_expires']
 
     person = ForeignKey(
         dbName='person', foreignKey='Person',
@@ -107,3 +107,64 @@ class Entitlement(SQLBase):
             self.amount_used -= 1
             raise EntitlementQuotaExceededError(
                 "The quota for this entitlement has been exceeded.")
+
+class EntitlementSet:
+    """The set of all entitlements."""
+
+    implements(IEntitlementSet)
+
+    def __getitem__(self, entitlement_id):
+        """See IEntitlementSet."""
+        entitlement = self.get(entitlement_id)
+        if entitlement is None:
+            raise NotFoundError(entitlement_id)
+        return entitlement
+
+    def __iter__(self):
+        """See IEntitlementSet."""
+        return iter(Entitlement.select())
+
+    def count(self):
+        """See IEntitlementSet."""
+        return Entitlement.select().count()
+
+    def get(self, entitlement_id, default=None):
+        """See IEntitlementSet."""
+        try:
+            return Entitlement.get(entitlement_id)
+        except SQLObjectNotFound:
+            return default
+
+    def getForPerson(self, person):
+        """See IEntitlementSet."""
+        return Entitlement.select('Entitlement.person=person')
+
+    def getValidForPerson(self, person):
+        """See IEntitlementSet."""
+        entitlements = self.getForPerson(person)
+        if entitlements:
+            entitlements = [
+            entitlement
+            for entitlement in entitlements
+            if entitlement.is_valid]
+        return entitlements
+
+    def new(self, person, quota, entitlement_type,
+            state, date_created=None, date_starts=None, date_expires=None,
+            amount_used=0, registrant=None, approved_by=None):
+        """See IEntitlementSet."""
+
+        if date_created is None:
+            date_created = datetime.now(pytz.timezone('UTC'))
+
+        return Entitlement(
+            person=person,
+            quota=quota,
+            entitlement_type=entitlement_type,
+            state=state,
+            date_created=date_created,
+            date_starts=date_starts,
+            date_expires=date_expires,
+            amount_used=amount_used,
+            registrant=registrant,
+            approved_by=approved_by)
