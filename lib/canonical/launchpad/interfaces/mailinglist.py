@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'IMailingList',
+    'IMailingListRegistry',
     ]
 
 
@@ -14,7 +15,7 @@ from zope.schema import Datetime, Int, Text
 from canonical.launchpad import _
 
 
-class IMailingList:
+class IMailingList(Interface):
     """A mailing list."""
 
     team = Attribute(_("The mailing list's team."))
@@ -25,14 +26,8 @@ class IMailingList:
         title=_('The date on which this mailing list was registered'),
         required=True, readonly=True)
 
-    reviewer = Int(
-        title=_('The person who reviewed this mailing list registration'),
-        description=_('All mailing list registrations must be reviewed by '
-                      'a Launchpad administrator.  The reviewer is the person '
-                      'who formally accepts or declines the team mailing list '
-                      'registration.  This may be None to indicate that the '
-                      'list registration has not yet been reviewed.')
-        )
+    reviewer = Attribute(
+        _('The person who reviewed this mailing list registration'))
 
     date_reviewed = Datetime(
         title=_('The date on which this mailing list registration was '
@@ -43,12 +38,12 @@ class IMailingList:
         )
 
     date_activated = Datetime(
-        title_('The date on which this mailing list registration was '
-               'activated'),
-        description=("A team's mailing list is activated once (and if) the "
-                     'Mailman process has successfully created it.  This '
-                     'may be None to indicate that the list has not yet been '
-                     'activated, or that its activation has failed.')
+        title=_('The date on which this mailing list registration was '
+                'activated'),
+        description=_("A team's mailing list is activated once (and if) the "
+                      'Mailman process has successfully created it.  This '
+                      'may be None to indicate that the list has not yet been '
+                      'activated, or that its activation has failed.')
         )
 
     status = Int(
@@ -102,7 +97,7 @@ class IMailingList:
         """
 
 
-class IMailingListRegistry:
+class IMailingListRegistry(Interface):
     """A mailing list registration service."""
 
     def register(team):
