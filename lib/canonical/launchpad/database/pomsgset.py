@@ -270,6 +270,12 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         msgids_text = [messageid.msgid
                        for messageid in potmsgset.getPOMsgIDs()]
 
+        # If the update is on the locked-to-published message, yet
+        # update is not published, silently return
+        # XXX 20070626 Danilo: do we want to raise an exception here?
+        if potmsgset.locked_to_published and not published:
+            return
+
         # By default all translations are correct.
         validation_status = TranslationValidationStatus.OK
 

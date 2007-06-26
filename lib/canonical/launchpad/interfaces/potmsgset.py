@@ -124,3 +124,10 @@ class IPOTMsgSet(Interface):
         Messages that are likely to contain email addresses
         are shown only to logged-in users, and not to anonymous users.
         """)
+
+    locked_to_published = Attribute(
+        """Whether the translation updates are restricted to published ones.
+
+        Example of messages locked to published translations and future
+        published updates are translation credit strings.
+        """)

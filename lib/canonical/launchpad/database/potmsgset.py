@@ -303,6 +303,19 @@ class POTMsgSet(SQLBase):
             u'translation-credits',
             u'translator-credits',
             u'translator_credits',
+            u'_: EMAIL OF TRANSLATORS\nYour emails'
+            ]
+
+
+    @property
+    def locked_to_published(self):
+        """See IPOTMsgSet."""
+        # primemsgid_.msgid is pre-joined everywhere where
+        # hide_translations_from_anonymous is used
+        return self.primemsgid_.msgid in [
+            u'translation-credits',
+            u'translator-credits',
+            u'translator_credits',
             u'_: EMAIL OF TRANSLATORS\nYour emails',
             u'_: NAME OF TRANSLATORS\nYour names'
             ]
