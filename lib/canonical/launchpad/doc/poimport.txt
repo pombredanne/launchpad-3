@@ -496,6 +496,9 @@ We don't touch entries that were in the queue previously.
 
 And run the cronscript.
 
+    >>> # XXX: JeroenVermeulen 2007-06-26, these script runs take a long time
+    >>> # (about 10 seconds each on my machine) so we could save some time
+    >>> # here, maybe by creating & running ImportProcess objects directly.
     >>> import subprocess, sys
     >>> process = subprocess.Popen([
     ...     sys.executable, 'cronscripts/rosetta-poimport.py',
