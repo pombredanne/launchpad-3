@@ -61,6 +61,7 @@
       #auth label {display: inline-block; margin-bottom: 0.25em;}
       code {font-weight: bold;}
       #lpinfo {
+        clear: both;
         width: 50%;
         margin-left: 25%;
       }
