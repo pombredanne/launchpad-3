@@ -6,6 +6,7 @@ import unittest
 
 from zope.component import getMultiAdapter
 
+from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import login
 from canonical.launchpad.systemhomes import ShipItApplication
@@ -206,12 +207,44 @@ class TestShippingRun(LaunchpadFunctionalTestCase):
 
 class TestShippingRequest(LaunchpadFunctionalTestCase):
 
-    def test_requests_that_can_be_approved_denied_or_changed(self):
-        requestset = ShippingRequestSet()
+    def setUp(self):
+        self.requestset = ShippingRequestSet()
+        LaunchpadFunctionalTestCase.setUp(self)
 
+    def test_recipient_email_for_users(self):
+        # If a user is active, its requests will have his preferred email as
+        # the recipient_email.
+        requests = self.requestset.search(recipient_text='Kreutzmann')
+        self.failIf(requests.count() == 0)
+        request = requests[0]
+        self.failUnlessEqual(
+            request.recipient.preferredemail.email, request.recipient_email)
+
+        # If the user becomes inactive (which can be done by having his
+        # account closed by an admin or by the user himself), though, the
+        # recipient_email will be just a piece of text explaining that.
+        request.recipient.preferredemail.destroySelf()
+        # Need to clean the cache because preferredemail is a cached property.
+        request.recipient._preferredemail_cached = None
+        self.failIf(request.recipient.preferredemail is not None)
+        self.failUnlessEqual(
+            u'inactive account -- no email address', request.recipient_email)
+
+    def test_recipient_email_for_shipit_admins(self):
+        # Requests made using the admin interface will have the shipit admins
+        # team as the recipient and thus its recipient_email property will
+        # return config.shipit.admins_email_address no matter what the email
+        # address for that team is.
+        requests = self.requestset.search(recipient_text='shipit-admins')
+        self.failIfEqual(requests.count(), 0)
+        for request in requests:
+            self.failUnlessEqual(
+                request.recipient_email, config.shipit.admins_email_address)
+
+    def test_requests_that_can_be_approved_denied_or_changed(self):
         # Requests pending approval can be approved and denied but not
         # changed.
-        pending_request = requestset.getOldestPending()
+        pending_request = self.requestset.getOldestPending()
         self.failUnless(pending_request.isAwaitingApproval())
         self.failUnless(pending_request.canBeApproved())
         self.failUnless(pending_request.canBeDenied())
@@ -242,7 +275,8 @@ class TestShippingRequest(LaunchpadFunctionalTestCase):
         # denied.
         shipped_request = cancelled_request
         shipped_request.status = ShippingRequestStatus.APPROVED
-        shippingrun = requestset._create_shipping_run([shipped_request.id])
+        shippingrun = self.requestset._create_shipping_run(
+            [shipped_request.id])
         flush_database_updates()
         self.failUnless(shipped_request.isShipped())
         self.failIf(shipped_request.canBeApproved())

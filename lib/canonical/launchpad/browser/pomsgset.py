@@ -943,12 +943,16 @@ class POMsgSetView(LaunchpadView):
         # allows us later to just iterate over them in the view code
         # using a generic template.
         self.suggestion_blocks = {}
+        self.suggestions_count = {}
         self.pluralform_indices = range(self.context.pluralforms)
         for index in self.pluralform_indices:
             non_editor, elsewhere, wiki, alt_lang_suggestions = \
                 self._buildAllSuggestions(index)
             self.suggestion_blocks[index] = \
                 [non_editor, elsewhere, wiki, alt_lang_suggestions]
+            self.suggestions_count[index] = (
+                len(non_editor.submissions) + len(elsewhere.submissions) +
+                len(wiki.submissions) + len(alt_lang_suggestions.submissions))
 
         # Initialise the translation dictionaries used from the
         # translation form.
@@ -956,6 +960,7 @@ class POMsgSetView(LaunchpadView):
 
         for index in self.pluralform_indices:
             active = self.getActiveTranslation(index)
+            published = self.getPublishedTranslation(index)
             translation = self.getTranslation(index)
             if (translation is None and
                 self.user_is_official_translator):
@@ -968,6 +973,11 @@ class POMsgSetView(LaunchpadView):
                              count_lines(self.singular_text) > 1 or
                              count_lines(self.plural_text) > 1)
             active_submission = self.context.getActiveSubmission(index)
+            if active_submission and active_submission.published:
+                published_submission = None
+            else:
+                published_submission = (
+                    self.context.getPublishedSubmission(index))
             is_same_translator = active_submission is not None and (
                 active_submission.person.id == self.context.reviewer.id)
             is_same_date = active_submission is not None and (
@@ -978,7 +988,11 @@ class POMsgSetView(LaunchpadView):
                     active, self.context.potmsgset.flags()),
                 'translation': translation,
                 'active_submission': active_submission,
+                'published_translation': text_to_html(
+                    published, self.context.potmsgset.flags()),
+                'published_submission': published_submission,
                 'suggestion_block': self.suggestion_blocks[index],
+                'suggestions_count': self.suggestions_count[index],
                 'store_flag': index in self.plural_indices_to_store,
                 'is_multi_line': is_multi_line,
                 'same_translator_and_reviewer': (is_same_translator and
@@ -1058,10 +1072,12 @@ class POMsgSetView(LaunchpadView):
         # other pruners which are dicts, but prune_dict copes well with
         # it.
         active_translations = set([self.context.active_texts[index]])
+        published_translations = set([self.context.published_texts[index]])
 
         wiki_translations_clean = prune_dict(wiki_translations,
-           [current_translations, non_editor_translations, active_translations])
-        wiki = self._buildSuggestions("Suggested elsewhere",
+           [current_translations, non_editor_translations,
+            active_translations, published_translations])
+        wiki = self._buildSuggestions("Suggested in",
             wiki_translations_clean.values())
 
         non_editor_translations = prune_dict(non_editor_translations,
@@ -1071,8 +1087,9 @@ class POMsgSetView(LaunchpadView):
             non_editor_translations.values())
 
         elsewhere_translations = prune_dict(current_translations,
-                                            [active_translations])
-        elsewhere = self._buildSuggestions("Used elsewhere",
+                                            [active_translations,
+                                             published_translations])
+        elsewhere = self._buildSuggestions("Used in",
             elsewhere_translations.values())
 
         if self.second_lang_potmsgset is None:
@@ -1099,17 +1116,31 @@ class POMsgSetView(LaunchpadView):
             title, self.context, submissions[:self.max_entries],
             self.user_is_official_translator)
 
+    def getOfficialTranslation(self, index, published = False):
+         """Return active or published translation for pluralform 'index'."""
+         assert index in self.pluralform_indices, (
+             'There is no plural form #%d for %s language' % (
+                 index, self.context.pofile.language.displayname))
+
+         if published:
+             translation = self.context.published_texts[index]
+         else:
+             translation = self.context.active_texts[index]
+         # We store newlines as '\n', '\r' or '\r\n', depending on the
+         # msgid but forms should have them as '\r\n' so we need to change
+         # them before showing them.
+         if translation is not None:
+             return convert_newlines_to_web_form(translation)
+         else:
+             return None
+
     def getActiveTranslation(self, index):
         """Return the active translation for the pluralform 'index'."""
-        assert index in self.pluralform_indices, (
-            'There is no plural form #%d for %s language' % (
-                index, self.context.pofile.language.displayname))
+        return self.getOfficialTranslation(index)
 
-        translation = self.context.active_texts[index]
-        # We store newlines as '\n', '\r' or '\r\n', depending on the text to
-        # translate; but forms should have them as '\r\n' so we need to change
-        # line endings before showing them.
-        return convert_newlines_to_web_form(translation)
+    def getPublishedTranslation(self, index):
+        """Return the published translation for the pluralform 'index'."""
+        return self.getOfficialTranslation(index, published=True)
 
     def getTranslation(self, index):
         """Return the translation submitted for the pluralform 'index'."""
@@ -1269,6 +1300,10 @@ class POMsgSetSuggestions:
     """See `IPOMsgSetSuggestions`."""
 
     implements(IPOMsgSetSuggestions)
+
+    def isFromSamePOFile(self, submission):
+        """Return if submission is from the same PO file as a POMsgSet."""
+        return self.pomsgset.pofile == submission['pomsgset'].pofile
 
     def __init__(self, title, pomsgset, submissions,
                  user_is_official_translator):

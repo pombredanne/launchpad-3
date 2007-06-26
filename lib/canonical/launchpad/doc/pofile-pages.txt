@@ -191,14 +191,30 @@ And check again.
 The messages displayed on the +translate page are always in ascending order of
 their POTMsgSets' sequence numbers.
 
-    >>> last = None
     >>> for potmsgset in pofile_view._getSelectedPOTMsgSets():
-    ...     if last is None:
-    ...         print "Start"
-    ...     elif potmsgset.sequence <= last.sequence:
-    ...         print "Wrong order!"
-    ...     last = potmsgset
-    Start
+    ...     print potmsgset.sequence
+    1
+    2
+    3
+    4
+    5
+    6
+    7
+    8
+    9
+    10
+    11
+    12
+    13
+    14
+    15
+    16
+    17
+    18
+    19
+    20
+    21
+    22
 
 Also, we get redirected to the next batch.
 
