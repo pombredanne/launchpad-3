@@ -99,8 +99,9 @@
         </metal:block></div>
         <div id="auth"><metal:block define-slot="auth">
         </metal:block></div>
+
         <div id="lpinfo">
-          <h2>What is LaunchPad and a LaunchPad Account?</h2>
+          <h2>What is Launchpad and a Launchpad Account?</h2>
 
           <p>Launchpad is the central point where we gather all
           sorts of interactions around Ubuntu, Canonical and free
