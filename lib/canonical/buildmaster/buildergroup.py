@@ -216,6 +216,7 @@ class BuilderGroup:
             self.commit()
             return
 
+        logtail = removeSecurityProxy(logtail)
         method = builder_status_handlers[builder_status]
         try:
             # XXX cprov 20070525: We need this code for WAITING status
