@@ -78,12 +78,8 @@ registration date is set, and its status is set to REGISTERED.
 
     >>> list_one.team.displayname
     u'Team One'
-    >>> list_one.team is team_one
-    True
     >>> list_one.registrant.name
     u'ddaa'
-    >>> list_one.registrant is team_one.teamowner
-    True
     >>> registration_date <= list_one.date_registered <= datetime.now(utc)
     True
     >>> list_one.status.name
@@ -101,8 +97,9 @@ welcome message text.
     >>> print list_one.welcome_message_text
     None
 
-The mailing list's registrant does not change if the team's owner changes.
+The mailing list's registrant does notchange even if the team's owner changes.
 
+    >>> login('carlos@canonical.com')
     >>> carlos = personset.getByName('carlos')
     >>> team_one.teamowner = carlos
     >>> flush_database_updates()
