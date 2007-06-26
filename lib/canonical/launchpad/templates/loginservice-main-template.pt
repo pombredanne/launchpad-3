@@ -60,6 +60,10 @@
       #auth input[type="submit"] {margin-top: 1em;}
       #auth label {display: inline-block; margin-bottom: 0.25em;}
       code {font-weight: bold;}
+      #lpinfo {
+        width: 50%;
+        margin-left: 25%;
+      }
     </style>
   </head>
 
@@ -94,6 +98,15 @@
         </metal:block></div>
         <div id="auth"><metal:block define-slot="auth">
         </metal:block></div>
+        <div id="lpinfo">
+          <h2>What is LaunchPad and a LaunchPad Account?</h2>
+
+          <p>Launchpad is the central point where we gather all
+          sorts of interactions around Ubuntu, Canonical and free
+          software generally.  You can use your Launchpad account to
+          report bugs, to find or contribute translations, to find
+          specs, to contribute code, or to simply buy a t-shirt.</p>
+        </div>
       </metal:block></div>
       <div style="clear: both;">&nbsp;</div>
     </div>
