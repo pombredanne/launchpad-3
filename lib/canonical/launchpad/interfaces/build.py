@@ -139,6 +139,14 @@ class IBuildSet(Interface):
         sourcepackagename matches (SQL LIKE).
         """
 
+    def getBuildsForArchive(archive, status=None, name=None, pocket=None):
+        """Return build records targeted to a given IArchive.
+
+        If status is provided, only builders with that status will
+        be returned. If name is passed, return only build which the
+        sourcepackagename matches (SQL LIKE).
+        """
+
     def getBuildsByArchIds(arch_ids, status=None, name=None, pocket=None):
         """Retrieve Build Records for a given arch_ids list.
 

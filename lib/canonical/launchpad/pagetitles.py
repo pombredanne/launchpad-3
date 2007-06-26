@@ -100,6 +100,12 @@ class ContextBugId(SubstitutionHelper):
 
 archive_index = ContextTitle('%s')
 
+archive_builds = ContextTitle('Builds for %s')
+
+archive_edit = ContextTitle('Edit %s')
+
+archive_admin = ContextTitle('Administer %s')
+
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
 bazaar_index = 'Launchpad Code'

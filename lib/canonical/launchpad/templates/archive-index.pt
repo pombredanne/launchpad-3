@@ -11,12 +11,17 @@
 
 
     <metal:leftportlets fill-slot="portlets_one">
-
+      <div tal:replace="structure context/owner/@@+portlet-details" />
     </metal:leftportlets>
 
     <div metal:fill-slot="main">
 
-       <p>YAY !!!</p>
+      <div>
+         <tal:archive-description
+              replace="structure context/description/fmt:text-to-html" />
+       </div>
+
+        <h2>Packages</h2>
 
     </div>
 

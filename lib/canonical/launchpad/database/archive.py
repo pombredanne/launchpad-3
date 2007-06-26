@@ -8,20 +8,23 @@ __all__ = ['Archive', 'ArchiveSet']
 
 import os
 
-from sqlobject import StringCol, ForeignKey, SingleJoin
+from sqlobject import StringCol, ForeignKey, BoolCol, IntCol
+from zope.component import getUtility
 from zope.interface import implements
+
 
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.interfaces import IArchive, IArchiveSet
+from canonical.launchpad.interfaces import (
+    IArchive, IArchiveSet, IHasOwner, IHasBuildRecords, IBuildSet)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackageUploadStatus)
 
 
 class Archive(SQLBase):
-    implements(IArchive)
+    implements(IArchive, IHasOwner, IHasBuildRecords)
     _table = 'Archive'
     _defaultOrder = 'id'
 
@@ -29,6 +32,13 @@ class Archive(SQLBase):
         foreignKey='Person', dbName='owner', notNull=False)
 
     description = StringCol(dbName='description', notNull=False, default=None)
+
+    enabled = BoolCol(dbName='enabled', notNull=False, default=True)
+
+    authorized_size = IntCol(
+        dbName='authorized_size', notNull=False, default=104857600)
+
+    whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
 
     @property
     def distribution(self):
@@ -39,6 +49,20 @@ class Archive(SQLBase):
         # 20050817.013453.5c129f83.en.html
         from canonical.launchpad.database.distribution import Distribution
         return Distribution.selectOneBy(main_archive=self.id)
+
+    @property
+    def title(self):
+        """See IArchive."""
+        if self.owner is not None:
+            return '%s PPA' % self.owner.displayname
+        # XXX cprov 20070606: We really need to have a FK to the distri
+        return '%s main archive' % self.distribution.title
+
+    @property
+    def archive_url(self):
+        """See IArchive."""
+        return urlappend(
+            config.personalpackagearchive.base_url, self.owner.name)
 
     def getPubConfig(self, distribution):
         """See IArchive."""
@@ -61,19 +85,11 @@ class Archive(SQLBase):
 
         return pubconf
 
-    @property
-    def archive_url(self):
-        """See IArchive."""
-        return urlappend(
-            config.personalpackagearchive.base_url, self.owner.name)
+    def getBuildRecords(self, status=None, name=None, pocket=None):
+        """See IHasBuildRecords"""
+        return getUtility(IBuildSet).getBuildsForArchive(
+            self, status, name, pocket)
 
-    @property
-    def title(self):
-        """See IArchive."""
-        if self.owner is not None:
-            return '%s PPA' % self.owner.displayname
-        # XXX cprov 20070606: We really need to have a FK to the distri
-        return '%s main archive' % self.distribution.title
 
 class ArchiveSet:
     implements(IArchiveSet)

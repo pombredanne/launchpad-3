@@ -401,6 +401,44 @@ class BuildSet:
         return Build.select(" AND ".join(queries), clauseTables=clauseTables,
                             orderBy=orderBy)
 
+    def getBuildsForArchive(self, archive, status=None, name=None, pocket=None):
+        """See IBuildSet."""
+        queries = []
+        clauseTables = []
+
+        if status:
+            queries.append('buildstate=%s' % sqlvalues(status))
+
+        if pocket:
+            condition_clauses.append('pocket=%s' % sqlvalues(pocket))
+
+        if name:
+            queries.append("Build.sourcepackagerelease="
+                           "Sourcepackagerelease.id")
+            queries.append("Sourcepackagerelease.sourcepackagename="
+                           "Sourcepackagename.id")
+            queries.append("Sourcepackagename.name LIKE '%%' || %s || '%%'"
+                           % quote_like(name))
+            clauseTables.append('Sourcepackagerelease')
+            clauseTables.append('Sourcepackagename')
+
+        # Ordering according status
+        # * SUPERSEDED & All by -datecreated
+        # * FULLYBUILT & FAILURES by -datebuilt
+        # It should present the builds in a more natural order.
+        if status == BuildStatus.SUPERSEDED or status is None:
+            orderBy = ["-Build.datecreated"]
+        else:
+            orderBy = ["-Build.datebuilt"]
+        # All orders fallback to -id if the primary order doesn't succeed
+        orderBy.append("-id")
+
+        queries.append("archive=%s" % sqlvalues(archive))
+        clause = " AND ".join(queries)
+
+        return Build.select(
+            clause, clauseTables=clauseTables,orderBy=orderBy)
+
     def getBuildsByArchIds(self, arch_ids, status=None, name=None,
                            pocket=None):
         """See IBuildSet."""

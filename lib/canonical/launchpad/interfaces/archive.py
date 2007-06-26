@@ -10,21 +10,38 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Text
+from zope.schema import Text, Choice, Int, Bool
 
 from canonical.launchpad import _
+from canonical.launchpad.interfaces import IHasOwner
 
 
-class IArchive(Interface):
+class IArchive(Interface, IHasOwner):
     """An Archive interface"""
 
     id = Attribute("The archive ID.")
 
-    owner = Attribute("The owner of the archive, or None for the main "
-                      "archive of a distribution")
+    owner = Choice(
+        title=_('Owner'), required=True, vocabulary='ValidOwner',
+        description=_("""The PPA owner."""))
+
     description = Text(
-        title=_("Archive Contents Description"), required=False,
-        description=_("A short description of contents of this Archive."))
+        title=_("PPA contents description"), required=False,
+        description=_("A short description of contents of this PPA."))
+
+    enabled = Bool(
+        title=_("Enabled"), required=False,
+        description=_("Whether the PPA is enabled or not."))
+
+    authorized_size = Int(
+        title=_("Authorized PPA size "), required=False,
+        description=_("Maximum size, in bytes, allowed for this PPA."))
+
+    whiteboard = Text(
+        title=_("Whiteboard"), required=False,
+        description=_("Administrator comments."))
+
+
     archive_url = Attribute("External archive URL.")
     title = Attribute("Archive Title.")
     distribution = Attribute('Distribution related to this Archive.')
