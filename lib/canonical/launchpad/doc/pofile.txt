@@ -688,6 +688,43 @@ Lets check that the updatesCount() is also properly updated.
   >>> pofile_changed.updatesCount()
   2
 
+
+== Locked translations ==
+
+Some translations are locked for updates except published ones, like
+'translation-credits'.
+
+Lets get Spanish translation for alsa-utils.
+
+  >>> alsautils = getUtility(IProductSet).getByName('alsa-utils')
+  >>> alsa_trunk = alsautils.getSeries('trunk')
+  >>> alsa_template = alsa_trunk.getPOTemplate('alsa-utils')
+  >>> alsa_translation = alsa_template.getPOFileByLang('es')
+
+This translation file contains untranslated translation-credits message.
+
+  >>> translation_credits = (
+  ...     alsa_translation.getPOMsgSet(u"translation-credits"))
+  >>> print translation_credits.active_texts
+  [None]
+
+If we submit a published translation, the translation for this message
+is updated.
+
+  >>> translation_credits.updateTranslationSet(
+  ...     alsa_translation.owner, {0: u'Happy translator'}, fuzzy=False,
+  ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
+  >>> print translation_credits.active_texts
+  [u'Happy translator']
+
+If we submit non-published translation, it's refused.
+
+  >>> translation_credits.updateTranslationSet(
+  ...     alsa_translation.owner, {0: u'Unhappy translator'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> print translation_credits.active_texts
+  [u'Happy translator']
+
 = POFile Security tests =
 
 Import the function that will help us to do this test.
