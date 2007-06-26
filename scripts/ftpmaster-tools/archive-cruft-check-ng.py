@@ -24,13 +24,13 @@ def main():
 
     logger_options(parser)
 
-    parser.add_option("-d", "--distro", dest="distro",
-                      help="remove from DISTRO")
-    parser.add_option("-n", "--no-action", dest="action",
-                      default=True, action="store_false",
-                      help="don't do anything")
-    parser.add_option("-s", "--suite", dest="suite",
-                      help="only act on SUITE")
+    parser.add_option(
+        "-d", "--distro", dest="distro", help="remove from DISTRO")
+    parser.add_option(
+        "-n", "--no-action", dest="action", default=True,
+        action="store_false", help="don't do anything")
+    parser.add_option(
+        "-s", "--suite", dest="suite", help="only act on SUITE")
 
     (options, args) = parser.parse_args()
 
@@ -51,9 +51,9 @@ def main():
         log.error('ARCHIVEPATH is require')
         return 1
 
-    checker = ArchiveCruftChecker(log, distribution_name=options.distro,
-                                  suite=options.suite,
-                                  archive_path=archive_path)
+    checker = ArchiveCruftChecker(
+        log, distribution_name=options.distro, suite=options.suite,
+        archive_path=archive_path)
 
     try:
         checker.initialize()
@@ -61,9 +61,10 @@ def main():
         log.error(info)
         return 1
 
-    if checker.nbs_to_remove and options.action:
-        checker.doRemovals()
-        ztm.commit()
+# XXX cprov 20070626: Disabling by distro-team request, see bug #121784
+#    if checker.nbs_to_remove and options.action:
+#        checker.doRemovals()
+#        ztm.commit()
 
     lock.release()
     return 0

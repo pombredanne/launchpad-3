@@ -6,31 +6,33 @@
 
 ################################################################################
 
+
+import _pythonpath
+
+
+import apt_pkg
 import commands
 import optparse
 import os
 import string
 import sys
 
-import apt_pkg
+
+from zope.component import getUtility
+from contrib.glock import GlobalLock
+
+
+from canonical.launchpad.database import DistroArchSeriesBinaryPackage
+from canonical.launchpad.interfaces import (
+    IBinaryPackageNameSet, IBinaryPackageReleaseSet, IDistributionSet,
+    NotFoundError)
+from canonical.launchpad.scripts import (
+    execute_zcml_for_scripts, logger, logger_options)
+from canonical.lp import initZopeless
+
 
 import dak_utils
 
-import _pythonpath
-
-from zope.component import getUtility
-
-from canonical.launchpad.database import DistroArchReleaseBinaryPackage
-from canonical.launchpad.interfaces import (IBinaryPackageNameSet,
-                                            IBinaryPackageReleaseSet,
-                                            IDistributionSet, NotFoundError)
-from canonical.launchpad.scripts import (execute_zcml_for_scripts,
-                                         logger, logger_options)
-from canonical.lp import initZopeless
-
-from contrib.glock import GlobalLock
-
-################################################################################
 
 Options = None
 Log = None
@@ -40,7 +42,6 @@ bpr = None
 source_versions = None
 source_binaries = None
 
-################################################################################
 
 def init():
     global Options, Log, Ztm, Lock, bpr
@@ -50,14 +51,15 @@ def init():
     # Parse command-line arguments
     parser = optparse.OptionParser()
     logger_options(parser)
-    parser.add_option("-d", "--distro", dest="distro",
-                      help="remove from DISTRO")
-    parser.add_option("-n", "--no-action", dest="action",
-                      default=True, action="store_false",
-                      help="don't do anything")
-    parser.add_option("-s", "--suite", dest="distrorelease",
-                      help="only act on SUITE")
-    
+
+    parser.add_option(
+        "-d", "--distro", dest="distro", help="remove from DISTRO")
+    parser.add_option(
+        "-n", "--no-action", dest="action", default=False,
+        action="store_false", help="don't do anything")
+    parser.add_option(
+        "-s", "--suite", dest="distroseries",help="only act on SUITE")
+
     (Options, args) = parser.parse_args()
     Log = logger(Options, "archive-cruft-check")
 
@@ -66,20 +68,19 @@ def init():
     Lock.acquire(blocking=True)
 
     Log.debug("Initialising connection.")
-    Ztm = initZopeless(dbuser="lucille", dbname="launchpad_prod",
-                       dbhost="jubany")
 
+    Ztm = initZopeless(
+        dbuser="lucille", dbname="launchpad_prod", dbhost="jubany")
     execute_zcml_for_scripts()
 
     bpr = getUtility(IBinaryPackageReleaseSet)
 
     return args
 
-################################################################################
 
-def cruft_check(distrorelease):
+def cruft_check(distroseries):
     global source_binaries, source_versions
-    
+
     nbs = {}
     asba = {}
 
@@ -87,19 +88,21 @@ def cruft_check(distrorelease):
     source_binaries = {}
     source_versions = {}
     arch_any = {}
-    
-    architectures = dict([(a.architecturetag,a) for a in distrorelease.architectures])
-    components = dict([(c.name,c) for c in distrorelease.components])
 
+    architectures = dict([(a.architecturetag, a)
+                          for a in distroseries.architectures])
+    components = dict([(c.name,c) for c in distroseries.components])
 
     for component in components:
         # XXX de-hardcode me harder
-        filename = "/srv/launchpad.net/ubuntu-archive/" + \
-                    "ubuntu/dists/%s/%s/source/Sources.gz" \
-                    % (distrorelease.name, component)
-        # apt_pkg.ParseTagFile needs a real file handle and can't handle a GzipFile instance...
+        filename = (
+            "/srv/launchpad.net/ubuntu-archive/ubuntu/dists/%s/%s/"
+            "source/Sources.gz" % (distroseries.name, component))
+        # apt_pkg.ParseTagFile needs a real file handle and can't
+        # handle a GzipFile instance...
         temp_filename = dak_utils.temp_filename()
-        (result, output) = commands.getstatusoutput("gunzip -c %s > %s" % (filename, temp_filename))
+        (result, output) = commands.getstatusoutput(
+            "gunzip -c %s > %s" % (filename, temp_filename))
         if (result != 0):
             sys.stderr.write("Gunzip invocation failed!\n%s\n" % (output))
             sys.exit(result)
@@ -129,12 +132,14 @@ def cruft_check(distrorelease):
     for component in components_and_di:
         for architecture in architectures:
             # XXX de-hardcode me harder
-            filename = "/srv/launchpad.net/ubuntu-archive/ubuntu" + \
-                       "/dists/%s/%s/binary-%s/Packages.gz" \
-                       % (distrorelease.name, component, architecture)
+            filename = (
+                "/srv/launchpad.net/ubuntu-archive/ubuntu/dists/%s/%s/"
+                "binary-%s/Packages.gz" % (
+                distroseries.name, component, architecture))
             # apt_pkg.ParseTagFile needs a real file handle
             temp_filename = dak_utils.temp_filename()
-            (result, output) = commands.getstatusoutput("gunzip -c %s > %s" % (filename, temp_filename))
+            (result, output) = commands.getstatusoutput(
+                "gunzip -c %s > %s" % (filename, temp_filename))
             if (result != 0):
                 sys.stderr.write("Gunzip invocation failed!\n%s\n" % (output))
                 sys.exit(result)
@@ -166,12 +171,14 @@ def cruft_check(distrorelease):
     for component in components_and_di:
         for architecture in architectures:
             # XXX de-hardcode me harder
-            filename = "/srv/launchpad.net/ubuntu-archive/ubuntu" + \
-                       "/dists/%s/%s/binary-%s/Packages.gz" \
-                       % (distrorelease.name, component, architecture)
+            filename = (
+                "/srv/launchpad.net/ubuntu-archive/ubuntu/dists/%s/%s/"
+                "binary-%s/Packages.gz" % (
+                distroseries.name, component, architecture))
             # apt_pkg.ParseTagFile needs a real file handle
             temp_filename = dak_utils.temp_filename()
-            (result, output) = commands.getstatusoutput("gunzip -c %s > %s" % (filename, temp_filename))
+            (result, output) = commands.getstatusoutput(
+                "gunzip -c %s > %s" % (filename, temp_filename))
             if (result != 0):
                 sys.stderr.write("Gunzip invocation failed!\n%s\n" % (output))
                 sys.exit(result)
@@ -189,8 +196,9 @@ def cruft_check(distrorelease):
                     source = m.group(1)
                     version = m.group(2)
                 if architecture == "all":
-                    if arch_any.has_key(package) and \
-                           apt_pkg.VersionCompare(version, arch_any[package]) > -1:
+                    if (arch_any.has_key(package) and
+                        apt_pkg.VersionCompare(version,
+                                               arch_any[package]) > -1):
                         asba.setdefault(source,{})
                         asba[source].setdefault(package, {})
                         asba[source][package].setdefault(version, {})
@@ -200,12 +208,11 @@ def cruft_check(distrorelease):
 
     return (nbs, asba)
 
-################################################################################
 
 def add_nbs(nbs_d, source, version, package):
     # Ensure the package is still in the suite (someone may have already removed
     # it).
-    result = bpr.getByNameInDistroRelease(Options.distrorelease, package)
+    result = bpr.getByNameInDistroSeries(Options.distroseries, package)
     if len(list(result)) == 0:
         return
 
@@ -213,7 +220,6 @@ def add_nbs(nbs_d, source, version, package):
     nbs_d[source].setdefault(version, {})
     nbs_d[source][version][package] = ""
 
-################################################################################
 
 def refine_nbs(nbs):
     # Distinguish dubious (version numbers match) and 'real' NBS (they don't)
@@ -232,7 +238,6 @@ def refine_nbs(nbs):
 
     return (real_nbs, dubious_nbs)
 
-################################################################################
 
 def output_nbs(real_nbs):
     output = "Not Built from Source\n"
@@ -242,9 +247,9 @@ def output_nbs(real_nbs):
     nbs_keys = real_nbs.keys()
     nbs_keys.sort()
     for source in nbs_keys:
-        output += " * %s_%s builds: %s\n" % (source,
-                                       source_versions.get(source, "??"),
-                                       source_binaries.get(source, "(source does not exist)"))
+        output += " * %s_%s builds: %s\n" % (
+            source, source_versions.get(source, "??"),
+            source_binaries.get(source, "(source does not exist)"))
         output += "      but no longer builds:\n"
         versions = real_nbs[source].keys()
         versions.sort(apt_pkg.VersionCompare)
@@ -262,29 +267,27 @@ def output_nbs(real_nbs):
 
     return nbs_to_remove
 
-################################################################################
 
 def do_removals(nbs_to_remove):
     Ztm.begin()
     for package in nbs_to_remove:
-        for distroarchrelease in Options.distrorelease.architectures:
+        for distroarchseries in Options.distroseries.architectures:
             binarypackagename = getUtility(IBinaryPackageNameSet)[package]
-            darbp = DistroArchReleaseBinaryPackage(distroarchrelease, binarypackagename)
+            dasbp = DistroArchSeriesBinaryPackage(
+                distroarchseries, binarypackagename)
             try:
-                sbpph = darbp.supersede()
+                sbpph = dasbp.supersede()
             # We're blindly removing for all arches, if it's not there
             # for some, that's fine ...
             except NotFoundError:
                 pass
             else:
                 version = sbpph.binarypackagerelease.version
-                print "Removed %s_%s from %s/%s ... " % (package,
-                                                         version,
-                                                         Options.distrorelease.name,
-                                                         distroarchrelease.architecturetag)
+                print "Removed %s_%s from %s/%s ... " % (
+                    package, version, Options.distroseries.name,
+                    distroarchseries.architecturetag)
     Ztm.commit()
 
-################################################################################
 
 def main():
     init()
@@ -293,11 +296,11 @@ def main():
         Options.distro = "ubuntu"
     Options.distro = getUtility(IDistributionSet)[Options.distro]
 
-    if not Options.distrorelease:
-        Options.distrorelease = Options.distro.currentseries.name
-    Options.distrorelease = Options.distro.getRelease(Options.distrorelease)
+    if not Options.distroseries:
+        Options.distroseries = Options.distro.currentseries.name
+    Options.distroseries = Options.distro.getSeries(Options.distroseries)
 
-    (nbs, asba) = cruft_check(Options.distrorelease)
+    (nbs, asba) = cruft_check(Options.distroseries)
 
     # XXX do something useful with asba
     for src in asba:
@@ -311,11 +314,10 @@ def main():
         if Options.action:
             dak_utils.game_over()
             do_removals(nbs_to_remove)
-    
+
     Lock.release()
     return 0
 
-################################################################################
 
 if __name__ == '__main__':
     sys.exit(main())
