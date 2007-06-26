@@ -177,6 +177,11 @@ class DummyPOMsgSet(POMsgSetMixIn):
         """See `IPOMsgSet`."""
         return [None] * self.pluralforms
 
+    @property
+    def published_texts(self):
+        """See IPOMsgSet."""
+        return [None] * self.pluralforms
+
     def getActiveSubmission(self, pluralform):
         """See `IPOMsgSet`."""
         return None
