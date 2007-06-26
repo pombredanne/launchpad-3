@@ -10,6 +10,7 @@ import tempfile
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.archiveuploader.tests.test_uploadprocessor import (
     MockOptions, MockLogger)
@@ -17,6 +18,14 @@ from canonical.archiveuploader.uploadpolicy import AbstractUploadPolicy
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
+from canonical.launchpad.database.binarypackagename import BinaryPackageName
+from canonical.launchpad.database.binarypackagerelease import (
+    BinaryPackageRelease)
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
+from canonical.launchpad.database.sourcepackagename import SourcePackageName
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
 from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import (
     IDistributionSet, IDistroSeriesSet, IPersonSet, IArchiveSet,
@@ -24,7 +33,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.mail import stub
 from canonical.lp.dbschema import (
     PackageUploadStatus, DistroSeriesStatus, PackagePublishingStatus,
-    PackagePublishingPocket)
+    PackagePublishingPocket, ArchivePurpose)
 from canonical.testing import LaunchpadZopelessLayer
 
 class BrokenUploadPolicy(AbstractUploadPolicy):
@@ -135,6 +144,28 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
     This test case is able to setup a fresh distroseries in Ubuntu.
     """
+
+    def _checkCommercialUploadEmail(self):
+        """Ensure commercial uploads generate the right email."""
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        foo_bar = "Foo Bar <foo.bar@canonical.com>"
+        self.assertEqual([e.strip() for e in to_addrs], [foo_bar])
+        self.assertTrue(
+            "NEW" in raw_msg, "Expected email containing 'NEW', got:\n%s"
+            % raw_msg)
+
+    def _publishPackage(self, packagename, version, source=True, archive=None):
+        """Publish a single package that is currently NEW in the queue."""
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.NEW, name=packagename,
+            version=version, exact_match=True, archive=archive)
+        self.assertEqual(queue_items.count(), 1)
+        queue_item = queue_items[0]
+        queue_item.setAccepted()
+        if source:
+            pubrec = queue_item.sources[0].publish(self.log)
+        else:
+            pubrec = queue_item.builds[0].publish(self.log)
 
     def testRejectionEmailForUnhandledException(self):
         """Test there's a rejection email when nascentupload breaks.
@@ -248,6 +279,79 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(
             queue_item.status, PackageUploadStatus.UNAPPROVED,
             "Expected queue item to be in UNAPPROVED status.")
+
+    def testCommercialUpload(self):
+        """Commercial packages should be uploaded to the separate commercial 
+        archive.
+
+        Packages that have files in the 'commercial' component should be
+        uploaded to a separate IArchive that has a purpose of
+        ArchivePurpose.COMMERCIAL"""
+
+        # Extra setup for breezy
+        self.setupBreezy()
+        self.layer.txn.commit()
+
+        # Set up the uploadprocessor with appropriate options and logger
+        self.options.context = 'anything' # upload policy allows anything
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload a package for Breezy.
+        upload_dir = self.queueUpload("foocomm_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check it went ok to the NEW queue and all is going well so far.
+        self._checkCommercialUploadEmail()
+
+        # Find the sourcepackagerelease and check its component:
+        foocomm_name = SourcePackageName.selectOneBy(name="foocomm")
+        foocomm_spr = SourcePackageRelease.selectOneBy(
+           sourcepackagename=foocomm_name)
+        self.assertEqual(foocomm_spr.component.name, 'commercial')
+
+        # Check that the right archive was picked:
+        self.assertEqual(foocomm_spr.upload_archive.description, 
+            'Commercial archive')
+
+        # Accept and publish the upload.
+        commercial_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntu, ArchivePurpose.COMMERCIAL)
+        self.assertTrue(commercial_archive)
+        self._publishPackage("foocomm", "1.0-1", archive=commercial_archive)
+
+        # Check the publishing record's archive and component:
+        foocomm_spph = SourcePackagePublishingHistory.selectOneBy(
+            sourcepackagerelease=foocomm_spr)
+        self.assertEqual(foocomm_spph.archive.description, 
+            'Commercial archive')
+        self.assertEqual(foocomm_spph.component.name, 
+            'commercial')
+
+        # Now upload a binary package of 'foocomm'
+        upload_dir = self.queueUpload("foocomm_1.0-1_binary")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check it went ok to the NEW queue and all is going well so far.
+        self._checkCommercialUploadEmail()
+
+        # Find the binarypackagerelease and check its component:
+        foocomm_binname = BinaryPackageName.selectOneBy(name="foocomm")
+        foocomm_bpr = BinaryPackageRelease.selectOneBy(
+            binarypackagename=foocomm_binname)
+        self.assertEqual(foocomm_bpr.component.name, 'commercial')
+
+        # Publish the upload so we can check the publishing record:
+        self._publishPackage("foocomm", "1.0-1", source=False,
+            archive=commercial_archive)
+
+        # Check the publishing record's archive and component:
+        foocomm_bpph = BinaryPackagePublishingHistory.selectOneBy(
+            binarypackagerelease=foocomm_bpr)
+        self.assertEqual(foocomm_bpph.archive.description, 
+            'Commercial archive')
+        self.assertEqual(foocomm_bpph.component.name, 
+            'commercial')
 
 
 class TestUploadProcessorPPA(TestUploadProcessorBase):

@@ -963,7 +963,6 @@ class DistributionSet:
     def new(self, name, displayname, title, description, summary, domainname,
             members, owner, mugshot=None, logo=None, icon=None):
         """See `IDistributionSet`."""
-        archive = getUtility(IArchiveSet).new(purpose=ArchivePurpose.PRIMARY)
         distro = Distribution(
             name=name,
             displayname=displayname,
@@ -974,9 +973,9 @@ class DistributionSet:
             members=members,
             mirror_admin=owner,
             owner=owner,
-            main_archive=archive,
             mugshot=mugshot,
             logo=logo,
             icon=icon)
-        archive.distribution = distro
+        archive = getUtility(IArchiveSet).new(distribution=distro,
+            purpose=ArchivePurpose.PRIMARY)
         return distro

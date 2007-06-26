@@ -53,6 +53,8 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         description=_("The distribution for which this is a series."))
     parent = Attribute('The structural parent of this series - the distro')
     components = Attribute("The series components.")
+    upload_components = Attribute("The series components that can be "
+                                  "uploaded to.")
     sections = Attribute("The series sections.")
     status = Choice(
         title=_("Status"), required=True,
@@ -305,9 +307,6 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         Raise NotFoundError if the section is not in the permitted section
         list for this distroseries.
         """
-
-    def addComponent(component):
-        """SQLObject provided method to fill a related join key component."""
 
     def addSection(section):
         """SQLObject provided method to fill a related join key section."""

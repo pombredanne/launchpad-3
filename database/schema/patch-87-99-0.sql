@@ -17,6 +17,7 @@
 --    ADD CONSTRAINT distributionarchive_archive_fk FOREIGN KEY (archive) REFERENCES archive(id);
 
 
+ALTER TABLE distribution DROP COLUMN main_archive;
 ALTER TABLE archive ADD COLUMN distribution INTEGER;
 ALTER TABLE archive ADD COLUMN purpose INTEGER;
 ALTER TABLE ONLY archive

@@ -327,10 +327,6 @@ class ArchiveCruftChecker:
         """
         self.logger.debug("Considering Sources:")
         for component in self.components:
-            # XXX julian 2007-06-24
-            # Greasy hack! Should this code become archive aware to avoid this?
-            if component == 'commercial':
-                continue
             filename = os.path.join(
                 self.dist_archive, "%s/source/Sources.gz" % component)
 
