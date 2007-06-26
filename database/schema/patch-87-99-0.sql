@@ -1,22 +1,11 @@
---CREATE TABLE distributionarchive (
---    id integer NOT NULL,
---    distribution integer NOT NULL,
---    archive integer NOT NULL,
---    purpose integer NOT NULL
---);
-
---ALTER TABLE ONLY distributionarchive
---    ADD CONSTRAINT distributionarchive_pkey PRIMARY KEY (id);
-
--- CREATE UNIQUE INDEX distributionarchive__distribution__archive__uniq ON distributionarchive USING btree (distribution, archive);
-
---ALTER TABLE ONLY distributionarchive
---    ADD CONSTRAINT distributionarchive_distribution_fk FOREIGN KEY (distribution) REFERENCES distribution(id);
-
---ALTER TABLE ONLY distributionarchive
---    ADD CONSTRAINT distributionarchive_archive_fk FOREIGN KEY (archive) REFERENCES archive(id);
-
-
+/*
+ * This patch adds support for the upcoming commercial archive.
+ * Distribution.main_archive has gone, and Archive has new distribution and
+ * purpose columns, which collectively define an archive's raison d'etre.
+ */
+   
+SET client_min_messages=ERROR;
+   
 ALTER TABLE distribution DROP COLUMN main_archive;
 ALTER TABLE archive ADD COLUMN distribution INTEGER;
 ALTER TABLE archive ADD COLUMN purpose INTEGER;
@@ -39,14 +28,14 @@ UPDATE Archive SET distribution = id where OWNER IS NULL;
 UPDATE Archive SET purpose = 1 where OWNER IS NULL;
 ALTER TABLE archive ALTER COLUMN purpose SET NOT NULL;
 
--- uncomment this before landing in PQM
--- Add commercial archive for Ubuntu
+-- This row needs to be inserted into production after landing, the lack
+-- of sample data when running the patch hits the distribution constraint.
 --INSERT INTO Archive (description, distribution, purpose)
---    VALUES ('Commercial archive', '1', 4);
+--    VALUES ('Commercial archive', 1, 4);
 
 -- New commercial component
---INSERT INTO component (name, description)
---    VALUES ('commercial', 'This component contains commercial packages only, which are not in the main Ubuntu archive.');
+INSERT INTO component (id, name, description)
+    VALUES (5, 'commercial', 'This component contains commercial packages only, which are not in the main Ubuntu archive.');
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
