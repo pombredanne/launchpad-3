@@ -508,24 +508,6 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `ISpecificationTarget`."""
         return Specification.selectOneBy(distribution=self, name=name)
 
-    def newQuestion(self, owner, title, description, language=None,
-                  datecreated=None):
-        """See `IQuestionTarget`."""
-        return QuestionSet.new(
-            title=title, description=description, owner=owner,
-            distribution=self, datecreated=datecreated, language=language)
-
-    def getQuestion(self, question_id):
-        """See `IQuestionTarget`."""
-        try:
-            question = Question.get(question_id)
-        except SQLObjectNotFound:
-            return None
-        # Verify that the question is actually for this distribution.
-        if question.distribution != self:
-            return None
-        return question
-
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
@@ -543,48 +525,16 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             needs_attention_from=needs_attention_from,
             unsupported_target=unsupported_target).getResults()
 
-
-    def findSimilarQuestions(self, title):
-        """See `IQuestionTarget`."""
-        return SimilarQuestionsSearch(title, distribution=self).getResults()
-
     def _getTargetTypes(self):
-        """See QuestionTargetMixin."""
+        """See `QuestionTargetMixin`."""
         return {'distribution': self,
                 'sourcepackagename': None}
 
-    def removeAnswerContact(self, person):
-        """See `IQuestionTarget`."""
-        if person not in self.answer_contacts:
+    def _questionIsForTarget(self, question):
+        """See `QuestionTargetMixin`."""
+        if question.distribution != self:
             return False
-        answer_contact = AnswerContact.selectOne(
-            "distribution = %d AND person = %d"
-            " AND sourcepackagename IS NULL" % (self.id, person.id))
-        answer_contact.destroySelf()
         return True
-
-    @property
-    def answer_contacts(self):
-        """See `IQuestionTarget`."""
-        answer_contacts = AnswerContact.select(
-            """distribution = %d AND sourcepackagename IS NULL""" % self.id)
-
-        return sorted(
-            [answer_contact.person for answer_contact in answer_contacts],
-            key=attrgetter('displayname'))
-
-    @property
-    def direct_answer_contacts(self):
-        """See `IQuestionTarget`."""
-        return self.answer_contacts
-
-    def getQuestionLanguages(self):
-        """See `IQuestionTarget`."""
-        return set(Language.select(
-            'Language.id = Question.language AND '
-            'Question.distribution = %s AND '
-            'Question.sourcepackagename IS NULL' % sqlvalues(self.id),
-            clauseTables=['Question'], distinct=True))
 
     def ensureRelatedBounty(self, bounty):
         """See `IDistribution`."""

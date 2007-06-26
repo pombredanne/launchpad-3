@@ -50,26 +50,18 @@ from canonical.launchpad.database.build import Build
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
     """Implementation of IQuestionTarget for SourcePackage."""
 
-    def newQuestion(self, owner, title, description, language=None,
-                    datecreated=None):
-        """See `IQuestionTarget`."""
-        return QuestionSet.new(
-            title=title, description=description, owner=owner,
-            language=language, distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename, datecreated=datecreated)
+    def _getTargetTypes(self):
+        """See `QuestionTargetMixin`."""
+        return {'distribution': self.distribution,
+                'sourcepackagename': self.sourcepackagename}
 
-    def getQuestion(self, question_id):
-        """See `IQuestionTarget`."""
-        try:
-            question = Question.get(question_id)
-        except SQLObjectNotFound:
-            return None
-        # Verify that this question is actually for this target.
+    def _questionIsForTarget(self, question):
+        """See `QuestionTargetMixin`."""
         if question.distribution != self.distribution:
-            return None
+            return False
         if question.sourcepackagename != self.sourcepackagename:
-            return None
-        return question
+            return False
+        return True
 
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
@@ -88,17 +80,6 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
             language=language, sort=sort, owner=owner,
             needs_attention_from=needs_attention_from,
             unsupported_target=unsupported_target).getResults()
-
-    def findSimilarQuestions(self, title):
-        """See `IQuestionTarget`."""
-        return SimilarQuestionsSearch(
-            title, distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename).getResults()
-
-    def _getTargetTypes(self):
-        """See QuestionTargetMixin."""
-        return {'distribution': self.distribution,
-                'sourcepackagename': self.sourcepackagename}
 
     def getAnswerContactsForLanguage(self, language):
         """See `IQuestionTarget`."""
@@ -120,18 +101,6 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
             self, language))
         return recipients
 
-    def removeAnswerContact(self, person):
-        """See `IQuestionTarget`."""
-        answer_contact = AnswerContact.selectOneBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename,
-            person=person)
-        if not answer_contact:
-            return False
-
-        answer_contact.destroySelf()
-        return True
-
     @property
     def answer_contacts(self):
         """See `IQuestionTarget`."""
@@ -143,21 +112,10 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
     @property
     def direct_answer_contacts(self):
         """See `IQuestionTarget`."""
-        answer_contacts = AnswerContact.selectBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
+        answer_contacts = AnswerContact.selectBy(**self._getTargetTypes())
         return sorted(
             [contact.person for contact in answer_contacts],
             key=attrgetter('displayname'))
-
-    def getQuestionLanguages(self):
-        """See `IQuestionTarget`."""
-        return set(Language.select(
-            'Language.id = Question.language AND '
-            'Question.distribution = %s AND '
-            'Question.sourcepackagename = %s'
-                % sqlvalues(self.distribution, self.sourcepackagename),
-            clauseTables=['Question'], distinct=True))
 
 
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):

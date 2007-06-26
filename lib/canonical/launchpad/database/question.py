@@ -799,7 +799,7 @@ class QuestionSearch:
 
 
 class QuestionTargetSearch(QuestionSearch):
-    """Search questions in an IQuestionTarget context.
+    """Search questions in an `IQuestionTarget` context.
 
     Used to implement IQuestionTarget.searchQuestions().
     """
@@ -826,7 +826,7 @@ class QuestionTargetSearch(QuestionSearch):
         self.unsupported_target = unsupported_target
 
     def getConstraints(self):
-        """See QuestionSearch."""
+        """See `QuestionSearch`."""
         constraints = QuestionSearch.getConstraints(self)
         if self.owner:
             constraints.append('Question.owner = %s' % self.owner.id)
@@ -840,7 +840,7 @@ class QuestionTargetSearch(QuestionSearch):
         return constraints
 
     def getPrejoins(self):
-        """See QuestionSearch."""
+        """See `QuestionSearch`."""
         prejoins = QuestionSearch.getPrejoins(self)
         if self.owner and 'owner' in prejoins:
             # Since it is constant, no need to prefetch it.
@@ -898,7 +898,7 @@ class QuestionPersonSearch(QuestionSearch):
             self.participation = participation
 
     def getTableJoins(self):
-        """See QuestionSearch."""
+        """See `QuestionSearch`."""
         joins = QuestionSearch.getTableJoins(self)
 
         if QuestionParticipation.SUBSCRIBER in self.participation:
@@ -923,7 +923,7 @@ class QuestionPersonSearch(QuestionSearch):
         QuestionParticipation.ASSIGNEE: "Question.assignee = %s"}
 
     def getConstraints(self):
-        """See QuestionSearch."""
+        """See `QuestionSearch`."""
         constraints = QuestionSearch.getConstraints(self)
 
         participations_filter = []
@@ -939,7 +939,7 @@ class QuestionPersonSearch(QuestionSearch):
 
 
 class QuestionTargetMixin:
-    """Mixin class for IQuestionTarget."""
+    """Mixin class for `IQuestionTarget`."""
 
     def _getTargetTypes(self):
         """Return a Dict of QuestionTargets representing this object.
@@ -949,6 +949,64 @@ class QuestionTargetMixin:
                  or None.
         """
         return {}
+
+    def newQuestion(self, owner, title, description, language=None,
+                  datecreated=None):
+        """See `IQuestionTarget`."""
+        return QuestionSet.new(
+            title=title, description=description, owner=owner,
+            datecreated=datecreated, language=language,
+            **self._getTargetTypes())
+
+    def getQuestion(self, question_id):
+        """See `IQuestionTarget`."""
+        try:
+            question = Question.get(question_id)
+        except SQLObjectNotFound:
+            return None
+        # Verify that the question is actually for this target.
+        if not self._questionIsForTarget(question):
+            return None
+        return question
+
+    def _questionIsForTarget(self, question):
+        """Verify that this question is actually for this target."""
+        if question.target != self:
+            return False
+        return True
+
+    def findSimilarQuestions(self, title):
+        """See `IQuestionTarget`."""
+        return SimilarQuestionsSearch(
+            title, **self._getTargetTypes()).getResults()
+
+    def getQuestionLanguages(self):
+        """See `IQuestionTarget`."""
+        constraints = ['Language.id = Question.language']
+        targets = self._getTargetTypes()
+        for column, target in targets.items():
+            if target is None:
+                constraint = "Question." + column + " IS NULL"
+            else:
+                constraint = "Question." + column + " = %s" % sqlvalues(
+                    target)
+            constraints.append(constraint)
+        return set(Language.select(
+            ' AND '.join(constraints),
+            clauseTables=['Question'], distinct=True))
+
+    @property
+    def answer_contacts(self):
+        """See `IQuestionTarget`."""
+        answer_contacts = AnswerContact.selectBy(**self._getTargetTypes())
+        return sorted(
+            [answer_contact.person for answer_contact in answer_contacts],
+            key=operator.attrgetter('displayname'))
+
+    @property
+    def direct_answer_contacts(self):
+        """See `IQuestionTarget`."""
+        return self.answer_contacts
 
     def addAnswerContact(self, person):
         """See `IQuestionTarget`."""
@@ -1014,6 +1072,17 @@ class QuestionTargetMixin:
                 header = 'Answer Contact (%s)' % self.displayname
             recipients.add(person, reason, header)
         return recipients
+
+    def removeAnswerContact(self, person):
+        """See `IQuestionTarget`."""
+        if person not in self.answer_contacts:
+            return False
+        answer_contact = AnswerContact.selectOneBy(
+            person=person, **self._getTargetTypes())
+        if answer_contact is None:
+            return False
+        answer_contact.destroySelf()
+        return True
 
     def getSupportedLanguages(self):
         """See `IQuestionTarget`."""

@@ -312,24 +312,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See BugTargetBase."""
         return 'BugTask.product = %s' % sqlvalues(self)
 
-    def newQuestion(self, owner, title, description, language=None,
-                    datecreated=None):
-        """See `IQuestionTarget`."""
-        return QuestionSet.new(title=title, description=description,
-            owner=owner, product=self, datecreated=datecreated,
-            language=language)
-
-    def getQuestion(self, question_id):
-        """See `IQuestionTarget`."""
-        try:
-            question = Question.get(question_id)
-        except SQLObjectNotFound:
-            return None
-        # Verify that the question is actually for this target.
-        if question.target != self:
-            return None
-        return question
-
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
@@ -347,43 +329,9 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             needs_attention_from=needs_attention_from,
             unsupported_target=unsupported_target).getResults()
 
-
-    def findSimilarQuestions(self, title):
-        """See `IQuestionTarget`."""
-        return SimilarQuestionsSearch(title, product=self).getResults()
-
     def _getTargetTypes(self):
-        """See QuestionTargetMixin."""
+        """See `QuestionTargetMixin`."""
         return {'product': self}
-
-    def removeAnswerContact(self, person):
-        """See `IQuestionTarget`."""
-        if person not in self.answer_contacts:
-            return False
-        answer_contact = AnswerContact.selectOneBy(
-            product=self, person=person)
-        answer_contact.destroySelf()
-        return True
-
-    @property
-    def answer_contacts(self):
-        """See `IQuestionTarget`."""
-        answer_contacts = AnswerContact.selectBy(product=self)
-        return sorted(
-            [answer_contact.person for answer_contact in answer_contacts],
-            key=attrgetter('displayname'))
-
-    @property
-    def direct_answer_contacts(self):
-        """See `IQuestionTarget`."""
-        return self.answer_contacts
-
-    def getQuestionLanguages(self):
-        """See `IQuestionTarget`."""
-        return set(Language.select(
-            'Language.id = Question.language AND '
-            'Question.product = %s' % sqlvalues(self.id),
-            clauseTables=['Question'], distinct=True))
 
     @property
     def translatable_packages(self):
