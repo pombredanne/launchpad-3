@@ -83,7 +83,7 @@ class IBranch(IHasOwner):
 
     id = Int(title=_('ID'), readonly=True, required=True)
     branch_type = Choice(
-        title=_("Branch type"), requried=True, vocabulary='BranchType',
+        title=_("Branch type"), required=True, vocabulary='BranchType',
         description=_("Hosted branches have Launchpad code hosting as the "
                       "primary location and can be pushed to.  Mirrored "
                       "branches are pulled from the remote location "
