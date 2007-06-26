@@ -63,10 +63,12 @@ class ImportProcess:
                 if entry_to_import is None:
                     continue
 
-                assert entry_to_import.import_into is not None, (
-                    "Entry '%s' is broken: it's Approved but lacks the place "
-                    "where it should be imported!  A DBA will need to fix "
-                    "this by hand." % entry_to_import.displayname())
+                if entry_to_import.import_into is None:
+                    raise AssertionError(
+                        "Entry '%s' is broken: it's Approved but lacks the "
+                        "place where it should be imported!  A DBA will need "
+                        "to fix this by hand."
+                        % entry_to_import.displayname())
 
                 # Do the import.
                 title = '[Unknown Title]'

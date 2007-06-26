@@ -627,7 +627,6 @@ script picks them up and processes them.
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     INFO    Import requests completed.
-    <BLANKLINE>
     >>> transaction.commit()
 
 And there are no more entries to import

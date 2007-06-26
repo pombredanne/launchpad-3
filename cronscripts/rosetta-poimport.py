@@ -12,7 +12,7 @@ from canonical.launchpad.scripts.base import LaunchpadCronScript
 # than this time, but will know to stop taking on new batches of imports.
 # Since script is run every 9 or 10 minutes, we set the "alarm" at 8 minutes.
 # That leaves a bit of time to complete the last ongoing batch of imports.
-SECONDS_TO_RUN = 8*60
+SECONDS_TO_RUN = 8 * 60
 
 class RosettaPOImporter(LaunchpadCronScript):
     def main(self):
