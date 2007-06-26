@@ -299,10 +299,11 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 lifecycle_status=data['lifecycle_status'],
                 home_page=data['home_page'],
                 whiteboard=data['whiteboard'])
-            notify(SQLObjectCreatedEvent(self.branch))
-            self.next_url = canonical_url(self.branch)
         except BranchCreationForbidden:
             self.setForbiddenError(self.getProduct(data))
+        else:
+            notify(SQLObjectCreatedEvent(self.branch))
+            self.next_url = canonical_url(self.branch)
 
     def setForbiddenError(self, product):
         """Method provided so the error handling can be overridden."""
@@ -328,19 +329,20 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 self.user, data['product'], data['name'])
 
     def script_hook(self):
-        return '''<script type="text/javascript">
+        return ('''<script type="text/javascript">
 
-        function populate_name() {
-          populate_branch_name_from_url('%(name)s', '%(url)s')
-        }
-        var url_field = document.getElementById('%(url)s');
-        // Since it is possible that the form could be submitted without
-        // the onblur getting called, and onblur can be called without
-        // onchange being fired, set them both, and handle it in the function.
-        url_field.onchange = populate_name;
-        url_field.onblur = populate_name;
-        </script>''' % { 'name' : self.widgets['name'].name,
-                         'url' : self.widgets['url'].name }
+            function populate_name() {
+                populate_branch_name_from_url('%(name)s', '%(url)s')
+            }
+            var url_field = document.getElementById('%(url)s');
+            // Since it is possible that the form could be submitted without
+            // the onblur getting called, and onblur can be called without
+            // onchange being fired, set them both, and handle it in the function.
+            url_field.onchange = populate_name;
+            url_field.onblur = populate_name;
+            </script>'''
+            % {'name': self.widgets['name'].name,
+               'url': self.widgets['url'].name})
 
 
 class PersonBranchAddView(BranchAddView):

@@ -5,7 +5,9 @@
 __metaclass__ = type
 
 __all__ = [
+    'BranchCreationException',
     'BranchCreationForbidden',
+    'BranchCreatorNotMemberOfOwnerTeam',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
@@ -38,11 +40,23 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.MATURE)
 
 
-class BranchCreationForbidden(Exception):
-    """Raised when a user is not allowed to create a branch.
+class BranchCreationException(Exception):
+    """Base class for branch creation exceptions."""
+
+
+class BranchCreationForbidden(BranchCreationException):
+    """A Branch visibility policy forbids branch creation.
 
     The exception is raised if the policy for the product does not allow
     the creator of the branch to create a branch for that product.
+    """
+
+
+class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
+    """Branch creator is not a member of the owner team.
+
+    Raised when a user is attempting to create a branch and set the owner of
+    the branch to a team that they are not a member of.
     """
 
 

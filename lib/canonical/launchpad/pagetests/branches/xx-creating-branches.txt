@@ -219,8 +219,8 @@ XXX: thumper 2007-06-12
 Following the current indentation of the doctest.  Given the discussions
 on the launchpad mailing list, the indentation guidelines may change.
 
-When registering a branch with the product in context, there is no
-product widget, so errors are set at the page level.
+When registering a branch from the product pages, there is no product widget,
+so errors are set at the page level.
 
   >>> user_browser.open('http://code.launchpad.dev/landscape')
   >>> user_browser.getLink('Register branch').click()
