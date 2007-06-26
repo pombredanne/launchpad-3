@@ -18,7 +18,6 @@ import warnings
 from StringIO import StringIO
 from difflib import unified_diff
 import sha
-from twisted.internet.error import TimeoutError
 
 from zope.component import getUtility
 
@@ -28,7 +27,7 @@ from canonical.lp.dbschema import (
 from canonical.launchpad.interfaces import (
     ILaunchBag, IRequestPreferredLanguages,
     IRequestLocalLanguages, ITeam)
-from canonical.launchpad.components.poparser import POParser
+from canonical.launchpad.translationformat.gettext_po_parser import POParser
 
 
 def text_replaced(text, replacements, _cache={}):
@@ -290,7 +289,8 @@ def validate_translation(original, translation, flags):
 
 class ShortListTimeoutError(Exception):
     """This error is raised when the shortlist hardlimit is reached"""
-    
+
+
 def shortlist(sequence, longest_expected=15, hardlimit=None):
     """Return a listified version of sequence.
 
@@ -353,13 +353,13 @@ def is_english_variant(language):
     >>> is_english_variant(Language('fr'))
     False
     >>> is_english_variant(Language('en'))
-    True
+    False
     >>> is_english_variant(Language('en_CA'))
     True
     >>> is_english_variant(Language('enm'))
     False
     """
-    return language.code[0:3] in ['en', 'en_']
+    return language.code[0:3] in ['en_']
 
 
 def check_po_syntax(s):

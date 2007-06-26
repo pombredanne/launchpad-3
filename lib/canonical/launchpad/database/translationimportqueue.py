@@ -20,13 +20,13 @@ from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.enumcol import EnumCol
-
-from canonical.lp.dbschema import RosettaImportStatus
-
 from canonical.launchpad.interfaces import (
-    ITranslationImportQueueEntry, ITranslationImportQueue, IPOFileSet,
-    IPOTemplateSet, ILanguageSet, NotFoundError, IHasTranslationImports)
+    IHasTranslationImports, IPOFileSet, IPOTemplateSet, ITranslationImporter,
+    ITranslationImportQueueEntry, ITranslationImportQueue, ILanguageSet,
+    NotFoundError)
 from canonical.librarian.interfaces import ILibrarianClient
+from canonical.lp.dbschema import RosettaImportStatus
+from canonical.lp.dbschema import TranslationFileFormat
 
 from canonical.launchpad.database.pillar import pillar_sort_key
 
@@ -57,6 +57,8 @@ class TranslationImportQueueEntry(SQLBase):
         notNull=False, default=None)
     potemplate = ForeignKey(foreignKey='POTemplate',
         dbName='potemplate', notNull=False, default=None)
+    format = EnumCol(dbName='format', schema=TranslationFileFormat,
+        default=TranslationFileFormat.PO, notNull=True)
     status = EnumCol(dbName='status', notNull=True,
         schema=RosettaImportStatus, default=RosettaImportStatus.NEEDS_REVIEW)
     date_status_changed = UtcDateTimeCol(dbName='date_status_changed',
@@ -76,8 +78,9 @@ class TranslationImportQueueEntry(SQLBase):
     @property
     def guessed_potemplate(self):
         """See ITranslationImportQueueEntry."""
-        assert self.path.endswith('.pot'), (
-            "We cannot handle the file %s here." % self.path)
+        if self.path != 'en-US.xpi':
+            assert self.path.endswith('.pot'), (
+                "We cannot handle the file %s here." % self.path)
 
         # It's an IPOTemplate
         potemplate_set = getUtility(IPOTemplateSet)
@@ -172,7 +175,8 @@ class TranslationImportQueueEntry(SQLBase):
         if self.pofile is not None:
             # The entry has an IPOFile associated where it should be imported.
             return self.pofile
-        elif self.potemplate is not None and self.path.endswith('.pot'):
+        elif (self.potemplate is not None and
+              (self.path.endswith('.pot') or self.path == 'en-US.xpi')):
             # The entry has an IPOTemplate associated where it should be
             # imported.
             return self.potemplate
@@ -529,7 +533,7 @@ class TranslationImportQueue:
 
     def addOrUpdateEntry(self, path, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, pofile=None):
+        potemplate=None, pofile=None, format=None):
         """See ITranslationImportQueue."""
         if ((sourcepackagename is not None or distroseries is not None) and
             productseries is not None):
@@ -547,16 +551,23 @@ class TranslationImportQueue:
         if path is None or path == '':
             raise AssertionError('The path cannot be empty')
 
-        # Upload the file into librarian.
         filename = os.path.basename(path)
+        root, ext = os.path.splitext(filename)
+        translation_importer = getUtility(ITranslationImporter)
+        if format is None:
+            # Get it based on the file extension.
+            format = (
+                translation_importer.getTranslationFileFormatByFileExtension(
+                    ext))
+        format_importer = translation_importer.getTranslationFormatImporter(
+            format)
+        # Upload the file into librarian.
         size = len(content)
         file = StringIO(content)
         client = getUtility(ILibrarianClient)
         alias = client.addFile(
-            name=filename,
-            size=size,
-            file=file,
-            contentType='application/x-po')
+            name=filename, size=size, file=file,
+            contentType=format_importer.content_type)
 
         # Check if we got already this request from this user.
         if sourcepackagename is not None:
@@ -611,7 +622,7 @@ class TranslationImportQueue:
                 importer=importer, sourcepackagename=sourcepackagename,
                 distroseries=distroseries, productseries=productseries,
                 is_published=is_published, potemplate=potemplate,
-                pofile=pofile)
+                pofile=pofile, format=format)
             return entry
 
     def addOrUpdateEntriesFromTarball(self, content, is_published, importer,
@@ -630,16 +641,27 @@ class TranslationImportQueue:
 
         num_files = 0
         for tarinfo in tarball:
-            if tarinfo.name.endswith('.pot') or tarinfo.name.endswith('.po'):
-                # Only the .pot and .po files are interested here, ignore the
-                # others as we don't support any other file format.
+            filename = tarinfo.name
+            # XXX: JeroenVermeulen 2007-06-18, Work multi-format support in
+            # For now we're only interested in PO and POT files.  We skip
+            # "dotfiles," i.e. files whose names start with a dot, and we
+            # ignore anything that isn't a file (such as directories,
+            # symlinks, and above all, device files which could cause some
+            # serious security headaches).  (see bug 121798)
+            looks_useful = (
+                tarinfo.isfile() and
+                not filename.startswith('.') and
+                (filename.endswith('.pot') or filename.endswith('.po')))
+            if looks_useful:
                 file_content = tarball.extractfile(tarinfo).read()
-                self.addOrUpdateEntry(
-                    tarinfo.name, file_content, is_published, importer,
-                    sourcepackagename=sourcepackagename,
-                    distroseries=distroseries, productseries=productseries,
-                    potemplate=potemplate)
-                num_files += 1
+                if len(file_content) > 0:
+                    self.addOrUpdateEntry(
+                        tarinfo.name, file_content, is_published, importer,
+                        sourcepackagename=sourcepackagename,
+                        distroseries=distroseries,
+                        productseries=productseries,
+                        potemplate=potemplate)
+                    num_files += 1
 
         tarball.close()
 

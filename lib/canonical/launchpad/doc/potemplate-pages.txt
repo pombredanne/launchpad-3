@@ -67,14 +67,6 @@ the entry should be linked with the IPOTemplate we are using.
     >>> entry.potemplate == potemplate
     True
 
-And for the path, we are going to use the one we already have for the
-given POTemplate instead of the one given with the submit.
-
-    >>> entry.path == potemplate.path
-    True
-    >>> potemplate.path
-    u'po/evolution-2.2.pot'
-
 From the IPOTemplate upload form, we can also upload .po files. Let's check
 that feature...
 
