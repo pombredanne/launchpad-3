@@ -1,0 +1,45 @@
+IEntitlementAPI
+---------------
+
+    >>> import xmlrpclib
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.functional import XMLRPCTestTransport
+    >>> from canonical.lp.dbschema import EntitlementState, EntitlementType
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.xmlrpc import EntitlementAPI, IEntitlementAPI
+    >>> from canonical.launchpad.ftests import login
+    >>> foobar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> login("foo.bar@canonical.com")
+    >>> entitlement_view = EntitlementAPI('somecontext', 'someview')
+    >>> verifyObject(IEntitlementAPI, entitlement_view)
+    True
+    
+Create a new entitlement directly.
+
+    >>> entitlement = entitlement_view.create_entitlement(
+    ...     "A-100",
+    ...     foobar.name,
+    ...     EntitlementType.PRIVATE_BUGS.value,
+    ...     100,
+    ...     EntitlementState.ACTIVE.value,
+    ...     '', '', '')
+    >>> print entitlement
+    6
+
+    >>> entitlement_api = xmlrpclib.ServerProxy(
+    ...     'http://foo.bar@canonical.com:test@xmlrpc.launchpad.dev/+entitlements/',
+    ...     transport=XMLRPCTestTransport())
+
+Create a new entitlement via XML-RPC.
+
+    >>> entitlement = entitlement_api.create_entitlement(
+    ...     "A-101", # external_id
+    ...     foobar.name, # person_name
+    ...     EntitlementType.PRIVATE_BRANCHES.value, # entitlement_type
+    ...     101, # quota
+    ...     EntitlementState.ACTIVE.value, # state
+    ...     '', # date_created
+    ...     '', # date_starts
+    ...     '') # date_expires
+    >>> print entitlement
+    7

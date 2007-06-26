@@ -7,6 +7,7 @@ __all__ = [
     'BranchAlreadyRegistered',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
+    'InvalidEntitlementType'
     'NoSuchDistribution',
     'NoSuchPackage',
     'NoSuchProduct',
@@ -159,3 +160,21 @@ class RequiredParameterMissing(LaunchpadFault):
 
     def __init__(self, parameter_name):
         LaunchpadFault.__init__(self, parameter_name=parameter_name)
+
+class InvalidEntitlementState(LaunchpadFault):
+    """Raised if the entitlement state is not valid."""
+
+    error_code = 110
+    msg_template = "The entitlement state is invalid: %(entitlement_state)d"
+
+    def __init__(self, entitlement_state):
+        LaunchpadFault.__init__(self, entitlement_state=entitlement_state)
+
+class InvalidEntitlementType(LaunchpadFault):
+    """Raised if the entitlement type is not valid."""
+
+    error_code = 120
+    msg_template = "The entitlement type is invalid: %(entitlement_type)d"
+
+    def __init__(self, entitlement_type):
+        LaunchpadFault.__init__(self, entitlement_type=entitlement_type)

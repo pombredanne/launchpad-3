@@ -16,6 +16,14 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidEntitlementState">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidEntitlementType">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
   <class class="canonical.launchpad.xmlrpc.faults.NoSuchDistribution">
     <require like_class="xmlrpclib.Fault" />
   </class>

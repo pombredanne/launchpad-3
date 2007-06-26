@@ -2,6 +2,7 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
     xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
 
   <content class="canonical.launchpad.database.Entitlement">
@@ -25,4 +26,15 @@
       provides="canonical.launchpad.interfaces.IEntitlementSet" >
     <allow interface="canonical.launchpad.interfaces.IEntitlementSet" />
   </securedutility>
+
+<!-- entitlement xmlrpc api -->
+<xmlrpc:view
+  for="canonical.launchpad.interfaces.ILaunchpadRoot"
+  interface="canonical.launchpad.xmlrpc.IEntitlementAPI"
+  class="canonical.launchpad.xmlrpc.EntitlementAPI"
+  permission="zope.Public"
+  name="+entitlements"
+  />
+
+
 </configure>

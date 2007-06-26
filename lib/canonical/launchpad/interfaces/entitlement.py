@@ -149,8 +149,8 @@ class IEntitlementSet(Interface):
         entitlements are found.
         """
 
-    def new(entitlement_id, person, quota, entitlement_type,
-            state, date_created=None, date_expires=None, date_starts=None,
+    def new(external_id, person, quota, entitlement_type, state,
+            date_created=None, date_expires=None, date_starts=None,
             amount_used=None, registrant=None, approved_by=None):
         """Create a new entitlement."""
 
