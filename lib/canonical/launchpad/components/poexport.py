@@ -6,7 +6,7 @@ PO files are exported by adapting objects to interfaces which have methods for
 exporting. Exported objects are either a single PO file, or a tarball of many
 PO files.
 
-See IPOTemplateExporter and IDistroReleasePOExporter.
+See IPOTemplateExporter and IDistroSeriesPOExporter.
 """
 
 # XXX
@@ -25,7 +25,6 @@ __metaclass__ = type
 import codecs
 import datetime
 import gettextpo
-import logging
 import os
 import subprocess
 import tarfile
@@ -37,12 +36,11 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad import helpers
-
+from canonical.launchpad.translationformat.gettext_po_parser import (
+    POMessage, POHeader)
 from canonical.launchpad.interfaces import (
-    IPOTemplateExporter, IDistroReleasePOExporter, IPOFileOutput,
+    IPOTemplateExporter, IDistroSeriesPOExporter, IPOFileOutput,
     IVPOExportSet, IVPOTExportSet, EXPORT_DATE_HEADER)
-
-from canonical.launchpad.components.poparser import POMessage, POHeader
 
 class RosettaWriteTarFile:
     """Convenience wrapper around the tarfile module.
@@ -249,15 +247,15 @@ class OutputMsgSet:
 
         message = POMessage(
             msgid=self.msgids[0],
-            msgidPlural=msgidPlural,
+            msgid_plural=msgidPlural,
             msgstr=msgstr,
-            msgstrPlurals=msgstrPlurals,
+            msgstr_plurals=msgstrPlurals,
             obsolete=self.obsolete,
             header=self.pofile.header,
             flags=self.flags,
-            commentText=self.commenttext,
-            sourceComment=self.sourcecomment,
-            fileReferences=self.filereferences)
+            comment=self.commenttext,
+            source_comment=self.sourcecomment,
+            file_references=self.filereferences)
 
         return unicode(message)
 
@@ -424,7 +422,7 @@ def export_rows(rows, pofile_output, force_utf8=False):
             if pofile is not None:
                 # Generate the header of the new PO file.
                 header = POHeader(
-                    commentText=row.potopcomment,
+                    comment=row.potopcomment,
                     msgstr=row.poheader)
 
                 if row.pofuzzyheader:
@@ -801,13 +799,13 @@ def export_potemplate_tarball(filehandle, potemplate, force_utf8=False):
 
     archive.close()
 
-class DistroReleaseTarballPOFileOutput:
+class DistroSeriesTarballPOFileOutput:
     """Add exported PO files to a tarball using language pack directory
     structure.
     """
 
-    def __init__(self, release, archive):
-        self.release = release
+    def __init__(self, series, archive):
+        self.series = series
         self.archive = archive
 
     def __call__(self, potemplate, language, variant, contents):
@@ -822,23 +820,23 @@ class DistroReleaseTarballPOFileOutput:
 
         domain = potemplate.potemplatename.translationdomain.encode('ascii')
         path = os.path.join(
-            'rosetta-%s' % self.release.name,
+            'rosetta-%s' % self.series.name,
             code,
             'LC_MESSAGES',
             '%s.po' % domain
             )
         self.archive.add_file(path, contents)
 
-def export_distrorelease_tarball(filehandle, release, date=None):
-    """Export a tarball of translations for a distribution release."""
+def export_distroseries_tarball(filehandle, series, date=None):
+    """Export a tarball of translations for a distribution series."""
 
     # Open the archive.
     archive = RosettaWriteTarFile(filehandle)
 
     # Do the export.
-    pofiles = getUtility(IVPOExportSet).get_distrorelease_pofiles(
-        release, date)
-    pofile_output = DistroReleaseTarballPOFileOutput(release, archive)
+    pofiles = getUtility(IVPOExportSet).get_distroseries_pofiles(
+        series, date)
+    pofile_output = DistroSeriesTarballPOFileOutput(series, archive)
 
     for pofile in pofiles:
         pofile_output(
@@ -848,7 +846,7 @@ def export_distrorelease_tarball(filehandle, release, date=None):
             contents=pofile.export())
 
     # Add a timestamp file.
-    path = 'rosetta-%s/timestamp.txt' % release.name
+    path = 'rosetta-%s/timestamp.txt' % series.name
     contents = datetime.datetime.utcnow().strftime('%Y%m%d\n')
     archive.add_file(path, contents)
 
@@ -904,24 +902,24 @@ class POTemplateExporter:
         export_potemplate_tarball(
             filehandle, self.potemplate, force_utf8=self.force_utf8)
 
-class DistroReleasePOExporter:
-    """Adapt a distribution release for PO exports."""
+class DistroSeriesPOExporter:
+    """Adapt a distribution series for PO exports."""
 
-    implements(IDistroReleasePOExporter)
+    implements(IDistroSeriesPOExporter)
 
-    def __init__(self, release):
-        self.release = release
+    def __init__(self, series):
+        self.series = series
 
     def export_tarball(self, date=None):
-        """See IDistroReleasePOExporter."""
+        """See IDistroSeriesPOExporter."""
 
         outputbuffer = StringIO()
-        export_distrorelease_tarball(outputbuffer, self.release, date)
+        export_distroseries_tarball(outputbuffer, self.series, date)
         return outputbuffer.getvalue()
 
     def export_tarball_to_file(self, filehandle, date=None):
-        """See IDistroReleasePOExporter."""
-        export_distrorelease_tarball(filehandle, self.release, date)
+        """See IDistroSeriesPOExporter."""
+        export_distroseries_tarball(filehandle, self.series, date)
 
 
 class MOCompilationError(Exception):

@@ -22,7 +22,7 @@ from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackagePublishingPocket,
-    PackageUploadStatus, DistributionReleaseStatus)
+    PackageUploadStatus, DistroSeriesStatus)
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.librarian.utils import filechunks
 
@@ -120,7 +120,7 @@ class TestQueueTool(TestQueueBase):
         bat = getUtility(IDistributionSet)['ubuntu']['breezy-autotest']
         queue_size = getUtility(IPackageUploadSet).count(
             status=PackageUploadStatus.NEW,
-            distrorelease=bat, pocket= PackagePublishingPocket.RELEASE)
+            distroseries=bat, pocket= PackagePublishingPocket.RELEASE)
         self.assertEqual(queue_size, queue_action.size)
         # check if none of them was filtered, since not filter term
         # was passed.
@@ -234,7 +234,7 @@ class TestQueueTool(TestQueueBase):
         """Check if BACKPORTS acceptance are not announced publicly.
 
         Queue tool normally announce acceptance in the specified changeslist
-        for the distrorelease in question, however BACKPORTS announce doesn't
+        for the distroseries in question, however BACKPORTS announce doesn't
         fit very well in that list, they cause unwanted noise.
 
         Further details in bug #59443
@@ -243,7 +243,7 @@ class TestQueueTool(TestQueueBase):
         # to BACKPORTS.
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
-        breezy_autotest.releasestatus = DistributionReleaseStatus.CURRENT
+        breezy_autotest.status = DistroSeriesStatus.CURRENT
 
         # Store the targeted queue item for future inspection.
         # Ensure it is what we expect.
@@ -288,7 +288,7 @@ class TestQueueTool(TestQueueBase):
         # to PROPOSED.
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
-        breezy_autotest.releasestatus = DistributionReleaseStatus.CURRENT
+        breezy_autotest.status = DistroSeriesStatus.CURRENT
 
         # Store the targeted queue item for future inspection.
         # Ensure it is what we expect.
@@ -313,10 +313,10 @@ class TestQueueTool(TestQueueBase):
         # No email was sent.
         self.assertEqual(0, len(stub.test_emails))
 
-    def assertQueueLength(self, expected_length, distro_release, status, name):
+    def assertQueueLength(self, expected_length, distro_series, status, name):
         self.assertEqual(
             expected_length,
-            distro_release.getQueueItems(status=status, name=name).count())
+            distro_series.getQueueItems(status=status, name=name).count())
 
     def testAcceptanceWorkflowForDuplications(self):
         """Check how queue tool behaves dealing with duplicated entries.

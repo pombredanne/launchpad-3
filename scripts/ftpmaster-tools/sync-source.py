@@ -1482,6 +1482,10 @@ def options_setup():
     if not Options.todistro:
         Options.todistro = "ubuntu"
 
+    # XXX FIXME: use distro.currentseries
+    if not Options.tosuite:
+        Options.tosuite = "dapper"
+
     if not Options.fromdistro:
         Options.fromdistro = "debian"
 
@@ -1501,21 +1505,26 @@ def options_setup():
 ################################################################################
 
 def objectize_options():
-    # Convert 'todistro', 'tosuite' and 'incomponent' to objects rather than strings
+    """Parse given options.
 
-    Options.todistro = getUtility(IDistributionSet)[Options.todistro]
+    Convert 'target_distro', 'target_suite' and 'target_component' to objects
+    rather than strings.
+    """
+    Options.target_distro = getUtility(IDistributionSet)[Options.target_distro]
 
-    if not Options.tosuite:
-        Options.tosuite = Options.todistro.currentrelease.name
-    Options.tosuite = Options.todistro.getRelease(Options.tosuite)
+    if not Options.target_suite:
+        Options.target_suite = Options.target_distro.currentseries.name
+    Options.target_suite = Options.target_distro.getSeries(Options.target_suite)
 
-    valid_components = dict([(c.name,c) for c in Options.tosuite.components])
-    if Options.incomponent:
-        if Options.incomponent not in valid_components:
-            dak_utils.fubar("%s is not a valid component for %s/%s."
-                            % (Options.incomponent, Options.todistro.name,
-                               Options.tosuite.name))
-        Options.incomponent = valid_components[Options.incomponent]
+    valid_components = (
+        dict([(c.name,c) for c in Options.target_suite.components]))
+    if (Options.target_component and
+        Options.target_component not in valid_components):
+        dak_utils.fubar(
+            "%s is not a valid component for %s/%s."
+            % (Options.target_component, Options.target_distro.name,
+               Options.target_suite.name))
+    Options.target_component = valid_components[Options.target_component]
 
     # Fix up Options.requestor
     if not Options.requestor:

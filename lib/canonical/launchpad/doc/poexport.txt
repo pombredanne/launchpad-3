@@ -395,11 +395,12 @@ The value at X-Rosetta-Export-Date cannot be tested directly because it would
 be a time bomb in our tests, so we parse the file again with our parser and
 try to get a datetime object of its value.
 
-  >>> from canonical.launchpad.components.poparser import POParser
+  >>> from canonical.launchpad.translationformat.gettext_po_parser import (
+  ...     POParser)
   >>> parser = POParser()
   >>> parser.write(pofile)
   >>> parser.finish()
-  >>> type(parser.header.getRosettaExportDate())
+  >>> type(parser.header.getLaunchpadExportDate())
   <type 'datetime.datetime'>
 
 We need to test also the feature that exports a po file without any obsolete

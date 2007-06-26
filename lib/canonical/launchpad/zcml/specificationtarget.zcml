@@ -16,7 +16,7 @@
 
   <browser:pages
     for="canonical.launchpad.interfaces.IHasSpecifications"
-    class="canonical.launchpad.browser.SpecificationTargetView"
+    class="canonical.launchpad.browser.HasSpecificationsView"
     permission="zope.Public">
     <browser:page
       name="+specs"

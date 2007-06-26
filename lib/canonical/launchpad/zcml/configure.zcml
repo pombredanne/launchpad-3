@@ -38,6 +38,7 @@
     <include file="build.zcml" />
     <include file="builder.zcml" />
     <include file="calendar.zcml" />
+    <include file="codeimport.zcml" />
     <include file="codeofconduct.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
@@ -51,15 +52,16 @@
     <include file="distributionsourcepackagecache.zcml" />
     <include file="distributionsourcepackagerelease.zcml" />
     <include file="distrocomponentuploader.zcml" />
-    <include file="distrorelease.zcml" />
-    <include file="distroreleasebinarypackage.zcml" />
-    <include file="distroreleasesourcepackagerelease.zcml" />
-    <include file="distroreleaselanguage.zcml" />
-    <include file="distroarchrelease.zcml" />
-    <include file="distroarchreleasebinarypackage.zcml" />
-    <include file="distroarchreleasebinarypackagerelease.zcml" />
+    <include file="distroseries.zcml" />
+    <include file="distroseriesbinarypackage.zcml" />
+    <include file="distroseriessourcepackagerelease.zcml" />
+    <include file="distroserieslanguage.zcml" />
+    <include file="distroarchseries.zcml" />
+    <include file="distroarchseriesbinarypackage.zcml" />
+    <include file="distroarchseriesbinarypackagerelease.zcml" />
     <include file="driver.zcml" />
     <include file="emailaddress.zcml" />
+    <include file="entitlement.zcml" />
     <include file="files.zcml" />
     <include file="gpgkey.zcml" />
     <include file="ircid.zcml" />
@@ -93,7 +95,6 @@
     <include file="potranslation.zcml" />
     <include file="processor.zcml" />
     <include file="productrelease.zcml" />
-    <include file="productrelease.zcml" />
     <include file="productseries.zcml" />
     <include file="product.zcml" />
     <include file="project.zcml" />
@@ -123,6 +124,7 @@
     <include file="teamparticipation.zcml" />
     <include file="team-subscriptions.zcml" />
     <include file="temporaryblobstorage.zcml" />
+    <include file="translationimportexport.zcml" />
     <include file="question.zcml" />
     <include file="question-events.zcml" />
     <include file="questionreopening.zcml" />

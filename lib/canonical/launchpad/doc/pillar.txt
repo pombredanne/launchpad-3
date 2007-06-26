@@ -132,3 +132,21 @@ Note that inactive products and projects won't be included in the results.
     distribution: GuadaLinex: Linux for Andalucia (guadalinex) [relevance: low]
 
 
+== PillarName objects ==
+
+PillarName objects have a pillar attribute that returns the object referenced
+by that pillar name
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IProjectSet)
+    >>> from canonical.launchpad.database import PillarName
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> gnome = getUtility(IProjectSet).getByName('gnome')
+    >>> ubuntu_pillarname = PillarName.selectOneBy(name='ubuntu')
+    >>> ubuntu_pillarname.pillar == ubuntu
+    True
+    >>> gnome_pillarname = PillarName.selectOneBy(name='gnome')
+    >>> gnome_pillarname.pillar == gnome
+    True
+

@@ -1,5 +1,7 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
+"""SQLBase implementation of  IAnswerContact."""
+
 __metaclass__ = type
 __all__ = ['AnswerContact']
 
@@ -13,7 +15,7 @@ from canonical.launchpad.interfaces import IAnswerContact
 
 
 class AnswerContact(SQLBase):
-    """An entry for an answer contact for an IQuestionTarget."""
+    """An entry for an answer contact for an `IQuestionTarget`."""
 
     implements(IAnswerContact)
 

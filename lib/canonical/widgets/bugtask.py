@@ -22,6 +22,7 @@ from zope.app.form.utility import setUpWidget
 
 from canonical.launchpad.interfaces import IBugWatch, ILaunchBag, NotFoundError
 from canonical.launchpad.webapp import canonical_url
+from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
@@ -407,11 +408,11 @@ class BugTaskSourcePackageNameWidget(SinglePopupWidget):
 
         field = self.context
         distribution = field.context.distribution
-        if distribution is None and field.context.distrorelease is not None:
-            distribution = field.context.distrorelease.distribution
+        if distribution is None and field.context.distroseries is not None:
+            distribution = field.context.distroseries.distribution
         assert distribution is not None, (
             "BugTaskSourcePackageNameWidget should be used only for"
-            " bugtasks on distributions or on distribution releases.")
+            " bugtasks on distributions or on distribution series.")
 
         try:
             source, binary = distribution.guessPackageNames(input)
@@ -485,3 +486,17 @@ class NewLineToSpacesWidget(StrippedTextWidget):
             lines = value.splitlines()
             value = ' '.join(lines)
         return value
+
+
+class NominationReviewActionWidget(LaunchpadRadioWidget):
+    """Widget for choosing a nomination review action.
+
+    It renders a radio box with no label for each option.
+    """
+    orientation = "horizontal"
+
+    # The label will always be the empty string.
+    _joinButtonToMessageTemplate = '%s%s'
+
+    def textForValue(self, term):
+        return u''
