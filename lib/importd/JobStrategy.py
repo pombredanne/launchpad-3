@@ -465,7 +465,7 @@ class SVNStrategy(CSCVSStrategy):
             ('https://mailman.svn.sourceforge.net/svnroot/mailman/'
              'branches/Release_2_1-maint/mailman'),
             ('https://stage.maemo.org/svn/maemo/projects/haf/branches/'
-             'hildon-control-panel/refactoring/'),
+             'hildon-control-panel/refactoring'),
          ])
 
     def getSVNDirPath(self, aJob, dir):
