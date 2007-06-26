@@ -55,17 +55,17 @@ def read_only_transaction(function):
     return mergeFunctionMetadata(function, transacted)
 
 
-## def writing_transaction(function):
-##     """Decorate 'function' by wrapping it in a transaction and Zope session."""
-##     def transacted(*args, **kwargs):
-##         transaction.begin()
-##         login(ANONYMOUS)
-##         try:
-##             return function(*args, **kwargs)
-##         finally:
-##             logout()
-##             transaction.commit()
-##     return mergeFunctionMetadata(function, transacted)
+def writing_transaction(function):
+    """Decorate 'function' by wrapping it in a transaction and Zope session."""
+    def transacted(*args, **kwargs):
+        transaction.begin()
+        login(ANONYMOUS)
+        try:
+            return function(*args, **kwargs)
+        finally:
+            logout()
+            transaction.commit()
+    return mergeFunctionMetadata(function, transacted)
 
 
 class UserDetailsStorageMixin:
@@ -455,34 +455,29 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             self._createBranchInteraction, loginID, personName, productName,
             branchName)
 
+    @writing_transaction
     def _createBranchInteraction(self, loginID, personName, productName,
                                  branchName):
         """The interaction for createBranch."""
-        transaction.begin()
-        login(ANONYMOUS)
+        if productName == '+junk':
+            product = None
+        else:
+            product = getUtility(IProductSet).getByName(productName)
+
+        person_set = getUtility(IPersonSet)
+        creator_id = self._getPerson(cursor(), loginID)[0]
+        creator = person_set.get(creator_id)
+        owner = person_set.getByName(personName)
+
+        branch_set = getUtility(IBranchSet)
         try:
-            if productName == '+junk':
-                product = None
-            else:
-                product = getUtility(IProductSet).getByName(productName)
-
-            person_set = getUtility(IPersonSet)
-            creator_id = self._getPerson(cursor(), loginID)[0]
-            creator = person_set.get(creator_id)
-            owner = person_set.getByName(personName)
-
-            branch_set = getUtility(IBranchSet)
-            try:
-                branch = branch_set.new(
-                    branchName, creator, owner, product, None, None,
-                    author=creator)
-            except BranchCreationForbidden:
-                return ''
-            else:
-                return branch.id
-        finally:
-            logout()
-            transaction.commit()
+            branch = branch_set.new(
+                branchName, creator, owner, product, None, None,
+                author=creator)
+        except BranchCreationForbidden:
+            return ''
+        else:
+            return branch.id
 
     def requestMirror(self, branchID):
         """See IHostedBranchStorage."""
