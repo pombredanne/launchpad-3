@@ -67,15 +67,17 @@ class IPOTMsgSet(Interface):
     def getPOMsgSet(language, variant=None):
         """Return the IPOMsgSet corresponding to this IPOTMsgSet or None.
 
-        :language: The language associated with the IPOMsgSet that we want.
-        :variant: The language variant.
+        :param language: The language associated with the IPOMsgSet that we
+            want.
+        :param variant: The language variant.
         """
 
     def getDummyPOMsgSet(language, variant=None):
         """Return a Dummy IPOMsgSet corresponding to this IPOTMsgSet.
 
-        :language: The language associated with the IPOMsgSet that we want.
-        :variant: The language variant.
+        :param language: The language associated with the IPOMsgSet that we
+            want.
+        :param variant: The language variant.
 
         We should not have already a POMsgSet for the given arguments.
         """
@@ -97,7 +99,7 @@ class IPOTMsgSet(Interface):
           self.normalizeWhitespaces
           self.normalizeNewLines
 
-        :arg unicode_text: A unicode text that needs to be checked.
+        :param unicode_text: A unicode text that needs to be checked.
         """
 
     def convertDotToSpace(unicode_text):
