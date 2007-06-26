@@ -329,9 +329,7 @@ def get_request_statements():
 
 
 def get_request_duration(now=None):
-    """Get the duration of the current request in seconds.
-
-    """
+    """Get the duration of the current request in seconds."""
     starttime = getattr(_local, 'request_start_time', None)
     if starttime is None:
         return -1
@@ -383,6 +381,35 @@ def soft_timeout_expired():
     return _check_expired(dbconfig.soft_request_timeout)
 
 
+def reset_hard_timeout(execute_func):
+    """Reset the statement_timeout to remaining wallclock time."""
+    if dbconfig.db_statement_timeout is None:
+        return # No timeout - nothing to do
+
+    global _local
+
+    start_time = getattr(_local, 'request_start_time', None)
+    if start_time is None:
+        return # Not in a request - nothing to do
+
+    now = time.time()
+    remaining_ms = (
+            dbconfig.db_statement_timeout - int(now - start_time) * 1000)
+
+    if remaining_ms <= 0:
+        return # Already timed out - nothing to do
+
+    # Only reset the statement timeout once in this many milliseconds
+    # to avoid too many database round trips.
+    precision = 2000
+
+    last_statement_timeout = getattr(_local, 'last_statement_timeout', None)
+    if (last_statement_timeout is None
+            or last_statement_timeout - remaining_ms > precision):
+        execute_func("SET statement_timeout TO %d" % remaining_ms)
+        _local.last_statement_timeout = remaining_ms
+
+
 class RequestExpired(RuntimeError):
     """Request has timed out."""
     implements(IRequestExpired)
@@ -432,6 +459,7 @@ class LaunchpadCursor(ReconnectingCursor):
         transaction completes) and the RequestExpired exception will
         be raised.
         """
+        reset_hard_timeout(super(LaunchpadCursor, self).execute)
         if hard_timeout_expired():
             # make sure the current transaction can not be committed by
             # sending a broken SQL statement to the database
@@ -452,8 +480,7 @@ class LaunchpadCursor(ReconnectingCursor):
                 sys.stderr.write(statement + "\n")
             try:
                 return super(LaunchpadCursor, self).execute(
-                    '/*%s*/ %s' % (id(self.connection), statement),
-                    *args, **kwargs)
+                        statement, *args, **kwargs)
             finally:
                 _log_statement(
                         starttime, time.time(),
@@ -499,12 +526,6 @@ class LaunchpadDatabaseAdapter(ReconnectingDatabaseAdapter):
         flags = _get_dirty_commit_flags()
         connection = super(LaunchpadDatabaseAdapter,
                            self)._connection_factory()
-
-        if dbconfig.db_statement_timeout is not None:
-            cursor = connection.cursor()
-            cursor.execute('SET statement_timeout TO %d' %
-                           dbconfig.db_statement_timeout)
-            connection.commit()
 
         _reset_dirty_commit_flags(*flags)
         return connection
