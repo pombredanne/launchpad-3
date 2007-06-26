@@ -249,6 +249,49 @@ class POFile(SQLBase, RosettaStats):
         """See IPOFile."""
         return getUtility(IPersonSet).getPOFileContributors(self)
 
+    def prepareTranslationCredits(self, potmsgset):
+        """See `IPOFile`."""
+        if (potmsgset.primemsgid_.msgid ==
+            u'_: EMAIL OF TRANSLATORS\nYour emails'):
+            text = potmsgset.translationsForLanguage(self.language.code)[0]
+            if text is None:
+                text = u''
+            for contributor in self.contributors:
+                preferred_email = contributor.preferredemail
+                if (contributor.hide_email_addresses or
+                    preferred_email is None):
+                    text += u'\n'
+                else:
+                    text += preferred_email.email + u'\n'
+            if text and text[-1] == '\n':
+                text = text[:-1]
+            return text
+        elif (potmsgset.primemsgid_.msgid ==
+              u'_: NAME OF TRANSLATORS\nYour names'):
+            text = potmsgset.translationsForLanguage(self.language.code)[0]
+            if text is None:
+                text = u''
+            for contributor in self.contributors:
+                text += u'\n' + contributor.displayname
+            return text
+        elif (potmsgset.primemsgid_.msgid in [u'translation-credits',
+                                              u'translator-credits',
+                                              u'translator_credits']):
+            text = potmsgset.translationsForLanguage(self.language.code)[0]
+            if len(list(self.contributors)):
+                if text is None:
+                    text = u''
+                else:
+                    text += u'\n\n'
+
+                text += 'Launchpad Contributions:'
+                for contributor in self.contributors:
+                    text += ("\n  %s <http://launchpad.net/~%s>" %
+                             (contributor.displayname, contributor.name))
+            return text
+        else:
+            return None
+
     def canEditTranslations(self, person):
         """See IPOFile."""
         if _can_edit_translations(self, person):

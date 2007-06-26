@@ -309,9 +309,9 @@ class POTMsgSet(SQLBase):
 
     @property
     def locked_to_published(self):
-        """See IPOTMsgSet."""
+        """See `IPOTMsgSet`."""
         # primemsgid_.msgid is pre-joined everywhere where
-        # hide_translations_from_anonymous is used
+        # locked_to_published is used
         return self.primemsgid_.msgid in [
             u'translation-credits',
             u'translator-credits',
