@@ -103,8 +103,8 @@ Right now this search is done across Products, Projects and Distributions.
     distribution: Ubuntu Linux (ubuntu) [relevance: perfect]
     distribution: Ubuntu Test (ubuntutest) [relevance: low]
     project: The Evolution Groupware Application (evolution) [relevance: low]
-    project: Tomcat (tomcat) [relevance: low]
     project: The Gnome Panel Applets (applets) [relevance: low]
+    distribution: GuadaLinex: Linux for Andalucia (guadalinex) [relevance: low]
 
 Note that inactive products and projects won't be included in the results.
 
@@ -126,7 +126,6 @@ Note that inactive products and projects won't be included in the results.
     distribution: Ubuntu Linux (ubuntu) [relevance: perfect]
     distribution: Ubuntu Test (ubuntutest) [relevance: low]
     project: The Evolution Groupware Application (evolution) [relevance: low]
-    project: Tomcat (tomcat) [relevance: low]
     project: The Gnome Panel Applets (applets) [relevance: low]
     distribution: GuadaLinex: Linux for Andalucia (guadalinex) [relevance: low]
 

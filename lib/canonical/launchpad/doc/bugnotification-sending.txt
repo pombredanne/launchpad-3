@@ -561,7 +561,7 @@ well:
     To: support@ubuntu.com
     From: Sample Person <test@canonical.com>
     Subject: [Bug 2] Re: Blackhole Trash folder
-    X-Launchpad-Message-Rationale: Registrant (tomcat) @ubuntu-team
+    X-Launchpad-Message-Rationale: Registrant (Tomcat) @ubuntu-team
     <BLANKLINE>
     ** Visibility changed to: Private.
     <BLANKLINE>
@@ -933,7 +933,7 @@ makes it write out the emails it sends.
     Reply-To: Bug 2 <2@bugs.launchpad.net>
     References: foo@example.com-332342--1231
     ...
-    X-Launchpad-Message-Rationale: Registrant (tomcat)
+    X-Launchpad-Message-Rationale: Registrant (Tomcat)
     ...
     INFO    Notifying test@canonical.com about bug 2.
     ...

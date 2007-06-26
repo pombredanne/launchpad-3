@@ -223,7 +223,7 @@ Add an Ubuntu bugtask for a bug that is confirmed upstream.
     ...     BugTaskSearchBugsElsewhereTest)
     >>> def bugTaskInfo(bugtask):
     ...     return '%i %i %s %s' % (
-    ...         bugtask.id, bugtask.bug.id, bugtask.targetname,
+    ...         bugtask.id, bugtask.bug.id, bugtask.bugtargetdisplayname,
     ...         bugtask.bug.title)
     >>> test_helper = BugTaskSearchBugsElsewhereTest(helper_only=True)
     >>> bug_twelve =  getUtility(IBugSet).get(12)

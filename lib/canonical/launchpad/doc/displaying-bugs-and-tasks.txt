@@ -123,7 +123,7 @@ This code also works for null bug tasks:
   >>> netapplet = Product.selectOneBy(name="netapplet")
   >>> null_bugtask = NullBugTask(bug=bug_one, product=netapplet)
   >>> render_bugtask_status(null_bugtask)
-  u'Not reported in NetApplet'
+  u'Not reported in netapplet'
 
 Lastly, some cleanup:
 

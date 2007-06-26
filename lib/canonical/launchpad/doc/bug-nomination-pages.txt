@@ -273,7 +273,7 @@ bugtask has been added.
     Ubuntu Warty, Nominated
 
     >>> for bugtask in bug_one.bugtasks:
-    ...     print bugtask.bugtargetname
+    ...     print bugtask.bugtargetdisplayname
     Mozilla Firefox
     mozilla-firefox (Ubuntu)
     mozilla-firefox (Ubuntu Grumpy)

@@ -503,7 +503,7 @@ A nomination row will be included for evolution now too.
     bugtask, New, Mozilla Firefox
     nomination, Nominated, Mozilla Firefox 1.0
     nomination, Nominated, Mozilla Firefox trunk
-    bugtask, Unconfirmed, evolution (Ubuntu)
+    bugtask, New, evolution (Ubuntu)
     nomination, Nominated, Ubuntu Hoary
     nomination, Nominated, Ubuntu Warty
     bugtask, Confirmed, mozilla-firefox (Debian)
