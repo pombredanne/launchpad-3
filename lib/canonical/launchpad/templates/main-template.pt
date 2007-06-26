@@ -34,7 +34,7 @@
     <tal:comment condition="nothing">
       This CSS collapses portlets and the contents of collapsible fieldsets,
       without the flashing that would result from doing it in JavaScript.
-      activateCollapsables() removes the class="collapsed" from fieldsets, to
+      activateCollapsibles() removes the class="collapsed" from fieldsets, to
       re-show their divs, once the children themselves have been collapsed.
     </tal:comment>
     <style type="text/css">
