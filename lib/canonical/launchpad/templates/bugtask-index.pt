@@ -25,8 +25,15 @@
           tal:attributes="title context/bug/datecreated/fmt:datetime"
           tal:content="context/bug/datecreated/fmt:displaydate" />
         by <tal:reporter replace="structure context/bug/owner/fmt:link" />
+        <strong tal:condition="context/bug/security_related"
+        >- security vulnerability</strong>
       </div>
       <div style="float: right;">
+        <img
+          tal:condition="context/bug/security_related"
+          alt=""
+          src="/@@/warning-large"
+        />
         <img src="/@@/locked-large" title="Private"
              tal:condition="context/bug/private" />
         <img src="/@@/mentoring-large" title="Mentoring available"
@@ -38,8 +45,6 @@
         tal:condition="context/bug/security_related"
         style="float: right; color: #c00;"
       >
-        <img alt="" src="/@@/warning" />
-        <strong>Security vulnerability</strong>
       </div>
       <h1 style="clear: left;" tal:content="context/bug/title">Waah</h1>
 
