@@ -69,6 +69,7 @@
     </div>
   </td>
 </tr>
+<tal:nonautomatic condition="not:context/potmsgset/hide_message">
 <tr
   tal:condition="view/msgid_has_tab"
   class="discreet secondary translation">
@@ -408,6 +409,14 @@
       </div>
     </td>
   </tr>
+</tal:nonautomatic>
+<tal:automatic condition="context/potmsgset/hide_message">
+<tr>
+  <td colspan="3" />
+  <td />
+  <td><strong>This message is handled automatically.</strong></td>
+</tr>
+</tal:automatic>
 </tal:language-code>
 <tr tal:condition="view/comment" class="secondary">
   <th colspan="3"><label>Translator note:</label></th>
