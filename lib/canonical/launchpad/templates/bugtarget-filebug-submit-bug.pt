@@ -55,36 +55,6 @@
             <tr>
               <td></td>
               <td>
-                <table tal:replace="nothing" class="listing" id="similar-bugs" style="clear: both">
-                  <thead>
-                    <tr><th colspan="3">Summary</th></tr>
-                  </thead>
-                  <tbody>
-                    <tr tal:repeat="bug view/similar_bugs"
-                        tal:attributes="title bug/description/fmt:shorten/500"
-                        title="bug description goes here">
-                      <td>
-                        <input type="radio" name="field.bug_already_reported_as"
-                               tal:attributes="value string:${bug/id};
-                                               id string:this-is-my-bug-${bug/id}" />
-                      </td>
-                      <td class="amount">
-                        <label tal:content="bug/id" style="font-weight: normal"
-                               tal:attributes="for string:this-is-my-bug-${bug/id}">1</label>
-                      </td>
-                      <td width="100%">
-                        <label tal:attributes="for string:this-is-my-bug-${bug/id}"
-                               style="font-weight: normal">
-                          <a tal:attributes="href bug/fmt:url" href="#"
-                             tal:content="bug/title">
-                            #1: Firefox does not support SVG
-                          </a>
-                        </label>
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-
                 <div id="similar_bugs_form">
                   <ul id="similar-bugs" style="list-style: none">
                     <li tal:repeat="bug view/similar_bugs"
