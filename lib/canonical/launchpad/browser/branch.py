@@ -14,6 +14,7 @@ __all__ = [
     'BranchInPersonView',
     'BranchInProductView',
     'BranchView',
+    'BranchSubscriptionsView',
     ]
 
 import cgi
@@ -23,20 +24,22 @@ import pytz
 from zope.event import notify
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+
+from canonical.lp import decorates
+
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
-    IBranch, IBranchSet, IBugSet, ILaunchpadCelebrities)
+    BranchCreationForbidden, IBranch, IBranchSet, IBranchSubscription, IBugSet,
+    ILaunchpadCelebrities, IPersonSet)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
-    LaunchpadEditFormView, action, custom_widget)
+    LaunchpadEditFormView, action)
 from canonical.launchpad.webapp.uri import URI
-from canonical.widgets import ContextWidget
 
 
 def quote(text):
@@ -60,13 +63,21 @@ class BranchNavigation(Navigation):
     def dotbzr(self):
         return BranchRef(self.context)
 
+    @stepthrough("+subscription")
+    def traverse_subscription(self, name):
+        """Traverses to an IBranchSubcription."""
+        person = getUtility(IPersonSet).getByName(name)
+
+        if person is not None:
+            return self.context.getSubscription(person)
+
 
 class BranchContextMenu(ContextMenu):
     """Context menu for branches."""
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'browse', 'reassign', 'subscription']
+    links = ['edit', 'browse', 'reassign', 'subscription', 'addsubscriber']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -96,6 +107,11 @@ class BranchContextMenu(ContextMenu):
             text = 'Subscribe'
             icon = 'add'
         return Link(url, text, icon=icon)
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def addsubscriber(self):
+        text = 'Subscribe someone else'
+        return Link('+addsubscriber', text, icon='add')
 
 
 class BranchView(LaunchpadView):
@@ -270,18 +286,34 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
     @action('Add Branch', name='add')
     def add_action(self, action, data):
         """Handle a request to create a new branch for this product."""
-        self.branch = getUtility(IBranchSet).new(
-            name=data['name'],
-            owner=self.user,
-            author=self.getAuthor(data),
-            product=self.getProduct(data),
-            url=data['url'],
-            title=data['title'],
-            summary=data['summary'],
-            lifecycle_status=data['lifecycle_status'],
-            home_page=data['home_page'],
-            whiteboard=data['whiteboard'])
-        notify(SQLObjectCreatedEvent(self.branch))
+        try:
+            self.branch = getUtility(IBranchSet).new(
+                name=data['name'],
+                creator=self.user,
+                owner=self.user,
+                author=self.getAuthor(data),
+                product=self.getProduct(data),
+                url=data['url'],
+                title=data['title'],
+                summary=data['summary'],
+                lifecycle_status=data['lifecycle_status'],
+                home_page=data['home_page'],
+                whiteboard=data['whiteboard'])
+        except BranchCreationForbidden:
+            self.setForbiddenError(self.getProduct(data))
+        else:
+            notify(SQLObjectCreatedEvent(self.branch))
+            self.next_url = canonical_url(self.branch)
+
+    def setForbiddenError(self, product):
+        """Method provided so the error handling can be overridden."""
+        assert product is not None, (
+            "BranchCreationForbidden should never be raised for "
+            "junk branches.")
+        self.setFieldError(
+            'product',
+            "You are not allowed to create branches in %s."
+            % (quote(product.displayname)))
 
     def getAuthor(self, data):
         """A method that is overridden in the derived classes."""
@@ -291,30 +323,26 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         """A method that is overridden in the derived classes."""
         return data['product']
 
-    @property
-    def next_url(self):
-        assert self.branch is not None, 'next_url called when branch is None'
-        return canonical_url(self.branch)
-
     def validate(self, data):
         if 'product' in data and 'name' in data:
-            self.validate_branch_name(self.user,
-                                      data['product'],
-                                      data['name'])
-    def script_hook(self):
-        return '''<script type="text/javascript">
+            self.validate_branch_name(
+                self.user, data['product'], data['name'])
 
-        function populate_name() {
-          populate_branch_name_from_url('%(name)s', '%(url)s')
-        }
-        var url_field = document.getElementById('%(url)s');
-        // Since it is possible that the form could be submitted without
-        // the onblur getting called, and onblur can be called without
-        // onchange being fired, set them both, and handle it in the function.
-        url_field.onchange = populate_name;
-        url_field.onblur = populate_name;
-        </script>''' % { 'name' : self.widgets['name'].name,
-                         'url' : self.widgets['url'].name } 
+    def script_hook(self):
+        return ('''<script type="text/javascript">
+
+            function populate_name() {
+                populate_branch_name_from_url('%(name)s', '%(url)s')
+            }
+            var url_field = document.getElementById('%(url)s');
+            // Since it is possible that the form could be submitted without
+            // the onblur getting called, and onblur can be called without
+            // onchange being fired, set them both, and handle it in the function.
+            url_field.onchange = populate_name;
+            url_field.onblur = populate_name;
+            </script>'''
+            % {'name': self.widgets['name'].name,
+               'url': self.widgets['url'].name})
 
 
 class PersonBranchAddView(BranchAddView):
@@ -329,11 +357,12 @@ class PersonBranchAddView(BranchAddView):
     def getAuthor(self, data):
         return self.context
 
+
 class ProductBranchAddView(BranchAddView):
     """See BranchAddView."""
 
     initial_focus_widget = 'url'
-    
+
     @property
     def field_names(self):
         fields = list(BranchAddView.field_names)
@@ -350,6 +379,15 @@ class ProductBranchAddView(BranchAddView):
     @property
     def initial_values(self):
         return {'author': self.user}
+
+    def setForbiddenError(self, product):
+        """There is no product widget, so set a form wide error."""
+        assert product is not None, (
+            "BranchCreationForbidden should never be raised for "
+            "junk branches.")
+        self.addError(
+            "You are not allowed to create branches in %s."
+            % (quote(product.displayname)))
 
 
 class BranchReassignmentView(ObjectReassignmentView):
@@ -390,3 +428,43 @@ class BranchReassignmentView(ObjectReassignmentView):
                    quote(branch.product.displayname),
                    branch.name))
             return False
+
+
+class DecoratedSubscription:
+    """Adds the editable attribute to a BranchSubscription."""
+    decorates(IBranchSubscription, 'subscription')
+
+    def __init__(self, subscription, editable):
+        self.subscription = subscription
+        self.editable = editable
+
+
+class BranchSubscriptionsView(LaunchpadView):
+    """The view for the branch subscriptions portlet.
+
+    The view is used to provide a decorated list of branch subscriptions
+    in order to provide links to be able to edit the subscriptions
+    based on whether or not the user is able to edit the subscription.
+    """
+
+    def isEditable(self, subscription):
+        """A subscription is editable by members of the subscribed team.
+
+        Launchpad Admins are special, and can edit anyone's subscription.
+        """
+        # We don't want to say editable if the logged in user
+        # is the same as the person of the subscription.
+        if self.user is None or self.user == subscription.person:
+            return False
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (self.user.inTeam(subscription.person) or
+                self.user.inTeam(admins))
+
+    def subscriptions(self):
+        """Return a decorated list of branch subscriptions."""
+        sorted_subscriptions = sorted(
+            self.context.subscriptions,
+            key=lambda subscription: subscription.person.browsername)
+        return [DecoratedSubscription(
+                    subscription, self.isEditable(subscription))
+                for subscription in sorted_subscriptions]

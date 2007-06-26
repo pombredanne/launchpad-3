@@ -7,13 +7,13 @@ There are currently four bugs open in Ubuntu.
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs')
     >>> print_bugtasks(anon_browser.contents)
     1 Firefox does not support SVG
-      mozilla-firefox Medium Unconfirmed
+      mozilla-firefox Medium New
     9 Thunderbird crashes
       thunderbird Medium Confirmed
     10 another test bug
-       linux-source-2.6.15 Medium Unconfirmed
+       linux-source-2.6.15 Medium New
     2 Blackhole Trash folder
-      &mdash; Medium Unconfirmed
+      &mdash; Medium New
 
 Now if we go to the advanced search and choose to list only the bugs
 needing a bug watch, only the bugs with tasks in other contexts that
@@ -25,24 +25,21 @@ doesn't have a bug watch.
     >>> anon_browser.getLink('Advanced search').attrs['href']
     '?advanced=1'
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> anon_browser.url
-    'http://launchpad.dev/ubuntu/+bugs?advanced=1'
-
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [
-    ...     'Show only bugs that need to be forwarded to an upstream bugtracker']
+    ...     'Show bugs that need to be forwarded to an upstream bugtracker']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     2 Blackhole Trash folder
-      &mdash; Medium Unconfirmed
+      &mdash; Medium New
 
 There's an exception to what's shown on this filter though: if all the
-bugtasks on contexts that don't use Launchpad are Rejected, those bugs
+bugtasks on contexts that don't use Launchpad are Invalid, those bugs
 are not included in the report.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout, syncUpdate
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.interfaces import (IBugSet, ILaunchBag)
     >>> from canonical.lp.dbschema import BugTaskStatus
 
     >>> login("foo.bar@canonical.com")
@@ -50,22 +47,23 @@ are not included in the report.
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> for bugtask in bug_two.bugtasks:
     ...     if not bugtask.target_uses_malone:
-    ...         bugtask.transitionToStatus(BugTaskStatus.REJECTED)
+    ...         bugtask.transitionToStatus(
+    ...             BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
     ...         syncUpdate(bugtask)
 
     >>> for bugtask in bug_two.bugtasks:
     ...     print "%s, %s" % (bugtask.target.bugtargetname, bugtask.status.title)
-    ubuntu-product (upstream), Rejected
-    Ubuntu, Unconfirmed
-    Ubuntu Hoary, Unconfirmed
-    mozilla-firefox (Debian), Rejected
-    mozilla-firefox (Debian Woody), Rejected
+    ubuntu-product (upstream), Invalid
+    Ubuntu, New
+    Ubuntu Hoary, New
+    mozilla-firefox (Debian), Invalid
+    mozilla-firefox (Debian Woody), Invalid
     >>> logout()
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [
-    ...     'Show only bugs that need to be forwarded to an upstream bugtracker']
+    ...     'Show bugs that need to be forwarded to an upstream bugtracker']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print anon_browser.contents
     <!DOCTYPE...
@@ -77,21 +75,18 @@ makes it easy for developers to ignore bugs that they've already passed
 on upstream, to focus instead on things they need to work on.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> anon_browser.url
-    'http://launchpad.dev/ubuntu/+bugs?advanced=1'
-
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [
-    ...     'Show only bugs that are not known to affect upstream']
+    ...     'Show bugs that are not known to affect upstream']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     10 another test bug
-       linux-source-2.6.15 Medium Unconfirmed
+       linux-source-2.6.15 Medium New
 
 We can also show only the bugs that have a resolved upstream task. For
 our purposes, this means:
 
-    * bugs with bugtasks linked to watches that are rejected, fixed
+    * bugs with bugtasks linked to watches that are invalid, fixed
       committed or fix released
     * bugs with upstream bugtasks that are fix committed or fix
       released
@@ -111,20 +106,126 @@ Now, if we choose to show only closed upstream task, only the bugs we
 modified and the sampledata we created above will show up.
 
     >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
-    >>> anon_browser.url
-    'http://launchpad.dev/ubuntu/+bugs?advanced=1'
-
     >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
     >>> upstream_status.displayValue = [
-    ...     'Show only bugs that are resolved upstream']
+    ...     'Show bugs that are resolved upstream']
     >>> anon_browser.getControl('Search', index=0).click()
     >>> print_bugtasks(anon_browser.contents)
     1 Firefox does not support SVG
-      mozilla-firefox Medium Unconfirmed
+      mozilla-firefox Medium New
     9 Thunderbird crashes
       thunderbird Medium Confirmed
     2 Blackhole Trash folder
-      &mdash; Medium Unconfirmed
+      &mdash; Medium New
+
+If more than one filter for upstream status is selected, the search returns
+the union of the results for the individual filters.
+
+    >>> anon_browser.open('http://launchpad.dev/ubuntu/+bugs?advanced=1')
+    >>> upstream_status = anon_browser.getControl(name='field.status_upstream')
+    >>> upstream_status.displayValue = [
+    ...     'Show bugs that are resolved upstream',
+    ...     'Show bugs that are not known to affect upstream'
+    ...     ]
+
+    >>> anon_browser.getControl('Search', index=0).click()
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG
+      mozilla-firefox Medium New
+    9 Thunderbird crashes
+      thunderbird Medium Confirmed
+    10 another test bug
+       linux-source-2.6.15 Medium New
+    2 Blackhole Trash folder
+      &mdash; Medium New
+
+== Backward-compatibility for old bookmars ==
+
+Before Launchpad version 1.1.6, users could selected only one upstream
+status. Bookmarks of such searches work nevertheless.
+
+The user opens a bookmark for "upstream status doesn't matter"
+
+    >>> from urllib import urlencode
+    >>> bookmark_params = {
+    ...     'field.status_upstream': '',
+    ...     'field.status_upstream-empty-marker': '1',
+    ...     'field.searchtext': '',
+    ...     'orderby': '-importance',
+    ...     'field.status:list': [
+    ...          'Unconfirmed', 'Needs Info', 'Confirmed', 'In Progress',
+    ...          'Fix Committed'],
+    ...     'assignee_option': 'any',
+    ...     'field.assignee': '',
+    ...     'field.bug_reporter': '',
+    ...     'field.bug_contact': '',
+    ...     'field.component-empty-marker': '1',
+    ...     'field.omit_dupes.used': '',
+    ...     'field.omit_dupes': 'on',
+    ...     'field.has_patch.used=':'',
+    ...     'field.tag': '',
+    ...     'field.has_cve.used': '',
+    ...     'field.has_no_package.used': '',
+    ...     'search': 'Search'}
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+bugs?' + urlencode(
+    ...         bookmark_params, True))
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG
+      mozilla-firefox Medium New
+    9 Thunderbird crashes
+      thunderbird Medium Confirmed
+    10 another test bug
+       linux-source-2.6.15 Medium New
+    2 Blackhole Trash folder
+      &mdash; Medium New
+ 
+The user opens a bookmark for "upstream status: Show only bugs that need 
+to be forwarded to an upstream bugtracker".
+
+    >>> bookmark_params['field.status_upstream'] = 'pending_bugwatch'
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+bugs?' + urlencode(
+    ...         bookmark_params, True))
+    >>> print_bugtasks(anon_browser.contents)
+
+The user opens a bookmark for "upstream status: Show only bugs that are
+not known to affect upstream".
+
+    >>> bookmark_params['field.status_upstream'] = 'hide_upstream'
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+bugs?' + urlencode(
+    ...         bookmark_params, True))
+    >>> print_bugtasks(anon_browser.contents)
+    10 another test bug
+       linux-source-2.6.15 Medium New
+
+The user opens a bookmark for "upstream status: Show only bugs that are
+resolved upstream".
+
+    >>> bookmark_params['field.status_upstream'] = 'only_resolved_upstream'
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+bugs?' + urlencode(
+    ...         bookmark_params, True))
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG
+      mozilla-firefox Medium New
+    9 Thunderbird crashes
+      thunderbird Medium Confirmed
+    2 Blackhole Trash folder
+      &mdash; Medium New
+
+Other values for status_upstream lead to an error.
+
+    >>> bookmark_params['field.status_upstream'] = 'invalid'
+    >>> anon_browser.open(
+    ...     'http://bugs.launchpad.dev/ubuntu/+bugs?' + urlencode(
+    ...         bookmark_params, True))
+    Traceback (most recent call last):
+    ...
+    UnexpectedFormData: Unexpected value for field 'status_upstream'. 
+    Perhaps your bookmarks are out of date or you changed the URL by hand?
+
 
 Let's reset the statuses we set.
 

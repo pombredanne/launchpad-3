@@ -6,22 +6,26 @@ __metaclass__ = type
 import threading
 import xmlrpclib
 
-from zope.publisher.browser import BrowserRequest, BrowserResponse, TestRequest
-from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
+from zope.app.form.browser.widget import SimpleInputWidget
+from zope.app.form.browser.itemswidgets import  MultiDataHelper
 from zope.app.session.interfaces import ISession
-from zope.interface import implements
 from zope.app.publication.httpfactory import HTTPPublicationRequestFactory
 from zope.app.publication.interfaces import IRequestPublicationFactory
-from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
 from zope.app.server import wsgi
 from zope.app.wsgi import WSGIPublisherApplication
-from zope.server.http.commonaccesslogger import CommonAccessLogger
+from zope.interface import implements
+from zope.publisher.browser import (
+    BrowserRequest, BrowserResponse, TestRequest)
+from zope.publisher.xmlrpc import XMLRPCRequest, XMLRPCResponse
 from zope.security.proxy import isinstance as zope_isinstance
+from zope.server.http.commonaccesslogger import CommonAccessLogger
+from zope.server.http.wsgihttpserver import PMDBWSGIHTTPServer, WSGIHTTPServer
 
 from canonical.cachedproperty import cachedproperty
 
 import canonical.launchpad.layers
-from canonical.launchpad.interfaces import IShipItApplication
+from canonical.launchpad.interfaces import (
+        IShipItApplication, IOpenIdApplication)
 
 from canonical.launchpad.webapp.notifications import (
     NotificationRequest, NotificationResponse, NotificationList)
@@ -376,6 +380,53 @@ class BrowserFormNG:
         return value
 
 
+class Zope3WidgetsUseIBrowserFormNGMonkeyPatch:
+    """Make Zope3 widgets use IBrowserFormNG.
+
+    Replace the SimpleInputWidget._getFormInput method with one using
+    `IBrowserFormNG`.
+    """
+
+    installed = False
+    
+    @classmethod
+    def install(cls):
+        """Install the monkey patch."""
+        assert not cls.installed, "Monkey patch is already installed."
+        def _getFormInput_single(self):
+            """Return the submitted form value.
+
+            :raises UnexpectedFormData: If more than one value is submitted.
+            """
+            return self.request.form_ng.getOne(self.name)
+
+        def _getFormInput_multi(self):
+            """Return the submitted form values.
+            """
+            return self.request.form_ng.getAll(self.name)
+
+        # Save the original method and replace it with fixed ones.
+        # We don't save MultiDataHelper._getFormInput because it doesn't
+        # override the one in SimpleInputWidget.
+        cls._original__getFormInput = SimpleInputWidget._getFormInput
+        SimpleInputWidget._getFormInput = _getFormInput_single
+        MultiDataHelper._getFormInput = _getFormInput_multi
+        cls.installed = True
+        
+    @classmethod
+    def uninstall(cls):
+        """Uninstall the monkey patch."""
+        assert cls.installed, "Monkey patch is not installed."
+
+        # Restore saved method.
+        SimpleInputWidget._getFormInput = cls._original__getFormInput
+        del MultiDataHelper._getFormInput
+        cls.installed = False
+
+
+Zope3WidgetsUseIBrowserFormNGMonkeyPatch.install()
+
+
 class LaunchpadBrowserResponse(NotificationResponse, BrowserResponse):
 
     # Note that NotificationResponse defines a 'redirect' method which
@@ -696,6 +747,9 @@ class LaunchpadXMLRPCResponse(XMLRPCResponse):
 
 class OpenIdPublication(LaunchpadBrowserPublication):
     """The publication used for OpenId requests."""
+
+    root_object_interface = IOpenIdApplication
+
 
 class OpenIdBrowserRequest(LaunchpadBrowserRequest):
     implements(canonical.launchpad.layers.OpenIdLayer)

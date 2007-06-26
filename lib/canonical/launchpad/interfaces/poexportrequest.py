@@ -5,11 +5,11 @@ __metaclass__ = type
 __all__ = ('IPOExportRequestSet', 'IPOExportRequest')
 
 from zope.interface import Interface, Attribute
-from canonical.lp.dbschema import RosettaFileFormat
+from canonical.lp.dbschema import TranslationFileFormat
 
 class IPOExportRequestSet(Interface):
     def addRequest(person, potemplate=None, pofiles=None,
-                   format=RosettaFileFormat.PO):
+                   format=TranslationFileFormat.PO):
         """Add a request to export a set of files.
 
         :potemplate: The PO template to export, or None.

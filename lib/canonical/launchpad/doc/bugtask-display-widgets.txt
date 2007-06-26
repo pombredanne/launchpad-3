@@ -68,11 +68,11 @@ in a span with the appropriate css class:
 
     >>> from canonical.widgets.bugtask import DBItemDisplayWidget
     >>> firefox_bugtask.status.title
-    'Unconfirmed'
+    'New'
     >>> status_field = IBugTask['status'].bind(firefox_bugtask)
     >>> status_widget = DBItemDisplayWidget(status_field, None, None)
     >>> print status_widget()
-    <span class="statusUNCONFIRMED">Unconfirmed</span>
+    <span class="statusNEW">New</span>
 
 If the value is None, a dash is displayed:
 

@@ -23,7 +23,7 @@ class ILoginToken(Interface):
         title=_('ID'), required=True, readonly=True,
         )
     email = TextLine(
-        title=_('The email address that this request was sent to.'),
+        title=_('Email address'),
         required=True,
         )
     requester = Int(

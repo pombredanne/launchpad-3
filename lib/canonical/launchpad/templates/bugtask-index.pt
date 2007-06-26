@@ -153,14 +153,14 @@
     &raquo; <a href="+mentor">Offer to mentor someone fixing this bug</a>
   </p>
 
-  <tal:branches define="bug_branches context/bug/bug_branches"
-              condition="bug_branches">
+  <tal:branches define="bug_branches view/bug_branches"
+                condition="bug_branches">
     <p tal:condition="context/bug/private"
          class="warning message">
       This bug is private, so avoid adding public branches here.
     </p>
 
-    <table class="listing">
+    <table class="listing" id="bug_branch_details">
       <thead>
         <tr>
           <th>Related Branch</th>
