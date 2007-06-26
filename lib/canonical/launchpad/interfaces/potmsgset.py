@@ -118,9 +118,9 @@ class IPOTMsgSet(Interface):
         """Return 'unicode_text' with new lines chars in sync with the msgid."""
 
 
-    hide_message = Attribute(
+    hide_translations_from_anonymous = Attribute(
         """Whether the translations for this message should be hidden.
 
-        Messages that are automatically handled are hidden from the
-        translate form.
+        Messages that are likely to contain email addresses
+        are shown only to logged-in users, and not to anonymous users.
         """)

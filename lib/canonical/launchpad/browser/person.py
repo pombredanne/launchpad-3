@@ -1978,12 +1978,14 @@ class PersonTranslationView(LaunchpadView):
     def should_display_message(self, pomsgset):
         """Should a certain POMsgSet be displayed.
 
-        Return False if message may contain sensitive data such as
-        email addresses, or if it's automatically handled by Launchpad.
+        Return False if user is not logged in and message may contain
+        sensitive data such as email addresses.
 
         Otherwise, return True.
         """
-        return not(pomsgset.potmsgset.hide_message)
+        if self.user:
+            return True
+        return not(pomsgset.potmsgset.hide_translations_from_anonymous)
 
 
 class PersonGPGView(LaunchpadView):
