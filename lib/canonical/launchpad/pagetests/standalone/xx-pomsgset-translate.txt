@@ -280,7 +280,7 @@ Now, we will check suggestions in this form.
 
 Check that suggestions come in from other contexts:
 
-  >>> "<label>Suggested elsewhere:</label>" in browser.contents
+  >>> "Suggested in" in browser.contents
   True
   >>> "suggestion added by a non-editor for a multiline" in browser.contents
   True
@@ -288,9 +288,9 @@ Check that suggestions come in from other contexts:
 Check that no other suggestions are presented (since no others are
 relevant for this message):
 
-  >>> "<label>Suggestion" not in browser.contents
+  >>> "Suggested by" not in browser.contents
   True
-  >>> "<label>Used elsewhere:</label>" not in browser.contents
+  >>> "Used in" not in browser.contents
   True
 
 Check for the translator note:

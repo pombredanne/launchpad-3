@@ -147,10 +147,11 @@ def _can_edit_translations(pofile, person):
 
 
 class POFileMixIn(RosettaStats):
-    """Base class for POFile and DummyPOFile.
+    """Base class for `POFile` and `DummyPOFile`.
 
-    Provides machinery for retrieving POMsgSets and populating their
-    submissions caches.  That machinery is needed even for DummyPOFiles."""
+    Provides machinery for retrieving `POMsgSet`s and populating their
+    submissions caches.  That machinery is needed even for `DummyPOFile`s.
+    """
 
     def getMsgSetsForPOTMsgSets(self, for_potmsgsets):
         """See `IPOFile`."""
@@ -158,16 +159,17 @@ class POFileMixIn(RosettaStats):
         if for_potmsgsets is None:
             return {}
         for_potmsgsets = list(for_potmsgsets)
-        if not for_potmsgsets:
+        if len(for_potmsgsets) == 0:
             return {}
 
         # Retrieve existing POMsgSets matching for_potmsgsets (one each).
-        # XXX: JeroenVermeulen 2007-06-15, why won't sqlvalues() work here?
-        ids = ','.join([quote(potmsgset.id) for potmsgset in for_potmsgsets])
+        ids_as_sql = ','.join(
+            quote(potmsgset) for potmsgset in for_potmsgsets)
         existing_msgsets = []
         if self.id is not None:
             existing_msgsets = POMsgSet.select(
-                "potmsgset in (%s) AND pofile = %s" % (ids, quote(self)))
+                "potmsgset in (%s) AND pofile = %s"
+                % (ids_as_sql, quote(self)))
 
         result = dict((pomsgset.potmsgset, pomsgset)
                       for pomsgset in existing_msgsets)
@@ -257,8 +259,9 @@ class POFileMixIn(RosettaStats):
         # Note that a suggestion coming from a fuzzy pomsgset isn't relevant
         # as a suggestion, but if it happens to be attached to a msgset from
         # stored_pomsgsets, it will still be relevant to that msgset.
+
         query = """
-            SELECT POSubmission.id, POTMsgSet.primemsgid
+            SELECT DISTINCT POSubmission.id, POTMsgSet.primemsgid
             FROM POSubmission
             JOIN POMsgSet ON POSubmission.pomsgset = POMsgSet.id
             JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
@@ -269,6 +272,9 @@ class POFileMixIn(RosettaStats):
                 POTMsgSet.primemsgid IN %(wanted_primemsgids)s
             """ % parameters
         cur = cursor()
+
+        # XXX: JeroenVermeulen 2007-06-17, pre-join the potranslations we'll
+        # be needing to prevent piecemeal retrieval.  (See bug 30602)
         cur.execute(query)
         available = dict(cur.fetchall())
         if not available:
@@ -572,7 +578,8 @@ class POFile(SQLBase, POFileMixIn):
               POSubmission.active IS NOT TRUE))
             ''' % sqlvalues(self.potemplate, self),
             clauseTables=['POMsgSet', 'POSubmission'],
-            orderBy='POTmsgSet.sequence')
+            orderBy='POTmsgSet.sequence',
+            distinct=True)
 
         return results
 

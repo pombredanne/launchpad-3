@@ -21,8 +21,8 @@
   </table>
   <p>
     <a href="+projects">
-      &raquo; See all projects owned or driven by 
-      <span tal:replace="context/title">Foo Bar</span>
+      &raquo; See all projects <span tal:replace="context/title">Foo Bar</span>
+      is involved with
     </a>
   </p>
 </div>

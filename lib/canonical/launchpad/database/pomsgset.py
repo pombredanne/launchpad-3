@@ -82,6 +82,7 @@ class POMsgSetMixIn:
                 POTMsgSet.primemsgid = %(primemsgid)s
             """ % parameters
 
+        # XXX: JeroenVermeulen 2007-016-17, pre-join potranslations!
         return POSubmission.select(
             query, clauseTables=joins, orderBy='-datecreated', distinct=True)
 
@@ -132,6 +133,7 @@ class POMsgSetMixIn:
                     submission
                     for submission in self.suggestions.get(pluralform)
                     if submission.potranslation != active.potranslation]
+
         assert self._hasSubmissionsCaches(), (
             "Failed to set up POMsgSet's submission caches")
 
@@ -173,6 +175,11 @@ class DummyPOMsgSet(POMsgSetMixIn):
     @property
     def active_texts(self):
         """See `IPOMsgSet`."""
+        return [None] * self.pluralforms
+
+    @property
+    def published_texts(self):
+        """See IPOMsgSet."""
         return [None] * self.pluralforms
 
     def getActiveSubmission(self, pluralform):
@@ -240,13 +247,13 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
     @property
     def published_texts(self):
         """See `IPOMsgSet`."""
-        self.initializeSubmissionsCaches()
+        self._fetchActiveAndPublishedSubmissions()
         return self._extractTranslations(self.published_submissions)
 
     @property
     def active_texts(self):
         """See `IPOMsgSet`."""
-        self.initializeSubmissionsCaches()
+        self._fetchActiveAndPublishedSubmissions()
         return self._extractTranslations(self.active_submissions)
 
     def isNewerThan(self, timestamp):
@@ -254,14 +261,42 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         date_updated = self.date_reviewed
         for pluralform in range(self.pluralforms):
             submission = self.getActiveSubmission(pluralform)
-            if submission and (not date_updated or
-                               submission.datecreated > date_updated):
+            if submission is not None and (
+                not date_updated or submission.datecreated > date_updated):
                 date_updated = submission.datecreated
 
         if (date_updated is not None and date_updated > timestamp):
             return True
         else:
             return False
+
+    def getLatestChangeInfo(self):
+        """Return a tuple of person, date for latest change to `IPOMsgSet`."""
+        if self.reviewer and self.date_reviewed:
+            return (self.reviewer, self.date_reviewed)
+
+        last_submission = None
+        for pluralform in range(self.pluralforms):
+            submission = self.getActiveSubmission(pluralform)
+            if (last_submission is None or
+                submission.datecreated > last_submission.datecreated):
+                last_submission = submission
+        if last_submission:
+            return (last_submission.person, last_submission.datecreated)
+        else:
+            return (None, None)
+
+    @property
+    def latest_change_date(self):
+        """See `IPOMsgSet`."""
+        person, date = self.getLatestChangeInfo()
+        return date
+
+    @property
+    def latest_change_person(self):
+        """See `IPOMsgSet`."""
+        person, date = self.getLatestChangeInfo()
+        return person
 
     def setActiveSubmission(self, pluralform, submission):
         """See `IPOMsgSet`."""
@@ -273,7 +308,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         current_active = self.getActiveSubmission(pluralform)
         if current_active is not None:
             current_active.active = False
-            del(self.active_submissions[pluralform])
+            del self.active_submissions[pluralform]
             # We need this syncUpdate so if the next submission.active change
             # is done we are sure that we will store this change first in the
             # database. This is because we can only have an IPOSubmission with
@@ -325,6 +360,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
         active = {}
         published = {}
+        # XXX: JeroenVermeulen 2007-016-17, prejoin potranslations!
         query = "pomsgset = %s AND (active OR published)" % quote(self)
         for submission in POSubmission.select(query):
             pluralform = submission.pluralform

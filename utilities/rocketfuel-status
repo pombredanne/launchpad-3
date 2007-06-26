@@ -11,6 +11,7 @@ for branch in *; do
     bzr status --short
     cd ../trunk
     bzr missing --theirs-only --line ../${branch} | grep -v "^You are missing"
+    cd ..
   fi;
 done;
 
