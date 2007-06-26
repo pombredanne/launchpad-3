@@ -7,7 +7,8 @@ an existing team.  This is done through an IMailingListRegistry utility.
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IMailingList, IMailingListRegistry)
-    >>> list_registry = getUtility(IMailingListRegistry)
+    >>> from canonical.launchpad.database import MailingListRegistry
+    >>> list_registry = MailingListRegistry()
     >>> verifyObject(IMailingListRegistry, list_registry)
     True
 
@@ -18,19 +19,25 @@ several team.
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> login(ANONYMOUS)
     >>> personset = getUtility(IPersonSet)
-    >>> team_owner = personset.getByName('ddaa')
-    >>> team_one = personset.newTeam(team_owner, 'team_one', 'Team One')
-    >>> team_two = personset.newTeam(team_owner, 'team_two', 'Team Two')
-    >>> team_three = personset.newTeam(team_owner, 'team_three', 'Team Three')
-    >>> team_four = personset.newTeam(team_owner, 'team_four', 'Team Four')
+    >>> ddaa = personset.getByName('ddaa')
+    >>> team_one = personset.newTeam(ddaa, 'team-one', 'Team One')
+    >>> team_two = personset.newTeam(ddaa, 'team-two', 'Team Two')
+    >>> team_three = personset.newTeam(ddaa, 'team-three', 'Team Three')
+    >>> team_four = personset.newTeam(ddaa, 'team-four', 'Team Four')
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
+Define a helper function that sorts mailing lists alphabetically based on
+their team's name.
+
+    >>> def sorted_lists(lists):
+    ...     return sorted(lists, key=lambda L: L.team.name)
+
 None of these teams have mailing lists yet.
 
-    >>> sorted(list_registry.registered_lists)
+    >>> sorted_lists(list_registry.registered_lists)
     []
-    >>> sorted(list_registry.approved_lists)
+    >>> sorted_lists(list_registry.approved_lists)
     []
     >>> print list_registry.getTeamMailingList(team_one)
     None
@@ -39,6 +46,7 @@ None of these teams have mailing lists yet.
     >>> print list_registry.getTeamMailingList(team_three)
     None
     >>> print list_registry.getTeamMailingList(team_four)
+    None
 
 
 == Registering a team mailing list ==
@@ -48,41 +56,65 @@ registering the list.  By registering the mailing list, the team owner makes a
 request to have the list created, but it is not created right away.
 
     >>> from datetime import datetime
-    >>> registration_date = datetime.now()
+    >>> import pytz
+    >>> utc = pytz.timezone('UTC')
+    >>> registration_date = datetime.now(utc)
     >>> list_one = list_registry.register(team_one)
     >>> flush_database_updates()
     >>> list_one
-    '<MailingList for ubuntu_team; status=REGISTERED>'
+    <MailingList for team "team-one"; status=REGISTERED at 0x...>
+
+You may not register a mailing list for a person.
+
+    >>> salgado = personset.getByName('salgado')
+    >>> list_registry.register(salgado)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Cannot register a list for a person who is not a team
 
 The newly registered mailing list is linked to its team, and the list's
 registrant is the team owner at the time the list was registered.  The list's
 registration date is set, and its status is set to REGISTERED.
 
-    >>> list_one.team
-    'Team One team'
-    >>> list_one.team is ubuntu_team
+    >>> list_one.team.displayname
+    u'Team One'
+    >>> list_one.team is team_one
     True
-    >>> list_one.registrant
-    'ddaa@canonical.com'
-    >>> list_one.registrant is ubuntu_team.teamowner
+    >>> list_one.registrant.name
+    u'ddaa'
+    >>> list_one.registrant is team_one.teamowner
     True
-    >>> registration_date <= list_one.date_registered >= datetime.now()
+    >>> registration_date <= list_one.date_registered <= datetime.now(utc)
     True
-    >>> list_one.status
-    REGISTERED
+    >>> list_one.status.name
+    'REGISTERED'
+
+The mailing list has no reviewer or review date, nor an activation date or
+welcome message text.
+
+    >>> print list_one.reviewer
+    None
+    >>> print list_one.date_reviewed
+    None
+    >>> print list_one.date_activated
+    None
+    >>> print list_one.welcome_message_text
+    None
 
 The mailing list's registrant does not change if the team's owner changes.
 
     >>> carlos = personset.getByName('carlos')
-    >>> ubuntu_team.owner = carlos
+    >>> team_one.teamowner = carlos
     >>> flush_database_updates()
-    >>> list_one.registrant
-    'ddaa@canonical.com'
+    >>> list_one.registrant.name
+    u'ddaa'
 
 A mailing list cannot be registered more than once.
 
     >>> list_registry.register(team_one)
-    Assertion Error
+    Traceback (most recent call last):
+    ...
+    AssertionError: Mailing list for team "team-one" already exists
 
 
 == Reviewing a registered mailing list ==
@@ -91,58 +123,79 @@ A registered mailing list must then be reviewed by a Launchpad administrator
 before the request to create it can be made.  Use the registry to find the set
 of all currently registered mailing lists.
 
-    >>> list_registry.register(team_two)
-    >>> list_registry.register(team_three)
-    >>> list_registry.register(team_four)
-    >>> sorted(list_registry.registered_lists)
-    ['Team One mailing list',
-     'Team Two mailing list',
-     'Team Three mailing list',
-     'Team Four mailing list']
+    >>> list_two = list_registry.register(team_two)
+    >>> list_two
+    <MailingList for team "team-two"; status=REGISTERED at ...>
+    >>> list_three = list_registry.register(team_three)
+    >>> list_three
+    <MailingList for team "team-three"; status=REGISTERED at ...>
+    >>> list_four = list_registry.register(team_four)
+    >>> list_four
+    <MailingList for team "team-four"; status=REGISTERED at ...>
+    >>> flush_database_updates()
+    >>> sorted_lists(list_registry.registered_lists)
+    [<MailingList for team "team-four"; status=REGISTERED at ...>,
+     <MailingList for team "team-one"; status=REGISTERED at ...>,
+     <MailingList for team "team-three"; status=REGISTERED at ...>,
+     <MailingList for team "team-two"; status=REGISTERED at ...>]
 
 A mailing list's registration cannot be reviewed by a non-administrator.
 
     >>> from canonical.lp.dbschema import MailingListStatus
     >>> no_priv = personset.getByName('no-priv')
     >>> list_one.review(no_priv, MailingListStatus.APPROVED)
-    Assertion Error
-    >>> list_one.review(carlos, MailingListStatus.APPROVED)
-    Assertion Error
+    Traceback (most recent call last):
+    ...
+    AssertionError: Reviewer must be a Launchpad administrator
     >>> list_one.review(ddaa, MailingListStatus.APPROVED)
-    Assertion Error
+    Traceback (most recent call last):
+    ...
+    AssertionError: Reviewer must be a Launchpad administrator
 
 A Launchpad administer though, may approve the registration.
 
-    >>> sabdfl = personset.getByName('sabdfl')
-    >>> list_one.review(sabdfl, MailingListStatus.APPROVED)
-    >>> list_one.status
-    APPROVED
+    >>> list_one.review(carlos, MailingListStatus.APPROVED)
+    >>> flush_database_updates()
+    >>> list_one.status.name
+    'APPROVED'
 
 A mailing list that has already been reviewed, may not be re-reviewed.
 
-    >>> list_one.review(sabdfl, MailingListStatus.APPROVED)
-    Assertion Error
-    >>> list_one.review(sabdfl, MailingListStatus.DECLINED)
-    Assertion Error
+    >>> list_one.review(carlos, MailingListStatus.APPROVED)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only unreviewed mailing lists may be reviewed
+    >>> list_one.review(carlos, MailingListStatus.DECLINED)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only unreviewed mailing lists may be reviewed
 
-A reviewer may  also decline a mailing list registration.
+A reviewer may also decline a mailing list registration.
 
-    >>> team_two.review(sabdfl, MailingListStatus.DECLINED)
+    >>> list_two.review(carlos, MailingListStatus.DECLINED)
     >>> flush_database_updates()
-    >>> python_list.status
-    DECLINED
+    >>> list_two.status.name
+    'DECLINED'
+
+A reviewer may not review a mailing list to a state other than approved or
+declined.
+
+    >>> list_three.review(carlos, MailingListStatus.ACTIVE)
+    Traceback (most recent call last):
+    ...
+    AssertionError: Reviewed lists may only be approved or declined
 
 Once approved or declined the lists won't be re-considered for review.
 
-    >>> sorted(list_registry.registered_lists)
-    ['Team Three mailing list',
-     'Team Four mailing list']
+    >>> sorted_lists(list_registry.registered_lists)
+    [<MailingList for team "team-four"; status=REGISTERED at ...>,
+     <MailingList for team "team-three"; status=REGISTERED at ...>]
 
 Approve a couple of other lists to illustrate some additional outcomes later
 on.
 
-    >>> team_three.review(sabdfl, MailingListStatus.APPROVED)
-    >>> team_four.review(sabdfl, MailingListStatus.APPROVED)
+    >>> list_three.review(carlos, MailingListStatus.APPROVED)
+    >>> list_four.review(carlos, MailingListStatus.APPROVED)
     >>> flush_database_updates()
     >>> list(list_registry.registered_lists)
     []
@@ -156,29 +209,35 @@ interface used by Mailman (not shown here).  When Mailman retrieves the set of
 mailing lists to construct, the list's statuses are set to the CONSTRUCTING
 state.
 
-    >>> sorted(list_registry.approved_lists)
-    ['Team One mailing list',
-     'Team Three mailing list',
-     'Team Four mailing list']
+    >>> sorted_lists(list_registry.approved_lists)
+    [<MailingList for team "team-four"; status=APPROVED at ...>,
+     <MailingList for team "team-one"; status=APPROVED at ...>,
+     <MailingList for team "team-three"; status=APPROVED at ...>]
+
     >>> list_one.construct()
-    >>> list_one.status
-    MailingListStatus.CONSTRUCTING
+    >>> flush_database_updates()
+    >>> list_one.status.name
+    'CONSTRUCTING'
 
 A mailing list that has been declined may not be constructed.
 
     >>> list_two.construct()
-    Assertion Error
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only approved mailing lists may be constructed
 
 Once in the construction phase, a list is no longer in the approval state.
 
-    >>> list(list_registry.approved_lists)
-    ['Team Three mailing list',
-     'Team Four mailing list']
+    >>> sorted_lists(list_registry.approved_lists)
+    [<MailingList for team "team-four"; status=APPROVED at ...>,
+     <MailingList for team "team-three"; status=APPROVED at ...>]
 
 Lists should never be constructed more than once.
 
     >>> list_one.construct()
-    Assertion Error
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only approved mailing lists may be constructed
 
 Construct a couple of other lists to illustration some additional outcomes
 later.
@@ -197,36 +256,38 @@ if not all will succeed, thus activating the team's mailing list.
     >>> list_one.reportConstructionResult(MailingListStatus.ACTIVE)
     >>> list_three.reportConstructionResult(MailingListStatus.ACTIVE)
     >>> flush_database_updates()
-    >>> list_one.status
-    ACTIVE
-    >>> list_three.status
-    ACTIVE
+    >>> list_one.status.name
+    'ACTIVE'
+    >>> list_three.status.name
+    'ACTIVE'
 
 Some list constructions may fail.
 
     >>> list_four.reportConstructionResult(MailingListStatus.FAILED)
     >>> flush_database_updates()
-    >>> list_four.status
-    FAILED
+    >>> list_four.status.name
+    'FAILED'
 
 
 == Deactivating lists ==
 
 A list which is active may be deactivated.
 
-    >>> list_four.deactivate()
+    >>> list_three.deactivate()
     >>> flush_database_updates()
-    >>> list_four.status
-    INACTIVE
+    >>> list_three.status.name
+    'INACTIVE'
 
 But lists which are not active may not be deactivated.
 
     >>> list_two.deactivate()
-    Assertion Error
-    >>> list_three.deactivate()
-    Assertion Error
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only active mailing lists may be deactivated
     >>> list_four.deactivate()
-    Assertion Error
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only active mailing lists may be deactivated
 
 
 == Welcome messages ==
@@ -238,7 +299,7 @@ they subscribe to a list.  The welcome message text can contain anything.
     ... Welcome to the Team One mailing list."""
     >>> flush_database_updates()
     >>> list_one.welcome_message_text
-    'Welcome to the Team One mailing list.'
+    u'Welcome to the Team One mailing list.'
     >>> print list_two.welcome_message_text
     None
 
