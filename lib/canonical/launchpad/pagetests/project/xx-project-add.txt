@@ -32,7 +32,7 @@ Add a new project without the http://
 Testing if the validator is working for the name field.
 
   >>> admin_browser.open('http://launchpad.dev/projectgroups/+new')
-  >>> admin_browser.getControl('Name', index=0).value = 'KDE'
+  >>> admin_browser.getControl('Name', index=0).value = 'kde!'
   >>> admin_browser.getControl('Display Name').value = 'K Desktop Environment'
   >>> admin_browser.getControl('Title').value = 'K Desktop Environment'
   >>> admin_browser.getControl('Project Group Summary').value = 'KDE'
@@ -42,7 +42,7 @@ Testing if the validator is working for the name field.
   >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
   ...     print message.renderContents()
   There is 1 error.
-  Invalid name 'KDE'. Names must...
+  Invalid name 'kde!'. Names must...
 
   >>> admin_browser.getControl('Name', index=0).value = 'apache'
   >>> admin_browser.getControl('Add').click()

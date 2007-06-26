@@ -992,12 +992,13 @@ class BugTaskEditView(GeneralFormView):
         if milestone_cleared:
             self.request.response.addWarningNotification(
                 "The %s milestone setting has been removed because "
-                "you reassigned the bug to %s." % (
-                    milestone_cleared.displayname, bugtask.bugtargetname))
+                "you reassigned the bug to %s." %
+                (milestone_cleared.displayname,
+                bugtask.bugtargetdisplayname))
         elif milestone_ignored:
             self.request.response.addWarningNotification(
                 "The milestone setting was ignored because "
-                "you reassigned the bug to %s." % bugtask.bugtargetname)
+                "you reassigned the bug to %s." % bugtask.bugtargetdisplayname)
 
         comment_on_change = self.request.form.get(
             "%s.comment_on_change" % self.prefix)

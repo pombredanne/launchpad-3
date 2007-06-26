@@ -102,18 +102,14 @@
 
   <div tal:replace="structure context/bug/@@+bugtasks-and-nominations-table" />
 
-      <tal:branches define="bug_branches context/bug/bug_branches"
+      <tal:branches define="bug_branches view/bug_branches"
                   condition="bug_branches">
-        <p tal:condition="context/bug/private"
-             class="warning message">
-          This bug is private, so avoid adding public branches here.
-        </p>
+        <p tal:condition="context/bug/private" class="warning message"
+        >This bug is private, so avoid adding public branches here.</p>
         <table class="listing" id="bug_branch_details">
           <thead>
             <tr>
-              <th>Related Branch</th>
-              <th>Developer</th>
-              <th>Revision Hint</th>
+              <th>Related Branch</th> <th>Developer</th> <th>Revision Hint</th>
             </tr>
           </thead>
           <tbody>

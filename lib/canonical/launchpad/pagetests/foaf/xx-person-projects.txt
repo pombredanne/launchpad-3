@@ -10,7 +10,7 @@ team.
     ...     print extract_text(tr)
     Ubuntu Linux
     Ubuntu Test
-    Ubuntu
+    Tomcat
 
 The +projects page displays a table with links to open bugs,
 unimplemented specs and open questions.
@@ -26,7 +26,7 @@ unimplemented specs and open questions.
     Name            Bugs    Blueprints  Questions
     Ubuntu Linux    4       1           7
     Ubuntu Test     0       0           0
-    Ubuntu          1       0           0
+    Tomcat          1       0           0
 
     >>> print anon_browser.getLink('4').url
     http://launchpad.dev/ubuntu/+bugs

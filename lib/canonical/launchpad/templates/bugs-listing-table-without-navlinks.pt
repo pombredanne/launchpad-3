@@ -3,7 +3,7 @@
     <thead>
       <tr>
         <th colspan="3">Summary</th>
-        <th tal:condition="context/show_column/bugtargetname|nothing">
+        <th tal:condition="context/show_column/targetname|nothing">
           In
         </th>
         <th tal:condition="context/show_column/packagename|nothing">
@@ -35,7 +35,7 @@
           </a>
           <img src="/@@/info" tal:replace="structure bugtask/image:badges" />
         </td>
-        <td tal:content="bugtask/bugtargetname"
+        <td tal:content="bugtask/bugtargetdisplayname"
             tal:condition="context/show_column/targetname|nothing"
         >mozilla-firefox (Ubuntu)</td>
         <td tal:content="structure bugtask/sourcepackagename/name|string:&mdash;"
