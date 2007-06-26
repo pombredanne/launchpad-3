@@ -79,8 +79,17 @@ from asking a question in the language of his choice.
     >>> browser.title
     'Ubuntu question #...Abrir uma pagina que requer...'
 
+The page reports the question language both in the content and in the
+markup. Search engine robots and browsers will use the lang and dir
+attributes for indexing and rendering respectively. Users will find
+the language in the question details portlet.
+
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
+    >>> print soup.html['lang']
+    pt-BR
+    >>> print soup.html['dir']
+    ltr
     >>> print soup.find('b', text='Language:').next.strip()
     Portuguese (Brazil)
 

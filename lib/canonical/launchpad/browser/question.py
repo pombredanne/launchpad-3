@@ -622,7 +622,7 @@ class QuestionWorkflowView(LaunchpadFormView):
     @property
     def lang(self):
         """The Question's language for the lang and xml:lang attributes."""
-        return self.context.language.direction
+        return self.context.language.dashedcode
 
     @property
     def dir(self):

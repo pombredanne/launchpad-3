@@ -45,14 +45,26 @@ the anonymous user will see a Spanish question.
 
     >>> anon_browser.getControl('English (en)').selected = False
     >>> anon_browser.getControl('Search').click()
-    >>> soup = BeautifulSoup(anon_browser.contents)
-    >>> for question in soup.fetch('td', 'question'):
+    >>> table = find_tag_by_id(anon_browser.contents, 'question-listing')
+    >>> for question in table.findAll('td', 'question'):
     ...     question.first('a').renderContents()
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
     'Continue playing after shutdown'
     'Play DVDs in Totem'
     'mailto: problem in webpage'
     'Installation of Java Runtime Environment for Mozilla'
+
+While the user might recognize the first question above is in Spanish,
+browsers and search engine robots need help. Each row in the list
+of questions declares its language and text direction.
+
+    >>> for question in table.findAll('tr', lang=True):
+    ...     print 'lang="%s" dir="%s"' % (question['lang'], question['dir'])
+    lang="es" dir="ltr"
+    lang="en" dir="ltr"
+    lang="en" dir="ltr"
+    lang="en" dir="ltr"
+    lang="en" dir="ltr"
 
     # Since we have more than 5 results, some of them are in the second batch.
     >>> anon_browser.getLink('Next').click()
