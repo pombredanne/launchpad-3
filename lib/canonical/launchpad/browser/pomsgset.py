@@ -1129,6 +1129,15 @@ class POMsgSetView(LaunchpadView):
         return self.context.potmsgset.hide_translations_from_anonymous
 
     @cachedproperty
+    def locked(self):
+        """Whether the message should be locked for modifications/suggestions.
+
+        If it's automatically handled by Launchpad (such as
+        translation-credits), it's locked for editing.
+        """
+        return self.context.potmsgset.locked_to_published
+
+    @cachedproperty
     def sequence(self):
         """Return the position number of this potmsgset in the pofile."""
         return self.context.potmsgset.sequence

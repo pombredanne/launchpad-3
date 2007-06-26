@@ -278,6 +278,7 @@
         </td>
       </tr>
     </tal:active-submission>
+    <tal:locked condition="not:view/locked">
     <tal:suggestion_block
          define="suggestion_block translation_dictionary/suggestion_block">
       <tal:suggestions repeat="suggestions suggestion_block">
@@ -374,6 +375,7 @@
         </tal:multi-line>
       </td>
     </tr>
+  </tal:locked>
   </tal:plural-form>
   </tal:translation-dictionaries>
   <tr class="secondary">
