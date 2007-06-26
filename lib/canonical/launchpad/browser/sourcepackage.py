@@ -1,5 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+"""Browser views for sourcepackages."""
+
 __metaclass__ = type
 
 __all__ = [
@@ -26,7 +28,7 @@ from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.authorization import check_permission
-from canonical.launchpad.webapp.interfaces import TranslationUnavailableError
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -34,6 +36,7 @@ from canonical.launchpad.browser.packagerelationship import (
     relationship_builder)
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
+from canonical.launchpad.browser.rosetta import TranslationsMixin
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
@@ -56,9 +59,9 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
         if (self.context.distroseries.hide_all_translations and
             not check_permission('launchpad.Admin', sourcepackage_pots)):
-            raise TranslationUnavailableError(
-                'Translation updates in progress.  Only admins may view'
-                ' translations for this sourcepackage.')
+            raise TranslationUnavailable(
+                'Translation updates are in progress. Only administrators '
+                'may view translations for this source package.')
 
         return sourcepackage_pots
 
@@ -171,7 +174,7 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
         return Link('+potemplatenames', 'Edit template names', icon='edit')
 
 
-class SourcePackageView(BuildRecordsView):
+class SourcePackageView(BuildRecordsView, TranslationsMixin):
 
     def initialize(self):
         # lets add a widget for the product series to which this package is
@@ -185,10 +188,6 @@ class SourcePackageView(BuildRecordsView):
         # IP address and launchpad preferences.
         self.status_message = None
         self.processForm()
-
-    @property
-    def languages(self):
-        return helpers.request_languages(self.request)
 
     def processForm(self):
         # look for an update to any of the things we track

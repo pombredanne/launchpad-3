@@ -1163,8 +1163,46 @@ be grouped together:
     >>> print upstream_task.assignee.displayname
     Sample Person
 
-Let's take a look at all the error messages that the sub commands can
-produce.
+Restricted statuses:
+
+    >>> email_user = getUtility(ILaunchBag).user
+
+Bug contacts can set some restricted statuses:
+
+    >>> login('foo.bar@canonical.com')
+    >>> upstream_task.pillar.bugcontact = email_user
+    >>> login(email_user.preferredemail.email)
+
+    >>> submit_commands(bug_four, 'status wontfix')
+    >>> print upstream_task.status.title
+    Won't Fix
+
+Everyone else gets an explanatory error message:
+
+    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> upstream_task.transitionToStatus(BugTaskStatus.NEW, email_user)
+
+    >>> login('foo.bar@canonical.com')
+    >>> upstream_task.pillar.bugcontact = None
+    >>> login('no-priv@canonical.com')
+
+    >>> submit_commands(bug_four, 'affects firefox', 'status wontfix')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: no-priv@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        status wontfix
+    ...
+    The status cannot be changed to wontfix because you are not the
+    registrant or a bug contact for Mozilla Firefox.
+    ...
+
+Let's take a look at all the other error messages that the sub
+commands can produce.
+
+    >>> login(email_user.preferredemail.email)
 
 Invalid status:
 
@@ -1178,11 +1216,11 @@ Invalid status:
         status foo
     ...
     The 'status' command expects any of the following arguments:
-    unconfirmed, needsinfo, rejected, confirmed, inprogress, fixcommitted, fixreleased
+    new, incomplete, invalid, wontfix, confirmed, triaged, inprogress, fixcommitted, fixreleased
     <BLANKLINE>
     For example:
     <BLANKLINE>
-        status unconfirmed
+        status new
     ...
 
 Invalid importance:
@@ -1297,7 +1335,7 @@ The user is a bug contact of the upstream product
     ...         bugtask.bugtargetdisplayname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     Mozilla Firefox: Confirmed, assigned to Sample Person
-    mozilla-firefox (Ubuntu): Unconfirmed, assigned to no one
+    mozilla-firefox (Ubuntu): New, assigned to no one
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
@@ -1306,7 +1344,7 @@ The user is a bug contact of the upstream product
     >>> print bug_notification.message.text_contents
     ** Changed in: firefox
     ...
-        Status: Unconfirmed => Confirmed
+        Status: New => Confirmed
 
 The user is a package bug contact
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1353,13 +1391,13 @@ The user is a distribution member
 
     >>> login('foo.bar@canonical.com')
     >>> submit_commands(
-    ...     bug_one, 'status unconfirmed', 'assignee test@canonical.com')
+    ...     bug_one, 'status new', 'assignee test@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
     ...         bugtask.bugtargetdisplayname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     Mozilla Firefox: Confirmed, assigned to Sample Person
-    mozilla-firefox (Ubuntu): Unconfirmed, assigned to Sample Person
+    mozilla-firefox (Ubuntu): New, assigned to Sample Person
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
@@ -1385,7 +1423,7 @@ user, telling him that he has to use the 'affects' command.
     ...         bugtask.bugtargetdisplayname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
     Mozilla Firefox: Confirmed, assigned to Sample Person
-    mozilla-firefox (Ubuntu): Unconfirmed, assigned to Sample Person
+    mozilla-firefox (Ubuntu): New, assigned to Sample Person
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> print_latest_email()

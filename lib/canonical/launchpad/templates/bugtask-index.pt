@@ -108,7 +108,7 @@
              class="warning message">
           This bug is private, so avoid adding public branches here.
         </p>
-        <table class="listing">
+        <table class="listing" id="bug_branch_details">
           <thead>
             <tr>
               <th>Related Branch</th>

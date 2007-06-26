@@ -101,7 +101,8 @@ decrease.
 If we mark the bug as In Progress, the open_inprogress will increase.
 
     >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> ubuntu_firefox_bugtask.transitionToStatus(BugTaskStatus.INPROGRESS)
+    >>> ubuntu_firefox_bugtask.transitionToStatus(
+    ...     BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
     >>> syncUpdate(ubuntu_firefox_bugtask)
 
     >>> for package_count in foo_bar.getBugContactOpenBugCounts(None):

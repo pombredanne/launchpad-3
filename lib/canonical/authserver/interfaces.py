@@ -17,10 +17,16 @@ __all__ = [
     'IHostedBranchStorage',
     'IUserDetailsStorage',
     'IUserDetailsStorageV2',
+    'READ_ONLY',
+    'WRITABLE'
     ]
-    
+
 
 from zope.interface import Interface
+
+
+READ_ONLY = 'r'
+WRITABLE = 'w'
 
 
 class IUserDetailsStorage(Interface):
@@ -43,20 +49,20 @@ class IUserDetailsStorage(Interface):
 
         :param loginID: A login ID (an email address, nickname, or numeric
             person ID from a user dict).
-        
+
         :returns: user dict if loginID exists, otherwise empty dict
         """
 
     def authUser(loginID, sshaDigestedPassword):
         """Authenticate a user
-        
+
         :param loginID: A login ID, same as for getUser.
         :returns: user dict if authenticated, otherwise empty dict
         """
 
     def getSSHKeys(archiveName):
         """Retrieve SSH public keys for a given push mirror archive
-        
+
         :param archive: an archive name.
         :returns: list of 2-tuples of (key type, key text).  This list will be
             empty if the user has no keys or does not exist.
@@ -94,13 +100,13 @@ class IUserDetailsStorageV2(Interface):
 
         :param loginID: A login ID (an email address, nickname, or numeric
             person ID from a user dict).
-        
+
         :returns: user dict if loginID exists, otherwise empty dict
         """
 
     def authUser(loginID, password):
         """Authenticate a user
-        
+
         :param loginID: A login ID, same as for getUser.
         :param password: A password, in clear text.
         :returns: user dict if authenticated, otherwise empty dict
@@ -108,7 +114,7 @@ class IUserDetailsStorageV2(Interface):
 
     def getSSHKeys(archiveName):
         """Retrieve SSH public keys for a given push mirror archive
-        
+
         :param archive: an archive name.
         :returns: list of 2-tuples of (key type, key text).  This list will be
             empty if the user has no keys or does not exist.
@@ -131,9 +137,17 @@ class IHostedBranchStorage(Interface):
             [(product id, product name, [(branch id, branch name), ...]), ...]
         """
 
+    def getBranchInformation(loginID, personName, productName, branchName):
+        """Return the database ID and permissions for a branch.
+
+        :returns: (branch_id, permissions), where 'permissions' is 'w' if the
+            user represented by 'loginID' can write to the branch, and 'r' if
+            they cannot. If the branch doesn't exist, return ('', '').
+        """
+
     def fetchProductID(productName):
         """Return the database ID for a product name.
-        
+
         :returns: a product ID.
         """
 
@@ -159,7 +173,7 @@ class IHostedBranchStorage(Interface):
 
 class IBranchDetailsStorage(Interface):
     """An interface for updating the status of branches in Launchpad.
-    
+
     Published at `http://$authserver_host/branch`.
     """
 

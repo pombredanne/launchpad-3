@@ -185,7 +185,7 @@ form.primary.search {
   .notforscreen {display:none;}
 }
 
-.highlighted, tr.highlight {background: #eee; border: 1px solid #ddd;}
+.highlighted, tr.highlight {background: #ddd; border: 1px solid #ddd;}
 .highlighted {padding: 0.5em;}
 .highlighted h3 {margin-top: 0;}
 .unhighlighted {padding: 0 0.5em;}
@@ -1119,13 +1119,15 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
   color: #9f2b33;
 }
 
-.status.UNCONFIRMED   {color: #930;}
-.status.NEEDSINFO     {color: Red;}
+.status.NEW           {color: #930;}
+.status.INCOMPLETE    {color: Red;}
 .status.CONFIRMED     {color: Red;}
+.status.TRIAGED       {color: Black;}
 .status.INPROGRESS    {color: Black;}
 .status.FIXRELEASED   {color: Black;}
 .status.FIXCOMMITTED  {color: Black;}
-.status.REJECTED      {color: Gray;}
+.status.INVALID       {color: Gray;}
+.status.WONTFIX       {color: Gray;}
 .importance.CRITICAL  {color: Red;}
 .importance.HIGH      {color: #ff6600;}
 .importance.MEDIUM    {color: Green;}
@@ -1582,3 +1584,7 @@ th.descending {
 
 .vcsimportSUCCESS {} /* inherited text color */
 .vcsimportFAILURE {color: Red;}
+
+.lowerCaseText {
+  text-transform: lowercase
+}

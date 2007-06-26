@@ -79,9 +79,9 @@
       class="canonical.launchpad.webapp.error.SystemErrorView"
       />
 
-  <!-- TranslationUnavailableError -->
+  <!-- TranslationUnavailable -->
   <browser:page
-      for="canonical.launchpad.webapp.interfaces.TranslationUnavailableError"
+      for="canonical.launchpad.webapp.interfaces.TranslationUnavailable"
       name="index.html"
       permission="zope.Public"
       template="../templates/launchpad-translationunavailable.pt"

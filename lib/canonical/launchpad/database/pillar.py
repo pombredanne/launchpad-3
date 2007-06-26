@@ -208,3 +208,13 @@ class PillarName(SQLBase):
     distribution = ForeignKey(foreignKey='Distribution', dbName='distribution')
     active = BoolCol(dbName='active', notNull=True, default=True)
 
+    @property
+    def pillar(self):
+        if self.distribution is not None:
+            return self.distribution
+        elif self.project is not None:
+            return self.project
+        elif self.product is not None:
+            return self.product
+        else:
+            raise AssertionError("Unknown pillar type: %s" % self.name)

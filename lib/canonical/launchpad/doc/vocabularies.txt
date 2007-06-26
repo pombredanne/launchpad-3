@@ -706,6 +706,27 @@ The BranchVocabulary recognises both unique names and URLs as tokens:
     >>> term.value == branch
     True
 
+The searches that the BranchVocabulary does are private branch aware.
+The results are effectively filtered on what the logged in user is
+able to see.
+
+    >>> branches = branch_vocabulary.search("trunk")
+    >>> for name in sorted([branch.unique_name for branch in branches]):
+    ...     print name
+    ~landscape-developers/landscape/trunk
+    ~limi/+junk/trunk
+    ~spiv/+junk/trunk
+
+    >>> login('no-priv@canonical.com')
+    >>> branches = branch_vocabulary.search("trunk")
+    >>> for name in sorted([branch.unique_name for branch in branches]):
+    ...     print name
+    ~limi/+junk/trunk
+    ~spiv/+junk/trunk
+
+    >>> login('foo.bar@canonical.com')
+
+
 ProjectVocabulary
 -----------------
 The list of selectable projects. The results are ordered by displayname.
