@@ -19,14 +19,14 @@ from canonical.lp.dbschema import PersonCreationRationale, QuestionStatus
 
 def check_script(con, log, hostname, scriptname, completed_from, completed_to):
     """Check whether a script ran on a specific host within stated timeframe.
-    
+
     Return True on success, or log an error message and return False
     """
     cur = con.cursor()
     cur.execute("""
-        SELECT id 
+        SELECT id
         FROM ScriptActivity
-        WHERE hostname='%s' AND name='%s' 
+        WHERE hostname='%s' AND name='%s'
             AND date_completed BETWEEN '%s' AND '%s'
         """ % (hostname, scriptname, completed_from, completed_to))
     try:
