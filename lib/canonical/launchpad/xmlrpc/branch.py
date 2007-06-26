@@ -73,8 +73,12 @@ class BranchSetAPI(LaunchpadXMLRPCView):
                 type="author", email_address=author_email)
 
         try:
+            if branch_url:
+                branch_type = BranchType.MIRRORED
+            else:
+                branch_type = BranchType.HOSTED
             branch = getUtility(IBranchSet).new(
-                branch_type=BranchType.HOSTED,
+                branch_type=branch_type,
                 name=branch_name, creator=owner, owner=owner, product=product,
                 url=branch_url, title=branch_title,
                 summary=branch_description, author=author)
