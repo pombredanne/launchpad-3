@@ -175,16 +175,17 @@ class ArchiveOverrider:
                                   distroarchseries.architecturetag))
                 return
 
-            darbp = distroarchseries.getBinaryPackage(binarypackagename)
+            dasbp = distroarchseries.getBinaryPackage(binarypackagename)
 
             try:
-                current = darbp.current_published
+                current = dasbp.current_published
             except NotFoundError:
                 self.log.error("'%s' binary isn't published in %s/%s"
                                % (package_name, self.distroseries.name,
                                   distroarchseries.architecturetag))
             else:
-                darbp.changeOverride(new_component=self.component,
+                dasbpr = dasbp[current.binarypackagerelease.version]
+                dasbpr.changeOverride(new_component=self.component,
                                      new_priority=self.priority,
                                      new_section=self.section)
                 self.log.info(
