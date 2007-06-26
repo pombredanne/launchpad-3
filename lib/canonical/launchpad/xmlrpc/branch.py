@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces import (
     IPersonSet, NotFoundError)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
 from canonical.launchpad.xmlrpc import faults
-from canonical.lp.dbschema import BugBranchStatus
+from canonical.lp.dbschema import BugBranchStatus, BranchType
 
 
 class IBranchSetAPI(Interface):
@@ -74,6 +74,7 @@ class BranchSetAPI(LaunchpadXMLRPCView):
 
         try:
             branch = getUtility(IBranchSet).new(
+                branch_type=BranchType.HOSTED,
                 name=branch_name, creator=owner, owner=owner, product=product,
                 url=branch_url, title=branch_title,
                 summary=branch_description, author=author)
