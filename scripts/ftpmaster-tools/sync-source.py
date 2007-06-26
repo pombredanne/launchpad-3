@@ -1129,7 +1129,7 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
 
 ################################################################################
 
-def read_current_source(distrorelease, valid_components="", arguments=None):
+def read_current_source(distroseries, valid_components="", arguments=None):
     """Returns a dictionary of packages in 'suite' with their version as the
     attribute.  'component' is an optional list of (comma or whitespace
     separated) components to restrict the search to.
@@ -1138,17 +1138,17 @@ def read_current_source(distrorelease, valid_components="", arguments=None):
     S = {}
     valid_components = dak_utils.split_args(valid_components)
 
-    # XXX FIXME: This searches all pockets of the distrorelease which
+    # XXX FIXME: This searches all pockets of the distroseries which
     #            is not what we want.
     if Options.all:
-        spp = distrorelease.getSourcePackagePublishing(
+        spp = distroseries.getSourcePackagePublishing(
             status=dbschema.PackagePublishingStatus.PUBLISHED,
             pocket=dbschema.PackagePublishingPocket.RELEASE
             )
     else:
         spp = []
         for package in arguments:
-            spp.extend(distrorelease.getPublishedReleases(package))
+            spp.extend(distroseries.getPublishedReleases(package))
 
     for sp in spp:
         component = sp.component.name
@@ -1173,13 +1173,13 @@ def read_current_source(distrorelease, valid_components="", arguments=None):
 
 ################################################################################
 
-def read_current_binaries(distrorelease):
-    """Returns a dictionary of binaries packages in 'distrorelease' with their
+def read_current_binaries(distroseries):
+    """Returns a dictionary of binaries packages in 'distroseries' with their
        version and component as the attributes.
 """
     B = {}
 
-    # XXX FIXME: This searches all pockets of the distrorelease which
+    # XXX FIXME: This searches all pockets of the distroseries which
     #            is not what we want.
 
     # XXX FIXME: this is insanely slow due to how SQLObject works.  It
@@ -1188,8 +1188,8 @@ def read_current_binaries(distrorelease):
     #            have the .dsc file and currently this function is
     #            run well before that.
     
-    #     for distroarchrelease in distrorelease.architectures:
-    #         bpp = distroarchrelease.getAllReleasesByStatus(
+    #     for distroarchseries in distroseries.architectures:
+    #         bpp = distroarchseries.getAllReleasesByStatus(
     #             dbschema.PackagePublishingStatus.PUBLISHED)
 
     #         for bp in bpp:
@@ -1204,7 +1204,7 @@ def read_current_binaries(distrorelease):
     #                     B[pkg] = [version, component]
 
     # XXX: so... let's fall back on raw SQL
-    dar_ids = ", ".join([(str(dar.id)) for dar in distrorelease.architectures])
+    dar_ids = ", ".join([(str(dar.id)) for dar in distroseries.architectures])
     cur = cursor()
     query = """
 SELECT bpn.name, bpr.version, c.name
@@ -1215,7 +1215,7 @@ SELECT bpn.name, bpr.version, c.name
    AND sbpph.status = %s AND dar.id in (%s)""" \
              % (dbschema.PackagePublishingStatus.PUBLISHED, dar_ids)
     cur.execute(query)
-    print "Getting binaries for %s..." % (distrorelease.name)
+    print "Getting binaries for %s..." % (distroseries.name)
     for (pkg, version, component) in cur.fetchall():
         if not B.has_key(pkg):
             B[pkg] = [version, component]
@@ -1464,7 +1464,7 @@ def options_setup():
     parser.add_option("-d", "--to-distro", dest="todistro",
                       help="sync to DISTRO")
     parser.add_option("-s", "--to-suite", dest="tosuite",
-                      help="sync to SUITE (aka distrorelease)")
+                      help="sync to SUITE (aka distroseries)")
 
     # Options controlling where to sync packages from:
 
@@ -1473,7 +1473,7 @@ def options_setup():
     parser.add_option("-D", "--from-distro", dest="fromdistro",
                       help="sync from DISTRO")
     parser.add_option("-S", "--from-suite", dest="fromsuite",
-                      help="sync from SUITE (aka distrorelease)")
+                      help="sync from SUITE (aka distroseries)")
 
 
     (Options, arguments) = parser.parse_args()
