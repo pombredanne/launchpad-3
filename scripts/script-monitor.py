@@ -4,7 +4,7 @@
 """Monitor scripts."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = ['check_script']
 
 import _pythonpath
 
@@ -43,35 +43,46 @@ def check_script(con, log, hostname, scriptname, completed_from, completed_to):
             """ % (hostname, scriptname))
             date_last_seen = cur.fetchone()[0]
             log.fatal(
-                "The script '%s' didn't run on '%s' between %s and %s (last seen %s)"
-                    % (scriptname, hostname, completed_from, completed_to, date_last_seen)
+                "The script '%s' didn't run on '%s' between "
+                "%s and %s (last seen %s)"
+                    % (scriptname, hostname, completed_from, 
+                        completed_to, date_last_seen)
                 )
         except:
             log.fatal(
-                "The script '%s' didn't run on '%s' between %s and %s" 
+                "The script '%s' didn't run on '%s' between %s and %s"
                     % (scriptname, hostname, completed_from, completed_to)
                 )
         return False
 
 def main():
     parser = OptionParser(
-            '%prog [options] (username|email) [...]'
+            '%prog [options] (minutes) (host:scriptname) [host:scriptname]'
             )
     db_options(parser)
     logger_options(parser)
 
     (options, args) = parser.parse_args()
 
-    if len(args) == 0:
-        parser.error("Must specify at least one host and script")
+    if len(args) < 2:
+        parser.error("Must specify at time in minutes and "
+            "at least one host and script")
 
     # First argument is the number of minutes into the past
     # we want to look for the scripts on the specified hosts
-    minutes_ago, args = int(args[0]), args[1:]
-    start_date = datetime.now() - timedelta(minutes=minutes_ago)
+    try:
+        minutes_ago, args = int(args[0]), args[1:]
+        start_date = datetime.now() - timedelta(minutes=minutes_ago)
 
-    completed_from = strftime("%Y-%m-%d %H:%M:%S", start_date.timetuple())
-    completed_to = strftime("%Y-%m-%d %H:%M:%S", datetime.now().timetuple())
+        completed_from = strftime("%Y-%m-%d %H:%M:%S", start_date.timetuple())
+        completed_to = strftime("%Y-%m-%d %H:%M:%S", datetime.now().timetuple())
+
+        for arg in args:
+            if len(arg.split(":")) != 2:
+                raise
+    except:
+        parser.error("Must specify at time in minutes and "
+            "at least one host and script")
 
     log = logger(options)
 
@@ -88,7 +99,8 @@ def main():
 
         error_found = 0
         for hs in hosts_scripts:
-            if not check_script(con, log, hs['hostname'], hs['scriptname'], completed_from, completed_to):
+            if not check_script(con, log, hs['hostname'], hs['scriptname'],
+                completed_from, completed_to):
                 error_found = 1
         return error_found
     except:
