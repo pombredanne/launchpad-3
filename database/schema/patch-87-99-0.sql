@@ -4,28 +4,28 @@
 
 SET client_min_messages=ERROR;
 
-ALTER TABLE Branch ADD COLUMN type INT;
+ALTER TABLE Branch ADD COLUMN branch_type INT;
 
 UPDATE Branch
-SET type = 3 -- IMPORTED
+SET branch_type = 3 -- IMPORTED
 WHERE owner IN (
    SELECT id FROM Person
    WHERE name = 'vcs-imports');
 
 UPDATE Branch
-SET type = 2 -- MIRRORED
+SET branch_type = 2 -- MIRRORED
 WHERE url IS NOT NULL
-  AND type IS NULL;
+  AND branch_type IS NULL;
 
 UPDATE Branch
-SET type = 1 -- HOSTED
-WHERE type IS NULL;
+SET branch_type = 1 -- HOSTED
+WHERE branch_type IS NULL;
 
-ALTER TABLE Branch ALTER type SET DEFAULT 0;
-ALTER TABLE Branch ALTER type SET NOT NULL;
+ALTER TABLE Branch ALTER branch_type SET DEFAULT 0;
+ALTER TABLE Branch ALTER branch_type SET NOT NULL;
 
 -- To be moved to comments.sql
-COMMENT ON COLUMN Branch.type IS 'Branches are currently one of HOSTED (1), MIRRORED (2), or IMPORTED (3).';
+COMMENT ON COLUMN Branch.branch_type IS 'Branches are currently one of HOSTED (1), MIRRORED (2), or IMPORTED (3).';
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
