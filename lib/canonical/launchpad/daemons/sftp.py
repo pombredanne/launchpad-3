@@ -5,7 +5,7 @@ branches. For more information, see lib/canonical/codehosting/README.
 """
 
 __metaclass__ = type
-__all__ = ['SFTPService']
+__all__ = ['SSHService']
 
 
 import os
@@ -17,10 +17,10 @@ from twisted.application import service, strports
 from canonical.config import config
 from canonical.authserver.client.twistedclient import TwistedAuthServer
 
-from canonical.codehosting import sftponly
+from canonical.codehosting import sshserver
 
 
-class SFTPService(service.Service):
+class SSHService(service.Service):
     """A Twisted service for the supermirror SFTP server."""
 
     def __init__(self):
@@ -30,7 +30,7 @@ class SFTPService(service.Service):
         """Create and return an authentication realm for the authserver."""
         homedirs = config.codehosting.branches_root
         authserver = TwistedAuthServer(config.codehosting.authserver)
-        return sftponly.Realm(homedirs, authserver)
+        return sshserver.Realm(homedirs, authserver)
 
     def makeFactory(self, hostPublicKey, hostPrivateKey):
         """Create and return an SFTP server that uses the given public and
@@ -40,8 +40,8 @@ class SFTPService(service.Service):
         authserver = TwistedAuthServer(config.codehosting.authserver)
         portal = Portal(self.makeRealm())
         portal.registerChecker(
-            sftponly.PublicKeyFromLaunchpadChecker(authserver))
-        sftpfactory = sftponly.Factory(hostPublicKey, hostPrivateKey)
+            sshserver.PublicKeyFromLaunchpadChecker(authserver))
+        sftpfactory = sshserver.Factory(hostPublicKey, hostPrivateKey)
         sftpfactory.portal = portal
         return sftpfactory
 
@@ -76,4 +76,4 @@ class SFTPService(service.Service):
     def stopService(self):
         """Stop the SFTP service."""
         service.Service.stopService(self)
-        self.service.stopService()
+        return self.service.stopService()
