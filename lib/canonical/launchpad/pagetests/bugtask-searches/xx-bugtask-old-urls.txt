@@ -20,13 +20,17 @@ but we need old bookmarks to keep working with the status names.
 The user is redirected to a new url to make the change explicit, and
 to allow user agents (and users) to update bookmarks, etc.
 
-    >>> def print_query_changes(a, b):
+    >>> def print_query_changes(query_string_before, query_string_after):
     ...     from cgi import parse_qsl
-    ...     ap = parse_qsl(a, keep_blank_values=True, strict_parsing=False)
-    ...     bp = parse_qsl(b, keep_blank_values=True, strict_parsing=False)
-    ...     for ae, be in zip(ap, bp):
-    ...         if ae != be:
-    ...             print '%s --> %s' % ('='.join(ae), '='.join(be))
+    ...     query_before = parse_qsl(
+    ...         query_string_before, keep_blank_values=True)
+    ...     query_after = parse_qsl(
+    ...         query_string_after, keep_blank_values=True)
+    ...     for term_before, term_after in zip(query_before, query_after):
+    ...         if term_before != term_after:
+    ...             print '%s --> %s' % (
+    ...                 '='.join(term_before),
+    ...                 '='.join(term_after))
 
     >>> from canonical.launchpad.webapp.uri import URI
     >>> uri = URI(anon_browser.url)
@@ -84,7 +88,8 @@ too.
     ...     "&field.has_patch.used="
     ... )
 
-Assigned bugs:
+Searching for assigned bugs using old status names works fine, but the
+user agent is automatically redirected to an updated location:
 
     >>> url = "http://bugs.launchpad.dev/~sabdfl/+assignedbugs?" + query
     >>> anon_browser.open(url)
@@ -100,7 +105,8 @@ Assigned bugs:
     >>> print_bugtasks(anon_browser.contents)
      1  Firefox does not support SVG  firefox (upstream)  Low  New
 
-Reported bugs:
+Just as with assigned bugs, searching for reported bugs takes the user
+agent to a corrected location:
 
     >>> url = "http://bugs.launchpad.dev/~sabdfl/+reportedbugs?" + query
     >>> anon_browser.open(url)
@@ -115,7 +121,10 @@ Reported bugs:
 
     >>> print_bugtasks(anon_browser.contents)
 
-Subscribed bugs:
+Again, subscribed bugs get the same treatment. Some day this
+functionality may be removed so it's important to get people moved
+over to the new locations as quickly and seamlessly as possible to
+avoid disruption.
 
     >>> url = "http://bugs.launchpad.dev/~sabdfl/+subscribedbugs?" + query
     >>> anon_browser.open(url)
