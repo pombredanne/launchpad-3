@@ -454,9 +454,10 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         branchID = transaction.fetchone()[0]
 
         transaction.execute(utf8('''
-            INSERT INTO Branch (id, owner, product, name, author)
-            VALUES (%s, %s, %s, %s, %s)'''
-            % sqlvalues(branchID, personID, productID, branchName, personID))
+            INSERT INTO Branch (id, branch_type, owner, product, name, author)
+            VALUES (%s, %s, %s, %s, %s, %s)'''
+            % sqlvalues(branchID, dbschema.BranchType.HOSTED, personID, productID,
+                        branchName, personID))
         )
         return branchID
 
