@@ -67,6 +67,18 @@ Let's add a fuzzy translation.
   ...     carlos, {0: u'foo'}, fuzzy=True, published=True,
   ...     lock_timestamp=datetime.datetime.now(UTC))
 
+Since this message came from upstream, it doesn't have a reviewer, but
+it does note a person which last changed it.
+
+  >>> print upstream_pomsgset.reviewer
+  None
+  >>> print upstream_pomsgset.date_reviewed
+  None
+  >>> upstream_pomsgset.latest_change_person.displayname
+  u'Carlos Perell\xf3 Mar\xedn'
+  >>> upstream_pomsgset.latest_change_date is None
+  False
+
 Now it should appear as active and as published.
 
   >>> upstream_pomsgset.active_texts
@@ -194,6 +206,8 @@ We get a POMsgSet and verify it's a singular form:
   1
   >>> pt_BR_dummypomsgset.active_texts
   [None]
+  >>> pt_BR_dummypomsgset.published_texts
+  [None]
 
 Using another dummy pofile we'll get a POMsgset that's not a
 singular form: 
@@ -275,6 +289,8 @@ space is for any submission done outside that IPOMsgSet.
 
   # As expected, is not translated.
   >>> pomsgset_untranslated.active_texts
+  [None]
+  >>> pomsgset_untranslated.published_texts
   [None]
 
 This other IPOMsgSet though, will get all submissions done in

@@ -1,12 +1,6 @@
 <tal:block condition="context/submissions">
-  <tr class="discreet secondary translation">
-    <th colspan="3" style="border: inherit;">
-      <label tal:content="string:${context/title}:" />
-    </th>
-  </tr>
   <tal:submission repeat="submission context/submissions">
-  <tr class="discreet secondary">
-    <td colspan="3" />
+  <tr class="secondary">
     <td class="icon left right">
       <tal:logged-in condition="request/lp:person">
       <tal:user-is-official-translator
@@ -59,12 +53,23 @@
       </label>
     </td>
   </tr>
-  <tr class="suggestion secondary">
-    <th colspan="3">
-      Coming from:
-    </th>
+  <tr class="discreet secondary"
+    tal:attributes="id string:msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}_origin">
     <td class="icon left right" />
-    <td style="overflow: auto;">
+    <td style="overflow: auto;"
+        tal:condition="python:context.isFromSamePOFile(submission)">
+      Suggested by
+      <a tal:content="submission/person/browsername"
+         tal:attributes="href submission/person/fmt:url">Foo Bar</a>
+      <span
+        tal:attributes="title submission/datecreated/fmt:datetime"
+        tal:content="submission/datecreated/fmt:displaydate">
+        2006-08-05
+      </span>
+    </td>
+    <td style="overflow: auto;"
+        tal:condition="python:not(context.isFromSamePOFile(submission))">
+      <tal:source content="string:${context/title}" />
       <a tal:content="submission/pomsgset/pofile/potemplate/displayname"
          tal:attributes="href string:${submission/pomsgset/fmt:url}/+translate">
         Spanish translation for evolution
