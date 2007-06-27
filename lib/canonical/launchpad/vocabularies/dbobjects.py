@@ -67,7 +67,7 @@ from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectNotFound
 
 from canonical.launchpad.webapp.vocabulary import (
     NamedSQLObjectHugeVocabulary, SQLObjectVocabularyBase,
-    NamedSQLObjectVocabulary, IHugeVocabulary)
+    NamedSQLObjectVocabulary, IHugeVocabulary, CountableIterator)
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import EmailAddressStatus, DistroSeriesStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
@@ -935,8 +935,7 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
             for spec in sorted(curr_spec.dependencies, key=lambda a: a.title):
                 yield SimpleTerm(spec, spec.name, spec.title)
 
-
-class SpecificationDepCandidatesVocabulary(NamedSQLObjectVocabulary):
+class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     """Specifications that could be dependencies of this spec.
 
     This includes only those specs that are not blocked by this spec
@@ -944,24 +943,53 @@ class SpecificationDepCandidatesVocabulary(NamedSQLObjectVocabulary):
 
     The current spec is not included.
     """
+    
+    implements(IHugeVocabulary)
 
     _table = Specification
-    _orderBy = 'title'
+    _orderBy = 'name'
+    displayname = 'Select a blueprint'
 
-    def __iter__(self):
-        assert ISpecification.providedBy(self.context)
-        curr_spec = self.context
+    def _doSearch(self, query):
+        """Return terms where query is in the text of name,
+        title or summary.
+        """
+        
+        if not query:
+            return []
 
-        if curr_spec is not None:
-            target = curr_spec.target
-            curr_blocks = set(curr_spec.all_blocked)
-            curr_deps = set(curr_spec.dependencies)
-            excluded_specs = curr_blocks.union(curr_deps)
-            excluded_specs.add(curr_spec)
-            for spec in sorted(target.valid_specifications,
-                key=lambda spec: spec.title):
-                if spec not in excluded_specs:
-                    yield SimpleTerm(spec, spec.name, spec.title)
+        quoted_query = quote_like(query)
+        sql_query = ("""
+            (Specification.name ~ %s OR
+             Specification.title ~ %s OR
+             Specification.summary ~ %s)
+            """
+            % (quoted_query, quoted_query, quoted_query))
+        all_specs = Specification.select(sql_query, orderBy=self._orderBy)
+
+        candidate_specs = [spec for spec in all_specs
+                           if (spec != self.context and
+                               (spec.product == self.context.product or
+                                spec.distribution == self.context.distribution)
+                               and spec not in self.context.all_blocked)]
+
+        return candidate_specs
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
+
+    def getTermByToken(self, token):
+        search_results = self._doSearch(token)
+        for search_result in search_results:
+            if search_result.name == token:
+                return self.toTerm(search_result)
+        raise LookupError(token)
+
+    def search(self, query):
+        candidate_specs = self._doSearch(query)
+        return CountableIterator(len(candidate_specs),
+                                 candidate_specs,
+                                 lambda obj: obj)
 
 
 class SprintVocabulary(NamedSQLObjectVocabulary):
