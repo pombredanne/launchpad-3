@@ -511,7 +511,7 @@ And run the import script.
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     WARNING Got an old version for Welsh (cy) translation of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
-    <BLANKLINE>
+    INFO    Import requests completed.
 
 Now the auto-approval script runs.  This can happen anytime, since it's
 asynchronous to the po-import script.  The script tries to approve any entries
@@ -615,7 +615,8 @@ script picks them up and processes them.
     >>> process.run()
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
     INFO    Importing: Welsh (cy) translation of firefox in Mozilla Firefox trunk
-    <BLANKLINE>
+    INFO    Import requests completed.
+
     >>> print entry.status.name
     IMPORTED
     >>> syncUpdate(entry)

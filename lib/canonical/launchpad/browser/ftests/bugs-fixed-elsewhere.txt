@@ -39,7 +39,8 @@ by one.
 
     >>> from canonical.launchpad.ftests import syncUpdate
     >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> elsewhere.transitionToStatus(BugTaskStatus.FIXRELEASED)
+    >>> elsewhere.transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> syncUpdate(elsewhere)
 
     >>> bugs_fixed = view.getBugsFixedElsewhereInfo()
@@ -56,7 +57,8 @@ Only bugs that the user has permission to view are included in the count.
 
     >>> another_elsewhere = getUtility(IBugTaskSet).createTask(
     ...     another_bug, owner=getUtility(ILaunchBag).user, product=evolution)
-    >>> another_elsewhere.transitionToStatus(BugTaskStatus.FIXRELEASED)
+    >>> another_elsewhere.transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> syncUpdate(another_elsewhere)
 
     >>> bugs_fixed = view.getBugsFixedElsewhereInfo()
@@ -107,7 +109,8 @@ The count includes only bugs that are open in the current context.
     ...         break
     ... else:
     ...     print "Couldn't find a bugtasks for %r" % bugtarget
-    >>> bugtask.transitionToStatus(BugTaskStatus.FIXRELEASED)
+    >>> bugtask.transitionToStatus(
+    ...     BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
     >>> syncUpdate(bugtask)
 
     >>> bugs_fixed = view.getBugsFixedElsewhereInfo()

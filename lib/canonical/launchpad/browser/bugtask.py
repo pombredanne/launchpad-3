@@ -59,10 +59,11 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadFormView,
     LaunchpadView, Navigation, redirection, stepthrough)
+from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
-    IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
+    IBug, IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
     IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
-    IDistribution, IDistributionSourcePackage, IBug,
+    IDistribution, IDistributionSourcePackage,
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask,
     IFrontPageBugTaskSearch, ILaunchBag, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
@@ -175,6 +176,35 @@ def get_sortorder_from_request(request):
     else:
         # No sort ordering specified, so use a reasonable default.
         return ["-importance"]
+
+
+OLD_BUGTASK_STATUS_MAP = {
+    'Unconfirmed': 'New',
+    'Needs Info': 'Incomplete',
+    'Rejected': 'Invalid',
+    }
+
+
+def rewrite_old_bugtask_status_query_string(query_string):
+    """Return a query string with old status names replaced with new.
+
+    If an old status string has been used in the query, construct a
+    corrected query string for the search, else return the original
+    query string.
+    """
+    query_elements = cgi.parse_qsl(
+        query_string, keep_blank_values=True, strict_parsing=False)
+    query_elements_mapped = []
+
+    for name, value in query_elements:
+        if name == 'field.status:list':
+            value = OLD_BUGTASK_STATUS_MAP.get(value, value)
+        query_elements_mapped.append((name, value))
+
+    if query_elements == query_elements_mapped:
+        return query_string
+    else:
+        return urllib.urlencode(query_elements_mapped, doseq=True)
 
 
 class BugTargetTraversalMixin:
@@ -612,6 +642,16 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
         """Return a boolean indicating whether the description was modified"""
         return self.comments[0].text_contents != self.context.bug.description
 
+    @cachedproperty
+    def bug_branches(self):
+        """Filter out the bug_branch links to non-visible private branches."""
+        bug_branches = []
+        for bug_branch in self.context.bug.bug_branches:
+            if check_permission('launchpad.View', bug_branch.branch):
+                bug_branches.append(bug_branch)
+        return bug_branches
+
+
 class BugTaskPortletView:
     def alsoReportedIn(self):
         """Return a list of IUpstreamBugTasks in which this bug is reported.
@@ -670,6 +710,29 @@ class BugTaskEditView(GeneralFormView):
         """
         editable_field_names = self._getEditableFieldNames()
         read_only_field_names = self._getReadOnlyFieldNames()
+
+        if 'status' in editable_field_names:
+            # Display different options depending on the logged-in
+            # user by creating a vocab at request time.
+            if self.user is None:
+                status_noshow = list(BugTaskStatus.items)
+            else:
+                status_noshow = [BugTaskStatus.UNKNOWN]
+                status_noshow.extend(
+                    status for status in BugTaskStatus.items
+                    if not self.context.canTransitionToStatus(
+                        status, self.user))
+            if self.context.status in status_noshow:
+                # The user has to be able to see the current value.
+                status_noshow.remove(self.context.status)
+            status_vocab_factory = vocab_factory(
+                BugTaskStatus, noshow=status_noshow)
+            status_field = Choice(
+                __name__='status',
+                title=self.schema['status'].title,
+                vocabulary=status_vocab_factory(self.context))
+            setUpWidget(self, 'status', status_field, IInputWidget,
+                        value=self.context.status)
 
         if self.context.target_uses_malone:
             self.bugwatch_widget = None
@@ -901,7 +964,7 @@ class BugTaskEditView(GeneralFormView):
         if ((new_status is not self._missing_value) and
             (bugtask.status != new_status)):
             changed = True
-            bugtask.transitionToStatus(new_status)
+            bugtask.transitionToStatus(new_status, self.user)
 
         if ((new_assignee is not self._missing_value) and
             (bugtask.assignee != new_assignee)):
@@ -912,7 +975,8 @@ class BugTaskEditView(GeneralFormView):
             if bugtask.bugwatch is None:
                 # Reset the status and importance to the default values,
                 # since Unknown isn't selectable in the UI.
-                bugtask.transitionToStatus(IBugTask['status'].default)
+                bugtask.transitionToStatus(
+                    IBugTask['status'].default, self.user)
                 bugtask.importance = IBugTask['importance'].default
             else:
                 #XXX: Reset the bug task's status information. The right
@@ -920,7 +984,8 @@ class BugTaskEditView(GeneralFormView):
                 #     Launchpad status, but it's not trivial to do at the
                 #     moment. I will fix this later.
                 #     -- Bjorn Tillenius, 2006-03-01
-                bugtask.transitionToStatus(BugTaskStatus.UNKNOWN)
+                bugtask.transitionToStatus(
+                    BugTaskStatus.UNKNOWN, self.user)
                 bugtask.importance = BugTaskImportance.UNKNOWN
                 bugtask.transitionToAssignee(None)
 
@@ -1038,7 +1103,7 @@ class BugTaskListingView(LaunchpadView):
 
         assignee_html = PersonFormatterAPI(assignee).link('+assignedbugs')
 
-        if status in (dbschema.BugTaskStatus.REJECTED,
+        if status in (dbschema.BugTaskStatus.INVALID,
                       dbschema.BugTaskStatus.FIXCOMMITTED):
             return '%s by %s' % (status_title, assignee_html)
         else:
@@ -1113,10 +1178,10 @@ class BugListingPortletView(LaunchpadView):
 
         return unresolved_tasks_query_string + "&assignee_option=none"
 
-    def getUnconfirmedBugsURL(self):
-        """Return the URL for unconfirmed bugs on this bug target."""
+    def getNewBugsURL(self):
+        """Return the URL for new bugs on this bug target."""
         return get_buglisting_search_filter_url(
-            self.request.URL, status=dbschema.BugTaskStatus.UNCONFIRMED.title)
+            self.request.URL, status=dbschema.BugTaskStatus.NEW.title)
 
     def getAllBugsEverReportedURL(self):
         all_statuses = UNRESOLVED_BUGTASK_STATUSES + RESOLVED_BUGTASK_STATUSES
@@ -1155,12 +1220,12 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}, IBugTaskSearch)
     >>> [status.name for status in initial['status']]
-    ['UNCONFIRMED', 'CONFIRMED', 'INPROGRESS', 'NEEDSINFO', 'FIXCOMMITTED']
+    ['NEW', 'INCOMPLETE', 'CONFIRMED', 'TRIAGED', 'INPROGRESS', 'FIXCOMMITTED']
 
     >>> initial = getInitialValuesFromSearchParams(
-    ...     {'status': dbschema.BugTaskStatus.REJECTED}, IBugTaskSearch)
+    ...     {'status': dbschema.BugTaskStatus.INVALID}, IBugTaskSearch)
     >>> [status.name for status in initial['status']]
-    ['REJECTED']
+    ['INVALID']
 
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'importance': [dbschema.BugTaskImportance.CRITICAL,
@@ -1220,8 +1285,9 @@ class BugListingBatchNavigator(TableBatchNavigator):
         # Create a map from the bug id to the branches.
         self.bug_id_mapping = {}
         for bugbranch in bugbranches:
-            self.bug_id_mapping.setdefault(
-                bugbranch.bug.id, []).append(bugbranch)
+            if check_permission('launchpad.View', bugbranch.branch):
+                self.bug_id_mapping.setdefault(
+                    bugbranch.bug.id, []).append(bugbranch)
 
     def _getListingItem(self, bugtask):
         """Return a decorated bugtask for the bug listing."""
@@ -1314,6 +1380,18 @@ class BugTaskSearchListingView(LaunchpadView):
             return IBugTaskSearch
 
     def initialize(self):
+        # Look for old status names and redirect to a new location if
+        # found.
+        query_string = self.request.get('QUERY_STRING')
+        if query_string:
+            query_string_rewritten = (
+                rewrite_old_bugtask_status_query_string(query_string))
+            if query_string_rewritten != query_string:
+                redirect_uri = URI(self.request.getURL()).replace(
+                    query=query_string_rewritten)
+                self.request.response.redirect(str(redirect_uri), status=301)
+                return
+
         if self.shouldShowComponentWidget():
             # CustomWidgetFactory doesn't work with
             # MultiCheckBoxWidget, so we work around this by manually
@@ -1364,6 +1442,7 @@ class BugTaskSearchListingView(LaunchpadView):
         An UnexpectedFormData exception is raised if the user submitted a URL
         that could not have been created from the UI itself.
         """
+        self._migrateOldUpstreamStatus()
         # The only way the user should get these field values incorrect is
         # through a stale bookmark or a hand-hacked URL.
         for field_name in ("status", "importance", "milestone", "component",
@@ -1374,7 +1453,6 @@ class BugTaskSearchListingView(LaunchpadView):
                 raise UnexpectedFormData(
                     "Unexpected value for field '%s'. Perhaps your bookmarks "
                     "are out of date or you changed the URL by hand?" % field_name)
-
 
         try:
             getWidgetsData(self, schema=self.schema, names=['tag'])
@@ -1394,6 +1472,29 @@ class BugTaskSearchListingView(LaunchpadView):
             except KeyError:
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)
+
+    def _migrateOldUpstreamStatus(self):
+        """ Before Launchpad version 1.1.6 (build 4412), the upstream parameter
+        in the requets was a single string value, coming from a set of
+        radio buttons. From that version on, the user can select multiple
+        values in the web UI. In order to keep old bookmarks working,
+        convert the old string parameter into a list.
+        """
+        old_upstream_status_values_to_new_values = {
+            'pending_bugwatch': 'pending_bugwatch',
+            'hide_upstream': 'hide_upstream',
+            'only_resolved_upstream': 'resolved_upstream'}
+        status_upstream = self.request.get('field.status_upstream')
+        if status_upstream in old_upstream_status_values_to_new_values.keys():
+            self.request.form['field.status_upstream'] = [
+                old_upstream_status_values_to_new_values[status_upstream]]
+        elif status_upstream == '':
+            del self.request.form['field.status_upstream']
+        else:
+            # The value of status_upstream is either correct, so nothing to
+            # do, or it has some other error, which is handled in the "for"
+            # loop below
+            pass
 
     def _getDefaultSearchParams(self):
         """Return a BugTaskSearchParams instance with default values.
@@ -2025,7 +2126,8 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
 
     def initialize(self):
         BugTaskSearchListingView.initialize(self)
-        self._redirectToSearchContext()
+        if not self._isRedirected():
+            self._redirectToSearchContext()
 
     def _redirectToSearchContext(self):
         """Check wether a target was given and redirect to it.

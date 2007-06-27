@@ -22,7 +22,8 @@ __all__ = [
     'IBugTaskSet',
     'INominationsReviewTableBatchNavigator',
     'RESOLVED_BUGTASK_STATUSES',
-    'UNRESOLVED_BUGTASK_STATUSES']
+    'UNRESOLVED_BUGTASK_STATUSES',
+    'BUG_CONTACT_BUGTASK_STATUSES']
 
 from zope.interface import implements, Interface, Attribute
 from zope.schema import (
@@ -41,22 +42,28 @@ from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 
 
-# XXX: Brad Bollenbach, 2005-12-02: In theory, NEEDSINFO belongs in
+# XXX: Brad Bollenbach, 2005-12-02: In theory, INCOMPLETE belongs in
 # UNRESOLVED_BUGTASK_STATUSES, but the semantics of our current reports would
 # break if it were added to the list below. See
 # <https://launchpad.net/malone/bugs/5320>
-# XXX: matsubara, 2006-02-02: I added the NEEDSINFO as a short-term solution
+# XXX: matsubara, 2006-02-02: I added the INCOMPLETE as a short-term solution
 # to bug https://launchpad.net/products/malone/+bug/4201
 UNRESOLVED_BUGTASK_STATUSES = (
-    dbschema.BugTaskStatus.UNCONFIRMED,
+    dbschema.BugTaskStatus.NEW,
+    dbschema.BugTaskStatus.INCOMPLETE,
     dbschema.BugTaskStatus.CONFIRMED,
+    dbschema.BugTaskStatus.TRIAGED,
     dbschema.BugTaskStatus.INPROGRESS,
-    dbschema.BugTaskStatus.NEEDSINFO,
     dbschema.BugTaskStatus.FIXCOMMITTED)
 
 RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.FIXRELEASED,
-    dbschema.BugTaskStatus.REJECTED)
+    dbschema.BugTaskStatus.INVALID,
+    dbschema.BugTaskStatus.WONTFIX)
+
+BUG_CONTACT_BUGTASK_STATUSES = (
+    dbschema.BugTaskStatus.WONTFIX,
+    dbschema.BugTaskStatus.TRIAGED)
 
 
 class ConjoinedBugTaskEditError(Exception):
@@ -89,7 +96,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     #   -- kiko, 2006-03-23
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
-        default=dbschema.BugTaskStatus.UNCONFIRMED)
+        default=dbschema.BugTaskStatus.NEW)
     importance = Choice(
         title=_('Importance'), vocabulary='BugTaskImportance',
         default=dbschema.BugTaskImportance.UNDECIDED)
@@ -189,12 +196,29 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         importance.
         """
 
-    def transitionToStatus(new_status):
+    def canTransitionToStatus(new_status, user):
+        """Return True if the user is allowed to change the status to
+        `new_status`.
+
+        :new_status: new status from `BugTaskStatus`
+        :user: the user requesting the change
+
+        Some status transitions, e.g. Triaged, require that the user
+        be a bug contact or the owner of the project.
+        """
+
+    def transitionToStatus(new_status, user):
         """Perform a workflow transition to the new_status.
+
+        :new_status: new status from `BugTaskStatus`
+        :user: the user requesting the change
 
         For certain statuses, e.g. Confirmed, other actions will
         happen, like recording the date when the task enters this
         status.
+
+        Some status transitions require extra conditions to be met.
+        See `canTransitionToStatus` for more details.
         """
 
     def transitionToAssignee(assignee):
@@ -603,7 +627,7 @@ class IBugTaskSet(Interface):
         """Return all bug tasks assigned to a package/product maintained by
         :person:.
 
-        By default, closed (FIXCOMMITTED, REJECTED) tasks are not
+        By default, closed (FIXCOMMITTED, INVALID) tasks are not
         returned. If you want closed tasks too, just pass
         showclosed=True.
 
