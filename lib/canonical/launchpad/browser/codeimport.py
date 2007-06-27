@@ -20,6 +20,9 @@ from canonical.widgets import LaunchpadDropdownWidget
 from zope.app.form import CustomWidgetFactory
 from zope.schema import Choice
 
+import operator
+
+
 class CodeImportSetNavigation(Navigation):
 
     usedfor = ICodeImportSet
@@ -32,6 +35,7 @@ class CodeImportSetNavigation(Navigation):
             return self.context.get(id)
         except LookupError:
             return None
+
 
 class CodeImportSetView(LaunchpadView):
     def initialize(self):
@@ -54,7 +58,10 @@ class CodeImportSetView(LaunchpadView):
         else:
             imports = self.context.getAll()
 
+        imports = sorted(imports, key=operator.attrgetter('id'))
+
         self.batchnav = BatchNavigator(imports, self.request, size=50)
+
 
 class CodeImportView(LaunchpadView):
     def initialize(self):

@@ -32,7 +32,7 @@ the page:
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
     >>> rows = table.tbody('tr')
     >>> ids = [extract_text(tr.td) for tr in rows]
-    >>> sorted(ids) # XXX argh
+    >>> ids
     [u'1', u'2']
 
 If we click on the code import's name, we go to the page for that
