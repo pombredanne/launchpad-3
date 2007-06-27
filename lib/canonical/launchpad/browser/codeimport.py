@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'CodeImportSetNavigation',
     'CodeImportSetView',
+    'CodeImportView',
     ]
 
 
@@ -32,3 +33,7 @@ class CodeImportSetView(LaunchpadView):
     def initialize(self):
         self.batchnav = BatchNavigator(
             self.context.getAll(), self.request, size=50)
+
+class CodeImportView(LaunchpadView):
+    def initialize(self):
+        self.title = "Code Import for %s"%(self.context.product.name,)

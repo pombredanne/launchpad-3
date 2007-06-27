@@ -13,6 +13,7 @@ a member of the vcs-imports team and can access the objects freely.
 
     >>> login('david.allouche@canonical.com')
 
+
 == Code import set utility ==
 
 CodeImports are created and found using the ICodeImportSet interface,
@@ -26,9 +27,8 @@ which is registered as a utility.
     >>> verifyObject(ICodeImportSet, removeSecurityProxy(code_import_set))
     True
 
-CodeImports record who created them, and we're also going to create new
-Products to create CodeImports for.  We're going to pretend that these
-are done by 'No Privileges Person'.
+CodeImports record who created them, and we're going to pretend that
+this is done by 'No Privileges Person'.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
@@ -37,7 +37,8 @@ CodeImports are associated with a Branch when they are created; this
 is how they are linked to a Product.  For the basic tests, we
 associate the imports with a new branch for the FireFox project
 (arbitrarily many imports can be created for a project).  A helper
-function to create these branches the tests below easier to read.
+function to create these branches makes the tests below easier to
+read.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IBranchSet, ILaunchpadCelebrities, IPersonSet, IProductSet)
@@ -72,6 +73,7 @@ in the repository, known as the "module".
     >>> verifyObject(ICodeImport, removeSecurityProxy(cvs_import))
     True
 
+
 === Import from Subversion ===
 
 Code imports from Subversion specify the URL used with "svn checkout" to
@@ -92,12 +94,14 @@ retrieve the tree to import.
 The first production code that creates CodeImports will be a sync
 script that creates CodeImports from the existing information in the
 ProductSeries table.  The only ProductSeries with such information in
-the sample data is evolution/main.
+the sample data is evolution/trunk.
 
     >>> from canonical.launchpad.interfaces import IProductSeriesSet
     >>> from canonical.lp.dbschema import ImportStatus
     >>> [series] = getUtility(IProductSeriesSet).search(
     ...     importstatus=ImportStatus.PROCESSING.value)
+    >>> u'%s/%s'%(series.product.name, series.name)
+    u'evolution/trunk'
     >>> series.cvsroot
     u':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'
     >>> series.cvsmodule
@@ -109,6 +113,12 @@ source details is a fairly simple matter.
     >>> from_existing_import = code_import_set.new(
     ...     registrant=vcs_imports, branch=series.import_branch, rcs_type=cvs,
     ...     cvs_root=series.cvsroot, cvs_module=series.cvsmodule)
+
+This CodeImport is associated to the evolution/main ProductSeries
+(because the series' import_branch is the branch of the CodeImport):
+
+    >>> from_existing_import.series.name
+    u'trunk'
 
 
 == Retreiving CodeImports ==

@@ -2,7 +2,7 @@
 
   <body>
 
-    <h1 metal:fill-slot="heading" tal:content="CONTEXTS/fmt:pagetitle">
+    <h1 metal:fill-slot="heading" tal:content="view/title">
       Code Import for firefox
     </h1>
 

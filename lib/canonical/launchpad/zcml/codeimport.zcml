@@ -32,6 +32,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.ICodeImport"
+    class="canonical.launchpad.browser.CodeImportView"
     name="+index"
     template="../templates/codeimport.pt"
     permission="launchpad.View"
