@@ -158,6 +158,13 @@ class POMsgSetMixIn:
             return []
         return suggestions
 
+    def makeHTMLId(self, suffix=None):
+        """See `IPOMsgSet`."""
+        elements = [self.pofile.language.code]
+        if suffix is not None:
+            elements.append(suffix)
+        return self.potmsgset.makeHTMLId('_'.join(elements))
+
 
 class DummyPOMsgSet(POMsgSetMixIn):
     """Represents a POMsgSet where we do not yet actually HAVE a POMsgSet for
@@ -175,6 +182,11 @@ class DummyPOMsgSet(POMsgSetMixIn):
     @property
     def active_texts(self):
         """See `IPOMsgSet`."""
+        return [None] * self.pluralforms
+
+    @property
+    def published_texts(self):
+        """See IPOMsgSet."""
         return [None] * self.pluralforms
 
     def getActiveSubmission(self, pluralform):
@@ -256,14 +268,42 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         date_updated = self.date_reviewed
         for pluralform in range(self.pluralforms):
             submission = self.getActiveSubmission(pluralform)
-            if submission and (not date_updated or
-                               submission.datecreated > date_updated):
+            if submission is not None and (
+                not date_updated or submission.datecreated > date_updated):
                 date_updated = submission.datecreated
 
         if (date_updated is not None and date_updated > timestamp):
             return True
         else:
             return False
+
+    def getLatestChangeInfo(self):
+        """Return a tuple of person, date for latest change to `IPOMsgSet`."""
+        if self.reviewer and self.date_reviewed:
+            return (self.reviewer, self.date_reviewed)
+
+        last_submission = None
+        for pluralform in range(self.pluralforms):
+            submission = self.getActiveSubmission(pluralform)
+            if (last_submission is None or
+                submission.datecreated > last_submission.datecreated):
+                last_submission = submission
+        if last_submission:
+            return (last_submission.person, last_submission.datecreated)
+        else:
+            return (None, None)
+
+    @property
+    def latest_change_date(self):
+        """See `IPOMsgSet`."""
+        person, date = self.getLatestChangeInfo()
+        return date
+
+    @property
+    def latest_change_person(self):
+        """See `IPOMsgSet`."""
+        person, date = self.getLatestChangeInfo()
+        return person
 
     def setActiveSubmission(self, pluralform, submission):
         """See `IPOMsgSet`."""
@@ -275,7 +315,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         current_active = self.getActiveSubmission(pluralform)
         if current_active is not None:
             current_active.active = False
-            del(self.active_submissions[pluralform])
+            del self.active_submissions[pluralform]
             # We need this syncUpdate so if the next submission.active change
             # is done we are sure that we will store this change first in the
             # database. This is because we can only have an IPOSubmission with

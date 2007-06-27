@@ -102,6 +102,17 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
             print 'requestMirror(%r)' % (branchID,)
         return self.storage.requestMirror(branchID)
 
+    def xmlrpc_getBranchInformation(self, loginID, userName, productName,
+                                    branchName):
+        """See IHostedBranchStorage."""
+        if self.debug:
+            print 'getBranchInformation(%r, %r, %r, %r)' % (loginID,
+                                                            userName,
+                                                            productName,
+                                                            branchName)
+        return self.storage.getBranchInformation(
+            loginID, userName, productName, branchName)
+
 
 class BranchDetailsResource(xmlrpc.XMLRPC):
 
