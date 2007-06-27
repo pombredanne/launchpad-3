@@ -50,6 +50,17 @@ def print_bugs_table(content, table_id):
         print bug_id.string, bug_title.a.string
 
 
+def print_bugs_list(content, list_id):
+    """Print the bugs list with the given ID.
+
+    This is quite simplistic, in that it just extracts the text from
+    the element given. If the bug list becomes more elaborate we can
+    update this method to do the dirty work.
+    """
+    bugs_list = find_tag_by_id(content, list_id)
+    print extract_text(bugs_list)
+
+
 def print_bugtasks(text):
     """Print all the bugtasks in the text."""
     main_content = find_main_content(text)

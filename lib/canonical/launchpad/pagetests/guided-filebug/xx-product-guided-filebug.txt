@@ -5,6 +5,14 @@ already been reported.
     >>> user_browser.open("http://bugs.launchpad.dev/firefox")
     >>> user_browser.getLink('Report a bug').click()
 
+On this page and the user is shown a table of the most common bugs in
+the current context.
+
+    >>> from canonical.launchpad.ftests.bug import print_bugs_table
+
+    >>> print_bugs_table(user_browser.contents, "most-common-bugs")
+    5 Firefox install instructions should be complete
+
 If no title is entered, the user is asked to supply one.
 
     >>> user_browser.getControl('Summary').value
@@ -21,7 +29,6 @@ If no title is entered, the user is asked to supply one.
 The user fills in some keywords, and clicks a button to search existing
 bugs.
 
-
     >>> user_browser.getControl(name="field.title").value = (
     ...     "SVG images aren't displayed")
     >>> user_browser.getControl("Continue").click()
@@ -32,16 +39,13 @@ it difficult to bypass the search-for-dupes bit.
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+filebug
 
-After searching, the user is presented with a list of similar bugs and
-a list of most common bugs in the current context.
+After searching, the user is presented with a list of similar bugs in
+the current context.
 
-    >>> from canonical.launchpad.ftests.bug import print_bugs_table
+    >>> from canonical.launchpad.ftests.bug import print_bugs_list
 
-    >>> print_bugs_table(user_browser.contents, "similar-bugs")
-    1 Firefox does not support SVG
-
-    >>> print_bugs_table(user_browser.contents, "most-common-bugs")
-    5 Firefox install instructions should be complete
+    >>> print_bugs_list(user_browser.contents, "similar-bugs")
+    #1: Firefox does not support SVG
 
 If the user doesn't see their bug already reported, they can proceed to
 file the bug.
@@ -68,6 +72,7 @@ will be displayed as well.
     http://bugs.launchpad.dev/firefox/+filebug
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
+    No similar bugs were found.
     There is 1 error.
     Required input is missing.
 
