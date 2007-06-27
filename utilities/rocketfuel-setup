@@ -78,7 +78,7 @@ Host chinstrap chinstrap.canonical.com chinstrap.ubuntu.com
     User ${whoami}
 ------------------------------------------------------------
 "
-read
+  read
 fi
 
 grep -q "^Host.*\*\.canonical.com" ~/.ssh/config
@@ -91,7 +91,7 @@ Host *.canonical.com *.ubuntu.com
     User ${whoami}
 ------------------------------------------------------------
 "
-read
+  read
 fi
 
 grep -q "^Host .*devpad" ~/.ssh/config
@@ -105,7 +105,7 @@ Host devpad devpad.canonical.com
     User ${whoami}
 ------------------------------------------------------------
 "
-read
+  read
 fi
 
 grep -q "^Host .*bazaar.launchpad.dev" ~/.ssh/config
@@ -120,7 +120,7 @@ Host bazaar.launchpad.dev
     IdentityFile ~/.ssh/launchpad_id_dsa
 ------------------------------------------------------------
 "
-read
+  read
 fi
 
 echo "Testing ssh to devpad..."
