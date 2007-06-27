@@ -73,6 +73,18 @@ There's a similar page for the other import, which uses CVS:
     ...     find_tag_by_id(browser.contents, 'cvs-module'))
     u'evolution'
 
+The code import listing is filterable, though only on review status so
+far.  There are no invalid imports in the sample data, so if we filter
+just on them we'll see the "no imports found" message.
+
+    >>> browser.getLink('Code Imports').click()
+    >>> control = browser.getControl(name="field.status")
+    >>> control.displayValue = ["Invalid"]
+    >>> browser.getControl(name="submit").click()
+    >>> extract_text(
+    ...     find_tag_by_id(browser.contents, 'no-imports'))
+    u'No matching code imports found!'
+
 If we create a lot of imports, the listing view will be batched.
 
     >>> from zope.component import getUtility

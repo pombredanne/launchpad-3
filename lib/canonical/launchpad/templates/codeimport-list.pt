@@ -7,9 +7,17 @@
 <div metal:fill-slot="main" class="visualPadding"
      tal:define="codeimports view/batchnav/currentBatch">
 
+  <form action="" method="GET">
+    <select name="review_status" tal:replace="structure view/status_widget">
+      <option label="">Any</option>
+      <option label="NEW">New</option>
+      <option label="REVIEWED">Reviewed</option>
+    </select>
+    <input type="submit" name="submit"/>
+  </form>
 
   <tal:block tal:condition="not:codeimports">
-    <p>No code imports found!</p>
+    <p id="no-imports">No matching code imports found!</p>
   </tal:block>
 
   <tal:block tal:condition="codeimports">
