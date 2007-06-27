@@ -8,14 +8,15 @@ __all__ = ['check_script']
 
 import _pythonpath
 
-from optparse import OptionParser
 from datetime import datetime, timedelta
+from optparse import OptionParser
 from time import strftime
 import sys
 
 from canonical.database.sqlbase import connect
 from canonical.launchpad.scripts import db_options, logger_options, logger
 from canonical.lp.dbschema import PersonCreationRationale, QuestionStatus
+
 
 def check_script(con, log, hostname, scriptname, completed_from, completed_to):
     """Check whether a script ran on a specific host within stated timeframe.
@@ -35,13 +36,13 @@ def check_script(con, log, hostname, scriptname, completed_from, completed_to):
     except TypeError:
         try:
             cur.execute("""
-                SELECT date_completed
+                SELECT MAX(date_completed)
                 FROM ScriptActivity
                 WHERE hostname='%s' AND name='%s'
-                ORDER BY date_completed DESC
-                LIMIT 1
             """ % (hostname, scriptname))
             date_last_seen = cur.fetchone()[0]
+            if not date_last_seen:
+                raise
             log.fatal(
                 "The script '%s' didn't run on '%s' between "
                 "%s and %s (last seen %s)"
@@ -81,12 +82,11 @@ def main():
             if len(arg.split(":")) != 2:
                 raise
     except:
-        parser.error("Must specify at time in minutes and "
+        parser.error("Must specify time in minutes and "
             "at least one host and script")
 
     log = logger(options)
 
-    con = None
     try:
         log.debug("Connecting to database")
         con = connect(options.dbuser)
@@ -101,7 +101,7 @@ def main():
         for hs in hosts_scripts:
             if not check_script(con, log, hs['hostname'], hs['scriptname'],
                 completed_from, completed_to):
-                error_found = 1
+                error_found = 2
         return error_found
     except:
         log.exception("Unhandled exception")
