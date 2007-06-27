@@ -216,7 +216,12 @@ class BuilderGroup:
             self.commit()
             return
 
+        # Since logtail is a xmlrpclib.Binary container and it is returned
+        # from the IBuilder content class, it arrives protected by a Zope
+        # Security Proxy, which is not declared, thus empty. Before passing
+        # it to the status handlers we will simply remove the proxy.
         logtail = removeSecurityProxy(logtail)
+
         method = builder_status_handlers[builder_status]
         try:
             # XXX cprov 20070525: We need this code for WAITING status
