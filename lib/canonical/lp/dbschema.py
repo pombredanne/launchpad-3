@@ -3186,6 +3186,13 @@ class MailingListStatus(DBSchema):
         owner.
         """)
 
+    MODIFIED = Item(8, """
+        Modified
+
+        An active mailing list has been modified and this modification needs
+        to be communicated to Mailman.
+        """)
+
 
 class BuildStatus(DBSchema):
     """Build status type

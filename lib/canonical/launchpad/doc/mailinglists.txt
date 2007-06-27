@@ -96,7 +96,7 @@ welcome message text.
     None
     >>> print list_one.date_activated
     None
-    >>> print list_one.welcome_message_text
+    >>> print list_one.welcome_message
     None
 
 The mailing list's registrant does not change even if the team's owner
@@ -253,8 +253,8 @@ After Mailman has worked at constructing lists for a while, it reports (again
 through XMLRPC not shown here) on the status of each list construction.  Most,
 if not all will succeed, thus activating the team's mailing list.
 
-    >>> list_one.reportConstructionResult(MailingListStatus.ACTIVE)
-    >>> list_three.reportConstructionResult(MailingListStatus.ACTIVE)
+    >>> list_one.reportResult(MailingListStatus.ACTIVE)
+    >>> list_three.reportResult(MailingListStatus.ACTIVE)
     >>> flush_database_updates()
     >>> list_one.status.name
     'ACTIVE'
@@ -263,7 +263,7 @@ if not all will succeed, thus activating the team's mailing list.
 
 Some list constructions may fail.
 
-    >>> list_four.reportConstructionResult(MailingListStatus.FAILED)
+    >>> list_four.reportResult(MailingListStatus.FAILED)
     >>> flush_database_updates()
     >>> list_four.status.name
     'FAILED'
@@ -293,15 +293,44 @@ But lists which are not active may not be deactivated.
 == Welcome messages ==
 
 Mailing lists have a welcome message text which is sent to new members when
-they subscribe to a list.  The welcome message text can contain anything.
+they subscribe to a list.  The welcome message can contain any text.
 
-    >>> list_one.welcome_message_text = """\
+    >>> print list_one.welcome_message
+    None
+    >>> list_one.welcome_message = """\
     ... Welcome to the Team One mailing list."""
     >>> flush_database_updates()
-    >>> list_one.welcome_message_text
+    >>> list_one.welcome_message
     u'Welcome to the Team One mailing list.'
-    >>> print list_two.welcome_message_text
-    None
+
+After changing the welcome message, the list's status should be MODIFIED.
+
+    >>> list_one.status.name
+    'MODIFIED'
+
+Eventually, Mailman will get around to acting on this modification, and then
+it will set the status back to ACTIVE (or FAILED if the update failed for some
+reason).
+
+    >>> list_one.reportResult(MailingListStatus.ACTIVE)
+    >>> flush_database_updates()
+    >>> list_one.status.name
+    'ACTIVE'
+
+You cannot change the welcome message text for a mailing list in anything but
+ACTIVE status.
+
+    >>> list_two.welcome_message = """\
+    ... This list has been declined."""
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only active mailing lists may be modified
+
+    >>> list_four.welcome_message = """\
+    ... This list has been deactivated."""
+    Traceback (most recent call last):
+    ...
+    AssertionError: Only active mailing lists may be modified
 
 
 == XXX ==
@@ -309,6 +338,5 @@ they subscribe to a list.  The welcome message text can contain anything.
  * How do we coordinate deactivation of lists with Mailman?  Should we be able
    to re-activate lists once they are deactivated, and if so, is approval
    necessary?
- * How do we handle changes to welcome_message_text with Mailman?
  * Should we use specific exceptions rather than assertions to deal with
    failure cases?
