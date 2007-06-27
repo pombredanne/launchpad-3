@@ -1,4 +1,8 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      xml:lang="en"
       lang="en"
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad"
@@ -71,6 +75,14 @@
     <div tal:replace="structure message/@@+display" />
   </tal:message>
 
+  <h2>Can you help with this problem?</h2>
+
+  <p>
+    Provide an answer of your own, or ask 
+    <span tal:replace="context/owner/browsername"></span>
+    for more information if necessary.
+  </p>
+
   <tal:workflowActions condition="view/hasActions">
     <div metal:use-macro="context/@@launchpad_form/form">
       <metal:no-heading fill-slot="heading" />
@@ -96,11 +108,22 @@
       </div>
     </div>
   </tal:workflowActions>
+
   <tal:not-logged-in condition="not: request/lp:person">
     <div align="center">
       To post a message you must <a href="+login">log in</a>.
     </div>
   </tal:not-logged-in>
+  
+  <div id="ask-your-own-question">
+    <h2>Got a question of your own?</h2>
+
+    <p>For best results,
+      <a href="+addquestion"
+        tal:attributes="href view/new_question_url">ask your own question
+        separately</a>.
+    </p>
+  </div>
 </div>
 
   <metal:help fill-slot="help">
