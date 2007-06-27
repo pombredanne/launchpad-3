@@ -474,3 +474,49 @@ Rejections with notify=False will also not generate any emails.
   >>> len(msgs)
   0
 
+
+Uploads with unicode characters in the changes file are converted to ASCII:
+
+  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
+  >>> anything_policy = getPolicy(
+  ...     name='anything', distro='ubuntu', distroseries='hoary')
+  >>> bar_src = NascentUpload(
+  ...     datadir('suite/bar_1.0-10/bar_1.0-10_source.changes'),
+  ...     anything_policy, mock_logger_quiet)
+  >>> bar_src.process()
+
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
+  DEBUG: Creating queue entry
+  DEBUG: Setting it to ACCEPTED
+  DEBUG: Creating PENDING publishing record.
+  DEBUG: Building recipients list.
+  ...
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: Accepted:
+  DEBUG:  OK: bar_1.0.orig.tar.gz
+  DEBUG:  OK: bar_1.0-10.diff.gz
+  DEBUG:  OK: bar_1.0-10.dsc
+  DEBUG:      -> Component: main Section: devel
+  ...
+  DEBUG: Announcing to hoary-announce@lists.ubuntu.com
+  ...
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: Accepted:
+  ...
+
+  >>> import operator
+  >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
+  >>> len(msgs)
+  2
+
+"Cihar" should actually be "Čihař" but the mailer will covert to ASCII.
+
+  >>> [message['From'] for message in msgs]
+  ['Root <root@localhost>', 'Launchpad Cihar team <launchpad@lists.canonical.com>']
+
+  >>> [message['To'] for message in msgs]
+  ['Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
+

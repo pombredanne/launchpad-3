@@ -446,7 +446,8 @@ class PackageUpload(SQLBase):
                 config.uploader.default_sender_name,
                 config.uploader.default_sender_address)
         else:
-            interpolations['MAINTAINERFROM'] = changes['maintainer']
+            interpolations['MAINTAINERFROM'] = guess_encoding(
+                changes['maintainer'])
 
         # The template is ready.  The remainder of this function deals with
         # whether to send a 'new' message, an acceptance message and/or an
