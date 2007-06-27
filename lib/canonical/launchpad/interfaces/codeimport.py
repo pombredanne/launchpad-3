@@ -91,3 +91,10 @@ class ICodeImportSet(Interface):
 
     def getByBranch(branch):
         """Get the CodeImport, if any, associated to a Branch."""
+
+    def search(review_status):
+        """Find the CodeImports of the given status.
+
+        :param review_status: An entry from the `CodeImportReviewStatus`
+                              schema.
+        """

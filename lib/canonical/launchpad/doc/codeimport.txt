@@ -137,6 +137,17 @@ present the import's details on the page of the branch.
     >>> code_import_set.getByBranch(cvs_branch).cvs_root
     u':pserver:anonymous@cvs.example.com:/cvsroot'
 
+Finally, you can search for imports by review status.  For instance,
+there is a single sample CodeImport with the "REVIEWED" status:
+
+    >>> from canonical.lp.dbschema import CodeImportReviewStatus
+    >>> reviewed_imports = list(code_import_set.search(
+    ...     review_status=CodeImportReviewStatus.REVIEWED))
+    >>> len(reviewed_imports)
+    1
+    >>> reviewed_imports[0].review_status.name
+    'REVIEWED'
+
 
 == Canonical URLs ==
 

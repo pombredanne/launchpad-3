@@ -90,3 +90,7 @@ class CodeImportSet:
     def getByBranch(self, branch):
         """See `ICodeImportSet`."""
         return CodeImport.selectOneBy(branch=branch)
+
+    def search(self, review_status):
+        """See `ICodeImportSet`."""
+        return CodeImport.selectBy(review_status=review_status.value)
