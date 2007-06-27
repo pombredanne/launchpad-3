@@ -3,11 +3,15 @@
 # This script checks each of your branches in ~/canonical/lp-branches/ to
 # see which ones have revisions that have not yet landed in trunk.
 
-cd ~/canonical/lp-branches/trunk
-for branch in ../*; do
-  if [ ${branch} != "../trunk" ]; then
-    echo "Examining ${branch} for revisions not yet in trunk"
-    bzr missing --theirs-only --line ${branch}
+cd ~/canonical/lp-branches
+for branch in *; do
+  if [ ${branch} != "trunk" ]; then
+    echo "Examining ${branch}"
+    cd ${branch}
+    bzr status --short
+    cd ../trunk
+    bzr missing --theirs-only --line ../${branch} | grep -v "^You are missing"
+    cd ..
   fi;
 done;
 

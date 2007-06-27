@@ -20,12 +20,15 @@ __all__ = [
     'IProductSeriesBugTask',
     'ISelectResultsSlicable',
     'IBugTaskSet',
+    'INominationsReviewTableBatchNavigator',
     'RESOLVED_BUGTASK_STATUSES',
-    'UNRESOLVED_BUGTASK_STATUSES']
+    'UNRESOLVED_BUGTASK_STATUSES',
+    'BUG_CONTACT_BUGTASK_STATUSES']
 
-from zope.interface import Interface, Attribute
+from zope.interface import implements, Interface, Attribute
 from zope.schema import (
     Bool, Choice, Datetime, Int, Text, TextLine, List, Field)
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from sqlos.interfaces import ISelectResults
 
@@ -36,24 +39,31 @@ from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 
 
-# XXX: Brad Bollenbach, 2005-12-02: In theory, NEEDSINFO belongs in
+# XXX: Brad Bollenbach, 2005-12-02: In theory, INCOMPLETE belongs in
 # UNRESOLVED_BUGTASK_STATUSES, but the semantics of our current reports would
 # break if it were added to the list below. See
 # <https://launchpad.net/malone/bugs/5320>
-# XXX: matsubara, 2006-02-02: I added the NEEDSINFO as a short-term solution
+# XXX: matsubara, 2006-02-02: I added the INCOMPLETE as a short-term solution
 # to bug https://launchpad.net/products/malone/+bug/4201
 UNRESOLVED_BUGTASK_STATUSES = (
-    dbschema.BugTaskStatus.UNCONFIRMED,
+    dbschema.BugTaskStatus.NEW,
+    dbschema.BugTaskStatus.INCOMPLETE,
     dbschema.BugTaskStatus.CONFIRMED,
+    dbschema.BugTaskStatus.TRIAGED,
     dbschema.BugTaskStatus.INPROGRESS,
-    dbschema.BugTaskStatus.NEEDSINFO,
     dbschema.BugTaskStatus.FIXCOMMITTED)
 
 RESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.FIXRELEASED,
-    dbschema.BugTaskStatus.REJECTED)
+    dbschema.BugTaskStatus.INVALID,
+    dbschema.BugTaskStatus.WONTFIX)
+
+BUG_CONTACT_BUGTASK_STATUSES = (
+    dbschema.BugTaskStatus.WONTFIX,
+    dbschema.BugTaskStatus.TRIAGED)
 
 
 class ConjoinedBugTaskEditError(Exception):
@@ -86,7 +96,7 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     #   -- kiko, 2006-03-23
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
-        default=dbschema.BugTaskStatus.UNCONFIRMED)
+        default=dbschema.BugTaskStatus.NEW)
     importance = Choice(
         title=_('Importance'), vocabulary='BugTaskImportance',
         default=dbschema.BugTaskImportance.UNDECIDED)
@@ -186,12 +196,29 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         importance.
         """
 
-    def transitionToStatus(new_status):
+    def canTransitionToStatus(new_status, user):
+        """Return True if the user is allowed to change the status to
+        `new_status`.
+
+        :new_status: new status from `BugTaskStatus`
+        :user: the user requesting the change
+
+        Some status transitions, e.g. Triaged, require that the user
+        be a bug contact or the owner of the project.
+        """
+
+    def transitionToStatus(new_status, user):
         """Perform a workflow transition to the new_status.
+
+        :new_status: new status from `BugTaskStatus`
+        :user: the user requesting the change
 
         For certain statuses, e.g. Confirmed, other actions will
         happen, like recording the date when the task enters this
         status.
+
+        Some status transitions require extra conditions to be met.
+        See `canTransitionToStatus` for more details.
         """
 
     def transitionToAssignee(assignee):
@@ -246,6 +273,22 @@ class INullBugTask(IBugTask):
     have tasks reported in your context.
     """
 
+UPSTREAM_STATUS_VOCABULARY = SimpleVocabulary(
+    [SimpleTerm(
+        "pending_bugwatch",
+        title="Show bugs that need to be forwarded to an upstream bug"
+        "tracker"),
+    SimpleTerm(
+        "hide_upstream",
+        title="Show bugs that are not known to affect upstream"),
+    SimpleTerm(
+        "resolved_upstream",
+        title="Show bugs that are resolved upstream"),
+    SimpleTerm(
+        "open_upstream",
+        title="Show bugs that are open upstream"),
+    ])
+
 
 class IBugTaskSearchBase(Interface):
     """The basic search controls."""
@@ -281,9 +324,10 @@ class IBugTaskSearchBase(Interface):
     component = List(
         title=_('Component'), value_type=IComponent['name'], required=False)
     tag = List(title=_("Tag"), value_type=Tag(), required=False)
-    status_upstream = Choice(
-        title=_('Status Upstream'), required=False,
-        vocabulary="AdvancedBugTaskUpstreamStatus")
+    status_upstream = List(
+        title=_('Status Upstream'),
+        value_type=Choice(vocabulary=UPSTREAM_STATUS_VOCABULARY),
+        required=False)
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
     bug_contact = Choice(
@@ -299,9 +343,6 @@ class IBugTaskSearch(IBugTaskSearchBase):
     for status to be a List field on a search form, where more than
     one value can be selected.)
     """
-    status_upstream = Choice(
-        title=_('Status Upstream'), required=False,
-        vocabulary="AdvancedBugTaskUpstreamStatus")
     tag = List(
         title=_("Tags"), description=_("Separated by whitespace."),
         value_type=Tag(), required=False)
@@ -471,8 +512,9 @@ class BugTaskSearchParams:
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
-                 only_resolved_upstream=False, has_no_upstream_bugtask=False,
-                 tag=None, has_cve=False, bug_contact=None, bug_reporter=None):
+                 resolved_upstream=False, open_upstream=False,
+                 has_no_upstream_bugtask=False, tag=None, has_cve=False,
+                 bug_contact=None, bug_reporter=None,nominated_for=None ):
         self.bug = bug
         self.searchtext = searchtext
         self.status = status
@@ -489,12 +531,14 @@ class BugTaskSearchParams:
         self.subscriber = subscriber
         self.component = component
         self.pending_bugwatch_elsewhere = pending_bugwatch_elsewhere
-        self.only_resolved_upstream = only_resolved_upstream
+        self.resolved_upstream = resolved_upstream
+        self.open_upstream = open_upstream
         self.has_no_upstream_bugtask = has_no_upstream_bugtask
         self.tag = tag
         self.has_cve = has_cve
         self.bug_contact = bug_contact
         self.bug_reporter = bug_reporter
+        self.nominated_for = nominated_for
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -583,7 +627,7 @@ class IBugTaskSet(Interface):
         """Return all bug tasks assigned to a package/product maintained by
         :person:.
 
-        By default, closed (FIXCOMMITTED, REJECTED) tasks are not
+        By default, closed (FIXCOMMITTED, INVALID) tasks are not
         returned. If you want closed tasks too, just pass
         showclosed=True.
 
@@ -628,3 +672,6 @@ class IAddBugTaskForm(Interface):
         title=_('URL'), required=False,
         description=_("The URL of this bug in the remote bug tracker."))
 
+
+class INominationsReviewTableBatchNavigator(ITableBatchNavigator):
+    """Marker interface to render custom template for the bug nominations."""

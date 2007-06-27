@@ -67,8 +67,6 @@ class ITranslationImportQueueEntry(Interface):
         "An ILibraryFileAlias reference with the file content. Must be not"
         " None.")
 
-    # XXX CarlosPerelloMarin 20060301: We are using Choice instead of Attribute
-    # due bug #34103
     status = Choice(
         title=_("The status of the import."),
         values=RosettaImportStatus.items,
@@ -87,14 +85,10 @@ class ITranslationImportQueueEntry(Interface):
     import_into = Attribute("The Object where this entry will be imported. Is"
         " None if we don't know where to import it.")
 
-    # XXX CarlosPerelloMarin 20060301: We are using Field instead of Attribute
-    # due bug #34103
     pofile = Field(
         title=_("The IPOfile where this entry should be imported."),
         required=False)
 
-    # XXX CarlosPerelloMarin 20060301: We are using Field instead of Attribute
-    # due bug #34103
     potemplate = Field(
         title=_("The IPOTemplate associated with this entry."),
         description=_("The IPOTemplate associated with this entry. If path"
@@ -146,7 +140,7 @@ class ITranslationImportQueue(Interface):
 
     def addOrUpdateEntry(path, content, is_published, importer,
         sourcepackagename=None, distroseries=None, productseries=None,
-        potemplate=None, pofile=None):
+        potemplate=None, pofile=None, format=None):
         """Return a new or updated entry of the import queue.
 
         :arg path: is the path, with the filename, of the file imported.
@@ -160,6 +154,7 @@ class ITranslationImportQueue(Interface):
         :arg productseries: is the link of this import with a product branch.
         :arg potemplate: is the link of this import with an IPOTemplate.
         :arg pofile: is the link of this import with an IPOFile.
+        :arg format: a TranslationFileFormat.
 
         sourcepackagename + distroseries and productseries are exclusive, we
         must have only one combination of them.

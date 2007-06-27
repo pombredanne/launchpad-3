@@ -8,6 +8,8 @@ __all__ = [
     'IProductSeries',
     'IProductSeriesSet',
     'IProductSeriesSourceAdmin',
+    'validate_cvs_root',
+    'validate_cvs_module',
     ]
 
 import re
@@ -214,8 +216,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     rcstype = Choice(title=_("Type of RCS"),
         required=False, vocabulary='RevisionControlSystems',
         description=_("The type of revision control used for "
-        "the upstream branch of this series. Can be CVS, SVN, BK or "
-        "Arch."))
+        "the upstream branch of this series. Can be CVS or Subversion."))
     cvsroot = TextLine(title=_("Repository"), required=False,
         constraint=validate_cvs_root,
         description=_('The CVSROOT. '
@@ -298,8 +299,29 @@ class IProductSeriesSourceAdmin(Interface):
     def certifyForSync():
         """enable this to sync"""
 
+    def markTestFailed():
+        """Mark this import as TESTFAILED.
+
+        See `dbschema.ImportStatus` for what this means.  This method also
+        clears timestamps and other ancillary data.
+        """
+
+    def markDontSync():
+        """Mark this import as DONTSYNC.
+
+        See `dbschema.ImportStatus` for what this means.  This method also
+        clears timestamps and other ancillary data.
+        """
+
+    def deleteImport():
+        """Do our best to forget that this series ever had an import
+        associated with it.
+
+        Use with care!
+        """
+
     def enableAutoSync():
-        """enable this series RCS for automatic baz syncronisation"""
+        """Enable this series RCS for automatic synchronisation."""
 
 
 class IProductSeriesSet(Interface):

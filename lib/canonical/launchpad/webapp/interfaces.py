@@ -15,7 +15,7 @@ from zope.security.interfaces import Forbidden
 from canonical.launchpad import _
 
 
-class TranslationUnavailableError(Forbidden):
+class TranslationUnavailable(Forbidden):
     """Translation objects are unavailable."""
 
 
@@ -38,7 +38,6 @@ class ILaunchpadApplication(Interface):
     application objects will provide an interface that extends this
     interface.
     """
-    name = Attribute('Name')
     title = Attribute('Title')
 
 

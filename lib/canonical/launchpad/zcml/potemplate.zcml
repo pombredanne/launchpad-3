@@ -18,7 +18,8 @@
         set_attributes="potemplatename productseries distroseries
                         sourcepackagename sourcepackageversion
                         binarypackagename languagepack path header
-                        iscurrent from_sourcepackagename date_last_updated"
+                        iscurrent from_sourcepackagename date_last_updated
+                        source_file source_file_format"
       />
     </content>
 
@@ -66,14 +67,6 @@
         <browser:page
             name="+portlet-langstats"
             template="../templates/potemplate-portlet-langstats.pt"
-            />
-        <browser:page
-            name="+portlet-relateds"
-            template="../templates/potemplate-portlet-relateds.pt"
-            />
-        <browser:page
-            name="+portlet-for"
-            template="../templates/potemplate-portlet-for.pt"
             />
     </browser:pages>
 
