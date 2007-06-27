@@ -307,6 +307,8 @@ After changing the welcome message, the list's status should be MODIFIED.
 
     >>> list_one.status.name
     'MODIFIED'
+    >>> sorted_lists(list_registry.modified_lists)
+    [<MailingList for team "team-one"; status=MODIFIED at ...>]
 
 Eventually, Mailman will get around to acting on this modification, and then
 it will set the status back to ACTIVE (or FAILED if the update failed for some

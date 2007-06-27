@@ -131,3 +131,8 @@ class MailingListRegistry:
     def approved_lists(self):
         """See `IMailingListRegistry`"""
         return MailingList.selectBy(status=MailingListStatus.APPROVED)
+
+    @property
+    def modified_lists(self):
+        """See `IMailingListRegistry`"""
+        return MailingList.selectBy(status=MailingListStatus.MODIFIED)
