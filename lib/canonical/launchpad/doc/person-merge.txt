@@ -85,17 +85,18 @@ That is not a particularly sensible way of renaming branches, but it is simple
 to implement, and it be should extremely rare for the case to occur.
 
     >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> from canonical.lp.dbschema import BranchType
     >>> branchset = getUtility(IBranchSet)
     >>> peoplemerge = branchset.new(
-    ...     'peoplemerge', sample, sample, None, None)
+    ...     BranchType.HOSTED, 'peoplemerge', sample, sample, None, None)
     >>> peoplemerge1 = branchset.new(
-    ...     'peoplemerge-1', sample, sample, None, None)
+    ...     BranchType.HOSTED, 'peoplemerge-1', sample, sample, None, None)
     >>> peoplemerge0 = branchset.new(
-    ...     'peoplemerge-0', marilize, marilize, None, None)
+    ...     BranchType.HOSTED, 'peoplemerge-0', marilize, marilize, None, None)
     >>> peoplemerge2 = branchset.new(
-    ...     'peoplemerge', marilize, marilize, None, None)
+    ...     BranchType.HOSTED, 'peoplemerge', marilize, marilize, None, None)
     >>> peoplemerge11 = branchset.new(
-    ...     'peoplemerge-1', marilize, marilize, None, None)
+    ...     BranchType.HOSTED, 'peoplemerge-1', marilize, marilize, None, None)
 
 'Sample Person' is a deactivated member of the 'Ubuntu Translators' team,
 while marilize is an active member. After the merge, 'Sample Person' will be an

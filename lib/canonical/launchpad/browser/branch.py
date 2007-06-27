@@ -27,6 +27,7 @@ from zope.component import getUtility
 from canonical.config import config
 
 from canonical.lp import decorates
+from canonical.lp.dbschema import BranchType
 
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.person import ObjectReassignmentView
@@ -287,7 +288,11 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
     def add_action(self, action, data):
         """Handle a request to create a new branch for this product."""
         try:
+            # XXX thumper 2007-06-27, the branch_type needs to be passed
+            # in as part of the view data, see spec
+            # launchpad-bazaar/+spec/branch-creation-refactoring
             self.branch = getUtility(IBranchSet).new(
+                branch_type=BranchType.MIRRORED,
                 name=data['name'],
                 creator=self.user,
                 owner=self.user,
