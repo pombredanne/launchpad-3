@@ -1,4 +1,5 @@
 import unittest
+import getpass
 
 from canonical.database.sqlbase import connect
 from canonical.launchpad.scripts.scriptmonitor import check_script
@@ -6,7 +7,7 @@ from canonical.launchpad.scripts.scriptmonitor import check_script
 
 class CheckScriptTestCase(unittest.TestCase):
     """Test script activity."""
-    con = connect()
+    con = connect(getpass.getuser())
 
     def test_scriptfound(self):
         self.assertEqual(
