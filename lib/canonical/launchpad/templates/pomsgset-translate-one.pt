@@ -32,8 +32,8 @@
          onClick string:
            javascript:copyInnerHTMLById(
              '${view/html_id}_singular',
-             '${view/html_id_0}_new');;
-           selectWidget('${view/html_id_0}_new_select', event);;
+             '${view/html_id_singular}_new');;
+           selectWidget('${view/html_id_singular}_new_select', event);;
            return false;;
        "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
     </tal:logged-in>

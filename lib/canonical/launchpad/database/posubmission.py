@@ -8,8 +8,7 @@ __all__ = [
 
 from zope.interface import implements
 
-from sqlobject import (
-    BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound)
+from sqlobject import (BoolCol, ForeignKey, IntCol, SQLObjectNotFound)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -54,7 +53,7 @@ class POSubmission(SQLBase):
     active = BoolCol(notNull=True, default=False)
     published = BoolCol(notNull=True, default=False)
 
-    def makeHtmlId(self, description, for_potmsgset=None):
+    def makeHTMLId(self, description, for_potmsgset=None):
         """See `IPOSubmission`."""
         if for_potmsgset is None:
             for_potmsgset = self.pomsgset.potmsgset
@@ -63,7 +62,7 @@ class POSubmission(SQLBase):
             description,
             str(self.id),
             str(self.pluralform)])
-        return for_potmsgset.makeHtmlId(suffix)
+        return for_potmsgset.makeHTMLId(suffix)
 
 
 # XXX do we want to indicate the difference between a from-scratch

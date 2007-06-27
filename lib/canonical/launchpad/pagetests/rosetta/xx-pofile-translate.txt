@@ -24,7 +24,7 @@ the translation form.
   >>> browser.url
   'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
 
-The page in rendered in read-only mode, without any textareas for input.
+The page is rendered in read-only mode, without any textareas for input.
 
   >>> main_content = find_tag_by_id(browser.contents, 'messages_to_translate')
   >>> for textarea in main_content.findAll('textarea'):
@@ -54,22 +54,22 @@ submissions.
 == Form elements ==
 
 Because the server does not remember what forms it served to whom, it is
-essential that every form element identifiers provide all the context the
+essential that every form element identifier provide all the context the
 server needs to find back the objects it relates to.  These HTML identifiers
 are created in several places in the code and parsed in yet other places, so
 they must adhere religiously to an agreed-to format.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> url = ("http://translations.launchpad.dev/"
-  ...     "ubuntu/hoary/+source/evolution/+pots/evolution-2.2/en_AU/"
-  ...     "+translate?field.alternative_language=es")
-  >>> browser.open(url)
-  >>> browser.url == url
-  True
+  >>> browser.open("http://translations.launchpad.dev/"
+  ...              "ubuntu/hoary/+source/evolution/+pots/evolution-2.2/en_AU/"
+  ...              "+translate?field.alternative_language=es")
+  >>> browser.url
+  'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/en_AU/+translate?field.alternative_language=es'
 
 Elements related 1:1 to a translatable message on this form have names and
 identifiers constructed as "msgset_<id>," where <id> is the unpadded decimal
-id of their POTMsgSet.
+id of their POTMsgSet.  The singular form, which plays a special role, has a
+suffix 'singular' appended.  We'll see other suffixes later.
 
   >>> browser.contents
   '...id="msgset_130"...
@@ -79,17 +79,12 @@ id of their POTMsgSet.
 HTML element identifiers for suggestions and translations on this form are
 constructed as an underscore-separated sequence of:
 
- * "msgset";
-
+ * the string 'msgset';
  * the id for the POTMsgSet they pertain to;
-
- * language code, e.g. "en_UK";
-
- * type, either "translation" or "suggestion";
-
+ * language code, e.g. 'en_UK';
+ * type, either 'translation' or 'suggestion';
  * plural-form number;
-
- * optional suffix describing the element, such as "radiobutton."
+ * optional suffix describing the element, such as 'radiobutton.'
 
   >>> browser.contents
   '...

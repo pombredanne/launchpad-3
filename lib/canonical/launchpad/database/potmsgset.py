@@ -352,7 +352,7 @@ class POTMsgSet(SQLBase):
             u'_: EMAIL OF TRANSLATORS\nYour emails'
             ]
 
-    def makeHtmlId(self, suffix=None):
+    def makeHTMLId(self, suffix=None):
         """See `IPOTMsgSet`."""
         elements = ['msgset', str(self.id)]
         if suffix is not None:

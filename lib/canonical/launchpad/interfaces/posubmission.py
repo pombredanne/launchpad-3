@@ -1,7 +1,7 @@
 # Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.schema import Object, Datetime, Bool
+from zope.schema import Bool
 from canonical.launchpad import _
 
 __metaclass__ = type
@@ -46,7 +46,7 @@ class IPOSubmission(Interface):
         It should not be referenced by any other object.
         """
 
-    def makeHtmlId(description, for_potmsgset=None):
+    def makeHTMLId(description, for_potmsgset=None):
         """Unique identifier for self, suitable for use in HTML element ids.
 
         Constructs an identifier for use in HTML.  This identifier matches the
