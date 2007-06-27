@@ -84,11 +84,8 @@ class IMailingList(Interface):
         """Set the status after a remote action has taken place.
 
         This sets the status of the mailing list to reflect the results of
-        construction by Mailman.  status may be either
-        MailingListStatus.ACTIVE or MailingListStatus.FAILED.  When
-        MailingListStatus.ACTIVE is given, this also sets the date_activated.
-        Prior to the results being reported, the status of the mailing list
-        must be MailingListStatus.CONSTRUCTING.
+        action by Mailman.  It handles various state changes, updating other
+        attributes such as the activate date as necessary.
         """
 
     def deactivate():
@@ -126,3 +123,6 @@ class IMailingListRegistry(Interface):
 
     modified_lists = Attribute(
         'All mailing lists with the status of MailingListStatus.MODIFIED.')
+
+    deactivated_lists = Attribute(
+        'All mailing lists with the status of MailingListStatus.DEACTIVATING.')

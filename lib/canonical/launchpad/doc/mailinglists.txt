@@ -276,6 +276,16 @@ A list which is active may be deactivated.
     >>> list_three.deactivate()
     >>> flush_database_updates()
     >>> list_three.status.name
+    'DEACTIVATING'
+
+This doesn't immediately deactivate the mailing list though.  Mailman still
+needs to query for the requested deactivations, take the necessary actions,
+and report the deactivation results.
+
+    >>> sorted_lists(list_registry.deactivated_lists)
+    [<MailingList for team "team-three"; status=DEACTIVATING at ...>]
+    >>> list_three.reportResult(MailingListStatus.INACTIVE)
+    >>> list_three.status.name
     'INACTIVE'
 
 But lists which are not active may not be deactivated.
@@ -333,12 +343,3 @@ ACTIVE status.
     Traceback (most recent call last):
     ...
     AssertionError: Only active mailing lists may be modified
-
-
-== XXX ==
-
- * How do we coordinate deactivation of lists with Mailman?  Should we be able
-   to re-activate lists once they are deactivated, and if so, is approval
-   necessary?
- * Should we use specific exceptions rather than assertions to deal with
-   failure cases?
