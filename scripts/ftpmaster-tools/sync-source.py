@@ -1205,7 +1205,7 @@ def options_setup():
     if not Options.todistro:
         Options.todistro = "ubuntu"
 
-    # XXX FIXME: use distro.currentrelease
+    # XXX FIXME: use distro.currentseries
     if not Options.tosuite:
         Options.tosuite = "dapper"
 
@@ -1236,7 +1236,7 @@ def objectize_options():
     Options.target_distro = getUtility(IDistributionSet)[Options.target_distro]
 
     if not Options.target_suite:
-        Options.target_suite = Options.target_distro.currentrelease.name
+        Options.target_suite = Options.target_distro.currentseries.name
     Options.target_suite = Options.target_distro.getRelease(Options.target_suite)
 
     valid_components = (

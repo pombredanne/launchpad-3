@@ -62,9 +62,6 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
     def breadcrumb(self):
         return self.context.displayname
 
-    def breadcrumb(self):
-        return self.context.displayname
-
     def traverse(self, name):
         return self.context.getProduct(name)
 
@@ -120,7 +117,8 @@ class ProjectDynMenu(DynMenu):
                     count += 1
                     if count >= self.MAX_SUB_PROJECTS:
                         break
-            yield self.makeLink('See all %s related projects...' % num_products)
+            yield self.makeLink(
+                'See all %s related projects...' % num_products)
 
 
 class ProjectSetNavigation(Navigation):

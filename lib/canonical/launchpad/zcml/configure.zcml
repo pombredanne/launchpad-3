@@ -38,6 +38,7 @@
     <include file="build.zcml" />
     <include file="builder.zcml" />
     <include file="calendar.zcml" />
+    <include file="codeimport.zcml" />
     <include file="codeofconduct.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
