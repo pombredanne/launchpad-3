@@ -44,7 +44,7 @@ returned:
     ...         self.request.response._status = self.status
 
     >>> def exercise_redirecting_page(page_factory):
-    ...     for status in REDIRECTS:
+    ...     for status in sorted(REDIRECTS):
     ...         request = StubRequest(StubResponse())
     ...         page = page_factory(None, request)
     ...         page.status = status
