@@ -36,6 +36,10 @@
       set_schema="canonical.launchpad.interfaces.IPerson"
       />
     <require
+      permission="launchpad.Special"
+      attributes="closeAccount"
+      />
+    <require
       permission="launchpad.Edit"
       attributes="acceptInvitationToBeMemberOf declineInvitationToBeMemberOf
                   renewTeamMembership"

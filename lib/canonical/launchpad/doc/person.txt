@@ -265,6 +265,57 @@ each direct member of that team.
      'robertc@robertcollins.net']
 
 
+== Closing user accounts ==
+
+Any user can close his own account, in case they don't want it anymore or
+they don't want to be shown as Launchpad users.  Closing an account means
+setting its password to NULL, removing the user from all teams he's a
+member of, changing all his email addresses status to NEW and revoking
+Code of Conduct signatures of that user.
+XXX: Should we reassign bugs/specs that are assigned to that user as well?
+XXX: What about products/projects/teams owned by that user?
+XXX: What about registered/authored/subscribed branches?
+
+    >>> [membership.team.name for membership in foobar.myactivememberships]
+    [u'guadamen', u'admins', u'launchpad-buildd-admins', u'launchpad',
+     u'testing-spanish-team', u'name18', u'ubuntu-team', u'vcs-imports']
+    >>> [email.email for email in foobar.validatedemails]
+    []
+    >>> foobar.preferredemail.email
+    u'foo.bar@canonical.com'
+    >>> [coc.active for coc in foobar.signedcocs]
+    [True]
+    >>> foobar.is_valid_person
+    True
+
+    >>> comment = ("I'm a silly person who doesn't want to be listed "
+    ...            "as a Launchpad user.")
+
+    # The closeAccount method is restricted to the user himself --not even
+    # launchpad admins can use it.
+    >>> login('mark@hbd.com')
+    >>> foobar.closeAccount(comment)
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...'launchpad.Special')
+
+    >>> login('foo.bar@canonical.com')
+    >>> foobar.closeAccount(comment)
+    >>> flush_database_updates()
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+
+    >>> foobar.is_valid_person
+    False
+    >>> [membership.team.name for membership in foobar.myactivememberships]
+    []
+    >>> [email.email for email in foobar.validatedemails]
+    []
+    >>> print getattr(foobar.preferredemail, 'email', None)
+    None
+    >>> [coc.active for coc in foobar.signedcocs]
+    [False]
+
 == Searching ==
 
 You can search based on a person's name or displayname, or any of the email
@@ -556,7 +607,7 @@ Inactive products are excluded from the listings.
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> from canonical.launchpad.ftests import login
     >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> login("foo.bar@canonical.com")
+    >>> login("mark@hbd.com")
     >>> firefox.active = False
     >>> flush_database_updates()
     >>> cprov.specifications(filter=['svg']).count()

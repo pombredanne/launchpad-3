@@ -1336,6 +1336,30 @@ class Person(SQLBase, HasSpecificationsMixin):
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
+    def closeAccount(self, comment):
+        """Close this person's Launchpad account.
+
+        Closing an account means setting its password to NULL, removing the
+        user from all teams he's a member of, changing all his email addresses
+        status to NEW and revoking Code of Conduct signatures of that user.
+        """
+        assert self.is_valid_person, (
+            "You can only close an account of a valid person.")
+        self.account_status = 1 # XXX: Need to merge bug-2773-db
+        self.account_status_comment = comment
+        self.password = None
+        # XXX: Still need to figure out what to do with products, projects and
+        # teams registered by this person, bugs/specs assigned to him,
+        # branches authored/registered/subscribed.
+        for membership in self.myactivememberships:
+            self.leave(membership.team)
+        for coc in self.signedcocs:
+            coc.active = False
+        for email in self.validatedemails:
+            email.status = EmailAddressStatus.NEW
+        self.preferredemail.status = EmailAddressStatus.NEW
+        self._preferredemail_cached = None
+
     def getActiveMemberships(self):
         """See `IPerson`."""
         return self._getMembershipsByStatuses(
