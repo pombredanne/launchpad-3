@@ -177,6 +177,11 @@ class DummyPOMsgSet(POMsgSetMixIn):
         """See `IPOMsgSet`."""
         return [None] * self.pluralforms
 
+    @property
+    def published_texts(self):
+        """See IPOMsgSet."""
+        return [None] * self.pluralforms
+
     def getActiveSubmission(self, pluralform):
         """See `IPOMsgSet`."""
         return None
@@ -264,6 +269,34 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             return True
         else:
             return False
+
+    def getLatestChangeInfo(self):
+        """Return a tuple of person, date for latest change to `IPOMsgSet`."""
+        if self.reviewer and self.date_reviewed:
+            return (self.reviewer, self.date_reviewed)
+
+        last_submission = None
+        for pluralform in range(self.pluralforms):
+            submission = self.getActiveSubmission(pluralform)
+            if (last_submission is None or
+                submission.datecreated > last_submission.datecreated):
+                last_submission = submission
+        if last_submission:
+            return (last_submission.person, last_submission.datecreated)
+        else:
+            return (None, None)
+
+    @property
+    def latest_change_date(self):
+        """See `IPOMsgSet`."""
+        person, date = self.getLatestChangeInfo()
+        return date
+
+    @property
+    def latest_change_person(self):
+        """See `IPOMsgSet`."""
+        person, date = self.getLatestChangeInfo()
+        return person
 
     def setActiveSubmission(self, pluralform, submission):
         """See `IPOMsgSet`."""

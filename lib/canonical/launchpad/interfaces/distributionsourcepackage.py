@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 """Source package in Distribution interfaces."""
 
@@ -8,9 +8,11 @@ __all__ = [
     'DuplicateBugContactError',
     'DeleteBugContactError',
     'IDistributionSourcePackage',
+    'IDistributionSourcePackageManageBugcontacts'
     ]
 
 from zope.interface import Attribute, Interface
+from zope.schema import Bool
 
 from canonical.launchpad.interfaces.bugtarget import IBugTarget
 
@@ -120,3 +122,10 @@ class IDistributionSourcePackage(IBugTarget):
         :person: The person to subscribe. An IPerson.
         """
 
+class IDistributionSourcePackageManageBugcontacts(Interface):
+    """Schema for the manage bug contacts form."""
+    make_me_a_bugcontact = Bool(
+        title=u"I want to receive all bugmail for this source package",
+        required=False)
+
+        

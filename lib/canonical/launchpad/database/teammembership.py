@@ -160,12 +160,11 @@ class TeamMembership(SQLBase):
             % self.dateexpires.strftime('%Y-%m-%d'))
         member = self.person
         if member.isTeam():
-            to_addrs = contactEmailAddresses(member.teamowner)
+            recipient = member.teamowner
             templatename = 'membership-expiration-warning-impersonal.txt'
         else:
+            recipient = member
             templatename = 'membership-expiration-warning-personal.txt'
-            to_addrs = format_address(
-                member.displayname, member.preferredemail.email)
         team = self.team
         subject = 'Launchpad: %s team membership about to expire' % team.name
 
@@ -174,27 +173,36 @@ class TeamMembership(SQLBase):
                 "If you want, you can renew this membership at\n"
                 "<%s/+expiringmembership/%s>"
                 % (canonical_url(member), team.name))
-        else:
+        elif not self.canChangeExpirationDate(recipient):
             admins_names = []
             admins = team.getDirectAdministrators()
             assert admins.count() >= 1
             if admins.count() == 1:
                 admin = admins[0]
                 how_to_renew = (
-                    "To prevent this membership from expiring, you should "
-                    "contact\nthe team's administrator, %s.\n<%s>"
+                    "To prevent this membership from expiring, you should"
+                    "contact the\nteam's administrator, %s.\n<%s>"
                     % (admin.unique_displayname, canonical_url(admin)))
             else:
                 for admin in admins:
-                    admins_names.append(
-                        "%s <%s>"
-                        % (admin.unique_displayname, canonical_url(admin)))
+                    # Do not tell the member to contact himself when he can't
+                    # extend his membership.
+                    if admin != member:
+                        admins_names.append(
+                            "%s <%s>"
+                            % (admin.unique_displayname, canonical_url(admin)))
 
                 how_to_renew = (
                     "To prevent this membership from expiring, you should get "
                     "in touch\nwith one of the team's administrators:\n")
                 how_to_renew += "\n".join(admins_names)
+        else:
+            how_to_renew = (
+                "To stay a member of this team you should extend your "
+                "membership at\n<%s/+member/%s>"
+                % (canonical_url(team), member.name))
 
+        to_addrs = contactEmailAddresses(recipient)
         formatter = DurationFormatterAPI(
             self.dateexpires - datetime.now(pytz.timezone('UTC')))
         replacements = {
