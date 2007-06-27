@@ -11,7 +11,6 @@ COMMENT ON COLUMN AnswerContact.distribution IS 'The distribution that the answe
 COMMENT ON COLUMN AnswerContact.sourcepackagename IS 'The sourcepackagename that the answer contact supports.';
 COMMENT ON COLUMN AnswerContact.person IS 'The person or team associated with the question target.';
 COMMENT ON COLUMN AnswerContact.date_created IS 'The date the answer contact was submitted.';
---COMMENT ON COLUMN AnswerContact.want_english IS 'Whether or not the answer contact supports questions in English.';
 
 -- Branch 
 COMMENT ON TABLE Branch IS 'Bzr branch';
@@ -1476,4 +1475,20 @@ COMMENT ON TABLE RevisionProperty IS 'A collection of name and value pairs that 
 COMMENT ON COLUMN RevisionProperty.revision IS 'The revision which has properties.';
 COMMENT ON COLUMN RevisionProperty.name IS 'The name of the property.';
 COMMENT ON COLUMN RevisionProperty.value IS 'The value of the property.';
+
+-- Entitlement
+COMMENT ON TABLE Entitlement IS 'Entitlements and usage of privileged features.';
+COMMENT ON COLUMN Entitlement.person IS 'The person to which the entitlements apply.';
+COMMENT ON COLUMN Entitlement.registrant IS 'The person (admin) who registered this entitlement.  It is NULL if imported directly from an external sales system.';
+COMMENT ON COLUMN Entitlement.approved_by IS 'The person who approved this entitlement.  It is NULL if imported directly from an external sales system.';
+COMMENT ON COLUMN Entitlement.date_approved IS 'Approval date of entitlement.  It is NULL if imported directly from an external sales system.';
+COMMENT ON COLUMN Entitlement.date_created IS 'Creation date of entitlement.';
+COMMENT ON COLUMN Entitlement.date_starts IS 'When this entitlement becomes active.';
+COMMENT ON COLUMN Entitlement.date_expires IS 'When this entitlement expires.';
+COMMENT ON COLUMN Entitlement.entitlement_type IS 'The type of this entitlement (e.g. private bug).';
+COMMENT ON COLUMN Entitlement.quota IS 'Number of this entitlement allowed.';
+COMMENT ON COLUMN Entitlement.amount_used IS 'Quantity of this entitlement allocation that is used.';
+COMMENT ON COLUMN Entitlement.whiteboard IS 'A place for administrator notes.';
+COMMENT ON COLUMN Entitlement.state IS 'The state (REQUESTED, ACTIVE, INACTIVE) of the entitlement.';
+
 

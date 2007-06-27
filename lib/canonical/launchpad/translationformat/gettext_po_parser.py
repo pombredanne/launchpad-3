@@ -29,6 +29,7 @@ from canonical.launchpad.interfaces import (
 
 class POSyntaxWarning(Warning):
     """ Syntax warning in a po file """
+
     def __init__(self, lno=0, msg=None):
         self.lno = lno
         self.msg = msg
@@ -43,6 +44,7 @@ class POSyntaxWarning(Warning):
 
 
 class POMessage(object):
+
     implements(ITranslationMessage)
 
     def __init__(self, **kw):
@@ -403,6 +405,7 @@ class POMessage(object):
 
 
 class POHeader(dict, POMessage):
+
     implements(ITranslationHeader, ITranslationMessage)
 
     def __init__(self, **kw):
@@ -700,6 +703,7 @@ class POHeader(dict, POMessage):
 
 
 class POParser(object):
+
     implements(IPOParser)
 
     def __init__(self, translation_factory=POMessage, header_factory=POHeader):

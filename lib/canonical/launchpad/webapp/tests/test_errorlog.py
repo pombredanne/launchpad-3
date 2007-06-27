@@ -12,10 +12,12 @@ import StringIO
 from textwrap import dedent
 
 from zope.publisher.browser import TestRequest
+from zope.security.interfaces import Unauthorized
 from zope.testing.loggingsupport import InstalledHandler
 
 from canonical.config import config
 from canonical.testing import reset_logging
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 
 UTC = pytz.timezone('UTC')
 
@@ -395,6 +397,42 @@ class TestErrorReportingUtility(unittest.TestCase):
         #  Module canonical.launchpad.webapp.ftests.test_errorlog, ...
         #    raise UnprintableException()
         self.assertEqual(lines[13], 'UnprintableException: <unprintable instance object>\n')
+
+    def test_raising_unauthorized(self):
+        """Test ErrorReportingUtility.raising() with an Unauthorized exception.
+
+        An OOPS is not recorded when a Unauthorized exceptions is raised.
+        """
+        from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+
+        try:
+            raise Unauthorized('xyz')
+        except:
+            utility.raising(sys.exc_info(), now=now)
+
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.assertFalse(os.path.exists(errorfile))
+
+    def test_raising_translation_unavailable(self):
+        """Test ErrorReportingUtility.raising() with a TranslationUnavailable
+        exception.
+
+        An OOPS is not recorded when a TranslationUnavailable exception is
+        raised.
+        """
+        from canonical.launchpad.webapp.errorlog import ErrorReportingUtility
+        utility = ErrorReportingUtility()
+        now = datetime.datetime(2006, 04, 01, 00, 30, 00, tzinfo=UTC)
+
+        try:
+            raise TranslationUnavailable('xyz')
+        except:
+            utility.raising(sys.exc_info(), now=now)
+
+        errorfile = os.path.join(utility.errordir(now), '01800.T1')
+        self.assertFalse(os.path.exists(errorfile))
 
 
 def test_suite():

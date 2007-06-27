@@ -10,8 +10,8 @@ from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 
 from canonical.launchpad.interfaces import (
-    IPOTMsgSet, ILanguageSet, BrokenTextError, TranslationConstants
-    )
+    BrokenTextError, ILanguageSet, IPOTMsgSet, ITranslationImporter,
+    TranslationConstants)
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
@@ -57,6 +57,20 @@ class POTMsgSet(SQLBase):
     @property
     def singular_text(self):
         """See IPOTMsgSet."""
+        format_importer = getUtility(
+            ITranslationImporter).getTranslationFormatImporter(
+                self.potemplate.source_file_format)
+        if format_importer.has_alternative_msgid:
+            # This format uses English translations as the way to store the
+            # singular_text.
+            pomsgset = self.getPOMsgSet('en')
+            if (pomsgset is not None and
+                pomsgset.active_texts[
+                    TranslationConstants.SINGULAR_FORM] is not None):
+                return pomsgset.active_texts[
+                    TranslationConstants.SINGULAR_FORM]
+
+        # By default, singular text is the msgid.
         return self.msgid
 
     @property
@@ -328,7 +342,7 @@ class POTMsgSet(SQLBase):
 
     @property
     def hide_translations_from_anonymous(self):
-        """See IPOTMsgSet."""
+        """See `IPOTMsgSet`."""
         # primemsgid_.msgid is pre-joined everywhere where
         # hide_translations_from_anonymous is used
         return self.primemsgid_.msgid in [
@@ -337,3 +351,11 @@ class POTMsgSet(SQLBase):
             u'translator_credits',
             u'_: EMAIL OF TRANSLATORS\nYour emails'
             ]
+
+    def makeHTMLId(self, suffix=None):
+        """See `IPOTMsgSet`."""
+        elements = ['msgset', str(self.id)]
+        if suffix is not None:
+            elements.append(suffix)
+        return '_'.join(elements)
+

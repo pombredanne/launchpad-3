@@ -222,7 +222,7 @@ and arch-independant binaries.
 
   >>> expect_okays('bar_1.0-1_binary', is_new=True)
 
-  >>> expect_okays('bar_1.0-2')
+  >>> expect_okays('bar_1.0-2', upload_policy='sync')
 
 Check the rejection of bar_1.0-2_binary when uploaded to the wrong build id.
 
@@ -268,7 +268,7 @@ Inspect the uploader log to find the rejection message.
   DEBUG       Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   DEBUG       Body:
   DEBUG    Rejected:
-  DEBUG    MD5 sum of uploaded file does not match existent file in archive
+  DEBUG    MD5 sum of uploaded file does not match existing file in archive
   ...
   <BLANKLINE>
 

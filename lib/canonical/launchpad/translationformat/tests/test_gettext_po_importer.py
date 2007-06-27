@@ -64,8 +64,10 @@ class GettextPoImporterTestCase(unittest.TestCase):
             productseries=productseries)
 
         transaction.commit()
-        self.template_importer = GettextPoImporter(template_entry)
-        self.translation_importer = GettextPoImporter(translation_entry)
+        self.template_importer = GettextPoImporter()
+        self.template_importer.parse(template_entry)
+        self.translation_importer = GettextPoImporter()
+        self.translation_importer.parse(translation_entry)
 
     def testInterface(self):
         """Check whether the object follows the interface."""
@@ -80,16 +82,6 @@ class GettextPoImporterTestCase(unittest.TestCase):
             self.template_importer.format == TranslationFileFormat.PO,
             'GettextPoImporter format expected PO but got %s' % (
                 self.template_importer.format.name))
-
-    def testCanHandleFileExtension(self):
-        """Check whether GettextPoImporter handles .po and .pot extensions."""
-        # Gettext's file extesions are .po and .pot
-        self.failUnless(
-            self.template_importer.canHandleFileExtension('.po'),
-            'GettextPoImporter should handle .po files!')
-        self.failUnless(
-            self.template_importer.canHandleFileExtension('.pot'),
-            'GettextPoImporter should handle .pot files!')
 
     def testGetLastTranslator(self):
         """Tests whether we extract last translator information correctly."""

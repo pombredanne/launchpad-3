@@ -38,6 +38,7 @@
     <include file="build.zcml" />
     <include file="builder.zcml" />
     <include file="calendar.zcml" />
+    <include file="codeimport.zcml" />
     <include file="codeofconduct.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
@@ -60,6 +61,7 @@
     <include file="distroarchseriesbinarypackagerelease.zcml" />
     <include file="driver.zcml" />
     <include file="emailaddress.zcml" />
+    <include file="entitlement.zcml" />
     <include file="files.zcml" />
     <include file="gpgkey.zcml" />
     <include file="ircid.zcml" />

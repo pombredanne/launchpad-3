@@ -77,7 +77,7 @@
             <li tal:repeat="project projects">
               <a href="#"
                  tal:attributes="href project/fmt:url">
-                <img alt="" tal:replace="structure context/image:icon" />
+                <img alt="" tal:replace="structure project/image:icon" />
                 <span tal:replace="project/displayname" />
               </a>
             </li>

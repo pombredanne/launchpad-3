@@ -1,5 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-"""Browser code for PO files."""
+"""Browser code for Translation files."""
 
 __metaclass__ = type
 
@@ -15,6 +15,7 @@ __all__ = [
     ]
 
 import re
+import os.path
 from zope.app.form.browser import DropdownWidget
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
@@ -25,7 +26,8 @@ from canonical.launchpad.browser.pomsgset import (
 from canonical.launchpad.browser.potemplate import (
     BaseExportView, POTemplateSOP, POTemplateFacets)
 from canonical.launchpad.interfaces import (
-    IPOFile, ITranslationImportQueue, UnexpectedFormData, NotFoundError)
+    IPOFile, ITranslationImporter, ITranslationImportQueue,
+    UnexpectedFormData, NotFoundError)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Link, canonical_url, LaunchpadView, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -137,7 +139,7 @@ class POFileUploadView(POFileView):
         self.process_form()
 
     def process_form(self):
-        """Handle a form submission to request a .po file upload."""
+        """Handle a form submission to request a translation file upload."""
         if self.request.method != 'POST' or self.user is None:
             # The form was not submitted or the user is not logged in.
             return
@@ -171,12 +173,12 @@ class POFileUploadView(POFileView):
             return
 
         translation_import_queue = getUtility(ITranslationImportQueue)
-
-        if not filename.endswith('.po'):
-            self.request.response.addWarningNotification(
+        root, ext = os.path.splitext(filename)
+        translation_importer = getUtility(ITranslationImporter)
+        if (ext not in translation_importer.file_extensions_with_importer):
+            self.request.response.addErrorNotification(
                 "Ignored your upload because the file you uploaded was not"
-                " recognised as a file that can be imported as it does not"
-                " end with the '.po' suffix.")
+                " recognised as a file that can be imported.")
             return
 
         # We only set the 'published' flag if the upload is marked as an
@@ -200,8 +202,8 @@ class POFileUploadView(POFileView):
             potemplate=self.context.potemplate, pofile=self.context)
 
         self.request.response.addInfoNotification(
-            'Thank you for your upload. The PO file content will be imported'
-            ' soon into Launchpad. You can track its status from the'
+            'Thank you for your upload. The translation content will be'
+            ' imported soon into Launchpad. You can track its status from the'
             ' <a href="%s">Translation Import Queue</a>' %
                 canonical_url(translation_import_queue))
 
@@ -251,9 +253,16 @@ class POFileTranslateView(BaseTranslationView):
 
     def _buildPOMsgSetViews(self, for_potmsgsets):
         """Build POMsgSet views for all POTMsgSets in for_potmsgsets."""
+        for_potmsgsets = list(for_potmsgsets)
         po_to_pot_msg = self.context.getMsgSetsForPOTMsgSets(for_potmsgsets)
 
-        for potmsgset, pomsgset in po_to_pot_msg.items():
+        last = None
+        for potmsgset in for_potmsgsets:
+            assert last is None or potmsgset.sequence >= last.sequence, (
+                "POTMsgSets on page not in ascending sequence order")
+            last = potmsgset
+
+            pomsgset = po_to_pot_msg[potmsgset]
             view = self._prepareView(
                 POMsgSetView, pomsgset, self.errors.get(potmsgset))
             self.pomsgset_views.append(view)

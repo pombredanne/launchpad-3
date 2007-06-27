@@ -37,7 +37,8 @@
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getSupportedLanguages
-      getQuestionLanguages"
+      getQuestionLanguages getAnswerContactsForLanguage
+      getAnswerContactRecipients"
       />
     <require
       permission="launchpad.AnyPerson"
@@ -231,15 +232,10 @@
       name="+portlet-aboutcve"
       template="../templates/portlet-aboutcve.pt"
       />
-  </browser:pages>
-
-  <browser:pages
-    for="canonical.launchpad.interfaces.IProduct"
-    permission="zope.Public">
-      <browser:page
-        name="+portlet-latestbranches"
-        template="../templates/product-portlet-latestbranches.pt"
-        />
+    <browser:page
+      name="+portlet-latestbranches"
+      template="../templates/product-portlet-latestbranches.pt"
+      />
   </browser:pages>
 
   <browser:page

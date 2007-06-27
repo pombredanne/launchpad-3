@@ -1,5 +1,4 @@
-Email Notifications for Specifications
-======================================
+= Email Notifications for Specifications =
 
 When a specification is edited, an email notification is sent out to
 all the related people. We send out notifications only on certain
@@ -7,9 +6,9 @@ changed, this will change in the future though.
 
 Changing the status:
 
-    >>> from zope.publisher.browser import TestRequest
-    >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> login('foo.bar@canonical.com')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
@@ -18,7 +17,8 @@ Changing the status:
     ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Drafting',
     ...     'field.delivery': svg_support.delivery.title,
     ...     }
-    >>> edit_view = getView(svg_support, '+status', TestRequest(form=form))
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
     >>> edit_view.update()
     u'Updated...'
 
@@ -83,7 +83,8 @@ previous people, and to the approver and the added subscriber:
     ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Pending Approval',
     ...     'field.delivery': svg_support.delivery.title,
     ...     'field.needs_discussion': '1'}
-    >>> edit_view = getView(svg_support, '+status', TestRequest(form=form))
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
     >>> edit_view.update()
     u'Updated...'
     >>> transaction.commit()
@@ -136,7 +137,8 @@ Whiteboard change:
     ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Pending Approval',
     ...     'field.delivery': svg_support.delivery.title,
     ...     'field.whiteboard': new_whiteboard}
-    >>> edit_view = getView(svg_support, '+status', TestRequest(form=form))
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
     >>> edit_view.update()
     u'Updated...'
     >>> transaction.commit()
@@ -176,7 +178,8 @@ Definition status and whiteboard change:
     ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Approved',
     ...     'field.delivery': svg_support.delivery.title,
     ...     'field.whiteboard': 'Excellent work.'}
-    >>> edit_view = getView(svg_support, '+status', TestRequest(form=form))
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
     >>> edit_view.update()
     u'Updated...'
     >>> transaction.commit()
@@ -214,7 +217,8 @@ Change priority:
     ...     'UPDATE_SUBMIT': 'Change', 'field.priority': 'Essential',
     ...     'field.direction_approved': 'on',
     ...     'field.whiteboard': svg_support.whiteboard}
-    >>> edit_view = getView(svg_support, '+priority', TestRequest(form=form))
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> edit_view = getMultiAdapter((svg_support, request), name='+priority')
     >>> edit_view.update()
     u'Updated...'
     >>> transaction.commit()
@@ -249,7 +253,8 @@ Change approver, assignee and drafter:
     >>> form = {
     ...     'UPDATE_SUBMIT': 'Change', 'field.assignee': 'sabdfl',
     ...     'field.approver': '', 'field.drafter': 'foo.bar@canonical.com'}
-    >>> edit_view = getView(svg_support, '+people', TestRequest(form=form))
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> edit_view = getMultiAdapter((svg_support, request), name='+people')
     >>> edit_view.update()
     u'Updated...'
     >>> transaction.commit()
@@ -285,7 +290,9 @@ about, no notification is sent:
     >>> form = {
     ...     'FORM_SUBMIT': 'Continue', 'field.productseries': '1',
     ...     'field.whiteboard': 'Proposing for milestones...'}
-    >>> edit_view = getView(svg_support, '+setproductseries', TestRequest(form=form))
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> edit_view = getMultiAdapter(
+    ...     (svg_support, request), name='+setproductseries')
     >>> edit_view.update()
     'Done.'
     >>> transaction.commit()
