@@ -983,7 +983,7 @@ class POMsgSetView(LaunchpadView):
                 published_submission = (
                     self.context.getPublishedSubmission(index))
             is_same_translator = active_submission is not None and (
-                active_submission.person.id == self.context.reviewer.id)
+                active_submission.person == self.context.reviewer)
             is_same_date = active_submission is not None and (
                 active_submission.datecreated == self.context.date_reviewed)
             translation_entry = {
