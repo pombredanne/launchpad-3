@@ -542,6 +542,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -1683,25 +1686,26 @@ ALTER TABLE distrorelease ENABLE TRIGGER ALL;
 
 ALTER TABLE distroreleaselanguage DISABLE TRIGGER ALL;
 
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (1, 3, 68, 62, 0, 0, 1, '2007-01-15 17:58:40.839938', 0);
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (2, 3, 196, 9, 0, 1, 2, '2007-01-15 17:58:41.198626', 0);
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (3, 3, 360, 63, 0, 0, 1, '2007-01-15 17:58:40.890389', 0);
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (4, 3, 193, 9, 0, 0, 1, '2007-01-15 17:58:41.164517', 0);
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (5, 3, 98, 65, 0, 0, 2, '2007-01-15 17:58:40.923097', 0);
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (6, 3, 241, 9, 0, 0, 1, '2007-01-15 17:58:41.235376', 0);
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (7, 3, 112, 9, 0, 0, 1, '2007-01-15 17:58:40.992446', 0);
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (8, 3, 143, 72, 0, 0, 2, '2007-01-15 17:58:41.129836', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (1, 3, 68, 62, 0, 0, 1, '2007-06-27 17:26:31.588678', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (2, 3, 196, 9, 0, 1, 2, '2007-06-27 17:26:31.94695', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (3, 3, 360, 63, 0, 0, 1, '2007-06-27 17:26:31.708686', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (4, 3, 193, 9, 0, 0, 1, '2007-06-27 17:26:31.92401', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (5, 3, 98, 65, 0, 0, 2, '2007-06-27 17:26:31.733003', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (6, 3, 241, 9, 0, 0, 1, '2007-06-27 17:26:31.97023', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (7, 3, 112, 9, 0, 0, 1, '2007-06-27 17:26:31.792418', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (8, 3, 143, 72, 0, 0, 2, '2007-06-27 17:26:31.898932', 0);
 INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (9, 3, 527, 49, 0, 0, 1, '2005-10-24 17:37:34.969591', 0);
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (10, 3, 454, 0, 0, 0, 0, '2007-01-15 17:58:41.406949', 0);
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (11, 3, 148, 3, 0, 0, 1, '2007-01-15 17:58:41.095497', 0);
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (12, 3, 302, 63, 0, 0, 1, '2007-01-15 17:58:41.269372', 0);
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (13, 3, 387, 67, 1, 0, 7, '2007-01-15 17:58:41.335782', 0);
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (14, 3, 427, 6, 0, 0, 1, '2007-01-15 17:58:41.373856', 0);
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (15, 3, 129, 9, 0, 0, 1, '2007-01-15 17:58:41.028301', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (10, 3, 454, 0, 0, 0, 0, '2007-06-27 17:26:32.086717', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (11, 3, 148, 3, 0, 0, 1, '2007-06-27 17:26:31.873678', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (12, 3, 302, 63, 0, 0, 1, '2007-06-27 17:26:31.992774', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (13, 3, 387, 67, 1, 1, 7, '2007-06-27 17:26:32.037082', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (14, 3, 427, 6, 0, 0, 1, '2007-06-27 17:26:32.064339', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (15, 3, 129, 9, 0, 0, 1, '2007-06-27 17:26:31.815162', 0);
 INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (16, 3, 502, 0, 0, 0, 0, '2005-10-24 17:37:35.182173', 0);
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (17, 3, 132, 66, 0, 0, 2, '2007-01-15 17:58:41.060738', 0);
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (18, 3, 521, 9, 0, 0, 1, '2007-01-15 17:58:41.301627', 0);
-INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (19, 3, 100, 9, 0, 0, 1, '2007-01-15 17:58:40.959409', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (17, 3, 132, 66, 0, 0, 2, '2007-06-27 17:26:31.844366', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (18, 3, 521, 9, 0, 0, 1, '2007-06-27 17:26:32.014597', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (19, 3, 100, 9, 0, 0, 1, '2007-06-27 17:26:31.769791', 0);
+INSERT INTO distroreleaselanguage (id, distrorelease, "language", currentcount, updatescount, rosettacount, contributorcount, dateupdated, unreviewed_count) VALUES (20, 3, 119, 0, 0, 8, 1, '2007-06-27 17:26:32.108744', 0);
 
 
 ALTER TABLE distroreleaselanguage ENABLE TRIGGER ALL;
@@ -1792,10 +1796,10 @@ ALTER TABLE emailaddress ENABLE TRIGGER ALL;
 
 ALTER TABLE entitlement DISABLE TRIGGER ALL;
 
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (1, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 10, 100, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (2, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 20, 200, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (4, 18, '2007-06-11 00:44:19.267601', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 10, 5, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (5, 18, '2007-06-11 01:02:48.538842', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 10, 3, 0);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (1, 17, 10, 100, 0, '2007-06-11 12:00:00', '2008-06-11 12:00:00', NULL, '2007-06-10 12:00:00', NULL, NULL, 30, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (2, 17, 20, 200, 0, '2007-06-11 12:00:00', '2008-06-11 12:00:00', NULL, '2007-06-10 12:00:00', NULL, NULL, 30, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (4, 18, 10, 5, 0, '2007-06-11 12:00:00', '2007-06-11 00:00:00', NULL, '2007-06-11 00:44:19.267601', NULL, NULL, 30, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (5, 18, 10, 3, 0, '2007-06-11 12:00:00', '2007-06-11 00:00:00', NULL, '2007-06-11 01:02:48.538842', NULL, NULL, 30, NULL);
 
 
 ALTER TABLE entitlement ENABLE TRIGGER ALL;
@@ -1909,6 +1913,14 @@ INSERT INTO karma (id, datecreated, person, "action", product, distribution, sou
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (59, '2000-03-13 20:45:15.852052', 16, 2, 20, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (60, '2000-03-13 20:45:51.817826', 16, 2, 20, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (61, '2000-03-13 20:46:49.83307', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (62, '2007-06-27 03:36:15.999411', 16, 14, NULL, 1, 16);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (63, '2007-06-27 03:36:15.999411', 16, 14, NULL, 1, 16);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (64, '2007-06-27 03:36:15.999411', 16, 14, NULL, 1, 16);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (65, '2007-06-27 03:36:15.999411', 16, 14, NULL, 1, 16);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (66, '2007-06-27 03:36:15.999411', 16, 14, NULL, 1, 16);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (67, '2007-06-27 03:36:15.999411', 16, 14, NULL, 1, 16);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (68, '2007-06-27 03:36:15.999411', 16, 14, NULL, 1, 16);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (69, '2007-06-27 03:36:15.999411', 16, 14, NULL, 1, 16);
 
 
 ALTER TABLE karma ENABLE TRIGGER ALL;
@@ -2630,32 +2642,32 @@ ALTER TABLE launchpaddatabaserevision ENABLE TRIGGER ALL;
 
 ALTER TABLE launchpadstatistic DISABLE TRIGGER ALL;
 
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (1, 'potemplate_count', 10, '2007-03-18 17:27:46.221219');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (2, 'pofile_count', 29, '2007-03-18 17:27:46.247125');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (3, 'pomsgid_count', 155, '2007-03-18 17:27:46.270903');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (4, 'translator_count', 27, '2007-03-18 17:27:46.309668');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (5, 'language_count', 18, '2007-03-18 17:27:46.292439');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (6, 'products_using_rosetta', 2, '2007-03-18 17:27:46.221219');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (7, 'rosetta_translator_count', 7, '2007-03-18 17:27:46.321317');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (8, 'products_with_potemplates', 3, '2007-03-18 17:27:46.330362');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (9, 'bug_count', 12, '2007-03-18 17:27:46.341312');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (10, 'bugtask_count', 24, '2007-03-18 17:27:46.351299');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (11, 'products_using_malone', 5, '2007-03-18 17:27:46.361282');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (12, 'projects_with_bugs', 7, '2007-03-18 17:27:46.370903');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (13, 'people_count', 48, '2007-01-15 17:58:42.118694');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (14, 'teams_count', 17, '2007-01-15 17:58:42.131757');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (15, 'shared_bug_count', 4, '2007-03-18 17:27:46.381918');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (16, 'question_count', 13, '2007-03-18 17:27:46.393469');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (17, 'answered_question_count', 3, '2007-03-18 17:27:46.40443');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (18, 'solved_question_count', 1, '2007-03-18 17:27:46.413242');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (19, 'projects_with_questions_count', 2, '2007-03-18 17:27:46.421899');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (20, 'active_products', 20, '2007-04-29 23:45:04.416248');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (21, 'products_with_translations', 3, '2007-04-29 23:45:04.416248');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (22, 'products_with_blueprints', 1, '2007-04-29 23:45:04.416248');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (23, 'products_with_branches', 5, '2007-04-29 23:45:04.416248');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (24, 'products_with_bugs', 5, '2007-04-29 23:45:04.416248');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (25, 'products_with_questions', 1, '2007-04-29 23:45:04.416248');
-INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (26, 'reviewed_products', 1, '2007-04-29 23:45:04.416248');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (1, 'potemplate_count', 10, '2007-06-27 17:26:32.857356');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (2, 'pofile_count', 31, '2007-06-27 17:26:33.042381');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (3, 'pomsgid_count', 157, '2007-06-27 17:26:33.049997');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (4, 'translator_count', 27, '2007-06-27 17:26:33.079967');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (5, 'language_count', 19, '2007-06-27 17:26:33.071205');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (6, 'products_using_rosetta', 2, '2007-06-27 17:26:32.857356');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (7, 'rosetta_translator_count', 7, '2007-06-27 17:26:33.100594');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (8, 'products_with_potemplates', 3, '2007-06-27 17:26:33.108407');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (9, 'bug_count', 12, '2007-06-27 17:26:32.563307');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (10, 'bugtask_count', 24, '2007-06-27 17:26:32.617867');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (11, 'products_using_malone', 6, '2007-06-27 17:26:32.64615');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (12, 'projects_with_bugs', 7, '2007-06-27 17:26:32.72619');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (13, 'people_count', 52, '2007-06-27 17:26:33.172591');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (14, 'teams_count', 19, '2007-06-27 17:26:33.181428');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (15, 'shared_bug_count', 4, '2007-06-27 17:26:32.837034');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (16, 'question_count', 13, '2007-06-27 17:26:33.117505');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (17, 'answered_question_count', 3, '2007-06-27 17:26:33.124907');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (18, 'solved_question_count', 1, '2007-06-27 17:26:33.132694');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (19, 'projects_with_questions_count', 2, '2007-06-27 17:26:33.140257');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (20, 'active_products', 20, '2007-06-27 17:26:32.857356');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (21, 'products_with_translations', 3, '2007-06-27 17:26:32.857356');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (22, 'products_with_blueprints', 1, '2007-06-27 17:26:32.857356');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (23, 'products_with_branches', 6, '2007-06-27 17:26:32.857356');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (24, 'products_with_bugs', 5, '2007-06-27 17:26:32.857356');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (25, 'products_with_questions', 1, '2007-06-27 17:26:32.857356');
+INSERT INTO launchpadstatistic (id, name, value, dateupdated) VALUES (26, 'reviewed_products', 1, '2007-06-27 17:26:32.857356');
 
 
 ALTER TABLE launchpadstatistic ENABLE TRIGGER ALL;
@@ -3989,6 +4001,22 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
 ', true, NULL, NULL, 0, 0, 2, NULL, 13, NULL, 'po/alsa-utils-es.po', NULL, NULL, '2007-04-07 10:14:36.267119', NULL, 755, 0);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, last_touched_pomsgset, unreviewed_count) VALUES (34, 5, 119, NULL, ' English translation for mozilla
+ Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
+ This file is distributed under the same license as the mozilla package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
+
+', 'Project-Id-Version: mozilla
+Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
+POT-Creation-Date: 2005-05-06 21:10:17.367605+00:00
+PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: English <en@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, NULL, NULL, 0, 0, 8, NULL, 16, NULL, 'debian/po/pkgconf-mozilla-en.po', NULL, NULL, '2007-06-27 03:36:15.999411', NULL, 764, 0);
 
 
 ALTER TABLE pofile ENABLE TRIGGER ALL;
@@ -4030,6 +4058,7 @@ INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (65, 56, 31, 702, '2007-01-05 13:04:20.092506');
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (66, 66, 30, 701, '2006-12-13 21:19:06.369142');
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (67, 13, 33, 708, '2007-04-07 11:09:37.437343');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (68, 16, 34, 712, '2007-06-27 04:02:51.765162');
 
 
 ALTER TABLE pofiletranslator ENABLE TRIGGER ALL;
@@ -5369,6 +5398,15 @@ INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, com
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (753, 0, 33, true, false, false, NULL, 200, false, false, false, '2007-04-07 10:14:36.267119', 13);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (754, 0, 33, false, false, false, NULL, 198, false, false, false, NULL, NULL);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (755, 0, 33, true, false, false, NULL, 199, false, false, false, '2007-04-07 11:09:37.437343', 16);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (756, 0, 34, true, false, false, NULL, 156, false, false, false, '2007-06-27 03:36:15.999411', 16);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (757, 0, 34, true, false, false, NULL, 160, false, false, false, '2007-06-27 03:36:15.999411', 16);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (758, 0, 34, true, false, false, NULL, 152, false, false, false, '2007-06-27 03:36:15.999411', 16);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (759, 0, 34, true, false, false, NULL, 153, false, false, false, '2007-06-27 03:36:15.999411', 16);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (760, 0, 34, true, false, false, NULL, 154, false, false, false, '2007-06-27 03:36:15.999411', 16);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (761, 0, 34, true, false, false, NULL, 155, false, false, false, '2007-06-27 03:36:15.999411', 16);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (762, 0, 34, false, false, false, NULL, 157, false, false, false, NULL, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (763, 0, 34, true, false, false, NULL, 158, false, false, false, '2007-06-27 03:36:15.999411', 16);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (764, 0, 34, true, false, false, NULL, 159, false, false, false, '2007-06-27 03:36:15.999411', 16);
 
 
 ALTER TABLE pomsgset ENABLE TRIGGER ALL;
@@ -6080,6 +6118,14 @@ INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datec
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (707, 753, 0, 663, 2, '2007-04-07 10:14:36.267119', 13, 1, true, false);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (708, 755, 0, 664, 2, '2007-04-07 10:14:36.267119', 13, 1, true, false);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (709, 755, 0, 665, 2, '2007-04-07 11:08:56.339275', 13, 1, false, false);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (710, 756, 0, 666, 2, '2007-06-27 03:36:15.999411', 16, 1, true, false);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (711, 757, 0, 667, 2, '2007-06-27 03:36:15.999411', 16, 1, true, false);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (712, 758, 0, 668, 2, '2007-06-27 03:36:15.999411', 16, 1, true, false);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (713, 759, 0, 669, 2, '2007-06-27 03:36:15.999411', 16, 1, true, false);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (714, 760, 0, 670, 2, '2007-06-27 03:36:15.999411', 16, 1, true, false);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (715, 761, 0, 671, 2, '2007-06-27 03:36:15.999411', 16, 1, true, false);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (716, 763, 0, 672, 2, '2007-06-27 03:36:15.999411', 16, 1, true, false);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (717, 764, 0, 673, 2, '2007-06-27 03:36:15.999411', 16, 1, true, false);
 
 
 ALTER TABLE posubmission ENABLE TRIGGER ALL;
@@ -7791,6 +7837,15 @@ INSERT INTO potranslation (id, translation) VALUES (662, 'blah, blah, blah');
 INSERT INTO potranslation (id, translation) VALUES (663, 'danilo@canonical.com');
 INSERT INTO potranslation (id, translation) VALUES (664, 'carlos@canonical.com');
 INSERT INTO potranslation (id, translation) VALUES (665, 'jtv@canonical.com');
+INSERT INTO potranslation (id, translation) VALUES (666, 'Please choose your sound system.');
+INSERT INTO potranslation (id, translation) VALUES (667, 'You must set your LC_MESSAGE or LC_ALL variable in order this setting works correctly.');
+INSERT INTO potranslation (id, translation) VALUES (668, 'Copy text   	
+/etc/mozilla/prefs.js is available for preconfiguring preferences.');
+INSERT INTO potranslation (id, translation) VALUES (669, 'Debian mozilla will load /etc/mozilla/prefs.js after loading some default preference scripts.');
+INSERT INTO potranslation (id, translation) VALUES (670, 'You can edit this file for system-wide settings. (i.e.: proxy settings)');
+INSERT INTO potranslation (id, translation) VALUES (671, 'auto, esddsp, artsdsp, mass, none');
+INSERT INTO potranslation (id, translation) VALUES (672, 'Enable automatic Language/Locale selection?');
+INSERT INTO potranslation (id, translation) VALUES (673, 'This setting provides an automatic language/region pack selection in Mozilla using the locale settings. It may help a system admin faced with hundreds of non-english-speaking novices.');
 
 
 ALTER TABLE potranslation ENABLE TRIGGER ALL;
@@ -8350,6 +8405,7 @@ ALTER TABLE revisionproperty ENABLE TRIGGER ALL;
 
 ALTER TABLE scriptactivity DISABLE TRIGGER ALL;
 
+INSERT INTO scriptactivity (id, name, hostname, date_started, date_completed) VALUES (1, 'launchpad-stats', 'autumn.annrky-sinzui.local', '2007-06-27 17:26:31.220699', '2007-06-27 17:26:33.190381');
 
 
 ALTER TABLE scriptactivity ENABLE TRIGGER ALL;

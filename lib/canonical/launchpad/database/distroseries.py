@@ -199,6 +199,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         result = DistroSeriesLanguage.select(
             "DistroReleaseLanguage.language = Language.id AND "
             "DistroReleaseLanguage.distrorelease = %d AND "
+            "Language.code != 'en' AND "
             "Language.visible = TRUE" % self.id,
             prejoinClauseTables=["Language"],
             clauseTables=["Language"],

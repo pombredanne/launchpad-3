@@ -52,6 +52,12 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     @stepthrough('+lang')
     def traverse_lang(self, langcode):
+        """Retrieve the DistroSeriesLanguage or a dummy if one it is None."""
+        # We do not want users to see the 'en' potemplate because
+        # we store the messages we want to translate as English.
+        if langcode == 'en':
+            raise NotFoundError(langcode)
+
         langset = getUtility(ILanguageSet)
         try:
             lang = langset[langcode]
