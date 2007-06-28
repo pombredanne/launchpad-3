@@ -62,11 +62,8 @@
                         title="bug description goes here">
                       <label style="font-weight: normal">
                         <input type="radio" name="field.bug_already_reported_as"
-                               tal:condition="repeat/bug/start" checked="checked"
-                               tal:attributes="value string:${bug/id};" />
-                        <input type="radio" name="field.bug_already_reported_as"
-                               tal:condition="not:repeat/bug/start"
-                               tal:attributes="value string:${bug/id};" />
+                               tal:attributes="value string:${bug/id};
+                                               checked repeat/bug/start|nothing" />
                         <a tal:attributes="href bug/fmt:url" href="#"
                            tal:content="string:#${bug/id}: ${bug/title}">
                           #1: Firefox does not support SVG
