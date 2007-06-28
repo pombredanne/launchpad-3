@@ -125,10 +125,7 @@ class IEntitlementSet(Interface):
         """Return an iterator that will go through all entitlements."""
 
     def count():
-        """Return the number of entitlements in the database.
-
-        Only counts public entitlementes.
-        """
+        """Return the number of entitlements in the database."""
 
     def get(entitlement_id, default=None):
         """Return the entitlement with the given id.
@@ -149,7 +146,7 @@ class IEntitlementSet(Interface):
         entitlements are found.
         """
 
-    def new(external_id, person, quota, entitlement_type, state,
+    def new(person, quota, entitlement_type, state,
             date_created=None, date_expires=None, date_starts=None,
             amount_used=None, registrant=None, approved_by=None):
         """Create a new entitlement."""

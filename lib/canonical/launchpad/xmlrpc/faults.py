@@ -9,6 +9,7 @@ __all__ = [
     'FileBugMissingProductOrDistribution',
     'InvalidEntitlementType'
     'NoSuchDistribution',
+    'NoSuchEntitlement',
     'NoSuchPackage',
     'NoSuchProduct',
     'NoSuchPerson',
@@ -178,3 +179,12 @@ class InvalidEntitlementType(LaunchpadFault):
 
     def __init__(self, entitlement_type):
         LaunchpadFault.__init__(self, entitlement_type=entitlement_type)
+
+class NoSuchEntitlement(LaunchpadFault):
+    """There's no such entitlement registered in Launchpad."""
+
+    error_code = 130
+    msg_template = "No such entitlement with id: %(id)s"
+
+    def __init__(self, id):
+        LaunchpadFault.__init__(self, id=id)

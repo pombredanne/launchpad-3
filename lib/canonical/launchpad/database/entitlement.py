@@ -30,7 +30,6 @@ class Entitlement(SQLBase):
     person = ForeignKey(
         dbName='person', foreignKey='Person',
         default=None, notNull=True)
-    external_id = StringCol(notNull=False, default=None)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     date_starts = UtcDateTimeCol(notNull=False, default=None)
     date_expires = UtcDateTimeCol(notNull=False, default=None)
@@ -150,7 +149,7 @@ class EntitlementSet:
             if entitlement.is_valid]
         return entitlements
 
-    def new(self, external_id, person, quota, entitlement_type,
+    def new(self, person, quota, entitlement_type,
             state, date_created=None, date_starts=None, date_expires=None,
             amount_used=0, registrant=None, approved_by=None):
         """See IEntitlementSet."""
@@ -159,7 +158,6 @@ class EntitlementSet:
             date_created = datetime.now(pytz.timezone('UTC'))
 
         return Entitlement(
-            external_id=external_id,
             person=person,
             quota=quota,
             entitlement_type=entitlement_type,

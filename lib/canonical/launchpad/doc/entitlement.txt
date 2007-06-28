@@ -36,6 +36,7 @@ person or team being granted the right.  The state for a granted
 entitlement is ACTIVE and the expiration and start dates can be specified.
 
     >>> entitlement = getUtility(IEntitlementSet).new(
+    ...     external_id="A-202",
     ...     quota=5,
     ...     entitlement_type=EntitlementType.PRIVATE_BUGS,
     ...     person=ubuntu_team,
@@ -44,6 +45,11 @@ entitlement is ACTIVE and the expiration and start dates can be specified.
     ...     amount_used=0)
     >>> verifyObject(IEntitlement, entitlement)
     True
+
+The person can be accessed and shown to be correct.
+
+    >>> print entitlement.person.name
+    ubuntu-team
 
 If the current date is after the start date (if not None) or before
 the expiration date (if not None) then the in_date_range test will
@@ -204,6 +210,8 @@ the date range is again satisfied and the entitlement is valid.
     >>> entitlement.is_valid
     True
 
+== Security ==
+
 Viewing the entitlement's attributes is restricted to the
 entitlement's owner, the entitlement's registrant (or to a member of
 these teams), and to Launchpad administrators. 
@@ -265,6 +273,8 @@ listed as a reviewer for the membership to go through.
       ...
     Unauthorized: (<Entitlement..., 'quota', 'launchpad.Admin')
     
+= EntitlementSets =
+
 All of the entitlements can be obtained using IEntitlementSet.
 
     >>> login("foo.bar@canonical.com")
@@ -291,6 +301,7 @@ A new entitlement for the ubuntu_team can be created, increasing the
 number of valid entitlements.
 
     >>> entitlement = getUtility(IEntitlementSet).new(
+    ...     external_id="A-203",
     ...     quota=50,
     ...     entitlement_type=EntitlementType.PRIVATE_BRANCHES,
     ...     person=ubuntu_team,

@@ -14,32 +14,63 @@ IEntitlementAPI
     >>> verifyObject(IEntitlementAPI, entitlement_view)
     True
     
+== Test directly ==
+
+Calling the interfaces directly is useful to show the methods work
+without involving the XML-RPC complexity.
+
 Create a new entitlement directly.
 
-    >>> entitlement = entitlement_view.create_entitlement(
-    ...     "A-100",
+    >>> entitlement_id = entitlement_view.create(
     ...     foobar.name,
     ...     EntitlementType.PRIVATE_BUGS.value,
     ...     100,
-    ...     EntitlementState.ACTIVE.value,
-    ...     '', '', '')
-    >>> print entitlement
-    6
+    ...     EntitlementState.ACTIVE.value)
+
+    >>> params = dict(id=entitlement_id,
+    ...               person_name=foobar.name,
+    ...               quota=120)
+    >>> res = entitlement_view.update(params)
+    >>> print res
+    True
+
+    >>> entitlement = entitlement_view.get(entitlement_id)
+    >>> print entitlement.get('quota')
+    120
+    
+== Test via XML-RPC ==
+
+Create server proxy for XML-RPC calls.
 
     >>> entitlement_api = xmlrpclib.ServerProxy(
     ...     'http://foo.bar@canonical.com:test@xmlrpc.launchpad.dev/+entitlements/',
     ...     transport=XMLRPCTestTransport())
 
-Create a new entitlement via XML-RPC.
+Create a new entitlement via XML-RPC.  Note that all parameters must
+be passed positionally, not as name=value pairs.  Optional parameters
+may be omitted but all optional parameters before the one of interest
+must be supplied.
 
-    >>> entitlement = entitlement_api.create_entitlement(
-    ...     "A-101", # external_id
+    >>> entitlement_id = entitlement_api.create(
     ...     foobar.name, # person_name
     ...     EntitlementType.PRIVATE_BRANCHES.value, # entitlement_type
     ...     101, # quota
-    ...     EntitlementState.ACTIVE.value, # state
-    ...     '', # date_created
-    ...     '', # date_starts
-    ...     '') # date_expires
-    >>> print entitlement
+    ...     EntitlementState.ACTIVE.value) # state
+    >>> print entitlement_id
     7
+
+An existing entitlement can be updated.
+    
+    >>> params = dict(id=entitlement_id,
+    ...               person_name=foobar.name,
+    ...               quota=200)
+    >>> res = entitlement_api.update(params)
+    >>> print res
+    True
+
+The newly changed entitlement can be retrieved with the new values.
+
+    >>> entitlement = entitlement_api.get(entitlement_id)
+    >>> print entitlement.get('quota')
+    200
+    

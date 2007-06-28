@@ -12,7 +12,8 @@
         />
     <require
         permission="launchpad.Admin"
-        set_attributes="quota amount_used state whiteboard date_starts date_expires"
+        set_attributes="person external_id quota amount_used state
+                        whiteboard date_starts date_expires"
         />
   </content>
 

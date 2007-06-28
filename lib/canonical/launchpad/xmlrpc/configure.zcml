@@ -28,6 +28,10 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchEntitlement">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
   <class class="canonical.launchpad.xmlrpc.faults.NoSuchPackage">
     <require like_class="xmlrpclib.Fault" />
   </class>
