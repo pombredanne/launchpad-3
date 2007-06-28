@@ -20,6 +20,8 @@ from bzrlib.tests import TestCaseInTempDir
 from bzrlib.transport import get_transport, remote
 
 from twisted.enterprise.adbapi import ConnectionPool
+from twisted.internet import process
+
 from canonical.tests.test_twisted import TwistedTestCase
 
 from canonical.codehosting import plugins
@@ -44,11 +46,17 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
         # synchronously.
         # See http://twistedmatrix.com/trac/ticket/2680
         ConnectionPool.shutdownID = None
+        # XXX: JonathanLange 2007-06-28, For some reason, we get reapProcess
+        # errors from Twisted when these tests are run after test_acceptance.
+        # This monkey-patch disables the errors.
+        self._reapAllProcesses = process.reapAllProcesses
+        process.reapAllProcesses = lambda: None
         self.make_empty_directory(config.codehosting.branches_root)
         self._authserver = Authserver()
         self._authserver.setUp()
 
     def tearDown(self):
+        process.reapAllProcesses = self._reapAllProcesses
         TestCaseInTempDir.tearDown(self)
         return self._authserver.tearDown()
 
