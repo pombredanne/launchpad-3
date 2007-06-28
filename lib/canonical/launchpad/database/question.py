@@ -826,7 +826,11 @@ class QuestionTargetSearch(QuestionSearch):
         self.unsupported_target = unsupported_target
 
     def getConstraints(self):
-        """See `QuestionSearch`."""
+        """See `QuestionSearch`.
+        
+        Return target and language constraints in addition to the base class
+        constraints.
+        """
         constraints = QuestionSearch.getConstraints(self)
         if self.owner:
             constraints.append('Question.owner = %s' % self.owner.id)
@@ -898,7 +902,10 @@ class QuestionPersonSearch(QuestionSearch):
             self.participation = participation
 
     def getTableJoins(self):
-        """See `QuestionSearch`."""
+        """See `QuestionSearch`.
+        
+        Return the joins for persons in addition to the base class joins.
+        """
         joins = QuestionSearch.getTableJoins(self)
 
         if QuestionParticipation.SUBSCRIBER in self.participation:
@@ -923,7 +930,11 @@ class QuestionPersonSearch(QuestionSearch):
         QuestionParticipation.ASSIGNEE: "Question.assignee = %s"}
 
     def getConstraints(self):
-        """See `QuestionSearch`."""
+        """See `QuestionSearch`.
+        
+        Return the base class constraints plus additional constraints upon
+        the Person's participation in Questions.
+        """
         constraints = QuestionSearch.getConstraints(self)
 
         participations_filter = []
@@ -941,10 +952,10 @@ class QuestionPersonSearch(QuestionSearch):
 class QuestionTargetMixin:
     """Mixin class for `IQuestionTarget`."""
 
-    def _getTargetTypes(self):
+    def getTargetTypes(self):
         """Return a Dict of QuestionTargets representing this object.
 
-        :Return: a Dict with product, distribution, and soucepackagename
+        :Return: a Dict with product, distribution, and sourcepackagename
                  as possible keys. Each value is a valid QuestionTarget
                  or None.
         """
@@ -956,7 +967,7 @@ class QuestionTargetMixin:
         return QuestionSet.new(
             title=title, description=description, owner=owner,
             datecreated=datecreated, language=language,
-            **self._getTargetTypes())
+            **self.getTargetTypes())
 
     def getQuestion(self, question_id):
         """See `IQuestionTarget`."""
@@ -965,25 +976,25 @@ class QuestionTargetMixin:
         except SQLObjectNotFound:
             return None
         # Verify that the question is actually for this target.
-        if not self._questionIsForTarget(question):
+        if not self.questionIsForTarget(question):
             return None
         return question
 
-    def _questionIsForTarget(self, question):
+    def questionIsForTarget(self, question):
         """Verify that this question is actually for this target."""
-        if question.target != self:
+        if question.target is not self:
             return False
         return True
 
     def findSimilarQuestions(self, title):
         """See `IQuestionTarget`."""
         return SimilarQuestionsSearch(
-            title, **self._getTargetTypes()).getResults()
+            title, **self.getTargetTypes()).getResults()
 
     def getQuestionLanguages(self):
         """See `IQuestionTarget`."""
         constraints = ['Language.id = Question.language']
-        targets = self._getTargetTypes()
+        targets = self.getTargetTypes()
         for column, target in targets.items():
             if target is None:
                 constraint = "Question." + column + " IS NULL"
@@ -998,7 +1009,7 @@ class QuestionTargetMixin:
     @property
     def answer_contacts(self):
         """See `IQuestionTarget`."""
-        answer_contacts = AnswerContact.selectBy(**self._getTargetTypes())
+        answer_contacts = AnswerContact.selectBy(**self.getTargetTypes())
         return sorted(
             [answer_contact.person for answer_contact in answer_contacts],
             key=operator.attrgetter('displayname'))
@@ -1011,14 +1022,14 @@ class QuestionTargetMixin:
     def addAnswerContact(self, person):
         """See `IQuestionTarget`."""
         answer_contact = AnswerContact.selectOneBy(
-            person=person, **self._getTargetTypes())
+            person=person, **self.getTargetTypes())
         if answer_contact is not None:
             return False
         # Person must speak a language to be an answer contact.
         assert person.languages.count() > 0, (
             "An Answer Contact must speak a language.")
         params = dict(product=None, distribution=None, sourcepackagename=None)
-        params.update(self._getTargetTypes())
+        params.update(self.getTargetTypes())
         AnswerContact(person=person, **params)
         return True
 
@@ -1036,7 +1047,7 @@ class QuestionTargetMixin:
         assert language is not None, (
             "The language cannot be None when selecting answer contacts.")
         constraints = []
-        targets = self._getTargetTypes()
+        targets = self.getTargetTypes()
         for column, target in targets.items():
             if target is None:
                 constraint = "AnswerContact." + column + " IS NULL"
@@ -1078,7 +1089,7 @@ class QuestionTargetMixin:
         if person not in self.answer_contacts:
             return False
         answer_contact = AnswerContact.selectOneBy(
-            person=person, **self._getTargetTypes())
+            person=person, **self.getTargetTypes())
         if answer_contact is None:
             return False
         answer_contact.destroySelf()

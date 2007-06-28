@@ -6,8 +6,6 @@ __metaclass__ = type
 __all__ = ['Product', 'ProductSet']
 
 
-from operator import attrgetter
-
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -28,7 +26,6 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.helpers import shortlist
 
-from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -42,12 +39,10 @@ from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtask import BugTaskSet
-from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.question import (
-    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet,
-    QuestionTargetMixin)
+    QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
@@ -329,8 +324,11 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             needs_attention_from=needs_attention_from,
             unsupported_target=unsupported_target).getResults()
 
-    def _getTargetTypes(self):
-        """See `QuestionTargetMixin`."""
+    def getTargetTypes(self):
+        """See `QuestionTargetMixin`.
+        
+        Defines product as self.
+        """
         return {'product': self}
 
     @property

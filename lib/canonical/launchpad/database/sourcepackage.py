@@ -12,7 +12,6 @@ from warnings import warn
 
 from zope.interface import implements
 
-from sqlobject import SQLObjectNotFound
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.database.constants import UTC_NOW
@@ -30,14 +29,12 @@ from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtask import BugTaskSet
-from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.question import (
-    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet,
-    QuestionTargetMixin)
+    QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
@@ -50,16 +47,24 @@ from canonical.launchpad.database.build import Build
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
     """Implementation of IQuestionTarget for SourcePackage."""
 
-    def _getTargetTypes(self):
-        """See `QuestionTargetMixin`."""
+    def getTargetTypes(self):
+        """See `QuestionTargetMixin`.
+        
+        Defines distribution and sourcepackagename as this object's
+        distribution and sourcepackagename.
+        """
         return {'distribution': self.distribution,
                 'sourcepackagename': self.sourcepackagename}
 
-    def _questionIsForTarget(self, question):
-        """See `QuestionTargetMixin`."""
-        if question.distribution != self.distribution:
+    def questionIsForTarget(self, question):
+        """See `QuestionTargetMixin`.
+        
+        Return True when the question's distribution and sourcepackagename
+        are this object's distribution and sourcepackagename.
+        """
+        if question.distribution is not self.distribution:
             return False
-        if question.sourcepackagename != self.sourcepackagename:
+        if question.sourcepackagename is not self.sourcepackagename:
             return False
         return True
 
@@ -112,7 +117,7 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
     @property
     def direct_answer_contacts(self):
         """See `IQuestionTarget`."""
-        answer_contacts = AnswerContact.selectBy(**self._getTargetTypes())
+        answer_contacts = AnswerContact.selectBy(**self.getTargetTypes())
         return sorted(
             [contact.person for contact in answer_contacts],
             key=attrgetter('displayname'))

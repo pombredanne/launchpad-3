@@ -4,8 +4,6 @@
 __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet']
 
-from operator import attrgetter
-
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -22,15 +20,13 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
-from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.question import (
-    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet,
-    QuestionTargetMixin)
+    QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
@@ -48,7 +44,6 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
-from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -525,14 +520,20 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             needs_attention_from=needs_attention_from,
             unsupported_target=unsupported_target).getResults()
 
-    def _getTargetTypes(self):
-        """See `QuestionTargetMixin`."""
+    def getTargetTypes(self):
+        """See `QuestionTargetMixin`.
+        
+        Defines distribution as self and sourcepackagename as None.
+        """
         return {'distribution': self,
                 'sourcepackagename': None}
 
-    def _questionIsForTarget(self, question):
-        """See `QuestionTargetMixin`."""
-        if question.distribution != self:
+    def questionIsForTarget(self, question):
+        """See `QuestionTargetMixin`.
+        
+        Return True when the Question's distribution is self.
+        """
+        if question.distribution is not self:
             return False
         return True
 
