@@ -246,7 +246,8 @@ class POFileMixIn(RosettaStats):
 
         parameters['ids'] = 'false'
         if stored_pomsgsets:
-            ids_list = [quote(pomsgset) for pomsgset in stored_pomsgset]
+            ids_list = ','.join(
+                [quote(pomsgset) for pomsgset in stored_pomsgsets])
             parameters['ids'] = 'POMsgSet.id IN (%s)' % ids_list
 
 
