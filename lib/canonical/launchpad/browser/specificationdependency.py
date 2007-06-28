@@ -9,6 +9,7 @@ __all__ = [
     'SpecificationDependencyRemoveView',
     ]
 
+from canonical.launchpad import _
 from canonical.launchpad.webapp import (
     GeneralFormView, canonical_url,
     LaunchpadFormView, action, custom_widget)
@@ -34,10 +35,10 @@ class SpecificationDependencyAddView(LaunchpadFormView):
                 vocabulary='SpecificationDepCandidates',
                 required=True,
                 description=_(
-                    u"If another blueprint needs to be fully implemented "
-                    u"before this feature can be started, then specify that "
-                    u"dependency here so Launchpad knows about it and can "
-                    u"give you an accurate project plan.")),
+                    "If another blueprint needs to be fully implemented "
+                    "before this feature can be started, then specify that "
+                    "dependency here so Launchpad knows about it and can "
+                    "give you an accurate project plan.")),
             render_context=self.render_context,
             custom_widget=self.custom_widgets['dependency'])
 
