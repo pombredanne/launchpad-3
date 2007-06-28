@@ -18,6 +18,8 @@ from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
 
 from zope.app.form import CustomWidgetFactory
+from zope.app.form.interfaces import IInputWidget
+from zope.app.form.utility import setUpWidget
 from zope.schema import Choice
 
 import operator
@@ -37,24 +39,27 @@ class CodeImportSetNavigation(Navigation):
             return None
 
 
+class ReviewStatusDropdownWidget(LaunchpadDropdownWidget):
+    """A DropdownWidget that says 'Any' instead of '(no value)'."""
+    _messageNoValue = _('Any')
+
+
 class CodeImportSetView(LaunchpadView):
     def initialize(self):
         # ICodeImport['review_status'].required is True, which means the
         # generated <select> widget lacks a 'no choice' option.
-        field = Choice(
+        status_field = Choice(
             __name__='status', title=_("Review Status"),
             vocabulary='CodeImportReviewStatus', required=False)
-        factory = CustomWidgetFactory(LaunchpadDropdownWidget)
-        self.status_widget = factory(field.bind(self.context), self.request)
-        self.status_widget._messageNoValue = 'Any'
+        self.status_widget = CustomWidgetFactory(ReviewStatusDropDownWidget)
+        setUpWidget(self, 'status',  status_field, IInputWidget)
 
         status = None
         if self.status_widget.hasValidInput():
             status = self.status_widget.getInputValue()
 
         if status is not None:
-            imports = self.context.search(
-                review_status=status)
+            imports = self.context.search(review_status=status)
         else:
             imports = self.context.getAll()
 

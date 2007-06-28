@@ -75,7 +75,7 @@ There's a similar page for the other import, which uses CVS:
 
 The code import listing is filterable, though only on review status so
 far.  There are no invalid imports in the sample data, so if we filter
-just on them we'll see the "no imports found" message.  It's worth
+just on them we'll see the "no imports found" message.  It is worth
 ensuring that the control for filtering on review status reads "Any"
 by default, as the code that ensures this is poking at Zope 3
 internals a bit.
