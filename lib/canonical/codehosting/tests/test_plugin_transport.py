@@ -133,15 +133,15 @@ class TestLaunchpadServer(TestCaseInTempDir):
         self.assertEqual([1], self.server.authserver._request_mirror_log)
 
 
-class TestLaunchpadTransport(TestCaseWithMemoryTransport):
+class TestLaunchpadTransport(TestCaseInTempDir):
 
     layer = BzrlibLayer
 
     def setUp(self):
-        TestCaseWithMemoryTransport.setUp(self)
+        TestCaseInTempDir.setUp(self)
         self.authserver = FakeLaunchpad()
         self.user_id = 1
-        self.backing_transport = self.get_transport()
+        self.backing_transport = MemoryTransport()
         self.mirror_transport = MemoryTransport()
         self.server = LaunchpadServer(
             self.authserver, self.user_id, self.backing_transport,
@@ -275,13 +275,13 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         self.assertEqual(set([]), self.server._dirty_branch_ids)
 
 
-class TestLaunchpadTransportReadOnly(TestCaseWithMemoryTransport):
+class TestLaunchpadTransportReadOnly(TestCaseInTempDir):
     """Tests for read-only operations on the LaunchpadTransport."""
 
     layer = BzrlibLayer
 
     def setUp(self):
-        TestCaseWithMemoryTransport.setUp(self)
+        TestCaseInTempDir.setUp(self)
         _memory_server = MemoryServer()
         _memory_server.setUp()
         self.addCleanup(_memory_server.tearDown)
@@ -289,7 +289,7 @@ class TestLaunchpadTransportReadOnly(TestCaseWithMemoryTransport):
 
         self.authserver = FakeLaunchpad()
         self.user_id = 1
-        self.backing_transport = self.get_transport()
+        self.backing_transport = MemoryTransport()
         self.server = LaunchpadServer(
             self.authserver, self.user_id, self.backing_transport,
             mirror_transport)
