@@ -120,7 +120,7 @@ Get previous page to check that the save translation is the right one.
   >>> browser.url
   'http://localhost/evolution/trunk/+pots/evolution-2.2/es/+translate?start=21&batch=1'
 
-And, as we can see, we get the same output, just one trailing new line char
+And, as we can see, we get the same output, just one trailing newline char.
 
   >>> print_tags(browser, [
   ...     'msgset_165', 'msgset_165_singular', 'msgset_165_es_translation_0'])
@@ -152,7 +152,7 @@ Get previous page to check that the save translation is the right one.
   >>> browser.url
   'http://localhost/evolution/trunk/+pots/evolution-2.2/es/+translate?start=21&batch=1'
 
-And Rosetta comes to the rescue and stores just one!.
+And Rosetta comes to the rescue and stores just one!
 
   >>> print_tags(browser, [
   ...     'msgset_165', 'msgset_165_singular', 'msgset_165_es_translation_0'])
