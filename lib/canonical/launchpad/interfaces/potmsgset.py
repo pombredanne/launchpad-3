@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
 from zope.schema import Field, Int
@@ -130,3 +130,16 @@ class IPOTMsgSet(Interface):
         Messages that are likely to contain email addresses
         are shown only to logged-in users, and not to anonymous users.
         """)
+
+    def makeHTMLId(suffix=None):
+        """Unique name for this `POTMsgSet` for use in HTML element ids.
+
+        The name is an underscore-separated sequence of:
+         * the string 'msgset'
+         * unpadded, numerical `id`
+         * optional caller-supplied suffix.
+
+        :param suffix: an optional suffix to be appended.  Must be suitable
+            for use in HTML element ids.
+        """
+
