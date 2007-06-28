@@ -26,8 +26,10 @@ from canonical.launchpad.interfaces import (
     ISprint,
     )
 
+from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
+from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
 
@@ -96,7 +98,9 @@ class HasSpecificationsView(LaunchpadView):
             raise AssertionError, 'Unknown blueprint listing site'
         if IHasDrivers.providedBy(self.context):
             self.has_drivers = True
-
+        self.batchnav = BatchNavigator(
+            self.specs, self.request,
+            size=config.launchpad.default_batch_size)
 
     def mdzCsv(self):
         """Quick hack for mdz, to get csv dump of specs."""
@@ -245,7 +249,7 @@ class HasSpecificationsView(LaunchpadView):
     @cachedproperty
     def specs(self):
         filter = self.spec_filter
-        return shortlist(self.context.specifications(filter=filter))
+        return self.context.specifications(filter=filter)
 
     @cachedproperty
     def spec_count(self):
