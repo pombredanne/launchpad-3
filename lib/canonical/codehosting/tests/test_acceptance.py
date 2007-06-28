@@ -366,7 +366,7 @@ def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(make_repository_tests(base_suite))
     suite.addTest(make_server_tests(
-        base_suite, [make_sftp_server(), make_bzr_ssh_server()]))
+        base_suite, [make_sftp_server, make_bzr_ssh_server]))
     suite.addTest(make_server_tests(
-        unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server()]))
+        unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server]))
     return suite
