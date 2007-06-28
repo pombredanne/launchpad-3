@@ -306,6 +306,7 @@ def set_request_started(starttime=None):
         starttime = time.time()
     _local.request_start_time = starttime
     _local.request_statements = []
+    _local.last_statement_timeout = None
 
 
 def clear_request_started():
@@ -348,10 +349,7 @@ def _log_statement(starttime, endtime, connection_wrapper, statement):
     # convert times to integer millisecond values
     starttime = int((starttime - request_starttime) * 1000)
     endtime = int((endtime - request_starttime) * 1000)
-    _local.request_statements.append((
-        starttime, endtime,
-        '/*%s*/ %s' % (id(connection_wrapper), statement)
-        ))
+    _local.request_statements.append((starttime, endtime, statement))
 
     # store the last executed statement as an attribute on the current
     # thread
@@ -394,14 +392,14 @@ def reset_hard_timeout(execute_func):
 
     now = time.time()
     remaining_ms = (
-            dbconfig.db_statement_timeout - int(now - start_time) * 1000)
+            dbconfig.db_statement_timeout - int((now - start_time) * 1000))
 
     if remaining_ms <= 0:
         return # Already timed out - nothing to do
 
     # Only reset the statement timeout once in this many milliseconds
     # to avoid too many database round trips.
-    precision = 2000
+    precision = config.launchpad.db_statement_timeout_precision
 
     last_statement_timeout = getattr(_local, 'last_statement_timeout', None)
     if (last_statement_timeout is None
