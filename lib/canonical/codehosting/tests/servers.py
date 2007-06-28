@@ -255,6 +255,9 @@ class FakeLaunchpadServer(LaunchpadServer):
         LaunchpadServer.tearDown(self)
         return defer.succeed(None)
 
+    def runAndWaitForDisconnect(self, func, *args, **kwargs):
+        return func(*args, **kwargs)
+
 
 class CodeHostingServer(Server):
 
