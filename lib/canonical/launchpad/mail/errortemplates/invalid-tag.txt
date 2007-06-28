@@ -1,0 +1,1 @@
+Tags can only contain alphanumeric characters.

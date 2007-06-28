@@ -763,32 +763,31 @@ tags foo and bar to the bug.
     >>> submit_commands(bug_four, 'tag foo bar')
     >>> for tag in bug_four.tags:
     ...     print tag
-    layout-test
-    foo
     bar
+    foo
+    layout-test
 
 We can also use the tag command to remove tags.
 
     >>> submit_commands(bug_four, 'tag -foo')
     >>> for tag in bug_four.tags:
     ...     print tag
-    layout-test
     bar
+    layout-test
 
-If we specify a non-existant tag, an error message will be sent:
+If we specify an invalid tag to be added, an error message will be sent:
 
-    >>> submit_commands(bug_four, 'tag non_existant')
+    >>> submit_commands(bug_four, 'tag bad_tag')
     >>> print_latest_email()
     Subject: Submit Request Failure
     To: test@canonical.com
     <BLANKLINE>
     ...
     Failing command:
-        tag non_existant
+        tag bad_tag
     ...
-    There's no such tag with the specified name: non_existant
+    Tags can only contain alphanumeric characters.
     ...
-
 
 duplicate $bug_id
 ^^^^^^^^^^^^^^^^^

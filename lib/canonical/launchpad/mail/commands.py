@@ -4,6 +4,7 @@ __metaclass__ = type
 __all__ = ['emailcommands', 'get_error_message']
 
 import os.path
+import re
 
 from zope.component import getUtility
 from zope.event import notify
@@ -707,6 +708,32 @@ class ReplacedByImportanceCommand(EmailCommand):
         raise EmailProcessingError(
                 get_error_message('bug-importance.txt', argument=self.name))
 
+class TagEmailCommand(EmailCommand):
+    """Assigns a tag to or removes a tag from bug."""
+
+    implements(IBugEditEmailCommand)
+
+    def execute(self, bug, current_event):
+        """See IEmailCommand."""
+        string_args = list(self.string_args)
+
+        tags = list(bug.tags)
+
+        for args in string_args:
+            # Are we adding or removing a tag?
+            if args[0] == '-':
+                tags.remove(args[1:])
+            else:
+                # Check for tag is valid before we add it
+                if re.search('[^a-zA-Z0-9]', args):
+                    raise EmailProcessingError(
+                        get_error_message('invalid-tag.txt'))
+                else:
+                    tags.append(args)
+
+        bug.tags = tags
+
+        return bug, current_event
 
 class NoSuchCommand(KeyError):
     """A command with the given name couldn't be found."""
@@ -730,6 +757,7 @@ class EmailCommands:
         'importance': ImportanceEmailCommand,
         'severity': ReplacedByImportanceCommand,
         'priority': ReplacedByImportanceCommand,
+        'tag': TagEmailCommand,
     }
 
     def names(self):
