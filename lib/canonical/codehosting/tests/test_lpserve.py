@@ -143,29 +143,6 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
             get_cmd_object('lp-serve'), lpserve.cmd_launchpad_server)
 
     @deferToThread
-    def test_bzr_serve_port_readonly(self):
-        # When the server is started read only, attempts to write data are
-        # rejected as 'TransportNotPossible'.
-        #
-        # This tests the 'listening on a port' code path.
-        process, url = self.start_server_port('sabdfl', ['--read-only'])
-        transport = get_transport(url)
-        self.assertRaises(errors.TransportNotPossible,
-                          transport.mkdir, '~sabdfl/+junk/new-branch')
-        self.assertServerFinishesCleanly(process)
-
-    @deferToThread
-    def test_bzr_serve_inet_readonly(self):
-        # When the server is started read only, attempts to write data are
-        # rejected as 'TransportNotPossible'.
-        #
-        # This tests the 'listening on stdio' code path.
-        process, transport = self.start_server_inet('sabdfl', ['--read-only'])
-        self.assertRaises(errors.TransportNotPossible,
-                          transport.mkdir, '~sabdfl/+junk/new-branch')
-        self.assertInetServerShutsdownCleanly(process)
-
-    @deferToThread
     def test_bzr_serve_inet_readwrite(self):
         # When the server is started normally (i.e. allowing writes), we can
         # use a transport pointing at the server to make directories, create
@@ -186,6 +163,29 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
                         "Expected .bzr/README, got %r" % (new_file_list[0]))
 
         self.assertInetServerShutsdownCleanly(process)
+
+    @deferToThread
+    def test_bzr_serve_port_readwrite(self):
+        # When the server is started normally (i.e. allowing writes), we can
+        # use a transport pointing at the server to make directories, create
+        # files and so forth. These operations are then translated to the local
+        # file system.
+        local_transport = get_transport(config.codehosting.branches_root)
+        old_file_list = list(local_transport.iter_files_recursive())
+        self.assertEqual([], old_file_list)
+
+        process, url = self.start_server_port('sabdfl')
+        transport = get_transport(url)
+        transport.mkdir('~sabdfl/+junk/new-branch')
+        transport.mkdir('~sabdfl/+junk/new-branch/.bzr')
+        transport.put_bytes('~sabdfl/+junk/new-branch/.bzr/README', 'Hello')
+
+        new_file_list = list(local_transport.iter_files_recursive())
+        self.assertEqual(1, len(new_file_list))
+        self.assertTrue(new_file_list[0].endswith('.bzr/README'),
+                        "Expected .bzr/README, got %r" % (new_file_list[0]))
+
+        self.assertServerFinishesCleanly(process)
 
 
 def test_suite():
