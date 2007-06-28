@@ -24,10 +24,10 @@ from canonical.tests.test_twisted import TwistedTestCase
 
 from canonical.codehosting import plugins
 from canonical.codehosting.plugins import lpserve
-from canonical.codehosting.tests.helpers import deferToThread
-from canonical.codehosting.tests.helpers import TwistedBzrlibLayer
+from canonical.codehosting.tests.helpers import (
+    deferToThread, TwistedBzrlibLayer)
 from canonical.config import config
-from canonical.launchpad.daemons.authserver import AuthserverService
+from canonical.codehosting.tests.servers import Authserver
 
 
 ROCKETFUEL_ROOT = os.path.dirname(
@@ -45,9 +45,12 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
         # See http://twistedmatrix.com/trac/ticket/2680
         ConnectionPool.shutdownID = None
         self.make_empty_directory(config.codehosting.branches_root)
-        authserver = AuthserverService()
-        authserver.startService()
-        self.addCleanup(authserver.stopService)
+        self._authserver = Authserver()
+        self._authserver.setUp()
+
+    def tearDown(self):
+        TestCaseInTempDir.tearDown(self)
+        return self._authserver.tearDown()
 
     def assertInetServerShutsdownCleanly(self, process):
         """Shutdown the server process looking for errors."""
