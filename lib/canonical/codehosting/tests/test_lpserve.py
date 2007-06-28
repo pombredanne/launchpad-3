@@ -143,7 +143,7 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
             get_cmd_object('lp-serve'), lpserve.cmd_launchpad_server)
 
     @deferToThread
-    def _test_bzr_serve_port_readonly(self):
+    def test_bzr_serve_port_readonly(self):
         # When the server is started read only, attempts to write data are
         # rejected as 'TransportNotPossible'.
         #
@@ -154,11 +154,8 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
                           transport.mkdir, '~sabdfl/+junk/new-branch')
         self.assertServerFinishesCleanly(process)
 
-    def test_bzr_serve_port_readonly(self):
-        return self._test_bzr_serve_port_readonly()
-
     @deferToThread
-    def _test_bzr_serve_inet_readonly(self):
+    def test_bzr_serve_inet_readonly(self):
         # When the server is started read only, attempts to write data are
         # rejected as 'TransportNotPossible'.
         #
@@ -168,11 +165,8 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
                           transport.mkdir, '~sabdfl/+junk/new-branch')
         self.assertInetServerShutsdownCleanly(process)
 
-    def test_bzr_serve_inet_readonly(self):
-        return self._test_bzr_serve_inet_readonly()
-
     @deferToThread
-    def _test_bzr_serve_inet_readwrite(self):
+    def test_bzr_serve_inet_readwrite(self):
         # When the server is started normally (i.e. allowing writes), we can
         # use a transport pointing at the server to make directories, create
         # files and so forth. These operations are then translated to the local
@@ -192,9 +186,6 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
                         "Expected .bzr/README, got %r" % (new_file_list[0]))
 
         self.assertInetServerShutsdownCleanly(process)
-
-    def test_bzr_serve_inet_readwrite(self):
-        return self._test_bzr_serve_inet_readwrite()
 
 
 def test_suite():
