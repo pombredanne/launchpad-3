@@ -130,7 +130,8 @@ class MenuAPI:
         if selectedfacetname is None:
             # No facet menu is selected.  So, return empty list.
             return []
-        menu = queryAdapter(self._context, IApplicationMenu, selectedfacetname)
+        menu = queryAdapter(
+            self._context, IApplicationMenu, selectedfacetname)
         if menu is None:
             return []
         else:
@@ -320,9 +321,9 @@ class NoneFormatter:
             if len(furtherPath) == 0:
                 raise TraversalError(
                     "you need to traverse a number after fmt:shorten")
-            maxlength = int(furtherPath.pop())
-            # XXX: why is maxlength not used here at all?
-            #       - kiko, 2005-08-24
+            # Remove the maxlength from the path as it is a parameter
+            # and not another traversal command.
+            int(furtherPath.pop())
             return ''
         elif name in self.allowed_names:
             return ''
@@ -501,7 +502,8 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
         badges = ''
         if self._context.bug.private:
-            badges += self.icon_template % ("private", "Private", "/@@/locked")
+            badges += self.icon_template % (
+                "private", "Private","/@@/locked")
 
         if self._context.bug.mentoring_offers.count() > 0:
             badges += self.icon_template % (
@@ -668,7 +670,8 @@ class NumberFormatterAPI:
 
     def bytes(self):
         """Render number as byte contractions according to IEC60027-2."""
-        # See http://en.wikipedia.org/wiki/Binary_prefixes#Specific_units_of_IEC_60027-2_A.2
+        # See http://en.wikipedia.org/wiki
+        # /Binary_prefixes#Specific_units_of_IEC_60027-2_A.2
         # Note that there is a zope.app.size.byteDisplay() function, but
         # it really limited and doesn't work well enough for us here.
         n = int(self._number)
@@ -1382,7 +1385,9 @@ class FormattersAPI:
     _re_dpkg_quoted = re.compile('^([:]|&gt;|-----BEGIN PGP)')
 
     # Match blocks that start as signatures quoted passages, or PGP.
-    _re_block_include = re.compile('^<p>(--<br />|&gt;|-----BEGIN PGP)')
+    _re_block_include = re.compile('^<p>(--<br />|([:|]|&gt)|-----BEGIN PGP)')
+    # Match a line started with > (implying text email or quoting by hand).
+    _re_quoted_line = re.compile('^&gt;')
 
     def email_to_html(self):
         """text_to_html and hide signatures and full-quoted emails.
@@ -1397,6 +1402,7 @@ class FormattersAPI:
         re_quoted = self._re_quoted
         output = []
         in_fold = False
+        in_quoted = False
         in_false_paragraph = False
         for line in self.text_to_html().split('\n'):
             if not in_fold and 'dpkg' in line:
@@ -1410,6 +1416,8 @@ class FormattersAPI:
                 line = '<p>%s%s' % (start_fold_markup, line[3:])
             elif not in_fold and re_quoted.match(line) is not None:
                 # Start a foldable section for a quoted passage.
+                if self._re_quoted_line.match(line):
+                    in_quoted = True
                 in_fold = True
                 output.append(start_fold_markup)
             else:
@@ -1422,12 +1430,18 @@ class FormattersAPI:
                 if not in_false_paragraph:
                     # End the foldable section.
                     in_fold = False
+                    in_quoted = False
                     line = end_fold_markup % line[0:-4]
                 else:
                     # Restore the line break to join with the next parapgrah.
                     line = '%s<br />\n<br />' %  line[0:-4]
-            elif (in_false_paragraph
-            and line.startswith('<p>')):
+            elif in_quoted and self._re_quoted_line.match(line) is None:
+                # End fold early because paragraph contains mixed quoted 
+                # and reply text.
+                in_fold = False
+                in_quoted = False
+                output.append("</span>\n")
+            elif in_false_paragraph and line.startswith('<p>'):
                 # Remove the paragraph to join with the previous paragraph.
                 in_false_paragraph = False
                 line = line[3:]

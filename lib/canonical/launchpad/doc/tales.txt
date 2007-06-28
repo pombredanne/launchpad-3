@@ -156,6 +156,11 @@ wrapped in markup to hide them:
     >>> bar_quoted_text = ('Someone said sometime ago:\n'
     ...                    '| Quote passages are folded.\n'
     ...                    '\n')
+    >>> mixed_quoted_text = ('Mister X wrote:\n'
+    ...                      '> This is a quoted line\n'
+    ...                      'This is a reply to the line above.\n'
+    ...                      'This is a continuation line.'
+    ...                      '\n')
     >>> command = ('dpkg -l libdvdread3\n'
     ...            'Desired=Unknown/Install/Remove/Purge/Hold\n'
     ...            '| Status=Not/Installed/Config-files/Unpacked/Failed-co\n'
@@ -286,6 +291,20 @@ The reverse order works too:
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
 
+Paragraphs that mix quoted and reply text fold only the quoted lines.
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([mixed_quoted_text, text]))
+    <p>Mister X wrote:<br />
+    <span class="foldable">
+    &gt; This is a quoted line<br />
+    </span>
+    This is a reply to the line above.<br />
+    This is a continuation line.</p>
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
 
 Dpkg generates lines that start with a '|' that will be confused with
 quoted text. Dpkg is common in messages, and when it is, we do not
