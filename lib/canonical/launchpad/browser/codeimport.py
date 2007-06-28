@@ -51,7 +51,7 @@ class CodeImportSetView(LaunchpadView):
         status_field = Choice(
             __name__='status', title=_("Review Status"),
             vocabulary='CodeImportReviewStatus', required=False)
-        self.status_widget = CustomWidgetFactory(ReviewStatusDropDownWidget)
+        self.status_widget = CustomWidgetFactory(ReviewStatusDropdownWidget)
         setUpWidget(self, 'status',  status_field, IInputWidget)
 
         status = None
