@@ -1,6 +1,6 @@
 <metal:branch-link define-macro="branch-heading-link">
   <div id="branch-back-link">
-    <img src="/@@/branch" />
+    <img src="/@@/branch" alt="" />
     <a tal:attributes="href branch/fmt:url"
        tal:content="branch/displayname" />
     <tal:not-junk condition="branch/product">

@@ -49,10 +49,10 @@ def quote(text):
 
 
 class BranchSOP(StructuralObjectPresentation):
-    """Provides the structural heading for IBranch."""
+    """Provides the structural heading for `IBranch`."""
 
     def getMainHeading(self):
-        """See IStructuralHeaderPresentation."""
+        """See `IStructuralHeaderPresentation`."""
         return self.context.owner.browsername
 
 
@@ -62,7 +62,7 @@ class BranchNavigation(Navigation):
 
     @stepthrough("+bug")
     def traverse_bug_branch(self, bugid):
-        """Traverses to an IBugBranch."""
+        """Traverses to an `IBugBranch`."""
         bug = getUtility(IBugSet).get(bugid)
 
         for bug_branch in bug.bug_branches:
@@ -75,7 +75,7 @@ class BranchNavigation(Navigation):
 
     @stepthrough("+subscription")
     def traverse_subscription(self, name):
-        """Traverses to an IBranchSubcription."""
+        """Traverses to an `IBranchSubcription`."""
         person = getUtility(IPersonSet).getByName(name)
 
         if person is not None:
@@ -340,11 +340,11 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         url_field.onchange = populate_name;
         url_field.onblur = populate_name;
         </script>''' % { 'name' : self.widgets['name'].name,
-                         'url' : self.widgets['url'].name } 
+                         'url' : self.widgets['url'].name }
 
 
 class PersonBranchAddView(BranchAddView):
-    """See BranchAddView."""
+    """See `BranchAddView`."""
 
     @property
     def field_names(self):
@@ -356,7 +356,7 @@ class PersonBranchAddView(BranchAddView):
         return self.context
 
 class ProductBranchAddView(BranchAddView):
-    """See BranchAddView."""
+    """See `BranchAddView`."""
 
     initial_focus_widget = 'url'
 
@@ -419,7 +419,7 @@ class BranchReassignmentView(ObjectReassignmentView):
 
 
 class DecoratedSubscription:
-    """Adds the editable attribute to a BranchSubscription."""
+    """Adds the editable attribute to a `BranchSubscription`."""
     decorates(IBranchSubscription, 'subscription')
 
     def __init__(self, subscription, editable):

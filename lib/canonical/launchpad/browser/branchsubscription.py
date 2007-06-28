@@ -14,7 +14,6 @@ from zope.component import getUtility
 
 from canonical.lp.dbschema import BranchSubscriptionNotificationLevel
 
-from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.interfaces import (
     IBranchSubscription, ILaunchpadCelebrities)

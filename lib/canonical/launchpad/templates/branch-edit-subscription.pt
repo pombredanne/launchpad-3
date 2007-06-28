@@ -6,12 +6,6 @@
     i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <tal:branch-link define="branch context">
-        <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
-      </tal:branch-link>
-      <h1>Edit subscription to branch</h1>
-    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -19,6 +13,11 @@
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
+
+  <tal:branch-link define="branch context">
+    <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
+  </tal:branch-link>
+  <h1>Edit subscription to branch</h1>
 
 <tal:subscribed condition="view/user_is_subscribed">
 

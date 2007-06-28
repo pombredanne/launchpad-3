@@ -6,10 +6,6 @@
       i18n:domain="launchpad">
 <body>
 
-<metal:heading fill-slot="pageheading">
-  <h1><img src="/@@/branch-large"/> <tal:branch replace="context/displayname" /></h1>
-</metal:heading>
-
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
@@ -17,6 +13,11 @@
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
+
+  <h1>
+    <img src="/@@/branch-large" alt="" />
+    <tal:branch replace="context/displayname" />
+  </h1>
 
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">
