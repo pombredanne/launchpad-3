@@ -267,7 +267,7 @@ class DistroArchSeriesBinaryPackageRelease:
 
     def changeOverride(self, new_component=None, new_section=None,
                        new_priority=None):
-        """See `IDistroArchSeriesBinaryPackage`."""
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
 
         # Check we have been asked to do something
         if (new_component is None and new_section is None
