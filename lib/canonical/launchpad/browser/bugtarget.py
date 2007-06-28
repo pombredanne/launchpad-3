@@ -555,7 +555,7 @@ class FileBugGuidedView(FileBugViewBase):
                 search_context = self.widgets['bugtarget'].getInputValue()
             else:
                 search_context = None
-        
+
         return search_context
 
     @cachedproperty
@@ -619,7 +619,6 @@ class FileBugGuidedView(FileBugViewBase):
     def found_possible_duplicates(self):
         return self.similar_bugs or self.most_common_bugs
 
-
     def getSearchText(self):
         """Return the search string entered by the user."""
         try:
@@ -668,9 +667,14 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     @cachedproperty
     def most_common_bugs(self):
         """Return a list of the most duplicated bugs."""
-        selected_product = self._getSelectedProduct()
-        return selected_product.getMostCommonBugs(
-            self.user, limit=self._MATCHING_BUGS_LIMIT)
+        # We can only discover the most common bugs when a product has
+        # been selected.
+        if self.widgets['product'].hasValidInput():
+            selected_product = self._getSelectedProduct()
+            return selected_product.getMostCommonBugs(
+                self.user, limit=self._MATCHING_BUGS_LIMIT)
+        else:
+            return []
 
     def getSecurityContext(self):
         """See FileBugViewBase."""
