@@ -950,11 +950,17 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     _orderBy = 'name'
     displayname = 'Select a blueprint'
 
+    def _filter_specs(self, specs):
+        return [spec for spec in specs
+                if (spec != self.context and
+                    spec.product == self.context.product
+                    and spec not in self.context.all_blocked)]        
+
     def _doSearch(self, query):
-        """Return terms where query is in the text of name,
-        title or summary.
+        """Return terms where query is in the text of name
+        or title, or matches the full text index.
         """
-        
+
         if not query:
             return []
 
@@ -967,12 +973,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
             % (quoted_query, quoted_query, quoted_query))
         all_specs = Specification.select(sql_query, orderBy=self._orderBy)
 
-        candidate_specs = [spec for spec in all_specs
-                           if (spec != self.context and
-                               spec.product == self.context.product
-                               and spec not in self.context.all_blocked)]
-
-        return candidate_specs
+        return self._filter_specs(all_specs)
 
     def toTerm(self, obj):
         return SimpleTerm(obj, obj.name, obj.title)
@@ -989,7 +990,13 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         return CountableIterator(len(candidate_specs),
                                  candidate_specs,
                                  lambda obj: obj)
+    
+    def __iter__(self):
+        specs = self._filter_specs(self.context.product.specifications())
+        return specs.__iter__()
 
+    def __contains__(self, obj):
+        return obj in self
 
 class SprintVocabulary(NamedSQLObjectVocabulary):
     _table = Sprint
