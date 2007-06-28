@@ -111,7 +111,7 @@ If we create a lot of imports, the listing view will be batched.
     ...         nopriv, name, name, name, name, name)
     ...     return getUtility(IBranchSet).new(
     ...         'trunk', vcs_imports, product, None, 'Import branch')
-    >>> for i in range(100):
+    >>> for i in range(10):
     ...     new_branch = import_branch_for_new_product('import-%s'%i)
     ...     svn_import = code_import_set.new(
     ...         registrant=nopriv, branch=new_branch,
@@ -122,4 +122,4 @@ If we create a lot of imports, the listing view will be batched.
     >>> browser.open('http://code.launchpad.dev/+code-imports')
     >>> browser.getLink('Next').click()
     >>> browser.url
-    'http://code.launchpad.dev/+code-imports/+index?start=50'
+    'http://code.launchpad.dev/+code-imports/+index?...start=5...'

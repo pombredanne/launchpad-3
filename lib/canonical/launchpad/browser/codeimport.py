@@ -65,7 +65,7 @@ class CodeImportSetView(LaunchpadView):
 
         imports = sorted(imports, key=operator.attrgetter('id'))
 
-        self.batchnav = BatchNavigator(imports, self.request, size=50)
+        self.batchnav = BatchNavigator(imports, self.request)
 
 
 class CodeImportView(LaunchpadView):

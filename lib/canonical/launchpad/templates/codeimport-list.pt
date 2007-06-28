@@ -58,7 +58,7 @@
             some date
           </td>
 
-          <td tal:content="codeimport/review_status/name">
+          <td tal:content="codeimport/review_status/title">
             status
           </td>
 
