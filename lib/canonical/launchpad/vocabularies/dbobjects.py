@@ -962,7 +962,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         sql_query = ("""
             (Specification.name ~ %s OR
              Specification.title ~ %s OR
-             Specification.summary ~ %s)
+             fti @@ ftq(%s))
             """
             % (quoted_query, quoted_query, quoted_query))
         all_specs = Specification.select(sql_query, orderBy=self._orderBy)
