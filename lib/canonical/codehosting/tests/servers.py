@@ -165,11 +165,13 @@ class AuthserverWithKeysMixin:
         self.testTeam = testTeam
 
     def setUpKeys(self):
-        if os.path.isdir(config.codehosting.host_key_pair_path):
-            shutil.rmtree(config.codehosting.host_key_pair_path)
-        shutil.copytree(
-            sibpath(__file__, 'keys'),
-            os.path.join(config.codehosting.host_key_pair_path))
+        key_pair_path = config.codehosting.host_key_pair_path
+        if os.path.isdir(key_pair_path):
+            shutil.rmtree(key_pair_path)
+        parent = os.path.dirname(key_pair_path)
+        if not os.path.isdir(parent):
+            os.makedirs(parent)
+        shutil.copytree(sibpath(__file__, 'keys'), os.path.join(key_pair_path))
 
     def setUpTestUser(self):
         """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a known
