@@ -969,8 +969,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
         candidate_specs = [spec for spec in all_specs
                            if (spec != self.context and
-                               (spec.product == self.context.product or
-                                spec.distribution == self.context.distribution)
+                               spec.product == self.context.product
                                and spec not in self.context.all_blocked)]
 
         return candidate_specs
