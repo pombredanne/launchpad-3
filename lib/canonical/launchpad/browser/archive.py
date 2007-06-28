@@ -16,6 +16,7 @@ __all__ = [
 
 from zope.app.form.browser import TextAreaWidget
 
+from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.interfaces import (
     IArchive, IHasBuildRecords)
