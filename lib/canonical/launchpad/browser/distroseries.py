@@ -72,13 +72,14 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
             # generate a dummy one so users have a chance to get to it in the
             # navigation and start adding translations for it.
             distroserieslangset = getUtility(IDistroSeriesLanguageSet)
-            distroserieslang = distroserieslangset.getDummy(self.context, lang)
+            distroserieslang = distroserieslangset.getDummy(
+                self.context, lang)
 
         if (self.context.hide_all_translations and
             not check_permission('launchpad.Admin', distroserieslang)):
             raise TranslationUnavailable(
-                'Translation updates are in progress.  Only administrators may view'
-                ' translations for this distribution series.')
+                'Translation updates are in progress.  Only administrators '
+                'may view translations for this distribution series.')
 
         return distroserieslang
 
@@ -286,7 +287,8 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         """
         distroserieslangs = []
         for language in self.translatable_languages:
-            distroserieslang = self.context.getDistroSeriesLanguageOrDummy(language)
+            distroserieslang = self.context.getDistroSeriesLanguageOrDummy(
+                language)
             distroserieslangs.append(distroserieslang)
         return distroserieslangs
 
@@ -316,7 +318,8 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         distroserieslangset = getUtility(IDistroSeriesLanguageSet)
         for lang in self.translatable_languages:
             if lang not in existing_languages:
-                distroserieslang = distroserieslangset.getDummy(self.context, lang)
+                distroserieslang = distroserieslangset.getDummy(
+                    self.context, lang)
                 distroserieslangs.append(distroserieslang)
 
         return sorted(distroserieslangs, key=lambda a: a.language.englishname)

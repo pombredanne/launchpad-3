@@ -1,4 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+"""SQLObject implementation of POTemplate classes."""
+
 
 __metaclass__ = type
 __all__ = [
@@ -580,7 +582,8 @@ class POTemplate(SQLBase, RosettaStats):
 
             replacements = {
                 'importer': entry_to_import.importer.displayname,
-                'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
+                'dateimport': entry_to_import.dateimported.strftime(
+                                  '%F %R%z'),
                 'elapsedtime': entry_to_import.getElapsedTimeText(),
                 'file_link': entry_to_import.content.http_url,
                 'import_title':
@@ -596,7 +599,8 @@ class POTemplate(SQLBase, RosettaStats):
             message = template % replacements
 
             fromaddress = config.rosetta.rosettaadmin.email
-            toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
+            toaddress = helpers.contactEmailAddresses(
+                entry_to_import.importer)
 
             simple_sendmail(fromaddress,
                 toaddress,
