@@ -9,8 +9,8 @@ Architecture: source
 Version: 1.0-10
 Distribution: breezy
 Urgency: low
-Maintainer: Launchpad Čihař team <launchpad@lists.canonical.com>
-Changed-By: Daniel Silverstone <daniel.silverstone@canonical.com>
+Maintainer: Non-ascii maintainer Čihař <launchpad@lists.canonical.com>
+Changed-By: Non-ascii changed-by Čihař <daniel.silverstone@canonical.com>
 Description: 
  bar        - Stuff for testing
 Changes: 
@@ -27,7 +27,7 @@ Files:
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.6 (GNU/Linux)
 
-iD8DBQFGgmTAjn63CGxkqMURApWEAJ9Pw1A3m3Dzf2SVR1xrezFsUW3Q3wCfTLtO
-XQcTF5gp30LvK0fO21A7MZA=
-=dQj5
+iD8DBQFGhNJcjn63CGxkqMURAtlZAJ9V1gLe42OLfi4rqWrKWfL06KCfBwCeL2et
+0wP4B0sZFYdMnG6OdMw/XOE=
+=SH9D
 -----END PGP SIGNATURE-----

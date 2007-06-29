@@ -515,7 +515,7 @@ Uploads with unicode characters in the changes file are converted to ASCII:
 "Cihar" should actually be "Čihař" but the mailer will covert to ASCII.
 
   >>> [message['From'] for message in msgs]
-  ['Root <root@localhost>', 'Launchpad Cihar team <launchpad@lists.canonical.com>']
+  ['Root <root@localhost>', 'Non-ascii changed-by Cihar <daniel.silverstone@canonical.com>']
 
   >>> [message['To'] for message in msgs]
   ['Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
