@@ -613,8 +613,6 @@ class SpecificationSprintAddView(SQLObjectAddView):
     def create(self, sprint):
         user = getUtility(ILaunchBag).user
         sprint_link = self.context.linkSprint(sprint, user)
-        if check_permission('launchpad.Driver', sprint):
-            sprint_link.acceptBy(user)
         return sprint_link
 
     def add(self, content):

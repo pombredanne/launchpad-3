@@ -21,6 +21,8 @@ from canonical.launchpad.interfaces import (
     ISpecificationSet,
     )
 
+from canonical.launchpad.webapp.authorization import check_permission
+
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -524,8 +526,11 @@ class Specification(SQLBase, BugLinkTargetMixin):
             # sprints have unique names
             if sprint_link.sprint.name == sprint.name:
                 return sprint_link
-        return SprintSpecification(specification=self,
+        sprint_link = SprintSpecification(specification=self,
             sprint=sprint, registrant=user)
+        if check_permission('launchpad.Driver', sprint):
+            sprint_link.acceptBy(user)
+        return sprint_link
 
     def unlinkSprint(self, sprint):
         """See ISpecification."""
