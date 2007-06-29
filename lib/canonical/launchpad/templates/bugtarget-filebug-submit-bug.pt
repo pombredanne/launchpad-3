@@ -46,7 +46,7 @@
                        tal:attributes="checked python: not path('view/submit_bug_action/submitted')
                                                        and 'checked' or None" />
               </td>
-              <td>
+              <td style="width: 100%">
                 <label for="bug-already-reported-yes">
                   Yes, it's one of these:
                 </label>
