@@ -37,6 +37,14 @@ Create a new entitlement directly.
     >>> entitlement = entitlement_view.get(entitlement_id)
     >>> print entitlement.get('quota')
     120
+
+    >>> entitlements = entitlement_view.getByPersonOrTeam('fredflintstone',False)
+    >>> print entitlements
+    <Fault 25: 'Invalid Person or Team: No person or team with the name "fredflintstone" was found'>
+
+    >>> entitlements = entitlement_view.getByPersonOrTeam(foobar.name,False)
+    >>> print len(entitlements)
+    1
     
 == Test via XML-RPC ==
 
@@ -73,4 +81,19 @@ The newly changed entitlement can be retrieved with the new values.
     >>> entitlement = entitlement_api.get(entitlement_id)
     >>> print entitlement.get('quota')
     200
+
+Entitlements can be retrieved by name of the person or team.
+
+If the person doesn't exist a fault is returned.
+
+    >>> entitlements = None
+    >>> entitlements = entitlement_api.getByPersonOrTeam('fredflintstone',0)
+    >>> print entitlements
+    <Fault 25: 'Invalid Person or Team: No person or team with the name "fredflintstone" was found'>
+
+
+    >>> entitlements = entitlement_api.getByPersonOrTeam(foobar.name,
+    ...                                                  True)
+    >>> print len(entitlements)
+    1
     

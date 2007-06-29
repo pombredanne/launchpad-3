@@ -73,7 +73,7 @@ class NoSuchPerson(LaunchpadFault):
 class NoSuchPersonOrTeam(LaunchpadFault):
     """There's no Person or Team with the specified name in Launchpad."""
 
-    error_code = 20
+    error_code = 25
     msg_template = (
         'Invalid Person or Team: No person or team with the name '
         '"%(name)s" was found')

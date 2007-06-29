@@ -137,7 +137,7 @@ class EntitlementSet:
 
     def getForPerson(self, person):
         """See IEntitlementSet."""
-        return Entitlement.select('Entitlement.person=person')
+        return Entitlement.selectBy(person=person)
 
     def getValidForPerson(self, person):
         """See IEntitlementSet."""
