@@ -1,7 +1,8 @@
 <metal:page define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <html xmlns="http://www.w3.org/1999/xhtml" xmlns:lpm="http://ns.launchpad.net/lpm" xml:lang="en" lang="en"
     tal:attributes="lang default_language|default;
-                    xml:lang default_language|default;">
+                    xml:lang default_language|default;"
+    tal:define="is_demo modules/canonical.config/config/launchpad/is_demo">
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad Login Service</title>
     <tal:x condition="nothing">Style is inline for maximum reliability.</tal:x>
@@ -66,6 +67,8 @@
         margin-left: 25%;
       }
     </style>
+    <style tal:condition="is_demo" type="text/css"
+    >html, body {background: #ddd url(/@@/demo) !important;}</style>
   </head>
 
   <body>
