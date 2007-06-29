@@ -14,6 +14,9 @@ Imports and test setup:
     >>> from sqlos.interfaces import IConnectionName
     >>> from canonical.config import config
     >>> from canonical.launchpad.webapp.adapter import *
+    >>> org_db_statement_timeout = config.launchpad.db_statement_timeout
+    >>> org_db_statement_timeout_precision = (
+    ...     config.launchpad.db_statement_timeout_precision)
 
 
 The Launchpad database connection is created by getting the
@@ -497,3 +500,12 @@ thread will have succeeded.
     Traceback (most recent call last):
     ...
     Retry: ...
+
+
+Reset out config:
+
+    >>> config.launchpad.db_statement_timeout = org_db_statement_timeout
+    >>> config.launchpad.db_statement_timeout_precision = (
+    ...     org_db_statement_timeout_precision)
+
+
