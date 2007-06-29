@@ -34,6 +34,8 @@ class TacTestSetup:
     """
     def setUp(self, spew=False):
         self.killTac()
+        if os.path.exists(self.pidfile):
+            os.remove(self.pidfile)
         self.setUpRoot()
         args = [sys.executable, twistd_script, '-o', '-y', self.tacfile,
                 '--pidfile', self.pidfile, '--logfile', self.logfile]
@@ -70,24 +72,20 @@ class TacTestSetup:
     def killTac(self):
         """Kill the TAC file, if it is running, and clean up any mess"""
         pidfile = self.pidfile
-        if os.path.exists(pidfile):
-            pid = open(pidfile,'r').read().strip()
-            # Keep killing until it is dead
-            count = 0
-            while True:
-                count += 1
-                if count == 50:
-                    # XXX: this codepath is untested
-                    os.kill(int(pid), SIGKILL)
-                    break
-                try:
-                    os.kill(int(pid), SIGTERM)
-                    time.sleep(0.1)
-                except OSError:
-                    break
-                except ValueError:
-                    # pidfile contains rubbish
-                    break
+        if not os.path.exists(pidfile):
+            return
+        pid = open(pidfile,'r').read().strip()
+        try:
+            pid = int(pid)
+        except ValueError:
+            # pidfile contains rubbish
+            return
+        os.kill(pid, SIGTERM)
+        try:
+            os.waitpid(pid, 0)
+        except OSError:
+            # Already terminated
+            pass
 
     def setUpRoot(self):
         """Override this.
