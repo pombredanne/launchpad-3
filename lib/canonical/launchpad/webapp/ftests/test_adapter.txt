@@ -86,19 +86,16 @@ a certain precision:
     >>> conn = da()
     >>> cursor = conn.cursor()
     >>> set_request_started()
-    >>> cursor.execute('SELECT pg_sleep(0.050)')
+    >>> cursor.execute('SELECT pg_sleep(0.05)')
     >>> print current_statement_timeout(cursor)
     200ms
-    >>> cursor.execute('SELECT pg_sleep(0.060)')
-    >>> cursor.execute('SELECT pg_sleep(0.040)')
+    >>> cursor.execute('SELECT pg_sleep(0.06)')
     >>> current_statement_timeout(cursor) == '200ms'
     False
-    >>> print current_statement_timeout(cursor)
-    whatever
-    >>> cursor.execute('SELECT pg_sleep(0.050)')
+    >>> cursor.execute('SELECT pg_sleep(0.10)')
     Traceback (most recent call last):
       ...
-    RequestStatementTimedOut: SELECT pg_sleep(0.05)
+    RequestStatementTimedOut: SELECT pg_sleep(0.10)
     >>> da.disconnect()
     >>> clear_request_started()
 
