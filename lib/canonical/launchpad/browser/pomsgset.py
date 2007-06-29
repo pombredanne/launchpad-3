@@ -1005,6 +1005,11 @@ class POMsgSetView(LaunchpadView):
                     self.context.makeHTMLId('translation_%d' % index),
                 }
 
+            if published_submission is not None:
+                translation_entry['html_id_published_suggestion'] = (
+                    published_submission.makeHTMLId(
+                        'suggestion', self.context.potmsgset))
+
             if self.message_must_be_hidden:
                 # We must hide the translation because it may have private
                 # info that we don't want to show to anoymous users.
