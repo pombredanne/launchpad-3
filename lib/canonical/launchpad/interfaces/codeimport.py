@@ -43,7 +43,7 @@ class ICodeImport(Interface):
         title=_("Series"),
         readonly=True, vocabulary='ProductSeries',
         description=_("The series this import is registered as the "
-                      "code for.  Can be None."))
+                      "code for, or None if there is no such series."))
 
     review_status = Choice(
         title=_("Review Status"), vocabulary='CodeImportReviewStatus',
@@ -87,7 +87,10 @@ class ICodeImportSet(Interface):
         """Return an iterable of all CodeImport objects."""
 
     def get(id):
-        """Get a CodeImport by its id."""
+        """Get a CodeImport by its id.
+
+        Raises `NotFoundError` if no such import exists.
+        """
 
     def getByBranch(branch):
         """Get the CodeImport, if any, associated to a Branch."""

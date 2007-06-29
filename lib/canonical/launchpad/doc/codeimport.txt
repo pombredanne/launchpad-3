@@ -8,7 +8,7 @@ populates the import branch, and updates it regularly.
 
 We can import code from CVS or Subversion.
 
-CodeImports are hidden from regular users currently.  David Allouce is
+CodeImports are hidden from regular users currently.  David Allouche is
 a member of the vcs-imports team and can access the objects freely.
 
     >>> login('david.allouche@canonical.com')
@@ -100,8 +100,10 @@ the sample data is evolution/trunk.
     >>> from canonical.lp.dbschema import ImportStatus
     >>> [series] = getUtility(IProductSeriesSet).search(
     ...     importstatus=ImportStatus.PROCESSING.value)
-    >>> u'%s/%s'%(series.product.name, series.name)
-    u'evolution/trunk'
+    >>> series.product.name
+    u'evolution'
+    >>> series.name
+    u'trunk'
     >>> series.cvsroot
     u':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'
     >>> series.cvsmodule
@@ -143,10 +145,19 @@ there is a single sample CodeImport with the "REVIEWED" status:
     >>> from canonical.lp.dbschema import CodeImportReviewStatus
     >>> reviewed_imports = list(code_import_set.search(
     ...     review_status=CodeImportReviewStatus.REVIEWED))
-    >>> len(reviewed_imports)
-    1
+    >>> reviewed_imports
+    [<...CodeImport...>]
     >>> reviewed_imports[0].review_status.name
     'REVIEWED'
+
+When you ask for an id that is not present ICodeImportSet.get() raises
+canonical.launchpad.interfaces.NotFoundError, rather than some
+internal database exception.
+
+    >>> code_import_set.get(-10)
+    Traceback (most recent call last):
+      ...
+    NotFoundError: -10
 
 
 == Canonical URLs ==
@@ -183,9 +194,9 @@ anonymous and regular users do _not_ have this access.
     >>> login('no-priv@canonical.com')
     >>> code_import_set.new
     Traceback (most recent call last):
-    ...
+      ...
     Unauthorized: (<...CodeImportSet...>, 'new', 'launchpad.View')
     >>> svn_import.id
     Traceback (most recent call last):
-    ...
+      ...
     Unauthorized: (<...CodeImport...>, 'id', 'launchpad.View')

@@ -16,6 +16,16 @@
               2007
             </td>
 	  </tr>
+	  <tr>
+            <th>Registrant:</th>
+            <td>
+              <a href=""
+                 tal:content="context/registrant/displayname"
+                 tal:attributes="href context/registrant/fmt:url">
+                Some Person.
+              </a>
+            </td>
+	  </tr>
           <tal:block condition="context/rcs_type/enumvalue:CVS">
 	    <tr>
               <th>CVS Root:</th>

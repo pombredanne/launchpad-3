@@ -664,10 +664,21 @@ class AdminTheBazaar(OnlyVcsImportsAndAdmins):
     usedfor = IBazaarApplication
 
 class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
+    """Control who can see the CodeImport listing page.
+
+    Currently, we don't let the general user see anything to do with
+    the new code import system.
+    """
+
     permission = 'launchpad.View'
     usedfor = ICodeImportSet
 
 class SeeCodeImports(OnlyVcsImportsAndAdmins):
+    """Control who can see the object view of a CodeImport.
+
+    Currently, we don't let the general user see anything to do with
+    the new code import system.
+    """
     permission = 'launchpad.View'
     usedfor = ICodeImport
 
