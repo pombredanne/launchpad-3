@@ -6,21 +6,17 @@
     i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <div>
-        <a
-          tal:attributes="href context/fmt:url"
-          tal:content="context/title"
-        >Branch</a>
-      </div>
-      <h1>Change branch details</h1>
-    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
+
+  <tal:branch-link define="branch context">
+    <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
+  </tal:branch-link>
+  <h1>Change branch details</h1>
 
   <div metal:use-macro="context/@@launchpad_form/form">
   </div>
