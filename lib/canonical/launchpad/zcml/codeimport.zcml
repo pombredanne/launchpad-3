@@ -27,4 +27,28 @@
     <allow interface="canonical.launchpad.interfaces.ICodeImportSet" />
   </securedutility>
 
+  <!-- CodeImportMachine -->
+
+  <content class="canonical.launchpad.database.CodeImportMachine">
+    <allow interface="canonical.launchpad.interfaces.ICodeImportMachine" />
+    <require
+        permission="zope.Public"
+        set_schema="canonical.launchpad.interfaces.ICodeImportMachine"
+    />
+  </content>
+
+  <!-- CodeImportMachineSet -->
+
+  <content class="canonical.launchpad.database.CodeImportMachineSet">
+    <allow interface="canonical.launchpad.interfaces.ICodeImportMachineSet" />
+  </content>
+
+  <securedutility
+      class="canonical.launchpad.database.CodeImportMachineSet"
+      provides="canonical.launchpad.interfaces.ICodeImportMachineSet" >
+    <require
+      permission="zope.Public"
+      interface="canonical.launchpad.interfaces.ICodeImportMachineSet" />
+  </securedutility>
+
 </configure>

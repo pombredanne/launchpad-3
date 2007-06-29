@@ -6,11 +6,13 @@ __metaclass__ = type
 
 __all__ = [
     'ICodeImport',
+    'ICodeImportMachine',
+    'ICodeImportMachineSet',
     'ICodeImportSet',
     ]
 
 from zope.interface import Attribute, Interface
-from zope.schema import Datetime, Choice, Int, TextLine
+from zope.schema import Datetime, Choice, Int, TextLine, Bool
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
@@ -85,3 +87,29 @@ class ICodeImportSet(Interface):
 
     def getByBranch(branch):
         """Get the CodeImport, if any, associated to a Branch."""
+
+
+class ICodeImportMachine(Interface):
+    """A machine that can perform imports."""
+
+    hostname = TextLine(
+        title=_('Host name'), required=True,
+        description=_('The hostname of the machine.'))
+    online = Bool(
+        title=_('Online'), required=True,
+        description=_('Is the machine currently online?'))
+
+
+class ICodeImportMachineSet(Interface):
+    """The set of machines that can perform imports."""
+
+    def getAll():
+        """Return an iterable of all code machines."""
+
+    def getByHostname(hostname):
+        """Retrieve the code importmachine for a hostname, if present."""
+
+    def new(hostname, online):
+        """Create a new code import machine with the given hostname and online
+        status.
+        """

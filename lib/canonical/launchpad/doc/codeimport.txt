@@ -124,3 +124,29 @@ present the import's details on the page of the branch.
     u'svn://svn.example.com/trunk'
     >>> code_import_set.getByBranch(cvs_branch).cvs_root
     u':pserver:anonymous@cvs.example.com:/cvsroot'
+
+
+== CodeImportMachine ==
+
+The simple CodeImportMachine table is a record of machines that can
+perform code imports.  The table is represented by an object that
+provides the ICodeImportMachineSet interface.
+
+    >>> from canonical.launchpad.interfaces import ICodeImportMachineSet
+    >>> code_import_machine_set = getUtility(ICodeImportMachineSet)
+    >>> verifyObject(ICodeImportMachineSet,
+    ...              removeSecurityProxy(code_import_machine_set))
+
+The table just records two people of information: a string "hostname"
+that uniquely identifies the machine and a boolean "online" that
+records whether the machine is currently online.
+
+    >>> def go_online(hostname):
+    ...     machine = code_import_machine_set.getByHostname(hostname)
+    ...     if machine is None:
+    ...         machine = code_import_machine_set.new(hostname, True)
+    ...     else:
+    ...         machine.online = True
+    ...     return machine
+
+

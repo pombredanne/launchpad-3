@@ -6,6 +6,8 @@ __metaclass__ = type
 
 __all__ = [
     'CodeImport',
+    'CodeImportMachine',
+    'CodeImportMachineSet',
     'CodeImportSet',
     ]
 
@@ -20,7 +22,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
-    ICodeImport, ICodeImportSet, ILaunchpadCelebrities)
+    ICodeImport, ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet,
+    ILaunchpadCelebrities)
 from canonical.lp.dbschema import (
     CodeImportReviewStatus, RevisionControlSystems)
 
@@ -85,3 +88,27 @@ class CodeImportSet:
     def getByBranch(self, branch):
         """See `ICodeImportSet`."""
         return CodeImport.selectOneBy(branch=branch)
+
+
+class CodeImportMachine(SQLBase):
+    """See `ICodeImportMachine`."""
+    implements(ICodeImportMachine)
+
+    hostname = StringCol(default=None)
+    online = BoolCol(default=False)
+
+class CodeImportMachineSet(SQLBase):
+    """See `ICodeImportMachineSet`."""
+    implements(ICodeImportMachine)
+
+    def getAll(self):
+        """See `ICodeImportMachineSet`."""
+        return CodeImportMachine.select()
+
+    def getByHostname(self, hostname):
+        """See `ICodeImportMachineSet`."""
+        return CodeImportMachine.selectOneBy(hostname=hostname)
+
+    def new(self, hostname, online):
+        """See `ICodeImportMachineSet`."""
+        return CodeImportMachine(hostname=hostname, online=online)
