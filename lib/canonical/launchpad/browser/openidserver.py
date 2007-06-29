@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'OpenIdMixin',
+    'OpenIdMixin', 'KNOWN_TRUST_ROOTS',
     ]
 
 import cgi
@@ -28,12 +28,11 @@ from openid import oidutil
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.lp.dbschema import LoginTokenType
+from canonical.lp.dbschema import LoginTokenType, PersonCreationRationale
 from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, ILoginTokenSet, IOpenIdApplication,
     IOpenIdAuthorizationSet, IPersonSet, NotFoundError, UnexpectedFormData)
-from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
@@ -327,6 +326,7 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
                 self.user, self.openid_request.trust_root, client_id)
 
 
+rationale = PersonCreationRationale
 # Information about known trust roots
 # XXX: 2007-06-14 jamesh
 # Include more information about the trust roots, such as an icon.  We
@@ -346,16 +346,25 @@ KNOWN_TRUST_ROOTS = {
              reason=("For the Ubuntu Store, you need a Launchpad account "
                      "so we can remember your order details and keep in "
                      "in touch with you about your orders.")),
-    #'https://shop.ubuntu.com/':
-    #    dict(title="Ubuntu Shop"),
+    'https://shop.canonical.com/':
+        dict(title="The Ubuntu Store from Canonical",
+             logo="/+icing/canonical-logo.png",
+             reason=("For the Ubuntu Store, you need a Launchpad account "
+                     "so we can remember your order details and keep in "
+                     "in touch with you about your orders."),
+             creation_rationale=rationale.OWNER_CREATED_UBUNTU_SHOP),
     #'https://shipit.ubuntu.com/':
-    #    dict(title="Ubuntu Shipit"),
+    #    dict(title="Ubuntu Shipit",
+    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
     #'https://shipit.kubuntu.org/':
-    #    dict(title="Kubuntu Shipit"),
+    #    dict(title="Kubuntu Shipit",
+    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
     #'https://shipit.edubuntu.org/':
-    #    dict(title="Edubuntu Shipit"),
+    #    dict(title="Edubuntu Shipit",
+    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
     #'https://wiki.ubuntu.com/':
-    #    dict(title="Ubuntu Wiki"),
+    #    dict(title="Ubuntu Wiki",
+    #         creation_rationale=rationale.OWNER_CREATED_UBUNTU_WIKI),
     }
 
 

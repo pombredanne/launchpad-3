@@ -7,9 +7,9 @@ Launchpad.
     >>> browser.open('http://launchpad.dev/~name16')
     >>> browser.getLink('Change details').click()
 
-    >>> browser.getControl('Display Name').value
+    >>> browser.getControl('Name').value
     'Foo Bar'
-    >>> browser.getControl('Name', index=1).value
+    >>> browser.getControl('Launchpad ID').value
     'name16'
     >>> browser.getControl('Timezone').value
     ['Africa/Johannesburg']
@@ -22,8 +22,8 @@ He noticed that his information is out of date and will update it.
 (If he leaves leading or trailing whitespace in the displayname it'll
 be stripped) 
 
-    >>> browser.getControl('Name', index=1).value = 'foobar'
-    >>> browser.getControl('Display Name').value = '  Foo Bar2  '
+    >>> browser.getControl('Launchpad ID').value = 'foobar'
+    >>> browser.getControl('Name').value = '  Foo Bar2  '
     >>> browser.getControl(
     ...     'Hide my email addresses from other Launchpad users').click()
     >>> browser.getControl('Save').click()
@@ -34,7 +34,7 @@ be stripped)
 Now we check to make sure the displayname was changed and stripped.
 
     >>> browser.open('http://launchpad.dev/~foobar/+edit')
-    >>> browser.getControl('Display Name').value
+    >>> browser.getControl('Name').value
     'Foo Bar2'
 
 And the email addresses are not shown on Foo Bar's home page to any random
