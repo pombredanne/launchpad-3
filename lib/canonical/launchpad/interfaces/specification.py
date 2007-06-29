@@ -89,6 +89,8 @@ class SpecURLField(TextLine):
 class ISpecification(IHasOwner, ICanBeMentored):
     """A Specification."""
 
+    id = Int(title=_('The Specification ID'))
+
     name = SpecNameField(
         title=_('Name'), required=True, readonly=False,
         description=_(
