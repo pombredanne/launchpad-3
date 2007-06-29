@@ -67,20 +67,44 @@ def nl_phrase_search(phrase, table, constraints='',
     Caveat: The SQLBase class must define a 'fti' column .
     This is the column that is used for full text searching.
     """
+
+    # Create a temporary table containing the IDs of the rows representing
+    # the search space.
+    cur = cursor()
+    temp_tablename = '%s_nl_search_candidates' % table._table
+    cur.execute('DROP TABLE IF EXISTS %s' % temp_tablename)
+    from_tables = [table._table]
+    if extra_constraints_tables:
+        from_tables.extend(extra_constraints_tables)
+    where_clause = ''
+    if constraints:
+        where_clause = 'WHERE %s' % constraints
+    cur.execute(
+        '''CREATE TEMPORARY TABLE %s ON COMMIT DROP
+        AS SELECT %s.id FROM %s %s''' % (
+            temp_tablename, table._table, ', '.join(from_tables),
+            where_clause))
+
+    # Total number of possible matching rows.
+    cur.execute('SELECT count(*) FROM %s' % temp_tablename)
+    total = cur.fetchall()[0][0]
+
+    # Find the possible terms.
     terms = []
-    total = table.select(
-        constraints, clauseTables=extra_constraints_tables).count()
     term_candidates = nl_term_candidates(phrase)
     if total == 0:
         return '|'.join(term_candidates)
+
+    # Eliminate terms that are too common to be useful.
     for term in term_candidates:
-        where_clause = []
-        if constraints:
-            where_clause.append('(' + constraints + ')')
-        where_clause.append('%s.fti @@ ftq(%s)' % (table._table, quote(term)))
+        replacements = dict(
+            tablename=table._table,
+            temp_tablename=temp_tablename,
+            search=quote(term))
         matches = table.select(
-            ' AND '.join(where_clause),
-            clauseTables=extra_constraints_tables).count()
+            '''%(tablename)s.id = %(temp_tablename)s.id
+            AND %(tablename)s.fti @@ ftq(%(search)s)''' % replacements,
+            clauseTables=[temp_tablename]).count()
         if float(matches) / total < 0.5:
             terms.append(term)
     return '|'.join(terms)
