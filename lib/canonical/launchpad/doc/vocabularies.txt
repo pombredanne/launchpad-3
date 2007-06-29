@@ -1221,30 +1221,69 @@ Inactive products and projects are not available
 All blueprints that can be added as a dependency of the
 context blueprint.
 
+First, we set up a product with three blueprints.
+
+    >>> from canonical.lp.dbschema import SpecificationStatus
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> foobar_person = getUtility(IPersonSet).getByName('name16')
+    >>> foobar_person.displayname
+    u'Foo Bar'
+    >>> specset = getUtility(ISpecificationSet)
+    >>> spec_a = specset.new('spec-a', 'Spec A',
+    ...     'http://www.example.org/SpecA', 'The first spec',
+    ...     SpecificationStatus.APPROVED, foobar_person, product=evolution)
+    >>> spec_b = specset.new('spec-b', 'Spec B',
+    ...     'http://www.example.org/SpecB', 'The second spec',
+    ...     SpecificationStatus.APPROVED, foobar_person, product=evolution)
+    >>> spec_c = specset.new('spec-c', 'Spec C',
+    ...     'http://www.example.org/SpecC', 'The third spec',
+    ...     SpecificationStatus.APPROVED, foobar_person, product=evolution)
+    >>> [spec.name for spec in evolution.specifications()]
+    [u'spec-a', u'spec-b', u'spec-c']
+
+The dependency candidates for spec_a are all blueprints for evolution
+except for spec_a itself.
+
+    >>> vocab = vocabulary_registry.get(
+    ...     spec_a, "SpecificationDepCandidates")
+    >>> [term.value.name for term in vocab]
+    [u'spec-b', u'spec-c']
+
 Dependency candidate come only from the same product of the blueprint
 they depend on.
 
-    >>> from canonical.launchpad.interfaces import IProduct
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> canvas_spec = firefox.getSpecification('canvas')
     >>> vocab = vocabulary_registry.get(
-    ...     canvas_spec, "SpecificationDepCandidates")
+    ...     spec_a, "SpecificationDepCandidates")
     >>> [term.value.product for term in vocab
-    ...  if term.value.product != firefox]
+    ...  if term.value.product != evolution]
     []
 
-No circular dependencies - blueprint A is not a dependency candidate
-of blueprint B if blueprint B depends on blueprint A.
+We mark spec_b as a dependency of spec_a.
 
-    >>> from canonical.launchpad.interfaces import IProduct
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
-    >>> e4x_spec = firefox.getSpecification('e4x')
-    >>> canvas_spec = firefox.getSpecification('canvas')
-    >>> canvas_spec in e4x_spec.all_blocked
+    >>> spec_a.createDependency(spec_b)
+    <SpecificationDependency at ...>
+    >>> [spec.name for spec in spec_a.dependencies]
+    [u'spec-b']
+
+No circular dependencies - the vocabulary excludes specifications that 
+are a dependency of the context spec. 
+
+    >>> spec_a in spec_b.all_blocked
     True
     >>> vocab = vocabulary_registry.get(
-    ...     e4x_spec, "SpecificationDepCandidates")
-    >>> canvas_spec in [term.value for term in vocab]
+    ...     spec_b, "SpecificationDepCandidates")
+    >>> spec_a in [term.value for term in vocab]
     False
 
-XXX: document more vocabularies here, particularly when they break!
+This vocabulary provides the IHugeVocabulary interface.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+    >>> verifyObject(IHugeVocabulary, vocab)
+    True
+
+The search() method returns specifications within the vocabulary
+that matches the search string. The string is matched against the name,
+or fallbacks to a full text search.
+
+XX: document more vocabularies here, particularly when they break!
