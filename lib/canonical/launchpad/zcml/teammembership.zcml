@@ -17,16 +17,16 @@
         <require 
             permission="zope.Public"
             attributes="team person reviewer status datejoined dateexpires
-                        reviewercomment statusname isExpired renewal_policy
+                        reviewercomment statusname isExpired
                         sendExpirationWarningEmail canBeRenewedByMember
-                        sendSelfRenewalNotification
+                        sendSelfRenewalNotification canChangeExpirationDate
                         sendAutoRenewalNotification" />
         <require 
             permission="launchpad.Edit"
-            attributes="setStatus" />
+            attributes="setStatus setExpirationDate" />
         <require 
             permission="launchpad.Edit"
-            set_schema="canonical.launchpad.interfaces.ITeamMembership" />
+            set_attributes="reviewer datejoined reviewercomment" />
     </content>
 
     <browser:url

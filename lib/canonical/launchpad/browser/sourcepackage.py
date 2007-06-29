@@ -1,5 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+"""Browser views for sourcepackages."""
+
 __metaclass__ = type
 
 __all__ = [
@@ -58,8 +60,8 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         if (self.context.distroseries.hide_all_translations and
             not check_permission('launchpad.Admin', sourcepackage_pots)):
             raise TranslationUnavailable(
-                'Translation updates are in progress.  Only administrators may view'
-                ' translations for this source package.')
+                'Translation updates are in progress. Only administrators '
+                'may view translations for this source package.')
 
         return sourcepackage_pots
 

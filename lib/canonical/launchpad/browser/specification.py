@@ -830,29 +830,35 @@ class SpecificationNewView(LaunchpadFormView):
         return field_names
 
     def validate(self, data):
-        """Validate the contents of the form. In general we can trust the
-        field validation but for the name of the spec we need to check that
-        there is not already a spec with that name for the given target.
+        """Validates the contents of the form.
+
+        Generally, we trust individual fields to perform validation in
+        isolation, but there are cases where fields must be validated
+        collectively. In the case where the current context does not
+        define a unique specification namespace, we need to identify
+        such a namespace from the user's specified target and check that
+        the specified name does not already exist in that namespace.
         """
-        if not ISpecificationSet.providedBy(self.context):
-            return
-        name = data.get('name')
-        if name is None:
-            self.setFieldError('name',
-                'Please provide a name for this blueprint')
-        target = data.get('target')
-        projecttarget = data.get('projecttarget')
-        if projecttarget is not None:
-            target = projecttarget
-        if target is None:
-            self.setFieldError('target',
-                'Please select a valid project.')
+        if ISpecificationSet.providedBy(self.context):
+            target = data.get('target')
+        elif IProject.providedBy(self.context):
+            target = data.get('projecttarget')
         else:
-            name = name.strip().lower()
-            if target.getSpecification(name) is not None:
-                self.setFieldError('name',
-                    'There is already a blueprint with this name for %s. '
-                    'Please try another name.' % target.displayname)
+            # The context corresponds to a unique specification name-
+            # space. We can rely on the name field to validate itself.
+            target = None
+        if target:
+            # The context does not correspond to a unique specification
+            # namespace. Instead, ensure that the specified name does
+            # not exist within the namespace of the specified target.
+            name = data.get('name')
+            if target.getSpecification(name):
+                # The specified name already exists. Mark the field with
+                # an error.
+                self.setFieldError(
+                    'name',
+                    self.schema['name'].errormessage % name
+                )
 
     @action(_('Register Blueprint'), name='register')
     def register_action(self, action, data):
