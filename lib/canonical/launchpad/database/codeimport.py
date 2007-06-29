@@ -92,14 +92,17 @@ class CodeImportSet:
 
 class CodeImportMachine(SQLBase):
     """See `ICodeImportMachine`."""
+
     implements(ICodeImportMachine)
 
     hostname = StringCol(default=None)
     online = BoolCol(default=False)
 
-class CodeImportMachineSet(SQLBase):
+
+class CodeImportMachineSet(object):
     """See `ICodeImportMachineSet`."""
-    implements(ICodeImportMachine)
+
+    implements(ICodeImportMachineSet)
 
     def getAll(self):
         """See `ICodeImportMachineSet`."""

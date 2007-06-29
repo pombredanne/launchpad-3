@@ -136,6 +136,7 @@ provides the ICodeImportMachineSet interface.
     >>> code_import_machine_set = getUtility(ICodeImportMachineSet)
     >>> verifyObject(ICodeImportMachineSet,
     ...              removeSecurityProxy(code_import_machine_set))
+    True
 
 The table just records two people of information: a string "hostname"
 that uniquely identifies the machine and a boolean "online" that
