@@ -75,6 +75,8 @@
   ...
 
 
+  # XXX: Remember to check the notification message displayed after this
+  # submission when converting this to use testbrowser.
   >>> print http(r"""
   ... POST %s HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -161,6 +163,8 @@
   ...
 
 
+  # XXX: Remember to check the notification message displayed after this
+  # submission when converting this to use testbrowser.
   >>> print http(r"""
   ... POST %s HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
@@ -291,6 +295,8 @@ Person validates the email address using the token.
 
   Email was validated.
 
+  # XXX: Remember to check the notification message displayed after this
+  # submission when converting this to use testbrowser.
   >>> print http(r"""
   ... POST %s HTTP/1.1
   ... Content-Type: application/x-www-form-urlencoded

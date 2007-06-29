@@ -7,7 +7,7 @@ __metaclass__ = type
 __all__ = [
     'ILoginToken',
     'ILoginTokenSet',
-    'IGPGKeyValidation',
+    'IGPGKeyValidationForm',
     ]
 
 from zope.schema import Datetime, Int, Text, TextLine
@@ -211,7 +211,7 @@ class ILoginTokenSet(Interface):
         """
 
 
-class IGPGKeyValidation(Interface):
+class IGPGKeyValidationForm(Interface):
     """The schema used by ILoginToken's +validategpg form."""
 
     signed_text = Text(title=_('Signed text'), required=True)
