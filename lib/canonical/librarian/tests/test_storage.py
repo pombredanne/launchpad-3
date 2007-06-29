@@ -13,23 +13,25 @@ import sha
 import shutil
 import tempfile
 
+import transaction
+
+import canonical.librarian.storage
 from canonical.librarian.storage import LibrarianStorage, DigestMismatchError
 from canonical.librarian.storage import _sameFile, _relFileLocation
 from canonical.librarian import db
-from canonical.database.sqlbase import SQLBase
-from canonical.database.sqlbase import (
-        FakeZopelessConnectionDescriptor, FakeZopelessTransactionManager)
 
 class LibrarianStorageTestCase(unittest.TestCase):
     """Librarian test cases that don't involve the database"""
     def setUp(self):
         self.directory = tempfile.mkdtemp()
         self.storage = LibrarianStorage(self.directory, db.Library())
-        self.fztm = FakeZopelessTransactionManager()
+        # Replace the "transaction" in the storage module's namespace.
+        self.stub_transaction = StubTransaction()
+        db.transaction = self.stub_transaction
 
     def tearDown(self):
         shutil.rmtree(self.directory, ignore_errors=True)
-        self.fztm.uninstall()
+        db.transaction = transaction
 
     def test_hasFile_missing(self):
         # Make sure hasFile returns False when a file is missing
@@ -97,13 +99,13 @@ class LibrarianStorageTestCase(unittest.TestCase):
         newfile.append(data)
 
         # The transaction shouldn't be committed yet...
-        self.failIf(SQLBase._connection.committed)
+        self.failIf(self.stub_transaction.committed)
 
         # Now try to store the file
         fileid, aliasid = newfile.store()
 
         # ...but it should be committed now.
-        self.failUnless(SQLBase._connection.committed)
+        self.failUnless(self.stub_transaction.committed)
 
         # And the file should now be in its final location on disk, too..
         self.failUnless(self.storage.hasFile(fileid))
@@ -124,13 +126,13 @@ class LibrarianStorageTestCase(unittest.TestCase):
         newfile._move = lambda x: 1/0
 
         # The transaction shouldn't have aborted yet...
-        self.failIf(SQLBase._connection.rolledback)
+        self.failIf(self.stub_transaction.aborted)
 
         # Now try to store the file, and catch the exception
         self.assertRaises(ZeroDivisionError, newfile.store)
 
         # ...and the transaction should have aborted.
-        self.failUnless(SQLBase._connection.rolledback)
+        self.failUnless(self.stub_transaction.aborted)
 
         # And the file should have been removed from its temporary location
         self.failIf(os.path.exists(newfile.tmpfilepath))
@@ -161,6 +163,23 @@ class LibrarianStorageTestCase(unittest.TestCase):
         self.failUnless(self.storage.hasFile(fileid1))
         self.failUnless(self.storage.hasFile(fileid2))
         
+
+class StubTransaction:
+
+    def __init__(self):
+        self.committed = False
+        self.aborted = False
+
+    def begin(self):
+        self.committed = False
+        self.aborted = False
+
+    def commit(self):
+        self.committed = True
+
+    def abort(self):
+        self.aborted = True
+
 
 class StubLibrary:
     # Used by test_transactionCommit/Abort

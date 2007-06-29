@@ -10,13 +10,15 @@ import sha
 import errno
 import tempfile
 
-from canonical.database.sqlbase import begin, commit, rollback, cursor
+from canonical.database.sqlbase import cursor
+from canonical.librarian.db import write_transaction
 
 __all__ = ['DigestMismatchError', 'LibrarianStorage', 'LibraryFileUpload',
            'DuplicateFileIDError', 'WrongDatabaseError',
            # _relFileLocation needed by other modules in this package.
            # Listed here to keep the import facist happy
            '_relFileLocation', '_sameFile']
+
 
 class DigestMismatchError(Exception):
     """The given digest doesn't match the SHA-1 digest of the file."""
@@ -93,6 +95,7 @@ class LibraryFileUpload(object):
         self.shaDigester.update(data)
         self.md5Digester.update(data)
 
+    @write_transaction
     def store(self):
         self.debugLog.append('storing %r, size %r' % (self.filename, self.size))
         self.tmpfile.close()
@@ -105,7 +108,6 @@ class LibraryFileUpload(object):
             os.remove(self.tmpfilepath)
             raise DigestMismatchError, (self.srcDigest, dstDigest)
 
-        begin()
         try:
             # If the client told us the name database of the database its using,
             # check that it matches
@@ -134,7 +136,6 @@ class LibraryFileUpload(object):
         except:
             # Abort transaction and re-raise
             self.debugLog.append('failed to get contentID/aliasID, aborting')
-            rollback()
             raise
 
         # Move file to final location
@@ -143,7 +144,6 @@ class LibraryFileUpload(object):
         except:
             # Abort DB transaction
             self.debugLog.append('failed to move file, aborting')
-            rollback()
 
             # Remove file
             os.remove(self.tmpfilepath)
@@ -151,10 +151,6 @@ class LibraryFileUpload(object):
             # Re-raise
             raise
 
-        # Commit any DB changes
-        commit()
-        self.debugLog.append('committed')
-        
         # Return the IDs if we created them, or None otherwise
         return contentID, aliasID
 

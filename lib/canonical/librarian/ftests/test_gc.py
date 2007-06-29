@@ -8,7 +8,7 @@ import os
 import os.path
 from subprocess import Popen, PIPE, STDOUT
 from cStringIO import StringIO
-from unittest import TestCase, TestSuite, makeSuite
+import unittest
 from datetime import datetime, timedelta
 from pytz import utc
 
@@ -41,7 +41,7 @@ class MockLogger:
         pass
 
 
-class TestLibrarianGarbageCollection(TestCase):
+class TestLibrarianGarbageCollection(unittest.TestCase):
     layer = LaunchpadLayer
 
     def setUp(self):
@@ -483,9 +483,10 @@ class TestLibrarianGarbageCollection(TestCase):
         finally:
             librariangc.time = org_time
 
+#del TestLibrarianGarbageCollection
 
 
-class TestBlobCollection(TestCase):
+class TestBlobCollection(unittest.TestCase):
     layer = LaunchpadLayer
 
     def setUp(self):
@@ -719,9 +720,6 @@ class TestBlobCollection(TestCase):
         count = cur.fetchone()[0]
         self.failIfEqual(count, 2)
 
- 
+
 def test_suite():
-    suite = TestSuite()
-    suite.addTest(makeSuite(TestLibrarianGarbageCollection))
-    suite.addTest(makeSuite(TestBlobCollection))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)

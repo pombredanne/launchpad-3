@@ -4,18 +4,18 @@
 import unittest
 
 from canonical.librarian import db
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+from canonical.testing import LaunchpadScriptLayer
 
 def sorted(l):
     l = list(l)
     l.sort()
     return l
 
-class DBTestCase(LaunchpadZopelessTestSetup, unittest.TestCase):
-    dbuser = 'librarian'
-    def __init__(self, methodName='runTest'):
-        unittest.TestCase.__init__(self, methodName)
-        LaunchpadZopelessTestSetup.__init__(self)
+class DBTestCase(unittest.TestCase):
+    layer = LaunchpadScriptLayer
+
+    def setUp(self):
+        LaunchpadScriptLayer.switchDbConfig('librarian')
 
     def test_lookupByDigest(self):
         # Create library
@@ -40,9 +40,7 @@ class DBTestCase(LaunchpadZopelessTestSetup, unittest.TestCase):
         alias = library.getAlias(aliasID)
         self.assertEqual('file1', alias.filename)
         self.assertEqual('text/unknown', alias.mimetype)
-        
+
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(DBTestCase))
-    return suite
+    return unittest.TestLoader().loadTestsFromName(__name__)

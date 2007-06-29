@@ -18,7 +18,7 @@ from canonical.launchpad.database import LibraryFileAlias
 from canonical.launchpad.interfaces import ILibraryFileAliasSet
 from canonical.config import config
 from canonical.database.sqlbase import commit
-from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
+from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer, LaunchpadScriptLayer
 
 
 class LibrarianWebTestCase(unittest.TestCase):
@@ -47,6 +47,8 @@ class LibrarianWebTestCase(unittest.TestCase):
             fileAlias = client.addFile('sample', len(sampleData),
                                                  StringIO(sampleData),
                                                  contentType='text/plain')
+            import sys
+            print >>sys.stderr, "Added file alias", fileAlias
 
             # Make sure we can get its URL
             url = client.getURLForAlias(fileAlias)
@@ -162,11 +164,15 @@ class LibrarianWebTestCase(unittest.TestCase):
 class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
     layer = LaunchpadZopelessLayer
 
-    def setUp(self):
-        LaunchpadZopelessLayer.switchDbUser(config.librarian.dbuser)
-
     def commit(self):
         LaunchpadZopelessLayer.commit()
+
+
+class LibrarianScriptWebTestCase(LibrarianWebTestCase):
+    layer = LaunchpadScriptLayer
+
+    def setUp(self):
+        LaunchpadScriptLayer.switchDbConfig('librarian')
 
     def test_accessTime(self):
         # Test to ensure the Librarian updates last_accessed as specced
@@ -202,25 +208,18 @@ class LibrarianZopelessWebTestCase(LibrarianWebTestCase):
         access_time_2 = LibraryFileAlias.get(id1).last_accessed
 
         self.failUnless(access_time_1 < access_time_2)
- 
+
 
 class DeletedContentTestCase(unittest.TestCase):
 
-    layer = LaunchpadZopelessLayer
-
-    def setUp(self):
-        LaunchpadZopelessLayer.switchDbUser(config.librarian.dbuser)
+    layer = LaunchpadScriptLayer
 
     def test_deletedContentNotFound(self):
-        # Use a user with rights to change the deleted flag in the db.
-        # This currently means a superuser.
-        LaunchpadZopelessLayer.switchDbUser('')
-
         alias = getUtility(ILibraryFileAliasSet).create(
                 'whatever', 8, StringIO('xxx\nxxx\n'), 'text/plain'
                 )
         alias_id = alias.id
-        LaunchpadZopelessLayer.commit()
+        transaction.commit()
 
         client = LibrarianClient()
 
@@ -234,15 +233,18 @@ class DeletedContentTestCase(unittest.TestCase):
         url = alias.http_url
         retrieved_content = urlopen(url).read()
         self.failUnlessEqual(retrieved_content, 'xxx\nxxx\n')
-        
 
-        # But when we flag the content as deleted
+        # Now mark the file as deleted.  We temporarily switch to the
+        # librarian GC user, who has permission to do this.
+        LaunchpadScriptLayer.switchDbConfig('librarian.gc')
+        transaction.begin()
         cur = cursor()
         cur.execute("""
             UPDATE LibraryFileContent SET deleted=TRUE WHERE id=%s
             """, (alias.content.id,)
             )
-        LaunchpadZopelessLayer.commit()
+        transaction.commit()
+        LaunchpadScriptLayer.switchDbConfig('launchpad')
 
         # Things become not found
         alias = getUtility(ILibraryFileAliasSet)[alias_id]
@@ -257,9 +259,4 @@ class DeletedContentTestCase(unittest.TestCase):
 
 
 def test_suite():
-    suite = unittest.TestSuite()
-    suite.addTest(unittest.makeSuite(LibrarianWebTestCase))
-    suite.addTest(unittest.makeSuite(LibrarianZopelessWebTestCase))
-    suite.addTest(unittest.makeSuite(DeletedContentTestCase))
-    return suite
-
+    return unittest.TestLoader().loadTestsFromName(__name__)
