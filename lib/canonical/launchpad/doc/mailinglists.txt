@@ -329,17 +329,28 @@ reason).
     >>> list_one.status.name
     'ACTIVE'
 
+A mailing list's welcome message can also be changed while it is in REGISTERED
+status.  This is essentially equivalent to initializing the mailing list with
+a particular welcome message.
+
+    >>> team_five = personset.newTeam(ddaa, 'team-five', 'Team Five')
+    >>> list_five = list_registry.register(team_five)
+    >>> list_five.welcome_message = u'Welcome to Team Five'
+    >>> flush_database_updates()
+    >>> list_five.status.name
+    'REGISTERED'
+
 You cannot change the welcome message text for a mailing list in anything but
-ACTIVE status.
+ACTIVE or REGISTERED status.
 
     >>> list_two.welcome_message = """\
     ... This list has been declined."""
     Traceback (most recent call last):
     ...
-    AssertionError: Only active mailing lists may be modified
+    AssertionError: Only registered or active mailing lists may be modified
 
     >>> list_four.welcome_message = """\
     ... This list has been deactivated."""
     Traceback (most recent call last):
     ...
-    AssertionError: Only active mailing lists may be modified
+    AssertionError: Only registered or active mailing lists may be modified
