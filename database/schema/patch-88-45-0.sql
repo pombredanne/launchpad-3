@@ -4,8 +4,8 @@ CREATE TABLE CodeImportMachine (
     id SERIAL PRIMARY KEY,
     date_created TIMESTAMP WITHOUT TIME ZONE
         DEFAULT (CURRENT_TIMESTAMP AT TIME ZONE 'UTC') NOT NULL,
-    hostname text UNIQUE,
-    online boolean
+    hostname text UNIQUE NOT NULL,
+    online boolean NOT NULL
     );
 
 -- XXX Put a proper patch number here.
