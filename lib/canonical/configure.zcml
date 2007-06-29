@@ -147,7 +147,7 @@
     <!-- virtual host: openid -->
     <browser:page
         name=""
-        for="canonical.launchpad.interfaces.ILaunchpadRoot"
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
         class="zope.app.publisher.browser.resources.Resources"
         permission="zope.Public"
         allowed_interface="zope.publisher.interfaces.browser.IBrowserPublisher"
