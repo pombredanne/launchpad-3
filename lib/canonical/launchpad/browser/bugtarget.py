@@ -200,7 +200,7 @@ class FileBugViewBase(LaunchpadFormView):
         # subscribe to an existing bug.
         elif self.this_is_my_bug_action.submitted():
             if not data.get('bug_already_reported_as'):
-                self.setFieldError('bug_already_reported_as', "Please choose a bug")
+                self.setFieldError('bug_already_reported_as', "Please choose a bug.")
         else:
             pass
 
@@ -488,6 +488,18 @@ class FileBugViewBase(LaunchpadFormView):
         else:
             return None
 
+    def showOptionalMarker(self, field_name):
+        # The comment field _is_ required, but only when filing the
+        # bug. Since the same form is also used for subscribing to a
+        # bug, the comment field in the schema cannot be marked
+        # required=True. Instead it's validated in
+        # FileBugViewBase.validate. So... we need to suppress the
+        # "(Optional)" marker.
+        if field_name == 'comment':
+            return False
+        else:
+            return LaunchpadFormView.showOptionalMarker(self, field_name)
+
 
 class FileBugAdvancedView(FileBugViewBase):
     """Browser view for filing a bug.
@@ -649,6 +661,7 @@ class FileBugGuidedView(FileBugViewBase):
 
     def showFileBugForm(self):
         return self._FILEBUG_FORM()
+
 
 class ProjectFileBugGuidedView(FileBugGuidedView):
     """Guided filebug pages for IProject."""
