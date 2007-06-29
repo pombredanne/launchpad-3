@@ -12,7 +12,7 @@ import re
 import unittest
 
 from BeautifulSoup import (BeautifulSoup, Comment, Declaration,
-    NavigableString, PageElement, ProcessingInstruction, Tag)
+    NavigableString, PageElement, ProcessingInstruction, SoupStrainer, Tag)
 
 from zope.app.testing.functional import HTTPCaller, SimpleCookie
 from zope.testbrowser.testing import Browser
@@ -57,9 +57,9 @@ class DuplicateIdError(Exception):
 
 def find_tag_by_id(content, id):
     """Find and return the tag with the given ID"""
-    soup = BeautifulSoup(content)
-    elements_with_id = soup.findAll(attrs={'id': id})
-    if not elements_with_id:
+    elements_with_id = [tag for tag in BeautifulSoup(
+        content, parseOnlyThese=SoupStrainer(id=id))]
+    if len(elements_with_id) == 0:
         return None
     elif len(elements_with_id) == 1:
         return elements_with_id[0]
@@ -75,7 +75,8 @@ def find_tags_by_class(content, class_):
         if value is None: return False
         classes = set(value.split())
         return match_classes.issubset(classes)
-    soup = BeautifulSoup(content)
+    soup = BeautifulSoup(
+        content, parseOnlyThese=SoupStrainer(attrs={'class': class_matcher}))
     return soup.findAll(attrs={'class': class_matcher})
 
 
@@ -96,24 +97,18 @@ def find_portlet(content, name):
 
 def find_main_content(content):
     """Find and return the main content area of the page"""
-    soup = BeautifulSoup(content)
-    tag = soup.find(attrs={'id': 'maincontent'}) # standard page with portlets
+    # Look for standard page with portlets first.
+    tag = find_tag_by_id(content, 'maincontent')
     if tag:
         return tag
-    return soup.find(attrs={'id': 'singlecolumn'}) # single-column page
+    # Fall back to looking for the single-column page.
+    return find_tag_by_id(content, 'singlecolumn')
+
 
 def get_feedback_messages(browser):
     """Find and return the feedback messages of the page."""
-    soup = BeautifulSoup(browser.contents)
-    feedback_messages = []
-    for div_tag in soup('div',
-        {'class': ['message',
-                   'informational message',
-                   'error message']}):
-        feedback_messages.append(div_tag.string)
-
-    return feedback_messages
-
+    return [div_tag.string
+            for div_tag in find_tags_by_class(browser.contents, 'message')]
 
 
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
