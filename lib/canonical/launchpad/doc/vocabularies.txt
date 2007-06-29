@@ -1194,4 +1194,36 @@ Inactive products and projects are not available
     The Ubuntu Project (Project) - class Project
     Ubuntu Test (Distribution) - class Distribution
 
+SpecificationDepCandidatesVocabulary
+------------------------------------
+
+    All blueprints that can be added as a dependency of the
+    context blueprint.
+
+    Dependency candidate come only from the same product of the
+    blueprint they depend on.
+
+    >>> from canonical.launchpad.interfaces import IProduct
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> canvas_spec = firefox.getSpecification('canvas')
+    >>> vocab = vocabulary_registry.get(canvas_spec,
+    ...                                 "SpecificationDepCandidates")
+    >>> [term.value.product for term in vocab
+    ...  if term.value.product != firefox]
+    []
+
+    No circular dependencies - blueprint A is not a dependency candidate
+    of blueprint B if blueprint B depends on blueprint A.
+
+    >>> from canonical.launchpad.interfaces import IProduct
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> e4x_spec = firefox.getSpecification('e4x')
+    >>> canvas_spec = firefox.getSpecification('canvas')
+    >>> canvas_spec in e4x_spec.all_blocked
+    True
+    >>> vocab = vocabulary_registry.get(e4x_spec,
+    ...                                 "SpecificationDepCandidates")
+    >>> canvas_spec in [term.value for term in vocab]
+    False
+
 XXX: document more vocabularies here, particularly when they break!
