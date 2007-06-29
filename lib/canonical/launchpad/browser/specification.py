@@ -12,7 +12,7 @@ __all__ = [
     'SpecificationGoalProposeView',
     'SpecificationGoalDecideView',
     'SpecificationLinkBranchView',
-    'SpecificationNewView',
+    'SpecificationAddView',
     'SpecificationRetargetingView',
     'SpecificationSprintAddView',
     'SpecificationSupersedingView',
@@ -805,7 +805,7 @@ class SpecificationTreeDotOutput(SpecificationTreeGraphView):
         return self.getDotFileText()
 
 
-class SpecificationNewView(LaunchpadFormView):
+class SpecificationAddView(LaunchpadFormView):
     """A form used to add a specification from the Blueprints home page,
     where we need to choose a context for the specification as well as
     asking for the spec details."""

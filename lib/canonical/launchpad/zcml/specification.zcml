@@ -446,7 +446,7 @@
     for="canonical.launchpad.interfaces.ISpecificationSet"
     permission="launchpad.AnyPerson"
     template="../templates/specification-new.pt"
-    class="canonical.launchpad.browser.SpecificationNewView"
+    class="canonical.launchpad.browser.SpecificationAddView"
     />
 
   <!-- SpecificationDelta -->
