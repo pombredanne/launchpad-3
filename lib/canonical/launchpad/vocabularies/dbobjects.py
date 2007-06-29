@@ -990,13 +990,15 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
         return CountableIterator(len(candidate_specs),
                                  candidate_specs,
                                  lambda obj: obj)
+
+    def _all_specs(self):
+        return self._filter_specs(self.context.product.specifications())
     
     def __iter__(self):
-        specs = self._filter_specs(self.context.product.specifications())
-        return specs.__iter__()
+        return (self.toTerm(spec) for spec in self._all_specs())
 
     def __contains__(self, obj):
-        return obj in self
+        return obj in self._all_specs()
 
 class SprintVocabulary(NamedSQLObjectVocabulary):
     _table = Sprint
