@@ -1,3 +1,5 @@
+= Filing bugs on Products =
+
 Launchpad does its best to minimize duplicate bug reports. The +filebug
 page for a product starts by asking the user to see if their bug has
 already been reported.
@@ -84,3 +86,32 @@ With both values set, the bug is created.
 
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/...
+
+== Subscribing to a similar bug ==
+
+If our bug is described by one of the suggested similar bugs, we can
+subscribe to it instead of filing a new bug. This also loosely implies
+a "me too" vote.
+
+    >>> user_browser.open("http://bugs.launchpad.dev/firefox/+filebug")
+    >>> user_browser.getControl(name="field.title").value = (
+    ...     "SVG images aren't displayed")
+    >>> user_browser.getControl("Continue").click()
+
+As before, we get a list of similar bugs to choose from.
+
+    >>> print_bugs_list(user_browser.contents, "similar-bugs")
+    #1: Firefox does not support SVG
+
+This one matches, so we subscribe.
+
+    >>> user_browser.getControl(
+    ...     '#1: Firefox does not support SVG').selected = True
+    >>> user_browser.getControl('Subscribe To This Bug').click()
+
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/firefox/+bug/...
+
+    >>> for message in get_feedback_messages(user_browser):
+    ...     print message
+    You have been subscribed to this bug.

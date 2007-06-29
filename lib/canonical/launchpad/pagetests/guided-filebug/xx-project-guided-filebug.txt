@@ -1,6 +1,6 @@
 = Filing bugs on Projects =
 
-Even though it's not possible to file bugs agains projects directly,
+Even though it's not possible to file bugs against projects directly,
 it's still possible to file a bug from a project's main page.
 
     >>> user_browser.open('http://launchpad.dev/gnome')
@@ -48,10 +48,44 @@ filebug page.
     'http://launchpad.dev/gnome/+filebug-advanced'
 
     >>> user_browser.getControl('Project').value = ['evolution']
-    >>> user_browser.getControl('Summary').value = 'Evolution crashes'
+    >>> user_browser.getControl('Summary').value = 'Evolution crashes lots'
     >>> user_browser.getControl('Further information').value = 'Crash.'
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/...'
     >>> user_browser.title
     'Bug #... in evolution (upstream): ...Evolution crashes...'
+
+== Subscribing to a similar bug ==
+
+If our bug is described by one of the suggested similar bugs, we can
+subscribe to it instead of filing a new bug. This also loosely implies
+a "me too" vote.
+
+    >>> user_browser.open("http://bugs.launchpad.dev/gnome/+filebug")
+    >>> user_browser.getControl('Project').value = ['evolution']
+    >>> user_browser.getControl('Summary').value = 'Evolution crashes'
+    >>> user_browser.getControl('Continue').click()
+
+As before, we get a list of similar bugs to choose from, including the
+bugs we filed recently.
+
+    >>> print_bugs_list(user_browser.contents, "similar-bugs")
+    #7: A test bug
+    #...: Evolution crashes
+    #...: Evolution crashes lots
+
+This one matches, so we subscribe.
+
+    >>> user_browser.getControl(
+    ...     label='Evolution crashes lots').selected = True
+    >>> user_browser.getControl('Subscribe To This Bug').click()
+
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/evolution/+bug/...
+
+But, of course, we're already subscribed because we created it.
+
+    >>> for message in get_feedback_messages(user_browser):
+    ...     print message
+    You are already subscribed to this bug.
