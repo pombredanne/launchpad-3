@@ -65,8 +65,8 @@ class FAQ(SQLBase):
             return self.distribution
 
     @staticmethod
-    def new(owner, title, content,
-            date_created=None, product=None, distribution=None):
+    def new(owner, title, content, keywords=keywords, date_created=None,
+            product=None, distribution=None):
         """Factory method to create a new FAQ.
 
         Ensure that only one of url or content, and product or
@@ -83,7 +83,7 @@ class FAQ(SQLBase):
         if date_created is None:
             date_created = DEFAULT
         return FAQ(
-            owner=owner, title=title, content=content,
+            owner=owner, title=title, content=content, keywords=keywords,
             date_created=date_created, product=product,
             distribution=distribution)
 

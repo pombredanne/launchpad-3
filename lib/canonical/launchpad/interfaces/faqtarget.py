@@ -15,13 +15,13 @@ from zope.interface import Interface
 class IFAQTarget(Interface):
     """An object that can contain a FAQ document."""
 
-    def newFAQ(owner, title, content,
-               date_created=None):
+    def newFAQ(owner, title, content, keywords=None, date_created=None):
         """Create a new FAQ hosted in this target.
 
         :param owner: The `IPerson` creating the FAQ document.
         :param title: The document's title.
         :param content: The document's content.
+        :param keywords: The document's keywords.
         :param date_created: The creation time of the document.
             Defaults to now.
         """

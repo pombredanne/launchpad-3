@@ -64,7 +64,8 @@ The returned object provides the IFAQ interface:
 
 The newFAQ() requires an owner, title, and content parameter. It also
 accepts an optional date_created attribute (which defaults to
-the current time).
+the current time), and an optional keywords parameter used to initialize
+the FAQ's keywords.
 
     >>> from datetime import datetime
     >>> from pytz import UTC
@@ -72,7 +73,7 @@ the current time).
 
     >>> faq = target.newFAQ(
     ...     no_priv, 'How to do something', 'Explain how to do something.',
-    ...     date_created=now)
+    ...     keywords='documentation howto', date_created=now)
 
     >>> print faq.owner.displayname
     No Privileges Person
@@ -80,6 +81,8 @@ the current time).
     How to do something
     >>> print faq.content
     Explain how to do something.
+    >>> print faq.keywords
+    documentation howto
     >>> faq.date_created == now
     True
 

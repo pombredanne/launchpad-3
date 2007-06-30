@@ -538,11 +538,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return False
         return True
 
-    def newFAQ(self, owner, title, content, 
-               date_created=None):
+    def newFAQ(self, owner, title, content, keywords=None, date_created=None):
         """See `IFAQTarget`."""
         return FAQ.new(
-            owner=owner, title=title, content=content,
+            owner=owner, title=title, content=content, keywords=keywords,
             date_created=date_created, distribution=self)
 
     def findSimilarFAQs(self, summary):
