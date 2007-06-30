@@ -32,6 +32,12 @@ sys.path.insert(0, os.path.join(here, 'lib'))
 # Set PYTHONPATH environment variable for spawned processes
 os.environ['PYTHONPATH'] = ':'.join(sys.path)
 
+# Set a flag if this is the main testrunner process
+if len(sys.argv) > 1 and sys.argv[1] == '--resume-layer':
+    main_process = False
+else:
+    main_process = True
+
 # Install the import fascist import hook and atexit handler.
 import importfascist
 importfascist.install_import_fascist()
@@ -111,8 +117,32 @@ defaults = [
     ]
 
 if __name__ == '__main__':
+
+    # Extract arguments so we can see them too. We need to strip --resume-layer
+    # and --default stuff if found as get_options can't handle it.
+    if len(sys.argv) > 1 and sys.argv[1] == '--resume-layer':
+        args = list(sys.argv)
+        args.pop(1) # --resume-layer
+        args.pop(1) # The layer name
+        while len(args) > 1 and args[1] == '--default':
+            args.pop(1) # --default
+            args.pop(1) # The default value
+        args.insert(0, sys.argv[0])
+    else:
+        args = sys.argv
+    options = testrunner.get_options(args=args, defaults=defaults)
+
+    # Turn on Layer profiling if requested.
+    from canonical.testing import profiled
+    if options.verbose >= 3 and main_process:
+        profiled.setup_profiling()
+
     result = testrunner.run(defaults)
     # Cribbed from sourcecode/zope/test.py - avoid spurious error during exit.
     logging.disable(999999999)
+
+    # Print Layer profiling report if requested.
+    if main_process and options.verbose >= 3:
+        profiled.report_profile_stats()
     sys.exit(result)
 

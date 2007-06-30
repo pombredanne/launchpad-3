@@ -5341,7 +5341,7 @@ INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, com
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (720, 7, 17, false, false, false, '', 158, false, false, false, NULL, NULL);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (721, 8, 17, false, false, false, '', 159, false, false, false, NULL, NULL);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (722, 9, 17, false, false, false, '', 160, false, false, false, NULL, NULL);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (723, 1, 16, true, false, false, '', 152, false, true, false, '2005-05-06 21:12:42.747648', 51);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (723, 1, 16, true, false, false, '', 152, false, true, false, NULL, NULL);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (724, 2, 16, true, false, false, '', 153, false, true, false, '2005-05-06 21:12:42.747648', 51);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (725, 3, 16, true, false, false, '', 154, false, true, false, '2005-05-06 21:12:42.747648', 51);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (726, 4, 16, true, false, false, '', 155, false, true, false, '2005-05-06 21:12:42.747648', 51);
@@ -9201,6 +9201,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (66, 29, 64, 2, '2007-05-10 17:21:17.877009', NULL, 16, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (67, 63, 64, 5, '2005-05-10 17:22:02.377319', '2006-05-10 17:22:02.377319', 16, '');
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (68, 12, 17, 1, '2007-05-16 15:03:47.748238', NULL, 12, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (69, 69, 17, 2, '2007-06-20 14:18:41.185147', NULL, 16, NULL);
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -9330,6 +9331,10 @@ INSERT INTO teamparticipation (id, team, person) VALUES (131, 243603, 243603);
 INSERT INTO teamparticipation (id, team, person) VALUES (132, 243604, 243603);
 INSERT INTO teamparticipation (id, team, person) VALUES (133, 243604, 243604);
 INSERT INTO teamparticipation (id, team, person) VALUES (134, 64, 29);
+INSERT INTO teamparticipation (id, team, person) VALUES (135, 32, 69);
+INSERT INTO teamparticipation (id, team, person) VALUES (136, 17, 69);
+INSERT INTO teamparticipation (id, team, person) VALUES (137, 32, 68);
+INSERT INTO teamparticipation (id, team, person) VALUES (138, 17, 68);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;
