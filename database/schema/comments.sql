@@ -556,12 +556,12 @@ COMMENT ON TABLE QuestionSubscription IS 'A subscription of a person to a partic
 COMMENT ON TABLE FAQ IS 'A technical document containing the answer to a common question.';
 COMMENT ON COLUMN FAQ.id IS 'The FAQ document sequence number.';
 COMMENT ON COLUMN FAQ.title IS 'The document title.';
-COMMENT ON COLUMN FAQ.summary IS 'A summary of the document. It should contains at least the commonly asked question.';
-COMMENT ON COLUMN FAQ.keywords IS 'White-space separated list of keywords.';
-COMMENT ON COLUMN FAQ.content IS 'The content of the document. Either "content" or "url" must be set.';
-COMMENT ON COLUMN FAQ.url IS 'The URL to the document content. Either "content" or "url" must be set.';
-COMMENT ON COLUMN FAQ.product IS 'The product to which this document is related. Either "product" or "distribution" must be set.';
-COMMENT ON COLUMN FAQ.distribution IS 'The distribution to which this document is related. Either "product" or "distribution" must be set.';
+COMMENT ON COLUMN FAQ.tags IS 'White-space separated list of tags.';
+COMMENT ON COLUMN FAQ.content IS 'The content of FAQ. It can also contain a short summary and a link.';
+COMMENT ON COLUMN FAQ.product IS 'The product to which this document is
+related. Either "product" or "distribution" must be set.';
+COMMENT ON COLUMN FAQ.distribution IS 'The distribution to which this document
+is related. Either "product" or "distribution" must be set.';
 COMMENT ON COLUMN FAQ.owner IS 'The person who created the document.';
 COMMENT ON COLUMN FAQ.date_created IS 'The datetime when the document was created.';
 COMMENT ON COLUMN FAQ.last_updated_by IS 'The person who last modified the document.';
