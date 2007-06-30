@@ -475,7 +475,8 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
         self.question.giveAnswer(
             self.answerer, 'Do something about it.', self.nowPlus(1))
         self._testTransitionGuard(
-            'can_confirm_answer', ['OPEN', 'NEEDSINFO', 'ANSWERED'])
+            'can_confirm_answer',
+            ['OPEN', 'NEEDSINFO', 'ANSWERED', 'GIVEINFO', 'SOLVED'])
 
     def test_confirmAnswerFromInvalidStates_without_answer(self):
         """Test calling confirmAnswer from invalid states.
@@ -495,7 +496,7 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
         """
         answer_message = self.question.giveAnswer(
             self.answerer, 'Do something about it.', self.nowPlus(1))
-        self._testInvalidTransition(['OPEN', 'NEEDSINFO', 'ANSWERED'],
+        self._testInvalidTransition(['OPEN', 'NEEDSINFO', 'ANSWERED', 'SOLVED'],
             self.question.confirmAnswer, "That answer worked!.",
             answer=answer_message, datecreated=self.nowPlus(1))
 

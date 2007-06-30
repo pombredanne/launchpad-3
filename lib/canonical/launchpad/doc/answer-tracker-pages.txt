@@ -220,7 +220,7 @@ Once in the SOLVED state, the owner can now only either add a comment
 or reopen the question:
 
     >>> getAvailableActionNames(workflow_harness.view)
-    ['comment', 'reopen']
+    ['comment', 'confirm', 'reopen']
 
 Adding a comment doesn't change the status:
 
@@ -270,7 +270,8 @@ the SOLVED state.
     ...         "SVG features that will only be available in Firefox 2.0."})
     >>> for notification in workflow_harness.request.response.notifications:
     ...     print notification.message
-    Thanks for sharing your solution.
+    Your question is solved, if a particular message helped you solved the 
+    problem, please use the <em>'This solved my problem'</em> button.
     >>> print firefox_question.status.name
     SOLVED
     >>> workflow_harness.redirectionTarget()

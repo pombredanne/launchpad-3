@@ -306,9 +306,12 @@ class Question(SQLBase, BugLinkTargetMixin):
         """See `IQuestion`."""
         if self.status not in [
             QuestionStatus.OPEN, QuestionStatus.ANSWERED,
-            QuestionStatus.NEEDSINFO]:
-
+            QuestionStatus.NEEDSINFO, QuestionStatus.SOLVED]:
             return False
+
+        if self.answerer is not self.owner:
+            #return False
+            pass
 
         for message in self.messages:
             if message.action == QuestionAction.ANSWER:

@@ -254,10 +254,20 @@ and answerer attributes are also updated.
 
 == 2) Self-answer ==
 
-Another scenario is for the case when the user comes back to answer the
-question himself. The giveAnswer() method is also used for that case.
+Another scenario is for the case when the user comes back to give the
+solution to question himself. The giveAnswer() method is also used for
+that case.
 
     >>> question = ubuntu.newQuestion(**new_question_args)
+
+    >>> login('test@canonical.com')
+    >>> tomorrow_plus_one_hour = tomorrow + timedelta(hours=1)
+    >>> alt_answer_message = question.giveAnswer(
+    ...     marilize, "Are you using a pre-G3 Mac? They are very difficult "
+    ...     "to install to. You must mess with the hardware to trick "
+    ...     "the core chips to let it install. You may not want to do this.")
+
+    >>> login('no-priv@canonical.com')
     >>> self_answer_message = question.giveAnswer(
     ...     no_priv, "I found some instructions on the Wiki on how to "
     ...     "install BootX to boot the installation CD on OldWorld Mac: "
@@ -266,11 +276,11 @@ question himself. The giveAnswer() method is also used for that case.
     ...     "worth the trouble.",
     ...     datecreated=now_plus_one_hour)
 
-In that case, the user is considered to have confirmed that the problem
-is solved and the question is moved straight to the SOLVED state. The
-'dateanswered' attribute will contain the date of the message,
-the 'answerer' attribute will be identical to the question owner and
-the 'answer' attribute will contain the message that closed the question.
+In that case, the user is considered to have giving information that
+the problem is solved and the question is moved straight to the 
+SOLVED state. The 'dateanswered' attribute will contain the date of
+the message. The 'answerer' attribute will be the question owner, and
+the 'answer' attribute will be the message.
 
     >>> print self_answer_message.action.name
     CONFIRM
@@ -282,8 +292,21 @@ the 'answer' attribute will contain the message that closed the question.
     No Privileges Person
     >>> question.dateanswered == now_plus_one_hour
     True
-    >>> question.answer == self_answer_message
-    True
+
+The user can still specify which message helped him solved his
+problem. The confirmAnswer() method is used for that purpose.
+
+    >>> confirm_message = question.confirmAnswer(
+    ...     "Thanks Marilize for your help. I don't think I'll put Ubuntu "
+    ...     "Ubuntu on my Mac.",
+    ...     datecreated=now_plus_one_hour, answer=alt_answer_message)
+    >>> print confirm_message.action.name
+    CONFIRM
+    >>> print confirm_message.new_status.name
+    SOLVED
+    >>> print confirm_message.owner.displayname
+    No Privileges Person
+
 
 == 3) The question expires ==
 

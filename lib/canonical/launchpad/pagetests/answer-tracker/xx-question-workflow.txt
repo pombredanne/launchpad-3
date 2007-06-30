@@ -187,14 +187,14 @@ status:
 It can happen that, altough the owner confirmed the question was solved,
 the original problem reappears. In this case, he can reopen the question
 by entering a new message and clicking the
-"I'm Still Having This Problem" button.
+"I Still Need an Answer" button.
 
     >>> owner_browser.getControl('Message').value = (
     ...     "Actually, there are still SVGs that do not display correctly. "
     ...     "For example, the following\n"
     ...     "http://people.w3.org/maxf/ChessGML/immortal.svg doesn't display "
     ...     "correctly.")
-    >>> owner_browser.getControl("I'm Still Having This Problem").click()
+    >>> owner_browser.getControl("I Still Need an Answer").click()
 
 This appends the new information to the question discussion and changes
 its status back to 'Open'.
@@ -231,35 +231,61 @@ reopening portlet.
 
 == Self-Answer ==
 
-The owner can also gives an answer to his own question. He simply have
-to enter his answer in the 'Message' box and click the
-'I Solved the Problem on My Own' button.
+The owner can also gives the soltion to his own question. He simply
+has to enter his solution in the 'Message' box and click the
+'Problem Solved' button.
 
     >>> owner_browser.getControl('Message').value = (
     ...     "OK, this example requires some SVG features that will only be "
     ...     "available in Firefox 2.0.")
-    >>> owner_browser.getControl("I Solved the Problem on My Own").click()
+    >>> owner_browser.getControl("Problem Solved").click()
 
 This appends the message to the quesiton and sets its status to
-'Solved'.
+'Solved', and the answerer as the owner. We do not however mark a 
+message as the "Best answer".
 
     >>> print find_request_status(owner_browser.contents)
     Solved
     >>> soup = BeautifulSoup(owner_browser.contents)
-    >>> 'Sample Person' in extract_text(soup.first('b', text='Solved by:').findNext('a'))
+    >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
+    Sample Person
+    >>> bestAnswer = soup.first('img', {'title': 'Marked as best answer'})
+    >>> None == bestAnswer
     True
 
+A message is displayed to the user confirming that the question is
+solved and suggesting that the user choose an answer that helped
+the user achieve the solution.
 
-It also records the owner as the answerer and marks his answer with the
-"Best answer" flag.
+    >>> for message in soup.findAll('div', 'informational message'):
+    ...     print extract_text(message)
+    Your question is solved, if a particular message helped you solved the 
+    problem, please use the 'This solved my problem' button.
 
-    >>> bestAnswer = soup.fetch('div', 'boardComment')[-1]
-    >>> print bestAnswer.first('img')
+If the user chooses a best answer, the author of that answer
+is attributed as the answerer.
+
+    >>> owner_browser.getControl('This Solved My Problem').click()
+    >>> print find_request_status(owner_browser.contents)
+    Solved
+    >>> soup = BeautifulSoup(owner_browser.contents)
+    >>> print extract_text(soup.first('b', text='Solved by:').findNext('a'))
+    No Privileges Person
+
+The answer's message is also highlighted as the best answer.
+
+    >>> bestAnswer = soup.find('img', {'title' : 'Marked as best answer'})
+    >>> print bestAnswer
     <img src="/@@/favourite-yes" ... title="Marked as best answer" />
-    >>> print soup.first(
-    ...     'div', 'boardCommentBody highlighted').renderContents()
-    <p>OK, this example requires some SVG features that will only be available
-    in Firefox 2.0.</p>
+    >>> answerer = bestAnswer.parent.find('a')
+    >>> print extract_text(answerer)
+    No Privileges Person
+    >>> message = bestAnswer.parent.parent.find(
+    ...     'div', 'boardCommentBody highlighted')
+    >>> print extract_text(message)
+    New version of the firefox package are available with SVG support
+    enabled. You can use apt-get or adept to upgrade.
+    
 
 = History =
 
@@ -293,5 +319,6 @@ It lists all the actions performed through workflow on the question:
     Sample Person        Confirm                      Solved
     Sample Person        Comment                      Solved
     Sample Person        Reopen                       Open
+    Sample Person        Confirm                      Solved
     Sample Person        Confirm                      Solved
 
