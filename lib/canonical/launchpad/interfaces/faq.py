@@ -13,7 +13,7 @@ from zope.schema import (
      Choice, Datetime,  Int, Object, Text, TextLine)
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import Summary, Title, URIField
+from canonical.launchpad.fields import Title
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 
@@ -35,27 +35,18 @@ class IFAQ(IHasOwner):
         description=_('Title describing the document content.'),
         required=True)
 
-    summary = Summary(
-        title=_('Summary'),
-        description=_(
-            'Short description of the issue described in the document.'),
-        required=True)
-
     keywords = TextLine(
         title=_('Keywords'),
-        description=_('List of keywords related to this document.'),
+        description=_(
+            'White-space list of keywords related to this document.'),
         required=False)
 
     content = Text(
         title=_('Content'),
-        description=_('The FAQ content. This is in plain text format.'),
-        required=False)
-
-    url = URIField(
-        title=_('Link'),
-        description=_('A link to a web page explaining the answer in details.'
-                      'Used as an alternative to entering the content.'),
-        allowed_schemes=('http', 'https'),
+        description=_(
+            'The FAQ content. This is plain text format. If you want to link'
+            'to an external document, simply enter a short description and '
+            'the URL to the document..'),
         required=False)
 
     date_created = Datetime(title=_('Created'), required=True, readonly=True)

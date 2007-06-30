@@ -466,8 +466,7 @@ class LinkFAQTestCase(BaseAnswerTrackerWorkflowTestCase):
         # Only admin can create FAQ on ubuntu.
         login(self.admin.preferredemail.email)
         self.faq = self.ubuntu.newFAQ(
-            self.admin, 'Generic HowTo', 'Describe how to do anything.',
-            url='http://www.everythingyouwantedtoknowbutwereafraidtoask.com')
+            self.admin, 'Generic HowTo', 'Describe how to do anything.')
 
         # Logs in as owner.
         login(self.owner.preferredemail.email)

@@ -34,13 +34,9 @@ class FAQ(SQLBase):
 
     title = StringCol(notNull=True)
 
-    summary = StringCol(notNull=True)
-
-    keywords = StringCol(notNull=False, default=None)
+    keywords = StringCol(dbName="tags", notNull=False, default=None)
 
     content = StringCol(notNull=False, default=None)
-
-    url = StringCol(notNull=False, default=None)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
@@ -69,7 +65,7 @@ class FAQ(SQLBase):
             return self.distribution
 
     @staticmethod
-    def new(owner, title, summary, content=None, url=None,
+    def new(owner, title, content,
             date_created=None, product=None, distribution=None):
         """Factory method to create a new FAQ.
 
@@ -79,11 +75,6 @@ class FAQ(SQLBase):
         if not IPerson.providedBy(owner):
             raise AssertionError(
                 'owner parameter should be an IPerson: %r' % owner)
-        if content is not None and url is not None:
-            raise AssertionError(
-                "only one of url or content should be provided")
-        if content is None and url is None:
-            raise AssertionError("content or url must be provided")
         if product is not None and distribution is not None:
              raise AssertionError(
                 "only one of product or distribution should be provided")
@@ -92,8 +83,8 @@ class FAQ(SQLBase):
         if date_created is None:
             date_created = DEFAULT
         return FAQ(
-            owner=owner, title=title, summary=summary, content=content,
-            url=url, date_created=date_created, product=product,
+            owner=owner, title=title, content=content,
+            date_created=date_created, product=product,
             distribution=distribution)
 
     @staticmethod

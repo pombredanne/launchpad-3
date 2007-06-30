@@ -78,6 +78,12 @@ ALL_FTI = [
             ('content', D),
             ]),
 
+    ('faq', [
+            ('title', A),
+            ('tags', B),
+            ('content', D),
+            ]),
+
     ('message', [
             ('subject', B),
             ]),
