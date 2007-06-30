@@ -18,7 +18,8 @@ from zope.interface import implements
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
-from canonical.launchpad.interfaces import UBUNTU_WIKI_URL, IProductSet
+from canonical.launchpad.interfaces import (
+    UBUNTU_WIKI_URL, IBranchSet, IPersonSet, IProductSet)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.database.sqlbase import sqlvalues
 from canonical.database.constants import UTC_NOW
@@ -27,7 +28,7 @@ from canonical.config import config
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
-    IUserDetailsStorageV2)
+    IUserDetailsStorageV2, READ_ONLY, WRITABLE)
 
 from twisted.internet.threads import deferToThread
 from twisted.python.util import mergeFunctionMetadata
@@ -40,6 +41,7 @@ def utf8(x):
 
 
 def read_only_transaction(function):
+    """Decorate 'function' by wrapping it in a transaction and Zope session."""
     def transacted(*args, **kwargs):
         transaction.begin()
         login(ANONYMOUS)
@@ -472,6 +474,25 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         """ % sqlvalues(branchID))
         # xmlrpc doesn't let us return None. True is an acceptable substitute.
         return True
+
+    def getBranchInformation(self, loginID, userName, productName, branchName):
+        """See IHostedBranchStorage."""
+        return deferToThread(
+            self._getBranchInformationInteraction, loginID, userName,
+            productName, branchName)
+
+    @read_only_transaction
+    def _getBranchInformationInteraction(self, loginID, userName, productName,
+                                         branchName):
+        branch = getUtility(IBranchSet).getByUniqueName(
+            '~%s/%s/%s' % (userName, productName, branchName))
+        if branch is None:
+            return '', ''
+        requester = getUtility(IPersonSet).get(loginID)
+        if requester.inTeam(branch.owner):
+            return branch.id, WRITABLE
+        else:
+            return branch.id, READ_ONLY
 
 
 class DatabaseBranchDetailsStorage:
