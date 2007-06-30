@@ -1,5 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+from canonical.launchpad.database.codeimport import *
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.pillar import *

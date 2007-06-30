@@ -14,14 +14,8 @@
 
     <h1 tal:content="context/title">FAQ Title</h1>
 
-    <div id="faq-summary"
-         class="summary"
-         tal:content="context/summary">Summary</div>
-
-    <div tal:condition="context/url">
-      This FAQ content is located at
-      <a href="#" tal:attributes="href context/url"
-         tal:content="context/url">http://help.launchpad.net</a>.
+    <div id="faq-keywords"><b>Keywords: </b>
+        <tal:keywords content="context/keywords">keywords</tal:keywords>
     </div>
 
     <div id="faq-content"

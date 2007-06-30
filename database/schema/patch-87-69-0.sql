@@ -3,10 +3,8 @@ SET client_min_messages=ERROR;
 CREATE TABLE FAQ (
     id  SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
-    summary TEXT NOT NULL,
-    keywords TEXT,
-    content TEXT,
-    url TEXT,
+    tags TEXT,
+    content TEXT NOT NULL,
     product INTEGER REFERENCES Product,
     distribution INTEGER REFERENCES Distribution,
     owner INTEGER NOT NULL REFERENCES Person,
@@ -16,9 +14,7 @@ CREATE TABLE FAQ (
     last_updated_by INTEGER REFERENCES Person,
     date_last_updated TIMESTAMP WITHOUT TIME ZONE,
     CONSTRAINT product_or_distro
-        CHECK (((product IS NULL) <> (distribution IS NULL))),
-    CONSTRAINT content_or_url
-        CHECK (((content IS NULL) <> (url IS NULL)))
+        CHECK ((product IS NULL) <> (distribution IS NULL))
 );
 
 CREATE INDEX faq__product__idx ON FAQ (product);

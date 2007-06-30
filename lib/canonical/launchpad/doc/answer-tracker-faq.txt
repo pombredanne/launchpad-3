@@ -37,8 +37,7 @@ contacts.)
 
     >>> firefox_faq = firefox.newFAQ(
     ...     sample_person, 'How can I see the Fnords?',
-    ...     'Describe installation of the Fnords highlighter extension.',
-    ...     content="Install the extension and see the Fnords!")
+    ...     "Install the Fnords highlighter extension and see the Fnords!")
 
 (The complete description of the IFAQTarget is available in
 lib/canonical/launchpad/interfaces/ftests/faqtarget.txt)
@@ -55,10 +54,8 @@ The FAQ document information is available in the object attributes.
 
     >>> print firefox_faq.title
     How can I see the Fnords?
-    >>> print firefox_faq.summary
-    Describe installation of the Fnords highlighter extension.
     >>> print firefox_faq.content
-    Install the extension and see the Fnords!
+    Install the Fnords highlighter extension and see the Fnords!
 
     >>> print firefox_faq.owner.displayname
     Sample Person

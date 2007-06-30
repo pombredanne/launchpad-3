@@ -57,19 +57,19 @@ Foo Bar (which is a site admin) does have that ability.
     >>> print admin_browser.title
     Create a FAQ for Mozilla Firefox
 
-The FAQ title and summary is pre-filled with the target question. He
+The FAQ title and content are pre-filled with the target question. He
 edits to be more appropriate:
 
     >>> print admin_browser.getControl('Title').value
     Problem showing the SVG demo on W3C site
     >>> admin_browser.getControl('Title').value = 'Displaying SVG in Firefox'
 
-    >>> print admin_browser.getControl('Summary').value
+    >>> print admin_browser.getControl('Content').value
     Hi! I'm trying to learn about SVG but I can't get it to work at all in
     firefox. Maybe there is a plugin? Help! Thanks.
     
-    >>> admin_browser.getControl('Summary').value = (
-    ...     'Describe how to get Firefox to display SVG.')
+    >>> admin_browser.getControl('Content').value = (
+    ...     'Upgrade your browser to Firefox 2.0.')
 
 He can also enters keywords describing the FAQ:
 
@@ -82,22 +82,6 @@ It is pre-filled, but he can change its value:
     >>> print admin_browser.getControl('Message').value
     Foo Bar suggests this article as an answer to your question:
     >>> admin_browser.getControl('Message').value = 'Read the Fine Answer:'
-
-FAQ must either contain a URL or the FAQ content.
-
-    >>> admin_browser.getControl('Create and Link').click()
-    >>> print admin_browser.url
-    http://answers.launchpad.dev/firefox/+question/2/+createfaq
-
-    >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
-    ...     print message.renderContents()
-    There is 1 error.
-    An FAQ must have either an URL or content.
-
-So he enters the FAQ content in the text field:
-
-    >>> admin_browser.getControl('Content').value = (
-    ...     'Upgrade your browser to Firefox 2.0.')
 
 After clicking the 'Create' button, the FAQ is created and the user is
 returned to the question page.
@@ -140,11 +124,11 @@ The FAQ's title appears as the prime heading:
     >>> print main_content.find('h1').renderContents()
     Displaying SVG in Firefox
 
-The FAQ summmary and content appears just below:
+The FAQ keywords and content appears just below:
 
-    >>> print find_tag_by_id(
-    ...     admin_browser.contents, 'faq-summary').renderContents()
-    Describe how to get Firefox to display SVG.
+    >>> print extract_text(find_tag_by_id(
+    ...     admin_browser.contents, 'faq-keywords'))
+    Keywords: SVG scalable vector graphic
 
     >>> print extract_text(find_tag_by_id(
     ...     admin_browser.contents, 'faq-content'))

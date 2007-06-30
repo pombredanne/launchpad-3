@@ -149,3 +149,16 @@ empty.
   <...
   ...Recent revisions...
   ...This branch is empty...
+
+
+== Structural object presentation ==
+
+The structural object presentation of a branch is the heading that appears
+in the top left hand corner of the browser, and should refer to the
+context object that all the tabs apply to.
+
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, "structuralobjectheading"))
+    Sample Person
