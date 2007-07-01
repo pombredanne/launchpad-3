@@ -53,16 +53,19 @@
     <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/lpmenu.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
+    <script type="text/javascript">
+      addLoadEvent(function() {
+        lpmenu.initialize(['menuroot'], '/', 'menupreload',
+                           [], '1.3em', 16, true);
+        sortables_init();
+        initHelpPanel();
+        initPortlets();
+      });
+    </script>
     <link rel="shortcut icon" tal:attributes="href string:${icingroot}/launchpad.png" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
   <body
-    onload="
-      lpmenu.initialize(['menuroot'], '/', 'menupreload', [], '1.3em', 16, true);
-      sortables_init();
-      initHelpPanel();
-      initPortlets();
-    "
     id="document"
     tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
   >
