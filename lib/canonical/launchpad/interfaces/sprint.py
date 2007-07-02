@@ -15,7 +15,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Choice, Text, TextLine
+from zope.schema import Datetime, Int, Choice, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -39,6 +39,8 @@ class SprintNameField(ContentNameField):
 
 class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     """A sprint, or conference, or meeting."""
+
+    id = Int(title=_('The Sprint ID'))
 
     name = SprintNameField(
         title=_('Name'), required=True, description=_('A unique name '

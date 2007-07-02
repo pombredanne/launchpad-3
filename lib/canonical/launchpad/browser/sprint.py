@@ -110,13 +110,13 @@ class SprintOverviewMenu(ApplicationMenu):
         text = 'Change branding'
         summary = 'Modify the imagery used to represent this meeting'
         return Link('+branding', text, summary, icon='edit')
-
+    
 
 class SprintSpecificationsMenu(ApplicationMenu):
 
     usedfor = ISprint
     facet = 'specifications'
-    links = ['assignments', 'declined', 'settopics', 'roadmap']
+    links = ['assignments', 'declined', 'settopics', 'roadmap', 'addspec']
 
     def assignments(self):
         text = 'Assignments'
@@ -138,6 +138,11 @@ class SprintSpecificationsMenu(ApplicationMenu):
         text = 'Roadmap'
         summary = 'Suggest a sequence of implementation for these features'
         return Link('+roadmap', text, summary, icon='info')
+
+    def addspec(self):
+        text = 'Register blueprint'
+        summary = 'Register a new blueprint for this meeting'
+        return Link('+addspec', text, summary, icon='info')
 
 
 class SprintSetNavigation(GetitemNavigation):

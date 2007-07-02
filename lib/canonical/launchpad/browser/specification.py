@@ -13,6 +13,7 @@ __all__ = [
     'SpecificationGoalDecideView',
     'SpecificationLinkBranchView',
     'SpecificationAddView',
+    'SprintSpecificationAddView',
     'SpecificationRetargetingView',
     'SpecificationSprintAddView',
     'SpecificationSupersedingView',
@@ -40,8 +41,10 @@ from canonical.launchpad.interfaces import (
     IProduct,
     IProject,
     ISpecification,
+    INewSpecification,
     ISpecificationBranch,
     ISpecificationSet,
+    ISprint,
     NotFoundError,
     )
 
@@ -803,63 +806,28 @@ class SpecificationTreeDotOutput(SpecificationTreeGraphView):
         return self.getDotFileText()
 
 
-class SpecificationAddView(LaunchpadFormView):
-    """A form used to add a specification from the Blueprints home page,
-    where we need to choose a context for the specification as well as
-    asking for the spec details."""
+class SpecificationAddViewBase(LaunchpadFormView):
+    """A base class for forms used to add a specification."""
 
-    schema = ISpecification
+    schema = INewSpecification
     label = "Register a new Blueprint"
 
-    @property
-    def field_names(self):
-        """This form is used sometimes on an IProject, IProduct or
-        IDistribution to get a new spec for them, and also on
-        ISpecificationSet as a system-wide "new spec" form. We need slightly
-        different field names in each case, so we make field_names a
-        property.
-        """
-        field_names = ['name', 'title', 'specurl', 'summary', 'status',
-                       'assignee', 'drafter', 'approver']
-        if ISpecificationSet.providedBy(self.context):
-            field_names.insert(0, 'target')
-        elif IProject.providedBy(self.context):
-            field_names.insert(0, 'projecttarget')
-        return field_names
-
-    def validate(self, data):
-        """Validates the contents of the form.
-
-        Generally, we trust individual fields to perform validation in
-        isolation, but there are cases where fields must be validated
-        collectively. In the case where the current context does not
-        define a unique specification namespace, we need to identify
-        such a namespace from the user's specified target and check that
-        the specified name does not already exist in that namespace.
-        """
-        if ISpecificationSet.providedBy(self.context):
-            target = data.get('target')
-        elif IProject.providedBy(self.context):
-            target = data.get('projecttarget')
-        else:
-            # The context corresponds to a unique specification name-
-            # space. We can rely on the name field to validate itself.
-            target = None
+    def _validate_name(self, name, target):
         if target:
             # The context does not correspond to a unique specification
             # namespace. Instead, ensure that the specified name does
             # not exist within the namespace of the specified target.
-            name = data.get('name')
             if target.getSpecification(name):
                 # The specified name already exists. Mark the field with
                 # an error.
                 self.setFieldError(
                     'name',
                     self.schema['name'].errormessage % name
-                )
+                )        
 
-    @action(_('Register Blueprint'), name='register')
-    def register_action(self, action, data):
+    def _add_spec(self, data):
+        """Add a new specification with the form values and return it."""
+        
         owner = self.user
         # clean up name
         name = data['name'].strip().lower()
@@ -889,12 +857,82 @@ class SpecificationAddView(LaunchpadFormView):
             assignee=data.get('assignee', None),
             drafter=data.get('drafter', None),
             approver=data.get('approver', None))
-        self._nextURL = canonical_url(spec)
+
+        sprint = data.get('sprint', None)
+        if sprint is not None:
+            spec.linkSprint(sprint, self.user)            
+        return spec
 
     @property
     def next_url(self):
         return self._nextURL
 
+
+class SpecificationAddView(SpecificationAddViewBase):
+    """A view for adding a specification from a project, project group
+    or distribution.
+    """
+    
+    @property
+    def field_names(self):
+        """This form is used sometimes on an IProject, IProduct or
+        IDistribution to get a new spec for them, and also on
+        ISpecificationSet as a system-wide "new spec" form. We need slightly
+        different field names in each case, so we make field_names a
+        property.
+        """
+        field_names = ['name', 'title', 'specurl', 'summary', 'status',
+                       'assignee', 'drafter', 'approver', 'sprint']
+        if ISpecificationSet.providedBy(self.context):
+            field_names.insert(0, 'target')
+        elif IProject.providedBy(self.context):
+            field_names.insert(0, 'projecttarget')
+        return field_names
+
+    def validate(self, data):
+        """Validates the contents of the form. Guarantees that the name chosen
+        for the new blueprint is unique within its target project.
+        """
+        if ISpecificationSet.providedBy(self.context):
+            target = data.get('target')
+        elif IProject.providedBy(self.context):
+            target = data.get('projecttarget')
+        else:
+            # The context corresponds to a unique specification name-
+            # space. We can rely on the name field to validate itself.
+            target = None
+        name = data.get('name')
+        self._validate_name(name, target)
+
+    @action(_('Register Blueprint'), name='register')
+    def register_action(self, action, data):
+        spec = self._add_spec(data)
+        self._nextURL = canonical_url(spec)
+
+
+class SprintSpecificationAddView(SpecificationAddViewBase):
+    """A view for adding a specification from a sprint."""
+    
+    @property
+    def field_names(self):
+        """This form is used an ISprint to get a new spec
+        for a project and propose it for the sprint.
+        """
+        return ['target', 'name', 'title', 'specurl', 'summary',
+                'status', 'assignee', 'drafter', 'approver']
+
+    def validate(self, data):
+        """Validates the contents of the form."""
+        target = data.get('target')
+        name = data.get('name')
+        self._validate_name(name, target)
+
+    @action(_('Register Blueprint'), name='register')
+    def register_action(self, action, data):
+        data['sprint'] = self.context
+        spec = self._add_spec(data)
+        self._nextURL = canonical_url(self.context)
+        
 
 class SpecificationLinkBranchView(LaunchpadFormView):
     """A form used to link a branch to this specification."""
