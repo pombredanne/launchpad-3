@@ -57,7 +57,7 @@ Attempting to create an entitlement on a non-existent person returns a fault.
 
     >>> entitlements = entitlement_view.getDirty()
     >>> print len(entitlements)
-    5
+    4
 
 == Test via XML-RPC ==
 
@@ -123,7 +123,7 @@ If the person doesn't exist a fault is returned.
 
     >>> entitlements = entitlement_api.getDirty()
     >>> print len(entitlements)
-    5
+    4
 
     >>> entitlement = entitlements[0]
     >>> params = dict(id=entitlement['id'],
@@ -135,5 +135,5 @@ If the person doesn't exist a fault is returned.
     
     >>> entitlements = entitlement_api.getDirty()
     >>> print len(entitlements)
-    4
+    3
 

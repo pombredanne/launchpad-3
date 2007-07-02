@@ -226,13 +226,10 @@ class EntitlementAPI(LaunchpadXMLRPCView):
     def getDirty(self):
         entitlements = getUtility(IEntitlementSet).getDirty()
 
-        for e in entitlements:
-            print "dirty: ", e.is_dirty
         if entitlements is None:
             results = []
         else:
             results = [EntitlementAPI._marshall(entitlement)
-                       for entitlement in entitlements
-                       if entitlement.is_dirty]
+                       for entitlement in entitlements]
 
         return results

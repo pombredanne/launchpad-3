@@ -152,7 +152,7 @@ class EntitlementSet:
 
     def getDirty(self):
         """See IEntitlementSet."""
-        return Entitlement.select(is_dirty=True)
+        return Entitlement.selectBy(is_dirty=True)
 
     def new(self, person, quota, entitlement_type,
             state, is_dirty=True, date_created=None, date_starts=None, date_expires=None,
