@@ -71,6 +71,11 @@ class CodeImportSetView(LaunchpadView):
         self.status_widget = CustomWidgetFactory(ReviewStatusDropdownWidget)
         setUpWidget(self, 'status',  status_field, IInputWidget)
 
+        # status should be None if either (a) there were no query arguments
+        # supplied, i.e. the user browsed directly to this page (this is when
+        # hasValidInput returns False) or (b) the user chose 'Any' in the
+        # status widget (this is when hasValidInput returns True but
+        # getInputValue returns None).
         status = None
         if self.status_widget.hasValidInput():
             status = self.status_widget.getInputValue()
