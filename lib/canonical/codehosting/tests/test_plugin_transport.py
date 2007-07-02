@@ -4,15 +4,17 @@
 
 __metaclass__ = type
 
+import os
 import unittest
 
 from bzrlib import errors
 from bzrlib.transport import get_transport, _get_protocol_handlers
-from bzrlib.transport.memory import MemoryTransport
+from bzrlib.transport.memory import MemoryServer, MemoryTransport
 from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 
+from canonical.authserver.interfaces import READ_ONLY, WRITABLE
 from canonical.codehosting.tests.helpers import FakeLaunchpad
-from canonical.codehosting.transport import LaunchpadServer
+from canonical.codehosting.transport import LaunchpadServer, makedirs
 from canonical.testing import BzrlibLayer
 
 
@@ -25,8 +27,10 @@ class TestLaunchpadServer(TestCaseInTempDir):
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         self.backing_transport = MemoryTransport()
+        self.mirror_transport = MemoryTransport()
         self.server = LaunchpadServer(
-            self.authserver, self.user_id, self.backing_transport)
+            self.authserver, self.user_id, self.backing_transport,
+            self.mirror_transport)
 
     def test_construct(self):
         self.assertEqual(self.backing_transport, self.server.backing_transport)
@@ -47,29 +51,38 @@ class TestLaunchpadServer(TestCaseInTempDir):
 
         # We can map a branch owned by the user to its path.
         self.assertEqual(
-            '00/00/00/01/',
+            ('00/00/00/01/', WRITABLE),
             self.server.translate_virtual_path('/~testuser/firefox/baz'))
+
+        # The '+junk' product doesn't actually exist. It is used for branches
+        # which don't have a product assigned to them.
+        self.assertEqual(
+            ('00/00/00/03/', WRITABLE),
+            self.server.translate_virtual_path('/~testuser/+junk/random'))
 
         # We can map a branch owned by a team that the user is in to its path.
         self.assertEqual(
-            '00/00/00/04/',
+            ('00/00/00/04/', WRITABLE),
             self.server.translate_virtual_path('/~testteam/firefox/qux'))
 
         # The '+junk' product doesn't actually exist. It is used for branches
         # which don't have a product assigned to them.
         self.assertEqual(
-            '00/00/00/03/',
-            self.server.translate_virtual_path('/~testuser/+junk/random'))
+            ('00/00/00/05/', READ_ONLY),
+            self.server.translate_virtual_path('/~name12/+junk/junk.dev'))
 
     def test_extend_path_translation(self):
         # More than just the branch name needs to be translated: transports
         # will ask for files beneath the branch. The server translates the
         # unique name of the branch (i.e. the ~user/product/branch-name part)
         # to the four-byte hexadecimal split ID described in
-        # test_extend_path_translation and appends the remainder of the path.
+        # test_base_path_translation and appends the remainder of the path.
         self.assertEqual(
-            '00/00/00/01/.bzr',
+            ('00/00/00/01/.bzr', WRITABLE),
             self.server.translate_virtual_path('/~testuser/firefox/baz/.bzr'))
+        self.assertEqual(
+            ('00/00/00/05/.bzr', READ_ONLY),
+            self.server.translate_virtual_path('/~name12/+junk/junk.dev/.bzr'))
 
     def test_setUp(self):
         # Setting up the server registers its schema with the protocol
@@ -129,8 +142,10 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         self.backing_transport = self.get_transport()
+        self.mirror_transport = MemoryTransport()
         self.server = LaunchpadServer(
-            self.authserver, self.user_id, self.backing_transport)
+            self.authserver, self.user_id, self.backing_transport,
+            self.mirror_transport)
         self.server.setUp()
         self.addCleanup(self.server.tearDown)
         self.backing_transport.mkdir_multi(
@@ -258,6 +273,65 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         transport = get_transport(self.server.get_url())
         transport.has('~testuser/firefox/baz/hello.txt')
         self.assertEqual(set([]), self.server._dirty_branch_ids)
+
+
+class TestLaunchpadTransportReadOnly(TestCaseWithMemoryTransport):
+    """Tests for read-only operations on the LaunchpadTransport."""
+
+    layer = BzrlibLayer
+
+    def setUp(self):
+        TestCaseWithMemoryTransport.setUp(self)
+        _memory_server = MemoryServer()
+        _memory_server.setUp()
+        self.addCleanup(_memory_server.tearDown)
+        mirror_transport = get_transport(_memory_server.get_url())
+
+        self.authserver = FakeLaunchpad()
+        self.user_id = 1
+        self.backing_transport = self.get_transport()
+        self.server = LaunchpadServer(
+            self.authserver, self.user_id, self.backing_transport,
+            mirror_transport)
+        self.server.setUp()
+        self.addCleanup(self.server.tearDown)
+        self.transport = get_transport(self.server.get_url())
+        path = self.server.translate_virtual_path('/~testuser/firefox/baz')[0]
+        makedirs(self.backing_transport, path)
+        self.backing_transport.put_bytes(
+            os.path.join(path, 'hello.txt'), 'Hello World!')
+        path = self.server.translate_virtual_path(
+            '/~name12/+junk/junk.dev/')[0]
+        makedirs(self.backing_transport, path)
+        t = self.backing_transport.clone(path)
+        t.put_bytes('README', 'Hello World!')
+        makedirs(mirror_transport, path)
+        mirror_transport.clone(path).put_bytes('README', 'Goodbye World!')
+
+    def test_mkdir_readonly(self):
+        # If we only have READ_ONLY access to a branch then we should not be
+        # able to create directories within that branch.
+        self.assertRaises(
+            errors.TransportNotPossible,
+            self.transport.mkdir, '~name12/+junk/junk.dev/.bzr')
+
+    def test_rename_target_readonly(self):
+        # Even if we can write to a file, we can't rename it to location which
+        # is read-only to us.
+        transport = get_transport(self.server.get_url())
+        self.assertRaises(
+            errors.TransportNotPossible,
+            self.transport.rename, '/~testuser/firefox/baz/hello.txt',
+            '/~name12/+junk/junk.dev/goodbye.txt')
+
+    def test_readonly_refers_to_mirror(self):
+        # Read-only operations should get their data from the mirror, not the
+        # primary backing transport.
+        # XXX: JonathanLange 2007-06-21, Explain more of this.
+        transport = get_transport(self.server.get_url())
+        self.assertEqual(
+            'Goodbye World!',
+            transport.get_bytes('/~name12/+junk/junk.dev/README'))
 
 
 def test_suite():

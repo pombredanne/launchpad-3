@@ -120,9 +120,12 @@ class FakeLaunchpad:
     def __init__(self):
         self._person_set = {
             1: dict(name='testuser', displayname='Test User',
-                    emailaddresses=['test@test.com'], wikiname='TestUser',
+                    emailaddresses=['spiv@test.com'], wikiname='TestUser',
                     teams=[1, 2]),
             2: dict(name='testteam', displayname='Test Team', teams=[]),
+            3: dict(name='name12', displayname='Other User',
+                    emailaddresses=['test@test.com'], wikiname='OtherUser',
+                    teams=[3]),
             }
         self._product_set = {
             1: dict(name='firefox'),
@@ -133,6 +136,7 @@ class FakeLaunchpad:
         self.createBranch(1, 1, 'qux')
         self.createBranch(1, '', 'random')
         self.createBranch(2, 1, 'qux')
+        self.createBranch(3, '', 'junk.dev')
         self._request_mirror_log = []
 
     def _lookup(self, item_set, item_id):
@@ -162,6 +166,23 @@ class FakeLaunchpad:
             if product_info['name'] == name:
                 return product_id
         return None
+
+    def getBranchInformation(self, login_id, user_name, product_name,
+                             branch_name):
+        for branch_id, branch in self._branch_set.iteritems():
+            owner = self._lookup(self._person_set, branch['user_id'])
+            if branch['product_id'] == '':
+                product = '+junk'
+            else:
+                product = self._product_set[branch['product_id']]['name']
+            if ((owner['name'], product, branch['name'])
+                == (user_name, product_name, branch_name)):
+                logged_in_user = self._lookup(self._person_set, login_id)
+                if owner['id'] in logged_in_user['teams']:
+                    return branch_id, 'w'
+                else:
+                    return branch_id, 'r'
+        return '', ''
 
     def getUser(self, loginID):
         """See IUserDetailsStorage.getUser."""
