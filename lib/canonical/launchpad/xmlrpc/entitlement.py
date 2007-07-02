@@ -60,7 +60,7 @@ class IEntitlementAPI(Interface):
              entitlement.
         """
 
-    def getByPersonOrTeam(name, valid_only):
+    def getByPersonOrTeam(name):
         """Update an entitlement in Launchpad.
 
         :name:       A string representing the person's or team's
@@ -105,7 +105,7 @@ class EntitlementAPI(LaunchpadXMLRPCView):
 
         person = getUtility(IPersonSet).getByName(person_name)
         if person is None:
-            return faults.NoSuchPersonOrTeam(name=person_id)
+            return faults.NoSuchPersonOrTeam(name=person_name)
 
         if quota is None:
             return faults.RequiredParameterMissing(
@@ -194,11 +194,12 @@ class EntitlementAPI(LaunchpadXMLRPCView):
             return faults.NoSuchEntitlement(id)
         return EntitlementAPI._to_dict(entitlement)
 
-    def getByPersonOrTeam(self, name, valid_only):
+    def getByPersonOrTeam(self, name):
         """See IEntitlementAPI."""
+        valid_only = False
         person = getUtility(IPersonSet).getByName(name)
         if person is None:
-            return faults.NoSuchPersonOrTeam(name)
+            return faults.NoSuchPersonOrTeam(name=name)
 
         if valid_only:
             entitlements = getUtility(IEntitlementSet).getValidForPerson(person)

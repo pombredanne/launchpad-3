@@ -21,6 +21,15 @@ without involving the XML-RPC complexity.
 
 Create a new entitlement directly.
 
+Attempting to create an entitlement on a non-existent person returns a fault.
+    >>> entitlement_id = entitlement_view.create(
+    ...     'fredflintstone',
+    ...     EntitlementType.PRIVATE_BUGS.value,
+    ...     100,
+    ...     EntitlementState.ACTIVE.value)
+    >>> print entitlement_id
+    <Fault 25: 'Invalid Person or Team: No person or team with the name "fredflintstone" was found'>
+
     >>> entitlement_id = entitlement_view.create(
     ...     foobar.name,
     ...     EntitlementType.PRIVATE_BUGS.value,
@@ -38,11 +47,11 @@ Create a new entitlement directly.
     >>> print entitlement.get('quota')
     120
 
-    >>> entitlements = entitlement_view.getByPersonOrTeam('fredflintstone',False)
+    >>> entitlements = entitlement_view.getByPersonOrTeam('fredflintstone')
     >>> print entitlements
     <Fault 25: 'Invalid Person or Team: No person or team with the name "fredflintstone" was found'>
 
-    >>> entitlements = entitlement_view.getByPersonOrTeam(foobar.name,False)
+    >>> entitlements = entitlement_view.getByPersonOrTeam(foobar.name)
     >>> print len(entitlements)
     1
     
@@ -58,6 +67,15 @@ Create a new entitlement via XML-RPC.  Note that all parameters must
 be passed positionally, not as name=value pairs.  Optional parameters
 may be omitted but all optional parameters before the one of interest
 must be supplied.
+
+    >>> entitlement_id = entitlement_api.create(
+    ...     'fredflintstone',
+    ...     EntitlementType.PRIVATE_BUGS.value,
+    ...     100,
+    ...     EntitlementState.ACTIVE.value)
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 25: 'Invalid Person or Team: No person or team with the name "fredflintstone" was found'>
 
     >>> entitlement_id = entitlement_api.create(
     ...     foobar.name, # person_name
@@ -87,13 +105,12 @@ Entitlements can be retrieved by name of the person or team.
 If the person doesn't exist a fault is returned.
 
     >>> entitlements = None
-    >>> entitlements = entitlement_api.getByPersonOrTeam('fredflintstone',0)
-    >>> print entitlements
-    <Fault 25: 'Invalid Person or Team: No person or team with the name "fredflintstone" was found'>
+    >>> entitlements = entitlement_api.getByPersonOrTeam('fredflintstone')
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 25: 'Invalid Person or Team: No person or team with the name "fredflintstone" was found'>
 
 
-    >>> entitlements = entitlement_api.getByPersonOrTeam(foobar.name,
-    ...                                                  True)
+    >>> entitlements = entitlement_api.getByPersonOrTeam(foobar.name)
     >>> print len(entitlements)
-    1
-    
+    2    
