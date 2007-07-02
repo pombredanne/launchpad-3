@@ -308,10 +308,8 @@ class Question(SQLBase, BugLinkTargetMixin):
             QuestionStatus.OPEN, QuestionStatus.ANSWERED,
             QuestionStatus.NEEDSINFO, QuestionStatus.SOLVED]:
             return False
-
-        if self.answerer is not self.owner:
-            #return False
-            pass
+        if self.answerer is not None and self.answerer is not self.owner:
+            return False
 
         for message in self.messages:
             if message.action == QuestionAction.ANSWER:

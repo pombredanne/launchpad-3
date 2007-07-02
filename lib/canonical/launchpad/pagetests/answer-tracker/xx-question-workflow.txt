@@ -231,7 +231,7 @@ reopening portlet.
 
 == Self-Answer ==
 
-The owner can also gives the soltion to his own question. He simply
+The owner can also gives the solution to his own question. He simply
 has to enter his solution in the 'Message' box and click the
 'Problem Solved' button.
 
@@ -240,7 +240,7 @@ has to enter his solution in the 'Message' box and click the
     ...     "available in Firefox 2.0.")
     >>> owner_browser.getControl("Problem Solved").click()
 
-This appends the message to the quesiton and sets its status to
+This appends the message to the question and sets its status to
 'Solved', and the answerer as the owner. We do not however mark a 
 message as the "Best answer".
 
