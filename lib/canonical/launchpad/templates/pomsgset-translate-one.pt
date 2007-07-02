@@ -214,6 +214,7 @@
       <tal:without-content
         condition="not: translation_dictionary/active_translation">
         <td class="icon left right">
+          <tal:not-locked condition="not:view/locked">
           <tal:user-is-official-translator condition="view/user_is_official_translator">
             <input
               type="radio"
@@ -224,6 +225,7 @@
                 value string:msgset_${context/potmsgset/id}_${language_code}_translation_${plural_index}
             " />
           </tal:user-is-official-translator>
+          </tal:not-locked>
         </td>
         <td>
           <div tal:condition="not: view/user_is_official_translator"
@@ -527,7 +529,7 @@
     Translator comment.
   </td>
 </tr>
-<tr class="discreet secondary">
+<tr class="discreet secondary" tal:condition="view/file_references">
   <td colspan="4" />
   <td style="padding-bottom: 1em; overflow: auto;">
     Located in
