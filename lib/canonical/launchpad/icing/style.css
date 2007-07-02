@@ -301,7 +301,11 @@ ul#menuroot a#homebreadcrumb span {
 }
 ul#menuroot li a#homebreadcrumb:hover span,
 ul#menuroot li.selected a#homebreadcrumb span {
-  background: url(home-low-high.gif) -1014px top no-repeat;
+  /* [br#102155] changed "background: url(home-low-high.gif) -1417 top no-repeat;"
+	for "background: url(home-low-high.gif) left -20px no-repeat;"
+	for compatibility with Safari
+	*/
+  background: url(home-low-high.gif) left -20px no-repeat;
   padding-left: 16px;
 }
 /* The location bar contains menus. */
@@ -563,21 +567,50 @@ So it's hidden initially, and then revealed if JavaScript is available.
 #help {visibility: hidden;}
 
 /* The rest of the page keeps clear of the collapsed help panel. */
-#nonhelp {margin: 0 20px 0 38px;}
+#nonhelp {
+	margin: 0 20px 0 38px;
+	min-width: 752px; /* [br#94323] for search bar not to go under tabs */
+}
 
 /*- App home pages and pillar indexes both have a heading and app buttons, -*/
 table#applications {margin-bottom: -0.5em;}
-/* Victor: vertical-align changed from 'baseline' to 'bottom' to solve a Safari+Konqueror issue */
+/* [br#109517] vertical-align changed from 'baseline' to 'bottom' to solve a Safari+Konqueror issue */
 table#applications th, table#applications td {vertical-align: bottom;}
-table#applications th {padding-left:60px; text-align: left;}
-/* Victor: Added to solve an issue on Safari+Konqueror */
-table#applications th h1 {margin-top: 40px;}
-table#applications td {text-align: right;}
+table#applications th {
+	padding-top: 60px;
+	padding-left: 60px;
+	text-align: left;
+}
+/* [br#109517] Sets the section title up to its right place */
+table#applications th h1 {
+	margin: 0px;
+	padding: 0px;
+}
+/* [br#109517] Set sections menu icons align right */
+table#applications td {
+	text-align: right;
+}
+
+/* [br#109517] Sets the watermark up to its right place */
+body.tab-branches #applications,
+body.tab-bugs #applications,
+body.tab-specifications #applications,
+body.tab-answers #applications,
+body.tab-translations #applications {
+	background-position: left bottom !important;
+}
+
+
 /* though the pillar indexes have no watermark, so no heading indenting. */
 body.pillarindex table#applications th {padding-left: 0;}
 
 /* Other page types have a global search field. */
-#globalsearch {float: right; margin-top: 15px; width: 220px;}
+#globalsearch {
+	float: right;
+	margin-top: 15px;
+	/*width: 220px; [br#94323] */
+	margin-right: 70px; /* [br#94323] for search field not to go under tabs */
+}
 #globalsearch #q {border: 1px solid #a7c2ce; width: 170px;}
 #globalsearch #searchbutton {
   position: relative;
@@ -973,22 +1006,6 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 .boardCommentContent { line-height: 1.5em;}
 dl.faq dt {font-weight: bold;}
 dl.faq dd {margin: 1em 0 2em 4em;}
-
-/* Victor: Sets the watermark up to its right place */
-body.tab-branches #applications,
-body.tab-bugs #applications,
-body.tab-specifications #applications,
-body.tab-answers #applications,
-body.tab-translations #applications {
-	background-position: 0px -12px !important;
-}
-/* Victor: Sets the section title up to its right place */
-table#applications th h1 {
-	margin-top: 20px !important;
-	margin-top: 14px; /* IE6 hack */
-	padding-bottom: 20px !important;
-	padding-bottom: 10px; /* IE6 hack */
-}
 
 /* --- Overview --- */
 
