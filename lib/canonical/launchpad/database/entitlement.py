@@ -8,7 +8,7 @@ import pytz
 
 from zope.interface import implements
 
-from sqlobject import ForeignKey, IntCol, StringCol
+from sqlobject import BoolCol, ForeignKey, IntCol, StringCol
 
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -53,6 +53,7 @@ class Entitlement(SQLBase):
         schema=EntitlementState,
         default=EntitlementState.INACTIVE)
     whiteboard = StringCol(notNull=False, default=None)
+    is_dirty = BoolCol(dbName="is_dirty", notNull=True, default=True)
 
     @property
     def exceeded_quota(self):
@@ -149,8 +150,12 @@ class EntitlementSet:
             if entitlement.is_valid]
         return entitlements
 
+    def getDirty(self):
+        """See IEntitlementSet."""
+        return Entitlement.select(is_dirty=True)
+
     def new(self, person, quota, entitlement_type,
-            state, date_created=None, date_starts=None, date_expires=None,
+            state, is_dirty=True, date_created=None, date_starts=None, date_expires=None,
             amount_used=0, registrant=None, approved_by=None):
         """See IEntitlementSet."""
 
@@ -162,6 +167,7 @@ class EntitlementSet:
             quota=quota,
             entitlement_type=entitlement_type,
             state=state,
+            is_dirty=is_dirty,
             date_created=date_created,
             date_starts=date_starts,
             date_expires=date_expires,

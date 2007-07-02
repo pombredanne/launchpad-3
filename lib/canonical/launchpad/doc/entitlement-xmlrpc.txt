@@ -54,7 +54,11 @@ Attempting to create an entitlement on a non-existent person returns a fault.
     >>> entitlements = entitlement_view.getByPersonOrTeam(foobar.name)
     >>> print len(entitlements)
     1
-    
+
+    >>> entitlements = entitlement_view.getDirty()
+    >>> print len(entitlements)
+    5
+
 == Test via XML-RPC ==
 
 Create server proxy for XML-RPC calls.
@@ -99,6 +103,8 @@ The newly changed entitlement can be retrieved with the new values.
     >>> entitlement = entitlement_api.get(entitlement_id)
     >>> print entitlement.get('quota')
     200
+    >>> print entitlement.get('is_dirty')
+    False
 
 Entitlements can be retrieved by name of the person or team.
 
@@ -114,3 +120,20 @@ If the person doesn't exist a fault is returned.
     >>> entitlements = entitlement_api.getByPersonOrTeam(foobar.name)
     >>> print len(entitlements)
     2    
+
+    >>> entitlements = entitlement_api.getDirty()
+    >>> print len(entitlements)
+    5
+
+    >>> entitlement = entitlements[0]
+    >>> params = dict(id=entitlement['id'],
+    ...               person_name=entitlement['person_name'],
+    ...               is_dirty=False)
+    >>> res = entitlement_api.update(params)
+    >>> print res
+    True
+    
+    >>> entitlements = entitlement_api.getDirty()
+    >>> print len(entitlements)
+    4
+

@@ -14,7 +14,7 @@ __all__ = [
 
 import sys
 from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int
+from zope.schema import Bool, Choice, Datetime, Int
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Whiteboard
@@ -99,6 +99,12 @@ class IEntitlement(Interface):
     whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the entitlement.'))
 
+    is_dirty = Bool(
+        title=_("Dirty?"),
+        description=_(
+            "Is the entitlement 'dirty', i.e. has been written since the "
+            "most recent update to an external system?"))
+
     is_valid = Attribute(
         "Is this entitlement valid?")
 
@@ -146,9 +152,16 @@ class IEntitlementSet(Interface):
         entitlements are found.
         """
 
+    def getDirty():
+        """Return the entitlements that have the dirty bit set.
+
+        Get all entitlements that are marked as dirty.
+        """
+
     def new(person, quota, entitlement_type, state,
-            date_created=None, date_expires=None, date_starts=None,
-            amount_used=None, registrant=None, approved_by=None):
+            is_dirty=True, date_created=None, date_expires=None,
+            date_starts=None, amount_used=None, registrant=None,
+            approved_by=None):
         """Create a new entitlement."""
 
 

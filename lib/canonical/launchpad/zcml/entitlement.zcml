@@ -13,7 +13,7 @@
     <require
         permission="launchpad.Admin"
         set_attributes="person external_id quota amount_used state
-                        whiteboard date_starts date_expires"
+                        whiteboard date_starts date_expires is_dirty"
         />
   </content>
 

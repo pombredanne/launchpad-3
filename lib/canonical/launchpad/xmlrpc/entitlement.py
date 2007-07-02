@@ -26,6 +26,7 @@ class IEntitlementAPI(Interface):
                entitlement_type,
                quota,
                state,
+               is_dirty,
                date_created,
                date_starts,
                date_expires):
@@ -70,6 +71,12 @@ class IEntitlementAPI(Interface):
 
         """
 
+    def getDirty():
+        """Get a list of entitlements that have the dirty bit set.
+
+        The dirty attribute represents that this entitlement has been updated
+        since it was synchronized with an external database.
+        """
 
 
 class EntitlementAPI(LaunchpadXMLRPCView):
@@ -77,13 +84,14 @@ class EntitlementAPI(LaunchpadXMLRPCView):
     implements(IEntitlementAPI)
 
     @staticmethod
-    def _to_dict(entitlement):
+    def _marshall(entitlement):
         """Convert an entitlement to a dict for marshalling."""
         return dict(id = entitlement.id,
                     person_name = entitlement.person.name,
                     quota = entitlement.quota,
                     entitlement_type = entitlement.entitlement_type.value,
                     state = entitlement.state.value,
+                    is_dirty = entitlement.is_dirty,
                     date_created = str(entitlement.date_created),
                     date_starts = str(entitlement.date_starts),
                     date_expires = str(entitlement.date_expires))
@@ -93,6 +101,7 @@ class EntitlementAPI(LaunchpadXMLRPCView):
                entitlement_type,
                quota,
                state,
+               is_dirty=False,
                date_created=None,
                date_starts=None,
                date_expires=None):
@@ -148,6 +157,7 @@ class EntitlementAPI(LaunchpadXMLRPCView):
             quota=quota,
             entitlement_type=entitlement_type,
             state=state,
+            is_dirty=is_dirty,
             date_created=date_created,
             date_starts=date_starts,
             date_expires=date_expires)
@@ -169,7 +179,7 @@ class EntitlementAPI(LaunchpadXMLRPCView):
         entitlement_type = params.get('entitlement_type')
         quota = params.get('quota')
         state = params.get('state')
-
+        is_dirty = params.get('is_dirty')
         entitlement = getUtility(IEntitlementSet).get(id)
 
         if entitlement is None:
@@ -184,7 +194,8 @@ class EntitlementAPI(LaunchpadXMLRPCView):
             entitlement.quota = quota
         if state is not None:
             entitlement.state = state
-
+        if is_dirty is not None:
+            entitlement.is_dirty = is_dirty
         return True
 
     def get(self, id):
@@ -192,7 +203,7 @@ class EntitlementAPI(LaunchpadXMLRPCView):
         entitlement = getUtility(IEntitlementSet).get(id)
         if entitlement is None:
             return faults.NoSuchEntitlement(id)
-        return EntitlementAPI._to_dict(entitlement)
+        return EntitlementAPI._marshall(entitlement)
 
     def getByPersonOrTeam(self, name):
         """See IEntitlementAPI."""
@@ -207,7 +218,21 @@ class EntitlementAPI(LaunchpadXMLRPCView):
             entitlements = getUtility(IEntitlementSet).getForPerson(person)
 
         if entitlements is None:
-            return faults.NoSuchEntitlement(name)
+            return []
 
-        return [EntitlementAPI._to_dict(entitlement)
+        return [EntitlementAPI._marshall(entitlement)
                 for entitlement in entitlements]
+
+    def getDirty(self):
+        entitlements = getUtility(IEntitlementSet).getDirty()
+
+        for e in entitlements:
+            print "dirty: ", e.is_dirty
+        if entitlements is None:
+            results = []
+        else:
+            results = [EntitlementAPI._marshall(entitlement)
+                       for entitlement in entitlements
+                       if entitlement.is_dirty]
+
+        return results
