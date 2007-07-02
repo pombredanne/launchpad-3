@@ -1,265 +1,315 @@
 
-Creating Specifications
-=======================
+= Creating Specifications =
 
 And on both Product and Distribution, we should be able to add a
 specification. Let's make sure we can see the relevant page on a Product.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://blueprints.launchpad.dev/firefox/+addspec')
-  >>> browser.url
-  'http://blueprints.launchpad.dev/firefox/+addspec'
+    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser.open('http://blueprints.launchpad.dev/firefox/+addspec')
+    >>> browser.url
+    'http://blueprints.launchpad.dev/firefox/+addspec'
 
 Let's also validate that a new spec's form page has the appropriate default
 specification status.
 
-  >>> browser.getControl(name='field.status').value
-  ['New']
+    >>> browser.getControl(name='field.status').value
+    ['New']
 
 
 And now, on a distribution.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
-  >>> browser.url
-  'http://blueprints.launchpad.dev/ubuntu/+addspec'
-  >>> browser.getControl(name='field.status').value
-  ['New']
+    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
+    >>> browser.url
+    'http://blueprints.launchpad.dev/ubuntu/+addspec'
+    >>> browser.getControl(name='field.status').value
+    ['New']
 
 
 Let's go one step further and confirm that we can actually POST to that
 form, to register a new specification. We'll do it on the Ubuntu
 distribution.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
-  >>> browser.getControl(name='field.name').value = 'networkmagic'
-  >>> browser.getControl(
-  ...   name='field.title').value = ('Network Magic - Automatic Network'
-  ...       'Detection')
-  >>> browser.getControl(
-  ...   name='field.specurl').value = ('http://wiki.ubuntu.com/NetworkMagic')
-  >>> summary = (
-  ...   "Users are increasingly using multiple"
-  ...   "networks. Being able to seamlessly move between networks whilst"
-  ...   "remembering the correct settings for each network would greatly"
-  ...   "enhance Ubuntu's usability for mobile professionals. Many network"
-  ...   "dependent services should only be run when the system is positive"
-  ...   "that it has a network. This would greatly enhance the system's"
-  ...   "flexibility and responsiveness.")
-  >>> browser.getControl(name='field.summary').value = summary
-  >>> browser.getControl(name='field.status').value = ['Approved']
-  >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
-  >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
-  >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
-  >>> browser.getControl('Register Blueprint').click()
-  >>> browser.url
-  'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic'
+    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
+    >>> browser.getControl(name='field.name').value = 'networkmagic'
+    >>> browser.getControl(
+    ...   name='field.title').value = ('Network Magic - Automatic Network'
+    ...       'Detection')
+    >>> browser.getControl(
+    ...   name='field.specurl').value = ('http://wiki.ubuntu.com/NetworkMagic')
+    >>> summary = (
+    ...   "Users are increasingly using multiple"
+    ...   "networks. Being able to seamlessly move between networks whilst"
+    ...   "remembering the correct settings for each network would greatly"
+    ...   "enhance Ubuntu's usability for mobile professionals. Many network"
+    ...   "dependent services should only be run when the system is positive"
+    ...   "that it has a network. This would greatly enhance the system's"
+    ...   "flexibility and responsiveness.")
+    >>> browser.getControl(name='field.summary').value = summary
+    >>> browser.getControl(name='field.status').value = ['Approved']
+    >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+    >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
+    >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+    >>> browser.getControl('Register Blueprint').click()
+    >>> browser.url
+    'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic'
 
 
 OK, that created a new specification. Let's make sure we can see it.
 
-  >>> url = 'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic'
-  >>> browser.open(url)
-  >>> browser.url
-  'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic'
+    >>> url = 'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic'
+    >>> browser.open(url)
+    >>> browser.url
+    'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic'
 
 Now we test if the specification name validator is working trying to register
 a spec with the same name.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
-  >>> browser.getControl(name='field.name').value = 'networkmagic'
-  >>> browser.getControl(name='field.title').value = ('Network Magic'
-  ...       '- Automatic Network Detection')
-  >>> browser.getControl(
-  ...   name='field.specurl').value = ('http://wiki.ubuntu.com/NetworkMagic')
-  >>> browser.getControl(name='field.summary').value = ("Users are"
-  ...       "increasingly using multiple networks.")
-  >>> browser.getControl(name='field.status').value = ['Approved']
-  >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
-  >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
-  >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
-  >>> browser.getControl('Register Blueprint').click()
-  >>> browser.url
-  'http://blueprints.launchpad.dev/ubuntu/+addspec'
+    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
+    >>> browser.getControl(name='field.name').value = 'networkmagic'
+    >>> browser.getControl(name='field.title').value = ('Network Magic'
+    ...       '- Automatic Network Detection')
+    >>> browser.getControl(
+    ...   name='field.specurl').value = ('http://wiki.ubuntu.com/NetworkMagic')
+    >>> browser.getControl(name='field.summary').value = ("Users are"
+    ...       "increasingly using multiple networks.")
+    >>> browser.getControl(name='field.status').value = ['Approved']
+    >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+    >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
+    >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+    >>> browser.getControl('Register Blueprint').click()
+    >>> browser.url
+    'http://blueprints.launchpad.dev/ubuntu/+addspec'
 
 Seeing that we were redirected again to the addspec page is a good sign
 (something prevented the spec from being registered) however better make sure
 this happened due to the right reason.
 
-  >>> 'is already in use by another blueprint' in browser.contents
-  True
+    >>> 'is already in use by another blueprint' in browser.contents
+    True
 
 We test the validator using an invalid name.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
-  >>> browser.getControl(name='field.name').value = 'NetworkMagic!'
-  >>> browser.getControl(name='field.title').value = (
-  ...   'Network Magic - Automatic Network Detection')
-  >>> browser.getControl(name='field.specurl').value = (
-  ...   'http://wiki.ubuntu.com/NetworkMagicExclamation')
-  >>> browser.getControl(name='field.summary').value = (
-  ...   "Users are increasingly using multiple networks.")
-  >>> browser.getControl(name='field.status').value = ['Approved']
-  >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
-  >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
-  >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
-  >>> browser.getControl('Register Blueprint').click()
-  >>> browser.url
-  'http://blueprints.launchpad.dev/ubuntu/+addspec'
-  >>> for message in find_tags_by_class(browser.contents, 'message'):
-  ...      print message.renderContents()
-  There is 1 error.
-  <BLANKLINE>
-  Invalid name ...
+    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
+    >>> browser.getControl(name='field.name').value = 'NetworkMagic!'
+    >>> browser.getControl(name='field.title').value = (
+    ...   'Network Magic - Automatic Network Detection')
+    >>> browser.getControl(name='field.specurl').value = (
+    ...   'http://wiki.ubuntu.com/NetworkMagicExclamation')
+    >>> browser.getControl(name='field.summary').value = (
+    ...   "Users are increasingly using multiple networks.")
+    >>> browser.getControl(name='field.status').value = ['Approved']
+    >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+    >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
+    >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+    >>> browser.getControl('Register Blueprint').click()
+    >>> browser.url
+    'http://blueprints.launchpad.dev/ubuntu/+addspec'
+    >>> for message in find_tags_by_class(browser.contents, 'message'):
+    ...      print message.renderContents()
+    There is 1 error.
+    <BLANKLINE>
+    Invalid name ...
 
 Some invalid names can be transformed into valid names. When it is clear that a
 valid name can be produced by removing trailing spaces or by converting upper
 case characters to their lower case equivalents, this is done automatically for
 the user:
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
-  >>> browser.getControl(name='field.name').value = ' RecoverableNetworkMagic '
-  >>> browser.getControl(name='field.title').value = (
-  ...   'Network Magic - Automatic Network Detection')
-  >>> browser.getControl(name='field.specurl').value = (
-  ...   'http://wiki.ubuntu.com/RecoverableNetworkMagic')
-  >>> browser.getControl(name='field.summary').value = (
-  ...   "Users are increasingly using multiple networks.")
-  >>> browser.getControl(name='field.status').value = ['Approved']
-  >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
-  >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
-  >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
-  >>> browser.getControl('Register Blueprint').click()
-  >>> browser.url
-  'http://blueprints.launchpad.dev/ubuntu/+spec/recoverablenetworkmagic'
-  >>> "Blueprint overview" in browser.contents
-  True
+    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
+    >>> browser.getControl(name='field.name').value = ' RecoverableNetworkMagic '
+    >>> browser.getControl(name='field.title').value = (
+    ...   'Network Magic - Automatic Network Detection')
+    >>> browser.getControl(name='field.specurl').value = (
+    ...   'http://wiki.ubuntu.com/RecoverableNetworkMagic')
+    >>> browser.getControl(name='field.summary').value = (
+    ...   "Users are increasingly using multiple networks.")
+    >>> browser.getControl(name='field.status').value = ['Approved']
+    >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+    >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
+    >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+    >>> browser.getControl('Register Blueprint').click()
+    >>> browser.url
+    'http://blueprints.launchpad.dev/ubuntu/+spec/recoverablenetworkmagic'
+    >>> "Blueprint overview" in browser.contents
+    True
 
 
 Now we test the URL field validator trying to register a new spec with the same
 URL.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
-  >>> browser.getControl(name='field.name').value = 'dupenetworkmagic'
-  >>> browser.getControl(name='field.title').value = (
-  ...   'This is a dupe Network Magic Spec')
-  >>> browser.getControl(name='field.specurl').value = (
-  ...   'http://wiki.ubuntu.com/NetworkMagic')
-  >>> browser.getControl(name='field.summary').value = "Users are increasingly"
-  >>> browser.getControl(name='field.status').value = ['Approved']
-  >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
-  >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
-  >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
-  >>> browser.getControl('Register Blueprint').click()
-  >>> browser.url
-  'http://blueprints.launchpad.dev/ubuntu/+addspec'
-  >>> "is already registered by another blueprint" in browser.contents
-  True
+    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
+    >>> browser.getControl(name='field.name').value = 'dupenetworkmagic'
+    >>> browser.getControl(name='field.title').value = (
+    ...   'This is a dupe Network Magic Spec')
+    >>> browser.getControl(name='field.specurl').value = (
+    ...   'http://wiki.ubuntu.com/NetworkMagic')
+    >>> browser.getControl(name='field.summary').value = "Users are increasingly"
+    >>> browser.getControl(name='field.status').value = ['Approved']
+    >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+    >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
+    >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+    >>> browser.getControl('Register Blueprint').click()
+    >>> browser.url
+    'http://blueprints.launchpad.dev/ubuntu/+addspec'
+    >>> "is already registered by another blueprint" in browser.contents
+    True
 
 
-Project blueprint registration
-==============================
+== Project blueprint registration ==
 
 There is also a form which lets user create a new Blueprint in an IProject
 that first requires them to select an IProduct target, showing them only the
 products in that IProject.
 
-  >>> browser.open('http://blueprints.launchpad.dev/mozilla/+addspec')
-  >>> browser.getControl(name='field.projecttarget').value = ['thunderbird']
-  >>> browser.getControl(name='field.name').value = 'gee-whizz-wotzit'
-  >>> browser.getControl(
-  ...   name='field.title').value = ('Grand amazing tool')
-  >>> browser.getControl(
-  ...   name='field.specurl').value = ('http://wiki.mozilla.org/WhizzWotzit')
-  >>> summary = (
-  ...   "This widget is the latest and greatest in a long range of wotzits. "
-  ...   "All wotzits are known to be particularly resilient.")
-  >>> browser.getControl(name='field.summary').value = summary
-  >>> browser.getControl(name='field.status').value = ['Approved']
-  >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
-  >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
-  >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
-  >>> browser.getControl('Register Blueprint').click()
-  >>> browser.url
-  'http://blueprints.launchpad.dev/thunderbird/+spec/gee-whizz-wotzit'
+    >>> browser.open('http://blueprints.launchpad.dev/mozilla/+addspec')
+    >>> browser.getControl(name='field.projecttarget').value = ['thunderbird']
+    >>> browser.getControl(name='field.name').value = 'gee-whizz-wotzit'
+    >>> browser.getControl(
+    ...   name='field.title').value = ('Grand amazing tool')
+    >>> browser.getControl(
+    ...   name='field.specurl').value = ('http://wiki.mozilla.org/WhizzWotzit')
+    >>> summary = (
+    ...   "This widget is the latest and greatest in a long range of wotzits. "
+    ...   "All wotzits are known to be particularly resilient.")
+    >>> browser.getControl(name='field.summary').value = summary
+    >>> browser.getControl(name='field.status').value = ['Approved']
+    >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+    >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
+    >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+    >>> browser.getControl('Register Blueprint').click()
+    >>> browser.url
+    'http://blueprints.launchpad.dev/thunderbird/+spec/gee-whizz-wotzit'
 
 
-System-wide blueprint registration
-==================================
+== System-wide blueprint registration ==
 
 There is also a form which lets user create a new Blueprint for any product
 or distribution, from the Blueprints app home page.
 
 First, we try to create a spec that has the same name as an existing one.
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://blueprints.launchpad.dev/specs/+new')
-  >>> browser.getControl(name='field.target').value = 'ubuntu'
-  >>> browser.getControl(name='field.name').value = 'networkmagic'
-  >>> browser.getControl(
-  ...   name='field.title').value = ('Network Magic - Automatic Network'
-  ...       'Detection')
-  >>> browser.getControl(
-  ...   name='field.specurl').value = ('http://wiki.ubuntu.com/NetworkMagic')
-  >>> summary = (
-  ...   "Users are increasingly using multiple"
-  ...   "networks. Being able to seamlessly move between networks whilst"
-  ...   "remembering the correct settings for each network would greatly"
-  ...   "enhance Ubuntu's usability for mobile professionals. Many network"
-  ...   "dependent services should only be run when the system is positive"
-  ...   "that it has a network. This would greatly enhance the system's"
-  ...   "flexibility and responsiveness.")
-  >>> browser.getControl(name='field.summary').value = summary
-  >>> browser.getControl(name='field.status').value = ['Approved']
-  >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
-  >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
-  >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
-  >>> browser.getControl('Register Blueprint').click()
-  >>> browser.url
-  'http://blueprints.launchpad.dev/specs/+new'
+    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser.open('http://blueprints.launchpad.dev/specs/+new')
+    >>> browser.getControl(name='field.target').value = 'ubuntu'
+    >>> browser.getControl(name='field.name').value = 'networkmagic'
+    >>> browser.getControl(
+    ...   name='field.title').value = ('Network Magic - Automatic Network'
+    ...       'Detection')
+    >>> browser.getControl(
+    ...   name='field.specurl').value = ('http://wiki.ubuntu.com/NetworkMagic')
+    >>> summary = (
+    ...   "Users are increasingly using multiple"
+    ...   "networks. Being able to seamlessly move between networks whilst"
+    ...   "remembering the correct settings for each network would greatly"
+    ...   "enhance Ubuntu's usability for mobile professionals. Many network"
+    ...   "dependent services should only be run when the system is positive"
+    ...   "that it has a network. This would greatly enhance the system's"
+    ...   "flexibility and responsiveness.")
+    >>> browser.getControl(name='field.summary').value = summary
+    >>> browser.getControl(name='field.status').value = ['Approved']
+    >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+    >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
+    >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+    >>> browser.getControl('Register Blueprint').click()
+    >>> browser.url
+    'http://blueprints.launchpad.dev/specs/+new'
 
 So, we were not redirected to the spec page, because the spec was not
 created. Let's check that this happened because the name is taken:
 
-  >>> 'is already in use by another blueprint' in browser.contents
-  True
+    >>> 'is already in use by another blueprint' in browser.contents
+    True
 
 
 Now, we'll register a spec with a unique name and it should go straight
 through.
 
-  >>> browser.open('http://blueprints.launchpad.dev/specs/+new')
-  >>> browser.getControl(name='field.target').value = 'ubuntu'
-  >>> browser.getControl(name='field.name').value = 'brandnewspec'
-  >>> browser.getControl(
-  ...   name='field.title').value = ('Network Voodoo - Automatic Network'
-  ...       'Detection')
-  >>> browser.getControl(
-  ...   name='field.specurl').value = ('http://wiki.ubuntu.com/NetworkVoodoo')
-  >>> summary = (
-  ...   "Users are increasingly using multiple"
-  ...   "networks. Being able to seamlessly move between networks whilst"
-  ...   "that it has a network. This would greatly enhance the system's"
-  ...   "flexibility and responsiveness.")
-  >>> browser.getControl(name='field.summary').value = summary
-  >>> browser.getControl(name='field.status').value = ['Approved']
-  >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
-  >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
-  >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
-  >>> browser.getControl('Register Blueprint').click()
-  >>> browser.url
-  'http://blueprints.launchpad.dev/ubuntu/+spec/brandnewspec'
+    >>> browser.open('http://blueprints.launchpad.dev/specs/+new')
+    >>> browser.getControl(name='field.target').value = 'ubuntu'
+    >>> browser.getControl(name='field.name').value = 'brandnewspec'
+    >>> browser.getControl(
+    ...   name='field.title').value = ('Network Voodoo - Automatic Network'
+    ...       'Detection')
+    >>> browser.getControl(
+    ...   name='field.specurl').value = ('http://wiki.ubuntu.com/NetworkVoodoo')
+    >>> summary = (
+    ...   "Users are increasingly using multiple"
+    ...   "networks. Being able to seamlessly move between networks whilst"
+    ...   "that it has a network. This would greatly enhance the system's"
+    ...   "flexibility and responsiveness.")
+    >>> browser.getControl(name='field.summary').value = summary
+    >>> browser.getControl(name='field.status').value = ['Approved']
+    >>> browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+    >>> browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
+    >>> browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+    >>> browser.getControl('Register Blueprint').click()
+    >>> browser.url
+    'http://blueprints.launchpad.dev/ubuntu/+spec/brandnewspec'
+
+== Registration and sprint proposal ==
+
+When registering a blueprint, it is possible to immediately propose it for
+a sprint.
+
+=== Registering and proposing for a sprint from a project ===
+
+When registering a blueprint for a project, we specify the `sprint` field to
+propose the blueprint we register for that sprint. If the user has permissions
+the blueprint will be automatically added to the agenda for the sprint.
+
+    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser.open('http://blueprints.launchpad.dev/jokosher/+addspec')
+    >>> browser.getControl(name='field.name').value = 'spec-for-sprint'
+    >>> browser.getControl(name='field.title').value = 'Spec for Sprint'
+    >>> summary = "A spec to be discussed at a sprint"
+    >>> browser.getControl(name='field.summary').value = summary
+    >>> browser.getControl(name='field.sprint').value = ['paris']
+    >>> browser.getControl('Register Blueprint').click()
+    >>> browser.url
+    'http://blueprints.launchpad.dev/jokosher/+spec/spec-for-sprint'
+    >>> browser.open('http://blueprints.launchpad.dev/sprints/paris')
+    >>> 'spec-for-sprint' in browser.contents
+    True
+
+=== Registering and proposing for a sprint from a sprint ===
+
+When registering a blueprint from a sprint, it is necessary to fill in the
+target field. The sprint field isn't present, since it is implicitly known from
+the context.
+
+When a user without permissions to the sprint registers a new blueprint, it is
+proposed for this sprint, but not added to the agenda. A priviledged user can
+accept or reject the proposal from the agenda page.
+
+    >>> user_browser.open('http://blueprints.launchpad.dev/sprints/futurista/+addspec')
+    >>> 'No Privileges Person' in user_browser.contents
+    True
+    >>> user_browser.getControl(name='field.target').value = 'jokosher'
+    >>> user_browser.getControl(name='field.name').value = 'another-spec-for-sprint'
+    >>> user_browser.getControl(name='field.title').value = 'Another Spec for Sprint'
+    >>> user_browser.getControl(name='field.summary').value = (
+    ...     "Another spec to be discussed at a sprint")
+    >>> user_browser.getControl('Register Blueprint').click()
+    >>> user_browser.url
+    'http://blueprints.launchpad.dev/sprints/futurista'
+    >>> 'another-spec-for-sprint' in browser.contents
+    False
+    >>> browser.open('http://blueprints.launchpad.dev/sprints/futurista/+settopics')
+    >>> 'another-spec-for-sprint' in browser.contents
+    True
+
 
 
 = TODO =
 There are many specification doctests with the following type of test:
 
-"  >>> 'Invalid name' in browser.contents                              "
+"    >>> 'Invalid name' in browser.contents                              "
 
 If such tests fail, they can be a little difficult to debug, because the
 failure messages do not specify the resulting string. Instead, we could
