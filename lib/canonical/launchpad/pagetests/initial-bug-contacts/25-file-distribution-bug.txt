@@ -36,7 +36,7 @@ contact, the Launchpad Admins team.
 
     >>> bugset = getUtility(IBugSet)
     >>> subscriber_names(bugset.get(15))
-    [u'admins', u'landscape-developers', u'name16', u'sabdfl']
+    [u'landscape-developers', u'name16', u'sabdfl']
 
     >>> logout()
 

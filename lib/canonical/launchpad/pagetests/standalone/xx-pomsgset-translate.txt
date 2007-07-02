@@ -280,7 +280,7 @@ Now, we will check suggestions in this form.
 
 Check that suggestions come in from other contexts:
 
-  >>> "<label>Suggested elsewhere:</label>" in browser.contents
+  >>> "Suggested in" in browser.contents
   True
   >>> "suggestion added by a non-editor for a multiline" in browser.contents
   True
@@ -288,9 +288,9 @@ Check that suggestions come in from other contexts:
 Check that no other suggestions are presented (since no others are
 relevant for this message):
 
-  >>> "<label>Suggestion" not in browser.contents
+  >>> "Suggested by" not in browser.contents
   True
-  >>> "<label>Used elsewhere:</label>" not in browser.contents
+  >>> "Used in" not in browser.contents
   True
 
 Check for the translator note:
@@ -413,3 +413,19 @@ But also, the new one should appear in the form.
 
   >>> 'foo!!' in slow_submission.contents
   True
+
+== Unreviewed translations ==
+
+If there is a message which has a translation, but no reviewer (eg. uploaded
+from a package), it only shows the translator, and not reviewer.
+
+  >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/'
+  ...              'mozilla/+pots/pkgconf-mozilla/de/1/+translate')
+  >>> print extract_text(
+  ...     find_tag_by_id(browser.contents, "translated_by").parent)
+  Translated by Helge Kreutzmann on 2005-05-06
+  >>> print find_tag_by_id(browser.contents, "reviewed_by")
+  None
+  >>> print find_tag_by_id(browser.contents, "translated_and_reviewed_by")
+  None
+

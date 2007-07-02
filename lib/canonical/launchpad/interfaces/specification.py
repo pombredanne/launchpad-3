@@ -20,7 +20,6 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (ContentNameField, Summary,
     Title)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner, IProject
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
@@ -34,35 +33,46 @@ from canonical.lp.dbschema import (
 
 class SpecNameField(ContentNameField):
 
-    errormessage = _("%s is already in use by another specification.")
+    errormessage = _("%s is already in use by another blueprint.")
 
     @property
     def _content_iface(self):
         return ISpecification
 
     def _getByName(self, name):
-        if ISpecification.providedBy(self.context):
-            # the context is a spec, so we are editing the spec details and
-            # we want to know if we are change the name whether there is
-            # alread a spec with this name for the target.
-            return self.context.target.getSpecification(name)
-        elif ISpecificationSet.providedBy(self.context):
-            # in the case of a form on the spec set, we need to validate at
-            # a higher level, in the form validation routine
+        """Finds a specification by name from the current context.
+
+        Returns a specification if (and only if) the current context
+        defines a unique specification namespace and then if a matching
+        specification can be found within that namespace. Returns None
+        otherwise.
+        """
+        if ISpecificationSet.providedBy(self.context):
+            # The context is the set of all specifications. Since this
+            # set corresponds to multiple specification namespaces, we
+            # return None.
             return None
         elif IProject.providedBy(self.context):
-            # the context is a Project, so we will validate this at a higher
-            # level, in the form validation routine
+            # The context is a project group. Since a project group
+            # corresponds to multiple specification namespaces, we
+            # return None.
             return None
+        elif ISpecification.providedBy(self.context):
+            # The context is a specification. Since a specification's
+            # target defines a single specification namespace, we ask
+            # the target to perform the lookup.
+            return self.context.target.getSpecification(name)
         else:
-            # the context is a Product or Distro which can tell us if there
-            # are already specs with this name
+            # The context is a entity such as a product or distribution.
+            # Since this type of context is associated with exactly one
+            # specification namespace, we ask the context to perform the
+            # lookup.
             return self.context.getSpecification(name)
 
 
 class SpecURLField(TextLine):
 
-    errormessage = _("%s is already registered by another specification.")
+    errormessage = _("%s is already registered by another blueprint.")
 
     def _validate(self, specurl):
         TextLine._validate(self, specurl)
@@ -85,11 +95,12 @@ class ISpecification(IHasOwner, ICanBeMentored):
     #      referencing it.
     id = Int(title=_("Database ID"), required=True, readonly=True)
     name = SpecNameField(
-        title=_('Name'), required=True, description=_(
+        title=_('Name'), required=True, readonly=False,
+        description=_(
             "May contain lower-case letters, numbers, and dashes. "
             "It will be used in the specification url. "
-            "Examples: mozilla-type-ahead-find, postgres-smart-serial."),
-        constraint=name_validator)
+            "Examples: mozilla-type-ahead-find, postgres-smart-serial.")
+        )
     title = Title(
         title=_('Title'), required=True, description=_(
             "Describe the feature as clearly as possible in up to 70 characters. "
@@ -353,7 +364,7 @@ class ISpecification(IHasOwner, ICanBeMentored):
     # branches
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
-    
+
     def linkBranch(branch, summary=None):
         """Link the given branch to this specification."""
 
