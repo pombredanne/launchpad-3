@@ -225,23 +225,25 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def canUploadToPocket(self, pocket):
         """See IDistroSeries."""
-        # frozen/released states
-        released_states = [
-            DistroSeriesStatus.SUPPORTED,
-            DistroSeriesStatus.CURRENT
-            ]
+        # Allow everything for distroseries in FROZEN state.
+        if self.status == DistroSeriesStatus.FROZEN:
+            return True
 
-        # deny uploads for released RELEASE pockets
+        # Stable/Released states
+        stable_states = (DistroSeriesStatus.SUPPORTED,
+                         DistroSeriesStatus.CURRENT)
+
+        # Deny uploads for RELEASE pocket in stable states.
         if (pocket == PackagePublishingPocket.RELEASE and
-            self.status in released_states):
+            self.status in stable_states):
             return False
 
-        # deny uploads for non-RELEASE unreleased pockets
+        # Deny uploads for post-release pockets in unstable states.
         if (pocket != PackagePublishingPocket.RELEASE and
-            self.status not in released_states):
+            self.status not in stable_states):
             return False
 
-        # allow anything else
+        # Allow anything else
         return True
 
     def updatePackageCount(self):
