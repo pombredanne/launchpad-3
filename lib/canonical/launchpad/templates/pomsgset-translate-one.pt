@@ -26,8 +26,13 @@
     </label>
   </th>
   <td class="icon left right">
+    <img tal:condition="view/locked" src="/@@/locked"
+        alt="This message is handled automatically by Launchpad."
+        title="This message is handled automatically by Launchpad." />
+
     <tal:logged-in condition="request/lp:person">
     <a href=""
+       tal:condition="not:view/locked"
        tal:attributes="
          onClick string:
            javascript:copyInnerHTMLById(
@@ -154,6 +159,7 @@
       <tal:with-content
            condition="translation_dictionary/active_translation">
         <td class="icon left right">
+          <tal:not-locked condition="not:view/locked">
           <tal:logged-in condition="request/lp:person">
           <tal:user-is-official-translator condition="view/user_is_official_translator">
             <input
@@ -181,6 +187,7 @@
                "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
           </tal:is-not-editor>
           </tal:logged-in>
+          </tal:not-locked>
         </td>
         <td>
           <div tal:content="structure translation_dictionary/active_translation"
@@ -470,6 +477,7 @@
     <td colspan="4" />
     <td>
       <div tal:condition="view/user_is_official_translator">
+       <tal:not-locked condition="not:view/locked">
         <label class="fuzzy-checkbox">
           <input
             type="checkbox"
@@ -485,6 +493,20 @@
             Someone should review these translations
           </tal:block>
         </label>
+       </tal:not-locked>
+       <tal:locked condition="view/locked">
+        <label class="fuzzy-checkbox">
+          <input
+            type="checkbox"
+            value="fuzzy"
+	    disabled="1"
+            tal:attributes="
+              checked view/is_fuzzy;
+              name string:msgset_${context/potmsgset/id}_${language_code}_needsreview"
+            />
+            Someone should review this translation
+        </label>
+       </tal:locked>
       </div>
       <div tal:condition="not: view/user_is_official_translator">
         <label tal:condition="view/is_fuzzy">

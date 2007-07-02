@@ -13,8 +13,8 @@ DELETE FROM posubmission WHERE id IN (
 	    (msgid='translation-credits' OR
 	     msgid='translator-credits' OR
 	     msgid='translator_credits' OR
-	     msgid=E'_:EMAIL OF TRANSLATORS\nYour emails' OR
-	     msgid=E'_:NAME OF TRANSLATORS\nYour names'));
+	     msgid=E'_: EMAIL OF TRANSLATORS\nYour emails' OR
+	     msgid=E'_: NAME OF TRANSLATORS\nYour names'));
 
 -- Set any existing inactive published translations as active
 UPDATE posubmission SET active=TRUE WHERE id IN (
@@ -31,7 +31,17 @@ UPDATE posubmission SET active=TRUE WHERE id IN (
 	    (msgid='translation-credits' OR
 	     msgid='translator-credits' OR
 	     msgid='translator_credits' OR
-	     msgid=E'_:EMAIL OF TRANSLATORS\nYour emails' OR
-	     msgid=E'_:NAME OF TRANSLATORS\nYour names'));
+	     msgid=E'_: EMAIL OF TRANSLATORS\nYour emails' OR
+	     msgid=E'_: NAME OF TRANSLATORS\nYour names'));
 
--- set sequence number to -1?
+-- Remove reviewer, date_reviewed from all translation credit POMsgSets
+UPDATE POMsgSet SET reviewer=NULL, date_reviewed=NULL
+    FROM POTMsgSet, POMsgId
+    WHERE
+        POMsgSet.potmsgset=POTMsgSet.id AND
+        POTMsgSet.primemsgid=POMsgId.id AND
+        (msgid='translation-credits' OR
+         msgid='translator-credits' OR
+         msgid='translator_credits' OR
+         msgid=E'_: EMAIL OF TRANSLATORS\nYour emails' OR
+         msgid=E'_: NAME OF TRANSLATORS\nYour names');
