@@ -34,4 +34,3 @@ sourcecode/twisted
 thread*.request
 ./TAGS
 lib/mailman
-newsampledata.sql
