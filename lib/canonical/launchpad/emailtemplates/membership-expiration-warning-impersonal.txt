@@ -1,8 +1,9 @@
 Hi,
 
-On %(expiration_date)s, %(approximate_duration)s from now, the membership of
-%(member_name)s (which you are the owner of) in the
-%(team_name)s Launchpad team is due to expire.
+On %(expiration_date)s, %(approximate_duration)s from now, the membership
+of %(member_name)s (which you are
+the owner of) in the %(team_name)s Launchpad team
+is due to expire.
 <%(team_url)s>
 
 %(how_to_renew)s
