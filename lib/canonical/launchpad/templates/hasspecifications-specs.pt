@@ -217,10 +217,6 @@
     <tal:nomatches condition="not: view/specs"
                    replace="structure context/@@+nomatches" />
 
-    <p tal:condition="view/specs">
-      <span tal:replace="view/specs/count">7</span> specification(s) listed.
-    </p>
-
     <p tal:condition="view/is_series">
       You can
       <a href="+specs?acceptance=declined">show declined feature goals</a>,
