@@ -7,15 +7,46 @@ __metaclass__ = type
 from unittest import TestCase, TestLoader
 
 from canonical.launchpad.database.branch import BranchSet
-from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam, IProductSet,
-    IPersonSet)
+    BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam, IBranchSet,
+    IProductSet, IPersonSet)
 from canonical.lp.dbschema import (
     BranchVisibilityRule, PersonCreationRationale, TeamSubscriptionPolicy)
 from canonical.testing import LaunchpadFunctionalLayer
 
 from zope.component import getUtility
+
+
+class TestBranchSet(TestCase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def setUp(self):
+        TestCase.setUp(self)
+        login(ANONYMOUS)
+
+    def tearDown(self):
+        logout()
+        TestCase.tearDown(self)
+
+    def test_getHostedBranchesForPerson(self):
+        """The hosted branches for a person are all of the branches without
+        urls that are owned by that person, or a team that the person is in.
+        """
+        branch_owner = getUtility(IPersonSet).get(12)
+        login(branch_owner.preferredemail.email)
+        try:
+            branch_set = getUtility(IBranchSet)
+            branches = list(
+                branch_set.getHostedBranchesForPerson(branch_owner))
+            expected_branches = branch_set.getBranchesForOwners(
+                list(branch_owner.teams_participated_in) + [branch_owner])
+            expected_branches = [
+                branch for branch in expected_branches if branch.url is None]
+            self.assertEqual(expected_branches, branches)
+        finally:
+            logout()
 
 
 class BranchVisibilityPolicyTestCase(TestCase):
