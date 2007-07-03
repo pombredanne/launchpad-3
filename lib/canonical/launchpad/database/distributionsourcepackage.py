@@ -141,9 +141,15 @@ class DistributionSourcePackage(BugTargetBase,
         """See IDistributionSourcePackage."""
         # Use "list" here because it's possible that this list will be longer
         # than a "shortlist", though probably uncommon.
-        contacts = PackageBugContact.selectBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
+        query = """
+            PackageBugContact.distribution=%s
+            AND PackageBugContact.sourcepackagename = %s
+            AND PackageBugContact.bugcontact = Person.id
+            """ % sqlvalues(self.distribution, self.sourcepackagename)
+        contacts = PackageBugContact.select(
+            query,
+            orderBy='Person.displayname',
+            clauseTables=['Person'])
         contacts.prejoin(["bugcontact"])
         return list(contacts)
 
@@ -195,11 +201,11 @@ class DistributionSourcePackage(BugTargetBase,
 
     # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
     @property
-    def by_distroreleases(self):
+    def by_distroseriess(self):
         """See IDistributionSourcePackage."""
         result = []
-        for release in self.distribution.releases:
-            candidate = SourcePackage(self.sourcepackagename, release)
+        for series in self.distribution.serieses:
+            candidate = SourcePackage(self.sourcepackagename, series)
             if candidate.currentrelease:
                 result.append(candidate)
         return result
@@ -243,8 +249,8 @@ class DistributionSourcePackage(BugTargetBase,
     def releases(self):
         """See IDistributionSourcePackage."""
         ret = SourcePackagePublishingHistory.select("""
-            sourcepackagepublishinghistory.distrorelease = distrorelease.id AND
-            distrorelease.distribution = %s AND
+            sourcepackagepublishinghistory.distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = %s AND
             sourcepackagepublishinghistory.archive = %s AND
             sourcepackagepublishinghistory.sourcepackagerelease =
                 sourcepackagerelease.id AND

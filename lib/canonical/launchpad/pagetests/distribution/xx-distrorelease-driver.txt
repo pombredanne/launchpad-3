@@ -1,6 +1,6 @@
-= Appointing a DistroRelease Driver =
+= Appointing a DistroSeries Driver =
 
-Appoint Sample Person as the driver of the Ubuntu Hoary distro release.
+Appoint Sample Person as the driver of the Ubuntu Hoary distro series.
 
   >>> browser.addHeader(
   ...     'Authorization', 'Basic jeff.waugh@ubuntulinux.com:jdub')

@@ -5,15 +5,16 @@ Get evolution template for Ubuntu Hoary
 >>> from zope.component import getUtility
 >>> from zope.interface.verify import verifyObject
 >>> from canonical.launchpad.interfaces import (
-... IPOTemplateSet, ISourcePackageNameSet, IDistributionSet, IPOFile)
+...     IDistributionSet, IPersonSet, IPOFile, IPOTemplateSet,
+...     ISourcePackageNameSet)
 >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
 >>> sourcepackagename = sourcepackagenameset['evolution']
 >>> distributionset = getUtility(IDistributionSet)
 >>> distribution = distributionset['ubuntu']
->>> release = distribution['hoary']
+>>> series = distribution['hoary']
 >>> potemplateset = getUtility(IPOTemplateSet)
 >>> potemplatesubset = potemplateset.getSubset(
-...     distrorelease=release, sourcepackagename=sourcepackagename)
+...     distroseries=series, sourcepackagename=sourcepackagename)
 >>> potemplate = potemplatesubset['evolution-2.2']
 
 Get Xhosa translation
@@ -28,6 +29,22 @@ True
 
 >>> verifyObject(IPOFile, dummy_pofile)
 True
+
+DummyPOFile returns empty SelectResults for getPOTMsgSet* methods,
+except for untranslated messages.
+
+>>> dummy_pofile.getPOTMsgSetTranslated().count()
+0
+>>> dummy_pofile.getPOTMsgSetFuzzy().count()
+0
+>>> dummy_pofile.getPOTMsgSetChangedInLaunchpad().count()
+0
+>>> dummy_pofile.getPOTMsgSetWithNewSuggestions().count()
+0
+>>> dummy_pofile.getPOTMsgSetWithErrors().count()
+0
+>>> dummy_pofile.getPOTMsgSetUntranslated().count()
+23
 
 Get the set of POTMsgSets that are untranslated.
 
@@ -47,7 +64,7 @@ Get the set of POTMsgSets that are untranslated.
 
 Test that the header is updated.
 
->>> from canonical.launchpad.components.poparser import POHeader
+>>> from canonical.launchpad.translationformat import POHeader
 
 This is the comment.
 
@@ -68,7 +85,7 @@ This is the new header.
 
 Now, get a POHeader object with that information.
 
->>> new_header = POHeader(commentText=comment, msgstr=msgstr)
+>>> new_header = POHeader(comment=comment, msgstr=msgstr)
 >>> new_header.updateDict()
 
 We check that the plural forms expression is correctly parsed:
@@ -143,8 +160,6 @@ This test is to be sure that the date comparation is working and that two
 headers with the same date will always be set as newer because lazy
 translators forget to update that field from time to time and sometimes we
 were losing translations because we were ignoring those imports too.
-
-    >>> from canonical.launchpad.components.poparser import POHeader
 
     >>> print pofile.header.encode('utf-8')
     Project-Id-Version: es
@@ -375,7 +390,7 @@ Is time to create it.
 
 As we can see, is the msgid we were looking for.
 
-  >>> pomsgset.potmsgset.primemsgid_.msgid == msgid
+  >>> pomsgset.potmsgset.msgid == msgid
   True
 
 This entry is in fact one that is not used anymore, that means, its sequence
@@ -467,21 +482,79 @@ invalidates the cache.
   >>> import datetime
   >>> import pytz
   >>> UTC = pytz.timezone('UTC')
-  >>> msgset.updateTranslationSet(person, {0: 'Blah.'}, fuzzy=False,
-  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+
+If we update it with the same untranslated message, the cache is not
+invalidated.
+
+  >>> msgset.updateTranslationSet(person, {0: ''}, fuzzy=False,
+  ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
   >>> print msgset.active_texts
-  [u'Blah.']
+  [None]
+  >>> print msgset.date_reviewed
+  None
+
+  # We need to sync the changed objects for the same reason as before.
+  >>> msgset.sync()
+  >>> pofile.validExportCache()
+  True
+
+When we actually update untranslated pomsgset with a new translation,
+cache is invalidated, but for published submissions, date_reviewed is
+not updated.
+
+  >>> msgset.updateTranslationSet(person, {0: 'Foo.'}, fuzzy=False,
+  ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
+  >>> print msgset.active_texts
+  [u'Foo.']
+  >>> print msgset.date_reviewed
+  None
   >>> txt = msgset.active_texts[0]
 
   # We need to sync the changed objects for the same reason as before.
   >>> msgset.sync()
-
   >>> pofile.validExportCache()
   False
+  >>> pofile.last_touched_pomsgset==msgset
+  True
+
+Exporting a pofile regenerates the cache.
+
+  >>> export = pofile.export()
+  >>> export is not None
+  True
+
+  # And we can see that it's applied in the exported file.
+  >>> print export.decode('UTF-8')
+  #...
+  #: addressbook/addressbook-errors.xml.h:6
+  msgid "Failed to authenticate with LDAP server."
+  msgstr "Foo."
+  ...
+  >>> pofile.validExportCache()
+  True
+
+Setting a new translation directly through Launchpad (not-published)
+updates the date_reviewed value and invalidates the cache.
+
+  >>> msgset.updateTranslationSet(person, {0: 'Blah.'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> print msgset.active_texts
+  [u'Blah.']
+
+  # We need to sync the changed objects for the same reason as before.
+  >>> msgset.sync()
+  >>> msgset.date_reviewed is None
+  False
+  >>> pofile.last_touched_pomsgset==msgset
+  True
 
 Another export run generates a new cached file that contains that new
 translation.
 
+  # First we invalidate the cache manually, because everything is inside
+  # one transaction and we will get the same value with now() being used
+  # in both pofile.exporttime and msgset.date_reviewed.
+  >>> pofile.exportfile = None
   >>> export = pofile.export()
   >>> export is not None
   True
@@ -585,6 +658,197 @@ exports it as UTF-8
   #...
   "Content-Type: text/plain; charset=UTF-8\n"
   ...
+
+== getPOTMsgSetChangedInLaunchpad ==
+
+This method returns only those POTMsgSet's which contain translation
+submissions through Launchpad which change existing published translations.
+
+Lets get Evolution Spanish translation in distribution Hoary.
+
+  >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
+  >>> sourcepackagename = sourcepackagenameset['evolution']
+  >>> distributionset = getUtility(IDistributionSet)
+  >>> distribution = distributionset['ubuntu']
+  >>> release = distribution['hoary']
+  >>> potemplateset = getUtility(IPOTemplateSet)
+  >>> potemplatesubset = potemplateset.getSubset(
+  ...     distroseries=release, sourcepackagename=sourcepackagename)
+  >>> potemplate = potemplatesubset['evolution-2.2']
+  >>> pofile_changed = potemplate.getPOFileByLang('es')
+
+This translation file already contains one message which has been changed in
+Launchpad.
+
+  >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInLaunchpad())
+  >>> len(potmsgsets)
+  1
+  >>> stats = pofile_changed.updateStatistics()
+  >>> print pofile_changed.updatesCount()
+  1
+
+We make sure that submissions on untranslated strings are not considered
+'changed in Launchpad', since this method is mainly designed to help
+translators revert translations to published translations.
+
+Lets get a single untranslated POTMsgSet.
+
+  >>> untranslated = list(pofile_changed.getPOTMsgSetUntranslated())[0]
+  >>> untranslated is None
+  False
+  >>> pomsgset = pofile_changed.getPOMsgSet(untranslated.msgid)
+  >>> pomsgset is None
+  False
+
+Now, lets provide a translation for it.
+
+  >>> import datetime
+  >>> import pytz
+  >>> UTC = pytz.timezone('UTC')
+  >>> pomsgset.updateTranslationSet(
+  ...     pofile_changed.owner, {0: u'sample translation'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+
+And make sure that the count of changed in Launchpad hasn't changed.
+
+  >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInLaunchpad())
+  >>> len(potmsgsets)
+  1
+  >>> stats = pofile_changed.updateStatistics()
+  >>> print pofile_changed.updatesCount()
+  1
+
+Now, lets change translation for a message which already has a published
+translation.  First we need to find a message with active, published
+translation:
+
+  >>> for pomsgset in pofile_changed:
+  ... 	  if pomsgset.publishedcomplete and not pomsgset.publishedfuzzy:
+  ...         submission = pomsgset.getPublishedSubmission(0)
+  ...         if submission and submission.active:
+  ...             break
+  >>> pomsgset is None
+  False
+
+Lets re-translate that:
+
+  >>> pomsgset.updateTranslationSet(
+  ...     pofile_changed.owner, {0: u'new translation'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+
+And make sure that the count of messages changed in Launchpad _has_ changed:
+
+  >>> potmsgsets = list(pofile_changed.getPOTMsgSetChangedInLaunchpad())
+  >>> len(potmsgsets)
+  2
+
+Lets check that the updatesCount() is also properly updated.
+
+  >>> stats = pofile_changed.updateStatistics()
+  >>> pofile_changed.updatesCount()
+  2
+
+== getPOTMsgSetWithNewSuggestions ==
+
+This method returns only those POTMsgSet's which contain suggestions
+submitted after the last review date, or, in other words, those
+suggestions which need to be reviewed.
+
+Lets get Evolution Spanish translation in distribution Hoary.
+
+  >>> person_set = getUtility(IPersonSet)
+  >>> potemplateset = getUtility(IPOTemplateSet)
+  >>> evolution = getUtility(IProductSet).getByName('evolution')
+  >>> evolution_trunk = evolution.getSeries('trunk')
+  >>> potemplatesubset = potemplateset.getSubset(productseries=evolution_trunk)
+  >>> evolution_template = potemplatesubset['evolution-2.2']
+  >>> evolution_es = evolution_template.getPOFileByLang('es')
+
+  >>> noneditor = person_set.getByName('no-priv')
+  >>> editor = person_set.getByName('carlos')
+
+  # Make sure the translation permission mode is closed
+  >>> from canonical.lp.dbschema import TranslationPermission
+  >>> product.translationpermission = TranslationPermission.CLOSED
+
+Non-editor can only submit a new suggestion on untranslated message.
+
+  >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
+  2
+  >>> stats = evolution_es.updateStatistics()
+  >>> print evolution_es.unreviewedCount()
+  2
+
+  >>> pomsgset = evolution_es.getPOMsgSet(u'evolution minicard')
+
+  # Make sure this entry is unreviewed and untranslated
+  >>> print pomsgset.date_reviewed
+  None
+  >>> pomsgset.active_texts
+  [None]
+
+  >>> pomsgset.updateTranslationSet(noneditor, {0: 'translation'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> pomsgset.active_texts
+  [None]
+  >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
+  3
+  >>> stats = evolution_es.updateStatistics()
+  >>> print evolution_es.unreviewedCount()
+  3
+
+A privileged translator can approve this same suggestion by submitting
+it himself.
+
+  >>> pomsgset.updateTranslationSet(editor, {0: 'translation'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> pomsgset.active_texts
+  [u'translation']
+  >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
+  2
+  >>> stats = evolution_es.updateStatistics()
+  >>> print evolution_es.unreviewedCount()
+  2
+
+Or, they can update it with entirely different translation, which won't be
+picked up as a new suggestion, but will be directly set as the translation.
+
+  >>> pomsgset.updateTranslationSet(editor, {0: 'boohoo'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> pomsgset.active_texts
+  [u'boohoo']
+  >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
+  2
+  >>> stats = evolution_es.updateStatistics()
+  >>> print evolution_es.unreviewedCount()
+  2
+
+Non-editors can still provide suggestions on messages with approved
+translations, and this will again list this message among those with
+new suggestions.
+
+  >>> pomsgset = evolution_es.getPOMsgSet(u'have ')
+  >>> print pomsgset.active_texts
+  [u'tiene ']
+  >>> pomsgset.updateTranslationSet(noneditor, {0: 'blahblah'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> pomsgset.active_texts
+  [u'tiene ']
+  >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
+  3
+  >>> stats = evolution_es.updateStatistics()
+  >>> print evolution_es.unreviewedCount()
+  3
+
+And if we've got two new suggestions for the same message, POTMsgSet
+will not be listed twice in the returned result.
+
+  >>> pomsgset.updateTranslationSet(noneditor, {0: 'another'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
+  3
+  >>> len(set(evolution_es.getPOTMsgSetWithNewSuggestions()))
+  3
 
 
 = POFile Security tests =

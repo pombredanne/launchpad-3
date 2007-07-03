@@ -21,9 +21,9 @@ class IDevelopmentManifest(IHasOwner):
 
     owner = Choice(title=_('Owner'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam')
-    distrorelease = Choice(title=_('Distribution Release'), required=False,
-        vocabulary='DistroRelease', description=_('Select '
-        'the distribution release for which this package is being '
+    distroseries = Choice(title=_('Series'), required=False,
+        vocabulary='DistroSeries', description=_('Select '
+        'the distribution series for which this package is being '
         'developed.'))
     sourcepackagename = Choice(title=_('Source Package'), required=False,
         vocabulary='SourcePackageName', description=_('The source package '

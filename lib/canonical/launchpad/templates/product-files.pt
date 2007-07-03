@@ -23,7 +23,7 @@
 
   <form method="POST"
         tal:attributes="action request/URL">
-    <tal:series repeat="series context/serieslist">
+    <tal:series repeat="series context/serieses">
 
       <h2>
         Release series &#8220;<tal:name

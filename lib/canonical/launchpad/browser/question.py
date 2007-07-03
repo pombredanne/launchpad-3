@@ -21,7 +21,7 @@ __all__ = [
     'QuestionSubscriptionView',
     'QuestionWorkflowView',
     ]
-    
+
 import re
 
 from operator import attrgetter
@@ -47,14 +47,14 @@ from canonical.launchpad.helpers import is_english_variant, request_languages
 
 from canonical.launchpad.interfaces import (
     CreateBugParams, IAnswersFrontPageSearchForm, IBug, ILanguageSet,
-    ILaunchpadStatisticSet, IProject, IQuestion, IQuestionAddMessageForm, 
-    IQuestionChangeStatusForm, IQuestionSet, IQuestionTarget, 
+    ILaunchpadStatisticSet, IProject, IQuestion, IQuestionAddMessageForm,
+    IQuestionChangeStatusForm, IQuestionSet, IQuestionTarget, NotFoundError,
     UnexpectedFormData)
 
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     LaunchpadView, action, LaunchpadFormView, LaunchpadEditFormView,
-    custom_widget, safe_action)
+    custom_widget, redirection, safe_action)
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
@@ -63,8 +63,18 @@ from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 
 
 class QuestionSetNavigation(Navigation):
-    """A navigator for a QuestionSet."""
+    """Navigation for the IQuestionSet."""
     usedfor = IQuestionSet
+
+    def traverse(self, name):
+        """Traverse to a question by id."""
+        try:
+            question = getUtility(IQuestionSet).get(int(name))
+        except ValueError:
+            question = None
+        if question is None:
+            raise NotFoundError(name)
+        return redirection(canonical_url(question), status=301)
 
 
 class QuestionSetView(LaunchpadFormView):
@@ -132,7 +142,12 @@ class QuestionSetView(LaunchpadFormView):
         # XXX flacoste 2006/11/28 We should probably define a new
         # QuestionSort value allowing us to sort on dateanswered descending.
         return self.context.searchQuestions(
-            status=QuestionStatus.SOLVED, sort=QuestionSort.NEWEST_FIRST)[:10]
+            status=QuestionStatus.SOLVED, sort=QuestionSort.NEWEST_FIRST)[:5]
+
+    @property
+    def most_active_projects(self):
+        """Return the 5 most active projects."""
+        return self.context.getMostActiveProjects(limit=5)
 
 
 class QuestionSubscriptionView(LaunchpadView):
@@ -168,7 +183,7 @@ class QuestionSubscriptionView(LaunchpadView):
 
     @property
     def subscription(self):
-        """establish if this user has a subscription"""
+        """Establish if this user has a subscription"""
         if self.user is None:
             return False
         return self.context.isSubscribed(self.user)
@@ -190,8 +205,8 @@ class QuestionLanguageVocabularyFactory:
     def __init__(self, view):
         """Create a QuestionLanguageVocabularyFactory.
 
-        :param view: The view that provides the request used to determine the 
-        user languages. The view contains the Product widget selected by the 
+        :param view: The view that provides the request used to determine the
+        user languages. The view contains the Product widget selected by the
         user in the case where a question is asked in the context of a Project.
         """
         self.view = view
@@ -201,19 +216,21 @@ class QuestionLanguageVocabularyFactory:
         for lang in request_languages(self.view.request):
             if not is_english_variant(lang):
                 languages.add(lang)
-        if (context is not None and IQuestion.providedBy(context) and
-            context.language.code != 'en'):
+        if context is not None and IQuestion.providedBy(context):
             languages.add(context.language)
         languages = list(languages)
 
         # Insert English as the first element, to make it the default one.
-        languages.insert(0, getUtility(ILanguageSet)['en'])
-        
+        english = getUtility(ILanguageSet)['en']
+        if english in languages:
+            languages.remove(english)
+        languages.insert(0, english)
+
         # The vocabulary indicates which languages are supported.
         if context is not None and not IProject.providedBy(context):
             question_target = IQuestionTarget(context)
             supported_languages = question_target.getSupportedLanguages()
-        elif (IProject.providedBy(context) and 
+        elif (IProject.providedBy(context) and
                 self.view.question_target is not None):
             # Projects do not implement IQuestionTarget--the user must
             # choose a product while asking a question.
@@ -272,7 +289,7 @@ class QuestionSupportLanguageMixin:
             key=attrgetter('englishname'))
 
     def createLanguageField(self):
-        """Create a field with a special vocabulary to edit a question language.
+        """Create a field with a vocabulary to edit a question language.
 
         :param the_form: The form that will use this field.
         :return: A form.Fields instance containing the language field.
@@ -298,7 +315,8 @@ class QuestionSupportLanguageMixin:
         will only be displayed one time, except if the user changes the
         request language to another unsupported value.
         """
-        if self.chosen_language in self.question_target.getSupportedLanguages():
+        if (self.chosen_language in
+            self.question_target.getSupportedLanguages()):
             return False
 
         old_chosen_language = self.request.form.get('chosen_language')
@@ -452,8 +470,7 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
     """View for editing a Question."""
     schema = IQuestion
     label = 'Edit question'
-    field_names = ["title", "description", "target", "priority", "assignee", 
-                   "whiteboard"]
+    field_names = ["title", "description", "target", "assignee", "whiteboard"]
 
     custom_widget('title', TextWidget, displayWidth=40)
     custom_widget('whiteboard', TextAreaWidget, height=5)
@@ -466,7 +483,7 @@ class QuestionEditView(QuestionSupportLanguageMixin, LaunchpadEditFormView):
         """
         LaunchpadEditFormView.setUpFields(self)
 
-        self.form_fields = self.form_fields.omit("distribution", 
+        self.form_fields = self.form_fields.omit("distribution",
             "sourcepackagename", "product")
 
         # Add the language field with a vocabulary specialized for display
@@ -496,7 +513,7 @@ class QuestionMakeBugView(LaunchpadFormView):
     field_names = ['title', 'description']
 
     def initialize(self):
-        """Initialize the view when a Bug may be reported for this Question."""
+        """Initialize the view when a Bug may be reported for the Question."""
         question = self.context
         if question.bugs:
             # we can't make a bug when we have linked bugs
@@ -519,7 +536,8 @@ class QuestionMakeBugView(LaunchpadFormView):
         """Create a Bug from a Question."""
         question = self.context
 
-        unmodifed_question = Snapshot(question, providing=providedBy(question))
+        unmodifed_question = Snapshot(
+            question, providing=providedBy(question))
         params = CreateBugParams(
             owner=self.user, title=data['title'], comment=data['description'])
         bug = question.target.createBug(params)
@@ -555,7 +573,7 @@ class QuestionRejectView(LaunchpadFormView):
 
 
     def initialize(self):
-        """See LaunchpadFormView.
+        """See `LaunchpadFormView`.
 
         Abort early if the question is already rejected.
         """
@@ -578,13 +596,13 @@ class QuestionWorkflowView(LaunchpadFormView):
     initial_focus_widget = None
 
     def setUpFields(self):
-        """See LaunchpadFormView."""
+        """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpFields(self)
         if self.context.isSubscribed(self.user):
             self.form_fields = self.form_fields.omit('subscribe_me')
 
     def setUpWidgets(self):
-        """See LaunchpadFormView."""
+        """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpWidgets(self)
         alsoProvides(self.widgets['message'], IAlwaysSubmittedWidget)
 
@@ -646,7 +664,7 @@ class QuestionWorkflowView(LaunchpadFormView):
     @action(_('I Solved the Problem on My Own'), name="selfanswer",
             condition=canSelfAnswer)
     def selfanswer_action(self, action, data):
-        """Action called when the owner provides the solution to his problem."""
+        """Action called when the owner provides the solution."""
         self.context.giveAnswer(self.user, data['message'])
         self._addNotificationAndHandlePossibleSubscription(
             _('Thanks for sharing your solution.'), data)
@@ -817,7 +835,7 @@ class SearchAllQuestionsView(SearchQuestionsView):
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _('Questions matching "${search_text}"',
                      mapping=dict(search_text=self.search_text))
@@ -826,14 +844,14 @@ class SearchAllQuestionsView(SearchQuestionsView):
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _("There are no questions matching "
                      '"${search_text}" with the requested statuses.',
                      mapping=dict(search_text=self.search_text))
         else:
             return _('There are no questions with the requested statuses.')
-    
+
     @safe_action
     @action(_('Search'), name='search')
     def search_action(self, action, data):
@@ -843,7 +861,9 @@ class SearchAllQuestionsView(SearchQuestionsView):
         attribute and redirects to questions when the term is a question id.
         """
         super(SearchAllQuestionsView, self).search_action.success(data)
-        
+
+        if not self.search_text:
+            return
         id_matches = SearchAllQuestionsView.id_pattern.match(self.search_text)
         if id_matches is not None:
             question = getUtility(IQuestionSet).get(id_matches.group(1))
@@ -855,7 +875,7 @@ class QuestionSOP(StructuralObjectPresentation):
     """Provides the structural heading for IQuestion."""
 
     def getMainHeading(self):
-        """See IStructuralHeaderPresentation."""
+        """See ```IStructuralHeaderPresentation`."""
         question = self.context
         return _('Question #${id} in ${target}',
                  mapping=dict(

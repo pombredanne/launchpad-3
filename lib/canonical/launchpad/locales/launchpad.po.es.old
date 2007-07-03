@@ -197,7 +197,7 @@ msgstr ""
 #: l/launchpad/interfaces/bugtracker.py:12
 #: l/launchpad/interfaces/bugtracker.py:24
 #: l/launchpad/interfaces/distribution.py:13
-#: l/launchpad/interfaces/distrorelease.py:14
+#: l/launchpad/interfaces/distroseries.py:14
 #: l/launchpad/interfaces/product.py:26
 #: l/launchpad/interfaces/productseries.py:19
 #: l/launchpad/interfaces/project.py:21
@@ -239,7 +239,7 @@ msgstr ""
 
 #: l/launchpad/interfaces/bounty.py:38 l/launchpad/interfaces/bug.py:41
 #: l/launchpad/interfaces/distribution.py:19
-#: l/launchpad/interfaces/distrorelease.py:21
+#: l/launchpad/interfaces/distroseries.py:21
 #: l/launchpad/interfaces/product.py:37
 msgid "Summary"
 msgstr ""
@@ -256,7 +256,7 @@ msgstr ""
 #: l/launchpad/interfaces/bugtracker.py:14
 #: l/launchpad/interfaces/country.py:32
 #: l/launchpad/interfaces/distribution.py:22
-#: l/launchpad/interfaces/distrorelease.py:25
+#: l/launchpad/interfaces/distroseries.py:25
 #: l/launchpad/interfaces/product.py:40
 #: l/launchpad/interfaces/productrelease.py:20
 #: l/launchpad/interfaces/project.py:35
@@ -563,7 +563,7 @@ msgstr ""
 #: l/launchpad/interfaces/bugtracker.py:13
 #: l/launchpad/interfaces/bugtracker.py:25 l/launchpad/interfaces/cveref.py:27
 #: l/launchpad/interfaces/distribution.py:17
-#: l/launchpad/interfaces/distrorelease.py:18
+#: l/launchpad/interfaces/distroseries.py:18
 #: l/launchpad/interfaces/message.py:24 l/launchpad/interfaces/product.py:34
 #: l/launchpad/interfaces/productrelease.py:18
 #: l/launchpad/interfaces/project.py:29
@@ -724,47 +724,47 @@ msgstr ""
 msgid "The distro's owner."
 msgstr ""
 
-#: l/launchpad/interfaces/distrorelease.py:15
+#: l/launchpad/interfaces/distroseries.py:15
 msgid "The name of this distribution release."
 msgstr ""
 
-#: l/launchpad/interfaces/distrorelease.py:16
+#: l/launchpad/interfaces/distroseries.py:16
 msgid "Display name"
 msgstr ""
 
-#: l/launchpad/interfaces/distrorelease.py:17
+#: l/launchpad/interfaces/distroseries.py:17
 msgid "The release's displayname."
 msgstr ""
 
-#: l/launchpad/interfaces/distrorelease.py:19
+#: l/launchpad/interfaces/distroseries.py:19
 msgid ""
 "The title of this release. It should be distinctive \n"
 "                      and designed to look good at the top of a page."
 msgstr ""
 
-#: l/launchpad/interfaces/distrorelease.py:22
+#: l/launchpad/interfaces/distroseries.py:22
 msgid ""
 "A brief summary of the highlights of this release. It should be no longer "
 "than a single paragraph, up to 200 words."
 msgstr ""
 
-#: l/launchpad/interfaces/distrorelease.py:26
+#: l/launchpad/interfaces/distroseries.py:26
 msgid ""
 "A detailed description of this release, with information on the "
 "architectures covered, the availability of security updates and any other "
 "relevant information."
 msgstr ""
 
-#: l/launchpad/interfaces/distrorelease.py:30
+#: l/launchpad/interfaces/distroseries.py:30
 #: l/launchpad/interfaces/productrelease.py:17
 msgid "Version"
 msgstr ""
 
-#: l/launchpad/interfaces/distrorelease.py:31
+#: l/launchpad/interfaces/distroseries.py:31
 msgid "The version string for this release."
 msgstr ""
 
-#: l/launchpad/interfaces/distrorelease.py:32
+#: l/launchpad/interfaces/distroseries.py:32
 #: l/launchpad/interfaces/message.py:36
 #: l/launchpad/interfaces/publishing.py:82
 #: l/launchpad/interfaces/publishing.py:119
@@ -773,7 +773,7 @@ msgstr ""
 msgid "Distribution"
 msgstr ""
 
-#: l/launchpad/interfaces/distrorelease.py:33
+#: l/launchpad/interfaces/distroseries.py:33
 msgid "The distribution for which this is a release."
 msgstr ""
 
@@ -1262,7 +1262,7 @@ msgid "Distribution ID"
 msgstr ""
 
 #: l/launchpad/interfaces/publishing.py:19
-msgid "The distroarchrelease being published into"
+msgid "The distroarchseries being published into"
 msgstr ""
 
 #: l/launchpad/interfaces/publishing.py:23
@@ -1294,7 +1294,7 @@ msgid "The source package release being published"
 msgstr ""
 
 #: l/launchpad/interfaces/publishing.py:58
-msgid "The distrorelease being published into"
+msgid "The distroseries being published into"
 msgstr ""
 
 #: l/launchpad/interfaces/publishing.py:70
@@ -1366,7 +1366,7 @@ msgid "SourcePackage Name"
 msgstr ""
 
 #: l/launchpad/interfaces/sourcepackage.py:49
-msgid "DistroRelease"
+msgid "DistroSeries"
 msgstr ""
 
 #: l/launchpad/interfaces/spokenin.py:18
