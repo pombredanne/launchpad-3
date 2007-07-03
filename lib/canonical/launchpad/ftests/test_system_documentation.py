@@ -335,12 +335,6 @@ special = {
             tearDown=uploadQueueTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
-    'codeimport-machine.txt': LayeredDocFileSuite(
-            '../doc/codeimport-machine.txt',
-            setUp=uploadQueueSetUp,
-            tearDown=uploadQueueTearDown,
-            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
-            ),
     'closing-bugs-from-changelogs.txt': LayeredDocFileSuite(
             '../doc/closing-bugs-from-changelogs.txt',
             setUp=uploadQueueSetUp,

@@ -25,7 +25,7 @@ from canonical.launchpad.interfaces import (
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
     IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset,
     IDistroSeriesLanguage, IBranch, IBranchSubscription, ICodeImport,
-    ICodeImportSet, IEntitlement)
+    ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet, IEntitlement)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
@@ -663,6 +663,7 @@ class AdminTheBazaar(OnlyVcsImportsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = IBazaarApplication
 
+
 class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
     """Control who can see the CodeImport listing page.
 
@@ -673,6 +674,7 @@ class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
     permission = 'launchpad.View'
     usedfor = ICodeImportSet
 
+
 class SeeCodeImports(OnlyVcsImportsAndAdmins):
     """Control who can see the object view of a CodeImport.
 
@@ -681,6 +683,28 @@ class SeeCodeImports(OnlyVcsImportsAndAdmins):
     """
     permission = 'launchpad.View'
     usedfor = ICodeImport
+
+
+class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):
+    """Control who can see the CodeImportMachine listing page.
+
+    Currently, we don't let the general user see anything to do with
+    the new code import system.
+    """
+
+    permission = 'launchpad.View'
+    usedfor = ICodeImportMachineSet
+
+
+class SeeCodeImportMachines(OnlyVcsImportsAndAdmins):
+    """Control who can see the object view of a CodeImportMachine.
+
+    Currently, we don't let the general user see anything to do with
+    the new code import system.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImportMachine
+
 
 class EditPOTemplateDetails(EditByOwnersOrAdmins):
     usedfor = IPOTemplate

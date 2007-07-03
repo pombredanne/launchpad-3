@@ -76,11 +76,10 @@
   <!-- CodeImportMachine -->
 
   <content class="canonical.launchpad.database.CodeImportMachine">
-    <allow interface="canonical.launchpad.interfaces.ICodeImportMachine" />
     <require
-      permission="zope.Public"
-      set_schema="canonical.launchpad.interfaces.ICodeImportMachine"
-    />
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.ICodeImportMachine"
+      />
   </content>
 
   <!-- CodeImportMachineSet -->
@@ -89,7 +88,7 @@
     class="canonical.launchpad.database.CodeImportMachineSet"
     provides="canonical.launchpad.interfaces.ICodeImportMachineSet" >
     <require
-      permission="zope.Public"
+      permission="launchpad.View"
       interface="canonical.launchpad.interfaces.ICodeImportMachineSet" />
   </securedutility>
 

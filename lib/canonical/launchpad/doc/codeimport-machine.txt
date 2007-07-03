@@ -6,51 +6,87 @@ is, currently capable of performing imports).  Adding new machines is
 considered an admin task, so requires that we switch to a database
 administrator.
 
-    >>> from canonical.testing import LaunchpadZopelessLayer
-    >>> LaunchpadZopelessLayer.switchDbUser('testadmin')
-
 Adding a machine is very simple SQL, for which there will probably be a
 shell script.
 
-    >>> from canonical.database.sqlbase import cursor, commit
-    >>> cur = cursor()
+    >>> from canonical.database.sqlbase import connect
+    >>> connection = connect('testadmin')
+    >>> cur = connection.cursor()
     >>> cur.execute('''INSERT INTO CodeImportMachine (hostname, online)
     ...                VALUES ('frobisher.example.com', false);''')
-    >>> commit()
+    >>> connection.commit()
 
-The webapp only has rights to examine the CodeImportMachine table.  The
-table is represented by an object that provides the
-ICodeImportMachineSet interface.
+The webapp only has rights to examine, not modify, the CodeImportMachine
+table.  The table is represented by an utility that provides the
+ICodeImportMachineSet interface.  Currently we hide all aspects of the
+new system from anonymous and regular users.
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> from canonical.launchpad.interfaces import (
     ...      ICodeImportMachine, ICodeImportMachineSet)
     >>> from zope.component import getUtility
+    >>> machine_set = getUtility(ICodeImportMachineSet)
+    >>> machine_set.getAll()
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ...
+
+Once we've logged in as member of vcs-imports, the object that provides
+ICodeImportMachineSet allows access to machines by hostname and to all
+machines.
+
+    >>> login('david.allouche@canonical.com')
+
+    >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> from zope.interface.verify import verifyObject
     >>> from zope.security.proxy import removeSecurityProxy
-    >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> verifyObject(ICodeImportMachineSet, removeSecurityProxy(machine_set))
     True
-    >>> machine = machine_set.getByHostname('frobisher.example.com')
+    >>> machine = machine_set.getByHostname('frobisher.example.com') 
+    >>> machine in machine_set.getAll()
+    True
+
+Machine objects themselves provide ICodeImportMachine, which includes
+hostname and online status information.
+
     >>> verifyObject(ICodeImportMachine, removeSecurityProxy(machine))
     True
     >>> machine.hostname
     u'frobisher.example.com'
     >>> machine.online
     False
-    >>> machine in machine_set.getAll()
-    True
+
+The web app cannot edit this information.
+
+    >>> machine.online = True
+    Traceback (most recent call last):
+      ...
+    ForbiddenAttribute: ...
 
 Jobs running on the machine itself will connect as the 'importd' user,
 which has rights to update the table so it can update the online status.
 
-    >>> LaunchpadZopelessLayer.switchDbUser('importd')
-    >>> machine_set = getUtility(ICodeImportMachineSet)
-    >>> machine = machine_set.getByHostname('frobisher.example.com')
-    >>> machine.online = True
-    >>> commit()
+XXX: MichaelHudson 2007-07-03, it would be nice to be able to use
+SQLObject here.  But the test framework doesn't appear to support this
+(see bug #123785).
 
-    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> connection = connect('importd')
+    >>> cur = connection.cursor()
+    >>> cur.execute('''UPDATE CodeImportMachine SET online = true
+    ...                WHERE hostname = 'frobisher.example.com';''')
+    >>> connection.commit()
+
+If we check again from the web apps point of view, we see that the
+status is indeed updated.
+
+    >>> from canonical.testing.layers import LaunchpadFunctionalLayer
+    >>> LaunchpadFunctionalLayer.testSetUp() # Reset the database connection.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...      ICodeImportMachine, ICodeImportMachineSet)
+    >>> from zope.component import getUtility
+    >>> from zope.interface.verify import verifyObject
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.database.sqlbase import cursor
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> machine = machine_set.getByHostname('frobisher.example.com')
     >>> machine.online
