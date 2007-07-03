@@ -30,6 +30,14 @@
 
 <div metal:fill-slot="main"
      tal:define="questions view/searchResults">
+  <p tal:define="unspoken_languages view/unspoken_languages|nothing"
+    tal:condition="unspoken_languages">
+    Mozilla Firefox has unsolved questions in 
+    <span tal:replace="structure unspoken_languages">
+     <a href="ubuntu/+unspoken?language=en">Spanish (1)</a>
+    </span>
+    with no answer contacts. Can you help?
+  </p>
 
   <div>
     <form method="get" id="question-search-form" action=""
@@ -43,6 +51,10 @@
       <tal:sort replace="structure view/widgets/sort" />
 
       <input tal:replace="structure view/search_action/render" />
+
+      <input type="hidden" name="field.language" value="es" 
+             tal:attributes="value view/language/code"
+             tal:condition="view/hide_language_control"/>
 
       <div class="field"
            tal:condition="view/show_language_control"

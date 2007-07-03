@@ -179,7 +179,7 @@ the search results.
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
 
 
-= Multiple Request Languages in Latest Questions =
+== Multiple Request Languages in Latest Questions ==
 
 The portlet that lists the latest questions involving a person displays
 all the questions, whatever the user preferred languages. (Since this
@@ -193,3 +193,49 @@ showing no questions when there could be in other languages.)
     >>> for link in portlet.fetch('a'):
     ...    link.renderContents()
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
+
+
+== Language questions ==
+
+The project questions page displays an inline list of languages that
+have questions that are unsolved when such questions exist.
+No Privileges Person is looking for an project that needs help. He 
+visits Kubuntu and does not see a need, but when he visits Mozilla
+Firefox, he is informed that there are questions going unanswered.
+
+    >>> user_browser.open('http://answers.launchpad.dev/kubuntu')
+    >>> paragraph = find_main_content(user_browser.contents).find('p')
+    >>> print extract_text(paragraph)
+    There are no questions for Kubuntu with the requested statuses.
+
+    >>> user_browser.open('http://answers.launchpad.dev/firefox')
+    >>> paragraph = find_main_content(user_browser.contents).find('p')
+    >>> print extract_text(paragraph)
+    Mozilla Firefox has unsolved questions in 
+    Portuguese (Brazil) (1) 
+    with no answer contacts. Can you help?
+
+The action menu provides links to predefined searches; Unsupported is one
+of those searches.
+
+    >>> browser.open('http://launchpad.dev/firefox/+tickets')
+    >>> portlet = find_portlet(browser.contents, 'Actions')
+    >>> portlet.find(name='a', text='Unsupported')
+    u'Unsupported'
+
+Each product and distro can have questions asked in languages that
+none of the Answer Contacts speak.
+
+    >>> browser.getLink('Unsupported').click()
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup.first('h1')
+    <h1>Unsupported questions for Mozilla Firefox</h1>
+
+That page displays table listing the Unsupported Questions for Mozilla
+Firefox
+
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> for question in soup.fetch('td', 'question'):
+    ...     question.first('a').renderContents()
+    'Problemas de Impress\xc3\xa3o no Firefox'
+

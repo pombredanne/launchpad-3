@@ -8,10 +8,10 @@ __all__ = [
     'AskAQuestionButtonView',
     'ManageAnswerContactView',
     'SearchQuestionsView',
+    'QuestionCollectionByLanguageView',
     'QuestionCollectionLatestQuestionsView',
     'QuestionCollectionMyQuestionsView',
     'QuestionCollectionNeedAttentionView',
-    'QuestionCollectionUnsupportedView',
     'QuestionCollectionOpenCountView',
     'QuestionCollectionAnswersMenu',
     'QuestionTargetFacetMixin',
@@ -182,7 +182,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     def validate(self, data):
         """Validate hook.
 
-        This validation method sets the chosen_language attribute.
+        This validation method checks that a valid status is submitted.
         """
         if not data.get('status', []):
             self.setFieldError(
@@ -234,6 +234,32 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             else:
                 return _('Questions for ${context}',
                          mapping=replacements)
+
+    @property
+    def unspoken_languages(self):
+        """Return a formatted string of unspoken question languages.
+        
+        The string summarizes the questions that are in languages that         
+        no answer contact speaks. The string takes the form of an
+        inline list with links to see the questions for each language:
+        '_Hungarian_ (2), _Romanian_ (1)'.
+        """
+        languages = {}
+        questions = self.context.searchQuestions(
+            unsupported=self.context, status=[QuestionStatus.OPEN])
+        for question in questions:
+            lang = question.language
+            if lang in languages:
+                languages[lang] += languages[lang]
+            else:
+                languages[lang] = 1
+        if len(languages.keys()) == 0:
+            return None
+        format = u'<a href="%s/+by-language?field.language=%s">%s</a> (%s)'
+        url = canonical_url(self.context, rootsite='answers')
+        links = [format % (url, key.code, key.englishname, languages[key])
+                 for key in languages.keys()]
+        return u', '.join(links)
 
     @property
     def empty_listing_message(self):
@@ -292,7 +318,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         """Whether to show the Languages boxes or not.
 
         When the QuestionTarget has questions in only one language,
-        and that language is among the user's languages, we hide
+        and that language is among the user's languages, we do not render
         the language control because there are no choices to be made.
         """
         languages = list(self.context_question_languages)
@@ -303,6 +329,11 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             return False
         else:
             return True
+
+    @property
+    def hide_language_control(self):
+        """Whether to render the Language control as a hidden input."""
+        return False
 
     @safe_action
     @action(_('Search'))
@@ -428,45 +459,78 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
                     language=self.user_support_languages)
 
 
-class QuestionCollectionUnsupportedView(SearchQuestionsView):
-    """SearchQuestionsView specialization for unsupported questions.
+class QuestionCollectionByLanguageView(SearchQuestionsView):
+    """Search for questions in a specific language.
 
-     It displays questions that are asked in an unsupported language for the
-     questiontarget context.
+     It displays questions that are asked in the specified language for the
+     QuestionTarget context.
      """
+
+    def __init__(self, context, request):
+        """Initialize the view, and check that a language was submitted.
+        
+        When the language is missing, the View redirects to the project's
+        Answer facet.
+        """
+        SearchQuestionsView.__init__(self, context, request)
+        # Language is intrinsic to this view, it manages the language
+        # field without the help of formlib.
+        lang_code = request.get('field.language', '')
+        try:
+            self.language = getUtility(ILanguageSet)[lang_code]
+        except NotFoundError:
+            self.request.response.redirect(
+                canonical_url(self.context, rootsite='answers'))
 
     @property
     def pageheading(self):
         """See `SearchQuestionsView`."""
         if self.search_text:
-            return _('Unsupported questions matching "${search_text}" '
-                     'for ${context}', mapping=dict(
+            return _('${language} questions matching "${search_text}" '
+                     'in ${context}', mapping=dict(
                         context=self.context.displayname,
-                        search_text=self.search_text))
+                        search_text=self.search_text,
+                        language=self.language.englishname))
         else:
-            return _('Unsupported questions for ${context}',
-                      mapping={'context': self.context.displayname})
+            return _('${language} questions in ${context}',
+                      mapping=dict(
+                        context=self.context.displayname,
+                        language=self.language.englishname))
 
     @property
     def empty_listing_message(self):
         """See `SearchQuestionsView`."""
         if self.search_text:
-            return _('No unsupported questions matching "${search_text}" '
-                     'for ${context}.', mapping=dict(
+            return _('No ${language} questions matching "${search_text}" '
+                     'in ${context} for the selected status.', mapping=dict(
                         context=self.context.displayname,
-                        search_text=self.search_text))
+                        search_text=self.search_text,
+                        language=self.language.englishname))
         else:
-            return _("No questions are unsupported for ${context}.",
-                      mapping={'context': self.context.displayname})
+            return _('No ${language} questions in ${context} for the '
+                     'selected status.', mapping=dict(
+                        context=self.context.displayname,
+                        language=self.language.englishname))
 
     @property
     def show_language_control(self):
-        """See `SearchQuestionsView`."""
+        """See `SearchQuestionsView`.
+        
+        This view does not permit the user to select a language.
+        """
         return False
+
+    @property
+    def hide_language_control(self):
+        """See `SearchQuestionsView`.
+        
+        The language is predetermined.
+        """
+        return True
 
     def getDefaultFilter(self):
         """See `SearchQuestionsView`."""
-        return dict(language=None, unsupported=True)
+        return dict(language=self.language)
 
 
 class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
@@ -682,13 +746,7 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
 
     usedfor = IQuestionTarget
     facet = 'answers'
-    links = QuestionCollectionAnswersMenu.links + (
-        ['unsupported', 'new', 'answer_contact'])
-
-    def unsupported(self):
-        """Return a Link to unsupported questions."""
-        text = 'Unsupported'
-        return Link('+unsupported', text, icon='question')
+    links = QuestionCollectionAnswersMenu.links + (['new', 'answer_contact'])
 
     def new(self):
         """Return a link to ask a question."""
