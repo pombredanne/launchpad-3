@@ -21,8 +21,15 @@ shell script.
 The webapp only has rights to examine the CodeImportMachine table.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
-    >>> cur.execute('''SELECT * FROM CodeImportMachine;''')
-    >>> len(cur.fetchall())
+    >>> from canonical.launchpad.interfaces import (
+    ...      ICodeImportMachine, ICodeImportMachineSet)
+    >>> from zope.component import getUtility
+    >>> from zope.interface.verify import verifyObject
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> machine_set = getUtility(ICodeImportMachineSet)
+    >>> verifyObject(ICodeImportMachineSet, removeSecurityProxy(machine_set))
+    True
+    >>> len(list(machine_set.getAll()))
     1
 
 Jobs running on the machine itself will connect as the 'importd' user,

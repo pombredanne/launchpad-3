@@ -111,7 +111,3 @@ class CodeImportMachineSet(object):
     def getByHostname(self, hostname):
         """See `ICodeImportMachineSet`."""
         return CodeImportMachine.selectOneBy(hostname=hostname)
-
-    def new(self, hostname, online):
-        """See `ICodeImportMachineSet`."""
-        return CodeImportMachine(hostname=hostname, online=online)

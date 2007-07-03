@@ -108,8 +108,3 @@ class ICodeImportMachineSet(Interface):
 
     def getByHostname(hostname):
         """Retrieve the code importmachine for a hostname, if present."""
-
-    def new(hostname, online):
-        """Create a new code import machine with the given hostname and online
-        status.
-        """
