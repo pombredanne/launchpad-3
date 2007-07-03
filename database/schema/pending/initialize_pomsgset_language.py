@@ -1,9 +1,12 @@
-#! /usr/bin/python
+#! /usr/bin/python2.4
 
 """Populate POMsgSet's language column."""
 
+from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
+from canonical.launchpad.scripts.base import LaunchpadScript
 from canonical.launchpad.utilities.looptuner import LoopTuner
+
 from zope.interface import implements
 
 class FillLanguageColumn:
@@ -15,7 +18,7 @@ class FillLanguageColumn:
         self.transaction_manager = transaction_manager
         cur = cursor()
         cur.execute("SELECT min(id), max(id) FROM POMsgSet")
-        self.lowest_id, self.highest_id = cur.fetch_one()
+        self.lowest_id, self.highest_id = cur.fetchone()
 
         if self.lowest_id is None:
             # Table is empty.  We weren't expecting this!
@@ -46,14 +49,15 @@ class FillLanguageColumn:
                 LIMIT %d)
                 AS id
             """ % (self.lowest_id, batch_size))
-        next = cur.fetch_one()[0]
+        next = cur.fetchone()[0]
         if next is not None:
+            next += 1
             cur.execute("""
                 UPDATE POMsgSet
                 SET language = POFile.language
                 FROM POFile
                 WHERE
-                    POFile.id = POMsgSet.language AND
+                    POFile.id = POMsgSet.pofile AND
                     POMsgSet.id >= %d AND
                     POMsgSet.id < %d AND
                     POMsgSet.language IS NULL
@@ -67,9 +71,11 @@ class FillLanguageColumn:
 
 class InitializePOMsgSetLanguage(LaunchpadScript):
     """A script, for one-time use only, to initialize POMsgSet.language."""
+
     def main(self):
         filler = FillLanguageColumn(self.txn)
-        LoopTuner(filler, 4, maximum_batch_size=20000).run()
+        LoopTuner(filler, 4).run()
+        self.logger.info("Done.")
 
 if __name__ == '__main__':
     script = InitializePOMsgSetLanguage('initialize-pomsgset-language')
