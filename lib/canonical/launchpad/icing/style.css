@@ -1389,7 +1389,7 @@ div#applications {padding: 1em 0; text-align: center;}
 }
 .central {
   clear: left; /* Bugs FP */
-  font-size: 1.25em;
+  font-size: 1.125em;
   margin: 0 auto 1em;
   padding: 0.5em 0; /* FP should fit in ~750px; Bugs FP */
   width: auto;
