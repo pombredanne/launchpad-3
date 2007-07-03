@@ -51,7 +51,7 @@ class GoalDecideView(HasSpecificationsView, LaunchpadView):
         """
         form = self.request.form
         user = getUtility(ILaunchBag).user
-        count = self.specs.count
+        count = self.specs.count()
 
         if 'SUBMIT_CANCEL' in form:
             self.status_message = 'Cancelled'
