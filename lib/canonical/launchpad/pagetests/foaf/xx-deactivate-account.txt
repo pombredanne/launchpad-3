@@ -1,0 +1,47 @@
+= Deactivating user accounts =
+
+Users who don't want to use Launchpad anymore can easily deactivate their
+accounts, so they stop receiving emails from Launchpad and make it impossible
+to use their accounts to log in.
+
+    >>> browser.open('http://launchpad.dev/+login')
+    >>> browser.getControl('E-mail', index=0).value = 'test@canonical.com'
+    >>> browser.getControl('Password').value = 'test'
+    >>> browser.getControl('Log In').click()
+    >>> print extract_text(find_tags_by_class(browser.contents, "login")[0])
+    Logged in as Sample Person ...
+
+    >>> browser.open('http://launchpad.dev/~name12')
+    >>> browser.getLink('Deactivate your account').click()
+    >>> browser.url
+    'http://launchpad.dev/~name12/+deactivate-account'
+
+    >>> browser.getControl('Why are you deactivating your account?').value = (
+    ...     "I'm going to become a Budhist monk in Tibet") 
+    >>> browser.getControl('Deactivate My Account').click()
+
+    >>> browser.url
+    'http://launchpad.dev'
+    >>> for tag in find_tags_by_class(browser.contents, "informational"):
+    ...     print tag.renderContents()
+    Your account has been deactivated.
+
+Sample Person can't log into Launchpad anymore.
+
+    >>> browser.open('http://launchpad.dev/+login')
+    >>> browser.getControl('E-mail', index=0).value = 'test@canonical.com'
+    >>> browser.getControl('Password').value = 'test'
+    >>> browser.getControl('Log In').click()
+    >>> for tag in find_tags_by_class(browser.contents, "message"):
+    ...     print tag.renderContents()
+    The email address and password do not match.
+
+The action of deactivating an account is something that can only be done by
+the user himself --not even Launchpad admins can do that on behalf of other
+people.
+
+    >>> admin_browser.open('http://launchpad.dev/~cprov/+deactivate-account')
+    Traceback (most recent call last):
+    ...
+    Unauthorized: ...
+

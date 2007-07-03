@@ -48,7 +48,7 @@ from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
 from canonical.lp.dbschema import (
-    PersonCreationRationale, TeamMembershipRenewalPolicy,
+    AccountStatus, PersonCreationRationale, TeamMembershipRenewalPolicy,
     TeamMembershipStatus, TeamSubscriptionPolicy)
 
 
@@ -236,6 +236,14 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             title=_("Key used to generate opaque OpenID identities."),
             readonly=True, required=False,
             )
+
+    account_status = Choice(
+        title=_("The status of this person's account"), required=False,
+        readonly=False, values=AccountStatus.items)
+
+    account_status_comment = Text(
+        title=_("Why are you deactivating your account?"), required=False,
+        readonly=False)
 
     # Properties of the Person object.
     karma_category_caches = Attribute(
