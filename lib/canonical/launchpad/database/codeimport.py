@@ -50,6 +50,8 @@ class CodeImport(SQLBase):
     cvs_module = StringCol(default=None)
     svn_branch_url = StringCol(default=None)
 
+    date_last_successful = UtcDateTimeCol(default=None)
+
 
 class CodeImportSet:
     """See `ICodeImportSet`."""

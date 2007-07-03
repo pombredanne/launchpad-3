@@ -69,6 +69,8 @@ class ICodeImport(Interface):
         description=_("The path to import within the repository."
             " Usually, it is the name of the project."))
 
+    date_last_successful = Datetime(title=_("Last successful"), required=False)
+
 
 class ICodeImportSet(Interface):
     """Interface representing the set of code imports."""
