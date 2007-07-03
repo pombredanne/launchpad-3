@@ -35,7 +35,7 @@
         </div>
       </div>
 
-      <table width="100%" tal:condition="view/similar_bugs">
+      <table class="form" tal:condition="view/similar_bugs">
         <tbody>
 
           <tal:similar-bugs>
@@ -56,19 +56,48 @@
               <td></td>
               <td>
                 <div id="similar_bugs_form">
-                  <ul id="similar-bugs" style="list-style: none">
+                  <ul id="similar-bugs" style="list-style: none; margin-left: 0">
                     <li tal:repeat="bug view/similar_bugs"
                         tal:attributes="title bug/description/fmt:shorten/500"
                         title="bug description goes here">
-                      <label style="font-weight: normal">
-                        <input type="radio" name="field.bug_already_reported_as"
-                               tal:attributes="value string:${bug/id};
-                                               checked repeat/bug/start|nothing" />
-                        <a tal:attributes="href bug/fmt:url" href="#"
-                           tal:content="string:#${bug/id}: ${bug/title}">
-                          #1: Firefox does not support SVG
-                        </a>
-                      </label>
+                      <table tal:define="bugtask python:bug.getBugTask(context)">
+                        <tbody>
+                          <tr>
+                            <td>
+                              <input type="radio" name="field.bug_already_reported_as"
+                                     tal:attributes="id string:bug-already-reported-as-${bug/id};
+                                                     value string:${bug/id};
+                                                     checked repeat/bug/start|nothing" />
+                            </td>
+                            <td>
+                              <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
+                                     tal:content="structure bugtask/image:icon" />
+                            </td>
+                            <td>
+                              <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
+                                     style="font-weight: normal">
+                                <div>
+                                  #<tal:bug-id replace="bug/id">4</tal:bug-id>
+                                  <a tal:attributes="href bug/fmt:url"
+                                     tal:content="bug/title">Bug title here</a>
+                                </div>
+                                <div class="lesser" tal:condition="bugtask/date_closed">
+                                  Closed
+                                  <tal:closed content="bugtask/date_closed/fmt:approximatedate">
+                                    35 minutes ago
+                                  </tal:closed>
+                                </div>
+                                <div class="lesser" tal:condition="not:bugtask/date_closed">
+                                  Last updated
+                                  <tal:last-updated content="bug/date_last_updated/fmt:approximatedate">
+                                    2007-07-03
+                                  </tal:last-updated>
+                                </div>
+                              </label>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </li>
                   </ul>
 
