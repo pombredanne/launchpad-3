@@ -105,6 +105,7 @@ The answer message was added to the question's discussion:
     Read the Fine Answer:
     FAQ...: \u201cDisplaying SVG in Firefox\u201d.
 
+
 == Viewing a FAQ ==
 
 A link to the FAQ appears in the question details portlet:
@@ -153,3 +154,26 @@ the FAQ:
     >>> print admin_browser.getLink(
     ...     'Problem showing the SVG demo on W3C site').url
     http://answers.launchpad.dev/firefox/+question/2
+
+
+== Distribution and Source Packages ==
+
+Questions asked about a distribution or distribution source package
+can also be linked to FAQs.
+
+    >>> admin_browser.open(
+    ...     'http://answers.launchpad.dev/ubuntu/+question/11')
+    >>> admin_browser.title
+    'Ubuntu question #11:...'
+    >>> admin_browser.getLink('This is a FAQ').click()
+    >>> print admin_browser.title
+    Is question #11 a FAQ?
+
+    >>> admin_browser.open(
+    ...     'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox'
+    ...     '/+question/9')
+    >>> admin_browser.title
+    'mozilla-firefox in ubuntu question #9:...'
+    >>> admin_browser.getLink('This is a FAQ').click()
+    >>> print admin_browser.title
+    Is question #9 a FAQ?

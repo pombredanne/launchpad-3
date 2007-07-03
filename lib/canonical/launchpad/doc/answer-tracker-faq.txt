@@ -42,6 +42,18 @@ contacts.)
 (The complete description of the IFAQTarget is available in
 lib/canonical/launchpad/interfaces/ftests/faqtarget.txt)
 
+Altough not providing IFAQTarget directly, it is possible to adapt
+an IDistributionSourcePackage to it.
+
+    >>> mozilla_firefox = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> IFAQTarget.providedBy(mozilla_firefox)
+    False
+    >>> mozilla_firefox_faq_target = IFAQTarget(mozilla_firefox)
+    >>> verifyObject(
+    ...     IFAQTarget, removeSecurityProxy(mozilla_firefox_faq_target))
+    True
+
+
 == IFAQ ==
 
 FAQ document provides the IFAQ interface.

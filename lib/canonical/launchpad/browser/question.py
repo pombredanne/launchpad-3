@@ -947,13 +947,13 @@ class QuestionLinkFAQView(LaunchpadFormView):
 
     @cachedproperty
     def faq_target(self):
-        """Return the IFAQTarget that should be use for this question."""
+        """Return the `IFAQTarget` that should be use for this question."""
         # Adapt the question's target.
         return IFAQTarget(self.context.target)
 
     
 class QuestionSOP(StructuralObjectPresentation):
-    """Provides the structural heading for IQuestion."""
+    """Provides the structural heading for `IQuestion`."""
 
     def getMainHeading(self):
         """See ```IStructuralHeaderPresentation`."""
