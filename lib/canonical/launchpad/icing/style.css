@@ -600,7 +600,7 @@ body.pillarindex table#applications th {padding-left: 0;}
 #globalsearchscope label {display: block; padding: 0 0 2px;}
 
 /* The last element is a standard footer. */
-#globalfooter {clear: both;}
+#globalfooter {clear: both; margin-left: -20px;}
 /* It has a top border if the page doesn't already have a rounded border. */
 body.freeform #globalfooter {
   border-top: 1px solid #ccc;
@@ -870,24 +870,13 @@ a conditional comment in main-template.pt to work around the above rule. */
   background-image: url(mainarea_bottom.gif);
   background-repeat: repeat-x;
   background-position: bottom left;
+  margin: 0 -20px 0 -38px; /* opposite of margin for #nonhelp */
   position: relative;
   top: -15px; /*- reduces logo~tab gap -*/
 }
 body.freeform #mainarea {top: 0;}
 * html #mainarea {top: 0;}
 body.freeform #mainarea {top: 20px;} /*- no logo on freeform pages -*/
-#mainarea div.t {
-  width: 100%;
-  background-image: url(mainarea_left.gif);
-  background-repeat: repeat-y;
-  background-position: top left;
-}
-#mainarea div.u {
-  width: 100%;
-  background-image: url(mainarea_right.gif);
-  background-repeat: repeat-y;
-  background-position: top right;
-}
 #mainarea div.v {
   width: 100%;
   background-image: url(mainarea_bottomleft.gif);
