@@ -5,7 +5,8 @@
       <p>
         We&rsquo;ve just e-mailed
         <code tal:content="view/token/email">email</code> (from
-        noreply@launchpad.net) <span tal:replace="view/email_reason" />
+        <code>noreply@launchpad.net</code>)
+        <span tal:replace="view/email_reason" />
       </p>
       <p>
         To continue, follow the link in that message.

@@ -50,7 +50,7 @@
         float: right;
       }
       #auth h2 {margin: 0 0 0.25em; padding: 0;}
-      #auth div {margin: 0 0 1em;}
+      #auth div {margin: 0 0 1em; width: 100%;}
       #auth div div {margin: 0;}
       #auth input[type="text"], #auth input[type="password"] {
         display: block;
