@@ -68,11 +68,14 @@ class RequestedMailingListAPI(LaunchpadXMLRPCView):
         for team_name, status in statuses.items():
             mailing_list = registry.getTeamMailingList(team_name)
             if mailing_list is None:
-                # XXX Raise an exception
-                print 'XXX BAD MAILING LIST NAME XXX'
-                continue
+                return faults.NoSuchTeam(team_name)
             if status == 'failure':
-                mailing_list.reportResult(MailingListStatus.FAILED)
+                if mailing_list.status in (MailingListStatus.CONSTRUCTING,
+                                           MailingListStatus.MODIFIED,
+                                           MailingListStatus.DEACTIVATING):
+                    mailing_list.reportResult(MailingListStatus.FAILED)
+                else:
+                    return faults.UnexpectedStatusReport(team_name, status)
             elif status == 'success':
                 if mailing_list.status in (MailingListStatus.CONSTRUCTING,
                                            MailingListStatus.MODIFIED):
@@ -80,9 +83,8 @@ class RequestedMailingListAPI(LaunchpadXMLRPCView):
                 elif mailing_list.status == MailingListStatus.DEACTIVATING:
                     mailing_list.reportResult(MailingListStatus.INACTIVE)
                 else:
-                    print 'XXX BAD STATE CHANGE XXX'
-                    continue
+                    return faults.UnexpectedStatusReport(team_name, status)
             else:
-                print 'XXX BAD STATUS'
+                return faults.BadStatus(team_name, status)
         # Everything was fine.
         return True
