@@ -30,9 +30,9 @@ new system from anonymous and regular users.
       ...
     Unauthorized: ...
 
-Once we've logged in as member of vcs-imports, the object that provides
-ICodeImportMachineSet allows access to machines by hostname and to all
-machines.
+Once we've logged in as David Allouche, a member of vcs-imports, the
+object that provides ICodeImportMachineSet allows access to machines by
+hostname and to all machines.
 
     >>> login('david.allouche@canonical.com')
 
