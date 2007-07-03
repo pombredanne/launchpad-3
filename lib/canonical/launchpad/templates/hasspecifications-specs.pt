@@ -5,10 +5,9 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
+<metal:portlets fill-slot="portlets">
   <div tal:replace="structure context/@@+portlet-latestspecs" />
-</metal:leftportlets>
+</metal:portlets>
 
 <div metal:fill-slot="main"
      tal:define="specs view/specs;
