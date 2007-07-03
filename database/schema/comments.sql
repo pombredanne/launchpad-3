@@ -175,6 +175,11 @@ COMMENT ON COLUMN CodeImport.svn_branch_url IS 'The URL of the Subversion branch
 COMMENT ON COLUMN CodeImport.cvs_root IS 'The $CVSROOT details, probably of the form :pserver:user@host:/path.';
 COMMENT ON COLUMN CodeImport.cvs_module IS 'The module in cvs_root to import, often the name of the project.';
 
+-- CodeImportMachine
+
+COMMENT ON TABLE CodeImportMachine IS 'The record of a machine capable of performing jobs for the code import system.';
+COMMENT ON COLUMN CodeImportMachine.hostname IS 'The (unique) hostname of the machine.';
+COMMENT ON COLUMN CodeImportMachine.online IS 'Whether the machine is capable of performing jobs at this time.';
 
 -- CVE
 
