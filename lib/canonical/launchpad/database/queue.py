@@ -669,7 +669,7 @@ class PackageUpload(SQLBase):
             from_addr = ascii_smash(from_addr)
 
         simple_sendmail(
-            ascii_smash(from_addr), 
+            from_addr, 
             recipients,
             subject, 
             mail_text, 
