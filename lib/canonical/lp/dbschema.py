@@ -3211,6 +3211,21 @@ class MailingListStatus(DBSchema):
         owner.
         """)
 
+    MODIFIED = Item(8, """
+        Modified
+
+        An active mailing list has been modified and this modification needs
+        to be communicated to Mailman.
+        """)
+
+    DEACTIVATING = Item(9, """
+        Deactivating
+
+        The mailing list has been flagged for deactivation by the team owner.
+        Mailman will be informed of this and will take the necessary actions
+        to deactive the list.
+        """)
+
 
 class BuildStatus(DBSchema):
     """Build status type

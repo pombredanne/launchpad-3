@@ -1,0 +1,18 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
+    i18n_domain="launchpad">
+
+    <content class="canonical.launchpad.database.MailingList">
+        <allow interface="canonical.launchpad.interfaces.IMailingList"/>
+    </content>
+
+    <securedutility
+        class="canonical.launchpad.database.MailingListRegistry"
+        provides="canonical.launchpad.interfaces.IMailingListRegistry">
+        <allow
+         interface="canonical.launchpad.interfaces.IMailingListRegistry"/>
+    </securedutility>
+
+</configure>
