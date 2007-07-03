@@ -195,7 +195,7 @@ showing no questions when there could be in other languages.)
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
 
 
-== Language questions ==
+== Questions by language ==
 
 The project questions page displays an inline list of languages that
 have questions that are unsolved when such questions exist.
@@ -215,27 +215,26 @@ Firefox, he is informed that there are questions going unanswered.
     Portuguese (Brazil) (1) 
     with no answer contacts. Can you help?
 
-The action menu provides links to predefined searches; Unsupported is one
-of those searches.
+No Privileges Person follows the 'Portuguese (Brazil)' link to view
+questions by language. The language is predetermined by the view.
+The user cannot change the language. The link presets the STATUS to
+OPEN. No Privileges Person sees a single question as indicated by
+the preceding page.
 
-    >>> browser.open('http://launchpad.dev/firefox/+tickets')
-    >>> portlet = find_portlet(browser.contents, 'Actions')
-    >>> portlet.find(name='a', text='Unsupported')
-    u'Unsupported'
+    >>> user_browser.getLink('Portuguese (Brazil)').click()
+    >>> print user_browser.title
+    Portuguese (Brazil) questions in Mozilla Firefox
 
-Each product and distro can have questions asked in languages that
-none of the Answer Contacts speak.
+    >>> language_field = user_browser.getControl(name='field.language')
+    >>> print language_field.type
+    hidden
 
-    >>> browser.getLink('Unsupported').click()
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> soup.first('h1')
-    <h1>Unsupported questions for Mozilla Firefox</h1>
+    >>> user_browser.getControl(name='field.status').value
+    ['Open']
 
-That page displays table listing the Unsupported Questions for Mozilla
-Firefox
-
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> for question in soup.fetch('td', 'question'):
+    >>> content = find_main_content(user_browser.contents)
+    >>> for question in content.findAll('td', 'question'):
     ...     question.first('a').renderContents()
     'Problemas de Impress\xc3\xa3o no Firefox'
-
+    
+The page in all other respects behaves like a question search page.

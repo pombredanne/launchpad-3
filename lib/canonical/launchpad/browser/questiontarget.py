@@ -255,7 +255,8 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
                 languages[lang] = 1
         if len(languages.keys()) == 0:
             return None
-        format = u'<a href="%s/+by-language?field.language=%s">%s</a> (%s)'
+        format = (u'<a href="%s/+by-language'
+                  u'?field.language=%s&field.status=Open">%s</a> (%s)')
         url = canonical_url(self.context, rootsite='answers')
         links = [format % (url, key.code, key.englishname, languages[key])
                  for key in languages.keys()]
