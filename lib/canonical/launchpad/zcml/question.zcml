@@ -58,7 +58,7 @@
   <adapter
     for="canonical.launchpad.interfaces.IQuestion"
     provides="canonical.launchpad.interfaces.IQuestionTarget"
-    factory="canonical.launchpad.components.question.question_to_questiontarget"
+    factory="canonical.launchpad.components.answertracker.question_to_questiontarget"
     />
 
   <adapter

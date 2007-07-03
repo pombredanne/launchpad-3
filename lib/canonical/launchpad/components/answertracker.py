@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = []
 
+
 def question_to_questiontarget(question):
     """Adapts an IQuestion to its IQuestionTarget."""
     return question.target
