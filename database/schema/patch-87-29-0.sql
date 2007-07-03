@@ -8,7 +8,4 @@ UPDATE person
     WHERE id IN (SELECT id FROM ValidPersonOrTeamCache)
         AND teamowner IS NULL;
 
--- TODO: Can we find out the accounts which were suspended or closed by an
--- admin and update their statuses here?
-
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 29, 0);
