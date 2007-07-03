@@ -137,7 +137,7 @@ questions are written in Launchpad.
 
     >>> sorted([language.code
     ...         for language in question_set.getQuestionLanguages()])
-    [u'en', u'es', u'pt_BR']
+    [u'ar', u'en', u'es', u'pt_BR']
 
 == getActiveProjects() ==
 

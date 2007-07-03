@@ -251,7 +251,7 @@ of changes to the bug status:
     http://.../ubuntu/+bug/...
     "Installer fails on a Mac PPC"
     <BLANKLINE>
-    This bug is linked to #14.
+    This bug is linked to #15.
     Installer doesn't work on a Mac
     http://.../ubuntu/+question/...
     <BLANKLINE>
