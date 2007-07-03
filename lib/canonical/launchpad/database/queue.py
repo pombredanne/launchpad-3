@@ -446,7 +446,8 @@ class PackageUpload(SQLBase):
                 config.uploader.default_sender_name,
                 config.uploader.default_sender_address)
         else:
-            interpolations['MAINTAINERFROM'] = changes['maintainer']
+            interpolations['MAINTAINERFROM'] = guess_encoding(
+                changes['changed-by'])
 
         # The template is ready.  The remainder of this function deals with
         # whether to send a 'new' message, an acceptance message and/or an
@@ -610,6 +611,9 @@ class PackageUpload(SQLBase):
 
     def _sendMail(self, mail_text):
         mail_message = message_from_string(ascii_smash(mail_text))
+        assert 'X-Katie' in mail_message.keys(), (
+            "Upload notification does not contain the mandatory"
+            "'X-Katie' header.")
         debug(self.logger, "Sent a mail:")
         debug(self.logger, "    Subject: %s" % mail_message['Subject'])
         debug(self.logger, "    Recipients: %s" % mail_message['To'])

@@ -74,7 +74,7 @@ But cprov can.
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
     Team and membership summary
     Team owner: Ubuntu Team
-    Membership: 11 (Moderated Team)
+    Membership: ... (Moderated Team)
 
     >>> browser.open('http://launchpad.dev/~landscape-developers/+members')
     >>> print extract_text(find_tag_by_id(browser.contents, 'activemembers'))
