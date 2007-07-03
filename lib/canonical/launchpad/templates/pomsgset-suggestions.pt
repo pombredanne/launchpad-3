@@ -8,13 +8,13 @@
         <input
           type="radio"
           tal:attributes="
-            name string:msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_translation_${submission/plural_index}_radiobutton;
-            id string:msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}_radiobutton;
-            value string:msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index};
+            name string:${submission/translation_html_id}_radiobutton;
+            id string:${submission/suggestion_html_id}_radiobutton;
+            value string:${submission/suggestion_html_id};
             onClick string:
               javascript:copyInnerHTMLById(
-                'msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}',
-                'msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_translation_${submission/plural_index}_new')
+                '${submission/suggestion_html_id}',
+                '${submission/translation_html_id}_new')
             " />
       </tal:user-is-official-translator>
       <tal:user-is-not-official-translator condition="not:context/user_is_official_translator">
@@ -22,9 +22,9 @@
           tal:attributes="
             onClick string:
               javascript:copyInnerHTMLById(
-                'msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}',
-                'msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_translation_${submission/plural_index}_new');;
-              selectWidget('msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_translation_${submission/plural_index}_new_select', event);;
+                '${submission/suggestion_html_id}',
+                '${submission/translation_html_id}_new');;
+              selectWidget('${submission/translation_html_id}_new_select', event);;
             return false;;
           "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
       </tal:user-is-not-official-translator>
@@ -36,7 +36,7 @@
         tal:attributes="
           lang submission/language/dashedcode;
           dir submission/language/abbreviated_text_dir;
-          id string:msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}"
+          id string:${submission/suggestion_html_id}"
         tal:content="structure submission/suggestion_text">
         suggestion
       </div>
@@ -46,8 +46,8 @@
         tal:attributes="
           lang submission/language/dashedcode;
           dir submission/language/abbreviated_text_dir;
-          id string:msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index};
-          for string:msgset_${context/pomsgset/potmsgset/id}_${submission/language/code}_suggestion_${submission/id}_${submission/plural_index}_radiobutton;"
+          id string:${submission/suggestion_html_id};
+          for string:${submission/suggestion_html_id}_radiobutton;"
         tal:content="structure submission/suggestion_text">
         suggestion
       </label>
