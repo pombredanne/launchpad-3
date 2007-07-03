@@ -242,7 +242,8 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         The string summarizes the questions that are in languages that         
         no answer contact speaks. The string takes the form of an
         inline list with links to see the questions for each language:
-        '_Hungarian_ (2), _Romanian_ (1)'.
+        '_Hungarian_ (2), _Romanian_ (1)'. None is returrned when all
+        questions are in a language spoken by the answer contacts.
         """
         languages = {}
         questions = self.context.searchQuestions(
