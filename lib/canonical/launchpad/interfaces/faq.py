@@ -48,8 +48,8 @@ class IFAQ(IHasOwner):
         description=_(
             'The FAQ content. This is plain text format. If you want to link'
             'to an external document, simply enter a short description and '
-            'the URL to the document..'),
-        required=False)
+            'the URL to the document.'),
+        required=True)
 
     date_created = Datetime(title=_('Created'), required=True, readonly=True)
 
