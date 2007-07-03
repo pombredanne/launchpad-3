@@ -8,8 +8,8 @@ Several views are used for presentation of FAQ.
     >>> login('foo.bar@canonical.com')
     >>> foo_bar = getUtility(ILaunchBag).user
     >>> firefox_faq = firefox.newFAQ(
-    ...     foo_bar, 'A FAQ', 'FAQ for test purpose',
-    ...     url='http://help.launchpad.net')
+    ...     foo_bar, 'A FAQ', 'FAQ for test purpose')
+
 
 == FAQStructuralObjectPresentation ==
 
