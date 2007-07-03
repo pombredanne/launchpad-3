@@ -58,6 +58,19 @@ followed by a description of the action that caused the entry to be created.
     >>> p.hide_email_addresses
     True
 
+By default, newly created Person entries will have AccountStatus.NOACCOUNT as
+their account_status.  This is only changed if/when we turn that entry into an
+actual user account. (Currently, we assume that a Person entry is turned into
+a user account when it first has an email address confirmed)
+
+    >>> p.account_status
+    <Item NOACCOUNT...AccountStatus...
+    >>> p.setPreferredEmail(email)
+    >>> email.status
+    <Item PREFERRED...EmailAddressStatus...
+    >>> p.account_status
+    <Item ACTIVE...AccountStatus...
+
 When a new sourcepackage is imported and a Person entry has to be created
 because we don't know about the maintainer of that package, the code to create
 the person should look like this:

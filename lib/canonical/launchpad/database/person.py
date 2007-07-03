@@ -1577,7 +1577,15 @@ class Person(SQLBase, HasSpecificationsMixin):
             # SQLObject will issue the changes and we can't set the new
             # address to PREFERRED until the old one has been set to VALIDATED
             preferredemail.syncUpdate()
-        # get the non-proxied EmailAddress object, so we can call
+        else:
+            # This is the first time we're confirming this person's email
+            # address, so we now assume this person has a Launchpad account.
+            # XXX: This is a hack! In the future we won't have this
+            # association between accounts and confirmed addresses, but this
+            # will do for now. -- Guilherme Salgado, 2007-07-03
+            self.account_status = AccountStatus.ACTIVE
+            self.account_status_comment = None
+        # Get the non-proxied EmailAddress object, so we can call
         # syncUpdate() on it:
         email = EmailAddress.get(email.id)
         email.status = EmailAddressStatus.PREFERRED
