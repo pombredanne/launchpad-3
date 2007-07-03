@@ -126,11 +126,11 @@ class AccountStatus(DBSchema):
         There's an active Launchpad account associated with this Person.
         """)
 
-    CLOSED = Item(30, """
-        Closed Launchpad account
+    DEACTIVATED = Item(30, """
+        Deactivated Launchpad account
 
-        The account associated with this Person has been closed by the Person
-        himself.
+        The account associated with this Person has been deactivated by the
+        Person himself.
         """)
 
     SUSPENDED = Item(40, """
