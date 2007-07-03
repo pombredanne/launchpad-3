@@ -238,6 +238,28 @@ class IPackageUploadSource(Interface):
             readonly=False,
             )
 
+    def verifyBeforeAccept():
+        """Perform overall checks before promoting source to ACCEPTED queue.
+
+        If two queue items have the same (name, version) pair there is
+        an inconsistency. To identify this situation we check the accepted
+        & done queue items for each distroseries for such duplicates and
+        raise an exception if any are found.
+        See bug #31038 & #62976 for details.
+        """
+
+    def verifyBeforePublish():
+        """Perform overall checks before publishing a source queue record.
+
+        Check if the source package files do not collide with the
+        ones already published in the archive. We need this to catch
+        inaccurate  *epoched* versions, which would pass the upload version
+        check but would collide with diff(s) or dsc(s) previously published
+        on disk. This inconsistency is well known in debian-like archives
+        and happens because filenames do not contain epoch. For further
+        information see bug #119753.
+        """
+
     def checkComponentAndSection():
         """Verify the current Component and Section via Selection table.
 

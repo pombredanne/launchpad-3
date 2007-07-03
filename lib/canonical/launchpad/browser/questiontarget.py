@@ -32,7 +32,8 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.launchpad.helpers import is_english_variant, request_languages
+from canonical.launchpad.helpers import (
+    browserLanguages, is_english_variant, request_languages)
 from canonical.launchpad.interfaces import (
     IDistribution, ILanguageSet, IProject, IQuestionCollection, IQuestionSet,
     IQuestionTarget, ISearchableByQuestionOwner, ISearchQuestionsForm,
@@ -74,19 +75,16 @@ class UserSupportLanguagesMixin:
     def user_support_languages(self):
         """The set of user support languages.
 
-        This set includes English and the user's preferred languages,
-        excluding all English variants. If the user is not logged in, or
-        doesn't have any preferred languages set, the languages will be
-        inferred from the request's (the Accept-Language header and GeoIP
+        This set includes the user's preferred languages, excluding all 
+        English variants. If the user is not logged in, or doesn't have 
+        any preferred languages set, the languages will be inferred 
+        from the request (the Accept-Language header and GeoIP
         information).
         """
-        en = getUtility(ILanguageSet)['en']
         languages = set(
             language for language in request_languages(self.request)
-            if not is_english_variant(language)
-            and language is not en)
+            if not is_english_variant(language))
         languages = list(languages)
-        languages.insert(0, en)
         return languages
 
 
@@ -143,13 +141,13 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     search_params = None
 
     def setUpFields(self):
-        """See LaunchpadFormView."""
+        """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpFields(self)
         if self.show_language_control:
             self.form_fields = self.createLanguageField() + self.form_fields
 
     def setUpWidgets(self):
-        """See LaunchpadFormView."""
+        """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpWidgets(self)
         # Make sure that the default filter is displayed
         # correctly in the widgets when not overriden by the user
@@ -186,7 +184,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
         This validation method sets the chosen_language attribute.
         """
-        if 'status' not in data:
+        if not data.get('status', []):
             self.setFieldError(
                 'status', _('You must choose at least one status.'))
 
@@ -365,7 +363,7 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _('Questions you asked matching "${search_text}" for '
                      '${context}', mapping=dict(
@@ -377,7 +375,7 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _("You didn't ask any questions matching "
                      '"${search_text}" for ${context}.', mapping=dict(
@@ -388,7 +386,7 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
                      mapping={'context': self.context.displayname})
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(owner=self.user, status=set(QuestionStatus.items),
                     language=self.user_support_languages)
 
@@ -402,7 +400,7 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _('Questions matching "${search_text}" needing your '
                      'attention for ${context}', mapping=dict(
@@ -414,7 +412,7 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _('No questions matching "${search_text}" need your '
                      'attention for ${context}.', mapping=dict(
@@ -425,7 +423,7 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
                      mapping={'context': self.context.displayname})
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(needs_attention_from=self.user,
                     language=self.user_support_languages)
 
@@ -439,7 +437,7 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _('Unsupported questions matching "${search_text}" '
                      'for ${context}', mapping=dict(
@@ -451,7 +449,7 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _('No unsupported questions matching "${search_text}" '
                      'for ${context}.', mapping=dict(
@@ -463,15 +461,15 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
 
     @property
     def show_language_control(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return False
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(language=None, unsupported=True)
 
 
-class ManageAnswerContactView(LaunchpadFormView):
+class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
     """View class for managing answer contacts."""
 
     label = _("Manage answer contacts")
@@ -479,7 +477,7 @@ class ManageAnswerContactView(LaunchpadFormView):
     custom_widget('answer_contact_teams', LabeledMultiCheckBoxWidget)
 
     def setUpFields(self):
-        """See LaunchpadFormView."""
+        """See `LaunchpadFormView`."""
         self.form_fields = form.Fields(
             self._createUserAnswerContactField(),
             self._createTeamAnswerContactsField())
@@ -534,6 +532,7 @@ class ManageAnswerContactView(LaunchpadFormView):
         response = self.request.response
         replacements = {'context': self.context.displayname}
         if want_to_be_answer_contact:
+            self._updatePreferredLanguages(self.user)
             if self.context.addAnswerContact(self.user):
                 response.addNotification(
                     _('You have been added as an answer contact for '
@@ -547,6 +546,7 @@ class ManageAnswerContactView(LaunchpadFormView):
         for team in self.administrated_teams:
             replacements['teamname'] = team.displayname
             if team in answer_contact_teams:
+                self._updatePreferredLanguages(team)
                 if self.context.addAnswerContact(team):
                     response.addNotification(
                         _('$teamname has been added as an answer contact '
@@ -558,6 +558,40 @@ class ManageAnswerContactView(LaunchpadFormView):
                           'for $context.', mapping=replacements))
 
         self.next_url = canonical_url(self.context, rootsite='answers')
+
+    def _updatePreferredLanguages(self, person_or_team):
+        """Check or update the Person's preferred languages as needed.
+
+        Answer contacts must tell Launchpad in which languages they provide
+        help. If the Person has not already set his preferred languages, they
+        are set to his browser languages. In the case of a team without
+        languages, only English is added to the preferred languages. When
+        languages are added, a notification is added to the response.
+        """
+        if person_or_team.languages.count() > 0:
+            return
+
+        response = self.request.response
+        if person_or_team.isTeam():
+            person_or_team.addLanguage(getUtility(ILanguageSet)['en'])
+            team_mapping = {'name' : person_or_team.name,
+                            'displayname' : person_or_team.displayname}
+            response.addNotification(
+                _("English was added to ${displayname}'s "
+                  '<a href="/~${name}/+editlanguages">preferred '
+                  'languages</a>.', mapping=team_mapping))
+        else:
+            if len(browserLanguages(self.request)) > 0:
+                languages = browserLanguages(self.request)
+            else:
+                languages = [getUtility(ILanguageSet)['en']]
+            for language in languages:
+                person_or_team.addLanguage(language)
+            language_str = ', '.join([lang.displayname for lang in languages])
+            response.addNotification(
+                _('<a href="/people/+me/+editlanguages">Your preferred '
+                  'languages</a> were set to your browser languages: '
+                  '$languages.', mapping={'languages' : language_str}))
 
 
 class QuestionTargetFacetMixin:

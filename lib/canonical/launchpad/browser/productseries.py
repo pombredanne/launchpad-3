@@ -7,6 +7,7 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesSOP',
            'ProductSeriesFacets',
            'ProductSeriesOverviewMenu',
+           'ProductSeriesBugsMenu',
            'ProductSeriesSpecificationsMenu',
            'ProductSeriesTranslationMenu',
            'ProductSeriesView',
@@ -20,28 +21,27 @@ __all__ = ['ProductSeriesNavigation',
            'get_series_branch_error']
 
 import cgi
-from datetime import datetime
+import os.path
 import pytz
-
+from datetime import datetime
 from BeautifulSoup import BeautifulSoup
-
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
-
-from canonical.launchpad.helpers import (
-    browserLanguages, is_tar_filename, request_languages)
+from canonical.launchpad.helpers import browserLanguages, is_tar_filename
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
-    ISourcePackageNameSet, IProductSeries,
+    ISourcePackageNameSet, IProductSeries, ITranslationImporter,
     ITranslationImportQueue, IProductSeriesSet, NotFoundError)
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation, DefaultShortLink
+from canonical.launchpad.browser.launchpad import (
+    StructuralObjectPresentation, DefaultShortLink)
+from canonical.launchpad.browser.rosetta import TranslationsMixin
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
     canonical_url, LaunchpadView, StandardLaunchpadFacets,
@@ -169,6 +169,19 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         return Link('+review', text, icon='edit')
 
 
+class ProductSeriesBugsMenu(ApplicationMenu):
+
+    usedfor = IProductSeries
+    facet = 'bugs'
+    links = ['new', 'nominations']
+
+    def new(self):
+        return Link('+filebug', 'Report a bug', icon='add')
+
+    def nominations(self):
+        return Link('+nominations', 'Review nominations', icon='bug')
+
+
 class ProductSeriesSpecificationsMenu(ApplicationMenu):
     """Specs menu for ProductSeries.
 
@@ -246,7 +259,7 @@ def get_series_branch_error(product, branch):
 # this becomes maintainable and form validation handled for us.
 # Currently, the pages just return 'System Error' as they trigger database
 # constraints. -- StuartBishop 20050502
-class ProductSeriesView(LaunchpadView):
+class ProductSeriesView(LaunchpadView, TranslationsMixin):
 
     def initialize(self):
         self.form = self.request.form
@@ -263,10 +276,6 @@ class ProductSeriesView(LaunchpadView):
 
         # Check the form submission.
         self.processForm()
-
-    @property
-    def languages(self):
-        return request_languages(self.request)
 
     def processForm(self):
         """Process a form if it was submitted."""
@@ -381,7 +390,9 @@ class ProductSeriesView(LaunchpadView):
 
         translation_import_queue_set = getUtility(ITranslationImportQueue)
 
-        if filename.endswith('.pot') or filename.endswith('.po'):
+        root, ext = os.path.splitext(filename)
+        translation_importer = getUtility(ITranslationImporter)
+        if (ext in translation_importer.file_extensions_with_importer):
             # Add it to the queue.
             translation_import_queue_set.addOrUpdateEntry(
                 filename, content, True, self.user,

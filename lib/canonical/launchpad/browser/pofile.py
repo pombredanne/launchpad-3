@@ -1,5 +1,5 @@
-# Copyright 2004-2006 Canonical Ltd.  All rights reserved.
-"""Browser code for PO files."""
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+"""Browser code for Translation files."""
 
 __metaclass__ = type
 
@@ -15,6 +15,7 @@ __all__ = [
     ]
 
 import re
+import os.path
 from zope.app.form.browser import DropdownWidget
 from zope.component import getUtility
 from zope.publisher.browser import FileUpload
@@ -25,7 +26,8 @@ from canonical.launchpad.browser.pomsgset import (
 from canonical.launchpad.browser.potemplate import (
     BaseExportView, POTemplateSOP, POTemplateFacets)
 from canonical.launchpad.interfaces import (
-    IPOFile, ITranslationImportQueue, UnexpectedFormData, NotFoundError)
+    IPOFile, ITranslationImporter, ITranslationImportQueue,
+    UnexpectedFormData, NotFoundError)
 from canonical.launchpad.webapp import (
     ApplicationMenu, Link, canonical_url, LaunchpadView, Navigation)
 from canonical.launchpad.webapp.batching import BatchNavigator
@@ -137,7 +139,7 @@ class POFileUploadView(POFileView):
         self.process_form()
 
     def process_form(self):
-        """Handle a form submission to request a .po file upload."""
+        """Handle a form submission to request a translation file upload."""
         if self.request.method != 'POST' or self.user is None:
             # The form was not submitted or the user is not logged in.
             return
@@ -171,12 +173,12 @@ class POFileUploadView(POFileView):
             return
 
         translation_import_queue = getUtility(ITranslationImportQueue)
-
-        if not filename.endswith('.po'):
-            self.request.response.addWarningNotification(
+        root, ext = os.path.splitext(filename)
+        translation_importer = getUtility(ITranslationImporter)
+        if (ext not in translation_importer.file_extensions_with_importer):
+            self.request.response.addErrorNotification(
                 "Ignored your upload because the file you uploaded was not"
-                " recognised as a file that can be imported as it does not"
-                " ends with the '.po' suffix.")
+                " recognised as a file that can be imported.")
             return
 
         # We only set the 'published' flag if the upload is marked as an
@@ -200,8 +202,8 @@ class POFileUploadView(POFileView):
             potemplate=self.context.potemplate, pofile=self.context)
 
         self.request.response.addInfoNotification(
-            'Thank you for your upload. The PO file content will be imported'
-            ' soon into Launchpad. You can track its status from the'
+            'Thank you for your upload. The translation content will be'
+            ' imported soon into Launchpad. You can track its status from the'
             ' <a href="%s">Translation Import Queue</a>' %
                 canonical_url(translation_import_queue))
 
@@ -247,8 +249,23 @@ class POFileTranslateView(BaseTranslationView):
 
     def _initializeMsgSetViews(self):
         """See BaseTranslationView._initializeMsgSetViews."""
-        for potmsgset in self.batchnav.currentBatch():
-            self.pomsgset_views.append(self._buildPOMsgSetView(potmsgset))
+        self._buildPOMsgSetViews(self.batchnav.currentBatch())
+
+    def _buildPOMsgSetViews(self, for_potmsgsets):
+        """Build POMsgSet views for all POTMsgSets in for_potmsgsets."""
+        for_potmsgsets = list(for_potmsgsets)
+        po_to_pot_msg = self.context.getMsgSetsForPOTMsgSets(for_potmsgsets)
+
+        last = None
+        for potmsgset in for_potmsgsets:
+            assert last is None or potmsgset.sequence >= last.sequence, (
+                "POTMsgSets on page not in ascending sequence order")
+            last = potmsgset
+
+            pomsgset = po_to_pot_msg[potmsgset]
+            view = self._prepareView(
+                POMsgSetView, pomsgset, self.errors.get(potmsgset))
+            self.pomsgset_views.append(view)
 
     def _submitTranslations(self):
         """See BaseTranslationView._submitTranslations."""
@@ -269,10 +286,10 @@ class POFileTranslateView(BaseTranslationView):
 
             # Get hold of an appropriate message set in the PO file,
             # creating it if necessary.
-            msgid_text = potmsgset.primemsgid_.msgid
-            pomsgset = self.pofile.getPOMsgSet(msgid_text, only_current=False)
+            pomsgset = self.pofile.getPOMsgSetFromPOTMsgSet(potmsgset,
+                                                            only_current=False)
             if pomsgset is None:
-                pomsgset = self.pofile.createMessageSetFromText(msgid_text)
+                pomsgset = self.pofile.createMessageSetFromMessageSet(potmsgset)
 
             error = self._storeTranslations(pomsgset)
             if error and pomsgset.sequence != 0:
@@ -315,23 +332,13 @@ class POFileTranslateView(BaseTranslationView):
     # Specific methods
     #
 
-    def _buildPOMsgSetView(self, potmsgset):
-        """Build a POMsgSetView for a given POTMsgSet."""
-        language = self.context.language
-        variant = self.context.variant
-        pomsgset = potmsgset.getPOMsgSet(language.code, variant)
-        if pomsgset is None:
-            pomsgset = potmsgset.getDummyPOMsgSet(language.code, variant)
-        return self._prepareView(POMsgSetView, pomsgset,
-                                 self.errors.get(pomsgset.potmsgset))
-
     def _initializeShowOption(self):
         # Get any value given by the user
         self.show = self.request.form.get('show')
 
         if self.show not in (
             'translated', 'untranslated', 'all', 'need_review',
-            'changed_in_launchpad'):
+            'changed_in_launchpad', 'new_suggestions'):
             # XXX: should this be an UnexpectedFormData?
             self.show = self.DEFAULT_SHOW
         if self.show == 'all':
@@ -342,6 +349,8 @@ class POFileTranslateView(BaseTranslationView):
             self.shown_count = self.context.untranslatedCount()
         elif self.show == 'need_review':
             self.shown_count = self.context.fuzzy_count
+        elif self.show == 'new_suggestions':
+            self.shown_count = self.context.unreviewedCount()
         elif self.show == 'changed_in_launchpad':
             self.shown_count = self.context.updatesCount()
         else:
@@ -361,6 +370,8 @@ class POFileTranslateView(BaseTranslationView):
             ret = pofile.getPOTMsgSetFuzzy()
         elif self.show == 'untranslated':
             ret = pofile.getPOTMsgSetUntranslated()
+        elif self.show == 'new_suggestions':
+            ret = pofile.getPOTMsgSetWithNewSuggestions()
         elif self.show == 'changed_in_launchpad':
             ret = pofile.getPOTMsgSetChangedInLaunchpad()
         else:

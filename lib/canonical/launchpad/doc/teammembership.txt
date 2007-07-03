@@ -309,16 +309,26 @@ ensures we'll never have teams which can't be managed.
     True
 
 
-== Changing membership statuses ==
+== Changing membership data ==
 
-TeamMembership.status is a read only attribute, so all status changes must be
-made using the setStatus() method.
+The only bits of a TeamMembership that can be changed are its status, expiry
+date, reviewer[comment] and the date the user joined. From these ones, the
+most interesting ones are the status and expiry date, which can only be set
+through a specific API (setStatus() and setExpirationDate()) protected with
+the launchpad.Edit permission. Also, since we don't want team admins to change
+the expiry date of their own memberships, the setExpirationDate() method does
+an extra check to ensure that doesn't happen.
 
     # Foo Bar is a launchpad admin, but even so he can't change a membership's
-    # status by hand.
+    # status/expiry-date by hand.
     >>> login('foo.bar@canonical.com')
     >>> membership = foobar.myactivememberships[0]
     >>> membership.status = None
+    Traceback (most recent call last):
+    ...
+    ForbiddenAttribute: ...
+
+    >>> membership.dateexpires = None
     Traceback (most recent call last):
     ...
     ForbiddenAttribute: ...
@@ -348,27 +358,84 @@ not changed.
 
     >>> buildd_admins = getUtility(IPersonSet).getByName(
     ...     'launchpad-buildd-admins')
-    >>> membership = membershipset.getByPersonAndTeam(foobar, buildd_admins)
-    >>> print membership.status.title
+    >>> foobar_on_buildd = membershipset.getByPersonAndTeam(
+    ...     foobar, buildd_admins)
+    >>> print foobar_on_buildd.status.title
     Administrator
-    >>> print membership.datejoined.strftime("%Y-%m-%d")
+    >>> print foobar_on_buildd.datejoined.strftime("%Y-%m-%d")
     2006-05-15
 
-    >>> membership.setStatus(TeamMembershipStatus.DEACTIVATED, reviewer=foobar)
-    >>> print membership.status.title
+    >>> foobar_on_buildd.setStatus(
+    ...     TeamMembershipStatus.DEACTIVATED, reviewer=foobar)
+    >>> print foobar_on_buildd.status.title
     Deactivated
-    >>> print membership.datejoined.strftime("%Y-%m-%d")
+    >>> print foobar_on_buildd.datejoined.strftime("%Y-%m-%d")
     2006-05-15
 
 Finally, if we reactivate his membership, the datejoined will once again be
 updated.
 
-    >>> membership.setStatus(TeamMembershipStatus.APPROVED, reviewer=foobar)
-    >>> print membership.status.title
+    >>> foobar_on_buildd.setStatus(
+    ...     TeamMembershipStatus.APPROVED, reviewer=foobar)
+    >>> print foobar_on_buildd.status.title
     Approved
-    >>> membership.datejoined.date() == utc_now.date()
+    >>> foobar_on_buildd.datejoined.date() == utc_now.date()
     True 
 
+When changing the expiry date we need to provide a date in the future and,
+as mentioned above, the change can't be done by a team admin to his own
+membership.
+
+We're still logged in as Foo Bar, which is a launchpad admin and thus
+can change any membership's expiry date (even his own), as long as
+the new expiry date is not in the past.
+
+    >>> foobar == foobar_on_buildd.team.teamowner
+    True
+    >>> foobar_on_buildd.canChangeExpirationDate(foobar)
+    True
+    >>> one_day_ago = datetime.now(pytz.timezone('UTC')) - timedelta(days=1)
+    >>> tomorrow = datetime.now(pytz.timezone('UTC')) + timedelta(days=1)
+    >>> foobar_on_buildd.setExpirationDate(one_day_ago, foobar)
+    Traceback (most recent call last):
+    ...
+    AssertionError: ...
+    >>> foobar_on_buildd.setExpirationDate(tomorrow, foobar)
+
+Team owners can also renew any memberships of the team they own.
+
+    >>> landscape = getUtility(IPersonSet).getByName(
+    ...     'landscape-developers')
+    >>> sampleperson = getUtility(IPersonSet).getByName(
+    ...     'name12')
+    >>> sampleperson_on_landscape = membershipset.getByPersonAndTeam(
+    ...     sampleperson, landscape)
+    >>> landscape.teamowner.name
+    u'name12'
+    >>> sampleperson_on_landscape.canChangeExpirationDate(sampleperson)
+    True
+    >>> sampleperson_on_landscape.setExpirationDate(tomorrow, sampleperson)
+
+In the case of a mere team admin, though, he can only change the expiry
+date of other's memberships, not his own.
+
+    >>> cprov_on_buildd = membershipset.getByPersonAndTeam(
+    ...     cprov, buildd_admins)
+    >>> buildd_admins.teamowner.name
+    u'name16'
+    >>> print cprov_on_buildd.status.title
+    Administrator
+
+    >>> foobar_on_buildd.canChangeExpirationDate(cprov)
+    True
+    >>> foobar_on_buildd.setExpirationDate(tomorrow, cprov)
+
+    >>> cprov_on_buildd.canChangeExpirationDate(cprov)
+    False
+    >>> cprov_on_buildd.setExpirationDate(tomorrow, cprov)
+    Traceback (most recent call last):
+    ...
+    AssertionError: ...
 
 == Flagging expired memberships ==
 
@@ -385,7 +452,9 @@ membership to expire right now.
     []
 
 Let's change the expiry date of an active membership, so we have something
-that should be expired.
+that should be expired. Since we can't set an expiry date in the past for a
+membership using setExpirationDate(), we'll have to cheat and access the
+dateexpires attribute directly.
 
     >>> foobar_on_admins = membershipset.getByPersonAndTeam(
     ...     personset.getByName('name16'), personset.getByName('admins'))
@@ -394,8 +463,7 @@ that should be expired.
     >>> foobar_on_admins.status.title
     'Administrator'
     >>> login('foo.bar@canonical.com')
-    >>> one_day_ago = datetime.now(pytz.timezone('UTC')) - timedelta(days=1)
-    >>> foobar_on_admins.dateexpires = one_day_ago
+    >>> removeSecurityProxy(foobar_on_admins).dateexpires = one_day_ago
     >>> flush_database_updates()
 
     >>> [(membership.person.name, membership.team.name)
@@ -412,7 +480,7 @@ deactivated, so it should not be flagged as expired.
     True
     >>> sp_on_ubuntu_translators.status.title
     'Deactivated'
-    >>> sp_on_ubuntu_translators.dateexpires = one_day_ago
+    >>> removeSecurityProxy(sp_on_ubuntu_translators).dateexpires = one_day_ago
     >>> flush_database_updates()
 
     >>> [(membership.person.name, membership.team.name)
@@ -435,7 +503,8 @@ expire on that date or before.
     >>> [(membership.person.name, membership.team.name)
     ...  for membership in membershipset.getMembershipsToExpire(when=when)]
     [(u'sabdfl', u'ubuntu-team'), (u'name16', u'admins'),
-     (u'ubuntu-team', u'guadamen')]
+     (u'ubuntu-team', u'guadamen'), (u'name16', u'launchpad-buildd-admins'),
+     (u'name12', u'landscape-developers')]
 
 Now we commit the changes and run the cronscript.
 XXX: flush_database_updates() shouldn't be needed. This seems to be
@@ -500,7 +569,7 @@ still active.
 The member himself can't change the expiration date of his membership.
 
     >>> login(karl.preferredemail.email)
-    >>> karl_on_mirroradmins.dateexpires = tomorrow
+    >>> karl_on_mirroradmins.setExpirationDate(tomorrow, karl)
     Traceback (most recent call last):
     ...
     Unauthorized: ...
@@ -508,7 +577,8 @@ The member himself can't change the expiration date of his membership.
 Only a team admin can.
 
     >>> login(mirror_admins.teamowner.preferredemail.email)
-    >>> karl_on_mirroradmins.dateexpires = tomorrow
+    >>> karl_on_mirroradmins.setExpirationDate(
+    ...     tomorrow, mirror_admins.teamowner)
     >>> karl_on_mirroradmins.dateexpires == tomorrow
     True
 

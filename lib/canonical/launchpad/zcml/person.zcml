@@ -202,6 +202,22 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
+    name="+projects"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonRelatedProjectsView"
+    template="../templates/person-projects.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+portlet-related-projects"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonRelatedProjectsView"
+    template="../templates/person-portlet-related-projects.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
     name="+table-specworkload"
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonSpecWorkLoadView"
@@ -469,6 +485,14 @@
     class="canonical.launchpad.browser.TeamEmailView"
     name="+editemail"
     template="../templates/team-editemail.pt"
+    />
+    
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.PersonLanguagesView"
+    name="+editlanguages"
+    template="../templates/person-editlanguages.pt"
     />
 
   <browser:page

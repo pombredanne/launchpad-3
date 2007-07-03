@@ -17,7 +17,7 @@ from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
 from canonical.archivepublisher.diskpool import DiskPool
-from canonical.archivepublisher.config import Config, LucilleConfigError
+from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
 from canonical.launchpad.interfaces import pocketsuffix
@@ -265,9 +265,9 @@ class Publisher(object):
         Write contents using LP info to an extra plain file (Packages.lp
         and Sources.lp .
         """
-        full_name = distroseries.name + pocketsuffix[pocket]
+        suite_name = distroseries.name + pocketsuffix[pocket]
         self.log.debug("Generate Indexes for %s/%s"
-                       % (full_name, component.name))
+                       % (suite_name, component.name))
 
         self.log.debug("Generating Sources")
         temp_index = tempfile.mktemp(prefix='source-index_')
@@ -281,7 +281,7 @@ class Publisher(object):
         source_index.close()
 
         source_index_basepath = os.path.join(
-            self._config.distsroot, full_name, component.name, 'source')
+            self._config.distsroot, suite_name, component.name, 'source')
         if not os.path.exists(source_index_basepath):
             os.makedirs(source_index_basepath)
         source_index_path = os.path.join(source_index_basepath, "Sources.gz")
@@ -292,7 +292,6 @@ class Publisher(object):
         # make the files group writable
         mode = stat.S_IMODE(os.stat(source_index_path).st_mode)
         os.chmod(source_index_path, mode | stat.S_IWGRP)
-
 
         for arch in distroseries.architectures:
             arch_path = 'binary-%s' % arch.architecturetag
@@ -310,7 +309,7 @@ class Publisher(object):
             package_index.close()
 
             package_index_basepath = os.path.join(
-                self._config.distsroot, full_name, component.name, arch_path)
+                self._config.distsroot, suite_name, component.name, arch_path)
             if not os.path.exists(package_index_basepath):
                 os.makedirs(package_index_basepath)
             package_index_path = os.path.join(
@@ -322,6 +321,16 @@ class Publisher(object):
             # make the files group writable
             mode = stat.S_IMODE(os.stat(package_index_path).st_mode)
             os.chmod(package_index_path, mode | stat.S_IWGRP)
+
+        # Inject static requests for Release files into self.apt_handler
+        # in a way which works for NoMoreAptFtpArchive without changing
+        # much of the rest of the code, specially D_writeReleaseFiles.
+        self.apt_handler.requestReleaseFile(
+            suite_name, component.name, 'source')
+        for arch in distroseries.architectures:
+            arch_name = "binary-" + arch.architecturetag
+            self.apt_handler.requestReleaseFile(
+                suite_name, component.name, arch_name)
 
     def isAllowed(self, distroseries, pocket):
         """Whether or not the given suite should be considered.

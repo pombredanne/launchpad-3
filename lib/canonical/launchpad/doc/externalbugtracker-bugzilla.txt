@@ -42,7 +42,7 @@ resolution, separated by a space character. The resolution only exists
 if the bug is closed:
 
     >>> external_bugzilla.convertRemoteStatus('UNCONFIRMED').title
-    'Unconfirmed'
+    'New'
     >>> external_bugzilla.convertRemoteStatus('NEW').title
     'Confirmed'
     >>> external_bugzilla.convertRemoteStatus('ASSIGNED').title
@@ -50,9 +50,9 @@ if the bug is closed:
     >>> external_bugzilla.convertRemoteStatus('REOPENED').title
     'Confirmed'
     >>> external_bugzilla.convertRemoteStatus('NEEDINFO').title
-    'Needs Info'
+    'Incomplete'
     >>> external_bugzilla.convertRemoteStatus('NEEDINFO_REPORTER').title
-    'Needs Info'
+    'Incomplete'
     >>> external_bugzilla.convertRemoteStatus('MODIFIED').title
     'Fix Committed'
     >>> external_bugzilla.convertRemoteStatus('UPSTREAM').title
@@ -62,11 +62,11 @@ if the bug is closed:
     >>> external_bugzilla.convertRemoteStatus('RESOLVED FIXED').title
     'Fix Released'
     >>> external_bugzilla.convertRemoteStatus('VERIFIED WONTFIX').title
-    'Rejected'
+    'Invalid'
     >>> external_bugzilla.convertRemoteStatus('CLOSED INVALID').title
-    'Rejected'
+    'Invalid'
 
-If the status can't be converted, Unkown is returned, and a warning
+If the status can't be converted, Unknown is returned, and a warning
 is logged.
 
     >>> external_bugzilla.convertRemoteStatus('FOO').title
@@ -189,7 +189,8 @@ the remote status hasn't changed. This can happen if we change the
 status mapping.
 
     >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> thunderbird_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> thunderbird_task.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
     >>> print thunderbird_task.status.title
     In Progress

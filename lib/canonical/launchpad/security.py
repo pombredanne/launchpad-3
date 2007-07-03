@@ -7,6 +7,9 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
+# XXX: thumper 2007-05-25
+# This import should really be tidied up. Made into alphabetical
+# order ideally.
 from canonical.launchpad.interfaces import (
     IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
     IDistribution, ITeamMembership, IMilestone, IBug, ITranslator,
@@ -21,7 +24,8 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, IPackageUpload, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
     IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset,
-    IDistroSeriesLanguage)
+    IDistroSeriesLanguage, IBranch, IBranchSubscription, ICodeImport,
+    ICodeImportSet, IEntitlement)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
@@ -325,7 +329,7 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
 
         The Launchpad admins also have launchpad.Edit on all teams.
         """
-        return can_admin_team(self.obj, user)
+        return can_edit_team(self.obj, user)
 
 
 class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
@@ -333,7 +337,7 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     usedfor = ITeamMembership
 
     def checkAuthenticated(self, user):
-        return can_admin_team(self.obj.team, user)
+        return can_edit_team(self.obj.team, user)
 
 
 class EditPersonBySelfOrAdmins(AuthorizationBase):
@@ -375,7 +379,7 @@ class EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     usedfor = IPollOption
 
     def checkAuthenticated(self, user):
-        return can_admin_team(self.obj.poll.team, user)
+        return can_edit_team(self.obj.poll.team, user)
 
 
 class AdminDistribution(AdminByAdminsTeam):
@@ -659,6 +663,24 @@ class AdminTheBazaar(OnlyVcsImportsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = IBazaarApplication
 
+class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
+    """Control who can see the CodeImport listing page.
+
+    Currently, we don't let the general user see anything to do with
+    the new code import system.
+    """
+
+    permission = 'launchpad.View'
+    usedfor = ICodeImportSet
+
+class SeeCodeImports(OnlyVcsImportsAndAdmins):
+    """Control who can see the object view of a CodeImport.
+
+    Currently, we don't let the general user see anything to do with
+    the new code import system.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImport
 
 class EditPOTemplateDetails(EditByOwnersOrAdmins):
     usedfor = IPOTemplate
@@ -889,8 +911,8 @@ class QuestionOwner(AuthorizationBase):
         return user.inTeam(self.obj.owner)
 
 
-def can_admin_team(team, user):
-    """Return True if the given user has admin rights for the given team."""
+def can_edit_team(team, user):
+    """Return True if the given user has edit rights for the given team."""
     if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
         return True
     else:
@@ -907,6 +929,29 @@ class AdminLanguage(OnlyRosettaExpertsAndAdmins):
     usedfor = ILanguage
 
 
+class AccessBranch(AuthorizationBase):
+    """Controls visibility of branches.
+
+    A person can see the branch if the branch is public or they are the owner
+    of the branch, subscribed to the branch, or a launchpad administrator.
+    """
+    permission = 'launchpad.View'
+    usedfor = IBranch
+
+    def checkAuthenticated(self, user):
+        if not self.obj.private:
+            return True
+        if user == self.obj.owner:
+            return True
+        for subscriber in self.obj.subscribers:
+            if user.inTeam(subscriber):
+                return True
+        return user.inTeam(getUtility(ILaunchpadCelebrities).admin)
+
+    def checkUnauthenticated(self):
+        return not self.obj.private
+
+
 class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = IPOTemplateSubset
@@ -920,3 +965,38 @@ class AdminDistroSeriesLanguage(OnlyRosettaExpertsAndAdmins):
 class AdminDistroSeriesTranslations(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.TranslationsAdmin'
     usedfor = IDistroSeries
+
+
+class BranchSubscriptionEdit(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IBranchSubscription
+
+    def checkAuthenticated(self, user):
+        """Is the user able to edit a branch subscription?
+
+        Any team member can edit a branch subscription for their team.
+        Launchpad Admins can also edit any branch subscription.
+        """
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.obj.person) or user.inTeam(admins)
+
+
+class ViewEntitlement(AuthorizationBase):
+    """Permissions to view IEntitlement objects.
+
+    Allow the owner of the entitlement, the entitlement registrant,
+    or any member of the team or any admin to view the entitlement.
+    """
+    permission = 'launchpad.View'
+    usedfor = IEntitlement
+
+    def checkAuthenticated(self, user):
+        """Is the user able to edit a branch subscription?
+
+        Any team member can edit a branch subscription for their team.
+        Launchpad Admins can also edit any branch subscription.
+        """
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.person) or
+                user.inTeam(self.obj.registrant) or
+                user.inTeam(admins))
