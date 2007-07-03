@@ -98,6 +98,13 @@ for distro in ubuntu kubuntu edubuntu xubuntu; do
       fi
       egrep -v -- "^(-|Package| )" "$seed"_"$distro"_"$suite"_"$arch" | awk '{print $1}' | sed -e "s,$,/$arch  Task  $task," | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
     done
+
+    # Generate apt-ftparchive 'extra' overrides for Build-Essential: fields
+    if [ -e build-essential ]; then
+      # Keep a copy, just for convenience
+      cp build-essential build-essential_"$distro"_"$suite"_"$arch"
+      egrep -v -- "^(-|Package| )" build-essential_"$distro"_"$suite"_"$arch" | awk '{print $1}' | sed -e "s,$,/$arch  Build-Essential  yes," | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
+    fi
   done
 done
 echo " done."

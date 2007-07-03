@@ -427,7 +427,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: bar_1.0-1_source.changes Rejected",
+            "Subject: bar_1.0-1_source.changes rejected",
             "Signer has no upload rights to this PPA"]
         self.assertEmail(contents)
 
@@ -443,7 +443,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: bar_1.0-1_source.changes Rejected",
+            "Subject: bar_1.0-1_source.changes rejected",
             "PPA uploads must be signed by an 'ubuntero'."]
         self.assertEmail(contents)
         self.assertTrue(name16.archive is None)
@@ -462,7 +462,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: bar_1.0-1_source.changes Rejected",
+            "Subject: bar_1.0-1_source.changes rejected",
             "PPA is only allowed for members of launchpad-beta-testers team."]
         self.assertEmail(contents)
         self.assertEqual(name16.archive, None)
@@ -473,7 +473,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: bar_1.0-1_source.changes Rejected",
+            "Subject: bar_1.0-1_source.changes rejected",
             "Could not find distribution 'biscuit'"]
         self.assertEmail(contents)
 
@@ -483,7 +483,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: bar_1.0-1_source.changes Rejected",
+            "Subject: bar_1.0-1_source.changes rejected",
             "PPA upload path must start with '~'."]
         self.assertEmail(contents)
 
@@ -493,7 +493,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: bar_1.0-1_source.changes Rejected",
+            "Subject: bar_1.0-1_source.changes rejected",
             "Could not find person 'orange'"]
         self.assertEmail(contents)
 
@@ -503,7 +503,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: bar_1.0-1_source.changes Rejected",
+            "Subject: bar_1.0-1_source.changes rejected",
             "Path mismatch 'ubuntu/one/two/three/four'. "
             "Use ~<person>/<distro>/[distroseries]/[files] for PPAs "
             "and <distro>/[files] for normal uploads."]

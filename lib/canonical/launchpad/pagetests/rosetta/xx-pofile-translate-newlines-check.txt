@@ -1,6 +1,13 @@
 In Rosetta, new lines matter with textareas.
 This test checks that we don't miss or add extra new lines.
 
+  >>> def print_tags(browser, tags):
+  ...     """Find and print [tags] in browser.contents. End each with '--'."""
+  ...     from BeautifulSoup import BeautifulSoup
+  ...     soup = BeautifulSoup(browser.contents)
+  ...     for tag in soup.findAll(attrs={'id': tags}):
+  ...         print "%s\n--\n" % tag.renderContents()
+
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open(
   ...     'http://localhost/ubuntu/hoary/+source/evolution/+pots/'
@@ -8,17 +15,17 @@ This test checks that we don't miss or add extra new lines.
   >>> browser.url
   'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate?start=19&batch=1'
 
-We can see that the message we are interested on is not translated.
+We can see that the message we are interested in is not translated.
 
-  >>> print find_tag_by_id(browser.contents, 'msgset_149').renderContents()
+  >>> print_tags(browser,
+  ...     ['msgset_149', 'msgset_149_singular', 'msgset_149_es_translation_0'])
   20.
   <input type="hidden" name="msgset_149" />
-  >>> print find_tag_by_id(
-  ...     browser.contents, 'msgset_149_singular').renderContents()
+  --
   Please select a key size in bits.  The cipher you have chosen...
-  >>> print find_tag_by_id(
-  ...     browser.contents, 'msgset_149_es_translation_0').renderContents()
+  --
   (no translation yet)
+  --
 
 Now, we submit some text with new lines before and after the text, the
 answer should have exactly those strings.
@@ -83,15 +90,15 @@ Get previous page to check that the save translation is the right one.
 
 And, as we can see, we get the trailing new line char
 
-  >>> print find_tag_by_id(browser.contents, 'msgset_165').renderContents()
+  >>> print_tags(browser, [
+  ...     'msgset_165', 'msgset_165_singular', 'msgset_165_es_translation_0'])
   23.
   <input type="hidden" name="msgset_165" />
-  >>> print find_tag_by_id(
-  ...     browser.contents, 'msgset_165_singular').renderContents()
+  --
   <code>%s</code>: option `<code>%s</code>' is ambiguous...
-  >>> print find_tag_by_id(
-  ...     browser.contents, 'msgset_165_es_translation_0').renderContents()
+  --
   <code>%s</code>: la opcion «<code>%s</code>» es ambigua<img alt="" src="/@@/translation-newline" /><br />
+  --
 
 Now, we do the right submit, with one trailing new line...
 
@@ -113,17 +120,17 @@ Get previous page to check that the save translation is the right one.
   >>> browser.url
   'http://localhost/evolution/trunk/+pots/evolution-2.2/es/+translate?start=21&batch=1'
 
-And, as we can see, we get the same output, just one trailing new line char
+And, as we can see, we get the same output, just one trailing newline char.
 
-  >>> print find_tag_by_id(browser.contents, 'msgset_165').renderContents()
+  >>> print_tags(browser, [
+  ...     'msgset_165', 'msgset_165_singular', 'msgset_165_es_translation_0'])
   23.
   <input type="hidden" name="msgset_165" />
-  >>> print find_tag_by_id(
-  ...     browser.contents, 'msgset_165_singular').renderContents()
+  --
   <code>%s</code>: option `<code>%s</code>' is ambiguous...
-  >>> print find_tag_by_id(
-  ...     browser.contents, 'msgset_165_es_translation_0').renderContents()
+  --
   <code>%s</code>: la opcion «<code>%s</code>» es ambigua<img alt="" src="/@@/translation-newline" /><br />
+  --
 
 Last check, the user sends two new line chars instead of just one...
 
@@ -145,14 +152,15 @@ Get previous page to check that the save translation is the right one.
   >>> browser.url
   'http://localhost/evolution/trunk/+pots/evolution-2.2/es/+translate?start=21&batch=1'
 
-And Rosetta comes to the rescue and stores just one!.
+And Rosetta comes to the rescue and stores just one!
 
-  >>> print find_tag_by_id(browser.contents, 'msgset_165').renderContents()
+  >>> print_tags(browser, [
+  ...     'msgset_165', 'msgset_165_singular', 'msgset_165_es_translation_0'])
   23.
   <input type="hidden" name="msgset_165" />
-  >>> print find_tag_by_id(
-  ...     browser.contents, 'msgset_165_singular').renderContents()
+  --
   <code>%s</code>: option `<code>%s</code>' is ambiguous...
-  >>> print find_tag_by_id(
-  ...     browser.contents, 'msgset_165_es_translation_0').renderContents()
+  --
   <code>%s</code>: la opcion «<code>%s</code>» es ambigua<img alt="" src="/@@/translation-newline" /><br />
+  --
+

@@ -18,7 +18,9 @@ shell script.
     ...                VALUES ('frobisher.example.com', false);''')
     >>> commit()
 
-The webapp only has rights to examine the CodeImportMachine table.
+The webapp only has rights to examine the CodeImportMachine table.  The
+table is represented by an object that provides the
+ICodeImportMachineSet interface.
 
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
     >>> from canonical.launchpad.interfaces import (

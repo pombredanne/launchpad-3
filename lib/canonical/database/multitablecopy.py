@@ -436,7 +436,7 @@ class MultiTableCopy:
                 "Pouring %s took %.3f seconds."
                 % (holding_table, time.time()-tablestarttime))
 
-            self._commit(transaction_manager)
+            cur = self._commit(transaction_manager)
 
     def _pourTable(
         self, holding_table, table, has_new_id, transaction_manager):

@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 from sqlobject import (
-    BoolCol, ForeignKey, IntCol, StringCol)
+    BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound)
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -21,9 +21,10 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
     ICodeImport, ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet,
-    ILaunchpadCelebrities)
+    ILaunchpadCelebrities, NotFoundError)
 from canonical.lp.dbschema import (
     CodeImportReviewStatus, RevisionControlSystems)
 
@@ -42,7 +43,13 @@ class CodeImport(SQLBase):
 
     @property
     def product(self):
+        """See `ICodeImport`."""
         return self.branch.product
+
+    @property
+    def series(self):
+        """See `ICodeImport`."""
+        return ProductSeries.selectOneBy(import_branch=self.branch)
 
     review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
         default=CodeImportReviewStatus.NEW)
@@ -83,11 +90,18 @@ class CodeImportSet:
 
     def get(self, id):
         """See `ICodeImportSet`."""
-        return CodeImport.get(id)
+        try:
+            return CodeImport.get(id)
+        except SQLObjectNotFound:
+            raise NotFoundError(id)
 
     def getByBranch(self, branch):
         """See `ICodeImportSet`."""
         return CodeImport.selectOneBy(branch=branch)
+
+    def search(self, review_status):
+        """See `ICodeImportSet`."""
+        return CodeImport.selectBy(review_status=review_status.value)
 
 
 class CodeImportMachine(SQLBase):
