@@ -485,6 +485,8 @@ Rosetta has an active translation for every expected plural form of this
 message set.';
 COMMENT ON COLUMN POMsgSet.reviewer IS 'The person who last reviewd the translations for this message.';
 COMMENT ON COLUMN POMsgSet.date_reviewed IS 'Last time this message was reviewed.';
+COMMENT ON COLUMN POMsgSet.language IS 'Language this POMsgSet is in; copied
+from its POFile for performance reasons.';
 
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
