@@ -109,10 +109,10 @@ class IMailingListRegistry(Interface):
         team must not yet have a mailing list.
         """
 
-    def getTeamMailingList(team):
-        """Return the IMailingList associated with the given team.
+    def getTeamMailingList(team_name):
+        """Return the IMailingList associated with the given team name.
 
-        None is returned if the team has no mailing list.
+        None is returned if the named team has no mailing list.
         """
 
     registered_lists = Attribute(

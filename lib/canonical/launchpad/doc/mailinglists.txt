@@ -39,13 +39,13 @@ None of these teams have mailing lists yet.
     []
     >>> sorted_lists(list_registry.approved_lists)
     []
-    >>> print list_registry.getTeamMailingList(team_one)
+    >>> print list_registry.getTeamMailingList(team_one.name)
     None
-    >>> print list_registry.getTeamMailingList(team_two)
+    >>> print list_registry.getTeamMailingList(team_two.name)
     None
-    >>> print list_registry.getTeamMailingList(team_three)
+    >>> print list_registry.getTeamMailingList(team_three.name)
     None
-    >>> print list_registry.getTeamMailingList(team_four)
+    >>> print list_registry.getTeamMailingList(team_four.name)
     None
 
 
@@ -267,6 +267,24 @@ Some list constructions may fail.
     >>> flush_database_updates()
     >>> list_four.status.name
     'FAILED'
+
+You can then get the mailing list for a team, given the team name.
+
+    >>> print list_registry.getTeamMailingList(team_one.name)
+    <MailingList for team "team-one"; status=ACTIVE at ...>
+    >>> print list_registry.getTeamMailingList(team_two.name)
+    <MailingList for team "team-two"; status=DECLINED at ...>
+    >>> print list_registry.getTeamMailingList(team_three.name)
+    <MailingList for team "team-three"; status=ACTIVE at ...>
+    >>> print list_registry.getTeamMailingList(team_four.name)
+    <MailingList for team "team-four"; status=FAILED at ...>
+
+This method will return None for missing teams or non-team people.
+
+    >>> print list_registry.getTeamMailingList('not an existing team')
+    None
+    >>> print list_registry.getTeamMailingList(carlos.name)
+    None
 
 
 == Deactivating lists ==
