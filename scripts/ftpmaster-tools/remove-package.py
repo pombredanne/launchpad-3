@@ -326,20 +326,21 @@ def what_to_remove(packages):
 
     for removal in packages:
         for suite in Options.suite:
-            distrorelease = Options.distro.getRelease(suite)
+            distroseries = Options.distro.getSeries(suite)
 
             if Options.sourceonly:
                 bpp_list = []
             else:
                 if Options.binaryonly:
-                    bpp_list = distrorelease.getBinaryPackagePublishing(removal)
+                    bpp_list = distroseries.getBinaryPackagePublishing(removal)
                 else:
-                    bpp_list = distrorelease.getBinaryPackagePublishing(sourcename=removal)
+                    bpp_list = distroseries.getBinaryPackagePublishing(
+                        sourcename=removal)
 
             for bpp in bpp_list:
                     package=bpp.binarypackagerelease.binarypackagename.name
                     version=bpp.binarypackagerelease.version
-                    architecture=bpp.distroarchrelease.architecturetag
+                    architecture=bpp.distroarchseries.architecturetag
                     if Options.architecture and \
                            architecture not in Options.architecture:
                         continue
@@ -352,7 +353,7 @@ def what_to_remove(packages):
                     to_remove.append(d)
 
             if not Options.binaryonly:
-                for spp in distrorelease.getPublishedReleases(removal):
+                for spp in distroseries.getPublishedReleases(removal):
                     package=spp.sourcepackagerelease.sourcepackagename.name
                     version=spp.sourcepackagerelease.version
                     if Options.component and \
