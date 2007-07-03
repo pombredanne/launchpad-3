@@ -187,6 +187,9 @@
     </metal:widgets>
 
     <div class="actions" metal:fill-slot="buttons">
+      <tal:comment replace="nothing">
+        This suppresses the normal action buttons.
+      </tal:comment>
     </div>
 
   </div>

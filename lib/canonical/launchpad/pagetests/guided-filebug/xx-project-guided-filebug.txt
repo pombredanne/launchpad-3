@@ -36,6 +36,7 @@ page.
     >>> user_browser.title
     'Bug #... in evolution (upstream): ...Evolution crashes...'
 
+
 == Advanced filebug page ==
 
 From the Project filebug page it's possible to go to the advanced
@@ -55,6 +56,7 @@ filebug page.
     'http://bugs.launchpad.dev/evolution/+bug/...'
     >>> user_browser.title
     'Bug #... in evolution (upstream): ...Evolution crashes...'
+
 
 == Subscribing to a similar bug ==
 
