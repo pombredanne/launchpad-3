@@ -92,15 +92,21 @@ class CodeImportSyncTestCase(LaunchpadZopelessTestCase):
             last_successful = None
         self.assertEqual(code_import.date_last_successful, last_successful)
 
+        # reviewStatusFromImportStatus is carefully unit-tested in
+        # TestReviewStatusFromImportStatus, so we can rely on it here.
+        review_status = self.code_import_sync.reviewStatusFromImportStatus(
+            series.importstatus)
+        self.assertEqual(code_import.review_status, review_status)
+
+
+class TestGetImportSeries(CodeImportSyncTestCase):
+    """Unit tests for CodeImportSync.getImportSeries."""
+
     def assertListSingleItemEquals(self, the_list, expected_item):
         """Fail if the_list does not have expected_item has its single item."""
         self.assertEqual(len(the_list), 1)
         [the_item] = the_list
         self.assertEqual(the_item, expected_item)
-
-
-class TestGetImportSeries(CodeImportSyncTestCase):
-    """Unit tests for CodeImportSync.getImportSeries."""
 
     def testEmpty(self):
         # If there is no series with importstatus set, getImportSeries gives an
@@ -116,6 +122,55 @@ class TestGetImportSeries(CodeImportSyncTestCase):
         self.assertListSingleItemEquals(import_series_set, testing)
 
 
+class TestReviewStatusFromImportStatus(unittest.TestCase):
+    """Unit tests for reviewStatusFromImportStatus."""
+
+    def setUp(self):
+        # reviewStatusFromImportStatus does not need any database access.
+        self.code_import_sync = CodeImportSync(logging, None)
+
+    def assertImportStatusTranslatesTo(self, import_status, expected):
+        """Assert that reviewStatusFromImportStatus returns `expected`
+        when passed `import_status`.
+        """
+        review_status = self.code_import_sync.reviewStatusFromImportStatus(
+            import_status)
+        self.assertEqual(review_status, expected)
+
+    def assertImportStatusDoesNotTranslate(self, import_status):
+        """Assert that reviewFromImportStatus raises AssertionError when passed
+        `import_status`.
+        """
+        self.assertRaises(AssertionError,
+            self.code_import_sync.reviewStatusFromImportStatus, import_status)
+
+    def testDontsync(self):
+        self.assertImportStatusDoesNotTranslate(ImportStatus.DONTSYNC)
+
+    def testTesting(self):
+        self.assertImportStatusTranslatesTo(
+            ImportStatus.TESTING, CodeImportReviewStatus.NEW)
+
+    def testTestfailed(self):
+        self.assertImportStatusDoesNotTranslate(ImportStatus.TESTFAILED)
+
+    def testAutotested(self):
+        self.assertImportStatusTranslatesTo(
+            ImportStatus.AUTOTESTED, CodeImportReviewStatus.NEW)
+
+    def testProcessing(self):
+        self.assertImportStatusTranslatesTo(
+            ImportStatus.PROCESSING, CodeImportReviewStatus.REVIEWED)
+
+    def testSyncing(self):
+        self.assertImportStatusTranslatesTo(
+            ImportStatus.SYNCING, CodeImportReviewStatus.REVIEWED)
+
+    def testStopped(self):
+        self.assertImportStatusTranslatesTo(
+            ImportStatus.STOPPED, CodeImportReviewStatus.SUSPENDED)
+
+
 class TestCreateCodeImport(CodeImportSyncTestCase):
     """Unit tests for CodeImportSync.createCodeImport."""
 
@@ -128,18 +183,36 @@ class TestCreateCodeImport(CodeImportSyncTestCase):
 class TestCodeImportSync(CodeImportSyncTestCase):
     """Feature tests for CodeImportSync."""
 
+    def run_code_import_sync(self):
+        """Run the code-import-sync, and flush database updates as needed."""
+        flush_database_updates()
+        self.code_import_sync.run()
+        flush_database_updates()
+
+    def assertSingleCodeImportMatchesSeries(self, series):
+        """Fail unless there is a single CodeImport object and it matches
+        series.
+        """
+        all_imports = list(getUtility(ICodeImportSet).getAll())
+        self.assertEqual(len(all_imports), 1)
+        [code_import] = all_imports
+        self.assertImportMatchesSeries(code_import, series)
+
     def testNewTesting(self):
         # A new TESTING series causes the creation of a new code import with
         # NEW review status.
         testing = self.createTestingSeries('testing')
-        flush_database_updates()
-        self.code_import_sync.run()
-        flush_database_updates()
-        all_imports = list(getUtility(ICodeImportSet).getAll())
-        self.assertEqual(len(all_imports), 1)
-        [code_import] = all_imports
-        self.assertImportMatchesSeries(code_import, testing)
-        self.assertEqual(code_import.review_status, CodeImportReviewStatus.NEW)
+        self.run_code_import_sync()
+        self.assertSingleCodeImportMatchesSeries(testing)
+
+    def testNewProcessing(self):
+        # A new PROCESSING series cause the creation of a new code import with
+        # REVIEWED review status.
+        processing = self.createTestingSeries('processing')
+        processing.certifyForSync()
+        self.assertEqual(processing.importstatus, ImportStatus.PROCESSING)
+        self.run_code_import_sync()
+        self.assertSingleCodeImportMatchesSeries(processing)
 
     # TODO: test that non-MAIN cvs branches are ignored, CodeImport does not
     # have a cvs_branch attribute.
@@ -163,10 +236,6 @@ class TestCodeImportSync(CodeImportSyncTestCase):
         # Create a series with importstatus = DONTSYNC
         dontsync = self.createTestingSeries('dontsync')
         dontsync.markDontSync()
-
-        # Create a series with importstatus = PROCESSING
-        processing = self.createTestingSeries('processing')
-        processing.certifyForSync()
 
         # Create a series with importstatus = SYNCING
         syncing = self.createTestingSeries('syncing')

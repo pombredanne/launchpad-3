@@ -48,6 +48,22 @@ class CodeImportSync:
         ProductSeries.
         """
 
+    def reviewStatusFromImportStatus(self, import_status):
+        """Return the CodeImportReviewStatus value corresponding to the given
+        ImportStatus value.
+        """
+        if import_status in (ImportStatus.TESTING, ImportStatus.AUTOTESTED):
+            review_status = CodeImportReviewStatus.NEW
+        elif import_status in (ImportStatus.PROCESSING, ImportStatus.SYNCING):
+            review_status = CodeImportReviewStatus.REVIEWED
+        elif import_status == ImportStatus.STOPPED:
+            review_status = CodeImportReviewStatus.SUSPENDED
+        else:
+            raise AssertionError(
+                "This import status should not produce a code import: %s"
+                % import_status)
+        return review_status
+
     def createCodeImport(self, series):
         """Create the CodeImport object corresponding to the given
         ProductSeries.
@@ -59,7 +75,6 @@ class CodeImportSync:
         :postcondition: The CodeImport object corresponding to `series` exists
             in the database and is up to date.
         """
-        review_status = CodeImportReviewStatus.NEW
         date_last_successful = None
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         branch = getUtility(IBranchSet).new(
@@ -68,6 +83,8 @@ class CodeImportSync:
             series.id, vcs_imports, branch, series.rcstype,
             svn_branch_url=series.svnrepository,
             cvs_root=series.cvsroot, cvs_module=series.cvsmodule)
+        review_status = self.reviewStatusFromImportStatus(series.importstatus)
+        code_import.review_status = review_status
         return code_import
 
     def updateCodeImport(self, series, code_import):
