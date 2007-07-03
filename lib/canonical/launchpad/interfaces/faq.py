@@ -46,7 +46,7 @@ class IFAQ(IHasOwner):
     content = Text(
         title=_('Content'),
         description=_(
-            'The FAQ content. This is plain text format. If you want to link'
+            'The FAQ content. This is plain text format. If you want to link '
             'to an external document, simply enter a short description and '
             'the URL to the document.'),
         required=True)
