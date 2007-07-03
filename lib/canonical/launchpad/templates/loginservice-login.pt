@@ -3,22 +3,7 @@
     metal:use-macro="context/@@main_template/master"
     i18n:domain="launchpad">
   <body>
-    <div metal:fill-slot="main">
-      <div id="rp" tal:define="rp_title view/relying_party_title">
-
-            <p class="warning message" tal:condition="not:view/isSaneTrustRoot">
-              <strong>Warning:</strong>
-              <em tal:content="view/openid_request/trust_root" /> does not look
-              like a trustworthy URL.
-            </p>
-            <h2 tal:content="rp_title">Ubuntu Shop</h2>
-
-            <p>To continue with <tal:title replace="rp_title" />, you
-            need to sign in to Launchpad.</p>
-
-      </div>
-      <div id="auth">
-
+    <metal:block fill-slot="auth" tal:define="rp_info view/rp_info">
       <form action="/+login-register" method="post" accept-charset="UTF-8">
         <tal:widget replace="structure view/widgets/nonce/hidden" />
 
@@ -40,8 +25,16 @@
             <h2>Do you have a Launchpad password?</h2>
 
         <div>
-          <tal:widget replace="structure view/widgets/action" />
-          <tal:widget replace="structure view/widgets/password" />
+          <div>
+            <tal:widget replace="structure view/login_radio_button" /><br>
+            <tal:widget replace="structure view/widgets/password" />
+          <div>
+          <div>
+            <tal:widget replace="structure view/createaccount_radio_button" />
+          </div>
+          <div>
+            <tal:widget replace="structure view/resetpassword_radio_button" />
+          </div>
         </div>
 
           <div>
@@ -51,9 +44,7 @@
           </div>
 
       </form>
-
-      </div>
-    </div>
+    </metal:block>
   </body>
 </html>
 

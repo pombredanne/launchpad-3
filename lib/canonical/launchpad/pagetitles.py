@@ -523,7 +523,7 @@ launchpadstatisticset_index = 'Launchpad statistics'
 loginservice_email_sent = 'Launchpad Login Service - Email sent'
 
 def loginservice_authorize(context, view):
-    return 'Authenticate to %s' % view.relying_party_title
+    return 'Authenticate to %s' % view.rp_info['title']
 
 loginservice_login = 'Launchpad Login Service'
 

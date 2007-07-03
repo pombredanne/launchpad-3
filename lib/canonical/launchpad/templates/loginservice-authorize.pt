@@ -1,22 +1,7 @@
 <html metal:use-macro="context/@@main_template/master" i18n:domain="launchpad">
   <body>
-    <div metal:fill-slot="main" tal:define="rp_title view/relying_party_title">
-      <div id="rp">
-
-            <p class="warning message" tal:condition="not:view/isSaneTrustRoot">
-              <strong>Warning:</strong>
-              <em tal:content="view/openid_request/trust_root" /> does not look
-              like a trustworthy URL.
-            </p>
-            <h2 tal:content="rp_title">Ubuntu Shop</h2>
-
-            <p>To continue with <tal:title replace="rp_title" />, you
-            need to sign in.</p>
-
-      </div>
-      <div id="auth">
-
-        <h2>Sign in as <span tal:replace="view/user/displayname" />?</h2>
+    <metal:block fill-slot="auth" tal:define="rp_info view/rp_info">
+      <h2>Sign in as <span tal:replace="view/user/displayname" />?</h2>
 
       <form action="/+decide" method="post" accept-charset="UTF-8">
         <tal:widget replace="structure view/widgets/nonce/hidden" />
@@ -29,7 +14,7 @@
 
             <h2>
               These details will be sent to
-              <tal:title replace="rp_title" />:
+              <tal:title replace="rp_info/title" />:
             </h2>
 
           <ul>
@@ -48,8 +33,6 @@
         </div>
 
       </form>
-
-      </div>
-    </div>
+    </metal:block>
   </body>
 </html>

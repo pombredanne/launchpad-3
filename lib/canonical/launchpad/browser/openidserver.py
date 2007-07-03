@@ -4,12 +4,14 @@
 
 __metaclass__ = type
 __all__ = [
-    'OpenIdMixin',
+    'OpenIdMixin', 'KNOWN_TRUST_ROOTS',
     ]
 
 import cgi
 from datetime import datetime
 from time import time
+
+from BeautifulSoup import BeautifulSoup
 
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.app.session.interfaces import ISession, IClientIdManager
@@ -23,14 +25,14 @@ from openid.server.server import CheckIDRequest, ENCODE_URL, Server
 from openid.server.trustroot import TrustRoot
 from openid import oidutil
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
-from canonical.lp.dbschema import LoginTokenType
+from canonical.lp.dbschema import LoginTokenType, PersonCreationRationale
 from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, ILoginTokenSet, IOpenIdApplication,
     IOpenIdAuthorizationSet, IPersonSet, NotFoundError, UnexpectedFormData)
-from canonical.launchpad.interfaces.validation import valid_password
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
@@ -76,6 +78,15 @@ class OpenIdMixin:
         return self.openid_request.identity in (
             IDENTIFIER_SELECT_URI, self.user_identity_url)
 
+    @cachedproperty('_openid_parameters')
+    def openid_parameters(self):
+        """A dictionary of OpenID query parameters from request."""
+        query = {}
+        for key, value in self.request.form.items():
+            if key.startswith('openid.'):
+                query[key.encode('US-ASCII')] = value.encode('US-ASCII')
+        return query
+
     def getSession(self):
         return ISession(self.request)[SESSION_PKG_KEY]
 
@@ -108,23 +119,28 @@ class OpenIdMixin:
         """Get the OpenIDRequest from our session using the given key."""
         session = self.getSession()
         try:
-            timestamp, self.openid_request = session[key]
+            timestamp, self._openid_parameters = session[key]
         except KeyError:
             raise UnexpectedFormData("Invalid or expired nonce")
 
+        # Decode the request parameters and create the request object.
+        self.openid_request = self.openid_server.decodeRequest(
+            self.openid_parameters)
         assert zisinstance(self.openid_request, CheckIDRequest), (
             'Invalid OpenIDRequest in session')
 
     def saveRequestInSession(self, key):
         """Save the OpenIDRequest in our session using the given key."""
+        query = self.openid_parameters
+        assert query.get('openid.mode') == 'checkid_setup', (
+            'Can only serialise checkid_setup OpenID requests')
+
         session = self.getSession()
         # We also store the time with the openid_request so we can clear
         # out old requests after some time, say 1 hour.
         now = time()
         self._sweep(now, session)
-        # Store nonce with a distinct prefix to ensure malicious requests
-        # can't trick our code into retrieving something that isn't a nonce.
-        session[key] = (now, self.openid_request)
+        session[key] = (now, query)
 
     def trashRequestInSession(self, key):
         """Remove the OpenIdRequest from the session using the given key."""
@@ -214,12 +230,9 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
         Returns the page contents after setting all relevant headers in
         self.request.response
         """
-        args = {}
-        for key, value in self.request.form.items():
-            if key.startswith('openid.'):
-                args[key.encode('US-ASCII')] = value.encode('US-ASCII')
         # NB: Will be None if there are no parameters in the request.
-        self.openid_request = self.openid_server.decodeRequest(args)
+        self.openid_request = self.openid_server.decodeRequest(
+            self.openid_parameters)
 
         # Not an OpenID request, so display a message explaining what this
         # is to nosy users.
@@ -313,6 +326,7 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
                 self.user, self.openid_request.trust_root, client_id)
 
 
+rationale = PersonCreationRationale
 # Information about known trust roots
 # XXX: 2007-06-14 jamesh
 # Include more information about the trust roots, such as an icon.  We
@@ -320,23 +334,37 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
 # for phase 1 of the implementation.
 KNOWN_TRUST_ROOTS = {
     'http://localhost.localdomain:8001/':
-        dict(title="OpenID Consumer Example"),
+        dict(title="OpenID Consumer Example",
+             logo=None,
+             reason="This is a localhost server.  Make your own judgement."),
     'http://pdl-dev.co.uk':
-        dict(title="PDL Demo OSCommerce shop"),
+        dict(title="PDL Demo OSCommerce shop",
+             logo="/+icing/canonical-logo.png", reason=None),
     'http://www.mmania.biz':
-        dict(title="Demo Canonical Shop"),
-    'http://www.mmania.biz/ubuntu/':
-        dict(title="Demo Canonical Shop"),
-    #'https://shop.ubuntu.com/':
-    #    dict(title="Ubuntu Shop"),
+        dict(title="The Ubuntu Store from Canonical",
+             logo="/+icing/canonical-logo.png",
+             reason=("For the Ubuntu Store, you need a Launchpad account "
+                     "so we can remember your order details and keep in "
+                     "in touch with you about your orders.")),
+    'https://shop.canonical.com/':
+        dict(title="The Ubuntu Store from Canonical",
+             logo="/+icing/canonical-logo.png",
+             reason=("For the Ubuntu Store, you need a Launchpad account "
+                     "so we can remember your order details and keep in "
+                     "in touch with you about your orders."),
+             creation_rationale=rationale.OWNER_CREATED_UBUNTU_SHOP),
     #'https://shipit.ubuntu.com/':
-    #    dict(title="Ubuntu Shipit"),
+    #    dict(title="Ubuntu Shipit",
+    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
     #'https://shipit.kubuntu.org/':
-    #    dict(title="Kubuntu Shipit"),
+    #    dict(title="Kubuntu Shipit",
+    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
     #'https://shipit.edubuntu.org/':
-    #    dict(title="Edubuntu Shipit"),
+    #    dict(title="Edubuntu Shipit",
+    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
     #'https://wiki.ubuntu.com/':
-    #    dict(title="Ubuntu Wiki"),
+    #    dict(title="Ubuntu Wiki",
+    #         creation_rationale=rationale.OWNER_CREATED_UBUNTU_WIKI),
     }
 
 
@@ -365,24 +393,31 @@ class LoginServiceBaseView(OpenIdMixin, LaunchpadFormView):
 
     def trashRequest(self):
         """Remove the OpenID request from the session."""
-        self.trashRequestInSession('nonce' + self.nonce)
+        # XXX: 2007-06-22 jamesh
+        # Removing the OpenID request from the session leads to an
+        # UnexpectedFormData exception if the user hits back and
+        # submits the form again.  Not deleting the request allows
+        # this behaviour (although a well designed RP will then
+        # complain about an unexpected OpenID response ...).
+
+        #self.trashRequestInSession('nonce' + self.nonce)
 
     @property
-    def relying_party_title(self):
-        """Return a display name for the relying party.
+    def rp_info(self):
+        """Return a dictionary of information about the relying party.
 
-        The relying party is looked up in the list of known RPs by its
-        trust root to find its title.
+        The dictionary contains 'title' and 'logo' entries.
 
-        If the relying party is not known, its trust root URL is returned.
+        If the relying party is not known, the title will be the same
+        as the trust root.
         """
         assert self.openid_request is not None, (
             'Could not find the OpenID request')
         rp_info = KNOWN_TRUST_ROOTS.get(self.openid_request.trust_root)
-        if rp_info is not None:
-            return rp_info['title']
-        else:
-            return self.openid_request.trust_root
+        if rp_info is None:
+            return dict(title=self.openid_request.trust_root,
+                        logo=None, reason=None)
+        return rp_info
 
     def isSaneTrustRoot(self):
         """Return True if the RP's trust root looks sane."""
@@ -440,15 +475,24 @@ class LoginServiceLoginView(LoginServiceBaseView):
         values['action'] = 'login'
         return values
 
+    def setUpWidgets(self):
+        super(LoginServiceLoginView, self).setUpWidgets()
+        # Dissect the action radio button group into three buttons.
+        soup = BeautifulSoup(self.widgets['action']())
+        [login, createaccount, resetpassword] = soup.findAll('label')
+        self.login_radio_button = str(login)
+        self.createaccount_radio_button = str(createaccount)
+        self.resetpassword_radio_button = str(resetpassword)
+
     def validate(self, data):
         email = data.get('email')
         action = data.get('action')
         password = data.get('password')
-        person = getUtility(IPersonSet).getByEmail(email)
         if email is None or not valid_email(email):
             self.addError('Please enter a valid email address.')
             return
 
+        person = getUtility(IPersonSet).getByEmail(email)
         if action == 'login':
             self.validateEmailAndPassword(email, password)
         elif action == 'resetpassword':
