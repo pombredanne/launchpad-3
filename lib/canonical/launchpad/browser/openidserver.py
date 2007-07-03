@@ -253,45 +253,28 @@ class OpenIdMixin:
         """
         assert self.user is not None, (
             'Must be logged in to calculate sreg items')
+        # Collect registration values
+        values = {}
+        values['nickname'] = self.user.name
+        values['fullname'] = self.user.displayname
+        values['email'] = self.user.preferredemail.email
+        values['timezone'] = self.user.timezone
         shipment = self.user.lastShippedRequest()
-        items = []
-        for field_name in self.sreg_field_names:
-            if field_name == 'nickname':
-                items.append((field_name, self.user.name))
-            elif field_name == 'fullname':
-                items.append((field_name, self.user.displayname))
-            elif field_name == 'email':
-                items.append((field_name, self.user.preferredemail.email))
-            elif field_name == 'timezone':
-                items.append((field_name, self.user.timezone))
-            elif field_name == 'x.address1':
-                if shipment is not None:
-                    items.append((field_name, shipment.addressline1))
-            elif field_name == 'x.address2':
-                if shipment is not None and shipment.addressline2 is not None:
-                    items.append((field_name, shipment.addressline2))
-            elif field_name == 'x.organization':
-                if shipment is not None and shipment.organization is not None:
-                    items.append((field_name, shipment.organization))
-            elif field_name == 'x.city':
-                if shipment is not None:
-                    items.append((field_name, shipment.city))
-            elif field_name == 'x.province':
-                if shipment is not None and shipment.province is not None:
-                    items.append((field_name, shipment.province))
-            elif field_name == 'country':
-                if shipment is not None:
-                    items.append((field_name, shipment.country.name))
-            elif field_name == 'postcode':
-                if shipment is not None and shipment.postcode is not None:
-                    items.append((field_name, shipment.postcode))
-            elif field_name == 'x.phone':
-                if shipment is not None and shipment.phone is not None:
-                    items.append((field_name, shipment.phone))
-            else:
-                raise AssertionError('Unknown openid.sreg field name: %s'
-                                     % field_name)
-        return items
+        if shipment is not None:
+            values['x.address1'] = shipment.addressline1
+            values['x.city'] = shipment.city
+            values['country'] = shipment.country.name
+            if shipment.addressline2 is not None:
+                values['x.address2'] = shipment.addressline2
+            if shipment.organization is not None:
+                values['x.organization'] = shipment.organization
+            if shipment.province is not None:
+                values['x.province'] = shipment.province
+            if shipment.postcode is not None:
+                values['postcode'] = shipment.postcode
+            if shipment.phone is not None:
+                values['x.phone'] = shipment.phone
+        return [(field, values[field]) for field in self.sreg_field_names]
 
     def renderOpenIdResponse(self, openid_response):
         webresponse = self.openid_server.encodeResponse(openid_response)

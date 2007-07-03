@@ -17,12 +17,13 @@
               <tal:title replace="rp_info/title" />:
             </h2>
 
-          <ul>
-            <li tal:content="view/user/displayname">
-              My name
-            </li>
-            <li tal:content="view/user/preferredemail/email">
-              My email
+          <ul tal:define="fields view/sreg_fields">
+            <li tal:repeat="field fields"
+                tal:content="python:field[1]" />
+            <li tal:condition="not:fields">
+              <!-- XXX: 2007-07-03 jamesh
+                   This text should be friendlier -->
+              <em>Only your identity URL</em>
             </li>
           </ul>
         </div>
