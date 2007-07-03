@@ -545,18 +545,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -732,6 +720,8 @@ INSERT INTO branch (id, title, summary, "owner", product, author, name, home_pag
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (28, NULL, NULL, 1, NULL, 1, 'testdoc', NULL, NULL, NULL, 1, NULL, NULL, 1, false, 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum', NULL, NULL, NULL, '2007-05-04 01:16:03.75446', 0, '2007-05-04 01:16:26.640702', false);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (29, 'Landscape trunk', NULL, 64, 16, 12, 'trunk', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2007-05-28 02:37:07.814303', 0, NULL, true);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (30, NULL, NULL, 12, 16, 12, 'feature-x', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2007-05-28 02:37:07.814303', 0, NULL, true);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (75, 'GNOME Terminal Import Branch', NULL, 24, 6, NULL, 'import', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-06-25 20:04:03.9465', 0, NULL, false);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (76, 'Evolution Import Branch', NULL, 24, 5, NULL, 'import', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-06-25 20:04:04.218451', 0, NULL, false);
 
 
 ALTER TABLE branch ENABLE TRIGGER ALL;
@@ -1185,6 +1175,8 @@ ALTER TABLE calendarsubscription ENABLE TRIGGER ALL;
 
 ALTER TABLE codeimport DISABLE TRIGGER ALL;
 
+INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, svn_branch_url, cvs_root, cvs_module, review_status) VALUES (1, 75, '2007-06-25 20:04:04.226605', 52, 2, 'http://svn.example.org/svnroot/gnome-terminal/trunk', NULL, NULL, 20);
+INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, svn_branch_url, cvs_root, cvs_module, review_status) VALUES (2, 76, '2007-06-25 20:04:04.379285', 52, 1, NULL, ':pserver:anonymous@anoncvs.example.org:/cvs/gnome', 'evolution', 1);
 
 
 ALTER TABLE codeimport ENABLE TRIGGER ALL;
@@ -5379,7 +5371,7 @@ INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, com
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (720, 7, 17, false, false, false, '', 158, false, false, false, NULL, NULL);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (721, 8, 17, false, false, false, '', 159, false, false, false, NULL, NULL);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (722, 9, 17, false, false, false, '', 160, false, false, false, NULL, NULL);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (723, 1, 16, true, false, false, '', 152, false, true, false, '2005-05-06 21:12:42.747648', 51);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (723, 1, 16, true, false, false, '', 152, false, true, false, NULL, NULL);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (724, 2, 16, true, false, false, '', 153, false, true, false, '2005-05-06 21:12:42.747648', 51);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (725, 3, 16, true, false, false, '', 154, false, true, false, '2005-05-06 21:12:42.747648', 51);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (726, 4, 16, true, false, false, '', 155, false, true, false, '2005-05-06 21:12:42.747648', 51);
@@ -7075,7 +7067,7 @@ INSERT INTO potranslation (id, translation) VALUES (264, 'Uso:
   %s<dispositivo>. Si el punto de montaje no existe, se creará.
 
 ');
-INSERT INTO potranslation (id, translation) VALUES (265, '%s --lock <dispositivo> <pid>↵
+INSERT INTO potranslation (id, translation) VALUES (265, '%s --lock <dispositivo> <pid>〓
   Previene posteriores montajes del <dispositivo> hasta que se desbloquee.
   <pid> especifica el id del proceso que pone el bloqueo. Esto permite
   bloquear un dispositivo a varios procesos independendientes evitando
@@ -7474,7 +7466,7 @@ INSERT INTO potranslation (id, translation) VALUES (436, 'Utilisation :
   satisfaient ( voir pumount(1) pour les détails). Le répertoire du
   point de montage est supprimé après l''opération.
 
-Options:↵
+Options:〓
   -l, --lazy : démontage paresseux, voir umount(8)
   -d, --debug : autorise l''affichage des messages de debug (très verbeux)
   -h, --help : affiche ce message d''aide et termine avec succès
@@ -9239,6 +9231,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (66, 29, 64, 2, '2007-05-10 17:21:17.877009', NULL, 16, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (67, 63, 64, 5, '2005-05-10 17:22:02.377319', '2006-05-10 17:22:02.377319', 16, '');
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (68, 12, 17, 1, '2007-05-16 15:03:47.748238', NULL, 12, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (69, 69, 17, 2, '2007-06-20 14:18:41.185147', NULL, 16, NULL);
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -9368,6 +9361,10 @@ INSERT INTO teamparticipation (id, team, person) VALUES (131, 243603, 243603);
 INSERT INTO teamparticipation (id, team, person) VALUES (132, 243604, 243603);
 INSERT INTO teamparticipation (id, team, person) VALUES (133, 243604, 243604);
 INSERT INTO teamparticipation (id, team, person) VALUES (134, 64, 29);
+INSERT INTO teamparticipation (id, team, person) VALUES (135, 32, 69);
+INSERT INTO teamparticipation (id, team, person) VALUES (136, 17, 69);
+INSERT INTO teamparticipation (id, team, person) VALUES (137, 32, 68);
+INSERT INTO teamparticipation (id, team, person) VALUES (138, 17, 68);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;

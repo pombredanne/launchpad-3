@@ -53,7 +53,7 @@ displays only the first five.
     Kubuntu - Free KDE-based Linux
 
     >>> anon_browser.getLink(
-    ...     'See all projects owned or driven by Mark Shuttleworth').click()
+    ...     'See all projects Mark Shuttleworth is involved with').click()
     >>> print anon_browser.url
     http://launchpad.dev/%7Esabdfl/+projects
 

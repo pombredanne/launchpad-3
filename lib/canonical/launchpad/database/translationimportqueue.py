@@ -16,7 +16,7 @@ from zope.interface import implements
 from zope.component import getUtility
 from sqlobject import SQLObjectNotFound, StringCol, ForeignKey, BoolCol
 
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
+from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW, DEFAULT
 from canonical.database.enumcol import EnumCol
@@ -641,16 +641,27 @@ class TranslationImportQueue:
 
         num_files = 0
         for tarinfo in tarball:
-            if tarinfo.name.endswith('.pot') or tarinfo.name.endswith('.po'):
-                # Only the .pot and .po files are interested here, ignore the
-                # others as we don't support any other file format.
+            filename = tarinfo.name
+            # XXX: JeroenVermeulen 2007-06-18, Work multi-format support in
+            # For now we're only interested in PO and POT files.  We skip
+            # "dotfiles," i.e. files whose names start with a dot, and we
+            # ignore anything that isn't a file (such as directories,
+            # symlinks, and above all, device files which could cause some
+            # serious security headaches).  (see bug 121798)
+            looks_useful = (
+                tarinfo.isfile() and
+                not filename.startswith('.') and
+                (filename.endswith('.pot') or filename.endswith('.po')))
+            if looks_useful:
                 file_content = tarball.extractfile(tarinfo).read()
-                self.addOrUpdateEntry(
-                    tarinfo.name, file_content, is_published, importer,
-                    sourcepackagename=sourcepackagename,
-                    distroseries=distroseries, productseries=productseries,
-                    potemplate=potemplate)
-                num_files += 1
+                if len(file_content) > 0:
+                    self.addOrUpdateEntry(
+                        tarinfo.name, file_content, is_published, importer,
+                        sourcepackagename=sourcepackagename,
+                        distroseries=distroseries,
+                        productseries=productseries,
+                        potemplate=potemplate)
+                    num_files += 1
 
         tarball.close()
 
@@ -688,30 +699,14 @@ class TranslationImportQueue:
 
         # Get oldest entry that either is not attached to a distroseries, or
         # is attached to one whose defer_translation_imports flag is not set.
-        oldest_wo_dr = TranslationImportQueueEntry.selectFirst('''
+        return TranslationImportQueueEntry.selectFirst('''
             status = %s AND
-            distrorelease IS NULL''' % sqlvalues(RosettaImportStatus.APPROVED),
-            orderBy=['dateimported'])
-
-        oldest_w_dr = TranslationImportQueueEntry.selectFirst('''
-            status = %s AND
-            TranslationImportQueueEntry.distrorelease = DistroRelease.id AND
-            not DistroRelease.defer_translation_imports
-            ''' % sqlvalues(RosettaImportStatus.APPROVED),
+            ((TranslationImportQueueEntry.distrorelease = DistroRelease.id AND
+             NOT DistroRelease.defer_translation_imports) OR
+            TranslationImportQueueEntry.distrorelease IS NULL)''' % quote(
+                RosettaImportStatus.APPROVED),
             clauseTables=['DistroRelease'],
             orderBy=['dateimported'])
-
-        if oldest_w_dr is None:
-            return oldest_wo_dr
-
-        if oldest_wo_dr is None:
-            return oldest_w_dr
-
-        if oldest_w_dr.dateimported < oldest_wo_dr.dateimported:
-            return oldest_w_dr
-
-        return oldest_wo_dr
-
 
     def getEntriesWithPOTExtension(self, distroseries=None,
         sourcepackagename=None, productseries=None):
@@ -791,10 +786,14 @@ class TranslationImportQueue:
                     # Set the place where it should be imported.
                     entry.potemplate = guess
 
+            assert not entry.import_into is None
+
+            if entry.status != RosettaImportStatus.APPROVED:
+                there_are_entries_approved = True
+
             # Already know where it should be imported. The entry is approved
             # automatically.
             entry.status = RosettaImportStatus.APPROVED
-            there_are_entries_approved = True
             # Do the commit to save the changes.
             ztm.commit()
 
