@@ -79,6 +79,10 @@ class ICodeImportSet(Interface):
             cvs_root=None, cvs_module=None):
         """Create a new CodeImport."""
 
+    def newWithId(id, registrant, branch, rcs_type, svn_branch_url=None,
+            cvs_root=None, cvs_module=None):
+        """Create a new CodeImport with a specified database id."""
+
     def getAll():
         """Return an iterable of all CodeImport objects."""
 

@@ -124,3 +124,8 @@ present the import's details on the page of the branch.
     u'svn://svn.example.com/trunk'
     >>> code_import_set.getByBranch(cvs_branch).cvs_root
     u':pserver:anonymous@cvs.example.com:/cvsroot'
+
+Trying to get an import for an id that does not exist returns None.
+
+    >>> print code_import_set.get(-1)
+    None

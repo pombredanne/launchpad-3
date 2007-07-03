@@ -6,24 +6,32 @@ __metaclass__ = type
 __all__ = ['test_suite']
 
 
+import datetime
 import logging
+import pytz
 import unittest
 
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.database import CodeImport, ProductSeries
+from canonical.launchpad.database import CodeImport, ProductSeries, ProductSet
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import (
-    IBranchSet, IProductSet)
+    IBranchSet, ICodeImportSet, IProductSet)
 from canonical.launchpad.scripts.importd.code_import_sync import CodeImportSync
 from canonical.launchpad.utilities import LaunchpadCelebrities
-from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
+from canonical.lp.dbschema import (
+    CodeImportReviewStatus, ImportStatus, RevisionControlSystems)
 
-class TestCodeImportSync(LaunchpadZopelessTestCase):
+
+UTC = pytz.timezone('UTC')
+
+
+class CodeImportSyncTestCase(LaunchpadZopelessTestCase):
 
     def setUp(self):
         self.cleanUpSampleData()
+        self.firefox = ProductSet().getByName('firefox')
         self.code_import_sync = CodeImportSync(logging, self.layer.txn)
 
     def cleanUpSampleData(self):
@@ -35,12 +43,19 @@ class TestCodeImportSync(LaunchpadZopelessTestCase):
         for code_import in all_code_imports:
             code_import.destroySelf()
 
-    def createTestingSeries(self, product, name):
+    def createTestingSeries(self, name):
         """Create an import series in with TESTING importstatus."""
+        product = self.firefox
         series = product.newSeries(product.owner, name, name)
         series.importstatus = ImportStatus.TESTING
         series.rcstype = RevisionControlSystems.SVN
         series.svnrepository = 'svn://example.com/' + name
+
+        # ProductSeries may have datelastsynced for any importstatus, but it
+        # must only be copied to the CodeImport in some cases.
+        series.datelastsynced = datetime.datetime(
+            2000, 1, 1, 0, 0, 0, tzinfo=UTC)
+
         return series
 
     def createImportBranch(self, series):
@@ -51,44 +66,116 @@ class TestCodeImportSync(LaunchpadZopelessTestCase):
         series.import_branch = branch
         return branch
 
-    def testGetImportSeriesEmpty(self):
+    def assertImportMatchesSeries(self, code_import, series):
+        """Fail if the CodeImport is not consistent with the ProductSeries."""
+        # A CodeImport must have the same database id as its corresponding
+        # series.
+        self.assertEqual(code_import.id, series.id)
+
+        # Since ProductSeries does not record who requested an import, all
+        # CodeImports created by the sync script are recorded as registered by
+        # the vcs-imports user.
+        self.assertEqual(code_import.registrant.name, u'vcs-imports')
+
+        # The VCS details must be identical.
+        self.assertEqual(code_import.rcs_type, series.rcstype)
+        self.assertEqual(code_import.svn_branch_url, series.svnrepository)
+        self.assertEqual(code_import.cvs_root, series.cvsroot)
+        self.assertEqual(code_import.cvs_module, series.cvsmodule)
+
+        # datelastsynced must be copied to date_last_successful if and only if
+        # the importstatus was SYNCING or STOPPED.
+        assert series.datelastsynced is not None # Test suite invariant.
+        if series.importstatus in (ImportStatus.SYNCING, ImportStatus.STOPPED):
+            last_successful = series.datelastsynced
+        else:
+            last_successful = None
+        self.assertEqual(code_import.date_last_successful, last_successful)
+
+    def assertListSingleItemEquals(self, the_list, expected_item):
+        """Fail if the_list does not have expected_item has its single item."""
+        self.assertEqual(len(the_list), 1)
+        [the_item] = the_list
+        self.assertEqual(the_item, expected_item)
+
+
+class TestGetImportSeries(CodeImportSyncTestCase):
+    """Unit tests for CodeImportSync.getImportSeries."""
+
+    def testEmpty(self):
         # If there is no series with importstatus set, getImportSeries gives an
         # empty iterable. This would never happen in real life.
+        flush_database_updates()
         self.assertEqual(list(self.code_import_sync.getImportSeries()), [])
+
+    def testTesting(self):
+        # getImportSeries yields series with TESTING importstatus.
+        testing = self.createTestingSeries('testing')
+        flush_database_updates()
+        import_series_set = list(self.code_import_sync.getImportSeries())
+        self.assertListSingleItemEquals(import_series_set, testing)
+
+
+class TestCreateCodeImport(CodeImportSyncTestCase):
+    """Unit tests for CodeImportSync.createCodeImport."""
+
+    def testTesting(self):
+        testing = self.createTestingSeries('testing')
+        code_import = self.code_import_sync.createCodeImport(testing)
+        self.assertImportMatchesSeries(code_import, testing)
+
+
+class TestCodeImportSync(CodeImportSyncTestCase):
+    """Feature tests for CodeImportSync."""
+
+    def testNewTesting(self):
+        # A new TESTING series causes the creation of a new code import with
+        # NEW review status.
+        testing = self.createTestingSeries('testing')
+        flush_database_updates()
+        self.code_import_sync.run()
+        flush_database_updates()
+        all_imports = list(getUtility(ICodeImportSet).getAll())
+        self.assertEqual(len(all_imports), 1)
+        [code_import] = all_imports
+        self.assertImportMatchesSeries(code_import, testing)
+        self.assertEqual(code_import.review_status, CodeImportReviewStatus.NEW)
+
+    # TODO: test that non-MAIN cvs branches are ignored, CodeImport does not
+    # have a cvs_branch attribute.
+
+    # TODO: test that CVS imports are correctly created and updated. All the
+    # basic tests are done on SVN imports.
 
     def testGetImportSeries(self):
         # getImportSeries should select all ProductSeries whose importstatus is
         # TESTING, AUTOTESTED, PROCESSING, SYNCING or STOPPED. ProductSeries
         # whose status is DONTSYNC or TESTFAILED are ignored.
-        firefox = getUtility(IProductSet).getByName('firefox')
-
-        # Create a series with importstatus = TESTING
-        testing = self.createTestingSeries(firefox, 'testing')
 
         # Create a series with importstatus = TESTFAILED
-        testfailed = self.createTestingSeries(firefox, 'testfailed')
+        testfailed = self.createTestingSeries('testfailed')
         testfailed.markTestFailed()
 
         # Create a series with importstatus = AUTOTESTED
-        autotested = self.createTestingSeries(firefox, 'autotested')
+        autotested = self.createTestingSeries('autotested')
         autotested.importstatus = ImportStatus.AUTOTESTED
 
         # Create a series with importstatus = DONTSYNC
-        dontsync = self.createTestingSeries(firefox, 'dontsync')
+        dontsync = self.createTestingSeries('dontsync')
         dontsync.markDontSync()
 
         # Create a series with importstatus = PROCESSING
-        processing = self.createTestingSeries(firefox, 'processing')
+        processing = self.createTestingSeries('processing')
         processing.certifyForSync()
 
         # Create a series with importstatus = SYNCING
-        syncing = self.createTestingSeries(firefox, 'syncing')
+        syncing = self.createTestingSeries('syncing')
         syncing.certifyForSync()
         syncing.enableAutoSync()
         syncing_branch = self.createImportBranch(syncing)
 
         # Create a series with importstatus = STOPPED
-        stopped = self.createTestingSeries(firefox, 'stopped')
+        stopped = self.createTestingSeries('stopped')
         stopped.certifyForSync()
         stopped.enableAutoSync()
         stopped_branch = self.createImportBranch(stopped)

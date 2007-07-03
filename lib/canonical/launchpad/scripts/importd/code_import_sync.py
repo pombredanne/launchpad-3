@@ -9,6 +9,13 @@ __metaclass__ = type
 __all__ = ['CodeImportSync']
 
 
+from zope.component import getUtility
+
+from canonical.lp.dbschema import CodeImportReviewStatus, ImportStatus
+from canonical.launchpad.interfaces import (
+    IBranchSet, ICodeImportSet, ILaunchpadCelebrities, IProductSeriesSet)
+
+
 class CodeImportSync:
     """Populate and update the CodeImport table from the ProductSeries table.
     """
@@ -19,16 +26,22 @@ class CodeImportSync:
 
     def run(self):
         """Entry point method for the script runner."""
+        for series in self.getImportSeries():
+            code_import = getUtility(ICodeImportSet).get(series.id)
+            if code_import is None:
+                self.createCodeImport(series)
 
     def getImportSeries(self):
-        """Select ProductSeries rows for which we want to have a CodeImport.
+        """Iterate over ProductSeries for which we want to have a CodeImport.
 
         This is any series where importstatus is TESTING, AUTOTESTED,
         PROCESSING, SYNCING or STOPPED.
 
         Series where importstatus is DONTSYNC or TESTFAILED are ignored.
         """
-        return []
+        import_series = getUtility(IProductSeriesSet).search(forimport=True)
+        for series in import_series:
+            yield series
 
     def syncOneSeries(self, series):
         """Create or update the CodeImport object associated to the given
@@ -40,11 +53,22 @@ class CodeImportSync:
         ProductSeries.
 
         :param series: a ProductSeries associated to a code import.
+        :return: the created CodeImport.
         :precondition: The CodeImport object corresponding to `series` does
             already exist in the database.
         :postcondition: The CodeImport object corresponding to `series` exists
             in the database and is up to date.
         """
+        review_status = CodeImportReviewStatus.NEW
+        date_last_successful = None
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        branch = getUtility(IBranchSet).new(
+            series.name, vcs_imports, series.product, None, None)
+        code_import = getUtility(ICodeImportSet).newWithId(
+            series.id, vcs_imports, branch, series.rcstype,
+            svn_branch_url=series.svnrepository,
+            cvs_root=series.cvsroot, cvs_module=series.cvsmodule)
+        return code_import
 
     def updateCodeImport(self, series, code_import):
         """Update `code_import` to match `series`.

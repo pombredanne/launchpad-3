@@ -10,6 +10,7 @@ __all__ = [
     ]
 
 from sqlobject import (
+    SQLObjectNotFound,
     BoolCol, ForeignKey, IntCol, StringCol)
 
 from zope.component import getUtility
@@ -76,13 +77,34 @@ class CodeImportSet:
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
 
+    def newWithId(self, id, registrant, branch, rcs_type, svn_branch_url=None,
+            cvs_root=None, cvs_module=None):
+        """See `ICodeImportSet`."""
+        assert branch.owner == getUtility(ILaunchpadCelebrities).vcs_imports
+        if rcs_type == RevisionControlSystems.CVS:
+            assert cvs_root is not None and cvs_module is not None
+            assert svn_branch_url is None
+        elif rcs_type == RevisionControlSystems.SVN:
+            assert cvs_root is None and cvs_module is None
+            assert svn_branch_url is not None
+        else:
+            raise AssertionError(
+                "Don't know how to sanity check source details for unknown "
+                "rcs_type %s"%rcs_type)
+        return CodeImport(id=id, registrant=registrant, branch=branch,
+            rcs_type=rcs_type, svn_branch_url=svn_branch_url,
+            cvs_root=cvs_root, cvs_module=cvs_module)
+
     def getAll(self):
         """See `ICodeImportSet`."""
         return CodeImport.select()
 
     def get(self, id):
         """See `ICodeImportSet`."""
-        return CodeImport.get(id)
+        try:
+            return CodeImport.get(id)
+        except SQLObjectNotFound:
+            return None
 
     def getByBranch(self, branch):
         """See `ICodeImportSet`."""
