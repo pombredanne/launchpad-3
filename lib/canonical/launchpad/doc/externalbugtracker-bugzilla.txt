@@ -61,7 +61,7 @@ if the bug is closed:
     'Fix Committed'
     >>> external_bugzilla.convertRemoteStatus('RESOLVED FIXED').title
     'Fix Released'
-    >>> external_bugzilla.convertRemoteStatus('RESOLVED PATCH_ALREADY_AVAILABLE').title
+    >>> external_bugzilla.convertRemoteStatus('CLOSED PATCH_ALREADY_AVAILABLE').title
     'Fix Released'
     >>> external_bugzilla.convertRemoteStatus('RESOLVED CODE_FIX').title
     'Fix Released'
