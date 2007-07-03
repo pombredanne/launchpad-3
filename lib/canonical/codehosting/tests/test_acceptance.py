@@ -362,11 +362,16 @@ def make_server_tests(base_suite, servers):
 
 
 def test_suite():
-    base_suite = unittest.makeSuite(AcceptanceTests)
-    suite = unittest.TestSuite()
-    suite.addTest(make_repository_tests(base_suite))
-    suite.addTest(make_server_tests(
-        base_suite, [make_sftp_server(), make_bzr_ssh_server()]))
-    suite.addTest(make_server_tests(
-        unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server()]))
-    return suite
+    # XXX: JonathanLange 2007-06-27, These tests are causing intermittent
+    # failures on PQM. They are being temporarily disabled until they can be
+    # made more reliable.
+    # See https://launchpad.net/bugs/122268 for more information.
+    return unittest.TestSuite()
+##     base_suite = unittest.makeSuite(AcceptanceTests)
+##     suite = unittest.TestSuite()
+##     suite.addTest(make_repository_tests(base_suite))
+##     suite.addTest(make_server_tests(
+##         base_suite, [make_sftp_server(), make_bzr_ssh_server()]))
+##     suite.addTest(make_server_tests(
+##         unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server()]))
+##     return suite
