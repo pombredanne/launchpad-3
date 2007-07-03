@@ -69,12 +69,59 @@ class FillLanguageColumn:
         self.lowest_id = next
 
 
+def check_for_mismatches():
+    """Verify that `POMsgSet.language` fields match corresponding `POFiles`'.
+
+    Raises AssertionError if a mismatch is found.
+
+    Null values are quietly ignored; this function can be run before or after
+    the `language` column is populated.
+    """
+    cur = cursor()
+    cur.execute("""
+        SELECT count(*)
+        FROM POMsgSet
+        JOIN POFile ON POMsgSet.pofile = POFile.id
+        WHERE POMsgSet.language <> POFile.language
+        """)
+    mismatches = cur.fetchone()[0]
+    if mismatches != 0:
+        raise AssertionError("%d mismatches between POMsgSet languages "
+            "and POFile languages" % mismatches)
+
+
+def check_for_nulls():
+    """Verify that no nulls are left in the `POMsgSet.language` column.
+
+    Raises AssertionError if nulls are found.
+    """
+    cur = cursor()
+    cur.execute("SELECT count(*) FROM POMsgSet WHERE language IS NULL")
+    nulls = cur.fetchone()[0]
+    if nulls != 0:
+        raise AssertionError(
+            "%d nulls found among POMsgSet languages" % nulls)
+
+
 class InitializePOMsgSetLanguage(LaunchpadScript):
     """A script, for one-time use only, to initialize POMsgSet.language."""
 
     def main(self):
+        self.logger.info("Checking for existing mismatches...")
+        check_for_mismatches()
+
+        self.logger.info("Populating POMsgSet.language column...")
         filler = FillLanguageColumn(self.txn)
         LoopTuner(filler, 4).run()
+
+        self.logger.info("Checking for remaining nulls...")
+        check_for_nulls()
+
+        self.logger.info("Checking for incorrectly filled language fields...")
+        check_for_mismatches()
+
+        self.logger.info("Committing...")
+        self.txn.commit()
         self.logger.info("Done.")
 
 if __name__ == '__main__':
