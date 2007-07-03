@@ -57,6 +57,77 @@ def null_log(message, level=0):
 oidutil.log = null_log
 
 
+rationale = PersonCreationRationale
+# Information about known trust roots
+# XXX: 2007-06-14 jamesh
+# Include more information about the trust roots, such as an icon.  We
+# should really maintain this data elsewhere, but this should be fine
+# for phase 1 of the implementation.
+KNOWN_TRUST_ROOTS = {
+    'http://localhost.localdomain:8001/':
+        dict(title="OpenID Consumer Example",
+             logo=None,
+             sreg=['fullname'],
+             reason="This is a localhost server.  Make your own judgement."),
+    'http://pdl-dev.co.uk':
+        dict(title="PDL Demo OSCommerce shop",
+             logo="/+icing/canonical-logo.png",
+             sreg=['email', 'fullname', 'nickname',
+                   'x.address1', 'x.address2', 'x.organization',
+                   'x.city', 'x.province', 'country', 'postcode',
+                   'x.phone'],
+             reason=None),
+    'http://www.mmania.biz':
+        dict(title="The Ubuntu Store from Canonical",
+             logo="/+icing/canonical-logo.png",
+             sreg=['email', 'fullname', 'nickname',
+                   'x.address1', 'x.address2', 'x.organization',
+                   'x.city', 'x.province', 'country', 'postcode',
+                   'x.phone'],
+             reason=("For the Ubuntu Store, you need a Launchpad account "
+                     "so we can remember your order details and keep in "
+                     "in touch with you about your orders."),
+             creation_rationale=rationale.OWNER_CREATED_UBUNTU_SHOP),
+    'https://shop.canonical.com/':
+        dict(title="The Ubuntu Store from Canonical",
+             logo="/+icing/canonical-logo.png",
+             sreg=['email', 'fullname', 'nickname',
+                   'x.address1', 'x.address2', 'x.organization',
+                   'x.city', 'x.province', 'country', 'postcode',
+                   'x.phone'],
+             reason=("For the Ubuntu Store, you need a Launchpad account "
+                     "so we can remember your order details and keep in "
+                     "in touch with you about your orders."),
+             creation_rationale=rationale.OWNER_CREATED_UBUNTU_SHOP),
+    #'https://shipit.ubuntu.com/':
+    #    dict(title="Ubuntu Shipit",
+    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
+    #'https://shipit.kubuntu.org/':
+    #    dict(title="Kubuntu Shipit",
+    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
+    #'https://shipit.edubuntu.org/':
+    #    dict(title="Edubuntu Shipit",
+    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
+    #'https://wiki.ubuntu.com/':
+    #    dict(title="Ubuntu Wiki",
+    #         creation_rationale=rationale.OWNER_CREATED_UBUNTU_WIKI),
+    }
+
+SREG_FIELDS = [
+    ('fullname', 'Full name'),
+    ('nickname', 'Launchpad ID'),
+    ('email', 'Email address'),
+    ('timezone', 'Time Zone'),
+    ('x.address1', 'Address line 1'),
+    ('x.address2', 'Address line 2'),
+    ('x.city', 'City'),
+    ('x.province', 'State/Province'),
+    ('country', 'Country'),
+    ('postcode', 'Postcode'),
+    ('x.phone', 'Phone number'),
+    ('x.organization', 'Organization'),
+    ]
+
 class OpenIdMixin:
 
     openid_request = None
@@ -150,6 +221,78 @@ class OpenIdMixin:
         except KeyError:
             pass
 
+    @property
+    def sreg_field_names(self):
+        """Return the list of sreg keys that will be provided to the RP."""
+        field_names = set()
+        # Collect the field names requested.  We treat required and
+        # optional parameters the same.
+        if 'openid.sreg.required' in self.openid_parameters:
+            field_names.update(
+                self.openid_parameters['openid.sreg.required'].split(','))
+        if 'openid.sreg.optional' in self.openid_parameters:
+            field_names.update(
+                self.openid_parameters['openid.sreg.optional'].split(','))
+        # Now subset them based on what keys are allowed from the
+        # KNOWN_TRUST_ROOTS list:
+        rp_info = KNOWN_TRUST_ROOTS.get(self.openid_request.trust_root, {})
+        field_names.intersection_update(rp_info.get('sreg', []))
+        # Sort the list according to SREG_FIELDS
+        return [name for (name, description) in SREG_FIELDS
+                if name in field_names]
+
+    @property
+    def sreg_fields(self):
+        """Return a list of the sreg (field, value) pairs to be sent to the RP.
+
+        As this function returns user details, the user must be logged
+        in before accessing this property.
+
+        Shipping information is taken from the last shipped Shipit
+        request.
+        """
+        assert self.user is not None, (
+            'Must be logged in to calculate sreg items')
+        shipment = self.user.lastShippedRequest()
+        items = []
+        for field_name in self.sreg_field_names:
+            if field_name == 'nickname':
+                items.append((field_name, self.user.name))
+            elif field_name == 'fullname':
+                items.append((field_name, self.user.displayname))
+            elif field_name == 'email':
+                items.append((field_name, self.user.preferredemail.email))
+            elif field_name == 'timezone':
+                items.append((field_name, self.user.timezone))
+            elif field_name == 'x.address1':
+                if shipment is not None:
+                    items.append((field_name, shipment.addressline1))
+            elif field_name == 'x.address2':
+                if shipment is not None and shipment.addressline2 is not None:
+                    items.append((field_name, shipment.addressline2))
+            elif field_name == 'x.organization':
+                if shipment is not None and shipment.organization is not None:
+                    items.append((field_name, shipment.organization))
+            elif field_name == 'x.city':
+                if shipment is not None:
+                    items.append((field_name, shipment.city))
+            elif field_name == 'x.province':
+                if shipment is not None and shipment.province is not None:
+                    items.append((field_name, shipment.province))
+            elif field_name == 'country':
+                if shipment is not None:
+                    items.append((field_name, shipment.country.name))
+            elif field_name == 'postcode':
+                if shipment is not None and shipment.postcode is not None:
+                    items.append((field_name, shipment.postcode))
+            elif field_name == 'x.phone':
+                if shipment is not None and shipment.phone is not None:
+                    items.append((field_name, shipment.phone))
+            else:
+                raise AssertionError('Unknown openid.sreg field name: %s'
+                                     % field_name)
+        return items
+
     def renderOpenIdResponse(self, openid_response):
         webresponse = self.openid_server.encodeResponse(openid_response)
         response = self.request.response
@@ -183,21 +326,9 @@ class OpenIdMixin:
         # not hurt, so we set it here unconditionally.
         response.addField(None, 'identity', self.user_identity_url)
 
-        # If this is a trust root we know about and trust, send some
-        # user details.
-        if (self.openid_request.trust_root in
-            config.launchpad.openid_sreg_trustroots):
-            response.addField('sreg', 'email',
-                              self.user.preferredemail.email, signed=True)
-            response.addField('sreg', 'fullname',
-                              self.user.displayname, signed=True)
-            response.addField('sreg', 'nickname',
-                              self.user.name, signed=True)
-            # XXX: 2007-06-20 jamesh
-            # Disable sending of data not needed by the shop, so we
-            # don't get people relying on this feature.
-            #response.addField('sreg', 'timezone',
-            #                  self.user.timezone, signed=True)
+        # Add sreg result data
+        for (field_name, value) in self.sreg_fields:
+            response.addField('sreg', field_name, value, signed=True)
         return response
 
     def createFailedResponse(self):
@@ -324,48 +455,6 @@ class OpenIdView(OpenIdMixin, LaunchpadView):
 
         return auth_set.isAuthorized(
                 self.user, self.openid_request.trust_root, client_id)
-
-
-rationale = PersonCreationRationale
-# Information about known trust roots
-# XXX: 2007-06-14 jamesh
-# Include more information about the trust roots, such as an icon.  We
-# should really maintain this data elsewhere, but this should be fine
-# for phase 1 of the implementation.
-KNOWN_TRUST_ROOTS = {
-    'http://localhost.localdomain:8001/':
-        dict(title="OpenID Consumer Example",
-             logo=None,
-             reason="This is a localhost server.  Make your own judgement."),
-    'http://pdl-dev.co.uk':
-        dict(title="PDL Demo OSCommerce shop",
-             logo="/+icing/canonical-logo.png", reason=None),
-    'http://www.mmania.biz':
-        dict(title="The Ubuntu Store from Canonical",
-             logo="/+icing/canonical-logo.png",
-             reason=("For the Ubuntu Store, you need a Launchpad account "
-                     "so we can remember your order details and keep in "
-                     "in touch with you about your orders.")),
-    'https://shop.canonical.com/':
-        dict(title="The Ubuntu Store from Canonical",
-             logo="/+icing/canonical-logo.png",
-             reason=("For the Ubuntu Store, you need a Launchpad account "
-                     "so we can remember your order details and keep in "
-                     "in touch with you about your orders."),
-             creation_rationale=rationale.OWNER_CREATED_UBUNTU_SHOP),
-    #'https://shipit.ubuntu.com/':
-    #    dict(title="Ubuntu Shipit",
-    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
-    #'https://shipit.kubuntu.org/':
-    #    dict(title="Kubuntu Shipit",
-    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
-    #'https://shipit.edubuntu.org/':
-    #    dict(title="Edubuntu Shipit",
-    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
-    #'https://wiki.ubuntu.com/':
-    #    dict(title="Ubuntu Wiki",
-    #         creation_rationale=rationale.OWNER_CREATED_UBUNTU_WIKI),
-    }
 
 
 class LoginServiceBaseView(OpenIdMixin, LaunchpadFormView):
