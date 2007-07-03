@@ -5,7 +5,9 @@
 __metaclass__ = type
 __all__ = [
     'IMailingList',
+    'IMailingListApplication',
     'IMailingListRegistry',
+    'IRequestedMailingListAPI',
     ]
 
 
@@ -13,6 +15,11 @@ from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Int, Text
 
 from canonical.launchpad import _
+from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+
+
+class IMailingListApplication(ILaunchpadApplication):
+    """Mailing lists application root."""
 
 
 class IMailingList(Interface):
@@ -126,3 +133,38 @@ class IMailingListRegistry(Interface):
 
     deactivated_lists = Attribute(
         'All mailing lists with the status of MailingListStatus.DEACTIVATING.')
+
+
+class IRequestedMailingListAPI(Interface):
+    """XMLRPC API that Mailman polls for mailing list actions."""
+
+    def getPendingActions():
+        """Return all pending mailing list actions.
+
+        :return: A dictionary with keys being the action names and values
+            being a sequence of values describing the details of each action.
+
+        Actions are strings, with the following valid values:
+
+        * 'create'     -- create the named team mailing list
+        * 'deactivate' -- deactivate the named team mailing list
+        * 'modify'     -- modify an existing team mailing list
+
+        For the 'deactivate' action, the value items are just the team name
+        for the list being deactivated.  For the 'create' and 'modify'
+        actions, the value items are 2-tuples where the first item is the team
+        name and the second item is a dictionary of the list attributes to
+        modify, for example 'welcome_message'.
+
+        There will be at most one action per team.
+        """
+
+    def reportStatus(statuses):
+        """Report the status of mailing list actions.
+
+        When Mailman processes the actions requested in getPendingActions(),
+        it will report the status of those actions back to Launchpad.
+
+        :param statuses: A dictionary mapping team names to result strings.
+            The result strings may be either 'success' or 'failure'.
+        """

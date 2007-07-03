@@ -6,10 +6,12 @@ initiated by Mailman in all cases; in other words, Mailman polls Launchpad to
 see if there is any work for Mailman to do.
 
     >>> import xmlrpclib
-    >>> from canonical.functional import XMLRPCTestTransport
-    >>> mailinglist_api = xmlrpclib.ServerProxy(
-    ...    'http://test@canonical.com:test@xmlrpc.launchpad.dev/mailinglists/',
-    ...    transport=XMLRPCTransport())
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import IRequestedMailingListAPI
+    >>> from canonical.launchpad.xmlrpc import RequestedMailingListAPI
+    >>> mailinglist_api = RequestedMailingListAPI('somecontext', 'someview')
+    >>> verifyObject(IRequestedMailingListAPI, mailinglist_api)
+    True
 
 
 == Set up ==
@@ -17,8 +19,11 @@ see if there is any work for Mailman to do.
 Let's start by seeding the database with some sample teams and their mailing
 lists.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.database import MailingListRegistry
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.lp.dbschema import MailingListStatus
     >>> login(ANONYMOUS)
     >>> personset = getUtility(IPersonSet)
     >>> ddaa = personset.getByName('ddaa')
@@ -26,15 +31,15 @@ lists.
     >>> team_two = personset.newTeam(ddaa, 'team-two', 'Team Two')
     >>> list_registry = MailingListRegistry()
     >>> list_one = list_registry.register(team_one)
+    >>> list_one.welcome_message = u'Welcome to Team One'
     >>> list_two = list_registry.register(team_two)
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
 Here's a helper function for printing the pending actions data structure.
 
     >>> def print_actions(pending_actions):
     ...     for action in sorted(pending_actions):
-    ...         for team in sorted(action):
+    ...         for team in sorted(pending_actions[action]):
     ...             if action in ('create', 'modify'):
     ...                 team, modification = team
     ...                 print team, '-->', action, modification
@@ -58,15 +63,23 @@ of the lists has an initial welcome message)...
     >>> carlos = personset.getByName('carlos')
     >>> list_one.review(carlos, MailingListStatus.APPROVED)
     >>> list_two.review(carlos, MailingListStatus.APPROVED)
-    >>> list_one.welcome_message = u'Welcome to Team One'
     >>> flush_database_updates()
 
 ...the next time Mailman polls XMLRPC, there will be things for it to do.
 
     >>> pending_actions = mailinglist_api.getPendingActions()
+    >>> flush_database_updates()
     >>> print_actions(pending_actions)
-    team-one --> create, {'welcome_message': u'Welcome to Team One'}
-    team-two --> create, {}
+    team-one --> create {'welcome_message': u'Welcome to Team One'}
+    team-two --> create {}
+
+In the database, the state of both lists should now be CONSTRUCTING to
+indicate that Mailman is in the process of creating the lists.
+
+    >>> list_one.status.name
+    'CONSTRUCTING'
+    >>> list_two.status.name
+    'CONSTRUCTING'
 
 
 == Creating the mailing lists ==
@@ -80,6 +93,8 @@ some reason.
     ...     'team-one': 'success',
     ...     'team-two': 'failure',
     ...     })
+    True
+    >>> flush_database_updates()
 
 We can see that the statuses of the mailing lists have been updated in the
 database.
@@ -111,15 +126,24 @@ This will show up in the actions pending for Mailman.
 
     >>> pending_actions = mailinglist_api.getPendingActions()
     >>> print_actions(pending_actions)
-    team-one --> deactivate
+    team-one --> deactivated
 
 Let's create another team mailing list and request its deactivation, to show
-what happens if a deactivation fails.
+what happens if a deactivation fails.  First, set things up behind the
+scenes.
 
     >>> team_three = personset.newTeam(ddaa, 'team-three', 'Team Three')
     >>> list_three = list_registry.register(team_three)
+    >>> list_three.review(carlos, MailingListStatus.APPROVED)
     >>> flush_database_updates()
+        
+    >>> pending_actions = mailinglist_api.getPendingActions()
+    >>> flush_database_updates()
+    >>> print_actions(pending_actions)
+    team-three --> create {}
+    team-one --> deactivated
     >>> mailinglist_api.reportStatus({'team-three': 'success'})
+    True
     >>> list_three.deactivate()
     >>> flush_database_updates()
 
@@ -127,16 +151,17 @@ We now have two active mailing lists for which deactivation has been
 requested.
 
     >>> print_actions(mailinglist_api.getPendingActions())
-    team-one --> deactivate
-    team-three --> deactivate
+    team-one --> deactivated
+    team-three --> deactivated
 
 Perhaps team one's list was successfully deactivated but team three's list
 deactivation failed for some reason.
 
     >>> mailinglist_api.reportStatus({
     ...     'team-one': 'success',
-    ...     'team-three': 'failed',
+    ...     'team-three': 'failure',
     ...     })
+    True
     >>> list_one.status.name
     'INACTIVE'
     >>> list_three.status.name
@@ -152,13 +177,21 @@ create a couple more teams and mailing lists.
 
     >>> team_four = personset.newTeam(ddaa, 'team-four', 'Team Four')
     >>> list_four = list_registry.register(team_four)
-    >>> team_five = personset.newTeam(ddaa, 'team-five, 'Team Five')
+    >>> list_four.review(carlos, MailingListStatus.APPROVED)
+    >>> team_five = personset.newTeam(ddaa, 'team-five', 'Team Five')
     >>> list_five = list_registry.register(team_five)
+    >>> list_five.review(carlos, MailingListStatus.APPROVED)
     >>> flush_database_updates()
+    >>> pending_actions = mailinglist_api.getPendingActions()
+    >>> print_actions(pending_actions)
+    team-five --> create {}
+    team-four --> create {}
     >>> mailinglist_api.reportStatus({
     ...     'team-four': 'success',
     ...     'team-five': 'success',
     ...     })
+    True
+    >>> flush_database_updates()
     >>> mailinglist_api.getPendingActions()
     {}
 
@@ -169,15 +202,17 @@ modification action the next time it polls.
     >>> list_five.welcome_message = u'Welcome to Team Five'
     >>> flush_database_updates()
     >>> print_actions(mailinglist_api.getPendingActions())
-    team-four --> modify, {'welcome_message': u'Welcome to Team Four'}
+    team-five --> modify {'welcome_message': u'Welcome to Team Five'}
+    team-four --> modify {'welcome_message': u'Welcome to Team Four'}
 
 Let's say that the change was successful for one of the lists, but failed for
 the other...
 
     >>> mailinglist_api.reportStatus({
     ...     'team-four': 'success',
-    ...     'team-five': 'failed',
+    ...     'team-five': 'failure',
     ...     })
+    True
 
 ...this is reflected in the status of the mailing lists in the database.
 
