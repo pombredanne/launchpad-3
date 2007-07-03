@@ -253,7 +253,7 @@ class HasSpecificationsView(LaunchpadView):
 
     @cachedproperty
     def spec_count(self):
-        return len(self.specs)
+        return self.specs.count
 
     @cachedproperty
     def documentation(self):
