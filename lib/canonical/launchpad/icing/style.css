@@ -584,7 +584,6 @@ body.pillarindex table#applications th {padding-left: 0;}
 #globalsearch {
   float: right;
   margin-top: 15px;
-  margin-right: 70px; /* should prevent search field from sliding under tabs */
 }
 #globalsearch #q {border: 1px solid #a7c2ce; width: 170px;}
 #globalsearch #searchbutton {
