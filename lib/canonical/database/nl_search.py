@@ -69,7 +69,8 @@ def nl_phrase_search(phrase, table, constraints='',
     """
 
     # Create a temporary table containing the IDs of the rows representing
-    # the search space.
+    # the search space. This is done in order to improve performance with
+    # complex extra constraints (like used in some bugs query).
     cur = cursor()
     temp_tablename = '%s_nl_search_candidates' % table._table
     cur.execute('DROP TABLE IF EXISTS %s' % temp_tablename)
