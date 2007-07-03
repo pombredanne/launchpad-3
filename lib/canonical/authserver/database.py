@@ -14,6 +14,7 @@ import transaction
 
 from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.security import AccessBranch
 from canonical.launchpad.webapp import urlappend
@@ -459,25 +460,29 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     def _createBranchInteraction(self, loginID, personName, productName,
                                  branchName):
         """The interaction for createBranch."""
-        if productName == '+junk':
-            product = None
-        else:
-            product = getUtility(IProductSet).getByName(productName)
-
-        person_set = getUtility(IPersonSet)
-        creator_id = self._getPerson(cursor(), loginID)[0]
-        creator = person_set.get(creator_id)
-        owner = person_set.getByName(personName)
-
-        branch_set = getUtility(IBranchSet)
+        requester_id = self._getPerson(cursor(), loginID)[0]
+        requester = getUtility(IPersonSet).get(requester_id)
+        login(requester.preferredemail.email)
         try:
-            branch = branch_set.new(
-                branchName, creator, owner, product, None, None,
-                author=creator)
-        except BranchCreationForbidden:
-            return ''
-        else:
-            return branch.id
+            if productName == '+junk':
+                product = None
+            else:
+                product = getUtility(IProductSet).getByName(productName)
+
+            person_set = getUtility(IPersonSet)
+            owner = person_set.getByName(personName)
+
+            branch_set = getUtility(IBranchSet)
+            try:
+                branch = branch_set.new(
+                    branchName, requester, owner, product, None, None,
+                    author=requester)
+            except BranchCreationForbidden:
+                return ''
+            else:
+                return branch.id
+        finally:
+            logout()
 
     def requestMirror(self, branchID):
         """See IHostedBranchStorage."""
@@ -503,17 +508,24 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     @read_only_transaction
     def _getBranchInformationInteraction(self, loginID, userName, productName,
                                          branchName):
-        branch = getUtility(IBranchSet).getByUniqueName(
-            '~%s/%s/%s' % (userName, productName, branchName))
-        if branch is None:
-            return '', ''
-        requester = getUtility(IPersonSet).get(loginID)
-        if not AccessBranch(branch).checkAuthenticated(requester):
-            return '', ''
-        if requester.inTeam(branch.owner):
-            return branch.id, WRITABLE
-        else:
-            return branch.id, READ_ONLY
+        requester_id = self._getPerson(cursor(), loginID)[0]
+        requester = getUtility(IPersonSet).get(requester_id)
+        login(requester.preferredemail.email)
+        try:
+            branch = getUtility(IBranchSet).getByUniqueName(
+                '~%s/%s/%s' % (userName, productName, branchName))
+            if branch is None:
+                return '', ''
+            try:
+                branch_id = branch.id
+            except Unauthorized:
+                return '', ''
+            if requester.inTeam(branch.owner):
+                return branch_id, WRITABLE
+            else:
+                return branch_id, READ_ONLY
+        finally:
+            logout()
 
 
 class DatabaseBranchDetailsStorage:

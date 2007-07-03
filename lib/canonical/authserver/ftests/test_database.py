@@ -7,10 +7,13 @@ __metaclass__ = type
 import unittest
 
 from zope.interface.verify import verifyObject
+from zope.security.management import setSecurityPolicy
+from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
+from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
@@ -221,6 +224,11 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
     def setUp(self):
         LaunchpadScriptLayer.switchDbConfig('authserver')
         super(NewDatabaseStorageTestCase, self).setUp()
+        setSecurityPolicy(LaunchpadSecurityPolicy)
+
+    def tearDown(self):
+        setSecurityPolicy(PermissiveSecurityPolicy)
+        super(NewDatabaseStorageTestCase, self).tearDown()
 
     def _getTime(self, row_id):
         cur = cursor()
@@ -309,12 +317,13 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         # When we get the branch information for a private branch that is
         # hidden to us, it is an if the branch doesn't exist at all.
         store = DatabaseUserDetailsStorageV2(None)
+        # salgado is a member of landscape-developers.
         store._createBranchInteraction(
-            'landscape-developers', 'landscape-developers', 'landscape',
+            'salgado', 'landscape-developers', 'landscape',
             'some-branch')
-        # 23 == ddaa, not an admin, not a Landscape developer.
+        # ddaa is not an admin, not a Landscape developer.
         branch_id, permissions = store._getBranchInformationInteraction(
-            23, 'landscape-developers', 'landscape', 'some-branch')
+            'ddaa', 'landscape-developers', 'landscape', 'some-branch')
         self.assertEqual('', branch_id)
         self.assertEqual('', permissions)
 

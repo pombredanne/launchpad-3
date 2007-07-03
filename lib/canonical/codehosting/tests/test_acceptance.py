@@ -295,9 +295,10 @@ class AcceptanceTests(SSHTestCase):
         # Trying to get information about a private branch should fail as if
         # the branch doesn't exist.
 
-        # Make a private branch.
+        # Make a private branch. 'salgado' is a member of landscape-developers.
         branch_url = self.pushNewBranch(
-            'landscape-developers', 'landscape', 'some-branch')
+            'landscape-developers', 'landscape', 'some-branch',
+            creator='salgado')
         # Sanity checking that the branch is actually there. We don't care
         # about the result, only that the call succeeds.
         self.getLastRevision(branch_url)
@@ -307,8 +308,6 @@ class AcceptanceTests(SSHTestCase):
             '~landscape-developers/landscape/some-branch')
         self.assertRaises(NotBranchError, self.getLastRevision, remote_url)
 
-    # TODO: Private branch that is in our team but that we can't see. Maybe not
-    # an acceptance test.
 
 class SmartserverTests(SSHTestCase):
     """Acceptance tests for the smartserver component of Launchpad codehosting
