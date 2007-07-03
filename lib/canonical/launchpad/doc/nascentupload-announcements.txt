@@ -475,7 +475,9 @@ Rejections with notify=False will also not generate any emails.
   0
 
 
-Uploads with unicode characters in the changes file are converted to ASCII:
+Uploads with unicode characters in the email addresses are converted to ASCII,
+which is a limitation of the mailer.  However, unicode in the mail content is 
+preserved.
 
   >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
   >>> anything_policy = getPolicy(
@@ -519,4 +521,19 @@ Uploads with unicode characters in the changes file are converted to ASCII:
 
   >>> [message['To'] for message in msgs]
   ['Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
+
+Unicode text in the changes file that is sent on the email is preserved
+in the MIME encoding.
+
+  >>> print msgs[0].get_payload() # doctest: -NORMALIZE_WHITESPACE
+  Accepted:
+  ...
+  Maintainer: Non-ascii maintainer =C4=8Ciha=C5=99 <launchpad@lists.canonical=
+  .com>
+  Changed-By: Non-ascii changed-by =C4=8Ciha=C5=99 <daniel.silverstone@canoni=
+  cal.com>
+  ...
+     * Non-ascii text: =C4=8Ciha=C5=99
+  ...
+
 

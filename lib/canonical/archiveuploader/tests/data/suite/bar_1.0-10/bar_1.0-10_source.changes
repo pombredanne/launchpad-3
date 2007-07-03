@@ -20,6 +20,8 @@ Changes:
  . 
    * Also closes Launchpad bug #6
  .
+   * Non-ascii text: Čihař
+ .
 Files: 
  a4932aa84fdb62819b49f3dda163fc0d 514 devel optional bar_1.0-10.dsc
  ac6b4efe44e31f47ec9f0d0fac6935f4 622 devel optional bar_1.0-10.diff.gz
@@ -27,7 +29,7 @@ Files:
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.6 (GNU/Linux)
 
-iD8DBQFGhNJcjn63CGxkqMURAtlZAJ9V1gLe42OLfi4rqWrKWfL06KCfBwCeL2et
-0wP4B0sZFYdMnG6OdMw/XOE=
-=SH9D
+iD8DBQFGiS0djn63CGxkqMURAgS7AJoCmDz/2TX9XWWt2XrhzmNRUVwLpwCdHQJJ
++hS/Q2TBehSPfQ1diniQBgw=
+=G0o6
 -----END PGP SIGNATURE-----

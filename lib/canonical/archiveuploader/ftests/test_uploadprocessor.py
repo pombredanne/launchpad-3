@@ -167,7 +167,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         self.assertEqual(to_addrs, [daniel])
         self.assertTrue("Unhandled exception processing upload: Exception "
-                        "raised by BrokenUploadPolicy for testing." in raw_msg)
+                        "raised by BrokenUploadPoli=\ncy for testing." 
+                        in raw_msg)
 
     def testUploadToFrozenDistro(self):
         """Uploads to a frozen distroseries should work, but be unapproved.
@@ -505,7 +506,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
             "Path mismatch 'ubuntu/one/two/three/four'. "
-            "Use ~<person>/<distro>/[distroseries]/[files] for PPAs "
+            "Use ~<person>/<distro>/[distrose=\nries]/[files] for PPAs "
             "and <distro>/[files] for normal uploads."]
         self.assertEmail(contents)
 
