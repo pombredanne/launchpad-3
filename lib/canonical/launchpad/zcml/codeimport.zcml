@@ -39,10 +39,6 @@
 
   <!-- CodeImportMachineSet -->
 
-  <content class="canonical.launchpad.database.CodeImportMachineSet">
-    <allow interface="canonical.launchpad.interfaces.ICodeImportMachineSet" />
-  </content>
-
   <securedutility
       class="canonical.launchpad.database.CodeImportMachineSet"
       provides="canonical.launchpad.interfaces.ICodeImportMachineSet" >

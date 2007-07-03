@@ -95,6 +95,7 @@ class CodeImportMachine(SQLBase):
 
     implements(ICodeImportMachine)
 
+    date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
     hostname = StringCol(default=None)
     online = BoolCol(default=False)
 

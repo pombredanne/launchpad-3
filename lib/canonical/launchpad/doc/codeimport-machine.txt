@@ -29,13 +29,27 @@ The webapp only has rights to examine the CodeImportMachine table.
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> verifyObject(ICodeImportMachineSet, removeSecurityProxy(machine_set))
     True
-    >>> len(list(machine_set.getAll()))
-    1
+    >>> machine = machine_set.getByHostname('frobisher.example.com')
+    >>> verifyObject(ICodeImportMachine, removeSecurityProxy(machine))
+    True
+    >>> machine.hostname
+    u'frobisher.example.com'
+    >>> machine.online
+    False
+    >>> machine in machine_set.getAll()
+    True
 
 Jobs running on the machine itself will connect as the 'importd' user,
 which has rights to update the table so it can update the online status.
 
     >>> LaunchpadZopelessLayer.switchDbUser('importd')
-    >>> cur.execute('''UPDATE CodeImportMachine SET online = true
-    ...                WHERE hostname = 'frobisher.example.com';''')
+    >>> machine_set = getUtility(ICodeImportMachineSet)
+    >>> machine = machine_set.getByHostname('frobisher.example.com')
+    >>> machine.online = True
     >>> commit()
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> machine_set = getUtility(ICodeImportMachineSet)
+    >>> machine = machine_set.getByHostname('frobisher.example.com')
+    >>> machine.online
+    True
