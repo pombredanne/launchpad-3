@@ -1,0 +1,34 @@
+= Code Import Machines =
+
+There is a simple CodeImportMachine table in the database that records
+the machines that can perform imports and whether they are online (that
+is, currently capable of performing imports).  Adding new machines is
+considered an admin task, so requires that we switch to a database
+administrator.
+
+    >>> from canonical.testing import LaunchpadZopelessLayer
+    >>> LaunchpadZopelessLayer.switchDbUser('testadmin')
+
+Adding a machine is very simple SQL, for which there will probably be a
+shell script.
+
+    >>> from canonical.database.sqlbase import cursor, commit
+    >>> cur = cursor()
+    >>> cur.execute('''INSERT INTO CodeImportMachine (hostname, online)
+    ...                VALUES ('frobisher.example.com', false);''')
+    >>> commit()
+
+The webapp only has rights to examine the CodeImportMachine table.
+
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+    >>> cur.execute('''SELECT * FROM CodeImportMachine;''')
+    >>> len(cur.fetchall())
+    1
+
+Jobs running on the machine itself will connect as the 'importd' user,
+which has rights to update the table so it can update the online status.
+
+    >>> LaunchpadZopelessLayer.switchDbUser('importd')
+    >>> cur.execute('''UPDATE CodeImportMachine SET online = true
+    ...                WHERE hostname = 'frobisher.example.com';''')
+    >>> commit()
