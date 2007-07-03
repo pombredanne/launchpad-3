@@ -88,6 +88,8 @@ class IPOMsgSet(Interface):
     latest_change_person = Attribute(
         """Return the person who did the latest change in the `IPOMsgSet`.""")
 
+    language = Attribute("Language this msgset is in, copied from `POFile`.")
+
     def isNewerThan(timestamp):
         """Whether the active translations are newer than the given timestamp.
 
