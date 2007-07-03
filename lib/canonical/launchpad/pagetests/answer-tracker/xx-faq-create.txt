@@ -171,9 +171,28 @@ can also be linked to FAQs.
 
     >>> admin_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox'
-    ...     '/+question/9')
+    ...     '/+question/8')
     >>> admin_browser.title
-    'mozilla-firefox in ubuntu question #9:...'
+    'mozilla-firefox in ubuntu question #8:...'
     >>> admin_browser.getLink('This is a FAQ').click()
     >>> print admin_browser.title
-    Is question #9 a FAQ?
+    Is question #8 a FAQ?
+
+
+== Solved question cannot be linked to a FAQ ==
+
+Since linking a question to a FAQ is like giving an answer, it cannot
+be used on solved questions:
+
+    >>> user_browser.open(
+    ...     'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox/'
+    ...     '+question/9')
+    >>> details_portlet = find_portlet(
+    ...     user_browser.contents, 'mozilla-firefox in ubuntu question #9')
+    >>> print details_portlet.find('b', text='Status:').next.strip()
+    Solved
+    >>> user_browser.getLink('This is a FAQ')
+    Traceback (most recent call last):
+      ...
+    LinkNotFoundError
+
