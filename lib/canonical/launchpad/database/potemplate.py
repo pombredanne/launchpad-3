@@ -577,7 +577,6 @@ class POTemplate(SQLBase, RosettaStats):
             if logger:
                 logger.warning(
                     'We got an error importing %s', self.title, exc_info=1)
-            template_mail = 'poimport-syntax-error.txt'
 
         replacements = {
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
@@ -591,13 +590,12 @@ class POTemplate(SQLBase, RosettaStats):
         if import_rejected:
             # We got an error that prevented us to import the template, we
             # need to notify the user and set the status to FAILED.
+            template_mail = 'poimport-syntax-error.txt'
             subject = 'Import problem - %s' % self.displayname
         else:
             # The import was successful.
             template_mail = 'poimport-template-confirmation.txt'
             subject = 'Translation template import - %s' % self.displayname
-
-        assert template_mail is not None, "No mail template chosen"
 
         # Send the email.
         template = helpers.get_email_template(template_mail)
