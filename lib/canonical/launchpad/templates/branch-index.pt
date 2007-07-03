@@ -1,16 +1,10 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
       metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
-  <body>
-    <metal:heading fill-slot="pageheading">
-      <div style="float: right">
-        <img src="/@@/locked-large" title="Private"
-             tal:condition="context/private" />
-      </div>
-      <h1>&#8220;<tal:branch replace="context/displayname" />&#8221; branch</h1>
-    </metal:heading>
+      i18n:domain="launchpad">
+<body>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -20,38 +14,49 @@
 
 <div metal:fill-slot="main">
 
+  <h1>
+    <img src="/@@/branch-large" alt="" />
+    <tal:branch replace="context/displayname" />
+  </h1>
+
   <p tal:repeat="notice view/notices" tal:content="notice"
      class="informational message">
     notice goes here
   </p>
 
-  <table tal:condition="context/url">
-    <tal:comment condition="nothing">
-      <!-- This is a mirror branch, display two URLs -->
-    </tal:comment>
+  <table id="branch-details-table">
     <caption style="margin-top:1ex" class="discreet">
       These URLs are intended for use with the
       <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
     </caption>
     <tbody>
-      <tr><th>Location:</th><td tal:content="context/url" /></tr>
-      <tr><th>Mirror:</th><td tal:content="view/supermirror_url" /></tr>
-    </tbody>
-  </table>
-
-  <table tal:condition="not:context/url">
-    <tal:comment condition="nothing">
-      <!-- This is a hosted or import branch, one URL -->
-    </tal:comment>
-    <caption style="margin-top:1ex" class="discreet">
-      This URL is intended for use with the
-      <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
-    </caption>
-    <tbody>
+      <tal:not-junk-branch tal:condition="context/product">
+        <tr>
+          <th>Project:</th>
+          <td>
+            <img src="/@@/project"
+                 tal:replace="structure context/product/image:icon" />
+            <a tal:attributes="href context/product/fmt:url"
+               tal:content="context/product/displayname" />
+          </td>
+        </tr>
+      </tal:not-junk-branch>
+    <tal:mirrored-branch tal:condition="context/url">
+      <tal:comment condition="nothing">
+        <!-- This is a mirror branch, display two URLs -->
+      </tal:comment>
+        <tr><th>Location:</th><td tal:content="context/url" /></tr>
+        <tr><th>Mirror:</th><td tal:content="view/supermirror_url" /></tr>
+    </tal:mirrored-branch>
+    <tal:hosted-or-imported-branch tal:condition="not:context/url">
+      <tal:comment condition="nothing">
+        <!-- This is a hosted or import branch, one URL -->
+      </tal:comment>
       <tr>
-	<th>Hosted on Launchpad:</th>
-	<td tal:content="view/supermirror_url" />
+        <th>Hosted on Launchpad:</th>
+        <td tal:content="view/supermirror_url" />
       </tr>
+    </tal:hosted-or-imported-branch>
     </tbody>
   </table>
 
