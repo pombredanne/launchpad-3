@@ -392,6 +392,8 @@ As we can see, is the msgid we were looking for.
 
   >>> pomsgset.potmsgset.msgid == msgid
   True
+  >>> pomsgset.language == pofile_sr.language
+  True
 
 This entry is in fact one that is not used anymore, that means, its sequence
 is zero.
