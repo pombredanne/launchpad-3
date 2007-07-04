@@ -274,7 +274,8 @@ class OpenIdMixin:
                 values['postcode'] = shipment.postcode
             if shipment.phone is not None:
                 values['x.phone'] = shipment.phone
-        return [(field, values[field]) for field in self.sreg_field_names]
+        return [(field, values[field])
+                for field in self.sreg_field_names if field in values]
 
     def renderOpenIdResponse(self, openid_response):
         webresponse = self.openid_server.encodeResponse(openid_response)
