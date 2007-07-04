@@ -568,6 +568,7 @@ class POTemplate(SQLBase, RosettaStats):
 
         subject = 'Translation template import - %s' % self.displayname
         template_mail = 'poimport-template-confirmation.txt'
+        import_rejected = False
         try:
             translation_importer.importFile(entry_to_import, logger)
         except (TranslationFormatSyntaxError,
@@ -577,6 +578,7 @@ class POTemplate(SQLBase, RosettaStats):
                     'We got an error importing %s', self.title, exc_info=1)
             template_mail = 'poimport-syntax-error.txt'
             subject = 'Import problem - %s' % self.displayname
+            import_rejected = True
 
         replacements = {
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
