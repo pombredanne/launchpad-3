@@ -107,8 +107,11 @@ def find_main_content(content):
 
 def get_feedback_messages(browser):
     """Find and return the feedback messages of the page."""
-    return [div_tag.string
-            for div_tag in find_tags_by_class(browser.contents, 'message')]
+    message_classes = ['message', 'informational message', 'error message']
+    soup = BeautifulSoup(
+        browser.contents,
+        parseOnlyThese=SoupStrainer('div', {'class': message_classes}))
+    return [div_tag.string for div_tag in soup]
 
 
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
