@@ -55,7 +55,7 @@ form, to register a new blueprint. We'll do it on the Ubuntu distribution.
   >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl('Assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl('Drafter').value = 'carlos@canonical.com'
-  >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+  >>> user_browser.getControl('Approver').value = 'tsukimi@quaqua.net'
   >>> user_browser.getControl('Register Blueprint').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic'
@@ -81,7 +81,7 @@ blueprint with the same name.
   >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl('Assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl('Drafter').value = 'carlos@canonical.com'
-  >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+  >>> user_browser.getControl('Approver').value = 'tsukimi@quaqua.net'
   >>> user_browser.getControl('Register Blueprint').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
@@ -106,7 +106,7 @@ We test the validator using an invalid name.
   >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl('Assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl('Drafter').value = 'carlos@canonical.com'
-  >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+  >>> user_browser.getControl('Approver').value = 'tsukimi@quaqua.net'
   >>> user_browser.getControl('Register Blueprint').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
@@ -132,7 +132,7 @@ the user:
   >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl('Assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl('Drafter').value = 'carlos@canonical.com'
-  >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+  >>> user_browser.getControl('Approver').value = 'tsukimi@quaqua.net'
   >>> user_browser.getControl('Register Blueprint').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/ubuntu/+spec/recoverablenetworkmagic'
@@ -152,7 +152,7 @@ same URL.
   >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl('Assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl('Drafter').value = 'carlos@canonical.com'
-  >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+  >>> user_browser.getControl('Approver').value = 'tsukimi@quaqua.net'
   >>> user_browser.getControl('Register Blueprint').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
@@ -180,7 +180,7 @@ products in that IProject.
   >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl('Assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl('Drafter').value = 'carlos@canonical.com'
-  >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+  >>> user_browser.getControl('Approver').value = 'tsukimi@quaqua.net'
   >>> user_browser.getControl('Register Blueprint').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/thunderbird/+spec/gee-whizz-wotzit'
@@ -213,7 +213,7 @@ First, we try to create a blueprint that has the same name as an existing one.
   >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl('Assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl('Drafter').value = 'carlos@canonical.com'
-  >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+  >>> user_browser.getControl('Approver').value = 'tsukimi@quaqua.net'
   >>> user_browser.getControl('Register Blueprint').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/specs/+new'
@@ -245,7 +245,7 @@ through.
   >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl('Assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl('Drafter').value = 'carlos@canonical.com'
-  >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
+  >>> user_browser.getControl('Approver').value = 'tsukimi@quaqua.net'
   >>> user_browser.getControl('Register Blueprint').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/ubuntu/+spec/brandnewspec'
