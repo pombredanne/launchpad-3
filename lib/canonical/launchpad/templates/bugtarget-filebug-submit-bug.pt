@@ -13,89 +13,95 @@
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_form/form">
+  <tal:uses_malone tal:condition="view/contextUsesMalone">
+    <div metal:use-macro="context/@@launchpad_form/form">
 
-    <div metal:fill-slot="extra_info">
+      <div metal:fill-slot="extra_info">
 
-      <p tal:condition="view/found_possible_duplicates">
-      <strong>Your bug may have already been reported.</strong>
-      Please take a few moments to look through the bugs below
-      to see if your bug has already been reported.
-      </p>
-      <p class="informational message"
-         tal:condition="not: view/found_possible_duplicates">
-        No similar bugs were found.
-      </p>
+        <p tal:condition="view/found_possible_duplicates">
+        <strong>Your bug may have already been reported.</strong>
+        Please take a few moments to look through the bugs below
+        to see if your bug has already been reported.
+        </p>
+        <p class="informational message"
+           tal:condition="not: view/found_possible_duplicates">
+          No similar bugs were found.
+        </p>
 
-      <tal:similar-bugs condition="view/similar_bugs">
-        <table class="listing" id="similar-bugs" style="clear: both">
-          <thead>
-            <tr><th colspan="2">Summary</th></tr>
-          </thead>
-          <tbody>
-            <tr tal:repeat="bug view/similar_bugs"
-                tal:attributes="title bug/description/fmt:shorten/500"
-                title="bug description goes here">
-              <td tal:content="bug/id" class="amount" width="10%">1</td>
-              <td>
-                <a href="#"
-                   tal:content="bug/title"
-                   tal:attributes="href bug/fmt:url">
-                   Firefox doesn't work
-                </a>
-              </td>
-            </tr>
-          </tbody>
+        <tal:similar-bugs condition="view/similar_bugs">
+          <table class="listing" id="similar-bugs" style="clear: both">
+            <thead>
+              <tr><th colspan="2">Summary</th></tr>
+            </thead>
+            <tbody>
+              <tr tal:repeat="bug view/similar_bugs"
+                  tal:attributes="title bug/description/fmt:shorten/500"
+                  title="bug description goes here">
+                <td tal:content="bug/id" class="amount" width="10%">1</td>
+                <td>
+                  <a href="#"
+                     tal:content="bug/title"
+                     tal:attributes="href bug/fmt:url">
+                     Firefox doesn't work
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </tal:similar-bugs>
+
+        <tal:most-common-bugs condition="view/most_common_bugs">
+          <h2 style="clear: both">Most Frequently Reported Bugs</h2>
+
+          <table class="listing" id="most-common-bugs">
+            <thead>
+              <tr><th colspan="2">Summary</th></tr>
+            </thead>
+            <tbody>
+              <tr tal:repeat="bug view/most_common_bugs"
+                  tal:attributes="title bug/description/fmt:shorten/500"
+                  title="bug description goes here">
+                <td class="amount" tal:content="bug/id" width="10%">1</td>
+                <td>
+                  <a href="#"
+                     tal:content="bug/title"
+                     tal:attributes="href bug/fmt:url">
+                     Firefox doesn't work
+                  </a>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </tal:most-common-bugs>
+
+      </div>
+
+      <metal:widgets metal:fill-slot="widgets">
+
+        <p tal:condition="view/found_possible_duplicates">
+          If your bug hasn't been reported before, please describe your
+          problem more in detail.
+        </p>
+
+        <table class="form">
+
+          <metal:basic_filebug_widgets
+              metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
+
         </table>
-      </tal:similar-bugs>
 
-      <tal:most-common-bugs condition="view/most_common_bugs">
-        <h2 style="clear: both">Most Frequently Reported Bugs</h2>
+      </metal:widgets>
 
-        <table class="listing" id="most-common-bugs">
-          <thead>
-            <tr><th colspan="2">Summary</th></tr>
-          </thead>
-          <tbody>
-            <tr tal:repeat="bug view/most_common_bugs"
-                tal:attributes="title bug/description/fmt:shorten/500"
-                title="bug description goes here">
-              <td class="amount" tal:content="bug/id" width="10%">1</td>
-              <td>
-                <a href="#"
-                   tal:content="bug/title"
-                   tal:attributes="href bug/fmt:url">
-                   Firefox doesn't work
-                </a>
-              </td>
-            </tr>
-          </tbody>
-        </table>
-      </tal:most-common-bugs>
+
+      <div class="actions" metal:fill-slot="buttons">
+        <input tal:replace="structure view/actions/field.actions.submit_bug/render" />
+      </div>
 
     </div>
 
-    <metal:widgets metal:fill-slot="widgets">
-
-      <p tal:condition="view/found_possible_duplicates">
-        If your bug hasn't been reported before, please describe your
-        problem more in detail.
-      </p>
-
-      <table class="form">
-
-        <metal:basic_filebug_widgets
-            metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
-
-      </table>
-
-    </metal:widgets>
-
-    <div class="actions" metal:fill-slot="buttons">
-      <input tal:replace="structure view/actions/field.actions.submit_bug/render" />
-    </div>
-
-  </div>
+  </tal:uses_malone>
+  <metal:not_uses_malone
+      use-macro="context/@@+filebug-macros/not_uses_malone" />
 
 </div>
 
