@@ -21,7 +21,8 @@
 
   <div style="float: right;">
     <a href="+addspec">
-	  <img alt="Register a blueprint" src="/+icing/but-sml-registeraspec.gif" />
+    	<img alt="Register a blueprint" 
+    	     src="/+icing/but-sml-registerablueprint.gif"/>
     </a>
   </div>
 
