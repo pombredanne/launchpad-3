@@ -738,6 +738,9 @@ a conditional comment in main-template.pt to work around the above rule. */
   color: #FFFFFF;
   font-weight: bold;
 }
+#portlets .portlet.expanded h2 {
+  background-image: url(leftnav_bg_expanded.gif);
+}
 #portlets #actions h2 {
   background-image: url(leftnav_bg_uncollapsible.gif);
 }
