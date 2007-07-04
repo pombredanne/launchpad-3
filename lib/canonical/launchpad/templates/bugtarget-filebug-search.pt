@@ -59,7 +59,7 @@
     </p>
 
       <tal:most-common-bugs condition="view/most_common_bugs">
-        <h2 style="clear: both">Most Frequently Reported Bugs</h2>
+        <h2>Most Frequently Reported Bugs</h2>
 
         <table class="listing" id="most-common-bugs">
           <thead>
@@ -67,7 +67,7 @@
           </thead>
           <tbody>
             <tr tal:repeat="bug view/most_common_bugs"
-                tal:attributes="title bug/description/fmt:shorten/500"
+                tal:attributes="title bug/description/fmt:shorten/150"
                 title="bug description goes here">
               <td class="amount" tal:content="bug/id" width="10%">1</td>
               <td>
