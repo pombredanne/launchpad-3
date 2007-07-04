@@ -413,10 +413,10 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         return getUtility(IPersonSet).getPOFileContributors(self)
 
-    def prepareTranslationCredits(self, potmsgset):
+    def prepareTranslationCredits(self, msgid):
         """See `IPOFile`."""
-        if (potmsgset.primemsgid_.msgid ==
-            u'_: EMAIL OF TRANSLATORS\nYour emails'):
+        if (msgid == u'_: EMAIL OF TRANSLATORS\nYour emails'):
+            potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(msgid)
             text = potmsgset.translationsForLanguage(self.language.code)[0]
             if text is None:
                 text = u''
@@ -424,23 +424,24 @@ class POFile(SQLBase, POFileMixIn):
                 preferred_email = contributor.preferredemail
                 if (contributor.hide_email_addresses or
                     preferred_email is None):
-                    text += u'\n'
+                    text += u','
                 else:
-                    text += preferred_email.email + u'\n'
-            if text and text[-1] == '\n':
+                    text += preferred_email.email + u','
+            if text and text[-1] == ',':
                 text = text[:-1]
             return text
-        elif (potmsgset.primemsgid_.msgid ==
-              u'_: NAME OF TRANSLATORS\nYour names'):
+        elif (msgid == u'_: NAME OF TRANSLATORS\nYour names'):
+            potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(msgid)
             text = potmsgset.translationsForLanguage(self.language.code)[0]
             if text is None:
                 text = u''
             for contributor in self.contributors:
-                text += u'\n' + contributor.displayname
+                text += u',' + contributor.displayname
             return text
-        elif (potmsgset.primemsgid_.msgid in [u'translation-credits',
-                                              u'translator-credits',
-                                              u'translator_credits']):
+        elif (msgid in [u'translation-credits',
+                        u'translator-credits',
+                        u'translator_credits']):
+            potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(msgid)
             text = potmsgset.translationsForLanguage(self.language.code)[0]
             if len(list(self.contributors)):
                 if text is None:

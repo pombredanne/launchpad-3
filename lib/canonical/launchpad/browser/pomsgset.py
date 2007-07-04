@@ -1197,6 +1197,17 @@ class POMsgSetView(LaunchpadView):
         return self.context.potmsgset.locked_to_published
 
     @cachedproperty
+    def automatic_translation(self):
+        """Returns automatically created translation if defined, or None."""
+        #return self.context.potmsgset.singular_text
+        if self.context.potmsgset.locked_to_published:
+            return text_to_html(self.context.pofile.prepareTranslationCredits(
+                                    self.context.potmsgset.singular_text),
+                                self.context.potmsgset.flags())
+        else:
+            return None
+
+    @cachedproperty
     def sequence(self):
         """Return the position number of this potmsgset in the pofile."""
         return self.context.potmsgset.sequence
@@ -1343,6 +1354,8 @@ class POMsgSetSuggestions:
                 'datecreated': submission.datecreated,
                 'suggestion_html_id':
                     submission.makeHTMLId('suggestion', pomsgset.potmsgset),
-                'translation_html_id': pomsgset.makeHTMLId('translation'),
+                'translation_html_id':
+                    pomsgset.makeHTMLId(
+                        'translation_%s' % (submission.pluralform)),
                 })
 

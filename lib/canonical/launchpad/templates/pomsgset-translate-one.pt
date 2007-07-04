@@ -156,10 +156,10 @@
                        tal:condition="view/is_plural">[0]</span>:
         </label>
       </th>
+      <tal:not-locked condition="not:view/locked">
       <tal:with-content
            condition="translation_dictionary/active_translation">
         <td class="icon left right">
-          <tal:not-locked condition="not:view/locked">
           <tal:logged-in condition="request/lp:person">
           <tal:user-is-official-translator condition="view/user_is_official_translator">
             <input
@@ -187,7 +187,6 @@
                "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
           </tal:is-not-editor>
           </tal:logged-in>
-          </tal:not-locked>
         </td>
         <td>
           <div tal:content="structure translation_dictionary/active_translation"
@@ -214,7 +213,6 @@
       <tal:without-content
         condition="not: translation_dictionary/active_translation">
         <td class="icon left right">
-          <tal:not-locked condition="not:view/locked">
           <tal:user-is-official-translator condition="view/user_is_official_translator">
             <input
               type="radio"
@@ -225,7 +223,6 @@
                 value string:${translation_dictionary/html_id_translation}
             " />
           </tal:user-is-official-translator>
-          </tal:not-locked>
         </td>
         <td>
           <div tal:condition="not: view/user_is_official_translator"
@@ -241,6 +238,25 @@
           </label>
         </td>
       </tal:without-content>
+      </tal:not-locked>
+      <tal:locked condition="view/locked">
+        <td class="icon left right" />
+        <td>
+          <div tal:condition="not: view/user_is_official_translator"
+               tal:attributes="
+                 id string:${translation_dictionary/html_id_translation}"
+               tal:content="structure view/automatic_translation">
+            automatic translation
+          </div>
+          <label tal:condition="view/user_is_official_translator"
+                 tal:attributes="
+                   id string:${translation_dictionary/html_id_translation};
+                   for string:${translation_dictionary/html_id_translation}_radiobutton"
+                 tal:content="structure view/automatic_translation">
+            automatic translation
+          </label>
+        </td>
+      </tal:locked>
     </tr>
 
     <tal:active-submission
