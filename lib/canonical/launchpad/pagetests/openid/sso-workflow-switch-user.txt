@@ -47,7 +47,7 @@ they want to authenticate as Mark Shuttleworth:
 At this point, the user says that they are not Mark Shuttleworth,
 which presents them with a login page:
 
-    >>> browser.getControl("No, I'm Someone Else").click()
+    >>> browser.getControl("I'm Someone Else").click()
     >>> print browser.title
     Launchpad Login Service
 

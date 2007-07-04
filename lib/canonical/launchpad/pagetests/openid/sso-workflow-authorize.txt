@@ -56,7 +56,7 @@ time, we will cancel the authentication request:
     >>> browser.open(setup_url)
     >>> print browser.title
     Authenticate to http://launchpad.dev/+openid-consumer
-    >>> browser.getControl("I Don't Want To Sign In").click()
+    >>> browser.getControl("Not Now").click()
     >>> print browser.url
     http://launchpad.dev/+openid-consumer?...
     >>> print browser.contents

@@ -206,7 +206,7 @@ This can be seen using the existing browser session:
     >>> sabdfl_browser.open(setup_url)
     >>> print sabdfl_browser.title
     Authenticate to http://launchpad.dev/+openid-consumer
-    >>> sabdfl_browser.getControl("I Don't Want To Sign In").click()
+    >>> sabdfl_browser.getControl("Not Now").click()
 
     >>> print sabdfl_browser.url
     http://launchpad.dev/+openid-consumer?openid.mode=cancel
