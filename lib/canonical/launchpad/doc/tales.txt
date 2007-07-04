@@ -137,7 +137,7 @@ Add manual word breaks to long words in a string:
 
 == The fmt: namespace to get strings (hiding and obfuscation) ==
 
-PGP blocks, Signatures and full-quoted parts of a message can be
+PGP blocks, signatures and full-quoted parts of a message can be
 wrapped in markup to hide them:
 
     >>> pgp_open = ('-----BEGIN PGP SIGNED MESSAGE-----\n'
@@ -169,6 +169,11 @@ wrapped in markup to hide them:
     ...            '+++-==============-==============-====================\n'
     ...            'ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs\n'
     ...            '\n')
+    >>> dpkg_in_text = ('When dpkg is mentioned in text,\n'
+    ...                 "we must take care to identify '|' quoted passages.\n"
+    ...                 '| This is a true quoted passage\n'
+    ...                 '| so it will be folded\n'
+    ...                 '\n')
     >>> quoted_text_all = ('> continuing from a previous thought.\n'
     ...                    '> 3. Get new handwriting.\n'
     ...                    '> 4. Add Year Zero to the calendar.\n'
@@ -211,7 +216,7 @@ formatter.
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
 
-PGP signed messages have and opening and closing blocks that are
+PGP signed messages have opening and closing blocks that are
 wrapped in a foldable span.
 
     >>> print test_tales('foo/fmt:email-to-html',
@@ -335,6 +340,15 @@ fold lines that start with a '|'.
     +++-===<wbr></wbr>=======<wbr></wbr>====-==<wbr></wbr>=======...
     ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs</p>
 
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([dpkg_in_text]))
+    <p>When dpkg is mentioned in text,<br />
+    we must take care to identify '|' quoted passages.<br />
+    <span class="foldable">
+    | This is a true quoted passage<br />
+    | so it will be folded
+    </span></p>
+
 The formatter is indifferent to the number and kinds of paragraphs
 it must markup. We can format the three examples at the same time.
 
@@ -382,7 +396,7 @@ is replaced with the message '<email address hidden>'.
     '<email address hidden>'
     >>> test_tales('foo/fmt:obfuscate-email',
     ...     foo='"long/name="@organization.org')
-    '"<email address hidden>'
+    '<email address hidden>'
     >>> test_tales('foo/fmt:obfuscate-email',
     ...     foo='long-name@building.museum')
     '<email address hidden>'

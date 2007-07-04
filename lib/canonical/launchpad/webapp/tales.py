@@ -323,7 +323,7 @@ class NoneFormatter:
                     "you need to traverse a number after fmt:shorten")
             # Remove the maxlength from the path as it is a parameter
             # and not another traversal command.
-            int(furtherPath.pop())
+            furtherPath.pop()
             return ''
         elif name in self.allowed_names:
             return ''
@@ -1384,9 +1384,9 @@ class FormattersAPI:
     _re_quoted = re.compile('^([:|]|&gt;|-----BEGIN PGP)')
     _re_dpkg_quoted = re.compile('^([:]|&gt;|-----BEGIN PGP)')
 
-    # Match blocks that start as signatures quoted passages, or PGP.
+    # Match blocks that start as signatures, quoted passages, or PGP.
     _re_block_include = re.compile('^<p>(--<br />|([:|]|&gt)|-----BEGIN PGP)')
-    # Match a line started with > (implying text email or quoting by hand).
+    # Match a line started with '>' (implying text email or quoting by hand).
     _re_quoted_line = re.compile('^&gt;')
 
     def email_to_html(self):
@@ -1404,16 +1404,24 @@ class FormattersAPI:
         in_fold = False
         in_quoted = False
         in_false_paragraph = False
+        dpkg_warning = False
         for line in self.text_to_html().split('\n'):
             if not in_fold and 'dpkg' in line:
-                # dpkg is important in bug reports. It is better to show
-                # lines starting with '|' in case it is dpkg out
-                re_quoted = self._re_dpkg_quoted
+                # dpkg is important in bug reports. We need to do extra
+                # checking that the '|' is not dpkg output.
+                dpkg_warning = True
 
             if not in_fold and self._re_block_include.match(line) is not None:
                 # Start a foldable paragraph for a signature or quote.
                 in_fold = True
                 line = '<p>%s%s' % (start_fold_markup, line[3:])
+            elif dpkg_warning and '| Status' in line and not in_fold:
+                # When we have a dpkg_warning, we must do an extra test
+                # that the first '|' is actually dpkg output. When it is
+                # we switch the quote matching rules. We also clear the
+                # warning to ensure we do not do pointless extra checks
+                re_quoted = self._re_dpkg_quoted
+                dpkg_warning = False
             elif not in_fold and re_quoted.match(line) is not None:
                 # Start a foldable section for a quoted passage.
                 if self._re_quoted_line.match(line):
@@ -1433,7 +1441,7 @@ class FormattersAPI:
                     in_quoted = False
                     line = end_fold_markup % line[0:-4]
                 else:
-                    # Restore the line break to join with the next parapgrah.
+                    # Restore the line break to join with the next paragraph.
                     line = '%s<br />\n<br />' %  line[0:-4]
             elif in_quoted and self._re_quoted_line.match(line) is None:
                 # End fold early because paragraph contains mixed quoted 
@@ -1450,7 +1458,7 @@ class FormattersAPI:
                 pass
 
             if in_fold and 'PGP SIGNATURE' in line:
-                # PGP signature blocks are split into two paragrpahs
+                # PGP signature blocks are split into two paragraphs
                 # by the text_to_html. The foldable feature works with
                 # a single paragraph, so we merge this paragraph with
                 # the next one.
@@ -1469,7 +1477,7 @@ class FormattersAPI:
         # (regardless of RFC 2882) because they conflict with other systems.
         # See https://lists.ubuntu.com
         #     /mailman/private/launchpad-reviews/2007-June/006081.html
-        r"\b[\"'-/=0-9A-Z_a-z]" # first character of localname
+        r"([\b]|[\"']?)[-/=0-9A-Z_a-z]" # first character of localname
         r"(\.?[\"'-/=0-9A-Z_a-z+])*@" # possible . and + in localname
         r"[a-zA-Z]" # first character of host or domain
         r"(-?[a-zA-Z0-9])*" # possible - and numbers in host or domain
