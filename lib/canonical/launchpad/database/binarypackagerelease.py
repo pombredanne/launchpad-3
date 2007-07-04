@@ -51,8 +51,6 @@ class BinaryPackageRelease(SQLBase):
     provides = StringCol(dbName='provides')
     essential = BoolCol(dbName='essential', default=False)
     installedsize = IntCol(dbName='installedsize')
-    copyright = StringCol(dbName='copyright')
-    licence = StringCol(dbName='licence')
     architecturespecific = BoolCol(dbName='architecturespecific',
                                    notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)

@@ -186,37 +186,21 @@ class Build(SQLBase):
                 return binpkg
         raise NotFoundError, 'No binary package "%s" in build' % name
 
-    def createBinaryPackageRelease(self, binarypackagename, version,
-                                   summary, description,
-                                   binpackageformat, component,
-                                   section, priority, shlibdeps,
-                                   depends, recommends, suggests,
-                                   conflicts, replaces, provides,
-                                   essential, installedsize,
-                                   copyright, licence,
-                                   architecturespecific):
+    def createBinaryPackageRelease(
+        self, binarypackagename, version, summary, description,
+        binpackageformat, component,section, priority, shlibdeps,
+        depends, recommends, suggests, conflicts, replaces, provides,
+        essential, installedsize, architecturespecific):
         """See IBuild."""
-        return BinaryPackageRelease(build=self,
-                                    binarypackagename=binarypackagename,
-                                    version=version,
-                                    summary=summary,
-                                    description=description,
-                                    binpackageformat=binpackageformat,
-                                    component=component,
-                                    section=section,
-                                    priority=priority,
-                                    shlibdeps=shlibdeps,
-                                    depends=depends,
-                                    recommends=recommends,
-                                    suggests=suggests,
-                                    conflicts=conflicts,
-                                    replaces=replaces,
-                                    provides=provides,
-                                    essential=essential,
-                                    installedsize=installedsize,
-                                    copyright=copyright,
-                                    licence=licence,
-                                    architecturespecific=architecturespecific)
+        return BinaryPackageRelease(
+            build=self, binarypackagename=binarypackagename, version=version,
+            summary=summary, description=description,
+            binpackageformat=binpackageformat,
+            component=component, section=section, priority=priority,
+            shlibdeps=shlibdeps, depends=depends, recommends=recommends,
+            suggests=suggests, conflicts=conflicts, replaces=replaces,
+            provides=provides, essential=essential, installedsize=installedsize,
+            architecturespecific=architecturespecific)
 
     def createBuildQueueEntry(self):
         """See IBuild"""

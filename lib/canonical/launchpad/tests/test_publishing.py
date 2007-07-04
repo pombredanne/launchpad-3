@@ -174,8 +174,6 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             provides=provides,
             essential=False,
             installedsize=100,
-            copyright='Foo Foundation',
-            licence='RMS will not like this',
             architecturespecific=False
             )
 
