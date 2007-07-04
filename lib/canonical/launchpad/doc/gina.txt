@@ -190,8 +190,12 @@ Check that x11proto-damage has its Build-Depends-Indep value correctly set:
     >>> n = SourcePackageName.selectOneBy(name="x11proto-damage")
     >>> x11p = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...                                         version="6.8.99.7-2")
+
     >>> print x11p.builddependsindep
     debhelper (>= 4.0.0)
+
+Check if the changelog message was stored correcly:
+
     >>> print x11p.changelog
     x11proto-damage (6.8.99.7-2) breezy; urgency=low
     <BLANKLINE>
@@ -199,9 +203,19 @@ Check that x11proto-damage has its Build-Depends-Indep value correctly set:
       * Add dependency on x11proto-fixes-dev.
     <BLANKLINE>
      -- Daniel Stone <daniel.stone@ubuntu.com>  Mon, 11 Jul 2005 19:11:11 +1000
+
     >>> from canonical.lp.dbschema import SourcePackageUrgency
     >>> x11p.urgency == SourcePackageUrgency.LOW
     True
+
+Same for the copyright:
+
+    >>> print x11p.copyright
+    $Id: COPYING,v 1.2 2003/11/05 05:39:58 keithp Exp $
+    <BLANKLINE>
+    Copyright ... 2003 Keith Packard
+    ...
+    PERFORMANCE OF THIS SOFTWARE.
 
 Check that the dsc on the libcap package is correct, and that we
 only imported one:
@@ -352,13 +366,6 @@ priority was correctly munged to "extra":
     editors
     >>> print ed.summary
     The classic unix line editor.
-    >>> print ed.licence
-    This is Debian GNU's prepackaged version of the FSF's GNU ed
-    utility.  The classic unix line editor, ed is a line-oriented text
-    editor.  It is used to create, display, modify and otherwise
-    ...
-    except that this permission notice may be stated in a translation approved
-    by the Foundation.
 
 We now check if the Breezy publication record has the correct priority:
 
