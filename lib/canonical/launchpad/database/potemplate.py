@@ -564,19 +564,19 @@ class POTemplate(SQLBase, RosettaStats):
             # There is no new import waiting for being imported.
             return
 
-        template_mail = None
         translation_importer = getUtility(ITranslationImporter)
-        import_rejected = True
+
+        subject = 'Translation template import - %s' % self.displayname
+        template_mail = 'poimport-template-confirmation.txt'
         try:
             translation_importer.importFile(entry_to_import, logger)
-            import_rejected = False
         except (TranslationFormatSyntaxError,
                 TranslationFormatInvalidInputError):
-            # The import failed, we mark it as failed so we could review it
-            # later in case it's a bug in our code.
             if logger:
                 logger.warning(
                     'We got an error importing %s', self.title, exc_info=1)
+            template_mail = 'poimport-syntax-error.txt'
+            subject = 'Import problem - %s' % self.displayname
 
         replacements = {
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
@@ -587,17 +587,7 @@ class POTemplate(SQLBase, RosettaStats):
             'template': self.displayname
             }
 
-        if import_rejected:
-            # We got an error that prevented us to import the template, we
-            # need to notify the user and set the status to FAILED.
-            template_mail = 'poimport-syntax-error.txt'
-            subject = 'Import problem - %s' % self.displayname
-        else:
-            # The import was successful.
-            template_mail = 'poimport-template-confirmation.txt'
-            subject = 'Translation template import - %s' % self.displayname
-
-        # Send the email.
+        # Send email: confirmation or error.
         template = helpers.get_email_template(template_mail)
         message = template % replacements
 
