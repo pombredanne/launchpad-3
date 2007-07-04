@@ -83,13 +83,11 @@ class CodeImportSyncTestCase(LaunchpadZopelessTestCase):
         self.assertEqual(code_import.cvs_root, series.cvsroot)
         self.assertEqual(code_import.cvs_module, series.cvsmodule)
 
-        # datelastsynced must be copied to date_last_successful if and only if
-        # the importstatus was SYNCING or STOPPED.
+        # dateLastSuccessfulFromProductSeries is carefully unit-testing in
+        # TestDateLastSuccessfulFromProductSeries, so we can rely on it here.
         assert series.datelastsynced is not None # Test suite invariant.
-        if series.importstatus in (ImportStatus.SYNCING, ImportStatus.STOPPED):
-            last_successful = series.datelastsynced
-        else:
-            last_successful = None
+        last_successful = \
+            self.code_import_sync.dateLastSuccessfulFromProductSeries(series)
         self.assertEqual(code_import.date_last_successful, last_successful)
 
         # reviewStatusFromImportStatus is carefully unit-tested in
@@ -97,6 +95,11 @@ class CodeImportSyncTestCase(LaunchpadZopelessTestCase):
         review_status = self.code_import_sync.reviewStatusFromImportStatus(
             series.importstatus)
         self.assertEqual(code_import.review_status, review_status)
+
+        # If series.import_branch is set, it should be the same as
+        # code_import.branch.
+        if series.import_branch is not None:
+            self.assertEqual(code_import.branch, series.import_branch)
 
 
 class TestGetImportSeries(CodeImportSyncTestCase):
@@ -126,7 +129,7 @@ class TestReviewStatusFromImportStatus(unittest.TestCase):
     """Unit tests for reviewStatusFromImportStatus."""
 
     def setUp(self):
-        # reviewStatusFromImportStatus does not need any database access.
+        # reviewStatusFromImportStatus does not need database access.
         self.code_import_sync = CodeImportSync(logging, None)
 
     def assertImportStatusTranslatesTo(self, import_status, expected):
@@ -171,6 +174,76 @@ class TestReviewStatusFromImportStatus(unittest.TestCase):
             ImportStatus.STOPPED, CodeImportReviewStatus.SUSPENDED)
 
 
+class StubProductSeries:
+    """Stub ProductSeries class used in unit tests."""
+    pass
+
+
+class TestDateLastSuccessfulFromProductSeries(unittest.TestCase):
+
+    def setUp(self):
+        # dateLastSuccessfulFromProductSeries does not need database access.
+        self.code_import_sync = CodeImportSync(logging, None)
+
+    def makeStubSeries(self, import_status):
+        """Create a stub ProductSeries with a datelastsynced and the given
+        import status.
+        """
+        series = StubProductSeries()
+        series.importstatus = import_status
+        series.datelastsynced = datetime.datetime(
+            2000, 1, 1, 0, 0, 0, tzinfo=UTC)
+        return series
+
+    def assertDateLastSuccessfulIsReturned(self, import_status):
+        """Assert that dateLastSuccessfulFromProductSeries returns
+        datelastsynced for a ProductSeries with the given `import_status`.
+        """
+        series = self.makeStubSeries(import_status)
+        date_last_successful = \
+            self.code_import_sync.dateLastSuccessfulFromProductSeries(series)
+        self.assertEqual(date_last_successful, series.datelastsynced)
+
+    def assertNoneIsReturned(self, import_status):
+        """Assert that dateLastSuccesfulFromProductSeries return None for a
+        ProductSeries with the given `import_status`.
+        """
+        series = self.makeStubSeries(import_status)
+        date_last_successful = \
+            self.code_import_sync.dateLastSuccessfulFromProductSeries(series)
+        self.assertEqual(date_last_successful, None)
+
+    def assertAssertionErrorRaised(self, import_status):
+        """Assort that dateLastSuccessfulFromProductSeries raises an
+        AssertionError for a ProductSeries with the given `import_status`.
+        """
+        series = self.makeStubSeries(import_status)
+        self.assertRaises(AssertionError,
+            self.code_import_sync.dateLastSuccessfulFromProductSeries, series)
+
+    def testDontsync(self):
+        self.assertAssertionErrorRaised(ImportStatus.DONTSYNC)
+
+    def testTesting(self):
+        self.assertNoneIsReturned(ImportStatus.TESTING)
+
+    def testFailed(self):
+        self.assertAssertionErrorRaised(ImportStatus.TESTFAILED)
+
+    def testAutotested(self):
+        self.assertNoneIsReturned(ImportStatus.AUTOTESTED)
+
+    def testProcessing(self):
+        self.assertNoneIsReturned(ImportStatus.PROCESSING)
+
+    def testSyncing(self):
+        self.assertDateLastSuccessfulIsReturned(ImportStatus.SYNCING)
+
+    def testStopped(self):
+        self.assertDateLastSuccessfulIsReturned(ImportStatus.STOPPED)
+
+
+
 class TestCreateCodeImport(CodeImportSyncTestCase):
     """Unit tests for CodeImportSync.createCodeImport."""
 
@@ -206,13 +279,23 @@ class TestCodeImportSync(CodeImportSyncTestCase):
         self.assertSingleCodeImportMatchesSeries(testing)
 
     def testNewProcessing(self):
-        # A new PROCESSING series cause the creation of a new code import with
+        # A new PROCESSING series causes the creation of a new code import with
         # REVIEWED review status.
         processing = self.createTestingSeries('processing')
         processing.certifyForSync()
         self.assertEqual(processing.importstatus, ImportStatus.PROCESSING)
         self.run_code_import_sync()
         self.assertSingleCodeImportMatchesSeries(processing)
+
+    def testNewSyncing(self):
+        # A new SYNCING series causes the creation of a new code import with
+        # REVIEWED review status and a non-NULL date_last_succesful.
+        syncing = self.createTestingSeries('syncing')
+        syncing.certifyForSync()
+        syncing.enableAutoSync()
+        self.createImportBranch(syncing)
+        self.run_code_import_sync()
+        self.assertSingleCodeImportMatchesSeries(syncing)
 
     # TODO: test that non-MAIN cvs branches are ignored, CodeImport does not
     # have a cvs_branch attribute.
@@ -236,12 +319,6 @@ class TestCodeImportSync(CodeImportSyncTestCase):
         # Create a series with importstatus = DONTSYNC
         dontsync = self.createTestingSeries('dontsync')
         dontsync.markDontSync()
-
-        # Create a series with importstatus = SYNCING
-        syncing = self.createTestingSeries('syncing')
-        syncing.certifyForSync()
-        syncing.enableAutoSync()
-        syncing_branch = self.createImportBranch(syncing)
 
         # Create a series with importstatus = STOPPED
         stopped = self.createTestingSeries('stopped')

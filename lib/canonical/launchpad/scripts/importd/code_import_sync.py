@@ -64,6 +64,22 @@ class CodeImportSync:
                 % import_status)
         return review_status
 
+    def dateLastSuccessfulFromProductSeries(self, series):
+        """Return the date_last_successful for the code import associated to
+        the given ProductSeries.
+        """
+        if series.importstatus in (ImportStatus.SYNCING, ImportStatus.STOPPED):
+            last_successful = series.datelastsynced
+        elif series.importstatus in (ImportStatus.TESTING,
+                                     ImportStatus.AUTOTESTED,
+                                     ImportStatus.PROCESSING):
+            last_successful = None
+        else:
+            raise AssertionError(
+                "This import status should not produce a code import: %s"
+                % series.importstatus)
+        return last_successful
+
     def createCodeImport(self, series):
         """Create the CodeImport object corresponding to the given
         ProductSeries.
@@ -75,16 +91,20 @@ class CodeImportSync:
         :postcondition: The CodeImport object corresponding to `series` exists
             in the database and is up to date.
         """
-        date_last_successful = None
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        branch = getUtility(IBranchSet).new(
-            series.name, vcs_imports, series.product, None, None)
+        if series.import_branch is None:
+            branch = getUtility(IBranchSet).new(
+                series.name, vcs_imports, series.product, None, None)
+        else:
+            branch = series.import_branch
         code_import = getUtility(ICodeImportSet).newWithId(
             series.id, vcs_imports, branch, series.rcstype,
             svn_branch_url=series.svnrepository,
             cvs_root=series.cvsroot, cvs_module=series.cvsmodule)
         review_status = self.reviewStatusFromImportStatus(series.importstatus)
         code_import.review_status = review_status
+        date_last_successful = self.dateLastSuccessfulFromProductSeries(series)
+        code_import.date_last_successful = date_last_successful
         return code_import
 
     def updateCodeImport(self, series, code_import):
