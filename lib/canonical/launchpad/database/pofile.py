@@ -1541,9 +1541,9 @@ class POFileToTranslationFileAdapter:
             # translations will appear multiple times. We see how many we've added
             # already to check whether the message ID/translation in the current
             # row are ones we need to add.
-            # Note that the msgid plural form must be equal to the number of
-            # message IDs, while the translation plural form can be greater than
-            # or equal to. This allows for non-contiguous plural form indices.
+            # Note that the translation plural forms can be greater than or
+            # equal to the translations available. This allows for
+            # non-contiguous plural form indices.
             if (row.msgidpluralform == TranslationConstants.SINGULAR_FORM and
                 msgset.msgid is None):
                 msgset.msgid = row.msgid
