@@ -7,7 +7,8 @@ Blueprints home page.
 
 Let's make sure we can see the relevant page on a distribution.
 
-  >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
+  >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu')
+  >>> user_browser.getLink('Register').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
 
@@ -19,7 +20,8 @@ blueprint status.
 
 And now, on a project.
 
-  >>> user_browser.open('http://blueprints.launchpad.dev/firefox/+addspec')
+  >>> user_browser.open('http://blueprints.launchpad.dev/firefox')
+  >>> user_browser.getLink('Register').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/firefox/+addspec'
   >>> user_browser.getControl('Status').value
@@ -27,7 +29,8 @@ And now, on a project.
 
 And finally, on a project group.
 
-  >>> user_browser.open('http://blueprints.launchpad.dev/mozilla/+addspec')
+  >>> user_browser.open('http://blueprints.launchpad.dev/mozilla')
+  >>> user_browser.getLink('Register').click()  
   >>> user_browser.url
   'http://blueprints.launchpad.dev/mozilla/+addspec'
   >>> user_browser.getControl('Status').value
