@@ -27,9 +27,7 @@ class CodeImportSync:
     def run(self):
         """Entry point method for the script runner."""
         for series in self.getImportSeries():
-            code_import = getUtility(ICodeImportSet).get(series.id)
-            if code_import is None:
-                self.createCodeImport(series)
+            self.syncOneSeries(series)
 
     def getImportSeries(self):
         """Iterate over ProductSeries for which we want to have a CodeImport.
@@ -42,11 +40,17 @@ class CodeImportSync:
         import_series = getUtility(IProductSeriesSet).search(forimport=True)
         for series in import_series:
             yield series
+        # TODO: correct filtering for all importstatus
 
     def syncOneSeries(self, series):
         """Create or update the CodeImport object associated to the given
         ProductSeries.
         """
+        code_import = getUtility(ICodeImportSet).get(series.id)
+        if code_import is None:
+            self.createCodeImport(series)
+        else:
+            self.updateCodeImport(series, code_import)
 
     def reviewStatusFromImportStatus(self, import_status):
         """Return the CodeImportReviewStatus value corresponding to the given
@@ -114,6 +118,11 @@ class CodeImportSync:
         :param code_import: The CodeImport corresponding to `series`.
         :postcondition: `code_import` is up to date with `series`.
         """
+        assert code_import.branch == series.import_branch
+        review_status = self.reviewStatusFromImportStatus(series.importstatus)
+        code_import.review_status = review_status
+        date_last_successful = self.dateLastSuccessfulFromProductSeries(series)
+        code_import.date_last_successful = date_last_successful
 
     def getOrphanedCodeImports(self):
         """Find all the CodeImport objects that do not have a corresponding

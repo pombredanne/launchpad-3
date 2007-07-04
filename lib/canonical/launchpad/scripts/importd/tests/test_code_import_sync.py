@@ -124,6 +124,11 @@ class TestGetImportSeries(CodeImportSyncTestCase):
         import_series_set = list(self.code_import_sync.getImportSeries())
         self.assertListSingleItemEquals(import_series_set, testing)
 
+    # TODO: test correct filtering for all importstatus.
+
+    # TODO: test that non-MAIN cvs branches are ignored, CodeImport does not
+    # have a cvs_branch attribute.
+
 
 class TestReviewStatusFromImportStatus(unittest.TestCase):
     """Unit tests for reviewStatusFromImportStatus."""
@@ -293,15 +298,37 @@ class TestCodeImportSync(CodeImportSyncTestCase):
         syncing = self.createTestingSeries('syncing')
         syncing.certifyForSync()
         syncing.enableAutoSync()
+        self.assertEqual(syncing.importstatus, ImportStatus.SYNCING)
         self.createImportBranch(syncing)
         self.run_code_import_sync()
         self.assertSingleCodeImportMatchesSeries(syncing)
 
-    # TODO: test that non-MAIN cvs branches are ignored, CodeImport does not
-    # have a cvs_branch attribute.
+    def testUpdateProcessingToSyncing(self):
+        # When a code import is created for a PROCESSING series, and the series
+        # is ugraded to SYNCING, the code import can be correctly updated.
+        series = self.createTestingSeries('processing-syncing')
+        series.certifyForSync()
+        self.assertEqual(series.importstatus, ImportStatus.PROCESSING)
+        self.run_code_import_sync()
+        series.enableAutoSync()
+        self.assertEqual(series.importstatus, ImportStatus.SYNCING)
+
+        # When code-import-sync runs in production, importd will need to use
+        # the CodeImport's branch to publish the import.
+        code_import = CodeImport.get(series.id) # Error if object not found.
+        series.import_branch = code_import.branch
+
+        self.run_code_import_sync()
+        self.assertSingleCodeImportMatchesSeries(series)
+
 
     # TODO: test that CVS imports are correctly created and updated. All the
     # basic tests are done on SVN imports.
+
+    # TODO: test updates to VCS details, CVS->SVN and SVN->CVS
+
+    # TODO: test deletion of code-import
+
 
     def testGetImportSeries(self):
         # getImportSeries should select all ProductSeries whose importstatus is
