@@ -754,52 +754,8 @@ class FrontPageFileBugAdvancedView(FileBugAdvancedView):
         return {"bugtarget": getUtility(ILaunchpadCelebrities).ubuntu}
 
     def contextUsesMalone(self):
-        """Does the context use Malone for its bug tracking?"""
-
-        # We have to try and find some context to test here, since the 
-        # frontpage bug form context is always an IMaloneApplication.
-        context = self.getProductOrDistroFromContext()
-
-        # getProdutOrDistroFromContext() will give us something with an
-        # official_malone property, or else will give us None.
-        if context is not None:
-            return context.official_malone
-
-        # If we can't find anything useable above, we just return True,
-        # otherwise the form won't show up.
-        else:
-            return True
-
-    def contextIsProduct(self):
-        """Is the context a product?"""
-        context = self.getProductOrDistroFromContext()
-        return IProduct.providedBy(context)
-
-    def getProductOrDistroFromContext(self):
-        """Return the product or distribution relative to the context.
-
-        For instance, if the context is an IDistroSeries, return the
-        distribution related to it. Will return None if the context is
-        not related to a product or a distro.
-        """
-        context = self.context
-
-        # XXX: Really not sure about this.
-        #      needs more investigation before being submitted
-        if IMaloneApplication.providedBy(context):
-            if self.widgets['bugtarget'].hasValidInput():
-                context = self.widgets['bugtarget'].getInputValue()
-
-        if (IProduct.providedBy(context) 
-            or IDistribution.providedBy(context)):
-            return context
-        elif IProductSeries.providedBy(context):
-            return context.product
-        elif (IDistroSeries.providedBy(context) or
-              IDistributionSourcePackage.providedBy(context)):
-            return context.distribution
-        else:
-            return None
+        """Say context uses Malone so that the filebug form is shown!"""
+        return True
 
 class BugTargetBugListingView:
     """Helper methods for rendering bug listings."""
