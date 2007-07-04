@@ -167,7 +167,7 @@ that first requires them to select an IProduct target, showing them only the
 products in that IProject.
 
   >>> user_browser.open('http://blueprints.launchpad.dev/mozilla/+addspec')
-  >>> user_browser.getControl(name='field.projecttarget').value = ['thunderbird']
+  >>> user_browser.getControl('For').value = ['thunderbird']
   >>> user_browser.getControl('Name').value = 'gee-whizz-wotzit'
   >>> user_browser.getControl(
   ...   'Title').value = ('Grand amazing tool')
