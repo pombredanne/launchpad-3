@@ -112,7 +112,7 @@ class InitializePOMsgSetLanguage(LaunchpadScript):
 
         self.logger.info("Populating POMsgSet.language column...")
         filler = FillLanguageColumn(self.txn)
-        LoopTuner(filler, 4).run()
+        LoopTuner(filler, 1, 10, 3000).run()
 
         self.logger.info("Checking for remaining nulls...")
         check_for_nulls()
