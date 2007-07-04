@@ -168,8 +168,7 @@ same URL.
   True
 
 
-Project blueprint registration
-==============================
+== Project blueprint registration ==
 
 There is also a form which lets user create a new blueprint in an IProject
 that first requires them to select an IProduct target, showing them only the
@@ -195,8 +194,7 @@ products in that IProject.
   'http://blueprints.launchpad.dev/thunderbird/+spec/gee-whizz-wotzit'
 
 
-System-wide blueprint registration
-==================================
+== System-wide blueprint registration ==
 
 There is also a form which lets user create a new blueprint for any product
 or distribution, from the Blueprints home page.
