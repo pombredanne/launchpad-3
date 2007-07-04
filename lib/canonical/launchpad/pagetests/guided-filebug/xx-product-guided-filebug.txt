@@ -87,6 +87,7 @@ With both values set, the bug is created.
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/...
 
+
 == Subscribing to a similar bug ==
 
 If our bug is described by one of the suggested similar bugs, we can
@@ -115,3 +116,36 @@ This one matches, so we subscribe.
     >>> for message in get_feedback_messages(user_browser):
     ...     print message
     You have been subscribed to this bug.
+
+
+== Filing a bug when there are none similar ==
+
+When no similar bugs are found the form works the same but appears
+different in the user agent.
+
+    >>> user_browser.open("http://launchpad.dev/firefox/+filebug")
+
+Submitting some distinctive details...
+
+    >>> user_browser.getControl('Summary').value = (
+    ...     "Frankenzombulon reanimated neighbour's dead pet")
+    >>> user_browser.getControl('Continue').click()
+
+...yields no similar bugs. In fact, the similar bugs table is not even
+shown.
+
+    >>> similar_bugs_list = find_tag_by_id(
+    ...     user_browser.contents, "similar-bugs")
+    >>> print similar_bugs_list
+    None
+
+But, as before, entering a description and submitting the bug takes
+the user to the bug page.
+
+    >>> user_browser.getControl('Further information').value = (
+    ...     'Frankenzombulon is only meant to check my mail.')
+    >>> user_browser.getControl('Submit Bug Report').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/...'
+    >>> user_browser.title
+    "Bug #... in firefox (upstream): ...Frankenzombulon reanimated..."

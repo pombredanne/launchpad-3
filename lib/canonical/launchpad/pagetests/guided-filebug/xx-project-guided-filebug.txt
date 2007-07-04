@@ -91,3 +91,37 @@ But, of course, we're already subscribed because we created it.
     >>> for message in get_feedback_messages(user_browser):
     ...     print message
     You are already subscribed to this bug.
+
+
+== Filing a bug when there are none similar ==
+
+When no similar bugs are found the form works the same but appears
+different in the user agent.
+
+    >>> user_browser.open("http://launchpad.dev/gnome/+filebug")
+
+Submitting some distinctive details...
+
+    >>> user_browser.getControl('Project').value = ['evolution']
+    >>> user_browser.getControl('Summary').value = (
+    ...     'Faznambutron dumps core unless clenching')
+    >>> user_browser.getControl('Continue').click()
+
+...yields no similar bugs. In fact, the similar bugs table is not even
+shown.
+
+    >>> similar_bugs_list = find_tag_by_id(
+    ...     user_browser.contents, "similar-bugs")
+    >>> print similar_bugs_list
+    None
+
+But, as before, entering a description and submitting the bug takes
+the user to the bug page.
+
+    >>> user_browser.getControl('Further information').value = (
+    ...     'Faznambutron is a plugin designed to ...')
+    >>> user_browser.getControl('Submit Bug Report').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/evolution/+bug/...'
+    >>> user_browser.title
+    'Bug #... in evolution (upstream): ...Faznambutron dumps core...'

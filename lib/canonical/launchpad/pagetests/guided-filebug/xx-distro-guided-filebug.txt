@@ -10,8 +10,8 @@ table is not shown.
 
     >>> most_common_bugs_table = find_tag_by_id(
     ...     user_browser.contents, "most-common-bugs")
-    >>> most_common_bugs_table is None
-    True
+    >>> print most_common_bugs_table
+    None
 
 Submitting a bug title...
 
@@ -54,6 +54,57 @@ back...
     >>> user_browser.getControl("In what package").value = "mozilla-firefox"
     >>> user_browser.getControl("Summary").value = "a new ubuntu bug"
     >>> user_browser.getControl("Further information").value = "test"
+
+The comment field ("Further information, ...") is not optional when
+filing a bug, but it is optional when subscribing to a similar
+bug. Nevertheless, we don't show an "(Optional)" hint next to the
+description.
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> import re
+
+    >>> page_soup = BeautifulSoup(user_browser.contents)
+    >>> field_labels = page_soup.findAll(
+    ...     'label', text=re.compile('Further information'))
+    >>> for field_label in field_labels:
+    ...     print extract_text(field_label.parent)
+    Further information, steps to reproduce, version information, etc.:
+
+Finally, let's submit the bug.
+
+    >>> user_browser.getControl("Submit Bug Report").click()
+
+    >>> print user_browser.url
+    http://bugs.launchpad.dev/ubuntu/+source/mozilla-firefox/+bug/...
+
+
+== Filing a bug when there are none similar ==
+
+When no similar bugs are found the form works the same but appears
+different in the user agent.
+
+    >>> user_browser.open("http://launchpad.dev/ubuntu/+filebug")
+
+Submitting a distinctive bug title...
+
+    >>> user_browser.getControl("Summary").value = (
+    ...     "Frobnobulator emits weird noises.")
+    >>> user_browser.getControl("Continue").click()
+
+...yields no similar bugs. In fact, the similar bugs table is not even
+shown.
+
+    >>> similar_bugs_list = find_tag_by_id(
+    ...     user_browser.contents, "similar-bugs")
+    >>> print similar_bugs_list
+    None
+
+But the bug can be filed as before.
+
+    >>> user_browser.getControl(name="packagename_option").value = ["choose"]
+    >>> user_browser.getControl("In what package").value = "mozilla-firefox"
+    >>> user_browser.getControl("Further information").value = (
+    ...     "Frobnobulator is a Firefox add-on, ...")
     >>> user_browser.getControl("Submit Bug Report").click()
 
     >>> print user_browser.url
