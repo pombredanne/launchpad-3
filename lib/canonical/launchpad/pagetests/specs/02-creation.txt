@@ -53,7 +53,7 @@ form, to register a new blueprint. We'll do it on the Ubuntu distribution.
   ...   "flexibility and responsiveness.")
   >>> user_browser.getControl('Summary').value = summary
   >>> user_browser.getControl('Status').value = ['Approved']
-  >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+  >>> user_browser.getControl('Assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
   >>> user_browser.getControl('Register Blueprint').click()
@@ -79,7 +79,7 @@ blueprint with the same name.
   >>> user_browser.getControl('Summary').value = ("Users are"
   ...       "increasingly using multiple networks.")
   >>> user_browser.getControl('Status').value = ['Approved']
-  >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+  >>> user_browser.getControl('Assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
   >>> user_browser.getControl('Register Blueprint').click()
@@ -104,7 +104,7 @@ We test the validator using an invalid name.
   >>> user_browser.getControl('Summary').value = (
   ...   "Users are increasingly using multiple networks.")
   >>> user_browser.getControl('Status').value = ['Approved']
-  >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+  >>> user_browser.getControl('Assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
   >>> user_browser.getControl('Register Blueprint').click()
@@ -130,7 +130,7 @@ the user:
   >>> user_browser.getControl('Summary').value = (
   ...   "Users are increasingly using multiple networks.")
   >>> user_browser.getControl('Status').value = ['Approved']
-  >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+  >>> user_browser.getControl('Assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
   >>> user_browser.getControl('Register Blueprint').click()
@@ -150,7 +150,7 @@ same URL.
   ...   'http://wiki.ubuntu.com/NetworkMagic')
   >>> user_browser.getControl('Summary').value = "Users are increasingly"
   >>> user_browser.getControl('Status').value = ['Approved']
-  >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+  >>> user_browser.getControl('Assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
   >>> user_browser.getControl('Register Blueprint').click()
@@ -178,7 +178,7 @@ products in that IProject.
   ...   "All wotzits are known to be particularly resilient.")
   >>> user_browser.getControl('Summary').value = summary
   >>> user_browser.getControl('Status').value = ['Approved']
-  >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+  >>> user_browser.getControl('Assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
   >>> user_browser.getControl('Register Blueprint').click()
@@ -211,7 +211,7 @@ First, we try to create a blueprint that has the same name as an existing one.
   ...   "flexibility and responsiveness.")
   >>> user_browser.getControl('Summary').value = summary
   >>> user_browser.getControl('Status').value = ['Approved']
-  >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+  >>> user_browser.getControl('Assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
   >>> user_browser.getControl('Register Blueprint').click()
@@ -243,7 +243,7 @@ through.
   ...   "flexibility and responsiveness.")
   >>> user_browser.getControl('Summary').value = summary
   >>> user_browser.getControl('Status').value = ['Approved']
-  >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
+  >>> user_browser.getControl('Assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
   >>> user_browser.getControl('Register Blueprint').click()
