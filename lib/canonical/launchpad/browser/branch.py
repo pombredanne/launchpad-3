@@ -258,15 +258,55 @@ class BranchEditFormView(LaunchpadEditFormView):
 class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
 
     schema = IBranch
-    field_names = ['product', 'url', 'name', 'title', 'summary',
+    field_names = ['product', 'private', 'url', 'name', 'title', 'summary',
                    'lifecycle_status', 'whiteboard', 'home_page', 'author']
 
     def setUpFields(self):
         LaunchpadFormView.setUpFields(self)
         # This is to prevent users from converting push/import
         # branches to pull branches.
-        if self.context.url is None:
+        branch = self.context
+        if branch.url is None:
             self.form_fields = self.form_fields.omit('url')
+
+        # Disable privacy if the owner of the branch is not allowed to change
+        # the branch from private to public, or is not allowed to have private
+        # branches for the project.
+        product = branch.product
+        # No privacy set for junk branches
+        if product is None:
+            hide_private_field = True
+        else:
+            # If there is an explicit rule for the team, then that overrides
+            # any rule specified for other teams that the owner is a member
+            # of.
+            rule = product.getBranchVisibilityRuleForTeam(branch.owner)
+            if rule is None:
+                # Determine the rule based on team membership.
+                rules = []
+                for item in product.getBranchVisibilityTeamPolicies():
+                    if item.team is not None and owner.inTeam(item.team):
+                        rules.append(item.rule)
+                if len(rules) > 0:
+                    # max returns the most restrictive policy. The ordering
+                    # of the dbSchema items ensures this.
+                    rule = max(rules)
+                else:
+                    rule = product.getBaseBranchVisibilityRule()
+
+            if rule == BranchVisibilityRule.PRIVATE_ONLY:
+                # If the branch is already private, then the user cannot
+                # make the branch public.  However if the branch is for
+                # some reason public, then the user is allowed to make
+                # it private.
+                hide_private_field = branch.private
+            elif rule == BranchVisibilityRule.PRIVATE:
+                hide_private_field = False
+            else:
+                hide_private_field = True
+
+        if hide_private_field:
+            self.form_fields = self.form_fields.omit('private')
 
     def validate(self, data):
         if 'product' in data and 'name' in data:
