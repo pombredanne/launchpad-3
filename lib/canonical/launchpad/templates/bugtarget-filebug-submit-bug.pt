@@ -81,14 +81,9 @@
                                   <a tal:attributes="href bug/fmt:url"
                                      tal:content="bug/title">Bug title here</a>
                                 </div>
-                                <div class="lesser" tal:condition="bugtask/date_closed">
-                                  Closed
-                                  <tal:closed content="bugtask/date_closed/fmt:approximatedate">
-                                    35 minutes ago
-                                  </tal:closed>
-                                </div>
-                                <div class="lesser" tal:condition="not:bugtask/date_closed">
-                                  Last updated
+                                <div class="lesser">
+                                  <tal:status replace="bugtask/status/title" />,
+                                  last updated
                                   <tal:last-updated content="bug/date_last_updated/fmt:approximatedate">
                                     2007-07-03
                                   </tal:last-updated>
