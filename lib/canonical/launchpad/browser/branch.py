@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BranchSOP',
     'PersonBranchAddView',
     'ProductBranchAddView',
     'BranchContextMenu',
@@ -29,6 +30,7 @@ from canonical.config import config
 from canonical.lp import decorates
 
 from canonical.launchpad.browser.branchref import BranchRef
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import truncate_text
@@ -46,13 +48,21 @@ def quote(text):
     return cgi.escape(text, quote=True)
 
 
+class BranchSOP(StructuralObjectPresentation):
+    """Provides the structural heading for `IBranch`."""
+
+    def getMainHeading(self):
+        """See `IStructuralHeaderPresentation`."""
+        return self.context.owner.browsername
+
+
 class BranchNavigation(Navigation):
 
     usedfor = IBranch
 
     @stepthrough("+bug")
     def traverse_bug_branch(self, bugid):
-        """Traverses to an IBugBranch."""
+        """Traverses to an `IBugBranch`."""
         bug = getUtility(IBugSet).get(bugid)
 
         for bug_branch in bug.bug_branches:
@@ -65,7 +75,7 @@ class BranchNavigation(Navigation):
 
     @stepthrough("+subscription")
     def traverse_subscription(self, name):
-        """Traverses to an IBranchSubcription."""
+        """Traverses to an `IBranchSubcription`."""
         person = getUtility(IPersonSet).getByName(name)
 
         if person is not None:
@@ -330,11 +340,11 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         url_field.onchange = populate_name;
         url_field.onblur = populate_name;
         </script>''' % { 'name' : self.widgets['name'].name,
-                         'url' : self.widgets['url'].name } 
+                         'url' : self.widgets['url'].name }
 
 
 class PersonBranchAddView(BranchAddView):
-    """See BranchAddView."""
+    """See `BranchAddView`."""
 
     @property
     def field_names(self):
@@ -346,10 +356,10 @@ class PersonBranchAddView(BranchAddView):
         return self.context
 
 class ProductBranchAddView(BranchAddView):
-    """See BranchAddView."""
+    """See `BranchAddView`."""
 
     initial_focus_widget = 'url'
-    
+
     @property
     def field_names(self):
         fields = list(BranchAddView.field_names)
@@ -409,7 +419,7 @@ class BranchReassignmentView(ObjectReassignmentView):
 
 
 class DecoratedSubscription:
-    """Adds the editable attribute to a BranchSubscription."""
+    """Adds the editable attribute to a `BranchSubscription`."""
     decorates(IBranchSubscription, 'subscription')
 
     def __init__(self, subscription, editable):

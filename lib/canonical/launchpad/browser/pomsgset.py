@@ -1339,6 +1339,8 @@ class POMsgSetSuggestions:
                 'datecreated': submission.datecreated,
                 'suggestion_html_id':
                     submission.makeHTMLId('suggestion', pomsgset.potmsgset),
-                'translation_html_id': pomsgset.makeHTMLId('translation'),
+                'translation_html_id':
+                    pomsgset.makeHTMLId('translation_%d'
+                                       % submission.pluralform),
                 })
 
