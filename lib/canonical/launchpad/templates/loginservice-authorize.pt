@@ -7,15 +7,11 @@
         <tal:widget replace="structure view/widgets/nonce/hidden" />
 
         <div>
-          <tal:submit replace="structure view/logout_action/render" />
-        </div>
 
-        <div>
-
-            <h2>
+            <p>
               These details will be sent to
               <tal:title replace="rp_info/title" />:
-            </h2>
+            </p>
 
           <ul tal:define="fields view/sreg_fields">
             <li tal:repeat="field fields"
@@ -28,9 +24,12 @@
           </ul>
         </div>
 
-        <div>
+        <div style="float: left; text-align: left; width: 25%;">
           <tal:submit replace="structure view/auth_action/render" />
+        </div>
+        <div style="float: right; text-align: right; text-wrap: none; width: 75%;">
           <tal:submit replace="structure view/deny_action/render" />
+          <tal:submit replace="structure view/logout_action/render" />
         </div>
 
       </form>

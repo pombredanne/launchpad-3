@@ -510,12 +510,12 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
         self.trashRequest()
         return self.renderOpenIdResponse(self.createPositiveResponse())
 
-    @action("I Don't Want To Sign In", name='deny')
+    @action("Not Now", name='deny')
     def deny_action(self, action, data):
         self.trashRequest()
         return self.renderOpenIdResponse(self.createFailedResponse())
 
-    @action("No, I'm Someone Else", name='logout')
+    @action("I'm Someone Else", name='logout')
     # XXX 20070618 mpt: "I'm" should use a typographical apostrophe
     # XXX 20070618 mpt: "Someone Else" should be "Not" then the person's name
     def logout_action(self, action, data):
