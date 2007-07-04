@@ -542,6 +542,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -717,6 +720,8 @@ INSERT INTO branch (id, title, summary, "owner", product, author, name, home_pag
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (28, NULL, NULL, 1, NULL, 1, 'testdoc', NULL, NULL, NULL, 1, NULL, NULL, 1, false, 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum', NULL, NULL, NULL, '2007-05-04 01:16:03.75446', 0, '2007-05-04 01:16:26.640702', false);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (29, 'Landscape trunk', NULL, 64, 16, 12, 'trunk', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2007-05-28 02:37:07.814303', 0, NULL, true);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (30, NULL, NULL, 12, 16, 12, 'feature-x', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2007-05-28 02:37:07.814303', 0, NULL, true);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (75, 'GNOME Terminal Import Branch', NULL, 24, 6, NULL, 'import', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-06-25 20:04:03.9465', 0, NULL, false);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (76, 'Evolution Import Branch', NULL, 24, 5, NULL, 'import', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-06-25 20:04:04.218451', 0, NULL, false);
 
 
 ALTER TABLE branch ENABLE TRIGGER ALL;
@@ -1170,6 +1175,8 @@ ALTER TABLE calendarsubscription ENABLE TRIGGER ALL;
 
 ALTER TABLE codeimport DISABLE TRIGGER ALL;
 
+INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, svn_branch_url, cvs_root, cvs_module, review_status) VALUES (1, 75, '2007-06-25 20:04:04.226605', 52, 2, 'http://svn.example.org/svnroot/gnome-terminal/trunk', NULL, NULL, 20);
+INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, svn_branch_url, cvs_root, cvs_module, review_status) VALUES (2, 76, '2007-06-25 20:04:04.379285', 52, 1, NULL, ':pserver:anonymous@anoncvs.example.org:/cvs/gnome', 'evolution', 1);
 
 
 ALTER TABLE codeimport ENABLE TRIGGER ALL;
@@ -1792,10 +1799,10 @@ ALTER TABLE emailaddress ENABLE TRIGGER ALL;
 
 ALTER TABLE entitlement DISABLE TRIGGER ALL;
 
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (1, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 10, 100, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (2, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 20, 200, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (4, 18, '2007-06-11 00:44:19.267601', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 10, 5, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (5, 18, '2007-06-11 01:02:48.538842', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 10, 3, 0);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (1, 17, 10, 100, 0, '2007-06-11 12:00:00', '2008-06-11 12:00:00', NULL, '2007-06-10 12:00:00', NULL, NULL, 30, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (2, 17, 20, 200, 0, '2007-06-11 12:00:00', '2008-06-11 12:00:00', NULL, '2007-06-10 12:00:00', NULL, NULL, 30, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (4, 18, 10, 5, 0, '2007-06-11 12:00:00', '2007-06-11 00:00:00', NULL, '2007-06-11 00:44:19.267601', NULL, NULL, 30, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (5, 18, 10, 3, 0, '2007-06-11 12:00:00', '2007-06-11 00:00:00', NULL, '2007-06-11 01:02:48.538842', NULL, NULL, 30, NULL);
 
 
 ALTER TABLE entitlement ENABLE TRIGGER ALL;
