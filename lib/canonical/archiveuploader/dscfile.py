@@ -14,10 +14,11 @@ __all__ = [
     'DSCUploadedFile',
     ]
 
-import os
-import errno
-import shutil
 import apt_pkg
+import errno
+import glob
+import os
+import shutil
 import subprocess
 import tempfile
 
@@ -171,6 +172,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                     mandatory_field, self.filename))
 
         self.maintainer = self.parseAddress(self._dict['maintainer'])
+        self.copyright = ''
 
         # If format is not present, assume 1.0. At least one tool in
         # the wild generates dsc files with format missing, and we need
@@ -400,6 +402,18 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 "[dpkg-source output: %s]"
                 % (self.filename, result, dpkg_output))
 
+        # Copy debian/copyright file content. It will be stored in the
+        # SourcePackageRelease records.
+        globpath = os.path.join(tmpdir, "*", "debian/copyright")
+        for fullpath in glob.glob(globpath):
+            if not os.path.exists(fullpath):
+                continue
+            self.logger.debug("Copying copyright contents.")
+            self.copyright = open(fullpath).read().strip()
+
+        if self.copyright is None:
+            yield UploadError("No copyright file found.")
+
         self.logger.debug("Cleaning up source tree.")
         try:
             shutil.rmtree(tmpdir)
@@ -452,6 +466,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             changelog=guess_encoding(self.changes.simulated_changelog),
             section=self.section,
             archive=self.policy.archive,
+            copyright=guess_encoding(self.copyright)
             # dateuploaded by default is UTC:now in the database
             )
 

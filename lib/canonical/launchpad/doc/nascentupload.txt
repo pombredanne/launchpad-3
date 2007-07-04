@@ -355,6 +355,15 @@ separated by space:
   >>> ed_spr.dsc_binaries
   u'ed'
 
+'debian/copyright' content is stored as 'copyright' attribute of
+SourcePackageRelease. (note that its content is coming from the
+'encoding.guess' filter)
+
+  >>> print ed_spr.copyright
+  This is Debian GNU's prepackaged version of the FSF's GNU ed
+  ...
+  by the Foundation.
+
 The ed source would be in NEW, so punt it into accepted.
 
   >>> ed_src.queue_root.setAccepted()

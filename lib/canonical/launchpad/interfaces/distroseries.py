@@ -259,8 +259,8 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         sourcepackagename, version, maintainer, builddepends,
         builddependsindep, architecturehintlist, component, creator, urgency,
         changelog, dsc, dscsigningkey, section, manifest, dsc_maintainer_rfc822,
-        dsc_standards_version, dsc_format, dsc_binaries, archive,
-        dateuploaded=None, copyright=None):
+        dsc_standards_version, dsc_format, dsc_binaries, archive, copyright,
+        dateuploaded=None):
         """Create an uploads SourcePackageRelease
 
         Set this distroseries set to be the uploadeddistroseries.
@@ -279,8 +279,7 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
          * manifest: IManifest
          * dscsigningkey: IGPGKey used to sign the DSC file
          * dsc: string, original content of the dsc file
-         * copyright: optional string containing the original content of
-           debian/copyright, if omitted assume empty string.
+         * copyright: string, the original debian/copyright content
          * changelog: string, changelog extracted from the changesfile
          * architecturehintlist: string, DSC architectures
          * builddepends: string, DSC build dependencies
