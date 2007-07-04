@@ -8,49 +8,45 @@ __all__ = [
     'POFileTranslator',
     ]
 
-import StringIO
+import datetime
 import logging
-
-# Zope interfaces
-from zope.interface import implements
-from zope.component import getUtility
+import StringIO
+import pytz
 from urllib2 import URLError
-
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound, SQLMultipleJoin
     )
+from zope.interface import implements
+from zope.component import getUtility
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
-
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import (
     cursor, SQLBase, flush_database_updates, quote, sqlvalues)
-from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.constants import UTC_NOW
-
-from canonical.lp.dbschema import (
-    RosettaImportStatus, TranslationPermission, TranslationValidationStatus)
-
 from canonical.launchpad import helpers
-from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.mailnotification import MailWrapper
-from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet, IPOFile,
-    IPOFileSet, IPOTemplateExporter, ITranslationImporter, IPOFileTranslator,
-    NotExportedFromLaunchpad, NotFoundError, OldTranslationImported,
-    TranslationFormatSyntaxError, TranslationFormatInvalidInputError,
-    UnknownTranslationRevisionDate, ZeroLengthPOExportError
-    )
+from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.pomsgid import POMsgID
-from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
+from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
-
-from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.translationformat import POHeader
+from canonical.launchpad.interfaces import (
+    ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet, IPOFile,
+    IPOFileSet, IPOTemplateExporter, ITranslationFile, ITranslationImporter,
+    IPOFileTranslator, IVPOExportSet, NotExportedFromLaunchpad, NotFoundError,
+    OldTranslationImported, TranslationConstants,
+    TranslationFormatSyntaxError, TranslationFormatInvalidInputError,
+    UnknownTranslationRevisionDate, ZeroLengthPOExportError)
+from canonical.launchpad.mail import simple_sendmail
+from canonical.launchpad.mailnotification import MailWrapper
+from canonical.launchpad.translationformat import POHeader, TranslationMessage
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
+from canonical.lp.dbschema import (
+    RosettaImportStatus, TranslationPermission, TranslationValidationStatus)
 
 
 def _check_translation_perms(permission, translators, person):
@@ -1423,3 +1419,182 @@ class POFileTranslator(SQLBase):
     date_last_touched = UtcDateTimeCol(dbName='date_last_touched',
         notNull=False, default=None)
 
+
+class POFileToTranslationFileAdapter:
+    """Adapter from IPOFile to ITranslationFile."""
+    implements(ITranslationFile)
+
+    def __init__(self, pofile):
+        self._pofile = pofile
+        self.messages = self._getMessages()
+
+    @cachedproperty
+    def translation_domain(self):
+        """See `ITranslationFile`."""
+        return self._pofile.potemplate.potemplatename.translationdomain
+
+    @property
+    def is_template(self):
+        """See `ITranslationFile`."""
+        return False
+
+    @cachedproperty
+    def language_code(self):
+        """See `ITraslationFile`."""
+        if self.is_template:
+            return None
+
+        return self._pofile.language.code
+
+    @cachedproperty
+    def header(self):
+        """See `ITranslationFile`."""
+        template_header = self._pofile.potemplate.getHeader()
+        translation_header = self._pofile.getHeader()
+        # Update default fields based on its values in the template header
+        translation_header.updateFromTemplateHeader(template_header)
+        date_reviewed = None
+        if self._pofile.last_touched_pomsgset is not None:
+            # There is at least one translation available.
+            date_reviewed = self._pofile.last_touched_pomsgset.date_reviewed
+
+        translation_header.setTranslationRevisionDate(date_reviewed)
+
+        if self._pofile.potemplate.hasPluralMessage():
+            number_plural_forms = None
+            plural_form_expression = None
+            if self._pofile.language.pluralforms is not None:
+                # We have pluralforms information for this language so we
+                # update the header to be sure that we use the language
+                # information from our database instead of use the one
+                # that we got from upstream. We check this information so
+                # we are sure it's valid.
+                number_plural_forms = self._pofile.language.pluralforms
+                plural_form_expression = (
+                    self._pofile.language.pluralexpression)
+
+            translation_header.setPluralFormFields(
+                number_plural_forms, plural_form_expression)
+
+        # We need to tag every export from Launchpad so we know whether a
+        # later upload should change every translation in our database or
+        # that we got a change between the export and the upload with
+        # modifications.
+        UTC = pytz.timezone('UTC')
+        datetime_now = datetime.datetime.now(UTC)
+        translation_header.setExportDateField(datetime_now.strftime('%F %T%z'))
+
+        return translation_header
+
+
+    def _getMessages(self):
+        """Return a list of ITranslationMessage for the IPOFile adapted."""
+        pofile = self._pofile
+        # Get all rows related to this file. We do this to speed the export
+        # process so we have a single DB query to fetch all needed
+        # information.
+        rows = getUtility(IVPOExportSet).get_pofile_rows(pofile)
+
+        potsequence = None
+        posequence = None
+        messages = []
+        msgset = None
+
+        for row in rows:
+            assert row.pofile == pofile, (
+                'Got a row for a different IPOFile.')
+
+            new_msgset = False
+
+            # Skip messages which are neither in the PO template nor in the PO
+            # file. (Messages which are in the PO template but not in the PO file
+            # are untranslated, and messages which are not in the PO template but
+            # in the PO file are obsolete.)
+            if ((row.posequence == 0 or row.posequence is None) and
+                row.potsequence == 0):
+                continue
+
+            # If the sequence number of either the PO template or the PO file has
+            # changed, we start a new message set.
+            if (row.potsequence != potsequence or
+                row.posequence != posequence):
+                new_msgset = True
+
+            if new_msgset:
+                if msgset is not None:
+                    # Output current message set before creating the new one.
+                    messages.append(msgset)
+
+                # Create new message set
+                msgset = TranslationMessage()
+                if row.potsequence > 0:
+                    msgset.sequence = row.potsequence
+                    msgset.obsolete = False
+                elif row.posequence > 0:
+                    msgset.sequence = row.posequence
+                    msgset.obsolete = True
+                else:
+                    msgset.sequence = 0
+                    msgset.obsolete = True
+
+            # Because of the way the database view works, message IDs and
+            # translations will appear multiple times. We see how many we've added
+            # already to check whether the message ID/translation in the current
+            # row are ones we need to add.
+            # Note that the msgid plural form must be equal to the number of
+            # message IDs, while the translation plural form can be greater than
+            # or equal to. This allows for non-contiguous plural form indices.
+            if (row.msgidpluralform == TranslationConstants.SINGULAR_FORM and
+                msgset.msgid is None):
+                msgset.msgid = row.msgid
+            elif (row.msgidpluralform == TranslationConstants.PLURAL_FORM and
+                msgset.msgid_plural is None):
+                msgset.msgid_plural = row.msgid
+            else:
+                assert row.msgidpluralform in (
+                        TranslationConstants.SINGULAR_FORM,
+                        TranslationConstants.PLURAL_FORM), (
+                    'msgid plural form is not valid!')
+
+            if (row.activesubmission is not None and
+                row.translationpluralform >= len(msgset.translations)):
+                # There is an active submission, the plural form is higher than
+                # the last imported plural form.
+
+                if (pofile.language.pluralforms is not None and
+                    row.translationpluralform >= pofile.language.pluralforms):
+                    # The plural form index is higher than the number of plural
+                    # form for this language, so we should ignore it.
+                    continue
+
+                msgset.addTranslation(row.translationpluralform, row.translation)
+
+            if row.isfuzzy and not 'fuzzy' in msgset.flags:
+                msgset.flags.append('fuzzy')
+
+            if row.pocommenttext and not msgset.commenttext:
+                msgset.commenttext = row.pocommenttext
+
+            if row.sourcecomment and not msgset.sourcecomment:
+                msgset.sourcecomment = row.sourcecomment
+
+            if row.filereferences and not msgset.filereferences:
+                msgset.filereferences = row.filereferences
+
+            if row.flagscomment and not msgset.flags:
+                msgset.flags = [
+                    flag.strip()
+                    for flag in row.flagscomment.split(',')
+                    if flag
+                    ]
+
+            # Store sequences so we can detect later whether we changed the
+            # message.
+            potsequence = row.potsequence
+            posequence = row.posequence
+
+        # Once we've processed all the rows, store last message set.
+        if msgset is not None:
+            messages.append(msgset)
+
+        return messages

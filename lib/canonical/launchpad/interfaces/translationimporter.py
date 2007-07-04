@@ -1,16 +1,13 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.interface.common.mapping import IMapping
 from zope.schema import Choice
 
 __metaclass__ = type
 
 __all__ = [
     'ITranslationFormatImporter',
-    'ITranslationHeader',
     'ITranslationImporter',
-    'ITranslationMessage',
     'OldTranslationImported',
     'NotExportedFromLaunchpad',
     'TranslationFormatSyntaxError',
@@ -127,11 +124,6 @@ class ITranslationFormatImporter(Interface):
     file_extensions = Attribute(
         "Set of file extensions handlable by this importer.")
 
-    header = Attribute("An ITranslationHeader for the parsed file.")
-
-    messages = Attribute(
-        "The list of ITranslationMessage included in the parsed file.")
-
     has_alternative_msgid = Attribute("""
         Whether this file format importer uses ids to identify strings
         instead of English strings.""")
@@ -141,86 +133,11 @@ class ITranslationFormatImporter(Interface):
 
         :param translation_import_queue: An ITranslationImportQueueEntry to
             import.
-
-        Once the parse is done self.header and self.messages contain the
-        elements parsed.
+        :return: an ITranslationFile representing the parsed file.
         """
 
     def getLastTranslator():
         """Return a tuple of name and email for last translator.
 
         name and/or email would be None if there is no such information.
-        """
-
-
-class ITranslationHeader(IMapping):
-    """Translation header interface."""
-
-    messages = Attribute('''
-        A reference to the sequence of ITranslationMessage this header
-        refers to
-        ''')
-
-    def getTranslationRevisionDate():
-        """Return when the translation resource was last revised.
-
-        The returned object is a datetime object.
-
-        Raises UnknownTranslationRevisionDate exception if the information is
-        unavailable  or invalid.
-        """
-
-    def getLaunchpadExportDate():
-        """Return when this file was last exported from Launchpad or None.
-
-        The returned object is a datetime object.
-        """
-
-    def getPluralFormExpression():
-        """Return the plural form expression defined in the file or None."""
-
-    def getRawContent():
-        """Return the header as found in the file."""
-
-
-class ITranslationMessage(Interface):
-    """Translation message interface."""
-
-    msgid = Attribute(
-        "The msgid of the message (as unicode).")
-
-    msgid_plural = Attribute(
-        "The plural msgid of the message (as unicode) or None.")
-
-    translations = Attribute(
-        "The translations of the message (as a list of unicodes).")
-
-    comment = Attribute(
-        "The human-written comments ('# foo') of the message (as unicode).")
-
-    source_comment = Attribute(
-        "The parser-generated comments ('#. foo') of the message (as unicode)."
-        )
-
-    file_references = Attribute(
-        "The references ('#: foo') of the message (as unicode).")
-
-    flags = Attribute(
-        "The flags of the message (a Set of strings).")
-
-    obsolete = Attribute(
-        'True if message is obsolete (#~ msgid "foo"\\n#~ msgstr "bar").')
-
-    nplurals = Attribute(
-        """The number of plural forms for this language, as used in this file.
-        None means the header does not have a Plural-Forms entry.""")
-
-    pluralExpr = Attribute(
-        "The expression used to get a plural form from a number.")
-
-    def flagsText(flags=None):
-        """The flags of the message.
-
-        if a sequence or set is passed in, pretend these are the messages
-        flags and return a unicode representing them.
         """

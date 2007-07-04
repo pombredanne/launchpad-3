@@ -83,45 +83,6 @@ class POFormatHandler(Handler):
             self.obj.export()
             return self.obj.exportfile.http_url
 
-class MOFormatHandler(Handler):
-    """Export handler for MO format exports."""
-
-    def get_filename(self):
-        """Return a filename for the file being exported."""
-
-        if is_potemplate(self.obj):
-            return POFormatHandler(self.obj).get_filename()
-        else:
-            po_filename = POFormatHandler(self.obj).get_filename()
-            return po_filename[:-3] + '.mo'
-
-    def get_contents(self):
-        """Return the contents of the exported file."""
-
-        if is_potemplate(self.obj):
-            return POFormatHandler(self.obj).get_contents()
-        else:
-            po_contents = POFormatHandler(self.obj).get_contents()
-            compiler = MOCompiler()
-            return compiler.compile(po_contents)
-
-    def get_librarian_url(self):
-        """Return a Librarian URL from which the exported file can be
-        downloaded.
-        """
-
-        if is_potemplate(self.obj):
-            return POFormatHandler(self.obj).get_librarian_url()
-        else:
-            mo_contents = self.get_contents()
-            alias_set = getUtility(ILibraryFileAliasSet)
-            alias = alias_set.create(
-                name=self.get_filename(),
-                size=len(mo_contents),
-                file=StringIO(mo_contents),
-                contentType='application/octet-stream')
-            return alias.http_url
-
 format_handlers = {
     TranslationFileFormat.PO: POFormatHandler,
     TranslationFileFormat.MO: MOFormatHandler,

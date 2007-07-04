@@ -1,15 +1,7 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""Components for exporting PO files.
+"""Components for exporting translation files."""
 
-PO files are exported by adapting objects to interfaces which have methods for
-exporting. Exported objects are either a single PO file, or a tarball of many
-PO files.
-
-See IPOTemplateExporter and IDistroSeriesPOExporter.
-"""
-
-# XXX
 # A note about tarballs, StringIO and unicode. SQLObject returns unicode
 # values for columns which are declared as StringCol. We have to be careful
 # not to pass unicode instances to the tarfile module, because when the
@@ -21,6 +13,10 @@ See IPOTemplateExporter and IDistroSeriesPOExporter.
 #  -- Dafydd Harries, 2005/04/07.
 
 __metaclass__ = type
+
+__all__ = [
+    'TranslationExporter'
+    ]
 
 import codecs
 import datetime
@@ -41,6 +37,33 @@ from canonical.launchpad.translationformat.gettext_po_parser import (
 from canonical.launchpad.interfaces import (
     IPOTemplateExporter, IDistroSeriesPOExporter, IPOFileOutput,
     IVPOExportSet, IVPOTExportSet, EXPORT_DATE_HEADER)
+
+
+class TranslationExporter:
+    """See `ITranslationExporter`."""
+
+    def getTranslationFormatExporters(self, file_format):
+        """See `ITranslationExporter`."""
+        for exporter in zope.component.subscribers([], ITranslationFormatExporter):
+            if exporter.format == file_format:
+                return exporter
+
+        return None
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 class RosettaWriteTarFile:
     """Convenience wrapper around the tarfile module.
@@ -190,33 +213,6 @@ class OutputMsgSet:
         self.sourcecomment = ''
         self.filereferences = ''
 
-    def add_msgid(self, msgid):
-        """Add a message ID to this message set."""
-        self.msgids.append(msgid)
-
-    def add_msgstr(self, pluralform, msgstr):
-        """Add a translation to this message set."""
-
-        # The msgstr should be item with index pluralform in the list
-        # self.msgstrs. I.e. after this function has returned:
-        #
-        #   self.msgstrs[pluralform] == msgstr
-        #
-        # However, unlike msgids, we can't assume that groups of msgstrs are
-        # contiguous. I.e. we might get translations for plural forms 0 and 2,
-        # but not 1. This means we need to add empty values if pluralform >
-        # len(self.msgstrs).
-        #
-        # We raise an error if pluralform < len(self.msgstrs).
-
-        if pluralform < len(self.msgstrs):
-            raise ValueError(
-                'This message set already has a translation for plural form'
-                ' %d' % pluralform)
-        elif pluralform > len(self.msgstrs):
-            self.msgstrs.extend([None] * (pluralform - len(self.msgstrs)))
-
-        self.msgstrs.append(msgstr)
 
     def export_unicode_string(self):
         """Return a unicode string representation of this message set."""
@@ -920,27 +916,3 @@ class DistroSeriesPOExporter:
     def export_tarball_to_file(self, filehandle, date=None):
         """See IDistroSeriesPOExporter."""
         export_distroseries_tarball(filehandle, self.series, date)
-
-
-class MOCompilationError(Exception):
-    pass
-
-class MOCompiler:
-    """Compile PO files to MO files."""
-
-    MSGFMT = '/usr/bin/msgfmt'
-
-    def compile(self, pofile):
-        """Return a MO version of the given PO file."""
-
-        msgfmt = subprocess.Popen(
-            args=[MOCompiler.MSGFMT, '-v', '-o', '-', '-'],
-            stdin=subprocess.PIPE,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT)
-        stdout, stderr = msgfmt.communicate(pofile)
-
-        if msgfmt.returncode != 0:
-            raise MOCompilationError("PO file compilation failed:\n" + stdout)
-
-        return stdout
