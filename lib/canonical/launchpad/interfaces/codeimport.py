@@ -26,9 +26,15 @@ class ICodeImport(Interface):
     id = Int(readonly=True, required=True)
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
+
+    # XXX: branch should really be readonly, but there is a corner case of the
+    # code-import-sync script where we have a need to change it. The readonly
+    # parameter should be set back to True after the transition to the new code
+    # import system is complete. -- DavidAllouche 2007-07-04.
     branch = Choice(
-        title=_('Branch'), required=True, readonly=True, vocabulary='Branch',
+        title=_('Branch'), required=True, readonly=False, vocabulary='Branch',
         description=_("The Bazaar branch produced by the import system."))
+
     registrant = Choice(
         title=_('Registrant'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam',

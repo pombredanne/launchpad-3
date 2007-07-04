@@ -9,6 +9,7 @@ __metaclass__ = type
 __all__ = ['CodeImportSync']
 
 
+import psycopg
 from zope.component import getUtility
 
 from canonical.lp.dbschema import CodeImportReviewStatus, ImportStatus
@@ -102,6 +103,12 @@ class CodeImportSync:
         """
         if series.importstatus in (ImportStatus.SYNCING, ImportStatus.STOPPED):
             last_successful = series.datelastsynced
+
+            # This invariant is depended on by the logic in updateCodeImport
+            # that decides if we need to create a new branch for an exiting
+            # CodeImport.
+            assert last_successful is not None
+
         elif series.importstatus in (ImportStatus.TESTING,
                                      ImportStatus.AUTOTESTED,
                                      ImportStatus.PROCESSING):
@@ -117,18 +124,27 @@ class CodeImportSync:
         ProductSeries.
 
         :param series: a ProductSeries associated to a code import.
-        :return: the created CodeImport.
+        :return: the created CodeImport, or None if there was a branch name
+            conflict.
+
         :precondition: The CodeImport object corresponding to `series` does
             already exist in the database.
         :postcondition: The CodeImport object corresponding to `series` exists
             in the database and is up to date.
         """
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-        if series.import_branch is None:
-            branch = getUtility(IBranchSet).new(
-                series.name, vcs_imports, series.product, None, None)
-        else:
+
+        # Get a branch to attach the new CodeImport to.
+        if series.import_branch is not None:
+            # Use the ProductSeries import_branch if it set.
             branch = series.import_branch
+        else:
+            # Otherwise, try to create an import branch.
+            branch = self.createNewImportBranch(series)
+            if branch is None:
+                # A branch name conflict occured.
+                return
+        # Given the branch, we can create the CodeImport.
         code_import = getUtility(ICodeImportSet).newWithId(
             series.id, vcs_imports, branch, series.rcstype,
             svn_branch_url=series.svnrepository,
@@ -149,6 +165,19 @@ class CodeImportSync:
         assert (series.import_branch is None
                 or code_import.branch == series.import_branch)
 
+        # If the previous date_last_successful was not NULL, and the new one is
+        # NULL, that means we are doing a re-import. So we must use a new
+        # branch.
+        date_last_successful = self.dateLastSuccessfulFromProductSeries(series)
+        if (code_import.date_last_successful is not None
+                and date_last_successful is None):
+            new_branch = self.createNewImportBranch(series)
+            if new_branch is None:
+                # A branch name conflict occured.
+                return
+            code_import.branch = new_branch
+        code_import.date_last_successful = date_last_successful
+
         code_import.rcs_type = series.rcstype
         code_import.cvs_root = series.cvsroot
         code_import.cvs_module = series.cvsmodule
@@ -156,8 +185,27 @@ class CodeImportSync:
         code_import.svn_branch_url = series.svnrepository
         review_status = self.reviewStatusFromImportStatus(series.importstatus)
         code_import.review_status = review_status
-        date_last_successful = self.dateLastSuccessfulFromProductSeries(series)
-        code_import.date_last_successful = date_last_successful
+
+    def createNewImportBranch(self, series):
+        """Create a new branch for the CodeImport associated to `series`.
+
+        :param: an import ProductSeries.
+        :return: an import branch, or None if a branch name conflict occured.
+        """
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        unique_name = '~%s/%s/%s' % (
+            vcs_imports.name, series.product.name, series.name)
+        branch_set = getUtility(IBranchSet)
+        conflict_branch = branch_set.getByUniqueName(unique_name)
+        if conflict_branch is not None:
+            # If there is already an import branch by this name, it should
+            # probably be renamed or deleted.
+            self.logger.error("Branch name conflict: %s",
+                canonical_url(conflict_branch))
+            return None
+        branch = getUtility(IBranchSet).new(
+            series.name, vcs_imports, series.product, None, None)
+        return branch
 
     def deleteOrphanedCodeImport(self, code_import_id):
         """Delete a CodeImport object that is no longer associated to an import

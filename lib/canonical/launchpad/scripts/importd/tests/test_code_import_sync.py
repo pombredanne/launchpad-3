@@ -120,7 +120,6 @@ class CodeImportSyncTestCase(LaunchpadZopelessTestCase):
 
         # dateLastSuccessfulFromProductSeries is carefully unit-testing in
         # TestDateLastSuccessfulFromProductSeries, so we can rely on it here.
-        assert series.datelastsynced is not None # Test suite invariant.
         last_successful = \
             self.code_import_sync.dateLastSuccessfulFromProductSeries(series)
         self.assertEqual(code_import.date_last_successful, last_successful)
@@ -352,6 +351,21 @@ class TestCreateCodeImport(CodeImportSyncTestCase):
         code_import = self.code_import_sync.createCodeImport(series)
         self.assertImportMatchesSeries(code_import, series)
 
+    def testBranchNameConflict(self):
+        # If it is not possible to create an import branch using the standard
+        # name ~vcs-imports/product/series, an error is logged.
+        series = self.createTestingSeries('testing')
+        # Create a branch with the standard name, but do not associate it with
+        # the productseries, so we will attempt to create a new one.
+        vcs_imports = LaunchpadCelebrities().vcs_imports
+        branch = getUtility(IBranchSet).new(
+            series.name, vcs_imports, series.product, None)
+        # Then, createCodeImport should fail and log an error.
+        code_import = self.code_import_sync.createCodeImport(series)
+        self.assertEqual(code_import, None)
+        self.assertEqual(self.code_import_sync.logger.error_calls,
+            [("Branch name conflict: %s", canonical_url(branch))])
+
 
 class TestUpdateCodeImport(CodeImportSyncTestCase):
     """Unit tests for CodeImportSync.updateCodeImport."""
@@ -456,10 +470,63 @@ class TestCodeImportSync(CodeImportSyncTestCase):
               canonical_url(import_branch))])
 
     def testReimportProcess(self):
-        # 1. syncing 2. processing 3. syncing. This is the only process that
-        # allows import_branch to change, and when we run code-import-sync in
-        # production, the processing step will always be visible.
-        pass
+        # In some cases, on the production server, the import_branch of a
+        # ProductSeries can change. When the import_branch is set in
+        # production, it must use the branch of the corresponding CodeImport if
+        # it exists. If the CodeImport was created when ProductSeries used the
+        # old import_branch value, that can make it difficult to change the
+        # import_branch.
+        #
+        # Fortunately, import_branch is only set to a different branch when a
+        # new import from scratch is done. Since code-import-sync is only run
+        # in production during the transition period, the new back-end needs
+        # code-import-sync to run to perform the new import. So we can act when
+        # we see that the import_branch has been cleared.
+
+        # Initially, we have a SYNCING series, and its associated code import.
+        reimport = self.createTestingSeries('reimport')
+        reimport.certifyForSync()
+        reimport.enableAutoSync()
+        self.assertEqual(reimport.importstatus, ImportStatus.SYNCING)
+        old_branch = self.createImportBranch(reimport)
+        self.run_code_import_sync()
+
+        # Then an import from scratch is requested. The import details in the
+        # series are cleared, new ones are installed (potentially the same
+        # details, if the reimport is needed because the imported repository
+        # has changed), and the existing import branch is renamed.
+        reimport.deleteImport()
+        old_branch.name = old_branch.name + '-broken'
+        self.updateSeriesWithSubversion(reimport)
+        reimport.certifyForSync()
+        self.assertEqual(reimport.importstatus, ImportStatus.PROCESSING)
+        self.assertEqual(reimport.import_branch, None)
+
+        # If we are running in production, that means we are between
+        # code-import-backend-transition and code-import-frontend transition.
+        # The back-end can only perform the re-import after code-import-sync
+        # has run.
+        self.run_code_import_sync()
+        self.assertSingleCodeImportMatchesSeries(reimport)
+
+        # In this situation, the CodeImport must use a new branch, because the
+        # old branch already contained import data.
+        code_import = CodeImport.get(reimport.id) # Error if object not found.
+        new_branch = code_import.branch
+        self.assertNotEqual(old_branch, new_branch)
+
+        # When the back-end completes the new import, it sets the import_branch
+        # to the branch of the CodeImport and puts a value into datelastsynced.
+        reimport.enableAutoSync()
+        self.assertEqual(reimport.importstatus, ImportStatus.SYNCING)
+        code_import = CodeImport.get(reimport.id) # Error if object not found.
+        reimport.import_branch = code_import.branch
+        reimport.datelastsynced = datetime.datetime(
+            2000, 1, 1, 0, 0, 0, tzinfo=UTC)
+
+        # Then code-import-sync runs again and updates the CodeImport object.
+        self.run_code_import_sync()
+        self.assertSingleCodeImportMatchesSeries(reimport)
 
 
 def test_suite():
