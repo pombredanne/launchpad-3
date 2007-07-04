@@ -14,7 +14,7 @@ Let's make sure we can see the relevant page on a distribution.
 Let's also validate that a new blueprint's form page has the appropriate default
 blueprint status.
 
-  >>> user_browser.getControl(name='field.status').value
+  >>> user_browser.getControl('Status').value
   ['New']
 
 And now, on a project.
@@ -22,7 +22,7 @@ And now, on a project.
   >>> user_browser.open('http://blueprints.launchpad.dev/firefox/+addspec')
   >>> user_browser.url
   'http://blueprints.launchpad.dev/firefox/+addspec'
-  >>> user_browser.getControl(name='field.status').value
+  >>> user_browser.getControl('Status').value
   ['New']
 
 And finally, on a project group.
@@ -30,7 +30,7 @@ And finally, on a project group.
   >>> user_browser.open('http://blueprints.launchpad.dev/mozilla/+addspec')
   >>> user_browser.url
   'http://blueprints.launchpad.dev/mozilla/+addspec'
-  >>> user_browser.getControl(name='field.status').value
+  >>> user_browser.getControl('Status').value
   ['New']
 
 Let's go one step further and confirm that we can actually POST to that
@@ -52,7 +52,7 @@ form, to register a new blueprint. We'll do it on the Ubuntu distribution.
   ...   "that it has a network. This would greatly enhance the system's"
   ...   "flexibility and responsiveness.")
   >>> user_browser.getControl(name='field.summary').value = summary
-  >>> user_browser.getControl(name='field.status').value = ['Approved']
+  >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
@@ -78,7 +78,7 @@ blueprint with the same name.
   ...   name='field.specurl').value = ('http://wiki.ubuntu.com/NetworkMagic')
   >>> user_browser.getControl(name='field.summary').value = ("Users are"
   ...       "increasingly using multiple networks.")
-  >>> user_browser.getControl(name='field.status').value = ['Approved']
+  >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
@@ -103,7 +103,7 @@ We test the validator using an invalid name.
   ...   'http://wiki.ubuntu.com/NetworkMagicExclamation')
   >>> user_browser.getControl(name='field.summary').value = (
   ...   "Users are increasingly using multiple networks.")
-  >>> user_browser.getControl(name='field.status').value = ['Approved']
+  >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
@@ -129,7 +129,7 @@ the user:
   ...   'http://wiki.ubuntu.com/RecoverableNetworkMagic')
   >>> user_browser.getControl(name='field.summary').value = (
   ...   "Users are increasingly using multiple networks.")
-  >>> user_browser.getControl(name='field.status').value = ['Approved']
+  >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
@@ -149,7 +149,7 @@ same URL.
   >>> user_browser.getControl(name='field.specurl').value = (
   ...   'http://wiki.ubuntu.com/NetworkMagic')
   >>> user_browser.getControl(name='field.summary').value = "Users are increasingly"
-  >>> user_browser.getControl(name='field.status').value = ['Approved']
+  >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
@@ -177,7 +177,7 @@ products in that IProject.
   ...   "This widget is the latest and greatest in a long range of wotzits. "
   ...   "All wotzits are known to be particularly resilient.")
   >>> user_browser.getControl(name='field.summary').value = summary
-  >>> user_browser.getControl(name='field.status').value = ['Approved']
+  >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
@@ -210,7 +210,7 @@ First, we try to create a blueprint that has the same name as an existing one.
   ...   "that it has a network. This would greatly enhance the system's"
   ...   "flexibility and responsiveness.")
   >>> user_browser.getControl(name='field.summary').value = summary
-  >>> user_browser.getControl(name='field.status').value = ['Approved']
+  >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
@@ -242,7 +242,7 @@ through.
   ...   "that it has a network. This would greatly enhance the system's"
   ...   "flexibility and responsiveness.")
   >>> user_browser.getControl(name='field.summary').value = summary
-  >>> user_browser.getControl(name='field.status').value = ['Approved']
+  >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
   >>> user_browser.getControl(name='field.approver').value = 'tsukimi@quaqua.net'
