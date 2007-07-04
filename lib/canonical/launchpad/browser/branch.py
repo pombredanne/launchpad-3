@@ -28,6 +28,7 @@ from zope.component import getUtility
 from canonical.config import config
 
 from canonical.lp import decorates
+from canonical.lp.dbschema import BranchVisibilityRule
 
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -294,6 +295,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             if rule is None:
                 # Determine the rule based on team membership.
                 rules = []
+                owner = branch.owner
                 for item in product.getBranchVisibilityTeamPolicies():
                     if item.team is not None and owner.inTeam(item.team):
                         rules.append(item.rule)
