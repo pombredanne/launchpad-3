@@ -7,7 +7,6 @@ __all__ = ['test_suite']
 
 
 import datetime
-import logging
 import pytz
 import unittest
 
@@ -20,6 +19,7 @@ from canonical.launchpad.interfaces import (
     IBranchSet, ICodeImportSet, IProductSet)
 from canonical.launchpad.scripts.importd.code_import_sync import CodeImportSync
 from canonical.launchpad.utilities import LaunchpadCelebrities
+from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
     CodeImportReviewStatus, ImportStatus, RevisionControlSystems)
 
@@ -27,12 +27,33 @@ from canonical.lp.dbschema import (
 UTC = pytz.timezone('UTC')
 
 
+class MockLogger:
+    """Mock logger object for testing."""
+
+    def __init__(self):
+        self.warning_calls = []
+        self.error_calls = []
+
+    def debug(self, *args):
+        pass
+
+    def info(self, *args):
+        pass
+
+    def warning(self, *args):
+        self.warning_calls.append(args)
+
+    def error(self, *args):
+        self.error_calls.append(args)
+
+
 class CodeImportSyncTestCase(LaunchpadZopelessTestCase):
 
     def setUp(self):
         self.cleanUpSampleData()
         self.firefox = ProductSet().getByName('firefox')
-        self.code_import_sync = CodeImportSync(logging, self.layer.txn)
+        logger = MockLogger()
+        self.code_import_sync = CodeImportSync(logger, self.layer.txn)
 
     def cleanUpSampleData(self):
         """Clear out the sample data that would affect tests."""
@@ -119,26 +140,77 @@ class CodeImportSyncTestCase(LaunchpadZopelessTestCase):
 class TestGetImportSeries(CodeImportSyncTestCase):
     """Unit tests for CodeImportSync.getImportSeries."""
 
-    def assertListSingleItemEquals(self, the_list, expected_item):
-        """Fail if the_list does not have expected_item has its single item."""
-        self.assertEqual(len(the_list), 1)
-        [the_item] = the_list
-        self.assertEqual(the_item, expected_item)
+    def assertGetImportSeriesYields(self, expected_series):
+        """Fail if getImportSeries does not yield a single item equal to
+        `expected_series`.
+        """
+        flush_database_updates()
+        series_list = list(self.code_import_sync.getImportSeries())
+        self.assertEqual(len(series_list), 1)
+        [series] = series_list
+        self.assertEqual(series, expected_series)
+
+    def assertGetImportSeriesYieldsNothing(self):
+        """Fail if getImportSeries yield anything."""
+        flush_database_updates()
+        series_list = list(self.code_import_sync.getImportSeries())
+        self.assertEqual(series_list, [])
 
     def testEmpty(self):
         # If there is no series with importstatus set, getImportSeries gives an
         # empty iterable. This would never happen in real life.
-        flush_database_updates()
-        self.assertEqual(list(self.code_import_sync.getImportSeries()), [])
+        self.assertGetImportSeriesYieldsNothing()
+
+    def testDoncSync(self):
+        # getImportSeries does not yield series with DONTSYNC import status.
+        dontsync = self.createTestingSeries('dontsync')
+        dontsync.markDontSync()
+        self.assertEqual(dontsync.importstatus, ImportStatus.DONTSYNC)
+        self.assertGetImportSeriesYieldsNothing()
 
     def testTesting(self):
-        # getImportSeries yields series with TESTING importstatus.
+        # getImportSeries yields series with TESTING import status.
         testing = self.createTestingSeries('testing')
-        flush_database_updates()
-        import_series_set = list(self.code_import_sync.getImportSeries())
-        self.assertListSingleItemEquals(import_series_set, testing)
+        self.assertEqual(testing.importstatus, ImportStatus.TESTING)
+        self.assertGetImportSeriesYields(testing)
 
-    # TODO: test correct filtering for all importstatus.
+    def testTestfailed(self):
+        # getImportSeries does not yield series with TESTFAILED import status.
+        testfailed = self.createTestingSeries('testfailed')
+        testfailed.markTestFailed()
+        self.assertEqual(testfailed.importstatus, ImportStatus.TESTFAILED)
+        self.assertGetImportSeriesYieldsNothing()
+
+    def testAutotested(self):
+        # getImportSeries yields series with AUTOTESTED import status.
+        autotested = self.createTestingSeries('autotested')
+        autotested.importstatus = ImportStatus.AUTOTESTED
+        self.assertGetImportSeriesYields(autotested)
+
+    def testProcessing(self):
+        # getImportSeries yields series with PROCESSING import status.
+        processing = self.createTestingSeries('processing')
+        processing.certifyForSync()
+        self.assertEqual(processing.importstatus, ImportStatus.PROCESSING)
+        self.assertGetImportSeriesYields(processing)
+
+    def testSyncing(self):
+        # getImportSeries yields series with SYNCING import status.
+        syncing = self.createTestingSeries('syncing')
+        syncing.certifyForSync()
+        syncing.enableAutoSync()
+        self.createImportBranch(syncing)
+        self.assertEqual(syncing.importstatus, ImportStatus.SYNCING)
+        self.assertGetImportSeriesYields(syncing)
+
+    def testStopped(self):
+        # getImportSeries yields series with STOPPED import status.
+        stopped = self.createTestingSeries('stopped')
+        stopped.certifyForSync()
+        stopped.enableAutoSync()
+        stopped_branch = self.createImportBranch(stopped)
+        stopped.importstatus = ImportStatus.STOPPED
+        self.assertGetImportSeriesYields(stopped)
 
     # TODO: test that non-MAIN cvs branches are ignored, CodeImport does not
     # have a cvs_branch attribute.
@@ -149,7 +221,8 @@ class TestReviewStatusFromImportStatus(unittest.TestCase):
 
     def setUp(self):
         # reviewStatusFromImportStatus does not need database access.
-        self.code_import_sync = CodeImportSync(logging, None)
+        logger = MockLogger()
+        self.code_import_sync = CodeImportSync(logger, None)
 
     def assertImportStatusTranslatesTo(self, import_status, expected):
         """Assert that reviewStatusFromImportStatus returns `expected`
@@ -202,7 +275,8 @@ class TestDateLastSuccessfulFromProductSeries(unittest.TestCase):
 
     def setUp(self):
         # dateLastSuccessfulFromProductSeries does not need database access.
-        self.code_import_sync = CodeImportSync(logging, None)
+        logger = MockLogger()
+        self.code_import_sync = CodeImportSync(logger, None)
 
     def makeStubSeries(self, import_status):
         """Create a stub ProductSeries with a datelastsynced and the given
@@ -246,7 +320,7 @@ class TestDateLastSuccessfulFromProductSeries(unittest.TestCase):
     def testTesting(self):
         self.assertNoneIsReturned(ImportStatus.TESTING)
 
-    def testFailed(self):
+    def testTestfailed(self):
         self.assertAssertionErrorRaised(ImportStatus.TESTFAILED)
 
     def testAutotested(self):
@@ -363,38 +437,29 @@ class TestCodeImportSync(CodeImportSyncTestCase):
         self.run_code_import_sync()
         self.assertSingleCodeImportMatchesSeries(series)
 
+    def testDeleteCodeImport(self):
+        # If the productseries import status changes to a value for which we do
+        # not create code imports (including None), we delete the CodeImport
+        # object and emit a warning that the associated branch maybe should be
+        # deleted manually.
+        series = self.createTestingSeries('deleted')
+        self.run_code_import_sync()
+        import_branch = getUtility(ICodeImportSet).get(series.id).branch
+        series.markDontSync()
+        self.assertEqual(series.importstatus, ImportStatus.DONTSYNC)
+        self.run_code_import_sync()
+        # code-import-sync should delete the CodeImport object.
+        self.assertEqual(getUtility(ICodeImportSet).get(series.id), None)
+        # And it should emit a warning about the orphaned import branch.
+        self.assertEqual(self.code_import_sync.logger.warning_calls,
+            [("Branch was orphaned, you may want to delete it: %s",
+              canonical_url(import_branch))])
 
-    # TODO: test that CVS imports are correctly created and updated. All the
-    # basic tests are done on SVN imports.
-
-    # TODO: test updates to VCS details, CVS->SVN and SVN->CVS
-
-    # TODO: test deletion of code-import
-
-
-    def testGetImportSeries(self):
-        # getImportSeries should select all ProductSeries whose importstatus is
-        # TESTING, AUTOTESTED, PROCESSING, SYNCING or STOPPED. ProductSeries
-        # whose status is DONTSYNC or TESTFAILED are ignored.
-
-        # Create a series with importstatus = TESTFAILED
-        testfailed = self.createTestingSeries('testfailed')
-        testfailed.markTestFailed()
-
-        # Create a series with importstatus = AUTOTESTED
-        autotested = self.createTestingSeries('autotested')
-        autotested.importstatus = ImportStatus.AUTOTESTED
-
-        # Create a series with importstatus = DONTSYNC
-        dontsync = self.createTestingSeries('dontsync')
-        dontsync.markDontSync()
-
-        # Create a series with importstatus = STOPPED
-        stopped = self.createTestingSeries('stopped')
-        stopped.certifyForSync()
-        stopped.enableAutoSync()
-        stopped_branch = self.createImportBranch(stopped)
-        stopped.importstatus = ImportStatus.STOPPED
+    def testReimportProcess(self):
+        # 1. syncing 2. processing 3. syncing. This is the only process that
+        # allows import_branch to change, and when we run code-import-sync in
+        # production, the processing step will always be visible.
+        pass
 
 
 def test_suite():

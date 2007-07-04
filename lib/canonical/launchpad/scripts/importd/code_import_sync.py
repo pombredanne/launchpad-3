@@ -14,6 +14,7 @@ from zope.component import getUtility
 from canonical.lp.dbschema import CodeImportReviewStatus, ImportStatus
 from canonical.launchpad.interfaces import (
     IBranchSet, ICodeImportSet, ILaunchpadCelebrities, IProductSeriesSet)
+from canonical.launchpad.webapp import canonical_url
 
 
 class CodeImportSync:
@@ -24,10 +25,35 @@ class CodeImportSync:
         self.logger = logger
         self.txn = txn
 
-    def run(self):
+    def runAndCommit(self):
         """Entry point method for the script runner."""
-        for series in self.getImportSeries():
-            self.syncOneSeries(series)
+        self.run()
+        self.txn.commit()
+
+    def run(self):
+        """Synchronize the CodeImport table with the ProductSeries table."""
+
+        # Get all relevant ProductSeries, and all CodeImports. We will need
+        # them later for set arithmetic. So we may as well use the complete
+        # lists for everything.
+        import_series_list = list(self.getImportSeries())
+        code_imports_map = dict(
+            (code_import.id, code_import)
+            for code_import in getUtility(ICodeImportSet).getAll())
+
+        # Create or update CodeImports associated to valid ProductSeries.
+        for series in import_series_list:
+            code_import = code_imports_map.get(series.id)
+            if code_import is None:
+                self.createCodeImport(series)
+            else:
+                self.updateCodeImport(series, code_import)
+
+        # Delete CodeImports not associated to any valid ProductSeries.
+        import_series_ids = set(series.id for series in import_series_list)
+        code_import_ids = set(code_imports_map.iterkeys())
+        for orphaned_id in code_import_ids.difference(import_series_ids):
+            self.deleteOrphanedCodeImport(orphaned_id)
 
     def getImportSeries(self):
         """Iterate over ProductSeries for which we want to have a CodeImport.
@@ -37,20 +63,22 @@ class CodeImportSync:
 
         Series where importstatus is DONTSYNC or TESTFAILED are ignored.
         """
-        import_series = getUtility(IProductSeriesSet).search(forimport=True)
-        for series in import_series:
-            yield series
-        # TODO: correct filtering for all importstatus
-
-    def syncOneSeries(self, series):
-        """Create or update the CodeImport object associated to the given
-        ProductSeries.
-        """
-        code_import = getUtility(ICodeImportSet).get(series.id)
-        if code_import is None:
-            self.createCodeImport(series)
-        else:
-            self.updateCodeImport(series, code_import)
+        series_iterator = getUtility(IProductSeriesSet).search(forimport=True)
+        for series in series_iterator:
+            if series.importstatus in (ImportStatus.DONTSYNC,
+                                       ImportStatus.TESTFAILED):
+                continue
+            elif series.importstatus in (ImportStatus.TESTING,
+                                         ImportStatus.AUTOTESTED,
+                                         ImportStatus.PROCESSING,
+                                         ImportStatus.SYNCING,
+                                         ImportStatus.STOPPED):
+                # TODO: filter out non-main branches
+                yield series
+            else:
+                assert series.importstatus is not None
+                raise AssertionError(
+                    "Unknown importstatus: %s", series.importstatus.name)
 
     def reviewStatusFromImportStatus(self, import_status):
         """Return the CodeImportReviewStatus value corresponding to the given
@@ -65,7 +93,7 @@ class CodeImportSync:
         else:
             raise AssertionError(
                 "This import status should not produce a code import: %s"
-                % import_status)
+                % import_status.name)
         return review_status
 
     def dateLastSuccessfulFromProductSeries(self, series):
@@ -81,7 +109,7 @@ class CodeImportSync:
         else:
             raise AssertionError(
                 "This import status should not produce a code import: %s"
-                % series.importstatus)
+                % series.importstatus.name)
         return last_successful
 
     def createCodeImport(self, series):
@@ -118,7 +146,6 @@ class CodeImportSync:
         :param code_import: The CodeImport corresponding to `series`.
         :postcondition: `code_import` is up to date with `series`.
         """
-        # TODO: test workflow that may cause import_branch to change
         assert (series.import_branch is None
                 or code_import.branch == series.import_branch)
 
@@ -132,9 +159,15 @@ class CodeImportSync:
         date_last_successful = self.dateLastSuccessfulFromProductSeries(series)
         code_import.date_last_successful = date_last_successful
 
-    def getOrphanedCodeImports(self):
-        """Find all the CodeImport objects that do not have a corresponding
-        ProductSeries.
+    def deleteOrphanedCodeImport(self, code_import_id):
+        """Delete a CodeImport object that is no longer associated to an import
+        product series.
 
-        :return: iterable of CodeImports.
+        :param code_import_id: database id of a CodeImport.
         """
+        code_import = getUtility(ICodeImportSet).get(code_import_id)
+        getUtility(ICodeImportSet).delete(code_import_id)
+        self.logger.warning(
+            "Branch was orphaned, you may want to delete it: %s",
+            canonical_url(code_import.branch))
+

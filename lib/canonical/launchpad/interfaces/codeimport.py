@@ -91,3 +91,6 @@ class ICodeImportSet(Interface):
 
     def getByBranch(branch):
         """Get the CodeImport, if any, associated to a Branch."""
+
+    def delete(id):
+        """Delete a CodeImport given its id."""

@@ -15,7 +15,7 @@ from canonical.launchpad.scripts.importd.code_import_sync import (
 class SyncCodeImports(LaunchpadCronScript):
 
     def main(self):
-        CodeImportSync(self.logger, self.txn).run()
+        CodeImportSync(self.logger, self.txn).runAndCommit()
 
 
 if __name__ = '__main__':
