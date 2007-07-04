@@ -140,9 +140,9 @@ Branches with no URL are primarily hosted on the supermirror.
 The IBranchSet can tell us how many public branches there are registered.
 
     >>> branchset.count()
-    30
+    32
 
-(28 public branches in the sample data, and two added above.)
+(30 public branches in the sample data, and two added above.)
 
 # XXX thumper 2007-05-28
 # Rework example so it doesn't get stuffed everytime we update sample data.
@@ -778,6 +778,7 @@ extra display information.
     Experimental ~name12/gnome-terminal/klingon
     New ~launchpad/gnome-terminal/launchpad
     New ~ddaa/gnome-terminal/dev
+    New ~vcs-imports/gnome-terminal/import
     New ~name12/gnome-terminal/mirrored
     New ~name12/gnome-terminal/pushed
     New ~name12/gnome-terminal/scanned
@@ -792,6 +793,7 @@ extra display information.
     Experimental ~name12/gnome-terminal/klingon
     New ~launchpad/gnome-terminal/launchpad
     New ~ddaa/gnome-terminal/dev
+    New ~vcs-imports/gnome-terminal/import
     New ~name12/gnome-terminal/mirrored
     New ~name12/gnome-terminal/pushed
     New ~name12/gnome-terminal/scanned
