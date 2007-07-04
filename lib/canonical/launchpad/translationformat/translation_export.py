@@ -15,19 +15,19 @@
 __metaclass__ = type
 
 __all__ = [
-    'TranslationExporter'
+    'TranslationExporter',
+    'LaunchpadWriteTarFile',
     ]
 
 import codecs
 import datetime
 import gettextpo
 import os
-import subprocess
 import tarfile
 import time
 import pytz
+import zope
 from StringIO import StringIO
-
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -36,7 +36,8 @@ from canonical.launchpad.translationformat.gettext_po_parser import (
     POMessage, POHeader)
 from canonical.launchpad.interfaces import (
     IPOTemplateExporter, IDistroSeriesPOExporter, IPOFileOutput,
-    IVPOExportSet, IVPOTExportSet, EXPORT_DATE_HEADER)
+    ITranslationFormatExporter, IVPOExportSet, IVPOTExportSet,
+    EXPORT_DATE_HEADER)
 
 
 class TranslationExporter:
@@ -51,21 +52,7 @@ class TranslationExporter:
         return None
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-class RosettaWriteTarFile:
+class LaunchpadWriteTarFile:
     """Convenience wrapper around the tarfile module.
 
     This class makes it convenient to generate tar files in various ways.
@@ -149,6 +136,29 @@ class RosettaWriteTarFile:
 
         for filename in sorted(files.keys()):
             self.add_file(filename, files[filename])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 class OutputPOFile:
@@ -827,7 +837,7 @@ def export_distroseries_tarball(filehandle, series, date=None):
     """Export a tarball of translations for a distribution series."""
 
     # Open the archive.
-    archive = RosettaWriteTarFile(filehandle)
+    archive = LaunchpadWriteTarFile(filehandle)
 
     # Do the export.
     pofiles = getUtility(IVPOExportSet).get_distroseries_pofiles(

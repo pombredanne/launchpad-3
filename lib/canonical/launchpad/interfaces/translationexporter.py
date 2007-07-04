@@ -8,7 +8,12 @@ __metaclass__ = type
 __all__ = [
     'ITranslationExporter',
     'ITranslationFormatExporter',
+    'UnknownTranslationExporterError',
     ]
+
+
+class UnknownTranslationExporterError(Exception):
+    """Something unkown went wrong while doing an export."""
 
 
 class ITranslationExporter(Interface):
@@ -39,12 +44,14 @@ class ITranslationFormatExporter(Interface):
         vocabulary='TranslationFileFormat',
         required=True)
 
-    content_type = Attribute(
-        "Content type string for this file format.")
+    content_type = Attribute("Content type string for this file format.")
 
     def exportTranslationFiles(translation_file_list):
-        """Return a file like object with given list serialized.
+        """Return file path and file like object with given list serialized.
 
         :param translation_file_list: A list of ITranslationFile objects to
             export.
+        :return: A tuple with a string noting the exported file path and a
+            file like object with 'translation_file_list' serialized. File
+            path would be None if the exporter cannot figure a value.
         """
