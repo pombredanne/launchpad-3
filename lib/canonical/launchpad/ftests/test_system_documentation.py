@@ -140,6 +140,11 @@ def uploadQueueSetUp(test):
 def uploadQueueTearDown(test):
     logout()
 
+def noPrivSetUp(test):
+    """Set up a test logged in as no-priv."""
+    setUp(test)
+    login('no-priv@canonical.com')
+
 def LayeredDocFileSuite(*args, **kw):
     '''Create a DocFileSuite with a layer.'''
     # Set stdout_logging keyword argument to True to make
@@ -340,6 +345,11 @@ special = {
             setUp=uploadQueueSetUp,
             tearDown=uploadQueueTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
+    'bugmessage.txt': LayeredDocFileSuite(
+            '../doc/bugmessage.txt',
+            setUp=noPrivSetUp, tearDown=tearDown,
+            optionflags=default_optionflags, layer=LaunchpadFunctionalLayer
             ),
     'bugmessage.txt-queued': LayeredDocFileSuite(
             '../doc/bugmessage.txt',
