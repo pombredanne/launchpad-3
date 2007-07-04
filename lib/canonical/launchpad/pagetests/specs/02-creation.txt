@@ -1,35 +1,43 @@
+= Creating Blueprints =
 
-Creating Specifications
-=======================
+Blueprints can be created from multiple locations within Launchpad. In
+particular, users can create blueprints from distributions, from projects and 
+from project groups. It's also possible to create a blueprint from the 
+Blueprints home page.
 
-And on both Product and Distribution, we should be able to add a
-specification. Let's make sure we can see the relevant page on a Product.
-
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open('http://blueprints.launchpad.dev/firefox/+addspec')
-  >>> browser.url
-  'http://blueprints.launchpad.dev/firefox/+addspec'
-
-Let's also validate that a new spec's form page has the appropriate default
-specification status.
-
-  >>> browser.getControl(name='field.status').value
-  ['New']
-
-
-And now, on a distribution.
+Let's make sure we can see the relevant page on a distribution.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
   >>> browser.url
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
+
+Let's also validate that a new blueprint's form page has the appropriate default
+blueprint status.
+
   >>> browser.getControl(name='field.status').value
   ['New']
 
+And now, on a project.
+
+  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser.open('http://blueprints.launchpad.dev/firefox/+addspec')
+  >>> browser.url
+  'http://blueprints.launchpad.dev/firefox/+addspec'
+  >>> browser.getControl(name='field.status').value
+  ['New']
+
+And finally, on a project group.
+
+  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+  >>> browser.open('http://blueprints.launchpad.dev/mozilla/+addspec')
+  >>> browser.url
+  'http://blueprints.launchpad.dev/mozilla/+addspec'
+  >>> browser.getControl(name='field.status').value
+  ['New']
 
 Let's go one step further and confirm that we can actually POST to that
-form, to register a new specification. We'll do it on the Ubuntu
-distribution.
+form, to register a new blueprint. We'll do it on the Ubuntu distribution.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
@@ -56,16 +64,15 @@ distribution.
   >>> browser.url
   'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic'
 
-
-OK, that created a new specification. Let's make sure we can see it.
+OK, that created a new blueprint. Let's make sure we can see it.
 
   >>> url = 'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic'
   >>> browser.open(url)
   >>> browser.url
   'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic'
 
-Now we test if the specification name validator is working trying to register
-a spec with the same name.
+Now we test if the blueprint name validator is working trying to register a
+blueprint with the same name.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
@@ -85,8 +92,8 @@ a spec with the same name.
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
 
 Seeing that we were redirected again to the addspec page is a good sign
-(something prevented the spec from being registered) however better make sure
-this happened due to the right reason.
+(something prevented the blueprint from being registered) however better make
+sure this happened due to the right reason.
 
   >>> 'is already in use by another blueprint' in browser.contents
   True
@@ -139,9 +146,8 @@ the user:
   >>> "Blueprint overview" in browser.contents
   True
 
-
-Now we test the URL field validator trying to register a new spec with the same
-URL.
+Now we test the URL field validator trying to register a new blueprint with the
+same URL.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
@@ -165,7 +171,7 @@ URL.
 Project blueprint registration
 ==============================
 
-There is also a form which lets user create a new Blueprint in an IProject
+There is also a form which lets user create a new blueprint in an IProject
 that first requires them to select an IProduct target, showing them only the
 products in that IProject.
 
@@ -192,10 +198,10 @@ products in that IProject.
 System-wide blueprint registration
 ==================================
 
-There is also a form which lets user create a new Blueprint for any product
-or distribution, from the Blueprints app home page.
+There is also a form which lets user create a new blueprint for any product
+or distribution, from the Blueprints home page.
 
-First, we try to create a spec that has the same name as an existing one.
+First, we try to create a blueprint that has the same name as an existing one.
 
   >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
   >>> browser.open('http://blueprints.launchpad.dev/specs/+new')
@@ -223,14 +229,14 @@ First, we try to create a spec that has the same name as an existing one.
   >>> browser.url
   'http://blueprints.launchpad.dev/specs/+new'
 
-So, we were not redirected to the spec page, because the spec was not
+So, we were not redirected to the blueprint page, because the blueprint was not
 created. Let's check that this happened because the name is taken:
 
   >>> 'is already in use by another blueprint' in browser.contents
   True
 
 
-Now, we'll register a spec with a unique name and it should go straight
+Now, we'll register a blueprint with a unique name and it should go straight
 through.
 
   >>> browser.open('http://blueprints.launchpad.dev/specs/+new')
@@ -257,7 +263,7 @@ through.
 
 
 = TODO =
-There are many specification doctests with the following type of test:
+There are many blueprint doctests with the following type of test:
 
 "  >>> 'Invalid name' in browser.contents                              "
 
