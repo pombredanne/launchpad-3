@@ -15,6 +15,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'ExportedTranslationFile',
     'TranslationExporter',
     'LaunchpadWriteTarFile',
     ]
@@ -35,9 +36,9 @@ from canonical.launchpad import helpers
 from canonical.launchpad.translationformat.gettext_po_parser import (
     POMessage, POHeader)
 from canonical.launchpad.interfaces import (
-    IPOTemplateExporter, IDistroSeriesPOExporter, IPOFileOutput,
-    ITranslationFormatExporter, IVPOExportSet, IVPOTExportSet,
-    EXPORT_DATE_HEADER)
+    EXPORT_DATE_HEADER, IDistroSeriesPOExporter, IExportedTranslationFile,
+    IPOFileOutput, IPOTemplateExporter, ITranslationFormatExporter,
+    IVPOExportSet, IVPOTExportSet)
 
 
 class TranslationExporter:
@@ -138,8 +139,14 @@ class LaunchpadWriteTarFile:
             self.add_file(filename, files[filename])
 
 
+class ExportedTranslationFile:
+    """See `IExportedTranslationFile`."""
+    implements(IExportedTranslationFile)
 
-
+    def __init__(self):
+        self.content_type = None
+        self.path = None
+        self.content_file  = None
 
 
 

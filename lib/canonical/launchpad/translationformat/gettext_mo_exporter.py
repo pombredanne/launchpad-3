@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import (
     ITranslationExporter,
     ITranslationFormatExporter, UnknownTranslationExporterError)
 from canonical.launchpad.translationformat.translation_export import (
-    LaunchpadWriteTarFile)
+    LaunchpadWriteTarFile, ExportedTranslationFile)
 from canonical.lp.dbschema import TranslationFileFormat
 
 class MoCompiler:
@@ -51,9 +51,9 @@ class GettextMoExporter:
         return TranslationFileFormat.MO
 
     @property
-    def content_type(self):
+    def handlable_formats(self):
         """See `ITranslationFormatExporter`."""
-        return 'application/x-mo'
+        return [TranslationFileFormat.PO]
 
     def exportTranslationFiles(self, translation_file_list):
         """See `ITranslationFormatExporter`."""
@@ -68,14 +68,16 @@ class GettextMoExporter:
         for translation_file in translation_file_list:
             # To generate MO files we need first its PO version and then,
             # generate the MO one.
-            file_path, exported_file_content = (
-                gettext_po_exporter.exportTranslationFiles(
-                    [translation_file]).read())
+            template_exported = gettext_po_exporter.exportTranslationFiles(
+                [translation_file])
             if translation_file.is_template:
                 # This exporter is not able to handle template files. In that
                 # case, we leave it as .po file. For this file format exported
                 # templates are stored in templates/ directory.
-                file_path = 'templates/%s' % os.path.basename(file_path)
+                file_path = 'templates/%s' % os.path.basename(
+                    template_exported.path)
+                exported_file_content = template_exported.content
+                content_type = template_exported.content_type
             else:
                 # Standard layout for MO files is
                 # 'LANG_CODE/LC_MESSAGES/TRANSLATION_DOMAIN.mo'
@@ -86,17 +88,23 @@ class GettextMoExporter:
                 mo_compiler = MoCompiler()
                 mo_content = mo_compiler.compile(exported_file_content)
                 exported_file_content = mo_content
+                content_type = 'application/x-gmo'
 
             exported_files[file_path] = exported_file_content
 
+        exported_file = ExportedTranslationFile()
         if len(exported_files) == 1:
             # It's a single file export. Return it directly.
-            return file_path, StringIO(exported_file_content)
+            exported_file.path = file_path
+            exported_file.content = StringIO(exported_file_content)
+            exported_file.content_type = content_type
+        else:
+            # There are multiple files being exported. We need to generate an
+            # archive that include all them.
+            exported_file.content = LaunchpadWriteTarFile.files_to_stream(
+                exported_files)
+            exported_file.content_type = 'application/x-gtar'
+            # We cannot give a proper file path for the tarball, that's why we
+            # don't set it. We leave that decision to the caller.
 
-        # There are multiple files being exported. We need to generate an
-        # archive that include all them.
-        tarball_file = LaunchpadWriteTarFile.files_to_stream(exported_files)
-
-        # We cannot give a proper file path for the tarball, leave that
-        # decision to the caller.
-        return None, tarball_file
+        return exported_file

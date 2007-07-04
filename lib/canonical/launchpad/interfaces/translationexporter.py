@@ -6,6 +6,7 @@ from zope.schema import Choice
 __metaclass__ = type
 
 __all__ = [
+    'IExportedTranslationFile',
     'ITranslationExporter',
     'ITranslationFormatExporter',
     'UnknownTranslationExporterError',
@@ -48,8 +49,6 @@ class ITranslationFormatExporter(Interface):
         "List of TranslationFileFormat entries that this exporter is able"
         " to convert from.")
 
-    content_type = Attribute("Content type string for this file format.")
-
     def exportTranslationFiles(translation_file_list):
         """Return file path and file like object with given list serialized.
 
@@ -59,3 +58,13 @@ class ITranslationFormatExporter(Interface):
             file like object with 'translation_file_list' serialized. File
             path would be None if the exporter cannot figure a value.
         """
+
+
+class IExportedTranslationFile(Interface):
+    """Exported translation file data."""
+
+    content_type = Attribute("Content type string for this file format.")
+
+    path = Attribute("Relative file path for this exported file.")
+
+    content_file = Attribute("File like object with the exported content.")
