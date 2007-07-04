@@ -1,43 +1,39 @@
 = Creating Blueprints =
 
 Blueprints can be created from multiple locations within Launchpad. In
-particular, users can create blueprints from distributions, from projects and 
-from project groups. It's also possible to create a blueprint from the 
-Blueprints home page.
+particular, logged-in users can create blueprints from distribution pages, from 
+project pages and from project group pages. It's also possible to create a 
+blueprint from the Blueprints home page.
 
-Let's make sure we can see the relevant page on a distribution.
+Let's start by demonstrating that users can register blueprints while looking
+at a distribution. In this case, Ubuntu:
 
   >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu')
   >>> user_browser.getLink('Register').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
 
-Let's also validate that a new blueprint's form page has the appropriate default
-blueprint status.
+By default, new blueprints have the 'New' status:
 
   >>> user_browser.getControl('Status').value
   ['New']
 
-And now, on a project.
+Users can also register blueprints while looking at a project:
 
   >>> user_browser.open('http://blueprints.launchpad.dev/firefox')
   >>> user_browser.getLink('Register').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/firefox/+addspec'
-  >>> user_browser.getControl('Status').value
-  ['New']
 
-And finally, on a project group.
+Finally, users can also register blueprints while looking at a project group:
 
   >>> user_browser.open('http://blueprints.launchpad.dev/mozilla')
   >>> user_browser.getLink('Register').click()  
   >>> user_browser.url
   'http://blueprints.launchpad.dev/mozilla/+addspec'
-  >>> user_browser.getControl('Status').value
-  ['New']
 
-Let's go one step further and confirm that we can actually POST to that
-form, to register a new blueprint. We'll do it on the Ubuntu distribution.
+Let's go one step further and actually register a blueprint for the Ubuntu 
+distribution:
 
   >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
   >>> control = user_browser.getControl
@@ -60,15 +56,15 @@ form, to register a new blueprint. We'll do it on the Ubuntu distribution.
   >>> user_browser.url
   'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic'
 
-OK, that created a new blueprint. Let's make sure we can see it.
+Observe that logged-on users can now see the blueprint:
 
   >>> url = 'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic'
   >>> user_browser.open(url)
   >>> user_browser.url
   'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic'
 
-Now we test if the blueprint name validator is working trying to register a
-blueprint with the same name.
+It's not possible to register a blueprint with the same name as an existing
+blueprint:
 
   >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
   >>> control('Name'    ).value = 'networkmagic'
@@ -82,16 +78,11 @@ blueprint with the same name.
   >>> control('Register').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
-
-Seeing that we were redirected again to the addspec page is a good sign
-(something prevented the blueprint from being registered) however better make
-sure this happened due to the right reason.
-
   >>> for message in find_tags_by_class(user_browser.contents, 'message'):
   ...      print message.renderContents()
   There is 1 error...already in use by another blueprint...
 
-We test the validator using an invalid name.
+Additionally, blueprint names must conform to a set pattern:
 
   >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
   >>> control('Name'    ).value = 'NetworkMagic!'
@@ -109,10 +100,10 @@ We test the validator using an invalid name.
   ...      print message.renderContents()
   There is 1 error...Invalid name...
 
-Some invalid names can be transformed into valid names. When it is clear that a
-valid name can be produced by removing trailing spaces or by converting upper
-case characters to their lower case equivalents, this is done automatically for
-the user:
+However, some invalid names can be transformed into valid names. When it is 
+clear that a valid name can be produced by removing trailing spaces or by 
+converting upper case characters to their lower case equivalents, this is done 
+automatically for the user:
 
   >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
   >>> control('Name    ').value = 'New-Network-Magic'
@@ -129,8 +120,8 @@ the user:
   >>> print user_browser.contents
   <...Blueprint overview...
 
-Now we test the URL field validator trying to register a new blueprint with the
-same URL.
+It's not possible to register a blueprint with the same URL as an existing
+blueprint:
 
   >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
   >>> control('Name'    ).value = 'dupenetworkmagic'
@@ -149,11 +140,10 @@ same URL.
   There is 1 error...already registered by another blueprint...
 
 
-== Project blueprint registration ==
+== Project group blueprint registration ==
 
-There is also a form which lets user create a new blueprint in an IProject
-that first requires them to select an IProduct target, showing them only the
-products in that IProject.
+Users can register blueprints while looking at a project group. In this case, 
+the user is asked to specify a project from the list of projects in the group:
 
   >>> user_browser.open('http://blueprints.launchpad.dev/mozilla/+addspec')
   >>> control('For'     ).value = ['thunderbird']
@@ -174,34 +164,9 @@ products in that IProject.
 
 == System-wide blueprint registration ==
 
-There is also a form which lets user create a new blueprint for any product
-or distribution, from the Blueprints home page.
-
-First, we try to create a blueprint that has the same name as an existing one.
-
-  >>> user_browser.open('http://blueprints.launchpad.dev/specs/+new')
-  >>> control('For'     ).value = 'ubuntu'
-  >>> control('Name'    ).value = 'networkmagic'
-  >>> control('Title'   ).value = 'Network Magic: Automatic Network Detection'
-  >>> control('URL'     ).value = 'http://wiki.ubuntu.com/NetworkMagicNew'
-  >>> control('Summary' ).value = summary
-  >>> control('Status'  ).value = ['Approved']
-  >>> control('Assignee').value = 'daf@canonical.com'
-  >>> control('Drafter' ).value = 'carlos@canonical.com'
-  >>> control('Approver').value = 'tsukimi@quaqua.net'
-  >>> control('Register').click()
-  >>> user_browser.url
-  'http://blueprints.launchpad.dev/specs/+new'
-
-So, we were not redirected to the blueprint page, because the blueprint was not
-created. Let's check that this happened because the name is taken:
-
-  >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-  ...      print message.renderContents()
-  There is 1 error...already in use by another blueprint...
-
-Now, we'll register a blueprint with a unique name and it should go straight
-through.
+Users can register blueprints while looking at the Blueprints home page. In
+this case, the user is asked to specify a project from the list of all projects
+in Launchpad:
 
   >>> user_browser.open('http://blueprints.launchpad.dev/specs/+new')
   >>> control('For'     ).value = 'ubuntu'
