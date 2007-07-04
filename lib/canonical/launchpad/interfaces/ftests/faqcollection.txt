@@ -1,0 +1,88 @@
+= IFAQCollection Interface =
+
+The Launchpad Answer Tracker can be used to track answers to commonly
+asked questions. Regular user questions can then be answered with a
+referral to the FAQ document.
+
+Objects that represents collection of FAQs provides the IFAQCollection
+interface.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import IFAQCollection
+
+    >>> verifyObject(IFAQCollection, collection)
+    True
+
+== Population FAQs collection ==
+
+The IFAQCollection interface is a read-only interface. The IFAQTarget
+interface is used for creating FAQs (see faqtarget.txt for details).
+
+Since not all IFAQCollections are IFAQTarget, we rely on the harness
+to provide us with a newFAQ() function that can be used to add a FAQ to
+the collection.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> personset = getUtility(IPersonSet)
+    >>> no_priv = personset.getByName('no-priv')
+    >>> foo_bar = personset.getByEmail('foo.bar@canonical.com')
+    >>> sample_person = personset.getByEmail('test@canonical.com')
+
+    >>> login('foo.bar@canonical.com')
+    >>> faq_specifications = [
+    ...     (no_priv, 'How do I install Foo?',
+    ...      'See http://www.foo.org/install', 'foo install'),
+    ...     (sample_person, 'What is The Meaning of Life?',
+    ...      'A Monthy Python film!', 'film monthy python'),
+    ...     (no_priv, 'How do I make money quickly off the Internet?',
+    ...      "Spamalot with an offer that gullible users can't refuse.",
+    ...      None),
+    ...     (foo_bar, 'How do I play the Game of Life?',
+    ...      'Keep breathing!', None),
+    ...     (sample_person, 'Who really shot JFK?',
+    ...     'You decide: there were at least six conspiracies going on '
+    ...     'in Dallas on Nov 22nd 1963.', None),
+    ...     (no_priv, 'What were the famous last words?',
+    ...      'Who closed the light?', None)
+    ... ]
+
+    >>> faq_set = []
+    >>> for owner, title, content, keywords in faq_specifications:
+    ...     faq_set.append(newFAQ(owner, title, content, keywords))
+
+    >>> login(ANONYMOUS)
+
+
+== getFAQ() ==
+
+It is possible to retrieve a FAQ in a colletion using its id by using
+the getFAQ() method.
+
+    >>> faq = faq_set[0]
+    >>> collection.getFAQ(faq.id) == faq
+    True
+
+It returns None when there is FAQ with that ID in the context:
+
+    >>> print collection.getFAQ(12345)
+    None
+
+It also returns None when asking an ID for a FAQ that isn't in the
+requested collection:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, ILaunchBag)
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu != collection
+    True
+    >>> login('foo.bar@canonical.com')
+    >>> foo_bar = getUtility(ILaunchBag).user
+    >>> ubuntu_faq = ubuntu.newFAQ(
+    ...     foo_bar, 'Ubuntu Installation HowTo',
+    ...     'Ubuntu installation procedure can be found at: '
+    ...     'https://help.ubuntu.com/community/Installation')
+
+    >>> login(ANONYMOUS)
+    >>> print collection.getFAQ(ubuntu_faq.id)
+    None
+
