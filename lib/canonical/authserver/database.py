@@ -408,34 +408,30 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
     def getBranchesForUser(self, personID):
         """See IHostedBranchStorage."""
-        ri = self.connectionPool.runInteraction
-        return ri(self._getBranchesForUserInteraction, personID)
+        return deferToThread(self._getBranchesForUserInteraction, personID)
 
-    def _getBranchesForUserInteraction(self, transaction, personID):
+    @read_only_transaction
+    def _getBranchesForUserInteraction(self, personID):
         """The interaction for getBranchesForUser."""
-        transaction.execute(utf8('''
-            SELECT Product.id, Product.name, Branch.id, Branch.name
-            FROM Product RIGHT OUTER JOIN Branch ON Branch.product = Product.id
-            WHERE Branch.owner = %s AND Branch.url IS NULL
-            ORDER BY Product.id
-            '''
-            % sqlvalues(personID))
-        )
-        branches = []
-        prevProductID = 'x'  # can never be equal to a real integer ID.
-        rows = transaction.fetchall()
-        for productID, productName, branchID, branchName in rows:
-            if productID != prevProductID:
-                prevProductID = productID
-                currentBranches = []
-                if productID is None:
-                    assert productName is None
-                    # Replace Nones with '', because standards-compliant XML-RPC
-                    # can't handle None :(
-                    productID, productName = '', ''
-                branches.append((productID, productName, currentBranches))
-            currentBranches.append((branchID, branchName))
-        return branches
+        person = getUtility(IPersonSet).get(personID)
+        login(person.preferredemail.email)
+        try:
+            branches = getUtility(
+                IBranchSet).getHostedBranchesForPerson(person)
+            branches_summary = []
+            for branch in branches:
+                if branch.product is None:
+                    product_id, product_name = '', ''
+                else:
+                    product_id = branch.product.id
+                    product_name = branch.product.name
+                if (len(branches_summary) == 0
+                    or branches_summary[-1][0] != product_id):
+                    branches_summary.append((product_id, product_name, []))
+                branches_summary[-1][2].append((branch.id, branch.name))
+            return branches_summary
+        finally:
+            logout()
 
     def fetchProductID(self, productName):
         """See IHostedBranchStorage."""

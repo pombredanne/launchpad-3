@@ -6,12 +6,17 @@ __metaclass__ = type
 
 import unittest
 
+import transaction
+
+from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.management import setSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.database.sqlbase import cursor, sqlvalues
 
+from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.interfaces import IBranchSet, IPersonSet
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 
@@ -171,49 +176,6 @@ class DatabaseStorageTestCase(unittest.TestCase):
         userDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
         self.assertEqual('sabdfl', userDict['name'])
 
-    def test_getBranchesForUser(self):
-        # Although user 12 has lots of branches in the sample data, they only
-        # have three push branches: "pushed", "mirrored" and "scanned" on the
-        # "gnome-terminal" product, and another branch on "landscape".
-        storage = DatabaseUserDetailsStorageV2(None)
-        branches = storage._getBranchesForUserInteraction(self.cursor, 12)
-        self.assertEqual(
-            2, len(branches), "Expected 2 products but got %s" % len(branches))
-        gnomeTermProduct = branches[0]
-        gnomeTermID, gnomeTermName, gnomeTermBranches = gnomeTermProduct
-        self.assertEqual(6, gnomeTermID)
-        self.assertEqual('gnome-terminal', gnomeTermName)
-        self.assertEqual(
-            set([(25, 'pushed'), (26, 'mirrored'), (27, 'scanned')]),
-            set(gnomeTermBranches))
-
-    def test_getBranchesForUserNullProduct(self):
-        # getBranchesForUser returns branches for hosted branches with no
-        # product.
-
-        # First, insert a push branch (url is NULL) with a NULL product.
-        self.cursor.execute("""
-            INSERT INTO Branch
-                (owner, product, name, title, summary, author, url)
-            VALUES
-                (12, NULL, 'foo-branch', NULL, NULL, 12, NULL)
-            """)
-
-        storage = DatabaseUserDetailsStorageV2(None)
-        branchInfo = storage._getBranchesForUserInteraction(self.cursor, 12)
-        self.assertEqual(3, len(branchInfo))
-
-        gnomeTermProduct, landscapeProduct, junkProduct = branchInfo
-        # Check that the details and branches for the junk product are correct:
-        # empty ID and name for the product, with a single branch named
-        # 'foo-branch'.
-        junkID, junkName, junkBranches = junkProduct
-        self.assertEqual('', junkID)
-        self.assertEqual('', junkName)
-        self.assertEqual(1, len(junkBranches))
-        fooBranchID, fooBranchName = junkBranches[0]
-        self.assertEqual('foo-branch', fooBranchName)
-
 
 class NewDatabaseStorageTestCase(unittest.TestCase):
     # Tests that call database methods that use the new-style database
@@ -282,6 +244,71 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         # Invalid product names are signalled by a return value of ''
         productID = storage._fetchProductIDInteraction('xxxxx')
         self.assertEqual('', productID)
+
+    def test_getBranchesForUser(self):
+        # getBranchesForUser returns all of the hosted branches that a user may
+        # write to. The branches are grouped by product, and are specified by
+        # name and id. The name and id of the products are also included.
+        storage = DatabaseUserDetailsStorageV2(None)
+        fetched_branches = storage._getBranchesForUserInteraction(12)
+
+        # Flatten the structured return value of getBranchesForUser so that we
+        # can easily compare it to the data from our SQLObject methods.
+        flattened = []
+        for product_id, product_name, branches in fetched_branches:
+            for branch_id, branch_name in branches:
+                flattened.append(
+                    (product_id, product_name, branch_id, branch_name))
+
+        # Get the hosted branches for user 12 from SQLObject classes.
+        login(ANONYMOUS)
+        try:
+            person = getUtility(IPersonSet).get(12)
+            login(person.preferredemail.email)
+            expected_branches = getUtility(
+                IBranchSet).getHostedBranchesForPerson(person)
+            expected_branches = [
+                (branch.product.id, branch.product.name, branch.id,
+                 branch.name)
+                for branch in expected_branches]
+        finally:
+            logout()
+
+        self.assertEqual(set(expected_branches), set(flattened))
+
+    def test_getBranchesForUserNullProduct(self):
+        # getBranchesForUser returns branches for hosted branches with no
+        # product.
+        login(ANONYMOUS)
+        try:
+            person = getUtility(IPersonSet).get(12)
+            login_email = person.preferredemail.email
+        finally:
+            logout()
+
+        transaction.begin()
+        login(login_email)
+        try:
+            branch = getUtility(IBranchSet).new(
+                'foo-branch', person, person, None, None, None)
+        finally:
+            logout()
+            transaction.commit()
+
+        storage = DatabaseUserDetailsStorageV2(None)
+        branchInfo = storage._getBranchesForUserInteraction(12)
+        self.assertEqual(3, len(branchInfo))
+
+        gnomeTermProduct, landscapeProduct, junkProduct = branchInfo
+        # Check that the details and branches for the junk product are
+        # correct: empty ID and name for the product, with a single branch
+        # named 'foo-branch'.
+        junkID, junkName, junkBranches = junkProduct
+        self.assertEqual('', junkID)
+        self.assertEqual('', junkName)
+        self.assertEqual(1, len(junkBranches))
+        fooBranchID, fooBranchName = junkBranches[0]
+        self.assertEqual('foo-branch', fooBranchName)
 
     def test_getBranchInformation_owned(self):
         # When we get the branch information for one of our own branches (i.e.
