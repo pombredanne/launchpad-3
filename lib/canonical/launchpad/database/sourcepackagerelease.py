@@ -61,6 +61,7 @@ class SourcePackageRelease(SQLBase):
     dateuploaded = UtcDateTimeCol(dbName='dateuploaded', notNull=True,
         default=UTC_NOW)
     dsc = StringCol(dbName='dsc')
+    copyright = StringCol(dbName='copyright', notNull=False, default=None)
     version = StringCol(dbName='version', notNull=True)
     changelog = StringCol(dbName='changelog')
     builddepends = StringCol(dbName='builddepends')
