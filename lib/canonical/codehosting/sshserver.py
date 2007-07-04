@@ -56,10 +56,13 @@ class LaunchpadAvatar(avatar.ConchUser):
         self.teams = userDict['teams']
 
         # Extract the initial branches from the user dict.
+        branches_by_team = dict(userDict['initialBranches'])
         self.branches = {}
-        for teamDict in self.teams:
-            self.branches[teamDict['id']] = teamDict['initialBranches']
-
+        for team in self.teams:
+            branches_by_product = branches_by_team.get(team['id'], [])
+            self.branches[team['id']] = team_branches = []
+            for (product_id, product_name), branches in branches_by_product:
+                team_branches.append((product_id, product_name, branches))
         self._productIDs = {}
         self._productNames = {}
 
@@ -169,21 +172,11 @@ class Realm:
             #      require only one (or include it in the team dict in the first
             #      place).
             #  -- Andrew Bennetts, 2005-12-13
-            deferreds = []
-            for teamDict in userDict['teams']:
-                deferred = self.authserver.getBranchesForUser(teamDict['id'])
-                def _gotBranches(branches, teamDict=teamDict):
-                    teamDict['initialBranches'] = branches
-                deferred.addCallback(_gotBranches)
-                deferreds.append(deferred)
-            def allDone(ignore):
+            deferred = self.authserver.getBranchesForUser(userDict['id'])
+            def _gotBranches(branches):
+                userDict['initialBranches'] = branches
                 return userDict
-
-            # This callback will complete when all the getBranchesForUser calls
-            # have completed and added initialBranches to each team dict, and
-            # will return the userDict.
-            return defer.DeferredList(deferreds,
-                    fireOnOneErrback=True).addCallback(allDone)
+            return deferred.addCallback(_gotBranches)
         deferred.addCallback(getInitialBranches)
 
         # Once all those details are retrieved, we can construct the avatar.

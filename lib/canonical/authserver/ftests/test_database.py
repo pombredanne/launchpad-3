@@ -255,10 +255,12 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         # Flatten the structured return value of getBranchesForUser so that we
         # can easily compare it to the data from our SQLObject methods.
         flattened = []
-        for product_id, product_name, branches in fetched_branches:
-            for branch_id, branch_name in branches:
-                flattened.append(
-                    (product_id, product_name, branch_id, branch_name))
+        for user_id, branches_by_product in fetched_branches:
+            for (product_id, product_name), branches in branches_by_product:
+                for branch_id, branch_name in branches:
+                    flattened.append(
+                        (user_id, product_id, product_name, branch_id,
+                         branch_name))
 
         # Get the hosted branches for user 12 from SQLObject classes.
         login(ANONYMOUS)
@@ -268,8 +270,8 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
             expected_branches = getUtility(
                 IBranchSet).getHostedBranchesForPerson(person)
             expected_branches = [
-                (branch.product.id, branch.product.name, branch.id,
-                 branch.name)
+                (branch.owner.id, branch.product.id, branch.product.name,
+                 branch.id, branch.name)
                 for branch in expected_branches]
         finally:
             logout()
@@ -297,18 +299,21 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
 
         storage = DatabaseUserDetailsStorageV2(None)
         branchInfo = storage._getBranchesForUserInteraction(12)
-        self.assertEqual(3, len(branchInfo))
 
-        gnomeTermProduct, landscapeProduct, junkProduct = branchInfo
-        # Check that the details and branches for the junk product are
-        # correct: empty ID and name for the product, with a single branch
-        # named 'foo-branch'.
-        junkID, junkName, junkBranches = junkProduct
-        self.assertEqual('', junkID)
-        self.assertEqual('', junkName)
-        self.assertEqual(1, len(junkBranches))
-        fooBranchID, fooBranchName = junkBranches[0]
-        self.assertEqual('foo-branch', fooBranchName)
+        for person_id, by_product in branchInfo:
+            if person_id == 12:
+                for (product_id, product_name), branches in by_product:
+                    if product_id == '':
+                        self.assertEqual('', product_name)
+                        self.assertEqual(1, len(branches))
+                        branch_id, branch_name = branches[0]
+                        self.assertEqual('foo-branch', branch_name)
+                        break
+                else:
+                    self.fail("Couldn't find +junk branch")
+                break
+        else:
+            self.fail("Couldn't find user 12")
 
     def test_getBranchInformation_owned(self):
         # When we get the branch information for one of our own branches (i.e.

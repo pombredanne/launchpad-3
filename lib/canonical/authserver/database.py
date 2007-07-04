@@ -16,7 +16,6 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.security import AccessBranch
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
@@ -24,7 +23,8 @@ from canonical.launchpad.interfaces import (
     UBUNTU_WIKI_URL, BranchCreationForbidden, IBranchSet, IPersonSet,
     IProductSet)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.database.sqlbase import cursor, sqlvalues
+from canonical.database.sqlbase import (
+    cursor, sqlvalues, clear_current_connection_cache)
 from canonical.database.constants import UTC_NOW
 from canonical.lp import dbschema
 from canonical.config import config
@@ -47,6 +47,7 @@ def read_only_transaction(function):
     """Decorate 'function' by wrapping it in a transaction and Zope session."""
     def transacted(*args, **kwargs):
         transaction.begin()
+        clear_current_connection_cache()
         login(ANONYMOUS)
         try:
             return function(*args, **kwargs)
@@ -60,12 +61,17 @@ def writing_transaction(function):
     """Decorate 'function' by wrapping it in a transaction and Zope session."""
     def transacted(*args, **kwargs):
         transaction.begin()
+        clear_current_connection_cache()
         login(ANONYMOUS)
         try:
-            return function(*args, **kwargs)
-        finally:
+            ret = function(*args, **kwargs)
+        except:
             logout()
-            transaction.commit()
+            transaction.abort()
+            raise
+        logout()
+        transaction.commit()
+        return ret
     return mergeFunctionMetadata(function, transacted)
 
 
@@ -418,18 +424,18 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         try:
             branches = getUtility(
                 IBranchSet).getHostedBranchesForPerson(person)
-            branches_summary = []
+            branches_summary = {}
             for branch in branches:
+                by_product = branches_summary.setdefault(branch.owner.id, {})
                 if branch.product is None:
                     product_id, product_name = '', ''
                 else:
                     product_id = branch.product.id
                     product_name = branch.product.name
-                if (len(branches_summary) == 0
-                    or branches_summary[-1][0] != product_id):
-                    branches_summary.append((product_id, product_name, []))
-                branches_summary[-1][2].append((branch.id, branch.name))
-            return branches_summary
+                by_product.setdefault((product_id, product_name), []).append(
+                    (branch.id, branch.name))
+            return [(person_id, by_product.items())
+                    for person_id, by_product in branches_summary.iteritems()]
         finally:
             logout()
 
