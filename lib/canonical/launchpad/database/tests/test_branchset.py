@@ -42,7 +42,7 @@ class BranchVisibilityPolicyTestCase(TestCase):
 
         self.firefox = getUtility(IProductSet).getByName('firefox')
         # Create some test people.
-        self.albert, alberts_email  = person_set.createPersonAndEmail(
+        self.albert, alberts_email = person_set.createPersonAndEmail(
             'albert@code.ninja.nz', PersonCreationRationale.USER_CREATED,
             name='albert', displayname='Albert Tester')
         self.albert.setPreferredEmail(alberts_email)
@@ -413,8 +413,19 @@ class PolicyTeamPrivateOverlap(BranchVisibilityPolicyTestCase):
         self.assertPrivateSubscriber(self.albert, self.albert, None)
 
 
-class PolicyTeamAll(BranchVisibilityPolicyTestCase):
-    """Test the visibility policy with a more complex policy structure."""
+class ComplexPolicyStructure(BranchVisibilityPolicyTestCase):
+    """Test the visibility policy with a complex policy structure.
+
+    The base visibility policy is set to FORBIDDEN, with both xray and yankee
+    teams creating PRIVATE branches.  Members of zulu team create PUBLIC
+    branches.
+
+    Branch creation is forbidden to all people who are not a member of
+    one of the teams: xray, yankee or zulu.  Members of zulu can create
+    branches that are public.  Branches created by members of xray and
+    yankee in the team namespace are private, and branches created in the
+    namespace of the user are also created private.
+    """
 
     def setUp(self):
         BranchVisibilityPolicyTestCase.setUp(self)

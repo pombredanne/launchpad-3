@@ -345,7 +345,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
 
     def script_hook(self):
         return '''<script type="text/javascript">
-
             function populate_name() {
                 populate_branch_name_from_url('%(name)s', '%(url)s')
             }

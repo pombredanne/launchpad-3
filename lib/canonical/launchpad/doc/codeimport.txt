@@ -8,6 +8,11 @@ populates the import branch, and updates it regularly.
 
 We can import code from CVS or Subversion.
 
+CodeImports are hidden from regular users currently.  David Allouche is
+a member of the vcs-imports team and can access the objects freely.
+
+    >>> login('david.allouche@canonical.com')
+
 
 == Code import set utility ==
 
@@ -22,21 +27,19 @@ which is registered as a utility.
     >>> verifyObject(ICodeImportSet, removeSecurityProxy(code_import_set))
     True
 
-CodeImports record who created them, and as we're also going to create
-new Products to create CodeImports for, so we log in as No Privileges
-Person.
+CodeImports record who created them, and we're going to pretend that
+this is done by 'No Privileges Person'.
 
-    >>> login("no-priv@canonical.com")
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchBag
-    >>> nopriv = getUtility(ILaunchBag).user
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
 
 CodeImports are associated with a Branch when they are created; this
 is how they are linked to a Product.  For the basic tests, we
 associate the imports with a new branch for the FireFox project
 (arbitrarily many imports can be created for a project).  A helper
-function to create these branches the tests below easier to read.
+function to create these branches makes the tests below easier to
+read.
 
-    >>> from canonical.lp.dbschema import BranchType
     >>> from canonical.launchpad.interfaces import (
     ...     IBranchSet, ILaunchpadCelebrities, IPersonSet, IProductSet)
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
@@ -92,12 +95,16 @@ retrieve the tree to import.
 The first production code that creates CodeImports will be a sync
 script that creates CodeImports from the existing information in the
 ProductSeries table.  The only ProductSeries with such information in
-the sample data is evolution/main.
+the sample data is evolution/trunk.
 
     >>> from canonical.launchpad.interfaces import IProductSeriesSet
     >>> from canonical.lp.dbschema import ImportStatus
     >>> [series] = getUtility(IProductSeriesSet).search(
     ...     importstatus=ImportStatus.PROCESSING.value)
+    >>> series.product.name
+    u'evolution'
+    >>> series.name
+    u'trunk'
     >>> series.cvsroot
     u':pserver:anonymous@anoncvs.gnome.org:/cvs/gnome'
     >>> series.cvsmodule
@@ -109,6 +116,12 @@ source details is a fairly simple matter.
     >>> from_existing_import = code_import_set.new(
     ...     registrant=vcs_imports, branch=series.import_branch, rcs_type=cvs,
     ...     cvs_root=series.cvsroot, cvs_module=series.cvsmodule)
+
+This CodeImport is associated to the evolution/main ProductSeries
+(because the series' import_branch is the branch of the CodeImport):
+
+    >>> from_existing_import.series.name
+    u'trunk'
 
 
 == Retreiving CodeImports ==
@@ -126,3 +139,65 @@ present the import's details on the page of the branch.
     u'svn://svn.example.com/trunk'
     >>> code_import_set.getByBranch(cvs_branch).cvs_root
     u':pserver:anonymous@cvs.example.com:/cvsroot'
+
+Finally, you can search for imports by review status.  For instance,
+there is a single sample CodeImport with the "REVIEWED" status:
+
+    >>> from canonical.lp.dbschema import CodeImportReviewStatus
+    >>> reviewed_imports = list(code_import_set.search(
+    ...     review_status=CodeImportReviewStatus.REVIEWED))
+    >>> reviewed_imports
+    [<...CodeImport...>]
+    >>> reviewed_imports[0].review_status.name
+    'REVIEWED'
+
+When you ask for an id that is not present ICodeImportSet.get() raises
+canonical.launchpad.interfaces.NotFoundError, rather than some
+internal database exception.
+
+    >>> code_import_set.get(-10)
+    Traceback (most recent call last):
+      ...
+    NotFoundError: -10
+
+
+== Canonical URLs ==
+
+We've registered the ICodeImportSet utility on the 'code' part of the
+site:
+
+    >>> from canonical.launchpad.webapp import canonical_url
+    >>> print canonical_url(code_import_set)
+    http://code.launchpad.dev/+code-imports
+
+Each code import can be found at '<url of ICodeImportSet>/<id of
+import>':
+
+    >>> print canonical_url(code_import_set.get(1))
+    http://code.launchpad.dev/+code-imports/1
+
+
+== Security ==
+
+As we've seen above, David has access to all methods defined by
+ICodeImport and ICodeImportSet.  During the transitional period,
+anonymous and regular users do _not_ have this access.
+
+    >>> login(ANONYMOUS)
+    >>> code_import_set.new
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<...CodeImportSet...>, 'new', 'launchpad.View')
+    >>> svn_import.id
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<...CodeImport...>, 'id', 'launchpad.View')
+    >>> login('no-priv@canonical.com')
+    >>> code_import_set.new
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<...CodeImportSet...>, 'new', 'launchpad.View')
+    >>> svn_import.id
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<...CodeImport...>, 'id', 'launchpad.View')
