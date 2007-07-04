@@ -46,6 +46,7 @@ understood by any member of the support community.
     'Installation of Java Runtime Environment for Mozilla'
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
     'mailto: problem in webpage'
+    '\xd8\xb9\xd9\x83\xd8\xb3 ...'
 
     >>> for tag in find_tags_by_class(browser.contents, 'warning message'):
     ...     print tag.renderContents()
@@ -79,8 +80,17 @@ from asking a question in the language of his choice.
     >>> browser.title
     'Ubuntu question #...Abrir uma pagina que requer...'
 
+The page reports the question language both in the content and in the
+markup. Search engine robots and browsers will use the lang and dir
+attributes for indexing and rendering respectively. Users will find
+the language in the question details portlet.
+
     >>> from BeautifulSoup import BeautifulSoup
     >>> soup = BeautifulSoup(browser.contents)
+    >>> print soup.html['lang']
+    pt-BR
+    >>> print soup.html['dir']
+    ltr
     >>> print soup.find('b', text='Language:').next.strip()
     Portuguese (Brazil)
 
