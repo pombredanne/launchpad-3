@@ -146,7 +146,7 @@ from canonical.launchpad.interfaces.questionmessage import *
 from canonical.launchpad.interfaces.questionreopening import *
 from canonical.launchpad.interfaces.questionsubscription import *
 from canonical.launchpad.interfaces.questiontarget import *
-from canonical.launchpad.interfaces.translation_common_format import *
+from canonical.launchpad.interfaces.translationcommonformat import *
 from canonical.launchpad.interfaces.translationgroup import *
 from canonical.launchpad.interfaces.translationimportqueue import *
 from canonical.launchpad.interfaces.translator import *

@@ -62,7 +62,8 @@ class POExportRequestSet:
             return None
 
         requests = POExportRequest.selectBy(
-            person=request.person, potemplate=request.potemplate)
+            person=request.person, potemplate=request.potemplate,
+            format=request.format)
         person = requests[0].person
         potemplate = requests[0].potemplate
         format = requests[0].format

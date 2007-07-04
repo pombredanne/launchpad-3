@@ -2,111 +2,23 @@
 
 __metaclass__ = type
 
-import tempfile
+import os
+import psycopg
 import textwrap
 import traceback
-import psycopg
-
 from StringIO import StringIO
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.lp.dbschema import TranslationFileFormat
 from canonical.launchpad import helpers
-from canonical.launchpad.mail import simple_sendmail
-from canonical.launchpad.components.poexport import (
-    MOCompiler, RosettaWriteTarFile)
 from canonical.launchpad.interfaces import (
-    IPOExportRequestSet, IPOTemplate, IPOFile, ILibraryFileAliasSet)
+    ILibraryFileAliasSet, IPOExportRequestSet, ITranslationExporter,
+    ITranslationFile)
+from canonical.launchpad.mail import simple_sendmail
 
-def is_potemplate(obj):
-    """Return True if the object is a PO template."""
-    return IPOTemplate.providedBy(obj)
-
-def is_pofile(obj):
-    """Return True if the object is a PO file."""
-    return IPOFile.providedBy(obj)
-
-def pofile_filename(pofile):
-    """Return a filename for a PO file."""
-
-    if pofile.variant is not None:
-        return '%s@%s.po' % (
-            pofile.language.code, pofile.variant.encode('UTF-8'))
-    else:
-        return '%s.po' % pofile.language.code
-
-class Handler:
-    """Base export handler class."""
-
-    def __init__(self, obj):
-        self.obj = obj
-
-    def get_name(self):
-        """Return a name for the export being handled."""
-
-        if is_potemplate(self.obj):
-            return self.obj.potemplatename.name
-        else:
-            return self.obj.potemplate.potemplatename.name
-
-class POFormatHandler(Handler):
-    """Export handler for PO format exports."""
-
-    def get_filename(self):
-        """Return a filename for the file being exported."""
-
-        if is_potemplate(self.obj):
-            return self.obj.potemplatename.name + '.pot'
-        else:
-            return pofile_filename(self.obj)
-
-    def get_contents(self):
-        """Return the contents of the exported file."""
-        return self.obj.export()
-
-    def get_librarian_url(self):
-        """Return a Librarian URL from which the exported file can be
-        downloaded.
-        """
-
-        if is_potemplate(self.obj):
-            potemplate_content = self.obj.export()
-            alias_set = getUtility(ILibraryFileAliasSet)
-            alias = alias_set.create(
-                name='%s.pot' % self.obj.potemplatename.name,
-                size=len(potemplate_content),
-                file=StringIO(potemplate_content),
-                contentType='application/x-po')
-            return alias.http_url
-        else:
-            self.obj.export()
-            return self.obj.exportfile.http_url
-
-format_handlers = {
-    TranslationFileFormat.PO: POFormatHandler,
-    TranslationFileFormat.MO: MOFormatHandler,
-}
-
-class UnsupportedExportObject(Exception):
-    pass
-
-class UnsupportedExportFormat(Exception):
-    pass
-
-def get_handler(format, obj):
-    """Get an export handler for the given format and object."""
-
-    if not (is_potemplate(obj) or is_pofile(obj)):
-        raise UnsupportedExportObject
-
-    if format not in format_handlers:
-        raise UnsupportedExportFormat
-
-    return format_handlers[format](obj)
 
 class ExportResult:
-    """The results of a PO export request.
+    """The results of a translation export request.
 
     This class has three main attributes:
 
@@ -257,21 +169,26 @@ class ExportResult:
         """
         self.successes.append(name)
 
+def process_request(potemplate, person, objects, format, logger):
+    """Process a request for an export of Launchpad translation files.
 
-def process_single_object_request(obj, format, logger):
-    """Process a request for a single object.
-
-    Returns an ExportResult object. The object must be a PO template or a PO
-    file.
+    After processing the request a notification email is sent to the requester
+    with the URL to retrieve the file (or the tarball, in case of a request of
+    multiple files) and information about files that we failed to export (if
+    any).
     """
+    translation_exporter = getUtility(ITranslationExporter)
+    translation_format_exporter = (
+        translation_exporter.getTranslationFormatExporterByFileFormat(format))
 
-    handler = get_handler(format, obj)
-    name = handler.get_name()
-    filename = handler.get_filename()
-    result = ExportResult(name)
+    result = ExportResult('XXX')
+    translation_file_list = []
+    for obj in objects:
+        translation_file_list.append(ITranslationFile(obj))
 
     try:
-        result.url = handler.get_librarian_url()
+        exported_file = translation_format_exporter.exportTranslationFiles(
+            translation_file_list)
     except (KeyboardInterrupt, SystemExit):
         # We should never catch KeyboardInterrupt or SystemExit.
         raise
@@ -280,98 +197,47 @@ def process_single_object_request(obj, format, logger):
         # should be done again in a new transaction.
         raise
     except:
-        # The export for the current entry failed with an unexpected error, we
-        # add the entry to the list of errors.
-        result.addFailure(filename)
+        # The export for the current entry failed with an unexpected
+        # error, we add the entry to the list of errors.
+        result.addFailure('XXX')
         # And log the error.
         logger.error(
-            "A unexpected exception was raised when exporting %s" % obj.title,
+            "A unexpected exception was raised when exporting %s" % (
+                obj.title),
             exc_info=True)
-        return result
     else:
-        result.addSuccess(filename)
-        return result
-
-def process_multi_object_request(objects, format, logger):
-    """Process an export request for many objects.
-
-    This function creates a tarball containing all of the objects requested,
-    puts it in the Librarian, and returns an ExportResult object with the
-    Librarian URL of the tarball. Each of the objects must be either a PO
-    template or a PO file.
-    """
-
-    assert len(objects) > 1
-
-    name = get_handler(format, objects[0]).get_name()
-    filehandle = tempfile.TemporaryFile()
-    archive = RosettaWriteTarFile(filehandle)
-    result = ExportResult(name)
-
-    for obj in objects:
-        handler = get_handler(format, obj)
-        filename = handler.get_filename()
-
-        try:
-            contents = handler.get_contents()
-        except (KeyboardInterrupt, SystemExit):
-            # We should never catch KeyboardInterrupt or SystemExit.
-            raise
-        except psycopg.Error:
-            # It's a DB exception, we don't catch it either, the export
-            # should be done again in a new transaction.
-            raise
-        except:
-            # The export for the current entry failed with an unexpected
-            # error, we add the entry to the list of errors.
-            result.addFailure(filename)
-            # And log the error.
-            logger.error(
-                "A unexpected exception was raised when exporting %s" % (
-                    obj.title),
-                exc_info=True)
-        else:
-            result.addSuccess(filename)
-            archive.add_file('rosetta-%s/%s' % (name, filename), contents)
-
-    archive.close()
-    size = filehandle.tell()
-    filehandle.seek(0)
+        result.addSuccess('XXX')
+        #archive.add_file('rosetta-%s/%s' % (name, filename), contents)
 
     if result.successes:
+        if exported_file.path is None:
+            # The exported path is unknown, use translation domain as its
+            # filename.
+            assert exported_file.file_extension, (
+                'File extension must have a value!.')
+            exported_file.path = 'launchpad-%s.%s' % (
+                potemplate.potemplatename.translationdomain,
+                exported_file.file_extension)
+        else:
+            # We only use basename.
+            exported_file.path = os.path.basename(exported_file.path)
+
         alias_set = getUtility(ILibraryFileAliasSet)
         alias = alias_set.create(
-            name='rosetta-%s.tar.gz' % name,
-            size=size,
-            file=filehandle,
-            contentType='application/octet-stream')
+            name=exported_file.path,
+            size=exported_file.content.len,
+            file=exported_file.content,
+            contentType=exported_file.content_type)
         result.url = alias.http_url
-
-    return result
-
-def process_request(person, objects, format, logger):
-    """Process a request for an export of Rosetta files.
-
-    After processing the request a notification email is sent to the requester
-    with the URL to retrieve the file (or the tarball, in case of a request of
-    multiple files) and information about files that we failed to export (if
-    any).
-    """
-
-    if len(objects) == 1:
-        result = process_single_object_request(objects[0], format, logger)
-    else:
-        result = process_multi_object_request(objects, format, logger)
 
     result.notify(person)
 
 def process_queue(transaction_manager, logger):
-    """Process each request in the PO export queue.
+    """Process each request in the translation export queue.
 
     Each item is removed from the queue as it is processed, so the queue will
     be empty when this function returns.
     """
-
     request_set = getUtility(IPOExportRequestSet)
 
     while True:
@@ -385,7 +251,7 @@ def process_queue(transaction_manager, logger):
             person.displayname, potemplate.displayname))
 
         try:
-            process_request(person, objects, format, logger)
+            process_request(potemplate, person, objects, format, logger)
         except psycopg.Error:
             # We had a DB error, we don't try to recover it here, just exit
             # from the script and next run will retry the export.
@@ -402,4 +268,3 @@ def process_queue(transaction_manager, logger):
         # because files are not accessible in the same transaction as they're
         # created.
         transaction_manager.commit()
-

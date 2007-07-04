@@ -25,7 +25,6 @@ class ITranslationExporter(Interface):
 
         :param file_format: An ITranslationFileFormat entry we want to export
             from.
-        :return: None if there are no exporters for that file format.
         """
 
     def getTranslationFormatExporterByFileFormat(file_format):

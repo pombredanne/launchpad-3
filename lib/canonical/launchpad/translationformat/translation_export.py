@@ -18,7 +18,8 @@ from StringIO import StringIO
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    IExportedTranslationFile, ITranslationFormatExporter)
+    IExportedTranslationFile, ITranslationExporter,
+    ITranslationFormatExporter)
 
 
 class ExportedTranslationFile:
@@ -27,14 +28,25 @@ class ExportedTranslationFile:
 
     def __init__(self):
         self.content_type = None
-        self.path = None
         self.content_file  = None
+        self.path = None
+        self.file_extension = None
 
 
 class TranslationExporter:
     """See `ITranslationExporter`."""
+    implements(ITranslationExporter)
 
     def getTranslationFormatExporters(self, file_format):
+        """See `ITranslationExporter`."""
+        exporters_available = []
+        for exporter in zope.component.subscribers([], ITranslationFormatExporter):
+            if file_format in exporter.handable_formats:
+                exporters_available.append(exporter)
+
+        return exporters_available
+
+    def getTranslationFormatExporterByFileFormat(self, file_format):
         """See `ITranslationExporter`."""
         for exporter in zope.component.subscribers([], ITranslationFormatExporter):
             if exporter.format == file_format:
@@ -104,7 +116,6 @@ class LaunchpadWriteTarFile:
 
         # Ensure that all the directories in the path are present in the
         # archive.
-
         for i in range(1, len(path_bits)):
             joined_path = os.path.join(*path_bits[:i])
 
