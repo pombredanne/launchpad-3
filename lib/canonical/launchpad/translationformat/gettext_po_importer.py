@@ -20,7 +20,7 @@ class GettextPoImporter:
     """Support class to import gettext .po files."""
     implements(ITranslationFormatImporter)
 
-    def __init__(self, logger=None):
+    def __init__(self, context=None, logger=None):
         self.logger = logger
         self.basepath = None
         self.productseries = None

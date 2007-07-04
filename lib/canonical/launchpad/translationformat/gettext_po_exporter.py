@@ -393,6 +393,9 @@ class GettextPoExporter:
     """Support class to export Gettext .po files."""
     implements(ITranslationFormatExporter)
 
+    def __init__(self, context=None):
+        pass
+
     @property
     def format(self):
         """See `ITranslationFormatExporter`."""

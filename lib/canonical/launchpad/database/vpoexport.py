@@ -79,19 +79,16 @@ class VPOExportSet:
             else:
                 break
 
-    def get_pofile_rows(self, potemplate, language, variant=None,
-                        included_obsolete=True):
+    def get_pofile_rows(self, pofile):
         """See IVPOExportSet."""
         where = ('potemplate = %s AND language = %s' %
-            sqlvalues(potemplate.id, language.id))
+            sqlvalues(pofile.potemplate, pofile.language))
 
-        if variant:
-            where += ' AND variant = %s' % sqlvalues(variant.encode('UTF-8'))
+        if pofile.variant:
+            where += ' AND variant = %s' % sqlvalues(
+                pofile.variant.encode('UTF-8'))
         else:
             where += ' AND variant is NULL'
-
-        if not included_obsolete:
-            where += ' AND potsequence > 0'
 
         return self._select(where=where)
 

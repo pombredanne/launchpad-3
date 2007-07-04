@@ -5,6 +5,7 @@ __all__ = [
     'POFile',
     'DummyPOFile',
     'POFileSet',
+    'POFileToTranslationFileAdapter',
     'POFileTranslator',
     ]
 
@@ -42,7 +43,7 @@ from canonical.launchpad.interfaces import (
     UnknownTranslationRevisionDate, ZeroLengthPOExportError)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
-from canonical.launchpad.translationformat import POHeader, TranslationMessage
+from canonical.launchpad.translationformat import TranslationMessage
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.lp.dbschema import (
@@ -1570,23 +1571,23 @@ class POFileToTranslationFileAdapter:
                 msgset.addTranslation(row.translationpluralform, row.translation)
 
             if row.isfuzzy and not 'fuzzy' in msgset.flags:
-                msgset.flags.append('fuzzy')
+                msgset.flags.add('fuzzy')
 
-            if row.pocommenttext and not msgset.commenttext:
-                msgset.commenttext = row.pocommenttext
+            if row.pocommenttext and not msgset.comment:
+                msgset.comment = row.pocommenttext
 
-            if row.sourcecomment and not msgset.sourcecomment:
-                msgset.sourcecomment = row.sourcecomment
+            if row.sourcecomment and not msgset.source_comment:
+                msgset.source_comment = row.sourcecomment
 
-            if row.filereferences and not msgset.filereferences:
-                msgset.filereferences = row.filereferences
+            if row.filereferences and not msgset.file_references:
+                msgset.file_references = row.filereferences
 
             if row.flagscomment and not msgset.flags:
-                msgset.flags = [
+                msgset.flags = set([
                     flag.strip()
                     for flag in row.flagscomment.split(',')
                     if flag
-                    ]
+                    ])
 
             # Store sequences so we can detect later whether we changed the
             # message.

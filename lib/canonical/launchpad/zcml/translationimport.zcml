@@ -11,16 +11,16 @@
             interface="canonical.launchpad.interfaces.ITranslationImporter" />
     </securedutility>
 
-    <content
-        class="canonical.launchpad.translationformat.gettext_po_importer.GettextPoImporter">
-        <allow
-          interface="canonical.launchpad.interfaces.ITranslationFormatImporter" />
-    </content>
+    <subscriber
+        for="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
+        provides="canonical.launchpad.interfaces.ITranslationFormatImporter"
+        factory="canonical.launchpad.translationformat.gettext_po_importer.GettextPoImporter"
+        />
 
-    <content
-        class="canonical.launchpad.translationformat.mozilla_xpi_importer.MozillaXpiImporter">
-        <allow
-          interface="canonical.launchpad.interfaces.ITranslationFormatImporter" />
-    </content>
+    <subscriber
+        for="canonical.launchpad.interfaces.ITranslationImportQueueEntry"
+        provides="canonical.launchpad.interfaces.ITranslationFormatImporter"
+        factory="canonical.launchpad.translationformat.mozilla_xpi_importer.MozillaXpiImporter"
+        />
 
 </configure>

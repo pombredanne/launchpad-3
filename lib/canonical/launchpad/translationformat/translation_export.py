@@ -40,7 +40,7 @@ class TranslationExporter:
     def getTranslationFormatExporters(self, file_format):
         """See `ITranslationExporter`."""
         exporters_available = []
-        for exporter in zope.component.subscribers([], ITranslationFormatExporter):
+        for exporter in zope.component.subscribers([self], ITranslationFormatExporter):
             if file_format in exporter.handable_formats:
                 exporters_available.append(exporter)
 
@@ -48,7 +48,7 @@ class TranslationExporter:
 
     def getTranslationFormatExporterByFileFormat(self, file_format):
         """See `ITranslationExporter`."""
-        for exporter in zope.component.subscribers([], ITranslationFormatExporter):
+        for exporter in zope.component.subscribers([self], ITranslationFormatExporter):
             if exporter.format == file_format:
                 return exporter
 

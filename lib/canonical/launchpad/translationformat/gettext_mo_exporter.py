@@ -45,6 +45,9 @@ class GettextMoExporter:
     """Support class to export Gettext .mo files."""
     implements(ITranslationFormatExporter)
 
+    def __init__(self, context):
+        pass
+
     @property
     def format(self):
         """See `ITranslationFormatExporter`."""

@@ -29,7 +29,7 @@ class XpiMessage:
 
     implements(ITranslationMessage)
 
-    def __init__(self):
+    def __init__(self, context=None):
         self.msgid = None
         self.msgid_plural = None
         self.translations = []

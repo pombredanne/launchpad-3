@@ -1,5 +1,11 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
+__metaclass__ = type
+
+__all__ = [
+    'TranslationMessage',
+    ]
+
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import ITranslationMessage
@@ -16,7 +22,7 @@ class TranslationMessage:
         self.comment = None
         self.source_comment = None
         self.file_references = None
-        self.flags = ()
+        self.flags = set()
         self.obsolete = False
         self.nplurals = None
         self.pluralExpr = None

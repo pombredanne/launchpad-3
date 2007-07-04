@@ -138,7 +138,9 @@ from canonical.launchpad.interfaces.sprintspecification import *
 from canonical.launchpad.interfaces.ssh import *
 from canonical.launchpad.interfaces.teammembership import *
 from canonical.launchpad.interfaces.temporaryblobstorage import *
-from canonical.launchpad.interfaces.translationformat import *
+from canonical.launchpad.interfaces.translationcommonformat import *
+from canonical.launchpad.interfaces.translationexporter import *
+from canonical.launchpad.interfaces.translationimporter import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *
 from canonical.launchpad.interfaces.questioncollection import *
