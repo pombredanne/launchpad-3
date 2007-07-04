@@ -35,7 +35,8 @@ class Milestone(SQLBase):
 
     # joins
     specifications = SQLMultipleJoin('Specification', joinColumn='milestone',
-        orderBy=['-priority', 'status', 'delivery', 'title'],
+        orderBy=['-priority', 'definition_status',
+            'implementation_status', 'title'],
         prejoins=['assignee'])
 
     @property

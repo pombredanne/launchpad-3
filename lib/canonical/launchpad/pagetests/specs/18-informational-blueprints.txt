@@ -1,0 +1,46 @@
+== Informational Blueprints ==
+
+=== Tracking informational blueprints ===
+
+When a blueprint does not require an implementation at all, it can be
+said to be ''informational'', and it isn't necessary to track its
+implementation.
+
+We register a new blueprint.
+
+    >>> admin_browser.open('http://blueprints.launchpad.dev/jokosher/+addspec')
+    >>> admin_browser.getControl('Name').value = 'informational-blueprint'
+    >>> admin_browser.getControl('Title').value = 'Informational blueprint'
+    >>> admin_browser.getControl('Specification URL').value = \
+    ...     'http://blueprints.example.com/informational'
+    >>> admin_browser.getControl('Summary').value = \
+    ...     "A blueprint requiring no implementation."
+    >>> admin_browser.getControl('Title').value = 'Informational blueprint'
+    >>> admin_browser.getControl('Register Blueprint').click()
+    >>> admin_browser.url
+    'http://blueprints.launchpad.dev/jokosher/+spec/informational-blueprint'
+
+We then set the blueprint's implementation status to ''informational''.
+
+    >>> admin_browser.getLink('Change status').click()
+    >>> admin_browser.url
+    'http://blueprints.launchpad.dev/jokosher/+spec/informational-blueprint/+status'
+    >>> admin_browser.getControl('Implementation Status').value = ['Informational']
+    >>> admin_browser.getControl('Change').click()
+
+The blueprint is displayed with a notice.
+
+    >>> 'Informational blueprint, no implementation necessary' in admin_browser.contents
+    True
+
+=== Documentation ===
+
+An informational blueprint that has been approved, displays on the its
+project's documentation page.
+
+    >>> admin_browser.getLink('Change status').click()
+    >>> admin_browser.getControl('Definition Status').value = ['Approved']
+    >>> admin_browser.getControl('Change').click()
+    >>> admin_browser.open('http://blueprints.launchpad.dev/jokosher/+documentation')
+    >>> 'Informational blueprint' in admin_browser.contents
+    True    

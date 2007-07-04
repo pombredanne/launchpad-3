@@ -27,11 +27,11 @@ Sample Person.
 
 And the same for some blueprints.
 
-    >>> from canonical.lp.dbschema import SpecificationDelivery
+    >>> from canonical.lp.dbschema import SpecificationImplementationStatus
     >>> from canonical.launchpad.database import Specification
     >>> spec = Specification.selectOneBy(name='media-integrity-check')
     >>> spec.assignee = sample_person
-    >>> spec.delivery = SpecificationDelivery.STARTED
+    >>> spec.delivery = SpecificationImplementationStatus.STARTED
     >>> newstate = spec.updateLifecycleStatus(sample_person)
     >>> logout()
     >>> flush_database_updates()

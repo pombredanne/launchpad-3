@@ -26,7 +26,8 @@ from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 
 from canonical.lp.dbschema import (
-    SprintSpecificationStatus, SpecificationFilter, SpecificationSort)
+    SprintSpecificationStatus, SpecificationFilter, SpecificationSort,
+    SpecificationImplementationStatus)
 
 
 class Sprint(SQLBase):
@@ -110,7 +111,8 @@ class Sprint(SQLBase):
 
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %d' %
+                      SpecificationImplementationStatus.INFORMATIONAL.value)
         
         # import here to avoid circular deps
         from canonical.launchpad.database.specification import Specification
@@ -170,7 +172,7 @@ class Sprint(SQLBase):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status',
+            order = ['-priority', 'Specification.definition_status',
                      'Specification.name']
         elif sort == SpecificationSort.DATE:
             # we need to establish if the listing will show specs that have

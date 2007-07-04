@@ -52,7 +52,7 @@
         <tr>
           <th>Definition:</th>
           <td>
-            <tal:definition replace="context/status/title" />
+            <tal:definition replace="context/definition_status/title" />
             <tal:guidance condition="not: context/direction_approved"
             >(Needs guidance)</tal:guidance>
           </td>
@@ -64,7 +64,7 @@
                  src="/@@/info" alt="Informational"
                  title="Informational blueprint, no implementation necessary"
                  />
-            <tal:impl content="context/delivery/title">Unknown</tal:impl>
+            <tal:impl content="context/implementation_status/title">Unknown</tal:impl>
           </td>
         </tr>
         <tr tal:condition="context/goal">

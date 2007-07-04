@@ -27,7 +27,7 @@ from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 
 from canonical.lp.dbschema import (
-    SpecificationStatus, SpecificationPriority, SpecificationDelivery,
+    SpecificationDefinitionStatus, SpecificationPriority, SpecificationImplementationStatus,
     SpecificationGoalStatus)
 
 
@@ -109,9 +109,9 @@ class ISpecification(IHasOwner, ICanBeMentored):
         title=_('Summary'), required=True, description=_(
             "A single-paragraph description of the feature. "
             "This will also be displayed in most feature listings."))
-    status = Choice(
-        title=_('Definition Status'), vocabulary='SpecificationStatus',
-        default=SpecificationStatus.NEW, description=_(
+    definition_status = Choice(
+        title=_('Definition Status'), vocabulary='SpecificationDefinitionStatus',
+        default=SpecificationDefinitionStatus.NEW, description=_(
             "The current status of the process to define the "
             "feature and get approval for the implementation plan."))
     priority = Choice(
@@ -198,9 +198,9 @@ class ISpecification(IHasOwner, ICanBeMentored):
         "number of developer days it will take to implement this feature. "
         "Please only provide an estimate if you are relatively confident "
         "in the number."))
-    delivery = Choice(title=_("Implementation Status"),
-        required=True, default=SpecificationDelivery.UNKNOWN,
-        vocabulary='SpecificationDelivery', description=_("The state of "
+    implementation_status = Choice(title=_("Implementation Status"),
+        required=True, default=SpecificationImplementationStatus.UNKNOWN,
+        vocabulary='SpecificationImplementationStatus', description=_("The state of "
         "progress being made on the actual implementation or delivery "
         "of this feature."))
     superseded_by = Choice(title=_("Superseded by"),
@@ -409,7 +409,7 @@ class ISpecificationDelta(Interface):
     # items where we provide 'old' and 'new' values if they changed
     name = Attribute("Old and new names, or None.")
     priority = Attribute("Old and new priorities, or None")
-    status = Attribute("Old and new statuses, or None")
+    definition_status = Attribute("Old and new statuses, or None")
     target = Attribute("Old and new target, or None")
     approver = Attribute("Old and new approver, or None")
     assignee = Attribute("Old and new assignee, or None")

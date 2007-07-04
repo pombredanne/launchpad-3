@@ -84,13 +84,13 @@ __all__ = (
 'SourcePackageFormat',
 'SourcePackageRelationships',
 'SourcePackageUrgency',
-'SpecificationDelivery',
+'SpecificationImplementationStatus',
 'SpecificationFilter',
 'SpecificationGoalStatus',
 'SpecificationLifecycleStatus',
 'SpecificationPriority',
 'SpecificationSort',
-'SpecificationStatus',
+'SpecificationDefinitionStatus',
 'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
@@ -970,7 +970,7 @@ class SourcePackageUrgency(DBSchema):
         """)
 
 
-class SpecificationDelivery(DBSchema):
+class SpecificationImplementationStatus(DBSchema):
     # Note that some of the states associated with this schema correlate to
     # a "not started" definition. See Specification.started_clause for
     # further information, and make sure that it is updated (together with
@@ -1076,6 +1076,13 @@ class SpecificationDelivery(DBSchema):
         This functionality has been delivered for the targeted release, the
         code has been uploaded to the main archives or committed to the
         targeted product series, and no further work is necessary.
+        """)
+
+    INFORMATIONAL = Item(95, """
+        Informational
+
+        This specification is informational, and does not require
+        any implementation.
         """)
 
 
@@ -1304,7 +1311,7 @@ class SpecificationSort(DBSchema):
         """)
 
 
-class SpecificationStatus(DBSchema):
+class SpecificationDefinitionStatus(DBSchema):
     """The current status of a Specification
 
     This enum tells us whether or not a specification is approved, or still

@@ -1628,7 +1628,7 @@ def notify_specification_modified(spec, event):
     subject = '[Spec %s] %s' % (spec.name, spec.title)
     indent = ' '*4
     info_lines = []
-    for dbitem_name in ('status', 'priority'):
+    for dbitem_name in ('definition_status', 'priority'):
         title = ISpecification[dbitem_name].title
         assert ISpecification[dbitem_name].required, (
             "The mail notification assumes %s can't be None" % dbitem_name)

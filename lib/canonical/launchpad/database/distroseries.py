@@ -30,7 +30,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.lp.dbschema import (
     DistroSeriesStatus, PackagePublishingPocket, PackagePublishingStatus,
     PackageUploadStatus, RosettaImportStatus, SpecificationFilter,
-    SpecificationGoalStatus, SpecificationSort)
+    SpecificationGoalStatus, SpecificationSort,
+    SpecificationImplementationStatus)
 
 from canonical.launchpad.interfaces import (
     IBinaryPackageName, IBuildSet, IDistroSeries, IDistroSeriesSet,
@@ -382,7 +383,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status', 'Specification.name']
+            order = ['-priority', 'Specification.definition_status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
             # we are showing specs for a GOAL, so under some circumstances
             # we care about the order in which the specs were nominated for
@@ -417,7 +418,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %d' %
+                      SpecificationImplementationStatus.INFORMATIONAL.value)
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details

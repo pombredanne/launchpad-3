@@ -14,8 +14,9 @@ Changing the status:
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> svg_support = firefox.getSpecification('svg-support')
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Drafting',
-    ...     'field.delivery': svg_support.delivery.title,
+    ...     'UPDATE_SUBMIT': 'Change', 'field.definition_status': 'Drafting',
+    ...     'field.implementation_status':
+    ...         svg_support.implementation_status.title,
     ...     }
     >>> request = LaunchpadTestRequest(form=form)
     >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
@@ -80,8 +81,10 @@ previous people, and to the approver and the added subscriber:
 
     >>> stub.test_emails = []
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Pending Approval',
-    ...     'field.delivery': svg_support.delivery.title,
+    ...     'UPDATE_SUBMIT': 'Change',
+    ...     'field.definition_status': 'Pending Approval',
+    ...     'field.implementation_status':
+    ...         svg_support.implementation_status.title,
     ...     'field.needs_discussion': '1'}
     >>> request = LaunchpadTestRequest(form=form)
     >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
@@ -134,8 +137,10 @@ Whiteboard change:
     ...     "\n"
     ...     "Another paragraph")
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Pending Approval',
-    ...     'field.delivery': svg_support.delivery.title,
+    ...     'UPDATE_SUBMIT': 'Change',
+    ...     'field.definition_status': 'Pending Approval',
+    ...     'field.implementation_status':
+    ...         svg_support.implementation_status.title,
     ...     'field.whiteboard': new_whiteboard}
     >>> request = LaunchpadTestRequest(form=form)
     >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
@@ -175,8 +180,10 @@ Definition status and whiteboard change:
 
     >>> stub.test_emails = []
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Approved',
-    ...     'field.delivery': svg_support.delivery.title,
+    ...     'UPDATE_SUBMIT': 'Change',
+    ...     'field.definition_status': 'Approved',
+    ...     'field.implementation_status':
+    ...         svg_support.implementation_status.title,
     ...     'field.whiteboard': 'Excellent work.'}
     >>> request = LaunchpadTestRequest(form=form)
     >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
