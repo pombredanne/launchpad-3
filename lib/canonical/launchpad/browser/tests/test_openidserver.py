@@ -27,8 +27,6 @@ class SimpleRegistrationTestCase(unittest.TestCase):
 
     def setUp(self):
         login(ANONYMOUS)
-        self.person = getUtility(IPersonSet).getByEmail(
-            'david@canonical.com')
 
     def tearDown(self):
         if 'fake-trust-root' in KNOWN_TRUST_ROOTS:
@@ -42,7 +40,6 @@ class SimpleRegistrationTestCase(unittest.TestCase):
             title='Fake Trust Root',
             sreg=['email', 'fullname', 'postcode'])
         class FieldNameTest(OpenIdMixin):
-            user = self.person
             openid_parameters = {
                 'openid.sreg.required': 'email,country,nickname',
                 'openid.sreg.optional': 'fullname'}
@@ -59,7 +56,8 @@ class SimpleRegistrationTestCase(unittest.TestCase):
     def test_sreg_fields(self):
         # Test that user details are extracted correctly.
         class FieldValueTest(OpenIdMixin):
-            user = self.person
+            user = getUtility(IPersonSet).getByEmail(
+                'david@canonical.com')
             sreg_field_names = [
                 'fullname', 'nickname', 'email', 'timezone',
                 'x.address1', 'x.address2', 'x.city', 'x.province',
@@ -77,6 +75,23 @@ class SimpleRegistrationTestCase(unittest.TestCase):
             ('country', u'France'),
             ('postcode', u'999432423'),
             ('x.phone', u'+55 16 3374-2027')])
+
+    def test_sreg_fields_no_shipping(self):
+        # Test that user details are extracted correctly when there is
+        # no previous successful shipit request.
+        class FieldValueTest(OpenIdMixin):
+            user = getUtility(IPersonSet).getByEmail(
+                'no-priv@canonical.com')
+            sreg_field_names = [
+                'fullname', 'nickname', 'email', 'timezone',
+                'x.address1', 'x.address2', 'x.city', 'x.province',
+                'country', 'postcode', 'x.phone', 'x.organization']
+        field_value_test = FieldValueTest(None, None)
+        self.assertEqual(field_value_test.sreg_fields, [
+            ('fullname', u'No Privileges Person'),
+            ('nickname', u'no-priv'),
+            ('email', u'no-priv@canonical.com'),
+            ('timezone', u'UTC')])
 
 
 def test_suite():
