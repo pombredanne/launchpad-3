@@ -58,6 +58,7 @@ release is on track.
     1 New bugs
     0 Incomplete bugs
     0 Confirmed bugs
+    0 Triaged bugs
     0 In Progress bugs
     0 Fix Committed bugs
     0 Fix Released bugs

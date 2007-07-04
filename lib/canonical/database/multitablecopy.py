@@ -159,8 +159,8 @@ class MultiTableCopy:
     """
     # XXX: JeroenVermeulen 2007-05-24, More quoting, fewer assumptions!
 
-    def __init__(self, name, tables, seconds_per_batch=4.0,
-            minimum_batch_size=1000):
+    def __init__(self, name, tables, seconds_per_batch=2.0,
+            minimum_batch_size=500):
         """Define a MultiTableCopy, including an in-order list of tables.
 
         The name parameter is a unique identifier for this MultiTableCopy
@@ -436,7 +436,7 @@ class MultiTableCopy:
                 "Pouring %s took %.3f seconds."
                 % (holding_table, time.time()-tablestarttime))
 
-            self._commit(transaction_manager)
+            cur = self._commit(transaction_manager)
 
     def _pourTable(
         self, holding_table, table, has_new_id, transaction_manager):
