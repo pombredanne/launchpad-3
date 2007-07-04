@@ -48,15 +48,29 @@ class CodeImportSyncTestCase(LaunchpadZopelessTestCase):
         product = self.firefox
         series = product.newSeries(product.owner, name, name)
         series.importstatus = ImportStatus.TESTING
-        series.rcstype = RevisionControlSystems.SVN
-        series.svnrepository = 'svn://example.com/' + name
-
+        self.updateSeriesWithSubversion(series)
         # ProductSeries may have datelastsynced for any importstatus, but it
         # must only be copied to the CodeImport in some cases.
         series.datelastsynced = datetime.datetime(
             2000, 1, 1, 0, 0, 0, tzinfo=UTC)
 
         return series
+
+    def updateSeriesWithCvs(self, series):
+        """Update a productseries to use CVS details."""
+        series.rcstype = RevisionControlSystems.CVS
+        series.svnrepository = None
+        series.cvsroot = ':pserver:anonymous@cvs.example.com/cvsroot'
+        series.cvsmodule = series.name
+        series.cvsbranch = 'MAIN'
+
+    def updateSeriesWithSubversion(self, series):
+        """Update a productseries to use Subversion details."""
+        series.rcstype = RevisionControlSystems.SVN
+        series.cvsroot = None
+        series.cvsmodule = None
+        series.cvsbranch = None
+        series.svnrepository = 'svn://example.com/' + series.name
 
     def createImportBranch(self, series):
         """Create an import branch and associate it to an import series."""
@@ -248,14 +262,42 @@ class TestDateLastSuccessfulFromProductSeries(unittest.TestCase):
         self.assertDateLastSuccessfulIsReturned(ImportStatus.STOPPED)
 
 
-
 class TestCreateCodeImport(CodeImportSyncTestCase):
     """Unit tests for CodeImportSync.createCodeImport."""
 
-    def testTesting(self):
-        testing = self.createTestingSeries('testing')
-        code_import = self.code_import_sync.createCodeImport(testing)
-        self.assertImportMatchesSeries(code_import, testing)
+    def testSubversion(self):
+        # Test correct creation of a CodeImport with Subversion details.
+        series = self.createTestingSeries('testing')
+        code_import = self.code_import_sync.createCodeImport(series)
+        self.assertImportMatchesSeries(code_import, series)
+
+    def testTestingCvs(self):
+        # Test correct creation of CodeImport with CVS details.
+        series = self.createTestingSeries('testing')
+        self.updateSeriesWithCvs(series)
+        code_import = self.code_import_sync.createCodeImport(series)
+        self.assertImportMatchesSeries(code_import, series)
+
+
+class TestUpdateCodeImport(CodeImportSyncTestCase):
+    """Unit tests for CodeImportSync.updateCodeImport."""
+
+    def testSubversionToCvs(self):
+        # Test updating a code import from Subversion to CVS.
+        series = self.createTestingSeries('testing')
+        code_import = self.code_import_sync.createCodeImport(series)
+        self.updateSeriesWithCvs(series)
+        self.code_import_sync.updateCodeImport(series, code_import)
+        self.assertImportMatchesSeries(code_import, series)
+
+    def testCvsToSubversion(self):
+        # Test updating a code import from CVS to Subversion.
+        series = self.createTestingSeries('testing')
+        self.updateSeriesWithCvs(series)
+        code_import = self.code_import_sync.createCodeImport(series)
+        self.updateSeriesWithSubversion(series)
+        self.code_import_sync.updateCodeImport(series, code_import)
+        self.assertImportMatchesSeries(code_import, series)
 
 
 class TestCodeImportSync(CodeImportSyncTestCase):

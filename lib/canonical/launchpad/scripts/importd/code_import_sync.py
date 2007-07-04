@@ -118,7 +118,15 @@ class CodeImportSync:
         :param code_import: The CodeImport corresponding to `series`.
         :postcondition: `code_import` is up to date with `series`.
         """
-        assert code_import.branch == series.import_branch
+        # TODO: test workflow that may cause import_branch to change
+        assert (series.import_branch is None
+                or code_import.branch == series.import_branch)
+
+        code_import.rcs_type = series.rcstype
+        code_import.cvs_root = series.cvsroot
+        code_import.cvs_module = series.cvsmodule
+        assert series.cvsbranch is None or series.cvsbranch == 'MAIN'
+        code_import.svn_branch_url = series.svnrepository
         review_status = self.reviewStatusFromImportStatus(series.importstatus)
         code_import.review_status = review_status
         date_last_successful = self.dateLastSuccessfulFromProductSeries(series)
