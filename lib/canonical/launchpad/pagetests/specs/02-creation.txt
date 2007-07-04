@@ -51,7 +51,7 @@ form, to register a new blueprint. We'll do it on the Ubuntu distribution.
   ...   "dependent services should only be run when the system is positive"
   ...   "that it has a network. This would greatly enhance the system's"
   ...   "flexibility and responsiveness.")
-  >>> user_browser.getControl(name='field.summary').value = summary
+  >>> user_browser.getControl('Summary').value = summary
   >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
@@ -76,7 +76,7 @@ blueprint with the same name.
   ...       '- Automatic Network Detection')
   >>> user_browser.getControl(
   ...   'URL').value = ('http://wiki.ubuntu.com/NetworkMagic')
-  >>> user_browser.getControl(name='field.summary').value = ("Users are"
+  >>> user_browser.getControl('Summary').value = ("Users are"
   ...       "increasingly using multiple networks.")
   >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
@@ -101,7 +101,7 @@ We test the validator using an invalid name.
   ...   'Network Magic - Automatic Network Detection')
   >>> user_browser.getControl('URL').value = (
   ...   'http://wiki.ubuntu.com/NetworkMagicExclamation')
-  >>> user_browser.getControl(name='field.summary').value = (
+  >>> user_browser.getControl('Summary').value = (
   ...   "Users are increasingly using multiple networks.")
   >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
@@ -127,7 +127,7 @@ the user:
   ...   'Network Magic - Automatic Network Detection')
   >>> user_browser.getControl('URL').value = (
   ...   'http://wiki.ubuntu.com/RecoverableNetworkMagic')
-  >>> user_browser.getControl(name='field.summary').value = (
+  >>> user_browser.getControl('Summary').value = (
   ...   "Users are increasingly using multiple networks.")
   >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
@@ -148,7 +148,7 @@ same URL.
   ...   'This is a dupe Network Magic Spec')
   >>> user_browser.getControl('URL').value = (
   ...   'http://wiki.ubuntu.com/NetworkMagic')
-  >>> user_browser.getControl(name='field.summary').value = "Users are increasingly"
+  >>> user_browser.getControl('Summary').value = "Users are increasingly"
   >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
@@ -176,7 +176,7 @@ products in that IProject.
   >>> summary = (
   ...   "This widget is the latest and greatest in a long range of wotzits. "
   ...   "All wotzits are known to be particularly resilient.")
-  >>> user_browser.getControl(name='field.summary').value = summary
+  >>> user_browser.getControl('Summary').value = summary
   >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
@@ -209,7 +209,7 @@ First, we try to create a blueprint that has the same name as an existing one.
   ...   "dependent services should only be run when the system is positive"
   ...   "that it has a network. This would greatly enhance the system's"
   ...   "flexibility and responsiveness.")
-  >>> user_browser.getControl(name='field.summary').value = summary
+  >>> user_browser.getControl('Summary').value = summary
   >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
@@ -241,7 +241,7 @@ through.
   ...   "networks. Being able to seamlessly move between networks whilst"
   ...   "that it has a network. This would greatly enhance the system's"
   ...   "flexibility and responsiveness.")
-  >>> user_browser.getControl(name='field.summary').value = summary
+  >>> user_browser.getControl('Summary').value = summary
   >>> user_browser.getControl('Status').value = ['Approved']
   >>> user_browser.getControl(name='field.assignee').value = 'daf@canonical.com'
   >>> user_browser.getControl(name='field.drafter').value = 'carlos@canonical.com'
