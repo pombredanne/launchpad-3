@@ -42,7 +42,7 @@ form, to register a new blueprint. We'll do it on the Ubuntu distribution.
   ...   'Title').value = ('Network Magic - Automatic Network'
   ...       'Detection')
   >>> user_browser.getControl(
-  ...   name='field.specurl').value = ('http://wiki.ubuntu.com/NetworkMagic')
+  ...   'URL').value = ('http://wiki.ubuntu.com/NetworkMagic')
   >>> summary = (
   ...   "Users are increasingly using multiple"
   ...   "networks. Being able to seamlessly move between networks whilst"
@@ -75,7 +75,7 @@ blueprint with the same name.
   >>> user_browser.getControl('Title').value = ('Network Magic'
   ...       '- Automatic Network Detection')
   >>> user_browser.getControl(
-  ...   name='field.specurl').value = ('http://wiki.ubuntu.com/NetworkMagic')
+  ...   'URL').value = ('http://wiki.ubuntu.com/NetworkMagic')
   >>> user_browser.getControl(name='field.summary').value = ("Users are"
   ...       "increasingly using multiple networks.")
   >>> user_browser.getControl('Status').value = ['Approved']
@@ -99,7 +99,7 @@ We test the validator using an invalid name.
   >>> user_browser.getControl('Name').value = 'NetworkMagic!'
   >>> user_browser.getControl('Title').value = (
   ...   'Network Magic - Automatic Network Detection')
-  >>> user_browser.getControl(name='field.specurl').value = (
+  >>> user_browser.getControl('URL').value = (
   ...   'http://wiki.ubuntu.com/NetworkMagicExclamation')
   >>> user_browser.getControl(name='field.summary').value = (
   ...   "Users are increasingly using multiple networks.")
@@ -125,7 +125,7 @@ the user:
   >>> user_browser.getControl('Name').value = ' RecoverableNetworkMagic '
   >>> user_browser.getControl('Title').value = (
   ...   'Network Magic - Automatic Network Detection')
-  >>> user_browser.getControl(name='field.specurl').value = (
+  >>> user_browser.getControl('URL').value = (
   ...   'http://wiki.ubuntu.com/RecoverableNetworkMagic')
   >>> user_browser.getControl(name='field.summary').value = (
   ...   "Users are increasingly using multiple networks.")
@@ -146,7 +146,7 @@ same URL.
   >>> user_browser.getControl('Name').value = 'dupenetworkmagic'
   >>> user_browser.getControl('Title').value = (
   ...   'This is a dupe Network Magic Spec')
-  >>> user_browser.getControl(name='field.specurl').value = (
+  >>> user_browser.getControl('URL').value = (
   ...   'http://wiki.ubuntu.com/NetworkMagic')
   >>> user_browser.getControl(name='field.summary').value = "Users are increasingly"
   >>> user_browser.getControl('Status').value = ['Approved']
@@ -172,7 +172,7 @@ products in that IProject.
   >>> user_browser.getControl(
   ...   'Title').value = ('Grand amazing tool')
   >>> user_browser.getControl(
-  ...   name='field.specurl').value = ('http://wiki.mozilla.org/WhizzWotzit')
+  ...   'URL').value = ('http://wiki.mozilla.org/WhizzWotzit')
   >>> summary = (
   ...   "This widget is the latest and greatest in a long range of wotzits. "
   ...   "All wotzits are known to be particularly resilient.")
@@ -200,7 +200,7 @@ First, we try to create a blueprint that has the same name as an existing one.
   ...   'Title').value = ('Network Magic - Automatic Network'
   ...       'Detection')
   >>> user_browser.getControl(
-  ...   name='field.specurl').value = ('http://wiki.ubuntu.com/NetworkMagic')
+  ...   'URL').value = ('http://wiki.ubuntu.com/NetworkMagic')
   >>> summary = (
   ...   "Users are increasingly using multiple"
   ...   "networks. Being able to seamlessly move between networks whilst"
@@ -235,7 +235,7 @@ through.
   ...   'Title').value = ('Network Voodoo - Automatic Network'
   ...       'Detection')
   >>> user_browser.getControl(
-  ...   name='field.specurl').value = ('http://wiki.ubuntu.com/NetworkVoodoo')
+  ...   'URL').value = ('http://wiki.ubuntu.com/NetworkVoodoo')
   >>> summary = (
   ...   "Users are increasingly using multiple"
   ...   "networks. Being able to seamlessly move between networks whilst"
