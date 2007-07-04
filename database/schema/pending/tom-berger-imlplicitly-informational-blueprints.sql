@@ -15,3 +15,8 @@ WHERE informational IS TRUE;
 
 ALTER TABLE specification
 DROP COLUMN informational;
+
+ALTER TABLE Specification ADD CONSTRAINT specification_start_recorded_chk
+CHECK ((date_started IS NULL) <>
+       (implementation_status NOT IN ( 0, 5, 10, 95 ) OR
+       (implementation_status = 95 AND definition_status = 10)));
