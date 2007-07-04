@@ -194,7 +194,7 @@ or distribution, from the Blueprints home page.
 First, we try to create a blueprint that has the same name as an existing one.
 
   >>> user_browser.open('http://blueprints.launchpad.dev/specs/+new')
-  >>> user_browser.getControl(name='field.target').value = 'ubuntu'
+  >>> user_browser.getControl('For').value = 'ubuntu'
   >>> user_browser.getControl('Name').value = 'networkmagic'
   >>> user_browser.getControl(
   ...   'Title').value = ('Network Magic - Automatic Network'
@@ -229,7 +229,7 @@ Now, we'll register a blueprint with a unique name and it should go straight
 through.
 
   >>> user_browser.open('http://blueprints.launchpad.dev/specs/+new')
-  >>> user_browser.getControl(name='field.target').value = 'ubuntu'
+  >>> user_browser.getControl('For').value = 'ubuntu'
   >>> user_browser.getControl('Name').value = 'brandnewspec'
   >>> user_browser.getControl(
   ...   'Title').value = ('Network Voodoo - Automatic Network'
