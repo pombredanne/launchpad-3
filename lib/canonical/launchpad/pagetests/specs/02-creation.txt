@@ -41,13 +41,13 @@ form, to register a new blueprint. We'll do it on the Ubuntu distribution.
 
   >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
   >>> control = user_browser.getControl
-  >>> summary = ('Users are increasingly using multiple networks. Being able '
-  ...            'to seamlessly move between networks whilst remembering the '
-  ...            'correct settings for each network would greatly enhance '
-  ...            'Ubuntu's usability for mobile professionals. Many network '
-  ...            'dependent services should only be run when the system is '
-  ...            'positive that it has a network. This would greatly enhance '
-  ...            'the system's flexibility and responsiveness.')
+  >>> summary = ("Users are increasingly using multiple networks. Being able "
+  ...            "to seamlessly move between networks whilst remembering the "
+  ...            "correct settings for each network would greatly enhance "
+  ...            "Ubuntu's usability for mobile professionals. Many network "
+  ...            "dependent services should only be run when the system is "
+  ...            "positive that it has a network. This would greatly enhance "
+  ...            "the system's flexibility and responsiveness.")
   >>> control('Name'    ).value = 'networkmagic'
   >>> control('Title'   ).value = 'Network Magic: Automatic Network Detection'
   >>> control('URL'     ).value = 'http://wiki.ubuntu.com/NetworkMagic'
