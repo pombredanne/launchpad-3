@@ -26,3 +26,17 @@ class IFAQCollection(Interface):
             document with that id.
         """
 
+    def searchFAQs(search_text=None, owner=None, sort=None):
+        """Return the FAQs from the collection matching search criteria.
+
+        :param search_text: A string that is matched against the FAQ title,
+        keywords and content. If None, the search_text is not included as
+        a filter criteria.
+
+        :param owner: A person that is matched against the owner of the FAQ.
+        If None, owner is not included as a filter criteria.
+
+        :param sort:  One value from of FAQSort. If None, a default value
+        is used. When there is a search_text value, the default is to sort by
+        RELEVANCY, otherwise results are sorted NEWEST_FIRST.
+        """
