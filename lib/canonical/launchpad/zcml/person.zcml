@@ -486,6 +486,14 @@
     name="+editemail"
     template="../templates/team-editemail.pt"
     />
+    
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.PersonLanguagesView"
+    name="+editlanguages"
+    template="../templates/person-editlanguages.pt"
+    />
 
   <browser:page
     name="+edit"
