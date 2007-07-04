@@ -73,7 +73,7 @@ blueprint with the same name.
   >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
   >>> control('Name'    ).value = 'networkmagic'
   >>> control('Title'   ).value = 'Network Magic: Automatic Network Detection'
-  >>> control('URL'     ).value = 'http://wiki.ubuntu.com/NetworkMagic'
+  >>> control('URL'     ).value = 'http://wiki.ubuntu.com/NetworkMagicNew'
   >>> control('Status'  ).value = ['Approved']
   >>> control('Summary' ).value = summary
   >>> control('Assignee').value = 'daf@canonical.com'
@@ -87,8 +87,9 @@ Seeing that we were redirected again to the addspec page is a good sign
 (something prevented the blueprint from being registered) however better make
 sure this happened due to the right reason.
 
-  >>> 'is already in use by another blueprint' in user_browser.contents
-  True
+  >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+  ...      print message.renderContents()
+  There is 1 error...already in use by another blueprint...
 
 We test the validator using an invalid name.
 
@@ -106,9 +107,7 @@ We test the validator using an invalid name.
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
   >>> for message in find_tags_by_class(user_browser.contents, 'message'):
   ...      print message.renderContents()
-  There is 1 error.
-  <BLANKLINE>
-  Invalid name ...
+  There is 1 error...Invalid name...
 
 Some invalid names can be transformed into valid names. When it is clear that a
 valid name can be produced by removing trailing spaces or by converting upper
@@ -127,8 +126,8 @@ the user:
   >>> control('Register').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/ubuntu/+spec/new-network-magic'
-  >>> 'Blueprint overview' in user_browser.contents
-  True
+  >>> print user_browser.contents
+  <...Blueprint overview...
 
 Now we test the URL field validator trying to register a new blueprint with the
 same URL.
@@ -145,8 +144,9 @@ same URL.
   >>> control('Register').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
-  >>> 'is already registered by another blueprint' in user_browser.contents
-  True
+  >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+  ...      print message.renderContents()
+  There is 1 error...already registered by another blueprint...
 
 
 == Project blueprint registration ==
@@ -183,7 +183,7 @@ First, we try to create a blueprint that has the same name as an existing one.
   >>> control('For'     ).value = 'ubuntu'
   >>> control('Name'    ).value = 'networkmagic'
   >>> control('Title'   ).value = 'Network Magic: Automatic Network Detection'
-  >>> control('URL'     ).value = 'http://wiki.ubuntu.com/NetworkMagic'
+  >>> control('URL'     ).value = 'http://wiki.ubuntu.com/NetworkMagicNew'
   >>> control('Summary' ).value = summary
   >>> control('Status'  ).value = ['Approved']
   >>> control('Assignee').value = 'daf@canonical.com'
@@ -196,8 +196,9 @@ First, we try to create a blueprint that has the same name as an existing one.
 So, we were not redirected to the blueprint page, because the blueprint was not
 created. Let's check that this happened because the name is taken:
 
-  >>> 'is already in use by another blueprint' in user_browser.contents
-  True
+  >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+  ...      print message.renderContents()
+  There is 1 error...already in use by another blueprint...
 
 Now, we'll register a blueprint with a unique name and it should go straight
 through.
