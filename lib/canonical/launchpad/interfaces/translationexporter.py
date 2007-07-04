@@ -42,7 +42,11 @@ class ITranslationFormatExporter(Interface):
     format = Choice(
         title=u'The file format that will be used for the export.',
         vocabulary='TranslationFileFormat',
-        required=True)
+        required=True, readonly=True)
+
+    handable_formats = Attribute(
+        "List of TranslationFileFormat entries that this exporter is able"
+        " to convert from.")
 
     content_type = Attribute("Content type string for this file format.")
 
