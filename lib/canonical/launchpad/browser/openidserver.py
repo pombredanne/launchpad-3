@@ -26,7 +26,6 @@ from openid.server.trustroot import TrustRoot
 from openid import oidutil
 
 from canonical.cachedproperty import cachedproperty
-from canonical.config import config
 from canonical.launchpad import _
 from canonical.lp.dbschema import LoginTokenType, PersonCreationRationale
 from canonical.launchpad.interfaces import (
