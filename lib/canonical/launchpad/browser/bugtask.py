@@ -584,6 +584,15 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
                     target=fake_task.distroseries.bugtargetname)
                 self.request.response.redirect(canonical_url(self.context))
                 return
+            elif IProductSeriesBugTask.providedBy(fake_task):
+                # Nominate the bug to be fixed in the series.
+                fake_task.bug.addNomination(
+                    self.user, fake_task.productseries)
+                self.request.response.addInfoNotification(
+                    'This bug has been nominated to be fixed in %(target)s',
+                    target=fake_task.productseries.bugtargetname)
+                self.request.response.redirect(canonical_url(self.context))
+                return
             else:
                 raise TypeError(
                     "Unknown bug task type: %s" % repr(fake_task))

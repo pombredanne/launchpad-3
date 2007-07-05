@@ -27,3 +27,26 @@ If the button is clicked, the bug is nominated for the series.
     Traceback (most recent call last):
     ...
     LookupError: label 'Also Needs Fixing Here'
+
+It works the same way for product series contexts.
+
+    >>> user_browser.open(
+    ...  'http://launchpad.dev/firefox/1.0/+bug/10')
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print extract_text(message)
+    This bug is not recorded as needing to be fixed in the
+    firefox 1.0 (upstream) distribution.
+    >>> user_browser.getControl('Also Needs Fixing Here') is not None
+    True
+
+    >>> user_browser.getControl('Also Needs Fixing Here').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/1.0/+bug/10'
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print extract_text(message)
+    This bug has been nominated to be fixed in firefox 1.0 (upstream)
+
+    >>> user_browser.getControl('Also Needs Fixing Here')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Also Needs Fixing Here'
