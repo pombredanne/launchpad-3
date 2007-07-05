@@ -39,8 +39,28 @@ contacts.)
     ...     sample_person, 'How can I see the Fnords?',
     ...     "Install the Fnords highlighter extension and see the Fnords!")
 
-(The complete description of the IFAQTarget is available in
+(The complete description of IFAQTarget is available in
 lib/canonical/launchpad/interfaces/ftests/faqtarget.txt)
+
+
+== IFAQCollection ==
+
+The `IFAQCollection` interface is provided by objects that represents
+a colletion of FAQ. This interface can be used to retrieve and search for
+FAQs. It is provided by product, distribution, and projects.
+
+    >>> from canonical.launchpad.interfaces import IFAQCollection, IProjectSet
+    >>> gnome = getUtility(IProjectSet).getByName('gnome')
+    >>> verifyObject(IFAQCollection, gnome)
+    True
+    >>> verifyObject(IFAQCollection, ubuntu)
+    True
+    >>> verifyObject(IFAQCollection, firefox)
+    True
+
+(The complete description of IFAQCollection is available in
+lib/canonical/launchpad/interfaces/ftests/faqcollection.txt)
+
 
 == IFAQ ==
 
