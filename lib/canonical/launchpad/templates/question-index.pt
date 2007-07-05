@@ -1,4 +1,8 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+<html xmlns="http://www.w3.org/1999/xhtml"
+      xmlns:tal="http://xml.zope.org/namespaces/tal"
+      xmlns:metal="http://xml.zope.org/namespaces/metal"
+      xmlns:i18n="http://xml.zope.org/namespaces/i18n"
+      xml:lang="en"
       lang="en"
       dir="ltr"
       metal:use-macro="context/@@main_template/master"
@@ -74,38 +78,59 @@
         <div tal:replace="structure message/@@+display" />
       </tal:message>
 
-      <div xml:lang="en" lang="en" dir="ltr" tal:condition="view/hasActions">
-        <div
-          metal:use-macro="context/@@launchpad_form/form">
-          <metal:no-heading fill-slot="heading" />
-          <tal:comment replace="nothing">
-            We control here the order of the action buttons and we omit
-            the confirmation action which is rendered using the 
-            QuestionMessage view.
-          </tal:comment>
-          <div class="actions" metal:fill-slot="buttons">
-            <div>
-              <input tal:replace="structure view/comment_action/render" />
-              <input tal:replace="structure view/answer_action/render" />
-              <input tal:replace="structure view/selfanswer_action/render" />
-              <input tal:replace="structure view/requestinfo_action/render" />
-              <input tal:replace="structure view/giveinfo_action/render" />
-              <input tal:replace="structure view/reopen_action/render" />
+      <div xml:lang="en" lang="en" dir="ltr">
+        <h2>
+          Can you help with this problem?
+        </h2>
+
+        <p>
+          Provide an answer of your own, or ask 
+          <span tal:replace="context/owner/browsername"></span>
+          for more information if necessary.
+        </p>
+        
+        <div tal:condition="view/hasActions">
+          <div metal:use-macro="context/@@launchpad_form/form">
+            <metal:no-heading fill-slot="heading" />
+            <tal:comment replace="nothing">
+              We control here the order of the action buttons and we omit
+              the confirmation action which is rendered using the 
+              QuestionMessage view.
+            </tal:comment>
+            <div class="actions" metal:fill-slot="buttons">
+              <div>
+                <input tal:replace="structure view/comment_action/render" />
+                <input tal:replace="structure view/answer_action/render" />
+                <input tal:replace="structure view/selfanswer_action/render" />
+                <input tal:replace="structure view/requestinfo_action/render" />
+                <input tal:replace="structure view/giveinfo_action/render" />
+                <input tal:replace="structure view/reopen_action/render" />
+              </div>
+              <p tal:condition="view/selfanswer_action/render">
+                To confirm an answer, use the 
+                <strong>'This Solved My Problem'</strong> button located at
+                the bottom of the answer.
+              </p>
             </div>
-            <p tal:condition="view/selfanswer_action/render">
-              To confirm an answer, use the 
-              <strong>'This Solved My Problem'</strong> button located at the 
-              bottom of the answer.
-            </p>
           </div>
         </div>
+
+        <tal:not-logged-in condition="not: request/lp:person">
+          <div align="center">
+            To post a message you must <a href="+login">log in</a>.
+          </div>
+        </tal:not-logged-in>
       </div>
 
-      <tal:not-logged-in condition="not: request/lp:person">
-        <div align="center" xml:lang="en" lang="en" dir="ltr">
-          To post a message you must <a href="+login">log in</a>.
-        </div>
-      </tal:not-logged-in>
+      <div id="ask-your-own-question" xml:lang="en" lang="en" dir="ltr">
+        <h2>Got a question of your own?</h2>
+
+        <p>For best results,
+          <a href="+addquestion"
+            tal:attributes="href view/new_question_url">ask your own question
+            separately</a>.
+        </p>
+      </div>
     </div>
 
     <metal:help fill-slot="help">

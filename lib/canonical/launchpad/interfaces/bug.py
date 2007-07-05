@@ -282,7 +282,7 @@ class IBug(IMessageTarget, ICanBeMentored):
         :is_patch: A boolean.
         """
 
-    def linkCVE(cve, user=None):
+    def linkCVE(cve, user):
         """Ensure that this CVE is linked to this bug."""
 
     def unlinkCVE(cve, user=None):
@@ -290,9 +290,11 @@ class IBug(IMessageTarget, ICanBeMentored):
         removed.
         """
 
-    def findCvesInText(text):
+    def findCvesInText(text, user):
         """Find any CVE references in the given text, make sure they exist
         in the database, and are linked to this bug.
+
+        The user is the one linking to the CVE.
         """
 
     def getMessageChunks():
@@ -419,6 +421,7 @@ class IBugAddForm(IBug):
             description=_("""The package you found this bug in,
             which was installed via apt-get, rpm, emerge or similar."""),
             vocabulary="BinaryAndSourcePackageName")
+    title = Title(title=_('Summary'), required=True)
     distribution = Choice(
             title=_("Linux Distribution"), required=True,
             description=_(
@@ -430,7 +433,10 @@ class IBugAddForm(IBug):
     comment = Text(
         title=_('Further information, steps to reproduce,'
                 ' version information, etc.'),
-        required=True)
+        required=False)
+    bug_already_reported_as = Choice(
+        title=_("This bug has already been reported as ..."), required=False,
+        vocabulary="Bug")
 
 
 class IProjectBugAddForm(IBugAddForm):
