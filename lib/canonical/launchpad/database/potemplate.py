@@ -34,7 +34,7 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IPOTemplate, IPOTemplateExporter, IPOTemplateSet,
-    IPOTemplateSubset, ITranslationFile, ITranslationImporter, IVPOExportSet,
+    IPOTemplateSubset, ITranslationFile, ITranslationImporter, IVPOTExportSet,
     LanguageNotFound, NotFoundError, TranslationConstants,
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.mail import simple_sendmail
@@ -256,6 +256,13 @@ class POTemplate(SQLBase, RosettaStats):
             return SourcePackage(distroseries=self.distroseries,
                 sourcepackagename=self.sourcepackagename)
         raise AssertionError('Unknown POTemplate translation target')
+
+    def getHeader(self):
+        """See `IPOTemplate`."""
+        translation_importer = getUtility(ITranslationImporter)
+        format_importer = translation_importer.getTranslationFormatImporter(
+            self.source_file_format)
+        return format_importer.getHeaderFromString(self.header)
 
     def getPOTMsgSetByMsgIDText(self, key, only_current=False):
         """See IPOTemplate."""
@@ -892,6 +899,11 @@ class POTemplateToTranslationFileAdapter:
         self.messages = self._getMessages()
 
     @cachedproperty
+    def path(self):
+        """See `ITranslationFile`."""
+        return self._potemplate.path
+
+    @cachedproperty
     def translation_domain(self):
         """See `ITranslationFile`."""
         return self._potemplate.potemplatename.translationdomain
@@ -917,7 +929,7 @@ class POTemplateToTranslationFileAdapter:
         # Get all rows related to this file. We do this to speed the export
         # process so we have a single DB query to fetch all needed
         # information.
-        rows = getUtility(IVPOExportSet).get_potemplate_rows(potemplate)
+        rows = getUtility(IVPOTExportSet).get_potemplate_rows(potemplate)
 
         sequence = None
         messages = []
@@ -950,10 +962,10 @@ class POTemplateToTranslationFileAdapter:
             # Because of the way the database view works, message IDs will appear
             # multiple times. We see how many we've added already to check whether
             # the message ID/translation in the current row are ones we need to add.
-            if (row.msgidpluralform == TranslationConstants.SINGULAR_FORM and
+            if (row.pluralform == TranslationConstants.SINGULAR_FORM and
                 msgset.msgid is None):
                 msgset.msgid = row.msgid
-            elif (row.msgidpluralform == TranslationConstants.PLURAL_FORM and
+            elif (row.pluralform == TranslationConstants.PLURAL_FORM and
                 msgset.msgid_plural is None):
                 msgset.msgid_plural = row.msgid
             else:
@@ -962,14 +974,14 @@ class POTemplateToTranslationFileAdapter:
                         TranslationConstants.PLURAL_FORM), (
                     'msgid plural form is not valid!')
 
-            if row.commenttext and not msgset.commenttext:
-                msgset.commenttext = row.commenttext
+            if row.commenttext and not msgset.comment:
+                msgset.comment = row.commenttext
 
-            if row.sourcecomment and not msgset.sourcecomment:
-                msgset.sourcecomment = row.sourcecomment
+            if row.sourcecomment and not msgset.source_comment:
+                msgset.source_comment = row.sourcecomment
 
-            if row.filereferences and not msgset.filereferences:
-                msgset.filereferences = row.filereferences
+            if row.filereferences and not msgset.file_references:
+                msgset.file_references = row.filereferences
 
             if row.flagscomment and not msgset.flags:
                 msgset.flags = [

@@ -31,12 +31,12 @@ class MoCompiler:
             args=[MoCompiler.MSGFMT, '-v', '-o', '-', '-'],
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT)
+            stderr=subprocess.PIPE)
         stdout, stderr = msgfmt.communicate(gettext_po_file)
 
         if msgfmt.returncode != 0:
             raise UnknownTranslationExporterError(
-                "Got an error while compiling PO file into MO:\n%s" % stdout)
+                "Got an error while compiling PO file into MO:\n%s" % stderr)
 
         return stdout
 
@@ -73,21 +73,25 @@ class GettextMoExporter:
             # generate the MO one.
             template_exported = gettext_po_exporter.exportTranslationFiles(
                 [translation_file])
+            exported_file_content = template_exported.content_file.read()
             if translation_file.is_template:
                 # This exporter is not able to handle template files. In that
                 # case, we leave it as .po file. For this file format exported
                 # templates are stored in templates/ directory.
                 file_path = 'templates/%s' % os.path.basename(
                     template_exported.path)
-                exported_file_content = template_exported.content
                 content_type = template_exported.content_type
+                file_extension = template_exported.file_extension
             else:
+                file_extension = 'mo'
                 # Standard layout for MO files is
                 # 'LANG_CODE/LC_MESSAGES/TRANSLATION_DOMAIN.mo'
                 file_path = os.path.join(
-                    translation_file_list.language_code,
+                    translation_file.language_code,
                     'LC_MESSAGES',
-                    '%s.mo' % translation_file_list.translation_domain)
+                    '%s.%s' % (
+                        translation_file.translation_domain,
+                        file_extension))
                 mo_compiler = MoCompiler()
                 mo_content = mo_compiler.compile(exported_file_content)
                 exported_file_content = mo_content
@@ -99,14 +103,16 @@ class GettextMoExporter:
         if len(exported_files) == 1:
             # It's a single file export. Return it directly.
             exported_file.path = file_path
-            exported_file.content = StringIO(exported_file_content)
+            exported_file.content_file = StringIO(exported_file_content)
             exported_file.content_type = content_type
+            exported_file.file_extension = file_extension
         else:
             # There are multiple files being exported. We need to generate an
             # archive that include all them.
-            exported_file.content = LaunchpadWriteTarFile.files_to_stream(
+            exported_file.content_file = LaunchpadWriteTarFile.files_to_stream(
                 exported_files)
             exported_file.content_type = 'application/x-gtar'
+            exported_file.file_extension = 'tar.gz'
             # We cannot give a proper file path for the tarball, that's why we
             # don't set it. We leave that decision to the caller.
 

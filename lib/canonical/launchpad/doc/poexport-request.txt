@@ -82,7 +82,7 @@ Let's read our mail.
   > The files you requested from Rosetta are ready for download
   > from the following location:
   > 
-  >     http://localhost:58000/.../rosetta-pmount.tar.gz
+  >     http://localhost:58000/.../launchpad-pmount.tar.gz
 
 The mail has a URL in it.
 
@@ -101,14 +101,14 @@ Let's download it and make sure the contents look ok.
   >>> tarball = string_to_tarfile(urllib2.urlopen(url).read())
   >>> for name in sorted(tarball.getnames()):
   ...   print name
-  rosetta-pmount/
-  rosetta-pmount/ca.po
-  rosetta-pmount/cs.po
+  pmount/
+  pmount/pmount-ca.po
+  pmount/pmount-cs.po
 
 Let's try requesting an export in MO format:
 
   >>> from canonical.lp.dbschema import TranslationFileFormat
-  >>> request_set.addRequest(person, None, [ca], TranslationFileFormat.MO)
+  >>> request_set.addRequest(person, None, [cs], TranslationFileFormat.MO)
   >>> process_queue(MockTransactionManager(), MockLogger())
   log> Exporting objects for Mark Shuttleworth, related to template pmount in
   Ubuntu Hoary package "pmount"
@@ -127,7 +127,7 @@ Let's try requesting an export in MO format:
   > The files you requested from Rosetta are ready for download
   > from the following location:
   > 
-  >     http://localhost:58000/.../ca.mo
+  >     http://localhost:58000/.../cs_LC_MESSAGES_pmount.mo
   >>> url = extract_url(body)
 
 We will need to define a helper function.
@@ -148,25 +148,6 @@ We will need to define a helper function.
 
   >>> is_valid_mofile(urllib2.urlopen(url).read())
   True
-
-Let's test the .mo compilation.
-
-  >>> from canonical.launchpad.components.poexport import MOCompiler
-  >>> compiler = MOCompiler()
-
-  >>> mofile = compiler.compile('''
-  ... msgid "foo"
-  ... msgstr "bar"
-  ... ''')
-  >>> is_valid_mofile(mofile)
-  True
-
-  >>> mofile = compiler.compile('''
-  ... blah
-  ... ''')
-  Traceback (most recent call last):
-  ...
-  MOCompilationError: ...
 
 Finally, the code should work when executed from the script. This is a good
 way that the user used by the script has the needed rights to use the

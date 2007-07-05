@@ -64,6 +64,9 @@ class IExportedTranslationFile(Interface):
 
     content_type = Attribute("Content type string for this file format.")
 
+    content_file = Attribute("File like object with the exported content.")
+
     path = Attribute("Relative file path for this exported file.")
 
-    content_file = Attribute("File like object with the exported content.")
+    file_extension = Attribute(
+        "File extension for this exported translation file.")

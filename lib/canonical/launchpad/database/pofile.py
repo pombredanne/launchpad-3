@@ -150,6 +150,13 @@ class POFileMixIn(RosettaStats):
     submissions caches.  That machinery is needed even for `DummyPOFile`s.
     """
 
+    def getHeader(self):
+        """See `IPOFile`."""
+        translation_importer = getUtility(ITranslationImporter)
+        format_importer = translation_importer.getTranslationFormatImporter(
+            self.potemplate.source_file_format)
+        return format_importer.getHeaderFromString(self.header)
+
     def getMsgSetsForPOTMsgSets(self, for_potmsgsets):
         """See `IPOFile`."""
 
@@ -780,9 +787,7 @@ class POFile(SQLBase, POFileMixIn):
         if new_plural_form is None:
             # The new header does not have plural form information.
             # Parse the old header.
-            old_header = POHeader(msgstr=self.header)
-            # The POHeader needs to know is ready to be used.
-            old_header.updateDict()
+            old_header = self.getHeader()
             old_plural_form = old_header.get('Plural-Forms', None)
             if old_plural_form is not None:
                 # First attempt: use the plural-forms header that is already
@@ -807,8 +812,7 @@ class POFile(SQLBase, POFileMixIn):
 
     def isPORevisionDateOlder(self, header):
         """See `IPOFile`."""
-        old_header = POHeader(msgstr=self.header)
-        old_header.updateDict()
+        old_header = self.getHeader()
 
         # Get the old and new PO-Revision-Date entries as datetime objects.
         try:
@@ -1430,6 +1434,11 @@ class POFileToTranslationFileAdapter:
         self.messages = self._getMessages()
 
     @cachedproperty
+    def path(self):
+        """See `ITranslationFile`."""
+        return self._pofile.path
+
+    @cachedproperty
     def translation_domain(self):
         """See `ITranslationFile`."""
         return self._pofile.potemplate.potemplatename.translationdomain
@@ -1483,7 +1492,7 @@ class POFileToTranslationFileAdapter:
         # modifications.
         UTC = pytz.timezone('UTC')
         datetime_now = datetime.datetime.now(UTC)
-        translation_header.setExportDateField(datetime_now.strftime('%F %T%z'))
+        translation_header.setExportDateField(datetime_now)
 
         return translation_header
 

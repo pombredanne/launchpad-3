@@ -39,6 +39,9 @@ class ITranslationFile(Interface):
 class ITranslationHeader(IMapping):
     """Translation header interface."""
 
+    charset = Attribute(
+        "Charset used to encode the content in its native form.")
+
     def getTranslationRevisionDate():
         """Return when the translation resource was last revised.
 
@@ -66,8 +69,8 @@ class ITranslationHeader(IMapping):
         :param template_header: an ITranslationHeader representing a template
             header.
 
-        The concrete fields updated depend on the file format that implements
-        this interface.
+        The concrete fields updated, if any, depend on the file format that
+        implements this interface.
         """
 
     def setTranslationRevisionDate(revision_date):

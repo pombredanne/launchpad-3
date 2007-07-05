@@ -296,7 +296,7 @@ def msgid_text_representation(translation_message, wrap_width):
     :param wrap_width: The width where the text should be wrapped.
     """
     text = wrap_text(translation_message.msgid, u'msgid', wrap_width)
-    if translation_message.msgid_plural is not None:
+    if translation_message.msgid_plural:
         text.extend(
             wrap_text(
                 translation_message.msgid_plural, u'msgid_plural', wrap_width)
@@ -314,7 +314,14 @@ def translation_text_representation(translation_message, wrap_width):
     :param wrap_width: The width where the text should be wrapped.
     """
     text = []
-    if translation_message.msgid_plural is None:
+    if translation_message.msgid_plural:
+        # It's a message with plural forms.
+        for i, s in enumerate(translation_message.translations):
+            text.extend(wrap_text(s, u'msgstr[%s]' % i, wrap_width))
+        else:
+            # We don't have any translation for it.
+            text = [u'msgstr[0] ""', u'msgstr[1] ""']
+    else:
         # It's a message without plural form.
         if translation_message.translations:
             translation = translation_message.translations[
@@ -322,13 +329,6 @@ def translation_text_representation(translation_message, wrap_width):
             text = wrap_text(translation, u'msgstr', wrap_width)
         else:
             text = [u'msgstr ""']
-    else:
-        # It's a message with plural forms.
-        for i, s in enumerate(translation_message.translations):
-            text.extend(wrap_text(s, u'msgstr[%s]' % i, wrap_width))
-        else:
-            # We don't have any translation for it.
-            text = [u'msgstr[0] ""', u'msgstr[1] ""']
 
     if translation_message.obsolete:
         text = ['#~ ' + l for l in text]
@@ -382,7 +382,7 @@ def export_translation_message(translation_message, wrap_width=77):
     u'msgid "\\tServer name: %s"\nmsgstr ""'
 
     '''
-    return '\n'.join([
+    return u'\n'.join([
         comments_text_representation(translation_message),
         msgid_text_representation(translation_message, wrap_width),
         translation_text_representation(translation_message, wrap_width),
@@ -413,41 +413,55 @@ class GettextPoExporter:
 
         exported_files = {}
         for translation_file in translation_file_list:
-            if translation_file.is_template:
-                file_path = '%s/%s.pot' % (
-                    os.path.dirname(translation_file.path),
-                    translation_file.translation_domain)
-            else:
-                file_path = '%s/%s-%s.po' % (
-                    os.path.dirname(translation_file.path),
-                    translation_file.translation_domain,
-                    translation_file.language_code)
+            dirname = os.path.dirname(translation_file.path)
+            if dirname == '':
+                # There is no directory in the path. Use
+                # translation_domain as it's directory.
+                dirname = translation_file.translation_domain
 
-            # XXX: We should export the Header too.
-            #chunks = [unicode(self.header).encode(self.header.charset)]
-            chunks = []
+            if translation_file.is_template:
+                file_extension = 'pot'
+                file_path = os.path.join(
+                    dirname, '%s.%s' % (
+                        translation_file.translation_domain,
+                        file_extension))
+            else:
+                file_extension = 'po'
+                file_path = os.path.join(
+                    dirname, '%s-%s.%s' % (
+                        translation_file.translation_domain,
+                        translation_file.language_code,
+                        file_extension))
+
+            exported_header = export_translation_message(
+                translation_file.header)
+            chunks = [exported_header.encode(translation_file.header.charset)]
             for message in translation_file.messages:
                 if message.obsolete and len(message.translations) == 0:
                     # Ignore obsolete messages without translations.
                     continue
-                chunks.append(export_translation_message(message))
+                exported_message = export_translation_message(message)
+                chunks.append(
+                    exported_message.encode(translation_file.header.charset))
 
-            exported_file_content = u'\n\n'.join(chunks)
+            exported_file_content = '\n\n'.join(chunks)
 
             exported_files[file_path] = exported_file_content
 
         exported_file = ExportedTranslationFile()
         if len(exported_files) == 1:
-            # It's a single file export. Return it directly.
+            # It's a single file export.
             exported_file.path = file_path
-            exported_file.content = StringIO(exported_file_content)
+            exported_file.content_file = StringIO(exported_file_content)
             exported_file.content_type = 'application/x-po'
+            exported_file.file_extension = file_extension
         else:
             # There are multiple files being exported. We need to generate an
             # archive that include all them.
-            exported_file.content = LaunchpadWriteTarFile.files_to_stream(
+            exported_file.content_file = LaunchpadWriteTarFile.files_to_stream(
                 exported_files)
             exported_file.content_type = 'application/x-gtar'
+            exported_file.file_extension = 'tar.gz'
             # We cannot give a proper file path for the tarball, that's why we
             # don't set it. We leave that decision to the caller.
 

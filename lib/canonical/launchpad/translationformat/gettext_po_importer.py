@@ -11,7 +11,8 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import ITranslationFormatImporter
-from canonical.launchpad.translationformat.gettext_po_parser import POParser
+from canonical.launchpad.translationformat.gettext_po_parser import (
+    POParser, PoHeader)
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lp.dbschema import TranslationFileFormat
 
@@ -70,6 +71,15 @@ class GettextPoImporter:
 
         self.header = parser.header
         self.messages = parser.messages
+
+    def getHeaderFromString(self, header_string):
+        """See `ITranslationFormatImporter`."""
+        header = PoHeader(msgstr=header_string)
+
+        # The PoHeader needs to know is ready to be used.
+        header.updateDict()
+
+        return header
 
     def getLastTranslator(self):
         """See `ITranslationFormatImporter`."""

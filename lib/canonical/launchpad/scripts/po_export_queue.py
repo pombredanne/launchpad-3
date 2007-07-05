@@ -7,6 +7,7 @@ import psycopg
 import textwrap
 import traceback
 from StringIO import StringIO
+from zope.proxy import removeAllProxies
 from zope.component import getUtility
 
 from canonical.config import config
@@ -215,18 +216,27 @@ def process_request(potemplate, person, objects, format, logger):
             # filename.
             assert exported_file.file_extension, (
                 'File extension must have a value!.')
-            exported_file.path = 'launchpad-%s.%s' % (
+            exported_path = 'launchpad-%s.%s' % (
                 potemplate.potemplatename.translationdomain,
                 exported_file.file_extension)
         else:
-            # We only use basename.
-            exported_file.path = os.path.basename(exported_file.path)
+            # Convert the path to a single file name so it's noted in
+            # librarian.
+            exported_path = exported_file.path.replace(os.sep, '_')
 
+        # XXX CarlosPerelloMarin 20070705: Reviewer, is there any way to avoid
+        # this other than define the file object like interface in ZCML ?
+        content_file = removeAllProxies(exported_file.content_file)
+        # Go to the end of the file.
+        content_file.seek(0, 2)
+        size = content_file.tell()
+        # Go back to the start of the file.
+        content_file.seek(0)
         alias_set = getUtility(ILibraryFileAliasSet)
         alias = alias_set.create(
-            name=exported_file.path,
-            size=exported_file.content.len,
-            file=exported_file.content,
+            name=exported_path,
+            size=size,
+            file=content_file,
             contentType=exported_file.content_type)
         result.url = alias.http_url
 

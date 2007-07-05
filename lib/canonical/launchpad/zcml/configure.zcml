@@ -130,6 +130,7 @@
     <include file="questionreopening.zcml" />
     <include file="questionsubscription.zcml" />
     <include file="questiontarget.zcml" />
+    <include file="translationcommonformat.zcml" />
     <include file="translationgroup.zcml" />
     <include file="translationimportqueue.zcml" />
     <include file="translator.zcml" />

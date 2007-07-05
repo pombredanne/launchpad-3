@@ -12,6 +12,7 @@ __all__ = [
 
 import os
 import tarfile
+import tempfile
 import time
 import zope
 from StringIO import StringIO
@@ -77,7 +78,7 @@ class LaunchpadWriteTarFile:
     @classmethod
     def files_to_stream(cls, files):
         """Turn a dictionary of files into a data stream."""
-        buffer = StringIO()
+        buffer = tempfile.TemporaryFile()
         archive = cls(buffer)
         archive.add_files(files)
         archive.close()

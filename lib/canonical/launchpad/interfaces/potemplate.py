@@ -45,13 +45,6 @@ class IPOTemplate(IRosettaStats):
             "developers."),
         required=False)
 
-    header = Text(
-        title=_('Header'),
-        description=_(
-            "The standard template header as gettext creates it. It's used "
-            "to get some default values when creating a new PO file."),
-        required=True)
-
     iscurrent = Bool(
         title=_("Accept translations?"),
         description=_(
@@ -183,6 +176,9 @@ class IPOTemplate(IRosettaStats):
 
     def __iter__():
         """Return an iterator over current IPOTMsgSets in this template."""
+
+    def getHeader():
+        """Return an ITranslationHeader representing its header."""
 
     def getPOTMsgSetByMsgIDText(msgidtext, only_current=False):
         """Return the IPOTMesgSet indexed by msgidtext from this template.

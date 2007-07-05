@@ -8,7 +8,7 @@ __metaclass__ = type
 
 __all__ = [
     'POMessage',
-    'POHeader',
+    'PoHeader',
     'POParser',
     ]
 
@@ -117,9 +117,11 @@ class POMessage(object):
             return [self.initial_indent + text]
 
 
-class POHeader(dict, POMessage):
+class PoHeader(dict, POMessage):
 
     implements(ITranslationHeader, ITranslationMessage)
+
+    strftime_text = '%F %R%z'
 
     def __init__(self, **kw):
         dict.__init__(self)
@@ -343,7 +345,7 @@ class POHeader(dict, POMessage):
             self[key] = other[key]
 
     def copy(self):
-        cp = POHeader(self)
+        cp = PoHeader(self)
         cp.updateDict()
         # copy any changes made by user-code
         cp.update(self)
@@ -414,12 +416,37 @@ class POHeader(dict, POMessage):
         """See ITranslationHeader."""
         return self.msgstr
 
+    def updateFromTemplateHeader(self, template_header):
+        """See `ITranslationHeader`."""
+        # 'Domain' is a non standard header field. However, this is required
+        # for good Plone support. It relies in that field to know the
+        # translation domain. For more information you can take a look to
+        # https://bugs.launchpad.net/rosetta/+bug/5
+        fields_to_copy = ['Domain', 'POT-Creation-Date']
+
+        for field in fields_to_copy:
+            if field in template_header:
+                self[field] = template_header[field]
+
+        self.updateDict()
+
+    def setTranslationRevisionDate(self, revision_date):
+        """See `ITranslationHeader`."""
+        self['PO-Revision-Date'] = revision_date.strftime(self.strftime_text)
+        self.updateDict()
+
+    def setExportDateField(self, export_date):
+        """See `ITranslationHeader`."""
+        self['X-Launchpad-Export-Date'] = export_date.strftime(
+            self.strftime_text)
+        self.updateDict()
+
 
 class POParser(object):
 
     implements(IPOParser)
 
-    def __init__(self, translation_factory=POMessage, header_factory=POHeader):
+    def __init__(self, translation_factory=POMessage, header_factory=PoHeader):
         self.translation_factory = translation_factory
         self.header_factory = header_factory
         self.header = None

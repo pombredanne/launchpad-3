@@ -1,6 +1,6 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-from zope.schema import TextLine, Text, Field, Choice
+from zope.schema import TextLine, Field, Choice
 from zope.interface import Interface, Attribute
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 
@@ -38,10 +38,6 @@ class IPOFile(IRosettaStats):
     description = Attribute("PO file description.")
 
     topcomment = Attribute("The main comment for this .po file.")
-
-    header = Text(
-        title=u'The header of this .po file.',
-        required=False)
 
     fuzzyheader = Attribute("Whether the header is fuzzy or not.")
 
@@ -115,6 +111,9 @@ class IPOFile(IRosettaStats):
 
     def __iter__():
         """Return an iterator over Current IPOMessageSets in this PO file."""
+
+    def getHeader():
+        """Return an ITranslationHeader representing its header."""
 
     def getPOMsgSet(msgid_text, only_current=False):
         """Return the IPOMsgSet in this IPOFile by msgid_text or None.

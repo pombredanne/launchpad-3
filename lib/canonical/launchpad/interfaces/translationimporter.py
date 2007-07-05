@@ -136,6 +136,13 @@ class ITranslationFormatImporter(Interface):
         :return: an ITranslationFile representing the parsed file.
         """
 
+    def getHeaderFromString(header_string):
+        """Return an ITranslationHeader representing the given header_string.
+
+        :param header_string: A text representing a string for this concrete
+            file format.
+        """
+
     def getLastTranslator():
         """Return a tuple of name and email for last translator.
 
