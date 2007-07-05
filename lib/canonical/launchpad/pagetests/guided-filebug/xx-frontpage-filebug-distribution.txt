@@ -17,8 +17,23 @@ for either a product or a package in a distribution.
     >>> user_browser.getControl('Package') is not None
     True
 
+If we select a distribution that doesn't use Launchpad Bugs we will be
+presented with a warning.
+
+    >>> user_browser.getControl('Distribution').selected = True
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.distribution').value = ['debian']
+    >>> user_browser.getControl('Summary').value = 'Evolution crashes'
+    >>> user_browser.getControl('Continue').click()
+    >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
+    ...     print extract_text(message)
+    Debian does not use Launchpad as its bug tracker.
+
 After we selected a target and entered a summary, a list of possible
 duplicates are presented.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/')
+    >>> user_browser.getLink('Report a bug').click()
 
     >>> user_browser.getControl('Distribution').selected = True
     >>> user_browser.getControl(
