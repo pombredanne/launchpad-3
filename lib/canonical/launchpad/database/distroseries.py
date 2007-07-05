@@ -229,7 +229,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         if self.status == DistroSeriesStatus.FROZEN:
             return True
 
-        # Stable/Released states
+        # Define stable/released states.
         stable_states = (DistroSeriesStatus.SUPPORTED,
                          DistroSeriesStatus.CURRENT)
 
@@ -243,7 +243,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             self.status not in stable_states):
             return False
 
-        # Allow anything else
+        # Allow anything else.
         return True
 
     def updatePackageCount(self):

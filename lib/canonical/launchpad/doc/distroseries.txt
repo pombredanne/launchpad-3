@@ -131,7 +131,7 @@ not, according the distroseries status and the upload target pocket.
    >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.SECURITY)
    False
 
-FROZEN  status is special, it allows uploads for all pocket, because
+The FROZEN status is special.  Uploads are allowed for all pockets as
 the upload will have to wait for manual approval anyway:
 
    >>> from zope.security.proxy import removeSecurityProxy
@@ -143,7 +143,6 @@ the upload will have to wait for manual approval anyway:
    True
    >>> hoary.canUploadToPocket(PackagePublishingPocket.SECURITY)
    True
-
 
 
 Package searching
