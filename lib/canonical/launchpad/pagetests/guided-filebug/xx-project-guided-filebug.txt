@@ -24,7 +24,8 @@ a list of possible duplicates.
 
     >>> from canonical.launchpad.ftests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
-    #7: A test bug
+    #7 A test bug
+    New, last updated 2006-05-19
 
 Entering a description and submitting the bug takes the user to the bug
 page.
@@ -73,9 +74,12 @@ As before, we get a list of similar bugs to choose from, including the
 bugs we filed recently.
 
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
-    #7: A test bug
-    #...: Evolution crashes
-    #...: Evolution crashes lots
+    #7 A test bug
+    New, last updated 2006-05-19
+    #... Evolution crashes
+    New, last updated ...
+    #... Evolution crashes lots
+    New, last updated ...
 
 This one matches, so we subscribe.
 
