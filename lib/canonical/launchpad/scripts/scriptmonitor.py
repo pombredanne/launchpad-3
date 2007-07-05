@@ -9,7 +9,7 @@ __all__ = ['check_script']
 def check_script(con, log, hostname, scriptname, completed_from, completed_to):
     """Check whether a script ran on a specific host within stated timeframe.
 
-    Return True on success, or log an error message and return False
+    Return nothing on success, or log an error message and return error message
     """
     cur = con.cursor()
     cur.execute("""
@@ -20,7 +20,7 @@ def check_script(con, log, hostname, scriptname, completed_from, completed_to):
         """ % (hostname, scriptname, completed_from, completed_to))
     try:
         script_id = cur.fetchone()[0]
-        return script_id
+        return None
     except TypeError:
         try:
             cur.execute("""
@@ -31,15 +31,13 @@ def check_script(con, log, hostname, scriptname, completed_from, completed_to):
             date_last_seen = cur.fetchone()[0]
             if not date_last_seen:
                 raise
-            log.fatal(
-                "The script '%s' didn't run on '%s' between "
+            output = ("The script '%s' didn't run on '%s' between "
                 "%s and %s (last seen %s)"
                     % (scriptname, hostname, completed_from,
-                        completed_to, date_last_seen)
-                )
+                        completed_to, date_last_seen))
+            log.fatal(output)
         except:
-            log.fatal(
-                "The script '%s' didn't run on '%s' between %s and %s"
-                    % (scriptname, hostname, completed_from, completed_to)
-                )
-        return False
+            output = ("The script '%s' didn't run on '%s' between %s and %s"
+                    % (scriptname, hostname, completed_from, completed_to))
+            log.fatal(output)
+        return output

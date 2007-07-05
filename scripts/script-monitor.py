@@ -9,8 +9,10 @@ __all__ = ['check_script']
 import _pythonpath
 
 from datetime import datetime, timedelta
+from email.MIMEText import MIMEText
 from optparse import OptionParser
 from time import strftime
+import smtplib
 import sys
 
 from canonical.database.sqlbase import connect
@@ -60,10 +62,26 @@ def main():
                 })
 
         error_found = 0
+        msg, subj = [], []
         for hs in hosts_scripts:
-            if not check_script(con, log, hs['hostname'], hs['scriptname'],
-                completed_from, completed_to):
+            failure_msg = check_script(con, log, hs['hostname'], 
+                hs['scriptname'], completed_from, completed_to)
+            if failure_msg:
+                msg.append(failure_msg)
+                subj.append("%s:%s" % (hs['hostname'], hs['scriptname']))
                 error_found = 2
+        if error_found:
+            # Construct our email
+            msg = MIMEText('\n'.join(msg))
+            msg['Subject'] = "Scripts failed to run: %s" % ", ".join(subj)
+            msg['From'] = 'launchpad@lists.canonical.com'
+            msg['To'] = 'launchpad@lists.canonical.com'
+            
+            # Send out the email
+            smtp = smtplib.SMTP()
+            smtp.connect()
+            smtp.sendmail('launchpad@lists.canonical.com', ['launchpad@lists.canonical.com'], msg.as_string())
+            smtp.close()
         return error_found
     except:
         log.exception("Unhandled exception")
