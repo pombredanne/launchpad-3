@@ -576,7 +576,9 @@ class BranchSet:
                                     visible_by_user=None):
         """See IBranchSet."""
         assert product is not None, "Must have a valid product."
-        query = "Branch.product = %d" % product.id
+        lifecycle_clause = self._lifecycleClause(
+            DEFAULT_BRANCH_STATUS_IN_LISTING)
+        query = "Branch.product = %d%s" % (product.id, lifecycle_clause)
         return Branch.select(
             self._generateBranchClause(query, visible_by_user),
             limit=quantity,
