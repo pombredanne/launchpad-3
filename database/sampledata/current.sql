@@ -1812,9 +1812,71 @@ ALTER TABLE entitlement ENABLE TRIGGER ALL;
 
 ALTER TABLE faq DISABLE TRIGGER ALL;
 
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (1, 'Wireless Networking Documentation', 'wifi', 'Installation instructions for many wireless cards can be found at:
+
+https://help.ubuntu.com/community/WifiDocs', NULL, 1, 16, '2007-07-03 21:13:24.061479', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (2, 'Dial-up Modem Networking Configuration', 'networking dial-up modem', 'Instructions on how to configure networking with a dial-up modem can be found at:
+
+https://help.ubuntu.com/community/DialupModemHowto
+
+This include explanations on how to install drivers for many common "soft-modems".', NULL, 1, 16, '2007-07-03 21:18:35.586123', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (3, 'How to obtain a fixed hostname with a dynamic IP', 'networking dns', 'The following document explains how to obtain a hostname that will work with the dynamic addresses that most providers give to their users:
+
+https://help.ubuntu.com/community/DynamicDNS
+
+', NULL, 1, 16, '2007-07-03 21:28:59.461247', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (4, 'How can I make VOIP calls?', 'sip phone', 'Ekiga is the standard Ubuntu application to make Voice-over-IP calls. 
+
+A document explaining how to configure and use it is available at:
+https://help.ubuntu.com/community/Ekiga', NULL, 1, 12, '2007-07-03 21:33:49.087585', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (5, 'How can I customize my desktop?', NULL, 'Instructions on how to customize your desktop environment can be found at:
+https://help.ubuntu.com/7.04/user-guide/C/prefs-look-and-feel.html
+
+This explain how to change:
+- the desktop background image (aka wallpaper);
+- the default font;
+- the appearance of windows;
+- the screensaver;
+- and a lot of other items also.', NULL, 1, 12, '2007-07-03 21:37:51.922609', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (6, 'How can I play MP3/Divx/DVDs/Quicktime/Realmedia files or view Flash/Java web pages', NULL, 'Playing many common formats such as DVIX, MP3, DVD, or Flash animations require the installation of plugins.
+
+See https://help.ubuntu.com/community/RestrictedFormats for all the details.', NULL, 1, 16, '2007-07-03 21:43:57.613622', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (7, 'How do I install Java?', NULL, 'Windows
+
+On Windows, Firefox can be used with Sun''s Java Runtime Environment (JRE) 1.4 and above. It is possible to install the latest version from within Firefox, using XPInstall technology: http://www.java.com/en/download/
+
+Linux
+
+Firefox is compiled with gcc 3.2.3, so a compatible version of the Java plugin must be used. On Linux, Firefox requires JRE 1.4.2 or later (http://java.sun.com/j2se/1.4.2/download.html).
+
+If you are using an older Linux distribution, you may need to install the gcc3 support libraries, as the gcc 3.2 version of the Java plugin requires libgcc_s.so.1 to operate. You may be able to find packages using Google.
+
+If you are using an old or unofficial build of Firefox, you can check which compiler was used by entering about:buildconfig in the location bar and pressing enter. You will see a line such as gcc version 3.3 20030226 (prerelease) (SuSE Linux), which will show the compiler that was used. If gcc2.9x was used, you need to use the ns610 plugin, not the ns610-gcc32 plugin.
+
+Mac OS X
+
+Java software can be downloaded directly from Apple (http://www.apple.com/java/).
+', 4, NULL, 12, '2007-07-03 21:58:34.782395', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (8, 'How do I install Extensions?', NULL, 'You can find various extensions  at http://addons.mozilla.org.
+
+When you see a link on a website to download or install an extension, simply click on that link. If you get prompted to save a XPI file, save it, and use File > Open File..., to open the file in Firefox.
+
+You can also open the Add-ons window (Tools > Add-ons), and drag the link or file to the Add-ons window.', 4, NULL, 12, '2007-07-03 22:01:00.585767', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (9, 'How do I troubleshoot problems with extensions/themes?', NULL, 'Poorly designed or incompatible Extensions can cause problems with your browser, including make it crash, slow down page display, etc. If you encounter strange problems relating to parts of the browser no longer working, the browser not starting, windows with strange or distorted appearance, degraded performance, etc, you may be suffering from Extension or Theme trouble. Restart the browser in Safe Mode. On Windows, start using the "Safe Mode" shortcut created in your Start menu or by running firefox.exe -safe-mode. On Linux, start with ./firefox -safe-mode and on Mac OS X, run:
+
+    cd /Applications/Firefox.app/Contents/MacOS/
+    ./firefox-bin -safe-mode
+
+When started in Safe Mode all extensions are disabled and the Default theme is used. Disable the Extension/Theme that is causing trouble and then start normally.
+', 4, NULL, 12, '2007-07-03 22:02:39.407123', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (10, 'How do I install plugins (Shockwave, QuickTime, etc.)?', NULL, 'PluginDoc (http://plugindoc.mozdev.org/faqs/) lists common plugins (such as RealPlayer, QuickTime, Flash, Java, etc.) and how to install them in Firefox.', 4, NULL, 16, '2007-07-03 22:05:36.648951', NULL, NULL, NULL);
 
 
 ALTER TABLE faq ENABLE TRIGGER ALL;
+
+
+
+
 
 
 
