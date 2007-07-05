@@ -27,7 +27,7 @@ from zope.app.form.interfaces import InputErrors
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
-from zope.interface import alsoProvides, implements
+from zope.interface import implements
 from zope.publisher.interfaces import NotFound
 from zope.publisher.interfaces.browser import IBrowserPublisher
 
@@ -43,7 +43,6 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
     safe_action, urlappend)
-from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.lp.dbschema import BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
@@ -239,16 +238,12 @@ class FileBugViewBase(LaunchpadFormView):
                 self.setFieldError("packagename", "Please enter a package name")
 
     def setUpWidgets(self):
-        """See `LaunchpadFormView`."""
+        """Customize the onKeyPress event of the package name chooser."""
         LaunchpadFormView.setUpWidgets(self)
 
-        # Customize the onKeyPress event of the package name chooser.
         if "packagename" in self.field_names:
             self.widgets["packagename"].onKeyPress = (
                 "selectWidget('choose', event)")
-
-        # Don't display "(Optional)" on comment field.
-        alsoProvides(self.widgets['comment'], IAlwaysSubmittedWidget)
 
     def contextUsesMalone(self):
         """Does the context use Malone as its official bugtracker?"""
@@ -492,6 +487,18 @@ class FileBugViewBase(LaunchpadFormView):
             return context.distribution
         else:
             return None
+
+    def showOptionalMarker(self, field_name):
+        # The comment field _is_ required, but only when filing the
+        # bug. Since the same form is also used for subscribing to a
+        # bug, the comment field in the schema cannot be marked
+        # required=True. Instead it's validated in
+        # FileBugViewBase.validate. So... we need to suppress the
+        # "(Optional)" marker.
+        if field_name == 'comment':
+            return False
+        else:
+            return LaunchpadFormView.showOptionalMarker(self, field_name)
 
 
 class FileBugAdvancedView(FileBugViewBase):
