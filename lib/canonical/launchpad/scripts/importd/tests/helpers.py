@@ -16,7 +16,7 @@ from bzrlib.tests import TestCaseWithTransport
 
 from canonical.config import config
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.testing import BzrlibZopelessLayer, LaunchpadZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer
 from importd.tests.helpers import SandboxHelper
 from importd.tests.test_bzrmanager import ProductSeriesHelper
 
@@ -24,7 +24,7 @@ from importd.tests.test_bzrmanager import ProductSeriesHelper
 class ImportdTestCase(TestCaseWithTransport):
     """Common base for test cases of importd script backends."""
 
-    layer = BzrlibZopelessLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         TestCaseWithTransport.setUp(self)

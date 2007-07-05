@@ -6,7 +6,7 @@ __metaclass__ = type
 __all__ = [
     'AvatarTestCase', 'CodeHostingTestProviderAdapter',
     'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
-    'ServerTestCase', 'TwistedBzrlibLayer', 'adapt_suite', 'deferToThread']
+    'ServerTestCase', 'adapt_suite', 'deferToThread']
 
 import os
 import shutil
@@ -14,7 +14,6 @@ import signal
 import threading
 import unittest
 
-from canonical.testing import TwistedLayer, BzrlibLayer
 from canonical.tests.test_twisted import TwistedTestCase
 
 from twisted.internet import defer, threads
@@ -93,10 +92,6 @@ class ServerTestCase(TrialTestCase):
 
     def getTransport(self, relpath=None):
         return self.server.getTransport(relpath)
-
-
-class TwistedBzrlibLayer(TwistedLayer, BzrlibLayer):
-    """Use the Twisted reactor and Bazaar's temporary directory logic."""
 
 
 def deferToThread(f):

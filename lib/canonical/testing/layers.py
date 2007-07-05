@@ -20,8 +20,7 @@ __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'LaunchpadScriptLayer', 'PageTestLayer',
-    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer',
-    'BzrlibZopelessLayer', 'BzrlibLayer'
+    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer'
     ]
 
 import shutil
@@ -725,33 +724,3 @@ class TwistedLayer(LaunchpadZopelessLayer):
             if pool is not None:
                 reactor.threadpool.stop()
                 reactor.threadpool = None
-
-
-class BzrlibLayer(BaseLayer):
-    """Clean up the test directory created by TestCaseInTempDir tests."""
-
-    @classmethod
-    @profiled
-    def setUp(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def testSetUp(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def testTearDown(cls):
-        pass
-
-
-# XXX: JonathanLange 2007-06-13, It seems that this layer behaves erroneously
-# if it is a subclass of (LaunchpadZopelessLayer, BzrlibLayer).
-class BzrlibZopelessLayer(BzrlibLayer, LaunchpadZopelessLayer):
-    """Clean up the test directory created by TestCaseInTempDir tests."""

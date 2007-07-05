@@ -26,10 +26,11 @@ from canonical.tests.test_twisted import TwistedTestCase
 
 from canonical.codehosting import plugins
 from canonical.codehosting.plugins import lpserve
-from canonical.codehosting.tests.helpers import (
-    deferToThread, TwistedBzrlibLayer)
+from canonical.codehosting.tests.helpers import deferToThread
 from canonical.config import config
 from canonical.codehosting.tests.servers import Authserver
+
+from canonical.testing import TwistedLayer
 
 
 ROCKETFUEL_ROOT = os.path.dirname(
@@ -38,7 +39,7 @@ ROCKETFUEL_ROOT = os.path.dirname(
 
 class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
 
-    layer = TwistedBzrlibLayer
+    layer = TwistedLayer
 
     def setUp(self):
         TestCaseInTempDir.setUp(self)

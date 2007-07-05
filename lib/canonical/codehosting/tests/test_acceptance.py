@@ -15,17 +15,20 @@ from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
 
 from canonical.codehosting.tests.helpers import (
-    adapt_suite, deferToThread, ServerTestCase, TwistedBzrlibLayer)
+    adapt_suite, deferToThread, ServerTestCase)
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting.transport import branch_id_to_path
+
 from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+
+from canonical.testing import TwistedLayer
 
 
 class SSHTestCase(ServerTestCase, TestCaseWithTransport):
 
-    layer = TwistedBzrlibLayer
+    layer = TwistedLayer
     server = None
 
     def installServer(self, server):

@@ -15,12 +15,9 @@ from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 from canonical.authserver.interfaces import READ_ONLY, WRITABLE
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import LaunchpadServer, makedirs
-from canonical.testing import BzrlibLayer
 
 
 class TestLaunchpadServer(TestCaseInTempDir):
-
-    layer = BzrlibLayer
 
     def setUp(self):
         TestCaseInTempDir.setUp(self)
@@ -134,8 +131,6 @@ class TestLaunchpadServer(TestCaseInTempDir):
 
 
 class TestLaunchpadTransport(TestCaseInTempDir):
-
-    layer = BzrlibLayer
 
     def setUp(self):
         TestCaseInTempDir.setUp(self)
@@ -277,8 +272,6 @@ class TestLaunchpadTransport(TestCaseInTempDir):
 
 class TestLaunchpadTransportReadOnly(TestCaseInTempDir):
     """Tests for read-only operations on the LaunchpadTransport."""
-
-    layer = BzrlibLayer
 
     def setUp(self):
         TestCaseInTempDir.setUp(self)

@@ -28,13 +28,13 @@ from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
 from canonical.launchpad.scripts.importd.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
 from canonical.launchpad.scripts.tests.webserver_helper import WebserverHelper
-from canonical.testing import LaunchpadZopelessLayer, BzrlibZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer
 
 
 class BzrSyncTestCase(TestCaseWithTransport):
     """Common base for BzrSync test cases."""
 
-    layer = BzrlibZopelessLayer
+    layer = LaunchpadZopelessLayer
 
     AUTHOR = "Revision Author <author@example.com>"
     LOG = "Log message"

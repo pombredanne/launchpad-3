@@ -14,13 +14,14 @@ from canonical.codehosting.tests.servers import (
     make_launchpad_server, make_sftp_server)
 
 from canonical.codehosting.tests.helpers import (
-    CodeHostingTestProviderAdapter, ServerTestCase, TwistedBzrlibLayer,
-    adapt_suite, deferToThread)
+    CodeHostingTestProviderAdapter, ServerTestCase, adapt_suite, deferToThread)
+
+from canonical.testing import TwistedLayer
 
 
 class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
-    layer = TwistedBzrlibLayer
+    layer = TwistedLayer
 
     def _cleanUp(self, result):
         # XXX: JonathanLange 2007-06-13, Override Twisted's post-test cleanup.
@@ -194,7 +195,7 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
 class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
 
-    layer = TwistedBzrlibLayer
+    layer = TwistedLayer
 
     def _cleanUp(self, result):
         # XXX: JonathanLange 2007-06-13, Override Twisted's post-test cleanup.
