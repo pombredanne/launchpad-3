@@ -63,7 +63,7 @@ class SSHTestCase(ServerTestCase, TestCaseWithTransport):
         """
         self.runInChdir(
             self.server.runAndWaitForDisconnect,
-            self.run_bzr_captured, ['push', remote_url], retcode=None)
+            self.run_bzr, ['push', remote_url], retcode=None)
 
     def getLastRevision(self, remote_url):
         """Get the last revision at the given URL.
@@ -286,7 +286,7 @@ class SmartserverTests(SSHTestCase):
             os.path.join(self.server._mirror_root,
                          branch_id_to_path(ro_branch_id)))
         self.runInChdir(
-            self.run_bzr_captured, ['push', '--create-prefix', ro_branch_url],
+            self.run_bzr, ['push', '--create-prefix', ro_branch_url],
             retcode=None)
 
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
@@ -319,7 +319,7 @@ class SmartserverTests(SSHTestCase):
             os.path.join(self.server._mirror_root,
                          branch_id_to_path(ro_branch_id)))
         self.runInChdir(
-            self.run_bzr_captured, ['push', '--create-prefix', ro_branch_url],
+            self.run_bzr, ['push', '--create-prefix', ro_branch_url],
             retcode=None)
 
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
