@@ -82,13 +82,26 @@ getByName() also accepts an argument to ignore inactive products.
     None
 
 You can also use the IProductSet to see some statistics on products.
+The methods use ILaunchpadStatisticSet to get the values.
 
-    >>> print productset.count_translatable()
-    3
-    >>> print productset.count_buggy()
-    3
-    >>> print productset.count_reviewed()
-    1
+    >>> class FakeStatistics:
+    ...     stats = {
+    ...         'products_with_translations': 1000,
+    ...         'projects_with_bugs': 2000,
+    ...         'reviewed_products': 3000}
+    ...     def value(self, name):
+    ...         return self.stats[name]
+
+    >>> from canonical.launchpad.database import ProductSet
+    >>> class FakeStatsProductSet(ProductSet):
+    ...     stats = FakeStatistics()
+
+    >>> print FakeStatsProductSet().count_translatable()
+    1000
+    >>> print FakeStatsProductSet().count_buggy()
+    2000
+    >>> print FakeStatsProductSet().count_reviewed()
+    3000
 
 It provides information on all the translatables available, too:
 
