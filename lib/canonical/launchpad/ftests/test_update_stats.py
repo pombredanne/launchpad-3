@@ -8,31 +8,34 @@ import unittest, subprocess, os.path, sys
 
 from zope.component import getUtility
 
-from canonical.config import config
-from canonical.database.sqlbase import commit, cursor
 from canonical.launchpad.ftests import login
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
+from canonical.launchpad.ftests.harness import (
+    LaunchpadTestCase, LaunchpadFunctionalTestCase)
 from canonical.launchpad.interfaces import (
     IDistributionSet, IDistroSeriesSet, ILanguageSet, IPOTemplateSet,
     IPersonSet)
-from canonical.testing.layers import LaunchpadZopelessLayer
+from canonical.config import config
 
 def get_script():
     script = os.path.join(config.root, 'cronscripts', 'update-stats.py')
     assert os.path.exists(script), '%s not found' % script
     return script
 
-class UpdateStatsTest(unittest.TestCase):
+class UpdateStatsTest(LaunchpadTestCase):
 
-    layer = LaunchpadZopelessLayer
     dbuser = 'statistician'
 
-    def setUp(self):
-        LaunchpadZopelessLayer.switchDbUser(self.dbuser)
+    def tearDown(self):
+        con = self.connect()
+        # Force a commit here so test harness optimizations know the database
+        # has been messed with by a subprocess.
+        con.commit()
+        LaunchpadTestCase.tearDown(self)
 
     def test_basic(self):
         # Nuke some stats so we know that they are updated
-        cur = cursor()
+        con = self.connect()
+        cur = con.cursor()
 
         # Destroy the LaunchpadStatistic entries so we can confirm they are
         # updated.
@@ -67,7 +70,7 @@ class UpdateStatsTest(unittest.TestCase):
         num_distroserieslanguage = cur.fetchone()[0]
 
         # Commit our changes so the subprocess can see them
-        commit()
+        con.commit()
 
         # Run the update-stats.py script
         cmd = [sys.executable, get_script(), '--quiet']
@@ -92,7 +95,7 @@ class UpdateStatsTest(unittest.TestCase):
                 )
 
         # Now confirm it did stuff it is supposed to
-        cur = cursor()
+        cur = con.cursor()
 
         # Make sure all DistroSeries.messagecount entries are updated
         cur.execute("SELECT COUNT(*) FROM DistroRelease WHERE messagecount=-1")
@@ -322,9 +325,12 @@ class UpdateTranslationStatsWithDisabledTemplateTest(
             spanish_hoary.contributor_count, new_contributor_count)
         self.failIf(contributor_count <= new_contributor_count)
 
-
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    suite = unittest.TestSuite()
+    suite.addTest(unittest.makeSuite(UpdateStatsTest))
+    suite.addTest(
+        unittest.makeSuite(UpdateTranslationStatsWithDisabledTemplateTest))
+    return suite
 
 
 if __name__ == '__main__':
