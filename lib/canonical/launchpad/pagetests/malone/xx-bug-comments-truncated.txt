@@ -93,7 +93,7 @@ changes to that test.
     ...     "\n"
     ...     "--\n"
     ...     "______________________\n"
-    ...     "human@somewhere.org\n"
+    ...     "human@example.org\n"
     ...     "Witty signatures rock!\n"
     ...     "\n"
     ...     "-----BEGIN PGP SIGNATURE-----\n"
@@ -116,7 +116,7 @@ email addresses in messages.
     >>> print extract_text(text.findAll('p')[-2])
     --
     ______________________
-    human@somewhere.org
+    human@example.org
     Witty signatures rock!
 
 Unauthenticated users, such as a bot will see the obfuscated email

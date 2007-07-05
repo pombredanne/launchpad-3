@@ -180,7 +180,7 @@ wrapped in markup to hide them:
     ...                    '\n')
     >>> signature = ('-- \n'
     ...              '__C U R T I S  C.  H O V E Y_______\n'
-    ...              'sinzui.is@somewhere.org\n'
+    ...              'sinzui.is@example.org\n'
     ...              'Guilty of stealing everything I am.\n'
     ...              '\n')
     >>> pgp_close = ('-----BEGIN PGP SIGNATURE-----\n'

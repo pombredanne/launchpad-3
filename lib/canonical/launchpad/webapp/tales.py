@@ -1419,7 +1419,7 @@ class FormattersAPI:
                 # When we have a dpkg_warning, we must do an extra test
                 # that the first '|' is actually dpkg output. When it is
                 # we switch the quote matching rules. We also clear the
-                # warning to ensure we do not do pointless extra checks
+                # warning to ensure we do not do pointless extra checks.
                 re_quoted = self._re_dpkg_quoted
                 dpkg_warning = False
             elif not in_fold and re_quoted.match(line) is not None:
@@ -1468,13 +1468,13 @@ class FormattersAPI:
         return '\n'.join(output)
 
     # This is a regular expression that matches email address embedded in
-    # text. It is not RFC 2882 compliant, nor does it need to be. This
+    # text. It is not RFC 2821 compliant, nor does it need to be. This
     # expression strives to identify probable email addresses so that they
     # can be obfuscated when viewed by unauthenticated users. See
     # http://www.email-unlimited.com/stuff/email_address_validator.htm
     _re_email = re.compile(
         # localnames do not have [&?%!@<>,;:`|{}()#*^~ ] in practice
-        # (regardless of RFC 2882) because they conflict with other systems.
+        # (regardless of RFC 2821) because they conflict with other systems.
         # See https://lists.ubuntu.com
         #     /mailman/private/launchpad-reviews/2007-June/006081.html
         r"([\b]|[\"']?)[-/=0-9A-Z_a-z]" # first character of localname
