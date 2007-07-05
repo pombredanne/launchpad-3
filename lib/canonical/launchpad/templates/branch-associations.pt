@@ -6,25 +6,23 @@
     i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <div>
-        <img alt="branch icon" src="/@@/branch" />
-        <a tal:attributes="href context/fmt:url"
-           tal:content="context/displayname" />
-      </div>
-      <h1>Branch associations</h1>
-    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
-
 
 <style metal:fill-slot="head_epilogue" type="text/css">
   div.indented {padding-left: 2em}
 </style>
 
 <div metal:fill-slot="main">
+
+  <div>
+    <img alt="branch icon" src="/@@/branch" />
+    <a tal:attributes="href context/fmt:url"
+       tal:content="context/displayname" />
+  </div>
+  <h1>Branch associations</h1>
 
   <tal:not-junk condition="context/product">
     <h2>Project</h2>
@@ -40,7 +38,7 @@
 
   <tal:has-bugs condition="context/related_bugs">
     <div tal:repeat="bug context/related_bugs" class="indented">
-      <img src="/@@/bug" />
+      <img src="/@@/bug" alt="" />
       <a tal:attributes="href bug/fmt:url"
          tal:content="bug/title" />
     </div>
