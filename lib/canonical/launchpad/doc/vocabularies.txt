@@ -1216,4 +1216,73 @@ Inactive products and projects are not available
     The Ubuntu Project (Project) - class Project
     Ubuntu Test (Distribution) - class Distribution
 
+
+=== FAQ ===
+
+The FAQ vocabulary contains all the FAQs available in a particular
+collection. It provides the IHugeVocabulary interface.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+
+    >>> vocab = vocabulary_registry.get(firefox, 'FAQ')
+    >>> verifyObject(IHugeVocabulary, vocab)
+    True
+
+    >>> print vocab.displayname
+    Select a FAQ
+
+It contains all the FAQs of the collection, but not those from other
+collections:
+
+    >>> for faq in firefox.searchFAQs():
+    ...     if faq not in vocab:
+    ...         print "'%s' is not in vocabulary." % faq.title
+
+    >>> ubuntu_faq = ubuntu.getFAQ(1)
+    >>> ubuntu_faq in vocab
+    False
+
+And it only contains FAQs:
+
+    >>> u'10' in vocab
+    False
+
+The term's token is the FAQ's id and its title is the FAQ's title:
+
+    >>> firefox_faq = firefox.getFAQ(10)
+    >>> term = vocab.getTerm(firefox_faq)
+    >>> term.token
+    '10'
+    >>> print term.title
+    How do I install plugins (Shockwave, QuickTime, etc.)?
+
+Asking for something which isn't a FAQ of the target raises LookupError:
+
+    >>> vocab.getTerm(ubuntu_faq)
+    Traceback (most recent call last):
+      ...
+    LookupError:...
+
+Since IHugeVocabulary extends IVocabularyTokenized, the term can also
+be retrieved by token:
+
+    >>> term = vocab.getTermByToken(u'10')
+    >>> print term.title
+    How do I install plugins (Shockwave, QuickTime, etc.)?
+
+Trying to retrieve an unknown token raises LookupError:
+
+    >>> vocab.getTermByToken('-244')
+    Traceback (most recent call last):
+      ...
+    LookupError:...
+
+The searchForTerms() method returns FAQs that are similar to the query:
+
+    >>> for term in vocab.searchForTerms('Problem showing SVG'):
+    ...     print term.title
+    How do I troubleshoot problems with extensions/themes?
+    How do I install Java?
+
 XXX: document more vocabularies here, particularly when they break!
