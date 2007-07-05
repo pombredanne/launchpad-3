@@ -91,6 +91,10 @@ class ICodeImportSet(Interface):
             cvs_root=None, cvs_module=None):
         """Create a new CodeImport."""
 
+    # XXX: newWithId is only needed for code-import-sync-script. This method
+    # should be removed after the transition to the new code import system is
+    # complete. -- DavidAllouche 2007-07-05
+
     def newWithId(id, registrant, branch, rcs_type, svn_branch_url=None,
             cvs_root=None, cvs_module=None):
         """Create a new CodeImport with a specified database id."""

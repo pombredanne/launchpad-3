@@ -38,9 +38,7 @@ class CodeImportSync:
     def run(self):
         """Synchronize the CodeImport table with the ProductSeries table."""
 
-        # Get all relevant ProductSeries, and all CodeImports. We will need
-        # them later for set arithmetic. So we may as well use the complete
-        # lists for everything.
+        # Get all relevant ProductSeries, and all CodeImports.
         self.logger.info("Reading data.")
         self.logger.debug("Reading ProductSeries table.")
         series_map = dict(
@@ -85,6 +83,9 @@ class CodeImportSync:
         PROCESSING, SYNCING or STOPPED.
 
         Series where importstatus is DONTSYNC or TESTFAILED are ignored.
+
+        Series for non-MAIN CVS branches are also ignored because we do not
+        record the CVS branch in CodeImport.
         """
         series_iterator = getUtility(IProductSeriesSet).search(forimport=True)
         for series in series_iterator:
@@ -201,7 +202,7 @@ class CodeImportSync:
         date_last_successful = self.dateLastSuccessfulFromProductSeries(series)
         if (code_import.date_last_successful is not None
                 and date_last_successful is None):
-            self.logger.debug("Resetting CodeImport's branch.")
+            self.logger.debug("CodeImport.branch must be reset.")
             new_branch = self.createNewImportBranch(series)
             if new_branch is None:
                 # A branch name conflict occured.
