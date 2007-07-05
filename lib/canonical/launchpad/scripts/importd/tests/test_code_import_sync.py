@@ -211,8 +211,14 @@ class TestGetImportSeries(CodeImportSyncTestCase):
         stopped.importstatus = ImportStatus.STOPPED
         self.assertGetImportSeriesYields(stopped)
 
-    # TODO: test that non-MAIN cvs branches are ignored, CodeImport does not
-    # have a cvs_branch attribute.
+    def testCvsNonMain(self):
+        # getImportSeries should ignore series with a cvsbranch which is not
+        # MAIN, regardless of the importstatus.
+        testing = self.createTestingSeries('testing')
+        self.updateSeriesWithCvs(testing)
+        assert testing.cvsbranch == 'MAIN' # test suite invariant
+        testing.cvsbranch = 'BRANCH-FOO'
+        self.assertGetImportSeriesYieldsNothing()
 
 
 class TestReviewStatusFromImportStatus(unittest.TestCase):

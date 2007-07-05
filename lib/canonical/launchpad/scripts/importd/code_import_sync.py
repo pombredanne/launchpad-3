@@ -12,7 +12,8 @@ __all__ = ['CodeImportSync']
 import psycopg
 from zope.component import getUtility
 
-from canonical.lp.dbschema import CodeImportReviewStatus, ImportStatus
+from canonical.lp.dbschema import (
+    CodeImportReviewStatus, ImportStatus, RevisionControlSystems)
 from canonical.launchpad.interfaces import (
     IBranchSet, ICodeImportSet, ILaunchpadCelebrities, IProductSeriesSet)
 from canonical.launchpad.webapp import canonical_url
@@ -74,7 +75,9 @@ class CodeImportSync:
                                          ImportStatus.PROCESSING,
                                          ImportStatus.SYNCING,
                                          ImportStatus.STOPPED):
-                # TODO: filter out non-main branches
+                if series.rcstype == RevisionControlSystems.CVS:
+                    if series.cvsbranch != 'MAIN':
+                        continue
                 yield series
             else:
                 assert series.importstatus is not None
