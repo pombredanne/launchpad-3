@@ -30,7 +30,10 @@ class CodeImportSync:
     def runAndCommit(self):
         """Entry point method for the script runner."""
         self.run()
+        self.logger.debug("Committing.")
         self.txn.commit()
+        self.logger.debug("Done committing.")
+        self.logger.info("Code imports sync complete.")
 
     def run(self):
         """Synchronize the CodeImport table with the ProductSeries table."""
@@ -38,28 +41,42 @@ class CodeImportSync:
         # Get all relevant ProductSeries, and all CodeImports. We will need
         # them later for set arithmetic. So we may as well use the complete
         # lists for everything.
+        self.logger.info("Reading data.")
+        self.logger.debug("Reading ProductSeries table.")
         series_map = dict(
             (series.id, series) for series in self.getImportSeries())
+        self.logger.debug("Done reading ProductSeries table.")
+        self.logger.debug("Reading CodeImport table.")
         code_imports_map = dict(
             (code_import.id, code_import)
             for code_import in getUtility(ICodeImportSet).getAll())
+        self.logger.debug("Done reading CodeImport table.")
         series_ids = set(series_map.iterkeys())
         code_import_ids = set(code_imports_map.iterkeys())
 
         # Create CodeImports for ProductSeries with no matching CodeImport.
-        for series_id in sorted(series_ids.difference(code_import_ids)):
+        series_id_list = list(sorted(series_ids.difference(code_import_ids)))
+        self.logger.info("Creating %d CodeImport rows.", len(series_id_list))
+        for series_id in series_id_list:
             series = series_map[series_id]
             self.createCodeImport(series)
 
         # Update CodeImports from their matching ProductSeries.
-        for update_id in sorted(series_ids.intersection(code_import_ids)):
+        update_id_list = list(sorted(series_ids.intersection(code_import_ids)))
+        self.logger.info("Updating %d CodeImport rows.", len(update_id_list))
+        for update_id in update_id_list:
             series = series_map[update_id]
             code_import = code_imports_map[update_id]
             self.updateCodeImport(series, code_import)
 
         # Delete CodeImports not associated to any valid ProductSeries.
-        for code_import_id in code_import_ids.difference(series_ids):
-            self.deleteOrphanedCodeImport(code_import_id)
+        code_import_id_list = list(sorted(
+            code_import_ids.difference(series_ids)))
+        self.logger.info(
+            "Deleting %d CodeImport rows.", len(code_import_id_list))
+        for code_import_id in code_import_id_list:
+            code_import = code_imports_map[code_import_id]
+            self.deleteOrphanedCodeImport(code_import)
 
     def getImportSeries(self):
         """Iterate over ProductSeries for which we want to have a CodeImport.
@@ -139,6 +156,8 @@ class CodeImportSync:
         :postcondition: The CodeImport object corresponding to `series` exists
             in the database and is up to date.
         """
+        self.logger.debug("Creating CodeImport for series %s/%s (%d).",
+            series.product.name, series.name, series.id)
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
 
         # Get a branch to attach the new CodeImport to.
@@ -150,6 +169,7 @@ class CodeImportSync:
             branch = self.createNewImportBranch(series)
             if branch is None:
                 # A branch name conflict occured.
+                self.logger.debug("Aborted creating CodeImport.")
                 return
         # Given the branch, we can create the CodeImport.
         code_import = getUtility(ICodeImportSet).newWithId(
@@ -160,6 +180,7 @@ class CodeImportSync:
         code_import.review_status = review_status
         date_last_successful = self.dateLastSuccessfulFromProductSeries(series)
         code_import.date_last_successful = date_last_successful
+        self.logger.debug("Done creating CodeImport.")
         return code_import
 
     def updateCodeImport(self, series, code_import):
@@ -169,6 +190,8 @@ class CodeImportSync:
         :param code_import: The CodeImport corresponding to `series`.
         :postcondition: `code_import` is up to date with `series`.
         """
+        self.logger.debug("Updating CodeImport for series %s/%s (%d).",
+            series.product.name, series.name, series.id)
         assert (series.import_branch is None
                 or code_import.branch == series.import_branch)
 
@@ -178,9 +201,11 @@ class CodeImportSync:
         date_last_successful = self.dateLastSuccessfulFromProductSeries(series)
         if (code_import.date_last_successful is not None
                 and date_last_successful is None):
+            self.logger.debug("Resetting CodeImport's branch.")
             new_branch = self.createNewImportBranch(series)
             if new_branch is None:
                 # A branch name conflict occured.
+                self.logger.debug("Aborted updating CodeImport.")
                 return
             code_import.branch = new_branch
         code_import.date_last_successful = date_last_successful
@@ -192,6 +217,7 @@ class CodeImportSync:
         code_import.svn_branch_url = series.svnrepository
         review_status = self.reviewStatusFromImportStatus(series.importstatus)
         code_import.review_status = review_status
+        self.logger.debug("Done updating Codeimport.")
 
     def createNewImportBranch(self, series):
         """Create a new branch for the CodeImport associated to `series`.
@@ -199,10 +225,12 @@ class CodeImportSync:
         :param: an import ProductSeries.
         :return: an import branch, or None if a branch name conflict occured.
         """
+        self.logger.debug("Creating import branch.")
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         unique_name = '~%s/%s/%s' % (
             vcs_imports.name, series.product.name, series.name)
         branch_set = getUtility(IBranchSet)
+        self.logger.debug("Checking name is available: %s", unique_name)
         conflict_branch = branch_set.getByUniqueName(unique_name)
         if conflict_branch is not None:
             # If there is already an import branch by this name, it should
@@ -210,19 +238,21 @@ class CodeImportSync:
             self.logger.error("Branch name conflict: %s",
                 canonical_url(conflict_branch))
             return None
+        self.logger.debug("Name available, creating branch.")
         branch = getUtility(IBranchSet).new(
             series.name, vcs_imports, series.product, None, None)
+        self.logger.debug("Done creating import branch.")
         return branch
 
-    def deleteOrphanedCodeImport(self, code_import_id):
+    def deleteOrphanedCodeImport(self, code_import):
         """Delete a CodeImport object that is no longer associated to an import
         product series.
-
-        :param code_import_id: database id of a CodeImport.
         """
-        code_import = getUtility(ICodeImportSet).get(code_import_id)
-        getUtility(ICodeImportSet).delete(code_import_id)
+        self.logger.debug("Deleting CodeImport %s (%d).",
+            code_import.branch.unique_name, code_import.id)
+        getUtility(ICodeImportSet).delete(code_import.id)
         self.logger.warning(
             "Branch was orphaned, you may want to delete it: %s",
             canonical_url(code_import.branch))
+        self.logger.debug("Done deleting CodeImport.")
 
