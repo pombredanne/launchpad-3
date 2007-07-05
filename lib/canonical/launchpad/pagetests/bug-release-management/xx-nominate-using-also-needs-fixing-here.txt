@@ -8,8 +8,8 @@ fixing in this context.
     ...  'http://launchpad.dev/ubuntu/grumpy/+source/evolution/+bug/10')
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print extract_text(message)
-    This bug is not recorded as needing to be fixed in the
-    evolution (Ubuntu Grumpy) package.
+    This bug is not recorded as needing to be fixed in
+    evolution (Ubuntu Grumpy).
 
     >>> user_browser.getControl('Also Needs Fixing Here') is not None
     True
@@ -34,8 +34,7 @@ It works the same way for product series contexts.
     ...  'http://launchpad.dev/firefox/1.0/+bug/10')
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print extract_text(message)
-    This bug is not recorded as needing to be fixed in the
-    firefox 1.0 (upstream) distribution.
+    This bug is not recorded as needing to be fixed in firefox 1.0 (upstream).
     >>> user_browser.getControl('Also Needs Fixing Here') is not None
     True
 

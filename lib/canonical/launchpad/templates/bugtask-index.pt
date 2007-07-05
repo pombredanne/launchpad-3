@@ -78,14 +78,9 @@
         method="POST"
       >
 
-    This bug is not recorded as needing to be fixed in the
+    This bug is not recorded as needing to be fixed in
     <a tal:attributes="href string:${context/target/fmt:url}/+bugs"
-       tal:content="context/targetname">upstream firefox</a>
-    <tal:product condition="context/product">project.</tal:product>
-    <tal:package condition="context/sourcepackagename">package.</tal:package>
-    <tal:distribution
-      condition="python: (not context.product) and (not context.sourcepackagename)"
-    >distribution.</tal:distribution>
+       tal:content="context/targetname">upstream firefox</a>.
 
     <tal:loggedin condition="request/lp:person">
 
