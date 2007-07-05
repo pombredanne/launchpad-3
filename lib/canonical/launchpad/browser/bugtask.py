@@ -577,11 +577,13 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
                     distribution=fake_task.distribution,
                     sourcepackagename=fake_task.sourcepackagename)
             elif IDistroSeriesBugTask.providedBy(fake_task):
-                # Create a real distro series bug task in this context.
-                real_task = getUtility(IBugTaskSet).createTask(
-                    bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
-                    distroseries=fake_task.distroseries,
-                    sourcepackagename=fake_task.sourcepackagename)
+                # Nominate the bug to be fixed in the series.
+                fake_task.bug.addNomination(self.user, fake_task.distroseries)
+                self.request.response.addInfoNotification(
+                    'This bug has been nominated to be fixed in %(target)s',
+                    target=fake_task.distroseries.bugtargetname)
+                self.request.response.redirect(canonical_url(self.context))
+                return
             else:
                 raise TypeError(
                     "Unknown bug task type: %s" % repr(fake_task))
@@ -599,8 +601,22 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
         """
         params = BugTaskSearchParams(user=self.user, bug=self.context.bug)
         matching_bugtasks = self.context.target.searchTasks(params)
+        if self.context.productseries is not None:
+            nomination_target = self.context.productseries
+        elif self.context.distroseries is not None:
+            nomination_target = self.context.distroseries
+        else:
+            nomination_target = None
+        if nomination_target is not None:
+            try:
+                nomination = self.context.bug.getNominationFor(
+                    nomination_target)
+            except NotFoundError:
+                nomination = None
+        else:
+            nomination = None
 
-        return matching_bugtasks.count() > 0
+        return nomination is not None or matching_bugtasks.count() > 0
 
     def isSeriesTargetableContext(self):
         """Is the context something that supports Series targeting?

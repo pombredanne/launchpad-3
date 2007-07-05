@@ -1,0 +1,29 @@
+= Nominate using the "also needs fixing here" button =
+
+If you visit a bug in a distroseries context to which the bug isn't
+targeted to, you get a message and button to indicate the bug needs
+fixing in this context.
+
+    >>> user_browser.open(
+    ...  'http://launchpad.dev/ubuntu/grumpy/+source/evolution/+bug/10')
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print extract_text(message)
+    This bug is not recorded as needing to be fixed in the
+    evolution (Ubuntu Grumpy) package.
+
+    >>> user_browser.getControl('Also Needs Fixing Here') is not None
+    True
+
+If the button is clicked, the bug is nominated for the series.
+
+    >>> user_browser.getControl('Also Needs Fixing Here').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/ubuntu/grumpy/+source/evolution/+bug/10'
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print extract_text(message)
+    This bug has been nominated to be fixed in Ubuntu Grumpy
+
+    >>> user_browser.getControl('Also Needs Fixing Here')
+    Traceback (most recent call last):
+    ...
+    LookupError: label 'Also Needs Fixing Here'
