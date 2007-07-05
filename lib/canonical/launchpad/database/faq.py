@@ -21,7 +21,7 @@ from canonical.database.nl_search import nl_phrase_search
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IFAQ, IPerson, IProduct)
+    IDistribution, IFAQ, IPerson, IProduct, IProject)
 
 from canonical.lp.dbschema import FAQSort
 
@@ -144,15 +144,17 @@ class FAQSearch:
     sort = None
     product = None
     distribution = None
-
+    project = None
+    
     def __init__(self, search_text=None, owner=None, sort=None, product=None,
-                 distribution=None):
+                 distribution=None, project=None):
         """Initialize a new FAQ search.
 
         See `IFAQCollection`.searchFAQs for the basic parameters description.
         Additional parameters:
         :param product: The product in which to search for FAQs.
         :param distribution: The distribution in which to search for FAQs.
+        :param project: The project in which to search for FAQs.
         """
         if search_text is not None:
             assert isinstance(search_text, basestring), (
@@ -172,21 +174,30 @@ class FAQSearch:
         if product is not None:
             assert IProduct.providedBy(product), (
                 'product should be an IProduct: %r' % product)
-            assert distribution is None, (
-                'cannot use product and distribution at the same time')
+            assert distribution is None and project is None, (
+                'can only use one of product, distribution, or project')
             self.product = product
 
         if distribution is not None:
             assert IDistribution.providedBy(distribution), (
                 'distribution should be an IDistribution: %r' % distribution)
-            assert product is None, (
-                'cannot use product and distribution at the same time')
+            assert product is None and project is None, (
+                'can only use one of product, distribution, or project')
             self.distribution = distribution
-    
+
+        if project is not None:
+            assert IProject.providedBy(project), (
+                'project should be an IProject: %r' % project)
+            assert product is None and distribution is None, (
+                'can only use one of product, distribution, or project')
+            self.project= project
+            
     def getResults(self):
         """Return the FAQs matching this search."""
         return FAQ.select(
-            self.getConstraints(), orderBy=self.getOrderByClause())
+            self.getConstraints(),
+            clauseTables=self.getClauseTables(),
+            orderBy=self.getOrderByClause())
 
     def getConstraints(self):
         """Return the constraints to use by this search."""
@@ -205,8 +216,20 @@ class FAQSearch:
             constraints.append(
                 'FAQ.distribution = %s' % sqlvalues(self.distribution))
 
+        if self.project:
+            constraints.append(
+                'FAQ.product = Product.id AND Product.project = %s' % (
+                    sqlvalues(self.project)))
+
         return '\n AND '.join(constraints)
 
+    def getClauseTables(self):
+        """Return the tables that should be added to the FROM clause."""
+        if self.project:
+            return ['Product']
+        else:
+            return []
+    
     def getOrderByClause(self):
         """Return the ORDER BY clause to sort the results."""
         sort = self.sort

@@ -47,12 +47,13 @@ def projectSetUp(test):
     gnome_project = getUtility(IProjectSet).getByName('gnome')
     products_queue = list(gnome_project.products)
 
-    def newFAQ(owner, title, content, tags=None, date_created=None):
+    def newFAQ(owner, title, content, keywords=None, date_created=None):
         """Create a new FAQ on each project's product in turn."""
         product = products_queue.pop(0)
         products_queue.append(product)
         return product.newFAQ(
-            owner, title, content, tags=tags, date_created=date_created)
+            owner, title, content, keywords=keywords,
+            date_created=date_created)
 
     test.globs['collection'] = gnome_project
     test.globs['newFAQ'] = newFAQ
@@ -63,7 +64,7 @@ def test_suite():
 
     targets = [('product', productSetUp),
                ('distribution', distributionSetUp),
-#               ('project', projectSetUp),
+               ('project', projectSetUp),
                ]
 
     for name, setUpMethod in targets:
