@@ -86,6 +86,42 @@ attribute:
     >>> print firefox_faq.target.name
     firefox
 
+
+== IFAQSet ==
+
+There is a global utility registered under the IFAQSet interface that
+can be used to retrieve all FAQs posted on Launchpad.
+
+    >>> from canonical.launchpad.interfaces import IFAQSet
+    >>> faqset = getUtility(IFAQSet)
+    >>> verifyObject(IFAQSet, faqset)
+    True
+
+It provides the IFAQCollection interface.
+
+    >>> verifyObject(IFAQCollection, faqset)
+    True
+
+It can retrieve any FAQ by id using the getFAQ() method.
+
+    >>> faqset.getFAQ(firefox_faq.id) == firefox_faq
+    True
+
+The searchFAQs() method can be used to find FAQs by keywords or owner.
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
+    >>> for faq in faqset.searchFAQs(
+    ...     search_text='java | flash', owner=foo_bar):
+    ...     print '%s (%s)' % (faq.title, faq.target.displayname)
+    How do I install plugins (Shockwave, QuickTime, etc.)? (Mozilla Firefox)
+    How can I play MP3/Divx/DVDs/Quicktime/Realmedia files
+        or view Flash/Java web pages (Ubuntu)
+
+(See lib/canonical/launchpad/interfaces/ftests/faqcollection.txt for
+the full interface description.)
+
+
 == Linking a FAQ to a question ==
 
 An IFAQ can be used to answer a question. The linkFAQ() method on

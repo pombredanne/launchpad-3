@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'FAQ',
     'FAQSearch',
+    'FAQSet',
     ]
 
 from sqlobject import (
@@ -21,7 +22,7 @@ from canonical.database.nl_search import nl_phrase_search
 from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
 from canonical.launchpad.interfaces import (
-    IDistribution, IFAQ, IPerson, IProduct, IProject)
+    IDistribution, IFAQ, IFAQSet, IPerson, IProduct, IProject)
 
 from canonical.lp.dbschema import FAQSort
 
@@ -253,3 +254,19 @@ class FAQSearch:
                 return "-FAQ.date_created"
         else:
             raise AssertionError, "Unknown FAQSort value: %r" % sort
+
+
+class FAQSet:
+    """See `IFAQSet`."""
+
+    implements(IFAQSet)
+
+
+    def getFAQ(self, id):
+        """See `IFAQSet`."""
+        return FAQ.getForTarget(id, None)
+
+    def searchFAQs(self, search_text=None, owner=None, sort=None):
+        """See `IFAQSet`."""
+        return FAQSearch(
+            search_text=search_text, owner=owner, sort=sort).getResults()
