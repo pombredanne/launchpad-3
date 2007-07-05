@@ -1,0 +1,197 @@
+ExternalBugTracker: Mantis
+============================
+
+This covers the implementation of the Mantis bug watch updater.
+
+Basics
+------
+
+The class that implements EBT for Mantis is called, surprisingly,
+Mantis! It doesn't do any version probing and simply stores a base URL
+which it will use to construct URLs to pull a CSV export from.
+
+    >>> from canonical.launchpad.components.externalbugtracker import Mantis
+    >>> alsa_mantis = Mantis("https://bugtrack.alsa-project.org/alsa-bug/")
+
+As with all ExternalBugTrackers, Mantis contains a function for converting one
+of its own status to a Malone status. Mantis' function takes a string
+in the form "status" or "status: resolution" as follows:
+
+    >>> alsa_mantis.convertRemoteStatus('assigned').title
+    'In Progress'
+    >>> alsa_mantis.convertRemoteStatus('resolved: won't fix").title
+    'Rejected'
+    >>> alsa_mantis.convertRemoteStatus('confirmed').title
+    'New'
+    >>> alsa_mantis.convertRemoteStatus('closed: suspended').title
+    'Rejected'
+    >>> alsa_mantis.convertRemoteStatus('closed: fixed').title
+    'Fix Released'
+
+If the status can't be converted, Unkown is returned, and a warning
+is logged.
+
+    >>> alsa_mantis.convertRemoteStatus(('foo: bar')).title
+    WARNING:...:Unknown status/resolution foo/bar at XXX
+    'Unknown'
+
+UNKNOWN_REMOTE_STATUS maps to Unknown without generating a warning.
+
+    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
+    >>> alsa_mantis.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
+    'Unknown'
+
+Updating Bug Watches
+--------------------
+
+We use a specially hacked Mantis instance that doesn't do network calls to verify here:
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import TestMantis
+    >>> from canonical.launchpad.database import BugTracker
+
+    >>> alsa = BugTracker.selectBy(name='alsa-bugs')
+    >>> alsa_test_mantis = TestMantis(alsa.baseurl)
+
+Collect the alsa watches:
+
+    >>> for bug_watch in alsa.watches:
+    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    3224:
+
+And have our special Mantis instance process them:
+
+    >>> alsa_test_mantis.updateBugWatches(gnome_bugzilla.watches)
+    >>> for bug_watch in alsa.watches:
+    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    XXX
+
+Let's add a few more watches:
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IBugSet, IBugWatchSet, IPersonSet)
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bug_watch_set = getUtility(IBugWatchSet)
+    >>> expected_remote_statuses = dict(
+    ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
+    ...      for bug_watch in gnome_bugzilla.watches])
+    >>> for remote_bug_id in range(100,300):
+    ...     bug_watch = bug_watch_set.createBugWatch(
+    ...         bug=bug_one, owner=sample_person, bugtracker=gnome_bugzilla,
+    ...         remotebug=str(remote_bug_id))
+    ...     external_bugzilla.bugzilla_bugs[remote_bug_id] = (
+    ...         'ASSIGNED', '')
+    ...     expected_remote_statuses[remote_bug_id] = 'ASSIGNED'
+
+Instead of issuing one request per bug watch, like was done before,
+updateBugWatches() issues only one request to update all watches:
+
+    >>> external_bugzilla.trace_calls = True
+    >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    CALLED _postPage()
+
+    >>> remote_statuses = dict(
+    ...     [(int(bug_watch.remotebug), bug_watch.remotestatus)
+    ...      for bug_watch in gnome_bugzilla.watches])
+    >>> remote_statuses == expected_remote_statuses
+    True
+
+    >>> external_bugzilla.trace_calls = False
+
+updateBugWatches() updates the lastchecked attribute on the watches, so
+now no bug watches are in need of updating:
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+    >>> gnome_bugzilla.getBugWatchesNeedingUpdate(23).count()
+    0
+
+If the status isn't different, the lastchanged attribute doesn't get
+updated:
+
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> bug_watch = gnome_bugzilla.watches[0]
+    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> bug_watch.lastchanged = now - timedelta(weeks=2)
+    >>> old_last_changed = bug_watch.lastchanged
+    >>> external_bugzilla.updateBugWatches([bug_watch])
+    >>> bug_watch.lastchanged == old_last_changed
+    True
+
+Now let's take a look at what happens when a bug watch is linked to
+from a bug task.
+
+    >>> login('foo.bar@canonical.com')
+    >>> bug_nine = getUtility(IBugSet).get(9)
+    >>> thunderbird_task = bug_nine.bugtasks[0]
+    >>> print thunderbird_task.status.title
+    Unknown
+    >>> thunderbird_task.bugwatch.remotestatus is None
+    True
+
+We don't yet support updating the importance for Bugzilla bugs, so let's set it
+to some bogus value, to see that it gets set to UNKNOWN.
+
+    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> thunderbird_task.importance = BugTaskImportance.HIGH
+
+We need to create a new ExternalBugtracker for the Mozilla tracker:
+
+    >>> mozilla_bugzilla = getUtility(IBugTrackerSet).getByName(
+    ...     'mozilla.org')
+    >>> external_bugzilla = TestBugzilla(
+    ...     mozilla_bugzilla.baseurl, version)
+    >>> external_bugzilla.bugzilla_bugs = {1234: ('ASSIGNED', '')}
+
+Let's update the bug watch, and see that the linked bug watch got
+synced:
+
+    >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
+    >>> print thunderbird_task.status.title
+    In Progress
+    >>> print thunderbird_task.importance.title
+    Unknown
+    >>> print thunderbird_task.bugwatch.remotestatus
+    ASSIGNED
+
+If we change the bugtask status, it will be updated again even though
+the remote status hasn't changed. This can happen if we change the
+status mapping.
+
+    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> thunderbird_task.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> external_bugzilla.updateBugWatches([thunderbird_task.bugwatch])
+    >>> print thunderbird_task.status.title
+    In Progress
+    >>> print thunderbird_task.bugwatch.remotestatus
+    ASSIGNED
+
+If there are two bug watches, linked to different bugs, pointing to the
+same remote bug, both will of course be updated.
+
+    >>> external_bugzilla.bugzilla_bugs[42] = ('RESOLVED', 'FIXED')
+    >>> bug_watch1 = bug_watch_set.createBugWatch(
+    ...     bug=bug_one, owner=sample_person, bugtracker=mozilla_bugzilla,
+    ...     remotebug='42')
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> bug_watch2 = bug_watch_set.createBugWatch(
+    ...     bug=bug_two, owner=sample_person, bugtracker=mozilla_bugzilla,
+    ...     remotebug='42')
+    >>> external_bugzilla.updateBugWatches([bug_watch1, bug_watch2])
+    >>> print bug_watch1.remotestatus
+    RESOLVED FIXED
+    >>> print bug_watch2.remotestatus
+    RESOLVED FIXED
+
+If updateBugWatches() can't parse the XML file returned from the remote
+bug tracker, an error is logged.
+
+    >>> external_bugzilla._postPage = (
+    ...     lambda self, data: '<invalid xml>')
+    >>> external_bugzilla.updateBugWatches(gnome_bugzilla.watches)
+    Traceback (most recent call last):
+    ...
+    UnparseableBugData:
+    Failed to parse XML description for https://bugzilla.mozilla.org...
+

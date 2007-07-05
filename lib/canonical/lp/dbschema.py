@@ -535,6 +535,11 @@ class BugTrackerType(DBSchema):
         support and request tracking.
         """)
 
+    MANTIS = Item(6, """
+        Mantis
+
+        Mantis is a web-based bug tracking system written in PHP.
+        """)
 
 class CveStatus(DBSchema):
     """The Status of this item in the CVE Database

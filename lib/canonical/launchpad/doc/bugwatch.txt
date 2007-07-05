@@ -149,6 +149,8 @@ easier you can use IBugWatchSet.fromText().
     ...         http://some.roundup/issue42
     ...     A Trac URL:
     ...         http://some.trac/ticket/42
+    ...     A Mantis URL:
+    ...         http://some.mantis/mantis/view.php?id=50
     ...     A SourceForge URL:
     ...         http://some.sf/tracker/index.php?func=detail&aid=1568562&group_id=84122&atid=42
     ...     An unrecognised URL:
@@ -165,6 +167,7 @@ easier you can use IBugWatchSet.fromText().
     DEBBUGS: 42
     ROUNDUP: 42
     TRAC: 42
+    MANTIS: 50
     SOURCEFORGE: 1568562
 
 Syncing the Status with Linked Bugtasks

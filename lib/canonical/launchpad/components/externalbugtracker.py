@@ -4,9 +4,11 @@
 
 __metaclass__ = type
 
+import csv
 import os.path
 import urllib
 import urllib2
+import ClientCookie
 import xml.parsers.expat
 from xml.dom import minidom
 
@@ -21,7 +23,7 @@ from canonical.launchpad.interfaces import (
     IExternalBugtracker, UNKNOWN_REMOTE_STATUS)
 
 # The user agent we send in our requests
-LP_USER_AGENT = "Launchpad Bugscraper/0.1 (http://launchpad.net/malone)"
+LP_USER_AGENT = "Launchpad Bugscraper/0.2 (http://bugs.launchpad.net/)"
 
 
 #
@@ -99,19 +101,50 @@ class ExternalBugTracker:
 
     implements(IExternalBugtracker)
 
-    def _initializeRemoteBugDB(self, bug_ids):
+    def urlopen(self, request, data=None):
+        # XXX: Use the standard urlopen() function. Child classes can
+        # use ClientCookie.urlopen as necessary.
+        return urllib.urlopen(request, data)
+
+    def initializeRemoteBugDB(self, bug_ids):
         """Do any initialization before each bug watch is updated.
 
         It's optional to override this method.
         """
 
-    def _getRemoteStatus(self, bug_id):
+    def getRemoteStatus(self, bug_id):
         """Return the remote status for the given bug id.
 
         Raise BugNotFound if the bug can't be found.
         Raise InvalidBugId if the bug id has an unexpected format.
         """
-        raise NotImplementedError(self._getRemoteStatus)
+        raise NotImplementedError(self.getRemoteStatus)
+
+    def _getPage(self, page):
+        """GET the specified page on the remote HTTP server."""
+        # For some reason, bugs.kde.org doesn't allow the regular urllib
+        # user-agent string (Python-urllib/2.x) to access their
+        # bugzilla, so we send our own instead.
+        request = urllib2.Request("%s/%s" % (self.baseurl, page),
+                                  headers={'User-agent': LP_USER_AGENT})
+        try:
+            url = self.urlopen(request)
+        except (urllib2.HTTPError, urllib2.URLError), val:
+            raise BugTrackerConnectError(self.baseurl, val)
+        page_contents = url.read()
+        return page_contents
+
+    def _postPage(self, page, form):
+        """POST to the specified page.
+
+        :form: is a dict of form variables being POSTed.
+        """
+        url = "%s/%s" % (self.baseurl, page)
+        post_data = urllib.urlencode(form)
+        request = urllib2.Request(url, headers={'User-agent': LP_USER_AGENT})
+        url = self.urlopen(request, data=post_data)
+        page_contents = url.read()
+        return page_contents
 
     def updateBugWatches(self, bug_watches):
         """Update the given bug watches."""
@@ -131,13 +164,13 @@ class ExternalBugTracker:
             bug_watches_by_remote_bug[remote_bug].append(bug_watch)
 
         bug_ids_to_update = bug_watches_by_remote_bug.keys()
-        self._initializeRemoteBugDB(bug_ids_to_update)
+        self.initializeRemoteBugDB(bug_ids_to_update)
 
         for bug_id, bug_watches in bug_watches_by_remote_bug.items():
             local_ids = ", ".join(str(watch.bug.id) for watch in bug_watches)
             try:
                 try:
-                    new_remote_status = self._getRemoteStatus(bug_id)
+                    new_remote_status = self.getRemoteStatus(bug_id)
                 except InvalidBugId, error:
                     log.warn("Invalid bug %r on %s (local bugs: %s)" %
                              (bug_id, self.baseurl, local_ids))
@@ -162,6 +195,9 @@ class ExternalBugTracker:
                             (bug_id, bug_tracker_url, local_ids),
                           exc_info=True)
 
+#
+# Bugzilla
+#
 
 class Bugzilla(ExternalBugTracker):
     """A class that deals with communications with a remote Bugzilla system."""
@@ -174,32 +210,6 @@ class Bugzilla(ExternalBugTracker):
         self.baseurl = baseurl
         self.version = version
         self.is_issuezilla = False
-
-    def _getPage(self, page):
-        """GET the specified page on the remote HTTP server."""
-        # For some reason, bugs.kde.org doesn't allow the regular urllib
-        # user-agent string (Python-urllib/2.x) to access their
-        # bugzilla, so we send our own instead.
-        request = urllib2.Request("%s/%s" % (self.baseurl, page),
-                                  headers={'User-agent': LP_USER_AGENT})
-        try:
-            url = urllib2.urlopen(request)
-        except (urllib2.HTTPError, urllib2.URLError), val:
-            raise BugTrackerConnectError(self.baseurl, val)
-        page_contents = url.read()
-        return page_contents
-
-    def _postPage(self, page, form):
-        """POST to the specified page.
-
-        :form: is a dict of form variables being POSTed.
-        """
-        url = "%s/%s" % (self.baseurl, page)
-        post_data = urllib.urlencode(form)
-        request = urllib2.Request(url, headers={'User-agent': LP_USER_AGENT})
-        url = urllib2.urlopen(request, data=post_data)
-        page_contents = url.read()
-        return page_contents
 
     def _parseDOMString(self, contents):
         """Return a minidom instance representing the XML contents supplied"""
@@ -286,7 +296,7 @@ class Bugzilla(ExternalBugTracker):
 
         return malone_status
 
-    def _initializeRemoteBugDB(self, bug_ids):
+    def initializeRemoteBugDB(self, bug_ids):
         """See ExternalBugTracker."""
         if self.version is None:
             self.version = self._probe_version()
@@ -395,7 +405,7 @@ class Bugzilla(ExternalBugTracker):
                     status += ' %s' % resolution
             self.remote_bug_status[bug_id] = status
 
-    def _getRemoteStatus(self, bug_id):
+    def getRemoteStatus(self, bug_id):
         """See ExternalBugTracker."""
         if not bug_id.isdigit():
             raise InvalidBugId(
@@ -406,11 +416,13 @@ class Bugzilla(ExternalBugTracker):
         except KeyError:
             raise BugNotFound(bug_id)
 
+#
+# Debbugs
+#
 
 debbugsstatusmap = {'open':      BugTaskStatus.UNCONFIRMED,
                     'forwarded': BugTaskStatus.CONFIRMED,
                     'done':      BugTaskStatus.FIXRELEASED}
-
 
 class DebBugs(ExternalBugTracker):
     """A class that deals with communications with a debbugs db."""
@@ -436,7 +448,7 @@ class DebBugs(ExternalBugTracker):
         # The debbugs database is split in two parts: a current
         # database, which is kept under the 'db-h' directory, and the
         # archived database, which is kept under 'archive'. The archived
-        # database is used as a fallback, as you can see in _getRemoteStatus
+        # database is used as a fallback, as you can see in getRemoteStatus
         self.debbugs_db = debbugs.Database(self.db_location, self.debbugs_pl)
         if os.path.exists(os.path.join(self.db_location, 'archive')):
             self.debbugs_db_archive = debbugs.Database(self.db_location,
@@ -506,7 +518,7 @@ class DebBugs(ExternalBugTracker):
 
         return debian_bug
 
-    def _getRemoteStatus(self, bug_id):
+    def getRemoteStatus(self, bug_id):
         """See ExternalBugTracker."""
         debian_bug = self._findBug(bug_id)
         if not debian_bug.severity:
@@ -517,4 +529,230 @@ class DebBugs(ExternalBugTracker):
         new_remote_status = ' '.join(
             [debian_bug.status, severity] + debian_bug.tags)
         return new_remote_status
+
+#
+# Mantis
+#
+
+class Mantis(ExternalBugTracker):
+    # Example sites:
+    #   http://www.atutor.ca/atutor/mantis/         1.0.6       OK  (418/2571)
+    #   http://bugs.mantisbt.org/                   1.1.0a2     OK  (2152/5574)
+    #   http://bugs.endian.it/                      1.0.3       OK  (48/53)
+    #   http://www.co-ode.org/mantis/               1.0.0rc1    OK  (322/472)
+    #   http://acme.able.cs.cmu.edu/mantis/         1.0.1       OK  (337/356)
+    #   http://bugs.netmrg.net/                     1.0.5       OK  (104/486)
+    #   http://bugs.busybox.net/                    ??? 2006    OK  (245/1109)
+    #   https://bugtrack.alsa-project.org/alsa-bug/ 1.0.6       OK  (1548/2672)
+
+    # Older version; I have been unable to get the filter resetting
+    # to work here yet..
+    #   https://gnunet.org/mantis/                  ??? 2004    XX  (59/766)
+
+    # These get set in initializeRemoteBugDB()
+    headers = None
+    bugs = None
+
+    def __init__(self, baseurl):
+        self.baseurl = baseurl
+        # Bugs maps an integer bug ID to a dictionary with bug data that
+        # we snarf from the CSV. We use an integer bug ID because the
+        # bug ID for mantis comes prefixed with a bunch of zeroes and it
+        # could get hard to match if we really wanted to format it
+        # exactly the same (and also because of the way we split lines
+        # below in initializeRemoteBugDB().
+        self.bugs = {}
+
+    def urlopen(self, request, data=None):
+        # We use ClientCookie to make following cookies transparent.
+        # This is required for certain bugtrackers that require cookies
+        # that actually do anything (as is the case with Mantis). It's
+        # basically a drop-in replacement for urllib.urlopen() that
+        # tracks cookies.
+        return ClientCookie.urlopen(request, data)
+
+    def initializeRemoteBugDB(self, bug_ids):
+        # It's unfortunate that Mantis offers no way of limiting its CSV
+        # export to a set of bugs; we end up having to pull the CSV for
+        # the entire bugtracker at once (and some of them actually blow
+        # up in the process!); this is why we ignore the bug_ids
+        # argument here.
+
+        if not bug_ids:
+            # Well, not completely: if we have no ids to refresh from
+            # this Mantis instance, don't even start the process and
+            # save us some time and bandwidth.
+            return
+
+        # We hit the login page first to authenticate; some sites
+        # require us to do this silly authenticatiion; others just let
+        # us in with no authentication step. I suspect some sites will
+        # reject our authentication here and the rest of the process
+        # will blow up. This sets MANTIS_STRING_COOKIE, btw.
+        self._getPage("login.php?username=guest&password=guest")
+        # Older versions of Mantis have a special anonymous login page;
+        # why not give that a try too? ;-)
+        self._getPage("login_anon.php")
+
+        # Next step is getting our query filter cookie set up; we need
+        # to do this weird submit in order to get the closed bugs
+        # included in the results; the default Mantis filter excludes
+        # them. It's unlikely that all these parameters are actually
+        # necessary, but it's easy to prepare the complete set from a
+        # view_all_bugs.php form dump so let's keep it complete.
+        data = {
+           'type': '1',
+           'page_number': '1',
+           'view_type': 'simple',
+           'reporter_id[]': '0',
+           'user_monitor[]': '0',
+           'handler_id[]': '0',
+           'show_category[]': '0',
+           'show_severity[]': '0',
+           'show_resolution[]': '0',
+           'show_profile[]': '0',
+           'show_status[]': '0',
+           # Some of the more modern Mantis trackers use
+           # a value of 'hide_status[]': '-2' here but it appears that
+           # [none] works. Oops, older Mantis uses 'none' here. Gross!
+           'hide_status[]': '[none]',
+           'show_build[]': '0',
+           'show_version[]': '0',
+           'fixed_in_version[]': '0',
+           'show_priority[]': '0',
+           'per_page': '50',
+           'view_state': '0',
+           'sticky_issues': 'on',
+           'highlight_changed': '6',
+           'relationship_type': '-1',
+           'relationship_bug': '0',
+           # Hack around the fact that the sorting parameter has
+           # changed over time.
+           'sort': 'last_updated',
+           'sort_0': 'last_updated',
+           'dir': 'DESC',
+           'dir_0': 'DESC',
+           'search': '',
+           'filter': 'Apply Filter',
+        }
+        self.page = self._postPage("view_all_set.php?f=3", data)
+
+        # Finally grab the full CSV export, which uses the
+        # MANTIS_VIEW_ALL_COOKIE set in the previous step to specify
+        # what's being viewed.
+        csv_data = self._getPage("csv_export.php")
+        # We store CSV in the instance just to make debugging easier.
+        self.csv_data = csv_data
+
+        # You may find this zero in "\r\n0" funny. Well I don't. This is
+        # to work around the fact that Mantis' CSV export doesn't cope
+        # with the fact that the bug summary can contain embedded "\r\n"
+        # characters! I don't see a better way to handle this short of
+        # not using the CSV module and forcing all lines to have the
+        # same number as fields as the header. XXX: report Mantis bug.
+        csv_data = csv_data.strip().split("\r\n0")
+
+        if not csv_data:
+            raise UnparseableBugData("Empty CSV for %s" % self.baseurl)
+
+        # Clean out stray, unqouted newlines inside csv_data to avoid
+        # the CSV module blowing up.
+        csv_data = [s.replace("\r", "") for s in csv_data]
+        csv_data = [s.replace("\n", "") for s in csv_data]
+
+        # The first line of the CSV file is the header. We need to read
+        # it because different Mantis instances have different header
+        # ordering and even different columns in the export.
+        self.headers = [h.lower() for h in csv_data.pop(0).split(",")]
+        if len(self.headers) < 2:
+            raise UnparseableBugData("CSV header mangled: %r" % self.headers)
+
+        if not csv_data:
+            # A file with a header and no bugs is also useless.
+            raise UnparseableBugData("CSV for %s contained no bugs!"
+                                     % self.baseurl)
+
+        try:
+            # Using the CSV reader is pretty much essential since the
+            # data that comes back can include title text which can in
+            # turn contain field separators -- you don't want to handle
+            # the unquoting yourself.
+            for bug_line in csv.reader(csv_data):
+                self._processBugLine(bug_line)
+        except csv.Error, e:
+            log.warn("Exception parsing CSV file: %s" % e)
+
+    def _processBugLine(self, bug_line):
+        """Processes a single line of the CSV.
+
+        Adds the bug it represents to self.bugs.
+        """
+        required_fields = ['id', 'status', 'resolution']
+        bug = {}
+        for header in self.headers:
+            try:
+                data = bug_line.pop(0)
+            except IndexError:
+                log.warn("Line %r incomplete" % bug_line)
+                return
+            bug[header] = data
+        for field in required_fields:
+            if field not in bug.keys():
+                log.warn("Bug %s lacked field %r" % (bug['id'], field))
+                return
+            try:
+                # See __init__ for an explanation of why we use integer
+                # IDs in the internal data structure.
+                bug_id = int(bug['id'])
+            except ValueError:
+                log.warn("Bug with invalid ID: %r" % bug['id'])
+                return
+
+        self.bugs[bug_id] = bug
+
+    def getRemoteStatus(self, bug_id):
+        if not bug_id.isdigit():
+            raise InvalidBugId(
+                "Mantis (%s) bug number not an integer: %s" % (
+                    self.baseurl, bug_id))
+        try:
+            bug = self.bugs[int(bug_id)]
+        except KeyError:
+            raise BugNotFound(bug_id)
+
+        # Use a colon and a space to join status and resolution because
+        # there is a chance that statuses contain spaces, and because
+        # it makes display of the data nicer.
+        return ": ".join(bug['status'], bug['resolution'])
+
+    def convertRemoteStatus(self, status_and_resolution):
+        if (not status_and_resolution or
+            status_and_resolution == UNKNOWN_REMOTE_STATUS):
+            return BugTaskStatus.UNKNOWN
+        remote_status, remote_resolution = status_and_resolution.split(": ", 1)
+        if remote_status == 'assigned':
+            return BugTaskStatus.INPROGRESS
+        if remote_status == 'feedback':
+            return BugTaskStatus.NEEDINFO
+        if remote_status in ['new']:
+            return BugTaskStatus.NEW
+        if remote_status in ['confirmed', 'acknowledged']:
+            return BugTaskStatus.CONFIRMED
+        if remote_status in ['resolved', 'closed']:
+            if remote_resolution == 'fixed':
+                return BugTaskStatus.FIXRELEASED
+            if remote_resolution == 'reopened':
+                return BugTaskStatus.NEW
+            if remote_resolution in ["won't fix", "unable to reproduce",
+                                     "not fixable", 'suspended']:
+                return BugTaskStatus.REJECTED
+            if remote_resolution == 'duplicate':
+                # XXX: follow duplicates
+                return BugTaskStatus.REJECTED
+            if remote_resolution in ['open', 'no change required']:
+                # XXX: pretty inconsistently used
+                return BugTaskStatus.FIXRELEASED
+        log.warn("Unknown status/resolution %s/%s" %
+                 (remote_status, remote_resolution))
+        return BugTaskStatus.UNKNOWN
 

@@ -80,6 +80,15 @@ class ExtractBugTrackerAndBugTestBase(LaunchpadFunctionalTestCase):
                 "NoBugTrackerFound wasn't raised by extractBugTrackerAndBug")
 
 
+class MantisExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with Bugzilla URLs."""
+
+    bugtracker_type = BugTrackerType.MANTIS
+    bug_url = 'http://some.host/bugs/view.php?id=3224'
+    base_url = 'http://some.host/bugs/'
+    bug_id = '3224'
+
+
 class BugzillaExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
     """Make sure BugWatchSet.extractBugTrackerAndBug works with Bugzilla URLs."""
 
@@ -158,6 +167,7 @@ def test_suite():
     suite.addTest(unittest.makeSuite(TracExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(DebbugsExtractBugTrackerAndBugTest))
     suite.addTest(unittest.makeSuite(SFExtractBugTrackerAndBugTest))
+    suite.addTest(unittest.makeSuite(MantisExtractBugTrackerAndBugTest))
     return suite
 
 
