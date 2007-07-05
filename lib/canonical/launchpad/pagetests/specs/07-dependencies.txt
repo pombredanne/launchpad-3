@@ -55,8 +55,8 @@ expect to be redirected to the blueprint page.
   >>> admin_browser.url
   'http://blueprints.launchpad.dev/firefox/+spec/canvas'
 
-Blueprints can only depend on blueprints in the same project. We
-register a blueprint for a different project.
+Blueprints can only depend on blueprints in the same project. To
+show this, we register a blueprint for a different project.
 
   >>> admin_browser.open(
   ...     'http://blueprints.launchpad.dev/jokosher/+addspec')
@@ -77,7 +77,7 @@ blueprint we registered in jokosher.
   >>> admin_browser.getControl(
   ...     'Depends On').value = 'test-blueprint'
   >>> admin_browser.getControl('Continue').click()
-  >>> 'Invalid value' in admin_browser.contents
+  >>> 'no blueprint named "test-blueprint"' in admin_browser.contents
   True
 
 In order to prevent circular dependencies, it is impossible to mark a
@@ -92,7 +92,7 @@ We know that "canvas" depends on "e4x". We try to make "e4x" depend on
   >>> admin_browser.getControl(
   ...     'Depends On').value = 'canvas'
   >>> admin_browser.getControl('Continue').click()
-  >>> 'Invalid value' in admin_browser.contents
+  >>> 'no blueprint named "canvas"' in admin_browser.contents
   True
 
 We know that no blueprints depend on "canvas", but "canvas" depends on "e4x"

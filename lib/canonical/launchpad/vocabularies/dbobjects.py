@@ -951,10 +951,13 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     displayname = 'Select a blueprint'
 
     def _filter_specs(self, specs):
-        return [spec for spec in specs
+        # XXX: is 100 a reasonable count before starting
+        #   to warn?  -- intellectronica, 2007-07-05
+        speclist = shortlist(specs, 100)
+        return [spec for spec in speclist
                 if (spec != self.context and
                     spec.product == self.context.product
-                    and spec not in self.context.all_blocked)]        
+                    and spec not in self.context.all_blocked)]
 
     def _doSearch(self, query):
         """Return terms where query is in the text of name
@@ -988,8 +991,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     def search(self, query):
         candidate_specs = self._doSearch(query)
         return CountableIterator(len(candidate_specs),
-                                 candidate_specs,
-                                 lambda obj: obj)
+                                 candidate_specs)
 
     def _all_specs(self):
         return self._filter_specs(self.context.product.specifications())

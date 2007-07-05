@@ -9,10 +9,12 @@ __all__ = [
     'SpecificationDependencyRemoveView',
     ]
 
+import cgi
+
 from canonical.launchpad import _
 from canonical.launchpad.webapp import (
-    GeneralFormView, canonical_url,
-    LaunchpadFormView, action, custom_widget)
+    action, canonical_url, custom_widget,
+    GeneralFormView, LaunchpadFormView)
 from canonical.widgets.popup import SinglePopupWidget
 from canonical.launchpad.interfaces.specificationdependency import (
     ISpecificationDependency)
@@ -41,6 +43,22 @@ class SpecificationDependencyAddView(LaunchpadFormView):
                     "give you an accurate project plan.")),
             render_context=self.render_context,
             custom_widget=self.custom_widgets['dependency'])
+
+    def validate(self, data):
+        is_valid = True        
+        token = self.request.form.get(self.widgets['dependency'].name)
+        try:
+            self.widgets['dependency'].vocabulary.getTermByToken(token)
+        except LookupError:
+            is_valid = False            
+        if not is_valid:
+            self.setFieldError(
+                'dependency',
+                'There is no blueprint named "%s" in %s, or '
+                '%s isn\'t valid dependency of that blueprint.' % (
+                cgi.escape(token),
+                cgi.escape(self.context.target.name),
+                cgi.escape(self.context.name)))
 
     @action(_('Continue'), name='linkdependency')
     def linkdependency_action(self, action, data):
