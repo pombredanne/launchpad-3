@@ -16,9 +16,7 @@ Description:
 Changes: 
  bar (1.0-10) breezy; urgency=low
  .
-   * A second upload to ensure that binary overrides of _all work
- . 
-   * Also closes Launchpad bug #6
+   * Changes file that contains UTF-8
  .
    * Non-ascii text: Čihař
  .
@@ -29,7 +27,7 @@ Files:
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.6 (GNU/Linux)
 
-iD8DBQFGiS0djn63CGxkqMURAgS7AJoCmDz/2TX9XWWt2XrhzmNRUVwLpwCdHQJJ
-+hS/Q2TBehSPfQ1diniQBgw=
-=G0o6
+iD8DBQFGjOzNjn63CGxkqMURAlDZAJ9CusNQWwbTJr7JHYV4Ka1JbWwmJACeLbs5
+Hzkb2pxxwYzKs7uyCiFONlo=
+=9dL/
 -----END PGP SIGNATURE-----
