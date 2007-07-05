@@ -38,24 +38,28 @@ class CodeImportSync:
         # Get all relevant ProductSeries, and all CodeImports. We will need
         # them later for set arithmetic. So we may as well use the complete
         # lists for everything.
-        import_series_list = list(self.getImportSeries())
+        series_map = dict(
+            (series.id, series) for series in self.getImportSeries())
         code_imports_map = dict(
             (code_import.id, code_import)
             for code_import in getUtility(ICodeImportSet).getAll())
+        series_ids = set(series_map.iterkeys())
+        code_import_ids = set(code_imports_map.iterkeys())
 
-        # Create or update CodeImports associated to valid ProductSeries.
-        for series in import_series_list:
-            code_import = code_imports_map.get(series.id)
-            if code_import is None:
-                self.createCodeImport(series)
-            else:
-                self.updateCodeImport(series, code_import)
+        # Create CodeImports for ProductSeries with no matching CodeImport.
+        for series_id in sorted(series_ids.difference(code_import_ids)):
+            series = series_map[series_id]
+            self.createCodeImport(series)
+
+        # Update CodeImports from their matching ProductSeries.
+        for update_id in sorted(series_ids.intersection(code_import_ids)):
+            series = series_map[update_id]
+            code_import = code_imports_map[update_id]
+            self.updateCodeImport(series, code_import)
 
         # Delete CodeImports not associated to any valid ProductSeries.
-        import_series_ids = set(series.id for series in import_series_list)
-        code_import_ids = set(code_imports_map.iterkeys())
-        for orphaned_id in code_import_ids.difference(import_series_ids):
-            self.deleteOrphanedCodeImport(orphaned_id)
+        for code_import_id in code_import_ids.difference(series_ids):
+            self.deleteOrphanedCodeImport(code_import_id)
 
     def getImportSeries(self):
         """Iterate over ProductSeries for which we want to have a CodeImport.
