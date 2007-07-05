@@ -94,7 +94,7 @@ constructed as an underscore-separated sequence of:
 
  * the string 'msgset';
  * the id for the POTMsgSet they pertain to;
- * language code, e.g. 'en_UK';
+ * language code, e.g. 'kr' or 'en_UK';
  * type, either 'translation' or 'suggestion';
  * plural-form number;
  * optional suffix describing the element, such as 'radiobutton.'
@@ -117,6 +117,14 @@ constructed as an underscore-separated sequence of:
   msgset_130_es_suggestion_702_0_origin
   msgset_130_es_suggestion_702_0_radiobutton
   msgset_130_singular
+
+Radio buttons are grouped by their name attribute.  The translate page shows
+each translatable message with one radiobutton to select the existing
+translation (the default); a group (possibly empty) of suggested translations;
+and one for a custom translation entered into a text input field.
+
+Here we see an example where three suggestions are offered, making for five
+identically-named radio buttons and sundry other HTML tags.
 
   >>> browser.open('http://translations.launchpad.dev/alsa-utils/trunk/+pots/alsa-utils/es/+translate')
   >>> msgset_198 = get_tags(browser, 'name', 'msgset_198')
