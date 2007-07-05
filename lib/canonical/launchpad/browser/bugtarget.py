@@ -798,10 +798,9 @@ class FrontPageFileBugAdvancedView(FileBugAdvancedView):
             return None
 
     def validate(self, data):
-        # XXX: We should check at this point that context uses Malone as
-        #      its bug-tracking system, otherwise bug 113268 is going to
-        #      rear its head again.
-        #      -- Graham Binns 2007-07-04
+        """Ensures that the target uses Malone for its bug tracking, then
+        passes the buck to FileBugViewBase.validate()
+        """
         context = self.getProductOrDistroFromContext()
         if context is None or not context.official_malone:
             return self.showFileBugForm()
