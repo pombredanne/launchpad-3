@@ -246,26 +246,6 @@ class CodeHostingTestProviderAdapter:
         return result
 
 
-class CodeHostingRepositoryTestProviderAdapter(CodeHostingTestProviderAdapter):
-    """Test adapter to run a single RepositoryTest against many codehosting
-    servers.
-    """
-
-    def __init__(self, format, servers):
-        self._repository_format = format
-        CodeHostingTestProviderAdapter.__init__(self, servers)
-
-    def adaptForServer(self, test, server):
-        from bzrlib.tests import default_transport
-        new_test = CodeHostingTestProviderAdapter.adaptForServer(
-            self, test, server)
-        new_test.transport_server = default_transport
-        new_test.transport_readonly_server = None
-        new_test.bzrdir_format = self._repository_format._matchingbzrdir
-        new_test.repository_format = self._repository_format
-        return new_test
-
-
 def adapt_suite(adapter, base_suite):
     from bzrlib.tests import iter_suite_tests
     suite = unittest.TestSuite()

@@ -10,8 +10,7 @@ import xmlrpclib
 
 import bzrlib.branch
 from bzrlib.errors import NotBranchError
-from bzrlib.tests.repository_implementations.test_repository import (
-    TestCaseWithRepository)
+from bzrlib.tests import TestCaseWithTransport
 from bzrlib.urlutils import local_path_from_url
 from bzrlib.workingtree import WorkingTree
 
@@ -24,7 +23,7 @@ from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 
 
-class SSHTestCase(ServerTestCase, TestCaseWithRepository):
+class SSHTestCase(ServerTestCase, TestCaseWithTransport):
 
     layer = TwistedBzrlibLayer
     server = None
@@ -338,48 +337,16 @@ class SmartserverTests(SSHTestCase):
         self.assertEqual(revision, remote_revision)
 
 
-def make_repository_tests(base_suite):
-    # Construct a test suite that runs AcceptanceTests with several different
-    # repository formats.
-    #
-    # We do this so that we can be sure that users can host various different
-    # formats without any trouble.
-    from bzrlib.repository import RepositoryTestProviderAdapter
-    from bzrlib.repository import format_registry
-    from bzrlib.repofmt.weaverepo import RepositoryFormat6
-    from bzrlib.tests import default_transport
-
-    # Test all the formats except for the default. The default format is tested
-    # by the server tests.
-    supported_formats = [RepositoryFormat6()]
-    supported_formats.extend([
-        format_registry.get(k) for k in format_registry.keys()
-        if k != format_registry.default_key])
-    adapter = RepositoryTestProviderAdapter(
-        default_transport,
-        # None here will cause a readonly decorator to be created
-        # by the TestCaseWithTransport.get_readonly_transport method.
-        None,
-        [(format, format._matchingbzrdir) for format in supported_formats])
-
-    return adapt_suite(adapter, base_suite)
-
-
 def make_server_tests(base_suite, servers):
-    from bzrlib.repository import RepositoryFormat
     from canonical.codehosting.tests.helpers import (
-        CodeHostingRepositoryTestProviderAdapter)
-    repository_format = RepositoryFormat.get_default_format()
-
-    adapter = CodeHostingRepositoryTestProviderAdapter(
-        repository_format, servers)
+        CodeHostingTestProviderAdapter)
+    adapter = CodeHostingTestProviderAdapter(servers)
     return adapt_suite(adapter, base_suite)
 
 
 def test_suite():
     base_suite = unittest.makeSuite(AcceptanceTests)
     suite = unittest.TestSuite()
-    suite.addTest(make_repository_tests(base_suite))
     suite.addTest(make_server_tests(
         base_suite, [make_sftp_server, make_bzr_ssh_server]))
     suite.addTest(make_server_tests(
