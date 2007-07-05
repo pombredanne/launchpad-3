@@ -72,17 +72,17 @@ KNOWN_TRUST_ROOTS = {
         dict(title="PDL Demo OSCommerce shop",
              logo="/+icing/canonical-logo.png",
              sreg=['email', 'fullname', 'nickname',
-                   'x.address1', 'x.address2', 'x.organization',
-                   'x.city', 'x.province', 'country', 'postcode',
-                   'x.phone'],
+                   'x_address1', 'x_address2', 'x_organization',
+                   'x_city', 'x_province', 'country', 'postcode',
+                   'x_phone'],
              reason=None),
     'http://www.mmania.biz':
         dict(title="The Ubuntu Store from Canonical",
              logo="/+icing/canonical-logo.png",
              sreg=['email', 'fullname', 'nickname',
-                   'x.address1', 'x.address2', 'x.organization',
-                   'x.city', 'x.province', 'country', 'postcode',
-                   'x.phone'],
+                   'x_address1', 'x_address2', 'x_organization',
+                   'x_city', 'x_province', 'country', 'postcode',
+                   'x_phone'],
              reason=("For the Ubuntu Store, you need a Launchpad account "
                      "so we can remember your order details and keep in "
                      "in touch with you about your orders."),
@@ -91,9 +91,9 @@ KNOWN_TRUST_ROOTS = {
         dict(title="The Ubuntu Store from Canonical",
              logo="/+icing/canonical-logo.png",
              sreg=['email', 'fullname', 'nickname',
-                   'x.address1', 'x.address2', 'x.organization',
-                   'x.city', 'x.province', 'country', 'postcode',
-                   'x.phone'],
+                   'x_address1', 'x_address2', 'x_organization',
+                   'x_city', 'x_province', 'country', 'postcode',
+                   'x_phone'],
              reason=("For the Ubuntu Store, you need a Launchpad account "
                      "so we can remember your order details and keep in "
                      "in touch with you about your orders."),
@@ -117,14 +117,14 @@ SREG_FIELDS = [
     ('nickname', 'Launchpad ID'),
     ('email', 'Email address'),
     ('timezone', 'Time Zone'),
-    ('x.address1', 'Address line 1'),
-    ('x.address2', 'Address line 2'),
-    ('x.city', 'City'),
-    ('x.province', 'State/Province'),
+    ('x_address1', 'Address line 1'),
+    ('x_address2', 'Address line 2'),
+    ('x_city', 'City'),
+    ('x_province', 'State/Province'),
     ('country', 'Country'),
     ('postcode', 'Postcode'),
-    ('x.phone', 'Phone number'),
-    ('x.organization', 'Organization'),
+    ('x_phone', 'Phone number'),
+    ('x_organization', 'Organization'),
     ]
 
 class OpenIdMixin:
@@ -260,19 +260,19 @@ class OpenIdMixin:
         values['timezone'] = self.user.timezone
         shipment = self.user.lastShippedRequest()
         if shipment is not None:
-            values['x.address1'] = shipment.addressline1
-            values['x.city'] = shipment.city
+            values['x_address1'] = shipment.addressline1
+            values['x_city'] = shipment.city
             values['country'] = shipment.country.name
             if shipment.addressline2 is not None:
-                values['x.address2'] = shipment.addressline2
+                values['x_address2'] = shipment.addressline2
             if shipment.organization is not None:
-                values['x.organization'] = shipment.organization
+                values['x_organization'] = shipment.organization
             if shipment.province is not None:
-                values['x.province'] = shipment.province
+                values['x_province'] = shipment.province
             if shipment.postcode is not None:
                 values['postcode'] = shipment.postcode
             if shipment.phone is not None:
-                values['x.phone'] = shipment.phone
+                values['x_phone'] = shipment.phone
         return [(field, values[field])
                 for field in self.sreg_field_names if field in values]
 

@@ -60,21 +60,21 @@ class SimpleRegistrationTestCase(unittest.TestCase):
                 'david@canonical.com')
             sreg_field_names = [
                 'fullname', 'nickname', 'email', 'timezone',
-                'x.address1', 'x.address2', 'x.city', 'x.province',
-                'country', 'postcode', 'x.phone', 'x.organization']
+                'x_address1', 'x_address2', 'x_city', 'x_province',
+                'country', 'postcode', 'x_phone', 'x_organization']
         field_value_test = FieldValueTest(None, None)
         self.assertEqual(field_value_test.sreg_fields, [
             ('fullname', u'David Allouche'),
             ('nickname', u'ddaa'),
             ('email', u'david.allouche@canonical.com'),
             ('timezone', u'UTC'),
-            ('x.address1', u'Velvet Zephyr Woods'),
-            ('x.address2', u'5423'),
-            ('x.city', u'whatever'),
-            ('x.province', u'not mandatory'),
+            ('x_address1', u'Velvet Zephyr Woods'),
+            ('x_address2', u'5423'),
+            ('x_city', u'whatever'),
+            ('x_province', u'not mandatory'),
             ('country', u'France'),
             ('postcode', u'999432423'),
-            ('x.phone', u'+55 16 3374-2027')])
+            ('x_phone', u'+55 16 3374-2027')])
 
     def test_sreg_fields_no_shipping(self):
         # Test that user details are extracted correctly when there is
@@ -84,8 +84,8 @@ class SimpleRegistrationTestCase(unittest.TestCase):
                 'no-priv@canonical.com')
             sreg_field_names = [
                 'fullname', 'nickname', 'email', 'timezone',
-                'x.address1', 'x.address2', 'x.city', 'x.province',
-                'country', 'postcode', 'x.phone', 'x.organization']
+                'x_address1', 'x_address2', 'x_city', 'x_province',
+                'country', 'postcode', 'x_phone', 'x_organization']
         field_value_test = FieldValueTest(None, None)
         self.assertEqual(field_value_test.sreg_fields, [
             ('fullname', u'No Privileges Person'),
