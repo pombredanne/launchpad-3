@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = [
@@ -8,8 +8,7 @@ __all__ = [
 
 from zope.interface import implements
 
-from sqlobject import (
-    BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound)
+from sqlobject import (BoolCol, ForeignKey, IntCol, SQLObjectNotFound)
 
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
@@ -53,6 +52,18 @@ class POSubmission(SQLBase):
         schema=TranslationValidationStatus)
     active = BoolCol(notNull=True, default=False)
     published = BoolCol(notNull=True, default=False)
+
+    def makeHTMLId(self, description, for_potmsgset=None):
+        """See `IPOSubmission`."""
+        if for_potmsgset is None:
+            for_potmsgset = self.pomsgset.potmsgset
+        suffix = '_'.join([
+            self.pomsgset.pofile.language.code,
+            description,
+            str(self.id),
+            str(self.pluralform)])
+        return for_potmsgset.makeHTMLId(suffix)
+
 
 # XXX do we want to indicate the difference between a from-scratch
 # submission and an editorial decision (for example, when someone is

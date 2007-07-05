@@ -1,0 +1,74 @@
+= Branch back links =
+
+In order to have consistency of behaviour on branch pages a link
+is now shown just above the main heading in the main content.
+
+    >>> browser = setupBrowser('Basic test@canonical.com:test')
+    >>> browser.open('http://code.launchpad.dev/~name12/firefox/main')
+
+
+== Edit details ==
+
+The link appears on the edit details page.
+
+    >>> browser.getLink('Change branch details').click()
+    >>> back_link = find_tag_by_id(browser.contents, 'branch-back-link')
+    >>> print back_link.renderContents()
+    <img src="/@@/branch" alt="" />
+    <a href="/~name12/firefox/main">Mozilla Firefox Mainline</a>
+    for the <a href="/firefox">Mozilla Firefox</a> project
+
+The link can be used to go back to the main branch page.
+
+    >>> browser.getLink('Mozilla Firefox Mainline').click()
+    >>> print browser.url
+    http://code.launchpad.dev/~name12/firefox/main
+
+
+== Subscribe ==
+
+The link also appears on the branch subscription page.
+
+    >>> browser.getLink('Subscribe').click()
+    >>> back_link = find_tag_by_id(browser.contents, 'branch-back-link')
+    >>> print back_link.renderContents()
+    <img src="/@@/branch" alt="" />
+    <a href="/~name12/firefox/main">Mozilla Firefox Mainline</a>
+    for the <a href="/firefox">Mozilla Firefox</a> project
+
+In order to check the edit subscription page, we need to subscribe.
+
+    >>> browser.getControl('Subscribe').click()
+
+
+== Edit subscription ==
+
+The link appears on the edit subscription page.
+
+    >>> browser.getLink('Edit subscription').click()
+    >>> back_link = find_tag_by_id(browser.contents, 'branch-back-link')
+    >>> print back_link.renderContents()
+    <img src="/@@/branch" alt="" />
+    <a href="/~name12/firefox/main">Mozilla Firefox Mainline</a>
+    for the <a href="/firefox">Mozilla Firefox</a> project
+
+
+== Subscribe someone else ==
+
+The link appears on the subscribe someone else page.
+
+    >>> browser.getLink('Subscribe someone else').click()
+    >>> back_link = find_tag_by_id(browser.contents, 'branch-back-link')
+    >>> print back_link.renderContents()
+    <img src="/@@/branch" alt="" />
+    <a href="/~name12/firefox/main">Mozilla Firefox Mainline</a>
+    for the <a href="/firefox">Mozilla Firefox</a> project
+
+
+== Change registrant ==
+
+XXX: thumper 2007-06-21
+This page currently uses a custom form page that is used to change
+the registrant of many different types of objects.  This page should
+be rewritten for branches in order to allow namespace clash resolutions.
+When this is done, the link should be added.

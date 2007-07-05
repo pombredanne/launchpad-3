@@ -113,12 +113,12 @@
       </tal:block>
     </td>
     <td style="text-align: right">
-      <a tal:attributes="href string: ${spr/distrosourcepackage/fmt:url}/+bugs"
+      <a tal:attributes="href string:${spr/distrosourcepackage/fmt:url}/+bugs"
          tal:content="python: spr.countOpenBugsInUploadedDistro(view.user)">
       </a>
     </td>
     <td style="text-align: right">
-      <a tal:attributes="href string: ${spr/sourcepackage/fmt:url}/+questions"
+      <a tal:attributes="href string:${spr/sourcepackage/fmt:url}/+questions"
          tal:content="spr/@@+open_questions_count">
       </a>
     </td>

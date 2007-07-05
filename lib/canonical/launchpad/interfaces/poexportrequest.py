@@ -12,15 +12,15 @@ class IPOExportRequestSet(Interface):
                    format=TranslationFileFormat.PO):
         """Add a request to export a set of files.
 
-        :potemplate: The PO template to export, or None.
-        :pofiles: A list of PO files to export.
+        :param potemplate: The PO template to export, or `None`.
+        :param pofiles: A list of PO files to export.
         """
 
     def popRequest():
         """Take the next request out of the queue.
 
         Returns a 3-tuple containing the person who made the request, the PO
-        template the request was for, and a list of POTemplate and POFile
+        template the request was for, and a list of `POTemplate` and `POFile`
         objects to export.
         """
 

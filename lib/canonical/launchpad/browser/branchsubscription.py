@@ -14,7 +14,6 @@ from zope.component import getUtility
 
 from canonical.lp.dbschema import BranchSubscriptionNotificationLevel
 
-from canonical.launchpad import _
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.interfaces import (
     IBranchSubscription, ILaunchpadCelebrities)
@@ -28,8 +27,7 @@ class BranchSubscriptionSOP(StructuralObjectPresentation):
 
     def getMainHeading(self):
         """See IStructuralHeaderPresentation."""
-        subscription = self.context
-        return _('Subscription to %s' % subscription.branch.displayname)
+        return self.context.branch.owner.browsername
 
 
 class _BranchSubscriptionView(LaunchpadFormView):
