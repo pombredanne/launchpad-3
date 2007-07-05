@@ -71,11 +71,11 @@ def builddmasterSetUp(test):
         isolation=READ_COMMITTED_ISOLATION)
     setGlobs(test)
 
-def importdSetUp(test):
-    LaunchpadZopelessLayer.switchDbUser('importd')
+def branchscannerSetUp(test):
+    LaunchpadZopelessLayer.switchDbUser('branchscanner')
     setUp(test)
 
-def importdTearDown(test):
+def branchscannerTearDown(test):
     tearDown(test)
 
 def answerTrackerSetUp(test):
@@ -139,6 +139,11 @@ def uploadQueueSetUp(test):
 
 def uploadQueueTearDown(test):
     logout()
+
+def noPrivSetUp(test):
+    """Set up a test logged in as no-priv."""
+    setUp(test)
+    login('no-priv@canonical.com')
 
 def LayeredDocFileSuite(*args, **kw):
     '''Create a DocFileSuite with a layer.'''
@@ -245,7 +250,7 @@ special = {
             ),
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
-            setUp=importdSetUp, tearDown=importdTearDown,
+            setUp=branchscannerSetUp, tearDown=branchscannerTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
     'answer-tracker-emailinterface.txt': LayeredDocFileSuite(
@@ -340,6 +345,11 @@ special = {
             setUp=uploadQueueSetUp,
             tearDown=uploadQueueTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
+    'bugmessage.txt': LayeredDocFileSuite(
+            '../doc/bugmessage.txt',
+            setUp=noPrivSetUp, tearDown=tearDown,
+            optionflags=default_optionflags, layer=LaunchpadFunctionalLayer
             ),
     'bugmessage.txt-queued': LayeredDocFileSuite(
             '../doc/bugmessage.txt',
