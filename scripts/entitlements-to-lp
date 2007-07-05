@@ -1,0 +1,82 @@
+#!/usr/bin/python2.4
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+
+__metaclass__ = type
+
+import logging
+import sys
+import csv
+
+import _pythonpath
+
+from canonical.config import config
+
+from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.entitlement import (
+    EntitlementExchange,
+    create_entitlements,
+    update_entitlements,
+    )
+
+action_methods = dict(
+    create=create_entitlements,
+    update=update_entitlements,
+    )
+
+class ImportEntitlementsScript(LaunchpadScript):
+
+    description = "Create or update entitlements."
+    usage = ("usage: %s [-c|--create | -u|--update] file_name" %
+             sys.argv[0])
+    loglevel = logging.INFO
+
+    def add_my_options(self):
+        self.parser.add_option(
+            '-c', '--create', action='store_const', const='create',
+            help='Create new entitlements', dest='action')
+        self.parser.add_option(
+            '-u', '--update', action='store_const', const='update',
+            help='Update existing entitlements', dest='action')
+        self.parser.add_option(
+            '-f', '--infile', action='store', default='-',
+            help='Input file name ("-" for stdin)', dest='in_file_name')
+        self.parser.add_option(
+            '-o', '--outfile', action='store', default='-',
+            help='Output file name ("-" for stdout)', dest='out_file_name')
+
+    def main(self):
+
+        action = self.options.action
+
+        if self.options.in_file_name == '-':
+            in_file = sys.stdin
+        else:
+            in_file = open(self.options.in_file_name, "rb")
+
+        if self.options.out_file_name == '-':
+            out_file = sys.stdout
+        else:
+            out_file = open(self.options.out_file_name, "wb")
+
+        action_method = action_methods.get(action)
+        if action_method is None:
+            sys.stderr.write("Invalid action: %s\n" % action)
+            return 1
+
+        # get a reader
+        reader = EntitlementExchange.readerFactory(in_file)
+        in_data = list(reader)
+        rd = action_method(in_data)
+        print rd
+        self.txn.commit()
+        return 0
+
+    def getReader(self, in_file):
+        reader = csv.DictReader(stripped_data, skipinitialspace=True,
+                                quoting=csv.QUOTE_ALL)
+        return reader
+
+if __name__ == '__main__':
+    script = ImportEntitlementsScript('canonical.launchpad.scripts.entitlements')
+    script.run()
