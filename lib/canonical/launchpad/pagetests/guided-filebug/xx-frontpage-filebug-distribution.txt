@@ -118,3 +118,21 @@ filebug page and file a bug directly.
     'http://bugs.launchpad.dev/ubuntu/+bug/...'
     >>> user_browser.title
     'Bug #... in Ubuntu: ...Ubuntu crashes...'
+
+Trying to file a bug against a distribution that doesn't use 
+Launchpad Bugs results in an informational page being displayed.
+
+    >>> user_browser.open('http://bugs.launchpad.dev/')
+    >>> user_browser.getLink('Report a bug').click()
+    >>> user_browser.getLink('complicated bug filing form').click()
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.distribution').value = ['debian']
+    >>> user_browser.getControl(
+    ...     name='field.bugtarget.package').value = 'alsa-utils'
+    >>> user_browser.getControl('Summary').value = 'Alsa crashes'
+    >>> user_browser.getControl('Further information').value = 'Crash.'
+    >>> user_browser.getControl('Submit Bug Report').click()
+    >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
+    ...     print extract_text(message)
+    Debian does not use Launchpad as its bug tracker.
+
