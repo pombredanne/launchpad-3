@@ -24,7 +24,7 @@
 
   <tal:not-junk condition="context/product">
     <h2>Project</h2>
-    <div class="indented">
+    <div class="indented" id="branch-project">
       <img src="/@@/project"
            tal:replace="structure context/product/image:icon" />
       <a tal:attributes="href context/product/fmt:url"
@@ -34,6 +34,7 @@
 
   <h2>Bugs</h2>
 
+  <div id="bug-links">
   <tal:has-bugs condition="context/related_bugs">
     <div tal:repeat="bug context/related_bugs" class="indented">
       <img src="/@@/bug" alt="" />
@@ -44,9 +45,11 @@
   <tal:has-bugs condition="not: context/related_bugs">
     <p>This branch is not associated with any bugs at this time.</p>
   </tal:has-bugs>
+  </div>
 
   <h2>Blueprints</h2>
 
+  <div id="blueprint-links">
   <tal:has-blueprints condition="context/spec_links">
     <div tal:repeat="spec_link context/spec_links" class="indented">
       <img src="/@@/blueprint"
@@ -58,20 +61,20 @@
   <tal:has-blueprints condition="not: context/spec_links">
     <p>This branch is not associated with any blueprints at this time.</p>
   </tal:has-blueprints>
+  </div>
 
   <h2>Subscribers</h2>
 
+  <div id="branch-subscribers">
   <tal:has-subscribers condition="context/subscribers">
     <div tal:repeat="subscriber context/subscribers" class="indented">
-      <img src="/@@/person"
-           tal:replace="structure subscriber/image:icon" />
-      <a tal:attributes="href subscriber/fmt:url"
-         tal:content="subscriber/browsername" />
+      <tal:person replace="structure subscriber/fmt:link" />
     </div>
   </tal:has-subscribers>
   <tal:has-subscribers condition="not: context/subscribers">
     <p>This branch has no subscribers at this time.</p>
   </tal:has-subscribers>
+  </div>
 
 </div>
 
