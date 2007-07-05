@@ -1455,7 +1455,8 @@ new imports with the information being copied.
         logging.info('Updating POMsgSet table...')
         cur.execute('''
             UPDATE POMsgSet SET
-                iscomplete = pms1.iscomplete, isfuzzy = pms1.isfuzzy,
+                iscomplete = pms1.iscomplete,
+                isfuzzy = pms1.isfuzzy,
                 isupdated = pms1.isupdated,
                 reviewer = pms1.reviewer,
                 date_reviewed = pms1.date_reviewed
