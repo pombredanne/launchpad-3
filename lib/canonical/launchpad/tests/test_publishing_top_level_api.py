@@ -222,11 +222,9 @@ class TestIPublishingAPI(TestNativePublishingBase):
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaulSourcePublications())
-
-        self.layer.commit()
-
-        # Release 'breezy-autotest'.
+        # Freeze 'breezy-autotest'.
         self.breezy_autotest.status = DistroSeriesStatus.FROZEN
+        self.layer.commit()
 
         # Usual publication procedure for a distroseries in development
         # state only 'pending' publishing records for pocket RELEASE
@@ -365,7 +363,6 @@ class TestIPublishingAPI(TestNativePublishingBase):
         self.assertEqual(
             [pub_pending_updates.id], [pub.id for pub in pub_records])
 
-
     def testPublicationLookUpForFrozenDistroArchSeries(self):
         """Binary publishing record lookup for a frozen DistroArchSeries.
 
@@ -374,7 +371,6 @@ class TestIPublishingAPI(TestNativePublishingBase):
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaulBinaryPublications())
-
         # Freeze 'breezy-autotest'
         self.breezy_autotest.status = DistroSeriesStatus.FROZEN
         self.layer.commit()
