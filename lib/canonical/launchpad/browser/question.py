@@ -629,6 +629,11 @@ class QuestionWorkflowView(LaunchpadFormView):
         """The Question's language direction for the dir attribute."""
         return self.context.language.abbreviated_text_dir
 
+    @property
+    def is_question_owner(self):
+        """Return True when this user is the question owner."""
+        return self.user == self.context.owner
+
     def hasActions(self):
         """Return True if some actions are possible for this user."""
         for action in self.actions:

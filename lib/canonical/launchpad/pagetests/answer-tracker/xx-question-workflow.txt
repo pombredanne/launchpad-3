@@ -45,12 +45,19 @@ It's not unusual that the original message of a question is terse
 and quite vague. In these cases, to help the user, some more
 information will be required.
 
-To request for more information from the question owner, a user enters
-the question in the 'Message' field and clicks on the
-'Add Information Request' button.
+No Privileges Person visits the question. He see the heading
+'Can you help with this problem?'. The problem is not clear, he
+needs more information. To request for more information from the
+question owner, No Privileges Person enters his question in the 
+'Message' field and clicks on the 'Add Information Request' button.
 
     >>> support_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
+    >>> content = find_tag_by_id(
+    ...     support_browser.contents, 'can-you-help-with-this-problem')
+    >>> print content.h2.renderContents()
+    Can you help with this problem?
+    
     >>> support_browser.getControl('Message').value = (
     ...     "Can you provide an example of an URL displaying the problem?")
     >>> support_browser.getControl('Add Information Request').click()
@@ -77,10 +84,17 @@ you an error.
 When the question is in the 'Needs information' state, it means that
 the question owner should come back and provide more information. He
 can do so by entering the reply in the 'Message' box and clicking on
-the "I'm Providing More Information" button.
+the "I'm Providing More Information" button. Note that the question
+owner cannot see the 'Can you help with this problem?' heading because
+it is not relevant to his tasks.
 
     >>> owner_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
+    >>> content = find_tag_by_id(
+    ...     owner_browser.contents, 'can-you-help-with-this-problem')
+    >>> content is None
+    True
+
     >>> owner_browser.getControl('Message').value = (
     ...     "The following SVG doesn't display properly:\n"
     ...     "http://www.w3.org/2001/08/rdfweb/rdfweb-chaals-and-dan.svg")
@@ -343,3 +357,12 @@ a similar problem so he asks his own question.
     >>> user_browser.getLink('ask your own question separately').click()
     >>> print user_browser.title
     Ask a question about Mozilla Firefox
+
+The 'Got a question of your own?' section in not relevant to the 
+question owner, so Sample person does not see it.
+
+    >>> owner_browser.open('http://launchpad.dev/firefox/+question/2')
+    >>> content = find_tag_by_id(
+    ...     owner_browser.contents, 'ask-your-own-question')
+    >>> content is None
+    True

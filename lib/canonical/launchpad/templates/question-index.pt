@@ -79,15 +79,18 @@
       </tal:message>
 
       <div xml:lang="en" lang="en" dir="ltr">
-        <h2>
-          Can you help with this problem?
-        </h2>
+        <div id="can-you-help-with-this-problem"
+          tal:condition="not: view/is_question_owner">
+          <h2>
+            Can you help with this problem?
+          </h2>
 
-        <p>
-          Provide an answer of your own, or ask 
-          <span tal:replace="context/owner/browsername"></span>
-          for more information if necessary.
-        </p>
+          <p>
+            Provide an answer of your own, or ask 
+            <span tal:replace="context/owner/browsername"></span>
+            for more information if necessary.
+          </p>
+        </div>
         
         <div tal:condition="view/hasActions">
           <div metal:use-macro="context/@@launchpad_form/form">
@@ -122,7 +125,8 @@
         </tal:not-logged-in>
       </div>
 
-      <div id="ask-your-own-question" xml:lang="en" lang="en" dir="ltr">
+      <div id="ask-your-own-question" xml:lang="en" lang="en" dir="ltr"
+        tal:condition="not: view/is_question_owner">
         <h2>Got a question of your own?</h2>
 
         <p>For best results,
