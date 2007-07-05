@@ -17,11 +17,9 @@
 
 <div metal:fill-slot="main">
 
-  <div>
-    <img alt="branch icon" src="/@@/branch" />
-    <a tal:attributes="href context/fmt:url"
-       tal:content="context/displayname" />
-  </div>
+  <tal:branch-link define="branch context">
+    <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
+  </tal:branch-link>
   <h1>Branch associations</h1>
 
   <tal:not-junk condition="context/product">
