@@ -775,6 +775,21 @@ We can also use the tag command to remove tags.
     bar
     layout-test
 
+Trying to remove a tag that is not assigned will result in an error message
+being sent.
+
+    >>> submit_commands(bug_four, 'tag -foobar')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        tag -foobar
+    ...
+    The tag you tried to remove is not assigned to this bug: foobar
+    ...
+
 If we specify an invalid tag to be added, an error message will be sent:
 
     >>> submit_commands(bug_four, 'tag bad_tag')
@@ -786,6 +801,24 @@ If we specify an invalid tag to be added, an error message will be sent:
     Failing command:
         tag bad_tag
     ...
+    A tag you specified is invalid: bad_tag
+    <BLANKLINE>
+    Tags can only contain alphanumeric characters.
+    ...
+
+We will receive the same message if we specify an invalid tag to be removed:
+
+    >>> submit_commands(bug_four, 'tag -bad_tag')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        tag -bad_tag
+    ...
+    A tag you specified is invalid: bad_tag
+    <BLANKLINE>
     Tags can only contain alphanumeric characters.
     ...
 

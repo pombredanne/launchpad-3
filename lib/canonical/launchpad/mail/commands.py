@@ -708,32 +708,42 @@ class ReplacedByImportanceCommand(EmailCommand):
         raise EmailProcessingError(
                 get_error_message('bug-importance.txt', argument=self.name))
 
+
 class TagEmailCommand(EmailCommand):
     """Assigns a tag to or removes a tag from bug."""
 
     implements(IBugEditEmailCommand)
 
     def execute(self, bug, current_event):
-        """See IEmailCommand."""
+        """See `IEmailCommand`."""
         string_args = list(self.string_args)
-
         tags = list(bug.tags)
 
-        for args in string_args:
+        for arg in string_args:
             # Are we adding or removing a tag?
-            if args[0] == '-':
-                tags.remove(args[1:])
+            if arg.startswith('-'):
+                remove = True
+                tag = arg[1:]
             else:
-                # Check for tag is valid before we add it
-                if re.search('[^a-zA-Z0-9]', args):
+                remove = False
+                tag = arg
+            # Tag moust contain only alphanumeric characters
+            if re.search('[^a-zA-Z0-9]', tag):
+                raise EmailProcessingError(
+                    get_error_message('invalid-tag.txt', tag=tag))
+            if remove:
+                try:
+                    tags.remove(tag)
+                except ValueError:
                     raise EmailProcessingError(
-                        get_error_message('invalid-tag.txt'))
-                else:
-                    tags.append(args)
+                        get_error_message('unassigned-tag.txt', tag=tag))
+            else:
+                tags.append(arg)
 
         bug.tags = tags
 
         return bug, current_event
+
 
 class NoSuchCommand(KeyError):
     """A command with the given name couldn't be found."""
