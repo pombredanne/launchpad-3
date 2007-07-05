@@ -493,6 +493,21 @@ class FileBugViewBase(LaunchpadFormView):
         else:
             return None
 
+    def getRelevantBugTask(self, bug):
+        context = self.context
+        bugtasks = bug.bugtasks
+
+        if IDistribution.providedBy(context):
+            for bugtask in bugtasks:
+                if bugtask.distribution == context:
+                    return bugtask
+        else:
+            for bugtask in bugtasks:
+                if bugtask.target == context:
+                    return bugtask
+
+        return None
+
 
 class FileBugAdvancedView(FileBugViewBase):
     """Browser view for filing a bug.

@@ -60,7 +60,7 @@
                     <li tal:repeat="bug view/similar_bugs"
                         tal:attributes="title bug/description/fmt:shorten/500"
                         title="bug description goes here">
-                      <table tal:define="bugtask python:bug.getBugTask(context)">
+                      <table tal:define="bugtask python:view.getRelevantBugTask(bug)">
                         <tbody>
                           <tr>
                             <td>
@@ -71,7 +71,9 @@
                             </td>
                             <td>
                               <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
+                                     tal:condition="bugtask"
                                      tal:content="structure bugtask/image:icon" />
+                              <img alt="" src="/@@/bug" tal:condition="not:bugtask" />
                             </td>
                             <td>
                               <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
@@ -81,12 +83,20 @@
                                   <a tal:attributes="href bug/fmt:url"
                                      tal:content="bug/title">Bug title here</a>
                                 </div>
-                                <div class="lesser">
+                                <div class="lesser" tal:condition="bugtask">
                                   <tal:status replace="bugtask/status/title" />,
                                   last updated
                                   <tal:last-updated content="bug/date_last_updated/fmt:approximatedate">
                                     2007-07-03
                                   </tal:last-updated>
+                                </div>
+                                <div class="lesser" tal:condition="not:bugtask">
+                                  <tal:closed condition="bug/is_complete">
+                                    Closed <tal:when replace="bug/date_closed/fmt:approximatedate" />
+                                  </tal:closed>
+                                  <tal:open condition="not:bug/is_complete">
+                                    Open, last updated <tal:when replace="bug/date_last_updated/fmt:approximatedate" />
+                                  </tal:open>
                                 </div>
                               </label>
                             </td>
