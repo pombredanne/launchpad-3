@@ -422,13 +422,9 @@ class SpecificationSupersedingView(LaunchpadFormView):
 
     def setUpFields(self):
         """Override the setup to define own fields."""
-        if self.context.product is not None:
-            spec_target = self.context.product
-        elif self.context.distribution is not None:
-            spec_target = self.context.distribution
-        else:
+        if self.context.target is None:
             raise AssertionError("No target found for this spec.")
-        specs = sorted(spec_target.specifications(),
+        specs = sorted(self.context.target.specifications(),
                        key=attrgetter('name'))
         terms = [SimpleTerm(spec, spec.name, spec.title)
                  for spec in specs if spec != self.context]
