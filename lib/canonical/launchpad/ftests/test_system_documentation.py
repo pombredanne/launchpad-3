@@ -20,9 +20,10 @@ from canonical.config import config
 from canonical.database.sqlbase import (
     flush_database_updates, READ_COMMITTED_ISOLATION)
 from canonical.functional import FunctionalDocFileSuite, StdoutHandler
-from canonical.launchpad.database import DistributionSet, PersonSet
+from canonical.launchpad.database import BugTaskSet, DistributionSet, PersonSet
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
-from canonical.launchpad.interfaces import CreateBugParams, ILaunchBag
+from canonical.launchpad.interfaces import (
+    CreateBugParams, ILanguageSet, ILaunchBag)
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import (
         LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
@@ -146,11 +147,14 @@ def noPrivSetUp(test):
     setUp(test)
     login('no-priv@canonical.com')
 
-def bugLinkedToQuestionSetUp(test):
-    setUp(test)
+def _createUbuntuBugTaskLinkedToQuestion():
+    """Get the id of an Ubuntu bugtask linked to a question."""
     login('test@canonical.com')
     sample_person = PersonSet().getByEmail('test@canonical.com')
+    ubuntu_team = PersonSet().getByName('ubuntu-team')
+    ubuntu_team.addLanguage(getUtility(ILanguageSet)['en'])
     ubuntu = DistributionSet().getByName('ubuntu')
+    ubuntu.addAnswerContact(ubuntu_team)
     ubuntu_question = ubuntu.newQuestion(
         sample_person, "Can't install Ubuntu",
         "I insert the install CD in the CD-ROM drive, but it won't boot.")
@@ -161,10 +165,29 @@ def bugLinkedToQuestionSetUp(test):
     bug = ubuntu.createBug(params)
     ubuntu_question.linkBug(bug)
     [ubuntu_bugtask] = bug.bugtasks
-    def get_bugtask_linked_to_question():
-        return ubuntu_bugtask
-    test.globs['get_bugtask_linked_to_question'] = get_bugtask_linked_to_question
+    bugtask_id = ubuntu_bugtask.id
     login(ANONYMOUS)
+    return ubuntu_bugtask.id
+
+def bugLinkedToQuestionSetUp(test):
+    def get_bugtask_linked_to_question():
+        return BugTaskSet().get(bugtask_id)
+    setUp(test)
+    bugtask_id = _createUbuntuBugTaskLinkedToQuestion()
+    test.globs['get_bugtask_linked_to_question'] = (
+        get_bugtask_linked_to_question)
+
+def uploaderBugLinkedToQuestionSetUp(test):
+    LaunchpadZopelessLayer.switchDbUser('launchpad')
+    bugLinkedToQuestionSetUp(test)
+    LaunchpadZopelessLayer.commit()
+    uploaderSetUp(test)
+
+def uploadQueueBugLinkedToQuestionSetUp(test):
+    LaunchpadZopelessLayer.switchDbUser('launchpad')
+    bugLinkedToQuestionSetUp(test)
+    LaunchpadZopelessLayer.commit()
+    uploadQueueSetUp(test)
 
 
 def LayeredDocFileSuite(*args, **kw):
@@ -396,6 +419,18 @@ special = {
             '../doc/answer-tracker-notifications-linked-bug.txt',
             setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
             optionflags=default_optionflags, layer=LaunchpadFunctionalLayer
+            ),
+    'answer-tracker-notifications-linked-bug.txt-uploader': LayeredDocFileSuite(
+            '../doc/answer-tracker-notifications-linked-bug.txt',
+            setUp=uploaderBugLinkedToQuestionSetUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
+    'answer-tracker-notifications-linked-bug.txt-queued': LayeredDocFileSuite(
+            '../doc/answer-tracker-notifications-linked-bug.txt',
+            setUp=uploadQueueBugLinkedToQuestionSetUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
     }
 
