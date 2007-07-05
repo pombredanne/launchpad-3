@@ -43,7 +43,7 @@ the collection.
     ...     'You decide: there were at least six conspiracies going on '
     ...     'in Dallas on Nov 22nd 1963.', None),
     ...     (no_priv, 'What were the famous last words?',
-    ...      'Who closed the light?', None)
+    ...      'Who turned off the light?', None)
     ... ]
 
     >>> from datetime import datetime, timedelta
@@ -95,7 +95,7 @@ requested collection:
 == searchFAQs ==
 
 The searchFAQs() method is used to select a set of FAQs in the
-collection matching criteria.
+collection matching various criteria.
 
 When no criteria are given, all the FAQs in the collection are returned.
 (The default sort order is most recent first.)
@@ -112,7 +112,7 @@ When no criteria are given, all the FAQs in the collection are returned.
 
 === search_text ===
 
-The first criteria is search_text, it returns FAQs matching the
+The first criteria is search_text. It will select FAQs matching the
 keywords specified. Keywords are looked for in the title, content and
 keywords field of the FAQ.
 
@@ -122,13 +122,14 @@ keywords field of the FAQ.
     How do I make money quickly off the Internet?
 
 By default, the results are sorted by relevancy. In the above example,
-the first is more relevant because the keyword appear in the title.
+the first result is more relevant because the keyword appear in the
+title.
 
 
 === owner ===
 
 The other filtering criteria is 'owner'. It will select only FAQs that
-we created by the specified user.
+were created by the specified user.
 
     >>> for faq in collection.searchFAQs(owner=no_priv):
     ...     print faq.title
@@ -141,8 +142,8 @@ Again, the default sort order is most recent first.
 
 === Combination ===
 
-You can combine criterias. Only FAQs matching all criteria will be
-returned.
+You can combine multiple criterias. Only FAQs matching all the criterias
+ will be returned.
 
     >>> for faq in collection.searchFAQs(
     ...         search_text='install', owner=no_priv):

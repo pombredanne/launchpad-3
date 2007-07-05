@@ -3,7 +3,7 @@
 """Test harness for running the faqcollection.txt interface test
 
 This module will run the interface test against Product, Distribution,
-and a Project.
+and Project.
 """
 
 __metaclass__ = type
