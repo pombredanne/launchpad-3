@@ -542,6 +542,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -717,6 +720,8 @@ INSERT INTO branch (id, title, summary, "owner", product, author, name, home_pag
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (28, NULL, NULL, 1, NULL, 1, 'testdoc', NULL, NULL, NULL, 1, NULL, NULL, 1, false, 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum', NULL, NULL, NULL, '2007-05-04 01:16:03.75446', 0, '2007-05-04 01:16:26.640702', false);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (29, 'Landscape trunk', NULL, 64, 16, 12, 'trunk', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2007-05-28 02:37:07.814303', 0, NULL, true);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (30, NULL, NULL, 12, 16, 12, 'feature-x', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2007-05-28 02:37:07.814303', 0, NULL, true);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (75, 'GNOME Terminal Import Branch', NULL, 24, 6, NULL, 'import', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-06-25 20:04:03.9465', 0, NULL, false);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (76, 'Evolution Import Branch', NULL, 24, 5, NULL, 'import', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-06-25 20:04:04.218451', 0, NULL, false);
 
 
 ALTER TABLE branch ENABLE TRIGGER ALL;
@@ -1170,6 +1175,8 @@ ALTER TABLE calendarsubscription ENABLE TRIGGER ALL;
 
 ALTER TABLE codeimport DISABLE TRIGGER ALL;
 
+INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, svn_branch_url, cvs_root, cvs_module, review_status) VALUES (1, 75, '2007-06-25 20:04:04.226605', 52, 2, 'http://svn.example.org/svnroot/gnome-terminal/trunk', NULL, NULL, 20);
+INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, svn_branch_url, cvs_root, cvs_module, review_status) VALUES (2, 76, '2007-06-25 20:04:04.379285', 52, 1, NULL, ':pserver:anonymous@anoncvs.example.org:/cvs/gnome', 'evolution', 1);
 
 
 ALTER TABLE codeimport ENABLE TRIGGER ALL;
@@ -1794,10 +1801,10 @@ ALTER TABLE emailaddress ENABLE TRIGGER ALL;
 
 ALTER TABLE entitlement DISABLE TRIGGER ALL;
 
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (1, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 10, 100, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (2, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 20, 200, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (4, 18, '2007-06-11 00:44:19.267601', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 10, 5, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (5, 18, '2007-06-11 01:02:48.538842', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 10, 3, 0);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (1, 17, 10, 100, 0, '2007-06-11 12:00:00', '2008-06-11 12:00:00', NULL, '2007-06-10 12:00:00', NULL, NULL, 30, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (2, 17, 20, 200, 0, '2007-06-11 12:00:00', '2008-06-11 12:00:00', NULL, '2007-06-10 12:00:00', NULL, NULL, 30, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (4, 18, 10, 5, 0, '2007-06-11 12:00:00', '2007-06-11 00:00:00', NULL, '2007-06-11 00:44:19.267601', NULL, NULL, 30, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (5, 18, 10, 3, 0, '2007-06-11 12:00:00', '2007-06-11 00:00:00', NULL, '2007-06-11 01:02:48.538842', NULL, NULL, 30, NULL);
 
 
 ALTER TABLE entitlement ENABLE TRIGGER ALL;
@@ -1805,9 +1812,71 @@ ALTER TABLE entitlement ENABLE TRIGGER ALL;
 
 ALTER TABLE faq DISABLE TRIGGER ALL;
 
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (1, 'Wireless Networking Documentation', 'wifi', 'Installation instructions for many wireless cards can be found at:
+
+https://help.ubuntu.com/community/WifiDocs', NULL, 1, 16, '2007-07-03 21:13:24.061479', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (2, 'Dial-up Modem Networking Configuration', 'networking dial-up modem', 'Instructions on how to configure networking with a dial-up modem can be found at:
+
+https://help.ubuntu.com/community/DialupModemHowto
+
+This include explanations on how to install drivers for many common "soft-modems".', NULL, 1, 16, '2007-07-03 21:18:35.586123', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (3, 'How to obtain a fixed hostname with a dynamic IP', 'networking dns', 'The following document explains how to obtain a hostname that will work with the dynamic addresses that most providers give to their users:
+
+https://help.ubuntu.com/community/DynamicDNS
+
+', NULL, 1, 16, '2007-07-03 21:28:59.461247', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (4, 'How can I make VOIP calls?', 'sip phone', 'Ekiga is the standard Ubuntu application to make Voice-over-IP calls. 
+
+A document explaining how to configure and use it is available at:
+https://help.ubuntu.com/community/Ekiga', NULL, 1, 12, '2007-07-03 21:33:49.087585', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (5, 'How can I customize my desktop?', NULL, 'Instructions on how to customize your desktop environment can be found at:
+https://help.ubuntu.com/7.04/user-guide/C/prefs-look-and-feel.html
+
+This explain how to change:
+- the desktop background image (aka wallpaper);
+- the default font;
+- the appearance of windows;
+- the screensaver;
+- and a lot of other items also.', NULL, 1, 12, '2007-07-03 21:37:51.922609', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (6, 'How can I play MP3/Divx/DVDs/Quicktime/Realmedia files or view Flash/Java web pages', NULL, 'Playing many common formats such as DVIX, MP3, DVD, or Flash animations require the installation of plugins.
+
+See https://help.ubuntu.com/community/RestrictedFormats for all the details.', NULL, 1, 16, '2007-07-03 21:43:57.613622', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (7, 'How do I install Java?', NULL, 'Windows
+
+On Windows, Firefox can be used with Sun''s Java Runtime Environment (JRE) 1.4 and above. It is possible to install the latest version from within Firefox, using XPInstall technology: http://www.java.com/en/download/
+
+Linux
+
+Firefox is compiled with gcc 3.2.3, so a compatible version of the Java plugin must be used. On Linux, Firefox requires JRE 1.4.2 or later (http://java.sun.com/j2se/1.4.2/download.html).
+
+If you are using an older Linux distribution, you may need to install the gcc3 support libraries, as the gcc 3.2 version of the Java plugin requires libgcc_s.so.1 to operate. You may be able to find packages using Google.
+
+If you are using an old or unofficial build of Firefox, you can check which compiler was used by entering about:buildconfig in the location bar and pressing enter. You will see a line such as gcc version 3.3 20030226 (prerelease) (SuSE Linux), which will show the compiler that was used. If gcc2.9x was used, you need to use the ns610 plugin, not the ns610-gcc32 plugin.
+
+Mac OS X
+
+Java software can be downloaded directly from Apple (http://www.apple.com/java/).
+', 4, NULL, 12, '2007-07-03 21:58:34.782395', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (8, 'How do I install Extensions?', NULL, 'You can find various extensions  at http://addons.mozilla.org.
+
+When you see a link on a website to download or install an extension, simply click on that link. If you get prompted to save a XPI file, save it, and use File > Open File..., to open the file in Firefox.
+
+You can also open the Add-ons window (Tools > Add-ons), and drag the link or file to the Add-ons window.', 4, NULL, 12, '2007-07-03 22:01:00.585767', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (9, 'How do I troubleshoot problems with extensions/themes?', NULL, 'Poorly designed or incompatible Extensions can cause problems with your browser, including make it crash, slow down page display, etc. If you encounter strange problems relating to parts of the browser no longer working, the browser not starting, windows with strange or distorted appearance, degraded performance, etc, you may be suffering from Extension or Theme trouble. Restart the browser in Safe Mode. On Windows, start using the "Safe Mode" shortcut created in your Start menu or by running firefox.exe -safe-mode. On Linux, start with ./firefox -safe-mode and on Mac OS X, run:
+
+    cd /Applications/Firefox.app/Contents/MacOS/
+    ./firefox-bin -safe-mode
+
+When started in Safe Mode all extensions are disabled and the Default theme is used. Disable the Extension/Theme that is causing trouble and then start normally.
+', 4, NULL, 12, '2007-07-03 22:02:39.407123', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (10, 'How do I install plugins (Shockwave, QuickTime, etc.)?', NULL, 'PluginDoc (http://plugindoc.mozdev.org/faqs/) lists common plugins (such as RealPlayer, QuickTime, Flash, Java, etc.) and how to install them in Firefox.', 4, NULL, 16, '2007-07-03 22:05:36.648951', NULL, NULL, NULL);
 
 
 ALTER TABLE faq ENABLE TRIGGER ALL;
+
+
+
+
 
 
 
@@ -1914,6 +1983,7 @@ INSERT INTO karma (id, datecreated, person, "action", product, distribution, sou
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (59, '2000-03-13 20:45:15.852052', 16, 2, 20, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (60, '2000-03-13 20:45:51.817826', 16, 2, 20, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (61, '2000-03-13 20:46:49.83307', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (62, '2001-07-03 21:30:51.583356', 12, 47, NULL, 1, NULL);
 
 
 ALTER TABLE karma ENABLE TRIGGER ALL;
@@ -8202,7 +8272,8 @@ No se como hacer para que funcione el doble-núcleo recompilando la kernel, pued
 ', NULL, NULL, NULL, 1, NULL, 10, 10, '2006-10-20 16:52:18.179187', '2006-10-20 16:52:18.179187', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 387, NULL);
 INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (13, 29, 'Problemas de Impressão no Firefox', 'Olá a todos!
 
-Não sei se isso acontece com todo mundo, mas aqui não consigo imprimir corretamente uma página com o Firefox, sempre sai cortado. Minha impressora é uma HP400 e uso papel A4, mas a impressão sai sempre como se estivesse selecionado o tamanho "letter", e isso mesmo mudando no mozilla para A4. Creio que não é um problema de configuração de impressora, pois isso só acontece com o Mozilla, em outros programas a impressão é normal.', NULL, NULL, 4, NULL, NULL, 10, 10, '2006-10-20 17:03:21.847064', '2006-10-20 17:03:21.847064', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 521, NULL);
+Não sei se isso acontece com todo mundo, mas aqui não consigo imprimir corretamente uma página com o Firefox, sempre sai cortado. Minha impressora é uma HP400 e uso papel A4, mas a impressão sai sempre como se estivesse selecionado o tamanho "letter", e isso mesmo mudando no mozilla para A4. Creio que não é um problema de configuração de impressora, pois isso só acontece com o Mozilla, em outros programas a impressão é normal.', NULL, NULL, 4, NULL, NULL, 10, 10, '2006-10-20 17:03:21.847064', '2006-10-20 17:03:21.847064', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 521);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (14, 12, 'عكس التغييرات غير المحفوظة للمستن؟', 'Testing Arabic writing direction (in Firefox) in questions.', NULL, NULL, NULL, 1, NULL, 10, 10, '2001-07-03 21:30:51.583356', '2001-07-03 21:30:51.583356', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 18);
 
 
 ALTER TABLE question ENABLE TRIGGER ALL;
@@ -8247,6 +8318,7 @@ INSERT INTO questionsubscription (id, question, person, date_created) VALUES (5,
 INSERT INTO questionsubscription (id, question, person, date_created) VALUES (6, 11, 12, '2006-10-16 18:31:53.205087');
 INSERT INTO questionsubscription (id, question, person, date_created) VALUES (7, 12, 13, '2006-11-09 16:52:18.179187');
 INSERT INTO questionsubscription (id, question, person, date_created) VALUES (8, 13, 29, '2006-11-09 17:03:21.847064');
+INSERT INTO questionsubscription (id, question, person, date_created) VALUES (9, 14, 12, '2001-07-03 21:30:51.583356');
 
 
 ALTER TABLE questionsubscription ENABLE TRIGGER ALL;

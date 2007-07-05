@@ -11,8 +11,10 @@ __all__ = [
 
 from zope.interface import Interface
 
+from canonical.launchpad.interfaces.faqcollection import IFAQCollection
 
-class IFAQTarget(Interface):
+
+class IFAQTarget(IFAQCollection):
     """An object that can contain a FAQ document."""
 
     def newFAQ(owner, title, content, keywords=None, date_created=None):
@@ -24,13 +26,6 @@ class IFAQTarget(Interface):
         :param keywords: The document's keywords.
         :param date_created: The creation time of the document.
             Defaults to now.
-        """
-
-    def getFAQ(id):
-        """Return the `IFAQ` in this target with the requested id.
-
-        :return: The `IFAQ` with the requested id or None if there is no
-            document with that id.
         """
 
     def findSimilarFAQs(summary):

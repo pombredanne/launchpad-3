@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'IFAQ',
+    'IFAQSet',
     ]
 
 from zope.interface import Attribute
@@ -16,6 +17,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title
+from canonical.launchpad.interfaces.faqcollection import IFAQCollection
 from canonical.launchpad.interfaces.faqtarget import IFAQTarget
 from canonical.launchpad.interfaces.launchpad import IHasOwner
 
@@ -68,3 +70,7 @@ class IFAQ(IHasOwner):
 
     related_questions = Attribute(
         _('The set of questions linked to this FAQ.'))
+
+
+class IFAQSet(IFAQCollection):
+    """`IFAQCollection` of all the FAQs existing in Launchpad."""

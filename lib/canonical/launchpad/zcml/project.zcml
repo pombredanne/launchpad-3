@@ -8,6 +8,7 @@
     <content class="canonical.launchpad.database.Project">
         <allow interface="canonical.launchpad.interfaces.IProject" />
         <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
+        <allow interface="canonical.launchpad.interfaces.IFAQCollection" />
         <allow interface="canonical.launchpad.interfaces.IQuestionCollection" />
         <require
             permission="launchpad.Edit"

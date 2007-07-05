@@ -18,9 +18,9 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IProject, IProjectSet, ICalendarOwner, ISearchableByQuestionOwner,
-    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH, IHasLogo, IHasMugshot,
-    IHasIcon)
+    IFAQCollection, IProduct, IProject, IProjectSet, ICalendarOwner,
+    ISearchableByQuestionOwner, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
+    IHasLogo, IHasMugshot, IHasIcon)
 
 from canonical.lp.dbschema import (
     TranslationPermission, ImportStatus, SpecificationSort,
@@ -33,6 +33,7 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.cal import Calendar
+from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
@@ -49,8 +50,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
               BranchVisibilityPolicyMixin):
     """A Project"""
 
-    implements(IProject, ICalendarOwner, ISearchableByQuestionOwner,
-               IHasLogo, IHasMugshot, IHasIcon)
+    implements(IProject, ICalendarOwner, IFAQCollection,
+               ISearchableByQuestionOwner, IHasLogo, IHasMugshot, IHasIcon)
 
     _table = "Project"
 
@@ -297,6 +298,24 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Question.product = Product.id AND
             Product.project = %s""" % sqlvalues(self.id),
             clauseTables=['Question', 'Product'], distinct=True))
+
+    # IFAQCollection
+    def getFAQ(self, id):
+        """See `IQuestionCollection`."""
+        faq = FAQ.getForTarget(id, None)
+        if (faq is not None
+            and IProduct.providedBy(faq.target)
+            and faq.target in self.products):
+            # Filter out faq not related to this project.
+            return faq
+        else:
+            return None
+
+    def searchFAQs(self, search_text=None, owner=None, sort=None):
+        """See `IQuestionCollection`."""
+        return FAQSearch(
+            search_text=search_text, owner=owner, sort=sort,
+            project=self).getResults()
 
 
 class ProjectSet:

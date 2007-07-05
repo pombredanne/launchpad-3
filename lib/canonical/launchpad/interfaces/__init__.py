@@ -67,6 +67,7 @@ from canonical.launchpad.interfaces.emailaddress import *
 from canonical.launchpad.interfaces.entitlement import *
 from canonical.launchpad.interfaces.externalbugtracker import *
 from canonical.launchpad.interfaces.faq import *
+from canonical.launchpad.interfaces.faqcollection import *
 from canonical.launchpad.interfaces.faqtarget import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.geoip import *

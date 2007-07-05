@@ -23,7 +23,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
-from canonical.launchpad.database.faq import FAQ
+from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.question import (
@@ -549,9 +549,15 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return FAQ.findSimilar(summary, distribution=self)
 
     def getFAQ(self, id):
-        """See `IFAQTarget`."""
+        """See `IFAQCollection`."""
         return FAQ.getForTarget(id, self)
 
+    def searchFAQs(self, search_text=None, owner=None, sort=None):
+        """See `IFAQCollection`."""
+        return FAQSearch(
+            search_text=search_text, owner=owner, sort=sort,
+            distribution=self).getResults()
+    
     def ensureRelatedBounty(self, bounty):
         """See `IDistribution`."""
         for curr_bounty in self.bounties:

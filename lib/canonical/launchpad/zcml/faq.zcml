@@ -6,7 +6,7 @@
 
 <facet facet="answers">
   <content class="canonical.launchpad.database.FAQ">
-    <!-- IQuestion -->
+    <!-- IFAQ-->
     <allow interface="canonical.launchpad.interfaces.IFAQ" />
   </content>
 
@@ -45,6 +45,14 @@
     provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
     factory="canonical.launchpad.browser.FAQStructuralObjectPresentation"
     />
+
+  <!-- IFAQSet -->
+  <securedutility
+    class="canonical.launchpad.database.FAQSet"
+    provides="canonical.launchpad.interfaces.IFAQSet"
+    >
+    <allow interface="canonical.launchpad.interfaces.IFAQSet" />
+  </securedutility>
 </facet>
 
 </configure>

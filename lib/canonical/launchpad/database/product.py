@@ -34,7 +34,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask
-from canonical.launchpad.database.faq import FAQ
+from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
@@ -344,9 +344,15 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         return FAQ.findSimilar(summary, product=self)
     
     def getFAQ(self, id):
-        """See `IFAQTarget`."""
+        """See `IFAQCollection`."""
         return FAQ.getForTarget(id, self)
-
+    
+    def searchFAQs(self, search_text=None, owner=None, sort=None):
+        """See `IFAQCollection`."""
+        return FAQSearch(
+            search_text=search_text, owner=owner, sort=sort,
+            product=self).getResults()
+    
     @property
     def translatable_packages(self):
         """See `IProduct`."""
