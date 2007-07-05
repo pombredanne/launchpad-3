@@ -61,12 +61,18 @@ class TestIPublishingAPI(TestNativePublishingBase):
         foo_deb = "%s/main/f/foo/foo-bin.deb" % self.pool_dir
         self.assertEqual(open(foo_deb).read().strip(), 'World')
 
+    def _createDefaulSourcePublications(self):
+        """Create and return default source publications.
 
-    def testPublicationLookUpForUnreleasedDistroSeries(self):
-        """Source publishing record lookup for a released DistroSeries.
+        See TestNativePublishingBase.getPubSource for more information.
 
-        Check if the IPublishing.getPendingPubliations() works properly
-        for a DistroSeries when it is still in development, 'unreleased'.
+        It creates the following publications in brezzy-autotest context:
+
+         * a PENDING publication for RELEASE pocket;
+         * a PUBLISHED publication for RELEASE pocket;
+         * a PENDING publication for UPDATES pocket;
+
+        Returns the respective ISPPH objects as a tuple.
         """
         pub_pending_release = self.getPubSource(
             sourcename='first',
@@ -82,6 +88,47 @@ class TestIPublishingAPI(TestNativePublishingBase):
             sourcename='third',
             status=PackagePublishingStatus.PENDING,
             pocket=PackagePublishingPocket.UPDATES)
+
+        return (pub_pending_release, pub_published_release, pub_pending_updates)
+
+    def _createDefaulBinaryPublications(self):
+        """Create and return default binary publications.
+
+        See TestNativePublishingBase.getPubBinary for more information.
+
+        It creates the following publications in brezzy-autotest context:
+
+         * a PENDING publication for RELEASE pocket;
+         * a PUBLISHED publication for RELEASE pocket;
+         * a PENDING publication for UPDATES pocket;
+
+        Returns the respective IBPPH objects as a tuple.
+        """
+        pub_pending_release = self.getPubBinary(
+            binaryname='first',
+            status=PackagePublishingStatus.PENDING,
+            pocket=PackagePublishingPocket.RELEASE)
+
+        pub_published_release = self.getPubBinary(
+            binaryname='second',
+            status=PackagePublishingStatus.PUBLISHED,
+            pocket=PackagePublishingPocket.RELEASE)
+
+        pub_pending_updates = self.getPubBinary(
+            binaryname='third',
+            status=PackagePublishingStatus.PENDING,
+            pocket=PackagePublishingPocket.UPDATES)
+
+        return (pub_pending_release, pub_published_release, pub_pending_updates)
+
+    def testPublicationLookUpForUnreleasedDistroSeries(self):
+        """Source publishing record lookup for a released DistroSeries.
+
+        Check if the IPublishing.getPendingPubliations() works properly
+        for a DistroSeries when it is still in development, 'unreleased'.
+        """
+        pub_pending_release, pub_published_release, pub_pending_updates = (
+            self._createDefaulSourcePublications())
 
         # Usual publication procedure for a distroseries in development
         # state only 'pending' publishing records for pocket RELEASE
@@ -124,7 +171,6 @@ class TestIPublishingAPI(TestNativePublishingBase):
             [pub_published_release.id, pub_pending_release.id],
             [pub.id for pub in pub_records])
 
-
     def testPublicationLookUpForReleasedDistroSeries(self):
         """Source publishing record lookup for a released DistroSeries.
 
@@ -132,20 +178,8 @@ class TestIPublishingAPI(TestNativePublishingBase):
         for a DistroSeries when it is not in development anymore, i.e.,
         'released'.
         """
-        pub_pending_release = self.getPubSource(
-            sourcename='first',
-            status=PackagePublishingStatus.PENDING,
-            pocket=PackagePublishingPocket.RELEASE)
-
-        pub_published_release = self.getPubSource(
-            sourcename='second',
-            status=PackagePublishingStatus.PUBLISHED,
-            pocket=PackagePublishingPocket.RELEASE)
-
-        pub_pending_updates = self.getPubSource(
-            sourcename='third',
-            status=PackagePublishingStatus.PENDING,
-            pocket=PackagePublishingPocket.UPDATES)
+        pub_pending_release, pub_published_release, pub_pending_updates = (
+            self._createDefaulSourcePublications())
 
         # Release 'breezy-autotest'.
         self.breezy_autotest.status = DistroSeriesStatus.CURRENT
@@ -180,6 +214,61 @@ class TestIPublishingAPI(TestNativePublishingBase):
         self.assertEqual(
             [pub_pending_updates.id], [pub.id for pub in pub_records])
 
+    def testPublicationLookUpForFrozenDistroSeries(self):
+        """Source publishing record lookup for a frozen DistroSeries.
+
+        Check if the IPublishing.getPendingPubliations() works properly
+        for a DistroSeries when it is in FROZEN state.
+        """
+        pub_pending_release, pub_published_release, pub_pending_updates = (
+            self._createDefaulSourcePublications())
+
+        self.layer.commit()
+
+        # Release 'breezy-autotest'.
+        self.breezy_autotest.status = DistroSeriesStatus.FROZEN
+
+        # Usual publication procedure for a distroseries in development
+        # state only 'pending' publishing records for pocket RELEASE
+        # are published.
+        pub_records = self.breezy_autotest.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
+            pocket=PackagePublishingPocket.RELEASE,
+            is_careful=False)
+        self.assertEqual(pub_records.count(), 1)
+        self.assertEqual(
+            [pub_pending_release.id], [pub.id for pub in pub_records])
+
+        # This step is unsusual but checks if the pocket restriction also
+        # work for other pockets than the RELEASE.
+        pub_records = self.breezy_autotest.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
+            pocket=PackagePublishingPocket.UPDATES,
+            is_careful=False)
+        self.assertEqual(pub_records.count(), 1)
+        self.assertEqual(
+            [pub_pending_updates.id], [pub.id for pub in pub_records])
+
+        # Restricting to a pocket with no publication returns an
+        # empty SQLResult.
+        pub_records = self.breezy_autotest.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
+            pocket=PackagePublishingPocket.BACKPORTS,
+            is_careful=False)
+        self.assertEqual(pub_records.count(), 0)
+
+        # Using the 'careful' mode results in the consideration
+        # of every 'pending' and 'published' records present in
+        # the given pocket.
+        pub_records = self.breezy_autotest.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
+            pocket=PackagePublishingPocket.RELEASE,
+            is_careful=True)
+        self.assertEqual(pub_records.count(), 2)
+        self.assertEqual(
+            [pub_published_release.id, pub_pending_release.id],
+            [pub.id for pub in pub_records])
+
     def testPublicationLookUpForUnreleasedDistroArchSeries(self):
         """Binary publishing record lookup for a unreleased DAR.
 
@@ -187,20 +276,9 @@ class TestIPublishingAPI(TestNativePublishingBase):
         for a DistroArchSeries when it is still in developement, i.e.,
         'unreleased'.
         """
-        pub_pending_release = self.getPubBinary(
-            binaryname='first',
-            status=PackagePublishingStatus.PENDING,
-            pocket=PackagePublishingPocket.RELEASE)
-
-        pub_published_release = self.getPubBinary(
-            binaryname='second',
-            status=PackagePublishingStatus.PUBLISHED,
-            pocket=PackagePublishingPocket.RELEASE)
-
-        pub_pending_updates = self.getPubBinary(
-            binaryname='third',
-            status=PackagePublishingStatus.PENDING,
-            pocket=PackagePublishingPocket.UPDATES)
+        pub_pending_release, pub_published_release, pub_pending_updates = (
+            self._createDefaulBinaryPublications())
+        self.layer.commit()
 
         # Usual publication procedure for a distroseries in development
         # state only 'pending' publishing records for pocket RELEASE
@@ -250,26 +328,11 @@ class TestIPublishingAPI(TestNativePublishingBase):
         a DistroArchSeries when it is not in development anymore, i.e.,
         'released'.
         """
-        pub_pending_release = self.getPubBinary(
-            binaryname='first',
-            status=PackagePublishingStatus.PENDING,
-            pocket=PackagePublishingPocket.RELEASE)
-
-        pub_published_release = self.getPubBinary(
-            binaryname='second',
-            status=PackagePublishingStatus.PUBLISHED,
-            pocket=PackagePublishingPocket.RELEASE)
-
-        pub_pending_updates = self.getPubBinary(
-            binaryname='third',
-            status=PackagePublishingStatus.PENDING,
-            pocket=PackagePublishingPocket.UPDATES)
+        pub_pending_release, pub_published_release, pub_pending_updates = (
+            self._createDefaulBinaryPublications())
 
         # Release 'breezy-autotest'
         self.breezy_autotest.status = DistroSeriesStatus.CURRENT
-        # XXX cprov 20070117: why do I need to commit here ?
-        # A similar operation is done in line 136 of this file w/o this
-        # requirement.
         self.layer.commit()
 
         # Since the distro is published, nothing is returned because
@@ -301,6 +364,61 @@ class TestIPublishingAPI(TestNativePublishingBase):
         self.assertEqual(pub_records.count(), 1)
         self.assertEqual(
             [pub_pending_updates.id], [pub.id for pub in pub_records])
+
+
+    def testPublicationLookUpForFrozenDistroArchSeries(self):
+        """Binary publishing record lookup for a frozen DistroArchSeries.
+
+        Check if the IPublishing.getPendingPubliations() works properly for
+        a DistroArchSeries when it is frozen state.
+        """
+        pub_pending_release, pub_published_release, pub_pending_updates = (
+            self._createDefaulBinaryPublications())
+
+        # Freeze 'breezy-autotest'
+        self.breezy_autotest.status = DistroSeriesStatus.FROZEN
+        self.layer.commit()
+
+        # Usual publication procedure for a distroseries in development
+        # state only 'pending' publishing records for pocket RELEASE
+        # are published.
+        pub_records = self.breezy_autotest_i386.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
+            pocket=PackagePublishingPocket.RELEASE,
+            is_careful=False)
+        self.assertEqual(pub_records.count(), 1)
+        self.assertEqual(
+            [pub_pending_release.id], [pub.id for pub in pub_records])
+
+        # This step is unsusual but checks if the pocket restriction also
+        # work for other pockets than the RELEASE.
+        pub_records = self.breezy_autotest_i386.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
+            pocket=PackagePublishingPocket.UPDATES,
+            is_careful=False)
+        self.assertEqual(pub_records.count(), 1)
+        self.assertEqual(
+            [pub_pending_updates.id], [pub.id for pub in pub_records])
+
+        # Restricting to a pocket with no publication returns an
+        # empty SQLResult.
+        pub_records = self.breezy_autotest_i386.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
+            pocket=PackagePublishingPocket.BACKPORTS,
+            is_careful=False)
+        self.assertEqual(pub_records.count(), 0)
+
+        # Using the 'careful' mode results in the consideration
+        # of every 'pending' and 'published' records present in
+        # the given pocket.
+        pub_records = self.breezy_autotest_i386.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
+            pocket=PackagePublishingPocket.RELEASE,
+            is_careful=True)
+        self.assertEqual(pub_records.count(), 2)
+        self.assertEqual(
+            [pub_published_release.id, pub_pending_release.id],
+            [pub.id for pub in pub_records])
 
 
 def test_suite():
