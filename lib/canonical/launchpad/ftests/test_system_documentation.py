@@ -148,7 +148,11 @@ def noPrivSetUp(test):
     login('no-priv@canonical.com')
 
 def _createUbuntuBugTaskLinkedToQuestion():
-    """Get the id of an Ubuntu bugtask linked to a question."""
+    """Get the id of an Ubuntu bugtask linked to a question.
+
+    The Ubuntu team is set as the answer contact for Ubuntu, and no-priv
+    is used as the submitter..
+    """
     login('test@canonical.com')
     sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
