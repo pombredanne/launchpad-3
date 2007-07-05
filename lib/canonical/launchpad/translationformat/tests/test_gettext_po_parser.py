@@ -138,7 +138,7 @@ class POBasicTestCase(unittest.TestCase):
     #         self.fail("no exception on bad escape sequence")
 
     def testPlural(self):
-        self.parser.header = pofile.POHeader()
+        self.parser.header = pofile.PoHeader()
         self.parser.header.nplurals = 2
         self.parser.write(textwrap.dedent('''
             %s
@@ -210,12 +210,10 @@ class POBasicTestCase(unittest.TestCase):
         self.parser.write('msgid ""\nmsgstr "foo: bar\\n"\n')
         self.parser.finish()
         self.parser.header['plural-forms'] = 'nplurals=2; plural=random()'
-        self.assertEqual(unicode(self.parser.header),
-            u'msgid ""\n'
-            u'msgstr ""\n'
-            u'"foo: bar\\n"\n'
-            u'"Content-Type: text/plain; charset=ASCII\\n"\n'
-            u'"plural-forms: nplurals=2; plural=random()\\n"')
+        self.assertEqual(self.parser.header.getRawContent(),
+            u'foo: bar\n'
+            u'Content-Type: text/plain; charset=ASCII\n'
+            u'plural-forms: nplurals=2; plural=random()\n')
 
     def testMultipartString(self):
         """

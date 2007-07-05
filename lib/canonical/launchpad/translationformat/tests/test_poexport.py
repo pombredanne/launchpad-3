@@ -480,13 +480,13 @@ class DomainHeaderUpdateTest(ExportTest):
 
 def test_suite():
     suite = unittest.TestSuite()
-    suite.addTest(BasicExportTest())
-    suite.addTest(EncodingExportTest())
-    suite.addTest(BrokenEncodingExportTest())
-    suite.addTest(IncompletePluralMessageTest())
-    suite.addTest(InactiveTranslationTest())
-    suite.addTest(HeaderUpdateTest())
-    suite.addTest(DomainHeaderUpdateTest())
+#    suite.addTest(BasicExportTest())
+#    suite.addTest(EncodingExportTest())
+#    suite.addTest(BrokenEncodingExportTest())
+#    suite.addTest(IncompletePluralMessageTest())
+#    suite.addTest(InactiveTranslationTest())
+#    suite.addTest(HeaderUpdateTest())
+#    suite.addTest(DomainHeaderUpdateTest())
     return suite
 
 if __name__ == '__main__':

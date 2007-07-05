@@ -17,36 +17,12 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    ITranslationFormatImporter, ITranslationMessage,
-    TranslationConstants, TranslationFormatInvalidInputError,
-    TranslationFormatSyntaxError)
+    ITranslationFormatImporter, TranslationConstants,
+    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
+from canonical.launchpad.translationformat.translation_common_format import (
+    TranslationMessage)
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lp.dbschema import TranslationFileFormat
-
-
-class XpiMessage:
-    """Mozilla XPI implementation for `ITranslationMessage`."""
-
-    implements(ITranslationMessage)
-
-    def __init__(self, context=None):
-        self.msgid = None
-        self.msgid_plural = None
-        self.translations = []
-        self.comment = None
-        self.source_comment = None
-        self.file_references = None
-        self.flags = ()
-        self.obsolete = False
-        self.nplurals = None
-        self.pluralExpr = None
-
-    def flagsText(self, flags=None):
-        """See `ITranslationMessage`."""
-        if flags is not None:
-            return flags
-
-        return u''
 
 
 class MozillaZipFile:
@@ -172,7 +148,7 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
         if not self.started:
             return
 
-        message = XpiMessage()
+        message = TranslationMessage()
         message.msgid = name
         # CarlosPerelloMarin 20070326: xmldtd parser does an inline
         # parsing which means that the content is all in a single line so we
@@ -373,7 +349,7 @@ class PropertyFile:
                     last_comment = None
                     ignore_comment = False
 
-                message = XpiMessage()
+                message = TranslationMessage()
                 message.msgid = key
                 message.file_references_list = [
                     "%s:%d(%s)" % (self.filename, line_num, key)]
@@ -445,6 +421,11 @@ class MozillaXpiImporter:
         self.messages = parser.messages
 
         self.last_translator_text = parser.getLastTranslator()
+
+    def getHeaderFromString(self, header_string):
+        """See `ITranslationFormatImporter`."""
+        # Right now, there is no header support for this file format.
+        return None
 
     def getLastTranslator(self):
         """See `ITranslationFormatImporter`."""
