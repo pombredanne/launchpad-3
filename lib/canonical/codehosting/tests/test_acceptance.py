@@ -43,6 +43,10 @@ class SSHTestCase(ServerTestCase, TestCaseWithTransport):
         tree.add('foo')
         tree.commit('Added foo', rev_id='rev1')
 
+    def tearDown(self):
+        TestCaseWithTransport.tearDown(self)
+        return ServerTestCase.tearDown(self)
+
     def runInChdir(self, func, *args, **kwargs):
         old_dir = os.getcwdu()
         os.chdir(local_path_from_url(self.local_branch.base))

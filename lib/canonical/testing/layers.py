@@ -738,14 +738,7 @@ class BzrlibLayer(BaseLayer):
     @classmethod
     @profiled
     def tearDown(cls):
-        # Remove the test directory created by TestCaseInTempDir.
-        # Copied from bzrlib.tests.TextTestRunner.run.
-        test_root = TestCaseInTempDir.TEST_ROOT
-        if test_root is not None:
-            test_root = test_root.encode(sys.getfilesystemencoding())
-            shutil.rmtree(test_root)
-        TestCaseWithMemoryTransport.TEST_ROOT = None
-
+        pass
 
     @classmethod
     @profiled
