@@ -802,8 +802,11 @@ class FrontPageFileBugAdvancedView(FileBugAdvancedView):
         passes the buck to FileBugViewBase.validate()
         """
         context = self.getProductOrDistroFromContext()
-        if context is None or not context.official_malone:
-            return self.showFileBugForm()
+
+        # If we have a context that we can test for Malone use, we do so.
+        if context is not None and not context.official_malone:
+            self.setFieldError("bugtarget",
+                               "That product does not use Malone")
         else:
             return super(FrontPageFileBugAdvancedView, self).validate(data)
 
