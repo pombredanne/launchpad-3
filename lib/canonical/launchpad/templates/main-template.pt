@@ -54,7 +54,7 @@
     <script type="text/javascript" tal:attributes="src string:${icingroot}/lpmenu.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
     <script type="text/javascript">
-      addLoadEvent(function() {
+      registerLaunchpadFunction(function() {
         lpmenu.initialize(['menuroot'], '/', 'menupreload',
                            [], '1.3em', 16, true);
         sortables_init();

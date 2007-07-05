@@ -806,7 +806,7 @@ class BugTargetBugsView(BugTaskSearchListingView):
                 var plotter = PlotKit.EasyPlot(
                     "pie", options, $("bugs-chart"), [data]);
             }
-            MochiKit.DOM.addLoadEvent(drawGraph);
+            registerLaunchpadFunction(drawGraph);
             """
         # The color list should inlude only colors for slices that will
         # be drawn in the pie chart, so colors that don't have any bugs
