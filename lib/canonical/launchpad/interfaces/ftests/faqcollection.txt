@@ -60,7 +60,7 @@ the collection.
 
 == getFAQ() ==
 
-It is possible to retrieve a FAQ in a colletion using its id by using
+It is possible to retrieve a FAQ in a collection using its id by using
 the getFAQ() method.
 
     >>> faq = faq_set[0]

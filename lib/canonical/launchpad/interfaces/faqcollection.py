@@ -17,7 +17,8 @@ class IFAQCollection(Interface):
 
     This interface allows for retrieving and searching for FAQs. The
     more specific `IFAQTarget` interface is used for objects that directly
-    contain the answer."""
+    contain the FAQ.
+    """
 
     def getFAQ(id):
         """Return the `IFAQ` in this target with the requested id.
