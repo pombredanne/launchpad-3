@@ -15,7 +15,7 @@ from canonical.launchpad.interfaces import IAnswerContact
 
 
 class AnswerContact(SQLBase):
-    """An entry for an answer contact for an IQuestionTarget."""
+    """An entry for an answer contact for an `IQuestionTarget`."""
 
     implements(IAnswerContact)
 

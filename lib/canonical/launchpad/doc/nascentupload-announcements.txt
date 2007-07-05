@@ -29,6 +29,11 @@ AUTO-APPROVED, UNAPPROVED) and its destination pocket:
    messages. Remembering that NEW and UNAPPROVED messages are also
    suppressed in 'queue' application.
 
+It's important to notice that all types of upload-notification
+contains the special header 'X-Katie', its presence is checked by
+third part application and also in our changeslist (gutsy-changes@).
+See further information in bug #121752.
+
 We need to be logged into the security model in order to get any further
 
   >>> login('foo.bar@canonical.com')
@@ -63,13 +68,13 @@ unsigned changes):
   >>> sync_policy = getPolicy(
   ...     name='sync', distro='ubuntu', distroseries='hoary')
 
-  >>> netapplet_src = NascentUpload(
+  >>> bar_src = NascentUpload(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
   ...     sync_policy, mock_logger_quiet)
-  >>> netapplet_src.process()
+  >>> bar_src.process()
 
-  >>> netapplet_src.logger = mock_logger
-  >>> result = netapplet_src.do_accept()
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
   ...
   DEBUG: Sent a mail:
@@ -87,14 +92,18 @@ unsigned changes):
 There is only one email generated:
 
   >>> [notification] = pop_notifications()
+
+  >>> notification['X-Katie']
+  'Launchpad actually'
+
   >>> notification['To']
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
 
 Let's ACCEPT bar sources in order to make the next uploads of this
 series *known* in hoary:
 
-  >>> netapplet_src.queue_root.setAccepted()
-  >>> netapplet_src.queue_root.realiseUpload()
+  >>> bar_src.queue_root.setAccepted()
+  >>> bar_src.queue_root.realiseUpload()
 
 Make the uploaded orig file available to librarian lookups
 
@@ -105,17 +114,17 @@ Ensure the previous transaction is *really* in the database before the next
 test:
 
   >>> from canonical.launchpad.ftests import syncUpdate
-  >>> syncUpdate(netapplet_src.queue_root)
+  >>> syncUpdate(bar_src.queue_root)
 
 Uploading the same package again will result in a rejection email:
 
-  >>> netapplet_src = NascentUpload(
+  >>> bar_src = NascentUpload(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
   ...     sync_policy, mock_logger_quiet)
-  >>> netapplet_src.process()
+  >>> bar_src.process()
 
-  >>> netapplet_src.logger = mock_logger
-  >>> result = netapplet_src.do_accept()
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
   ...
@@ -126,6 +135,10 @@ Uploading the same package again will result in a rejection email:
   ...
 
   >>> [notification] = pop_notifications()
+
+  >>> notification['X-Katie']
+  'Launchpad actually'
+
   >>> notification['To']
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
 
@@ -137,13 +150,13 @@ override sync policy to allow binary uploads):
   ...     name='sync', distro='ubuntu', distroseries='hoary')
   >>> modified_sync_policy.can_upload_binaries = True
 
-  >>> netapplet_src = NascentUpload(
+  >>> bar_src = NascentUpload(
   ...     datadir('suite/bar_1.0-1_binary/bar_1.0-1_i386.changes'),
   ...     modified_sync_policy, mock_logger_quiet)
-  >>> netapplet_src.process()
+  >>> bar_src.process()
 
-  >>> netapplet_src.logger = mock_logger
-  >>> result = netapplet_src.do_accept()
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
   ...
   DEBUG: above if files already exist in other distroseries.
@@ -161,8 +174,8 @@ in order to test other features in post-release pockets.
 Let's accept & publish bar binary in order to make the next uploads of
 this series *known* in hoary:
 
-  >>> netapplet_src.queue_root.setAccepted()
-  >>> netapplet_src.queue_root.realiseUpload()
+  >>> bar_src.queue_root.setAccepted()
+  >>> bar_src.queue_root.realiseUpload()
 
 
 NEW source uploads for 'translations' section via sync policy:
@@ -265,19 +278,24 @@ UNAPPROVED message was also skipped for an upload targeted to
 An UNAPPROVED binary upload via insecure will send one email saying that
 the upload is waiting for approval:
 
-  >>> netapplet_src = NascentUpload(
+  >>> bar_src = NascentUpload(
   ...     datadir('suite/bar_1.0-2/bar_1.0-2_source.changes'),
   ...     insecure_policy, mock_logger_quiet)
-  >>> netapplet_src.process()
+  >>> bar_src.process()
 
-  >>> netapplet_src.logger = mock_logger
-  >>> result = netapplet_src.do_accept()
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
   ...
 
   >>> [notification] = pop_notifications()
+
+  >>> notification['X-Katie']
+  'Launchpad actually'
+
   >>> notification['To']
   'Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>'
+
   >>> notification['Subject']
   'Waiting for approval: bar 1.0-2 (source)'
 
@@ -288,13 +306,13 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
   ...     name='sync', distro='ubuntu', distroseries=None)
   >>> modified_sync_policy.setDistroSeriesAndPocket('hoary-backports')
 
-  >>> netapplet_src = NascentUpload(
+  >>> bar_src = NascentUpload(
   ...     datadir('suite/bar_1.0-4/bar_1.0-4_source.changes'),
   ...     modified_sync_policy, mock_logger_quiet)
-  >>> netapplet_src.process()
+  >>> bar_src.process()
 
-  >>> netapplet_src.logger = mock_logger
-  >>> result = netapplet_src.do_accept()
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
   DEBUG: Creating PENDING publishing record.
@@ -320,8 +338,13 @@ AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
 There is one email generated:
 
   >>> [notification] = pop_notifications()
+
+  >>> notification['X-Katie']
+  'Launchpad actually'
+
   >>> notification['To']
   'Celso Providelo <celso.providelo@canonical.com>'
+
   >>> notification['Subject']
   'Accepted bar 1.0-4 (source)'
 
@@ -338,13 +361,13 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
   ...     name='security', distro='ubuntu', distroseries=None)
   >>> security_policy.setDistroSeriesAndPocket('hoary-security')
 
-  >>> netapplet_src = NascentUpload(
+  >>> bar_src = NascentUpload(
   ...     datadir('suite/bar_1.0-2/bar_1.0-2_source.changes'),
   ...     security_policy, mock_logger_quiet)
-  >>> netapplet_src.process()
+  >>> bar_src.process()
 
-  >>> netapplet_src.logger = mock_logger
-  >>> result = netapplet_src.do_accept()
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
   DEBUG: Creating PENDING publishing record.
@@ -368,8 +391,12 @@ AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
 
   >>> [message['To'] for message in msgs]
   ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
-  >>> msgs[0]['Subject']
-  'Accepted bar 1.0-2 (source)'
+
+  >>> [message['Subject'] for message in msgs]
+  ['Accepted bar 1.0-2 (source)', 'Accepted bar 1.0-2 (source)']
+
+  >>> [message['X-Katie'] for message in msgs]
+  ['Launchpad actually', 'Launchpad actually']
 
 Remove orig.tar.gz pumped from librarian to disk during the upload
 checks:
@@ -383,13 +410,13 @@ AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
   ...     name='security', distro='ubuntu', distroseries=None)
   >>> security_policy.setDistroSeriesAndPocket('hoary-security')
 
-  >>> netapplet_bin = NascentUpload(
+  >>> bar_bin = NascentUpload(
   ...     datadir('suite/bar_1.0-2_binary/bar_1.0-2_i386.changes'),
   ...     security_policy, mock_logger_quiet)
-  >>> netapplet_bin.process()
+  >>> bar_bin.process()
 
-  >>> netapplet_bin.logger = mock_logger
-  >>> result = netapplet_bin.do_accept()
+  >>> bar_bin.logger = mock_logger
+  >>> result = bar_bin.do_accept()
   DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
   DEBUG: Building recipients list.
@@ -409,8 +436,13 @@ AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
 One email generated:
 
   >>> [notification] = pop_notifications()
+
+  >>> notification['X-Katie']
+  'Launchpad actually'
+
   >>> notification['To']
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
+
   >>> notification['Subject']
   'Accepted bar 1.0-2 (i386)'
 
@@ -421,13 +453,13 @@ notify=False:
   >>> sync_policy = getPolicy(
   ...     name='sync', distro='ubuntu', distroseries='hoary')
 
-  >>> netapplet_src = NascentUpload(
+  >>> bar_src = NascentUpload(
   ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
   ...     sync_policy, mock_logger_quiet)
-  >>> netapplet_src.process()
+  >>> bar_src.process()
 
-  >>> netapplet_src.logger = mock_logger
-  >>> result = netapplet_src.do_accept(notify=False)
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept(notify=False)
 
 No emails generated:
 
@@ -437,7 +469,7 @@ No emails generated:
 
 Rejections with notify=False will also not generate any emails.
 
-  >>> result = netapplet_src.do_reject(notify=False)
+  >>> result = bar_src.do_reject(notify=False)
   >>> msgs = pop_notifications()
   >>> len(msgs)
   0
