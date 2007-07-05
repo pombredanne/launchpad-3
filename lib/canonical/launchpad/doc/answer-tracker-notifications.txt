@@ -246,6 +246,14 @@ A notification is also sent when a bug is unlinked from the question:
     You received this question notification because you are a member of
     Ubuntu Team, which is an answer contact for Ubuntu.
 
+
+=== Linked Bug Status Changed Notification ===
+
+When a question is linked to a bug, the question's subscribers are
+notified of changes of the bug status. See
+answer-tracker-notifications-linked-bug.txt for more information.
+
+
 == Workflow Notifications ==
 
 Notifications are also sent when workflow actions are done on questions.
