@@ -196,7 +196,8 @@ Unfortunately, the search doesn't return any similar questions:
 
     >>> print browser.title
     Questions matching "firefox is slow" for Ubuntu
-    >>> print find_main_content(browser.contents).first('p').renderContents()
+    >>> search_summary = find_main_content(browser.contents).findAll('p')[1]
+    >>> print search_summary.renderContents()
     There are no questions matching "firefox is slow" for Ubuntu with
     the requested statuses.
 
@@ -336,7 +337,8 @@ he enters 'Evolution' as a keyword and hits the search button.
     >>> browser.getControl(name='field.search_text').value = 'Evolution'
     >>> browser.getControl('Search').click()
 
-    >>> print find_main_content(browser.contents).first('p').renderContents()
+    >>> search_summary = find_main_content(browser.contents).findAll('p')[1]
+    >>> print search_summary.renderContents()
     There are no answered questions matching "Evolution" for Ubuntu.
 
 
@@ -440,8 +442,9 @@ Like all other report, this one is searchable:
     >>> sample_person_browser.getControl('Search').click()
     >>> print sample_person_browser.title
     Questions matching "evolution" needing your attention for Ubuntu
-    >>> print find_main_content(
-    ...     sample_person_browser.contents).first('p').renderContents()
+    >>> search_summary = find_main_content(
+    ...     sample_person_browser.contents).findAll('p')[1]
+    >>> print search_summary.renderContents()
     No questions matching "evolution" need your attention for Ubuntu.
 
 If there is no questions needing the user's attention, a message
