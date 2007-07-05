@@ -282,7 +282,7 @@ class IBug(IMessageTarget, ICanBeMentored):
         :is_patch: A boolean.
         """
 
-    def linkCVE(cve, user=None):
+    def linkCVE(cve, user):
         """Ensure that this CVE is linked to this bug."""
 
     def unlinkCVE(cve, user=None):
@@ -290,9 +290,11 @@ class IBug(IMessageTarget, ICanBeMentored):
         removed.
         """
 
-    def findCvesInText(text):
+    def findCvesInText(text, user):
         """Find any CVE references in the given text, make sure they exist
         in the database, and are linked to this bug.
+
+        The user is the one linking to the CVE.
         """
 
     def getMessageChunks():

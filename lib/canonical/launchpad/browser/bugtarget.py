@@ -39,7 +39,7 @@ from canonical.launchpad.interfaces import (
     IProject, IDistributionSourcePackage, NotFoundError,
     CreateBugParams, IBugAddForm, ILaunchpadCelebrities,
     IProductSeries, ITemporaryStorageManager, IMaloneApplication,
-    IFrontPageBugAddForm, IProjectBugAddForm)
+    IFrontPageBugAddForm, IProjectBugAddForm, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
     safe_action, urlappend)
@@ -844,6 +844,7 @@ class BugTargetBugsView(BugTaskSearchListingView):
         BugTaskStatus.NEW: '#993300',
         BugTaskStatus.INCOMPLETE: 'red',
         BugTaskStatus.CONFIRMED: 'orange',
+        BugTaskStatus.TRIAGED: 'black',
         BugTaskStatus.INPROGRESS: 'blue',
         BugTaskStatus.FIXCOMMITTED: 'green',
         BugTaskStatus.FIXRELEASED: 'magenta',
@@ -853,13 +854,7 @@ class BugTargetBugsView(BugTaskSearchListingView):
 
     def initialize(self):
         BugTaskSearchListingView.initialize(self)
-        bug_statuses_to_show = [
-            BugTaskStatus.NEW,
-            BugTaskStatus.INCOMPLETE,
-            BugTaskStatus.CONFIRMED,
-            BugTaskStatus.INPROGRESS,
-            BugTaskStatus.FIXCOMMITTED,
-            ]
+        bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
         if IDistroSeries.providedBy(self.context):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
         bug_counts = sorted(

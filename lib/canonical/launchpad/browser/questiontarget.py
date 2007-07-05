@@ -141,13 +141,13 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     search_params = None
 
     def setUpFields(self):
-        """See LaunchpadFormView."""
+        """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpFields(self)
         if self.show_language_control:
             self.form_fields = self.createLanguageField() + self.form_fields
 
     def setUpWidgets(self):
-        """See LaunchpadFormView."""
+        """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpWidgets(self)
         # Make sure that the default filter is displayed
         # correctly in the widgets when not overriden by the user
@@ -363,7 +363,7 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _('Questions you asked matching "${search_text}" for '
                      '${context}', mapping=dict(
@@ -375,7 +375,7 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _("You didn't ask any questions matching "
                      '"${search_text}" for ${context}.', mapping=dict(
@@ -386,7 +386,7 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
                      mapping={'context': self.context.displayname})
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(owner=self.user, status=set(QuestionStatus.items),
                     language=self.user_support_languages)
 
@@ -400,7 +400,7 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _('Questions matching "${search_text}" needing your '
                      'attention for ${context}', mapping=dict(
@@ -412,7 +412,7 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _('No questions matching "${search_text}" need your '
                      'attention for ${context}.', mapping=dict(
@@ -423,7 +423,7 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
                      mapping={'context': self.context.displayname})
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(needs_attention_from=self.user,
                     language=self.user_support_languages)
 
@@ -437,7 +437,7 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _('Unsupported questions matching "${search_text}" '
                      'for ${context}', mapping=dict(
@@ -449,7 +449,7 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _('No unsupported questions matching "${search_text}" '
                      'for ${context}.', mapping=dict(
@@ -461,11 +461,11 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
 
     @property
     def show_language_control(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return False
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(language=None, unsupported=True)
 
 
@@ -477,7 +477,7 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
     custom_widget('answer_contact_teams', LabeledMultiCheckBoxWidget)
 
     def setUpFields(self):
-        """See LaunchpadFormView."""
+        """See `LaunchpadFormView`."""
         self.form_fields = form.Fields(
             self._createUserAnswerContactField(),
             self._createTeamAnswerContactsField())

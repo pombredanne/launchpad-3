@@ -28,7 +28,8 @@ from canonical.archiveuploader.nascentuploadfile import (
     BaseBinaryUploadFile)
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
-    NotFoundError, IDistributionSet)
+    NotFoundError, IDistributionSet, QueueInconsistentStateError)
+from canonical.launchpad.scripts.processaccepted import closeBugsForQueueItem
 from canonical.lp.dbschema import PackagePublishingPocket
 
 
@@ -917,8 +918,11 @@ class NascentUpload:
                     (self.queue_root.customfiles.count() == 0)):
                     self.logger.debug("Creating PENDING publishing record.")
                     self.queue_root.realiseUpload()
+                    # Closing bugs.
+                    changesfile_object = open(self.changes.filepath, 'r')
+                    closeBugsForQueueItem(
+                        self.queue_root, changesfile_object=changesfile_object)
+                    changesfile_object.close()
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
                 self.queue_root.setUnapproved()
-
-

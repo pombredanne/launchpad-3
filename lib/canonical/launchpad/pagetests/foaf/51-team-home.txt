@@ -12,11 +12,11 @@ details about the team.
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-approved'))
     Recently approved
+    Launchpad Beta Testers (launchpad-beta-testers)
     Daniel Silverstone (kinnison)
     Celso Providelo (cprov)
     Jeff Waugh (jdub)
     Colin Watson (kamion)
-    Steve Alexander (stevea)
 
     >>> print extract_text(
     ...     find_tag_by_id(browser.contents, 'recently-applied'))
@@ -28,7 +28,7 @@ details about the team.
     ...     find_tag_by_id(browser.contents, 'membership-summary'))
     Team and membership summary
     Team owner: Mark Shuttleworth
-    Membership: 8 (Moderated Team)
+    Membership: ... (Moderated Team)
     Wiki: UbuntuTeam
 
     >>> print extract_text(

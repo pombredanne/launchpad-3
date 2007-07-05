@@ -88,7 +88,8 @@ if [ -z "$pyfiles" ]; then
 fi
 
 if which pyflakes >/dev/null; then
-    output=`pyflakes $pyfiles`
+    output=`pyflakes $pyfiles \
+            | grep -v "unable to detect undefined names"`
     if [ ! -z "$output" ]; then
         echo "============================================================="
         echo "Pyflakes notices"
