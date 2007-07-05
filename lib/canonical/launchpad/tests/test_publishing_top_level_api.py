@@ -15,11 +15,12 @@ class TestIPublishingAPI(TestNativePublishingBase):
     def _createLinkedPublication(self, name, pocket):
         """Create and return a linked pair of source and binary publications."""
         pub_source = self.getPubSource(
-            sourcename=name, filecontent="Hello")
+            sourcename=name, filecontent="Hello", pocket=pocket)
 
         binaryname = '%s-bin' % name
         pub_bin = self.getPubBinary(
-            binaryname=binaryname, filecontent="World", pub_source=pub_source)
+            binaryname=binaryname, filecontent="World",
+            pub_source=pub_source, pocket=pocket)
 
         return (pub_source, pub_bin)
 
@@ -83,11 +84,19 @@ class TestIPublishingAPI(TestNativePublishingBase):
 
         return (pub_pending_release, pub_published_release, pub_pending_updates)
 
-    def testPublishDistroSeries(self):
-        """Top level publication for IDistroSeries.
+    def testPublishUnstableDistroSeries(self):
+        """Top level publication for IDistroSeries in 'unstable' states.
 
-        Source and Binary get published.
+        Source and Binary publications to pocket RELEASE get PUBLISHED.
+        Source and Binary publications to pocket UPDATES (any post-release,
+        in fact) are still PENDING.
         """
+        self.assertEqual(
+            self.breezy_autotest.status, DistroSeriesStatus.EXPERIMENTAL)
+        self.assertEqual(
+            self.breezy_autotest.isUnstable(), True)
+
+        # RELEASE pocket.
         pub_source, pub_bin = self._createLinkedPublication(
             name='foo', pocket=PackagePublishingPocket.RELEASE)
 
@@ -98,11 +107,139 @@ class TestIPublishingAPI(TestNativePublishingBase):
             is_careful=False)
         self.layer.txn.commit()
 
+        # PUBLISHED in database.
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
         self.assertEqual(pub_bin.status, PackagePublishingStatus.PUBLISHED)
 
+        # PUBLISHED on disk.
         foo_dsc = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(open(foo_dsc).read().strip(),'Hello')
+
+        foo_deb = "%s/main/f/foo/foo-bin.deb" % self.pool_dir
+        self.assertEqual(open(foo_deb).read().strip(), 'World')
+
+        # UPDATES (post-release) pocket.
+        pub_source, pub_bin = self._createLinkedPublication(
+            name='bar', pocket=PackagePublishingPocket.UPDATES)
+
+        self.breezy_autotest.publish(
+            self.disk_pool, self.logger,
+            archive=self.breezy_autotest.main_archive,
+            pocket=PackagePublishingPocket.UPDATES,
+            is_careful=False)
+        self.layer.txn.commit()
+
+        # The publication to pocket UPDATES were ignored.
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(pub_bin.status, PackagePublishingStatus.PENDING)
+
+    def testPublishStableDistroSeries(self):
+        """Top level publication for IDistroSeries in 'stable' states.
+
+        Source and Binary publications to pocket RELEASE are ignored.
+        Source and Binary publications to pocket UPDATES get PUBLISHED.
+        """
+        # Release ubuntu/breezy-autotest.
+        self.breezy_autotest.status = DistroSeriesStatus.CURRENT
+        self.layer.commit()
+
+        self.assertEqual(
+            self.breezy_autotest.status, DistroSeriesStatus.CURRENT)
+        self.assertEqual(
+            self.breezy_autotest.isUnstable(), False)
+
+        # UPDATES (post-release) pocket.
+        pub_source, pub_bin = self._createLinkedPublication(
+            name='bar', pocket=PackagePublishingPocket.UPDATES)
+
+        self.breezy_autotest.publish(
+            self.disk_pool, self.logger,
+            archive=self.breezy_autotest.main_archive,
+            pocket=PackagePublishingPocket.UPDATES,
+            is_careful=False)
+        self.layer.txn.commit()
+
+        # PUBLISHED in database.
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_bin.status, PackagePublishingStatus.PUBLISHED)
+
+        # PUBLISHED on disk.
+        bar_dsc = "%s/main/b/bar/bar.dsc" % self.pool_dir
+        self.assertEqual(open(bar_dsc).read().strip(),'Hello')
+
+        bar_deb = "%s/main/b/bar/bar-bin.deb" % self.pool_dir
+        self.assertEqual(open(bar_deb).read().strip(), 'World')
+
+        # RELEASE pocket.
+        pub_source, pub_bin = self._createLinkedPublication(
+            name='foo', pocket=PackagePublishingPocket.RELEASE)
+
+        self.breezy_autotest.publish(
+            self.disk_pool, self.logger,
+            archive=self.breezy_autotest.main_archive,
+            pocket=PackagePublishingPocket.RELEASE,
+            is_careful=False)
+        self.layer.txn.commit()
+
+        # The publications to pocket RELEASE where ignored.
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(pub_bin.status, PackagePublishingStatus.PENDING)
+
+    def testPublishFrozenDistroSeries(self):
+        """Top level publication for IDistroSeries in FROZEN state.
+
+        Source and Binary publications to pocket RELEASE get PUBLISHED.
+        Source and Binary publications to pocket UPDATES get PUBLISHED.
+        """
+        # Release ubuntu/breezy-autotest.
+        self.breezy_autotest.status = DistroSeriesStatus.FROZEN
+        self.layer.commit()
+
+        self.assertEqual(
+            self.breezy_autotest.status, DistroSeriesStatus.FROZEN)
+        self.assertEqual(
+            self.breezy_autotest.isUnstable(), True)
+
+        # UPDATES (post-release) pocket.
+        pub_source, pub_bin = self._createLinkedPublication(
+            name='bar', pocket=PackagePublishingPocket.UPDATES)
+
+        self.breezy_autotest.publish(
+            self.disk_pool, self.logger,
+            archive=self.breezy_autotest.main_archive,
+            pocket=PackagePublishingPocket.UPDATES,
+            is_careful=False)
+        self.layer.txn.commit()
+
+        # PUBLISHED in database.
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_bin.status, PackagePublishingStatus.PUBLISHED)
+
+        # PUBLISHED on disk.
+        bar_dsc = "%s/main/b/bar/bar.dsc" % self.pool_dir
+        self.assertEqual(open(bar_dsc).read().strip(),'Hello')
+
+        bar_deb = "%s/main/b/bar/bar-bin.deb" % self.pool_dir
+        self.assertEqual(open(bar_deb).read().strip(), 'World')
+
+        # RELEASE pocket.
+        pub_source, pub_bin = self._createLinkedPublication(
+            name='foo', pocket=PackagePublishingPocket.RELEASE)
+
+        self.breezy_autotest.publish(
+            self.disk_pool, self.logger,
+            archive=self.breezy_autotest.main_archive,
+            pocket=PackagePublishingPocket.RELEASE,
+            is_careful=False)
+        self.layer.txn.commit()
+
+        # The publications to pocket RELEASE also get PUBLISHED.
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_bin.status, PackagePublishingStatus.PUBLISHED)
+
+        # PUBLISHED on disk.
+        foo_dsc = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        self.assertEqual(open(bar_dsc).read().strip(),'Hello')
 
         foo_deb = "%s/main/f/foo/foo-bin.deb" % self.pool_dir
         self.assertEqual(open(foo_deb).read().strip(), 'World')
@@ -131,8 +268,8 @@ class TestIPublishingAPI(TestNativePublishingBase):
         foo_deb = "%s/main/f/foo/foo-bin.deb" % self.pool_dir
         self.assertEqual(open(foo_deb).read().strip(), 'World')
 
-    def testPublicationLookUpForUnreleasedDistroSeries(self):
-        """Source publishing record lookup for a released DistroSeries.
+    def testPublicationLookUpForUnstableDistroSeries(self):
+        """Source publishing record lookup for a unstable DistroSeries.
 
         Check if the IPublishing.getPendingPubliations() works properly
         for a DistroSeries when it is still in development, 'unreleased'.
@@ -181,8 +318,8 @@ class TestIPublishingAPI(TestNativePublishingBase):
             [pub_published_release.id, pub_pending_release.id],
             [pub.id for pub in pub_records])
 
-    def testPublicationLookUpForReleasedDistroSeries(self):
-        """Source publishing record lookup for a released DistroSeries.
+    def testPublicationLookUpForStableDistroSeries(self):
+        """Source publishing record lookup for a stable/released DistroSeries.
 
         Check if the IPublishing.getPendingPubliations() works properly
         for a DistroSeries when it is not in development anymore, i.e.,
@@ -277,8 +414,8 @@ class TestIPublishingAPI(TestNativePublishingBase):
             [pub_published_release.id, pub_pending_release.id],
             [pub.id for pub in pub_records])
 
-    def testPublicationLookUpForUnreleasedDistroArchSeries(self):
-        """Binary publishing record lookup for a unreleased DAR.
+    def testPublicationLookUpForUnstableDistroArchSeries(self):
+        """Binary publishing record lookup for a unstable DistroArchSeries.
 
         Check if the IPublishing.getPendingPubliations() works properly
         for a DistroArchSeries when it is still in developement, i.e.,
@@ -329,8 +466,8 @@ class TestIPublishingAPI(TestNativePublishingBase):
             [pub_published_release.id, pub_pending_release.id],
             [pub.id for pub in pub_records])
 
-    def testPublicationLookUpForReleasedDistroArchSeries(self):
-        """Binary publishing record lookup for a released DistroArchSeries.
+    def testPublicationLookUpForStableDistroArchSeries(self):
+        """Binary publishing record lookup for stable/released DistroArchSeries.
 
         Check if the IPublishing.getPendingPubliations() works properly for
         a DistroArchSeries when it is not in development anymore, i.e.,

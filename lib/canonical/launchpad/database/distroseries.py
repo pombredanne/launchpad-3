@@ -1830,12 +1830,18 @@ new imports with the information being copied.
 
     def checkLegalPocket(self, publication, is_careful, log):
         """Check if the publication can happen in the archive."""
-        # careful re-publishes everything:
+        # 'careful' mode re-publishes everything:
         if is_careful:
             return True
+
         # PPA allows everything (aka Hotel California).
         if publication.archive != self.main_archive:
             return True
+
+        # FROZEN state also allow all pockets to be published.
+        if self.status == DistroSeriesStatus.FROZEN:
+            return True
+
         # If we're not republishing, we want to make sure that
         # we're not publishing packages into the wrong pocket.
         # Unfortunately for careful mode that can't hold true
