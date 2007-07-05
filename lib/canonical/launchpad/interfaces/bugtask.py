@@ -50,9 +50,10 @@ from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 # to bug https://launchpad.net/products/malone/+bug/4201
 UNRESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.NEW,
-    dbschema.BugTaskStatus.CONFIRMED,
-    dbschema.BugTaskStatus.INPROGRESS,
     dbschema.BugTaskStatus.INCOMPLETE,
+    dbschema.BugTaskStatus.CONFIRMED,
+    dbschema.BugTaskStatus.TRIAGED,
+    dbschema.BugTaskStatus.INPROGRESS,
     dbschema.BugTaskStatus.FIXCOMMITTED)
 
 RESOLVED_BUGTASK_STATUSES = (

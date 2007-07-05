@@ -5,8 +5,9 @@ PYTHON_VERSION=2.4
 PYTHON=python${PYTHON_VERSION}
 IPYTHON=$(PYTHON) $(shell which ipython)
 PYTHONPATH:=$(shell pwd)/lib:${PYTHONPATH}
+VERBOSITY=-vv
 
-TESTFLAGS=-p -v
+TESTFLAGS=-p $(VERBOSITY)
 TESTOPTS=
 
 SHHH=${PYTHON} utilities/shhh.py
@@ -58,14 +59,11 @@ check_merge_ui: build check importdcheck
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-check_merge_edge: check_no_dbupdates check_merge
+check_merge_edge: dbfreeze_check check_merge
 	# Allow the merge if there are no database updates, including
 	# database patches or datamigration scripts (which should live
 	# in database/schema/pending. Used for maintaining the
 	# edge.lauchpad.net branch.
-
-check_no_dbupdates:
-	[ `PYTHONPATH= bzr status | grep database/schema/ | wc -l` -eq 0 ]
 
 importdcheck: build
 	env PYTHONPATH=$(PYTHONPATH) \
@@ -75,18 +73,10 @@ check: build
 	# Run all tests. test_on_merge.py takes care of setting up the
 	# database..
 	env PYTHONPATH=$(PYTHONPATH) \
-	${PYTHON} -t ./test_on_merge.py -vv
+	${PYTHON} -t ./test_on_merge.py $(VERBOSITY)
 
 lint:
 	@bash ./utilities/lint.sh
-
-#lintmerge:
-#	@# Thank Stuart, not me!
-#	@baz diff -s rocketfuel@canonical.com/launchpad--devel--0 | \
-#		grep -v "^*" | \
-#		grep -v "{arch}" | \
-#		cut -c4- | \
-#		xargs sh ./utilities/lint.sh
 
 pagetests: build
 	env PYTHONPATH=$(PYTHONPATH) ${PYTHON} test.py test_pages
@@ -195,6 +185,9 @@ launchpad.pot:
 	$(PYTHON) sourcecode/zope/utilities/i18nextract.py \
 	    -d launchpad -p lib/canonical/launchpad \
 	    -o locales
+
+static:
+	$(PYTHON) scripts/make-static.py
 
 TAGS:
 	ctags -e -R lib
