@@ -20,8 +20,9 @@ from canonical.config import config
 from canonical.database.sqlbase import (
     flush_database_updates, READ_COMMITTED_ISOLATION)
 from canonical.functional import FunctionalDocFileSuite, StdoutHandler
+from canonical.launchpad.database import DistributionSet, PersonSet
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import CreateBugParams, ILaunchBag
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import (
         LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
@@ -144,6 +145,27 @@ def noPrivSetUp(test):
     """Set up a test logged in as no-priv."""
     setUp(test)
     login('no-priv@canonical.com')
+
+def bugLinkedToQuestionSetUp(test):
+    setUp(test)
+    login('test@canonical.com')
+    sample_person = PersonSet().getByEmail('test@canonical.com')
+    ubuntu = DistributionSet().getByName('ubuntu')
+    ubuntu_question = ubuntu.newQuestion(
+        sample_person, "Can't install Ubuntu",
+        "I insert the install CD in the CD-ROM drive, but it won't boot.")
+    no_priv = PersonSet().getByEmail('no-priv@canonical.com')
+    params = CreateBugParams(
+        owner=no_priv, title="Installer fails on a Mac PPC",
+        comment=ubuntu_question.description)
+    bug = ubuntu.createBug(params)
+    ubuntu_question.linkBug(bug)
+    [ubuntu_bugtask] = bug.bugtasks
+    def get_bugtask_linked_to_question():
+        return ubuntu_bugtask
+    test.globs['get_bugtask_linked_to_question'] = get_bugtask_linked_to_question
+    login(ANONYMOUS)
+
 
 def LayeredDocFileSuite(*args, **kw):
     '''Create a DocFileSuite with a layer.'''
@@ -369,6 +391,11 @@ special = {
             tearDown=tearDown,
             optionflags=default_optionflags,
             layer=LaunchpadZopelessLayer
+            ),
+    'answer-tracker-notifications-linked-bug.txt': LayeredDocFileSuite(
+            '../doc/answer-tracker-notifications-linked-bug.txt',
+            setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
+            optionflags=default_optionflags, layer=LaunchpadFunctionalLayer
             ),
     }
 
