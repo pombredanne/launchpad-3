@@ -16,7 +16,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database import CodeImport, ProductSeries, ProductSet
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import (
-    IBranchSet, ICodeImportSet, IProductSet)
+    IBranchSet, ICodeImportSet, IProductSet, NotFoundError)
 from canonical.launchpad.scripts.importd.code_import_sync import CodeImportSync
 from canonical.launchpad.utilities import LaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
@@ -451,7 +451,7 @@ class TestCodeImportSync(CodeImportSyncTestCase):
 
         # When code-import-sync runs in production, importd will need to use
         # the CodeImport's branch to publish the import.
-        code_import = CodeImport.get(series.id) # Error if object not found.
+        code_import = CodeImport.get(series.id)
         series.import_branch = code_import.branch
 
         self.run_code_import_sync()
@@ -469,7 +469,8 @@ class TestCodeImportSync(CodeImportSyncTestCase):
         self.assertEqual(series.importstatus, ImportStatus.DONTSYNC)
         self.run_code_import_sync()
         # code-import-sync should delete the CodeImport object.
-        self.assertEqual(getUtility(ICodeImportSet).get(series.id), None)
+        self.assertRaises(NotFoundError,
+            getUtility(ICodeImportSet).get, series.id)
         # And it should emit a warning about the orphaned import branch.
         self.assertEqual(self.code_import_sync.logger.warning_calls,
             [("Branch was orphaned, you may want to delete it: %s",
@@ -517,7 +518,7 @@ class TestCodeImportSync(CodeImportSyncTestCase):
 
         # In this situation, the CodeImport must use a new branch, because the
         # old branch already contained import data.
-        code_import = CodeImport.get(reimport.id) # Error if object not found.
+        code_import = CodeImport.get(reimport.id)
         new_branch = code_import.branch
         self.assertNotEqual(old_branch, new_branch)
 
@@ -525,7 +526,7 @@ class TestCodeImportSync(CodeImportSyncTestCase):
         # to the branch of the CodeImport and puts a value into datelastsynced.
         reimport.enableAutoSync()
         self.assertEqual(reimport.importstatus, ImportStatus.SYNCING)
-        code_import = CodeImport.get(reimport.id) # Error if object not found.
+        code_import = CodeImport.get(reimport.id)
         reimport.import_branch = code_import.branch
         reimport.datelastsynced = datetime.datetime(
             2000, 1, 1, 0, 0, 0, tzinfo=UTC)
