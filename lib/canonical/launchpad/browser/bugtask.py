@@ -555,6 +555,14 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
                 'plural_suffix': plural_suffix,
                 'dupe_links_string': dupe_links_string})
 
+    def _nominateBug(self, series):
+        """Nominate the bug for the series and redirect to the bug page."""
+        self.context.bug.addNomination(self.user, series)
+        self.request.response.addInfoNotification(
+            'This bug has been nominated to be fixed in %(target)s',
+            target=series.bugtargetname)
+        self.request.response.redirect(canonical_url(self.context))
+
     def reportBugInContext(self):
         form = self.request.form
         fake_task = self.context
@@ -577,21 +585,10 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
                     distribution=fake_task.distribution,
                     sourcepackagename=fake_task.sourcepackagename)
             elif IDistroSeriesBugTask.providedBy(fake_task):
-                # Nominate the bug to be fixed in the series.
-                fake_task.bug.addNomination(self.user, fake_task.distroseries)
-                self.request.response.addInfoNotification(
-                    'This bug has been nominated to be fixed in %(target)s',
-                    target=fake_task.distroseries.bugtargetname)
-                self.request.response.redirect(canonical_url(self.context))
+                self._nominateBug(fake_task.distroseries)
                 return
             elif IProductSeriesBugTask.providedBy(fake_task):
-                # Nominate the bug to be fixed in the series.
-                fake_task.bug.addNomination(
-                    self.user, fake_task.productseries)
-                self.request.response.addInfoNotification(
-                    'This bug has been nominated to be fixed in %(target)s',
-                    target=fake_task.productseries.bugtargetname)
-                self.request.response.redirect(canonical_url(self.context))
+                self._nominateBug(fake_task.productseries)
                 return
             else:
                 raise TypeError(
