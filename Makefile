@@ -59,14 +59,11 @@ check_merge_ui: build check importdcheck
 	$(MAKE) -C sourcecode check PYTHON=${PYTHON} \
 		PYTHON_VERSION=${PYTHON_VERSION} PYTHONPATH=$(PYTHONPATH)
 
-check_merge_edge: check_no_dbupdates check_merge
+check_merge_edge: dbfreeze_check check_merge
 	# Allow the merge if there are no database updates, including
 	# database patches or datamigration scripts (which should live
 	# in database/schema/pending. Used for maintaining the
 	# edge.lauchpad.net branch.
-
-check_no_dbupdates:
-	[ `PYTHONPATH= bzr status | grep database/schema/ | wc -l` -eq 0 ]
 
 importdcheck: build
 	env PYTHONPATH=$(PYTHONPATH) \
