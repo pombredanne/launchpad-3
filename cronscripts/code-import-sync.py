@@ -7,7 +7,7 @@ __metaclass__ = type
 
 import _pythonpath
 
-from canonical.launcphad.scripts.base import LaunchpadCronScript
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.scripts.importd.code_import_sync import (
     CodeImportSync)
 
@@ -18,6 +18,6 @@ class SyncCodeImports(LaunchpadCronScript):
         CodeImportSync(self.logger, self.txn).runAndCommit()
 
 
-if __name__ = '__main__':
-    script = SyncCodeImports("synccodeimports")
+if __name__ == '__main__':
+    script = SyncCodeImports("code-import-sync")
     script.lock_and_run()

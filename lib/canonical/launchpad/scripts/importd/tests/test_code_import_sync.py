@@ -7,11 +7,14 @@ __all__ = ['test_suite']
 
 
 import datetime
+import os.path
 import pytz
+from subprocess import Popen, PIPE
 import unittest
 
 from zope.component import getUtility
 
+from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database import CodeImport, ProductSeries, ProductSet
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
@@ -534,6 +537,25 @@ class TestCodeImportSync(CodeImportSyncTestCase):
         # Then code-import-sync runs again and updates the CodeImport object.
         self.run_code_import_sync()
         self.assertSingleCodeImportMatchesSeries(reimport)
+
+
+class TestCodeImportSyncScript(LaunchpadZopelessTestCase):
+    """Tests for the code-import-sync.py script runner."""
+
+    def testItRuns(self):
+        # Test that cronscripts/code-import-sync.py runs. We are not testing
+        # that it does anything it all, its logic should be trivial, we are
+        # testing for dumb mistakes.
+        script = os.path.join(
+            config.root, 'cronscripts', 'code-import-sync.py')
+        process = Popen([script, '-q'],
+                        stdout=PIPE, stderr=PIPE, stdin=open('/dev/null'))
+        output, error = process.communicate()
+        status = process.returncode
+        self.assertEqual(status, 0,
+                         'code-import-sync.py exited with status=%d\n'
+                         '>>>stdout<<<\n%s\n>>>stderr<<<\n%s'
+                         % (status, output, error))
 
 
 def test_suite():
