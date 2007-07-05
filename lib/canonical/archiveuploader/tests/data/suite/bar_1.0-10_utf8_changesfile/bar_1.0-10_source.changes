@@ -16,9 +16,7 @@ Description:
 Changes: 
  bar (1.0-10) breezy; urgency=low
  .
-   * A second upload to ensure that binary overrides of _all work
- . 
-   * Also closes Launchpad bug #6
+   * Changes file that contains UTF-8 in the email addrs
  .
 Files: 
  a4932aa84fdb62819b49f3dda163fc0d 514 devel optional bar_1.0-10.dsc
@@ -27,7 +25,7 @@ Files:
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.6 (GNU/Linux)
 
-iD8DBQFGhNJcjn63CGxkqMURAtlZAJ9V1gLe42OLfi4rqWrKWfL06KCfBwCeL2et
-0wP4B0sZFYdMnG6OdMw/XOE=
-=SH9D
+iD8DBQFGjLy0jn63CGxkqMURAoFRAKCDclHQnOHw15VMWvDvHEQSKRxq1wCfS8xW
+1ge2JUVncbTBa5wFDW2igGE=
+=Gd2/
 -----END PGP SIGNATURE-----
