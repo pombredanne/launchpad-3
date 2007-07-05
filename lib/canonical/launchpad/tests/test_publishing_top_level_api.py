@@ -12,54 +12,16 @@ from canonical.lp.dbschema import (
 
 class TestIPublishingAPI(TestNativePublishingBase):
 
-    def testPublishDistroSeries(self):
-        """Top level publication for IDistroSeries.
+    def _createLinkedPublication(self, name, pocket):
+        """Create and return a linked pair of source and binary publications."""
+        pub_source = self.getPubSource(
+            sourcename=name, filecontent="Hello")
 
-        Source and Binary get published.
-        """
-        pub_source = self.getPubSource(filecontent="Hello")
+        binaryname = '%s-bin' % name
         pub_bin = self.getPubBinary(
-            filecontent="World", pub_source=pub_source)
+            binaryname=binaryname, filecontent="World", pub_source=pub_source)
 
-        self.breezy_autotest.publish(
-            self.disk_pool, self.logger,
-            archive=self.breezy_autotest.main_archive,
-            pocket=PackagePublishingPocket.RELEASE,
-            is_careful=False)
-        self.layer.txn.commit()
-
-        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
-        self.assertEqual(pub_bin.status, PackagePublishingStatus.PUBLISHED)
-
-        foo_dsc = "%s/main/f/foo/foo.dsc" % self.pool_dir
-        self.assertEqual(open(foo_dsc).read().strip(),'Hello')
-
-        foo_deb = "%s/main/f/foo/foo-bin.deb" % self.pool_dir
-        self.assertEqual(open(foo_deb).read().strip(), 'World')
-
-    def testPublishDistroArchSeries(self):
-        """Top level publication for IDistroArchSeries.
-
-        Only binary gets published.
-        """
-        pub_source = self.getPubSource(filecontent="Hello")
-        pub_bin = self.getPubBinary(filecontent="World", pub_source=pub_source)
-
-        self.breezy_autotest_i386.publish(
-            self.disk_pool, self.logger,
-            archive=self.breezy_autotest.main_archive,
-            pocket=PackagePublishingPocket.RELEASE,
-            is_careful=False)
-        self.layer.txn.commit()
-
-        self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
-        self.assertEqual(pub_bin.status, PackagePublishingStatus.PUBLISHED)
-
-        foo_dsc = "%s/main/f/foo/foo.dsc" % self.pool_dir
-        self.assertEqual(os.path.exists(foo_dsc), False)
-
-        foo_deb = "%s/main/f/foo/foo-bin.deb" % self.pool_dir
-        self.assertEqual(open(foo_deb).read().strip(), 'World')
+        return (pub_source, pub_bin)
 
     def _createDefaulSourcePublications(self):
         """Create and return default source publications.
@@ -120,6 +82,54 @@ class TestIPublishingAPI(TestNativePublishingBase):
             pocket=PackagePublishingPocket.UPDATES)
 
         return (pub_pending_release, pub_published_release, pub_pending_updates)
+
+    def testPublishDistroSeries(self):
+        """Top level publication for IDistroSeries.
+
+        Source and Binary get published.
+        """
+        pub_source, pub_bin = self._createLinkedPublication(
+            name='foo', pocket=PackagePublishingPocket.RELEASE)
+
+        self.breezy_autotest.publish(
+            self.disk_pool, self.logger,
+            archive=self.breezy_autotest.main_archive,
+            pocket=PackagePublishingPocket.RELEASE,
+            is_careful=False)
+        self.layer.txn.commit()
+
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
+        self.assertEqual(pub_bin.status, PackagePublishingStatus.PUBLISHED)
+
+        foo_dsc = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        self.assertEqual(open(foo_dsc).read().strip(),'Hello')
+
+        foo_deb = "%s/main/f/foo/foo-bin.deb" % self.pool_dir
+        self.assertEqual(open(foo_deb).read().strip(), 'World')
+
+    def testPublishDistroArchSeries(self):
+        """Top level publication for IDistroArchSeries.
+
+        Only binary gets published.
+        """
+        pub_source = self.getPubSource(filecontent="Hello")
+        pub_bin = self.getPubBinary(filecontent="World", pub_source=pub_source)
+
+        self.breezy_autotest_i386.publish(
+            self.disk_pool, self.logger,
+            archive=self.breezy_autotest.main_archive,
+            pocket=PackagePublishingPocket.RELEASE,
+            is_careful=False)
+        self.layer.txn.commit()
+
+        self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
+        self.assertEqual(pub_bin.status, PackagePublishingStatus.PUBLISHED)
+
+        foo_dsc = "%s/main/f/foo/foo.dsc" % self.pool_dir
+        self.assertEqual(os.path.exists(foo_dsc), False)
+
+        foo_deb = "%s/main/f/foo/foo-bin.deb" % self.pool_dir
+        self.assertEqual(open(foo_deb).read().strip(), 'World')
 
     def testPublicationLookUpForUnreleasedDistroSeries(self):
         """Source publishing record lookup for a released DistroSeries.
