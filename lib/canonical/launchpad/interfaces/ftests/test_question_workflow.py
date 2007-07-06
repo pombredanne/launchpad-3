@@ -495,7 +495,8 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
         """
         answer_message = self.question.giveAnswer(
             self.answerer, 'Do something about it.', self.nowPlus(1))
-        self._testInvalidTransition(['OPEN', 'NEEDSINFO', 'ANSWERED', 'SOLVED'],
+        self._testInvalidTransition(
+            ['OPEN', 'NEEDSINFO', 'ANSWERED', 'SOLVED'],
             self.question.confirmAnswer, "That answer worked!.",
             answer=answer_message, datecreated=self.nowPlus(1))
 
@@ -530,7 +531,7 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
                            'answer', 'datelastquery'])
 
     def testCannotConfirmAnAnswerFromAnotherQuestion(self):
-        """Test that you can't confirm an answer not from the same question."""
+        """Test that you can't confirm an answer from a different question."""
         question1_answer = self.question.giveAnswer(
             self.answerer, 'Really, just do it!')
         question2 = self.ubuntu.newQuestion(self.owner, 'Help 2', 'Help me!')
