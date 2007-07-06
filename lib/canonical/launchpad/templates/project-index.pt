@@ -38,7 +38,7 @@
           </a>
         </li>
       </ul>
-      <ul class="buttons">
+      <ul class="buttons" tal:condition="context/products">
         <li>
           <a href="+filebug">
             <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
