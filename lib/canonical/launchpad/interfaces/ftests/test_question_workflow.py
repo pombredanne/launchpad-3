@@ -423,12 +423,33 @@ class GiveAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
                 self.answerer, "It looks like a real problem.",),
             edited_fields=None)
 
+    def test_giveAnswerByOwner(self):
+        """Test giveAnswerByOwner().
+        
+        Test that giveAnswer can be called by the questions owner when the
+        question status is one of OPEN, NEEDSINFO or ANSWERED and check
+        that it returns a valid IQuestionMessage.
+        """
+        # Do not check the edited_fields attributes since it
+        # changes based on departure state.
+        self._testValidTransition(
+            [QuestionStatus.OPEN, QuestionStatus.NEEDSINFO,
+             QuestionStatus.ANSWERED],
+            expected_owner=self.answerer,
+            expected_action=QuestionAction.ANSWER,
+            expected_status=QuestionStatus.ANSWERED,
+            transition_method=self.question.giveAnswer,
+            transition_method_args=(
+                self.answerer, "It looks like a real problem.",),
+            edited_fields=None)
+
         # When the owner gives the answer, the question moves straight to
         # SOLVED.
         def checkAnswerMessage(message):
             """Check additional attributes set when the owner gives the
             answers.
             """
+            self.assertEquals(None, self.question.answer)
             self.assertEquals(self.owner, self.question.answerer)
             self.assertEquals(message.datecreated, self.question.dateanswered)
 
