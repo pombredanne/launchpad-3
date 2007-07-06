@@ -15,13 +15,7 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.scripts.base import LaunchpadScript
 from canonical.launchpad.scripts.entitlement import (
     EntitlementExchange,
-    create_entitlements,
-    update_entitlements,
-    )
-
-action_methods = dict(
-    create=create_entitlements,
-    update=update_entitlements,
+    EntitlementWriter,
     )
 
 class ImportEntitlementsScript(LaunchpadScript):
@@ -29,6 +23,7 @@ class ImportEntitlementsScript(LaunchpadScript):
     description = "Create or update entitlements."
     usage = ("usage: %s [-c|--create | -u|--update] file_name" %
              sys.argv[0])
+
     loglevel = logging.INFO
 
     def add_my_options(self):
@@ -59,23 +54,24 @@ class ImportEntitlementsScript(LaunchpadScript):
         else:
             out_file = open(self.options.out_file_name, "wb")
 
-        action_method = action_methods.get(action)
-        if action_method is None:
-            sys.stderr.write("Invalid action: %s\n" % action)
+        # get a reader and writer
+        reader = EntitlementExchange.readerFactory(in_file)
+        writer = EntitlementExchange.writerFactory(out_file)
+        in_data = list(reader)
+        entitlement_writer = EntitlementWriter(self.logger)
+        if action == 'create':
+            out_data = entitlement_writer.createEntitlements(in_data)
+        elif action == 'update':
+            out_data = entitlement_writer.updateEntitlements(in_data)
+        else:
+            self.logger.error("Invalid action: %s\n" % action)
             return 1
 
-        # get a reader
-        reader = EntitlementExchange.readerFactory(in_file)
-        in_data = list(reader)
-        rd = action_method(in_data)
-        print rd
         self.txn.commit()
-        return 0
 
-    def getReader(self, in_file):
-        reader = csv.DictReader(stripped_data, skipinitialspace=True,
-                                quoting=csv.QUOTE_ALL)
-        return reader
+        if out_data:
+            writer.writerows(out_data)
+        return 0
 
 if __name__ == '__main__':
     script = ImportEntitlementsScript('canonical.launchpad.scripts.entitlements')
