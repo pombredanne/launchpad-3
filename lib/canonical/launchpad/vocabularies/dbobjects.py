@@ -253,6 +253,10 @@ class FAQVocabulary:
 
     def getTermByToken(self, token):
         """See `IVocabularyTokenized`."""
+        try:
+            faq_id = int(token)
+        except ValueError:
+            raise LookupError(token)
         faq = self.context.getFAQ(token)
         if faq is None:
             raise LookupError(token)

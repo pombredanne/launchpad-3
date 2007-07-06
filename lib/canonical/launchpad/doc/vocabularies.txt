@@ -1271,9 +1271,14 @@ be retrieved by token:
     >>> print term.title
     How do I install plugins (Shockwave, QuickTime, etc.)?
 
-Trying to retrieve an unknown token raises LookupError:
+Trying to retrieve an invalid or non-existent token raises LookupError:
 
-    >>> vocab.getTermByToken('-244')
+    >>> vocab.getTermByToken('not a good token')
+    Traceback (most recent call last):
+      ...
+    LookupError:...
+
+    >>> vocab.getTermByToken('1001')
     Traceback (most recent call last):
       ...
     LookupError:...
