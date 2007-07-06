@@ -60,8 +60,12 @@ question' or 'Help translate' buttons.
     Traceback (most recent call last):
       ..
     LinkNotFoundError...
+    >>> user_browser.getLink(url='+mentoring')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
 
-Also, the bugs, blueprints and answers facets will be disabled:
+Also, the bugs, blueprints, translations and answers facets will be disabled:
 
     >>> user_browser.open('http://launchpad.dev/a-test-group')
     >>> user_browser.getLink('Bugs')
@@ -80,7 +84,7 @@ Also, the bugs, blueprints and answers facets will be disabled:
     Traceback (most recent call last):
       ..
     LinkNotFoundError...
-    >>> user_browser.getLink(url='+mentoring')
+    >>> user_browser.getLink('Translations')
     Traceback (most recent call last):
       ..
     LinkNotFoundError...
