@@ -90,6 +90,9 @@ class TestIPublishingAPI(TestNativePublishingBase):
         Source and Binary publications to pocket RELEASE get PUBLISHED.
         Source and Binary publications to pocket UPDATES (any post-release,
         in fact) are still PENDING.
+
+        Note that it also tests IDistroArchSeries.publish() API, since it's
+        invoked/chained inside IDistroSeries.publish().
         """
         self.assertEqual(
             self.breezy_autotest.status, DistroSeriesStatus.EXPERIMENTAL)
@@ -129,7 +132,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
             is_careful=False)
         self.layer.txn.commit()
 
-        # The publication to pocket UPDATES were ignored.
+        # The publications to pocket UPDATES were ignored.
         self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
         self.assertEqual(pub_bin.status, PackagePublishingStatus.PENDING)
 
@@ -244,30 +247,6 @@ class TestIPublishingAPI(TestNativePublishingBase):
         foo_deb = "%s/main/f/foo/foo-bin.deb" % self.pool_dir
         self.assertEqual(open(foo_deb).read().strip(), 'World')
 
-    def testPublishDistroArchSeries(self):
-        """Top level publication for IDistroArchSeries.
-
-        Only binary gets published.
-        """
-        pub_source = self.getPubSource(filecontent="Hello")
-        pub_bin = self.getPubBinary(filecontent="World", pub_source=pub_source)
-
-        self.breezy_autotest_i386.publish(
-            self.disk_pool, self.logger,
-            archive=self.breezy_autotest.main_archive,
-            pocket=PackagePublishingPocket.RELEASE,
-            is_careful=False)
-        self.layer.txn.commit()
-
-        self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
-        self.assertEqual(pub_bin.status, PackagePublishingStatus.PUBLISHED)
-
-        foo_dsc = "%s/main/f/foo/foo.dsc" % self.pool_dir
-        self.assertEqual(os.path.exists(foo_dsc), False)
-
-        foo_deb = "%s/main/f/foo/foo-bin.deb" % self.pool_dir
-        self.assertEqual(open(foo_deb).read().strip(), 'World')
-
     def testPublicationLookUpForUnstableDistroSeries(self):
         """Source publishing record lookup for a unstable DistroSeries.
 
@@ -288,7 +267,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         self.assertEqual(
             [pub_pending_release.id], [pub.id for pub in pub_records])
 
-        # This step is unsusual but checks if the pocket restriction also
+        # This step is unusual but checks if the pocket restriction also
         # work for other pockets than the RELEASE.
         pub_records = self.breezy_autotest.getPendingPublications(
             archive=self.breezy_autotest.main_archive,
@@ -331,7 +310,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # Release 'breezy-autotest'.
         self.breezy_autotest.status = DistroSeriesStatus.CURRENT
 
-        # Since the distro is published, nothing is returned because
+        # Since the distroseries is stable, nothing is returned because
         # RELEASE pocket is ignored, in both modes, careful or not.
         pub_records = self.breezy_autotest.getPendingPublications(
             archive=self.breezy_autotest.main_archive,
@@ -384,7 +363,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         self.assertEqual(
             [pub_pending_release.id], [pub.id for pub in pub_records])
 
-        # This step is unsusual but checks if the pocket restriction also
+        # This step is unusual but checks if the pocket restriction also
         # work for other pockets than the RELEASE.
         pub_records = self.breezy_autotest.getPendingPublications(
             archive=self.breezy_autotest.main_archive,
@@ -418,8 +397,8 @@ class TestIPublishingAPI(TestNativePublishingBase):
         """Binary publishing record lookup for a unstable DistroArchSeries.
 
         Check if the IPublishing.getPendingPubliations() works properly
-        for a DistroArchSeries when it is still in developement, i.e.,
-        'unreleased'.
+        for a DistroArchSeries when it is still in DEVELOPMENT, i.e.,
+        'unstable'.
         """
         pub_pending_release, pub_published_release, pub_pending_updates = (
             self._createDefaulBinaryPublications())
@@ -436,7 +415,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         self.assertEqual(
             [pub_pending_release.id], [pub.id for pub in pub_records])
 
-        # This step is unsusual but checks if the pocket restriction also
+        # This step is unusual but checks if the pocket restriction also
         # work for other pockets than the RELEASE.
         pub_records = self.breezy_autotest_i386.getPendingPublications(
             archive=self.breezy_autotest.main_archive,
@@ -480,7 +459,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         self.breezy_autotest.status = DistroSeriesStatus.CURRENT
         self.layer.commit()
 
-        # Since the distro is published, nothing is returned because
+        # Since the distroseries is stable, nothing is returned because
         # RELEASE pocket is ignored, in both modes, careful or not.
         pub_records = self.breezy_autotest_i386.getPendingPublications(
             archive=self.breezy_autotest.main_archive,
@@ -533,7 +512,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         self.assertEqual(
             [pub_pending_release.id], [pub.id for pub in pub_records])
 
-        # This step is unsusual but checks if the pocket restriction also
+        # This step is unusual but checks if the pocket restriction also
         # work for other pockets than the RELEASE.
         pub_records = self.breezy_autotest_i386.getPendingPublications(
             archive=self.breezy_autotest.main_archive,
