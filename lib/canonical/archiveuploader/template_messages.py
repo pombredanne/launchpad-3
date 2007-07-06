@@ -12,7 +12,7 @@ __all__ = [
 rejection_template = """From: %(SENDER)s
 To: %(RECIPIENT)s
 Bcc: %(DEFAULT_RECIPIENT)s
-Subject: %(CHANGES)s Rejected
+Subject: %(CHANGES)s rejected
 X-Katie: Launchpad actually
 
 Rejected:

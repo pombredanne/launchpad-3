@@ -21,7 +21,9 @@ from canonical.database.sqlbase import (
     flush_database_updates, READ_COMMITTED_ISOLATION)
 from canonical.functional import FunctionalDocFileSuite, StdoutHandler
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
-from canonical.launchpad.interfaces import ILaunchBag
+from canonical.launchpad.interfaces import (
+    CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet, ILaunchBag,
+    IPersonSet)
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import (
         LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
@@ -71,11 +73,11 @@ def builddmasterSetUp(test):
         isolation=READ_COMMITTED_ISOLATION)
     setGlobs(test)
 
-def importdSetUp(test):
-    LaunchpadZopelessLayer.switchDbUser('importd')
+def branchscannerSetUp(test):
+    LaunchpadZopelessLayer.switchDbUser('branchscanner')
     setUp(test)
 
-def importdTearDown(test):
+def branchscannerTearDown(test):
     tearDown(test)
 
 def answerTrackerSetUp(test):
@@ -139,6 +141,63 @@ def uploadQueueSetUp(test):
 
 def uploadQueueTearDown(test):
     logout()
+
+def noPrivSetUp(test):
+    """Set up a test logged in as no-priv."""
+    setUp(test)
+    login('no-priv@canonical.com')
+
+def _createUbuntuBugTaskLinkedToQuestion():
+    """Get the id of an Ubuntu bugtask linked to a question.
+
+    The Ubuntu team is set as the answer contact for Ubuntu, and no-priv
+    is used as the submitter..
+    """
+    login('test@canonical.com')
+    sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    ubuntu_team.addLanguage(getUtility(ILanguageSet)['en'])
+    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    ubuntu.addAnswerContact(ubuntu_team)
+    ubuntu_question = ubuntu.newQuestion(
+        sample_person, "Can't install Ubuntu",
+        "I insert the install CD in the CD-ROM drive, but it won't boot.")
+    no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+    params = CreateBugParams(
+        owner=no_priv, title="Installer fails on a Mac PPC",
+        comment=ubuntu_question.description)
+    bug = ubuntu.createBug(params)
+    ubuntu_question.linkBug(bug)
+    [ubuntu_bugtask] = bug.bugtasks
+    bugtask_id = ubuntu_bugtask.id
+    login(ANONYMOUS)
+    return ubuntu_bugtask.id
+
+def bugLinkedToQuestionSetUp(test):
+    def get_bugtask_linked_to_question():
+        return getUtility(IBugTaskSet).get(bugtask_id)
+    setUp(test)
+    bugtask_id = _createUbuntuBugTaskLinkedToQuestion()
+    test.globs['get_bugtask_linked_to_question'] = (
+        get_bugtask_linked_to_question)
+    # Log in here, since we don't want to set up an non-anonymous
+    # interaction in the test.
+    login('no-priv@canonical.com')
+
+def uploaderBugLinkedToQuestionSetUp(test):
+    LaunchpadZopelessLayer.switchDbUser('launchpad')
+    bugLinkedToQuestionSetUp(test)
+    LaunchpadZopelessLayer.commit()
+    uploaderSetUp(test)
+    login(ANONYMOUS)
+
+def uploadQueueBugLinkedToQuestionSetUp(test):
+    LaunchpadZopelessLayer.switchDbUser('launchpad')
+    bugLinkedToQuestionSetUp(test)
+    LaunchpadZopelessLayer.commit()
+    uploadQueueSetUp(test)
+    login(ANONYMOUS)
+
 
 def LayeredDocFileSuite(*args, **kw):
     '''Create a DocFileSuite with a layer.'''
@@ -245,7 +304,7 @@ special = {
             ),
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
-            setUp=importdSetUp, tearDown=importdTearDown,
+            setUp=branchscannerSetUp, tearDown=branchscannerTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
     'answer-tracker-emailinterface.txt': LayeredDocFileSuite(
@@ -341,12 +400,46 @@ special = {
             tearDown=uploadQueueTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
+    'bugmessage.txt': LayeredDocFileSuite(
+            '../doc/bugmessage.txt',
+            setUp=noPrivSetUp, tearDown=tearDown,
+            optionflags=default_optionflags, layer=LaunchpadFunctionalLayer
+            ),
+    'bugmessage.txt-queued': LayeredDocFileSuite(
+            '../doc/bugmessage.txt',
+            setUp=uploadQueueSetUp,
+            tearDown=uploadQueueTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
+    'bugmessage.txt-uploader': LayeredDocFileSuite(
+            '../doc/bugmessage.txt',
+            setUp=uploaderSetUp,
+            tearDown=uploaderTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
     'bug-private-by-default.txt': LayeredDocFileSuite(
             '../doc/bug-private-by-default.txt',
             setUp=setUp,
             tearDown=tearDown,
             optionflags=default_optionflags,
             layer=LaunchpadZopelessLayer
+            ),
+    'answer-tracker-notifications-linked-bug.txt': LayeredDocFileSuite(
+            '../doc/answer-tracker-notifications-linked-bug.txt',
+            setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
+            optionflags=default_optionflags, layer=LaunchpadFunctionalLayer
+            ),
+    'answer-tracker-notifications-linked-bug.txt-uploader': LayeredDocFileSuite(
+            '../doc/answer-tracker-notifications-linked-bug.txt',
+            setUp=uploaderBugLinkedToQuestionSetUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
+    'answer-tracker-notifications-linked-bug.txt-queued': LayeredDocFileSuite(
+            '../doc/answer-tracker-notifications-linked-bug.txt',
+            setUp=uploadQueueBugLinkedToQuestionSetUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
     }
 

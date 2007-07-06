@@ -23,7 +23,6 @@ from canonical.authserver.xmlrpc import (
 from canonical.authserver.database import (
     DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
     DatabaseBranchDetailsStorage)
-from canonical.launchpad.daemons.tachandler import ReadyService
 from canonical.config import config
 
 
@@ -93,4 +92,4 @@ class AuthserverService(service.Service):
     def stopService(self):
         service.Service.stopService(self)
         self.dbpool.close()
-        self.service.stopService()
+        return self.service.stopService()

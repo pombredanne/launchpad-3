@@ -107,6 +107,7 @@ Now request the email:
   >>> changes_file_path = datadir(
   ...     'suite/netapplet_1.0-1-signed/netapplet_1.0-1_source.changes')
   >>> changes_file = open(changes_file_path,'r')
+  >>> netapplet_upload.setAccepted()
   >>> netapplet_upload.notify(
   ...     announce_list="announcelist@canonical.com", 
   ...     changes_file_object=changes_file, logger=mock_logger)
@@ -116,18 +117,26 @@ Now request the email:
   ...
   DEBUG:     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   ...
-  DEBUG: above if files already exist in other distroseries.
+  DEBUG: Announcing to announcelist@canonical.com
   ...
-  DEBUG: signer of the above package.
+  DEBUG: Sent a mail:
+  ...
 
-Again, there is only one email:
+There are two emails, the upload acknowledgement and the announcement, because
+this upload is already accepted.
 
-  >>> [notification] = pop_notifications()
+  >>> msgs = pop_notifications()
+  >>> len(msgs)
+  2
 
 The mail headers are the same as before:
 
-  >>> notification['To']
-  'Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>'
+  >>> [msg['To'] for msg in msgs]
+  ['Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>', 'announcelist@canonical.com']
+
+  >>> [msg['From'] for msg in msgs]
+  ['Root <root@localhost>', 'Daniel Silverstone <daniel.silverstone@canonical.com>']
+
   >>> notification['Subject']
   'netapplet-1.0.0.tar.gz is NEW'
 
@@ -157,6 +166,7 @@ the case when nascent upload runs).  This example demonstrates this usage:
   >>> changes_file = open(changes_file_path,"r")
   >>> fillLibrarianFile(1, content=changes_file.read())
   >>> changes_file.close()
+  >>> netapplet_upload.setNew()
   >>> netapplet_upload.notify(announce_list="announcelist@canonical.com", 
   ...     logger=mock_logger)
   DEBUG: Building recipients list.
@@ -208,7 +218,7 @@ the summary.  Rejections don't currently auto-generate anything.
   ...
   DEBUG: Sending rejection email.
   ...
-  DEBUG:     Subject: netapplet-1.0.0.tar.gz Rejected
+  DEBUG:     Subject: netapplet-1.0.0.tar.gz rejected
   DEBUG:     Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   DEBUG:     Body:
   DEBUG: Rejected:
