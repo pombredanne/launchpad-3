@@ -149,20 +149,13 @@
     template="../templates/specification-retargeting.pt"
     />
 
-  <browser:generalform
+  <browser:page
     name="+supersede"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationSupersedingView"
-    label="Mark specification superseded"
-    fields="superseded_by"
-    keyword_arguments="superseded_by"
     permission="launchpad.Edit"
-    template="../templates/specification-superseding.pt">
-    <browser:widget
-      field="superseded_by"
-      class="canonical.launchpad.browser.specification.SupersededByWidget" />
-  </browser:generalform>
+    template="../templates/specification-superseding.pt"
+    />
 
   <browser:editform
     name="+edit"
