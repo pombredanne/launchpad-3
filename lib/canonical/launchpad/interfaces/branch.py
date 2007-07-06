@@ -523,7 +523,7 @@ class IBranchSet(Interface):
         """Return the most recently created branches for the product.
 
         At most `quantity` branches are returned. Branches that have been
-        merged or abandoned don't appear in the results — only branches that
+        merged or abandoned don't appear in the results -- only branches that
         match `DEFAULT_BRANCH_STATUS_IN_LISTING`.
 
         The visible_by_user parameter is used to filter out the branches
