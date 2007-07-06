@@ -521,7 +521,7 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             self.question.confirmAnswer, "That answer worked!.",
             answer=answer_message, datecreated=self.nowPlus(1))
 
-    def test_confirmAnswer(self):
+    def test_confirmAnswerBeforeSOLVED(self):
         """Test confirmAnswer().
 
         Test that confirmAnswer() can be called when the question status
@@ -549,6 +549,39 @@ class ConfirmAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             transition_method_kwargs={'answer': answer_message,
                                       'datecreated' : self.nowPlus(2)},
             edited_fields=['status', 'messages', 'dateanswered', 'answerer',
+                           'answer', 'datelastquery'])
+
+    def test_confirmAnswerAfterSOLVED(self):
+        """Test confirmAnswer().
+
+        Test that confirmAnswer() can be called when the question status
+        is SOLVED, and that it has at least one ANSWER message and check
+        that it returns a valid IQuestionMessage.
+        """
+        answer_message = self.question.giveAnswer(
+            self.answerer, "Press the any key.", datecreated=self.nowPlus(1))
+        self.question.giveAnswer(
+            self.owner, 'I solved my own problem.',
+            datecreated=self.nowPlus(2))
+        self.assertEquals(self.question.status, QuestionStatus.SOLVED)
+
+        def checkAnswerMessage(message):
+            # Check the attributes that are set when an answer is confirmed.
+            self.assertEquals(answer_message, self.question.answer)
+            self.assertEquals(self.answerer, self.question.answerer)
+            self.assertEquals(message.datecreated, self.question.dateanswered)
+
+        self._testValidTransition(
+            [QuestionStatus.SOLVED],
+            expected_owner=self.owner,
+            expected_action=QuestionAction.CONFIRM,
+            expected_status=QuestionStatus.SOLVED,
+            extra_message_check=checkAnswerMessage,
+            transition_method=self.question.confirmAnswer,
+            transition_method_args=("The space bar also works.",),
+            transition_method_kwargs={'answer': answer_message,
+                                      'datecreated' : self.nowPlus(2)},
+            edited_fields=['messages', 'dateanswered', 'answerer',
                            'answer', 'datelastquery'])
 
     def testCannotConfirmAnAnswerFromAnotherQuestion(self):
