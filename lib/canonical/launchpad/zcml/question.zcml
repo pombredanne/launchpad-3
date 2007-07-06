@@ -60,7 +60,11 @@
     provides="canonical.launchpad.interfaces.IQuestionTarget"
     factory="canonical.launchpad.components.answertracker.question_to_questiontarget"
     />
-
+  <adapter
+    for="canonical.launchpad.interfaces.IQuestion"
+    provides="canonical.launchpad.interfaces.IFAQTarget"
+    factory="canonical.launchpad.components.answertracker.question_to_faqtarget"
+    />
   <adapter
     for="canonical.launchpad.interfaces.IQuestion"
     provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
