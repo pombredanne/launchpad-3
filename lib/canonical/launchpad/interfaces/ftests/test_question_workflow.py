@@ -609,11 +609,11 @@ class ReopenTestCase(BaseAnswerTrackerWorkflowTestCase):
             transition_method_args=('I still have this problem.',),
             edited_fields=['status', 'messages', 'datelastquery'])
 
-    def test_reopenFromSOLVED(self):
+    def test_reopenFromSOLVEDByOwner(self):
         """Test that reopen() can be called when the question is in the
-        SOLVED state and that it returns an appropriate IQuestionMessage.
-        This transition should also clear the dateanswered, answered and
-        answerer attributes.
+        SOLVED state (by the question owner) and that it returns an 
+        appropriate IQuestionMessage. This transition should also clear
+        the dateanswered, answered and answerer attributes.
         """
         self.setUpEventListeners()
         # Mark the question as solved by the user.
@@ -634,6 +634,34 @@ class ReopenTestCase(BaseAnswerTrackerWorkflowTestCase):
         self.checkTransitionEvents(
             message, ['status', 'messages', 'answerer',
                       'dateanswered', 'datelastquery'],
+            QuestionStatus.OPEN.title)
+
+    def test_reopenFromSOLVEDByAnswerer(self):
+        """Test that reopen() can be called when the question is in the
+        SOLVED state (answer confirmed by the question owner) and that it
+        returns an appropriate IQuestionMessage. This transition should
+        also clear the dateanswered, answered and answerer attributes.
+        """
+        self.setUpEventListeners()
+        # Mark the question as solved by the user.
+        answer_message = self.question.giveAnswer(
+            self.answerer, 'Press the any key.', datecreated=self.nowPlus(0))
+        self.question.confirmAnswer("That answer worked!.",
+            answer=answer_message, datecreated=self.nowPlus(1))
+        self.assertEquals(self.question.status, QuestionStatus.SOLVED)
+
+        # Clear previous events.
+        self.collected_events = []
+
+        message = self.question.reopen(
+            "Where is the any key?", datecreated=self.nowPlus(1))
+        self.checkTransitionMessage(
+            message, expected_owner=self.owner,
+            expected_action=QuestionAction.REOPEN,
+            expected_status=QuestionStatus.OPEN)
+        self.checkTransitionEvents(
+            message, ['status', 'messages', 'answerer', 'answer',
+                      'dateanswered'],
             QuestionStatus.OPEN.title)
 
     def test_reopenPermission(self):
