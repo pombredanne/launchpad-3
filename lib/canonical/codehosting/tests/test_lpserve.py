@@ -152,6 +152,9 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
 
     @deferToThread
     def test_bzr_serve_inet_readwrite(self):
+        # Test the server when running as an 'inet' service. That is, listening
+        # on stdin and writing to stdout.
+        #
         # When the server is started normally (i.e. allowing writes), we can
         # use a transport pointing at the server to make directories, create
         # files and so forth. These operations are then translated to the local
@@ -174,10 +177,17 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
 
     @deferToThread
     def test_bzr_serve_port_readwrite(self):
+        # Test the server when running as an 'port' service. That is, listening
+        # on a TCP port.
+        #
         # When the server is started normally (i.e. allowing writes), we can
         # use a transport pointing at the server to make directories, create
         # files and so forth. These operations are then translated to the local
         # file system.
+
+        # XXX: JonathanLange 2007-07-06, This test is almost identical to
+        # test_bzr_serve_inet_readwrite. Both tests should be refactored to
+        # share code, rather than copy it.
         local_transport = get_transport(config.codehosting.branches_root)
         old_file_list = list(local_transport.iter_files_recursive())
         self.assertEqual([], old_file_list)

@@ -9,6 +9,7 @@ __all__ = ['TacTestSetup', 'ReadyService', 'TacException']
 import sys
 import os
 import time
+import warnings
 from signal import SIGTERM, SIGKILL
 import subprocess
 
@@ -35,6 +36,9 @@ class TacTestSetup:
     def setUp(self, spew=False):
         self.killTac()
         if os.path.exists(self.pidfile):
+            warnings.warn(
+                "Removing pidfile %r. Should have already been removed."
+                % self.pidfile)
             os.remove(self.pidfile)
         self.setUpRoot()
         args = [sys.executable, twistd_script, '-o', '-y', self.tacfile,
@@ -48,7 +52,7 @@ class TacTestSetup:
                                 stderr=subprocess.STDOUT)
         stdout = proc.stdout.read()
         if stdout:
-            raise TacException('Error running %s: unclean stdout/err: %s' 
+            raise TacException('Error running %s: unclean stdout/err: %s'
                                % (args, stdout))
         rv = proc.wait()
         if rv != 0:
@@ -74,7 +78,7 @@ class TacTestSetup:
         pidfile = self.pidfile
         if not os.path.exists(pidfile):
             return
-        pid = open(pidfile,'r').read().strip()
+        pid = open(pidfile, 'r').read().strip()
         try:
             pid = int(pid)
         except ValueError:
