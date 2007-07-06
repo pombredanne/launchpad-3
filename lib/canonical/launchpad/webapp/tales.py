@@ -1386,7 +1386,7 @@ class FormattersAPI:
 
     # Match blocks that start as signatures, quoted passages, or PGP.
     _re_block_include = re.compile('^<p>(--<br />|([:|]|&gt)|-----BEGIN PGP)')
-    # Match a line started with '>' (implying text email or quoting by hand).
+    # Match a line starting with '>' (implying text email or quoting by hand).
     _re_quoted_line = re.compile('^&gt;')
 
     def email_to_html(self):
