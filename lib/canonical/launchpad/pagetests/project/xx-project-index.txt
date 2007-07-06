@@ -30,6 +30,61 @@ is only available to users which have 'Admin' privileges on the project.
     >>> admin_browser.getLink('Register another project').url
     'http://launchpad.dev/mozilla/+newproduct'
 
+== Empty Project Groups ==
+
+An empty project group needs to be set up first...
+
+    >>> admin_browser.open('http://launchpad.dev/projectgroups/+new')
+    >>> admin_browser.getControl(name='field.name').value = 'a-test-group'
+    >>> admin_browser.getControl('Display Name:').value = 'Test Group'
+    >>> admin_browser.getControl('Title:').value = 'My Test Group'
+    >>> admin_browser.getControl(name='field.summary').value = 'Summary'
+    >>> admin_browser.getControl('Description:').value = 'Define me'
+    >>> admin_browser.getControl('Add').click()
+    >>> admin_browser.url
+    'http://launchpad.dev/a-test-group'
+
+Empty project group index pages will not display the 'Report a bug', 'Ask a
+question' or 'Help translate' buttons.
+
+    >>> user_browser.open('http://launchpad.dev/a-test-group')
+    >>> user_browser.getLink('Report a bug')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+    >>> user_browser.getLink('Ask a question')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+    >>> user_browser.getLink('Help translate')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+
+Also, the bugs, blueprints and answers facets will be disabled:
+
+    >>> user_browser.open('http://launchpad.dev/a-test-group')
+    >>> user_browser.getLink('Bugs')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+    >>> user_browser.getLink('Blueprints')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+    >>> user_browser.getLink('Answers')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+    >>> user_browser.getLink('Answers')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+    >>> user_browser.getLink(url='+mentoring')
+    Traceback (most recent call last):
+      ..
+    LinkNotFoundError...
+
 == Overview Fallback ==
 
 When a project is accessed through a facet not usually available on
