@@ -19,10 +19,10 @@ class DistributionMirrorTestHTTPServer(Resource):
     :error: Respond with a '500 Internal Server Error' status.
 
     :redirect-to-valid-mirror: Respond with a '302 Found' status, redirecting
-                               to http://localhost:11375/valid-mirror.
+                               to http://localhost:%(port)s/valid-mirror.
 
     :redirect-infinite-loop: Respond with a '302 Found' status, redirecting
-                             to http://localhost:11375/redirect-infinite-loop.
+                             to http://localhost:%(port)s/redirect-infinite-loop.
 
     :redirect-unknown-url-scheme: Respond with a '302 Found' status, redirecting
                                   to ssh://localhost/foo.
@@ -32,6 +32,7 @@ class DistributionMirrorTestHTTPServer(Resource):
     """
 
     def getChild(self, name, request):
+        port = request.getHost().port
         if name == 'valid-mirror':
             leaf = DistributionMirrorTestHTTPServer()
             leaf.isLeaf = True
@@ -41,10 +42,11 @@ class DistributionMirrorTestHTTPServer(Resource):
         elif name == 'error':
             return FiveHundredResource()
         elif name == 'redirect-to-valid-mirror':
-            return RedirectingResource('http://localhost:11375/valid-mirror')
+            return RedirectingResource(
+                'http://localhost:%s/valid-mirror' % port)
         elif name == 'redirect-infinite-loop':
             return RedirectingResource(
-                'http://localhost:11375/redirect-infinite-loop')
+                'http://localhost:%s/redirect-infinite-loop' % port)
         elif name == 'redirect-unknown-url-scheme':
             return RedirectingResource('ssh://localhost/foo')
         else:

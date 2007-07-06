@@ -8,13 +8,16 @@ import urllib
 from zope.interface import implements
 
 from sqlobject import (
-    ForeignKey, StringCol, SQLMultipleJoin, SQLRelatedJoin, SQLObjectNotFound)
+    ForeignKey, StringCol, SQLMultipleJoin, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND
 
-from canonical.launchpad.helpers import shortlist
-from canonical.lp.dbschema import EnumCol, BugTrackerType
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote, sqlvalues)
+
+from canonical.lp.dbschema import BugTrackerType
+
+from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugwatch import BugWatch
 from canonical.launchpad.interfaces import (

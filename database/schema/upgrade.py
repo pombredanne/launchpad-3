@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 """
 Apply all outstanding schema patches to an existing launchpad database

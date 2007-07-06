@@ -1,16 +1,6 @@
 <configure xmlns="http://namespaces.zope.org/zope">
 
   <vocabulary
-    name="BinaryAndSourcePackageName"
-    factory="canonical.launchpad.vocabularies.BinaryAndSourcePackageNameVocabulary"
-    />
-
-  <vocabulary
-    name="BinaryPackageName"
-    factory="canonical.launchpad.vocabularies.BinaryPackageNameVocabulary"
-    />
-
-  <vocabulary
     name="Bounty"
     factory="canonical.launchpad.vocabularies.BountyVocabulary"
     />
@@ -31,8 +21,28 @@
     />
 
   <vocabulary
+    name="BranchLifecycleStatusFilter"
+    factory="canonical.launchpad.vocabularies.BranchLifecycleStatusFilterVocabulary"
+    />
+
+  <vocabulary
     name="BranchReviewStatus"
     factory="canonical.launchpad.vocabularies.BranchReviewStatusVocabulary"
+    />
+
+  <vocabulary
+    name="BranchSubscriptionDiffSize"
+    factory="canonical.launchpad.vocabularies.BranchSubscriptionDiffSizeVocabulary"
+    />
+
+  <vocabulary
+    name="BranchSubscriptionNotificationLevel"
+    factory="canonical.launchpad.vocabularies.BranchSubscriptionNotificationLevelVocabulary"
+    />
+
+  <vocabulary
+    name="BranchVisibilityPolicy"
+    factory="canonical.launchpad.vocabularies.BranchVisibilityPolicyVocabulary"
     />
 
   <vocabulary
@@ -51,8 +61,8 @@
     />
 
   <vocabulary
-    name="BugNominatableReleases"
-    factory="canonical.launchpad.vocabularies.BugNominatableReleasesVocabulary"
+    name="BugNominatableSerieses"
+    factory="canonical.launchpad.vocabularies.BugNominatableSeriesesVocabulary"
     />
 
   <vocabulary
@@ -96,6 +106,11 @@
       />
 
   <vocabulary
+      name="CodeImportReviewStatus"
+      factory="canonical.launchpad.vocabularies.CodeImportReviewStatusVocabulary"
+      />
+
+  <vocabulary
       name="CountryName"
       factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
       />
@@ -116,23 +131,23 @@
     />
 
   <vocabulary
-    name="DistroRelease"
-    factory="canonical.launchpad.vocabularies.DistroReleaseVocabulary"
+    name="DistroSeries"
+    factory="canonical.launchpad.vocabularies.DistroSeriesVocabulary"
     />
 
   <vocabulary
-    name="DistributionReleaseStatus"
-    factory="canonical.launchpad.vocabularies.DistributionReleaseStatusVocabulary"
+    name="DistroSeriesStatus"
+    factory="canonical.launchpad.vocabularies.DistroSeriesStatusVocabulary"
     />
 
   <vocabulary
-    name="FilteredDistroArchRelease"
-    factory="canonical.launchpad.vocabularies.FilteredDistroArchReleaseVocabulary"
+    name="FilteredDistroArchSeries"
+    factory="canonical.launchpad.vocabularies.FilteredDistroArchSeriesVocabulary"
     />
 
   <vocabulary
-    name="FilteredDistroRelease"
-    factory="canonical.launchpad.vocabularies.FilteredDistroReleaseVocabulary"
+    name="FilteredDistroSeries"
+    factory="canonical.launchpad.vocabularies.FilteredDistroSeriesVocabulary"
     />
 
   <vocabulary
@@ -221,6 +236,11 @@
     />
 
   <vocabulary
+    name="PersonTeamParticipations"
+    factory="canonical.launchpad.vocabularies.person_team_participations_vocabulary_factory"
+    />
+
+  <vocabulary
     name="PollAlgorithm"
     factory="canonical.launchpad.vocabularies.PollAlgorithmVocabulary"
     />
@@ -261,6 +281,16 @@
     />
 
   <vocabulary
+    name="ProjectProducts"
+    factory="canonical.launchpad.vocabularies.project_products_vocabulary_factory"
+    />
+
+  <vocabulary
+    name="ProjectProductsUsingMalone"
+    factory="canonical.launchpad.vocabularies.project_products_using_malone_vocabulary_factory"
+    />
+
+  <vocabulary
     name="RemoteBugTaskStatus"
     factory="canonical.launchpad.vocabularies.RemoteBugTaskStatusVocabulary"
     />
@@ -278,11 +308,6 @@
   <vocabulary
     name="ShipItFlavour"
     factory="canonical.launchpad.vocabularies.ShipItFlavourVocabulary"
-    />
-
-  <vocabulary
-    name="SourcePackageName"
-    factory="canonical.launchpad.vocabularies.SourcePackageNameVocabulary"
     />
 
   <vocabulary
@@ -331,33 +356,48 @@
     />
 
   <vocabulary
+    name="TeamMembershipRenewalPolicy"
+    factory="canonical.launchpad.vocabularies.TeamMembershipRenewalPolicyVocabulary"
+    />
+
+  <vocabulary
     name="TeamSubscriptionPolicy"
     factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
     />
 
   <vocabulary
-    name="TicketAction"
-    factory="canonical.launchpad.vocabularies.TicketActionVocabulary"
+    name="TextDirection"
+    factory="canonical.launchpad.vocabularies.TextDirectionVocabulary"
     />
 
   <vocabulary
-    name="TicketPriority"
-    factory="canonical.launchpad.vocabularies.TicketPriorityVocabulary"
+    name="QuestionAction"
+    factory="canonical.launchpad.vocabularies.QuestionActionVocabulary"
     />
 
   <vocabulary
-    name="TicketSort"
-    factory="canonical.launchpad.vocabularies.TicketSortVocabulary"
+    name="QuestionPriority"
+    factory="canonical.launchpad.vocabularies.QuestionPriorityVocabulary"
     />
 
   <vocabulary
-    name="TicketStatus"
-    factory="canonical.launchpad.vocabularies.TicketStatusVocabulary"
+    name="QuestionSort"
+    factory="canonical.launchpad.vocabularies.QuestionSortVocabulary"
+    />
+
+  <vocabulary
+    name="QuestionStatus"
+    factory="canonical.launchpad.vocabularies.QuestionStatusVocabulary"
     />
 
   <vocabulary
     name="TimezoneName"
     factory="canonical.launchpad.vocabularies.TimezoneNameVocabulary"
+    />
+
+  <vocabulary
+    name="TranslationFileFormat"
+    factory="canonical.launchpad.vocabularies.TranslationFileFormatVocabulary"
     />
 
   <vocabulary
@@ -373,6 +413,11 @@
   <vocabulary
     name="UpstreamFileType"
     factory="canonical.launchpad.vocabularies.UpstreamFileTypeVocabulary"
+    />
+
+  <vocabulary
+    name="UserTeamsParticipation"
+    factory="canonical.launchpad.vocabularies.UserTeamsParticipationVocabulary"
     />
 
   <vocabulary
@@ -423,16 +468,6 @@
   <vocabulary
     name="DistributionOrProductOrProject"
     factory="canonical.launchpad.vocabularies.DistributionOrProductOrProjectVocabulary"
-    />
-
-  <!-- Define the widget used by Choice fields that use huge vocabularies -->
-  <view
-    type="zope.publisher.interfaces.browser.IBrowserRequest"
-    for="zope.schema.interfaces.IChoice
-      canonical.launchpad.vocabularies.IHugeVocabulary"
-    provides="zope.app.form.interfaces.IInputWidget"
-    factory="canonical.widgets.SinglePopupWidget"
-    permission="zope.Public"
     />
 
 </configure>

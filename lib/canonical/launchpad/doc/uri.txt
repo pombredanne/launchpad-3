@@ -1,0 +1,199 @@
+= URI support in Launchpad =
+
+== The URI class ==
+
+    >>> from canonical.launchpad.webapp.uri import URI
+    >>> uri1 = URI('http://localhost/foo/bar?123')
+    >>> uri2 = URI('http://localhost/foo/bar/baz')
+    >>> uri1.contains(uri2)
+    True
+
+These next two are equivalent, so the answer should be True, even through
+the "outside" one is shorter than the "inside" one.
+
+    >>> uri1 = URI('http://localhost/foo/bar/')
+    >>> uri2 = URI('http://localhost/foo/bar')
+    >>> uri1.contains(uri2)
+    True
+
+The next two are exactly the same.  We consider a url to be inside itself.
+
+    >>> uri1 = URI('http://localhost/foo/bar/')
+    >>> uri2 = URI('http://localhost/foo/bar/')
+    >>> uri1.contains(uri2)
+    True
+
+In the next case, the string of url2 starts with the string of url1.  But,
+because url2 continues within the same path step, url2 is not inside url1.
+
+    >>> uri1 = URI('http://localhost/foo/ba')
+    >>> uri2 = URI('http://localhost/foo/bar')
+    >>> uri1.contains(uri2)
+    False
+
+Here, url2 is url1 plus an extra path step.  So, url2 is inside url1.
+
+    >>> uri1 = URI('http://localhost/foo/bar/')
+    >>> uri2 = URI('http://localhost/foo/bar/baz')
+    >>> uri1.contains(uri2)
+    True
+
+We also test the basic parsing functionality.
+
+    >>> uri = URI('https://fish.tree:8666/blee/blah')
+    >>> uri.scheme
+    'https'
+    >>> uri.host
+    'fish.tree'
+    >>> uri.port
+    '8666'
+    >>> uri.authority
+    'fish.tree:8666'
+    >>> uri.path
+    '/blee/blah'
+
+    >>> uri = URI('https://localhost/blee/blah')
+    >>> uri.scheme
+    'https'
+    >>> uri.host
+    'localhost'
+    >>> uri.port is None
+    True
+    >>> uri.authority
+    'localhost'
+    >>> uri.path
+    '/blee/blah'
+
+The grammar from RFC 3986 does not allow for square brackets in the
+query component, but Section 3.4 does say how such delimeter
+characters should be handled if found in the component.
+
+    >>> uri = URI('http://www.apple.com/store?delivery=[slow]#horse+cart')
+    >>> uri.scheme
+    'http'
+    >>> uri.host
+    'www.apple.com'
+    >>> uri.port is None
+    True
+    >>> uri.path
+    '/store'
+    >>> uri.query
+    'delivery=[slow]'
+    >>> uri.fragment
+    'horse+cart'
+
+== Security Proxied URI Objects ==
+
+URI objects can be compared for equality even in the presence of Zope
+security proxies.
+
+  >>> from zope.security.proxy import ProxyFactory
+
+  >>> uri1 = URI('http://a/b/c/d;p?q')
+  >>> uri2 = URI('http://a/b/c/d;p?q')
+  >>> uri3 = URI('https://launchpad.net')
+  >>> proxied_uri1 = ProxyFactory(uri1)
+  >>> proxied_uri2 = ProxyFactory(uri2)
+  >>> proxied_uri3 = ProxyFactory(uri3)
+
+We can access the various URI components:
+
+  >>> print proxied_uri1.scheme
+  http
+  >>> print proxied_uri1.userinfo
+  None
+  >>> print proxied_uri1.host
+  a
+  >>> print proxied_uri1.port
+  None
+  >>> print proxied_uri1.path
+  /b/c/d;p
+  >>> print proxied_uri1.query
+  q
+  >>> print proxied_uri1.fragment
+  None
+  >>> print proxied_uri1.authority
+  a
+  >>> print proxied_uri1.hier_part
+  //a/b/c/d;p
+
+We can test for equality:
+
+  >>> uri1 == uri2
+  True
+  >>> uri1 == proxied_uri2
+  True
+  >>> proxied_uri1 == uri2
+  True
+  >>> proxied_uri1 == proxied_uri2
+  True
+
+  >>> proxied_uri1 == proxied_uri3
+  False
+
+Similarly, inequality can be checked:
+
+  >>> proxied_uri1 != proxied_uri3
+  True
+
+We can get the string value and representation of a URI:
+
+  >>> print str(proxied_uri1)
+  http://a/b/c/d;p?q
+  >>> print repr(proxied_uri1)
+  URI('http://a/b/c/d;p?q')
+
+We can replace components:
+
+  >>> print proxied_uri1.replace(scheme='https')
+  https://a/b/c/d;p?q
+
+We can append a component:
+
+  >>> print proxied_uri1.append('e/f')
+  http://a/b/c/d;p/e/f
+
+We can check for containment:
+
+  >>> proxied_uri1.contains(proxied_uri2)
+  True
+  >>> proxied_uri1.contains(proxied_uri3)
+  False
+
+We can create a URI that ensures it has or does not have a trailing
+slash:
+
+  >>> print proxied_uri1.ensureSlash()
+  http://a/b/c/d;p/?q
+  >>> print proxied_uri1.ensureNoSlash()
+  http://a/b/c/d;p?q
+  
+
+== Finding URIs in Text ==
+
+We can also retrieve a list of URIs from a block of text.  This is
+intended for uses like finding bug tracker URIs or similar.
+
+The find_uris_in_text() returns an iterator that yields URI objects
+for each URI found in the text.  Note that the returned URIs have been
+canonicalised by the URI class:
+
+  >>> from canonical.launchpad.webapp.uri import find_uris_in_text
+  >>> text = '''
+  ... A list of URIs:
+  ...  * http://localhost/a/b
+  ...  * http://launchpad.net
+  ...  * MAILTO:joe@example.com
+  ...  * xmpp:fred@example.org
+  ...  * http://bazaar.launchpad.net/%7ename12/firefox/foo
+  ...  * http://somewhere.in/time?track=[02]#wasted-years
+  ... '''
+
+  >>> for uri in find_uris_in_text(text):
+  ...     print uri
+  http://localhost/a/b
+  http://launchpad.net/
+  mailto:joe@example.com
+  xmpp:fred@example.org
+  http://bazaar.launchpad.net/~name12/firefox/foo
+  http://somewhere.in/time?track=[02]#wasted-years

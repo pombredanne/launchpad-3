@@ -1,9 +1,0 @@
-  Let's see the bugs subscribe to for Sample Person.
-
-  >>> print http(r"""
-  ... GET /~name12/+subscribedbugs HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Bugs Sample Person is subscribed to...
-  ...1...
-  ...Firefox does not support SVG...

@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+<tour next="code">
+  <title>Launchpad</title>
+  <screen>
+    <title>Launchpad overview</title>
+    <headline>Collaboration and project hosting for free software
+        projects
+    </headline>
+    <summary>
+      <p>Collaboration is crucial to free software projects.
+          Traditionally, it has been difficult for communities to exchange
+          information if they use different tools.
+      </p>
+      <p>Throughout this tour, you'll see how Launchpad's new approach
+          solves the problems of collaboration on software projects. By
+          bringing together information from different project-specific
+          sources and helping communities to organise themselves into teams,
+          Launchpad helps different projects to collaborate on common
+          problems, such as bugs in shared code.
+      </p>
+      <p>Let's start by finding our way around the interface.</p>
+    </summary>
+
+    <screenshot>/+icing/launchpad-tour-screenshot1.png</screenshot>
+    <callout top="13" left="15">You can always see which project you're
+      currently working on in the top-left of the page.
+    </callout>
+    <callout top="13" left="285">Use the tabs to switch between Launchpad's
+      applications.
+    </callout>
+    <callout top="57" left="100">The Actions menu is important in Launchpad,
+      giving you access to the main functionality of the current application.
+    </callout>
+    <callout top="143" left="28">You can find additional information in the
+      expandable boxes below the Actions menu.
+    </callout>
+  </screen>
+
+  <screen>
+    <title>People</title>
+    <summary>Launchpad makes it easy to find out what work someone is involved
+      in. Each individual's home page shows their team memberships, the
+      projects that they're most active in and their contact details.
+    </summary>
+    <screenshot>/+icing/launchpad-tour-screenshot2.png</screenshot>
+    <callout top="53" left="305">Knowing who you're working with is an
+      important part of community building and may help you find people to
+      collaborate with.
+    </callout>
+    <callout top="146" left="202">Launchpad shows you which projects and
+      applications each person has used most recently.
+    </callout>
+    <callout top="223" left="220">You can build a picture of someone's
+      interests by seeing which Launchpad teams they've joined.
+    </callout>
+    <callout top="148" left="369">Launchpad shows you how to contact people
+      that you'd like to work with and where to find a wiki page with more
+      information.
+    </callout>
+  </screen>
+
+  <screen>
+    <title>Teams</title>
+    <headline>Effortless team creation</headline>
+    <summary>
+      <p>Strong communities are built on teams. Launchpad helps communities to
+        develop rich structures, through the effortless creation of teams
+        around projects and initiatives.
+      </p>
+      <p>Teams work just like individuals: they can join other teams and take
+        roles in projects, such as acting as a bug contact for a project.
+      </p>
+    </summary>
+    <screenshot>/+icing/launchpad-tour-screenshot3.png</screenshot>
+    <callout top="50" left="360">Your team's description is an important way
+      to let potential members know your plans and how they can join you.
+    </callout>
+    <callout top="150" left="220">As a team administrator, you choose the
+      membership policy that's most appropriate:
+      open: anyone can join; moderated: anyone can apply to join but a
+      team administrator must approve their membership;
+      restricted: a team administrator must invite a person to join.
+    </callout>
+    <callout top="220" left="390">This row of small icons shows which other
+      teams this team has joined.
+    </callout>
+  </screen>
+
+  <screen>
+    <title>Registering a project</title>
+    <summary>
+      <p>Registering your project with Launchpad is the first step to
+        improving your collaboration. It's free, quick and easy.
+      </p>
+      <p>Once you've told Launchpad about your project, you're ready to
+        start using each of its five tools.
+      </p>
+    </summary>
+    <screenshot>/+icing/launchpad-tour-screenshot4.png</screenshot>
+    <transition>Let's start with Code Hosting.</transition>
+  </screen>
+</tour>

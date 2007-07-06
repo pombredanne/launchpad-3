@@ -27,7 +27,7 @@ Ensure the CoC was acknowledge by searching in the CoC Admin Console:
   >>> admin_browser.getControl(name='search').click()
   >>> 'paper submission accepted by Foo Bar' in admin_browser.contents
   True
-  >>> '<a href="http://launchpad.dev/~sabdfl">' in admin_browser.contents
+  >>> '<a href="/~sabdfl">' in admin_browser.contents
   True
   >>> '[ACTIVE]' in admin_browser.contents
   True

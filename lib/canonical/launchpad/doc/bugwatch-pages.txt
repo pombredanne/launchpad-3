@@ -1,0 +1,30 @@
+= Bug Watch Edit Page =
+
+It's possible to edit a bug watch on +edit, as well as deleting it.
+Deleting a bug watch is only possible when the bug watch isn't linked to
+a bug task.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> linked_bugwatches = [
+    ...     bugwatch for bugwatch in bug_one.watches
+    ...     if bugwatch.bugtasks]
+    >>> unlinked_bugwatches = [
+    ...     bugwatch for bugwatch in bug_one.watches
+    ...     if not bugwatch.bugtasks]
+
+    >>> from zope.component import getView
+    >>> from zope.publisher.browser import TestRequest
+    >>> linked_bugwatch_view = getView(
+    ...     linked_bugwatches.pop(), '+edit', TestRequest())
+    >>> linked_bugwatch_view.initialize()
+    >>> [action.label for action in linked_bugwatch_view.actions
+    ...  if action.available()]
+    ['Change']
+
+    >>> unlinked_bugwatch_view = getView(
+    ...     unlinked_bugwatches.pop(), '+edit', TestRequest())
+    >>> unlinked_bugwatch_view.initialize()
+    >>> [action.label for action in unlinked_bugwatch_view.actions
+    ...  if action.available()]
+    ['Change', 'Delete Bug Watch']

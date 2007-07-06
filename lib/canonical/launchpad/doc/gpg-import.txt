@@ -112,6 +112,12 @@ the 40-byte fingerprint we captured above:
     >>> gpghandler.getURLForKeyInServer(fingerprint)
     'http://localhost:11371/pks/lookup?search=0xDFD20543&op=index'
 
+The method accepts a flag to retrieve a link to ubuntu's public
+keyserver web interface.
+
+    >>> gpghandler.getURLForKeyInServer("DFD20543", public=True)
+    'http://keyserver.ubuntu.com:11371/pks/lookup?search=0xDFD20543&op=index'
+
 
 Fingerprint sanitizing
 ======================

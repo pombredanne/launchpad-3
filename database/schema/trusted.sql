@@ -1,4 +1,4 @@
--- Copyright 2004-2006 Canonical Ltd.  All rights reserved.
+-- Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 /* This is created as a function so the same definition can be used with
     many tables
@@ -121,7 +121,9 @@ LANGUAGE plpythonu IMMUTABLE RETURNS NULL ON NULL INPUT AS
 $$
     from urlparse import urlparse
     (scheme, netloc, path, params, query, fragment) = urlparse(args[0])
-    if scheme == "sftp":
+    # urlparse in the stdlib does not correctly parse the netloc from
+    # sftp and bzr+ssh schemes, so we have to manually check those
+    if scheme in ("sftp", "bzr+ssh"):
         return 1
     if not (scheme and netloc):
         return 0
@@ -154,7 +156,7 @@ $$
         return 0
 $$;
 
-COMMENT ON FUNCTION valid_keyid(text) IS 'Returns true if passed a valid GPG keyid. Valid GPG keyids are an 8 character long hexadecimal number in uppercase (in reality, they are 16 characters long but we are using the \'common\' definition.';
+COMMENT ON FUNCTION valid_keyid(text) IS 'Returns true if passed a valid GPG keyid. Valid GPG keyids are an 8 character long hexadecimal number in uppercase (in reality, they are 16 characters long but we are using the ''common'' definition.';
 
 
 CREATE OR REPLACE FUNCTION valid_regexp(text) RETURNS boolean
@@ -188,10 +190,8 @@ CREATE OR REPLACE FUNCTION you_are_your_own_member() RETURNS trigger
 LANGUAGE plpgsql AS
 $$
     BEGIN
-        IF NEW.teamowner IS NULL THEN
-            INSERT INTO TeamParticipation (person, team)
-                VALUES (NEW.id, NEW.id);
-        END IF;
+        INSERT INTO TeamParticipation (person, team)
+            VALUES (NEW.id, NEW.id);
         RETURN NULL;
     END;
 $$;
@@ -248,18 +248,6 @@ $$;
 
 COMMENT ON FUNCTION is_printable_ascii(text) IS
     'True if the string is pure printable US-ASCII';
-
-
-CREATE OR REPLACE FUNCTION sleep_for_testing(double precision) RETURNS boolean
-LANGUAGE plpythonu AS
-$$
-    import time
-    time.sleep(args[0])
-    return True
-$$;
-
-COMMENT ON FUNCTION sleep_for_testing(double precision) IS
-    'Sleep for the given number of seconds and return True.  This function is intended to be used by tests to trigger timeout conditions.';
 
 
 CREATE OR REPLACE FUNCTION mv_pillarname_distribution() RETURNS TRIGGER
@@ -712,4 +700,68 @@ $$
 $$;
 
 COMMENT ON FUNCTION is_blacklisted_name(text) IS 'Return TRUE if any regular expressions stored in the NameBlacklist table match the givenname, otherwise return FALSE.';
+
+
+CREATE OR REPLACE FUNCTION set_shipit_normalized_address() RETURNS trigger
+LANGUAGE plpgsql AS
+$$
+    BEGIN
+        NEW.normalized_address = 
+            lower(
+                -- Strip off everything that's not alphanumeric
+                -- characters.
+                regexp_replace(
+                    coalesce(NEW.addressline1, '') || ' ' ||
+                    coalesce(NEW.addressline2, '') || ' ' ||
+                    coalesce(NEW.city, ''),
+                    '[^a-zA-Z0-9]+', '', 'g'));
+        RETURN NEW;
+    END;
+$$;
+
+COMMENT ON FUNCTION set_shipit_normalized_address() IS 'Store a normalized concatenation of the request''s address into the normalized_address column.';
+
+
+CREATE OR REPLACE FUNCTION set_openid_identifier() RETURNS trigger
+LANGUAGE plpythonu AS
+$$
+    # If someone is trying to explicitly set the openid_identifier, let them.
+    # This also causes openid_identifiers to be left alone if this is an
+    # UPDATE trigger.
+    if TD['new']['openid_identifier'] is not None:
+        return None
+
+    from random import choice
+
+    # Non display confusing characters
+    chars = '34678bcdefhkmnprstwxyzABCDEFGHJKLMNPQRTWXY'
+
+    # character length of tokens. Can be increased, decreased or even made
+    # random - Launchpad does not care. 7 means it takes 40 bytes to store
+    # a null-terminated Launchpad identity URL on the current domain name.
+    length=7
+
+    loop_count = 0
+    while loop_count < 20000:
+        # Generate a random openid_identifier
+        oid = ''.join(choice(chars) for count in range(length))
+
+        # Check if the oid is already in the db, although this is pretty
+        # unlikely
+        rv = plpy.execute("""
+            SELECT COUNT(*) AS num FROM Person WHERE openid_identifier = '%s'
+            """ % oid, 1)
+        if rv[0]['num'] == 0:
+            TD['new']['openid_identifier'] = oid
+            return "MODIFY"
+        loop_count += 1
+        if loop_count == 1:
+            plpy.warning(
+                'Clash generating unique openid_identifier. '
+                'Increase length if you see this warning too much.')
+    plpy.error(
+        "Unable to generate unique openid_identifier. "
+        "Need to increase length of tokens.")
+$$;
+
 

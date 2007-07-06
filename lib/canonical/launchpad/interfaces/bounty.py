@@ -63,7 +63,7 @@ class IBounty(IHasOwner, IMessageTarget):
     reviewer = Choice(title=_('The bounty reviewer.'), required=False,
         description=_("The person who is responsible for deciding whether "
         "the bounty is awarded, and to whom if there are multiple "
-        "claimants."), vocabulary='ValidPersonOrTeamVocabulary')
+        "claimants."), vocabulary='ValidPersonOrTeam')
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True,
             )
@@ -80,8 +80,8 @@ class IBounty(IHasOwner, IMessageTarget):
 
     # joins
     subscriptions = Attribute('The set of subscriptions to this bounty.')
-    projects = Attribute('The projects which this bounty is related to.')
-    products = Attribute('The products to which this bounty is related.')
+    projects = Attribute('The project groups which this bounty is related to.')
+    products = Attribute('The projects to which this bounty is related.')
     distributions = Attribute(
         'The distributions to which this bounty is related.')
 

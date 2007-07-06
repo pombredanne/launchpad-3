@@ -1,0 +1,30 @@
+
+check_permission
+----------------
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPersonSet, IHasOwner
+
+This is the same check available in TALES as something/required:permission.Name.
+It checks that the currently logged in user has the requested permission on an
+object:
+
+    >>> personset = getUtility(IPersonSet)
+    >>> sample_person = personset.get(12)
+
+    >>> login('test@canonical.com')
+    >>> check_permission('launchpad.Edit', sample_person)
+    True
+    >>> sabdfl = personset.getByEmail('mark@hbd.com')
+    >>> check_permission('launchpad.Edit', sabdfl)
+    False
+
+If the permission doesn't exist, it raises an error:
+
+    >>> check_permission('mushroom.Badger', sample_person)
+    Traceback (most recent call last):
+    ...
+    ValueError: ('Undefined permission id', 'mushroom.Badger')
+
+

@@ -8,17 +8,23 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import (
-    StringCol, ForeignKey, IntervalCol)
+    StringCol, ForeignKey, IntervalCol, SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, IN
 
 from canonical.config import config
+
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
+
+from canonical.lp.dbschema import (
+    BuildStatus, PackagePublishingPocket)
+
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.database.buildqueue import BuildQueue
-from canonical.launchpad.database.queue import DistroReleaseQueueBuild
+from canonical.launchpad.database.queue import PackageUploadBuild
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
@@ -26,8 +32,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
-from canonical.lp.dbschema import (
-    EnumCol, BuildStatus, PackagePublishingPocket, DistributionReleaseStatus)
+
 
 
 class Build(SQLBase):
@@ -38,8 +43,8 @@ class Build(SQLBase):
     datecreated = UtcDateTimeCol(dbName='datecreated', default=UTC_NOW)
     processor = ForeignKey(dbName='processor', foreignKey='Processor',
         notNull=True)
-    distroarchrelease = ForeignKey(dbName='distroarchrelease',
-        foreignKey='DistroArchRelease', notNull=True)
+    distroarchseries = ForeignKey(dbName='distroarchrelease',
+        foreignKey='DistroArchSeries', notNull=True)
     buildstate = EnumCol(dbName='buildstate', notNull=True, schema=BuildStatus)
     sourcepackagerelease = ForeignKey(dbName='sourcepackagerelease',
         foreignKey='SourcePackageRelease', notNull=True)
@@ -52,6 +57,7 @@ class Build(SQLBase):
     pocket = EnumCol(dbName='pocket', schema=PackagePublishingPocket,
                      notNull=True)
     dependencies = StringCol(dbName='dependencies', default=None)
+    archive = ForeignKey(foreignKey='Archive', dbName='archive', notNull=True)
 
     @property
     def buildqueue_record(self):
@@ -64,31 +70,34 @@ class Build(SQLBase):
     @property
     def changesfile(self):
         """See IBuild"""
-        queue_item = DistroReleaseQueueBuild.selectOneBy(build=self)
+        queue_item = PackageUploadBuild.selectOneBy(build=self)
         if queue_item is None:
             return None
-        return queue_item.distroreleasequeue.changesfile
+        return queue_item.packageupload.changesfile
 
     @property
-    def distrorelease(self):
+    def distroseries(self):
         """See IBuild"""
-        return self.distroarchrelease.distrorelease
+        return self.distroarchseries.distroseries
 
     @property
     def distribution(self):
         """See IBuild"""
-        return self.distroarchrelease.distrorelease.distribution
+        return self.distroarchseries.distroseries.distribution
+
+    @property
+    def is_trusted(self):
+        """See IBuild"""
+        return self.archive == self.distribution.main_archive
 
     @property
     def title(self):
         """See IBuild"""
         return '%s build of %s %s in %s %s %s' % (
-            self.distroarchrelease.architecturetag,
+            self.distroarchseries.architecturetag,
             self.sourcepackagerelease.name,
             self.sourcepackagerelease.version,
-            self.distroarchrelease.distrorelease.distribution.name,
-            self.distroarchrelease.distrorelease.name,
-            self.pocket.name)
+            self.distribution.name, self.distroseries.name, self.pocket.name)
 
     @property
     def was_built(self):
@@ -105,7 +114,7 @@ class Build(SQLBase):
             DistributionSourcePackageRelease)
 
         return DistributionSourcePackageRelease(
-            distribution=self.distroarchrelease.distrorelease.distribution,
+            distribution=self.distroarchseries.distroseries.distribution,
             sourcepackagerelease=self.sourcepackagerelease)
 
     @property
@@ -115,17 +124,29 @@ class Build(SQLBase):
         return sorted(bpklist, key=lambda a: a.binarypackagename.name)
 
     @property
+    def distroarchseriesbinarypackages(self):
+        """See IBuild."""
+        # Avoid circular import by importing locally.
+        from canonical.launchpad.database.distroarchseriesbinarypackagerelease\
+            import (DistroArchSeriesBinaryPackageRelease)
+        return [DistroArchSeriesBinaryPackageRelease(
+            self.distroarchseries, bp) 
+            for bp in self.binarypackages]
+
+    @property
     def can_be_retried(self):
         """See IBuild."""
         # check if the build would be properly collected if it was
         # reset. Do not reset denied builds.
-        if not self.distrorelease.canUploadToPocket(self.pocket):
+        if (self.is_trusted and not
+            self.distroseries.canUploadToPocket(self.pocket)):
             return False
 
         failed_buildstates = [
             BuildStatus.FAILEDTOBUILD,
             BuildStatus.MANUALDEPWAIT,
             BuildStatus.CHROOTWAIT,
+            BuildStatus.FAILEDTOUPLOAD,
             ]
 
         return self.buildstate in failed_buildstates
@@ -138,7 +159,6 @@ class Build(SQLBase):
     @property
     def calculated_buildstart(self):
         """See IBuild."""
-        assert self.was_built, "value is not suitable for pending builds."
         assert self.datebuilt and self.buildduration, (
             "value is not suitable for this build record (%d)"
             % self.id)
@@ -177,13 +197,13 @@ class Build(SQLBase):
                                    architecturespecific):
         """See IBuild."""
         return BinaryPackageRelease(build=self,
-                                    binarypackagenameID=binarypackagename,
+                                    binarypackagename=binarypackagename,
                                     version=version,
                                     summary=summary,
                                     description=description,
                                     binpackageformat=binpackageformat,
-                                    componentID=component,
-                                    sectionID=section,
+                                    component=component,
+                                    section=section,
                                     priority=priority,
                                     shlibdeps=shlibdeps,
                                     depends=depends,
@@ -202,10 +222,12 @@ class Build(SQLBase):
         """See IBuild"""
         return BuildQueue(build=self)
 
-    def notify(self):
+    def notify(self, extra_info=None):
         """See IBuild"""
         if not config.builddmaster.send_build_notification:
             return
+
+        recipients = set()
 
         fromaddress = format_address(
             config.builddmaster.default_sender_name,
@@ -215,24 +237,45 @@ class Build(SQLBase):
             'X-Launchpad-Build-State': self.buildstate.name,
             }
 
-        buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
-        recipients = contactEmailAddresses(buildd_admins)
+        # XXX cprov 20061027: temporary extra debug info about the
+        # SPR.creator in context, to be used during the service quarantine,
+        # notify_owner will be disabled to avoid *spamming* Debian people.
+        creator = self.sourcepackagerelease.creator
+        extra_headers['X-Creator-Recipient'] = ",".join(
+            contactEmailAddresses(creator))
 
         # Currently there are 7038 SPR published in edgy which the creators
         # have no preferredemail. They are the autosync ones (creator = katie,
         # 3583 packages) and the untouched sources since we have migrated from
         # DAK (the rest). We should not spam Debian maintainers.
-        creator = self.sourcepackagerelease.creator
         if config.builddmaster.notify_owner:
             recipients = recipients.union(contactEmailAddresses(creator))
 
-        # XXX cprov 20061027: temporary extra debug info about the
-        # SPR.creator in context, to be used during the service quarantine,
-        # notify_owner will be disabled to avoid *spamming* Debian people.
-        extra_headers['X-Creator-Recipient'] = ",".join(
-            contactEmailAddresses(creator))
-
-        subject = "[Build #%d] %s" % (self.id, self.title)
+        # Modify notification contents according the targeted archive.
+        # 'Archive Tag', 'Subject' and 'Source URL' are customized for PPA.
+        # We only send build-notifications to 'buildd-admin' celebrity for
+        # main archive candidates.
+        # For PPA build notifications we include the archive.owner
+        # contact_address.
+        if self.is_trusted:
+            buildd_admins = getUtility(ILaunchpadCelebrities).buildd_admin
+            recipients = recipients.union(
+                contactEmailAddresses(buildd_admins))
+            archive_tag = '%s main archive' % self.distribution.name
+            subject = "[Build #%d] %s" % (self.id, self.title)
+            source_url = canonical_url(self.distributionsourcepackagerelease)
+        else:
+            recipients = recipients.union(
+                contactEmailAddresses(self.archive.owner))
+            # For PPAs we run the risk of having no available contact_address,
+            # for instance, when both, SPR.creator and Archive.owner have
+            # not enabled it.
+            if len(recipients) == 0:
+                return
+            archive_tag = '%s PPA' % self.archive.owner.name
+            subject = "[Build #%d] %s (%s)" % (
+                self.id, self.title, archive_tag)
+            source_url = 'not available'
 
         # XXX cprov 20060802: pending security recipients for SECURITY
         # pocket build. We don't build SECURITY yet :(
@@ -255,20 +298,31 @@ class Build(SQLBase):
             # completed states (success and failure)
             buildduration = DurationFormatterAPI(
                 self.buildduration).approximateduration()
-            buildlog_url = self.buildlog.url
+            buildlog_url = self.buildlog.http_url
             builder_url = canonical_url(self.builder)
+
+        if self.buildstate == BuildStatus.FAILEDTOUPLOAD:
+            assert extra_info is not None, (
+                'Extra information is required for FAILEDTOUPLOAD '
+                'notifications.')
+            extra_info = 'Upload log:\n%s' % extra_info
+        else:
+            extra_info = ''
 
         template = get_email_template('build-notification.txt')
         replacements = {
             'source_name': self.sourcepackagerelease.name,
             'source_version': self.sourcepackagerelease.version,
-            'architecturetag': self.distroarchrelease.architecturetag,
+            'architecturetag': self.distroarchseries.architecturetag,
             'build_state': self.buildstate.title,
             'build_duration': buildduration,
             'buildlog_url': buildlog_url,
             'builder_url': builder_url,
             'build_title': self.title,
             'build_url': canonical_url(self),
+            'source_url': source_url,
+            'extra_info': extra_info,
+            'archive_tag': archive_tag,
             }
         message = template % replacements
 
@@ -294,18 +348,21 @@ class BuildSet:
 
     def getByBuildID(self, id):
         """See IBuildSet."""
-        return Build.get(id)
+        try:
+            return Build.get(id)
+        except SQLObjectNotFound, e:
+            raise NotFoundError(str(e))
 
-    def getPendingBuildsForArchSet(self, archreleases):
+    def getPendingBuildsForArchSet(self, archserieses):
         """See IBuildSet."""
-        if not archreleases:
+        if not archserieses:
             return None
 
-        archrelease_ids = [d.id for d in archreleases]
+        archseries_ids = [d.id for d in archserieses]
 
         return Build.select(
             AND(Build.q.buildstate==BuildStatus.NEEDSBUILD,
-                IN(Build.q.distroarchreleaseID, archrelease_ids))
+                IN(Build.q.distroarchseriesID, archseries_ids))
             )
 
     def getBuildsForBuilder(self, builder_id, status=None, name=None):
@@ -347,7 +404,7 @@ class BuildSet:
     def getBuildsByArchIds(self, arch_ids, status=None, name=None,
                            pocket=None):
         """See IBuildSet."""
-        # If not distroarchrelease was found return empty list
+        # If not distroarchseries was found return empty list
         if not arch_ids:
             # XXX cprov 20060908: returning and empty SelectResult to make
             # the callsites happy as bjorn suggested. However it would be
@@ -412,6 +469,17 @@ class BuildSet:
             clauseTables.append('Sourcepackagerelease')
             clauseTables.append('Sourcepackagename')
 
+        # Only pick builds from the distribution's main archive to
+        # exclude PPA builds
+        clauseTables.extend(["DistroArchRelease",
+                             "DistroRelease",
+                             "Distribution"])
+        condition_clauses.append("""
+            Build.distroarchrelease = DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = Distribution.id AND
+            Distribution.main_archive = Build.archive
+            """)
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,

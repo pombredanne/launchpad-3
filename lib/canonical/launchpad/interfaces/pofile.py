@@ -1,6 +1,6 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-from zope.schema import TextLine, Text, Field, Int, Choice
+from zope.schema import TextLine, Text, Field, Choice
 from zope.interface import Interface, Attribute
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 
@@ -61,18 +61,12 @@ class IPOFile(IRosettaStats):
 
     exportfile = Attribute("The Librarian alias of the last cached export.")
 
-    latest_sighting = Attribute("""Of all the translation sightings belonging
-        to PO messages sets belonging to this PO file, return the one which
-        was most recently modified (greatest datelastactive), or None if
-        there are no sightings belonging to this PO file.""")
+    datecreated = Attribute("The date this file was created.")
 
-    datecreated = Attribute("The fate this file was created.")
-
-    latestsubmission = Field(
-        title=u'Translation submission which was most recently added.',
-        description=(u'Translation submission which was most recently added,'
-            u' or None if there are no submissions belonging to this IPOFile.'
-            ),
+    last_touched_pomsgset = Field(
+        title=u'Translation message which was most recently touched.',
+        description=(u'Translation message which was most recently touched,'
+            u' or None if there are no translations active in this IPOFile.'),
         required=False)
 
     translators = Attribute("A list of Translators that have been "
@@ -122,23 +116,38 @@ class IPOFile(IRosettaStats):
     def __iter__():
         """Return an iterator over Current IPOMessageSets in this PO file."""
 
-    def getPOMsgSet(msgid_text, onlyCurrent=False):
-        """Return the IPOMsgSet in this IPOFile identified by msgid_text or
-        None.
+    def getPOMsgSet(msgid_text, only_current=False):
+        """Return the IPOMsgSet in this IPOFile by msgid_text or None.
 
-        :msgid_text: is an unicode string.
-        :only_current: Whether we should look only on current entries.
+        :param msgid_text: is an unicode string.
+        :param only_current: Whether we should look only on current entries.
+        """
+
+    def getPOMsgSetFromPOTMsgSet(potmsgset, only_current=False):
+        """Return the IPOMsgSet in this IPOFile by potmsgset or None.
+
+        :param potmsgset: is an instance of POTMsgSet.
+        :param only_current: Whether we should look only on current entries.
+        """
+
+    def getMsgSetsForPOTMsgSets(potmsgsets):
+        """Return mapping from each of potmsgsets to matching POMsgSet.
+
+        The result is a dict.  Any POTMsgSets in potmsgsets that have no
+        translation in pofile yet will come with matching DummyPOMsgSets.
+        Both dummy and pre-existing POMsgSets will have their submissions
+        caches populated.
         """
 
     def __getitem__(msgid_text):
         """Return the active IPOMsgSet in this IPOFile identified by msgid_text.
 
-        :msgid_text: is an unicode string.
+        :param msgid_text: is an unicode string.
 
         Raise NotFoundError if it does not exist.
         """
 
-    def getPOMsgSetNotInTemplate():
+    def getPOMsgSetsNotInTemplate():
         """
         Return an iterator over message sets in this PO file that do not
         correspond to a message set in the template; eg, the template
@@ -166,6 +175,17 @@ class IPOFile(IRosettaStats):
         Return the message sets using 'slice' or all of them if slice is None.
         """
 
+    def getPOTMsgSetWithNewSuggestions():
+        """Get pot message sets with suggestions submitted after last review.
+        """
+
+    def getPOTMsgSetChangedInLaunchpad():
+        """Get pot message sets changed through Launchpad in this PO file.
+
+        'Changed in Launchpad' are only those which were translated when
+        initially imported, but then got overridden in Launchpad.
+        """
+
     def getPOTMsgSetWithErrors(slice=None):
         """Get pot message sets that have translations published with errors.
 
@@ -176,12 +196,16 @@ class IPOFile(IRosettaStats):
     def hasMessageID(msgid):
         """Return whether a given message ID exists within this PO file."""
 
-    def pendingImport():
-        """Gives all pofiles that have a rawfile pending of import into
-        Rosetta."""
-
     def validExportCache():
-        """Does this PO file have a cached export that is up to date?"""
+        """Does this PO file have a cached export that is up to date?
+
+        Using stale cache can result in exporting outdated data (eg.
+        translations which have been changed or deactivated in the
+        meantime would end up exported).
+
+        So, 'False' is the more conservative choice: if we're not sure
+        if the cache is valid, returning False is the way to go.
+        """
 
     def updateExportCache(contents):
         """Update this PO file's export cache with a string."""
@@ -198,9 +222,9 @@ class IPOFile(IRosettaStats):
     def uncachedExport(included_obsolete=True, export_utf8=False):
         """Export this PO file as string without using any cache.
 
-        :included_obsolete: Whether the exported PO file does not have
+        :param included_obsolete: Whether the exported PO file does not have
             obsolete entries.
-        :export_utf8: Whether the exported PO file should be exported as
+        :param export_utf8: Whether the exported PO file should be exported as
             UTF-8.
         """
 
@@ -258,9 +282,6 @@ class IPOFile(IRosettaStats):
         import will be logged there.
         """
 
-    def recalculateLatestSubmission():
-        """Update IPOFile.latestsubmission with latest submission."""
-
 
 class IPOFileAlternativeLanguage(Interface):
     """A PO File's alternative language."""
@@ -283,11 +304,11 @@ class IPOFileSet(Interface):
         """Return a dummy pofile for the given po template and language."""
 
     def getPOFileByPathAndOrigin(path, productseries=None,
-        distrorelease=None, sourcepackagename=None):
+        distroseries=None, sourcepackagename=None):
         """Return an IPOFile that is stored at 'path' in source code.
 
         We filter the IPOFiles to check only the ones related to the given
-        arguments 'productseries', 'distrorelease' and 'sourcepackagename'
+        arguments 'productseries', 'distroseries' and 'sourcepackagename'
 
         Return None if there is not such IPOFile.
         """

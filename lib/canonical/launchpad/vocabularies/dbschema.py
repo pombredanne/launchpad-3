@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """
 You probably don't want to import stuff from here. See __init__.py
@@ -12,7 +12,11 @@ __all__ = [
     'BountyDifficultyVocabulary',
     'BountyStatusVocabulary',
     'BranchLifecycleStatusVocabulary',
+    'BranchLifecycleStatusFilterVocabulary',
     'BranchReviewStatusVocabulary',
+    'BranchSubscriptionDiffSizeVocabulary',
+    'BranchSubscriptionNotificationLevelVocabulary',
+    'BranchVisibilityPolicyVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugBranchStatusVocabulary',
@@ -20,8 +24,11 @@ __all__ = [
     'BugTaskImportanceVocabulary',
     'BugTaskStatusVocabulary',
     'BugTrackerTypeVocabulary',
+    'CodeImportReviewStatusVocabulary',
     'CveStatusVocabulary',
-    'DistributionReleaseStatusVocabulary',
+    'DistroSeriesStatusVocabulary',
+    'EntitlementStateVocabulary',
+    'EntitlementTypeVocabulary',
     'GPGKeyAlgorithmVocabulary',
     'InfestationStatusVocabulary',
     'MirrorContentVocabulary',
@@ -32,6 +39,10 @@ __all__ = [
     'PackagingTypeVocabulary',
     'PollAlgorithmVocabulary',
     'PollSecrecyVocabulary',
+    'QuestionActionVocabulary',
+    'QuestionPriorityVocabulary',
+    'QuestionSortVocabulary',
+    'QuestionStatusVocabulary',
     'RemoteBugTaskImportanceVocabulary',
     'RemoteBugTaskStatusVocabulary',
     'RevisionControlSystemsVocabulary',
@@ -41,38 +52,19 @@ __all__ = [
     'SpecificationStatusVocabulary',
     'SpecificationGoalStatusVocabulary',
     'SprintSpecificationStatusVocabulary',
+    'TeamMembershipRenewalPolicyVocabulary',
     'TeamSubscriptionPolicyVocabulary',
-    'TicketActionVocabulary',
-    'TicketPriorityVocabulary',
-    'TicketSortVocabulary',
-    'TicketStatusVocabulary',
+    'TextDirectionVocabulary',
+    'TranslationFileFormatVocabulary',
     'TranslationPermissionVocabulary',
     'UpstreamFileTypeVocabulary',
     ]
 
 from canonical.lp import dbschema
-from zope.schema.vocabulary import SimpleVocabulary
 
-# TODO: Make DBSchema classes provide an interface, so we can adapt IDBSchema
-# to IVocabulary
-def vocab_factory(schema, noshow=[]):
-    """Factory for IDBSchema -> IVocabulary adapters.
+from canonical.launchpad.webapp.vocabulary import (
+    sortkey_ordered_vocab_factory, vocab_factory)
 
-    This function returns a callable object that creates vocabularies
-    from dbschemas.
-
-    The items appear in value order, lowest first.
-    """
-    def factory(context, schema=schema, noshow=noshow):
-        """Adapt IDBSchema to IVocabulary."""
-        # XXX kiko: we should use sort's built-in DSU here.
-        items = [(item.value, item.title, item)
-            for item in schema.items
-            if item not in noshow]
-        items.sort()
-        items = [(title, value) for sortkey, title, value in items]
-        return SimpleVocabulary.fromItems(items)
-    return factory
 
 # DB Schema Vocabularies
 
@@ -80,7 +72,14 @@ BountyDifficultyVocabulary = vocab_factory(dbschema.BountyDifficulty)
 BountyStatusVocabulary = vocab_factory(dbschema.BountyStatus)
 BranchLifecycleStatusVocabulary = \
     vocab_factory(dbschema.BranchLifecycleStatus)
+BranchLifecycleStatusFilterVocabulary = \
+    vocab_factory(dbschema.BranchLifecycleStatusFilter)
 BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
+BranchSubscriptionDiffSizeVocabulary = \
+    sortkey_ordered_vocab_factory(dbschema.BranchSubscriptionDiffSize)
+BranchSubscriptionNotificationLevelVocabulary = \
+    vocab_factory(dbschema.BranchSubscriptionNotificationLevel)
+BranchVisibilityPolicyVocabulary = vocab_factory(dbschema.BranchVisibilityPolicy)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
 BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
@@ -92,8 +91,12 @@ BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
 BugTrackerTypeVocabulary = vocab_factory(dbschema.BugTrackerType,
     noshow=[dbschema.BugTrackerType.DEBBUGS,
             dbschema.BugTrackerType.SOURCEFORGE])
+CodeImportReviewStatusVocabulary = vocab_factory(
+    dbschema.CodeImportReviewStatus)
 CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
-DistributionReleaseStatusVocabulary = vocab_factory(dbschema.DistributionReleaseStatus)
+DistroSeriesStatusVocabulary = vocab_factory(dbschema.DistroSeriesStatus)
+EntitlementStateVocabulary = vocab_factory(dbschema.EntitlementState)
+EntitlementTypeVocabulary = vocab_factory(dbschema.EntitlementType)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 MirrorContentVocabulary = vocab_factory(dbschema.MirrorContent)
@@ -105,6 +108,10 @@ PackagePublishingPocketVocabulary = vocab_factory(
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
 PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
+QuestionActionVocabulary = vocab_factory(dbschema.QuestionAction)
+QuestionSortVocabulary =  vocab_factory(dbschema.QuestionSort)
+QuestionStatusVocabulary =  vocab_factory(dbschema.QuestionStatus)
+QuestionPriorityVocabulary = vocab_factory(dbschema.QuestionPriority)
 RemoteBugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 RevisionControlSystemsVocabulary = vocab_factory(
@@ -115,11 +122,11 @@ SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
 SpecificationStatusVocabulary =  vocab_factory(dbschema.SpecificationStatus)
 SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStatus)
 SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
+TeamMembershipRenewalPolicyVocabulary = vocab_factory(
+    dbschema.TeamMembershipRenewalPolicy)
 TeamSubscriptionPolicyVocabulary = vocab_factory(
-        dbschema.TeamSubscriptionPolicy)
-TicketActionVocabulary = vocab_factory(dbschema.TicketAction)
-TicketSortVocabulary =  vocab_factory(dbschema.TicketSort)
-TicketStatusVocabulary =  vocab_factory(dbschema.TicketStatus)
-TicketPriorityVocabulary = vocab_factory(dbschema.TicketPriority)
+    dbschema.TeamSubscriptionPolicy)
+TextDirectionVocabulary =  vocab_factory(dbschema.TextDirection)
+TranslationFileFormatVocabulary = vocab_factory(dbschema.TranslationFileFormat)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
 UpstreamFileTypeVocabulary = vocab_factory(dbschema.UpstreamFileType)

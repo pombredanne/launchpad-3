@@ -11,7 +11,7 @@ unnecessarily difficult to "take" a bug.
 Of course, a widget is just a view on a field, so it takes a request
 argument:
 
-  >>> from zope.publisher.browser import TestRequest
+  >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 and a context, which is an IBugTask.assignee field:
 
@@ -48,7 +48,7 @@ pretend to be logged in as Foo Bar:
 Then, let's simulate selecting the "me" radio button, to assign the
 bug to the currently logged-in user:
 
-  >>> request = TestRequest(form={
+  >>> request = LaunchpadTestRequest(form={
   ...     'field.assignee.option': 'field.assignee.assign_to_me'})
   >>> widget = BugTaskAssigneeWidget(context, None, request)
 
@@ -66,7 +66,7 @@ But it is assigned to another user:
   True
 
   >>> widget.getAssigneeDisplayValue()
-  u'mark@hbd.com'
+  u'Mark Shuttleworth (sabdfl)'
 
 The widget has input:
 
@@ -165,7 +165,7 @@ Which means it's not assigned to another user:
   False
 
   >>> widget.getAssigneeDisplayValue()
-  u'foo.bar@canonical.com'
+  u'Foo Bar (name16)'
 
 The widget has input:
 

@@ -6,21 +6,17 @@
     i18n:domain="launchpad"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
-      <div>
-        <a
-          tal:attributes="href context/fmt:url"
-          tal:content="context/title"
-        >Branch</a>
-      </div>
-      <h1>Change branch details</h1>
-    </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
 </metal:leftportlets>
 
 <div metal:fill-slot="main">
+
+  <tal:branch-link define="branch context">
+    <metal:branch-link use-macro="context/@@+macros/branch-heading-link"/>
+  </tal:branch-link>
+  <h1>Change branch details</h1>
 
   <div metal:use-macro="context/@@launchpad_form/form">
   </div>
@@ -37,7 +33,7 @@
     registrant is a team you belong to.</p>
 
   <p>The URL of the branch on Launchpad is based on the nickname of the
-    registrant, the name of the associated product, and the name of the branch.
+    registrant, the name of the associated project, and the name of the branch.
     All these values can be changed.</p>
 
   <p>If the branch is a <em>mirror</em> branch, you can change remote URL that
@@ -64,3 +60,4 @@
 
 </body>
 </html>
+<!-- 1-0 done -->

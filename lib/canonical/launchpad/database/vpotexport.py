@@ -34,6 +34,7 @@ class VPOTExportSet:
     sort_column_names = [
         'potemplate',
         'sequence',
+        'potmsgset',
         'pluralform',
     ]
     sort_columns = ', '.join(

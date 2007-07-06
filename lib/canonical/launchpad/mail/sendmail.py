@@ -92,11 +92,13 @@ def simple_sendmail(from_addr, to_addrs, subject, body, headers={}):
     """Send an email from from_addr to to_addrs with the subject and body
     provided. to_addrs can be a list, tuple, or ASCII string.
 
-    Arbitrary headers can be set using the headers parameter. If the value for a
-    given key in the headers dict is a list or tuple, the header will be added
-    to the message once for each value in the list.
+    Arbitrary headers can be set using the headers parameter. If the value for
+    a given key in the headers dict is a list or tuple, the header will be
+    added to the message once for each value in the list.  Note however that
+    the `Precedence` header will always be set to `bulk`, overriding any
+    `Precedence` header in `headers`.
 
-    Returns the Message-Id.
+    Returns the `Message-Id`.
     """
     if zisinstance(to_addrs, basestring):
         to_addrs = [to_addrs]
@@ -197,6 +199,11 @@ def sendmail(message, to_addrs=None):
     # want it to be bounce_address instead.
     if 'return-path' not in message:
         message['Return-Path'] = config.bounce_address
+
+    # Add Precedence header to prevent automatic reply programs
+    # (e.g. vacation) from trying to respond to our messages.
+    del message['Precedence']
+    message['Precedence'] = 'bulk'
 
     # Add an X-Generated-By header for easy whitelisting
     del message['X-Generated-By']

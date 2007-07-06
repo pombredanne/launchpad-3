@@ -1,4 +1,4 @@
-# Copyright 2005-2006 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 """Classes to represent source packages in a distribution."""
 
@@ -16,11 +16,11 @@ from zope.interface import implements
 from canonical.lp.dbschema import PackagePublishingStatus
 
 from canonical.launchpad.interfaces import (
-    IDistributionSourcePackage, ITicketTarget, DuplicateBugContactError,
-    DeleteBugContactError, TICKET_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.database.bugtarget import BugTargetBase
+    IDistributionSourcePackage, IQuestionTarget, DuplicateBugContactError,
+    DeleteBugContactError)
 from canonical.database.sqlbase import sqlvalues
 from canonical.launchpad.database.bug import BugSet, get_bug_tags_open_count
+from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
@@ -32,15 +32,12 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.sourcepackage import (
-    SourcePackage, SourcePackageTicketTargetMixin)
-from canonical.launchpad.database.supportcontact import SupportContact
-from canonical.launchpad.database.ticket import (
-    SimilarTicketsSearch, Ticket, TicketTargetSearch, TicketSet)
+    SourcePackage, SourcePackageQuestionTargetMixin)
 from canonical.launchpad.helpers import shortlist
 
 
 class DistributionSourcePackage(BugTargetBase,
-                                SourcePackageTicketTargetMixin):
+                                SourcePackageQuestionTargetMixin):
     """This is a "Magic Distribution Source Package". It is not an
     SQLObject, but instead it represents a source package with a particular
     name in a particular distribution. You can then ask it all sorts of
@@ -48,7 +45,7 @@ class DistributionSourcePackage(BugTargetBase,
     or current release, etc.
     """
 
-    implements(IDistributionSourcePackage, ITicketTarget)
+    implements(IDistributionSourcePackage, IQuestionTarget)
 
     def __init__(self, distribution, sourcepackagename):
         self.distribution = distribution
@@ -85,12 +82,13 @@ class DistributionSourcePackage(BugTargetBase,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.version = %s
-            """ % sqlvalues(self.distribution, self.sourcepackagename,
-                            version),
+            """ % sqlvalues(self.distribution, self.distribution.main_archive,
+                            self.sourcepackagename, version),
             orderBy='-datecreated',
             prejoinClauseTables=['SourcePackageRelease'],
             clauseTables=['DistroRelease', 'SourcePackageRelease'])
@@ -112,8 +110,10 @@ class DistributionSourcePackage(BugTargetBase,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status != %s
             """ % sqlvalues(self.sourcepackagename, self.distribution,
+                            self.distribution.main_archive,
                             PackagePublishingStatus.REMOVED),
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             orderBy=[SQLConstant(order_const),
@@ -141,9 +141,15 @@ class DistributionSourcePackage(BugTargetBase,
         """See IDistributionSourcePackage."""
         # Use "list" here because it's possible that this list will be longer
         # than a "shortlist", though probably uncommon.
-        contacts = PackageBugContact.selectBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
+        query = """
+            PackageBugContact.distribution=%s
+            AND PackageBugContact.sourcepackagename = %s
+            AND PackageBugContact.bugcontact = Person.id
+            """ % sqlvalues(self.distribution, self.sourcepackagename)
+        contacts = PackageBugContact.select(
+            query,
+            orderBy='Person.displayname',
+            clauseTables=['Person'])
         contacts.prejoin(["bugcontact"])
         return list(contacts)
 
@@ -195,11 +201,11 @@ class DistributionSourcePackage(BugTargetBase,
 
     # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
     @property
-    def by_distroreleases(self):
+    def by_distroseriess(self):
         """See IDistributionSourcePackage."""
         result = []
-        for release in self.distribution.releases:
-            candidate = SourcePackage(self.sourcepackagename, release)
+        for series in self.distribution.serieses:
+            candidate = SourcePackage(self.sourcepackagename, series)
             if candidate.currentrelease:
                 result.append(candidate)
         return result
@@ -219,13 +225,15 @@ class DistributionSourcePackage(BugTargetBase,
     def _getPublishingHistoryQuery(self, status=None):
         query = """
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id)
+            """ % sqlvalues(self.distribution,
+                            self.distribution.main_archive,
+                            self.sourcepackagename)
 
         if status is not None:
             query += ("AND SourcePackagePublishingHistory.status = %s"
@@ -241,12 +249,15 @@ class DistributionSourcePackage(BugTargetBase,
     def releases(self):
         """See IDistributionSourcePackage."""
         ret = SourcePackagePublishingHistory.select("""
-            sourcepackagepublishinghistory.distrorelease = distrorelease.id AND
-            distrorelease.distribution = %s AND
+            sourcepackagepublishinghistory.distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = %s AND
+            sourcepackagepublishinghistory.archive = %s AND
             sourcepackagepublishinghistory.sourcepackagerelease =
                 sourcepackagerelease.id AND
             sourcepackagerelease.sourcepackagename = %s
-            """ % sqlvalues(self.distribution.id, self.sourcepackagename.id),
+            """ % sqlvalues(self.distribution,
+                            self.distribution.main_archive,
+                            self.sourcepackagename),
             orderBy='-datecreated',
             clauseTables=['distrorelease', 'sourcepackagerelease'])
         result = []
@@ -301,3 +312,8 @@ class DistributionSourcePackage(BugTargetBase,
             sourcepackagename=self.sourcepackagename)
         return BugSet().createBug(bug_params)
 
+    def _getBugTaskContextClause(self):
+        """See BugTargetBase."""
+        return (
+            'BugTask.distribution = %s AND BugTask.sourcepackagename = %s' %
+                sqlvalues(self.distribution, self.sourcepackagename))

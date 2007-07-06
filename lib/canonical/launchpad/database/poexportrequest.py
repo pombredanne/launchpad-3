@@ -8,8 +8,11 @@ from sqlobject import ForeignKey
 
 from zope.interface import implements
 
-from canonical.lp.dbschema import EnumCol, RosettaFileFormat
 from canonical.database.sqlbase import SQLBase
+from canonical.database.enumcol import EnumCol
+
+from canonical.lp.dbschema import TranslationFileFormat
+
 from canonical.launchpad.interfaces import IPOExportRequestSet, \
     IPOExportRequest
 
@@ -35,7 +38,7 @@ class POExportRequestSet:
             format=format)
 
     def addRequest(self, person, potemplate=None, pofiles=None,
-            format=RosettaFileFormat.PO):
+            format=TranslationFileFormat.PO):
         """See IPOExportRequestSet."""
         if pofiles is None:
             pofiles = []
@@ -58,11 +61,8 @@ class POExportRequestSet:
         except IndexError:
             return None
 
-        # The list() is a workaround used to prevent warnings about indexing
-        # an unordered set being unreliable.
-
-        requests = list(POExportRequest.selectBy(
-            person=request.person, potemplate=request.potemplate))
+        requests = POExportRequest.selectBy(
+            person=request.person, potemplate=request.potemplate)
         person = requests[0].person
         potemplate = requests[0].potemplate
         format = requests[0].format
@@ -87,6 +87,6 @@ class POExportRequest(SQLBase):
     potemplate = ForeignKey(dbName='potemplate', foreignKey='POTemplate',
         notNull=True)
     pofile = ForeignKey(dbName='pofile', foreignKey='POFile')
-    format = EnumCol(dbName='format', schema=RosettaFileFormat,
-        default=RosettaFileFormat.PO, notNull=True)
+    format = EnumCol(dbName='format', schema=TranslationFileFormat,
+        default=TranslationFileFormat.PO, notNull=True)
 

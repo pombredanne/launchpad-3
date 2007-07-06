@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BranchSOP',
     'PersonBranchAddView',
     'ProductBranchAddView',
     'BranchContextMenu',
@@ -13,8 +14,8 @@ __all__ = [
     'BranchNavigation',
     'BranchInPersonView',
     'BranchInProductView',
-    'BranchUrlWidget',
     'BranchView',
+    'BranchSubscriptionsView',
     ]
 
 import cgi
@@ -24,23 +25,35 @@ import pytz
 from zope.event import notify
 from zope.component import getUtility
 
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
+
+from canonical.lp import decorates
+
 from canonical.launchpad.browser.branchref import BranchRef
+from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
-    IBranch, IBranchSet, IBugSet)
+    IBranch, IBranchSet, IBranchSubscription, IBugSet, ILaunchpadCelebrities,
+    IPersonSet)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
-    LaunchpadEditFormView, action, custom_widget)
-from canonical.widgets import ContextWidget
-from canonical.widgets.textwidgets import StrippedTextWidget
+    LaunchpadEditFormView, action)
+from canonical.launchpad.webapp.uri import URI
 
 
 def quote(text):
     return cgi.escape(text, quote=True)
+
+
+class BranchSOP(StructuralObjectPresentation):
+    """Provides the structural heading for `IBranch`."""
+
+    def getMainHeading(self):
+        """See `IStructuralHeaderPresentation`."""
+        return self.context.owner.browsername
 
 
 class BranchNavigation(Navigation):
@@ -49,7 +62,7 @@ class BranchNavigation(Navigation):
 
     @stepthrough("+bug")
     def traverse_bug_branch(self, bugid):
-        """Traverses to an IBugBranch."""
+        """Traverses to an `IBugBranch`."""
         bug = getUtility(IBugSet).get(bugid)
 
         for bug_branch in bug.bug_branches:
@@ -60,36 +73,62 @@ class BranchNavigation(Navigation):
     def dotbzr(self):
         return BranchRef(self.context)
 
+    @stepthrough("+subscription")
+    def traverse_subscription(self, name):
+        """Traverses to an `IBranchSubcription`."""
+        person = getUtility(IPersonSet).getByName(name)
+
+        if person is not None:
+            return self.context.getSubscription(person)
+
 
 class BranchContextMenu(ContextMenu):
     """Context menu for branches."""
 
     usedfor = IBranch
     facet = 'branches'
-    links = ['edit', 'reassign', 'subscription']
+    links = ['edit', 'browse', 'reassign', 'subscription', 'addsubscriber']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Branch Details'
+        text = 'Change branch details'
         return Link('+edit', text, icon='edit')
+
+    def browse(self):
+        text = 'Browse code'
+        # Only enable the link if we've ever mirrored the branch.
+        enabled = self.context.last_mirrored_id is not None
+        url = config.launchpad.codebrowse_root + self.context.unique_name
+        return Link(url, text, icon='info', enabled=enabled)
 
     @enabled_with_permission('launchpad.Edit')
     def reassign(self):
-        text = 'Change Registrant'
+        text = 'Change registrant'
         return Link('+reassign', text, icon='edit')
 
+    @enabled_with_permission('launchpad.AnyPerson')
     def subscription(self):
-        user = self.user
-        if user is not None and self.context.has_subscription(user):
-            text = 'Unsubscribe'
+        if self.context.hasSubscription(self.user):
+            url = '+edit-subscription'
+            text = 'Edit subscription'
+            icon = 'edit'
         else:
+            url = '+subscribe'
             text = 'Subscribe'
-        return Link('+subscribe', text, icon='edit')
+            icon = 'add'
+        return Link(url, text, icon=icon)
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def addsubscriber(self):
+        text = 'Subscribe someone else'
+        return Link('+addsubscriber', text, icon='add')
 
 
 class BranchView(LaunchpadView):
 
     __used_for__ = IBranch
+
+    MAXIMUM_STATUS_MESSAGE_LENGTH = 128
 
     def initialize(self):
         self.notices = []
@@ -110,13 +149,7 @@ class BranchView(LaunchpadView):
         """Is the current user subscribed to this branch?"""
         if self.user is None:
             return False
-        return self.context.has_subscription(self.user)
-
-    @cachedproperty
-    def revision_count(self):
-        # Avoid hitting the database multiple times, which is expensive
-        # because it issues a COUNT
-        return self.context.revision_count()
+        return self.context.hasSubscription(self.user)
 
     def recent_revision_count(self, days=30):
         """Number of revisions committed during the last N days."""
@@ -138,27 +171,43 @@ class BranchView(LaunchpadView):
         linkdata = BranchContextMenu(self.context).edit()
         return '%s/%s' % (canonical_url(self.context), linkdata.target)
 
-    def url(self):
-        """URL where the branch can be checked out.
+    def mirror_of_ssh(self):
+        """True if this a mirror branch with an sftp or bzr+ssh URL."""
+        if not self.context.url:
+            return False # not a mirror branch
+        uri = URI(self.context.url)
+        return uri.scheme in ('sftp', 'bzr+ssh')
 
-        This is the URL set in the database, or the Supermirror URL.
-        """
-        if self.context.url:
-            return self.context.url
+    def show_mirror_failure(self):
+        """True if mirror_of_ssh is false and branch mirroring failed."""
+        if self.mirror_of_ssh():
+            # SSH branches can't be mirrored, so a general failure message
+            # is shown instead of the reported errors.
+            return False
         else:
-            return self.supermirror_url()
+            return self.context.mirror_failures
 
-    def missing_title_or_summary_text(self):
-        if self.context.title:
-            if self.context.summary:
-                return None
-            else:
-                return '(this branch has no summary)'
-        else:
-            if self.context.summary:
-                return '(this branch has no title)'
-            else:
-                return '(this branch has neither title nor summary)'
+    def user_can_upload(self):
+        """Whether the user can upload to this branch."""
+        return self.user.inTeam(self.context.owner)
+
+    def upload_url(self):
+        """The URL the logged in user can use to upload to this branch."""
+        return 'sftp://%s@bazaar.launchpad.net/%s' % (
+            self.user.name, self.context.unique_name)
+
+    def is_hosted_branch(self):
+        """Whether this is a user-provided hosted branch."""
+        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+        return self.context.url is None and self.context.owner != vcs_imports
+
+    def mirror_status_message(self):
+        """A message from a bad scan or pull, truncated for display."""
+        message = self.context.mirror_status_message
+        if len(message) <= self.MAXIMUM_STATUS_MESSAGE_LENGTH:
+            return message
+        return truncate_text(
+            message, self.MAXIMUM_STATUS_MESSAGE_LENGTH) + ' ...'
 
 
 class BranchInPersonView(BranchView):
@@ -174,28 +223,6 @@ class BranchInProductView(BranchView):
 
     show_person_link = True
     show_product_link = False
-
-
-class BranchUrlWidget(StrippedTextWidget):
-    """A widget to capture the URL of a remote branch.
-
-    Wider than a normal TextLine widget and ignores trailing slashes.
-    """
-    displayWidth = 44
-    cssClass = 'urlTextType'
-
-    def _toFieldValue(self, input):
-        if input == self._missing:
-            return self.context.missing_value
-        else:
-            value = StrippedTextWidget._toFieldValue(self, input)
-            return value.rstrip('/')
-
-
-class BranchHomePageWidget(StrippedTextWidget):
-    """A widget to capture a web page URL, wider than a normal TextLine."""
-    displayWidth = 44
-    cssClass = 'urlTextType'
 
 
 class BranchNameValidationMixin:
@@ -244,9 +271,6 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     field_names = ['product', 'url', 'name', 'title', 'summary',
                    'lifecycle_status', 'whiteboard', 'home_page', 'author']
 
-    custom_widget('url', BranchUrlWidget)
-    custom_widget('home_page', BranchHomePageWidget)
-
     def setUpFields(self):
         LaunchpadFormView.setUpFields(self)
         # This is to prevent users from converting push/import
@@ -267,9 +291,6 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
     field_names = ['product', 'url', 'name', 'title', 'summary',
                    'lifecycle_status', 'whiteboard', 'home_page', 'author']
 
-    custom_widget('url', BranchUrlWidget)
-    custom_widget('home_page', BranchHomePageWidget)
-
     branch = None
 
     @action('Add Branch', name='add')
@@ -278,8 +299,8 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
         self.branch = getUtility(IBranchSet).new(
             name=data['name'],
             owner=self.user,
-            author=data['author'],
-            product=data['product'],
+            author=self.getAuthor(data),
+            product=self.getProduct(data),
             url=data['url'],
             title=data['title'],
             summary=data['summary'],
@@ -287,6 +308,14 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             home_page=data['home_page'],
             whiteboard=data['whiteboard'])
         notify(SQLObjectCreatedEvent(self.branch))
+
+    def getAuthor(self, data):
+        """A method that is overridden in the derived classes."""
+        return data['author']
+
+    def getProduct(self, data):
+        """A method that is overridden in the derived classes."""
+        return data['product']
 
     @property
     def next_url(self):
@@ -298,18 +327,47 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
             self.validate_branch_name(self.user,
                                       data['product'],
                                       data['name'])
+    def script_hook(self):
+        return '''<script type="text/javascript">
+
+        function populate_name() {
+          populate_branch_name_from_url('%(name)s', '%(url)s')
+        }
+        var url_field = document.getElementById('%(url)s');
+        // Since it is possible that the form could be submitted without
+        // the onblur getting called, and onblur can be called without
+        // onchange being fired, set them both, and handle it in the function.
+        url_field.onchange = populate_name;
+        url_field.onblur = populate_name;
+        </script>''' % { 'name' : self.widgets['name'].name,
+                         'url' : self.widgets['url'].name }
 
 
 class PersonBranchAddView(BranchAddView):
+    """See `BranchAddView`."""
 
-    custom_widget('author', ContextWidget)
+    @property
+    def field_names(self):
+        fields = list(BranchAddView.field_names)
+        fields.remove('author')
+        return fields
 
+    def getAuthor(self, data):
+        return self.context
 
 class ProductBranchAddView(BranchAddView):
-
-    custom_widget('product', ContextWidget)
+    """See `BranchAddView`."""
 
     initial_focus_widget = 'url'
+
+    @property
+    def field_names(self):
+        fields = list(BranchAddView.field_names)
+        fields.remove('product')
+        return fields
+
+    def getProduct(self, data):
+        return self.context
 
     def validate(self, data):
         if 'name' in data:
@@ -358,3 +416,43 @@ class BranchReassignmentView(ObjectReassignmentView):
                    quote(branch.product.displayname),
                    branch.name))
             return False
+
+
+class DecoratedSubscription:
+    """Adds the editable attribute to a `BranchSubscription`."""
+    decorates(IBranchSubscription, 'subscription')
+
+    def __init__(self, subscription, editable):
+        self.subscription = subscription
+        self.editable = editable
+
+
+class BranchSubscriptionsView(LaunchpadView):
+    """The view for the branch subscriptions portlet.
+
+    The view is used to provide a decorated list of branch subscriptions
+    in order to provide links to be able to edit the subscriptions
+    based on whether or not the user is able to edit the subscription.
+    """
+
+    def isEditable(self, subscription):
+        """A subscription is editable by members of the subscribed team.
+
+        Launchpad Admins are special, and can edit anyone's subscription.
+        """
+        # We don't want to say editable if the logged in user
+        # is the same as the person of the subscription.
+        if self.user is None or self.user == subscription.person:
+            return False
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (self.user.inTeam(subscription.person) or
+                self.user.inTeam(admins))
+
+    def subscriptions(self):
+        """Return a decorated list of branch subscriptions."""
+        sorted_subscriptions = sorted(
+            self.context.subscriptions,
+            key=lambda subscription: subscription.person.browsername)
+        return [DecoratedSubscription(
+                    subscription, self.isEditable(subscription))
+                for subscription in sorted_subscriptions]

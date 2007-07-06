@@ -4,8 +4,9 @@ An object has a facetmenu if it can be adapted to IFacetMenu.
 
 === Construct an example url hierarchy ===
 
-    >>> from canonical.launchpad.webapp import nearest_menu, canonical_url
-    >>> from canonical.launchpad.interfaces import (
+    >>> from canonical.launchpad.webapp import (
+    ...     nearest_adapter, nearest_context_with_adapter, canonical_url)
+    >>> from canonical.launchpad.webapp.interfaces import (
     ...     ICanonicalUrlData, IFacetMenu, IApplicationMenu, IContextMenu,
     ...     ILink, ILinkData, IFacetLink
     ...     )
@@ -51,16 +52,21 @@ Let's make three objects that together make a url hierarchy:
     u'http://launchpad.dev/sesamestreet'
 
 
-=== Test nearest_menu ===
+=== Test nearest_adapter ===
 
 Right now, none of our example objects have a facet menu.
 
-    >>> nearest_menu(root, IFacetMenu) is None
+    >>> nearest_adapter(root, IFacetMenu) is None
     True
-    >>> nearest_menu(street, IFacetMenu) is None
+    >>> nearest_adapter(street, IFacetMenu) is None
     True
-    >>> nearest_menu(house, IFacetMenu) is None
+    >>> nearest_adapter(house, IFacetMenu) is None
     True
+
+We can see that this is true for nearest_context_with_adapter too.
+
+    >>> nearest_context_with_adapter(root, IFacetMenu)
+    (None, None)
 
 We'll make the 'street' object be conformable to IFacetMenu.  Making an object
 be conformable to IFacetMenu is one way of making the object adaptable to
@@ -75,13 +81,20 @@ IFacetMenu.  Another way would be to provide an adapter.
     >>> street.setAdapter(IFacetMenu, ExampleFacetMenu)
     >>> IFacetMenu(street).__class__ is ExampleFacetMenu
     True
-    >>> nearest_menu(root, IFacetMenu) is None
+    >>> nearest_adapter(root, IFacetMenu) is None
     True
-    >>> nearest_menu(street, IFacetMenu).__class__ is ExampleFacetMenu
+    >>> nearest_adapter(street, IFacetMenu).__class__ is ExampleFacetMenu
     True
-    >>> nearest_menu(house, IFacetMenu).__class__ is ExampleFacetMenu
+    >>> nearest_adapter(house, IFacetMenu).__class__ is ExampleFacetMenu
     True
 
+We can also see this work with nearest_context_with_adapter.
+
+    >>> context, adapter = nearest_context_with_adapter(house, IFacetMenu)
+    >>> adapter.__class__ is ExampleFacetMenu
+    True
+    >>> context is street
+    True
 
 == The Link class ==
 
@@ -477,12 +490,12 @@ To test this, we need a dummy request object that provides `getURL()`.
     ...         else:
     ...             return self.query
 
-    >>> from canonical.launchpad.webapp.url import Url
+    >>> from canonical.launchpad.webapp.uri import URI
 
 The following request is for a url that is different from all of the facet
 menu links for 'sesamestreet'.  So, all links will be linked.
 
-    >>> request = Url('http://launchpad.dev/sesamestreet/+xxx')
+    >>> request = URI('http://launchpad.dev/sesamestreet/+xxx')
     >>> facets = Facets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
@@ -502,7 +515,7 @@ still be linked.
 
 Next, we'll use the link +bar.  The +bar link will not be linked.
 
-    >>> request = Url('http://launchpad.dev/sesamestreet/+bar')
+    >>> request = URI('http://launchpad.dev/sesamestreet/+bar')
     >>> facets = Facets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
@@ -512,7 +525,7 @@ Next, we'll use the link +bar.  The +bar link will not be linked.
 Now, we use +bar with a trailing slash.  The +bar link will still be not
 linked.
 
-    >>> request = Url('http://launchpad.dev/sesamestreet/+bar/')
+    >>> request = URI('http://launchpad.dev/sesamestreet/+bar/')
     >>> facets = Facets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
@@ -540,7 +553,7 @@ This will be the common case for default links.
     ...             'More explanation about Baz of %s' % self.context.name)
     ...         return Link(target, text, summary)
 
-    >>> request = Url('http://launchpad.dev/sesamestreet/+bar')
+    >>> request = URI('http://launchpad.dev/sesamestreet/+bar')
     >>> facets = BlankTargetTestFacets(street)
     >>> for link in facets.iterlinks(request):
     ...     print link.url, link.linked
@@ -602,7 +615,7 @@ earlier in this doctest.
     >>> canonical_url(street)
     u'http://launchpad.dev/sesamestreet'
 
-    >>> request = Url('http://launchpad.dev/sesamestreet')
+    >>> request = URI('http://launchpad.dev/sesamestreet')
 
     >>> facets = AbsoluteUrlTargetTestFacets(street)
     >>> for link in facets.iterlinks(request):
@@ -857,7 +870,7 @@ We use menus in page templates by using the `thing/menu:typeofmenu`
 TALES namespace.
 
 First, let's look at `thing/menu:facet`.  What this does is to look up
-nearest_menu(thing, IFacetMenu), getting an IFacetMenu adapter from it.
+nearest_adapter(thing, IFacetMenu), getting an IFacetMenu adapter from it.
 Then, it gets the request from either the TALES CONTEXTS or the current
 interaction, and calculates a request Url object to pass into IMenu.iterlinks,
 so that it can properly decide whether a particular link should appear linked.

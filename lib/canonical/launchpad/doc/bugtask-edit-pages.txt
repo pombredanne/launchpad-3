@@ -79,8 +79,7 @@ exist in Launchpad. we'll get an error message.
     u'Please fix the problems below and try again.'
     >>> for error in edit_view.errors:
     ...     print error
-    Launchpad doesn't know of any source package named 'no-such-package'
-    in Ubuntu.
+    (u"Launchpad doesn't know of any source package named 'no-such-package' in Ubuntu.", None)
 
 If we try to change the source package to a package name that another
 distribution task already has, an error message will occur. First,
@@ -121,15 +120,16 @@ fail.
     ...     print error
     This bug has already been reported on evolution (ubuntu).
 
-This also works if we try to reassign an accepted distribution release
+This also works if we try to reassign an accepted distribution series
 task. Since we aren't allowed to edit the current development task
 directly, let's add a grumpy task first.
 
     >>> login('foo.bar@canonical.com')
-    >>> ubuntu_grumpy = ubuntu.getRelease('grumpy')
+    >>> ubuntu_grumpy = ubuntu.getSeries('grumpy')
     >>> nomination = bug_two.addNomination(
     ...     target=ubuntu_grumpy, owner=getUtility(ILaunchBag).user)
-    >>> nomination.approve(getUtility(ILaunchBag).user)
+    >>> nomination.isApproved()
+    True
 
     >>> ubuntu_grumpy_task = bug_two.bugtasks[5]
     >>> ubuntu_grumpy_task.targetname
@@ -179,7 +179,8 @@ XXX: We really should update the status from the bug watch, but that's
      -- Bjorn Tillenius, 2006-03-01
 
     >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> thunderbird_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
+    >>> thunderbird_task.transitionToStatus(
+    ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
     >>> request = LaunchpadTestRequest(
     ...     form={
     ...         'FORM_SUBMIT': '',

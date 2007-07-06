@@ -18,7 +18,7 @@
   </metal:leftportlets>
 
   <metal:rightportlets fill-slot="portlets_two">
-    <div tal:replace="structure context/@@+portlet-details" />
+    <div tal:replace="structure context/bug/@@+portlet-details" />
     <div tal:replace="structure context/@@+portlet-search" />
     <div tal:replace="structure context/@@+portlet-alsoreportedin" />
   </metal:rightportlets>
@@ -91,7 +91,7 @@
               </td>
             </tr>
             <tr tal:condition="python:context.distribution or
-                                      context.distrorelease">
+                                      context.distroseries">
               <td colspan="0">
                 <label tal:attributes="for view/sourcepackagename_widget/name"
                        tal:content="view/sourcepackagename_widget/label">
@@ -100,7 +100,7 @@
               </td>
             </tr>
             <tr tal:condition="python:context.distribution or
-                                      context.distrorelease">
+                                      context.distroseries">
               <td colspan="0"
                   tal:content="context/sourcepackagename/name|nothing" nowrap />
             </tr>

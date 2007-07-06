@@ -15,10 +15,6 @@ Imports and test setup:
     >>> from canonical.config import config
     >>> from canonical.launchpad.webapp.adapter import *
 
-    >>> from canonical.launchpad.ftests.harness import (
-    ...     LaunchpadFunctionalTestSetup)
-    >>> LaunchpadFunctionalTestSetup().setUp()
-
 
 The Launchpad database connection is created by getting the
 IZopeDatabaseAdapter for the connection name in question.  The
@@ -28,6 +24,15 @@ SQLOS uses:
     >>> name = getUtility(IConnectionName)
     >>> da = getUtility(IZopeDatabaseAdapter, name.name)
     >>> isinstance(da, LaunchpadDatabaseAdapter)
+    True
+
+
+The database adapter is a reconnecting database adapter, so handles
+connection drops (as tested elsewhere):
+
+    >>> from canonical.launchpad.webapp.adapter import (
+    ...     ReconnectingDatabaseAdapter)
+    >>> isinstance(da, ReconnectingDatabaseAdapter)
     True
 
 
@@ -51,16 +56,16 @@ the Postgres statement timeout (a value of zero means no timeout):
     >>> da.disconnect()
 
 
-Using the custom sleep_for_testing() function, we can trigger the
+Using the builtin pg_sleep() function, we can trigger the
 timeout by sleeping for 200ms with a 100ms statement timeout:
 
     >>> config.launchpad.db_statement_timeout = 100
     >>> conn = da()
     >>> cursor = conn.cursor()
-    >>> cursor.execute('SELECT sleep_for_testing(0.200)')
+    >>> cursor.execute('SELECT pg_sleep(0.200)')
     Traceback (most recent call last):
       ...
-    RequestStatementTimedOut: SELECT sleep_for_testing(0.200)
+    RequestStatementTimedOut: SELECT pg_sleep(0.200)
     >>> da.disconnect()
 
 
@@ -71,8 +76,7 @@ Set the timeout to 5000ms for the next tests:
     >>> cursor = conn.cursor()
     >>> cursor.execute('SHOW statement_timeout')
     >>> print cursor.fetchone()[0]
-    5000
-
+    5s
 
 
 Request Timeout
@@ -461,7 +465,3 @@ thread will have succeeded.
     Traceback (most recent call last):
     ...
     Retry: ...
-
-Cleanup:
-
-    >>> LaunchpadFunctionalTestSetup().tearDown()

@@ -19,7 +19,7 @@
         must be approved. Please select the action (Approve, Deny, Hold) for 
         each user and click on <em>Submit</em>.</p>
 
-        <table>
+        <table id="member-list">
           <tr tal:repeat="member members">
             <tal:block tal:define="action_name string:action_${member/id};
                                    approve_id string:approve_${member/id};

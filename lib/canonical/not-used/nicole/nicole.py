@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 from string import split
 from time import sleep
 from re import sub

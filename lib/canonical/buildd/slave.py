@@ -227,7 +227,7 @@ class BuildDSlave(object):
                     f = urllib2.urlopen(url)
                 except Exception, info:
                     extra_info = 'Error accessing Librarian: %s' % info
-                    self.log(extra_info, exc_info=True)
+                    self.log(extra_info)
                 else:
                     of = open(self.cachePath(sha1sum), "w")
                     # Upped for great justice to 256k
@@ -289,6 +289,7 @@ class BuildDSlave(object):
             os.remove(self.cachePath("buildlog"))
             self._log = None
         self.waitingfiles = {}
+        self.builddependencies = ""
         self.manager = None
         self.buildstatus = BuildStatus.OK
 

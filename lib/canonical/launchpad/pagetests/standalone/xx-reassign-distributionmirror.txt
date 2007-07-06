@@ -1,5 +1,5 @@
 XXX: This test must be generalized and used like
-interfaces/ftests/tickettarget.txt, to test reassignment in all contexts that
+interfaces/ftests/questiontarget.txt, to test reassignment in all contexts that
 allow them. -- Guilherme Salgado, 2006-10-27
 
     These are the variables that will be defined in each setup hook once we
@@ -14,7 +14,7 @@ Distribution mirrors can be reassigned by anybody with the launchpad.Admin
 permission on them.
 
     >>> user_browser.open(context_url)
-    >>> user_browser.getLink('Change Owner')
+    >>> user_browser.getLink('Change owner')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
@@ -25,7 +25,7 @@ permission on them.
 
     >>> browser.addHeader('Authorization', 'Basic karl@canonical.com:test')
     >>> browser.open(context_url)
-    >>> browser.getLink('Change Owner').click()
+    >>> browser.getLink('Change owner').click()
     >>> browser.url
     'http://launchpad.dev/ubuntu/+mirror/archive-mirror/+reassign'
 

@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2.4
 
 """Copyright Canonical Limited 2005
  Author: Matt Zimmerman <matt.zimmerman@canonical.com>
@@ -31,19 +31,19 @@ def main():
 
     parser.add_option("-d", "--distribution",
                       dest="distribution", metavar="DISTRIBUTION",
-                      default="ubuntu", help="distribution name")
+                      default="ubuntu", help="Distribution name")
 
-    parser.add_option("-s", "--suite",
-                      dest="suite", metavar="SUITE", default=None,
-                      help="suite name")
+    parser.add_option("-s", "--series",
+                      dest="series", metavar="SERIES", default=None,
+                      help="Series name")
 
     parser.add_option("-a", "--architecture",
                       dest="architecture", metavar="ARCH", default=None,
-                      help="architecture tag")
+                      help="Architecture tag")
 
     parser.add_option("-f", "--filepath",
                       dest="filepath", metavar="FILEPATH", default=None,
-                      help="chroot file path")
+                      help="Chroot file path")
 
     (options, args) = parser.parse_args()
 
@@ -66,18 +66,18 @@ def main():
         return 1
 
     try:
-        if options.suite is not None:
-            release, pocket = distribution.getDistroReleaseAndPocket(
-                options.suite)
+        if options.series is not None:
+            series, pocket = distribution.getDistroSeriesAndPocket(
+                options.series)
         else:
-            release = distribution.currentrelease
+            series = distribution.currentseries
             pocket = PackagePublishingPocket.RELEASE
     except NotFoundError, info:
-        log.error("Suite not found: %s" % info)
+        log.error("Series not found: %s" % info)
         return 1
 
     try:
-        dar = release[options.architecture]
+        dar = series[options.architecture]
     except NotFoundError, info:
         log.error(info)
         return 1

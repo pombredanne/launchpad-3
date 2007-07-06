@@ -10,13 +10,13 @@ __metaclass__ = type
 
 from zope.component import getUtility
 from zope.interface import implements
+
 from canonical.launchpad.interfaces import (
-    IRegistryApplication, IMaloneApplication, IBazaarApplication,
-    IShipItApplication, IRosettaApplication, IProductSet, IDistroReleaseSet,
-    ITranslationGroupSet, ILaunchpadStatisticSet,
-    IBugSet, IBugWatchSet, IBugExternalRefSet,
-    IBugTaskSet, IBugTrackerSet, ILaunchBag, BugTaskSearchParams,
-    IBranchSet)
+    BugTaskSearchParams, IBazaarApplication, IBranchSet, IBugExternalRefSet,
+    IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet, IDistroSeriesSet,
+    ILanguageSet, ILaunchBag, ILaunchpadStatisticSet, IMaloneApplication,
+    IOpenIdApplication, IProductSet, IRegistryApplication,
+    IRosettaApplication, IShipItApplication, ITranslationGroupSet)
 
 
 class RegistryApplication:
@@ -32,6 +32,10 @@ class MaloneApplication:
 
     def __init__(self):
         self.title = 'Malone: the Launchpad bug tracker'
+
+    def searchTasks(self, search_params):
+        """See IMaloneApplication."""
+        return getUtility(IBugTaskSet).search(search_params)
 
     @property
     def bug_count(self):
@@ -57,6 +61,14 @@ class MaloneApplication:
         return getUtility(IBugTrackerSet).search().count()
 
     @property
+    def projects_with_bugs_count(self):
+        return getUtility(ILaunchpadStatisticSet).value('projects_with_bugs')
+
+    @property
+    def shared_bug_count(self):
+        return getUtility(ILaunchpadStatisticSet).value('shared_bug_count')
+
+    @property
     def top_bugtrackers(self):
         return getUtility(IBugTrackerSet).getMostActiveBugTrackers(limit=5)
 
@@ -73,14 +85,11 @@ class BazaarApplication:
     def __init__(self):
         self.title = 'The Open Source Bazaar'
 
-    @property
-    def all(self):
-        branches = getUtility(IBranchSet).all
-        return branches
 
-    def getMatchingBranches(self):
-        """See IBazaarApplication."""
-        return self.branches
+class OpenIdApplication:
+    implements(IOpenIdApplication)
+
+    title = 'Launchpad Login Service'
 
 
 class RosettaApplication:
@@ -91,23 +100,40 @@ class RosettaApplication:
         self.name = 'Rosetta'
 
     @property
+    def languages(self):
+        """See IRosettaApplication."""
+        return getUtility(ILanguageSet)
+
+    @property
+    def language_count(self):
+        """See IRosettaApplication."""
+        stats = getUtility(ILaunchpadStatisticSet)
+        return stats.value('language_count')
+
+    @property
     def statsdate(self):
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.dateupdated('potemplate_count')
 
-    def translatable_products(self):
-        """See IRosettaApplication."""
-        products = getUtility(IProductSet)
-        return products.translatables()
-
-    def translatable_distroreleases(self):
-        """See IRosettaApplication."""
-        distroreleases = getUtility(IDistroReleaseSet)
-        return distroreleases.translatables()
-
+    @property
     def translation_groups(self):
         """See IRosettaApplication."""
         return getUtility(ITranslationGroupSet)
+
+    def translatable_products(self):
+        """See IRosettaApplication."""
+        products = getUtility(IProductSet)
+        return products.getTranslatables()
+
+    def featured_products(self):
+        """See IRosettaApplication."""
+        products = getUtility(IProductSet)
+        return products.featuredTranslatables()
+
+    def translatable_distroseriess(self):
+        """See IRosettaApplication."""
+        distroseriess = getUtility(IDistroSeriesSet)
+        return distroseriess.translatables()
 
     def potemplate_count(self):
         """See IRosettaApplication."""
@@ -129,8 +155,4 @@ class RosettaApplication:
         stats = getUtility(ILaunchpadStatisticSet)
         return stats.value('translator_count')
 
-    def language_count(self):
-        """See IRosettaApplication."""
-        stats = getUtility(ILaunchpadStatisticSet)
-        return stats.value('language_count')
 

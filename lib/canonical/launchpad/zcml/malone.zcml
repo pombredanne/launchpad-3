@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     xmlns:xmlrpc="http://namespaces.zope.org/xmlrpc"
     i18n_domain="launchpad">
@@ -45,20 +44,18 @@
         permission="zope.Public"
         name="+index"
         template="../templates/malone-index.pt"
-        lp:url="bugs/+index" />
+        />
 
     <!-- pages for the malone application -->
     <browser:pages
         for="canonical.launchpad.interfaces.IMaloneApplication"
+        class="canonical.launchpad.browser.MaloneView"
         facet="bugs"
         permission="zope.Public">
         <browser:page
             name="+about"
             template="../templates/malone-about.pt"
-            lp:url="bugs/+about" />
-        <browser:page
-            name="+portlet-about"
-            template="../templates/malone-portlet-about.pt" />
+            />
         <browser:page
             name="+portlet-stats"
             template="../templates/malone-portlet-stats.pt" />
@@ -66,6 +63,28 @@
             name="+portlet-bugtrackers"
             template="../templates/malone-portlet-bugtrackers.pt" />
     </browser:pages>
+
+    <browser:page
+        name="+filebug"
+        for="canonical.launchpad.interfaces.IMaloneApplication"
+        class="canonical.launchpad.browser.FrontPageFileBugGuidedView"
+        facet="bugs"
+        permission="launchpad.AnyPerson" />
+
+    <browser:page
+        name="+filebug-advanced"
+        for="canonical.launchpad.interfaces.IMaloneApplication"
+        class="canonical.launchpad.browser.FrontPageFileBugAdvancedView"
+        facet="bugs"
+        permission="launchpad.AnyPerson" />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IMaloneApplication"
+        class="canonical.launchpad.browser.BugsBugTaskSearchListingView"
+        permission="zope.Public"
+        name="+bugs"
+        facet="bugs"
+        template="../templates/buglisting-embedded-advanced-search.pt"/>
 
     <xmlrpc:view
        for="canonical.launchpad.interfaces.IMaloneApplication"
@@ -89,5 +108,6 @@
         class="canonical.launchpad.browser.DeprecatedAssignedBugsView"
         attribute="redirect_to_assignedbugs"
         permission="launchpad.AnyPerson"
-        lp:url="bugs/assigned" />
+        />
+
 </configure>

@@ -63,12 +63,12 @@ class MilestoneContextMenu(ContextMenu):
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
-        text = 'Edit Milestone'
+        text = 'Change details'
         return Link('+edit', text, icon='edit')
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
-        text = 'Admin Milestone'
+        text = 'Administer'
         return Link('+admin', text, icon='edit')
 
 
@@ -92,7 +92,7 @@ class MilestoneView(LaunchpadView):
 class MilestoneAddView:
     def create(self, name, dateexpected=None):
         """We will use the newMilestone method on the ProductSeries or
-        Distrorelease context to make the milestone."""
+        DistroSeries context to make the milestone."""
         return self.context.newMilestone(name, dateexpected=dateexpected)
 
     def add(self, content):

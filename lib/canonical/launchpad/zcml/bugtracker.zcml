@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -40,15 +39,15 @@
         <browser:page
             name="+index"
             template="../templates/bugtracker-index.pt"
-            lp:url="malone/bugtrackers/$BugTracker.name/" />
+            />
         <browser:page
             name="+portlet-details"
             template="../templates/bugtracker-portlet-details.pt"
-            lp:url="/malone/bugtrackers/$BugTracker.name/+portlet-details" />
+            />
         <browser:page
             name="+portlet-projects"
             template="../templates/bugtracker-portlet-projects.pt"
-            lp:url="/malone/bugtrackers/$BugTracker.name/+portlet-projects" />
+            />
     </browser:pages>
 
     <browser:pages
@@ -57,7 +56,7 @@
         class="canonical.launchpad.browser.BugTrackerEditView">
         <browser:page name="+oldedit"
             template="../templates/bugtracker-edit.pt"
-            lp:url="malone/bugtrackers/$BugTracker.name/+oldedit" />
+            />
     </browser:pages>
 
     <browser:editform
@@ -68,7 +67,6 @@
       fields="title bugtrackertype summary baseurl contactdetails"
       permission="launchpad.AnyPerson"
       template="../templates/bugtracker-edit.pt"
-      lp:url="malone/bugtrackers/$BugTracker.name/+edit"
       >
       <browser:widget
         field="summary"
@@ -104,15 +102,15 @@
         <browser:page
             name="+index"
             template="../templates/bugtrackers-index.pt"
-            lp:url="malone/bugtrackers/" />
+            />
         <browser:page
             name="+portlet-info"
             template="../templates/bugtrackers-portlet-info.pt"
-            lp:url="malone/bugtrackers/+portlet-info" />
+            />
         <browser:page
             name="+portlet-details"
             template="../templates/bugtrackers-portlet-details.pt"
-            lp:url="/malone/bugtrackers/+portlet-details" />
+            />
     </browser:pages>
 
     <browser:addform
@@ -125,8 +123,7 @@
         keyword_arguments="name bugtrackertype title summary baseurl
                            contactdetails"
         template="../templates/bugtrackers-add.pt"
-        lp:url="malone/bugtrackers/+newbugtracker"
-    />
+        />
 
     <!-- RemoteBug -->
     <content class="canonical.launchpad.browser.bugtracker.RemoteBug">
@@ -149,7 +146,7 @@
         <browser:page
             name="+index"
             template="../templates/remotebug-index.pt"
-            lp:url="malone/bugtrackers/$BugTracker.name/$remotebug" />
+            />
     </browser:pages>
 
   </facet>

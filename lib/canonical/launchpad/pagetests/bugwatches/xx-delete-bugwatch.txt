@@ -1,0 +1,36 @@
+= Delete a Bug Watch =
+
+If a bug watch isn't linked to a bug task, it's possible to delete from
+the bug watch edit page.
+
+    >>> from canonical.launchpad.ftests.test_pages import find_portlet
+    >>> user_browser.open('http://launchpad.dev/bugs/1')
+    >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
+    >>> for li in bug_watches('li'):
+    ...     print li.findAll('a')[1].renderContents()
+    mozilla.org #123543
+    mozilla.org #2000
+    mozilla.org #42
+    debbugs #304014
+
+    >>> user_browser.getLink(url='/+watch/3').click()
+    >>> user_browser.title
+    'Bug #1 - Edit external bug watch (123543 in The Mozilla.org Bug Tracker)'
+    >>> print find_portlet(
+    ...     user_browser.contents, 'Is linked to').span.renderContents()
+    There are currently no links to this bug watch.
+
+    >>> user_browser.getControl('Delete Bug Watch').click()
+
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print message.renderContents()
+    The <a href="https://bugzilla.mozilla.org/...123543">mozilla.org #123543</a>
+    bug watch has been deleted.
+
+    >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
+    >>> for li in bug_watches('li'):
+    ...     print li.findAll('a')[1].renderContents()
+    mozilla.org #2000
+    mozilla.org #42
+    debbugs #304014
+

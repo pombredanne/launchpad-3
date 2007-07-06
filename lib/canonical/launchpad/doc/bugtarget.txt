@@ -10,17 +10,25 @@ Bug Tasks on Bug Targets
 An IBugTarget provides various attributes for manipulating its
 bugtasks. Here are some examples, using Debian mozilla-firefox:
 
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.launchpad.interfaces import IBugTarget, IDistributionSet
 
     >>> distroset = getUtility(IDistributionSet)
     >>> debian = distroset.getByName("debian")
     >>> debian_firefox = debian.getSourcePackage("mozilla-firefox")
+    >>> verifyObject(IBugTarget, debian_firefox)
+    True
 
 Open bugtasks:
 
     >>> [bugtask.bug.id for bugtask in debian_firefox.open_bugtasks]
     [1, 2, 3]
+
+Closed bugtasks:
+
+    >>> [bugtask.bug.id for bugtask in debian_firefox.closed_bugtasks]
+    [8]
 
 For the next couple of examples, we'll temporarily modify some bugtask
 values to have some sample data for examples following.
@@ -33,8 +41,10 @@ values to have some sample data for examples following.
     >>> bug_one_in_debian_firefox = getUtility(IBugTaskSet).get(4)
     >>> bug_two_in_debian_firefox = getUtility(IBugTaskSet).get(5)
     >>> bug_one_in_debian_firefox.importance = BugTaskImportance.CRITICAL
-    >>> bug_one_in_debian_firefox.transitionToStatus(BugTaskStatus.INPROGRESS)
-    >>> bug_two_in_debian_firefox.transitionToStatus(BugTaskStatus.INPROGRESS)
+    >>> bug_one_in_debian_firefox.transitionToStatus(
+    ...     BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
+    >>> bug_two_in_debian_firefox.transitionToStatus(
+    ...     BugTaskStatus.INPROGRESS, getUtility(ILaunchBag).user)
 
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
@@ -66,7 +76,7 @@ display in bug-related pages.
 
     >>> firefox = getUtility(IProductSet).getByName("firefox")
     >>> firefox_1_0 = firefox.getSeries("1.0")
-    >>> debian_woody = debian.getRelease("woody")
+    >>> debian_woody = debian.getSeries("woody")
     >>> debian_woody_firefox = debian_woody.getSourcePackage("mozilla-firefox")
 
     >>> IBugTarget.providedBy(firefox)

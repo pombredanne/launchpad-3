@@ -1,0 +1,84 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:leftportlets fill-slot="portlets_one">
+</metal:leftportlets>
+
+<metal:rightportlets fill-slot="portlets_two">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:rightportlets>
+
+<metal:heading fill-slot="pageheading">
+  <h1 i18n:translate="">
+    Projects for which 
+    <span i18n:name="person_name" 
+      tal:replace="context/browsername">Person Name</span> is an answer contact
+  </h1>
+</metal:heading>
+
+<div metal:fill-slot="main">
+  <div tal:condition="view/direct_question_targets">
+    <h2>Contact via self subscription</h2>
+
+    <ul class="listing" id="direct-answer-contacts-for-list">
+      <li tal:repeat="question_target view/direct_question_targets">
+        <a href="#"
+          tal:attributes="href string:${question_target/fmt:url}"
+          tal:content="question_target/title">Project Title</a> 
+        <tal:link condition="view/showRemoveYourselfLink">
+          &mdash; 
+          <a id="project-setanswercontact" href="#"
+            tal:attributes="href string:${question_target/fmt:url}/+support-contact;
+            id string:${question_target/name}-setdirectanswercontact">
+            Remove yourself</a>
+        </tal:link>
+      </li>
+    </ul>
+  </div>
+
+  <div tal:condition="view/team_question_targets">
+    <h2>Contact via team participation</h2>
+    
+    <ul class="listing" id="team-answer-contacts-for-list">
+      <li tal:repeat="question_target view/team_question_targets">
+        <a href="#"
+          tal:attributes="href string:${question_target/fmt:url}"
+          tal:content="question_target/title">Project Title</a> 
+        <tal:link condition="view/showRemoveYourselfLink">
+          &mdash; 
+          <a id="project-setanswercontact" href="#"
+            tal:attributes="href string:${question_target/fmt:url}/+support-contact;
+            id string:${question_target/name}-setteamanswercontact">
+            Remove team</a>
+        </tal:link>
+      </li>
+    </ul>
+  </div>
+    
+  <p tal:condition="not: view/team_question_targets | view/direct_question_targets" i18n:translate="">
+    <span i18n:name="person_name" 
+      tal:replace="context/browsername">Person Name</span> is not an answer 
+      contact for any project.
+  </p>
+</div>
+
+<metal:help fill-slot="help">
+  <p>
+    This report shows all the projects for which this person is registered as
+    an answer contact. This may be because he, or a team he is a member of, is 
+    set as an answer contact. A project may also be listed if a team that the
+    person belongs to is a member of another team that is set as an answer
+    contact.
+  </p>
+  <p>
+    A person may choose the "Remove yourself" link to unset himself as an
+    answer contact when he is logged in and viewing this page in his own
+    profile.
+  </p>
+</metal:help>
+</body>
+</html>

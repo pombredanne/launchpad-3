@@ -25,6 +25,7 @@ class RequestWidget(object):
     hint = ''
     label = ''
     required = False
+    visible = False
 
     def __init__(self, context, request):
         # We are a View

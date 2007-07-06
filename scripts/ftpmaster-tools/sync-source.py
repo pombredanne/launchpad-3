@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 
 # "Sync" a source package by generating an upload
 # Copyright (C) 2005, 2006  Canonical Software Ltd. <james.troup@canonical.com>
@@ -972,8 +972,9 @@ SELECT bpn.name, bpr.version, c.name
        securebinarypackagepublishinghistory sbpph, distroarchrelease dar
  WHERE bpr.binarypackagename = bpn.id AND sbpph.binarypackagerelease = bpr.id
    AND sbpph.component = c.id AND sbpph.distroarchrelease = dar.id
-   AND sbpph.status = %s AND dar.id in (%s)""" \
-             % (dbschema.PackagePublishingStatus.PUBLISHED, dar_ids)
+   AND sbpph.status = %s AND sbppd.archive = %s AND dar.id in (%s)""" \
+             % (dbschema.PackagePublishingStatus.PUBLISHED,
+                distrorelease.main_archive, dar_ids)
     cur.execute(query)
     print "Getting binaries for %s..." % (distrorelease.name)
     for (pkg, version, component) in cur.fetchall():
@@ -1204,7 +1205,7 @@ def options_setup():
     if not Options.todistro:
         Options.todistro = "ubuntu"
 
-    # XXX FIXME: use distro.currentrelease
+    # XXX FIXME: use distro.currentseries
     if not Options.tosuite:
         Options.tosuite = "dapper"
 
@@ -1235,7 +1236,7 @@ def objectize_options():
     Options.target_distro = getUtility(IDistributionSet)[Options.target_distro]
 
     if not Options.target_suite:
-        Options.target_suite = Options.target_distro.currentrelease.name
+        Options.target_suite = Options.target_distro.currentseries.name
     Options.target_suite = Options.target_distro.getRelease(Options.target_suite)
 
     valid_components = (

@@ -6,7 +6,7 @@ PO files are exported by adapting objects to interfaces which have methods for
 exporting. Exported objects are either a single PO file, or a tarball of many
 PO files.
 
-See IPOTemplateExporter and IDistroReleasePOExporter.
+See IPOTemplateExporter and IDistroSeriesPOExporter.
 """
 
 # XXX
@@ -22,9 +22,9 @@ See IPOTemplateExporter and IDistroReleasePOExporter.
 
 __metaclass__ = type
 
+import codecs
 import datetime
 import gettextpo
-import logging
 import os
 import subprocess
 import tarfile
@@ -36,12 +36,11 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad import helpers
-
+from canonical.launchpad.translationformat.gettext_po_parser import (
+    POMessage, POHeader)
 from canonical.launchpad.interfaces import (
-    IPOTemplateExporter, IDistroReleasePOExporter, IPOFileOutput,
+    IPOTemplateExporter, IDistroSeriesPOExporter, IPOFileOutput,
     IVPOExportSet, IVPOTExportSet, EXPORT_DATE_HEADER)
-
-from canonical.launchpad.components.poparser import POMessage, POHeader
 
 class RosettaWriteTarFile:
     """Convenience wrapper around the tarfile module.
@@ -122,7 +121,7 @@ class RosettaWriteTarFile:
     def add_files(self, files):
         """Add a number of files to the archive.
 
-        :files: A dictionary mapping file names to file contents.
+        :param files: A dictionary mapping file names to file contents.
         """
 
         for filename in sorted(files.keys()):
@@ -174,14 +173,6 @@ class OutputPOFile:
         except UnicodeEncodeError:
             # Got any message that cannot be represented by its default
             # encoding, need to force a UTF-8 export.
-            # We log it.
-            export_logger = logging.getLogger('poexport-user-warnings')
-            export_logger.warn(
-                'Had to recode the file as UTF-8 as it has characters that'
-                ' cannot be represented using the %s charset' % 
-                    self.header.charset
-                )
-            # Export the file as UTF-8 as a workaround to this problem.
             self.header['Content-Type'] = 'text/plain; charset=UTF-8'
             self.header.updateDict()
             return self.export_string()
@@ -256,15 +247,15 @@ class OutputMsgSet:
 
         message = POMessage(
             msgid=self.msgids[0],
-            msgidPlural=msgidPlural,
+            msgid_plural=msgidPlural,
             msgstr=msgstr,
-            msgstrPlurals=msgstrPlurals,
+            msgstr_plurals=msgstrPlurals,
             obsolete=self.obsolete,
             header=self.pofile.header,
             flags=self.flags,
-            commentText=self.commenttext,
-            sourceComment=self.sourcecomment,
-            fileReferences=self.filereferences)
+            comment=self.commenttext,
+            source_comment=self.sourcecomment,
+            file_references=self.filereferences)
 
         return unicode(message)
 
@@ -427,10 +418,11 @@ def export_rows(rows, pofile_output, force_utf8=False):
                 pot_header['Content-Type'] = 'text/plain; charset=UTF-8'
                 pot_header.updateDict()
 
-            if row.pofile is not None:
+            pofile = row.pofile
+            if pofile is not None:
                 # Generate the header of the new PO file.
                 header = POHeader(
-                    commentText=row.potopcomment,
+                    comment=row.potopcomment,
                     msgstr=row.poheader)
 
                 if row.pofuzzyheader:
@@ -459,32 +451,42 @@ def export_rows(rows, pofile_output, force_utf8=False):
                 # We are exporting an IPOTemplate.
                 header = pot_header
 
+            try:
+                codecs.getdecoder(header.charset)
+            except LookupError:
+                # The codec we are using to do the export is not valid,
+                # we default to UTF-8 for the export.
+                header.charset = u'UTF-8'
+                header['Content-Type'] = 'text/plain; charset=UTF-8'
+                header.updateDict()
+
             # This part is conditional on the PO file being present in order
             # to make it easier to fake data for testing.
 
-            if (row.pofile is not None and
-                row.pofile.latestsubmission is not None):
+            if (pofile is not None and
+                pofile.last_touched_pomsgset is not None and
+                pofile.last_touched_pomsgset.reviewer is not None):
                 # Update the last translator field.
+                last_touched_pomsgset = pofile.last_touched_pomsgset
 
-                submission = row.pofile.latestsubmission
-                header['Last-Translator'] = (
-                    last_translator_text(submission.person))
+                header['Last-Translator'] = last_translator_text(
+                    last_touched_pomsgset.reviewer)
 
                 # Update the revision date field.
 
                 header['PO-Revision-Date'] = (
-                    submission.datecreated.strftime('%F %R%z'))
+                    last_touched_pomsgset.date_reviewed.strftime('%F %R%z'))
 
             if row.potemplate.hasPluralMessage():
-                if row.pofile.language.pluralforms is not None:
+                if pofile.language.pluralforms is not None:
                     # We have pluralforms information for this language so we
                     # update the header to be sure that we use the language
                     # information from our database instead of use the one
                     # that we got from upstream. We check this information so
                     # we are sure it's valid.
                     header['Plural-Forms'] = 'nplurals=%d; plural=(%s);' % (
-                        row.pofile.language.pluralforms,
-                        row.pofile.language.pluralexpression)
+                        pofile.language.pluralforms,
+                        pofile.language.pluralexpression)
             elif 'Plural-Forms' in header:
                 # There is no plural forms here but we have a 'Plural-Forms'
                 # header, we remove it because it's not needed.
@@ -496,7 +498,7 @@ def export_rows(rows, pofile_output, force_utf8=False):
             # modifications.
             UTC = pytz.timezone('UTC')
             dt = datetime.datetime.now(UTC)
-            header[EXPORT_DATE_HEADER] = dt.strftime('%F %R+%z')
+            header[EXPORT_DATE_HEADER] = dt.strftime('%F %T%z')
 
             # Create the new PO file.
 
@@ -545,8 +547,8 @@ def export_rows(rows, pofile_output, force_utf8=False):
             # There is an active submission, the plural form is higher than
             # the last imported plural form.
 
-            if (row.pofile.language.pluralforms is not None and
-                row.translationpluralform >= row.pofile.language.pluralforms):
+            if (pofile.language.pluralforms is not None and
+                row.translationpluralform >= pofile.language.pluralforms):
                 # The plural form index is higher than the number of plural
                 # form for this language, so we should ignore it.
                 continue
@@ -797,13 +799,13 @@ def export_potemplate_tarball(filehandle, potemplate, force_utf8=False):
 
     archive.close()
 
-class DistroReleaseTarballPOFileOutput:
+class DistroSeriesTarballPOFileOutput:
     """Add exported PO files to a tarball using language pack directory
     structure.
     """
 
-    def __init__(self, release, archive):
-        self.release = release
+    def __init__(self, series, archive):
+        self.series = series
         self.archive = archive
 
     def __call__(self, potemplate, language, variant, contents):
@@ -818,23 +820,23 @@ class DistroReleaseTarballPOFileOutput:
 
         domain = potemplate.potemplatename.translationdomain.encode('ascii')
         path = os.path.join(
-            'rosetta-%s' % self.release.name,
+            'rosetta-%s' % self.series.name,
             code,
             'LC_MESSAGES',
             '%s.po' % domain
             )
         self.archive.add_file(path, contents)
 
-def export_distrorelease_tarball(filehandle, release, date=None):
-    """Export a tarball of translations for a distribution release."""
+def export_distroseries_tarball(filehandle, series, date=None):
+    """Export a tarball of translations for a distribution series."""
 
     # Open the archive.
     archive = RosettaWriteTarFile(filehandle)
 
     # Do the export.
-    pofiles = getUtility(IVPOExportSet).get_distrorelease_pofiles(
-        release, date)
-    pofile_output = DistroReleaseTarballPOFileOutput(release, archive)
+    pofiles = getUtility(IVPOExportSet).get_distroseries_pofiles(
+        series, date)
+    pofile_output = DistroSeriesTarballPOFileOutput(series, archive)
 
     for pofile in pofiles:
         pofile_output(
@@ -844,7 +846,7 @@ def export_distrorelease_tarball(filehandle, release, date=None):
             contents=pofile.export())
 
     # Add a timestamp file.
-    path = 'rosetta-%s/timestamp.txt' % release.name
+    path = 'rosetta-%s/timestamp.txt' % series.name
     contents = datetime.datetime.utcnow().strftime('%Y%m%d\n')
     archive.add_file(path, contents)
 
@@ -900,24 +902,24 @@ class POTemplateExporter:
         export_potemplate_tarball(
             filehandle, self.potemplate, force_utf8=self.force_utf8)
 
-class DistroReleasePOExporter:
-    """Adapt a distribution release for PO exports."""
+class DistroSeriesPOExporter:
+    """Adapt a distribution series for PO exports."""
 
-    implements(IDistroReleasePOExporter)
+    implements(IDistroSeriesPOExporter)
 
-    def __init__(self, release):
-        self.release = release
+    def __init__(self, series):
+        self.series = series
 
     def export_tarball(self, date=None):
-        """See IDistroReleasePOExporter."""
+        """See IDistroSeriesPOExporter."""
 
         outputbuffer = StringIO()
-        export_distrorelease_tarball(outputbuffer, self.release, date)
+        export_distroseries_tarball(outputbuffer, self.series, date)
         return outputbuffer.getvalue()
 
     def export_tarball_to_file(self, filehandle, date=None):
-        """See IDistroReleasePOExporter."""
-        export_distrorelease_tarball(filehandle, self.release, date)
+        """See IDistroSeriesPOExporter."""
+        export_distroseries_tarball(filehandle, self.series, date)
 
 
 class MOCompilationError(Exception):

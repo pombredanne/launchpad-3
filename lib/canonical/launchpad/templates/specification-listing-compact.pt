@@ -1,47 +1,6 @@
-<table width="100%">
-  <tr>
-    <td width="10px">
-      <img src="/@@/spec" />
-    </td>
-    <td width="70%">
-      <a tal:attributes="href context/fmt:url"
-         tal:content="context/title">Spec Title Here</a>
-      <img src="/@@/info" alt="Informational"
-           title="Informational specification"
-           tal:condition="context/informational" />
-    </td>
-    <td class="lesser">
-      <tal:block condition="context/specurl">
-        <img src="/@@/link" />
-        <a tal:attributes="href context/specurl">Web Page</a>
-      </tal:block>
-    </td>
-  </tr>
-  <tr class="lesser">
-    <td></td>
-    <td>
-      <span tal:content="context/status/title"
-            tal:attributes="class string:specstatus${context/status/name}"
-            >Approved</span>
-      <span tal:condition="context/priority"
-            tal:content="context/priority/title"
-            tal:attributes="class string:specpriority${context/priority/name}"
-            >High</span>
-      <i tal:condition="not: context/direction_approved">Needs guidance.</i>
-      <tal:block condition="context/assignee">
-        <img src="/@@/user" />&nbsp;<a
-             tal:attributes="href context/assignee/fmt:url"
-             tal:content="context/assignee/browsername">Foo Bar</a>
-      </tal:block>
-      <br />
-      <span tal:replace="context/summary/fmt:shorten/120">summary</span>.
-      <tal:sprints repeat="sprint_link context/sprint_links">
-        <a tal:condition="sprint_link/is_confirmed"
-           tal:content="sprint_link/sprint/name"
-           tal:attributes="href sprint_link/sprint/fmt:url">ubz</a>
-      </tal:sprints>
-    </td>
-    <td>
-    </td>
-  </tr>
-</table>
+
+<tr>
+  <td tal:content="structure context/image:icon" />
+  <td><a tal:attributes="href context/fmt:url"
+         tal:content="context/title">Spec Title Here</a></td>
+</tr>

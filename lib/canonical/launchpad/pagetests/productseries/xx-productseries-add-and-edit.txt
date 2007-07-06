@@ -1,0 +1,106 @@
+Test to add a product series
+
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/firefox')
+  >>> browser.getLink('Register a series').click()
+  >>> print browser.url
+  http://launchpad.dev/firefox/+addseries
+
+  >>> print find_main_content(browser.contents).find('h1').renderContents()
+  Register another series
+
+After checking that the page +addseries is there, we try to add a new series.
+
+  >>> browser.getControl('Name').value = 'stable'
+  >>> browser.getControl('Summary').value = 'Product series add testing'
+  >>> browser.getControl('Branch').value = '~sabdfl/firefox/release-0.9.2'
+  >>> browser.getControl('Release URL pattern').value = (
+  ...     'ftp://ftp.mozilla.org/pub/mozilla/firefox-*.tar.gz')
+  >>> browser.getControl('Register Series').click()
+
+Now we are redirected to the Overview page of the product series we just added
+
+  >>> browser.url
+  'http://launchpad.dev/firefox/stable'
+
+  >>> content = find_main_content(browser.contents)
+  >>> print content.find('p').renderContents()
+  Product series add testing
+
+  >>> print content.find('ul', 'branch').find('a')
+  <a href="http://code.launchpad.dev/~sabdfl/firefox/release-0.9.2">Mozilla
+  Firefox 0.9.2</a>
+
+  >>> print extract_text(
+  ...     find_portlet(browser.contents, 'Revision control details'))
+  Revision control details
+  Bazaar Branch:
+  Mozilla Firefox 0.9.2
+
+Now we test if we can edit the new added series. First we check if we
+can reach the +edit page.
+
+  >>> browser.getLink('Change details').click()
+  >>> browser.url
+  'http://launchpad.dev/firefox/stable/+edit'
+
+Then we edit the information about the series. First we try to use a
+name already in use and a branch for a product other than Firefox:
+
+  >>> browser.getControl('Name').value = '1.0'
+  >>> browser.getControl('Summary').value = (
+  ...   'Testing the edit of productseries')
+  >>> browser.getControl('Branch').value = '~carlos/evolution/2.0'
+  >>> browser.getControl('Release URL pattern').value = 'file:///etc'
+  >>> browser.getControl('Change').click()
+
+We'll get a nice error message for the three problems:
+
+  >>> for tag in find_tags_by_class(browser.contents, 'message'):
+  ...     print extract_text(tag)
+  There are 3 errors.
+  1.0 is already in use by another series.
+  ~carlos/evolution/2.0 is not a branch of Mozilla Firefox.
+  Invalid release URL pattern.
+
+We now change it to a unique name, and pick a branch of firefox:
+
+  >>> browser.getControl('Name').value = 'unstable'
+  >>> browser.getControl('Branch').value = '~name12/firefox/main'
+  >>> browser.getControl('Release URL pattern').value = (
+  ...     'http://ftp.mozilla.org/pub/mozilla.org/firefox-*.tar.gz')
+  >>> browser.getControl('Change').click()
+
+  >>> browser.url
+  'http://launchpad.dev/firefox/unstable'
+
+We test if the edited product release is there:
+
+  >>> content = find_main_content(browser.contents)
+  >>> print content.find('p').renderContents()
+  Testing the edit of productseries
+
+  >>> print content.find('ul', 'branch').find('a')
+  <a href="http://code.launchpad.dev/~name12/firefox/main">Mozilla Firefox
+  Mainline</a>
+
+  >>> print extract_text(
+  ...     find_portlet(browser.contents, 'Revision control details'))
+  Revision control details
+  Bazaar Branch:
+  Mozilla Firefox Mainline
+
+
+And if we try to add another series with the same name to same product, we
+should get a nice error message.
+
+  >>> browser.open('http://launchpad.dev/firefox/+addseries')
+
+  >>> browser.getControl('Name').value = 'unstable'
+  >>> browser.getControl('Summary').value = 'Another series with the same name'
+  >>> browser.getControl('Register Series').click()
+
+  >>> for message in find_tags_by_class(browser.contents, 'message'):
+  ...     print message.renderContents()
+  There is 1 error.
+  unstable is already in use by another series.

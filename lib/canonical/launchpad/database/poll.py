@@ -14,10 +14,11 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, IntCol, AND)
 
-from canonical.lp.dbschema import PollSecrecy, PollAlgorithm, EnumCol
+from canonical.lp.dbschema import PollSecrecy, PollAlgorithm
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
+from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     IPoll, IPollSet, IPollOption, IPollOptionSet, IVote, IVoteCast,

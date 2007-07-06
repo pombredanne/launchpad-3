@@ -1,7 +1,6 @@
 <configure
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser"
-    xmlns:lp="http://launchpad.canonical.com"
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
@@ -22,7 +21,7 @@
     <browser:url
         for="canonical.launchpad.interfaces.IBuild"
         path_expression="string:+build/${id}"
-        parent_utility="canonical.launchpad.interfaces.IBuilderSet"
+        attribute_to_parent="distributionsourcepackagerelease"
         />
 
     <browser:menus

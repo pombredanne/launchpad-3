@@ -18,13 +18,25 @@
       </tr>
     </thead>
     <tbody>
-      <tr tal:repeat="membership context/activememberships">
+      <tr tal:repeat="membership context/getActiveMemberships">
         <td>
           <a tal:content="membership/person/browsername"
              tal:attributes="href membership/person/fmt:url" />
         </td>
-        <td tal:content="membership/datejoined/fmt:date">12-12-2004</td>
-        <td tal:content="membership/dateexpires/fmt:date">12-12-2005</td>
+        <td>
+          <span
+            tal:attributes="title membership/datejoined/fmt:datetime"
+            tal:content="membership/datejoined/fmt:approximatedate">
+            12-12-2004
+          </span>
+        </td>
+        <td>
+          <span
+            tal:attributes="title membership/dateexpires/fmt:datetime"
+            tal:content="membership/dateexpires/fmt:approximatedate">
+            12-12-2005
+          </span>
+        </td>
         <td tal:content="membership/status/title">Administrator</td>
       </tr>
     </tbody>

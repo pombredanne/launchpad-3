@@ -11,7 +11,7 @@
   <table>
   <tbody>
   <tr>
-  <td width="80%">
+  <td width="80%" id="main-content">
 
   <p tal:condition="not: view/reports">
     No reports were generated yet
@@ -27,9 +27,17 @@
     </thead>
     <tbody>
       <tr tal:repeat="report view/reports">
-        <td tal:content="report/datecreated/fmt:date" />
+        <td>
+          <span class="sortkey"
+            tal:content="report/datecreated/fmt:datetime" />
+          <span
+            tal:attributes="title report/datecreated/fmt:datetime"
+            tal:content="report/datecreated/fmt:approximatedate">
+            2005-11-14
+          </span>
+        </td>
         <td><a tal:content="report/csvfile/filename"
-               tal:attributes="href report/csvfile/url" />
+               tal:attributes="href report/csvfile/http_url" />
         </td>
       </tr>
     </tbody>
@@ -38,7 +46,7 @@
 
   </td>
   <td
-    width="20%"
+    width="20%" id="navigation"
     style="vertical-align: top;"
     tal:content="structure context/@@+portlet-navigation"
   />

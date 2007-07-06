@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
 
 <body>
@@ -11,14 +11,13 @@
 </metal:leftportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Context title goes here</h3>
-  <h1>Specification assignments</h1>
+  <h1>Assignment of work on blueprints</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
 
   <p class="informational message" tal:condition="not: view/specs">
-    No specifications to display.
+    No blueprints to display.
   </p>
 
   <table class="listing sortable" tal:condition="view/specs" id="work">
@@ -74,13 +73,14 @@
     </tbody>
   </table>
 
-  <p tal:condition="view/specs" class="discreet">
+  <p tal:condition="view/specs">
     This listing shows the assignment of work for
-    specifications currently associated with 
+    blueprints currently associated with 
     <span tal:replace="context/displayname">Mozilla</span>.
     The drafter is responsible for getting the specification correctly
-    written up and approved, the approver is usually the person who would
-    sign off on the spec.
+    written up and approved.
+    The approver is usually the person who would
+    sign off on the specification.
   </p>
 
 </div>

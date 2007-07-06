@@ -60,7 +60,8 @@ A multi-line text widget is displayed in two table rows:
     </th>
   </tr>
   <tr>
-    <td colspan="2">
+    <td>&nbsp;</td>
+    <td>
       <div><textarea ... name="field.summary" ...></textarea></div>
       <p class="formHelp">...</p>
     </td>
@@ -79,7 +80,8 @@ label row:
     </th>
   </tr>
   <tr>
-    <td colspan="2">
+    <td>&nbsp;</td>
+    <td>
       <div><textarea ... name="field.description" ...></textarea></div>
       <p class="formHelp">...</p>
     </td>
@@ -103,7 +105,7 @@ a widget.
     <td width="100%">
       ...
       <input ... name="field.official_rosetta" type="checkbox" ... />
-      <label for="field.official_rosetta">Uses Rosetta Officially</label>
+      <label for="field.official_rosetta">Uses Translations Officially</label>
       <p class="formHelp">...</p>
     </td>
   </tr>

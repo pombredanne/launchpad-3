@@ -8,7 +8,10 @@
     <span tal:replace="context/name">foo</span><br />
 
     <b>Date expected:</b>
-    <span tal:replace="context/dateexpected/fmt:date|nothing">2005-06-01</span>
+    <span
+      tal:replace="context/dateexpected/fmt:approximatedate|nothing">
+      2005-06-01
+    </span>
     <i tal:condition="not: context/dateexpected">None set.</i>
     <br />
 

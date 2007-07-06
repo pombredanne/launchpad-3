@@ -1,0 +1,17 @@
+<div class="portlet" tal:condition="view/getTopContributors">
+  <h2>Top contributors</h2>
+  <div class="portletBody portletContent">
+    <p>
+      These are the top 20 translation contributors who have stated they have
+      a particular interest in
+      <tal:language_name replace="view/language_name">
+        Espa&ntilde;ol
+      </tal:language_name>:
+    <ul class="person">
+      <li tal:repeat="contributor view/getTopContributors">
+        <a tal:content="contributor/browsername"
+           tal:attributes="href contributor/fmt:url">Guilherme Salgado</a>
+      </li>
+    </ul>
+  </div>
+</div>

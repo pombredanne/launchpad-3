@@ -2,7 +2,7 @@ Let's change the preferred email from no-priv.
 
   >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
   >>> browser.open('http://launchpad.dev/~no-priv')
-  >>> browser.getLink('E-mail Addresses').click()
+  >>> browser.getLink('Update e-mail addresses').click()
   >>> browser.url
   'http://launchpad.dev/~no-priv/+editemails'
   >>> browser.title

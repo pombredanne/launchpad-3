@@ -3,19 +3,11 @@ the productseries' bug page, in order to see a list of all bugs
 targeted to it.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/firefox/1.0')
-    >>> anon_browser.getLink('Bugs').click()
-    >>> anon_browser.url
-    'http://bugs.launchpad.dev/firefox/1.0/+bugs'
+    ...     'http://launchpad.dev/firefox/1.0/+bugs')
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> def print_bugtasks(text):
-    ...     soup = BeautifulSoup(text)
-    ...     table = soup.find('table', {'id': 'buglisting'})
-    ...     for tr in table('tr'):
-    ...         if not tr.td:
-    ...             continue
-    ...         icon, id, description, status = tr('td', limit=4)
-    ...         print id.string, description.a.string, status.renderContents()
+    >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
-    1 Firefox does not support SVG Undecided
+    5 Firefox install instructions should be complete
+      Undecided New
+    1 Firefox does not support SVG
+      Undecided Confirmed

@@ -14,14 +14,15 @@ imported.
 
 Try to import a key which is already imported:
 
-  >>> user_browser.open('http://launchpad.dev/~name12/+editpgpkeys')
-  >>> user_browser.getControl(name='fingerprint').value = preimported
-  >>> user_browser.getControl(name='import').click()
-  >>> "A message has been sent" in user_browser.contents
+  >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+  >>> browser.open('http://launchpad.dev/~name12/+editpgpkeys')
+  >>> browser.getControl(name='fingerprint').value = preimported
+  >>> browser.getControl(name='import').click()
+  >>> "A message has been sent" in browser.contents
   False
   >>> stub.test_emails
   []
-  >>> print user_browser.contents
+  >>> print browser.contents
   <BLANKLINE>
   ...
   ...has already been imported...
@@ -29,40 +30,53 @@ Try to import a key which is already imported:
 Finally, a key which is sign-only. This one is actually supported and
 has a special validation email..
 
-  >>> user_browser.open('http://launchpad.dev/~name12/+editpgpkeys')
-  >>> user_browser.getControl(name='fingerprint').value = sign_only
-  >>> user_browser.getControl(name='import').click()
-  >>> print user_browser.contents
+  >>> browser.open('http://launchpad.dev/~name12/+editpgpkeys')
+  >>> browser.getControl(name='fingerprint').value = sign_only
+  >>> browser.getControl(name='import').click()
+  >>> print browser.contents
   <BLANKLINE>
   ...
   ...A message has been sent...
 
 ..which is not encrypted..
 
-  >>> "decrypt the message" in user_browser.contents
+  >>> "decrypt the message" in browser.contents
   False
 
 and looks like this:
 
   >>> from_addr, to_addrs, raw_msg = stub.test_emails.pop()
   >>> msg = email.message_from_string(raw_msg)
+
+Verify that the instructions are in clear text.
+
   >>> print msg.get_payload(decode=True)
+  Hello,
   <BLANKLINE>
-  ...
-  We received a request from Sample Person using email address 
-  test@canonical.com, trying to confirm an OpenPGP key for use in 
-  Launchpad.
+  Here are the instructions for confirming the OpenPGP key registration that we
+  received for use in Launchpad.
+  <BLANKLINE>
+  Requester details:
+  <BLANKLINE>
+      User name    : Sample Person
+      Email address: test@canonical.com
   <BLANKLINE>
   Key details:
   <BLANKLINE>
-  447DBF38C4F9C4ED752246B77D88913717B05A8F
-  1024D/17B05A8F
-  sign.only@canonical.com
+      Fingerprint : 447DBF38C4F9C4ED752246B77D88913717B05A8F
+      Key type/ID : 1024D/17B05A8F
   <BLANKLINE>
+  UIDs:
+      sign.only@canonical.com
   <BLANKLINE>
   Please go here to finish adding the key to your Launchpad account:
-  http://.../token/...
-  ...
+  <BLANKLINE>
+      http://.../token/...
+  <BLANKLINE>
+  <BLANKLINE>
+  Thanks,
+  <BLANKLINE>
+  The Launchpad Team
 
 Finally, kill zeca:
 

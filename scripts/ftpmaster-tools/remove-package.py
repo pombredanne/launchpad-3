@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/python2.4
 
 # General purpose package removal tool for ftpmaster
 # Copyright (C) 2000, 2001, 2002, 2003, 2004, 2005  James Troup <james@nocrew.org>
@@ -267,7 +267,7 @@ def init():
     Options.distro = getUtility(IDistributionSet)[Options.distro]
 
     if not Options.suite:
-        Options.suite = Options.distro.currentrelease.name
+        Options.suite = Options.distro.currentseries.name
 
     Options.architecture = dak_utils.split_args(Options.architecture)
     Options.component = dak_utils.split_args(Options.component)

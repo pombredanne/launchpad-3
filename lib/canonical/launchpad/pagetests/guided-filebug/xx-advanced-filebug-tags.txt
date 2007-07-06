@@ -1,0 +1,37 @@
+= Adding tags while using the advanced filebug page =
+
+On the advanced filebug page, there's the possibility to add tags to the
+filed bug.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+filebug-advanced')
+    >>> user_browser.getControl('Tags') is not None
+    True
+
+So if we enter some tags in that field, those tags will be added to the
+filed bug.
+
+    >>> user_browser.getControl('Tags').value = 'foo bar'
+    >>> user_browser.getControl('Summary').value = 'Bug with tags'
+    >>> user_browser.getControl('Further information').value = (
+    ...     'This bug has tags')
+    >>> user_browser.getControl('Submit Bug Report').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/...'
+
+    >>> tags_div = find_tag_by_id(user_browser.contents, 'bug-tags')
+    >>> for a_tag in tags_div('a'):
+    ...   print a_tag.renderContents()
+    bar
+    foo
+
+== Pre-populating the tags field ==
+
+For people wanting to pre-fill the tags field with certain tags, it's
+possible to do so by supplying a 'field.tags' URL parameter.
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/'
+    ...     '+filebug-advanced?field.tags=foo+bar')
+    >>> user_browser.getControl('Tags').value
+    'bar foo'

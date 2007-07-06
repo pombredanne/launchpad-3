@@ -13,7 +13,7 @@ import unittest
 
 from zope.component import getUtility, ComponentLookupError
 
-from canonical.config import config
+from canonical.config import config, dbconfig
 from canonical.librarian.client import LibrarianClient, UploadFailed
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.testing import *
@@ -241,8 +241,8 @@ class ZopelessTestCase(BaseTestCase):
     layer = ZopelessLayer
 
     want_component_architecture = True
-    want_launchpad_database = True
-    want_librarian_running = True
+    want_launchpad_database = False
+    want_librarian_running = False
     want_zopeless_flag = True
 
 
@@ -255,7 +255,7 @@ class LaunchpadFunctionalTestCase(BaseTestCase):
     want_functional_flag = True
 
 
-class LaunchpadZopeless(BaseTestCase):
+class LaunchpadZopelessTestCase(BaseTestCase):
     layer = LaunchpadZopelessLayer
 
     want_component_architecture = True
@@ -264,6 +264,27 @@ class LaunchpadZopeless(BaseTestCase):
     want_zopeless_flag = True
 
 
+class LaunchpadScriptTestCase(BaseTestCase):
+    layer = LaunchpadScriptLayer
+
+    want_component_architecture = True
+    want_launchpad_database = True
+    want_librarian_running = True
+    want_zopeless_flag = True
+
+    def testSwitchDbConfig(self):
+        # Test that we can switch database configurations, and that we
+        # end up connected as the right user.
+        self.assertEqual(dbconfig.dbuser, 'launchpad')
+        LaunchpadScriptLayer.switchDbConfig('librarian')
+        self.assertEqual(dbconfig.dbuser, 'librarian')
+
+        from canonical.database.sqlbase import cursor
+        cur = cursor()
+        cur.execute('SELECT current_user;')
+        user = cur.fetchone()[0]
+        self.assertEqual(user, 'librarian')
+
+
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)
-    

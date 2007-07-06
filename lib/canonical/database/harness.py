@@ -1,4 +1,5 @@
-#
+#! /usr/bin/python2.4 -i
+
 # This is designed to be used as follows:
 #
 #   python -i harness.py
@@ -36,7 +37,23 @@ transactionmgr = initZopeless(dbuser=dbuser)
 from canonical.launchpad.database import *
 from canonical.launchpad.interfaces import *
 
+from zope.interface.verify import verifyObject
+
 import readline
 import rlcompleter
 readline.parse_and_bind('tab: complete')
+
+#
+# Let's get a few handy objects going
+#
+if dbuser == 'launchpad':
+    d = Distribution.get(1)
+    p = Person.get(1)
+    ds = DistroSeries.get(1)
+    prod = Product.get(1)
+    proj = Project.get(1)
+    b2 = Bug.get(2)
+    b1 = Bug.get(1)
+    s = Specification.get(1)
+    q = Question.get(1)
 

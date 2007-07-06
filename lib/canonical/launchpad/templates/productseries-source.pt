@@ -1,9 +1,4 @@
-<tal:layout define="columns1 default">
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-  lang="en"
-  metal:use-macro="context/@@main_template_2col/master"
-  i18n:domain="rosetta"
->
+<html metal:use-macro="view/macro:page/default" i18n:domain="bazaar">
 <body>
 
 <metal:leftportlets fill-slot="portlets_one">
@@ -15,7 +10,6 @@
 </metal:rightportlets>
 
 <metal:heading fill-slot="pageheading">
-  <h3 tal:content="context/title">Foo Series: main</h3>
   <h1>Upstream source import</h1>
 </metal:heading>
 
@@ -25,10 +19,8 @@
     <p metal:fill-slot="extra_info" tal:condition="not:view/errors">
       Once you enter the details of the
       <abbr title="revision control system">RCS</abbr> you use for
-      this product series, Launchpad can attempt to import that code
-      and publish it as a Bazaar branch.  This lets distributors share
-      code with you more efficiently, and also allows distributed
-      upstream development.
+      this release series, Launchpad Administrators will attempt to import that
+      code and publish it as a Bazaar branch.
     </p>
 
     <metal:formbody fill-slot="widgets">
@@ -120,4 +112,4 @@
 </div>
 </body>
 </html>
-</tal:layout>
+<!-- 1-0 in-progress -->

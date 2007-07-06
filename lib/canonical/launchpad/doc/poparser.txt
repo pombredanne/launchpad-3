@@ -1,21 +1,15 @@
-Tests for our PO parser.
-========================
+= Tests for our PO parser =
 
 The core of Rosetta is the PO parser, it allows to communicate with the
 external world importing files and exporting them.
 
 Let's import some needed objects...
 
-  >>> from canonical.launchpad.components.poparser import (
+  >>> from canonical.launchpad.translationformat.gettext_po_parser import (
   ...     POMessage, POHeader, POParser)
 
 
-POParser
-========
-
-First we get the needed imports.
-
-  >>> from canonical.launchpad.components.poparser import POParser
+== POParser ==
 
 We should be completely sure that a .po file with an empty header is reported.
 
@@ -24,21 +18,36 @@ We should be completely sure that a .po file with an empty header is reported.
   >>> parser.finish()
   Traceback (most recent call last):
   ...
-  POSyntaxError:...
+  TranslationFormatSyntaxError:...
 
 
-POHeader
-========
+== POHeader ==
 
 A POHeader is a representation of a special message that all .po files have.
 That first message has as the msgid the empty string ("") and as the
 translation of it some metadata.
 
 
-POHeader.getPORevisionDate
---------------------------
+=== getTranslationRevisionDate() ===
 
-Test that the function does not fails if the date field has unicode chars:
+This method gives you a datetime object representing PO-Revision-Date field.
+
+  >>> header = POHeader(msgstr="""
+  ... Project-Id-Version: foo
+  ... Report-Msgid-Bugs-To: foo@bar.com
+  ... POT-Creation-Date: 2005-01-26 01:01+0100
+  ... PO-Revision-Date: 2004-03-06 20:06+0100
+  ... Last-Translator: Foo translator <footranslator@bar.com>
+  ... MIME-Version: 1.0
+  ... Content-Type: text/plain; charset=UTF-8
+  ... Content-Transfer-Encoding: 8bit
+  ... """)
+  >>> header.updateDict()
+  >>> header.getTranslationRevisionDate()
+  datetime.datetime(2004, 3, 6, 20, 6, tzinfo=tzinfo(60))
+
+Even if the function has unicode chars we detect that as not having the
+revision date:
 
   >>> header = POHeader(msgstr="""
   ... Project-Id-Version: foo
@@ -51,14 +60,15 @@ Test that the function does not fails if the date field has unicode chars:
   ... Content-Transfer-Encoding: 8bit
   ... """)
   >>> header.updateDict()
-  >>> header.getPORevisionDate()
-  (u'\xe1 2004-03-06 20:06+0100', None)
+  >>> header.getTranslationRevisionDate()
+  Traceback (most recent call last):
+  ...
+  UnknownTranslationRevisionDate: Found an invalid date representation...
   >>> header.getPluralFormExpression() == None
   True
 
 
-Parsing a PO template
----------------------
+== Parsing a PO template ==
 
 Parsing a PO template:
 
@@ -110,11 +120,10 @@ errors occur:
   >>> parser.write(chunk2)
   Traceback (most recent call last):
     ...
-  POInvalidInputError: could not decode input from ASCII
+  TranslationFormatInvalidInputError: could not decode input from ASCII
 
 
-Split Multibyte Sequences
--------------------------
+== Split Multibyte Sequences ==
 
 The PO file parser can incrementally parse files.  When multibyte
 character encodings are used, this opens up the possibility that a
@@ -148,8 +157,7 @@ The PO parser handles this case correctly:
   u'\u2584'
 
 
-Evil Big5 Multibyte Sequences
------------------------------
+== Evil Big5 Multibyte Sequences ==
 
 To parse a PO file, it is necessary to know what encoding it is in,
 which is specified in the PO file header.
@@ -187,8 +195,7 @@ correctly, despite the backslash in the second multibyte sequence:
   u'\u6210\u529f'
 
 
-Newline Formats
----------------
+== Newline Formats ==
 
 Not everyone is using UNIX systems, so some submitted PO files will
 not use standard UNIX newlines.
@@ -214,10 +221,12 @@ Verify that it still parses:
   u'\u6210\u529f'
 
 
-Escape Characters in Strings
-----------------------------
+== Escape Characters in Strings ==
 
-Message strings in PO files can contain C string escape sequences:
+Message strings in PO files can contain C string escape sequences. Some of
+them have special meaning like 'new line': '\n' or 'tabs' '\t' and others are
+just the numeric representation of a character in the declared encoding by
+the Content-Type field of the header.
 
   >>> content = """
   ... msgid ""
@@ -231,12 +240,24 @@ Message strings in PO files can contain C string escape sequences:
   ... "Bar\\n"
   ... msgstr "\\a\\b\\v\\f\\t\\v\\\\\\"\\'\\n"
   ... "\\70 \\070 \\0700 \\x70\\n"
+  ...
+  ... #: foo/bar.c: 50
+  ... msgid "view \\302\\253${version_title}\\302\\273"
+  ... msgstr ""
   ... """
 
   >>> parser = POParser()
   >>> parser.write(content)
   >>> parser.finish()
 
+The special symbols and numeric representations of the chars '8', '80' and 'p'
+are decoded correctly.
+
   >>> parser.messages[0].msgstr
   u'\x07\x08\x0b\x0c\t\x0b\\"\'\n8 8 80 p\n'
 
+In this case, the numeric representation are UTF-8 only characters and we can
+see that we get its Unicode equivalent.
+
+  >>> parser.messages[1].msgid
+  u'view \xab${version_title}\xbb'

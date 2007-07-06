@@ -1,109 +1,109 @@
-At first there should be no translators in the polyglot group.
+= Appointing translators in a translation group =
 
-  >>> print http(r"""
-  ... GET /translations/groups/polyglot/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...The PolyGlot Translation Group...
-  ...There are no translators appointed in this group yet....
-  ...href="+appoint"...Appoint...
+No translators have been appointed in the polyglot group so far.
+
+A user can have rights to appoint or remove members on any of three grounds:
+owning the group, being a Rosetta expert, or being a Launchpad administrator.
+
+Jordi Mallach, is a Rosetta administrator ("expert").  He does not own polyglot
+nor is he a Launchpad adminstrator.  That is enough to allow him to appoint a
+translator.
+
+  >>> browser.addHeader('Authorization', 'Basic jordi@ubuntu.com:test')
+  >>> browser.open(
+  ...   'http://translations.launchpad.dev/+groups/polyglot/')
+  >>> print find_portlet(browser.contents, 'Translation Teams')
+  <...
+  There are no translators appointed in this group yet.
   ...
 
-Now, let's appoint a translator. First see if we can display the
-appointments page.
+Verify that the appointments form displays, and offers the option to appoint
+a translator.
 
-  >>> print http(r"""
-  ... GET /translations/groups/polyglot/+appoint HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...The PolyGlot Translation Group...
-  <select id="field.language" name="field.language" size="1" >
-  ...
-  <input type="text" name="field.translator"
-  ...
+  >>> browser.getLink('Appoint').click()
+  >>> browser.url
+  'http://translations.launchpad.dev/+groups/polyglot/+appoint'
 
-Now let's make an appointment. Hoary Gnome Team will translate into
-Abkhasian. We should get redirected back to the group page.
+Appoint a translator. Hoary Gnome Team will translate into Abkhazian.
 
-  >>> print http(r"""
-  ... POST /translations/groups/polyglot/+appoint HTTP/1.1
-  ... Content-Length: 568
-  ... Content-Type: multipart/form-data; boundary=---------------------------145492490015831423901241554584
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... -----------------------------145492490015831423901241554584
-  ... Content-Disposition: form-data; name="field.language"
-  ... 
-  ... ab
-  ... -----------------------------145492490015831423901241554584
-  ... Content-Disposition: form-data; name="field.language-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------145492490015831423901241554584
-  ... Content-Disposition: form-data; name="field.translator"
-  ... 
-  ... name21
-  ... -----------------------------145492490015831423901241554584
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------145492490015831423901241554584--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: .
-  <BLANKLINE>
-  ...
+  >>> browser.getControl('Language').value=['ab']
+  >>> browser.getControl('Translator').value='name21'
+  >>> browser.getControl('Add').click()
 
-And let's appoint No Priviledges user for Afrikaans too.
+We should get redirected back to the group page.
 
-  >>> print http(r"""
-  ... POST /translations/groups/polyglot/+appoint HTTP/1.1
-  ... Content-Length: 558
-  ... Content-Type: multipart/form-data; boundary=---------------------------1528991119743688478288052508
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... 
-  ... -----------------------------1528991119743688478288052508
-  ... Content-Disposition: form-data; name="field.language"
-  ... 
-  ... af
-  ... -----------------------------1528991119743688478288052508
-  ... Content-Disposition: form-data; name="field.language-empty-marker"
-  ... 
-  ... 1
-  ... -----------------------------1528991119743688478288052508
-  ... Content-Disposition: form-data; name="field.translator"
-  ... 
-  ... no-priv
-  ... -----------------------------1528991119743688478288052508
-  ... Content-Disposition: form-data; name="UPDATE_SUBMIT"
-  ... 
-  ... Add
-  ... -----------------------------1528991119743688478288052508--
-  ... """)
-  HTTP/1.1 303 See Other
-  Content-Length: ...
-  Content-Type: text/html;charset=utf-8
-  Location: .
-  <BLANKLINE>
-  ...
+  >>> browser.url
+  'http://translations.launchpad.dev/+groups/polyglot'
+
+  >>> browser.getLink('Appoint').click()
+  >>> browser.url
+  'http://translations.launchpad.dev/+groups/polyglot/+appoint'
+
+And let's appoint No Privileges user for Afrikaans too.
+
+  >>> browser.getControl('Language').value=['af']
+  >>> browser.getControl('Translator').value='no-priv'
+  >>> browser.getControl('Add').click()
 
 Now we should see both of those appointments on the polyglot page:
 
-  >>> print http(r"""
-  ... GET /translations/groups/polyglot/ HTTP/1.1
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...The PolyGlot Translation Group...
+  >>> find_main_content(browser.contents)
+  <...Abkhazian...Hoary Gnome Team...
+  ...Afrikaans...No Privileges Person...
+
+  >>> browser.url
+  'http://translations.launchpad.dev/+groups/polyglot'
+
+Appointing a new Abkhazian translator must fail gracefully, not crash as
+it used to do (Bug #52991).
+
+  >>> browser.getLink('Appoint').click()
+  >>> browser.getControl('Language').value=['ab']
+  >>> browser.getControl('Translator').value='name12'
+  >>> browser.getControl('Add').click()
+
+The error means we stay on the appoint page:
+
+  >>> browser.url
+  'http://translations.launchpad.dev/+groups/polyglot/+appoint'
+
+  >>> for message in find_tags_by_class(browser.contents, 'message'):
+  ...     print message.renderContents()
+  There is 1 error.
+  There is already a translator for this language
+
+Launchpad administrators, are allowed too to manage translation group
+membership.
+
+  >>> admin_browser.open(
+  ...   'http://translations.launchpad.dev/+groups/polyglot/')
+  >>> admin_browser.getLink('Appoint').click()
+  >>> admin_browser.url
+  'http://translations.launchpad.dev/+groups/polyglot/+appoint'
+
+Even to edit details of the translation group.
+
+  >>> admin_browser.open(
+  ...   'http://translations.launchpad.dev/+groups/polyglot/')
+  >>> admin_browser.getLink('Edit translation group details').click()
+  >>> admin_browser.url
+  'http://translations.launchpad.dev/+groups/polyglot/+edit'
+
+Normal users, however, are not.
+
+  >>> user_browser.open(
+  ...   'http://translations.launchpad.dev/+groups/polyglot/')
+  >>> user_browser.url
+  'http://translations.launchpad.dev/+groups/polyglot/'
+  >>> user_browser.getLink('Appoint').click()
+  Traceback (most recent call last):
   ...
-        <td>Abkhazian</td>
-        <td><a href=".../~name21">Hoary Gnome Team</a>
+  Unauthorized:...
+  >>> user_browser.open(
+  ...   'http://translations.launchpad.dev/+groups/polyglot/')
+  >>> user_browser.url
+  'http://translations.launchpad.dev/+groups/polyglot/'
+  >>> user_browser.getLink('Edit translation group details').click()
+  Traceback (most recent call last):
   ...
-        <td>Afrikaans</td>
-        <td><a href=".../~no-priv">No Privileges Person</a>
-  ...
-  ...href="+appoint"...Appoint...
+  Unauthorized:...

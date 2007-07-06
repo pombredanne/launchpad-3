@@ -12,17 +12,19 @@ contributors on a given context and the top contributors by category.
     ...     view = getView(context, name, TestRequest(form=form))
     ...     view.initialize()
     ...     return view
-    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
 
-    >>> topcontributors = create_view(firefox, '+topcontributors')
+    >>> topcontributors = create_view(evolution, '+topcontributors')
     >>> contributors = topcontributors._getTopContributorsWithLimit(limit=3)
     >>> [(contrib.person.name, contrib.karmavalue) for contrib in contributors]
-    [(u'name12', 105L), (u'sabdfl', 61L), (u'name16', 17L)]
+    [(u'name16', 175), (u'sabdfl', 22), (u'carlos', 9)]
 
     >>> contributors = topcontributors.top_contributors_by_category
-    >>> for category, contribs in contributors.items():
+    >>> categories = sorted(contributors.keys())
+    >>> for category in categories:
     ...     print category, [(contrib.person.name, contrib.karmavalue)
-    ...                      for contrib in contribs]
-    Specification Tracking [(u'sabdfl', 61L)]
-    Bug Management [(u'name12', 105L), (u'name16', 17L)]
+    ...                      for contrib in contributors[category]]
+    Bug Management [(u'name16', 11)]
+    Specification Tracking [(u'sabdfl', 22)]
+    Translations in Rosetta [(u'name16', 164), (u'carlos', 9)]
 

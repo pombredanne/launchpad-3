@@ -23,6 +23,8 @@ from interfaces import IBatch
 
 from sqlos.interfaces import ISelectResults
 
+from canonical.cachedproperty import cachedproperty
+
 # The base batch size, which can be overridden by users of _Batch such
 # as BatchNavigator. In Launchpad, we override it via a config option.
 BATCH_SIZE = 50
@@ -84,13 +86,19 @@ class _Batch(object):
             raise IndexError, 'batch is empty'
         return self.list[self.start+key]
 
+    @cachedproperty
+    def sliced_list(self):
+        # We use a cachedproperty here to avoid self.__iter__ giving us
+        # new objects every time; in certain cases (such as SQLObject)
+        # this can be expensive.
+        return list(self.list[self.start:self.end+1])
+
     def __iter__(self):
         if self.start < 0:
             # as in __getitem__, we need to avoid slicing with negative
             # indices in this code
             return iter([])
-        batch = self.list[self.start:self.end+1]
-        return iter(batch)
+        return iter(self.sliced_list)
 
     def first(self):
         return self[0]

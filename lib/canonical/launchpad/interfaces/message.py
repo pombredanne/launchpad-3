@@ -57,6 +57,8 @@ class IMessage(Interface):
     title = Attribute(_('The message title, usually just the subject.'))
     bugattachments = Attribute("A list of BugAttachments connected to this "
         "message.")
+    has_new_title = Attribute("Whether or not the title of this message "
+        "is different to that of its parent.")
 
     def __iter__():
         """Iterate over all the message chunks."""
