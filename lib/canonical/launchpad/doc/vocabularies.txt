@@ -1283,9 +1283,16 @@ Trying to retrieve an invalid or non-existent token raises LookupError:
       ...
     LookupError:...
 
-The searchForTerms() method returns FAQs that are similar to the query:
+The searchForTerms() method returns a CountableIterator of terms that
+are similar to the query:
 
-    >>> for term in vocab.searchForTerms('Problem showing SVG'):
+    >>> from canonical.launchpad.webapp.vocabulary import CountableIterator
+    >>> terms = vocab.searchForTerms('Problem showing SVG')
+    >>> isinstance(terms, CountableIterator)
+    True
+    >>> terms.count()
+    2
+    >>> for term in terms:
     ...     print term.title
     How do I troubleshoot problems with extensions/themes?
     How do I install Java?

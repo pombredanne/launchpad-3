@@ -67,7 +67,7 @@ from zope.security.proxy import isinstance as zisinstance
 from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectNotFound
 
 from canonical.launchpad.webapp.vocabulary import (
-    NamedSQLObjectHugeVocabulary, SQLObjectVocabularyBase,
+    CountableIterator, NamedSQLObjectHugeVocabulary, SQLObjectVocabularyBase,
     NamedSQLObjectVocabulary, IHugeVocabulary)
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import EmailAddressStatus, DistroSeriesStatus
@@ -268,8 +268,8 @@ class FAQVocabulary:
 
     def searchForTerms(self, query=None):
         """See `IHugeVocabulary`."""
-        for faq in self.context.findSimilarFAQs(query):
-            yield self.toTerm(faq)
+        results = self.context.findSimilarFAQs(query)
+        return CountableIterator(results.count(), results, self.toTerm)
 
 
 class LanguageVocabulary(SQLObjectVocabularyBase):
