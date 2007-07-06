@@ -217,3 +217,17 @@ class IBranchDetailsStorage(Interface):
         :param reason: A string giving the reason for the failure.
         :returns: True if the branch status was successfully updated.
         """
+
+    def recordSuccess(name, hostname, date_started, date_completed):
+        """Notify Launchpad that a mirror script has successfully completed.
+
+        Create an entry in the ScriptActivity table with the provided data.
+
+        :param name: Name of the script.
+        :param hostname: Where the script was running.
+
+        :param date_started: When the script started, as an UTC time tuple.
+        :param date_completed: When the script completed (now), as an UTC time
+            tuple.
+        :returns: True if the ScriptActivity record was successfully inserted.
+        """

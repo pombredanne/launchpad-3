@@ -8,6 +8,7 @@ __all__ = [
     'DatabaseBranchDetailsStorage',
     ]
 
+import datetime
 import os
 
 import transaction
@@ -645,3 +646,30 @@ class DatabaseBranchDetailsStorage:
         assert transaction.rowcount in [0, 1]
         return transaction.rowcount == 1
 
+    def recordSuccess(self, name, hostname, date_started, date_completed):
+        """See `IBranchDetailsStorage`."""
+        ri = self.connectionPool.runInteraction
+        return ri(self._recordSuccessInteraction,
+                  name, hostname, date_started, date_completed)
+
+    def _recordSuccessInteraction(self, transaction, name, hostname,
+            started_tuple, completed_tuple):
+        """The interaction for recordSuccess."""
+        date_started = datetime_from_tuple(started_tuple)
+        date_completed = datetime_from_tuple(completed_tuple)
+        transaction.execute(utf8("""
+            INSERT INTO ScriptActivity
+              (name, hostname, date_started, date_completed)
+              VALUES (%s, %s, %s, %s)""" % sqlvalues(
+            name, hostname, date_started, date_completed)))
+        return transaction.rowcount == 1
+
+
+def datetime_from_tuple(time_tuple):
+    """Create a datetime from a sequence that quacks like time.struct_time.
+
+    The tm_isdst is (index 8) is ignored. The created datetime uses tzinfo=UTC.
+    """
+    [year, month, day, hour, minute, second, weekday, yearday, is_dst] = \
+        time_tuple
+    return datetime.datetime(year, month, day, hour, minute, second)

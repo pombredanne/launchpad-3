@@ -36,3 +36,10 @@ class BranchStatusClient:
         if not self.client.mirrorFailed(branch_id, reason):
             raise BranchStatusError('mirrorFailed() failed for branch %d'
                                     % branch_id)
+
+    def recordSuccess(self, name, hostname, date_started, date_completed):
+        started_tuple = tuple(date_started.utctimetuple())
+        completed_tuple = tuple(date_completed.utctimetuple())
+        if not self.client.recordSuccess(
+                name, hostname, started_tuple, completed_tuple):
+            raise BranchStatusError('recordSuccess() failed')
