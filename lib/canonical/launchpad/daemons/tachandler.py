@@ -35,8 +35,6 @@ class TacTestSetup:
     def setUp(self, spew=False):
         self.killTac()
         if os.path.exists(self.pidfile):
-            print ("Removing pidfile %r. Should have already been removed."
-                   % self.pidfile)
             os.remove(self.pidfile)
         self.setUpRoot()
         args = [sys.executable, twistd_script, '-o', '-y', self.tacfile,
