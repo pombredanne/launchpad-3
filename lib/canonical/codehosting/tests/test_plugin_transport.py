@@ -16,8 +16,15 @@ from canonical.authserver.interfaces import READ_ONLY, WRITABLE
 from canonical.codehosting.tests.helpers import FakeLaunchpad
 from canonical.codehosting.transport import LaunchpadServer, makedirs
 
+from canonical.testing import BaseLayer
+
 
 class TestLaunchpadServer(TestCaseInTempDir):
+
+    # bzrlib manipulates 'logging'. The test runner will generate spurious
+    # warnings if these manipulations are not cleaned up. BaseLayer does the
+    # cleanup we need.
+    layer = BaseLayer
 
     def setUp(self):
         TestCaseInTempDir.setUp(self)
@@ -131,6 +138,9 @@ class TestLaunchpadServer(TestCaseInTempDir):
 
 
 class TestLaunchpadTransport(TestCaseInTempDir):
+
+    # See comment on TestLaunchpadServer.
+    layer = BaseLayer
 
     def setUp(self):
         TestCaseInTempDir.setUp(self)
@@ -272,6 +282,9 @@ class TestLaunchpadTransport(TestCaseInTempDir):
 
 class TestLaunchpadTransportReadOnly(TestCaseInTempDir):
     """Tests for read-only operations on the LaunchpadTransport."""
+
+    # See comment on TestLaunchpadServer.
+    layer = BaseLayer
 
     def setUp(self):
         TestCaseInTempDir.setUp(self)
