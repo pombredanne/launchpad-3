@@ -10,7 +10,7 @@ import unittest
 from bzrlib import errors
 from bzrlib.transport import get_transport, _get_protocol_handlers
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
-from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
+from bzrlib.tests import TestCase, TestCaseInTempDir
 
 from canonical.authserver.interfaces import READ_ONLY, WRITABLE
 from canonical.codehosting.tests.helpers import FakeLaunchpad
@@ -137,13 +137,13 @@ class TestLaunchpadServer(TestCaseInTempDir):
         self.assertEqual([1], self.server.authserver._request_mirror_log)
 
 
-class TestLaunchpadTransport(TestCaseInTempDir):
+class TestLaunchpadTransport(TestCase):
 
     # See comment on TestLaunchpadServer.
     layer = BaseLayer
 
     def setUp(self):
-        TestCaseInTempDir.setUp(self)
+        TestCase.setUp(self)
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         self.backing_transport = MemoryTransport()
@@ -280,14 +280,14 @@ class TestLaunchpadTransport(TestCaseInTempDir):
         self.assertEqual(set([]), self.server._dirty_branch_ids)
 
 
-class TestLaunchpadTransportReadOnly(TestCaseInTempDir):
+class TestLaunchpadTransportReadOnly(TestCase):
     """Tests for read-only operations on the LaunchpadTransport."""
 
     # See comment on TestLaunchpadServer.
     layer = BaseLayer
 
     def setUp(self):
-        TestCaseInTempDir.setUp(self)
+        TestCase.setUp(self)
         _memory_server = MemoryServer()
         _memory_server.setUp()
         self.addCleanup(_memory_server.tearDown)
