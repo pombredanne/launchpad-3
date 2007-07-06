@@ -805,8 +805,7 @@ class FrontPageFileBugAdvancedView(FileBugAdvancedView):
 
         # If we have a context that we can test for Malone use, we do so.
         if context is not None and not context.official_malone:
-            self.setFieldError("bugtarget",
-                               "That product does not use Malone")
+            self.addError("The selected project does not use Malone")
         else:
             return super(FrontPageFileBugAdvancedView, self).validate(data)
 
