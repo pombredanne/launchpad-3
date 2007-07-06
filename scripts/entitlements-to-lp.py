@@ -15,7 +15,7 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.launchpad.scripts.base import LaunchpadScript
 from canonical.launchpad.scripts.entitlement import (
     EntitlementExchange,
-    EntitlementWriter,
+    EntitlementImporter,
     )
 
 class ImportEntitlementsScript(LaunchpadScript):
@@ -58,11 +58,11 @@ class ImportEntitlementsScript(LaunchpadScript):
         reader = EntitlementExchange.readerFactory(in_file)
         writer = EntitlementExchange.writerFactory(out_file)
         in_data = list(reader)
-        entitlement_writer = EntitlementWriter(self.logger)
+        entitlement_writer = EntitlementImporter(self.logger)
         if action == 'create':
-            out_data = entitlement_writer.createEntitlements(in_data)
+            out_data = entitlement_importer.createEntitlements(in_data)
         elif action == 'update':
-            out_data = entitlement_writer.updateEntitlements(in_data)
+            out_data = entitlement_importer.updateEntitlements(in_data)
         else:
             self.logger.error("Invalid action: %s\n" % action)
             return 1

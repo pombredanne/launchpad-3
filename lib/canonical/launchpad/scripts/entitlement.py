@@ -5,8 +5,10 @@
 __metaclass__ = type
 __all__ = [
     'EntitlementExchange',
-    'EntitlementWriter',
+    'EntitlementImporter',
+    'InvalidFormat',
     'NoSuchEntitlement',
+    'UnsupportedVersion',
     ]
 
 from zope.component import getUtility
@@ -75,7 +77,7 @@ class EntitlementExchange:
                 reported)
         else:
             # The version is supported
-            return
+            return True
 
     @staticmethod
     def _preprocessData(in_file):
@@ -118,7 +120,7 @@ class EntitlementExchange:
         return writer
 
 
-class EntitlementWriter:
+class EntitlementImporter:
     """Class for writing and updating entitlement data.
 
     Methods create_entitlements and update_entitlements are called with a list
@@ -142,7 +144,7 @@ class EntitlementWriter:
             person = getUtility(IPersonSet).getByName(person_name)
         if person_required and person is None:
             self.logger.error(
-                "[E%d] Person %s is not found." % (self.row_no,
+                "[E%d] Person '%s' is not found." % (self.row_no,
                                                    person_name))
             return None
 
@@ -199,7 +201,7 @@ class EntitlementWriter:
             val = entitlement.get(key)
             if not val:
                 self.logger.error(
-                    "[E%d] A required key is missing : %s." % (self.row_no,
+                    "[E%d] A required key is missing: %s." % (self.row_no,
                                                                key))
                 return False
         return True
@@ -248,6 +250,12 @@ class EntitlementWriter:
             entitlement_set = getUtility(IEntitlementSet)
 
             existing = entitlement_set.get(lpid)
+            if existing is None:
+                self.logger.error(
+                    "[E%d] Invalid entitlement id: %d" % (self.row_no,
+                                                          lpid))
+                continue
+
             succeeded = True
             for (key, val) in norm_entitlement.items():
                 if key == 'id':
@@ -256,6 +264,8 @@ class EntitlementWriter:
                     self.logger.info(
                         "[E%d] You may not change the person for the "
                         "entitlement." % (self.row_no))
+                    succeeded = False
+                    break
                 elif key == 'entitlement_type':
                     existing.entitlement_type = val
                 elif key == 'quota':
