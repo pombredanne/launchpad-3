@@ -522,7 +522,9 @@ class IBranchSet(Interface):
     def getLatestBranchesForProduct(product, quantity, visible_by_user=None):
         """Return the most recently created branches for the product.
 
-        At most quantity branches are returned.
+        At most `quantity` branches are returned. Branches that have been
+        merged or abandoned don't appear in the results — only branches that
+        match `DEFAULT_BRANCH_STATUS_IN_LISTING`.
 
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are

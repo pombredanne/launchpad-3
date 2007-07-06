@@ -8,7 +8,7 @@ from unittest import TestCase, TestLoader
 
 import transaction
 
-from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.interfaces import IBranchSet, IProductSet
 
 from canonical.lp.dbschema import BranchLifecycleStatus
@@ -16,6 +16,7 @@ from canonical.lp.dbschema import BranchLifecycleStatus
 from canonical.testing import LaunchpadFunctionalLayer
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 
 class TestBranchSet(TestCase):
@@ -58,19 +59,15 @@ class TestBranchSet(TestCase):
         activity.
         """
         original_branches = list(
-            self.branch_set.getLatestBranchesForProduct(self.product, 0))
+            self.branch_set.getLatestBranchesForProduct(self.product, 5))
         branch = original_branches[0]
-        # XXX: JonathanLange 2007-07-05, This assumes that the branch owner is
-        # an individual and not a team.
-        login(branch.owner.preferredemail.email)
-        try:
-            branch.lifecycle_status = BranchLifecycleStatus.ABANDONED
-        finally:
-            logout()
-        transaction.commit()
-        login(ANONYMOUS)
+        # XXX: JonathanLange 2007-07-06, WHITEBOXING. The anonymous user cannot
+        # change branch details, so we remove the security proxy and change it.
+        branch = removeSecurityProxy(branch)
+        branch.lifecycle_status = BranchLifecycleStatus.ABANDONED
+        syncUpdate(branch)
         latest_branches = list(
-            self.branch_set.getLatestBranchesForProduct(self.product, 0))
+            self.branch_set.getLatestBranchesForProduct(self.product, 5))
         self.assertEqual(original_branches[1:], latest_branches)
 
 

@@ -574,7 +574,7 @@ class BranchSet:
 
     def getLatestBranchesForProduct(self, product, quantity,
                                     visible_by_user=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         assert product is not None, "Must have a valid product."
         lifecycle_clause = self._lifecycleClause(
             DEFAULT_BRANCH_STATUS_IN_LISTING)
