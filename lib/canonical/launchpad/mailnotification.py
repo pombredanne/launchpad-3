@@ -1805,3 +1805,39 @@ def send_branch_modified_notifications(branch, event):
     contents = '\n'.join(info_lines)
     email_branch_modified_notifications(
         branch, to_addresses, from_address, contents, recipients)
+
+def notify_specification_subscription_created(specsub, event):
+    """Notify a user that they have been subscribed to a blueprint."""
+    user = event.user
+    address = specsub.person.preferredemail.email.encode('ascii')
+    subject = ('[Blueprint %s] %s' %
+        (specsub.specification.name, specsub.specification.title))
+    body = ('You are now subscribed to the blueprint '
+        '%(blueprint_name)s - %(blueprint_title)s.\n\n'
+        '--\n  %(blueprint_url)s' %
+        {'blueprint_name' : specsub.specification.name,
+         'blueprint_title' : specsub.specification.title,
+         'blueprint_url' : canonical_url(specsub.specification)})
+    simple_sendmail_from_person(user, [address], subject, body)
+
+def notify_specification_subscription_modified(specsub, event):
+    """Notify a subscriber to a blueprint that their
+    subscription has changed.
+    """
+    user = event.user
+    address = specsub.person.preferredemail.email.encode('ascii')
+    subject = ('[Blueprint %s] %s' %
+        (specsub.specification.name, specsub.specification.title))
+    if specsub.essential:
+        specsub_type = 'Participation essential'
+    else:
+        specsub_type = 'Participation non-essential'
+    body = ('Your subscription to the blueprint '
+        '%(blueprint_name)s - %(blueprint_title)s '
+        'has changed to [%(specsub_type)s].\n\n'
+        '--\n  %(blueprint_url)s' %
+        {'blueprint_name' : specsub.specification.name,
+         'blueprint_title' : specsub.specification.title,
+         'specsub_type' : specsub_type,
+         'blueprint_url' : canonical_url(specsub.specification)})
+    simple_sendmail_from_person(user, [address], subject, body)

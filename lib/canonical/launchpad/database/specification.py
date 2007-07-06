@@ -37,7 +37,7 @@ from canonical.launchpad.helpers import (
     contactEmailAddresses, shortlist)
 
 from canonical.launchpad.event.sqlobjectevent import (
-    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
+    SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
@@ -456,18 +456,28 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 return sub
         return None
 
-    def subscribe(self, person, essential=None):
+    def subscribe(self, person, essential=None, user=None):
         """See ISpecification."""
         # first see if a relevant subscription exists, and if so, return it
         sub = self.subscription(person)
         if sub is not None and essential is not None:
-            sub.essential = essential
+            if sub.essential != essential:
+                # XXX : The second argument should really be a copy
+                #     of sub with only the essential attribute changed,
+                #     though we know that we can get away with not
+                #     examining the attribute at all - it's a boolean!
+                #     -- 2007-07-06 Tom Berger
+                sub.essential = essential
+                notify(
+                    SQLObjectModifiedEvent(sub, sub, ['essential'], user=user))
             return sub
         # since no previous subscription existed, create and return a new one
         if essential is None:
             essential = False
-        return SpecificationSubscription(specification=self,
+        sub = SpecificationSubscription(specification=self,
             person=person, essential=essential)
+        notify(SQLObjectCreatedEvent(sub, user=user))
+        return sub
 
     def unsubscribe(self, person):
         """See ISpecification."""

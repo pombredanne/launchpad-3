@@ -19,7 +19,7 @@ class SpecificationSubscriptionAddView(GeneralFormView):
 
     def process(self, person, essential):
         self._nextURL = canonical_url(self.context)
-        return self.context.subscribe(person, essential)
+        return self.context.subscribe(person, essential, user=self.user)
 
 
 class SpecificationSubscriptionEditView(SQLObjectEditView):
