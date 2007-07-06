@@ -10,7 +10,7 @@ import unittest
 from bzrlib import errors
 from bzrlib.transport import get_transport, _get_protocol_handlers
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
-from bzrlib.tests import TestCase, TestCaseInTempDir
+from bzrlib.tests import TestCase
 
 from canonical.authserver.interfaces import READ_ONLY, WRITABLE
 from canonical.codehosting.tests.helpers import FakeLaunchpad
@@ -19,7 +19,7 @@ from canonical.codehosting.transport import LaunchpadServer, makedirs
 from canonical.testing import BaseLayer
 
 
-class TestLaunchpadServer(TestCaseInTempDir):
+class TestLaunchpadServer(TestCase):
 
     # bzrlib manipulates 'logging'. The test runner will generate spurious
     # warnings if these manipulations are not cleaned up. BaseLayer does the
@@ -27,7 +27,7 @@ class TestLaunchpadServer(TestCaseInTempDir):
     layer = BaseLayer
 
     def setUp(self):
-        TestCaseInTempDir.setUp(self)
+        TestCase.setUp(self)
         self.authserver = FakeLaunchpad()
         self.user_id = 1
         self.backing_transport = MemoryTransport()
