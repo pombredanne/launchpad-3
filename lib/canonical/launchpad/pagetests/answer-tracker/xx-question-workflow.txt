@@ -269,7 +269,7 @@ message as the "Best answer".
 
 A message is displayed to the user confirming that the question is
 solved and suggesting that the user choose an answer that helped
-the user achieve the solution.
+the question owner to solve the his problem.
 
     >>> for message in soup.findAll('div', 'informational message'):
     ...     print extract_text(message)

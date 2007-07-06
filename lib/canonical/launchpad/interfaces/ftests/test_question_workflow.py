@@ -429,7 +429,6 @@ class GiveAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             """Check additional attributes set when the owner gives the
             answers.
             """
-            self.assertEquals(message, self.question.answer)
             self.assertEquals(self.owner, self.question.answerer)
             self.assertEquals(message.datecreated, self.question.dateanswered)
 
@@ -445,7 +444,7 @@ class GiveAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
                 self.owner, "I found the solution.",),
             transition_method_kwargs={'datecreated': self.nowPlus(3)},
             edited_fields=['status', 'messages', 'dateanswered', 'answerer',
-                           'answer', 'datelastquery'])
+                           'datelastquery'])
 
     def test_giveAnswerPermission(self):
         """Test that only a logged in user can access giveAnswer()."""
@@ -611,7 +610,7 @@ class ReopenTestCase(BaseAnswerTrackerWorkflowTestCase):
             expected_action=QuestionAction.REOPEN,
             expected_status=QuestionStatus.OPEN)
         self.checkTransitionEvents(
-            message, ['status', 'messages', 'answerer', 'answer',
+            message, ['status', 'messages', 'answerer',
                       'dateanswered', 'datelastquery'],
             QuestionStatus.OPEN.title)
 

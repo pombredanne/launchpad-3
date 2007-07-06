@@ -821,7 +821,6 @@ class QuestionMessageDisplayView(LaunchpadView):
     def isBestAnswer(self):
         """Return True when this message is marked as solving the question."""
         return (self.context == self.question.answer
-                and self.context.owner != self.question.owner
                 and self.context.action in [
                     QuestionAction.ANSWER, QuestionAction.CONFIRM])
 

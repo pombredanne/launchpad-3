@@ -1968,7 +1968,7 @@ INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (41,
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (42, 7, 0, 'questiongaveinfo', 'Gave more information on a question', 'User replied to a message asking for more information on a question in the Answer Tracker.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (43, 7, 0, 'questiongaveanswer', 'Gave answer on a question', 'User post a message containing an answer to a question in the Answer Tracker. This is distinct from having that message confirmed as solving the problem.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (44, 7, 0, 'questionrejected', 'Rejected question', 'User rejected a question in the Answer Tracker.');
-INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (45, 7, 0, 'questionownersolved', 'Solved own question', 'User post a message explaining how he solved his own problem.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (45, 7, 3, 'questionownersolved', 'Solved own question', 'User post a message explaining how he solved his own problem.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (46, 7, 0, 'questionreopened', 'Reopened question', 'User posed a message to reopen his question in the Answer Tracker.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (47, 7, 1, 'questionasked', 'Asked question', 'User asked a question in the Answer Tracker.');
 

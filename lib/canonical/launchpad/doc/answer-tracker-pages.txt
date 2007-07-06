@@ -264,7 +264,8 @@ If the question owner reopens the question, its status is changed back to
     '.../+question/2'
 
 When the question owner answers his own question, it is moved straight to
-the SOLVED state.
+the SOLVED state. The question owner is attributed as the answerer, but
+no answer message is assigned to the answer.
 
     >>> workflow_harness.submit(
     ...     'selfanswer', {
@@ -276,6 +277,10 @@ the SOLVED state.
     problem, please use the <em>'This solved my problem'</em> button.
     >>> print firefox_question.status.name
     SOLVED
+    >>> print firefox_question.answerer.displayname
+    Sample Person
+    >>> firefox_question.answer is None
+    True
     >>> workflow_harness.redirectionTarget()
     '.../+question/2'
 
@@ -283,6 +288,7 @@ When the answerer is the question owner, the owner can still confirm
 an answer, in addition to adding a comment or reopening the question.
 This path permits the question owner to state how the problem was
 solved, then attribute an answerer as a contributor to the solution.
+The answerer's message is attributed as the answer in this case.
 
     >>> getAvailableActionNames(workflow_harness.view)
     ['comment', 'confirm', 'reopen']
@@ -292,6 +298,10 @@ solved, then attribute an answerer as a contributor to the solution.
     ...                 'field.message': ''})
     >>> print firefox_question.status.name
     SOLVED
+    >>> print firefox_question.answerer.displayname
+    No Privileges Person
+    >>> print firefox_question.answer.owner.displayname
+    No Privileges Person 
     >>> workflow_harness.redirectionTarget()
     '.../+question/2'
 

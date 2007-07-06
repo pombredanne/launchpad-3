@@ -294,11 +294,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         if self.owner == user:
             self.dateanswered = msg.datecreated
             self.answerer = user
-            self.answer = msg
-            self.owner.assignKarma(
-                'questionownersolved', product=self.product,
-                distribution=self.distribution,
-                sourcepackagename=self.sourcepackagename)
+
         return msg
 
     @property
