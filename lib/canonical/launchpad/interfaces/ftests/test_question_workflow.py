@@ -405,7 +405,7 @@ class GiveAnswerTestCase(BaseAnswerTrackerWorkflowTestCase):
             ['OPEN', 'NEEDSINFO', 'ANSWERED'], self.question.giveAnswer,
             self.answerer, "The answer is this.", datecreated=self.nowPlus(1))
 
-    def test_giveAnswer(self):
+    def test_giveAnswerByAnswerer(self):
         """Test that giveAnswer can be called when the question status is
         one of OPEN, NEEDSINFO or ANSWERED and check that it returns a
         valid IQuestionMessage.
