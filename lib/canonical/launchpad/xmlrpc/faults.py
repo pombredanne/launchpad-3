@@ -14,6 +14,7 @@ __all__ = [
     'NoSuchBranch',
     'NoSuchBug',
     'RequiredParameterMissing',
+    'InvalidBranchUri',
     ]
 
 import xmlrpclib
@@ -146,3 +147,13 @@ class RequiredParameterMissing(LaunchpadFault):
 
     def __init__(self, parameter_name):
         LaunchpadFault.__init__(self, parameter_name=parameter_name)
+
+
+class InvalidBranchUri(LaunchpadFault):
+    """The provided branch URL is not a valid URI."""
+
+    error_code = 110
+    msg_template = "Invalid URI: %(branch_url)s"
+
+    def __init__(self, branch_url):
+        LaunchpadFault.__init__(self, branch_url=branch_url)

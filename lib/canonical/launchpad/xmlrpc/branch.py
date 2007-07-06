@@ -11,8 +11,9 @@ from zope.component import getUtility
 from zope.interface import Interface, implements
 
 from canonical.launchpad.interfaces import (
-    IBranchSet, IBugSet, ILaunchBag, IProductSet, IPersonSet, NotFoundError)
+    IBranchSet, IBugSet, ILaunchBag, IPersonSet, IProductSet, NotFoundError)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
+from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.xmlrpc import faults
 from canonical.lp.dbschema import BugBranchStatus
 
@@ -53,6 +54,11 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         existing_branch = getUtility(IBranchSet).getByUrl(branch_url)
         if existing_branch is not None:
             return faults.BranchAlreadyRegistered(branch_url)
+
+        try:
+            uri = URI(branch_url)
+        except InvalidURIError, e:
+            return faults.InvalidBranchUri(branch_url)
 
         # We want it to be None in the database, not ''.
         if not branch_description:
