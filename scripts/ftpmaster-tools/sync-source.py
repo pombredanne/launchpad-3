@@ -91,6 +91,8 @@ def urgency_from_numeric(n):
 
 
 def sign_changes(changes, dsc):
+    # XXX cprov 20070706: hardcoded file locations and parameters for
+    # production.
     temp_filename = "unsigned-changes"
     keyid = "0C12BDD7"
     secret_keyring = "/srv/launchpad.net/dot-gnupg/secring.gpg"
@@ -195,7 +197,7 @@ def parse_changelog(changelog_filename, previous_version):
 
 
 def fix_changelog(changelog):
-    """Fix debian/changelog entr(y,ies) to be in .changes compatible format."""
+    """Fix debian/changelog entries to be in .changes compatible format."""
     fixed = []
     fixed_idx = -1
     for line in changelog.split("\n"):
@@ -330,7 +332,7 @@ def check_dsc(dsc, current_sources, current_binaries):
                     "%s is trying to override %s_%s without -f/--force." %
                     (source, binary, current_version))
             print "I: %s [%s] -> %s_%s [%s]." % (
-                source, source_component,binary, current_version,
+                source, source_component, binary, current_version,
                 current_component)
 
 
@@ -467,7 +469,7 @@ def read_current_binaries(distroseries):
     query = """
     SELECT bpn.name, bpr.version, c.name
     FROM binarypackagerelease bpr, binarypackagename bpn, component c,
-         securebinarypackagepublishinghistory sbpph, distroarchrelease dar
+        securebinarypackagepublishinghistory sbpph, distroarchrelease dar
     WHERE
         bpr.binarypackagename = bpn.id AND
              sbpph.binarypackagerelease = bpr.id AND
@@ -828,7 +830,7 @@ def init():
 
     # Blacklist
     Blacklisted = {}
-    # XXX
+    # XXX cprov 20070706: hardcoded file location for production.
     blacklist_file = open("/srv/launchpad.net/dak/sync-blacklist.txt")
     for line in blacklist_file:
         try:

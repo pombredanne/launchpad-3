@@ -16,7 +16,7 @@ origins = {
     "dsc": "must be signed and valid"
     },
 
-"security":{
+"security": {
     "name": "Security",
     "url": "http://security.debian.org/debian-security/",
     "default suite": "etch/updates",
@@ -78,22 +78,6 @@ origins = {
     "name": "apt.pgpackages.org-debian",
     "url": "http://apt.pgpackages.org/debian/",
     "default suite": "sid",
-    "default component": "main",
-    "dsc": "can be unsigned"
-    },
-
-"apt.pgpackages.org-debian": {
-    "name": "apt.pgpackages.org-debian",
-    "url": "http://apt.pgpackages.org/debian/",
-    "default suite": "sid",
-    "default component": "contrib",
-    "dsc": "can be unsigned"
-    },
-
-"apt.pgpackages.org-debian": {
-    "name": "apt.pgpackages.org-debian",
-    "url": "http://apt.pgpackages.org/debian/",
-    "default suite": "sid",
     "default component": "non-free",
     "dsc": "can be unsigned"
     },
@@ -114,43 +98,11 @@ origins = {
     "dsc": "can be unsigned"
     },
 
-"debian.hinterhof.net": {
-    "name": "debian.hinterhof.net",
-    "url": "http://debian.hinterhof.net/",
-    "default suite": "unstable",
-    "default component": "",
-    "dsc": "can be unsigned"
-    },
-
 "debian.speedblue.org": {
     "name": "debian.speedblue.org",
     "url": "http://debian.speedblue.org/",
     "default suite": "",
     "default component": "",
-    "dsc": "can be unsigned"
-    },
-
-"debian.wgdd.de-debian": {
-    "name": "debian.wgdd.de-debian",
-    "url": "http://debian.wgdd.de/debian/",
-    "default suite": "unstable",
-    "default component": "main",
-    "dsc": "can be unsigned"
-    },
-
-"debian.wgdd.de-debian": {
-    "name": "debian.wgdd.de-debian",
-    "url": "http://debian.wgdd.de/debian/",
-    "default suite": "unstable",
-    "default component": "contrib",
-    "dsc": "can be unsigned"
-    },
-
-"debian.wgdd.de-debian": {
-    "name": "debian.wgdd.de-debian",
-    "url": "http://debian.wgdd.de/debian/",
-    "default suite": "unstable",
-    "default component": "non-free",
     "dsc": "can be unsigned"
     },
 
@@ -198,22 +150,6 @@ origins = {
     "name": "jeroen.coekaerts.be-debian",
     "url": "http://jeroen.coekaerts.be/debian/",
     "default suite": "unstable",
-    "default component": "main",
-    "dsc": "can be unsigned"
-    },
-
-"jeroen.coekaerts.be-debian": {
-    "name": "jeroen.coekaerts.be-debian",
-    "url": "http://jeroen.coekaerts.be/debian/",
-    "default suite": "unstable",
-    "default component": "contrib",
-    "dsc": "can be unsigned"
-    },
-
-"jeroen.coekaerts.be-debian": {
-    "name": "jeroen.coekaerts.be-debian",
-    "url": "http://jeroen.coekaerts.be/debian/",
-    "default suite": "unstable",
     "default component": "non-free",
     "dsc": "can be unsigned"
     },
@@ -223,22 +159,6 @@ origins = {
     "url": "http://laylward.com/debian/",
     "default suite": "unstable",
     "default component": "",
-    "dsc": "can be unsigned"
-    },
-
-"mherrn.de-debian": {
-    "name": "mherrn.de-debian",
-    "url": "http://mherrn.de/debian/",
-    "default suite": "sid",
-    "default component": "hatari",
-    "dsc": "can be unsigned"
-    },
-
-"mherrn.de-debian": {
-    "name": "mherrn.de-debian",
-    "url": "http://mherrn.de/debian/",
-    "default suite": "sid",
-    "default component": "paranoia",
     "dsc": "can be unsigned"
     },
 
@@ -290,14 +210,6 @@ origins = {
     "dsc": "can be unsigned"
     },
 
-"people.debian.org-%7etora-deb": {
-    "name": "people.debian.org-%7Etora-deb",
-    "url": "http://people.debian.org/~tora/deb/",
-    "default suite": "",
-    "default component": "",
-    "dsc": "can be unsigned"
-    },
-
 "piem.homeip.net-%7epiem-debian": {
     "name": "piem.homeip.net-%7Epiem-debian",
     "url": "http://piem.homeip.net/~piem/debian/",
@@ -333,14 +245,6 @@ origins = {
 "security.dsi.unimi.it-%7elorenzo-debian": {
     "name": "security.dsi.unimi.it-%7Elorenzo-debian",
     "url": "http://security.dsi.unimi.it/~lorenzo/debian/",
-    "default suite": "",
-    "default component": "",
-    "dsc": "can be unsigned"
-    },
-
-"silcnet.org-download-client-deb": {
-    "name": "silcnet.org-download-client-deb",
-    "url": "http://silcnet.org/download/client/deb/",
     "default suite": "",
     "default component": "",
     "dsc": "can be unsigned"
@@ -464,22 +368,6 @@ origins = {
     "name": "http.debian.or.jp-debian-jp",
     "url": "http://http.debian.or.jp/debian-jp/",
     "default suite": "unstable-jp",
-    "default component": "main",
-    "dsc": "can be unsigned"
-    },
-
-"http.debian.or.jp-debian-jp": {
-    "name": "http.debian.or.jp-debian-jp",
-    "url": "http://http.debian.or.jp/debian-jp/",
-    "default suite": "unstable-jp",
-    "default component": "contrib",
-    "dsc": "can be unsigned"
-    },
-
-"http.debian.or.jp-debian-jp": {
-    "name": "http.debian.or.jp-debian-jp",
-    "url": "http://http.debian.or.jp/debian-jp/",
-    "default suite": "unstable-jp",
     "default component": "non-free",
     "dsc": "can be unsigned"
     },
@@ -568,22 +456,6 @@ origins = {
     "name": "debian.wgdd.de-debian",
     "url": "http://debian.wgdd.de/debian/",
     "default suite": "sid",
-    "default component": "main",
-    "dsc": "can be unsigned"
-    },
-
-"debian.wgdd.de-debian": {
-    "name": "debian.wgdd.de-debian",
-    "url": "http://debian.wgdd.de/debian/",
-    "default suite": "sid",
-    "default component": "contrib",
-    "dsc": "can be unsigned"
-    },
-
-"debian.wgdd.de-debian": {
-    "name": "debian.wgdd.de-debian",
-    "url": "http://debian.wgdd.de/debian/",
-    "default suite": "sid",
     "default component": "non-free",
     "dsc": "can be unsigned"
     },
@@ -647,14 +519,6 @@ origins = {
 "eric.lavar.de-comp-linux-debian": {
     "name": "eric.lavar.de-comp-linux-debian",
     "url": "http://eric.lavar.de/comp/linux/debian/",
-    "default suite": "unstable",
-    "default component": "",
-    "dsc": "can be unsigned"
-    },
-
-"eric.lavar.de-comp-linux-debian": {
-    "name": "eric.lavar.de-comp-linux-debian",
-    "url": "http://eric.lavar.de/comp/linux/debian/",
     "default suite": "experimental",
     "default component": "",
     "dsc": "can be unsigned"
@@ -688,14 +552,6 @@ origins = {
     "name": "ftp.unixdev.net-pub-debian-udev",
     "url": "http://ftp.unixdev.net/pub/debian-udev/",
     "default suite": "unixdev",
-    "default component": "main",
-    "dsc": "can be unsigned"
-    },
-
-"ftp.unixdev.net-pub-debian-udev": {
-    "name": "ftp.unixdev.net-pub-debian-udev",
-    "url": "http://ftp.unixdev.net/pub/debian-udev/",
-    "default suite": "unixdev",
     "default component": "non-free",
     "dsc": "can be unsigned"
     },
@@ -704,39 +560,7 @@ origins = {
     "name": "packages.kirya.net",
     "url": "http://packages.kirya.net/",
     "default suite": "unstable",
-    "default component": "main",
-    "dsc": "can be unsigned"
-    },
-
-"packages.kirya.net": {
-    "name": "packages.kirya.net",
-    "url": "http://packages.kirya.net/",
-    "default suite": "unstable",
-    "default component": "contrib",
-    "dsc": "can be unsigned"
-    },
-
-"packages.kirya.net": {
-    "name": "packages.kirya.net",
-    "url": "http://packages.kirya.net/",
-    "default suite": "unstable",
     "default component": "non-free",
-    "dsc": "can be unsigned"
-    },
-
-"repos.knio.it": {
-    "name": "repos.knio.it",
-    "url": "http://repos.knio.it/",
-    "default suite": "unstable",
-    "default component": "main",
-    "dsc": "can be unsigned"
-    },
-
-"repos.knio.it": {
-    "name": "repos.knio.it",
-    "url": "http://repos.knio.it/",
-    "default suite": "unstable",
-    "default component": "contrib",
     "dsc": "can be unsigned"
     },
 
@@ -785,14 +609,6 @@ origins = {
     "url": "http://rapid.dotsrc.org/",
     "default suite": "unstable",
     "default component": "",
-    "dsc": "can be unsigned"
-    },
-
-"debian-eclipse.wfrag.org-debian": {
-    "name": "debian-eclipse.wfrag.org-debian",
-    "url": "http://debian-eclipse.wfrag.org/debian/",
-    "default suite": "sid",
-    "default component": "main",
     "dsc": "can be unsigned"
     },
 
