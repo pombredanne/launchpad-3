@@ -1271,16 +1271,28 @@ be retrieved by token:
     >>> print term.title
     How do I install plugins (Shockwave, QuickTime, etc.)?
 
-Trying to retrieve an unknown token raises LookupError:
+Trying to retrieve an invalid or non-existent token raises LookupError:
 
-    >>> vocab.getTermByToken('-244')
+    >>> vocab.getTermByToken('not a good token')
     Traceback (most recent call last):
       ...
     LookupError:...
 
-The searchForTerms() method returns FAQs that are similar to the query:
+    >>> vocab.getTermByToken('1001')
+    Traceback (most recent call last):
+      ...
+    LookupError:...
 
-    >>> for term in vocab.searchForTerms('Problem showing SVG'):
+The searchForTerms() method returns a CountableIterator of terms that
+are similar to the query:
+
+    >>> from canonical.launchpad.webapp.vocabulary import CountableIterator
+    >>> terms = vocab.searchForTerms('Problem showing SVG')
+    >>> isinstance(terms, CountableIterator)
+    True
+    >>> terms.count()
+    2
+    >>> for term in terms:
     ...     print term.title
     How do I troubleshoot problems with extensions/themes?
     How do I install Java?
