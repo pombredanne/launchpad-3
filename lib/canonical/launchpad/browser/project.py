@@ -183,37 +183,64 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link(target, text, enabled=enabled)
 
     def bugs(self):
+        """Sets up the Bugs facet for a project
+
+        :return: A Link instance for the Bugs facet
+
+        If the project has < 1 product the Link will be disabled.
+        This is to avoid situations where users try to file bugs against
+        empty project groups (Malone bug #106523)
+        """
         site = 'bugs'
         text = 'Bugs'
 
-        # We only enable this link if the Project 1 or more products
         products = list(self.context.products)
         enabled = len(products) > 0
         return Link('', text, enabled=enabled, site=site)
 
     def answers(self):
+        """Sets up the Answers facet for a project
+
+        :return: A Link instance for the Answers facet
+
+        If the project has < 1 product the Link will be disabled.
+        This is to avoid situations where users try to file questions
+        against empty project groups (Answers bug #124434)
+        """
         site = 'answers'
         text = 'Answers'
 
-        # We only enable this link if the Project 1 or more products
         products = list(self.context.products)
         enabled = len(products) > 0
         return Link('', text, enabled=enabled, site=site)
 
     def specifications(self):
+        """Sets up the Blueprints facet for a project
+
+        :return: A Link instance for the Blueprints facet
+
+        If the project has < 1 product the Link will be disabled.
+        This is to avoid situations where users try to file specs against
+        empty project groups (Answers bug #124428)
+        """
         site = 'blueprints'
         text = 'Blueprints'
 
-        # We only enable this link if the Project 1 or more products
         products = list(self.context.products)
         enabled = len(products) > 0
         return Link('', text, enabled=enabled, site=site)
 
     def translations(self):
+        """Sets up the Translations facet for a project
+
+        :return: A Link instance for the Translations facet
+
+        If the project has < 1 product the Link will be disabled for the
+        sake of consistency with the behaviour of the other facets
+        """
         site = 'translations'
         text = 'Translations'
 
-        # We only enable this link if the Project 1 or more products
         products = list(self.context.products)
         enabled = len(products) > 0
         return Link('', text, enabled=enabled, site=site)
