@@ -197,11 +197,13 @@ showing no questions when there could be in other languages.)
 
 == Questions by language ==
 
-The project questions page displays an inline list of languages that
-have questions that are unsolved when such questions exist.
-No Privileges Person is looking for an project that needs help. He 
-visits Kubuntu and does not see a need, but when he visits Mozilla
-Firefox, he is informed that there are questions going unanswered.
+When unsolved questions are in languages that no answer contacts
+speak, the project questions page displays links to see those 
+questions. Each link is to a page that displays the questions
+for a specific language. No Privileges Person is looking for a
+project that needs help. He visits Kubuntu and does not see a need,
+but when he visits Mozilla Firefox, he is informed that there are
+questions going unanswered.
 
     >>> user_browser.open('http://answers.launchpad.dev/kubuntu')
     >>> paragraph = find_main_content(user_browser.contents).find('p')

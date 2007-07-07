@@ -75,9 +75,9 @@ class UserSupportLanguagesMixin:
     def user_support_languages(self):
         """The set of user support languages.
 
-        This set includes the user's preferred languages, excluding all 
-        English variants. If the user is not logged in, or doesn't have 
-        any preferred languages set, the languages will be inferred 
+        This set includes the user's preferred languages, excluding all
+        English variants. If the user is not logged in, or doesn't have
+        any preferred languages set, the languages will be inferred
         from the request (the Accept-Language header and GeoIP
         information).
         """
@@ -238,29 +238,26 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
     @property
     def unspoken_languages(self):
         """Return a formatted string of unspoken question languages.
-        
-        The string summarizes the questions that are in languages that         
+
+        The string summarizes the questions that are in languages that
         no answer contact speaks. The string takes the form of an
         inline list with links to see the questions for each language:
-        '_Hungarian_ (2), _Romanian_ (1)'. None is returrned when all
-        questions are in a language spoken by the answer contacts.
+        '_Hungarian_ (2), _Romanian_ (1)'. An empty stirng is returned
+        when all questions are in a language spoken by the answer contacts.
         """
-        languages = {}
+        language_counts = {}
         questions = self.context.searchQuestions(
             unsupported=self.context, status=[QuestionStatus.OPEN])
         for question in questions:
             lang = question.language
-            if lang in languages:
-                languages[lang] += languages[lang]
-            else:
-                languages[lang] = 1
-        if len(languages.keys()) == 0:
-            return None
-        format = (u'<a href="%s/+by-language'
-                  u'?field.language=%s&field.status=Open">%s</a> (%s)')
+            language_counts[lang] = language_counts.setdefault(lang, 0) + 1
+        if len(language_counts) == 0:
+            return ''
         url = canonical_url(self.context, rootsite='answers')
-        links = [format % (url, key.code, key.englishname, languages[key])
-                 for key in languages.keys()]
+        format = (u'<a href="' + url + u'/+by-language'
+                  u'?field.language=%s&field.status=Open">%s</a> (%s)')
+        links = [format % (key.code, key.englishname, language_counts[key])
+                 for key in language_counts]
         return u', '.join(links)
 
     @property
@@ -317,7 +314,7 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     @property
     def show_language_control(self):
-        """Whether to show the Languages boxes or not.
+        """Whether to render Language control, or not at all.
 
         When the QuestionTarget has questions in only one language,
         and that language is among the user's languages, we do not render
@@ -334,7 +331,11 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
 
     @property
     def hide_language_control(self):
-        """Whether to render the Language control as a hidden input."""
+        """Whether to render the Language control as a hidden input.
+        
+        When the form requires a predetermined language, the language
+        control should be redered as a <input type="hidden"....
+        """
         return False
 
     @safe_action
@@ -464,13 +465,13 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
 class QuestionCollectionByLanguageView(SearchQuestionsView):
     """Search for questions in a specific language.
 
-     It displays questions that are asked in the specified language for the
-     QuestionTarget context.
+     This view displays questions that are asked in the specified language
+     for the QuestionTarget context.
      """
 
     def __init__(self, context, request):
         """Initialize the view, and check that a language was submitted.
-        
+
         When the language is missing, the View redirects to the project's
         Answer facet.
         """
@@ -517,7 +518,7 @@ class QuestionCollectionByLanguageView(SearchQuestionsView):
     @property
     def show_language_control(self):
         """See `SearchQuestionsView`.
-        
+
         This view does not permit the user to select a language.
         """
         return False
@@ -525,8 +526,8 @@ class QuestionCollectionByLanguageView(SearchQuestionsView):
     @property
     def hide_language_control(self):
         """See `SearchQuestionsView`.
-        
-        The language is predetermined.
+
+        The language is predetermined, always render a <input type="hidden".
         """
         return True
 
@@ -748,7 +749,7 @@ class QuestionTargetAnswersMenu(QuestionCollectionAnswersMenu):
 
     usedfor = IQuestionTarget
     facet = 'answers'
-    links = QuestionCollectionAnswersMenu.links + (['new', 'answer_contact'])
+    links = QuestionCollectionAnswersMenu.links + ['new', 'answer_contact']
 
     def new(self):
         """Return a link to ask a question."""
