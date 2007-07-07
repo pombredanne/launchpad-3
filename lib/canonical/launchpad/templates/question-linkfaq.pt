@@ -34,7 +34,24 @@
 </div>
 
 <metal:help fill-slot="help">
-  <p>XXX flacoste 20070610 TBD</p>
+  <p>This page is used to answer the question by giving a link to a FAQ
+    document. 
+  </p>
+  <p>Select the appropriate FAQ using the radio buttons. The list of suggested
+    FAQs is determined by searching for FAQs similar to the question title.
+    You can change the suggested list by modifying the search used and clicking
+    on the <b>Search</b> button.
+  </p>
+  <p>To remove the FAQ link, select the <b>No existing FAQs are relevant</b>
+    option.
+  </p>
+  <p>The message that will be used to answer the question is displayed in the
+    <b>Answer Message</b> field. The selected FAQ title will be automatically
+    appended to this message.
+  </p>
+  <p>If you are the project owner or one of its answer contacts, you can
+    create a new FAQ document if none of the existing ones apply.
+  </p>
 </metal:help>
 
 </body>

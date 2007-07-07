@@ -462,7 +462,9 @@ class IQuestionLinkFAQForm(Interface):
     faq = Choice(
         title=_('Which is the relevant FAQ?'),
         description=_(
-            'Select the FAQ that is the most relevant for this question.'),
+            'Select the FAQ that is the most relevant for this question. '
+            'You can modify the list of suggested FAQs by editing the search '
+            'field and clicking "Search".'),
         vocabulary='FAQ', required=False, default=None)
 
     message = Text(

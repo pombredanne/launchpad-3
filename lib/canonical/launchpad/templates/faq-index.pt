@@ -24,7 +24,15 @@
 </div>
 
   <metal:help fill-slot="help">
-    XXX flacoste 20070608 TBD
+    <p>FAQ documents contain a solution to a common problem (usually a question
+      that appears often in the Answer Tracker.
+    </p>
+    <p>Project owners and answer contacts can modify this document using the
+      <b>Edit FAQ</b> menu item.
+    </p>
+    <p>The list of questions answered by this document can be found under the
+      <b>Related questions</b> portlet.
+    </p>
   </metal:help>
 </body>
 </html>
