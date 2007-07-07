@@ -329,15 +329,6 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         else:
             return True
 
-    @property
-    def hide_language_control(self):
-        """Whether to render the Language control as a hidden input.
-        
-        When the form requires a predetermined language, the language
-        control should be redered as a <input type="hidden"....
-        """
-        return False
-
     @safe_action
     @action(_('Search'))
     def search_action(self, action, data):
@@ -469,6 +460,8 @@ class QuestionCollectionByLanguageView(SearchQuestionsView):
      for the QuestionTarget context.
      """
 
+    custom_widget('language', LabeledMultiCheckBoxWidget, visible=False)
+
     def __init__(self, context, request):
         """Initialize the view, and check that a language was submitted.
 
@@ -520,14 +513,6 @@ class QuestionCollectionByLanguageView(SearchQuestionsView):
         """See `SearchQuestionsView`.
 
         This view does not permit the user to select a language.
-        """
-        return False
-
-    @property
-    def hide_language_control(self):
-        """See `SearchQuestionsView`.
-
-        The language is predetermined, always render a <input type="hidden".
         """
         return True
 

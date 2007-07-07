@@ -52,17 +52,19 @@
 
       <input tal:replace="structure view/search_action/render" />
 
-      <input type="hidden" name="field.language" value="es" 
-             tal:attributes="value view/language/code"
-             tal:condition="view/hide_language_control"/>
+      <tal:language_control condition="view/show_language_control">
+        <input type="hidden" name="field.language" value="es" 
+               tal:attributes="value view/language/code"
+               tal:condition="not:view/widgets/language/visible"/>
 
-      <div class="field"
-           tal:condition="view/show_language_control"
-           tal:define="widget nocall:view/widgets/language|nothing">
-        <label tal:content="widget/label">Label</label>
-        (<a href="/+editmylanguages">Change your preferred languages</a>)
-        <tal:languages replace="structure widget" />
-      </div>
+        <div class="field"
+             tal:condition="view/widgets/language/visible"
+             tal:define="widget nocall:view/widgets/language|nothing">
+          <label tal:content="widget/label">Label</label>
+          (<a href="/+editmylanguages">Change your preferred languages</a>)
+          <tal:languages replace="structure widget" />
+        </div>
+      </tal:language_control>
 
       <div class="field"
            tal:define="widget nocall:view/widgets/status|nothing"
