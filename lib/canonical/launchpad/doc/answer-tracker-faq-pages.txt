@@ -1,7 +1,5 @@
 = Answer Tracker FAQ Pages =
 
-Several views are used for presentation of FAQ.
-
     >>> from canonical.launchpad.interfaces import ILaunchBag, IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
 
@@ -15,7 +13,7 @@ Several views are used for presentation of FAQ.
 
 There is an IStructuralObjectPresentation adapter available for
 IFAQ. This adapter is used to render the title appearing in
-in the structuralheader area.
+the structuralheader area.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IStructuralObjectPresentation)

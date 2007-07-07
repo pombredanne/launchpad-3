@@ -3,8 +3,8 @@
 == Linking to a FAQ ==
 
 Even though similar questions are shown when a user creates a new
-question, common questions still happens for a number of reason.
-The Answer Tracker can be used to manage common answers (aka FAQ) to
+question, common questions still happen for a number of reasons.
+The Answer Tracker can be used to manage common answers (aka FAQ) 
 which can be used to answer a particular question.
 
 Any logged in user can use the 'This is a FAQ' action item to link
@@ -61,7 +61,7 @@ under the radio widgets. That query defaults to the question's title.
     >>> print search_field.value
     Problem showing the SVG demo on W3C site
 
-From the title, it doesn't seem like one of these FAQs would be
+From the titles, it doesn't seem like one of these FAQs would be
 appropriate. The user can modify the search query and hit the 'Search'
 button to update the list of available choices:
 
@@ -149,14 +149,14 @@ changes the message and click 'Link FAQ'.
     ...     "Sorry, this document doesn't really answer your question.")
     >>> user_browser.getControl('Link FAQ').click()
 
-The new message was added to the question and the link was removed.
+The new message was added to the question:
 
     >>> print extract_text(find_tags_by_class(
     ...     user_browser.contents, 'boardCommentBody')[-1]).encode(
     ...     'ascii', 'backslashreplace')
     Sorry, this document doesn't really answer your question.
 
-The link was removed from the details portlet:
+The link was also removed from the details portlet:
 
     >>> details_portlet = find_portlet(
     ...     user_browser.contents, 'Mozilla Firefox question #2')

@@ -897,7 +897,7 @@ class LinkFAQMixin:
 
     @cachedproperty
     def faq_target(self):
-        """Return the IFAQTarget that should be use for this question."""
+        """Return the `IFAQTarget` that should be use for this question."""
         return IFAQTarget(self.context)
 
     @property
@@ -926,7 +926,7 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
 
     @property
     def initial_values(self):
-        """Fill title and summary based on the question."""
+        """Fill title and content based on the question."""
         question = self.context
         return {
             'title': question.title,
@@ -1080,7 +1080,7 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
 
     @property
     def initial_values(self):
-        """Fill title and summary based on the question."""
+        """Sets initial form values."""
         return {
             'faq': self.context.faq,
             'message': self.default_message,
