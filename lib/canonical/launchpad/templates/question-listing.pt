@@ -30,13 +30,13 @@
 
 <div metal:fill-slot="main"
      tal:define="questions view/searchResults">
-  <p tal:define="unspoken_languages view/unspoken_languages|nothing"
+  <p tal:define="unspoken_languages view/unspoken_languages"
     tal:condition="unspoken_languages">
-    Mozilla Firefox has unsolved questions in 
+    <span tal:replace="context/displayname">Mozilla Firefox</span> has 
+    unsolved questions in 
     <span tal:replace="structure unspoken_languages">
      <a href="ubuntu/+unspoken?language=en">Spanish (1)</a>
-    </span>
-    with no answer contacts. Can you help?
+    </span>. Can you help?
   </p>
 
   <div>
