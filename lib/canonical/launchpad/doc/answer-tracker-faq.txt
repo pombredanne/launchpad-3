@@ -125,6 +125,40 @@ attribute:
     firefox
 
 
+=== IFAQ permissions ===
+
+Only the project owners or answer contacts can edit an IFAQ.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> login(ANONYMOUS)
+    >>> check_permission('launchpad.Edit', firefox_faq)
+    False
+
+So Sample Person (the project owner) has edit permission:
+
+    >>> login('test@canonical.com')
+    >>> check_permission('launchpad.Edit', firefox_faq)
+    True
+
+But No Privileges Person doesn't:
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Edit', firefox_faq)
+    False
+
+But if we make him an answer contact, he will:
+
+    # An answer contact needs a preferred language.
+    >>> from canonical.launchpad.interfaces import (ILanguageSet)
+    >>> no_priv = getUtility(ILaunchBag).user
+    >>> no_priv.addLanguage(getUtility(ILanguageSet)['en'])
+    >>> firefox.addAnswerContact(no_priv)
+    True
+    >>> check_permission('launchpad.Edit', firefox_faq)
+    True
+
+
 == IFAQSet ==
 
 There is a global utility registered under the IFAQSet interface that

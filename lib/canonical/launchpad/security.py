@@ -12,9 +12,9 @@ from zope.component import getUtility
 # order ideally.
 from canonical.launchpad.interfaces import (
     IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
-    IDistribution, IFAQTarget, ITeamMembership, IMilestone, IBug, ITranslator,
-    ITranslationGroup, ITranslationGroupSet, IProduct, IProductSeries,
-    IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet,
+    IDistribution, IFAQ, IFAQTarget, ITeamMembership, IMilestone, IBug,
+    ITranslator, ITranslationGroup, ITranslationGroupSet, IProduct,
+    IProductSeries, IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet,
     ISourcePackage, ILaunchpadCelebrities, IDistroSeries, IBugTracker,
     IBugAttachment, IPoll, IPollSubset, IPollOption, IProductRelease,
     IQuestion, IQuestionTarget,
@@ -31,6 +31,7 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
 from canonical.lp.dbschema import PackageUploadStatus
+
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -925,7 +926,17 @@ class ModerateFAQTarget(EditByOwnersOrAdmins):
                 if user.inTeam(answer_contact):
                     return True
         return False
-        
+
+
+class EditFAQ(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IFAQ
+
+    def checkAuthenticated(self, user):
+        """Everybody who has launchpad.Moderate on the FAQ target is allowed.
+        """
+        return ModerateFAQTarget(self.obj.target).checkAuthenticated(user)
+
 
 def can_edit_team(team, user):
     """Return True if the given user has edit rights for the given team."""
