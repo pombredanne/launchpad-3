@@ -45,8 +45,8 @@ the anonymous user will see a Spanish question.
 
     >>> anon_browser.getControl('English (en)').selected = False
     >>> anon_browser.getControl('Search').click()
-    >>> soup = BeautifulSoup(anon_browser.contents)
-    >>> for question in soup.fetch('td', 'question'):
+    >>> table = find_tag_by_id(anon_browser.contents, 'question-listing')
+    >>> for question in table.findAll('td', 'question'):
     ...     question.first('a').renderContents()
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
     'Continue playing after shutdown'
@@ -54,13 +54,35 @@ the anonymous user will see a Spanish question.
     'mailto: problem in webpage'
     'Installation of Java Runtime Environment for Mozilla'
 
-    # Since we have more than 5 results, some of them are in the second batch.
+While the user might recognize the first question above is in Spanish,
+browsers and search engine robots need help. Each row in the list
+of questions declares its language and text direction.
+
+    >>> for question in table.findAll('tr', lang=True):
+    ...     print 'lang="%s" dir="%s"' % (question['lang'], question['dir'])
+    lang="es" dir="ltr"
+    lang="en" dir="ltr"
+    lang="en" dir="ltr"
+    lang="en" dir="ltr"
+    lang="en" dir="ltr"
+
+Following the next link to the second page, the anonymous person or
+robot will see the remaining questions. The last question is in
+Arabic and is written from right-to-left.
+
     >>> anon_browser.getLink('Next').click()
-    >>> soup = BeautifulSoup(anon_browser.contents)
-    >>> for question in soup.fetch('td', 'question'):
+    >>> table = find_tag_by_id(anon_browser.contents, 'question-listing')
+    >>> for question in table.findAll('td', 'question'):
     ...     question.first('a').renderContents()
     'Slow system'
     'Installation failed'
+    '\xd8\xb9\xd9\x83\xd8\xb3 ...
+
+    >>> for question in table.findAll('tr', lang=True):
+    ...     print 'lang="%s" dir="%s"' % (question['lang'], question['dir'])
+    lang="en" dir="ltr"
+    lang="en" dir="ltr"
+    lang="ar" dir="rtl"
 
 When the project has no questions to search, we do not show the
 language controls.
@@ -160,12 +182,12 @@ Catalan questions, so no Cataloan checkbox is displayed.
     >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+questions')
     >>> language_control = browser.getControl(name='field.language')
-    >>> for label in language_control.displayOptions:
+    >>> for label in sorted(language_control.displayOptions):
     ...     # print the label without the leading non-breaking space.
     ...     label[1:]
     'English (en)'
     'Spanish (es)'
-    >>> browser.getControl(name='field.language').options
+    >>> sorted(browser.getControl(name='field.language').options)
     ['en', 'es']
 
 By unchecking a checkbox, Carlos can exclude English questions from

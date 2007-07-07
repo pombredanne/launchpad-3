@@ -109,8 +109,12 @@
         </tr>
       </thead>
       <tbody>
-        <tr tal:repeat="question questions/batch"
-            tal:attributes="title question/description/fmt:shorten/300">
+        <tr xml:lang="en" lang="en" dir="ltr"
+            tal:repeat="question questions/batch"
+            tal:attributes="title question/description/fmt:shorten/300;
+                            xml:lang question/language/dashedcode;
+                            lang question/language/dashedcode;
+                            dir question/language/abbreviated_text_dir">
           <td class="icon right">
             <img alt="Open" title="Open" src="/@@/question"
                  tal:attributes="alt question/status/title;
