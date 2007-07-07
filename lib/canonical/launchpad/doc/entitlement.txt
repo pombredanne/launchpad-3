@@ -36,7 +36,6 @@ person or team being granted the right.  The state for a granted
 entitlement is ACTIVE and the expiration and start dates can be specified.
 
     >>> entitlement = getUtility(IEntitlementSet).new(
-    ...     external_id="A-202",
     ...     quota=5,
     ...     entitlement_type=EntitlementType.PRIVATE_BUGS,
     ...     person=ubuntu_team,
@@ -301,7 +300,6 @@ A new entitlement for the ubuntu_team can be created, increasing the
 number of valid entitlements.
 
     >>> entitlement = getUtility(IEntitlementSet).new(
-    ...     external_id="A-203",
     ...     quota=50,
     ...     entitlement_type=EntitlementType.PRIVATE_BRANCHES,
     ...     person=ubuntu_team,

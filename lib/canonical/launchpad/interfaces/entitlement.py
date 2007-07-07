@@ -54,11 +54,11 @@ class IEntitlement(Interface):
     date_starts = Datetime(
         title=_("Date Starts"),
         description=_("The date on which this entitlement starts."),
-        readonly=True)
+        readonly=False)
     date_expires = Datetime(
         title=_("Date Expires"),
         description=_("The date on which this entitlement expires."),
-        readonly=True)
+        readonly=False)
     entitlement_type = Choice(
         title=_("Type of entitlement."),
         required=True,

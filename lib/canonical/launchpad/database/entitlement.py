@@ -8,7 +8,9 @@ import pytz
 
 from zope.interface import implements
 
-from sqlobject import BoolCol, ForeignKey, IntCol, StringCol
+from sqlobject import (
+    BoolCol, ForeignKey, IntCol, SQLObjectNotFound, StringCol,
+    )
 
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -156,7 +158,7 @@ class EntitlementSet:
 
     def new(self, person, quota, entitlement_type,
             state, is_dirty=True, date_created=None, date_starts=None, date_expires=None,
-            amount_used=0, registrant=None, approved_by=None):
+            amount_used=0, registrant=None, approved_by=None, whiteboard=None):
         """See IEntitlementSet."""
 
         if date_created is None:
@@ -173,4 +175,5 @@ class EntitlementSet:
             date_expires=date_expires,
             amount_used=amount_used,
             registrant=registrant,
-            approved_by=approved_by)
+            approved_by=approved_by,
+            whiteboard=whiteboard)
