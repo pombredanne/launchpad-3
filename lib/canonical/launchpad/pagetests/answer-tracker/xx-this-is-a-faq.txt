@@ -1,6 +1,6 @@
 = This is a FAQ =
 
-== Creating a new FAQ ==
+== Linking to a FAQ ==
 
 Even though similar questions are shown when a user creates a new
 question, common questions still happens for a number of reason.
@@ -25,24 +25,157 @@ on 'This is a FAQ' to answer the question:
     >>> print backslashreplace(user_browser.title)
     Is question #2 a FAQ?
 
-That page lists the existing FAQs that matches the question's title.
-In this case, there are no matching FAQ so the user can only choose
-'No FAQ answers this question':
+That page lists the existing FAQs that matches the question's title. In
+that listing, the radio labels only contain the FAQ id. The FAQ title is
+displayed in a link besides the label. The default selected FAQ is the
+one currently associated to the question. In this particular case, since
+no FAQ is associated to the question, the 'No existing FAQs are
+relevant' option is selected.
 
-    # Since radio widget is a virtual widget with no explicitely
-    # associated label, we must resort to name lookup.
-    >>> choose_faq = user_browser.getControl(name='field.faq')
-    >>> for label in choose_faq.displayOptions:
-    ...     # Remove the non-breaking space from the label
-    ...     print label[1:]
-    No existing FAQs are relevant
-    >>> choose_faq.displayValue
-    ['\xa0No existing FAQs are relevant']
+    >>> def printFAQOptions(contents):
+    ...     buttons =  find_main_content(user_browser.contents).findAll(
+    ...         'input', {'name': 'field.faq'})
+    ...     for button in buttons:
+    ...         label = extract_text(button.parent)
+    ...         if button.get('checked', None):
+    ...             radio = '(*)'
+    ...         else:
+    ...             radio = '( )'
+    ...         if button['value']:
+    ...             link = button.findNext('a').renderContents()
+    ...         else:
+    ...             link = ''
+    ...         print radio, label, link
+    >>> printFAQOptions(user_browser.contents)
+    (*) No existing FAQs are relevant
+    ( ) 9: How do I troubleshoot problems with extensions/themes?
+    ( ) 7: How do I install Java?
+
+    >>> print user_browser.getLink('How do I troubleshoot problems').url
+    http://answers.launchpad.dev/firefox/+faq/9
+
+The query used to find these results is displayed in the search field
+under the radio widgets. That query defaults to the question's title.
+
+    >>> search_field = user_browser.getControl(name='field.faq-query')
+    >>> print search_field.value
+    Problem showing the SVG demo on W3C site
+
+From the title, it doesn't seem like one of these FAQs would be
+appropriate. The user can modify the search query and hit the 'Search'
+button to update the list of available choices:
+
+    >>> search_field.value = 'Where can I find a SVG plugin'
+    >>> user_browser.getControl('Search').click()
+
+The page is updated with a new list of FAQs:
+
+    >>> print user_browser.title
+    Is question #2 a FAQ?
+    >>> printFAQOptions(user_browser.contents)
+    (*) No existing FAQs are relevant
+    ( ) 10: How do I install plugins (Shockwave, QuickTime, etc.)?
+    ( ) 7: How do I install Java?
+    ( ) 8: How do I install Extensions?
+
+The most relevant result seems like the good answer, so the user selects
+it.
+
+    >>> user_browser.getControl('10').selected = True
+
+There is a 'Message' field that will be used to answer the question.
+It is pre-filled, but he can change its value. The FAQ reference will
+be appended to the message.
+
+    >>> print user_browser.getControl('Message').value
+    No Privileges Person suggests this article as an answer to your question:
+
+He can then clicks 'Link FAQ' to add an answer to the question linking
+the question to this FAQ. After clicking the button, the user is
+redirected to the question page.
+
+    >>> user_browser.getControl('Link FAQ').click()
+    >>> print user_browser.url
+    http://answers.launchpad.dev/firefox/+question/2
+
+Where he sees that the question's status was changed to 'Answered':
+
+    >>> details_portlet = find_portlet(
+    ...     user_browser.contents, 'Mozilla Firefox question #2')
+    >>> print details_portlet.find('b', text='Status:').next.strip()
+    Answered
+
+A link to the FAQ appears in the details portlet.
+
+    >>> print extract_text(
+    ...     details_portlet.find('b', text='Related FAQ:').findNext('a'))
+    How do I install plugins (Shockwave, QuickTime, etc.)?
+    >>> print user_browser.getLink('How do I install plugins').url
+    http://answers.launchpad.dev/firefox/+faq/10
+
+The answer message was added to the question's discussion:
+
+    >>> print extract_text(find_tags_by_class(
+    ...     user_browser.contents, 'boardCommentBody')[-1]).encode(
+    ...     'ascii', 'backslashreplace')
+    No Privileges Person suggests this article as an answer to your question:
+    FAQ #10: \u201cHow do I install plugins...
+
+
+== Modifying the FAQ ==
+
+The link to the FAQ can be changed by using the same 'This is a FAQ'
+option. Continuing on the previous example, the user went on the read
+the FAQ that he just linked and found that it doesn't really answer
+the question. To correct the mistake, he uses the same 'This is a FAQ'
+action.
+
+    >>> user_browser.getLink('This is a FAQ').click()
+
+The existing linked FAQ is selected and the other FAQs matching the
+question's title is displayed:
+
+    >>> printFAQOptions(user_browser.contents)
+    ( ) No existing FAQs are relevant
+    (*) 10: How do I install plugins (Shockwave, QuickTime, etc.)?
+    ( ) 9: How do I troubleshoot problems with extensions/themes?
+    ( ) 7: How do I install Java?
+
+To remove the FAQ, the user selects the 'No existing...' option, he
+changes the message and click 'Link FAQ'.
+
+    >>> user_browser.getControl('No existing FAQs').selected = True
+    >>> user_browser.getControl('Message').value = (
+    ...     "Sorry, this document doesn't really answer your question.")
+    >>> user_browser.getControl('Link FAQ').click()
+
+The new message was added to the question and the link was removed.
+
+    >>> print extract_text(find_tags_by_class(
+    ...     user_browser.contents, 'boardCommentBody')[-1]).encode(
+    ...     'ascii', 'backslashreplace')
+    Sorry, this document doesn't really answer your question.
+
+The link was removed from the details portlet:
+
+    >>> details_portlet = find_portlet(
+    ...     user_browser.contents, 'Mozilla Firefox question #2')
+    >>> print extract_text(
+    ...     details_portlet.find('b', text='Related FAQ:').findNext('i'))
+    None
+
+
+== Creating a new FAQ ==
+
+When no existing FAQs are relevant, it is possible to create a new FAQ
+from the same 'This is a FAQ' action. But this option is reserved to
+users having 'moderation' privilege on the project (this includes
+answer contacts and the project's owner).
 
 Since No Privileges Person isn't an answer contact for the project nor
-part of the project registrant, he doesn't have the possibility to
-create a new FAQ.
+the project owner, he doesn't have the possibility to create a new FAQ.
 
+    >>> user_browser.getLink('This is a FAQ').click()
     >>> user_browser.getLink('create a new FAQ')
     Traceback (most recent call last):
       ...
@@ -58,7 +191,7 @@ Foo Bar (which is a site admin) does have that ability.
     Create a FAQ for Mozilla Firefox
 
 The FAQ title and content are pre-filled with the target question. He
-edits to be more appropriate:
+edits them to be more appropriate:
 
     >>> print admin_browser.getControl('Title').value
     Problem showing the SVG demo on W3C site
@@ -74,7 +207,7 @@ edits to be more appropriate:
 He can also enters keywords describing the FAQ:
 
     >>> admin_browser.getControl('Keywords').value = (
-    ...     'SVG scalable vector graphic')
+    ...     'scalable vector graphic')
 
 There is a 'Message' field that will be used to answer the question.
 It is pre-filled, but he can change its value:
@@ -129,7 +262,7 @@ The FAQ keywords and content appears just below:
 
     >>> print extract_text(find_tag_by_id(
     ...     admin_browser.contents, 'faq-keywords'))
-    Keywords: SVG scalable vector graphic
+    Keywords: scalable vector graphic
 
     >>> print extract_text(find_tag_by_id(
     ...     admin_browser.contents, 'faq-content'))

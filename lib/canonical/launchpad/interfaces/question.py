@@ -15,7 +15,6 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.schema import (
      Bool, Choice, Datetime,  Int, List, Object, Text, TextLine)
-from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
@@ -464,9 +463,7 @@ class IQuestionLinkFAQForm(Interface):
         title=_('Which is the relevant FAQ?'),
         description=_(
             'Select the FAQ that is the most relevant for this question.'),
-        vocabulary=SimpleVocabulary([]),
-        required=False,
-        default=None)
+        vocabulary='FAQ', required=False, default=None)
 
     message = Text(
         title=_('Answer Message'),
