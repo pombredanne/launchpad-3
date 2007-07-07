@@ -442,6 +442,8 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
+faq_edit = ContextId('Edit FAQ #%s details')
+
 def faq_index(context, view):
     return (
         smartquote('%s FAQ #%d: "%s"') %

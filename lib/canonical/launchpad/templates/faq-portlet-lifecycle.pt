@@ -16,6 +16,21 @@
               >2005-10-05
           </td>
         </tr>
+        <tal:last_updated_by condition="context/last_updated_by">
+          <tr>
+            <th>Last updated by:</th>
+            <td tal:content="structure context/last_updated_by/fmt:link">
+              Foo Bar
+            </td>
+          </tr>
+          <tr>
+            <th>When:</th>
+            <td tal:attributes="title context/date_last_updated/fmt:datetime"
+                tal:content="context/date_last_updated/fmt:displaydate"
+                >2005-10-05
+            </td>
+          </tr>
+        </tal:last_updated_by>
       </tbody>
     </table>
   </div>
