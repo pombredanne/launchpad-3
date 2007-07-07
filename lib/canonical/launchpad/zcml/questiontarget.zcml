@@ -63,6 +63,12 @@
     name="+by-language"
     permission="launchpad.AnyPerson"
     />
+  <browser:renamed-page
+    for="canonical.launchpad.interfaces.IQuestionTarget"
+    name="+unsupported"
+    new_name="+questions"
+    rootsite="answers"
+    />
   <browser:page
     for="canonical.launchpad.interfaces.IQuestionTarget"
     name="+answer-contact"

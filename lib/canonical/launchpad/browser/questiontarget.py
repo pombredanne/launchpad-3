@@ -242,21 +242,27 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         The string summarizes the questions that are in languages that
         no answer contact speaks. The string takes the form of an
         inline list with links to see the questions for each language:
-        '_Hungarian_ (2), _Romanian_ (1)'. An empty stirng is returned
+        '_Hungarian_ (2), _Romanian_ (1)'. An empty string is returned
         when all questions are in a language spoken by the answer contacts.
+        
+        This method is relevant to QuestionTargets. Subclasses of this
+        View that want to list unspoken languages for other objects must
+        provide their own implementation.
         """
+        if not IQuestionTarget.providedBy(self.context):
+            return ''
         language_counts = {}
         questions = self.context.searchQuestions(
             unsupported=self.context, status=[QuestionStatus.OPEN])
         for question in questions:
             lang = question.language
-            language_counts[lang] = language_counts.setdefault(lang, 0) + 1
+            language_counts[lang] = language_counts.get(lang, 0) + 1
         if len(language_counts) == 0:
             return ''
         url = canonical_url(self.context, rootsite='answers')
-        format = (u'<a href="' + url + u'/+by-language'
-                  u'?field.language=%s&field.status=Open">%s</a> (%s)')
-        links = [format % (key.code, key.englishname, language_counts[key])
+        format = (u'%s in <a href="' + url + u'/+by-language'
+                  u'?field.language=%s&field.status=Open">%s</a>')
+        links = [format % (language_counts[key], key.code, key.englishname)
                  for key in language_counts]
         return u', '.join(links)
 
