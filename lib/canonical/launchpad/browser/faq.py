@@ -19,7 +19,7 @@ from canonical.launchpad.webapp import (
 
 
 class FAQContextMenu(ContextMenu):
-    """Context menu of actions that can be performed upon a Question."""
+    """Context menu of actions that can be performed upon a FAQ."""
     usedfor = IFAQ
     links = [
         'edit',
@@ -32,7 +32,7 @@ class FAQContextMenu(ContextMenu):
 
 
 class FAQEditView(LaunchpadEditFormView):
-    """View to changes the FAQ data."""
+    """View to change the FAQ details."""
 
     schema = IFAQ
     label = _('Edit FAQ')

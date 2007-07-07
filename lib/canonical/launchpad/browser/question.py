@@ -357,7 +357,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     # Do not autofocus the title widget
     initial_focus_widget = None
 
-    # The similar items will be held in the follwowing properties
+    # The similar items will be held in the following properties.
     similar_questions = None
     similar_faqs = None
     
