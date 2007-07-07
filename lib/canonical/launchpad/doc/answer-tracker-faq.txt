@@ -59,6 +59,17 @@ It is possible to adapt an IDistributionSourcePackage to IFAQTarget,
     ...     IFAQTarget, removeSecurityProxy(mozilla_firefox_faq_target))
     True
 
+Likewise, it is possible to adapt an ISourcePackage to IFAQTarget.
+
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> hoary_mozilla_firefox = hoary.getSourcePackage('mozilla-firefox')
+    >>> IFAQTarget.providedBy(hoary_mozilla_firefox)
+    False
+    >>> hoary_firefox_faq_target = IFAQTarget(hoary_mozilla_firefox)
+    >>> verifyObject(
+    ...     IFAQTarget, removeSecurityProxy(hoary_firefox_faq_target))
+    True
+
 It is also possible to adapt an IQuestion into an IFAQTarget. This
 adaptation returns the IFAQTarget that should be use for the question.
 

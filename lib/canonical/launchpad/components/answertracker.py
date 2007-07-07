@@ -35,3 +35,8 @@ def question_to_faqtarget(question):
 def distrosourcepackage_to_faqtarget(distrosourcepackage):
     """Adapts an `IDistributionSourcePackage` into an `IFAQTarget`."""
     return distrosourcepackage.distribution
+
+
+def sourcepackage_to_faqtarget(sourcepackage):
+    """Adapts an `ISourcePackage` into an `IFAQTarget`."""
+    return sourcepackage.distribution
