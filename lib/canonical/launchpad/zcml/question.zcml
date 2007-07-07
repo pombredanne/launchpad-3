@@ -198,7 +198,7 @@
     name="+createfaq"
     for="canonical.launchpad.interfaces.IQuestion"
     class="canonical.launchpad.browser.QuestionCreateFAQView"
-    permission="launchpad.AnyPerson"
+    permission="launchpad.Moderate"
     template="../templates/question-createfaq.pt"
     />
   
