@@ -19,6 +19,7 @@ Asking a new question requires logging in:
     >>> user_browser.title
     'Ask a question about Ubuntu'
 
+
 == Get Help Online ==
 
 The other way is by using the 'Get Help Online' menu item that is found
@@ -36,11 +37,13 @@ associated with the source package of the used application.
     >>> user_browser.title
     'Ask a question about Hoary mozilla-firefox'
 
-== Searching for Similar Questions ==
+
+== Searching for Similar FAQs and Questions ==
 
 Asking a new question is a two-step process. In the first step, the user
 enters a summary of his problem. Using that summary, a search
-is performed to find similar questions that might exists.
+is performed to find similar questions and similar FAQs that might
+exists.
 
 That step cannot be skipped by the user, if he just clicks 'Continue',
 an error message will be displayed.
@@ -59,17 +62,19 @@ questions are displayed.
     ...     'Visiting a web page requiring java crashes firefox')
     >>> user_browser.getControl('Continue').click()
     >>> contents = find_main_content(user_browser.contents)
-    >>>
+    >>> print extract_text(contents.find(id='similar-faqs'))
+    How can I play MP3/Divx/DVDs/Quicktime/Realmedia files or view
+        Flash/Java web pages
     >>> print extract_text(contents.find(id='similar-questions'))
     Installation of Java Runtime Environment for Mozilla  (Answered)
         posted on 2006-07-20 by  Sample Person
         in Source Package "mozilla-firefox" in Ubuntu Linux 
 
-The beginning of the description appears in a small pop-up when the mouse is
-left over the question's title.
+The beginning of the description appears in a small pop-up when the
+mouse is left over the question's title.
 
     >>> import re
-    >>> question_link = contents.first(
+    >>> question_link = contents.find(
     ...     'a', text=re.compile('Installation of Java'))
     >>> print question_link.findParent('tr')['title']
     <BLANKLINE>
@@ -80,6 +85,19 @@ left over the question's title.
     2) next screen indicates JRE &quot;not available&quot; and requests
     &quot;manual install&quot;
     3) clicking on &quot;manual install&quot; open java web site.......
+
+Similarly, the beginning of the FAQ's content appears when the mouse
+hovers on the FAQ's title:
+
+    >>> faq_link = contents.find(
+    ...     'a', text=re.compile('How can I play MP3/Divx'))
+    >>> print faq_link.findParent('li')['title']
+    Playing many common formats such as DVIX, MP3, DVD, or Flash
+    animations require the installation of plugins.
+    <BLANKLINE>
+    See https://help.ubuntu.com/community/RestrictedFormats for all the
+    details.
+
 
 == Creating a New Question ==
 

@@ -352,11 +352,15 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
 
     template = search_template
 
-    _MAX_SIMILAR_TICKETS = 10
+    _MAX_SIMILAR_ITEMS = 10
 
     # Do not autofocus the title widget
     initial_focus_widget = None
 
+    # The similar items will be held in the follwowing properties
+    similar_questions = None
+    similar_faqs = None
+    
     def setUpFields(self):
         """Set up the form_fields from the schema and custom_widgets."""
         # Add our language field with a vocabulary specialized for
@@ -395,18 +399,26 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
         return _('Ask a question about ${context}',
                  mapping=dict(context=self.context.displayname))
 
+    @property
+    def has_similar_items(self):
+        """Return True if similar FAQs or questions were found."""
+        return self.similar_questions or self.similar_faqs
+
     @action(_('Continue'))
     def continue_action(self, action, data):
-        """Search for questions similar to the entered summary."""
+        """Search for questions and FAQs similar to the entered summary."""
         # If the description widget wasn't setup, add it here
         if self.widgets.get('description') is None:
             self.widgets += form.setUpWidgets(
                 self.form_fields.select('description'), self.prefix,
                  self.context, self.request, data=self.initial_values,
                  ignore_request=False)
+        
+        faqs = IFAQTarget(self.question_target).findSimilarFAQs(data['title'])
+        self.similar_faqs = faqs[:self._MAX_SIMILAR_ITEMS]
 
         questions = self.question_target.findSimilarQuestions(data['title'])
-        self.searchResults = questions[:self._MAX_SIMILAR_TICKETS]
+        self.similar_questions = questions[:self._MAX_SIMILAR_ITEMS]
 
         return self.add_template()
 
@@ -428,11 +440,11 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     # which is fixed in 3.3.0b1 and 3.2.1
     @action(_('Add'), failure=handleAddError)
     def add_action(self, action, data):
-        """Add a Question to an IQuestionTarget."""
+        """Add a Question to an `IQuestionTarget`."""
         if self.shouldWarnAboutUnsupportedLanguage():
-            # Warn the user that the language is not supported.
-            self.searchResults = []
-            return self.add_template()
+            # Warn the user that the language is not supported, so redisplay
+            # last step.
+            return self.continue_action.success(data)
 
         question = self.question_target.newQuestion(
             self.user, data['title'], data['description'], data['language'])
