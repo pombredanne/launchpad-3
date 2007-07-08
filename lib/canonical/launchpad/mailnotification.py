@@ -1373,6 +1373,15 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
                 indent + '%s\n' % canonical_url(unlinked_bug) +
                 indent + '"%s"' % unlinked_bug.title)
 
+        if question.faq != old_question.faq:
+            if question.faq is None:
+                info_fields.append(indent + 'Related FAQ was removed.')
+            else:
+                info_fields.append(
+                    indent + 'Related FAQ set to:\n' +
+                    indent + question.faq.title + '\n' +
+                    indent + canonical_url(question.faq))
+
         if question.title != old_question.title:
             info_fields.append('Summary changed to:\n%s' % question.title)
         if question.description != old_question.description:
