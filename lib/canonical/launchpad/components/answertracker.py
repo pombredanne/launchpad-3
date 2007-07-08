@@ -40,3 +40,9 @@ def distrosourcepackage_to_faqtarget(distrosourcepackage):
 def sourcepackage_to_faqtarget(sourcepackage):
     """Adapts an `ISourcePackage` into an `IFAQTarget`."""
     return sourcepackage.distribution
+
+
+def faq_to_faqtarget(faq):
+    """Adapts an `IFAQ` into an `IFAQTarget`."""
+    return faq.target
+
