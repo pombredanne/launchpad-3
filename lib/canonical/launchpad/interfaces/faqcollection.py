@@ -6,10 +6,14 @@ __metaclass__ = type
 
 __all__ = [
     'IFAQCollection',
+    'ISearchFAQsForm',
     ]
 
 
 from zope.interface import Interface
+from zope.schema import TextLine
+
+from canonical.launchpad import _
 
 
 class IFAQCollection(Interface):
@@ -41,3 +45,11 @@ class IFAQCollection(Interface):
         is used. When there is a search_text value, the default is to sort by
         RELEVANCY, otherwise results are sorted NEWEST_FIRST.
         """
+
+
+# The next schema is only used by browser/faqcollection.py and should really
+# live there. See Bug #66950.
+class ISearchFAQsForm(Interface):
+    """Schema for the search FAQs form."""
+
+    search_text = TextLine(title=_('Search text'), required=False)

@@ -34,13 +34,14 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import (
     browserLanguages, is_english_variant, request_languages)
+from canonical.launchpad.browser.faqcollection import FAQCollectionMenu
 from canonical.launchpad.interfaces import (
     IDistribution, ILanguageSet, IProject, IQuestionCollection, IQuestionSet,
     IQuestionTarget, ISearchableByQuestionOwner, ISearchQuestionsForm,
     NotFoundError)
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, custom_widget, LaunchpadFormView,
-    Link, safe_action, stepto, stepthrough, urlappend)
+    action, canonical_url, custom_widget, LaunchpadFormView, Link,
+    safe_action, stepto, stepthrough, urlappend)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import QuestionStatus
 from canonical.widgets import LabeledMultiCheckBoxWidget
@@ -638,12 +639,18 @@ class QuestionTargetTraversalMixin:
         return self.redirectSubTree(target)
 
 
-class QuestionCollectionAnswersMenu(ApplicationMenu):
+
+# XXX flacoste 2007/07/08 This menu shouldn't "extend" FAQCollectionMenu.
+# But this is needed because of limitations in the current menu architecture.
+# Menu should be built by merging all menus applying to the context object
+# (-based on the interfaces it provides).
+class QuestionCollectionAnswersMenu(FAQCollectionMenu):
     """Base menu definition for QuestionCollection searchable by owner."""
 
     usedfor = ISearchableByQuestionOwner
     facet = 'answers'
-    links = ['open', 'answered', 'myrequests', 'need_attention']
+    links = FAQCollectionMenu.links + [
+        'open', 'answered', 'myrequests', 'need_attention']
 
     def makeSearchLink(self, statuses, sort='by relevancy'):
         """Return the search parameters for a search link."""

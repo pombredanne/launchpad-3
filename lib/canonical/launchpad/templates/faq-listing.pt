@@ -1,0 +1,45 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+
+<body>
+
+<metal:portlets fill-slot="portlets">
+  <div tal:replace="structure context/@@+portlet-answercontacts|nothing" />
+  <div tal:replace="structure context/@@+portlet-details|nothing" />
+</metal:portlets>
+
+
+<div metal:fill-slot="main"
+     tal:define="faqs view/getMatchingFAQs">
+  <h1 i18n:translate="" tal:content="view/heading">FAQs</h1>
+
+  <p tal:condition="not: faqs/batch"
+     i18n:translate="">
+    There are no FAQs for
+    <tal:name i18n:name="displayname"
+              replace="context/displayname">Kubuntu</tal:name>.
+  </p>
+
+  <tal:results condition="faqs">
+    <ul id="faqs-listing"
+        class="faq">
+      <li tal:repeat="faq faqs/batch"
+          tal:attributes="title faq/content/fmt:shorten/320"
+          ><a href="#" tal:attributes="href faq/fmt:url"
+              tal:content="faq/title">How do I do this?</a></li>
+    </ul>
+    <tal:navigation replace="structure faqs/@@+navigation-links-lower" />
+  </tal:results>
+</div>
+
+<metal:help fill-slot="help">
+  <p>This listing displays the FAQs in a particular project. 
+  </p>
+  <p>If you hover the mouse over a FAQ's title, the beginning of its content
+    will pop-up after a few seconds.
+  </p>
+</metal:help>
+</body>
+</html>
