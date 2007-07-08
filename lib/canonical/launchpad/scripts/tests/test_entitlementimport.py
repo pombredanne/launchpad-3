@@ -37,7 +37,7 @@ class EntitlementExchangeTestCase(unittest.TestCase):
         """ Test the version tester works for all cases."""
         version = EntitlementExchange.version
         check = EntitlementExchange._checkVersion(version)
-        self.assertEqual(check, True)
+        self.assertTrue(check)
         self.assertRaises(
             UnsupportedVersion, EntitlementExchange._checkVersion, version-1)
         self.assertRaises(
