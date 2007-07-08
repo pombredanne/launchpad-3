@@ -47,6 +47,8 @@ from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 
+from canonical.launchpad.webapp import canonical_url
+
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.translationformat import POHeader
 from canonical.librarian.interfaces import (
@@ -413,10 +415,10 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         return getUtility(IPersonSet).getPOFileContributors(self)
 
-    def prepareTranslationCredits(self, msgid):
+    def prepareTranslationCredits(self, potmsgset):
+        msgid = potmsgset.singular_text
         """See `IPOFile`."""
         if (msgid == u'_: EMAIL OF TRANSLATORS\nYour emails'):
-            potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(msgid)
             text = potmsgset.translationsForLanguage(self.language.code)[0]
             if text is None:
                 text = u''
@@ -431,17 +433,17 @@ class POFile(SQLBase, POFileMixIn):
                 text = text[:-1]
             return text
         elif (msgid == u'_: NAME OF TRANSLATORS\nYour names'):
-            potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(msgid)
             text = potmsgset.translationsForLanguage(self.language.code)[0]
             if text is None:
                 text = u''
             for contributor in self.contributors:
-                text += u',' + contributor.displayname
+                text += contributor.displayname + u','
+            if text and text[-1] == ',':
+                text = text[:-1]
             return text
         elif (msgid in [u'translation-credits',
                         u'translator-credits',
                         u'translator_credits']):
-            potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(msgid)
             text = potmsgset.translationsForLanguage(self.language.code)[0]
             if len(list(self.contributors)):
                 if text is None:
@@ -451,8 +453,9 @@ class POFile(SQLBase, POFileMixIn):
 
                 text += 'Launchpad Contributions:'
                 for contributor in self.contributors:
-                    text += ("\n  %s <http://launchpad.net/~%s>" %
-                             (contributor.displayname, contributor.name))
+                    text += ("\n  %s <%s>" %
+                             (contributor.displayname,
+                              canonical_url(contributor)))
             return text
         else:
             return None

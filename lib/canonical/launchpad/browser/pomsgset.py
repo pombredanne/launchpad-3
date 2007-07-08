@@ -1198,12 +1198,12 @@ class POMsgSetView(LaunchpadView):
 
     @cachedproperty
     def automatic_translation(self):
-        """Returns automatically created translation if defined, or None."""
-        #return self.context.potmsgset.singular_text
-        if self.context.potmsgset.locked_to_published:
-            return text_to_html(self.context.pofile.prepareTranslationCredits(
-                                    self.context.potmsgset.singular_text),
-                                self.context.potmsgset.flags())
+        """Return automatically created translation if defined, or None."""
+        if self.context.potmsgset.locked_to_published and self.context.pofile:
+            return text_to_html(
+                self.context.pofile.prepareTranslationCredits(
+                    self.context.potmsgset),
+                self.context.potmsgset.flags())
         else:
             return None
 
