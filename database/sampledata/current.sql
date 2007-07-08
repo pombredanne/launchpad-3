@@ -548,6 +548,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -2040,6 +2043,8 @@ INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (44,
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (45, 7, 3, 'questionownersolved', 'Solved own question', 'User post a message explaining how he solved his own problem.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (46, 7, 0, 'questionreopened', 'Reopened question', 'User posed a message to reopen his question in the Answer Tracker.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (47, 7, 1, 'questionasked', 'Asked question', 'User asked a question in the Answer Tracker.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (48, 7, 5, 'faqcreated', 'FAQ created', 'User create a new FAQ in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (49, 7, 1, 'faqedited', 'FAQ edited', 'User updated the details of a FAQ in Launchpad.');
 
 
 ALTER TABLE karmaaction ENABLE TRIGGER ALL;
@@ -8272,10 +8277,10 @@ Para activar esta opcion (SMP) necesito recompilar la kernel (bajada desde kerne
 No se como hacer para que funcione el doble-núcleo recompilando la kernel, puede que haga algo mal i que me escoja automaticamente por culpa de la configuracion antigua (oldconfig) pero no lo se. Que hago mal?
 
 ', NULL, NULL, NULL, 1, NULL, 10, 10, '2006-10-20 16:52:18.179187', '2006-10-20 16:52:18.179187', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 387, NULL);
-INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (13, 29, 'Problemas de Impressão no Firefox', 'Olá a todos!
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (13, 29, 'Problemas de Impressão no Firefox', 'Olá a todos!
 
-Não sei se isso acontece com todo mundo, mas aqui não consigo imprimir corretamente uma página com o Firefox, sempre sai cortado. Minha impressora é uma HP400 e uso papel A4, mas a impressão sai sempre como se estivesse selecionado o tamanho "letter", e isso mesmo mudando no mozilla para A4. Creio que não é um problema de configuração de impressora, pois isso só acontece com o Mozilla, em outros programas a impressão é normal.', NULL, NULL, 4, NULL, NULL, 10, 10, '2006-10-20 17:03:21.847064', '2006-10-20 17:03:21.847064', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 521);
-INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (14, 12, 'عكس التغييرات غير المحفوظة للمستن؟', 'Testing Arabic writing direction (in Firefox) in questions.', NULL, NULL, NULL, 1, NULL, 10, 10, '2001-07-03 21:30:51.583356', '2001-07-03 21:30:51.583356', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 18);
+Não sei se isso acontece com todo mundo, mas aqui não consigo imprimir corretamente uma página com o Firefox, sempre sai cortado. Minha impressora é uma HP400 e uso papel A4, mas a impressão sai sempre como se estivesse selecionado o tamanho "letter", e isso mesmo mudando no mozilla para A4. Creio que não é um problema de configuração de impressora, pois isso só acontece com o Mozilla, em outros programas a impressão é normal.', NULL, NULL, 4, NULL, NULL, 10, 10, '2006-10-20 17:03:21.847064', '2006-10-20 17:03:21.847064', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 521, NULL);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (14, 12, 'عكس التغييرات غير المحفوظة للمستن؟', 'Testing Arabic writing direction (in Firefox) in questions.', NULL, NULL, NULL, 1, NULL, 10, 10, '2001-07-03 21:30:51.583356', '2001-07-03 21:30:51.583356', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 18, NULL);
 
 
 ALTER TABLE question ENABLE TRIGGER ALL;

@@ -16,6 +16,8 @@ actions we consider to be a reasonable contribution.
     [u'Answered question',
      u'Asked question',
      u'Comment made on a question',
+     u'FAQ created',
+     u'FAQ edited',
      u'Gave answer on a question',
      u'Gave more information on a question',
      u'Question description changed',
@@ -178,13 +180,29 @@ action to the same person.
     >>> from canonical.launchpad.database import Bug
     >>> questionbug = firefox_question.linkBug(Bug.get(5))
     Karma added: action=questionlinkedtobug, product=firefox, person=name12
-    >>> logout()
 
-Now we do a check to make sure all Answer Tracker  related karma actions
+- Creating a FAQ:
+
+    >>> firefox_faq = firefox.newFAQ(
+    ...     sample_person, 'A FAQ', 'About something important')
+    Karma added: action=faqcreated, product=firefox, person=name12
+
+- Modifying a FAQ:
+
+    >>> old_faq = Snapshot(firefox_faq, providing=providedBy(firefox_faq))
+    >>> firefox_faq.title = 'How can I make the Fnord appears?'
+    >>> firefox_faq.content = 'Install the Fnords highlighter extensions.'
+    >>> notify(SQLObjectModifiedEvent(
+    ...     firefox_faq, old_faq, ['title', 'content']))
+    Karma added: action=faqedited, product=firefox, person=name12
+
+Now we do a check to make sure all Answer Tracker related karma actions
 have been tested.
 
-    >>> karma_helper.added_karma_actions == set(answers_karma_actions)
-    True
+    >>> missing_actions = set(answers_karma_actions).difference(
+    ...     karma_helper.added_karma_actions)
+    >>> for action in missing_actions:
+    ...     print action.name
 
     # Unregister the event listener to make sure we won't interfere in
     # other tests.
