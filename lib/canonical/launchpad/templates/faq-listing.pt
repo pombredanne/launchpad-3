@@ -15,11 +15,33 @@
      tal:define="faqs view/getMatchingFAQs">
   <h1 i18n:translate="" tal:content="view/heading">FAQs</h1>
 
-  <p tal:condition="not: faqs/batch"
-     i18n:translate="">
-    There are no FAQs for
-    <tal:name i18n:name="displayname"
-              replace="context/displayname">Kubuntu</tal:name>.
+  <div>
+    <form method="get" id="question-search-form" action=""
+          tal:attributes="action view/action_url">
+
+      <tal:searchbox replace="structure view/widgets/search_text" />
+
+      <input tal:replace="structure view/search_action/render" />
+
+    </form>
+  </div>
+
+  <p i18n:translate=""
+     tal:condition="not: faqs/batch"
+     tal:content="view/empty_listing_message">
+    No FAQs.
+  </p>
+
+  <p i18n:translate=""
+     tal:condition="view/matching_questions_count">
+    You can also consult the list of
+    <a href="#" tal:attributes="href view/matching_questions_url"
+       ><tal:count i18n:name="count"
+                   replace="view/matching_questions_count" /> question(s)</a>
+    matching
+    &ldquo;<tal:keywords i18n:name="search_text"
+                          replace="view/search_text"
+                          >Keywords</tal:keywords>&rdquo;.
   </p>
 
   <tal:results condition="faqs">
@@ -36,6 +58,9 @@
 
 <metal:help fill-slot="help">
   <p>This listing displays the FAQs in a particular project. 
+  </p>
+  <p>You can enter keywords and hit the <b>Search</b> to restrict the listing
+    to FAQs matching those keywords.
   </p>
   <p>If you hover the mouse over a FAQ's title, the beginning of its content
     will pop-up after a few seconds.
