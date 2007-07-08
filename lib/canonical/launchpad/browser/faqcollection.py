@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'FAQCollectionMenu',
-    'SearchFAQsBaseView',
+    'SearchFAQsView',
     ]
 
 from urllib import urlencode
@@ -37,7 +37,7 @@ class FAQCollectionMenu(ContextMenu):
         return Link(url, 'List all FAQs')
 
 
-class SearchFAQsBaseView(LaunchpadFormView):
+class SearchFAQsView(LaunchpadFormView):
     """View to list and search FAQs."""
 
     schema = ISearchFAQsForm

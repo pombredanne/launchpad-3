@@ -385,6 +385,9 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
     in user in a questiontarget context.
     """
 
+    # No point listing a FAQs link on this report.
+    matching_faqs_count = 0
+    
     @property
     def pageheading(self):
         """See `SearchQuestionsView`."""
@@ -421,6 +424,9 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
     It displays and searches the questions needing attention from the
     logged in user in a questiontarget context.
     """
+    
+    # No point listing a FAQs link on this report.
+    matching_faqs_count = 0
 
     @property
     def pageheading(self):
@@ -458,6 +464,9 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
      It displays questions that are asked in an unsupported language for the
      questiontarget context.
      """
+    
+    # No point listing a FAQs link on this report.
+    matching_faqs_count = 0
 
     @property
     def pageheading(self):

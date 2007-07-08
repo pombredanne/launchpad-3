@@ -8,7 +8,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IFAQCollection"
-    class="canonical.launchpad.browser.SearchFAQsBaseView"
+    class="canonical.launchpad.browser.SearchFAQsView"
     name="+faqs"
     permission="zope.Public"
     template="../templates/faq-listing.pt"
