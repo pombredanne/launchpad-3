@@ -12,7 +12,7 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import ITranslationFormatImporter
 from canonical.launchpad.translationformat.gettext_po_parser import (
-    POParser, PoHeader)
+    PoParser, PoHeader)
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lp.dbschema import TranslationFileFormat
 
@@ -21,16 +21,13 @@ class GettextPoImporter:
     """Support class to import gettext .po files."""
     implements(ITranslationFormatImporter)
 
-    def __init__(self, context=None, logger=None):
-        self.logger = logger
+    def __init__(self, context=None):
         self.basepath = None
         self.productseries = None
         self.distroseries = None
         self.sourcepackagename = None
         self.is_published = False
         self.content = None
-        self.header = None
-        self.messages = []
 
     @property
     def format(self):
@@ -65,21 +62,12 @@ class GettextPoImporter:
         self.content = librarian_client.getFileByAlias(
             translation_import_queue_entry.content.id)
 
-        parser = POParser()
-        parser.write(self.content.read())
-        parser.finish()
+        parser = PoParser()
+        return parser.parse(self.content.read())
 
-        self.header = parser.header
-        self.messages = parser.messages
-
-    def getHeaderFromString(self, header_string):
+    def getHeaderFromString(self, header_string, charset=None):
         """See `ITranslationFormatImporter`."""
-        header = PoHeader(msgstr=header_string)
-
-        # The PoHeader needs to know is ready to be used.
-        header.updateDict()
-
-        return header
+        return PoHeader(header_string, charset='unicode_escape')
 
     def getLastTranslator(self):
         """See `ITranslationFormatImporter`."""

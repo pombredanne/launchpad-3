@@ -60,7 +60,13 @@ def comments_text_representation(translation_message):
             for line in translation_message.file_references.split('\n'):
                 text.append(u'#: ' + line)
     if translation_message.flags:
-        text.append(translation_message.flagsText())
+        flags = list(translation_message.flags)
+        flags.sort()
+        if 'fuzzy' in flags:
+            # Force 'fuzzy' to be the first flag in the list.
+            flags.remove('fuzzy')
+            flags.insert(0, 'fuzzy')
+        text.append(u'#, %s' % u', '.join(flags))
 
     return u'\n'.join(text)
 

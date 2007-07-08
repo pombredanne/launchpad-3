@@ -103,7 +103,7 @@ class MozillaZipFile:
             if self._isKeyShortcutMessage(message):
                 message.source_comment = u"Default key in en_US: '%s'" % (
                     message.translations[TranslationConstants.SINGULAR_FORM])
-                message.translations = []
+                message.resetAllTranslations()
 
             self._msgids.append(message.msgid)
             self.messages.append(message)
@@ -154,7 +154,7 @@ class MozillaDtdConsumer (xmldtd.WFCDTD):
         # parsing which means that the content is all in a single line so we
         # don't have a way to show the line number with the source reference.
         message.file_references_list = ["%s(%s)" % (self.filename, name)]
-        message.translations = [value]
+        message.addTranslation(TranslationConstants.SINGULAR_FORM, value)
         message.source_comment = self.last_comment
         self.messages.append(message)
         self.started += 1
@@ -353,7 +353,9 @@ class PropertyFile:
                 message.msgid = key
                 message.file_references_list = [
                     "%s:%d(%s)" % (self.filename, line_num, key)]
-                message.translations = [translation.strip()]
+                message.addTranslation(
+                    TranslationConstants.SINGULAR_FORM,
+                    translation.strip())
                 message.source_comment = last_comment
                 self.messages.append(message)
 

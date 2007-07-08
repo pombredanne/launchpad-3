@@ -34,8 +34,6 @@
         class="canonical.launchpad.translationformat.gettext_po_parser.PoHeader">
         <allow
             interface="canonical.launchpad.interfaces.ITranslationHeader" />
-        <allow
-            interface="canonical.launchpad.interfaces.ITranslationMessage" />
     </content>
 
     <content

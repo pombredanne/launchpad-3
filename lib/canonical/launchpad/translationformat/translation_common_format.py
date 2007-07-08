@@ -3,12 +3,27 @@
 __metaclass__ = type
 
 __all__ = [
+    'TranslationFile',
     'TranslationMessage',
     ]
 
 from zope.interface import implements
 
-from canonical.launchpad.interfaces import ITranslationMessage
+from canonical.launchpad.interfaces import (
+    ITranslationFile, ITranslationMessage)
+
+
+class TranslationFile:
+    """See `ITranslationFile`."""
+    implements(ITranslationFile)
+
+    def __init__(self):
+        self.header = None
+        self.messages = []
+        self.path = None
+        self.translation_domain = None
+        self.is_template = None
+        self.language_code = None
 
 
 class TranslationMessage:
@@ -23,9 +38,7 @@ class TranslationMessage:
         self.source_comment = None
         self.file_references = None
         self.flags = set()
-        self.obsolete = False
-        self.nplurals = None
-        self.pluralExpr = None
+        self.is_obsolete = False
 
     @property
     def translations(self):
@@ -40,6 +53,7 @@ class TranslationMessage:
         # len(self._translations).
         #
         # We raise an error if plural_form < len(self.translations).
+        assert plural_form is not None, 'plural_form cannot be None!'
         assert plural_form >= len(self._translations), (
             'This message already has a translation for plural form %d' % (
                 plural_form))
@@ -52,9 +66,7 @@ class TranslationMessage:
 
         self._translations.append(translation)
 
-    def flagsText(self, flags=None):
+    def resetAllTranslations(self):
         """See `ITranslationMessage`."""
-        if flags is not None:
-            return flags
+        self._translations = []
 
-        return u''

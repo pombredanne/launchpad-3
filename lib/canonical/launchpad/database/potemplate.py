@@ -262,7 +262,8 @@ class POTemplate(SQLBase, RosettaStats):
         translation_importer = getUtility(ITranslationImporter)
         format_importer = translation_importer.getTranslationFormatImporter(
             self.source_file_format)
-        return format_importer.getHeaderFromString(self.header)
+        return format_importer.getHeaderFromString(
+            self.header, charset='unicode_escape')
 
     def getPOTMsgSetByMsgIDText(self, key, only_current=False):
         """See IPOTemplate."""

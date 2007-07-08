@@ -4,9 +4,11 @@ import unittest
 import doctest
 import textwrap
 
-from canonical.launchpad.translationformat import gettext_po_parser as pofile
 from canonical.launchpad.interfaces import (
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
+from canonical.launchpad.translationformat import gettext_po_parser
+from canonical.launchpad.translationformat.gettext_po_parser import (
+    PoParser, PoHeader)
 
 DEFAULT_HEADER = '''
 msgid ""
@@ -17,7 +19,7 @@ msgstr ""
 class POBasicTestCase(unittest.TestCase):
 
     def setUp(self):
-        self.parser = pofile.POParser()
+        self.parser = PoParser()
 
     def testSingular(self):
         self.parser.write('''%smsgid "foo"\nmsgstr "bar"\n''' % DEFAULT_HEADER)
@@ -138,7 +140,7 @@ class POBasicTestCase(unittest.TestCase):
     #         self.fail("no exception on bad escape sequence")
 
     def testPlural(self):
-        self.parser.header = pofile.PoHeader()
+        self.parser.header = PoHeader()
         self.parser.header.nplurals = 2
         self.parser.write(textwrap.dedent('''
             %s
@@ -273,11 +275,8 @@ class POBasicTestCase(unittest.TestCase):
 
 
 def test_suite():
-    dt_suite = doctest.DocTestSuite(pofile)
+    # Run gettext PO parser doc tests.
+    dt_suite = doctest.DocTestSuite(gettext_po_parser)
     loader = unittest.TestLoader()
     ut_suite = loader.loadTestsFromTestCase(POBasicTestCase)
     return unittest.TestSuite((ut_suite, dt_suite))
-
-if __name__ == '__main__':
-    runner = unittest.TextTestRunner()
-    runner.run(test_suite())

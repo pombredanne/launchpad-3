@@ -99,7 +99,6 @@ from canonical.launchpad.interfaces.poll import *
 from canonical.launchpad.interfaces.pomsgid import *
 from canonical.launchpad.interfaces.pomsgidsighting import *
 from canonical.launchpad.interfaces.pomsgset import *
-from canonical.launchpad.interfaces.gettext_po_parser import *
 from canonical.launchpad.interfaces.potemplate import *
 from canonical.launchpad.interfaces.potemplatename import *
 from canonical.launchpad.interfaces.potmsgset import *
