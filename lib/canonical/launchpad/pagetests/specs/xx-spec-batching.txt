@@ -13,10 +13,10 @@ To demonstrate this, we'll create a new project:
   >>> browser = user_browser
   >>> browser.open("http://launchpad.dev/projects/+new")
   >>> browser.getControl('Name', index=0).value = 'big-project'
-  >>> browser.getControl('Display Name' ).value = 'Big Project'
-  >>> browser.getControl('Title'        ).value = 'The Big Project'
-  >>> browser.getControl('Summary'      ).value = 'A big project indeed.'
-  >>> browser.getControl('Add'          ).click()
+  >>> browser.getControl('Display Name').value = 'Big Project'
+  >>> browser.getControl('Title').value = 'The Big Project'
+  >>> browser.getControl('Summary').value = 'A big project indeed.'
+  >>> browser.getControl('Add').click()
   >>> browser.url
   'http://launchpad.dev/big-project'
 
@@ -29,9 +29,9 @@ In the beginning, a project has no blueprints:
 We'll go ahead and add just a single blueprint:
 
   >>> browser.open('http://launchpad.dev/big-project/+addspec')
-  >>> browser.getControl('Name',      index=0).value = 'blueprint-0'
-  >>> browser.getControl('Title'             ).value = 'Blueprint 0'
-  >>> browser.getControl('Summary'           ).value = 'Blueprint 0'
+  >>> browser.getControl('Name', index=0).value = 'blueprint-0'
+  >>> browser.getControl('Title').value = 'Blueprint 0'
+  >>> browser.getControl('Summary').value = 'Blueprint 0'
   >>> browser.getControl('Register Blueprint').click()
   >>> browser.url
   'http://blueprints.launchpad.dev/big-project/+spec/blueprint-0'
@@ -47,9 +47,9 @@ Let's add some more blueprints:
 
   >>> for n in map(repr, range(1, 20)):
   ...     browser.open('http://launchpad.dev/big-project/+addspec')
-  ...     browser.getControl('Name',      index=0).value = 'blueprint-' + n
-  ...     browser.getControl('Title'             ).value = 'Blueprint ' + n
-  ...     browser.getControl('Summary'           ).value = 'Blueprint ' + n
+  ...     browser.getControl('Name', index=0).value = 'blueprint-' + n
+  ...     browser.getControl('Title').value = 'Blueprint ' + n
+  ...     browser.getControl('Summary').value = 'Blueprint ' + n
   ...     browser.getControl('Register Blueprint').click()
 
 Observe that now when we ask for the complete list of blueprints, only some of
