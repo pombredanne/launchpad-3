@@ -723,17 +723,22 @@ class Mantis(ExternalBugTracker):
         # Use a colon and a space to join status and resolution because
         # there is a chance that statuses contain spaces, and because
         # it makes display of the data nicer.
-        return ": ".join(bug['status'], bug['resolution'])
+        return "%s: %s" % (bug['status'], bug['resolution'])
 
     def convertRemoteStatus(self, status_and_resolution):
         if (not status_and_resolution or
             status_and_resolution == UNKNOWN_REMOTE_STATUS):
             return BugTaskStatus.UNKNOWN
-        remote_status, remote_resolution = status_and_resolution.split(": ", 1)
+
+        if ": " in status_and_resolution:
+            remote_status, remote_resolution = status_and_resolution.split(": ", 1)
+        else:
+            remote_status, remote_resolution = status_and_resolution, None
+
         if remote_status == 'assigned':
             return BugTaskStatus.INPROGRESS
         if remote_status == 'feedback':
-            return BugTaskStatus.NEEDINFO
+            return BugTaskStatus.INCOMPLETE
         if remote_status in ['new']:
             return BugTaskStatus.NEW
         if remote_status in ['confirmed', 'acknowledged']:
@@ -743,15 +748,18 @@ class Mantis(ExternalBugTracker):
                 return BugTaskStatus.FIXRELEASED
             if remote_resolution == 'reopened':
                 return BugTaskStatus.NEW
-            if remote_resolution in ["won't fix", "unable to reproduce",
-                                     "not fixable", 'suspended']:
-                return BugTaskStatus.REJECTED
+            if remote_resolution in ["unable to reproduce", "not fixable",
+                                     'suspended']:
+                return BugTaskStatus.INVALID
+            if remote_resolution == "won't fix":
+                return BugTaskStatus.WONTFIX
             if remote_resolution == 'duplicate':
                 # XXX: follow duplicates
-                return BugTaskStatus.REJECTED
+                return BugTaskStatus.INVALID
             if remote_resolution in ['open', 'no change required']:
                 # XXX: pretty inconsistently used
                 return BugTaskStatus.FIXRELEASED
+
         log.warn("Unknown status/resolution %s/%s" %
                  (remote_status, remote_resolution))
         return BugTaskStatus.UNKNOWN

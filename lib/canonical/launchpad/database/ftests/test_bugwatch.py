@@ -81,7 +81,7 @@ class ExtractBugTrackerAndBugTestBase(LaunchpadFunctionalTestCase):
 
 
 class MantisExtractBugTrackerAndBugTest(ExtractBugTrackerAndBugTestBase):
-    """Make sure BugWatchSet.extractBugTrackerAndBug works with Bugzilla URLs."""
+    """Make sure BugWatchSet.extractBugTrackerAndBug works with Mantis URLs."""
 
     bugtracker_type = BugTrackerType.MANTIS
     bug_url = 'http://some.host/bugs/view.php?id=3224'
