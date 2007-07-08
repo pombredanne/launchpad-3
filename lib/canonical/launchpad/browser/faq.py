@@ -11,17 +11,18 @@ __all__ = [
     ]
 
 from canonical.launchpad import _
+from canonical.launchpad.browser.faqcollection import FAQCollectionMenu
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.interfaces import IFAQ
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, enabled_with_permission,
-    LaunchpadEditFormView, Link)
+    action, canonical_url, enabled_with_permission, LaunchpadEditFormView,
+    Link)
 
 
-class FAQContextMenu(ContextMenu):
+class FAQContextMenu(FAQCollectionMenu):
     """Context menu of actions that can be performed upon a FAQ."""
     usedfor = IFAQ
-    links = [
+    links = FAQCollectionMenu.links + [
         'edit',
         ]
 

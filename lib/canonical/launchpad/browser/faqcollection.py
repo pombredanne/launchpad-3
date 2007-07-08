@@ -11,7 +11,8 @@ __all__ = [
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IFAQCollection, ISearchFAQsForm
-from canonical.launchpad.webapp import ContextMenu, LaunchpadFormView, Link
+from canonical.launchpad.webapp import (
+    canonical_url, ContextMenu, LaunchpadFormView, Link)
 from canonical.launchpad.webapp.batching import BatchNavigator
 
 
@@ -24,7 +25,12 @@ class FAQCollectionMenu(ContextMenu):
 
     def list_all(self):
         """Return a Link to list all FAQs."""
-        return Link('+faqs', 'List all FAQs')
+        # We adapt to IFAQCollection so that the link can be used
+        # on object which don't provide IFAQCollection directly, but for
+        # which an adapter exists that gives the proper context.
+        collection = IFAQCollection(self.context)
+        url = canonical_url(collection, rootsite='answers') + '/+faqs'
+        return Link(url, 'List all FAQs')
 
 
 class SearchFAQsBaseView(LaunchpadFormView):

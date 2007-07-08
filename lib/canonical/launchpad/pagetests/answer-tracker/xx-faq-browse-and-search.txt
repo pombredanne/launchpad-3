@@ -75,3 +75,25 @@ She clicks on FAQ's title to display the complete FAQ content:
     >>> print browser.url
     http://answers.launchpad.dev/ubuntu/+faq/6
 
+The FAQ page has a link back to the FAQ listing:
+
+    >>> browser.getLink('List all FAQs').click()
+    >>> print backslashreplace(browser.title)
+    FAQs for Ubuntu
+    >>> print browser.url
+    http://answers.launchpad.dev/ubuntu/+faqs
+
+
+== Distribution Source Packages ==
+
+Altough distribution source packages aren't directly associated with
+FAQs. The 'List all FAQs' link that appears in that context links to the
+distribution FAQs.
+
+    >>> browser.open('http://answers.launchpad.dev/ubuntu/'
+    ...              '+source/mozilla-firefox')
+    >>> browser.getLink('List all FAQs').click()
+    >>> print browser.title
+    FAQs for Ubuntu
+    >>> print browser.url
+    http://answers.launchpad.dev/ubuntu/+faqs
