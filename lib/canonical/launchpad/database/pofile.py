@@ -422,6 +422,8 @@ class POFile(SQLBase, POFileMixIn):
             text = potmsgset.translationsForLanguage(self.language.code)[0]
             if text is None:
                 text = u''
+            else:
+                text += u','
             for contributor in self.contributors:
                 preferred_email = contributor.preferredemail
                 if (contributor.hide_email_addresses or
@@ -1396,6 +1398,9 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
+    def prepareTranslationCredits(self, potmsgset):
+        """See `IPOFile`."""
+        return None
 
 class POFileSet:
     implements(IPOFileSet)

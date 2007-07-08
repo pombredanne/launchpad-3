@@ -285,10 +285,14 @@ class VPOExport:
          self.filereferences,
          self.flagscomment) = args
 
+        self.potemplate = POTemplate.get(potemplate)
         self.language = Language.get(language)
         if pofile is None:
             self.pofile = None
         else:
             self.pofile = POFile.get(pofile)
-        self.potemplate = POTemplate.get(potemplate)
+            auto_translation = self.pofile.prepareTranslationCredits(
+                self.potemplate.getPOTMsgSetByMsgIDText(self.msgid))
+            if auto_translation:
+                self.translation = auto_translation
 

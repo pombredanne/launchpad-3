@@ -4386,6 +4386,8 @@ INSERT INTO pomsgid (id, msgid) VALUES (155, '%d messages exported to maildir "%
 INSERT INTO pomsgid (id, msgid) VALUES (156, 'translation-credits');
 INSERT INTO pomsgid (id, msgid) VALUES (157, '_: EMAIL OF TRANSLATORS
 Your emails');
+INSERT INTO pomsgid (id, msgid) VALUES (158, '_: NAME OF TRANSLATORS
+Your names');
 
 
 ALTER TABLE pomsgid ENABLE TRIGGER ALL;
@@ -4602,9 +4604,10 @@ INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (207, 196, 24, '2007-01-05 10:29:04.835918', '2007-01-05 10:29:04.835918', true, 0);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (208, 196, 25, '2007-01-05 10:29:04.835918', '2007-01-05 10:29:04.835918', true, 1);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (209, 197, 26, '2007-01-05 10:29:04.835918', '2007-01-05 10:29:04.835918', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (210, 198, 147, '2006-08-14 18:41:39.782681', '2006-08-14 18:41:39.782681', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (211, 199, 156, '2007-04-07 08:47:01.528605', '2007-04-07 08:47:01.528605', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (212, 200, 157, '2007-04-07 08:47:01.528605', '2007-04-07 08:47:01.528605', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (210, 198, 147, '2006-08-14 18:41:39.782681', '2007-07-08 21:47:20.776962', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (211, 199, 156, '2007-04-07 08:47:01.528605', '2007-07-08 21:47:20.776962', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (212, 200, 157, '2007-04-07 08:47:01.528605', '2007-07-08 21:47:20.776962', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (213, 201, 158, '2007-07-08 21:47:20.776962', '2007-07-08 21:47:20.776962', true, 0);
 
 
 ALTER TABLE pomsgidsighting ENABLE TRIGGER ALL;
@@ -6431,6 +6434,7 @@ INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, file
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (198, 147, 1, 10, '', 'test_browserwidget.py:34', '', '', NULL);
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (199, 156, 2, 10, '', '', '', '', NULL);
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (200, 157, 3, 10, '', '', '', '', NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (201, 158, 4, 10, '', '', '', '', NULL);
 
 
 ALTER TABLE potmsgset ENABLE TRIGGER ALL;
