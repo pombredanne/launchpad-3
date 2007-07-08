@@ -9,6 +9,7 @@ for question whatever the target they were created in.
     >>> verifyObject(IQuestionSet, question_set)
     True
 
+
 == get() ==
 
 The get() method can be used to get a question with a specific id:
@@ -29,12 +30,14 @@ If no default value is given, None is returned:
     >>> question_set.get(123456) is None
     True
 
+
 == searchQuestions() ==
 
 IQuestionSet also defines a searchQuestions() method that can be used to
 search for questions defined in any products or distributions (in fact,
 in any context that allows questions to be defined). Two search criteria
 are defined search_text and status.
+
 
 === search_text ===
 
@@ -49,6 +52,8 @@ the query using the regular full text algorithm.
     u'mailto: problem in webpage'                  mozilla-firefox in ubuntu
     u"Newly installed plug-in doesn't seem to be used" Mozilla Firefox
     u'Problem showing the SVG demo on W3C site'    Mozilla Firefox
+    u'\u0639\u0643\u0633 ...'                      Ubuntu
+
 
 === status ===
 
@@ -71,6 +76,7 @@ The status parameter can also take a list of statuses.
     ...          question.target.displayname)
     mailto: problem in webpage                Solved mozilla-firefox in ubuntu
     Firefox is slow and consumes too much RAM Invalid mozilla-firefox in ubuntu
+
 
 === language ===
 
@@ -98,6 +104,8 @@ by each criteria:
     u'Firefox loses focus and gets stuck'       Open    Mozilla Firefox
     u'Firefox cannot render Bank Site'          Open    Mozilla Firefox
     u'Problem showing the SVG demo on W3C site' Open    Mozilla Firefox
+    u'\u0639\u0643\u0633 ...'                   Open    Ubuntu
+
 
 === Sort Order ===
 
@@ -110,6 +118,7 @@ one of the constant defined in the QuestionSort enumeration.
     ...         search_text='firefox', sort=QuestionSort.OLDEST_FIRST):
     ...     print question.id, repr(question.title), (
     ...          question.target.displayname)
+    14 u'\u0639\u0643\u0633 ...'                   Ubuntu
     1 u'Firefox cannot render Bank Site'           Mozilla Firefox
     2 u'Problem showing the SVG demo on W3C site'  Mozilla Firefox
     4 u'Firefox loses focus and gets stuck'        Mozilla Firefox
@@ -130,6 +139,7 @@ QuestionSort.NEWEST_FIRST.
      5 u'Installation failed'                      Ubuntu
      4 u'Firefox loses focus and gets stuck'       Mozilla Firefox
 
+
 == getQuestionLanguages() ==
 
 The getQuestionLanguages() method returns the set of languages in which
@@ -137,7 +147,8 @@ questions are written in Launchpad.
 
     >>> sorted([language.code
     ...         for language in question_set.getQuestionLanguages()])
-    [u'en', u'es', u'pt_BR']
+    [u'ar', u'en', u'es', u'pt_BR']
+
 
 == getActiveProjects() ==
 
