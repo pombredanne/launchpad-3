@@ -128,6 +128,24 @@ Following the link will show the questions results:
     ...     print question.first('a').renderContents()
     Installation of Java Runtime Environment for Mozilla
 
+On the question page, there is also a link to consult the FAQ matching
+the same keywords.
+
+    >>> message = find_main_content(browser.contents).find('p')
+    >>> print extract_text(message).encode('ascii', 'backslashreplace')
+    You can also consult the list of 1 FAQ(s)
+        matching &ldquo;plugin&rdquo;.
+
+Following the link will show the questions results:
+
+    >>> browser.getLink('1 FAQ(s)').click()
+    >>> print backslashreplace(browser.title)
+    FAQs matching \u201cplugin\u201d for Ubuntu
+
+    >>> print extract_text(find_tag_by_id(browser.contents, 'faqs-listing'))
+    How can I play MP3/Divx/DVDs/Quicktime/Realmedia files or view
+        Flash/Java web pages
+
 
 == Distribution Source Packages and FAQs ==
 

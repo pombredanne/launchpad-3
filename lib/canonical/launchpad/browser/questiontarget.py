@@ -36,9 +36,9 @@ from canonical.launchpad.helpers import (
     browserLanguages, is_english_variant, request_languages)
 from canonical.launchpad.browser.faqcollection import FAQCollectionMenu
 from canonical.launchpad.interfaces import (
-    IDistribution, ILanguageSet, IProject, IQuestionCollection, IQuestionSet,
-    IQuestionTarget, ISearchableByQuestionOwner, ISearchQuestionsForm,
-    NotFoundError)
+    IDistribution, IFAQCollection, ILanguageSet, IProject,
+    IQuestionCollection, IQuestionSet, IQuestionTarget,
+    ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, Link,
     safe_action, stepto, stepthrough, urlappend)
@@ -304,6 +304,29 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
             return False
         else:
             return True
+
+    @cachedproperty
+    def matching_faqs_count(self):
+        """Return the FAQs matching the same keywords."""
+        if not self.search_text:
+            return 0
+        try:
+            faq_collection = IFAQCollection(self.context)
+        except TypeError:
+            # The context is not adaptable to IFAQCollection.
+            return 0
+        return faq_collection.searchFAQs(search_text=self.search_text).count()
+
+    @property
+    def matching_faqs_url(self):
+        """Return the URL to use to display the list of matching FAQs."""
+        assert self.matching_faqs_count > 0, (
+            "can't call matching_faqs_url when matching_faqs_count == 0")
+        collection = IFAQCollection(self.context)
+        return canonical_url(collection) + '/+faqs?' + urlencode({
+            'field.search_text': self.search_text,
+            'field.actions.search': 'Search',
+            })
 
     @safe_action
     @action(_('Search'))
