@@ -950,7 +950,7 @@ class BugTaskSet:
         if not summary:
             return BugTask.select('1 = 2')
 
-        search_params.searchtext = nl_phrase_search(
+        search_params.bug_text = nl_phrase_search(
             summary, Bug, ' AND '.join(constraint_clauses), ['BugTask'])
         return self.search(search_params)
 
