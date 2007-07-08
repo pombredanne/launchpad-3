@@ -271,7 +271,7 @@ class BugImporter:
 
         # Remaining setup for first comment
         self.createAttachments(bug, msg, commentnode)
-        bug.findCvesInText(msg.text_contents)
+        bug.findCvesInText(msg.text_contents, bug.owner)
 
         # Process remaining comments
         for commentnode in comments:
@@ -279,7 +279,6 @@ class BugImporter:
                                      defaulttitle=bug.followup_subject())
             bug.linkMessage(msg)
             self.createAttachments(bug, msg, commentnode)
-            bug.findCvesInText(msg.text_contents)
 
         # set up bug
         bug.private = get_value(bugnode, 'private') == 'True'
@@ -301,7 +300,7 @@ class BugImporter:
             if cve is None:
                 raise BugXMLSyntaxError('Unknown CVE: %s' %
                                         get_text(cvenode))
-            bug.linkCVE(cve)
+            bug.linkCVE(cve, self.bug_importer)
 
         tags = []
         for tagnode in get_all(bugnode, 'tags/tag'):

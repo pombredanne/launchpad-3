@@ -42,8 +42,8 @@ To participate in a question, the user must be logged in.
 == Requesting for More Information ==
 
 It's not unusual that the original message of a question is terse
-and quite vague. In these cases, to help the user, some more information
-will be required.
+and quite vague. In these cases, to help the user, some more
+information will be required.
 
 To request for more information from the question owner, a user enters
 the question in the 'Message' field and clicks on the
@@ -74,10 +74,10 @@ you an error.
 
 == Answering with More Information ==
 
-When the question is in the 'Needs information' state, it means that the
-question owner should come back and provide more information. He can do
-so by entering the reply in the 'Message' box and clicking on the
-"I'm Providing More Information" button.
+When the question is in the 'Needs information' state, it means that
+the question owner should come back and provide more information. He
+can do so by entering the reply in the 'Message' box and clicking on
+the "I'm Providing More Information" button.
 
     >>> owner_browser.open(
     ...     'http://launchpad.dev/firefox/+question/2')
@@ -88,7 +88,7 @@ so by entering the reply in the 'Message' box and clicking on the
 
 Once the owner replied with the, hopefully, requested information, the
 status is changed to Open and his answer appended to the question
-discusson.
+discussion.
 
     >>> print find_request_status(owner_browser.contents)
     Open
@@ -131,8 +131,8 @@ When the owner comes back on the question page, he will now see a new
     <input type="submit" name="field.actions.confirm"
      value="This Solved My Problem" />
 
-(Not altough we have three comments on the question, that's the only one
-that has this button. Only answers have this button.)
+(Not although we have three comments on the question, that's the only
+one that has this button. Only answers have this button.)
 
 Clicking that button will confirm that the answer solved the problem.
 
@@ -184,9 +184,9 @@ status:
 
 == Reopening ==
 
-It can happen that, altough the owner confirmed the question was solved,
-the original problem reappears. In this case, he can reopen the question
-by entering a new message and clicking the
+It can happen that, although the owner confirmed the question was
+solved, the original problem reappears. In this case, he can reopen
+the question by entering a new message and clicking the
 "I'm Still Having This Problem" button.
 
     >>> owner_browser.getControl('Message').value = (
@@ -240,7 +240,7 @@ to enter his answer in the 'Message' box and click the
     ...     "available in Firefox 2.0.")
     >>> owner_browser.getControl("I Solved the Problem on My Own").click()
 
-This appends the message to the quesiton and sets its status to
+This appends the message to the question and sets its status to
 'Solved'.
 
     >>> print find_request_status(owner_browser.contents)
@@ -295,3 +295,24 @@ It lists all the actions performed through workflow on the question:
     Sample Person        Reopen                       Open
     Sample Person        Confirm                      Solved
 
+
+== Asking a separate question ==
+
+A user that is new to Answers is not familiar with the workflow. He
+may have a problem of his own, and has discovered an existing
+question. We want him to ask his own question instead of intruding
+into the workflow of existing questions.
+
+No Privileges Person (a different user from the one above) discovers
+the Firefox question. The solution does not work, but he thinks he has
+a similar problem so he asks his own question.
+
+    >>> user_browser.open('http://launchpad.dev/firefox/+question/2')
+    >>> content = find_tag_by_id(
+    ...     user_browser.contents, 'ask-your-own-question')
+    >>> print content.h2.renderContents()
+    Got a question of your own?
+    
+    >>> user_browser.getLink('ask your own question separately').click()
+    >>> print user_browser.title
+    Ask a question about Mozilla Firefox
