@@ -10,6 +10,8 @@ __all__ = [
     ]
 
 from zope.interface import Attribute
+from zope.interface.exceptions import Invalid
+from zope.interface.interface import invariant
 from zope.schema import (
      Choice, Datetime,  Int, Object, Text, TextLine)
 
@@ -46,10 +48,10 @@ class IFAQ(IHasOwner):
     content = Text(
         title=_('Content'),
         description=_(
-            'The FAQ content. This is plain text format. If you want to link'
+            'The FAQ content. This is plain text format. If you want to link '
             'to an external document, simply enter a short description and '
-            'the URL to the document..'),
-        required=False)
+            'the URL to the document.'),
+        required=True)
 
     date_created = Datetime(title=_('Created'), required=True, readonly=True)
 

@@ -9,6 +9,7 @@ __all__ = [
     'IQuestion',
     'IQuestionAddMessageForm',
     'IQuestionChangeStatusForm',
+    'IQuestionLinkFAQForm',
     ]
 
 from zope.interface import Interface, Attribute
@@ -454,3 +455,22 @@ class IQuestionChangeStatusForm(Interface):
         description=_('Enter an explanation for the status change'),
         required=True)
 
+
+class IQuestionLinkFAQForm(Interface):
+    """Form schema for the `QuestionLinkFAQView`."""
+
+    faq = Choice(
+        title=_('Which is the relevant FAQ?'),
+        description=_(
+            'Select the FAQ that is the most relevant for this question. '
+            'You can modify the list of suggested FAQs by editing the search '
+            'field and clicking "Search".'),
+        vocabulary='FAQ', required=False, default=None)
+
+    message = Text(
+        title=_('Answer Message'),
+        description=_(
+            'Enter a message that will be added as the question answer. '
+            'The title of the FAQ will be automatically appended to this '
+            'message.'),
+        required=True)

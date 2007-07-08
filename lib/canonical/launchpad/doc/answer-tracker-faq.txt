@@ -43,6 +43,44 @@ contacts.)
 lib/canonical/launchpad/interfaces/ftests/faqtarget.txt)
 
 
+=== IFAQTarget adapters ===
+
+Convenient adapters are available so that is possible to easily retrieve
+a suitable IFAQTarget from objects that do not provide it directly.
+
+It is possible to adapt an IDistributionSourcePackage to IFAQTarget,
+(the distribution is really the appropriate IFAQTarget in this case):
+
+    >>> mozilla_firefox = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> IFAQTarget.providedBy(mozilla_firefox)
+    False
+    >>> mozilla_firefox_faq_target = IFAQTarget(mozilla_firefox)
+    >>> verifyObject(
+    ...     IFAQTarget, removeSecurityProxy(mozilla_firefox_faq_target))
+    True
+
+Likewise, it is possible to adapt an ISourcePackage to IFAQTarget.
+
+    >>> hoary = ubuntu.getSeries('hoary')
+    >>> hoary_mozilla_firefox = hoary.getSourcePackage('mozilla-firefox')
+    >>> IFAQTarget.providedBy(hoary_mozilla_firefox)
+    False
+    >>> hoary_firefox_faq_target = IFAQTarget(hoary_mozilla_firefox)
+    >>> verifyObject(
+    ...     IFAQTarget, removeSecurityProxy(hoary_firefox_faq_target))
+    True
+
+It is also possible to adapt an IQuestion into an IFAQTarget. This
+adaptation returns the IFAQTarget that should be use for the question.
+
+    >>> firefox_question = firefox.getQuestion(1)
+    >>> IFAQTarget.providedBy(firefox_question)
+    False
+    >>> question_faq_target = IFAQTarget(firefox_question)
+    >>> verifyObject(IFAQTarget, removeSecurityProxy(question_faq_target))
+    True
+
+
 == IFAQCollection ==
 
 The `IFAQCollection` interface is provided by objects that represents
@@ -85,6 +123,40 @@ attribute:
 
     >>> print firefox_faq.target.name
     firefox
+
+
+=== IFAQ permissions ===
+
+Only the project owners or answer contacts can edit an IFAQ.
+
+    >>> from canonical.launchpad.webapp.authorization import check_permission
+
+    >>> login(ANONYMOUS)
+    >>> check_permission('launchpad.Edit', firefox_faq)
+    False
+
+So Sample Person (the project owner) has edit permission:
+
+    >>> login('test@canonical.com')
+    >>> check_permission('launchpad.Edit', firefox_faq)
+    True
+
+But No Privileges Person doesn't:
+
+    >>> login('no-priv@canonical.com')
+    >>> check_permission('launchpad.Edit', firefox_faq)
+    False
+
+But if we make him an answer contact, he will:
+
+    # An answer contact needs a preferred language.
+    >>> from canonical.launchpad.interfaces import (ILanguageSet)
+    >>> no_priv = getUtility(ILaunchBag).user
+    >>> no_priv.addLanguage(getUtility(ILanguageSet)['en'])
+    >>> firefox.addAnswerContact(no_priv)
+    True
+    >>> check_permission('launchpad.Edit', firefox_faq)
+    True
 
 
 == IFAQSet ==

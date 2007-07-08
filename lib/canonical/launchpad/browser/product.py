@@ -65,6 +65,7 @@ from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
@@ -88,7 +89,7 @@ from canonical.widgets.textwidgets import StrippedTextWidget
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin, CalendarTraversalMixin,
-    QuestionTargetTraversalMixin):
+    FAQTargetNavigationMixin, QuestionTargetTraversalMixin):
 
     usedfor = IProduct
 

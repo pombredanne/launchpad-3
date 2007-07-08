@@ -47,6 +47,7 @@ from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.components.request_country import request_country
 from canonical.launchpad.browser.questiontarget import (
@@ -66,7 +67,8 @@ from canonical.lp.dbschema import DistroSeriesStatus, MirrorContent
 
 
 class DistributionNavigation(
-    GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin):
+    GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin,
+    FAQTargetNavigationMixin):
 
     usedfor = IDistribution
 

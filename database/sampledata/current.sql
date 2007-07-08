@@ -545,6 +545,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -1797,8 +1800,6 @@ INSERT INTO emailaddress (id, email, person, status, date_created) VALUES (64, '
 ALTER TABLE emailaddress ENABLE TRIGGER ALL;
 
 
-
-
 ALTER TABLE entitlement DISABLE TRIGGER ALL;
 
 INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (1, 17, 10, 100, 0, '2007-06-11 12:00:00', '2008-06-11 12:00:00', NULL, '2007-06-10 12:00:00', NULL, NULL, 30, NULL);
@@ -1870,6 +1871,7 @@ INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_
 When started in Safe Mode all extensions are disabled and the Default theme is used. Disable the Extension/Theme that is causing trouble and then start normally.
 ', 4, NULL, 12, '2007-07-03 22:02:39.407123', NULL, NULL, NULL);
 INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (10, 'How do I install plugins (Shockwave, QuickTime, etc.)?', NULL, 'PluginDoc (http://plugindoc.mozdev.org/faqs/) lists common plugins (such as RealPlayer, QuickTime, Flash, Java, etc.) and how to install them in Firefox.', 4, NULL, 16, '2007-07-03 22:05:36.648951', NULL, NULL, NULL);
+INSERT INTO faq (id, title, tags, content, product, distribution, "owner", date_created, last_updated_by, date_last_updated, fti) VALUES (11, 'What''s the keyboard shortcut for [random feature]?', NULL, 'See the Keyboard Shortcuts table available at http://www.mozilla.org/support/firefox/keyboard  for a list of the most common keyboard shortcuts.', 4, NULL, 12, '2007-07-07 16:03:54.231152', NULL, NULL, NULL);
 
 
 ALTER TABLE faq ENABLE TRIGGER ALL;
