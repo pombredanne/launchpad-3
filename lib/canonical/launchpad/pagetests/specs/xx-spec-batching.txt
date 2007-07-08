@@ -23,7 +23,7 @@ To demonstrate this, we'll create a new project:
 In the beginning, a project has no blueprints:
 
   >>> browser.open("http://blueprints.launchpad.dev/big-project")
-  >>> print browser.contents
+  >>> print find_tag_by_id(browser.contents, 'maincontent')
   <...Register the first blueprint in this project!...
   
 We'll go ahead and add just a single blueprint:
@@ -40,7 +40,7 @@ When we ask for the complete list of blueprints for our project, the new
 blueprint is listed:
 
   >>> browser.open("http://blueprints.launchpad.dev/big-project")
-  >>> print browser.contents
+  >>> print find_tag_by_id(browser.contents, 'maincontent')
   <...1...&rarr...1...of...1 result...
   
 Let's add some more blueprints:
@@ -56,17 +56,17 @@ Observe that now when we ask for the complete list of blueprints, only some of
 the blueprints are listed:
 
   >>> browser.open("http://blueprints.launchpad.dev/big-project")
-  >>> print browser.contents
+  >>> print find_tag_by_id(browser.contents, 'maincontent')
   <...1...&rarr...5...of...20 results...
 
 We can go to the next batch of blueprints by following the 'Next' link:
     
   >>> browser.getLink('Next').click()
-  >>> print browser.contents
+  >>> print find_tag_by_id(browser.contents, 'maincontent')
   <...6...&rarr...10...of...20 results...
 
 Following the 'Last' link takes us to the last batch of blueprints:
 
   >>> browser.getLink('Last').click()
-  >>> print browser.contents
+  >>> print find_tag_by_id(browser.contents, 'maincontent')
   <...16...&rarr...20...of...20 results...
