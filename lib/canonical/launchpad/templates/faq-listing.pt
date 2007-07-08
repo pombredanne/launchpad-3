@@ -59,8 +59,8 @@
 <metal:help fill-slot="help">
   <p>This listing displays the FAQs in a particular project. 
   </p>
-  <p>You can enter keywords and hit the <b>Search</b> to restrict the listing
-    to FAQs matching those keywords.
+  <p>You can enter keywords and hit the <b>Search</b> button to restrict the
+    listing to FAQs matching those keywords.
   </p>
   <p>If you hover the mouse over a FAQ's title, the beginning of its content
     will pop-up after a few seconds.

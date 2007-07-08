@@ -30,7 +30,7 @@ class FAQCollectionMenu(ContextMenu):
     def list_all(self):
         """Return a Link to list all FAQs."""
         # We adapt to IFAQCollection so that the link can be used
-        # on object which don't provide IFAQCollection directly, but for
+        # on object swhich don't provide IFAQCollection directly, but for
         # which an adapter exists that gives the proper context.
         collection = IFAQCollection(self.context)
         url = canonical_url(collection, rootsite='answers') + '/+faqs'

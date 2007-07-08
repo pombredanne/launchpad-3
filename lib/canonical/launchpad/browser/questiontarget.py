@@ -385,7 +385,7 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
     in user in a questiontarget context.
     """
 
-    # No point listing a FAQs link on this report.
+    # No point showing a matching FAQs link on this report.
     matching_faqs_count = 0
     
     @property
@@ -425,7 +425,7 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
     logged in user in a questiontarget context.
     """
     
-    # No point listing a FAQs link on this report.
+    # No point showing a matching FAQs link on this report.
     matching_faqs_count = 0
 
     @property
@@ -465,7 +465,7 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
      questiontarget context.
      """
     
-    # No point listing a FAQs link on this report.
+    # No point showing a matching FAQs link on this report.
     matching_faqs_count = 0
 
     @property

@@ -3,13 +3,12 @@
 == No FAQs ==
 
 Miss Piggy decided to give Kubuntu a try based on the recommendations of
-Kermit. She wants to watch the marriage seen of The Muppets Take
+Kermit. She wants to watch the wedding scene of The Muppets Take
 Manhattan but is unable to play the DVD. She goes to the Kubuntu support
 page on Launchpad to try to get some help. She clicks the
 'List all FAQs' link to obtain the list of common questions hoping to
 find her problem there (surely playing a DVD must be common thing to do
 with a computer these days).
-
 
     >>> browser.open('http://answers.launchpad.dev/kubuntu')
     >>> browser.getLink('List all FAQs').click()
@@ -28,7 +27,7 @@ Kubuntu:
 
 == Browsing FAQs ==
 
-She learns through Fozzie Bear that she support for Kubuntu is really
+She learns through Fozzie Bear that support for Kubuntu is really
 happening on the Ubuntu project.
 
     >>> browser.open('http://answers.launchpad.dev/ubuntu')
@@ -38,7 +37,9 @@ happening on the Ubuntu project.
 
 She sees a listing of the current FAQs about Ubuntu:
 
-c
+    >>> print extract_text(find_tag_by_id(browser.contents, 'faqs-listing'))
+    How can I play MP3/Divx/DVDs/Quicktime/Realmedia files or view
+        Flash/Java web pages
     How can I customize my desktop?
     How can I make VOIP calls?
     How to obtain a fixed hostname with a dynamic IP
@@ -53,7 +54,7 @@ There is a 'Next' link to see the second batch of results:
     Wireless Networking Documentation
 
 Going back to the first page, she realises that when she leaves the
-mouse hover a FAQ title, the beginning of the FAQ's content appears in
+mouse over a FAQ title, the beginning of the FAQ's content appears in
 a pop-up:
 
     >>> import re
@@ -107,7 +108,8 @@ Otherwise, the listing only contains the matching FAQs.
     Wireless Networking Documentation
 
 When searching for FAQs, a link to the questions matching the same
-keywords is displayed. (The link is only displayed when there matches.)
+keywords is displayed. (The link is only displayed when there are
+matches.)
 
     >>> browser.getControl(name='field.search_text').value = 'plugin'
     >>> browser.getControl('Search').click()
@@ -128,7 +130,7 @@ Following the link will show the questions results:
     ...     print question.first('a').renderContents()
     Installation of Java Runtime Environment for Mozilla
 
-On the question page, there is also a link to consult the FAQ matching
+On the question page, there is also a link to consult the FAQs matching
 the same keywords.
 
     >>> message = find_main_content(browser.contents).find('p')
