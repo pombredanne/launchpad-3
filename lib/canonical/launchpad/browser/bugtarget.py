@@ -157,7 +157,8 @@ class FileBugViewBase(LaunchpadFormView):
     def field_names(self):
         """Return the list of field names to display."""
         context = self.context
-        field_names = ['title', 'comment', 'tags', 'security_related']
+        field_names = ['title', 'comment', 'tags', 'security_related',
+                       'bug_already_reported_as']
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
@@ -190,6 +191,20 @@ class FileBugViewBase(LaunchpadFormView):
 
     def validate(self, data):
         """Make sure the package name, if provided, exists in the distro."""
+
+        # The comment field is only required if filing a new bug.
+        if self.submit_bug_action.submitted():
+            if not data.get('comment'):
+                self.setFieldError('comment', "Required input is missing.")
+        # Check a bug has been selected when the user wants to
+        # subscribe to an existing bug.
+        elif self.this_is_my_bug_action.submitted():
+            if not data.get('bug_already_reported_as'):
+                self.setFieldError('bug_already_reported_as', "Please choose a bug.")
+        else:
+            # We only care about those two actions.
+            pass
+
         # We have to poke at the packagename value directly in the
         # request, because if validation failed while getting the
         # widget's data, it won't appear in the data dict.
@@ -397,6 +412,22 @@ class FileBugViewBase(LaunchpadFormView):
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
 
+    @action("Subscribe To This Bug", name="this_is_my_bug",
+            failure=handleSubmitBugFailure)
+    def this_is_my_bug_action(self, action, data):
+        """Subscribe to the bug suggested."""
+        bug = data.get('bug_already_reported_as')
+
+        if bug.isSubscribed(self.user):
+            self.request.response.addNotification(
+                "You are already subscribed to this bug.")
+        else:
+            bug.subscribe(self.user)
+            self.request.response.addNotification(
+                "You have been subscribed to this bug.")
+
+        self.next_url = canonical_url(bug.bugtasks[0])
+
     def showFileBugForm(self):
         """Override this method in base classes to show the filebug form."""
         raise NotImplementedError
@@ -456,6 +487,18 @@ class FileBugViewBase(LaunchpadFormView):
             return context.distribution
         else:
             return None
+
+    def showOptionalMarker(self, field_name):
+        # The comment field _is_ required, but only when filing the
+        # bug. Since the same form is also used for subscribing to a
+        # bug, the comment field in the schema cannot be marked
+        # required=True. Instead it's validated in
+        # FileBugViewBase.validate. So... we need to suppress the
+        # "(Optional)" marker.
+        if field_name == 'comment':
+            return False
+        else:
+            return LaunchpadFormView.showOptionalMarker(self, field_name)
 
 
 class FileBugAdvancedView(FileBugViewBase):
@@ -524,7 +567,7 @@ class FileBugGuidedView(FileBugViewBase):
                 search_context = self.widgets['bugtarget'].getInputValue()
             else:
                 search_context = None
-        
+
         return search_context
 
     @cachedproperty
@@ -588,7 +631,6 @@ class FileBugGuidedView(FileBugViewBase):
     def found_possible_duplicates(self):
         return self.similar_bugs or self.most_common_bugs
 
-
     def getSearchText(self):
         """Return the search string entered by the user."""
         try:
@@ -620,6 +662,7 @@ class FileBugGuidedView(FileBugViewBase):
     def showFileBugForm(self):
         return self._FILEBUG_FORM()
 
+
 class ProjectFileBugGuidedView(FileBugGuidedView):
     """Guided filebug pages for IProject."""
 
@@ -637,9 +680,14 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     @cachedproperty
     def most_common_bugs(self):
         """Return a list of the most duplicated bugs."""
-        selected_product = self._getSelectedProduct()
-        return selected_product.getMostCommonBugs(
-            self.user, limit=self._MATCHING_BUGS_LIMIT)
+        # We can only discover the most common bugs when a product has
+        # been selected.
+        if self.widgets['product'].hasValidInput():
+            selected_product = self._getSelectedProduct()
+            return selected_product.getMostCommonBugs(
+                self.user, limit=self._MATCHING_BUGS_LIMIT)
+        else:
+            return []
 
     def getSecurityContext(self):
         """See FileBugViewBase."""
@@ -806,7 +854,7 @@ class BugTargetBugsView(BugTaskSearchListingView):
                 var plotter = PlotKit.EasyPlot(
                     "pie", options, $("bugs-chart"), [data]);
             }
-            MochiKit.DOM.addLoadEvent(drawGraph);
+            connect(window, 'onload', drawGraph);
             """
         # The color list should inlude only colors for slices that will
         # be drawn in the pie chart, so colors that don't have any bugs
