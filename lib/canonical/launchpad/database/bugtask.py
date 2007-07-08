@@ -1030,29 +1030,13 @@ class BugTaskSet:
             extra_clauses.append("BugAttachment.bug = BugTask.bug")
             extra_clauses.append(where_cond)
 
-        if params.searchtext:
-            searchtext_quoted = sqlvalues(params.searchtext)[0]
-            searchtext_like_quoted = quote_like(params.searchtext)
-            comment_clause = """BugTask.id IN (
-                SELECT BugTask.id
-                FROM BugTask, BugMessage,Message, MessageChunk
-                WHERE BugMessage.bug = BugTask.bug
-                    AND BugMessage.message = Message.id
-                    AND Message.id = MessageChunk.message
-                    AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
-            extra_clauses.append("""
-                ((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s) OR (%s))
-                 OR (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))
-                """ % (
-                    searchtext_quoted,searchtext_quoted, comment_clause,
-                    searchtext_like_quoted))
-            if params.orderby is None:
-                # Unordered search results aren't useful, so sort by relevance
-                # instead.
-                params.orderby = [
-                    SQLConstant("-rank(Bug.fti, ftq(%s))" % searchtext_quoted),
-                    SQLConstant(
-                        "-rank(BugTask.fti, ftq(%s))" % searchtext_quoted)]
+        search_text_clause = self._buildSearchTextClause(params)
+        if search_text_clause:
+            extra_clauses.append(search_text_clause)
+
+        bug_text_clause = self._buildBugTextClause(params)
+        if bug_text_clause:
+            extra_clauses.append(bug_text_clause)
 
         if params.subscriber is not None:
             clauseTables.append('BugSubscription')
@@ -1229,6 +1213,55 @@ class BugTaskSet:
             upstream_clause = " OR ".join(upstream_clauses)
             return '(%s)' % upstream_clause
         return None
+
+    def _buildSearchTextClause(self, params):
+        """Build the clause for searchtext."""
+        if not params.searchtext:
+            return None
+        assert params.bug_text is None, (
+            'cannot use bug_text at the same time than searchtext')
+
+        [searchtext_quoted] = sqlvalues(params.searchtext)
+        searchtext_like_quoted = quote_like(params.searchtext)
+
+        if params.orderby is None:
+            # Unordered search results aren't useful, so sort by relevance
+            # instead.
+            params.orderby = [
+                SQLConstant("-rank(Bug.fti, ftq(%s))" % searchtext_quoted),
+                SQLConstant(
+                    "-rank(BugTask.fti, ftq(%s))" % searchtext_quoted)]
+        
+        comment_clause = """BugTask.id IN (
+            SELECT BugTask.id
+            FROM BugTask, BugMessage,Message, MessageChunk
+            WHERE BugMessage.bug = BugTask.bug
+                AND BugMessage.message = Message.id
+                AND Message.id = MessageChunk.message
+                AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
+        return """
+            ((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s) OR (%s))
+            OR (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))
+            """ % (
+                searchtext_quoted, searchtext_quoted, comment_clause,
+                searchtext_like_quoted)
+
+    def _buildBugTextClause(self, params):
+        """Build the clause to use for the bug_text criteria."""
+        if not params.bug_text:
+            return None
+        assert params.searchtext is None, (
+            'cannot use searchtext at the same time than bug_text')
+
+        [bug_text_quoted] = sqlvalues(params.bug_text)
+        
+        if params.orderby is None:
+            # Unordered search results aren't useful, so sort by relevance
+            # instead.
+            params.orderby = [
+                SQLConstant("-rank(Bug.fti, ftq(%s))" % bug_text_quoted)]
+
+        return "Bug.fti @@ ftq(%s)" % bug_text_quoted
 
     def search(self, params, *args):
         """See canonical.launchpad.interfaces.IBugTaskSet."""

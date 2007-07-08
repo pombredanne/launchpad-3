@@ -108,6 +108,36 @@ twice.
     >>> found_bugtasks.count() == firefox_bugs.count() + ubuntu_bugs.count()
     True
 
+
+== Searching using bug full-text index ==
+
+The search_text parameter does an extensive and expensive search (it
+looks through the bug's title and description, bug comments, bugtask
+target name, etc.) For some use cases, it is often easier and cheaper
+to simply search on the bug's full text index.
+
+For example, there are no bugs with the word 'Fnord' in Firefox.
+
+    >>> text_search = BugTaskSearchParams(user=None, bug_text='Fnord')
+    >>> found_bugtasks = firefox.searchTasks(text_search)
+    >>> found_bugtasks.count()
+    0
+
+But if we put that word in the bug #4 description, it will be found.
+
+    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> bug_four = getUtility(IBugSet).get(4)
+    >>> bug_four.description += (
+    ...     '\nThat happens pretty often with the Fnord Highlighter '
+    ...     'extension installed.')
+    >>> syncUpdate(bug_four)
+
+    >>> found_bugtasks = firefox.searchTasks(text_search)
+    >>> for bugtask in found_bugtasks:
+    ...     print "#%s" % bugtask.bug.id
+    #4
+
+
 == Searching in comments ==
 
 By default, comments are also searched when specifying a search text.
@@ -123,7 +153,6 @@ For example, no Firefox bugs are found when searching for
 If we add a comment containg the the search string to bug one, that bug
 will be returned by the search.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bug_one.newMessage(no_priv, 'No subject', 'some wordincomment')
     <Message at ...>
