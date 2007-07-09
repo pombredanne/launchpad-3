@@ -80,12 +80,19 @@ class TacTestSetup:
         except ValueError:
             # pidfile contains rubbish
             return
-        try:
-            os.kill(pid, SIGTERM)
-            os.waitpid(pid, 0)
-        except OSError:
-            # Already terminated
-            pass
+        for i in range(50):
+            try:
+                os.kill(pid, SIGTERM)
+                os.waitpid(pid, 0)
+            except OSError:
+                break
+        else:
+            try:
+                os.kill(pid, SIGKILL)
+                os.waitpid(pid, 0)
+            except OSError:
+                # Already terminated
+                pass
 
     def setUpRoot(self):
         """Override this.
