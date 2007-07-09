@@ -127,7 +127,7 @@ to make sure it's stored properly.
 
     >>> transaction.commit()
 
-We go through an import run.  But since we haven't approved our entry yet,
+Since we haven't approved our entry yet, if we go through an import run now,
 nothing happens.
 
     >>> original_import_status = entry.status
@@ -135,12 +135,16 @@ nothing happens.
     >>> entry.status == original_import_status
     True
 
-Now the entry gets approved, so it'll be imported next time
+That also means we do not get an email about the import, though we will later.
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    0
+
+Now the entry gets approved, so it'll be imported next time.
 
     >>> entry.status = RosettaImportStatus.APPROVED
     >>> syncUpdate(entry)
-
-Store current date
 
     >>> import datetime
     >>> import pytz
@@ -162,7 +166,28 @@ The last update date is the one we got.
     >>> potemplate.date_last_updated > saved_date
     True
 
-Once we've done this, the correct message IDs should show up in the template.
+A successful import is confirmed by email.
+
+    >>> transaction.commit()
+    >>> len(stub.test_emails)
+    1
+    >>> from_addr, to_addrs, raw_message = stub.test_emails.pop()
+    >>> msg = email.message_from_string(raw_message)
+    >>> msg["Subject"]
+    'Translation template import - firefox in Mozilla Firefox trunk'
+    >>> print msg.get_payload(decode=True)
+    Hello Mark Shuttleworth,
+    <BLANKLINE>
+    On ..., you uploaded a translation
+    template for firefox in Mozilla Firefox trunk in Launchpad.
+    <BLANKLINE>
+    The template has now been imported successfully.
+    <BLANKLINE>
+    Thank you,
+    <BLANKLINE>
+    The Launchpad team
+
+The correct message IDs now show up in the template.
 
     >>> potmsgsets = list(potemplate.getPOTMsgSets())
     >>> [potmsgset.msgid for potmsgset in potmsgsets]
