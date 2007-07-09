@@ -935,28 +935,32 @@ class NascentUpload:
         uploaded package is placed into based on various criteria.  This
         includes decisions such as moving the package to the commercial
         archive if the package's component is 'commercial'.
+
+        PPA uploads with commercial files and normal uploads with a mixture 
+        of commercial and non-commercial files will be rejected.
         """
 
-        # Firstly, we don't want to override PPAs:
-        if self.is_ppa:
-            return
+        # Get a list of the components used in this upload:
+        components = set([file.component_name for file in self.changes.files])
 
-        # There needs to be some files in the package if we're going to
-        # override the component.
-        if len(self.changes.files) == 0:
-            return
+        if 'commercial' in components:
+            # Reject commercial uploads to PPAs.
+            if self.is_ppa:
+                self.reject("PPA does not support commercial uploads.")
 
-        # Is this a commercial package?  Check the component on the first
-        # file in the package (they all have the same component so checking
-        # just the first is fine).
-        if self.changes.files[0].component_name == "commercial":
+            # All files in the upload must be commercial if any one of them is.
+            if len(components) != 1:
+                self.reject("Cannot mix commercial files with non-commercial.")
+                return
+
             # Reset the archive in the policy to the commercial archive.
             self.policy.archive = getUtility(IArchiveSet).getByDistroPurpose(
                 self.policy.distroseries.distribution, 
                 ArchivePurpose.COMMERCIAL
                 )
+
             # Check for data problems:
-            assert (self.policy.archive, 
-                "Commercial archive for distro '%s' not found" % (
+            if not self.policy.archive:
+                self.reject("Commercial archive for distro '%s' not found" % (
                     self.policy.distroseries.distribution.name))
 
