@@ -47,7 +47,7 @@ read.
     ...     product = getUtility(IProductSet).getByName('firefox')
     ...     return getUtility(IBranchSet).new(
     ...         BranchType.IMPORTED,
-    ...         name, vcs_imports, product,
+    ...         name, vcs_imports, vcs_imports, product,
     ...         None, 'Import branch')
 
 

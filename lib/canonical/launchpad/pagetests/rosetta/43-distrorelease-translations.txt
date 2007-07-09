@@ -1,3 +1,4 @@
+= Translations for DistroSeries =
 
 First, we need to ensure that we can see the distroseries translations
 page, and that it has all the data we are expecting, in terms of languages.

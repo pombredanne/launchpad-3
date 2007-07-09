@@ -247,6 +247,3 @@ product widget, so the error is associated with the product widget.
   ...     print element.renderContents()
   There is 1 error.
   You are not allowed to create branches in The Landscape Project.
-  >>> parent = messages[1].findParent()
-  >>> print parent.div.input['id']
-  field.product
