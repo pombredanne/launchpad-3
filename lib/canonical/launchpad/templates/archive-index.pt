@@ -16,12 +16,25 @@
 
     <div metal:fill-slot="main">
 
-      <div>
-         <tal:archive-description
-              replace="structure context/description/fmt:text-to-html" />
-       </div>
+      <p>PPA description:</p>
 
-        <h2>Packages</h2>
+      <div id="description">
+         <tal:archive-description
+            replace="structure context/description/fmt:text-to-html" />
+      </div>
+
+      <p id="source_counter">
+         This PPA contains <span tal:content="view/number_of_sources"
+         /> sources.
+      </p>
+
+      <h2>Packages</h2>
+
+         <ul>
+            <li tal:repeat="pub context/getPublishedSources">
+               <span tal:replace="pub/sourcepackagerelease/name" />
+            </li>
+         </ul>
 
     </div>
 

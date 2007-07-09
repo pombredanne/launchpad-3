@@ -72,6 +72,10 @@ class ArchiveView(LaunchpadView):
     """
     __used_for__ = IArchive
 
+    def number_of_sources(self):
+        """ """
+        return self.context.getPublishedSources().count()
+
 
 class ArchiveActivateView(AddView):
 
