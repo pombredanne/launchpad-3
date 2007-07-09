@@ -27,6 +27,8 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.mailnotification import (
     send_branch_revision_notifications)
 
+from canonical.lp.dbschema import BranchSubscriptionNotificationLevel
+
 UTC = pytz.timezone('UTC')
 
 
@@ -45,11 +47,11 @@ class BzrSync:
         self.trans_manager = trans_manager
         self._admin = getUtility(ILaunchpadCelebrities).admin
         self.email_from = config.noreply_from_address
-        
+
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)
         self.logger = logger
-        
+
         self.db_branch = branch
         if branch_url is None:
             branch_url = self.db_branch.url
@@ -58,7 +60,25 @@ class BzrSync:
         # We want to generate the email contents as close to the source
         # of the email as possible, but we don't want to send them until
         # the information has been committed.
+        self.initializeEmailQueue()
+
+    def initializeEmailQueue(self):
+        """Create an email queue and determine whether to create diffs.
+
+        In order to avoid creating diffs when no one is interested in seeing
+        it, we check the all the branch subscriptions first, and decide here
+        whether or not to generate the revision diffs as the branch is scanned.
+
+        See XXX comment in `sendRevisionNotificationEmails` for the reason
+        behind the queue itself.
+        """
         self.pending_emails = []
+        levels = [
+            subscription.notification_level
+            for subscription in self.db_branch.subscriptions]
+        self.generate_emails = (
+            BranchSubscriptionNotificationLevel.DIFFSONLY in levels or
+            BranchSubscriptionNotificationLevel.FULL in levels)
 
     def close(self):
         """Explicitly release resources."""
@@ -114,7 +134,8 @@ class BzrSync:
         self.insertBranchRevisions(branchrevisions_to_insert)
         self.trans_manager.commit()
         # Now that these changes have been committed, send the pending emails.
-        self.sendRevisionNotificationEmails()
+        if self.generate_emails:
+            self.sendRevisionNotificationEmails()
         # The Branch table is modified by other systems, including the web UI,
         # so we need to update it in a short transaction to avoid causing
         # timeouts in the webapp. This opens a small race window where the
@@ -195,7 +216,8 @@ class BzrSync:
                 contents = ('%d revisions were removed from the branch.'
                             % number_removed)
             # No diff is associated with the removed email.
-            self.pending_emails.append((contents, ''))
+            if self.generate_emails:
+                self.pending_emails.append((contents, ''))
 
         # Merged (non-history) revisions in the database and the bzr branch.
         old_merged = db_ancestry.difference(db_history)
@@ -357,8 +379,10 @@ class BzrSync:
                     self.logger.debug("%d of %d: %s is a ghost",
                                       self.curr, self.last, revision_id)
                     continue
-                self.pending_emails.append(
-                    (self.getRevisionMessage(revision), self.getDiff(revision)))
+                if self.generate_emails:
+                    message = self.getRevisionMessage(revision)
+                    revision_diff = self.getDiff(revision)
+                    self.pending_emails.append((message, revision_diff))
 
     def updateBranchStatus(self):
         """Update the branch-scanner status in the database Branch table."""
