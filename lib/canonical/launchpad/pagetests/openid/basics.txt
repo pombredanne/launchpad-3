@@ -133,7 +133,9 @@ will currently return "can't say" as we are not yet logged into Launchpad.
     >>> anon_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> print anon_browser.contents
     Consumer received GET
+    openid.assoc_handle:...
     openid.mode:id_res
+    ...
     openid.user_setup_url:http://openid.launchpad.dev/+openid?...
     <BLANKLINE>
 
@@ -150,7 +152,9 @@ user.
     >>> user_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
     >>> print user_browser.contents
     Consumer received GET
+    openid.assoc_handle:...
     openid.mode:id_res
+    ...
     openid.user_setup_url:http://openid.launchpad.dev/+openid?...
     <BLANKLINE>
 
