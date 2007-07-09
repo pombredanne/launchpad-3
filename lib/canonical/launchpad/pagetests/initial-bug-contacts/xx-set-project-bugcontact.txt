@@ -1,0 +1,33 @@
+= Package Bug Contacts =
+
+== Teams as Bug Contacts ==
+
+First, some setup. We create a new project owned by "Sample Person".
+
+    >>> browser.addHeader("Authorization", 
+    ...                   "Basic test@canonical.com:test")
+    >>> browser.open('http://launchpad.dev/projects/+new')
+    >>> browser.getControl(name='field.name').value = 'testy'
+    >>> browser.getControl('Display Name:').value = 'Test Project'
+    >>> browser.getControl('Title:').value = 'A project for testing things'
+    >>> browser.getControl('Summary:').value = 'Testing team bug contacts'
+    >>> browser.getControl('Description:').value = 'See bug 109652'
+    >>> browser.getControl('Add').click()
+    >>> browser.url
+    'http://launchpad.dev/testy'
+
+Sample Person, a member of "Warty Security Team" (~name20) should not be 
+able to set Warty Security Team as a bug contact for Test Project as she's 
+not an admin of that team.
+
+    >>> browser.getLink('Bugs').click()
+    >>> browser.getLink('Change bug contact').click()
+    >>> browser.url
+    'http://bugs.launchpad.net/testy/+bugcontact'
+
+    >>> browser.getControl('Bug Contact').value = 'name20'
+    >>> browser.getControl('Change').click()
+    >>> 'Successfully changed the bug contact to Warty Security Team' not in browser.contents
+    True
+
+
