@@ -419,8 +419,8 @@ class Person(SQLBase, HasSpecificationsMixin):
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += (' AND Specification.implementation_status = %d' %
-                      SpecificationImplementationStatus.INFORMATIONAL.value)
+            query += (' AND Specification.implementation_status = %s' %
+                quote(SpecificationImplementationStatus.INFORMATIONAL.value))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details

@@ -561,8 +561,7 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
             badges += self.icon_template % (
                 "branch", "Branch is available", "/@@/branch")
 
-        if (self._context.implementation_status ==
-            dbschema.SpecificationImplementationStatus.INFORMATIONAL):
+        if self._context.informational:
             badges += self.icon_template % (
                 "informational", "Blueprint is purely informational",
                 "/@@/info")

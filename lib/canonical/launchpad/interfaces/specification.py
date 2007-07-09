@@ -27,8 +27,8 @@ from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 
 from canonical.lp.dbschema import (
-    SpecificationDefinitionStatus, SpecificationPriority, SpecificationImplementationStatus,
-    SpecificationGoalStatus)
+    SpecificationDefinitionStatus, SpecificationPriority,
+    SpecificationImplementationStatus, SpecificationGoalStatus)
 
 
 class SpecNameField(ContentNameField):
@@ -214,10 +214,6 @@ class ISpecification(IHasOwner, ICanBeMentored):
         "which supersedes this one. Note that selecting a specification "
         "here and pressing Continue will change the specification "
         "status to Superseded."))
-    informational = Bool(title=_('Is Informational'),
-        required=False, default=False, description=_('Check this box if '
-        'this specification is purely documentation or overview and does '
-        'not actually involve any implementation.'))
 
     # lifecycle
     starter = Attribute('The person who first set the state of the '
@@ -246,6 +242,8 @@ class ISpecification(IHasOwner, ICanBeMentored):
     branch_links = Attribute('The entries that link the branches to the spec')
 
     # emergent properties
+    informational = Attribute('Is True if this spec is purely informational '
+        'and requires no implementation.')
     is_complete = Attribute('Is True if this spec is already completely '
         'implemented. Note that it is True for informational specs, since '
         'they describe general functionality rather than specific '

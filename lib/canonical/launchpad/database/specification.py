@@ -70,7 +70,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
     name = StringCol(unique=True, notNull=True)
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
-    definition_status = EnumCol(schema=SpecificationDefinitionStatus, notNull=True,
+    definition_status = EnumCol(
+        schema=SpecificationDefinitionStatus, notNull=True,
         default=SpecificationDefinitionStatus.NEW)
     priority = EnumCol(schema=SpecificationPriority, notNull=True,
         default=SpecificationPriority.UNDEFINED)
@@ -104,7 +105,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
     whiteboard = StringCol(notNull=False, default=None)
     direction_approved = BoolCol(notNull=True, default=False)
     man_days = IntCol(notNull=False, default=None)
-    implementation_status = EnumCol(schema=SpecificationImplementationStatus, notNull=True,
+    implementation_status = EnumCol(
+        schema=SpecificationImplementationStatus, notNull=True,
         default=SpecificationImplementationStatus.UNKNOWN)
     superseded_by = ForeignKey(dbName='superseded_by',
         foreignKey='Specification', notNull=False, default=None)
@@ -318,34 +320,37 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     # NB NB NB if you change this definition PLEASE update the db constraint
     # Specification.specification_completion_recorded_chk !!!
-    completeness_clause =  """
-                Specification.implementation_status = %d
-                """ % SpecificationImplementationStatus.IMPLEMENTED.value + """
-            OR
-                Specification.definition_status IN ( %d, %d )
-                """ % (SpecificationDefinitionStatus.OBSOLETE.value,
-                       SpecificationDefinitionStatus.SUPERSEDED.value) + """
-            OR
-               (Specification.implementation_status = %d AND
-                Specification.definition_status = %d)
-                """ % (SpecificationImplementationStatus.INFORMATIONAL.value,
-                       SpecificationDefinitionStatus.APPROVED.value)
+    completeness_clause =  ("""
+        Specification.implementation_status = %s OR
+        Specification.definition_status IN ( %s, %s ) OR
+        (Specification.implementation_status = %s AND
+         Specification.definition_status = %s)
+        """ % sqlvalues(SpecificationImplementationStatus.IMPLEMENTED.value,
+                        SpecificationDefinitionStatus.OBSOLETE.value,
+                        SpecificationDefinitionStatus.SUPERSEDED.value,
+                        SpecificationImplementationStatus.INFORMATIONAL.value,
+                        SpecificationDefinitionStatus.APPROVED.value))
 
     @property
     def is_complete(self):
-        """See ISpecification. This is a code implementation of the
-        SQL in self.completeness. Just for completeness.
-        """
-        return (self.definition_status in [
-                    SpecificationDefinitionStatus.OBSOLETE,
-                    SpecificationDefinitionStatus.SUPERSEDED,
-                    ]
-                or (self.implementation_status ==
-                    SpecificationImplementationStatus.IMPLEMENTED)
-                or ((self.implementation_status ==
-                     SpecificationImplementationStatus.INFORMATIONAL) and
-                    (self.definition_status ==
-                     SpecificationDefinitionStatus.APPROVED)))
+        """See `ISpecification`."""
+        # Implemented blueprints are by definition complete.
+        if (self.implementation_status ==
+            SpecificationImplementationStatus.IMPLEMENTED):
+            return True
+        # Obsolete and superseded blueprints are considered complete.
+        if self.definition_status in (
+            SpecificationDefinitionStatus.OBSOLETE,
+            SpecificationDefinitionStatus.SUPERSEDED):
+            return True
+        # Approved information blueprints are also considered complete.
+        if ((self.implementation_status ==
+             SpecificationImplementationStatus.INFORMATIONAL) and
+            (self.definition_status ==
+             SpecificationDefinitionStatus.APPROVED)):
+            return True
+        else:
+            return False
 
     # NB NB If you change this definition, please update the equivalent
     # DB constraint Specification.specification_start_recorded_chk
@@ -355,16 +360,15 @@ class Specification(SQLBase, BugLinkTargetMixin):
     # started should be less than the threshold". We'll see how maintainable
     # this is.
     started_clause =  """
-                Specification.implementation_status NOT IN ( %d, %d, %d, %d )
-                """ % ( SpecificationImplementationStatus.UNKNOWN.value,
+        Specification.implementation_status NOT IN (%s, %s, %s, %s) OR
+        (Specification.implementation_status = %s AND
+         Specification.definition_status = %s)
+        """ % sqlvalues(SpecificationImplementationStatus.UNKNOWN.value,
                         SpecificationImplementationStatus.NOTSTARTED.value,
                         SpecificationImplementationStatus.DEFERRED.value,
-                        SpecificationImplementationStatus.INFORMATIONAL.value ) + """
-            OR
-               (Specification.implementation_status = %d AND
-                Specification.definition_status = %d)
-                """ % (SpecificationImplementationStatus.INFORMATIONAL.value,
-                       SpecificationDefinitionStatus.APPROVED.value)
+                        SpecificationImplementationStatus.INFORMATIONAL.value,
+                        SpecificationImplementationStatus.INFORMATIONAL.value,
+                        SpecificationDefinitionStatus.APPROVED.value)
 
     @property
     def is_started(self):
@@ -719,8 +723,8 @@ class SpecificationSet(HasSpecificationsMixin):
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += (' AND Specification.implementation_status = %d ' %
-                      SpecificationImplementationStatus.INFORMATIONAL.value)
+            query += (' AND Specification.implementation_status = %s ' %
+                quote(SpecificationImplementationStatus.INFORMATIONAL.value))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -735,9 +739,9 @@ class SpecificationSet(HasSpecificationsMixin):
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
             # XXX: this is untested and was broken. -- kiko 2007-02-07
-            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
+            query += (' AND Specification.definition_status NOT IN ( %s, %s ) ' %
                 sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
-                          SpecificationDefinitionStatus.SUPERSEDED)
+                          SpecificationDefinitionStatus.SUPERSEDED))
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:

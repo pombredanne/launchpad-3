@@ -100,19 +100,19 @@ class Sprint(SQLBase):
         #  - acceptance for sprint agenda.
         #  - informational.
         #
-        base = """SprintSpecification.sprint = %d AND
+        base = """SprintSpecification.sprint = %s AND
                   SprintSpecification.specification = Specification.id AND 
                   (Specification.product IS NULL OR
                    Specification.product NOT IN
                     (SELECT Product.id FROM Product
                      WHERE Product.active IS FALSE))
-                  """ % self.id
+                  """ % quote(self.id)
         query = base
 
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += (' AND Specification.implementation_status = %d' %
-                      SpecificationImplementationStatus.INFORMATIONAL.value)
+            query += (' AND Specification.implementation_status = %s' %
+              quote(SpecificationImplementationStatus.INFORMATIONAL.value))
         
         # import here to avoid circular deps
         from canonical.launchpad.database.specification import Specification
@@ -129,14 +129,14 @@ class Sprint(SQLBase):
         # look for specs that have a particular SprintSpecification
         # status (proposed, accepted or declined)
         if SpecificationFilter.ACCEPTED in filter:
-            query += ' AND SprintSpecification.status = %d' % (
-                SprintSpecificationStatus.ACCEPTED.value)
+            query += ' AND SprintSpecification.status = %s' % (
+                quote(SprintSpecificationStatus.ACCEPTED.value))
         elif SpecificationFilter.PROPOSED in filter:
-            query += ' AND SprintSpecification.status = %d' % (
-                SprintSpecificationStatus.PROPOSED.value)
+            query += ' AND SprintSpecification.status = %s' % (
+                quote(SprintSpecificationStatus.PROPOSED.value))
         elif SpecificationFilter.DECLINED in filter:
-            query += ' AND SprintSpecification.status = %d' % (
-                SprintSpecificationStatus.DECLINED.value)
+            query += ' AND SprintSpecification.status = %s' % (
+                quote(SprintSpecificationStatus.DECLINED.value))
         
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:

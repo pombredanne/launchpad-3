@@ -295,7 +295,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
             query += (' AND Specification.implementation_status = %s' %
-                      SpecificationImplementationStatus.INFORMATIONAL.value)
+              quote(SpecificationImplementationStatus.INFORMATIONAL.value))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
