@@ -4,8 +4,6 @@
 __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet']
 
-from operator import attrgetter
-
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -25,15 +23,13 @@ from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.archive import Archive
-from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.question import (
-    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet,
-    QuestionTargetMixin)
+    QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
@@ -51,7 +47,6 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
-from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -515,24 +510,6 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `ISpecificationTarget`."""
         return Specification.selectOneBy(distribution=self, name=name)
 
-    def newQuestion(self, owner, title, description, language=None,
-                  datecreated=None):
-        """See `IQuestionTarget`."""
-        return QuestionSet.new(
-            title=title, description=description, owner=owner,
-            distribution=self, datecreated=datecreated, language=language)
-
-    def getQuestion(self, question_id):
-        """See `IQuestionTarget`."""
-        try:
-            question = Question.get(question_id)
-        except SQLObjectNotFound:
-            return None
-        # Verify that the question is actually for this distribution.
-        if question.distribution != self:
-            return None
-        return question
-
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
@@ -550,48 +527,22 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             needs_attention_from=needs_attention_from,
             unsupported_target=unsupported_target).getResults()
 
-
-    def findSimilarQuestions(self, title):
-        """See `IQuestionTarget`."""
-        return SimilarQuestionsSearch(title, distribution=self).getResults()
-
-    def _getTargetTypes(self):
-        """See QuestionTargetMixin."""
+    def getTargetTypes(self):
+        """See `QuestionTargetMixin`.
+        
+        Defines distribution as self and sourcepackagename as None.
+        """
         return {'distribution': self,
                 'sourcepackagename': None}
 
-    def removeAnswerContact(self, person):
-        """See `IQuestionTarget`."""
-        if person not in self.answer_contacts:
+    def questionIsForTarget(self, question):
+        """See `QuestionTargetMixin`.
+        
+        Return True when the Question's distribution is self.
+        """
+        if question.distribution is not self:
             return False
-        answer_contact = AnswerContact.selectOne(
-            "distribution = %d AND person = %d"
-            " AND sourcepackagename IS NULL" % (self.id, person.id))
-        answer_contact.destroySelf()
         return True
-
-    @property
-    def answer_contacts(self):
-        """See `IQuestionTarget`."""
-        answer_contacts = AnswerContact.select(
-            """distribution = %d AND sourcepackagename IS NULL""" % self.id)
-
-        return sorted(
-            [answer_contact.person for answer_contact in answer_contacts],
-            key=attrgetter('displayname'))
-
-    @property
-    def direct_answer_contacts(self):
-        """See `IQuestionTarget`."""
-        return self.answer_contacts
-
-    def getQuestionLanguages(self):
-        """See `IQuestionTarget`."""
-        return set(Language.select(
-            'Language.id = Question.language AND '
-            'Question.distribution = %s AND '
-            'Question.sourcepackagename IS NULL' % sqlvalues(self.id),
-            clauseTables=['Question'], distinct=True))
 
     def ensureRelatedBounty(self, bounty):
         """See `IDistribution`."""

@@ -542,6 +542,9 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -718,6 +721,8 @@ INSERT INTO branch (id, title, summary, "owner", product, author, name, home_pag
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (28, NULL, NULL, 1, NULL, 1, 'testdoc', NULL, NULL, NULL, 1, NULL, NULL, 1, false, 'Lorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum', NULL, NULL, NULL, '2007-05-04 01:16:03.75446', 0, '2007-05-04 01:16:26.640702', false);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (29, 'Landscape trunk', NULL, 64, 16, 12, 'trunk', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2007-05-28 02:37:07.814303', 0, NULL, true);
 INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (30, NULL, NULL, 12, 16, 12, 'feature-x', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2007-05-28 02:37:07.814303', 0, NULL, true);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (75, 'GNOME Terminal Import Branch', NULL, 24, 6, NULL, 'import', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-06-25 20:04:03.9465', 0, NULL, false);
+INSERT INTO branch (id, title, summary, "owner", product, author, name, home_page, url, whiteboard, lifecycle_status, last_mirrored, last_mirror_attempt, mirror_failures, pull_disabled, mirror_status_message, last_scanned, last_scanned_id, last_mirrored_id, date_created, revision_count, mirror_request_time, private) VALUES (76, 'Evolution Import Branch', NULL, 24, 5, NULL, 'import', NULL, NULL, NULL, 1, NULL, NULL, 0, false, NULL, NULL, NULL, NULL, '2006-06-25 20:04:04.218451', 0, NULL, false);
 
 
 ALTER TABLE branch ENABLE TRIGGER ALL;
@@ -1171,6 +1176,8 @@ ALTER TABLE calendarsubscription ENABLE TRIGGER ALL;
 
 ALTER TABLE codeimport DISABLE TRIGGER ALL;
 
+INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, svn_branch_url, cvs_root, cvs_module, review_status) VALUES (1, 75, '2007-06-25 20:04:04.226605', 52, 2, 'http://svn.example.org/svnroot/gnome-terminal/trunk', NULL, NULL, 20);
+INSERT INTO codeimport (id, branch, date_created, registrant, rcs_type, svn_branch_url, cvs_root, cvs_module, review_status) VALUES (2, 76, '2007-06-25 20:04:04.379285', 52, 1, NULL, ':pserver:anonymous@anoncvs.example.org:/cvs/gnome', 'evolution', 1);
 
 
 ALTER TABLE codeimport ENABLE TRIGGER ALL;
@@ -1795,10 +1802,10 @@ ALTER TABLE emailaddress ENABLE TRIGGER ALL;
 
 ALTER TABLE entitlement DISABLE TRIGGER ALL;
 
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (1, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 10, 100, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (2, 17, '2007-06-10 12:00:00', '2007-06-11 12:00:00', '2008-06-11 12:00:00', 20, 200, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (4, 18, '2007-06-11 00:44:19.267601', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 10, 5, 0);
-INSERT INTO entitlement (id, person, date_created, date_starts, date_expires, entitlement_type, quota, amount_used) VALUES (5, 18, '2007-06-11 01:02:48.538842', '2007-06-11 12:00:00', '2007-06-11 00:00:00', 10, 3, 0);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (1, 17, 10, 100, 0, '2007-06-11 12:00:00', '2008-06-11 12:00:00', NULL, '2007-06-10 12:00:00', NULL, NULL, 30, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (2, 17, 20, 200, 0, '2007-06-11 12:00:00', '2008-06-11 12:00:00', NULL, '2007-06-10 12:00:00', NULL, NULL, 30, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (4, 18, 10, 5, 0, '2007-06-11 12:00:00', '2007-06-11 00:00:00', NULL, '2007-06-11 00:44:19.267601', NULL, NULL, 30, NULL);
+INSERT INTO entitlement (id, person, entitlement_type, quota, amount_used, date_starts, date_expires, registrant, date_created, approved_by, date_approved, state, whiteboard) VALUES (5, 18, 10, 3, 0, '2007-06-11 12:00:00', '2007-06-11 00:00:00', NULL, '2007-06-11 01:02:48.538842', NULL, NULL, 30, NULL);
 
 
 ALTER TABLE entitlement ENABLE TRIGGER ALL;
@@ -1912,6 +1919,7 @@ INSERT INTO karma (id, datecreated, person, "action", product, distribution, sou
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (59, '2000-03-13 20:45:15.852052', 16, 2, 20, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (60, '2000-03-13 20:45:51.817826', 16, 2, 20, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (61, '2000-03-13 20:46:49.83307', 16, 2, 20, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (62, '2001-07-03 21:30:51.583356', 12, 47, NULL, 1, NULL);
 
 
 ALTER TABLE karma ENABLE TRIGGER ALL;
@@ -5339,7 +5347,7 @@ INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, com
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (720, 7, 17, false, false, false, '', 158, false, false, false, NULL, NULL);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (721, 8, 17, false, false, false, '', 159, false, false, false, NULL, NULL);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (722, 9, 17, false, false, false, '', 160, false, false, false, NULL, NULL);
-INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (723, 1, 16, true, false, false, '', 152, false, true, false, '2005-05-06 21:12:42.747648', 51);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (723, 1, 16, true, false, false, '', 152, false, true, false, NULL, NULL);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (724, 2, 16, true, false, false, '', 153, false, true, false, '2005-05-06 21:12:42.747648', 51);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (725, 3, 16, true, false, false, '', 154, false, true, false, '2005-05-06 21:12:42.747648', 51);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer) VALUES (726, 4, 16, true, false, false, '', 155, false, true, false, '2005-05-06 21:12:42.747648', 51);
@@ -8201,6 +8209,7 @@ No se como hacer para que funcione el doble-núcleo recompilando la kernel, pued
 INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (13, 29, 'Problemas de Impressão no Firefox', 'Olá a todos!
 
 Não sei se isso acontece com todo mundo, mas aqui não consigo imprimir corretamente uma página com o Firefox, sempre sai cortado. Minha impressora é uma HP400 e uso papel A4, mas a impressão sai sempre como se estivesse selecionado o tamanho "letter", e isso mesmo mudando no mozilla para A4. Creio que não é um problema de configuração de impressora, pois isso só acontece com o Mozilla, em outros programas a impressão é normal.', NULL, NULL, 4, NULL, NULL, 10, 10, '2006-10-20 17:03:21.847064', '2006-10-20 17:03:21.847064', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 521);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language") VALUES (14, 12, 'عكس التغييرات غير المحفوظة للمستن؟', 'Testing Arabic writing direction (in Firefox) in questions.', NULL, NULL, NULL, 1, NULL, 10, 10, '2001-07-03 21:30:51.583356', '2001-07-03 21:30:51.583356', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 18);
 
 
 ALTER TABLE question ENABLE TRIGGER ALL;
@@ -8245,6 +8254,7 @@ INSERT INTO questionsubscription (id, question, person, date_created) VALUES (5,
 INSERT INTO questionsubscription (id, question, person, date_created) VALUES (6, 11, 12, '2006-10-16 18:31:53.205087');
 INSERT INTO questionsubscription (id, question, person, date_created) VALUES (7, 12, 13, '2006-11-09 16:52:18.179187');
 INSERT INTO questionsubscription (id, question, person, date_created) VALUES (8, 13, 29, '2006-11-09 17:03:21.847064');
+INSERT INTO questionsubscription (id, question, person, date_created) VALUES (9, 14, 12, '2001-07-03 21:30:51.583356');
 
 
 ALTER TABLE questionsubscription ENABLE TRIGGER ALL;
@@ -9199,6 +9209,7 @@ INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, r
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (66, 29, 64, 2, '2007-05-10 17:21:17.877009', NULL, 16, NULL);
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (67, 63, 64, 5, '2005-05-10 17:22:02.377319', '2006-05-10 17:22:02.377319', 16, '');
 INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (68, 12, 17, 1, '2007-05-16 15:03:47.748238', NULL, 12, NULL);
+INSERT INTO teammembership (id, person, team, status, datejoined, dateexpires, reviewer, reviewercomment) VALUES (69, 69, 17, 2, '2007-06-20 14:18:41.185147', NULL, 16, NULL);
 
 
 ALTER TABLE teammembership ENABLE TRIGGER ALL;
@@ -9328,6 +9339,10 @@ INSERT INTO teamparticipation (id, team, person) VALUES (131, 243603, 243603);
 INSERT INTO teamparticipation (id, team, person) VALUES (132, 243604, 243603);
 INSERT INTO teamparticipation (id, team, person) VALUES (133, 243604, 243604);
 INSERT INTO teamparticipation (id, team, person) VALUES (134, 64, 29);
+INSERT INTO teamparticipation (id, team, person) VALUES (135, 32, 69);
+INSERT INTO teamparticipation (id, team, person) VALUES (136, 17, 69);
+INSERT INTO teamparticipation (id, team, person) VALUES (137, 32, 68);
+INSERT INTO teamparticipation (id, team, person) VALUES (138, 17, 68);
 
 
 ALTER TABLE teamparticipation ENABLE TRIGGER ALL;

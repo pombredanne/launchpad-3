@@ -244,23 +244,25 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def canUploadToPocket(self, pocket):
         """See IDistroSeries."""
-        # frozen/released states
-        released_states = [
-            DistroSeriesStatus.SUPPORTED,
-            DistroSeriesStatus.CURRENT
-            ]
+        # Allow everything for distroseries in FROZEN state.
+        if self.status == DistroSeriesStatus.FROZEN:
+            return True
 
-        # deny uploads for released RELEASE pockets
+        # Define stable/released states.
+        stable_states = (DistroSeriesStatus.SUPPORTED,
+                         DistroSeriesStatus.CURRENT)
+
+        # Deny uploads for RELEASE pocket in stable states.
         if (pocket == PackagePublishingPocket.RELEASE and
-            self.status in released_states):
+            self.status in stable_states):
             return False
 
-        # deny uploads for non-RELEASE unreleased pockets
+        # Deny uploads for post-release pockets in unstable states.
         if (pocket != PackagePublishingPocket.RELEASE and
-            self.status not in released_states):
+            self.status not in stable_states):
             return False
 
-        # allow anything else
+        # Allow anything else.
         return True
 
     def updatePackageCount(self):
@@ -1472,7 +1474,8 @@ new imports with the information being copied.
         logging.info('Updating POMsgSet table...')
         cur.execute('''
             UPDATE POMsgSet SET
-                iscomplete = pms1.iscomplete, isfuzzy = pms1.isfuzzy,
+                iscomplete = pms1.iscomplete,
+                isfuzzy = pms1.isfuzzy,
                 isupdated = pms1.isupdated,
                 reviewer = pms1.reviewer,
                 date_reviewed = pms1.date_reviewed

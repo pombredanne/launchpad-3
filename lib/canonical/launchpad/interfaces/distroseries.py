@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Interfaces including and related to IDistroSeries."""
 
@@ -81,10 +81,10 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     lucilleconfig = Attribute("Lucille Configuration Field")
     sourcecount = Attribute("Source Packages Counter")
     defer_translation_imports = Bool(
-        title = _("Defer translation imports"),
-        description = _("Suspends any translation imports for this series"),
-        default = True,
-        required = True
+        title=_("Defer translation imports"),
+        description=_("Suspends any translation imports for this series"),
+        default=True,
+        required=True
         )
     binarycount = Attribute("Binary Packages Counter")
     potemplates = Attribute("The set of potemplates in the series")
@@ -161,6 +161,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                 edgy          -> ALLOW
                 warty-updates -> ALLOW
                 edgy-security -> DENY
+
+        Note that FROZEN is not considered either 'stable' or 'unstable' state.
+        Uploads to a FROZEN distroseries will end up in UNAPPROVED queue.
 
         Return True if the upload is allowed and False if denied.
         """
