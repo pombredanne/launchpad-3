@@ -202,10 +202,11 @@ class POFileMixIn(RosettaStats):
         POSubmissions that are relevant to it.  Each of the lists is in
         newest-to-oldest order.
 
-        :stored_pomsgsets: List of pomsgsets that are already present in the
-        database, and whose in-memory caches are to be populated.
-        :dummy_pomsgsets: List of pomsgsets that have not yet been stored in
-        the database, and whose in-memory caches are to be populated.
+        :param stored_pomsgsets: List of pomsgsets that are already present in
+            the database, and whose in-memory caches are to be populated.
+        :param dummy_pomsgsets: List of pomsgsets that have not yet been
+            stored in the database, and whose in-memory caches are to be
+            populated.
         """
 
         all_pomsgsets = stored_pomsgsets + dummy_pomsgsets
@@ -249,9 +250,9 @@ class POFileMixIn(RosettaStats):
 
         parameters['ids'] = 'false'
         if stored_pomsgsets:
-            ids_list = sqlvalues(
-                [pomsgset.id for pomsgset in stored_pomsgsets])
-            parameters['ids'] = 'POMsgSet.id IN %s' % ids_list
+            ids_list = ','.join(
+                [quote(pomsgset) for pomsgset in stored_pomsgsets])
+            parameters['ids'] = 'POMsgSet.id IN (%s)' % ids_list
 
 
         # Phase 1.
@@ -903,15 +904,15 @@ class POFile(SQLBase, POFileMixIn):
             'sequence > 0 AND pofile=%s' % (sqlvalues(self.id))).count()
 
         replacements = {
-            'importer': entry_to_import.importer.displayname,
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
             'elapsedtime': entry_to_import.getElapsedTimeText(),
-            'language': self.language.displayname,
-            'template': self.potemplate.displayname,
             'file_link': entry_to_import.content.http_url,
-            'numberofmessages': msgsets_imported,
             'import_title': '%s translations for %s' % (
-                self.language.displayname, self.potemplate.displayname)
+                self.language.displayname, self.potemplate.displayname),
+            'importer': entry_to_import.importer.displayname,
+            'language': self.language.displayname,
+            'numberofmessages': msgsets_imported,
+            'template': self.potemplate.displayname,
             }
 
         if import_rejected:

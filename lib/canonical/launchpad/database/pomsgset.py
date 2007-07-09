@@ -41,6 +41,7 @@ class POMsgSetMixIn:
     @property
     def pluralforms(self):
         """See `IPOMsgSet`."""
+
         if self.potmsgset.plural_text is not None:
             if self.pofile.language.pluralforms is not None:
                 entries = self.pofile.language.pluralforms
@@ -307,8 +308,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def setActiveSubmission(self, pluralform, submission):
         """See `IPOMsgSet`."""
+
         assert submission is None or submission.pomsgset == self, (
             'Submission made "active" in the wrong POMsgSet')
+
         if submission is not None and submission.active:
             return
 
@@ -330,8 +333,10 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def setPublishedSubmission(self, pluralform, submission):
         """See `IPOMsgSet`."""
+
         assert submission is None or submission.pomsgset == self, (
             "Submission set as published in wrong POMsgSet")
+
         if submission is not None and submission.published:
             return
 
@@ -386,6 +391,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def getActiveSubmission(self, pluralform):
         """See `IPOMsgSet`."""
+
         if self.active_submissions is None:
             if self.id is None:
                 return None
@@ -394,6 +400,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def getPublishedSubmission(self, pluralform):
         """See `IPOMsgSet`."""
+
         if self.published_submissions is None:
             if self.id is None:
                 return None
@@ -822,6 +829,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def updateFlags(self):
         """See `IPOMsgSet`."""
+
         # Make sure we are working with the very latest data.
         flush_database_updates()
         self.initializeSubmissionsCaches()

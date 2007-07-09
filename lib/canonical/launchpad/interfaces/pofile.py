@@ -138,7 +138,7 @@ class IPOFile(IRosettaStats):
     def __getitem__(msgid_text):
         """Return the active IPOMsgSet in this IPOFile identified by msgid_text.
 
-        :msgid_text: is an unicode string.
+        :param msgid_text: is an unicode string.
 
         Raise NotFoundError if it does not exist.
         """
@@ -218,9 +218,9 @@ class IPOFile(IRosettaStats):
     def uncachedExport(included_obsolete=True, export_utf8=False):
         """Export this PO file as string without using any cache.
 
-        :included_obsolete: Whether the exported PO file does not have
+        :param included_obsolete: Whether the exported PO file does not have
             obsolete entries.
-        :export_utf8: Whether the exported PO file should be exported as
+        :param export_utf8: Whether the exported PO file should be exported as
             UTF-8.
         """
 

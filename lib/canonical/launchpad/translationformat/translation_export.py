@@ -143,7 +143,7 @@ class LaunchpadWriteTarFile:
     def add_files(self, files):
         """Add a number of files to the archive.
 
-        :files: A dictionary mapping file names to file contents.
+        :param files: A dictionary mapping file names to file contents.
         """
 
         for filename in sorted(files.keys()):

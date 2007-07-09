@@ -448,7 +448,7 @@ class Bug(SQLBase):
             result = BugMessage(bug=self, message=message)
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, message.owner)
-            self.findCvesInText(message.text_contents)
+            self.findCvesInText(message.text_contents, message.owner)
             return result
 
     def addWatch(self, bugtracker, remotebug, owner):
@@ -516,7 +516,7 @@ class Bug(SQLBase):
 
         return bug_branch
 
-    def linkCVE(self, cve, user=None):
+    def linkCVE(self, cve, user):
         """See IBug."""
         if cve not in self.cves:
             bugcve = BugCve(bug=self, cve=cve)
@@ -531,11 +531,11 @@ class Bug(SQLBase):
                 BugCve.delete(cve_link.id)
                 break
 
-    def findCvesInText(self, text):
+    def findCvesInText(self, text, user):
         """See IBug."""
         cves = getUtility(ICveSet).inText(text)
         for cve in cves:
-            self.linkCVE(cve)
+            self.linkCVE(cve, user)
 
     # Several other classes need to generate lists of bugs, and
     # one thing they often have to filter for is completeness. We maintain

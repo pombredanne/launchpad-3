@@ -16,7 +16,7 @@ __all__ = [
     'BranchReviewStatusVocabulary',
     'BranchSubscriptionDiffSizeVocabulary',
     'BranchSubscriptionNotificationLevelVocabulary',
-    'BranchVisibilityPolicyVocabulary',
+    'BranchVisibilityRuleVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugBranchStatusVocabulary',
@@ -24,6 +24,7 @@ __all__ = [
     'BugTaskImportanceVocabulary',
     'BugTaskStatusVocabulary',
     'BugTrackerTypeVocabulary',
+    'CodeImportReviewStatusVocabulary',
     'CveStatusVocabulary',
     'DistroSeriesStatusVocabulary',
     'EntitlementStateVocabulary',
@@ -78,7 +79,7 @@ BranchSubscriptionDiffSizeVocabulary = \
     sortkey_ordered_vocab_factory(dbschema.BranchSubscriptionDiffSize)
 BranchSubscriptionNotificationLevelVocabulary = \
     vocab_factory(dbschema.BranchSubscriptionNotificationLevel)
-BranchVisibilityPolicyVocabulary = vocab_factory(dbschema.BranchVisibilityPolicy)
+BranchVisibilityRuleVocabulary = vocab_factory(dbschema.BranchVisibilityRule)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
 BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
@@ -90,6 +91,8 @@ BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
 BugTrackerTypeVocabulary = vocab_factory(dbschema.BugTrackerType,
     noshow=[dbschema.BugTrackerType.DEBBUGS,
             dbschema.BugTrackerType.SOURCEFORGE])
+CodeImportReviewStatusVocabulary = vocab_factory(
+    dbschema.CodeImportReviewStatus)
 CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
 DistroSeriesStatusVocabulary = vocab_factory(dbschema.DistroSeriesStatus)
 EntitlementStateVocabulary = vocab_factory(dbschema.EntitlementState)

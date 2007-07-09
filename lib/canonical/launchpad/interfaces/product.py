@@ -346,10 +346,6 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """Ensure that the bounty is linked to this product. Return None.
         """
 
-    def newBranch(name, title, url, home_page, lifecycle_status, summary,
-                  whiteboard):
-        """Create a new Branch for this product."""
-
 
 class IProductSet(Interface):
     """The collection of products."""
