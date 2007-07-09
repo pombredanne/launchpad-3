@@ -15,7 +15,9 @@ from zope.interface import implements
 
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
-from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory)
 from canonical.launchpad.interfaces import (
     IArchive, IArchiveSet, IHasOwner, IHasBuildRecords, IBuildSet)
 from canonical.launchpad.webapp.url import urlappend
@@ -90,6 +92,26 @@ class Archive(SQLBase):
         return getUtility(IBuildSet).getBuildsForArchive(
             self, status, name, pocket)
 
+    def getPublishedSources(self, name=None):
+        """See IArchive."""
+        clauses = [
+            'SourcePackagePublishingHistory.archive = %s' % sqlvalues(self)]
+        clauseTables = []
+
+        if name is not None:
+            clauses.append("""
+            SourcePackagePublishingHistory.sourcepackagerelease =
+                SourcePackageRelease.id AND
+            SourcePackageRelease.sourcepackagename =
+                SourcePackageName.id AND
+            SourcePackageName.name LIKE '%%' || %s || '%%'
+            """ % quote_like(name))
+            clauseTables.extend(
+                ['SourcePackageRelease', 'SourcePackageName'])
+
+        query = ' AND '.join(clauses)
+        return SourcePackagePublishingHistory.select(
+            query, orderBy='id', clauseTables=clauseTables)
 
 class ArchiveSet:
     implements(IArchiveSet)

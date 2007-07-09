@@ -27,6 +27,75 @@ An Archive can be retrieved via IPerson.archive SingleJoin:
   >>> name16.archive == sandbox_archive
   True
 
+IArchive implements a published source lookup method:
+
+  >>> cprov = getUtility(IPersonSet).getByName('cprov')
+  >>> cprov_archive = cprov.archive
+
+  >>> cprov_archive.getPublishedSources().count()
+  2
+
+This lookup also support 'name' restriction (as in SQL
+"LIKE '%%' || NAME || '%%'")
+
+  >>> cd_lookup = cprov_archive.getPublishedSources(name='cd')
+  >>> cd_lookup.count()
+  1
+  >>> cd_lookup[0].sourcepackagerelease.name
+  u'cdrkit'
+
+  >>> ice_lookup = cprov_archive.getPublishedSources(name='ice')
+  >>> ice_lookup.count()
+  1
+  >>> ice_lookup[0].sourcepackagerelease.name
+  u'iceweasel'
+
+  >>> cprov_archive.getPublishedSources(name='foo').count()
+  0
+
+It also implements a build look method, which supports, 'name',
+'status' and 'pocket'.
+
+Let's check 'name' build lookup:
+
+  >>> cd_lookup = cprov_archive.getBuildRecords(name='cd')
+  >>> cd_lookup.count()
+  1
+  >>> cd_lookup[0].sourcepackagerelease.name
+  u'cdrkit'
+
+  >>> ice_lookup = cprov_archive.getBuildRecords(name='ice')
+  >>> ice_lookup.count()
+  1
+  >>> ice_lookup[0].sourcepackagerelease.name
+  u'iceweasel'
+
+  >>> cprov_archive.getBuildRecords(name='foo').count()
+  0
+
+Let's check 'status' build lookup:
+
+  >>> from canonical.lp.dbschema import BuildStatus
+  >>> cprov_archive.getBuildRecords(status=BuildStatus.FULLYBUILT).count()
+  1
+
+  >>> cprov_archive.getBuildRecords(status=BuildStatus.FAILEDTOBUILD).count()
+  1
+
+  >>> cprov_archive.getBuildRecords(status=BuildStatus.NEEDSBUILD).count()
+  0
+
+Let's check 'pocket' build lookup:
+
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> cprov_archive.getBuildRecords(
+  ...     pocket=PackagePublishingPocket.RELEASE).count()
+  2
+
+  >>> cprov_archive.getBuildRecords(
+  ...     pocket=PackagePublishingPocket.UPDATES).count()
+  0
+
 
 IArchive has a method to provide a modified Publisher Configuration (see
 lib/archivepublisher/config.py), which provides the right paths for its

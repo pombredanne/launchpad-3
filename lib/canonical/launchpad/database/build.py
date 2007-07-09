@@ -410,7 +410,7 @@ class BuildSet:
             queries.append('buildstate=%s' % sqlvalues(status))
 
         if pocket:
-            condition_clauses.append('pocket=%s' % sqlvalues(pocket))
+            queries.append('pocket=%s' % sqlvalues(pocket))
 
         if name:
             queries.append("Build.sourcepackagerelease="

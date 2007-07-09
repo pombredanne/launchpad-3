@@ -54,6 +54,9 @@ class IArchive(Interface, IHasOwner):
         paths to cope with personal archives publication workflow.
         """
 
+    def getPublishedSources():
+        """Return all ISourcePackagePublishingHistory target to this archive."""
+
 
 class IArchiveSet(Interface):
     """Interface for ArchiveSet"""
