@@ -9,9 +9,7 @@ __all__ = [
 
 from canonical.lp.dbschema import (
     SpecificationFilter,
-    SpecificationGoalStatus,
     SpecificationSort,
-    SprintSpecificationStatus,
     )
 
 from canonical.launchpad.interfaces import (

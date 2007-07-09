@@ -14,7 +14,7 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
-from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool, Field
+from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (ContentNameField, Summary,

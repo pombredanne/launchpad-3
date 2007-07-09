@@ -55,8 +55,6 @@ from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
 
-from canonical.launchpad.helpers import (
-    contactEmailAddresses, shortlist)
 from canonical.launchpad.components import ObjectDelta
 from canonical.launchpad.components.specification import SpecificationDelta
 
