@@ -2,36 +2,15 @@
 
 __metaclass__ = type
 
-import pytz
 from textwrap import dedent
 import unittest
-from StringIO import StringIO
-from datetime import datetime
 
 from canonical.launchpad.helpers import test_diff
-from canonical.launchpad.translationformat import (
-    TranslationFile, TranslationMessage)
 from canonical.launchpad.translationformat.gettext_po_exporter import (
     GettextPoExporter)
 from canonical.launchpad.translationformat.gettext_po_parser import (
     PoParser)
 from canonical.testing import LaunchpadZopelessLayer
-
-
-pofile_ja = '''
-    msgid ""
-    msgstr ""
-    "Project-Id-Version: foo\n"
-    "Report-Msgid-Bugs-To: \n"
-    "POT-Creation-Date: 2007-07-09 03:39+0100\n"
-    "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
-    "Last-Translator: Kubla Kahn <kk@pleasure-dome.com>\n"
-    "Language-Team: LANGUAGE <LL@li.org>\n"
-    "MIME-Version: 1.0\n"
-    "Content-Type: text/plain; charset=UTF-8\n"
-    "Content-Transfer-Encoding: 8bit\n"
-    "Plural-Forms: nplurals=1; plural=0;\n"
-    '''
 
 
 class GettextPoExporterTestCase(unittest.TestCase):
@@ -101,6 +80,7 @@ class GettextPoExporterTestCase(unittest.TestCase):
         cy_translation_file = self.parser.parse(pofile_cy % '\n')
         cy_translation_file.is_template = False
         cy_translation_file.language_code = 'cy'
+        cy_translation_file.path = 'po/cy.po'
         cy_translation_file.translation_domain = 'testing'
         exported_cy_file = self.translation_exporter.exportTranslationFiles(
             [cy_translation_file])
@@ -120,6 +100,7 @@ class GettextPoExporterTestCase(unittest.TestCase):
             translation_file = self.parser.parse(pofile % '\n')
             translation_file.is_template = False
             translation_file.language_code = 'ja'
+            translation_file.path = 'po/ja.po'
             translation_file.translation_domain = 'testing'
 
             # We are sure that 'Japanese' is correctly stored as Unicode so
@@ -221,6 +202,7 @@ class GettextPoExporterTestCase(unittest.TestCase):
             pofile % ('ISO-8859-15', '\n', '\xe1'))
         translation_file.is_template = False
         translation_file.language_code = 'es'
+        translation_file.path = 'po/es.po'
         translation_file.translation_domain = 'testing'
         # Force the export as ASCII, it will not be possible because
         # translation is not available in that encoding and thus, we should
@@ -260,6 +242,7 @@ class GettextPoExporterTestCase(unittest.TestCase):
         translation_file = self.parser.parse(pofile % ('\n', ''))
         translation_file.is_template = False
         translation_file.language_code = 'es'
+        translation_file.path = 'po/es.po'
         translation_file.translation_domain = 'testing'
         exported_file = self.translation_exporter.exportTranslationFiles(
             [translation_file])

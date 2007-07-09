@@ -8,7 +8,7 @@ from canonical.launchpad.interfaces import (
     TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat import gettext_po_parser
 from canonical.launchpad.translationformat.gettext_po_parser import (
-    PoParser, PoHeader)
+    PoParser)
 
 DEFAULT_HEADER = '''
 msgid ""
@@ -203,7 +203,7 @@ class POBasicTestCase(unittest.TestCase):
             u'Last-Translator: FULL NAME <EMAIL@ADDRESS>',
             u'Language-Team: LANGUAGE <LL@li.org>',
             u'MIME-Version: 1.0',
-            u'Content-Type: text/plain; charset=ASCII',
+            u'Content-Type: text/plain; charset=UTF-8',
             u'Content-Transfer-Encoding: 8bit',
             u'X-Launchpad-Export-Date: ...',
             u'X-Generator: Launchpad (build Unknown)',

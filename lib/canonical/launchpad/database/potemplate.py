@@ -13,8 +13,9 @@ import os.path
 from sqlobject import (
     BoolCol, ForeignKey, IntCol, SQLMultipleJoin, SQLObjectNotFound,
     StringCol)
-from zope.interface import implements
 from zope.component import getUtility
+from zope.interface import implements
+from zope.proxy import removeAllProxies
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -33,9 +34,9 @@ from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IPOTemplate, IPOTemplateExporter, IPOTemplateSet,
-    IPOTemplateSubset, ITranslationFile, ITranslationImporter, IVPOTExportSet,
-    LanguageNotFound, NotFoundError, TranslationConstants,
+    ILaunchpadCelebrities, IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
+    ITranslationExporter, ITranslationFile, ITranslationImporter,
+    IVPOTExportSet, LanguageNotFound, NotFoundError, TranslationConstants,
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
@@ -417,9 +418,16 @@ class POTemplate(SQLBase, RosettaStats):
         return results.count() > 0
 
     def export(self):
-        """See IPOTemplate."""
-        exporter = IPOTemplateExporter(self)
-        return exporter.export_potemplate()
+        """See `IPOTemplate`."""
+        translation_exporter = getUtility(ITranslationExporter)
+        translation_format_exporter = (
+            translation_exporter.getTranslationFormatExporterByFileFormat(
+                self.source_file_format))
+
+        template_file = ITranslationFile(self)
+        exported_file = translation_format_exporter.exportTranslationFiles(
+            [template_file])
+        return removeAllProxies(exported_file.content_file).read()
 
     def expireAllMessages(self):
         """See IPOTemplate."""

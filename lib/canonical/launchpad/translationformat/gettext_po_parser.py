@@ -124,8 +124,8 @@ class PoHeader:
 
     def _parseCharset(self):
         """Return charset used in this header."""
-        # Default placeholder for charset is 'CHARSET'
-        charset = 'CHARSET'
+        # Default to UTF-8 charset
+        charset = 'UTF-8'
         # Scan for the charset in the same way that gettext does.
         match = re.search(r'charset=([^\s]+)', self._raw_header)
         if match is not None:
@@ -272,6 +272,9 @@ class PoHeader:
                 # Ignore it, new exports use x-launchpad-export-date.
                 continue
             elif key == 'x-launchpad-export-date':
+                if self.is_template:
+                    # Templates doesn't have this.
+                    continue
                 UTC = pytz.timezone('UTC')
                 now = datetime.datetime.now(UTC)
                 raw_content_list.append(
