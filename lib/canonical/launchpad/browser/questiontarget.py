@@ -475,7 +475,7 @@ class QuestionCollectionByLanguageView(SearchQuestionsView):
         Answer facet.
         """
         SearchQuestionsView.__init__(self, context, request)
-        # Language is intrinsic to this view, it manages the language
+        # Language is intrinsic to this view; it manages the language
         # field without the help of formlib.
         lang_code = request.get('field.language', '')
         try:
@@ -487,32 +487,31 @@ class QuestionCollectionByLanguageView(SearchQuestionsView):
     @property
     def pageheading(self):
         """See `SearchQuestionsView`."""
+        mapping = dict(context=self.context.displayname,
+                       search_text=self.search_text,
+                       language=self.language.englishname)
         if self.search_text:
             return _('${language} questions matching "${search_text}" '
-                     'in ${context}', mapping=dict(
-                        context=self.context.displayname,
-                        search_text=self.search_text,
-                        language=self.language.englishname))
+                     'in ${context}',
+                     mapping=mapping)
         else:
             return _('${language} questions in ${context}',
-                      mapping=dict(
-                        context=self.context.displayname,
-                        language=self.language.englishname))
+                      mapping=mapping)
 
     @property
     def empty_listing_message(self):
         """See `SearchQuestionsView`."""
+        mapping = dict(context=self.context.displayname,
+                       search_text=self.search_text,
+                       language=self.language.englishname)
         if self.search_text:
             return _('No ${language} questions matching "${search_text}" '
-                     'in ${context} for the selected status.', mapping=dict(
-                        context=self.context.displayname,
-                        search_text=self.search_text,
-                        language=self.language.englishname))
+                     'in ${context} for the selected status.',
+                     mapping=mapping)
         else:
             return _('No ${language} questions in ${context} for the '
-                     'selected status.', mapping=dict(
-                        context=self.context.displayname,
-                        language=self.language.englishname))
+                     'selected status.',
+                     mapping=mapping)
 
     @property
     def show_language_control(self):

@@ -13,8 +13,7 @@ questions will be shown when the user has not provided language
 information.
 
     >>> anon_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> soup = find_main_content(anon_browser.contents)
     >>> for question in soup.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
     Continue playing after shutdown
@@ -25,7 +24,7 @@ information.
 
     # Since we have more than 5 results, some of them are in the second batch.
     >>> anon_browser.getLink('Next').click()
-    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> soup = find_main_content(anon_browser.contents)
     >>> for question in soup.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
     Installation failed
@@ -121,7 +120,7 @@ then questions with those language will be displayed:
     >>> anon_browser.getControl('Spanish (es)').selected
     True
 
-    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> soup = find_main_content(anon_browser.contents)
     >>> for question in soup.fetch('td', 'question'):
     ...     question.first('a').renderContents()
     'Problema al recompilar kernel con soporte smp (doble-n\xc3\xbacleo)'
@@ -132,7 +131,7 @@ then questions with those language will be displayed:
 
     # Since we have more than 5 results, some of them are in the second batch.
     >>> anon_browser.getLink('Next').click()
-    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> soup = find_main_content(anon_browser.contents)
     >>> for question in soup.fetch('td', 'question'):
     ...     question.first('a').renderContents()
     'Slow system'
