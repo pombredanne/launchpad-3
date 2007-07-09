@@ -30,7 +30,7 @@ __all__ = (
 'BranchReviewStatus',
 'BranchSubscriptionDiffSize',
 'BranchSubscriptionNotificationLevel',
-'BranchVisibilityPolicy',
+'BranchVisibilityRule',
 'BugBranchStatus',
 'BugNominationStatus',
 'BugTaskStatus',
@@ -2653,8 +2653,8 @@ class BranchSubscriptionNotificationLevel(DBSchema):
         """)
 
 
-class BranchVisibilityPolicy(DBSchema):
-    """Branch Visibility Policy"""
+class BranchVisibilityRule(DBSchema):
+    """Branch Visibility Rules for defining branch visibility policy."""
 
     PUBLIC = Item(1, """
         Public
