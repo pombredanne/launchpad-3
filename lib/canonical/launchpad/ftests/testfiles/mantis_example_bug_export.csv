@@ -1,4 +1,5 @@
 Id,Project,Reporter,Assigned To,Priority,Severity,Reproducibility,Product Version,Projection,Category,Date Submitted,ETA,OS,OS Version,Platform,View Status,Updated,Summary,Status,Resolution,Fixed in Version,Duplicate ID
+0003224,mantisbt,bhaddad,grangeway,normal,feature,always,,none,bugtracker,2003-07-11,none,,,,public,2005-01-31,error message does not tell where is the error,assigned,open,,0000000
 0007346,mantisbt,fman,zakman,normal,feature,always,1.0.5,none,custom fields,2006-08-09,none,,,,public,2007-07-06,Copy custom fields from one project to another,assigned,open,,0000000
 0006685,mantisbt,flangset,,normal,tweak,always,1.0.0,none,news,2006-02-08,none,,,,public,2007-07-06,News items should probably propagate down to sub-projects,new,open,,0000000
 0008104,mantisbt,brunosouza,vboctor,normal,block,always,,none,email,2007-06-27,none,,,,public,2007-07-06,Error send mail in 1.1.0a3,assigned,open,,0000000
