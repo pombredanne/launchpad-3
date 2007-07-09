@@ -41,7 +41,7 @@ from canonical.launchpad.helpers import (
 
 from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, EmailAddressStatus, LoginTokenType,
-    PersonCreationRationale, ShippingRequestStatus SpecificationFilter,
+    PersonCreationRationale, ShippingRequestStatus, SpecificationFilter,
     SpecificationDefinitionStatus, SpecificationImplementationStatus,
     SpecificationSort, SSHKeyType, TeamMembershipRenewalPolicy,
     TeamMembershipStatus, TeamSubscriptionPolicy)

@@ -20,11 +20,14 @@
 <div metal:fill-slot="main">
 
   <div style="float: right;">
-    <img src="/@@/mentoring-large" title="Mentoring available"
+    <img id="mentoring-available-icon"
+	 src="/@@/mentoring-large" title="Mentoring available"
          tal:condition="context/mentoring_offers/count" />
-    <img src="/@@/branch-large" title="Branch available"
+    <img id="branch-available-icon"
+	 src="/@@/branch-large" title="Branch available"
          tal:condition="context/branch_links/count" />
-    <img src="/@@/info-large"
+    <img id="informational-icon"
+	 src="/@@/info-large"
          title="Informational blueprint, no implementation necessary"
          tal:condition="context/informational" />
   </div>
