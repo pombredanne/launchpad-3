@@ -416,8 +416,8 @@ class POFile(SQLBase, POFileMixIn):
         return getUtility(IPersonSet).getPOFileContributors(self)
 
     def prepareTranslationCredits(self, potmsgset):
-        msgid = potmsgset.singular_text
         """See `IPOFile`."""
+        msgid = potmsgset.singular_text
         if (msgid == u'_: EMAIL OF TRANSLATORS\nYour emails'):
             text = potmsgset.translationsForLanguage(self.language.code)[0]
             if text is None:

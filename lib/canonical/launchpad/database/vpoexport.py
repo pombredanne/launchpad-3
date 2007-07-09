@@ -295,4 +295,6 @@ class VPOExport:
                 self.potemplate.getPOTMsgSetByMsgIDText(self.msgid))
             if auto_translation:
                 self.translation = auto_translation
+                self.activesubmission = True
+                self.translationpluralform = 0
 
