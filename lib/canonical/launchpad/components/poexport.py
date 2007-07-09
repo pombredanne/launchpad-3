@@ -182,6 +182,7 @@ class OutputMsgSet:
 
     def __init__(self, pofile):
         self.pofile = pofile
+        self.context = None
         self.msgids = []
         self.msgstrs = []
         self.flags = []
@@ -189,6 +190,10 @@ class OutputMsgSet:
         self.commenttext = ''
         self.sourcecomment = ''
         self.filereferences = ''
+
+    def set_context(self, context):
+        """Set context for the message set."""
+        self.context = context
 
     def add_msgid(self, msgid):
         """Add a message ID to this message set."""
@@ -246,6 +251,7 @@ class OutputMsgSet:
             msgstrPlurals = None
 
         message = POMessage(
+            msgctxt=self.context,
             msgid=self.msgids[0],
             msgid_plural=msgidPlural,
             msgstr=msgstr,
