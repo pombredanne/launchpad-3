@@ -30,6 +30,7 @@ The blueprint is displayed with a notice.
     >>> find_tag_by_id(user_browser.contents, 'informational-icon')
     <...Informational blueprint, no implementation necessary...>
 
+
 == Documentation ==
 
 An informational blueprint that has been approved, displays on the its
@@ -39,5 +40,6 @@ project's documentation page.
     >>> user_browser.getControl('Definition Status').value = ['Approved']
     >>> user_browser.getControl('Change').click()
     >>> browser.open('http://blueprints.launchpad.dev/jokosher/+documentation')
-    >>> 'Informational blueprint' in user_browser.contents
-    True    
+    >>> 'Informational blueprint' in extract_text(find_tag_by_id(
+    ...     browser.contents, 'documentation-listing-table'))
+    True
