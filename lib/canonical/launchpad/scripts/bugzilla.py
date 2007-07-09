@@ -465,13 +465,12 @@ class Bugzilla:
         lp_bug.addWatch(self.bugtracker, bug.bug_id, lp_bug.owner)
 
         # add remaining comments, and add CVEs found in all text
-        lp_bug.findCvesInText(text)
+        lp_bug.findCvesInText(text, lp_bug.owner)
         for (who, when, text) in comments:
             text = self._bug_re.sub(self.replaceBugRef, text)
             msg = msgset.fromText(msg.followup_title, text,
                                   self.person(who), when)
             lp_bug.linkMessage(msg)
-            lp_bug.findCvesInText(text)
 
         # subscribe QA contact and CC's
         if bug.qa_contact:

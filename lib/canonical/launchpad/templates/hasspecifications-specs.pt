@@ -5,9 +5,9 @@
 
 <body>
 
-<metal:portlets fill-slot="portlets">
-  <div tal:replace="structure context/@@+portlet-latestspecs" />
-</metal:portlets>
+    <metal:portlets fill-slot="portlets">
+      <div tal:replace="structure context/@@+portlet-latestspecs" />
+    </metal:portlets>
 
 <div metal:fill-slot="main"
      tal:define="specs view/specs;
@@ -17,6 +17,13 @@
      >Blueprints involving <tal:person replace="context/title" /></h1>
   <h1 tal:condition="not:view/is_person"
      >Blueprints for <tal:software replace="context/displayname" /></h1>
+
+  <div style="float: right;">
+    <a href="+addspec">
+    	<img alt="Register a blueprint" 
+    	     src="/+icing/but-sml-registerablueprint.gif"/>
+    </a>
+  </div>
 
   <tal:no_specs condition="not: has_any_specs">
 
@@ -127,7 +134,7 @@
   </tal:no_specs>
   <tal:has_specs condition="has_any_specs">
     <div>
-      <form name="spec_search" method="GET">
+      <form name="spec_search" class="primary search" method="GET">
 
         Show only blueprints containing:
 

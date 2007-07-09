@@ -130,7 +130,8 @@ class MenuAPI:
         if selectedfacetname is None:
             # No facet menu is selected.  So, return empty list.
             return []
-        menu = queryAdapter(self._context, IApplicationMenu, selectedfacetname)
+        menu = queryAdapter(
+            self._context, IApplicationMenu, selectedfacetname)
         if menu is None:
             return []
         else:
@@ -320,9 +321,9 @@ class NoneFormatter:
             if len(furtherPath) == 0:
                 raise TraversalError(
                     "you need to traverse a number after fmt:shorten")
-            maxlength = int(furtherPath.pop())
-            # XXX: why is maxlength not used here at all?
-            #       - kiko, 2005-08-24
+            # Remove the maxlength from the path as it is a parameter
+            # and not another traversal command.
+            furtherPath.pop()
             return ''
         elif name in self.allowed_names:
             return ''
@@ -501,7 +502,8 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
 
         badges = ''
         if self._context.bug.private:
-            badges += self.icon_template % ("private", "Private", "/@@/locked")
+            badges += self.icon_template % (
+                "private", "Private","/@@/locked")
 
         if self._context.bug.mentoring_offers.count() > 0:
             badges += self.icon_template % (
@@ -668,7 +670,8 @@ class NumberFormatterAPI:
 
     def bytes(self):
         """Render number as byte contractions according to IEC60027-2."""
-        # See http://en.wikipedia.org/wiki/Binary_prefixes#Specific_units_of_IEC_60027-2_A.2
+        # See http://en.wikipedia.org/wiki
+        # /Binary_prefixes#Specific_units_of_IEC_60027-2_A.2
         # Note that there is a zope.app.size.byteDisplay() function, but
         # it really limited and doesn't work well enough for us here.
         n = int(self._number)
@@ -1376,10 +1379,15 @@ class FormattersAPI:
 
     # Match lines that start with the ':', '|', and '>' symbols
     # commonly used for quoting passages from another email.
-    _re_quoted = re.compile('^([:|]|&gt;)')
+    # the dpkg version is used for exceptional cases where it
+    # is better to not assume '|' is a start of a quoted passage.
+    _re_quoted = re.compile('^([:|]|&gt;|-----BEGIN PGP)')
+    _re_dpkg_quoted = re.compile('^([:]|&gt;|-----BEGIN PGP)')
 
-    # Match blocks that start as signatures or quoted passages.
-    _re_block_include = re.compile('^<p>(--<br />|&gt;)')
+    # Match blocks that start as signatures, quoted passages, or PGP.
+    _re_block_include = re.compile('^<p>(--<br />|([:|]|&gt)|-----BEGIN PGP)')
+    # Match a line starting with '>' (implying text email or quoting by hand).
+    _re_quoted_line = re.compile('^&gt;')
 
     def email_to_html(self):
         """text_to_html and hide signatures and full-quoted emails.
@@ -1391,35 +1399,89 @@ class FormattersAPI:
         """
         start_fold_markup = '<span class="foldable">'
         end_fold_markup = '%s\n</span></p>'
+        re_quoted = self._re_quoted
         output = []
         in_fold = False
+        in_quoted = False
+        in_false_paragraph = False
+        dpkg_warning = False
         for line in self.text_to_html().split('\n'):
+            if not in_fold and 'dpkg' in line:
+                # dpkg is important in bug reports. We need to do extra
+                # checking that the '|' is not dpkg output.
+                dpkg_warning = True
+
             if not in_fold and self._re_block_include.match(line) is not None:
                 # Start a foldable paragraph for a signature or quote.
                 in_fold = True
                 line = '<p>%s%s' % (start_fold_markup, line[3:])
-            elif not in_fold and self._re_quoted.match(line) is not None:
+            elif dpkg_warning and '| Status' in line and not in_fold:
+                # When we have a dpkg_warning, we must do an extra test
+                # that the first '|' is actually dpkg output. When it is
+                # we switch the quote matching rules. We also clear the
+                # warning to ensure we do not do pointless extra checks.
+                re_quoted = self._re_dpkg_quoted
+                dpkg_warning = False
+            elif not in_fold and re_quoted.match(line) is not None:
                 # Start a foldable section for a quoted passage.
+                if self._re_quoted_line.match(line):
+                    in_quoted = True
                 in_fold = True
                 output.append(start_fold_markup)
-            elif in_fold and line.endswith('</p>'):
-                # End the foldable section
-                in_fold = False
-                line = end_fold_markup % line[0:-4]
             else:
-                # This line is not extraordinary.
+                # The start of this line is not extraordinary.
                 pass
+
+            # We must test line starts and ends in separate blocks to
+            # close the rare single line that is foldable.
+            if in_fold and line.endswith('</p>'):
+                if not in_false_paragraph:
+                    # End the foldable section.
+                    in_fold = False
+                    in_quoted = False
+                    line = end_fold_markup % line[0:-4]
+                else:
+                    # Restore the line break to join with the next paragraph.
+                    line = '%s<br />\n<br />' %  line[0:-4]
+            elif in_quoted and self._re_quoted_line.match(line) is None:
+                # End fold early because paragraph contains mixed quoted 
+                # and reply text.
+                in_fold = False
+                in_quoted = False
+                output.append("</span>\n")
+            elif in_false_paragraph and line.startswith('<p>'):
+                # Remove the paragraph to join with the previous paragraph.
+                in_false_paragraph = False
+                line = line[3:]
+            else:
+                # The end of this line is not extraordinary.
+                pass
+
+            if in_fold and 'PGP SIGNATURE' in line:
+                # PGP signature blocks are split into two paragraphs
+                # by the text_to_html. The foldable feature works with
+                # a single paragraph, so we merge this paragraph with
+                # the next one.
+                in_false_paragraph = True
+
             output.append(line)
         return '\n'.join(output)
 
     # This is a regular expression that matches email address embedded in
-    # text. It is not RFC 2882 compliant, nor does it need to be. This
+    # text. It is not RFC 2821 compliant, nor does it need to be. This
     # expression strives to identify probable email addresses so that they
     # can be obfuscated when viewed by unauthenticated users. See
     # http://www.email-unlimited.com/stuff/email_address_validator.htm
     _re_email = re.compile(
-        r"\b[-!#$%&'*+/0-9=?A-Z^_a-z{|}~](\.?[-!#$%&'*+/0-9=?A-Z^_a-z{|}~])*@"
-        r"[a-zA-Z](-?[a-zA-Z0-9])*(\.[a-zA-Z](-?[a-zA-Z0-9])*)+\b")
+        # localnames do not have [&?%!@<>,;:`|{}()#*^~ ] in practice
+        # (regardless of RFC 2821) because they conflict with other systems.
+        # See https://lists.ubuntu.com
+        #     /mailman/private/launchpad-reviews/2007-June/006081.html
+        r"([\b]|[\"']?)[-/=0-9A-Z_a-z]" # first character of localname
+        r"(\.?[\"'-/=0-9A-Z_a-z+])*@" # possible . and + in localname
+        r"[a-zA-Z]" # first character of host or domain
+        r"(-?[a-zA-Z0-9])*" # possible - and numbers in host or domain
+        r"(\.[a-zA-Z](-?[a-zA-Z0-9])*)+\b") # dot starts one or more domains.
 
     def obfuscate_email(self):
         """Obfuscate an email address as '<email address hidden>'.
