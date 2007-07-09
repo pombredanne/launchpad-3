@@ -87,6 +87,9 @@ Parsing a PO template:
   ... #: foo/bar.c:42
   ... msgid "Foo"
   ... msgstr ""
+  ... msgctxt "Context"
+  ... msgid "Foo"
+  ... msgstr ""
   ... """
 
   >>> parser = POParser()
@@ -98,9 +101,13 @@ Parsing a PO template:
   >>> print parser.header['content-type']
   text/plain; charset=CHARSET
   >>> len(parser.messages)
-  1
+  2
   >>> print parser.messages[0].msgid
   Foo
+  >>> print parser.messages[1].msgid
+  Foo
+  >>> print parser.messages[1].msgctxt
+  Context
 
 PO templates, and other PO files that do not specify their encoding,
 are parsed as ASCII text.  If they contain 8 bit characters, parsing
@@ -261,3 +268,4 @@ see that we get its Unicode equivalent.
 
   >>> parser.messages[1].msgid
   u'view \xab${version_title}\xbb'
+

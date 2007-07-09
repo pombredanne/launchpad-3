@@ -829,7 +829,12 @@ class POParser(object):
 
     def append(self):
         if self._partial_transl:
-            if self._messageids.has_key(self._partial_transl['msgid']):
+            msgkey = self._partial_transl['msgid']
+            if self._partial_transl['msgctxt'] is not None:
+                # msgctxt is internally split from msgid with \2 in
+                # gettext MO files, so this guarantees that it will be unique
+                msgkey = self._partial_transl['msgctxt'] + '\2' + msgkey
+            if self._messageids.has_key(msgkey):
                 lineno = self._partial_transl['_lineno']
                 # XXX: I changed the exception below to use %r
                 # because the original %d returned "<unprintable
@@ -847,7 +852,7 @@ class POParser(object):
                     e.line_number = self._partial_transl['_lineno']
                 raise
             self.messages.append(transl)
-            self._messageids[self._partial_transl['msgid']] = True
+            self._messageids[msgkey] = True
         self._partial_transl = None
 
     def _make_header(self):
@@ -1066,8 +1071,7 @@ class POParser(object):
         # XXX: l.startswith('msgid') is needed because not all msgid/msgstr
         # pairs have a leading comment
         if ((l.startswith('#') or l.startswith('msgid') or
-             l.startswith('msgctxt')) and
-            (self._section == 'msgstr' or self._section == 'msgctxt')):
+             l.startswith('msgctxt')) and (self._section == 'msgstr')):
             if self._partial_transl is None:
                 # first entry - do nothing
                 pass
