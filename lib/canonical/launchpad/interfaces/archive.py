@@ -49,8 +49,11 @@ class IArchiveSet(Interface):
 
     title = Attribute('Title')
 
-    def new(owner, distribution, purpose):
-        """Create a new archive."""
+    def new(distribution, purpose=None, owner=None):
+        """Create a new archive.
+        
+        If purpose is ArchivePurpose.PPA, owner must be set.
+        """
 
     def ensure(owner, distribution, purpose):
         """Ensure the owner has an valid archive."""

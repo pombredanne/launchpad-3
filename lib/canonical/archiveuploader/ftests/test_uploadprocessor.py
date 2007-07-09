@@ -280,6 +280,33 @@ class TestUploadProcessor(TestUploadProcessorBase):
             queue_item.status, PackageUploadStatus.UNAPPROVED,
             "Expected queue item to be in UNAPPROVED status.")
 
+    def testMixedCommercialUploadFails(self):
+        """Uploads with commercial and non-commercial files are rejected.
+        
+        Test that a package that has commercial and non-commercial files in it
+        is rejected.  Commercial uploads should be entirely commercial."""
+        # Extra setup for breezy
+        self.setupBreezy()
+        self.layer.txn.commit()
+
+        # Set up the uploadprocessor with appropriate options and logger
+        self.options.context = 'anything' # upload policy allows anything
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload a package for Breezy.
+        upload_dir = self.queueUpload("foocomm_1.0-1-illegal-component-mix")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check that it was rejected:
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        foo_bar = "Foo Bar <foo.bar@canonical.com>"
+        self.assertEqual([e.strip() for e in to_addrs], [foo_bar])
+        self.assertTrue(
+            "Cannot mix commercial files with non-commercial." in raw_msg, 
+            "Expected email containing 'Cannot mix commercial files with "
+                "non-commercial.', got:\n%s" % raw_msg)
+
     def testCommercialUpload(self):
         """Commercial packages should be uploaded to the separate commercial 
         archive.
@@ -534,6 +561,16 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "Subject: bar_1.0-1_source.changes rejected",
             "Signer has no upload rights to this PPA"]
         self.assertEmail(contents)
+
+    def testPPACommercialUploadFails(self):
+        """Upload a commercial package to a PPA and ensure it's rejected."""
+        upload_dir = self.queueUpload("foocomm_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "foocomm_1.0-1_source.changes rejected",
+            "PPA does not support commercial uploads."]
+        self.assertEmail(contents, [self.name16_recipient])
 
     def testUploadSignedByNonUbuntero(self):
         """Check if a non-ubuntero can upload to his PPA."""

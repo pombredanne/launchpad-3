@@ -39,7 +39,7 @@ class Archive(SQLBase):
         """See IArchive."""
         pubconf = PubConfig(distribution)
 
-        if self.id == distribution.main_archive.id:
+        if self.purpose == ArchivePurpose.PRIMARY:
             return pubconf
 
         pubconf.distroroot = config.personalpackagearchive.root
@@ -74,10 +74,10 @@ class ArchiveSet:
     def getByDistroPurpose(self, distribution, purpose):
         return Archive.selectOneBy(distribution=distribution, purpose=purpose)
 
-    def new(self, owner=None, distribution=None,
-            purpose=ArchivePurpose.PPA):
+    def new(self, distribution=None, purpose=None, owner=None):
         """See canonical.launchpad.interfaces.IArchiveSet."""
-        # The default action is to make a PPA for Ubuntu.
+        if purpose == ArchivePurpose.PPA:
+            assert owner, "Owner required when purpose is PPA."
         if distribution is None:
             distribution = getUtility(IDistributionSet)['ubuntu']
         return Archive(owner=owner, distribution=distribution, purpose=purpose)
@@ -86,8 +86,8 @@ class ArchiveSet:
         """See canonical.launchpad.interfaces.IArchiveSet."""
         archive = owner.archive
         if archive is None:
-            archive = self.new(owner=owner, distribution=distribution, 
-                purpose=purpose)
+            archive = self.new(distribution=distribution, purpose=purpose,
+                owner=owner)
         return archive
 
     def getAllPPAs(self):
