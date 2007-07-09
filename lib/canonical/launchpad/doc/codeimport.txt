@@ -46,7 +46,7 @@ read.
     >>> def new_import_branch(name):
     ...     product = getUtility(IProductSet).getByName('firefox')
     ...     return getUtility(IBranchSet).new(
-    ...         name, vcs_imports, product,
+    ...         name, vcs_imports, vcs_imports, product,
     ...         None, 'Import branch')
 
 
