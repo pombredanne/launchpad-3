@@ -9,17 +9,20 @@ __all__ = [
     'ArchiveFacets',
     'ArchiveOverviewMenu',
     'ArchiveView',
+    'ArchiveActivateView',
     'ArchiveBuildsView',
     'ArchiveEditView',
     'ArchiveAdminView',
     ]
 
 from zope.app.form.browser import TextAreaWidget
+from zope.app.form.browser.add import AddView
+from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.interfaces import (
-    IArchive, IHasBuildRecords)
+    IArchive, IArchiveSet, IHasBuildRecords)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Navigation, Link, LaunchpadView,
     LaunchpadEditFormView, ApplicationMenu, enabled_with_permission,
@@ -32,6 +35,7 @@ class ArchiveNavigation(Navigation):
 
     def breadcrumb(self):
         return self.context.title
+
 
 class ArchiveFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IArchive."""
@@ -67,6 +71,24 @@ class ArchiveView(LaunchpadView):
     Implements useful actions and colect useful set for the pagetemplate.
     """
     __used_for__ = IArchive
+
+
+class ArchiveActivateView(AddView):
+
+    def __init__(self, context, request):
+        self.request = request
+        self.context = context
+        self._nextURL = '.'
+        AddView.__init__(self, context, request)
+
+    def createAndAdd(self, data):
+        ppa = getUtility(IArchiveSet).new(
+            owner=self.context, description=data['description'])
+        self._nextURL = canonical_url(ppa)
+        return ppa
+
+    def nextURL(self):
+        return self._nextURL
 
 
 class ArchiveBuildsView(BuildRecordsView):

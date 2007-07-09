@@ -731,7 +731,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editsshkeys', 'editpgpkeys',
              'memberships', 'mentoringoffers',
              'codesofconduct', 'karma', 'common_packages', 'administer',
-             'related_projects', 'archive',]
+             'related_projects', 'activatearchive', 'showarchive']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -830,10 +830,25 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Administer'
         return Link(target, text, icon='edit')
 
-    def archive(self):
+    @enabled_with_permission('launchpad.Edit')
+    def activatearchive(self):
+        enabled = True
+        if self.context.archive is not None:
+            enabled = False
+        target = "+activatearchive"
+        text = 'Activate PPA'
+        summary = ('Aknowledge terms of service for Launchpad Personal '
+                   'Package Archive.')
+        return Link(target, text, summary, icon='edit', enabled=enabled)
+
+    def showarchive(self):
+        enabled = True
+        if self.context.archive is None:
+            enabled = False
         target = '+archive'
         text = 'Show PPA'
-        return Link(target, text, icon='info')
+        summary = 'Browse Personal Package Archive packages.'
+        return Link(target, text, summary, icon='info', enabled=enabled)
 
 
 class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):

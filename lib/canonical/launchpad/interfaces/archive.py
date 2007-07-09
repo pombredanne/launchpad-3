@@ -63,7 +63,7 @@ class IArchiveSet(Interface):
 
     title = Attribute('Title')
 
-    def new(owner=None):
+    def new(owner=None, description=None):
         """Create a new archive."""
 
     def ensure(owner=None):

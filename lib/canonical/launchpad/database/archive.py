@@ -121,9 +121,9 @@ class ArchiveSet:
         """See canonical.launchpad.interfaces.IArchiveSet."""
         return Archive.get(archive_id)
 
-    def new(self, owner=None):
+    def new(self, owner=None, description=None):
         """See canonical.launchpad.interfaces.IArchiveSet."""
-        return Archive(owner=owner)
+        return Archive(owner=owner, description=description)
 
     def ensure(self, owner):
         """See canonical.launchpad.interfaces.IArchiveSet."""

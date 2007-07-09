@@ -347,6 +347,17 @@
     template="../templates/buglisting-embedded-advanced-search.pt"
     />
 
+  <browser:addform
+    name="+activatearchive"
+    for="canonical.launchpad.interfaces.IPerson"
+    facet="overview"
+    schema="canonical.launchpad.interfaces.IArchive"
+    label="Activate your PPA"
+    fields="description"
+    class="canonical.launchpad.browser.ArchiveActivateView"
+    permission="launchpad.Edit"
+    template="../templates/archive-activate.pt"
+    />
 
   <!-- Adding SSH keys is the only possibly harmful thing that can be done
   without the user's password, so we use a special permission here to make

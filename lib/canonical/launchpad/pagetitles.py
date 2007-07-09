@@ -98,13 +98,15 @@ class ContextBugId(SubstitutionHelper):
 
 # Functions and strings used as the titles of pages.
 
-archive_index = ContextTitle('%s')
+archive_admin = ContextTitle('Administer %s')
+
+archive_activate = 'Activate PPA'
 
 archive_builds = ContextTitle('Builds for %s')
 
 archive_edit = ContextTitle('Edit %s')
 
-archive_admin = ContextTitle('Administer %s')
+archive_index = ContextTitle('%s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
