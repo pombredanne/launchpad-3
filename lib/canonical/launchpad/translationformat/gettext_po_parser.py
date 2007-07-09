@@ -22,8 +22,7 @@ from zope.app import datetimeutils
 
 from canonical.launchpad.interfaces import (
     ITranslationHeader, TranslationConstants,
-    TranslationFormatInvalidInputError, TranslationFormatSyntaxError,
-    UnknownTranslationRevisionDate)
+    TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.translation_common_format import (
     TranslationFile, TranslationMessage)
 from canonical.launchpad.versioninfo import revno
@@ -62,6 +61,7 @@ class PoHeader:
         'content-transfer-encoding': 'Content-Transfer-Encoding',
         'plural-forms': 'Plural-Forms',
         'x-launchpad-export-date': 'X-Launchpad-Export-Date',
+        'x-rosetta-export-date': 'X-Rosetta-Export-Date',
         'x-generator': 'X-Generator',
         }
 
@@ -69,7 +69,8 @@ class PoHeader:
         'project-id-version', 'report-msgid-bugs-to', 'pot-creation-date',
         'po-revision-date', 'last-translator', 'language-team',
         'mime-version', 'content-type', 'content-transfer-encoding',
-        'plural-forms', 'x-launchpad-export-date', 'x-generator'
+        'plural-forms', 'x-launchpad-export-date', 'x-rosetta-export-date',
+        'x-generator'
         ]
 
     _strftime_text = '%F %R%z'
@@ -102,8 +103,8 @@ class PoHeader:
         self._parseHeaderFields()
 
     def _decode(self, text):
-        if isinstance(text, unicode):
-            # Text is already unicode, no need to do anything.
+        if text is None or isinstance(text, unicode):
+            # There is noo need to do anything.
             return text
         try:
             text = unicode(text, self.charset)
@@ -120,14 +121,12 @@ class PoHeader:
 
     def _parseCharset(self):
         """Return charset used in this header."""
+        # Default placeholder for charset is 'CHARSET'
         charset = 'CHARSET'
         # Scan for the charset in the same way that gettext does.
         match = re.search(r'charset=([^\s]+)', self._raw_header)
         if match is not None:
             charset = match.group(1)
-        if charset == 'CHARSET':
-            # If charset is unknown, default to ASCII.
-            charset = 'ASCII'
         return charset
 
     def _getHeaderDictionary(self):
@@ -170,9 +169,8 @@ class PoHeader:
                         # In that case, set the default value.
                         logging.warning(
                             POSyntaxWarning(
-                                self._lineno,
-                                "The plural form header has an unknown error."
-                                " Using the default value..."))
+                                msg=("The plural form header has an unknown"
+                                    " error. Using the default value...")))
                         self.number_plural_forms = 2
                     self.plural_form_expression = parts.get('plural', '0')
             elif key == 'po-revision-date':
@@ -180,12 +178,14 @@ class PoHeader:
                     self.translation_revision_date = (
                         datetimeutils.parseDatetimetz(value))
                 except datetimeutils.DateTimeError:
-                    raise UnknownTranslationRevisionDate, (
-                        'Found an invalid date representation: %r' % (
-                            value))
+                    # We couldn't parse it.
+                    self.translation_revision_date = None
             elif key == 'last-translator':
                 self._last_translator = value
-            elif key == 'x-launchpad-export-date':
+            elif key in ('x-launchpad-export-date', 'x-rosetta-export-date'):
+                # The key we use right now to note the export date is
+                # X-Launchpad-Export-Date but we need to accept the old one
+                # too so old exports will still work.
                 try:
                     self.launchpad_export_date = (
                         datetimeutils.parseDatetimetz(value))
@@ -220,10 +220,15 @@ class PoHeader:
                     '%s: %s\n' % (value, self.template_creation_date.strftime(
                         self._strftime_text)))
             elif key == 'po-revision-date':
+                if self.translation_revision_date is None:
+                    revision_date_text = 'YEAR-MO-DA HO:MI+ZONE'
+                else:
+                    revision_date_text = (
+                        self.translation_revision_date.strftime(
+                            self._strftime_text))
                 raw_content_list.append(
                     '%s: %s\n' % (
-                        value, self.translation_revision_date.strftime(
-                            self._strftime_text)))
+                        value, revision_date_text))
             elif key == 'last-translator':
                 raw_content_list.append(
                     '%s: %s\n' % (value, self._last_translator))
@@ -251,6 +256,9 @@ class PoHeader:
                     plural = self.plural_form_expression
                 raw_content_list.append('%s: nplurals=%s; plural=%s;\n' % (
                     value, nplurals, plural))
+            elif key == 'x-rosetta-export-date':
+                # Ignore it, new exports use x-launchpad-export-date.
+                continue
             elif key == 'x-launchpad-export-date':
                 UTC = pytz.timezone('UTC')
                 now = datetime.datetime.now(UTC)
@@ -332,7 +340,10 @@ class PoParser(object):
         if self._translation_file.header is None:
             return
 
-        decode = codecs.getdecoder(self._translation_file.header.charset)
+        charset = self._translation_file.header.charset
+        if charset == 'CHARSET':
+            charset = 'ASCII'
+        decode = codecs.getdecoder(charset)
         # decode as many characters as we can:
         try:
             newchars, length = decode(self._pending_chars, 'strict')
@@ -347,8 +358,7 @@ class PoParser(object):
             if len(self._pending_chars) - exc.start > 10:
                 raise TranslationFormatInvalidInputError(
                     line_number=self._lineno,
-                    message="could not decode input from %s" % (
-                        self._translation_file.header.charset))
+                    message="could not decode input from %s" % charset)
             newchars, length = decode(self._pending_chars[:exc.start],
                                       'strict')
         self._pending_unichars += newchars
@@ -388,12 +398,24 @@ class PoParser(object):
         self._plural_case = None
         self._parsed_content = u''
 
+        # First thing to do is to get the charset used in the content_text. We
+        # are going to follow the same procedure Gettext does.
+        charset = 'ASCII'
+        match = re.search(r'charset=([^\s]+)\\n', content_text)
+        if match is not None:
+            charset = match.group(1)
+            if charset == 'CHARSET':
+                charset = 'ASCII'
+
         # First, parse the header, inefficiently. It ought to be short, so
         # this isn't disastrous.
         line = self._getHeaderLine()
         while line is not None:
-            self._parseLine(line)
-            if self._translation_file.header is not None:
+            self._parseLine(line.decode(charset))
+            if (self._translation_file.header is not None or
+                self._message.msgid):
+                # Either found the header already or it's a message with a
+                # non empty msgid which means is not a header.
                 break
             line = self._getHeaderLine()
 
@@ -453,8 +475,7 @@ class PoParser(object):
                 self._message.translations[
                     TranslationConstants.SINGULAR_FORM],
                 self._message.comment)
-        except (TranslationFormatInvalidInputError,
-                UnknownTranslationRevisionDate), e:
+        except TranslationFormatInvalidInputError, e:
             if e.line_number is None:
                 e.line_number = self._message_lineno
             raise
@@ -618,19 +639,19 @@ class PoParser(object):
                 unescaped_string = escaped_string.decode('string-escape')
 
                 if (self._translation_file is not None and
-                    self._translation_file.header is not None):
+                    self._translation_file.header is not None and
+                    self._translation_file.header.charset != 'CHARSET'):
                     # There is a header, so we know the original encoding for
                     # the given string.
+                    charset = self._translation_file.header.charset
                     try:
-                        output += unescaped_string.decode(
-                            self._translation_file.header.charset)
+                        output += unescaped_string.decode(charset)
                     except UnicodeDecodeError:
                         raise TranslationFormatInvalidInputError(
                             line_number=self._lineno,
                             message=(
                                 "could not decode escaped string as %s: (%s)"
-                                    % (self._translation_file.header.charset,
-                                       escaped_string)))
+                                    % (charset, escaped_string)))
                 else:
                     # We don't know the original encoding of the imported file
                     # so we cannot get the right values. We store the string

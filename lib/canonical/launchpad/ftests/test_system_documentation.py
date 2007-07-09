@@ -187,11 +187,7 @@ special = {
             optionflags=default_optionflags, setUp=setGlobs
             ),
 
-    # And these tests want minimal environments too.
-    'poparser.txt': DocFileSuite(
-            '../doc/poparser.txt', optionflags=default_optionflags
-            ),
-
+    # And this test want minimal environment too.
     'package-relationship.txt': DocFileSuite(
             '../doc/package-relationship.txt',
             optionflags=default_optionflags

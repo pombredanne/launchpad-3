@@ -1,7 +1,6 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
-from zope.interface.common.mapping import IMapping
 
 __metaclass__ = type
 
@@ -35,7 +34,7 @@ class ITranslationFile(Interface):
         " unknown or is_template flag is set.")
 
 
-class ITranslationHeader(IMapping):
+class ITranslationHeader(Interface):
     """Translation header interface."""
 
     is_fuzzy = Attribute(
@@ -48,9 +47,6 @@ class ITranslationHeader(IMapping):
     translation_revision_date = Attribute(
         "A datetime object for when the translation resource was last"
         " revised or None.")
-
-    last_translator = Attribute(
-        "String noting the last person doing translations in this file.")
 
     language_team = Attribute(
         "String noting the language team in charge of this translation.")

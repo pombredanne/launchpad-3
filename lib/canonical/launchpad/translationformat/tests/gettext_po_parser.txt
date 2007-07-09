@@ -1,38 +1,49 @@
 = Tests for our PO parser =
 
-The core of Rosetta is the PO parser, it allows to communicate with the
-external world importing files and exporting them.
+Gettext PO parser allows to communicate with the external world importing
+files and exporting them.
 
-Let's import some needed objects...
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.interfaces import (
+    ...     ITranslationMessage, ITranslationHeader)
+    >>> from canonical.launchpad.translationformat import TranslationMessage
+    >>> from canonical.launchpad.translationformat.gettext_po_parser import (
+    ...     PoHeader, PoParser)
 
-  >>> from canonical.launchpad.translationformat.gettext_po_parser import (
-  ...     POMessage, POHeader, POParser)
 
-
-== POParser ==
+== PoParser ==
 
 We should be completely sure that a .po file with an empty header is reported.
 
-  >>> parser = POParser()
-  >>> parser.write('msgid "foo"\nmsgstr ""\n')
-  >>> parser.finish()
+  >>> parser = PoParser()
+  >>> parser.parse('msgid "foo"\nmsgstr ""\n')
   Traceback (most recent call last):
   ...
   TranslationFormatSyntaxError:...
 
 
-== POHeader ==
+== PoHeader ==
 
-A POHeader is a representation of a special message that all .po files have.
+A PoHeader is a representation of a special message that all .po files have.
 That first message has as the msgid the empty string ("") and as the
 translation of it some metadata.
 
+It must implement ITranslationHeader.
 
-=== getTranslationRevisionDate() ===
+    >>> content = """
+    ...     msgid ""
+    ...     msgstr ""
+    ...     "Content-Type: text/plain; charset=ASCII\n"
+    ...     """
+    >>> verifyObject(ITranslationHeader, PoHeader(content))
+    True
 
-This method gives you a datetime object representing PO-Revision-Date field.
+=== translation_revision_date ===
 
-  >>> header = POHeader(msgstr="""
+This attribute gives you a datetime object representing the
+PO-Revision-Date field.
+
+  >>> header = PoHeader("""
   ... Project-Id-Version: foo
   ... Report-Msgid-Bugs-To: foo@bar.com
   ... POT-Creation-Date: 2005-01-26 01:01+0100
@@ -42,14 +53,13 @@ This method gives you a datetime object representing PO-Revision-Date field.
   ... Content-Type: text/plain; charset=UTF-8
   ... Content-Transfer-Encoding: 8bit
   ... """)
-  >>> header.updateDict()
-  >>> header.getTranslationRevisionDate()
+  >>> header.translation_revision_date
   datetime.datetime(2004, 3, 6, 20, 6, tzinfo=tzinfo(60))
 
 Even if the function has unicode chars we detect that as not having the
 revision date:
 
-  >>> header = POHeader(msgstr="""
+  >>> header = PoHeader("""
   ... Project-Id-Version: foo
   ... Report-Msgid-Bugs-To: foo@bar.com
   ... POT-Creation-Date: 2005-01-26 01:01+0100
@@ -59,12 +69,7 @@ revision date:
   ... Content-Type: text/plain; charset=UTF-8
   ... Content-Transfer-Encoding: 8bit
   ... """)
-  >>> header.updateDict()
-  >>> header.getTranslationRevisionDate()
-  Traceback (most recent call last):
-  ...
-  UnknownTranslationRevisionDate: Found an invalid date representation...
-  >>> header.getPluralFormExpression() == None
+  >>> header.translation_revision_date is None
   True
 
 
@@ -89,17 +94,14 @@ Parsing a PO template:
   ... msgstr ""
   ... """
 
-  >>> parser = POParser()
-  >>> parser.write(content)
-  >>> parser.finish()
+  >>> parser = PoParser()
+  >>> translation_file = parser.parse(content)
 
-  >>> print parser.header['project-id-version']
-  Foobar 1.0
-  >>> print parser.header['content-type']
-  text/plain; charset=CHARSET
-  >>> len(parser.messages)
+  >>> print translation_file.header.charset
+  CHARSET
+  >>> len(translation_file.messages)
   1
-  >>> print parser.messages[0].msgid
+  >>> print translation_file.messages[0].msgid
   Foo
 
 PO templates, and other PO files that do not specify their encoding,
@@ -115,46 +117,10 @@ errors occur:
   ... msgstr "abcdef"
   ... """
 
-  >>> parser = POParser()
-  >>> parser.write(content)
-  >>> parser.write(chunk2)
+  >>> parser.parse(content + chunk2)
   Traceback (most recent call last):
     ...
   TranslationFormatInvalidInputError: could not decode input from ASCII
-
-
-== Split Multibyte Sequences ==
-
-The PO file parser can incrementally parse files.  When multibyte
-character encodings are used, this opens up the possibility that a
-chunk fed to the parser will start or end with part of a character.
-
-The PO parser handles this case correctly:
-
-  >>> chunk1 = """
-  ... msgid ""
-  ... msgstr ""
-  ... "POT-Creation-Date: 2004-05-11 20:22+0800\\n"
-  ... "PO-Revision-Date: 2004-05-11 20:22+0800\\n"
-  ... "Content-Type: text/plain; charset=UTF-8\\n"
-  ... "Content-Transfer-Encoding: 8bit\\n"
-  ... #: foo/bar.c: 42
-  ... msgid "Foo"
-  ... msgstr "\xE2"""
-  >>> chunk2 = """\x96\x84"
-  ... """
-
-  >>> parser = POParser()
-  >>> parser.write(chunk1)
-  >>> parser.write(chunk2)
-  >>> parser.finish()
-
-  >>> len(parser.messages)
-  1
-  >>> parser.messages[0].msgid
-  u'Foo'
-  >>> parser.messages[0].msgstr
-  u'\u2584'
 
 
 == Evil Big5 Multibyte Sequences ==
@@ -178,21 +144,19 @@ character.
   ... msgstr "\xa6\xa8\xa5\\"
   ... """
 
-  >>> parser = POParser()
-  >>> parser.write(content)
-  >>> parser.finish()
+  >>> translation_file = parser.parse(content)
 
 Check that Big5 characters in the PO header have been correctly
 converted:
 
-  >>> parser.header['last-translator']
-  u'\u7a0b\u5f0f\u932f\u8aa4'
+  >>> translation_file.header.getRawContent()
+  u'...Last-Translator:   \u7a0b\u5f0f\u932f\u8aa4\n...'
 
 Check that the translation of the first message has been interpreted
 correctly, despite the backslash in the second multibyte sequence:
 
-  >>> parser.messages[0].msgstr
-  u'\u6210\u529f'
+  >>> translation_file.messages[0].translations
+  [u'\u6210\u529f']
 
 
 == Newline Formats ==
@@ -213,12 +177,9 @@ Change the last PO file to use Mac-style newlines:
 
 Verify that it still parses:
 
-  >>> parser = POParser()
-  >>> parser.write(content)
-  >>> parser.finish()
-
-  >>> parser.messages[0].msgstr
-  u'\u6210\u529f'
+  >>> translation_file = parser.parse(content)
+  >>> translation_file.messages[0].translations
+  [u'\u6210\u529f']
 
 
 == Escape Characters in Strings ==
@@ -246,18 +207,16 @@ the Content-Type field of the header.
   ... msgstr ""
   ... """
 
-  >>> parser = POParser()
-  >>> parser.write(content)
-  >>> parser.finish()
+  >>> translation_file = parser.parse(content)
 
 The special symbols and numeric representations of the chars '8', '80' and 'p'
 are decoded correctly.
 
-  >>> parser.messages[0].msgstr
-  u'\x07\x08\x0b\x0c\t\x0b\\"\'\n8 8 80 p\n'
+  >>> translation_file.messages[0].translations
+  [u'\x07\x08\x0b\x0c\t\x0b\\"\'\n8 8 80 p\n']
 
 In this case, the numeric representation are UTF-8 only characters and we can
 see that we get its Unicode equivalent.
 
-  >>> parser.messages[1].msgid
+  >>> translation_file.messages[1].msgid
   u'view \xab${version_title}\xbb'
