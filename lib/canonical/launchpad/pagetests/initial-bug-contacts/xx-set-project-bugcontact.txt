@@ -23,11 +23,23 @@ not an admin of that team.
     >>> browser.getLink('Bugs').click()
     >>> browser.getLink('Change bug contact').click()
     >>> browser.url
-    'http://bugs.launchpad.net/testy/+bugcontact'
+    'http://bugs.launchpad.dev/testy/+bugcontact'
 
     >>> browser.getControl('Bug Contact').value = 'name20'
     >>> browser.getControl('Change').click()
-    >>> 'Successfully changed the bug contact to Warty Security Team' not in browser.contents
+    >>> 'Successfully changed the bug contact' not in browser.contents
     True
 
+    >>> print browser.contents
+    <!DOCTYPE...
+    ...You cannot set Warty Security Team as the bug contact...
+    ...you are not an administrator of that team...
+
+In the warning, the user will be pointed to the Warty Security Team's
+membership page and advised to contact an administrator if she believes that 
+the team should be a bug contact.
+
+    >>> browser.getLink('Warty Security Team administrators').click()
+    >>> browser.url
+    'http://launchpad.dev/~name20/+members'
 
