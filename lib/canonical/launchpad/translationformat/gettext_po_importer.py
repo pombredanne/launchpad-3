@@ -6,7 +6,6 @@ __all__ = [
     'GettextPoImporter'
     ]
 
-from email.Utils import parseaddr
 from zope.component import getUtility
 from zope.interface import implements
 
@@ -65,28 +64,6 @@ class GettextPoImporter:
         parser = PoParser()
         return parser.parse(self.content.read())
 
-    def getHeaderFromString(self, header_string, charset=None):
+    def getHeaderFromString(self, header_string):
         """See `ITranslationFormatImporter`."""
-        return PoHeader(header_string, charset='unicode_escape')
-
-    def getLastTranslator(self):
-        """See `ITranslationFormatImporter`."""
-        if self.header is None:
-            # The file does not have a header field.
-            return None, None
-
-        # Get last translator information. If it's not found, we use the
-        # default value from Gettext.
-        last_translator = self.header.get(
-            'Last-Translator', 'FULL NAME <EMAIL@ADDRESS>')
-
-        name, email = parseaddr(last_translator)
-
-        if email == 'EMAIL@ADDRESS' or '@' not in email:
-            # Gettext (and Launchpad) sets by default the email address to
-            # EMAIL@ADDRESS unless it knows the real address, thus,
-            # we know this isn't a real account so we don't accept it as a
-            # valid one.
-            return None, None
-        else:
-            return name, email
+        return PoHeader(header_string)

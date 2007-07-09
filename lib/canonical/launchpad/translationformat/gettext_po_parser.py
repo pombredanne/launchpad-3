@@ -16,6 +16,7 @@ import re
 import codecs
 import logging
 import pytz
+from email.Utils import parseaddr
 from zope.interface import implements
 from zope.app import datetimeutils
 
@@ -64,15 +65,22 @@ class PoHeader:
         'x-generator': 'X-Generator',
         }
 
+    _handled_keys_order = [
+        'project-id-version', 'report-msgid-bugs-to', 'pot-creation-date',
+        'po-revision-date', 'last-translator', 'language-team',
+        'mime-version', 'content-type', 'content-transfer-encoding',
+        'plural-forms', 'x-launchpad-export-date', 'x-generator'
+        ]
+
     _strftime_text = '%F %R%z'
 
-    def __init__(self, header_content, comment=None, charset=None):
+    def __init__(self, header_content, comment=None):
         self._raw_header = header_content
         self.is_fuzzy = False
         UTC = pytz.timezone('UTC')
         self.template_creation_date = datetime.datetime.now(UTC)
         self.translation_revision_date = datetime.datetime.now(UTC)
-        self.last_translator = 'FULL NAME <EMAIL@ADDRESS>'
+        self._last_translator = 'FULL NAME <EMAIL@ADDRESS>'
         self.language_team = 'LANGUAGE <LL@li.org>'
         self.has_plural_forms = False
         self.number_plural_forms = None
@@ -81,10 +89,7 @@ class PoHeader:
 
         # First thing to do is to get the charset used to decode correctly the
         # header content.
-        if self.charset is None:
-            # We didn't get a charset argument, so we need to extract it from
-            # the header content.
-            self.charset = self._parseCharset()
+        self.charset = self._parseCharset()
 
         # Decode comment using the declared charset.
         self.comment = self._decode(comment)
@@ -97,12 +102,14 @@ class PoHeader:
         self._parseHeaderFields()
 
     def _decode(self, text):
+        if isinstance(text, unicode):
+            # Text is already unicode, no need to do anything.
+            return text
         try:
             text = unicode(text, self.charset)
         except UnicodeError:
             logging.warning(POSyntaxWarning(
-                self._lineno,
-                'string is not in declared charset %r' % self.charset
+                msg='string is not in declared charset %r' % self.charset
                 ))
             text = unicode(text, self.charset, 'replace')
         except LookupError:
@@ -120,7 +127,7 @@ class PoHeader:
             charset = match.group(1)
         if charset == 'CHARSET':
             # If charset is unknown, default to ASCII.
-            charset = 'US-ASCII'
+            charset = 'ASCII'
         return charset
 
     def _getHeaderDictionary(self):
@@ -139,7 +146,7 @@ class PoHeader:
             # Store in lower case the entries we know about so we are sure
             # that we update entries even when it's not using the right
             # character case.
-            if field.lower() in self._handled_keys_mapping.keys():
+            if field.lower() in self._handled_keys_order:
                 field = field.lower()
 
             header_dictionary[field] = value
@@ -176,6 +183,8 @@ class PoHeader:
                     raise UnknownTranslationRevisionDate, (
                         'Found an invalid date representation: %r' % (
                             value))
+            elif key == 'last-translator':
+                self._last_translator = value
             elif key == 'x-launchpad-export-date':
                 try:
                     self.launchpad_export_date = (
@@ -189,34 +198,35 @@ class PoHeader:
     def getRawContent(self):
         """See ITranslationHeader."""
         raw_content_list = []
-        for key, value in self._handled_keys_mapping.iteritems():
+        for key in self._handled_keys_order:
+            value = self._handled_keys_mapping[key]
             if key == 'project-id-version':
                 if key in self._header_dictionary.keys():
                     content = self._header_dictionary[key]
                 else:
                     # Use default one.
-                    content = 'PACKAGE VERSION\n'
+                    content = 'PACKAGE VERSION'
                 raw_content_list.append('%s: %s\n' % (value, content))
             elif key == 'report-msgid-bugs-to':
                 if key in self._header_dictionary.keys():
                     content = self._header_dictionary[key]
                 else:
                     # Use default one.
-                    content = ' \n'
+                    content = ' '
                 raw_content_list.append(
                     '%s: %s\n' % (value, content))
             elif key == 'pot-creation-date':
                 raw_content_list.append(
-                    '%s: %s\n' % (value, self.template_creation_date.strfmt(
+                    '%s: %s\n' % (value, self.template_creation_date.strftime(
                         self._strftime_text)))
             elif key == 'po-revision-date':
                 raw_content_list.append(
                     '%s: %s\n' % (
-                        value, self.translation_revision_date.strfmt(
+                        value, self.translation_revision_date.strftime(
                             self._strftime_text)))
             elif key == 'last-translator':
                 raw_content_list.append(
-                    '%s: %s\n' % (value, self.last_translator))
+                    '%s: %s\n' % (value, self._last_translator))
             elif key == 'language-team':
                 raw_content_list.append(
                     '%s: %s\n' % (value, self.language_team))
@@ -243,21 +253,28 @@ class PoHeader:
                     value, nplurals, plural))
             elif key == 'x-launchpad-export-date':
                 UTC = pytz.timezone('UTC')
+                now = datetime.datetime.now(UTC)
                 raw_content_list.append(
-                    '%s: %s\n' % datetime.datetime.now(UTC))
+                    '%s: %s\n' % (value, now.strftime(self._strftime_text)))
             elif key == 'x-generator':
+                # Note the revision number so it would help for debugging
+                # problems with bad exports.
+                if revno is None:
+                    build = 'Unknown'
+                else:
+                    build = revno
                 raw_content_list.append(
-                    '%s: Launchpad (build %s)\n' % (value, revno))
+                    '%s: Launchpad (build %s)\n' % (value, build))
             else:
                 raise AssertionError('key %s is not being handled!' % value)
 
         # Now, we copy any other header information in the original .po file.
-        for key, value in self._header_dictionary:
+        for key, value in self._header_dictionary.iteritems():
             if key in self._handled_keys_mapping.keys():
                 # It's already handled, skip it.
                 continue
 
-            raw_content_list.append('%s: %s' % (key, value))
+            raw_content_list.append('%s: %s\n' % (key, value.strip()))
 
         return u''.join(raw_content_list)
 
@@ -273,9 +290,37 @@ class PoHeader:
             if field in template_header:
                 self[field] = template_header[field]
 
+    def getLastTranslator(self):
+        """See `ITranslationHeader`."""
+        # Get last translator information. If it's not found, we use the
+        # default value from Gettext.
+        name, email = parseaddr(self._last_translator)
+
+        if email == 'EMAIL@ADDRESS' or '@' not in email:
+            # Gettext (and Launchpad) sets by default the email address to
+            # EMAIL@ADDRESS unless it knows the real address, thus,
+            # we know this isn't a real account so we don't accept it as a
+            # valid one.
+            return None, None
+        else:
+            return name, email
+
+    def setLastTranslator(self, email, name=None):
+        """See `ITranslationHeader`."""
+        assert email is not None, ('Email address cannot be None')
+
+        if name is None:
+            name = u''
+        self._last_translator = u'%s <%s>' % (name, email)
+
 
 class PoParser(object):
     """Parser class for Gettext files."""
+
+    def __init__(self):
+        self._translation_file = None
+        self._messageids = {}
+        self._lineno = 0
 
     def _decode(self):
         # is there anything to convert?
@@ -326,7 +371,7 @@ class PoParser(object):
             # only one line
             return None
         line, self._pending_chars = parts
-        return line
+        return line.strip()
 
     def parse(self, content_text):
         """Parse string as a PO file."""
@@ -337,11 +382,11 @@ class PoParser(object):
         self._pending_unichars = u''
         self._lineno = 0
         # Message specific variables.
-        self._message = None
+        self._message = TranslationMessage()
         self._message_lineno = self._lineno
         self._section = None
         self._plural_case = None
-        self._parsed_content = None
+        self._parsed_content = u''
 
         # First, parse the header, inefficiently. It ought to be short, so
         # this isn't disastrous.
@@ -353,20 +398,38 @@ class PoParser(object):
             line = self._getHeaderLine()
 
         if line is None:
+            if (self._translation_file.header is None and
+                not self._message.msgid):
+                # Seems like the file has only the header without any message,
+                # we parse it.
+                self._dumpCurrentSection()
+                self._parseHeader()
+
             # There is nothing left to parse.
             return self._translation_file
 
         # Parse anything left all in one go.
         lines = re.split(r'\n|\r\n|\r', self._pending_unichars)
-        if lines:
-            # If we have any lines, the last one should be the empty string,
-            # if we have a properly-formed po file with a new line at the
-            # end.  So, put the last line into _pending_unichars so the rest
-            # of the parser gets what's expected.
-            self._pending_unichars = lines[-1]
-            lines = lines[:-1]
         for line in lines:
             self._parseLine(line)
+
+        if self._translation_file.header is None:
+            raise TranslationFormatSyntaxError(
+                message='No header found in this pofile')
+
+        if self._message is not None:
+            # We need to dump latest message.
+            if self._section is None:
+                # The message has not content or it's just a comment, ignore
+                # it.
+                return self._translation_file
+            elif self._section == 'msgstr':
+                self._dumpCurrentSection()
+                self._storeCurrentMessage()
+            else:
+                raise TranslationFormatSyntaxError(
+                    line_number = self._lineno,
+                    message='Got a truncated message!')
 
         return self._translation_file
 
@@ -398,7 +461,7 @@ class PoParser(object):
         self._translation_file.header.is_fuzzy = (
             'fuzzy' in self._message.flags)
 
-        if self.messages:
+        if self._translation_file.messages:
             logging.warning(
                 POSyntaxWarning(
                     self._lineno, 'Header entry is not first entry'))
@@ -437,7 +500,8 @@ class PoParser(object):
 
           >>> class FakeHeader:
           ...     charset = 'UTF-8'
-          >>> parser.header = FakeHeader()
+          >>> parser._translation_file = TranslationFile()
+          >>> parser._translation_file.header = FakeHeader()
           >>> parser._parseQuotedString(utf8_string)
           u'view \xab${version_title}\xbb'
 
@@ -553,17 +617,20 @@ class PoParser(object):
                 # First, we unescape it.
                 unescaped_string = escaped_string.decode('string-escape')
 
-                if self.header is not None:
+                if (self._translation_file is not None and
+                    self._translation_file.header is not None):
                     # There is a header, so we know the original encoding for
                     # the given string.
                     try:
-                        output += unescaped_string.decode(self.header.charset)
+                        output += unescaped_string.decode(
+                            self._translation_file.header.charset)
                     except UnicodeDecodeError:
                         raise TranslationFormatInvalidInputError(
                             line_number=self._lineno,
                             message=(
                                 "could not decode escaped string as %s: (%s)"
-                                    % (self.header.charset, escaped_string)))
+                                    % (self._translation_file.header.charset,
+                                       escaped_string)))
                 else:
                     # We don't know the original encoding of the imported file
                     # so we cannot get the right values. We store the string
@@ -590,13 +657,20 @@ class PoParser(object):
 
     def _dumpCurrentSection(self):
         """Dump current parsed content inside the translation message."""
-        if self._section == 'msgid':
+        if self._section is None:
+            # There is nothing to dump.
+            return
+        elif self._section == 'msgid':
             self._message.msgid = self._parsed_content
         elif self._section == 'msgid_plural':
             self._message.msgid_plural = self._parsed_content
         elif self._section == 'msgstr':
             self._message.addTranslation(
                 self._plural_case, self._parsed_content)
+        else:
+            raise AssertionError('Unknown section %s' % self.section)
+
+        self._parsed_content = u''
 
     def _parseLine(self, original_line):
         self._lineno += 1
@@ -621,7 +695,7 @@ class PoParser(object):
             elif self._message.msgid:
                 self._dumpCurrentSection()
                 self._storeCurrentMessage()
-            elif not self.header:
+            elif self._translation_file.header is None:
                 # When there is no msgid in the parsed message, it's the
                 # header for this file.
                 self._dumpCurrentSection()
@@ -632,10 +706,11 @@ class PoParser(object):
             self._message_lineno = self._lineno
             self._section = None
             self._plural_case = None
-            self._parsed_content = ''
+            self._parsed_content = u''
 
-        # Record whether the message is obsolete.
-        self._message.is_obsolete = is_obsolete
+        if self._message is not None:
+            # Record whether the message is obsolete.
+            self._message.is_obsolete = is_obsolete
 
         if l[0] == '#':
             # Record flags
@@ -659,6 +734,7 @@ class PoParser(object):
         if l.startswith('msgid_plural'):
             if self._section != 'msgid':
                 raise TranslationFormatSyntaxError(line_number=self._lineno)
+            self._dumpCurrentSection()
             self._section = 'msgid_plural'
             l = l[len('msgid_plural'):]
         elif l.startswith('msgid'):
@@ -669,6 +745,7 @@ class PoParser(object):
             self._plural_case = None
         # Now we are in a msgstr section
         elif l.startswith('msgstr'):
+            self._dumpCurrentSection()
             self._section = 'msgstr'
             l = l[len('msgstr'):]
             # XXX kiko: if l is empty, it means we got an msgstr
@@ -714,14 +791,9 @@ class PoParser(object):
                 line_number=self._lineno,
                 message='Invalid content: %r' % original_line)
 
-        if not self.header:
-            raise TranslationFormatSyntaxError(
-                message='No header found in this pofile')
-
 
 # convenience function to parse "assignment" expressions like
 # the plural-form header
-
 def parse_assignments(text, separator=';', assigner='=', skipfirst=False):
     parts = {}
     if skipfirst:

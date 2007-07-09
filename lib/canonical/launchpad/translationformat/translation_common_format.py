@@ -34,9 +34,9 @@ class TranslationMessage:
         self.msgid = None
         self.msgid_plural = None
         self._translations = []
-        self.comment = None
-        self.source_comment = None
-        self.file_references = None
+        self.comment = u''
+        self.source_comment = u''
+        self.file_references = u''
         self.flags = set()
         self.is_obsolete = False
 

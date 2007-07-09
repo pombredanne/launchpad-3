@@ -125,7 +125,7 @@ class XpiTestCase(unittest.TestCase):
         # There is no way to know whether a comment is from a
         # translator or a developer comment, so we have comenttext
         # always as None and store all comments as source comments.
-        self.assertEquals(message.commenttext, None)
+        self.assertEquals(message.commenttext, u'')
 
         # This format doesn't support any functionality like .po flags.
         self.assertEquals(message.flagscomment, u'')

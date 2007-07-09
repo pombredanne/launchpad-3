@@ -84,6 +84,19 @@ class ITranslationHeader(IMapping):
         The fields copied depend on the file format.
         """
 
+    def getLastTranslator():
+        """Return a tuple of name and email for last translator.
+
+        name and/or email would be None if there is no such information.
+        """
+
+    def setLastTranslator(email, name=None):
+        """Set last translator information.
+
+        :param email: A string with the email address for last translator.
+        :param name: The name for the last translator or None.
+        """
+
 
 class ITranslationMessage(Interface):
     """Translation message interface."""

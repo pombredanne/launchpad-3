@@ -65,9 +65,10 @@ class GettextPoImporterTestCase(unittest.TestCase):
 
         transaction.commit()
         self.template_importer = GettextPoImporter()
-        self.template_importer.parse(template_entry)
+        self.template_file = self.template_importer.parse(template_entry)
         self.translation_importer = GettextPoImporter()
-        self.translation_importer.parse(translation_entry)
+        self.translation_file = self.translation_importer.parse(
+            translation_entry)
 
     def testInterface(self):
         """Check whether the object follows the interface."""
@@ -82,22 +83,6 @@ class GettextPoImporterTestCase(unittest.TestCase):
             self.template_importer.format == TranslationFileFormat.PO,
             'GettextPoImporter format expected PO but got %s' % (
                 self.template_importer.format.name))
-
-    def testGetLastTranslator(self):
-        """Tests whether we extract last translator information correctly."""
-        # When it's the default one in Gettext (FULL NAME <EMAIL@ADDRESS>),
-        # used in templates, we get a tuple with None values.
-        name, email = self.template_importer.getLastTranslator()
-        self.failUnless(name is None,
-            "Didn't detect default Last Translator name")
-        self.failUnless(email is None,
-            "Didn't detect default Last Translator email")
-
-        # Let's try with the translation file, it has valid Last Translator
-        # information.
-        name, email = self.translation_importer.getLastTranslator()
-        self.assertEqual(name, 'Carlos Perello Marin')
-        self.assertEqual(email, 'carlos@canonical.com')
 
 
 def test_suite():

@@ -142,9 +142,3 @@ class ITranslationFormatImporter(Interface):
         :param header_string: A text representing a string for this concrete
             file format.
         """
-
-    def getLastTranslator():
-        """Return a tuple of name and email for last translator.
-
-        name and/or email would be None if there is no such information.
-        """
