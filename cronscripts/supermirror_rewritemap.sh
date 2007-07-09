@@ -1,12 +1,14 @@
 #!/bin/sh
 
 RSYNC_FILE=/srv/launchpad.net/etc/supermirror_rewritemap.conf
+PYTHON_VERSION=2.4
+PYTHON=python${PYTHON_VERSION}
 
 if [ -f "$RSYNC_FILE" ]
 then
-    # This simply exports for us the RSYNC_PASSWORD
-    # variable. We don't want it here because we don't
-    # want that password exposed within RF
+    # Because we don't want to put the rsync password in a revision controlled
+    # file, we store it in a configuration file.  By sourcing the configuration
+    # file here, this makes it available for use by this script.
     . $RSYNC_FILE
 else
     echo `date` "Supermirror config file not found, exiting"
@@ -24,7 +26,7 @@ MAP=/tmp/new-sm-map
 
 lockfile -l 600 ${LOCK}
 
-python supermirror_rewritemap.py -q ${MAP} && rsync ${MAP} \
+$PYTHON supermirror_rewritemap.py -q ${MAP} && rsync ${MAP} \
         launchpad@bazaar.launchpad.net::config/launchpad-lookup.txt
 
 rm -f ${LOCK}
