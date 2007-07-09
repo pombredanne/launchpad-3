@@ -37,5 +37,7 @@ ALTER TABLE archive ALTER COLUMN purpose SET NOT NULL;
 INSERT INTO component (id, name, description)
     VALUES (5, 'commercial', 'This component contains commercial packages only, which are not in the main Ubuntu archive.');
 
+-- Also create componentselection rows to allow "commercial" for Gutsy 
+-- distroseries.
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
