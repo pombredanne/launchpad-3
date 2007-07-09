@@ -619,6 +619,16 @@ class QuestionWorkflowView(LaunchpadFormView):
             if not data.get('message'):
                 self.setFieldError('message', _('Please enter a message.'))
 
+    @property
+    def lang(self):
+        """The Question's language for the lang and xml:lang attributes."""
+        return self.context.language.dashedcode
+
+    @property
+    def dir(self):
+        """The Question's language direction for the dir attribute."""
+        return self.context.language.abbreviated_text_dir
+
     def hasActions(self):
         """Return True if some actions are possible for this user."""
         for action in self.actions:
@@ -758,6 +768,12 @@ class QuestionWorkflowView(LaunchpadFormView):
                     _("You have subscribed to this question."))
 
         self.next_url = canonical_url(self.context)
+
+    @property
+    def new_question_url(self):
+        """Return a URL to add a new question for the QuestionTarget."""
+        return '%s/+addquestion' % canonical_url(self.context.target,
+                                                 rootsite='answers')
 
 
 
