@@ -75,7 +75,8 @@ def create_branch_for_series(series):
     name = series.name
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     product = series.product
-    branch = getUtility(IBranchSet).new(name, vcs_imports, product, url=None)
+    branch = getUtility(IBranchSet).new(
+        name, vcs_imports, vcs_imports, product, url=None)
     return branch
 
 
