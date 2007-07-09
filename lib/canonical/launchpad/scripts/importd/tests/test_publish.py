@@ -79,7 +79,8 @@ class TestImportdPublisher(ImportdTestCase):
         self.setUpOneCommit()
         series = self.series_helper.series
         branch = getUtility(IBranchSet).new(
-            series.name, series.product.owner, series.product, url=None)
+            series.name, series.product.owner, series.product.owner,
+            series.product, url=None)
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         assert branch.owner != vcs_imports
         series.import_branch = branch

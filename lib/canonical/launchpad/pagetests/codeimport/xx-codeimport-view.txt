@@ -127,7 +127,8 @@ If we create a lot of imports, the listing view will be batched.
     ...     product = getUtility(IProductSet).createProduct(
     ...         nopriv, name, name, name, name, name)
     ...     return getUtility(IBranchSet).new(
-    ...         'trunk', vcs_imports, product, None, 'Import branch')
+    ...         'trunk', vcs_imports, vcs_imports, product, None,
+    ...         'Import branch')
     >>> for i in range(10):
     ...     new_branch = import_branch_for_new_product('import-%s' % i)
     ...     svn_import = code_import_set.new(
