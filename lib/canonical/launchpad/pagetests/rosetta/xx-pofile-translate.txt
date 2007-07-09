@@ -70,64 +70,64 @@ server needs to find back the objects it relates to.  These HTML identifiers
 are created in several places in the code and parsed in yet other places, so
 they must adhere religiously to an agreed-to format.
 
-  >>> def get_tags(browser, attribute, prefix):
-  ...     """Extract tag "attributes" in page that begin with "prefix"."""
-  ...     from BeautifulSoup import BeautifulSoup
-  ...     import re
-  ...     soup = BeautifulSoup(browser.contents)
-  ...     ids = [
-  ...         tag.get(attribute)
-  ...         for tag in soup.findAll()
-  ...         if re.match(prefix, tag.get(attribute,''))]
-  ...     return sorted(ids)
+    >>> def get_tags(browser, attribute, prefix):
+    ...     """Extract tag "attributes" in page that begin with "prefix"."""
+    ...     from BeautifulSoup import BeautifulSoup
+    ...     import re
+    ...     soup = BeautifulSoup(browser.contents)
+    ...     ids = [
+    ...         tag.get(attribute)
+    ...         for tag in soup.findAll()
+    ...         if re.match(prefix, tag.get(attribute,''))]
+    ...     return sorted(ids)
 
-  >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-  >>> browser.open("http://translations.launchpad.dev/"
-  ...              "ubuntu/hoary/+source/evolution/+pots/evolution-2.2/en_AU/"
-  ...              "+translate?field.alternative_language=es")
-  >>> browser.url
-  'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/en_AU/+translate?field.alternative_language=es'
+    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
+    >>> browser.open("http://translations.launchpad.dev/"
+    ...              "ubuntu/hoary/+source/evolution/+pots/evolution-2.2/en_AU/"
+    ...              "+translate?field.alternative_language=es")
+    >>> browser.url
+    'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/en_AU/+translate?field.alternative_language=es'
 
 Elements related 1:1 to a translatable message on this form have names and
 identifiers constructed as "msgset_<id>," where <id> is the unpadded decimal
 id of their POTMsgSet.  The singular form, which plays a special role, has a
 suffix 'singular' appended.  We'll see other suffixes later.
 
-  >>> msgset_130 = get_tags(browser, 'id', 'msgset_130')
-  >>> for id in msgset_130:
-  ...     print id
-  msgset_130
-  ...
-  msgset_130_singular
+    >>> msgset_130 = get_tags(browser, 'id', 'msgset_130')
+    >>> for id in msgset_130:
+    ...     print id
+    msgset_130
+    ...
+    msgset_130_singular
 
 HTML element identifiers for suggestions and translations on this form are
 constructed as an underscore-separated sequence of:
 
- * the string 'msgset';
- * the id for the POTMsgSet they pertain to;
- * language code, e.g. 'kr' or 'en_UK';
- * type, either 'translation' or 'suggestion';
- * plural-form number;
- * optional suffix describing the element, such as 'radiobutton.'
+    * the string 'msgset';
+    * the id for the POTMsgSet they pertain to;
+    * language code, e.g. 'kr' or 'en_UK';
+    * type, either 'translation' or 'suggestion';
+    * plural-form number;
+    * optional suffix describing the element, such as 'radiobutton.'
 
-  >>> for id in msgset_130:
-  ...     print id
-  msgset_130
-  msgset_130_en_AU_translation_0
-  msgset_130_en_AU_translation_0_new
-  msgset_130_en_AU_translation_0_new_select
-  msgset_130_en_AU_translation_0_new_to_textarea
-  msgset_130_en_AU_translation_0_radiobutton
-  msgset_130_es_suggestion_1_0
-  msgset_130_es_suggestion_1_0_origin
-  msgset_130_es_suggestion_1_0_radiobutton
-  msgset_130_es_suggestion_565_0
-  msgset_130_es_suggestion_565_0_origin
-  msgset_130_es_suggestion_565_0_radiobutton
-  msgset_130_es_suggestion_702_0
-  msgset_130_es_suggestion_702_0_origin
-  msgset_130_es_suggestion_702_0_radiobutton
-  msgset_130_singular
+    >>> for id in msgset_130:
+    ...     print id
+    msgset_130
+    msgset_130_en_AU_translation_0
+    msgset_130_en_AU_translation_0_new
+    msgset_130_en_AU_translation_0_new_select
+    msgset_130_en_AU_translation_0_new_to_textarea
+    msgset_130_en_AU_translation_0_radiobutton
+    msgset_130_es_suggestion_1_0
+    msgset_130_es_suggestion_1_0_origin
+    msgset_130_es_suggestion_1_0_radiobutton
+    msgset_130_es_suggestion_565_0
+    msgset_130_es_suggestion_565_0_origin
+    msgset_130_es_suggestion_565_0_radiobutton
+    msgset_130_es_suggestion_702_0
+    msgset_130_es_suggestion_702_0_origin
+    msgset_130_es_suggestion_702_0_radiobutton
+    msgset_130_singular
 
 Radio buttons are grouped by their name attribute.  The translate page shows
 each translatable message with one radiobutton to select the existing
@@ -137,25 +137,25 @@ and one for a custom translation entered into a text input field.
 Here we see an example where three suggestions are offered, making for five
 identically-named radio buttons and sundry other HTML tags.
 
-  >>> browser.open('http://translations.launchpad.dev/alsa-utils/trunk/+pots/alsa-utils/es/+translate')
-  >>> msgset_198 = get_tags(browser, 'name', 'msgset_198')
-  >>> for name in msgset_198:
-  ...     print name
-  msgset_198
-  msgset_198_es_needsreview
-  msgset_198_es_translation_0_new
-  msgset_198_es_translation_0_new_to_textarea
-  msgset_198_es_translation_0_radiobutton
-  msgset_198_es_translation_0_radiobutton
-  msgset_198_es_translation_0_radiobutton
-  msgset_198_es_translation_0_radiobutton
-  msgset_198_es_translation_0_radiobutton
+    >>> browser.open('http://translations.launchpad.dev/alsa-utils/trunk/+pots/alsa-utils/es/+translate')
+    >>> msgset_198 = get_tags(browser, 'name', 'msgset_198')
+    >>> for name in msgset_198:
+    ...     print name
+    msgset_198
+    msgset_198_es_needsreview
+    msgset_198_es_translation_0_new
+    msgset_198_es_translation_0_new_to_textarea
+    msgset_198_es_translation_0_radiobutton
+    msgset_198_es_translation_0_radiobutton
+    msgset_198_es_translation_0_radiobutton
+    msgset_198_es_translation_0_radiobutton
+    msgset_198_es_translation_0_radiobutton
 
 There are many variants of this id structure, generated in several places and
 for several objects, all generated by the same methods.
 
-  >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate')
-  >>> print extract_text(find_tag_by_id(
-  ...     browser.contents, 'msgset_134_es_suggestion_568_0'))
-  tarjetas
+    >>> browser.open('http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/5/+translate')
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'msgset_134_es_suggestion_568_0'))
+    tarjetas
 
