@@ -47,6 +47,7 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import alsoProvides, implements
+from zope.app.form.interfaces import WidgetsError
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -84,6 +85,8 @@ from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.interfaces import ITeam
 
 
 class ProductNavigation(
@@ -950,7 +953,7 @@ class ProductAddView(LaunchpadFormView):
         return canonical_url(self.product)
 
 
-class ProductBugContactEditView(SQLObjectEditView):
+class ProductBugContactEditView(SQLObjectEditView, LaunchpadFormView):
     """Browser view class for editing the product bug contact."""
 
     def changed(self):
@@ -983,6 +986,28 @@ class ProductBugContactEditView(SQLObjectEditView):
 
         self.request.response.redirect(canonical_url(product))
 
+    def validate(self, data):
+        """Validates the new bug contact for the product
+
+        If the bug contact is a team of which the user is not an 
+        administrator then the submission will fail and the user will be
+        notified of the error.
+        """
+        contact = data['bugcontact']
+        user_teams = self.user.getAdministratedTeams()
+        if contact.isTeam() and contact not in user_teams:
+            error = (
+                "You cannot set %(team)s as the bug contact for "
+                "%(project)s because you are not an administrator of that "
+                "team.<br />If you believe that %(team)s should be the bug"
+                " contact for %(project)s, please notify one of the "
+                "<a href=\"%(url)s\">%(team)s administrators</a>."
+
+                % {'team': contact.displayname,
+                   'project': self.context.displayname,
+                   'url': canonical_url(contact, rootsite='mainsite') 
+                          + '/+members'})
+            raise WidgetsError([LaunchpadValidationError(error)])
 
 class ProductReassignmentView(ObjectReassignmentView):
     """Reassign product to a new owner."""
