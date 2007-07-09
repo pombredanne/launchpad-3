@@ -47,7 +47,6 @@ The parent gets set to the initial message of the bug:
 If a bug message contains links to an external bug report or a CVE,
 bugwatches resp. CVE watches are automatically created.
 
-    >>> login('foo.bar@canonical.com')
     >>> for cve in bug_one.cves:
     ...     print cve.displayname
     CVE-1999-8979
