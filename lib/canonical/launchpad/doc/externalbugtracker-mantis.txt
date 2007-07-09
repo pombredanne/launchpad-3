@@ -136,8 +136,6 @@ updateBugWatches() issues only one request to update all watches:
 
     >>> example_ext_bug_tracker.trace_calls = False
 
-XXXXXXXXXXXXXXXXXXXXXXX: Nothing checked beyond here!
-
 updateBugWatches() updates the lastchecked attribute on the watches, so
 now no bug watches are in need of updating:
 
@@ -158,6 +156,8 @@ updated:
     >>> example_ext_bug_tracker.updateBugWatches([bug_watch])
     >>> bug_watch.lastchanged == old_last_changed
     True
+
+XXX: Don't understand from here on...
 
 Now let's take a look at what happens when a bug watch is linked to
 from a bug task.
