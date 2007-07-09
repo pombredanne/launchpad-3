@@ -23,7 +23,13 @@ new system from anonymous and regular users.
 
     >>> from canonical.launchpad.interfaces import (
     ...      ICodeImportMachine, ICodeImportMachineSet)
-    >>> from zope.component import getUtility
+    >>> machine_set = getUtility(ICodeImportMachineSet)
+    >>> machine_set.getAll()
+    Traceback (most recent call last):
+      ...
+    Unauthorized: ...
+
+    >>> login('test@canonical.com')
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> machine_set.getAll()
     Traceback (most recent call last):
@@ -41,7 +47,7 @@ hostname and to all machines.
     >>> from zope.security.proxy import removeSecurityProxy
     >>> verifyObject(ICodeImportMachineSet, removeSecurityProxy(machine_set))
     True
-    >>> machine = machine_set.getByHostname('frobisher.example.com') 
+    >>> machine = machine_set.getByHostname('frobisher.example.com')
     >>> machine in machine_set.getAll()
     True
 
@@ -81,12 +87,6 @@ status is indeed updated.
     >>> from canonical.testing.layers import LaunchpadFunctionalLayer
     >>> LaunchpadFunctionalLayer.testSetUp() # Reset the database connection.
 
-    >>> from canonical.launchpad.interfaces import (
-    ...      ICodeImportMachine, ICodeImportMachineSet)
-    >>> from zope.component import getUtility
-    >>> from zope.interface.verify import verifyObject
-    >>> from zope.security.proxy import removeSecurityProxy
-    >>> from canonical.database.sqlbase import cursor
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> machine = machine_set.getByHostname('frobisher.example.com')
     >>> machine.online

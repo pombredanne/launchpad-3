@@ -126,4 +126,8 @@ class ICodeImportMachineSet(Interface):
         """Return an iterable of all code machines."""
 
     def getByHostname(hostname):
-        """Retrieve the code importmachine for a hostname, if present."""
+        """Retrieve the code import machine for a hostname.
+
+        Returns a `ICodeImportMachine` provider or ``None`` if no such machine
+        is present.
+        """

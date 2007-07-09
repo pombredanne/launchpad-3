@@ -667,8 +667,8 @@ class AdminTheBazaar(OnlyVcsImportsAndAdmins):
 class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
     """Control who can see the CodeImport listing page.
 
-    Currently, we don't let the general user see anything to do with
-    the new code import system.
+    Currently, we restrict the visibility of the new code import
+    system to memebers of ~vcs-imports and Launchpad admins.
     """
 
     permission = 'launchpad.View'
@@ -678,8 +678,8 @@ class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
 class SeeCodeImports(OnlyVcsImportsAndAdmins):
     """Control who can see the object view of a CodeImport.
 
-    Currently, we don't let the general user see anything to do with
-    the new code import system.
+    Currently, we restrict the visibility of the new code import
+    system to memebers of ~vcs-imports and Launchpad admins.
     """
     permission = 'launchpad.View'
     usedfor = ICodeImport
@@ -688,8 +688,8 @@ class SeeCodeImports(OnlyVcsImportsAndAdmins):
 class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):
     """Control who can see the CodeImportMachine listing page.
 
-    Currently, we don't let the general user see anything to do with
-    the new code import system.
+    Currently, we restrict the visibility of the new code import
+    system to memebers of ~vcs-imports and Launchpad admins.
     """
 
     permission = 'launchpad.View'
@@ -699,8 +699,8 @@ class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):
 class SeeCodeImportMachines(OnlyVcsImportsAndAdmins):
     """Control who can see the object view of a CodeImportMachine.
 
-    Currently, we don't let the general user see anything to do with
-    the new code import system.
+    Currently, we restrict the visibility of the new code import
+    system to memebers of ~vcs-imports and Launchpad admins.
     """
     permission = 'launchpad.View'
     usedfor = ICodeImportMachine
