@@ -106,16 +106,19 @@ class PoHeader:
         if text is None or isinstance(text, unicode):
             # There is noo need to do anything.
             return text
+        charset = self.charset
+        if self.charset == 'CHARSET':
+            charset = 'ASCII'
         try:
-            text = unicode(text, self.charset)
+            text = unicode(text, charset)
         except UnicodeError:
             logging.warning(POSyntaxWarning(
-                msg='string is not in declared charset %r' % self.charset
+                msg='string is not in declared charset %r' % charset
                 ))
-            text = unicode(text, self.charset, 'replace')
+            text = unicode(text, charset, 'replace')
         except LookupError:
             raise TranslationFormatInvalidInputError(
-                message='Unknown charset %r' % self.charset)
+                message='Unknown charset %r' % charset)
 
         return text
 
@@ -148,7 +151,7 @@ class PoHeader:
             if field.lower() in self._handled_keys_order:
                 field = field.lower()
 
-            header_dictionary[field] = value
+            header_dictionary[field] = value.strip()
 
         return header_dictionary
 
@@ -173,6 +176,13 @@ class PoHeader:
                                     " error. Using the default value...")))
                         self.number_plural_forms = 2
                     self.plural_form_expression = parts.get('plural', '0')
+            elif key == 'pot-creation-date':
+                try:
+                    self.template_creation_date = (
+                        datetimeutils.parseDatetimetz(value))
+                except datetimeutils.DateTimeError:
+                    # We couldn't parse it, leave current default value.
+                    pass
             elif key == 'po-revision-date':
                 try:
                     self.translation_revision_date = (
@@ -182,6 +192,8 @@ class PoHeader:
                     self.translation_revision_date = None
             elif key == 'last-translator':
                 self._last_translator = value
+            elif key == 'language-team':
+                self.language_team = value
             elif key in ('x-launchpad-export-date', 'x-rosetta-export-date'):
                 # The key we use right now to note the export date is
                 # X-Launchpad-Export-Date but we need to accept the old one
@@ -247,12 +259,12 @@ class PoHeader:
                     # This file doesn't have plural forms so we don't export
                     # any plural form information in the header.
                     continue
-                if self.number_plurals is None:
+                if self.number_plural_forms is None:
                     # Use the default values.
                     nplurals = 'INTEGER'
                     plural = 'EXPRESSION'
                 else:
-                    nplurals = str(self.number_plurals)
+                    nplurals = str(self.number_plural_forms)
                     plural = self.plural_form_expression
                 raw_content_list.append('%s: nplurals=%s; plural=%s;\n' % (
                     value, nplurals, plural))
@@ -295,8 +307,12 @@ class PoHeader:
         fields_to_copy = ['Domain']
 
         for field in fields_to_copy:
-            if field in template_header:
-                self[field] = template_header[field]
+            if field in template_header._header_dictionary:
+                self._header_dictionary[field] = (
+                    template_header._header_dictionary[field])
+
+        # Standard fields update.
+        self.template_creation_date = template_header.template_creation_date
 
     def getLastTranslator(self):
         """See `ITranslationHeader`."""
@@ -464,6 +480,16 @@ class PoParser(object):
                 raise TranslationFormatInvalidInputError(
                     message='Po file: duplicate msgid ending on line %r' % (
                         self._message_lineno))
+
+            number_plural_forms = (
+                self._translation_file.header.number_plural_forms)
+            if (self._message.msgid_plural and
+                len(self._message.translations) < number_plural_forms):
+                # Has plural forms but the number of translations is lower.
+                # Fill the others with an empty string.
+                for index in range(
+                    len(self._message.translations), number_plural_forms):
+                    self._message.addTranslation(index, u'')
 
             self._translation_file.messages.append(self._message)
             self._messageids[self._message.msgid] = True
@@ -685,6 +711,8 @@ class PoParser(object):
             self._message.msgid = self._parsed_content
         elif self._section == 'msgid_plural':
             self._message.msgid_plural = self._parsed_content
+            # Note in the header that there are plural forms.
+            self._translation_file.header.has_plural_forms = True
         elif self._section == 'msgstr':
             self._message.addTranslation(
                 self._plural_case, self._parsed_content)

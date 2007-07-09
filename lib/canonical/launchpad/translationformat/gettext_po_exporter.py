@@ -12,6 +12,7 @@ from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     ITranslationFormatExporter, TranslationConstants)
+from canonical.launchpad.translationformat import TranslationMessage
 from canonical.launchpad.translationformat.translation_export import (
     LaunchpadWriteTarFile, ExportedTranslationFile)
 from canonical.lp.dbschema import TranslationFileFormat
@@ -51,13 +52,13 @@ def comments_text_representation(translation_message):
     if translation_message.comment:
         for line in translation_message.comment.split('\n')[:-1]:
             text.append(u'#' + line)
-    if not translation_message.obsolete:
+    if not translation_message.is_obsolete:
         # Source comments are only exported if it's not an obsolete entry.
         if translation_message.source_comment:
             for line in translation_message.source_comment.split('\n')[:-1]:
                 text.append(u'#. ' + line)
         if translation_message.file_references:
-            for line in translation_message.file_references.split('\n'):
+            for line in translation_message.file_references.split('\n')[:-1]:
                 text.append(u'#: ' + line)
     if translation_message.flags:
         flags = list(translation_message.flags)
@@ -307,7 +308,7 @@ def msgid_text_representation(translation_message, wrap_width):
             wrap_text(
                 translation_message.msgid_plural, u'msgid_plural', wrap_width)
             )
-    if translation_message.obsolete:
+    if translation_message.is_obsolete:
         text = ['#~ ' + l for l in text]
 
     return u'\n'.join(text)
@@ -324,7 +325,8 @@ def translation_text_representation(translation_message, wrap_width):
         # It's a message with plural forms.
         for i, s in enumerate(translation_message.translations):
             text.extend(wrap_text(s, u'msgstr[%s]' % i, wrap_width))
-        else:
+
+        if len(text) == 0:
             # We don't have any translation for it.
             text = [u'msgstr[0] ""', u'msgstr[1] ""']
     else:
@@ -336,7 +338,7 @@ def translation_text_representation(translation_message, wrap_width):
         else:
             text = [u'msgstr ""']
 
-    if translation_message.obsolete:
+    if translation_message.is_obsolete:
         text = ['#~ ' + l for l in text]
 
     return u'\n'.join(text)
@@ -352,7 +354,7 @@ def export_translation_message(translation_message, wrap_width=77):
     u'msgid "foo"\nmsgstr "bar"'
 
     obsolete entries are prefixed with #~ .
-    >>> translation_message.obsolete = True
+    >>> translation_message.is_obsolete = True
     >>> export_translation_message(translation_message)
     u'#~ msgid "foo"\n#~ msgstr "bar"'
 
@@ -412,6 +414,16 @@ class GettextPoExporter:
         """See `ITranslationFormatExporter`."""
         return [TranslationFileFormat.PO, TranslationFileFormat.XPI]
 
+    def _getHeaderAsMessage(self, translation_file):
+        """Return an ITranslationMessage with the header content."""
+        header_translation_message = TranslationMessage()
+        header_translation_message.addTranslation(
+            TranslationConstants.SINGULAR_FORM,
+            translation_file.header.getRawContent())
+        header_translation_message.comment = (
+            translation_file.header.comment)
+        return header_translation_message
+
     def exportTranslationFiles(self, translation_file_list):
         """See `ITranslationFormatExporter`."""
         assert len(translation_file_list) > 0, (
@@ -439,18 +451,46 @@ class GettextPoExporter:
                         translation_file.language_code,
                         file_extension))
 
+            header_translation_message = self._getHeaderAsMessage(
+                translation_file)
             exported_header = export_translation_message(
-                translation_file.header)
+                header_translation_message)
             chunks = [exported_header.encode(translation_file.header.charset)]
             for message in translation_file.messages:
-                if message.obsolete and len(message.translations) == 0:
+                if message.is_obsolete and len(message.translations) == 0:
                     # Ignore obsolete messages without translations.
                     continue
                 exported_message = export_translation_message(message)
-                chunks.append(
-                    exported_message.encode(translation_file.header.charset))
+                try:
+                    encoded_text = exported_message.encode(
+                        translation_file.header.charset)
+                except UnicodeEncodeError:
+                    if translation_file.header.charset.upper() == 'UTF-8':
+                        # It's already UTF-8, we cannot do anything.
+                        raise
+
+                    # This message cannot be represented in current encoding,
+                    # change to UTF-8 and try again.
+                    old_charset = translation_file.header.charset
+                    translation_file.header.charset = 'UTF-8'
+                    # We need to update the header too.
+                    header_translation_message = self._getHeaderAsMessage(
+                        translation_file)
+                    exported_header = export_translation_message(
+                        header_translation_message)
+                    chunks[0] = exported_header.encode(old_charset)
+                    # Update already exported entries.
+                    for index in range(len(chunks)):
+                        chunks[index] = chunks[index].decode(
+                            old_charset).encode('UTF-8')
+                    encoded_text = exported_message.encode('UTF-8')
+
+                chunks.append(encoded_text)
 
             exported_file_content = '\n\n'.join(chunks)
+
+            # Gettext .po files are supposed to end with a new line.
+            exported_file_content += '\n'
 
             exported_files[file_path] = exported_file_content
 

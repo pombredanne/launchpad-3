@@ -4,8 +4,10 @@ Rosetta PO Export Request Queue
 The queue of export requests is served by a cron script. Let's check if it can
 serve those requests properly.
 
-  >>> from zope.component import getUtility
-  >>> from canonical.launchpad.interfaces import IPOExportRequestSet
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import IPOExportRequestSet
+    >>> from canonical.launchpad.translationformat.tests.test_gettext_mo_exporter_doctest import (
+    ...     is_valid_mofile)
 
 This is a dummy logger class to capture the export's log messages.
 
@@ -130,21 +132,7 @@ Let's try requesting an export in MO format:
   >     http://localhost:58000/.../cs_LC_MESSAGES_pmount.mo
   >>> url = extract_url(body)
 
-We will need to define a helper function.
-
-  >>> def is_valid_mofile(mofile):
-  ...     """Test whether a string is a valid MO file."""
-  ...
-  ...     # There are different magics for big- and little-endianness, so we
-  ...     # test for both.
-  ...     be_magic = '\x95\x04\x12\xde'
-  ...     le_magic = ''.join(reversed(be_magic))
-  ...
-  ...     for magic in (be_magic, le_magic):
-  ...         if mofile[:len(magic)] == magic:
-  ...             return True
-  ...
-  ...     return False
+Check whether we generated a good .mo file.
 
   >>> is_valid_mofile(urllib2.urlopen(url).read())
   True
