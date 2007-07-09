@@ -104,6 +104,10 @@ This is the file that'll get imported.
     ... msgid "baz"
     ... msgstr ""
     ...
+    ... msgctxt "context"
+    ... msgid "bar"
+    ... msgstr ""
+    ...
     ... #, c-format
     ... msgid "Foo %%s"
     ... msgstr ""
@@ -166,7 +170,7 @@ Once we've done this, the correct message IDs should show up in the template.
 
     >>> potmsgsets = list(potemplate.getPOTMsgSets())
     >>> [potmsgset.msgid for potmsgset in potmsgsets]
-    [u'foo', u'bar', u'baz', u'Foo %s', u'Singular %d']
+    [u'foo', u'bar', u'baz', u'bar', u'Foo %s', u'Singular %d']
 
 The file references field should be there
 
@@ -352,7 +356,7 @@ Now, is time to check the notification email.
     <BLANKLINE>
     There were problems with 1 of these translations.
     <BLANKLINE>
-    4.  [msg 4]
+    5.  [msg 4]
     "format specifications in 'msgid' and 'msgstr' for argument 1 are not the same":
     <BLANKLINE>
     #, c-format
@@ -477,7 +481,7 @@ Now, is time to check the notification email.
     Hello Rosetta Administrators,
     <BLANKLINE>
     ...
-    5.  [msg 0]
+    6.  [msg 0]
     "The msgid_plural field has changed since the last time this file was
     generated, please report this error to ...
     <BLANKLINE>

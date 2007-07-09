@@ -22,6 +22,8 @@ class IPOTMsgSet(Interface):
     # The primary message ID is the same as the message ID with plural
     # form 0 -- i.e. it's redundant. However, it acts as a cached value.
 
+    context = Attribute("Disambiguating context for the message set.")
+
     primemsgid_ID = Int(title=u'Key of primary msgid for this set.',
         required=True, readonly=True)
 
