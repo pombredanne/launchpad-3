@@ -12,4 +12,4 @@ UPDATE person
     WHERE id NOT IN (SELECT id FROM ValidPersonOrTeamCache)
         OR teamowner IS NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 29, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 22, 0);
