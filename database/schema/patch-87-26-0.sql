@@ -8,7 +8,5 @@ CREATE TABLE CodeImportMachine (
     online boolean NOT NULL
     );
 
--- XXX Put a proper patch number here.
--- 2007-06-29 Michael Hudson
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 45, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 26, 0);
 
