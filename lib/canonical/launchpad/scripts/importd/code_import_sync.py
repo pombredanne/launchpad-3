@@ -9,7 +9,6 @@ __metaclass__ = type
 __all__ = ['CodeImportSync']
 
 
-import psycopg
 from zope.component import getUtility
 
 from canonical.lp.dbschema import (

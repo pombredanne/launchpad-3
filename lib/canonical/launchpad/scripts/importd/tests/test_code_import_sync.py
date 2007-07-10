@@ -19,7 +19,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database import CodeImport, ProductSeries, ProductSet
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.interfaces import (
-    IBranchSet, ICodeImportSet, IProductSet, NotFoundError)
+    IBranchSet, ICodeImportSet, NotFoundError)
 from canonical.launchpad.scripts.importd.code_import_sync import CodeImportSync
 from canonical.launchpad.utilities import LaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
