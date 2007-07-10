@@ -23,7 +23,10 @@ To create a new Specification, use ISpecificationSet.new:
     >>> from canonical.lp.dbschema import SpecificationDefinitionStatus
     >>> from canonical.lp.dbschema import SpecificationImplementationStatus
     >>> sabdfl = Person.byName('sabdfl')
-    >>> newspec = specset.new('mng', 'Support MNG Format', 'http://www.silly.me/SpecName', 'we really need this', SpecificationDefinitionStatus.APPROVED, sabdfl, product=upstream_firefox)
+    >>> newspec = specset.new('mng', 'Support MNG Format',
+    ...     'http://www.silly.me/SpecName', 'we really need this',
+    ...     SpecificationDefinitionStatus.APPROVED, sabdfl,
+    ...     product=upstream_firefox)
     >>> print newspec.name
     mng
 
