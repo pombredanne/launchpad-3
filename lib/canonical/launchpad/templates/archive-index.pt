@@ -45,20 +45,32 @@
 
       <h2>Packages</h2>
 
-      <p id="source_counter">
-         This PPA contains <span tal:content="view/number_of_sources"
-         /> sources.
-      </p>
+      <div>
+        <ul id="package_counters">
+          <li id="source_counter">
+             <span tal:replace="context/number_of_sources"/> Sources
+             (<span tal:replace="context/sources_size/fmt:bytes" />)</li>
+          <li id="binary_counter">
+             <span tal:replace="context/number_of_binaries"/> Binaries
+             (<span tal:replace="context/binaries_size/fmt:bytes" />)</li>
+	  <li id="total_size">
+             Estimated archive size:
+             <span tal:replace="context/estimated_size/fmt:bytes" /></li>
+        <ul>
+      </div>
 
-      <form name="package_search" action="" method="GET">
-         <label for="name"> Package with names containing:</label>
-         <input id="name" title="Package Name" size="20"
-                type="text" name="name_filter"
-                tal:attributes="value view/name_filter"/>
-         <input type="submit" value="Update" />
-      </form>
+      <div>
+        <form name="package_search" action="" method="GET">
+           <label for="name"> Package with names containing:</label>
+           <input id="name" title="Package Name" size="20"
+                  type="text" name="name_filter"
+                  tal:attributes="value view/name_filter"/>
+           <input type="submit" value="Update" />
+        </form>
+      </div>
 
-      <tal:batch define="batch view/search_results">
+      <div tal:define="batch view/search_results">
+
       <tal:navigation_top
            replace="structure view/batchnav/@@+navigation-links-upper" />
 
@@ -88,7 +100,7 @@
          No packages for '<span tal:replace="view/name_filter|nothing" />'.
       </div>
 
-      </tal:batch>
+      </div>
 
     </div>
   </body>

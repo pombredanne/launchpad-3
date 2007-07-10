@@ -84,10 +84,6 @@ class ArchiveView(LaunchpadView):
     """
     __used_for__ = IArchive
 
-    def number_of_sources(self):
-        """Return the number of sources published in the context archive."""
-        return self.context.getPublishedSources().count()
-
     def searchPackages(self):
         """Setup a batched ISPPH list.
 

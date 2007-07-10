@@ -41,10 +41,19 @@ class IArchive(Interface, IHasOwner):
         title=_("Whiteboard"), required=False,
         description=_("Administrator comments."))
 
-
     archive_url = Attribute("External archive URL.")
     title = Attribute("Archive Title.")
     distribution = Attribute('Distribution related to this Archive.')
+
+    number_of_sources = Attribute(
+        'The number of sources published in the context archive.')
+    number_of_binaries = Attribute(
+        'The number of binaries published in the context archive.')
+    sources_size = Attribute(
+        'The size of sources published in the context archive.')
+    binaries_size = Attribute(
+        'The size of binaries published in the context archive.')
+    estimated_size = Attribute('Estimated archive size.')
 
     def getPubConfig(distribution):
         """Return an overridden Publisher Configuration instance.
@@ -56,6 +65,9 @@ class IArchive(Interface, IHasOwner):
 
     def getPublishedSources():
         """Return all ISourcePackagePublishingHistory target to this archive."""
+
+    def getPublishedBinaries():
+        """Return all IBinaryPackagePublishingHistory target to this archive."""
 
 
 class IArchiveSet(Interface):

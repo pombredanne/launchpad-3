@@ -17,7 +17,8 @@ from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like, quote
 from canonical.launchpad.database.publishing import (
-    SourcePackagePublishingHistory)
+    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
+from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.interfaces import (
     IArchive, IArchiveSet, IHasOwner, IHasBuildRecords, IBuildSet)
 from canonical.launchpad.webapp.url import urlappend
@@ -112,6 +113,79 @@ class Archive(SQLBase):
         query = ' AND '.join(clauses)
         return SourcePackagePublishingHistory.select(
             query, orderBy='id', clauseTables=clauseTables)
+
+    @property
+    def number_of_sources(self):
+        """See IArchive."""
+        return self.getPublishedSources().count()
+
+    @property
+    def sources_size(self):
+        """See IArchive."""
+        query = """
+        LibraryFileContent.id=LibraryFileAlias.content AND
+        LibraryFileAlias.id=SourcePackageFilePublishing.libraryfilealias AND
+        SourcePackageFilePublishing.archive=%s
+        """ % sqlvalues(self)
+
+        clauseTables = ['LibraryFileAlias', 'SourcePackageFilePublishing']
+        result = LibraryFileContent.select(query, clauseTables=clauseTables)
+
+        size = result.sum('filesize')
+        if size is None:
+            return 0
+        return size
+
+    def getPublishedBinaries(self, name=None):
+        """See IArchive."""
+        clauses = [
+            'BinaryPackagePublishingHistory.archive = %s' % sqlvalues(self)]
+        clauseTables = []
+
+        if name is not None:
+            clauses.append("""
+            BinaryPackagePublishingHistory.binarypackagerelease =
+                BinaryPackageRelease.id AND
+            BinaryPackageRelease.binarypackagename =
+                BinaryPackageName.id AND
+            BinaryPackageName.name LIKE '%%' || %s || '%%'
+            """ % quote_like(name))
+            clauseTables.extend(
+                ['BinaryPackageRelease', 'BinaryPackageName'])
+
+        query = ' AND '.join(clauses)
+        return BinaryPackagePublishingHistory.select(
+            query, orderBy='id', clauseTables=clauseTables)
+
+    @property
+    def number_of_binaries(self):
+        """See IArchive."""
+        return self.getPublishedBinaries().count()
+
+    @property
+    def binaries_size(self):
+        """See IArchive."""
+        query = """
+        LibraryFileContent.id=LibraryFileAlias.content AND
+        LibraryFileAlias.id=BinaryPackageFilePublishing.libraryfilealias AND
+        BinaryPackageFilePublishing.archive=%s
+        """ % sqlvalues(self)
+
+        clauseTables = ['LibraryFileAlias', 'BinaryPackageFilePublishing']
+        result = LibraryFileContent.select(query, clauseTables=clauseTables)
+
+        size = result.sum('filesize')
+        if size is None:
+            return 0
+        return size
+
+    @property
+    def estimated_size(self):
+        """See IArchive."""
+        size = self.sources_size + self.binaries_size
+        cruft = (self.number_of_sources + self.number_of_binaries) * 1024
+        return size + cruft
+
 
 class ArchiveSet:
     implements(IArchiveSet)
