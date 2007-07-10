@@ -730,6 +730,12 @@ class BugTask(SQLBase, BugTaskMixin):
         else:
             assignee_value = 'None'
 
+        # Calculate an appropriate display value for the milestone
+        if self.milestone:
+            milestone_value = self.milestone.name
+        else:
+            milestone_value = 'None'
+
         # Calculate an appropriate display value for the sourcepackage.
         if self.sourcepackagename:
             sourcepackagename_value = self.sourcepackagename.name
@@ -779,10 +785,11 @@ class BugTask(SQLBase, BugTaskMixin):
 
         header_value += ((
             ' status=%(status)s; importance=%(importance)s; '
-            'assignee=%(assignee)s;') %
+            'assignee=%(assignee)s; milestone=%(milestone)s;') %
             {'status': self.status.title,
              'importance': self.importance.title,
-             'assignee': assignee_value})
+             'assignee': assignee_value,
+             'milestone': milestone_value})
 
         return header_value
 
