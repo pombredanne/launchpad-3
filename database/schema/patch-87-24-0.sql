@@ -8,9 +8,10 @@ CREATE TABLE MailingList (
     -- Date the list was requested to be created
     date_registered timestamp without time zone DEFAULT timezone('UTC'::text,
                     ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    -- The id of the Person who reviewed the creation request.
+    -- The id of the Person who reviewed the creation request, or NULL if not
+    -- yet reviewed.
     reviewer        integer REFERENCES Person,
-    -- The date the request was reviewed
+    -- The date the request was reviewed, or NULL if not yet reviewed.
     date_reviewed   timestamp without time zone DEFAULT timezone('UTC'::text,
                     ('now'::text)::timestamp(6) with time zone),
     -- The date the list was (last) activated.  If the list is not yet active,
@@ -105,7 +106,7 @@ ALTER TABLE person ADD COLUMN
 
 
 CREATE TABLE MailingListSubscription (
-    id serial   NOT NULL,
+    id          serial NOT NULL,
     -- Person who is subscribed to the mailing list
     person      integer NOT NULL,
     -- Team whose mailing list this person is subscribed
@@ -136,15 +137,16 @@ ALTER TABLE ONLY MailingListSubscription
     FOREIGN KEY (email_address) REFERENCES EmailAddress(id);
 
 CREATE TABLE MailingListBan (
-    id serial   NOT NULL,
+    id          serial NOT NULL,
     -- The person who was banned
     person      integer NOT NULL,
-    -- The administrator who banned them
+    -- The administrator who imposed the ban
     banned_by   integer NOT NULL,
-    -- When the ban was instanted
+    -- When the ban was imposed
     date_banned timestamp without time zone DEFAULT
         timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone)
         NOT NULL,
+    -- The reason for the ban
     reason_text text
 );
 
@@ -161,19 +163,19 @@ ALTER TABLE ONLY MailingListBan
 
 
 CREATE TABLE MessagesAwaitingApproval (
-    id serial NOT NULL,
+    id              serial NOT NULL,
     /* The Message-ID header of the held message. */
-    message_id text NOT NULL,
+    message_id      text NOT NULL,
     /* The id of the Person who posted the message. */
-    posted_by integer NOT NULL,
-    /* The team/mailing list to which the message was posted. */
-    team integer NOT NULL,
+    posted_by       integer NOT NULL,
+    /* The team mailing list to which the message was posted. */
+    team            integer NOT NULL,
     /* Foreign key to libraryfilealias table pointing to where the posted
        message's text lives.
     */
-    posted_message integer NOT NULL,
+    posted_message  integer NOT NULL,
     /* The date the message was posted. */
-    posted_date timestamp without time zone DEFAULT
+    posted_date     timestamp without time zone DEFAULT
         timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone)
         NOT NULL,
     /* This DBschema enum defines the status of the posted message.  The
@@ -187,16 +189,16 @@ CREATE TABLE MessagesAwaitingApproval (
        PostedMessageStatus.REJECTED (2)
             -- The message has been rejected and will not be delivered.
     */
-    status integer DEFAULT 0 NOT NULL,
+    status          integer DEFAULT 0 NOT NULL,
     /* Id of the Person who disposed of this message, or NULL if no
        disposition has yet been made (i.e. this message is in the
        PostedMessageStatus.NEW state.
     */
-    disposed_by integer,
+    disposed_by     integer,
     /* The date on which this message was disposed, or NULL if no disposition
        has yet been made.
     */
-    disposal_date timestamp without time zone DEFAULT
+    disposal_date   timestamp without time zone DEFAULT
         timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone)
 );
 
@@ -222,4 +224,4 @@ ALTER TABLE ONLY MessagesAwaitingApproval
 CREATE INDEX MessagesAwaitingApproval_message_id_idx
     ON MessagesAwaitingApproval USING btree (message_id);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 24, 0);
