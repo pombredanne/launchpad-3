@@ -21,5 +21,5 @@ CHECK ((date_started IS NULL) <>
        (implementation_status NOT IN ( 0, 5, 10, 95 ) OR
        (implementation_status = 95 AND definition_status = 10)));
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (88, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 32, 0);
 
