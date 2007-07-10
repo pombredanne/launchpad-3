@@ -273,7 +273,7 @@ class Bugzilla(ExternalBugTracker):
                               'FIXED', 'NEXTRELEASE', 
                               'PATCH_ALREADY_AVAILABLE', 'RAWHIDE']:
  
-                # The following resoultions come from bugzilla.redhat.com.
+                # The following resolutions come from bugzilla.redhat.com.
                 # All of them map to Malone's FIXRELEASED status:
                 #     CODE_FIX, CURRENTRELEASE, ERRATA, NEXTRELEASE,
                 #     PATCH_ALREADY_AVAILABLE, RAWHIDE
