@@ -2,7 +2,7 @@
 
 RSYNC_FILE=/srv/launchpad.net/etc/supermirror_rewritemap.conf
 PYTHON_VERSION=2.4
-PYTHON=python${PYTHON_VERSION}
+PYTHON=/usr/bin/python${PYTHON_VERSION}
 
 if [ -f "$RSYNC_FILE" ]
 then
