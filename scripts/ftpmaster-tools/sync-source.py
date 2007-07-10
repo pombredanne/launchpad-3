@@ -387,7 +387,7 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
     filehandle.close()
 
 
-def read_current_source(distroseries, valid_components="", arguments=None):
+def read_current_source(distro_series, valid_components="", arguments=None):
     """Returns a dictionary of packages in 'suite'.
 
     The dictionary contains their version as the attribute.
@@ -397,17 +397,17 @@ def read_current_source(distroseries, valid_components="", arguments=None):
     S = {}
     valid_components = dak_utils.split_args(valid_components)
 
-    # XXX FIXME: This searches all pockets of the distroseries which
+    # XXX FIXME: This searches all pockets of the distro_series which
     #            is not what we want.
     if Options.all:
-        spp = distroseries.getSourcePackagePublishing(
+        spp = distro_series.getSourcePackagePublishing(
             status=dbschema.PackagePublishingStatus.PUBLISHED,
             pocket=dbschema.PackagePublishingPocket.RELEASE
             )
     else:
         spp = []
         for package in arguments:
-            spp.extend(distroseries.getPublishedReleases(package))
+            spp.extend(distro_series.getPublishedReleases(package))
 
     for sp in spp:
         component = sp.component.name
@@ -431,14 +431,14 @@ def read_current_source(distroseries, valid_components="", arguments=None):
     return S
 
 
-def read_current_binaries(distroseries):
-    """Returns a dictionary of binaries packages in 'distroseries'.
+def read_current_binaries(distro_series):
+    """Returns a dictionary of binaries packages in 'distro_series'.
 
     The dictionary contains their version and component as the attributes.
     """
     B = {}
 
-    # XXX FIXME: This searches all pockets of the distroseries which
+    # XXX FIXME: This searches all pockets of the distro_series which
     #            is not what we want.
 
     # XXX FIXME: this is insanely slow due to how SQLObject works.  It
@@ -447,7 +447,7 @@ def read_current_binaries(distroseries):
     #            have the .dsc file and currently this function is
     #            run well before that.
     #
-    #     for distroarchseries in distroseries.architectures:
+    #     for distroarchseries in distro_series.architectures:
     #         bpp = distroarchseries.getAllReleasesByStatus(
     #             dbschema.PackagePublishingStatus.PUBLISHED)
     #
@@ -463,7 +463,7 @@ def read_current_binaries(distroseries):
     #                     B[pkg] = [version, component]
 
     # XXX: so... let's fall back on raw SQL
-    dar_ids = ", ".join([(str(dar.id)) for dar in distroseries.architectures])
+    dar_ids = ", ".join([(str(dar.id)) for dar in distro_series.architectures])
     cur = cursor()
 
     query = """
@@ -479,7 +479,7 @@ def read_current_binaries(distroseries):
      """ % (dbschema.PackagePublishingStatus.PUBLISHED, dar_ids)
     cur.execute(query)
 
-    print "Getting binaries for %s..." % (distroseries.name)
+    print "Getting binaries for %s..." % (distro_series.name)
     for (pkg, version, component) in cur.fetchall():
         if not B.has_key(pkg):
             B[pkg] = [version, component]
