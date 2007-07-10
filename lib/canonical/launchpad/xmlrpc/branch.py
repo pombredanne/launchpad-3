@@ -11,7 +11,8 @@ from zope.component import getUtility
 from zope.interface import Interface, implements
 
 from canonical.launchpad.interfaces import (
-    IBranchSet, IBugSet, ILaunchBag, IProductSet, IPersonSet, NotFoundError)
+    BranchCreationForbidden, IBranchSet, IBugSet, ILaunchBag, IProductSet,
+    IPersonSet, NotFoundError)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
 from canonical.launchpad.xmlrpc import faults
 from canonical.lp.dbschema import BugBranchStatus
@@ -71,9 +72,13 @@ class BranchSetAPI(LaunchpadXMLRPCView):
             return faults.NoSuchPerson(
                 type="author", email_address=author_email)
 
-        branch = getUtility(IBranchSet).new(
-            name=branch_name, owner=owner, product=product, url=branch_url,
-            title=branch_title, summary=branch_description, author=author)
+        try:
+            branch = getUtility(IBranchSet).new(
+                name=branch_name, creator=owner, owner=owner, product=product,
+                url=branch_url, title=branch_title,
+                summary=branch_description, author=author)
+        except BranchCreationForbidden:
+            return faults.BranchCreationForbidden(product.displayname)
 
         return canonical_url(branch)
 

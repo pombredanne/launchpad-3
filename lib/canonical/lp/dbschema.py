@@ -30,7 +30,7 @@ __all__ = (
 'BranchReviewStatus',
 'BranchSubscriptionDiffSize',
 'BranchSubscriptionNotificationLevel',
-'BranchVisibilityPolicy',
+'BranchVisibilityRule',
 'BugBranchStatus',
 'BugNominationStatus',
 'BugTaskStatus',
@@ -2650,8 +2650,8 @@ class BranchSubscriptionNotificationLevel(DBSchema):
         """)
 
 
-class BranchVisibilityPolicy(DBSchema):
-    """Branch Visibility Policy"""
+class BranchVisibilityRule(DBSchema):
+    """Branch Visibility Rules for defining branch visibility policy."""
 
     PUBLIC = Item(1, """
         Public
@@ -3478,20 +3478,20 @@ class PersonalStanding(DBSchema):
         Nothing about this person's standing is known.
         """)
 
-    POOR = Item(1, """
+    POOR = Item(100, """
         Poor standing
 
         This person has poor standing.
         """)
 
-    GOOD = Item(2, """
+    GOOD = Item(200, """
         Good standing
 
         This person has good standing and may post to a mailing list without
         being subject to first-post moderation rules.
         """)
 
-    EXCELLENT = Item(3, """
+    EXCELLENT = Item(300, """
         Excellent standing
 
         This person has excellent standing and may post to a mailing list

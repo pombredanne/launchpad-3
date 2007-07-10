@@ -1246,7 +1246,7 @@ body.tab-translations #mainarea ul#applicationchooser li {
   background-image: url(appchoose_tab5_a.gif);
 }
 body.tab-translations #mainarea ul#applicationchooser li.tab-translations {
-  background-position: -300px 0px !important;
+  background-position: -200px 0px !important;
 }
 body.tab-translations #mainarea #portlets .portlet.active h2 a,
 body.tab-translations #mainarea div#portlets div.portlet.active a {

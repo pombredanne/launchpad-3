@@ -8,9 +8,10 @@ CREATE TABLE MailingList (
     -- Date the list was requested to be created
     date_registered timestamp without time zone DEFAULT timezone('UTC'::text,
                     ('now'::text)::timestamp(6) with time zone) NOT NULL,
-    -- The id of the Person who reviewed the creation request.
+    -- The id of the Person who reviewed the creation request, or NULL if not
+    -- yet reviewed.
     reviewer        integer REFERENCES Person,
-    -- The date the request was reviewed
+    -- The date the request was reviewed, or NULL if not yet reviewed.
     date_reviewed   timestamp without time zone DEFAULT timezone('UTC'::text,
                     ('now'::text)::timestamp(6) with time zone),
     -- The date the list was (last) activated.  If the list is not yet active,
@@ -42,6 +43,11 @@ ALTER TABLE ONLY MailingList
 ALTER TABLE ONLY MailingList
     ADD CONSTRAINT MailingList_reviewer_fk
     FOREIGN KEY (reviewer) REFERENCES person(id);
+
+CREATE INDEX mailinglist__team__status__idx ON MailingList(team, status);
+
+CREATE INDEX mailinglist__registrant__idx ON MailingList(registrant)
+    WHERE registrant IS NOT NULL;
 
 
 /* The person's standing indicates (for now, just) whether the person can
@@ -105,7 +111,7 @@ ALTER TABLE person ADD COLUMN
 
 
 CREATE TABLE MailingListSubscription (
-    id serial   NOT NULL,
+    id          serial NOT NULL,
     -- Person who is subscribed to the mailing list
     person      integer NOT NULL,
     -- Team whose mailing list this person is subscribed
@@ -135,16 +141,26 @@ ALTER TABLE ONLY MailingListSubscription
     ADD CONSTRAINT MailingListSubscription_email_address_fk
     FOREIGN KEY (email_address) REFERENCES EmailAddress(id);
 
+CREATE UNIQUE INDEX mailinglistsubscription__person__team__key
+    ON MailingList(person, team);
+
+CREATE INDEX mailinglistsubscription__team__idx ON MailingList(team);
+
+CREATE INDEX mailinglistsubscription__email_address__idx
+    ON MailingList(email_address) WHERE email_address IS NOT NULL;
+
+
 CREATE TABLE MailingListBan (
-    id serial   NOT NULL,
+    id          serial NOT NULL,
     -- The person who was banned
     person      integer NOT NULL,
-    -- The administrator who banned them
+    -- The administrator who imposed the ban
     banned_by   integer NOT NULL,
-    -- When the ban was instanted
+    -- When the ban was imposed
     date_banned timestamp without time zone DEFAULT
         timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone)
         NOT NULL,
+    -- The reason for the ban
     reason_text text
 );
 
@@ -159,21 +175,27 @@ ALTER TABLE ONLY MailingListBan
     ADD CONSTRAINT MailingListBan_banned_by_fk
     FOREIGN KEY (banned_by) REFERENCES person(id);
 
+CREATE INDEX mailinglistban__person__idx
+    ON MailingListBan(person);
+
+CREATE INDEX mailinglistban__banned_by__idx
+    ON MailingListBan(banned_by);
+
 
 CREATE TABLE MessagesAwaitingApproval (
-    id serial NOT NULL,
+    id              serial NOT NULL,
     /* The Message-ID header of the held message. */
-    message_id text NOT NULL,
+    message_id      text NOT NULL,
     /* The id of the Person who posted the message. */
-    posted_by integer NOT NULL,
-    /* The team/mailing list to which the message was posted. */
-    team integer NOT NULL,
+    posted_by       integer NOT NULL,
+    /* The team mailing list to which the message was posted. */
+    team            integer NOT NULL,
     /* Foreign key to libraryfilealias table pointing to where the posted
        message's text lives.
     */
-    posted_message integer NOT NULL,
+    posted_message  integer NOT NULL,
     /* The date the message was posted. */
-    posted_date timestamp without time zone DEFAULT
+    posted_date     timestamp without time zone DEFAULT
         timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone)
         NOT NULL,
     /* This DBschema enum defines the status of the posted message.  The
@@ -187,16 +209,16 @@ CREATE TABLE MessagesAwaitingApproval (
        PostedMessageStatus.REJECTED (2)
             -- The message has been rejected and will not be delivered.
     */
-    status integer DEFAULT 0 NOT NULL,
+    status          integer DEFAULT 0 NOT NULL,
     /* Id of the Person who disposed of this message, or NULL if no
        disposition has yet been made (i.e. this message is in the
        PostedMessageStatus.NEW state.
     */
-    disposed_by integer,
+    disposed_by     integer,
     /* The date on which this message was disposed, or NULL if no disposition
        has yet been made.
     */
-    disposal_date timestamp without time zone DEFAULT
+    disposal_date   timestamp without time zone DEFAULT
         timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone)
 );
 
@@ -219,7 +241,24 @@ ALTER TABLE ONLY MessagesAwaitingApproval
     ADD CONSTRAINT MessagesAwaitingApproval_posted_message_fk
     FOREIGN KEY (posted_message) REFERENCES libraryfilealias(id);
 
-CREATE INDEX MessagesAwaitingApproval_message_id_idx
+ALTER TABLE MessagesAwaitingApproval ADD CONSTRAINT
+    messagesawaitingapproval__message_id__key UNIQUE (message_id);
+
+
+CREATE INDEX MessagesAwaitingApproval_message_id__idx
     ON MessagesAwaitingApproval USING btree (message_id);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
+CREATE INDEX messagesawaitingapproval__posted_by__idx
+    ON MessagesAwaitingApproval(posted_by);
+
+CREATE INDEX messagesawaitingapproval__team__status__posted_date__idx
+    ON MessagesAwaitingApproval(team, status, posted_date);
+
+CREATE INDEX messageawaitingapproval__posted_message__idx
+    ON MessagesAwaitingApproval(posted_message);
+
+CREATE INDEX messagesawaitingapproval__disposed_by__idx
+    ON MessagesAwaitingApproval(disposed_by) WHERE disposed_by IS NOT NULL;
+
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 24, 0);
