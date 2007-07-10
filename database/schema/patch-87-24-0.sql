@@ -246,7 +246,7 @@ ALTER TABLE MessagesAwaitingApproval ADD CONSTRAINT
     messagesawaitingapproval__message_id__key UNIQUE (message_id);
 
 
-CREATE INDEX MessagesAwaitingApproval_message_id__idx
+CREATE INDEX MessagesAwaitingApproval_message_id_idx
     ON MessagesAwaitingApproval USING btree (message_id);
 
 CREATE INDEX messagesawaitingapproval__posted_by__idx
