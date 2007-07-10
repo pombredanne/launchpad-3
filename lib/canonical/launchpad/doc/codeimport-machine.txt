@@ -41,6 +41,10 @@ object that provides ICodeImportMachineSet allows access to machines by
 hostname and to all machines.
 
     >>> login('david.allouche@canonical.com')
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> ddaa = getUtility(ILaunchBag).user
+    >>> ddaa.inTeam(getUtility(ILaunchpadCelebrities).vcs_imports)
+    True
 
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> from zope.interface.verify import verifyObject
@@ -50,6 +54,12 @@ hostname and to all machines.
     >>> machine = machine_set.getByHostname('frobisher.example.com')
     >>> machine in machine_set.getAll()
     True
+
+getByHostname returns None if there is no machine by that name in the
+database.
+
+    >>> print machine_set.getByHostname('unlikely.example.com')
+    None
 
 Machine objects themselves provide ICodeImportMachine, which includes
 hostname and online status information.
@@ -83,6 +93,9 @@ SQLObject here.  But the test framework doesn't appear to support this
 
 If we check again from the web apps point of view, we see that the
 status is indeed updated.
+
+XXX: MichaelHudson 2007-07-10, nothing short of tearing down the
+connection and reconnecting seems to see the change made above.
 
     >>> from canonical.testing.layers import LaunchpadFunctionalLayer
     >>> LaunchpadFunctionalLayer.testSetUp() # Reset the database connection.

@@ -668,7 +668,7 @@ class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
     """Control who can see the CodeImport listing page.
 
     Currently, we restrict the visibility of the new code import
-    system to memebers of ~vcs-imports and Launchpad admins.
+    system to members of ~vcs-imports and Launchpad admins.
     """
 
     permission = 'launchpad.View'
@@ -679,7 +679,7 @@ class SeeCodeImports(OnlyVcsImportsAndAdmins):
     """Control who can see the object view of a CodeImport.
 
     Currently, we restrict the visibility of the new code import
-    system to memebers of ~vcs-imports and Launchpad admins.
+    system to members of ~vcs-imports and Launchpad admins.
     """
     permission = 'launchpad.View'
     usedfor = ICodeImport
@@ -689,7 +689,7 @@ class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):
     """Control who can see the CodeImportMachine listing page.
 
     Currently, we restrict the visibility of the new code import
-    system to memebers of ~vcs-imports and Launchpad admins.
+    system to members of ~vcs-imports and Launchpad admins.
     """
 
     permission = 'launchpad.View'
@@ -700,7 +700,7 @@ class SeeCodeImportMachines(OnlyVcsImportsAndAdmins):
     """Control who can see the object view of a CodeImportMachine.
 
     Currently, we restrict the visibility of the new code import
-    system to memebers of ~vcs-imports and Launchpad admins.
+    system to members of ~vcs-imports and Launchpad admins.
     """
     permission = 'launchpad.View'
     usedfor = ICodeImportMachine
