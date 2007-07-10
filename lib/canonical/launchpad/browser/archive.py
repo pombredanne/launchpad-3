@@ -22,11 +22,11 @@ from zope.component import getUtility
 from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.interfaces import (
-    IArchive, IArchiveSet, IHasBuildRecords)
+    IArchive, IArchiveSet, IBuildSet, IHasBuildRecords)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Navigation, Link, LaunchpadView,
     LaunchpadEditFormView, ApplicationMenu, enabled_with_permission,
-    action, custom_widget, canonical_url)
+    action, custom_widget, canonical_url, stepthrough)
 
 
 class ArchiveNavigation(Navigation):
@@ -35,6 +35,17 @@ class ArchiveNavigation(Navigation):
 
     def breadcrumb(self):
         return self.context.title
+
+    @stepthrough('+build')
+    def traverse_build(self, name):
+        try:
+            build_id = int(name)
+        except ValueError:
+            return None
+        try:
+            return getUtility(IBuildSet).getByBuildID(build_id)
+        except NotFoundError:
+            return None
 
 
 class ArchiveFacets(StandardLaunchpadFacets):
@@ -73,7 +84,7 @@ class ArchiveView(LaunchpadView):
     __used_for__ = IArchive
 
     def number_of_sources(self):
-        """ """
+        """Return the number of sources published in the context archive."""
         return self.context.getPublishedSources().count()
 
 

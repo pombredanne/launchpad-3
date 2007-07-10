@@ -20,9 +20,7 @@
 
     <browser:url
         for="canonical.launchpad.interfaces.IBuild"
-        path_expression="string:+build/${id}"
-        attribute_to_parent="distributionsourcepackagerelease"
-        />
+	urldata="canonical.launchpad.browser.build.BuildUrl" />
 
     <browser:menus
         module="canonical.launchpad.browser.build"

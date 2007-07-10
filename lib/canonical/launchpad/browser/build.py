@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BuildUrl',
     'BuildNavigation',
     'BuildFacets',
     'BuildOverviewMenu',
@@ -13,16 +14,46 @@ __all__ = [
     ]
 
 from zope.component import getUtility
-
-from canonical.lp.dbschema import BuildStatus
+from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
     IHasBuildRecords, IBuild, IBuildQueueSet, UnexpectedFormData)
-
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, GetitemNavigation, ApplicationMenu,
-    LaunchpadView, enabled_with_permission)
+    LaunchpadView, enabled_with_permission, canonical_url)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
+from canonical.lp.dbschema import BuildStatus
+
+
+class BuildUrl:
+    """Dynamic URL declaration for IBuild.
+
+    When dealing with distribution builds ('trusted') we want to present them
+    under IDistributionSourcePackageRelease url:
+
+       /ubuntu/+source/foo/1.0/+build/1234
+
+    On the other hand, PPA builds ('untrusted') will be presented under the PPA
+    page:
+
+       /~cprov/+archive/+build/1235
+    """
+    implements(ICanonicalUrlData)
+    rootsite = None
+
+    def __init__(self, context):
+        self.context = context
+
+    @property
+    def inside(self):
+        if self.context.is_trusted:
+            return self.context.distributionsourcepackagerelease
+        return self.context.archive
+
+    @property
+    def path(self):
+        return u"+build/%d" % self.context.id
 
 
 class BuildNavigation(GetitemNavigation):
