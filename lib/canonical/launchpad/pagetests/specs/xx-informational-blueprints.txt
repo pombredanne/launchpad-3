@@ -1,6 +1,9 @@
 = Informational Blueprints =
 
-Informational blueprints are blueprints for which no implementation is necessary, other than writing the blueprint itself. We track such blueprints by setting their ''implementation_status'' to ''informational'' and using only their ''definition_status'' to follow change.
+Informational blueprints are blueprints for which no implementation is
+necessary, other than writing the blueprint itself. We track such blueprints
+by setting their ''implementation_status'' to ''informational'' and using
+only their ''definition_status'' to follow change.
 
 
 == Tracking informational blueprints ==
