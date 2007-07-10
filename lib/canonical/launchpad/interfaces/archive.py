@@ -75,6 +75,9 @@ class IArchiveSet(Interface):
     def getAllPPAs():
         """Return all existent personal archives."""
 
+    def searchPPAs(text=None):
+        """Return all existent personal archives matching the given text."""
+
     def getPendingAcceptancePPAs():
         """Return only pending acceptance personal archives."""
 

@@ -8,16 +8,51 @@
       <h1>Personal Package Archives of Ubuntu</h1>
     </metal:heading>
 
-  <div metal:fill-slot="main">
+  <div metal:fill-slot="main" tal:condition="not: view/searchPPAs">
 
-    <ul class="person">
-      <li tal:repeat="ppa view/getAllPPAs">
-        <a tal:content="ppa/owner/browsername"
-           tal:attributes="href ppa/owner/fmt:url">Foo Bar</a>:
-        <span tal:replace="ppa/description" />
-	<a tal:attributes="href ppa/archive_url">See the archive</a>
-      </li>
-    </ul>
+      <form name="ppa_search" action="" method="GET">
+         <label for="name"> PPA containing:</label>
+         <input id="name" title="Filter" size="20"
+                type="text" name="name_filter"
+                tal:attributes="value view/name_filter"/>
+         <input type="submit" value="Update" />
+      </form>
+
+      <tal:batch define="batch view/search_results">
+      <tal:navigation_top
+           replace="structure view/batchnav/@@+navigation-links-upper" />
+
+      <table class="listing sortable" id="ppa_list" tal:condition="batch">
+        <thead>
+          <tr>
+            <th>Owner</th>
+            <th>Description</th>
+            <th>Page</th>
+            <th>Archive</th>
+          </tr>
+        </thead>
+        <tbody>
+	<tr tal:repeat="ppa batch">
+           <td><a tal:content="ppa/owner/browsername"
+                  tal:attributes="href ppa/owner/fmt:url"
+               >FooBar</a></td>
+           <td tal:content="ppa/description/fmt:shorten/50" />
+           <td><a tal:attributes="href ppa/fmt:url"
+                >View the PPA</a></td>
+	   <td><a tal:attributes="href ppa/archive_url"
+                >Browse the archive</a></td>
+        </tr>
+        </tbody>
+      </table>
+
+      <tal:navigation_bottom
+           replace="structure view/batchnav/@@+navigation-links-lower" />
+
+      <div id="empty-result" tal:condition="not: batch">
+         No PPA contaning '<span tal:replace="view/package_name|nothing" />'.
+      </div>
+
+      </tal:batch>
 
   </div>
 </body>

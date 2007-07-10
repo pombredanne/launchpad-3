@@ -438,9 +438,16 @@ class DistributionView(BuildRecordsView):
         return sorted(serieses, key=operator.attrgetter('version'),
                       reverse=True)
 
-    def getAllPPAs(self):
-        """Return alls Personal Package Archive available."""
-        return getUtility(IArchiveSet).getAllPPAs()
+    def searchPPAs(self):
+        """Setup a batched IArchive list.
+
+        Return None, so use tal:condition="not: view/searchPPAs" to
+        invoke it in template.
+        """
+        self.name_filter = self.request.get('name_filter', None)
+        ppas = getUtility(IArchiveSet).searchPPAs(text=self.name_filter)
+        self.batchnav = BatchNavigator(ppas, self.request)
+        self.search_results = self.batchnav.currentBatch()
 
 
 class DistributionAllPackagesView(LaunchpadView):

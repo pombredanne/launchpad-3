@@ -15,7 +15,7 @@ from zope.interface import implements
 
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like, quote
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.interfaces import (
@@ -135,6 +135,21 @@ class ArchiveSet:
     def getAllPPAs(self):
         """See canonical.launchpad.interfaces.IArchiveSet."""
         return Archive.select("owner is not NULL")
+
+    def searchPPAs(self, text=None):
+        """See canonical.launchpad.interfaces.IArchiveSet."""
+        clauseTables = []
+        orderBy = []
+        clauses = ['Archive.owner is not NULL']
+
+        if text:
+            clauses.append('Person.id = Archive.owner')
+            clauses.append('Person.fti @@ ftq(%s)' % quote(text))
+            clauseTables.append('Person')
+            orderBy.append('Person.name')
+
+        query = ' AND '.join(clauses)
+        return Archive.select(query, orderBy=orderBy, clauseTables=clauseTables)
 
     def getPendingAcceptancePPAs(self):
         """See canonical.launchpad.interfaces.IArchiveSet."""
