@@ -106,13 +106,13 @@ class Sprint(SQLBase):
                    Specification.product NOT IN
                     (SELECT Product.id FROM Product
                      WHERE Product.active IS FALSE))
-                  """ % quote(self.id)
+                  """ % quote(self)
         query = base
 
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
             query += (' AND Specification.implementation_status = %s' %
-              quote(SpecificationImplementationStatus.INFORMATIONAL.value))
+              quote(SpecificationImplementationStatus.INFORMATIONAL))
         
         # import here to avoid circular deps
         from canonical.launchpad.database.specification import Specification
@@ -130,13 +130,13 @@ class Sprint(SQLBase):
         # status (proposed, accepted or declined)
         if SpecificationFilter.ACCEPTED in filter:
             query += ' AND SprintSpecification.status = %s' % (
-                quote(SprintSpecificationStatus.ACCEPTED.value))
+                quote(SprintSpecificationStatus.ACCEPTED))
         elif SpecificationFilter.PROPOSED in filter:
             query += ' AND SprintSpecification.status = %s' % (
-                quote(SprintSpecificationStatus.PROPOSED.value))
+                quote(SprintSpecificationStatus.PROPOSED))
         elif SpecificationFilter.DECLINED in filter:
             query += ' AND SprintSpecification.status = %s' % (
-                quote(SprintSpecificationStatus.DECLINED.value))
+                quote(SprintSpecificationStatus.DECLINED))
         
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
