@@ -11,7 +11,7 @@ ALTER TABLE DistroSeries ALTER COLUMN id
 
 ALTER TABLE distrorelease_pkey RENAME TO distroseries_pkey;
 ALTER TABLE distrorelease_distribution_key
-    RENAME TO distroseries__distribution__key;
+    RENAME TO distroseries__distribution__name__key;
 
 ALTER TABLE distrorelease_distro_release_unique
     RENAME TO distroseries__distribution__id__key;
@@ -35,8 +35,15 @@ ALTER TABLE DistroSeries ADD CONSTRAINT distroseries__owner__fk
 ALTER  TABLE DistroSeries DROP CONSTRAINT distrorelease_owner_fk;
 CREATE INDEX distroseries__owner__idx ON DistroSeries(owner);
 
-ALTER TABLE DistroSeries ADD CONSTRAINT distroseries__parentseries__fk
-    FOREIGN KEY (parentrelease) REFERENCES DistroSeries;
+ALTER TABLE DistroSeries RENAME COLUMN parentrelease TO parent_series;
+ALTER TABLE DistroSeries ADD CONSTRAINT distroseries__parent_series__fk
+    FOREIGN KEY (parent_series) REFERENCES DistroSeries;
+
+\d distroseries
+        
+ALTER TABLE DistroReleaseLanguage RENAME TO DistroSeriesLanguage;
+ALTER TABLE DistroSeriesLanguage RENAME COLUMN distrorelease TO distroseries;
+
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 21, 0);
 
