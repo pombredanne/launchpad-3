@@ -56,7 +56,7 @@ class Archive(SQLBase):
     def title(self):
         """See IArchive."""
         if self.owner is not None:
-            return '%s PPA' % self.owner.displayname
+            return 'PPA for %s' % self.owner.displayname
         # XXX cprov 20070606: We really need to have a FK to the distri
         return '%s main archive' % self.distribution.title
 
