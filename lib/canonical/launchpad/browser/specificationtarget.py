@@ -7,6 +7,8 @@ __all__ = [
     'HasSpecificationsView',
     ]
 
+from operator import itemgetter
+
 from canonical.lp.dbschema import (
     SpecificationFilter,
     SpecificationSort,
@@ -283,7 +285,7 @@ class HasSpecificationsView(LaunchpadView):
                 categories[spec.definition_status] = category
             category['specs'].append(spec)
         categories = categories.values()
-        return sorted(categories, key=lambda a: a['definition_status'].value)
+        return sorted(categories, key=itemgetter('definition_status'))
 
     def getLatestSpecifications(self, quantity=5):
         """Return <quantity> latest specs created for this target. This
