@@ -3,10 +3,6 @@
 Anonymous users should not be able to nominate bugs for release because
 launchpad.Edit permission is required to do so.:
 
-    >>> from zope.testbrowser.testing import Browser
-
-    >>> anon_browser = Browser()
-    >>> anon_browser.handleErrors = False
     >>> anon_browser.open(
     ...     'http://bugs.launchpad.dev/jokosher/+bug/12')
 
