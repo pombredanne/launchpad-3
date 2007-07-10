@@ -140,7 +140,7 @@ class CodeImportSyncTestCase(LaunchpadZopelessTestCase):
 
 
 class TestGetImportSeries(CodeImportSyncTestCase):
-    """Unit tests for CodeImportSync.getImportSeries."""
+    """Unit tests for `CodeImportSync.getImportSeries`."""
 
     def assertGetImportSeriesYields(self, expected_series):
         """Fail if getImportSeries does not yield a single item equal to
@@ -225,7 +225,7 @@ class TestGetImportSeries(CodeImportSyncTestCase):
 
 
 class TestReviewStatusFromImportStatus(unittest.TestCase):
-    """Unit tests for reviewStatusFromImportStatus."""
+    """Unit tests for `CodeImportSync.reviewStatusFromImportStatus`."""
 
     def setUp(self):
         # reviewStatusFromImportStatus does not need database access.
@@ -280,6 +280,7 @@ class StubProductSeries:
 
 
 class TestDateLastSuccessfulFromProductSeries(unittest.TestCase):
+    """Unit tests for `CodeImportSync.dateLastSuccessfulFromProductSeries`."""
 
     def setUp(self):
         # dateLastSuccessfulFromProductSeries does not need database access.
@@ -345,7 +346,7 @@ class TestDateLastSuccessfulFromProductSeries(unittest.TestCase):
 
 
 class TestCreateCodeImport(CodeImportSyncTestCase):
-    """Unit tests for CodeImportSync.createCodeImport."""
+    """Unit tests for `CodeImportSync.createCodeImport`."""
 
     def testSubversion(self):
         # Test correct creation of a CodeImport with Subversion details.
@@ -377,7 +378,7 @@ class TestCreateCodeImport(CodeImportSyncTestCase):
 
 
 class TestUpdateCodeImport(CodeImportSyncTestCase):
-    """Unit tests for CodeImportSync.updateCodeImport."""
+    """Unit tests for `CodeImportSync.updateCodeImport`."""
 
     def testSubversionToCvs(self):
         # Test updating a code import from Subversion to CVS.
@@ -398,7 +399,7 @@ class TestUpdateCodeImport(CodeImportSyncTestCase):
 
 
 class TestCodeImportSync(CodeImportSyncTestCase):
-    """Feature tests for CodeImportSync."""
+    """Feature tests for `CodeImportSync`."""
 
     def run_code_import_sync(self):
         """Run the code-import-sync, and flush database updates as needed."""

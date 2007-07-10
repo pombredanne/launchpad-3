@@ -107,8 +107,8 @@ class CodeImportSync:
                     "Unknown importstatus: %s", series.importstatus.name)
 
     def reviewStatusFromImportStatus(self, import_status):
-        """Return the CodeImportReviewStatus value corresponding to the given
-        ImportStatus value.
+        """Return the `CodeImportReviewStatus` value corresponding to the given
+        `ImportStatus` value.
         """
         if import_status in (ImportStatus.TESTING, ImportStatus.AUTOTESTED):
             review_status = CodeImportReviewStatus.NEW
