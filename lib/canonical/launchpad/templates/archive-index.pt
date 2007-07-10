@@ -14,7 +14,7 @@
       <div tal:replace="structure context/owner/@@+portlet-details" />
     </metal:leftportlets>
 
-    <div metal:fill-slot="main">
+    <div metal:fill-slot="main" tal:condition="not: view/searchPackages">
 
       <p>PPA description:</p>
 
@@ -28,15 +28,49 @@
          /> sources.
       </p>
 
+
       <h2>Packages</h2>
 
-         <ul>
-            <li tal:repeat="pub context/getPublishedSources">
-               <span tal:replace="pub/sourcepackagerelease/name" />
-            </li>
-         </ul>
+      <form name="package_search" action="" method="GET">
+         <label for="name"> Package with names containing:</label>
+         <input id="name" title="Package Name" size="20"
+                type="text" name="name_filter"
+                tal:attributes="value view/name_filter"/>
+         <input type="submit" value="Update" />
+      </form>
+
+      <tal:batch define="batch view/search_results">
+      <tal:navigation_top
+           replace="structure view/batchnav/@@+navigation-links-upper" />
+
+      <table class="listing" tal:condition="batch">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>When</th>
+            <th>Status</th>
+            <th>Target</th>
+            <th>Pocket</th>
+            <th>Component</th>
+            <th>Section</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tal:block repeat="publishing batch"
+                     replace="structure publishing/@@+listing-ppa-detailed">
+          </tal:block>
+        </tbody>
+      </table>
+
+      <tal:navigation_bottom
+           replace="structure view/batchnav/@@+navigation-links-lower" />
+
+      <div id="empty-result" tal:condition="not: batch">
+         No packages for '<span tal:replace="view/package_name|nothing" />'.
+      </div>
+
+      </tal:batch>
 
     </div>
-
   </body>
 </html>

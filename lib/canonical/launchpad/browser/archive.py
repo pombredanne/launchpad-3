@@ -27,6 +27,7 @@ from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Navigation, Link, LaunchpadView,
     LaunchpadEditFormView, ApplicationMenu, enabled_with_permission,
     action, custom_widget, canonical_url, stepthrough)
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 
 class ArchiveNavigation(Navigation):
@@ -86,6 +87,18 @@ class ArchiveView(LaunchpadView):
     def number_of_sources(self):
         """Return the number of sources published in the context archive."""
         return self.context.getPublishedSources().count()
+
+    def searchPackages(self):
+        """Setup a batched ISPPH list.
+
+        Return None, so use tal:condition="not: view/searchPackage" to
+        invoke it in template.
+        """
+        self.name_filter = self.request.get('name_filter', None)
+        publishing = self.context.getPublishedSources(
+            name=self.name_filter)
+        self.batchnav = BatchNavigator(publishing, self.request)
+        self.search_results = self.batchnav.currentBatch()
 
 
 class ArchiveActivateView(AddView):
