@@ -384,6 +384,8 @@ distribution_builds = ContextTitle('%s builds')
 
 distribution_uploadadmin = ContextTitle('Change Upload Manager for %s')
 
+distribution_ppa_list = 'Personal Package Archive List'
+
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
@@ -781,8 +783,6 @@ potemplatename_edit = ContextTitle(smartquote('Edit "%s" in Launchpad'))
 potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
 
 potemplatenames_index = 'Template names in Launchpad'
-
-ppa_list = 'Personal Package Archive List'
 
 product_add = 'Register a project in Launchpad'
 

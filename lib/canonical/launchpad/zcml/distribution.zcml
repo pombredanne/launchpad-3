@@ -208,7 +208,7 @@
       />
     <browser:page
       name="+ppas"
-      template="../templates/ppa-list.pt"
+      template="../templates/distribution-ppa-list.pt"
       />
   </browser:pages>
 
