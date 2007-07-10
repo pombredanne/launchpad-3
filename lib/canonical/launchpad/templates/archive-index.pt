@@ -80,7 +80,7 @@
            replace="structure view/batchnav/@@+navigation-links-lower" />
 
       <div id="empty-result" tal:condition="not: batch">
-         No packages for '<span tal:replace="view/package_name|nothing" />'.
+         No packages for '<span tal:replace="view/name_filter|nothing" />'.
       </div>
 
       </tal:batch>
