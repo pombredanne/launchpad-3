@@ -661,14 +661,6 @@ well:
     ...
     ----------------------------------------------------------------------
 
-If we take a closer look at a notification, we can see that
-X-Launchpad-Bug headers were added:
-
-    >>> sorted(message.get_all('X-Launchpad-Bug'))
-    [u'distribution=debian; sourcepackage=mozilla-firefox; component=None;...',
-     u'distribution=ubuntu; sourcepackage=mozilla-firefox;...',
-     u'product=firefox; status=New; importance=Low;...']
-
 There's a blank line before the signature, and the signature marker has
 a trailing space.
 
@@ -725,6 +717,45 @@ notification will be sent to all members individually.
     >>> for notification in BugNotification.select():
     ...     notification.date_emailed = datetime.now(pytz.timezone('UTC'))
     >>> flush_database_updates()
+
+The X-Launchpad-Bug header
+--------------------------
+
+When a notification is sent out about a bug, the X-Launchpad-Bug header is
+filled with data about that bug:
+
+    >>> from canonical.launchpad.interfaces import IMilestoneSet
+    >>> bug_three = getUtility(IBugSet).get(3)
+    >>> subscription = bug_three.subscribe(sample_person)
+
+    >>> comment = getUtility(IMessageSet).fromText(
+    ...     'subject', 'a short comment.', sample_person,
+    ...     datecreated=ten_minutes_ago)
+    >>> bug_three.addCommentNotification(comment)
+    >>> notifications = getUtility(
+    ...     IBugNotificationSet).getNotificationsToSend()
+    >>> len(notifications)
+    1
+
+If we take a closer look at a notification, we can see that
+X-Launchpad-Bug headers were added:
+
+    >>> for bug_notifications, messages in get_email_notifications(
+    ...     notifications):
+    ...     for message in messages:
+    ...         sorted(message.get_all('X-Launchpad-Bug'))
+    [u'distribution=debian; distroseries=sarge;... milestone=3.1;...',
+     u'distribution=debian; distroseries=woody;...',
+     u'distribution=debian; sourcepackage=mozilla-firefox; component=...']
+
+The milestone field in X-Launchpad-Bug won't be filled where no milestone is 
+specified:
+
+    >>> for line in sorted(message.get_all('X-Launchpad-Bug')):
+    ...     'milestone' in line
+    True
+    False
+    False
 
 Bug Filed Notification
 ----------------------
