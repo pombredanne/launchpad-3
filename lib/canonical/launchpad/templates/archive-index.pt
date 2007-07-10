@@ -16,20 +16,34 @@
 
     <div metal:fill-slot="main" tal:condition="not: view/searchPackages">
 
-      <p>PPA description:</p>
+      <p>Description:</p>
 
       <div id="description">
          <tal:archive-description
             replace="structure context/description/fmt:text-to-html" />
       </div>
 
+      <p id="archive_url">
+        You can install packages by adding the following line to your
+        /etc/apt/source.list:</p>
+
+      <pre>
+       deb <span tal:replace="context/archive_url" />/ubuntu SUITE [COMPONENTS]
+       deb-src <span tal:replace="context/archive_url" />/ubuntu SUITE [COMPONENTS]
+
+      </pre>
+
+       <p>Replace <b>SUITE</b> by <i>feisty</i> or <i>gutsy</i>.</p>
+       <p>Replace <b>[COMPONENTS]</b> by a list of component names
+          separated by spaces, like: <i>main universe</i></p>
+
+
+      <h2>Packages</h2>
+
       <p id="source_counter">
          This PPA contains <span tal:content="view/number_of_sources"
          /> sources.
       </p>
-
-
-      <h2>Packages</h2>
 
       <form name="package_search" action="" method="GET">
          <label for="name"> Package with names containing:</label>
@@ -43,7 +57,7 @@
       <tal:navigation_top
            replace="structure view/batchnav/@@+navigation-links-upper" />
 
-      <table class="listing" tal:condition="batch">
+      <table class="listing sortable" id="packages_list" tal:condition="batch">
         <thead>
           <tr>
             <th>Source</th>
