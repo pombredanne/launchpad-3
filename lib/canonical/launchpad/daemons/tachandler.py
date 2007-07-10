@@ -83,13 +83,12 @@ class TacTestSetup:
         for i in range(50):
             try:
                 os.kill(pid, SIGTERM)
-                os.waitpid(pid, 0)
+                time.sleep(0.1)
             except OSError:
                 break
         else:
             try:
                 os.kill(pid, SIGKILL)
-                os.waitpid(pid, 0)
             except OSError:
                 # Already terminated
                 pass
