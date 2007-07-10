@@ -30,7 +30,7 @@ from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
     NotFoundError, IDistributionSet, IArchiveSet, QueueInconsistentStateError)
 from canonical.launchpad.scripts.processaccepted import closeBugsForQueueItem
-from canonical.lp.dbschema import (PackagePublishingPocket, ArchivePurpose)
+from canonical.lp.dbschema import PackagePublishingPocket, ArchivePurpose
 
 
 class FatalUploadError(Exception):
@@ -941,7 +941,7 @@ class NascentUpload:
         """
 
         # Get a set of the components used in this upload:
-        components = set([file.component_name for file in self.changes.files])
+        components = set(file.component_name for file in self.changes.files)
 
         if 'commercial' in components:
             # Reject commercial uploads to PPAs.
@@ -961,6 +961,6 @@ class NascentUpload:
 
             # Check for data problems:
             if not self.policy.archive:
-                self.reject("Commercial archive for distro '%s' not found" % (
-                    self.policy.distroseries.distribution.name))
+                self.reject("Commercial archive for distro '%s' not found" % 
+                    self.policy.distroseries.distribution.name)
 

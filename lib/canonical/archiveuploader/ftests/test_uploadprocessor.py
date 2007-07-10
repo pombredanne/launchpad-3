@@ -333,13 +333,13 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Check it went ok to the NEW queue and all is going well so far.
         self._checkCommercialUploadEmail()
 
-        # Find the sourcepackagerelease and check its component:
+        # Find the sourcepackagerelease and check its component.
         foocomm_name = SourcePackageName.selectOneBy(name="foocomm")
         foocomm_spr = SourcePackageRelease.selectOneBy(
            sourcepackagename=foocomm_name)
         self.assertEqual(foocomm_spr.component.name, 'commercial')
 
-        # Check that the right archive was picked:
+        # Check that the right archive was picked.
         self.assertEqual(foocomm_spr.upload_archive.description, 
             'Commercial archive')
 
@@ -349,7 +349,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertTrue(commercial_archive)
         self._publishPackage("foocomm", "1.0-1", archive=commercial_archive)
 
-        # Check the publishing record's archive and component:
+        # Check the publishing record's archive and component.
         foocomm_spph = SourcePackagePublishingHistory.selectOneBy(
             sourcepackagerelease=foocomm_spr)
         self.assertEqual(foocomm_spph.archive.description, 
@@ -357,24 +357,24 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(foocomm_spph.component.name, 
             'commercial')
 
-        # Now upload a binary package of 'foocomm'
+        # Now upload a binary package of 'foocomm'.
         upload_dir = self.queueUpload("foocomm_1.0-1_binary")
         self.processUpload(uploadprocessor, upload_dir)
 
         # Check it went ok to the NEW queue and all is going well so far.
         self._checkCommercialUploadEmail()
 
-        # Find the binarypackagerelease and check its component:
+        # Find the binarypackagerelease and check its component.
         foocomm_binname = BinaryPackageName.selectOneBy(name="foocomm")
         foocomm_bpr = BinaryPackageRelease.selectOneBy(
             binarypackagename=foocomm_binname)
         self.assertEqual(foocomm_bpr.component.name, 'commercial')
 
-        # Publish the upload so we can check the publishing record:
+        # Publish the upload so we can check the publishing record.
         self._publishPackage("foocomm", "1.0-1", source=False,
             archive=commercial_archive)
 
-        # Check the publishing record's archive and component:
+        # Check the publishing record's archive and component.
         foocomm_bpph = BinaryPackagePublishingHistory.selectOneBy(
             binarypackagerelease=foocomm_bpr)
         self.assertEqual(foocomm_bpph.archive.description, 
