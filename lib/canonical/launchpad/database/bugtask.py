@@ -730,12 +730,6 @@ class BugTask(SQLBase, BugTaskMixin):
         else:
             assignee_value = 'None'
 
-        # Calculate an appropriate display value for the milestone
-        if self.milestone:
-            milestone_value = self.milestone.name
-        else:
-            milestone_value = 'None'
-
         # Calculate an appropriate display value for the sourcepackage.
         if self.sourcepackagename:
             sourcepackagename_value = self.sourcepackagename.name
@@ -783,13 +777,17 @@ class BugTask(SQLBase, BugTaskMixin):
         else:
             raise AssertionError('Unknown BugTask context: %r' % self)
 
+        # We only want to have a milestone field in the header if there's
+        # a milestone set for the bug
+        if self.milestone:
+            header_value += ' milestone=%s;' % self.milestone.name
+
         header_value += ((
             ' status=%(status)s; importance=%(importance)s; '
-            'assignee=%(assignee)s; milestone=%(milestone)s;') %
+            'assignee=%(assignee)s;') %
             {'status': self.status.title,
              'importance': self.importance.title,
-             'assignee': assignee_value,
-             'milestone': milestone_value})
+             'assignee': assignee_value})
 
         return header_value
 
