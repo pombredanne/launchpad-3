@@ -32,6 +32,7 @@ import tempfile
 re_single_line_field = re.compile(r"^(\S*)\s*:\s*(.*)")
 re_multi_line_field = re.compile(r"^\s(.*)")
 re_no_epoch = re.compile(r"^\d+\:")
+re_extract_src_version = re.compile(r"(\S+)\s*\((.*)\)")
 
 changes_parse_error_exc = "Can't parse line in .changes file"
 invalid_dsc_format_exc = "Invalid .dsc file"
