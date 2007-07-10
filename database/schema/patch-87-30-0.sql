@@ -4,4 +4,4 @@ SET client_min_messages=ERROR;
 ALTER TABLE Entitlement
     ADD COLUMN is_dirty BOOLEAN NOT NULL DEFAULT TRUE;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES(87, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES(87, 30, 0);
