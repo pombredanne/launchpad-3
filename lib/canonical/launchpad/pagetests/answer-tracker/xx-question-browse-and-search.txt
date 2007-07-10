@@ -195,11 +195,12 @@ Unfortunately, the search doesn't return any similar questions:
 
     >>> print browser.title
     Questions matching "firefox is slow" for Ubuntu
-    >>> search_summary = find_main_content(
-    ...     browser.contents).find(text=re.compile('There are no.*'))
+    >>> search_summary = find_main_content(browser.contents)
     >>> print search_summary
-    There are no questions matching "firefox is slow" for Ubuntu with
-    the requested statuses.
+    <...
+    <p>There are no questions matching "firefox is slow" for Ubuntu with
+    the requested statuses.</p>
+    ...
 
 Joe observes under the search widget that there are checkboxes to select
 the question status to search. He notices that only some statuses are
@@ -339,10 +340,11 @@ he enters 'Evolution' as a keyword and hits the search button.
     >>> browser.getControl(name='field.search_text').value = 'Evolution'
     >>> browser.getControl('Search').click()
 
-    >>> search_summary = find_main_content(
-    ...     browser.contents).find(text=re.compile('There are no.*'))
+    >>> search_summary = find_main_content(browser.contents)
     >>> print search_summary
-    There are no answered questions matching "Evolution" for Ubuntu.
+    <...
+    <p>There are no answered questions matching "Evolution" for Ubuntu.</p>
+    ...
 
 
 === My questions ===
@@ -445,11 +447,11 @@ Like all other report, this one is searchable:
     >>> sample_person_browser.getControl('Search').click()
     >>> print sample_person_browser.title
     Questions matching "evolution" needing your attention for Ubuntu
-    >>> search_summary = find_main_content(
-    ...     sample_person_browser.contents).find(
-    ...         text=re.compile('No questions.*'))
+    >>> search_summary = find_main_content(sample_person_browser.contents)
     >>> print search_summary
-    No questions matching "evolution" need your attention for Ubuntu.
+    <...
+    <p>No questions matching "evolution" need your attention for Ubuntu.</p>
+    ...
 
 If there is no questions needing the user's attention, a message
 informing him of this fact is displayed.
