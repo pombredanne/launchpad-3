@@ -30,7 +30,7 @@ class SourcePackageReleaseView(LaunchpadView):
         for match_text, version, distroseries in matches:
             # Rather ugly to construct this URL, but it avoids the need to
             # look up database objects for each matching line of text here.
-            url = '../../../%s/+source/%s/%s"' % (
+            url = '../../../%s/+source/%s/%s' % (
                 distroseries, sourcepkgnametxt, version)
             changelog = changelog.replace(match_text,
                 '(<a href="%s">%s</a>) %s' % (url, version, distroseries))
