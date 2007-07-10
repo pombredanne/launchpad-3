@@ -59,15 +59,15 @@ CREATE INDEX mailinglist__registrant__idx ON MailingList(registrant)
 
    PersonalStanding.UNKNOWN (0)
         -- Nothing about this person's standing is known.
-   PersonalStanding.POOR (1)
+   PersonalStanding.POOR (100)
         -- This person has bad standing.  For now, the only way to get bad
            standing is for a Launchpad administrator to explicitly set it
            as such.
-   PersonalStanding.GOOD (2)
+   PersonalStanding.GOOD (200)
         -- The person has good standing, meaning they reasonably understand
            netiquette and may post to mailing lists without having their
            first posts be moderated.
-   PersonalStanding.EXCELLENT (3)
+   PersonalStanding.EXCELLENT (300)
         -- The person has excellent standing.  Currently the only way to set
            is is by explicitly tweaking the database.  Nothing currently
            requires excellent standing, although a person with EXCELLENT
