@@ -143,10 +143,13 @@ class ArchiveSet:
         clauses = ['Archive.owner is not NULL']
 
         if text:
-            clauses.append('Person.id = Archive.owner')
-            clauses.append('Person.fti @@ ftq(%s)' % quote(text))
+            clauses.append("""
+            Person.id = Archive.owner AND
+            ((Person.fti @@ ftq(%s) OR
+            Archive.description LIKE '%%' || %s || '%%'))
+            """ % (quote(text), quote_like(text)))
             clauseTables.append('Person')
-            orderBy.append('Person.name')
+            orderBy.append('-Person.name')
 
         query = ' AND '.join(clauses)
         return Archive.select(query, orderBy=orderBy, clauseTables=clauseTables)
