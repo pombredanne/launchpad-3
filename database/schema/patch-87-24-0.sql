@@ -44,6 +44,11 @@ ALTER TABLE ONLY MailingList
     ADD CONSTRAINT MailingList_reviewer_fk
     FOREIGN KEY (reviewer) REFERENCES person(id);
 
+CREATE INDEX mailinglist__team__status__idx ON MailingList(team, status);
+
+CREATE INDEX mailinglist__registrant__idx ON MailingList(registrant)
+    WHERE registrant IS NOT NULL;
+
 
 /* The person's standing indicates (for now, just) whether the person can
    post to a mailing list without requiring first post moderation.  This
@@ -136,6 +141,15 @@ ALTER TABLE ONLY MailingListSubscription
     ADD CONSTRAINT MailingListSubscription_email_address_fk
     FOREIGN KEY (email_address) REFERENCES EmailAddress(id);
 
+CREATE UNIQUE INDEX mailinglistsubscription__person__team__key
+    ON MailingList(person, team);
+
+CREATE INDEX mailinglistsubscription__team__idx ON MailingList(team);
+
+CREATE INDEX mailinglistsubscription__email_address__idx
+    ON MailingList(email_address) WHERE email_address IS NOT NULL;
+
+
 CREATE TABLE MailingListBan (
     id          serial NOT NULL,
     -- The person who was banned
@@ -160,6 +174,12 @@ ALTER TABLE ONLY MailingListBan
 ALTER TABLE ONLY MailingListBan
     ADD CONSTRAINT MailingListBan_banned_by_fk
     FOREIGN KEY (banned_by) REFERENCES person(id);
+
+CREATE INDEX mailinglistban__person__idx
+    ON MailingListBan(person);
+
+CREATE INDEX mailinglistban__banned_by__idx
+    ON MailingListBan(banned_by);
 
 
 CREATE TABLE MessagesAwaitingApproval (
@@ -221,7 +241,24 @@ ALTER TABLE ONLY MessagesAwaitingApproval
     ADD CONSTRAINT MessagesAwaitingApproval_posted_message_fk
     FOREIGN KEY (posted_message) REFERENCES libraryfilealias(id);
 
-CREATE INDEX MessagesAwaitingApproval_message_id_idx
+ALTER TABLE MessagesAwaitingApproval ADD CONSTRAINT
+    messagesawaitingapproval__message_id__key UNIQUE (message_id);
+
+
+CREATE INDEX MessagesAwaitingApproval_message_id__idx
     ON MessagesAwaitingApproval USING btree (message_id);
+
+CREATE INDEX messagesawaitingapproval__posted_by__idx
+    ON MessagesAwaitingApproval(posted_by);
+
+CREATE INDEX messagesawaitingapproval__team__status__posted_date__idx
+    ON MessagesAwaitingApproval(team, status, posted_date);
+
+CREATE INDEX messageawaitingapproval__posted_message__idx
+    ON MessagesAwaitingApproval(posted_message);
+
+CREATE INDEX messagesawaitingapproval__disposed_by__idx
+    ON MessagesAwaitingApproval(disposed_by) WHERE disposed_by IS NOT NULL;
+
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 24, 0);
