@@ -67,12 +67,15 @@ if [ ! -e ~/.ssh/config ]; then
     touch ~/.ssh/config
 fi
 
-echo "Please add the following directive to your ~/.ssh/config:
+grep -q "^GSSAPIAuthentication" ~/.ssh/config
+if [ $? -ne 0 ]; then
+  echo "Please add the following directive to your ~/.ssh/config:
 ------------------------------------------------------------
 GSSAPIAuthentication no
 ------------------------------------------------------------
 "
-read
+  read
+fi
 
 grep -q "^Host .*chinstrap" ~/.ssh/config
 if [ $? -ne 0 ]; then
