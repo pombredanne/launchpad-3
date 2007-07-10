@@ -151,8 +151,9 @@ class TestUploadProcessor(TestUploadProcessorBase):
         foo_bar = "Foo Bar <foo.bar@canonical.com>"
         self.assertEqual([e.strip() for e in to_addrs], [foo_bar])
         self.assertTrue(
-            "NEW" in raw_msg, "Expected email containing 'NEW', got:\n%s"
-            % raw_msg)
+            "rejected" not in raw_msg, 
+            "Expected acceptance email not rejection. Actually Got:\n%s"
+                % raw_msg)
 
     def _publishPackage(self, packagename, version, source=True, archive=None):
         """Publish a single package that is currently NEW in the queue."""
@@ -284,7 +285,8 @@ class TestUploadProcessor(TestUploadProcessorBase):
         """Uploads with commercial and non-commercial files are rejected.
         
         Test that a package that has commercial and non-commercial files in it
-        is rejected.  Commercial uploads should be entirely commercial."""
+        is rejected.  Commercial uploads should be entirely commercial.
+        """
         # Extra setup for breezy
         self.setupBreezy()
         self.layer.txn.commit()
@@ -308,12 +310,12 @@ class TestUploadProcessor(TestUploadProcessorBase):
                 "non-commercial.', got:\n%s" % raw_msg)
 
     def testCommercialUpload(self):
-        """Commercial packages should be uploaded to the separate commercial 
-        archive.
+        """Commercial packages should be uploaded to the commercial archive.
 
         Packages that have files in the 'commercial' component should be
         uploaded to a separate IArchive that has a purpose of
-        ArchivePurpose.COMMERCIAL"""
+        ArchivePurpose.COMMERCIAL.
+        """
 
         # Extra setup for breezy
         self.setupBreezy()

@@ -18,7 +18,8 @@ from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.launchpad.interfaces import (
     IArchiveSet, IDistributionSet, IPersonSet)
 from canonical.lp.dbschema import (
-    ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket, PackagePublishingStatus)
+    ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket, 
+    PackagePublishingStatus)
 
 
 class TestPublisher(TestNativePublishingBase):
@@ -274,9 +275,11 @@ class TestPublisher(TestNativePublishingBase):
         ubuntu = getUtility(IDistributionSet)['ubuntu']
 
         cprov = person_set.getByName('cprov')
-        cprov_archive = archive_set.ensure(cprov, ubuntu, ArchivePurpose.PPA)
+        cprov_archive = archive_set.ensure(cprov, ubuntu, 
+            ArchivePurpose.PPA)
         name16 = person_set.getByName('name16')
-        name16_archive = archive_set.ensure(name16, ubuntu, ArchivePurpose.PPA)
+        name16_archive = archive_set.ensure(name16, ubuntu, 
+            ArchivePurpose.PPA)
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
