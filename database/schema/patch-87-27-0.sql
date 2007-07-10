@@ -8,5 +8,5 @@ ALTER TABLE BinaryPackageRelease DROP COLUMN licence;
 ALTER TABLE SourcePackageRelease ADD COLUMN copyright TEXT;
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 27, 0);
 
