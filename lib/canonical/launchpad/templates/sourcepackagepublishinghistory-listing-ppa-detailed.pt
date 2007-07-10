@@ -1,36 +1,14 @@
   <tr>
      <td tal:content="context/sourcepackagerelease/title"
-        >foo - 1.0<
-        span class="sortkey"
-             tal:content="context/sourcepackagerelease/title" />
-      </td>
-     <td
-       tal:attributes="title context/datepublished/fmt:datetime"
-       tal:content="context/datepublished/fmt:approximatedate">
-       2005-09-16
-        span class="sortkey"
-             tal:content="title" />
-     </td>
+         >foo - 1.0</td>
+     <td tal:attributes="title context/datepublished/fmt:datetime"
+         tal:content="context/datepublished/fmt:approximatedate"
+         >2005-09-16</td>
      <td tal:content="context/status/title"
-         >PUBLISHED<
-         span class="sortkey"
-              tal:content="context/status/title" />
-     </td>
+         >PUBLISHED</td>
      <td tal:content="context/sourcepackagerelease/uploaddistroseries/name"
-         >dapper<
-         span class="sortkey"
-              tal:content="context/sourcepackagerelease/uploaddistroseries/name" />
-     </td>
-     <td tal:content="context/pocket/title">RELEASE<
-         span class="sortkey"
-              tal:content="context/pocket/title" />
-     </td>
-     <td tal:content="context/component/name">main<
-         span class="sortkey"
-              tal:content="context/component/title" />
-  </td>
-     <td tal:content="context/section/name">base<
-         span class="sortkey"
-              tal:content="context/section/name" />
-  </td>
+         >dapper</td>
+     <td tal:content="context/pocket/title">RELEASE</td>
+     <td tal:content="context/component/name">main</td>
+     <td tal:content="context/section/name">base</td>
   </tr>
