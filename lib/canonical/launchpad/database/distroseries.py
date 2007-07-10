@@ -319,7 +319,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     @property
     def bugtargetname(self):
         """See IBugTarget."""
-        return self.name
+        return self.fullseriesname
+        # XXX 20070710 mpt: This should be fixed to use the distribution's
+        # and series' names (not displaynames) for bugs 113258 and 113262.
 
     @property
     def bugtargetdisplayname(self):

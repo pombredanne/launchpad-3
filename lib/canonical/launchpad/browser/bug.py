@@ -135,7 +135,8 @@ class BugContextMenu(ContextMenu):
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
              'nominate', 'addbranch', 'linktocve', 'unlinkcve',
-             'offermentoring', 'retractmentoring', 'activitylog']
+             'offermentoring', 'retractmentoring', 'filebug',
+             'activitylog']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -441,7 +442,7 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
                         ' <a href="%(package_url)s/+edit-packaging">updating'
                         ' the packaging information for'
                         ' %(full_package_name)s</a>.',
-                        full_package_name=bugtask.bugtargetname,
+                        full_package_name=bugtask.bugtargetdisplayname,
                         package_url=canonical_url(sourcepackage))
             else:
                 try:

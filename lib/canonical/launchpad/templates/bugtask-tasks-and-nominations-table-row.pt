@@ -23,9 +23,9 @@
     </td>
     <td tal:condition="not:indent_task">
       <img
-        tal:condition="view/bugTaskIcon"
+        tal:condition="view/bugtask_icon"
         alt=""
-        tal:attributes="src view/bugTaskIcon"
+        tal:attributes="src view/bugtask_icon"
       />
       <a
         tal:attributes="href context/target/fmt:url"
@@ -45,7 +45,7 @@
     </tal:conjoined-task>
 
     <tal:not-conjoined-task condition="not:context/conjoined_master">
-    <td tal:attributes="class string:status ${context/status/name}">
+    <td tal:attributes="class string:status${context/status/name}">
       <a
         tal:condition="expandable"
         tal:attributes="
@@ -62,7 +62,7 @@
       <tal:status condition="not:expandable" replace="context/status/title" />
     </td>
 
-    <td tal:attributes="class string:importance ${context/importance/name}">
+    <td tal:attributes="class string:importance${context/importance/name}">
       <a
         tal:condition="expandable"
         tal:attributes="

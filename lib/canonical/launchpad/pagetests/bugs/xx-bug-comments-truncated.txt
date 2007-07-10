@@ -75,9 +75,9 @@ with an email address in it. Note: This set of tests is generally
 the same rules as xx-question-message.txt; changes here may require
 changes to that test.
 
-    >>> user_browser.open('http://bugs.launchpad.dev/ubuntu-product/+bug/2')
+    >>> user_browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
     >>> user_browser.title.decode('utf-8')
-    u'Bug #2 in ubuntu (upstream): ...Blackhole Trash folder...'
+    u'Bug #2 in Tomcat: ...Blackhole Trash folder...'
     >>> user_browser.getControl('Comment', index=-1).value = (
     ...     "Top quoting is bad netiquette.\n"
     ...     "The leading text will be displayed\n"
@@ -98,7 +98,7 @@ No Privileges Person is authenticated in user_browser, so he can see
 email addresses in messages.
 
     >>> user_browser.title.decode('utf-8')
-    u'Bug #2 in ubuntu (upstream): ...Blackhole Trash folder...'
+    u'Bug #2 in Tomcat: ...Blackhole Trash folder...'
     >>> text = find_tags_by_class(
     ...     user_browser.contents, 'boardCommentBody')[-1]
     >>> print extract_text(text.findAll('p')[-1])
@@ -111,9 +111,9 @@ Unauthenticated users, such as a bot will see the obfuscated email
 address, '<email address hidden>'. The anonymous user is
 unauthenticated, so he will see the obfuscated email address.
 
-    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu-product/+bug/2')
+    >>> anon_browser.open('http://bugs.launchpad.dev/tomcat/+bug/2')
     >>> anon_browser.title.decode('utf-8')
-    u'Bug #2 in ubuntu (upstream): ...Blackhole Trash folder...'
+    u'Bug #2 in Tomcat: ...Blackhole Trash folder...'
     >>> text = find_tags_by_class(
     ...     anon_browser.contents, 'boardCommentBody')[-1]
     >>> print extract_text(text.findAll('p')[-1])

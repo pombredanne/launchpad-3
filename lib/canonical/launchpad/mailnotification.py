@@ -290,7 +290,10 @@ class BugNotificationRecipients(NotificationRecipientSet):
 
     def addDistroBugContact(self, person, distro):
         """Registers a distribution bug contact for this bug."""
-        reason = "Bug Contact (%s)" % distro.bugtargetdisplayname
+        reason = "Bug Contact (%s)" % distro.displayname
+        # All displaynames in these reasons should be changed to bugtargetname
+        # (as part of bug 113262) once bugtargetname is finalized for packages
+        # (bug 113258). Changing it before then would be excessively disruptive.
         if person.isTeam():
             text = ("are a member of %s, which is the bug contact for %s" %
                 (person.displayname, distro.displayname))
@@ -302,9 +305,6 @@ class BugNotificationRecipients(NotificationRecipientSet):
     def addPackageBugContact(self, person, package):
         """Registers a package bug contact for this bug."""
         reason = "Bug Contact (%s)" % package.displayname
-        # displayname here should be changed to bugtargetname (as part of bug
-        # 113262) once bugtargetname is finalized for packages (bug 113258).
-        # Changing it before then would be excessively disruptive.
         if person.isTeam():
             text = ("are a member of %s, which is a bug contact for %s" %
                 (person.displayname, package.displayname))
@@ -315,7 +315,7 @@ class BugNotificationRecipients(NotificationRecipientSet):
 
     def addUpstreamBugContact(self, person, upstream):
         """Registers an upstream bug contact for this bug."""
-        reason = "Bug Contact (%s)" % upstream.bugtargetname
+        reason = "Bug Contact (%s)" % upstream.displayname
         if person.isTeam():
             text = ("are a member of %s, which is the bug contact for %s" %
                 (person.displayname, upstream.displayname))

@@ -30,11 +30,9 @@
                            bug_subscribers is_complete canTransitionToStatus
                            isMentor canMentor isSubscribed" />
         <require
-            permission="zope.Public"
-            attributes="bugtargetname bugtargetdisplayname" />
-        <require
             permission="launchpad.View"
-            attributes="product productseries sourcepackagename distribution
+            attributes="bugtargetname bugtargetdisplayname
+                        product productseries sourcepackagename distribution
                         distroseries milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
                         title related_tasks other_affected_pillars
@@ -473,7 +471,6 @@
     <!-- BugTaskDelta -->
     <content class="canonical.launchpad.database.bugtask.BugTaskDelta">
         <allow interface="canonical.launchpad.interfaces.IBugTaskDelta" />
-        <require permission="zope.Public" attributes="bugtargetname" />
     </content>
 
   </facet>

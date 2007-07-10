@@ -136,12 +136,9 @@ class BugTaskDelta:
         return self.bugtask.bugtargetname
 
     @property
-    def bugtargetname(self):
-        return self.bugtask.bugtargetname
-
-    @property
     def bugtargetdisplayname(self):
-        return self.bugtask.bugtargetdisplayname
+        """See canonical.launchpad.interfaces.IBugTask."""
+        return self.targetnamecache
 
 
 class BugTaskMixin:

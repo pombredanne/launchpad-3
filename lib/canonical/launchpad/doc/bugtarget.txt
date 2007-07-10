@@ -70,8 +70,9 @@ All bugtasks ever reported:
     [1, 2, 3, 8]
 
 Bug targets have a bugtargetdisplayname attribute, which returns a value
-suitable for display in bug-related pages; and a bugtargetname attribute,
-which returns a value suitable for display in e-mail messages.
+tailored for human reading (e.g. display in Web pages); and a bugtargetname
+attribute, which returns a value tailored for unique identification of the
+target (such as in filterable e-mail messages).
 
     >>> from canonical.launchpad.interfaces import IProductSet, IBugTarget
 

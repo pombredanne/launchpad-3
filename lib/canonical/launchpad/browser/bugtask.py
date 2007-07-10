@@ -992,9 +992,9 @@ class BugTaskEditView(GeneralFormView):
         if milestone_cleared:
             self.request.response.addWarningNotification(
                 "The %s milestone setting has been removed because "
-                "you reassigned the bug to %s." %
-                (milestone_cleared.displayname,
-                bugtask.bugtargetdisplayname))
+                "you reassigned the bug to %s." % (
+                    milestone_cleared.displayname,
+                    bugtask.bugtargetdisplayname))
         elif milestone_ignored:
             self.request.response.addWarningNotification(
                 "The milestone setting was ignored because "
@@ -1044,7 +1044,7 @@ class BugTaskEditView(GeneralFormView):
             # subscribed the new bug contacts.
             self.request.response.addNotification(
                 "The bug contacts for %s have been subscribed to this bug." % (
-                    bugtask.bugtargetname))
+                    bugtask.bugtargetdisplayname))
 
     def nextURL(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
@@ -2057,17 +2057,17 @@ class BugTaskTableRowView(LaunchpadView):
 
     def canSeeTaskDetails(self):
         """Whether someone can see a task's status details.
-        
+
         This returns true if this is not a conjoined task, and if the bug is
         not a duplicate. It is independent of whether they can *change* the
         status; you need to expand the details to see any milestone set.
         """
-        return not (self.context.conjoined_master or
-                    self.context.bug.duplicateof)
+        return (self.context.conjoined_master is None and
+                self.context.bug.duplicateof is None)
 
     def getTaskRowCSSClass(self):
         """The appropriate CSS class for the row in the Affects table.
-        
+
         Currently this consists solely of highlighting the current context.
         """
         bugtask = self.context
@@ -2113,7 +2113,8 @@ class BugTaskTableRowView(LaunchpadView):
         """Get the conjoined master's name for displaying."""
         return self._getSeriesTargetNameHelper(self.context.conjoined_master)
 
-    def bugTaskIcon(self):
+    @property
+    def bugtask_icon(self):
         """Which icon should be shown for the task, if any?"""
         if IDistroBugTask.providedBy(self.context):
             if self.context.sourcepackagename:
