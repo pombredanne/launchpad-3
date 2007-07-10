@@ -800,7 +800,7 @@ Both access methods work as expected, remove the temporary file used here.
 Check the log from the uploader run has made it into the upload directory:
 
   >>> failed_dir = os.path.join(config.builddmaster.root, 'failed')
-  >>> failed_uploads = os.listdir(failed_dir)
+  >>> failed_uploads = sorted(os.listdir(failed_dir))
   >>> len(failed_uploads)
   2
 
