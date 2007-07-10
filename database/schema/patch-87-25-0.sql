@@ -15,7 +15,7 @@ ALTER TABLE archive ADD COLUMN purpose INTEGER;
 -- add btree for distro/purpose on archive
 CREATE UNIQUE INDEX archive__distribution__purpose__key
     ON archive (distribution, purpose)
-    WHERE Owner IS NULL;
+    WHERE Distribution IS NOT NULL AND Owner IS NULL;
 
 ALTER TABLE component ADD COLUMN description TEXT;
 
