@@ -256,7 +256,7 @@ COMMENT ON TABLE MailingListSubscription IS 'Track the subscriptions of a person
 COMMENT ON COLUMN MailingListSubscription.person IS 'The person who is subscribed to the mailing list.';
 COMMENT ON COLUMN MailingListSubscription.team IS 'The team whose mailing list this person is subscribed to.';
 COMMENT ON COLUMN MailingListSubscription.date_joined IS 'The date this person subscribed to the mailing list.';
-COMMENT ON COLUMN MailingListSubscription.email_address IS 'Which of the person's email addresses are subscribed to the mailing list.  This may be NULL to indicate that it's the person's preferred address.';
+COMMENT ON COLUMN MailingListSubscription.email_address IS 'Which of the person\'s email addresses are subscribed to the mailing list.  This may be NULL to indicate that it\'s the person\'s preferred address.';
 
 -- MailingListBan
 
@@ -276,7 +276,7 @@ COMMENT ON TABLE MessagesAwaitingApproval IS 'Track mailing list postings awaiti
 COMMENT ON COLUMN MessagesAwaitingApproval.message_id IS 'The Message-ID header of the held message.';
 COMMENT ON COLUMN MessagesAwaitingApproval.posted_by IS 'The person who posted the message.';
 COMMENT ON COLUMN MessagesAwaitingApproval.team IS 'The team mailing list to which the message was posted.';
-COMMENT ON COLUMN MessagesAwaitingApproval.posted_message IS 'Foreign key to libraryfilealias table pointing to where the posted message's text lives.';
+COMMENT ON COLUMN MessagesAwaitingApproval.posted_message IS 'Foreign key to libraryfilealias table pointing to where the posted message\'s text lives.';
 COMMENT ON COLUMN MessagesAwaitingApproval.posted_date IS 'The date the message was posted.';
 COMMENT ON COLUMN MessagesAwaitingApproval.status IS 'The status of the posted message.  Values are described in dbschema.PostedMessageStatus.';
 COMMENT ON COLUMN MessagesAwaitingApproval.disposed_by IS 'The person who disposed of (i.e. approved or rejected) the message, or NULL if no disposition has yet been made.';
@@ -840,7 +840,7 @@ COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation o
 COMMENT ON COLUMN Person.creation_comment IS 'A text comment for the creation of this person.';
 COMMENT ON COLUMN Person.registrant IS 'The user who created this profile.';
 COMMENT ON COLUMN Person.personal_standing IS 'The standing of the person, which indicates (for now, just) whether the person can post to a mailing list without requiring first post moderation.  Values are documented in dbschema.PersonalStanding.';
-COMMENT ON COLUMN Person.personal_standing_reason IS 'The reason a person's standing has changed.';
+COMMENT ON COLUMN Person.personal_standing_reason_text IS 'The reason a person\'s standing has changed.';
 COMMENT ON COLUMN Person.mail_resumption_date IS 'A NULL resumption date or a date in the past indicates that there is no vacation in effect.  Vacations are granular to the day, so a datetime is not necessary.';
 COMMENT ON COLUMN Person.mailing_list_auto_subscribe_policy IS 'The auto-subscription policy for the person, i.e. whether and how the user is automatically subscribed to mailing lists for teams they join.  Values are described in dbschema.MailingListAutoSubscribePolicy.';
 COMMENT ON COLUMN Person.mailing_list_receive_duplicates IS 'True means the user wants to receive list copies of messages on which they are explicitly named as a recipient.';

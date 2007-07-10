@@ -545,6 +545,18 @@ SET search_path = public, pg_catalog;
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');

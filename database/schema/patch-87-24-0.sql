@@ -142,12 +142,13 @@ ALTER TABLE ONLY MailingListSubscription
     FOREIGN KEY (email_address) REFERENCES EmailAddress(id);
 
 CREATE UNIQUE INDEX mailinglistsubscription__person__team__key
-    ON MailingList(person, team);
+    ON MailingListSubscription(person, team);
 
-CREATE INDEX mailinglistsubscription__team__idx ON MailingList(team);
+CREATE INDEX mailinglistsubscription__team__idx
+    ON MailingListSubscription(team);
 
 CREATE INDEX mailinglistsubscription__email_address__idx
-    ON MailingList(email_address) WHERE email_address IS NOT NULL;
+    ON MailingListSubscription(email_address) WHERE email_address IS NOT NULL;
 
 
 CREATE TABLE MailingListBan (
