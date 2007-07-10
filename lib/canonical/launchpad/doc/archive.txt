@@ -3,6 +3,7 @@
 An Archive models a Debian Archive ...
 
   >>> from zope.interface.verify import verifyObject
+  >>> from canonical.lp.dbschema import ArchivePurpose
   >>> from canonical.launchpad.interfaces import (
   ...     IPerson, IPersonSet, IArchiveSet, IArchive,
   ...     IDistributionSet)
@@ -14,7 +15,8 @@ Let get the IArchiveSet utility:
 A new Archive can be created by passing a name and an owner
 
   >>> name16 = getUtility(IPersonSet).getByName('name16')
-  >>> sandbox_archive = archive_set.new(owner=name16)
+  >>> sandbox_archive = archive_set.new(purpose=ArchivePurpose.PPA, 
+  ...     owner=name16)
 
   >>> verifyObject(IArchive, sandbox_archive)
   True
