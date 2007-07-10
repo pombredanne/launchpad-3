@@ -146,9 +146,15 @@ class DistributionSourcePackage(BugTargetBase,
         """See IDistributionSourcePackage."""
         # Use "list" here because it's possible that this list will be longer
         # than a "shortlist", though probably uncommon.
-        contacts = PackageBugContact.selectBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
+        query = """
+            PackageBugContact.distribution=%s
+            AND PackageBugContact.sourcepackagename = %s
+            AND PackageBugContact.bugcontact = Person.id
+            """ % sqlvalues(self.distribution, self.sourcepackagename)
+        contacts = PackageBugContact.select(
+            query,
+            orderBy='Person.displayname',
+            clauseTables=['Person'])
         contacts.prejoin(["bugcontact"])
         return list(contacts)
 

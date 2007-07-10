@@ -308,6 +308,11 @@ canbementored_mentoringoffer = 'Offer to mentor this work'
 
 canbementored_retractmentoring = 'Retract offer of mentorship'
 
+def codeimport(context, view):
+    return view.title
+
+codeimport_list = 'Code Imports'
+
 codeofconduct_admin = 'Administer Codes of Conduct'
 
 codeofconduct_index = ContextTitle('%s')

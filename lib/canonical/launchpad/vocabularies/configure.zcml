@@ -41,8 +41,8 @@
     />
 
   <vocabulary
-    name="BranchVisibilityPolicy"
-    factory="canonical.launchpad.vocabularies.BranchVisibilityPolicyVocabulary"
+    name="BranchVisibilityRule"
+    factory="canonical.launchpad.vocabularies.BranchVisibilityRuleVocabulary"
     />
 
   <vocabulary
@@ -103,6 +103,11 @@
   <vocabulary
       name="Component"
       factory="canonical.launchpad.vocabularies.ComponentVocabulary"
+      />
+
+  <vocabulary
+      name="CodeImportReviewStatus"
+      factory="canonical.launchpad.vocabularies.CodeImportReviewStatusVocabulary"
       />
 
   <vocabulary

@@ -1,0 +1,13 @@
+<metal:branch-link define-macro="branch-heading-link">
+  <div id="branch-back-link">
+    <img src="/@@/branch" alt="" />
+    <a tal:attributes="href branch/fmt:url"
+       tal:content="branch/displayname" />
+    <tal:not-junk condition="branch/product">
+      for the
+      <a tal:attributes="href branch/product/fmt:url"
+         tal:content="branch/product/displayname" />
+      project
+    </tal:not-junk>
+  </div>
+</metal:branch-link>
