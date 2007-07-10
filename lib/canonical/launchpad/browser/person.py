@@ -720,6 +720,26 @@ class CommonMenuLinks:
         summary = 'Projects %s is involved with' % self.context.browsername
         return Link(target, text, summary, icon='packages')
 
+    @enabled_with_permission('launchpad.Edit')
+    def activatearchive(self):
+        enabled = True
+        if self.context.archive is not None:
+            enabled = False
+        target = "+activatearchive"
+        text = 'Activate PPA'
+        summary = ('Aknowledge terms of service for Launchpad Personal '
+                   'Package Archive.')
+        return Link(target, text, summary, icon='edit', enabled=enabled)
+
+    def showarchive(self):
+        enabled = True
+        if self.context.archive is None:
+            enabled = False
+        target = '+archive'
+        text = 'Show PPA'
+        summary = 'Browse Personal Package Archive packages.'
+        return Link(target, text, summary, icon='info', enabled=enabled)
+
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
@@ -830,26 +850,6 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         text = 'Administer'
         return Link(target, text, icon='edit')
 
-    @enabled_with_permission('launchpad.Edit')
-    def activatearchive(self):
-        enabled = True
-        if self.context.archive is not None:
-            enabled = False
-        target = "+activatearchive"
-        text = 'Activate PPA'
-        summary = ('Aknowledge terms of service for Launchpad Personal '
-                   'Package Archive.')
-        return Link(target, text, summary, icon='edit', enabled=enabled)
-
-    def showarchive(self):
-        enabled = True
-        if self.context.archive is None:
-            enabled = False
-        target = '+archive'
-        text = 'Show PPA'
-        summary = 'Browse Personal Package Archive packages.'
-        return Link(target, text, summary, icon='info', enabled=enabled)
-
 
 class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
@@ -859,7 +859,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'add_member', 'memberships', 'received_invitations', 'mugshots',
              'editemail', 'polls', 'add_poll',
              'joinleave', 'mentorships', 'reassign', 'common_packages',
-             'related_projects']
+             'related_projects', 'activatearchive', 'showarchive']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
