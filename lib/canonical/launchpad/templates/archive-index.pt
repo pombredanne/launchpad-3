@@ -18,9 +18,14 @@
 
       <p>Description:</p>
 
-      <div id="description">
+      <div id="description" tal:condition="context/description">
          <tal:archive-description
             replace="structure context/description/fmt:text-to-html" />
+      </div>
+
+      <div id="description" tal:condition="not:context/description">
+         <p tal:condition="python: view.user == context.owner"
+            ><a href="+edit">Add a PPA description</a>.</p>
       </div>
 
       <p id="archive_url">
