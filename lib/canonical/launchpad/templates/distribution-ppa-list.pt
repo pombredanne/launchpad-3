@@ -11,7 +11,7 @@
   <div metal:fill-slot="main" tal:condition="not: view/searchPPAs">
 
       <form name="ppa_search" action="" method="GET">
-         <label for="name"> PPA containing:</label>
+         <label for="name"> PPAs containing:</label>
          <input id="name" title="Filter" size="20"
                 type="text" name="name_filter"
                 tal:attributes="value view/name_filter"/>
@@ -27,20 +27,17 @@
           <tr>
             <th>Owner</th>
             <th>Description</th>
-            <th>Page</th>
-            <th>Archive</th>
+            <th>Sources</th>
+            <th>Binaries</th>
           </tr>
         </thead>
         <tbody>
 	<tr tal:repeat="ppa batch">
            <td><a tal:content="ppa/owner/browsername"
-                  tal:attributes="href ppa/owner/fmt:url"
-               >FooBar</a></td>
-           <td tal:content="ppa/description/fmt:shorten/50" />
-           <td><a tal:attributes="href ppa/fmt:url"
-                >View the PPA</a></td>
-	   <td><a tal:attributes="href ppa/archive_url"
-                >Browse the archive</a></td>
+                  tal:attributes="href ppa/fmt:url">FooBar</a></td>
+           <td tal:content="ppa/description/fmt:shorten/65" />
+           <td tal:content="ppa/number_of_sources" />
+           <td tal:content="ppa/number_of_binaries" />
         </tr>
         </tbody>
       </table>
