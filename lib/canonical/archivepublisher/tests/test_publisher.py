@@ -169,7 +169,8 @@ class TestPublisher(TestNativePublishingBase):
             self.logger, self.config, self.disk_pool, self.ubuntutest,
             self.ubuntutest.main_archive)
 
-        test_archive = getUtility(IArchiveSet).new()
+        test_archive = getUtility(IArchiveSet).new(
+            purpose=ArchivePurpose.PRIMARY)
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=test_archive)
@@ -188,7 +189,8 @@ class TestPublisher(TestNativePublishingBase):
         """Publisher also works as expected for another archives."""
         from canonical.archivepublisher.publishing import Publisher
 
-        test_archive = getUtility(IArchiveSet).new()
+        test_archive = getUtility(IArchiveSet).new(
+            purpose=ArchivePurpose.PRIMARY)
         test_pool_dir = tempfile.mkdtemp()
         test_temp_dir = tempfile.mkdtemp()
         test_disk_pool = DiskPool(test_pool_dir, test_temp_dir, self.logger)
@@ -199,7 +201,7 @@ class TestPublisher(TestNativePublishingBase):
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc",
-            filecontent='I am supposed to be a PPA',
+            filecontent='I am supposed to be a primary archive',
             status=PackagePublishingStatus.PENDING, archive=test_archive)
 
         publisher.A_publish(False)
@@ -212,7 +214,8 @@ class TestPublisher(TestNativePublishingBase):
         # nothing got published
         foo_path = "%s/main/f/foo/foo.dsc" % test_pool_dir
         self.assertEqual(
-            open(foo_path).read().strip(),'I am supposed to be a PPA',)
+            open(foo_path).read().strip(),
+            'I am supposed to be a primary archive',)
 
         # remove locally created dir
         shutil.rmtree(test_pool_dir)

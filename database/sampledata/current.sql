@@ -1189,6 +1189,7 @@ INSERT INTO component (id, name, description) VALUES (1, 'main', NULL);
 INSERT INTO component (id, name, description) VALUES (2, 'restricted', NULL);
 INSERT INTO component (id, name, description) VALUES (3, 'universe', NULL);
 INSERT INTO component (id, name, description) VALUES (4, 'multiverse', NULL);
+INSERT INTO component (id, name, description) VALUES (5, 'commercial', 'This component contains commercial packages only, which are not in the main Ubuntu archive.');
 
 
 ALTER TABLE component ENABLE TRIGGER ALL;
