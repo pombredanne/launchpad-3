@@ -242,7 +242,7 @@ class BuilddMaster:
             #    Attempt to cope with new CommercialRepo changes.
             # 2. 'ppa_archtags' should be modeled as
             #    DistroArchSeries.ppa_supported
-            if pubrec.archive != pubrec.distroseries.main_archive:
+            if pubrec.archive.purpose == dbschema.ArchivePurpose.PPA:
                 ppa_archtags = ('i386', 'amd64')
                 legal_archs = set(
                     (distro_arch_series for distro_arch_series in legal_archs
