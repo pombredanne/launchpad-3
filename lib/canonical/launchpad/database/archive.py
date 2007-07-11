@@ -218,18 +218,15 @@ class ArchiveSet:
 
     def searchPPAs(self, text=None):
         """See canonical.launchpad.interfaces.IArchiveSet."""
-        clauseTables = []
-        orderBy = []
-        clauses = ['Archive.owner is not NULL']
+        clauses = ['Archive.owner is not NULL AND Person.id = Archive.owner']
+        clauseTables = ['Person']
+        orderBy = ['Person.name']
 
         if text:
             clauses.append("""
-            Person.id = Archive.owner AND
             ((Person.fti @@ ftq(%s) OR
             Archive.description LIKE '%%' || %s || '%%'))
             """ % (quote(text), quote_like(text)))
-            clauseTables.append('Person')
-            orderBy.append('-Person.name')
 
         query = ' AND '.join(clauses)
         return Archive.select(query, orderBy=orderBy, clauseTables=clauseTables)
