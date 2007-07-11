@@ -7,7 +7,6 @@ __all__ = [
     'BranchAlreadyRegistered',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
-    'InvalidEntitlementType'
     'NoSuchDistribution',
     'NoSuchEntitlement',
     'NoSuchPackage',
@@ -17,6 +16,7 @@ __all__ = [
     'NoSuchBranch',
     'NoSuchBug',
     'RequiredParameterMissing',
+    'BranchCreationForbidden',
     ]
 
 import xmlrpclib
@@ -162,11 +162,13 @@ class RequiredParameterMissing(LaunchpadFault):
     def __init__(self, parameter_name):
         LaunchpadFault.__init__(self, parameter_name=parameter_name)
 
-class InvalidEntitlementState(LaunchpadFault):
-    """Raised if the entitlement state is not valid."""
+
+class BranchCreationForbidden(LaunchpadFault):
+    """The user was not permitted to create a branch."""
 
     error_code = 110
-    msg_template = "The entitlement state is invalid: %(entitlement_state)d"
+    msg_template = (
+        "You are not allowed to create a branch for project: %(parameter_name)s")
 
     def __init__(self, entitlement_state):
         LaunchpadFault.__init__(self, entitlement_state=entitlement_state)

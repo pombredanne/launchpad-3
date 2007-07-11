@@ -174,7 +174,13 @@ COMMENT ON COLUMN CodeImport.rcs_type IS 'The revision control system used by th
 COMMENT ON COLUMN CodeImport.svn_branch_url IS 'The URL of the Subversion branch for this import.';
 COMMENT ON COLUMN CodeImport.cvs_root IS 'The $CVSROOT details, probably of the form :pserver:user@host:/path.';
 COMMENT ON COLUMN CodeImport.cvs_module IS 'The module in cvs_root to import, often the name of the project.';
+COMMENT ON COLUMN CodeImport.date_last_successful IS 'When this code import last succeeded. NULL if this import has never succeeded.';
 
+-- CodeImportMachine
+
+COMMENT ON TABLE CodeImportMachine IS 'The record of a machine capable of performing jobs for the code import system.';
+COMMENT ON COLUMN CodeImportMachine.hostname IS 'The (unique) hostname of the machine.';
+COMMENT ON COLUMN CodeImportMachine.online IS 'Whether the machine is capable of performing jobs at this time.';
 
 -- CVE
 
@@ -527,6 +533,7 @@ COMMENT ON COLUMN Question.dateanswered IS 'The date this question was last "ans
 COMMENT ON COLUMN Question.dateclosed IS 'The date the requester marked this question CLOSED.';
 COMMENT ON COLUMN Question.language IS 'The language of the question''s title and description.';
 COMMENT ON COLUMN Question.whiteboard IS 'A general status whiteboard. This is a scratch space to which arbitrary data can be added (there is only one constant whiteboard with no history). It is displayed at the top of the question. So its a useful way for projects to add their own semantics or metadata to the Answer Tracker.';
+COMMENT ON COLUMN Question.faq IS 'The FAQ document that contains the long answer to this question.';
 
 -- QuestionBug
 
@@ -549,6 +556,22 @@ COMMENT ON COLUMN QuestionReopening.priorstate IS 'The state of the question bef
 -- QuestionSubscription
 
 COMMENT ON TABLE QuestionSubscription IS 'A subscription of a person to a particular question.';
+
+
+-- FAQ 
+COMMENT ON TABLE FAQ IS 'A technical document containing the answer to a common question.';
+COMMENT ON COLUMN FAQ.id IS 'The FAQ document sequence number.';
+COMMENT ON COLUMN FAQ.title IS 'The document title.';
+COMMENT ON COLUMN FAQ.tags IS 'White-space separated list of tags.';
+COMMENT ON COLUMN FAQ.content IS 'The content of FAQ. It can also contain a short summary and a link.';
+COMMENT ON COLUMN FAQ.product IS 'The product to which this document is
+related. Either "product" or "distribution" must be set.';
+COMMENT ON COLUMN FAQ.distribution IS 'The distribution to which this document
+is related. Either "product" or "distribution" must be set.';
+COMMENT ON COLUMN FAQ.owner IS 'The person who created the document.';
+COMMENT ON COLUMN FAQ.date_created IS 'The datetime when the document was created.';
+COMMENT ON COLUMN FAQ.last_updated_by IS 'The person who last modified the document.';
+COMMENT ON COLUMN FAQ.date_last_updated IS 'The datetime when the document was last modified.';
 
 
 -- DistroReleaseLanguage
@@ -618,7 +641,6 @@ COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribut
 COMMENT ON COLUMN Distribution.official_answers IS 'Whether or not this product upstream uses Answers officialy.';
 
 COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroRelease that should get the translation effort focus.';
-COMMENT ON COLUMN Distribution.main_archive IS 'The Archive used to publish this distribution.';
 
 -- DistroRelease
 
@@ -783,6 +805,8 @@ COMMENT ON COLUMN Karma.sourcepackagename IS 'The SourcePackageName on which a p
 
 -- Person
 COMMENT ON TABLE Person IS 'Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
+COMMENT ON COLUMN Person.account_status IS 'The status of the account associated with this Person.';
+COMMENT ON COLUMN Person.account_status_comment IS 'The comment on the status of the account associated with this Person.';
 COMMENT ON COLUMN Person.subscriptionpolicy IS 'The policy for new members to join this team.';
 COMMENT ON COLUMN Person.renewal_policy IS 'The policy for membership renewal on this team.';
 COMMENT ON COLUMN Person.displayname IS 'Person or group''s name as it should be rendered to screen';
@@ -1426,10 +1450,13 @@ COMMENT ON COLUMN Archive.description IS 'Allow users to describe their PPAs con
 COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for accepting uploads.';
 COMMENT ON COLUMN Archive.authorized_size IS 'Size in bytes allowed for this PPA.';
 COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventions made in the PPA configuration.';
+COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
+COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
 COMMENT ON COLUMN Component.name IS 'Component name text';
+COMMENT ON COLUMN Component.description IS 'Description of this component.';
 
 
 -- Section
