@@ -311,7 +311,7 @@ will None.
 The question owner can still specify which message helped him solved
 his problem. The confirmAnswer() method is used when the question
 owner chooses another user's answer as a best answer. The status
-Will remain SOLVED. The 'answerer' attribute will be the message
+will remain SOLVED. The 'answerer' attribute will be the message
 owner, and the 'answer' will be the message. The question's
 'dateanswered' attribute will be the date of the answer message.
 

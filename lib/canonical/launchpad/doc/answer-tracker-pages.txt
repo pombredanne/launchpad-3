@@ -301,7 +301,10 @@ The answerer's message is attributed as the answer in this case.
     >>> print firefox_question.answerer.displayname
     No Privileges Person
     >>> print firefox_question.answer.owner.displayname
-    No Privileges Person 
+    No Privileges Person
+    >>> answer_id = firefox_question.messages[answer_message_number].id
+    >>> firefox_question.answer.id == answer_id
+    True
     >>> workflow_harness.redirectionTarget()
     '.../+question/2'
 
