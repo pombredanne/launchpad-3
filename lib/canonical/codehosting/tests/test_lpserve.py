@@ -20,14 +20,16 @@ from bzrlib.tests import TestCaseInTempDir
 from bzrlib.transport import get_transport, remote
 
 from twisted.enterprise.adbapi import ConnectionPool
+from twisted.internet import process
+
 from canonical.tests.test_twisted import TwistedTestCase
 
 from canonical.codehosting import plugins
 from canonical.codehosting.plugins import lpserve
-from canonical.codehosting.tests.helpers import deferToThread
-from canonical.codehosting.tests.helpers import TwistedBzrlibLayer
+from canonical.codehosting.tests.helpers import (
+    deferToThread, TwistedBzrlibLayer)
 from canonical.config import config
-from canonical.launchpad.daemons.authserver import AuthserverService
+from canonical.codehosting.tests.servers import Authserver
 
 
 ROCKETFUEL_ROOT = os.path.dirname(
@@ -44,10 +46,19 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
         # synchronously.
         # See http://twistedmatrix.com/trac/ticket/2680
         ConnectionPool.shutdownID = None
+        # XXX: JonathanLange 2007-06-28, For some reason, we get reapProcess
+        # errors from Twisted when these tests are run after test_acceptance.
+        # This monkey-patch disables the errors.
+        self._reapAllProcesses = process.reapAllProcesses
+        process.reapAllProcesses = lambda: None
         self.make_empty_directory(config.codehosting.branches_root)
-        authserver = AuthserverService()
-        authserver.startService()
-        self.addCleanup(authserver.stopService)
+        self._authserver = Authserver()
+        self._authserver.setUp()
+
+    def tearDown(self):
+        process.reapAllProcesses = self._reapAllProcesses
+        TestCaseInTempDir.tearDown(self)
+        return self._authserver.tearDown()
 
     def assertInetServerShutsdownCleanly(self, process):
         """Shutdown the server process looking for errors."""
@@ -140,36 +151,10 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
             get_cmd_object('lp-serve'), lpserve.cmd_launchpad_server)
 
     @deferToThread
-    def _test_bzr_serve_port_readonly(self):
-        # When the server is started read only, attempts to write data are
-        # rejected as 'TransportNotPossible'.
+    def test_bzr_serve_inet_readwrite(self):
+        # Test the server when running as an 'inet' service. That is, listening
+        # on stdin and writing to stdout.
         #
-        # This tests the 'listening on a port' code path.
-        process, url = self.start_server_port('sabdfl', ['--read-only'])
-        transport = get_transport(url)
-        self.assertRaises(errors.TransportNotPossible,
-                          transport.mkdir, '~sabdfl/+junk/new-branch')
-        self.assertServerFinishesCleanly(process)
-
-    def test_bzr_serve_port_readonly(self):
-        return self._test_bzr_serve_port_readonly()
-
-    @deferToThread
-    def _test_bzr_serve_inet_readonly(self):
-        # When the server is started read only, attempts to write data are
-        # rejected as 'TransportNotPossible'.
-        #
-        # This tests the 'listening on stdio' code path.
-        process, transport = self.start_server_inet('sabdfl', ['--read-only'])
-        self.assertRaises(errors.TransportNotPossible,
-                          transport.mkdir, '~sabdfl/+junk/new-branch')
-        self.assertInetServerShutsdownCleanly(process)
-
-    def test_bzr_serve_inet_readonly(self):
-        return self._test_bzr_serve_inet_readonly()
-
-    @deferToThread
-    def _test_bzr_serve_inet_readwrite(self):
         # When the server is started normally (i.e. allowing writes), we can
         # use a transport pointing at the server to make directories, create
         # files and so forth. These operations are then translated to the local
@@ -190,8 +175,35 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
 
         self.assertInetServerShutsdownCleanly(process)
 
-    def test_bzr_serve_inet_readwrite(self):
-        return self._test_bzr_serve_inet_readwrite()
+    @deferToThread
+    def test_bzr_serve_port_readwrite(self):
+        # Test the server when running as an 'port' service. That is, listening
+        # on a TCP port.
+        #
+        # When the server is started normally (i.e. allowing writes), we can
+        # use a transport pointing at the server to make directories, create
+        # files and so forth. These operations are then translated to the local
+        # file system.
+
+        # XXX: JonathanLange 2007-07-06, This test is almost identical to
+        # test_bzr_serve_inet_readwrite. Both tests should be refactored to
+        # share code, rather than copy it.
+        local_transport = get_transport(config.codehosting.branches_root)
+        old_file_list = list(local_transport.iter_files_recursive())
+        self.assertEqual([], old_file_list)
+
+        process, url = self.start_server_port('sabdfl')
+        transport = get_transport(url)
+        transport.mkdir('~sabdfl/+junk/new-branch')
+        transport.mkdir('~sabdfl/+junk/new-branch/.bzr')
+        transport.put_bytes('~sabdfl/+junk/new-branch/.bzr/README', 'Hello')
+
+        new_file_list = list(local_transport.iter_files_recursive())
+        self.assertEqual(1, len(new_file_list))
+        self.assertTrue(new_file_list[0].endswith('.bzr/README'),
+                        "Expected .bzr/README, got %r" % (new_file_list[0]))
+
+        self.assertServerFinishesCleanly(process)
 
 
 def test_suite():

@@ -26,7 +26,8 @@ from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 
 from canonical.lp.dbschema import (
-    SprintSpecificationStatus, SpecificationFilter, SpecificationSort)
+    SprintSpecificationStatus, SpecificationFilter, SpecificationSort,
+    SpecificationImplementationStatus)
 
 
 class Sprint(SQLBase):
@@ -99,18 +100,19 @@ class Sprint(SQLBase):
         #  - acceptance for sprint agenda.
         #  - informational.
         #
-        base = """SprintSpecification.sprint = %d AND
+        base = """SprintSpecification.sprint = %s AND
                   SprintSpecification.specification = Specification.id AND 
                   (Specification.product IS NULL OR
                    Specification.product NOT IN
                     (SELECT Product.id FROM Product
                      WHERE Product.active IS FALSE))
-                  """ % self.id
+                  """ % quote(self)
         query = base
 
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+              quote(SpecificationImplementationStatus.INFORMATIONAL))
         
         # import here to avoid circular deps
         from canonical.launchpad.database.specification import Specification
@@ -127,14 +129,14 @@ class Sprint(SQLBase):
         # look for specs that have a particular SprintSpecification
         # status (proposed, accepted or declined)
         if SpecificationFilter.ACCEPTED in filter:
-            query += ' AND SprintSpecification.status = %d' % (
-                SprintSpecificationStatus.ACCEPTED.value)
+            query += ' AND SprintSpecification.status = %s' % (
+                quote(SprintSpecificationStatus.ACCEPTED))
         elif SpecificationFilter.PROPOSED in filter:
-            query += ' AND SprintSpecification.status = %d' % (
-                SprintSpecificationStatus.PROPOSED.value)
+            query += ' AND SprintSpecification.status = %s' % (
+                quote(SprintSpecificationStatus.PROPOSED))
         elif SpecificationFilter.DECLINED in filter:
-            query += ' AND SprintSpecification.status = %d' % (
-                SprintSpecificationStatus.DECLINED.value)
+            query += ' AND SprintSpecification.status = %s' % (
+                quote(SprintSpecificationStatus.DECLINED))
         
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -170,7 +172,7 @@ class Sprint(SQLBase):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status',
+            order = ['-priority', 'Specification.definition_status',
                      'Specification.name']
         elif sort == SpecificationSort.DATE:
             # we need to establish if the listing will show specs that have
