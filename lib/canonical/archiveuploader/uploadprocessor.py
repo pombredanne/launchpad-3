@@ -418,11 +418,14 @@ class UploadProcessor:
                 raise UploadPathError(
                     "Could not find distribution '%s'" % distribution_name)
 
-            archive = getUtility(IArchiveSet).ensure(owner=person, 
-                distribution=distribution, purpose=ArchivePurpose.PPA)
+            archive = person.archive
             if archive is None:
                 raise UploadPathError(
                     "Could not find PPA for '%s'" % person_name)
+
+            if not archive.enabled:
+                raise UploadPathError(
+                    "%s is disabled" % archive.title)
 
             if len(parts) > 2:
                 suite_name = parts[2]
