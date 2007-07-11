@@ -22,7 +22,7 @@ somebody are subject to expiration.
     >>> from canonical.lp.dbschema import QuestionStatus
     >>> Question.select('status IN (%i,%i)' % (
     ...     QuestionStatus.OPEN.value, QuestionStatus.NEEDSINFO.value)).count()
-    8
+    9
 
     # By default, all open and needs info question should expire. Make
     # sure that no new questions were recently added and will make this
@@ -103,8 +103,8 @@ somebody are subject to expiration.
     INFO    creating lockfile
     INFO    Expiring OPEN and NEEDSINFO questions without activity for the
             last 15 days.
-    INFO    Found 5 questions to expire.
-    INFO    Expired 5 questions.
+    INFO    Found 6 questions to expire.
+    INFO    Expired 6 questions.
     INFO    Finished expiration run.
     <BLANKLINE>
     >>> print out

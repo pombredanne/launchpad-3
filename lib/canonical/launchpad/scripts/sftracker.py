@@ -363,12 +363,11 @@ class TrackerImporter:
         logger.info('Creating Launchpad bug #%d', bug.id)
 
         # attach comments and create CVE links.
-        bug.findCvesInText(text)
+        bug.findCvesInText(text, bug.owner)
         for (date, userid, text) in comments:
             msg = self.createMessage(bug.followup_subject(), date,
                                       userid, text)
             bug.linkMessage(msg)
-            bug.findCvesInText(text)
             comments_by_date_and_user[(date, userid)] = msg
 
         # set up bug task
