@@ -47,9 +47,9 @@ __all__ = [
     'RemoteBugTaskStatusVocabulary',
     'RevisionControlSystemsVocabulary',
     'ShipItFlavourVocabulary',
-    'SpecificationDeliveryVocabulary',
+    'SpecificationImplementationStatusVocabulary',
     'SpecificationPriorityVocabulary',
-    'SpecificationStatusVocabulary',
+    'SpecificationDefinitionStatusVocabulary',
     'SpecificationGoalStatusVocabulary',
     'SprintSpecificationStatusVocabulary',
     'TeamMembershipRenewalPolicyVocabulary',
@@ -117,9 +117,9 @@ RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 RevisionControlSystemsVocabulary = vocab_factory(
     dbschema.RevisionControlSystems)
 ShipItFlavourVocabulary = vocab_factory(dbschema.ShipItFlavour)
-SpecificationDeliveryVocabulary =  vocab_factory(dbschema.SpecificationDelivery)
+SpecificationImplementationStatusVocabulary =  vocab_factory(dbschema.SpecificationImplementationStatus)
 SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
-SpecificationStatusVocabulary =  vocab_factory(dbschema.SpecificationStatus)
+SpecificationDefinitionStatusVocabulary =  vocab_factory(dbschema.SpecificationDefinitionStatus)
 SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStatus)
 SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
 TeamMembershipRenewalPolicyVocabulary = vocab_factory(

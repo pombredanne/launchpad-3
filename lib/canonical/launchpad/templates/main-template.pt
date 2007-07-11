@@ -103,6 +103,7 @@
         id="globalsearch" xml:lang="en" lang="en" dir="ltr"
         action="/projects/"
         method="get"
+        accept-charset="UTF-8"
       >
         <div>
           <input

@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Text
+from zope.schema import Int, Text
 
 from canonical.launchpad import _
 
@@ -28,6 +28,13 @@ class IArchive(Interface):
 
     archive_url = Attribute("External archive URL.")
 
+    distribution = Attribute("The distribution that uses this archive.")
+
+    purpose = Int(
+        title=_("Purpose of archive."), required=True, readonly=True,
+        )
+
+
     def getPubConfig(distribution):
         """Return an overridden Publisher Configuration instance.
 
@@ -42,14 +49,20 @@ class IArchiveSet(Interface):
 
     title = Attribute('Title')
 
-    def new(owner=None):
-        """Create a new archive."""
+    def new(distribution, purpose=None, owner=None):
+        """Create a new archive.
+        
+        If purpose is ArchivePurpose.PPA, owner must be set.
+        """
 
-    def ensure(owner=None):
+    def ensure(owner, distribution, purpose):
         """Ensure the owner has an valid archive."""
 
     def get(archive_id):
         """Return the IArchive with the given archive_id."""
+
+    def getByDistroPurpose(distribution, purpose):
+        """Return the IArchive with the given distribution and purpose."""
 
     def getAllPPAs():
         """Return all existent personal archives."""
