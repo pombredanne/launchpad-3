@@ -14,7 +14,12 @@
 
 <div metal:fill-slot="main">
 
-  <tal:uses_malone tal:condition="view/contextUsesMalone">
+  <tal:comment replace="nothing">
+    <tal:uses_malone tal:condition="view/contextUsesMalone" />
+  </tal:comment>
+
+  <metal:not_uses_malone
+      use-macro="context/@@+filebug-macros/not_uses_malone" />
 
   <div metal:use-macro="context/@@launchpad_form/form">
 
@@ -40,7 +45,7 @@
       <table width="100%" tal:condition="view/similar_bugs">
         <tbody>
 
-          <tal:similar-bugs>
+          <tal:similar-bugs condition="view/contextUsesMalone">
             <tr>
               <td>
                 <input type="radio" id="bug-already-reported-yes"
@@ -83,7 +88,12 @@
           </tal:similar-bugs>
 
           <tal:submit-new-bug>
-            <tr>
+            <tal:comment replace="nothing">
+              We hide this next row if the context doesn't use malone because
+              in that situation we're showing the form after an error message
+              and in that context the radio button makes no sense.
+            </tal:comment>
+            <tr tal:condition="view/contextUsesMalone">
               <td>
                 <input type="radio" id="bug-already-reported-no"
                        name="field.bug_already_reported" value="off"
@@ -195,12 +205,7 @@
     </div>
 
   </div>
-
-  </tal:uses_malone>
-  <metal:not_uses_malone
-      use-macro="context/@@+filebug-macros/not_uses_malone" />
-
-</div>
+  </div>
 
 </body>
 </html>
