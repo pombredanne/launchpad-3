@@ -85,7 +85,7 @@ KNOWN_TRUST_ROOTS = {
                    'x_phone'],
              reason=("For the Ubuntu Store, you need a Launchpad account "
                      "so we can remember your order details and keep in "
-                     "in touch with you about your orders."),
+                     "touch with you about your orders."),
              creation_rationale=rationale.OWNER_CREATED_UBUNTU_SHOP),
     'https://shop.canonical.com/':
         dict(title="The Ubuntu Store from Canonical",
@@ -96,7 +96,7 @@ KNOWN_TRUST_ROOTS = {
                    'x_phone'],
              reason=("For the Ubuntu Store, you need a Launchpad account "
                      "so we can remember your order details and keep in "
-                     "in touch with you about your orders."),
+                     "touch with you about your orders."),
              creation_rationale=rationale.OWNER_CREATED_UBUNTU_SHOP),
     #'https://shipit.ubuntu.com/':
     #    dict(title="Ubuntu Shipit",

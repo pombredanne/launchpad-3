@@ -10,8 +10,9 @@ Canonical/Ubuntu sites participating in single sign-on.
 
 == Behaviour for unknown trust roots ==
 
-First we'll see what happens with an OpenID request from an unknown
-trust root.
+If a relying party attempts to request user details via the
+openid.sreg extension and Launchpad does not have a particular policy
+configured, then no details are disclosed in the response.
 
 First acquire an association handle:
 

@@ -45,25 +45,23 @@ class SimpleRegistrationTestCase(unittest.TestCase):
                 'openid.sreg.optional': 'fullname'}
             class openid_request:
                 trust_root = 'fake-trust-root'
-        field_name_test = FieldNameTest(None, None)
+        view = FieldNameTest(None, None)
         # Note that country and nickname are not returned since they
         # are not included in the policy.  Similarly, postcode is not
         # returned since it was not requested.  The field names are
         # returned in a fixed order.
-        self.assertEqual(field_name_test.sreg_field_names,
-                         ['fullname', 'email'])
+        self.assertEqual(view.sreg_field_names, ['fullname', 'email'])
 
     def test_sreg_fields(self):
         # Test that user details are extracted correctly.
         class FieldValueTest(OpenIdMixin):
-            user = getUtility(IPersonSet).getByEmail(
-                'david@canonical.com')
+            user = getUtility(IPersonSet).getByEmail('david@canonical.com')
             sreg_field_names = [
                 'fullname', 'nickname', 'email', 'timezone',
                 'x_address1', 'x_address2', 'x_city', 'x_province',
                 'country', 'postcode', 'x_phone', 'x_organization']
-        field_value_test = FieldValueTest(None, None)
-        self.assertEqual(field_value_test.sreg_fields, [
+        view = FieldValueTest(None, None)
+        self.assertEqual(view.sreg_fields, [
             ('fullname', u'David Allouche'),
             ('nickname', u'ddaa'),
             ('email', u'david.allouche@canonical.com'),
@@ -79,15 +77,16 @@ class SimpleRegistrationTestCase(unittest.TestCase):
     def test_sreg_fields_no_shipping(self):
         # Test that user details are extracted correctly when there is
         # no previous successful shipit request.
+        person = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+        self.assertEqual(person.lastShippedRequest(), None)
         class FieldValueTest(OpenIdMixin):
-            user = getUtility(IPersonSet).getByEmail(
-                'no-priv@canonical.com')
+            user = person
             sreg_field_names = [
                 'fullname', 'nickname', 'email', 'timezone',
                 'x_address1', 'x_address2', 'x_city', 'x_province',
                 'country', 'postcode', 'x_phone', 'x_organization']
-        field_value_test = FieldValueTest(None, None)
-        self.assertEqual(field_value_test.sreg_fields, [
+        view = FieldValueTest(None, None)
+        self.assertEqual(view.sreg_fields, [
             ('fullname', u'No Privileges Person'),
             ('nickname', u'no-priv'),
             ('email', u'no-priv@canonical.com'),
