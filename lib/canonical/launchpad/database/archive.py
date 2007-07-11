@@ -16,7 +16,8 @@ from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.interfaces import IArchive, IArchiveSet, IDistributionSet
+from canonical.launchpad.interfaces import (IArchive, IArchiveSet, 
+    IDistributionSet)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.lp.dbschema import (
     ArchivePurpose, PackagePublishingStatus, PackageUploadStatus)
