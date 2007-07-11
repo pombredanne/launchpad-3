@@ -110,7 +110,7 @@ class Archive(SQLBase):
 
         query = ' AND '.join(clauses)
         return SourcePackagePublishingHistory.select(
-            query, orderBy='id', clauseTables=clauseTables)
+            query, orderBy='-id', clauseTables=clauseTables)
 
     @property
     def number_of_sources(self):
@@ -153,7 +153,7 @@ class Archive(SQLBase):
 
         query = ' AND '.join(clauses)
         return BinaryPackagePublishingHistory.select(
-            query, orderBy='id', clauseTables=clauseTables)
+            query, orderBy='-id', clauseTables=clauseTables)
 
     @property
     def number_of_binaries(self):
