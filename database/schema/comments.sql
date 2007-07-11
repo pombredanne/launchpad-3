@@ -176,6 +176,11 @@ COMMENT ON COLUMN CodeImport.cvs_root IS 'The $CVSROOT details, probably of the 
 COMMENT ON COLUMN CodeImport.cvs_module IS 'The module in cvs_root to import, often the name of the project.';
 COMMENT ON COLUMN CodeImport.date_last_successful IS 'When this code import last succeeded. NULL if this import has never succeeded.';
 
+-- CodeImportMachine
+
+COMMENT ON TABLE CodeImportMachine IS 'The record of a machine capable of performing jobs for the code import system.';
+COMMENT ON COLUMN CodeImportMachine.hostname IS 'The (unique) hostname of the machine.';
+COMMENT ON COLUMN CodeImportMachine.online IS 'Whether the machine is capable of performing jobs at this time.';
 
 -- CVE
 
@@ -636,7 +641,6 @@ COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribut
 COMMENT ON COLUMN Distribution.official_answers IS 'Whether or not this product upstream uses Answers officialy.';
 
 COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroRelease that should get the translation effort focus.';
-COMMENT ON COLUMN Distribution.main_archive IS 'The Archive used to publish this distribution.';
 
 -- DistroRelease
 
@@ -936,16 +940,12 @@ COMMENT ON COLUMN Specification.distribution IS 'The distribution for which this
 COMMENT ON COLUMN Specification.distrorelease IS 'If this is not NULL, then it means that the release managers have targeted this feature to be released in the given distrorelease. It is not necessary to target a distrorelease, but this is a useful way of know which specifications are, for example, BreezyGoals.';
 COMMENT ON COLUMN Specification.productseries IS 'This is an indicator that the specification is planned, or targeted, for implementation in a given product series. It is not necessary to target a spec to a series, but it is a useful way of showing which specs are planned to implement for a given series.';
 COMMENT ON COLUMN Specification.milestone IS 'This is an indicator that the feature defined in this specification is expected to be delivered for a given milestone. Note that milestones are not necessarily releases, they are a way of identifying a point in time and grouping bugs and features around that.';
-COMMENT ON COLUMN Specification.informational IS 'An indicator as to whether or not the spec is purely informational, or is actually supposed to be implemented. High level overview specs, for example, are often marked "informational" and will be considered implemented once the spec is approved.';
-COMMENT ON COLUMN Specification.status IS 'An enum called SpecificationStatus that shows what the current status (new, draft, implemented etc) the spec is currently in.';
+COMMENT ON COLUMN Specification.definition_status IS 'An enum called SpecificationDefinitionStatus that shows what the current status (new, draft, implemented etc) the spec is currently in.';
 COMMENT ON COLUMN Specification.priority IS 'An enum that gives the implementation priority (low, medium, high, emergency) of the feature defined in this specification.';
 COMMENT ON COLUMN Specification.specurl IS 'The URL where the specification itself can be found. This is usually a wiki page somewhere.';
 COMMENT ON COLUMN Specification.whiteboard IS 'As long as the specification is somewhere else (i.e. not in Launchpad) it will be useful to have a place to hold some arbitrary message or status flags that have meaning to the project, not Launchpad. This whiteboard is just the place for it.';
 COMMENT ON COLUMN Specification.superseded_by IS 'The specification which replaced this specification.';
-COMMENT ON COLUMN Specification.delivery IS 'The implementation status of this
-specification. This field is used to track the actual delivery of the feature
-(implementing the spec), as opposed to the definition of expected behaviour
-(writing the spec).';
+COMMENT ON COLUMN Specification.implementation_status IS 'The implementation status of this specification. This field is used to track the actual delivery of the feature (implementing the spec), as opposed to the definition of expected behaviour (writing the spec).';
 COMMENT ON COLUMN Specification.goalstatus IS 'Whether or not the drivers for the goal product series or distro release have accepted this specification as a goal.';
 COMMENT ON COLUMN Specification.goal_proposer IS 'The person who proposed this spec as a goal for the productseries or distrorelease.';
 COMMENT ON COLUMN Specification.date_goal_proposed IS 'The date the spec was proposed as a goal.';
@@ -953,7 +953,7 @@ COMMENT ON COLUMN Specification.goal_decider IS 'The person who approved or decl
 COMMENT ON COLUMN Specification.date_goal_decided IS 'The date this goal was accepted or declined.';
 COMMENT ON COLUMN Specification.completer IS 'The person who changed the state of the spec in such a way that it was determined to be completed.';
 COMMENT ON COLUMN Specification.date_completed IS 'The date this specification was completed or marked obsolete. This lets us chart the progress of a project (or a release) over time in terms of features implemented.';
-COMMENT ON CONSTRAINT specification_completion_recorded_chk ON Specification IS 'A constraint to ensure that we have recorded the date of completion if the specification is in fact considered completed. The SQL behind the completion test is repeated at a code level in database/specification.py: as Specification.completeness, please ensure that the constraint is kept in sync with the code.';
+-- COMMENT ON CONSTRAINT specification_completion_recorded_chk ON Specification IS 'A constraint to ensure that we have recorded the date of completion if the specification is in fact considered completed. The SQL behind the completion test is repeated at a code level in database/specification.py: as Specification.completeness, please ensure that the constraint is kept in sync with the code.';
 COMMENT ON CONSTRAINT specification_completion_fully_recorded_chk ON Specification IS 'A constraint that ensures, where we have a date_completed, that we also have a completer. This means that the resolution was fully recorded.';
 COMMENT ON COLUMN Specification.private IS 'Specification is private.';
 
@@ -1446,10 +1446,13 @@ COMMENT ON COLUMN Archive.description IS 'Allow users to describe their PPAs con
 COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for accepting uploads.';
 COMMENT ON COLUMN Archive.authorized_size IS 'Size in bytes allowed for this PPA.';
 COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventions made in the PPA configuration.';
+COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
+COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
 COMMENT ON COLUMN Component.name IS 'Component name text';
+COMMENT ON COLUMN Component.description IS 'Description of this component.';
 
 
 -- Section
