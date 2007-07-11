@@ -1223,7 +1223,7 @@ context blueprint.
 
 First, we set up a product with three blueprints.
 
-    >>> from canonical.lp.dbschema import SpecificationStatus
+    >>> from canonical.lp.dbschema import SpecificationDefinitionStatus
     >>> evolution = getUtility(IProductSet).getByName('evolution')
     >>> foobar_person = getUtility(IPersonSet).getByName('name16')
     >>> foobar_person.displayname
@@ -1231,13 +1231,16 @@ First, we set up a product with three blueprints.
     >>> specset = getUtility(ISpecificationSet)
     >>> spec_a = specset.new('spec-a', 'Spec A',
     ...     'http://www.example.org/SpecA', 'The first spec',
-    ...     SpecificationStatus.APPROVED, foobar_person, product=evolution)
+    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
+    ...     product=evolution)
     >>> spec_b = specset.new('spec-b', 'Spec B',
     ...     'http://www.example.org/SpecB', 'The second spec',
-    ...     SpecificationStatus.APPROVED, foobar_person, product=evolution)
+    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
+    ...     product=evolution)
     >>> spec_c = specset.new('spec-c', 'Spec C',
     ...     'http://www.example.org/SpecC', 'The third spec',
-    ...     SpecificationStatus.APPROVED, foobar_person, product=evolution)
+    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
+    ...     product=evolution)
     >>> sorted([spec.name for spec in evolution.specifications()])
     [u'spec-a', u'spec-b', u'spec-c']
 
@@ -1254,7 +1257,8 @@ they depend on.
 
     >>> unrelated_spec = specset.new('unrelated-spec', 'Unrelated Spec',
     ...     'http://example.com/SpecU', 'A spec unrelated to Evolution',
-    ...     SpecificationStatus.APPROVED, foobar_person, product=firefox)
+    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
+    ...     product=firefox)
     >>> vocab = vocabulary_registry.get(
     ...     spec_a, "SpecificationDepCandidates")
     >>> unrelated_spec in vocab
