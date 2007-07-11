@@ -424,18 +424,20 @@ class Publisher(object):
 
         self.log.debug("Writing Release file for %s/%s/%s" % (
             full_name, component, architecture))
-        if architecture != "source":
-            file_stub = "Packages"
 
-            # Set up the debian-installer paths, which are nested
-            # inside the component
-            di_path = os.path.join(component, "debian-installer",
-                                   architecture)
-            di_file_stub = os.path.join(di_path, file_stub)
-            for suffix in index_suffixes:
-                all_files.add(di_file_stub + suffix)
+        if architecture != "source":
             # Strip "binary-" off the front of the architecture
             clean_architecture = architecture[7:]
+            file_stub = "Packages"
+
+            if self.archive == self.distro.main_archive:
+                # Set up the debian-installer paths for main_archive.
+                # d-i paths are nested inside the component.
+                di_path = os.path.join(
+                    component, "debian-installer", architecture)
+                di_file_stub = os.path.join(di_path, file_stub)
+                for suffix in index_suffixes:
+                    all_files.add(di_file_stub + suffix)
         else:
             file_stub = "Sources"
             clean_architecture = architecture
