@@ -20,7 +20,6 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces import IBranchSet
-from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.scripts.supermirror.ftests import createbranch
 from canonical.testing import LaunchpadZopelessLayer
 
