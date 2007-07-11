@@ -84,7 +84,7 @@ class CodeImportSync:
         Series where importstatus is DONTSYNC or TESTFAILED are ignored.
 
         Series for non-MAIN CVS branches are also ignored because we do not
-        record the CVS branch in CodeImport.
+        support imports from non-MAIN CVS branches.
         """
         series_iterator = getUtility(IProductSeriesSet).search(forimport=True)
         for series in series_iterator:
@@ -130,7 +130,8 @@ class CodeImportSync:
 
             # This invariant is depended on by the logic in updateCodeImport
             # that decides if we need to create a new branch for an exiting
-            # CodeImport.
+            # CodeImport. See TestCodeImportSync.testReimportProcess for
+            # details
             assert last_successful is not None
 
         elif series.importstatus in (ImportStatus.TESTING,
@@ -192,12 +193,15 @@ class CodeImportSync:
         """
         self.logger.debug("Updating CodeImport for series %s/%s (%d).",
             series.product.name, series.name, series.id)
+
+        # When code-import-sync runs in production, importd will need to use
+        # the CodeImport's branch to publish the import.
         assert (series.import_branch is None
                 or code_import.branch == series.import_branch)
 
         # If the previous date_last_successful was not NULL, and the new one is
         # NULL, that means we are doing a re-import. So we must use a new
-        # branch.
+        # branch. See TestCodeImportSync.testReimportProcess for details
         date_last_successful = self.dateLastSuccessfulFromProductSeries(series)
         if (code_import.date_last_successful is not None
                 and date_last_successful is None):

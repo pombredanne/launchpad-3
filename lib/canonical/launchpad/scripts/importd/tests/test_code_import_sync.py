@@ -10,14 +10,14 @@ import datetime
 import os.path
 import pytz
 from subprocess import Popen, PIPE
-import unittest
+from unittest import TestCase, TestLoader
 
 from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.database import CodeImport, ProductSeries, ProductSet
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
+from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.interfaces import (
     IBranchSet, ICodeImportSet, NotFoundError)
 from canonical.launchpad.scripts.importd.code_import_sync import CodeImportSync
@@ -50,7 +50,9 @@ class MockLogger:
         self.error_calls.append(args)
 
 
-class CodeImportSyncTestCase(LaunchpadZopelessTestCase):
+class CodeImportSyncTestCase(TestCase):
+
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         self.cleanUpSampleData()
@@ -219,12 +221,11 @@ class TestGetImportSeries(CodeImportSyncTestCase):
         # MAIN, regardless of the importstatus.
         testing = self.createTestingSeries('testing')
         self.updateSeriesWithCvs(testing)
-        assert testing.cvsbranch == 'MAIN' # test suite invariant
         testing.cvsbranch = 'BRANCH-FOO'
         self.assertGetImportSeriesYieldsNothing()
 
 
-class TestReviewStatusFromImportStatus(unittest.TestCase):
+class TestReviewStatusFromImportStatus(TestCase):
     """Unit tests for `CodeImportSync.reviewStatusFromImportStatus`."""
 
     def setUp(self):
@@ -276,10 +277,9 @@ class TestReviewStatusFromImportStatus(unittest.TestCase):
 
 class StubProductSeries:
     """Stub ProductSeries class used in unit tests."""
-    pass
 
 
-class TestDateLastSuccessfulFromProductSeries(unittest.TestCase):
+class TestDateLastSuccessfulFromProductSeries(TestCase):
     """Unit tests for `CodeImportSync.dateLastSuccessfulFromProductSeries`."""
 
     def setUp(self):
@@ -307,7 +307,7 @@ class TestDateLastSuccessfulFromProductSeries(unittest.TestCase):
         self.assertEqual(date_last_successful, series.datelastsynced)
 
     def assertNoneIsReturned(self, import_status):
-        """Assert that dateLastSuccesfulFromProductSeries return None for a
+        """Assert that dateLastSuccesfulFromProductSeries returns None for a
         ProductSeries with the given `import_status`.
         """
         series = self.makeStubSeries(import_status)
@@ -316,7 +316,7 @@ class TestDateLastSuccessfulFromProductSeries(unittest.TestCase):
         self.assertEqual(date_last_successful, None)
 
     def assertAssertionErrorRaised(self, import_status):
-        """Assort that dateLastSuccessfulFromProductSeries raises an
+        """Assert that dateLastSuccessfulFromProductSeries raises an
         AssertionError for a ProductSeries with the given `import_status`.
         """
         series = self.makeStubSeries(import_status)
@@ -540,8 +540,10 @@ class TestCodeImportSync(CodeImportSyncTestCase):
         self.assertSingleCodeImportMatchesSeries(reimport)
 
 
-class TestCodeImportSyncScript(LaunchpadZopelessTestCase):
+class TestCodeImportSyncScript(TestCase):
     """Tests for the code-import-sync.py script runner."""
+
+    layer = LaunchpadZopelessLayer
 
     def testItRuns(self):
         # Test that cronscripts/code-import-sync.py runs. We are not testing
@@ -560,4 +562,4 @@ class TestCodeImportSyncScript(LaunchpadZopelessTestCase):
 
 
 def test_suite():
-    return unittest.TestLoader().loadTestsFromName(__name__)
+    return TestLoader().loadTestsFromName(__name__)

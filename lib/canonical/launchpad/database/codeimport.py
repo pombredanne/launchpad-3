@@ -18,7 +18,7 @@ from zope.interface import implements
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import (cursor, SQLBase, sqlvalues)
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
     ICodeImport, ICodeImportSet, ILaunchpadCelebrities, NotFoundError)
@@ -101,6 +101,12 @@ class CodeImportSet:
             raise AssertionError(
                 "Don't know how to sanity check source details for unknown "
                 "rcs_type %s"%rcs_type)
+        cur = cursor()
+        cur.execute("""
+            SELECT setval('codeimport_id_seq', GREATEST(%s, (
+                SELECT last_value from codeimport_id_seq)));"""
+            % sqlvalues(id))
+        assert len(cur.fetchall()) == 1
         return CodeImport(id=id, registrant=registrant, branch=branch,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
