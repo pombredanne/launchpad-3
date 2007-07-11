@@ -17,12 +17,22 @@ Selecting a product that doesn't use Launchpad Bugs will take us to an informati
     >>> user_browser.getControl('Project').selected = True
     >>> user_browser.getControl(
     ...     name='field.bugtarget.product').value = 'thunderbird'
+    >>> user_browser.getControl('Summary').value = 'Some harry'
     >>> user_browser.getControl('Continue').click()
     >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
     ...     print extract_text(message)
     Mozilla Thunderbird does not use Launchpad as its bug tracker.
 
- If we enter an non-existant product, we get an error message.
+The bugtarget fields on the form will be highlighted to show the error:
+
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print extract_text(message)
+    Mozilla Thunderbird does not use...
+    ...
+    There is 1 error.
+    Mozilla Thunderbird does not use Launchpad as its bug tracker
+
+If we enter an non-existant product, we get an error message.
 
     >>> user_browser.open('http://bugs.launchpad.dev/bugs/+filebug/')
     >>> user_browser.getControl('Project').selected = True

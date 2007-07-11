@@ -28,6 +28,15 @@ presented with a warning.
     ...     print extract_text(message)
     Debian does not use Launchpad as its bug tracker.
 
+The bugtarget fields on the form will be highlighted to show the error:
+
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...	    print extract_text(message)
+    Debian does not use...
+    ...
+    There is 1 error.
+    Debian does not use Launchpad as its bug tracker
+
 If we enter an non-existant source package, we get an error message.
 
     >>> user_browser.open('http://bugs.launchpad.dev/')
