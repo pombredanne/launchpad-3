@@ -22,8 +22,7 @@
   <metal:not_uses_malone
     use-macro="context/@@+filebug-macros/not_uses_malone" />
 
-  <tal:uses_malone 
-      tal:condition="python: view.contextUsesMalone() or view.getProductOrDistroFromContext()">
+  <tal:uses_malone tal:condition="view/contextUsesMalone">
 
     <div metal:use-macro="context/@@launchpad_form/form">
 
