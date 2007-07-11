@@ -222,7 +222,7 @@ and arch-independant binaries.
 
   >>> expect_okays('bar_1.0-1_binary', is_new=True)
 
-  >>> expect_okays('bar_1.0-2', upload_policy='sync')
+  >>> expect_okays('bar_1.0-2')
 
 Check the rejection of bar_1.0-2_binary when uploaded to the wrong build id.
 
