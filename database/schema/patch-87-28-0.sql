@@ -11,5 +11,5 @@ ANALYZE POMsgSet(language);
 -- We'll probably want to partition POMsgSet on this column in the future
 CREATE INDEX pomsgset__language__idx ON POMsgSet(language);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 28, 0);
 
