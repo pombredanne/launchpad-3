@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+s()# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Project-related interfaces for Launchpad."""
 
@@ -211,7 +211,9 @@ class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
         """
 
     def hasProducts():
-        """Indicates whether a Project has any products associated with it"""
+        """Returns True if a project has products associated with it, False
+        otherwise.
+        """
 
 # Interfaces for set
 

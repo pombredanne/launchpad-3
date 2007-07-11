@@ -183,28 +183,28 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link(target, text, enabled=enabled)
 
     def bugs(self):
-        """Set up a link on the Bugs tab"""
+        """Set up a link on the Bugs tab."""
         site = 'bugs'
         text = 'Bugs'
 
         return Link('', text, enabled=self.context.hasProducts(), site=site)
 
     def answers(self):
-        """Set up a link on the Answers tab"""
+        """Set up a link on the Answers tab."""
         site = 'answers'
         text = 'Answers'
 
         return Link('', text, enabled=self.context.hasProducts(), site=site)
 
     def specifications(self):
-        """Set up a link on the Blueprints tab"""
+        """Set up a link on the Blueprints tab."""
         site = 'blueprints'
         text = 'Blueprints'
 
         return Link('', text, enabled=self.context.hasProducts(), site=site)
 
     def translations(self):
-        """Sets up a link on the Translations tab"""
+        """Sets up a link on the Translations tab."""
         site = 'translations'
         text = 'Translations'
 
@@ -249,7 +249,7 @@ class ProjectOverviewMenu(ApplicationMenu):
 
         # We disable this link if the project has no products. This is for
         # consistency with the way the overview buttons behave in the same
-        # circumstances
+        # circumstances.
         return Link('+mentoring', text, icon='info', 
                     enabled=self.context.hasProducts())
 
