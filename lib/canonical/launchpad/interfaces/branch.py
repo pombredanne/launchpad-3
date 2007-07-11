@@ -5,6 +5,9 @@
 __metaclass__ = type
 
 __all__ = [
+    'BranchCreationException',
+    'BranchCreationForbidden',
+    'BranchCreatorNotMemberOfOwnerTeam',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
@@ -19,8 +22,8 @@ from zope.component import getUtility
 from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 
 from canonical.config import config
-from canonical.lp.dbschema import (BranchLifecycleStatus,
-                                   BranchLifecycleStatusFilter)
+from canonical.lp.dbschema import (
+    BranchLifecycleStatus, BranchLifecycleStatusFilter)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
@@ -37,6 +40,26 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.MATURE)
 
 
+class BranchCreationException(Exception):
+    """Base class for branch creation exceptions."""
+
+
+class BranchCreationForbidden(BranchCreationException):
+    """A Branch visibility policy forbids branch creation.
+
+    The exception is raised if the policy for the product does not allow
+    the creator of the branch to create a branch for that product.
+    """
+
+
+class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
+    """Branch creator is not a member of the owner team.
+
+    Raised when a user is attempting to create a branch and set the owner of
+    the branch to a team that they are not a member of.
+    """
+
+
 class BranchURIField(URIField):
 
     def _validate(self, value):
@@ -45,6 +68,12 @@ class BranchURIField(URIField):
         from canonical.launchpad.webapp.uri import URI
 
         super(BranchURIField, self)._validate(value)
+
+        # XXX thumper 2007-06-12
+        # Move this validation code into IBranchSet so it can be
+        # reused in the XMLRPC code, and the Authserver.
+        # This also means we could get rid of the imports above.
+
         # URIField has already established that we have a valid URI
         uri = URI(value)
         supermirror_root = URI(config.launchpad.supermirror_root)
@@ -76,7 +105,7 @@ class BranchURIField(URIField):
 
 class IBranchBatchNavigator(ITableBatchNavigator):
     """A marker interface for registering the appropriate branch listings."""
-    
+
 
 class IBranch(IHasOwner):
     """A Bazaar branch."""
@@ -323,10 +352,14 @@ class IBranchSet(Interface):
         Return the default value if there is no such branch.
         """
 
-    def new(name, owner, product, url, title,
+    def new(name, creator, owner, product, url, title,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None, date_created=None):
-        """Create a new branch."""
+        """Create a new branch.
+
+        Raises BranchCreationForbidden if the creator is not allowed
+        to create a branch for the specified product.
+        """
 
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.
