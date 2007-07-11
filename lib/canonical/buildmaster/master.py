@@ -237,8 +237,20 @@ class BuilddMaster:
         # instance for self._archserieses, it ends up empty. Bug 2070.
         # XXX: I have no idea what celso is talking about above. -- kiko
         for pubrec in sources_published:
+            # XXX cprov 20070711: Fix me please.
+            # 1. ISSPPH should implement 'is_personal' or 'is_distro' property
+            #    Attempt to cope with new CommercialRepo changes.
+            # 2. 'ppa_archtags' should be modeled as
+            #    DistroArchSeries.ppa_supported
+            if pubrec.archive != pubrec.distroseries.main_archive:
+                ppa_archtags = ('i386', 'amd64')
+                legal_archs = set(
+                    (distro_arch_series for distro_arch_series in legal_archs
+                     if distro_arch_series.architecturetag in ppa_archtags))
+
             build_archs = determineArchitecturesToBuild(
-                            pubrec, legal_archs, distroseries, pas_verify)
+                pubrec, legal_archs, distroseries, pas_verify)
+
             self._createMissingBuildsForPublication(pubrec, build_archs)
 
         self.commit()
