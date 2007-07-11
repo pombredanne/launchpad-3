@@ -33,7 +33,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import (
-    browserLanguages, is_english_variant, request_languages)
+    browserLanguages, is_english_variant, person_or_request_languages)
 from canonical.launchpad.interfaces import (
     IDistribution, ILanguageSet, IProject, IQuestionCollection, IQuestionSet,
     IQuestionTarget, ISearchableByQuestionOwner, ISearchQuestionsForm,
@@ -75,15 +75,15 @@ class UserSupportLanguagesMixin:
     def user_support_languages(self):
         """The set of user support languages.
 
-        This set includes the user's preferred languages, excluding all 
-        English variants. If the user is not logged in, or doesn't have 
-        any preferred languages set, the languages will be inferred 
-        from the request (the Accept-Language header and GeoIP
+        This set includes the user's preferred languages, converting
+        English variants to English. If the user is not logged in, or
+        doesn't have any preferred languages set, the languages will
+        be inferred from the request (the Accept-Language header and GeoIP
         information).
         """
         english = getUtility(ILanguageSet)['en']
         languages = set()
-        for language in request_languages(self.request):
+        for language in person_or_request_languages(self.request):
             if is_english_variant(language):
                 languages.add(english)
             else:
@@ -599,8 +599,10 @@ class ManageAnswerContactView(UserSupportLanguagesMixin, LaunchpadFormView):
                 and len(variants) == 0):
                 languages = browserLanguages(self.request)
             else:
-                # A person who speak an English variant or his browser
-                # does not have languages is considered to speak English.
+                # A) The person and browser are not associated with any
+                #    language; we assume he speaks English.
+                # B) The person speaks an English variant; we know that he
+                #    can answer English questions.
                 languages = [english]
             for language in languages:
                 person_or_team.addLanguage(language)

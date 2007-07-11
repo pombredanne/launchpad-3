@@ -51,6 +51,7 @@ from canonical.launchpad.database.questionsubscription import (
     QuestionSubscription)
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
 from canonical.launchpad.webapp.enum import Item
@@ -1019,6 +1020,8 @@ class QuestionTargetMixin:
         """See `IQuestionTarget`."""
         languages = set()
         for contact in self.answer_contacts:
-            languages |= contact.getSupportedLanguages()
+            languages |= set(contact.languages)
         languages.add(getUtility(ILanguageSet)['en'])
+        languages = set(
+            lang for lang in languages if not is_english_variant(lang))
         return languages

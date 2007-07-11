@@ -461,18 +461,6 @@ class Person(SQLBase, HasSpecificationsMixin):
                 needs_attention=needs_attention
                 ).getResults()
 
-    def getSupportedLanguages(self):
-        """See `IPerson`."""
-        languages = set()
-        english = getUtility(ILanguageSet)['en']
-        known_languages = self.languages
-        if known_languages.count() != 0:
-            for lang in known_languages:
-                if is_english_variant(lang):
-                    lang = english
-                languages.add(lang)
-        return languages
-
     def getQuestionLanguages(self):
         """See `IQuestionTarget`."""
         return set(Language.select(

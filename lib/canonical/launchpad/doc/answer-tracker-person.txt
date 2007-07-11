@@ -189,53 +189,6 @@ by each criteria:
     Installation of Java Runtime Environment for Mozilla    Answered
     Newly installed plug-in doesn't seem to be used         Answered
 
-== getSupportedLanguages() ==
-
-IPerson also provides a getSupportedLanguages method which can be used
-to retrieve the list of languages in which the person or team can
-answer questions.
-
-    # Helper to see easily the languages in a list.
-    >>> def language_codes(languages):
-    ...     return sorted(str(language.code) for language in languages)
-
-For a person without list of known languages doe not support any languages:
-
-    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-    >>> language_codes(sample_person.languages)
-    []
-    >>> language_codes(sample_person.getSupportedLanguages())
-    []
-
-Otherwise, the list of supported languages matches the list of
-known languages:
-
-    >>> carlos = getUtility(IPersonSet).getByName('carlos')
-    >>> language_codes(carlos.languages)
-    ['ca', 'en', 'es']
-    >>> language_codes(carlos.getSupportedLanguages())
-    ['ca', 'en', 'es']
-
-Also, note that all English variants are considered to be English.
-
-    >>> daf = getUtility(IPersonSet).getByName('daf')
-    >>> language_codes(daf.languages)
-    ['cy', 'en_GB', 'ja']
-    >>> language_codes(daf.getSupportedLanguages())
-    ['cy', 'en', 'ja']
-
-For team with a list of known languages set, the same rule applies:
-
-    >>> from canonical.launchpad.interfaces import ILanguageSet
-    >>> ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
-    >>> esperanto = getUtility(ILanguageSet)['eo']
-    >>> ubuntu_team.addLanguage(esperanto)
-
-    >>> language_codes(ubuntu_team.languages)
-    ['eo']
-    >>> language_codes(ubuntu_team.getSupportedLanguages())
-    ['eo']
-
 
 == getQuestionLanguages() ==
 

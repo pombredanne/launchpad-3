@@ -550,12 +550,17 @@ are used:
 
 Note that all variants of English are always excluded from the
 vocabulary (since we don't want to confuse people by providing multiple
-English options). English is substitute for the English variant.
+English options).
+
+Daf has en_GB listed among his languages:
 
     >>> login('daf@canonical.com')
     >>> user = getUtility(ILaunchBag).user
     >>> sorted(lang.code for lang in user.languages)
     [u'cy', u'en_GB', u'ja']
+
+But the vocabulary made from this languages has substituted the
+English variant with English:
 
     >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]

@@ -789,16 +789,6 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         If the given language is not present, nothing  will happen.
         """
 
-    def getSupportedLanguages():
-        """Return a set containing the languages in which support is provided.
-
-        For a person, this is equal to the list of known languages minus
-        the dialects.
-        For a team that doesn't have any explicit known languages set, this
-        will be equal to union of all the languages known by its members
-        minus dialects.
-        """
-
     def getDirectAnswerQuestionTargets():
         """Return a list of IQuestionTargets that a person is subscribed to.
 
