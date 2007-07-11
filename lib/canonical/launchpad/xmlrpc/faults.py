@@ -14,6 +14,7 @@ __all__ = [
     'NoSuchBranch',
     'NoSuchBug',
     'RequiredParameterMissing',
+    'BranchCreationForbidden',
     ]
 
 import xmlrpclib
@@ -143,6 +144,17 @@ class RequiredParameterMissing(LaunchpadFault):
 
     error_code = 100
     msg_template = "Required parameter missing: %(parameter_name)s"
+
+    def __init__(self, parameter_name):
+        LaunchpadFault.__init__(self, parameter_name=parameter_name)
+
+
+class BranchCreationForbidden(LaunchpadFault):
+    """The user was not permitted to create a branch."""
+
+    error_code = 110
+    msg_template = (
+        "You are not allowed to create a branch for project: %(parameter_name)s")
 
     def __init__(self, parameter_name):
         LaunchpadFault.__init__(self, parameter_name=parameter_name)
