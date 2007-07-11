@@ -1226,6 +1226,7 @@ body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
 .specdeliveryNEEDSREVIEW        {color: purple;}
 .specdeliveryAWAITINGDEPLOYMENT {color: red;}
 .specdeliveryIMPLEMENTED        {color: green;}
+.specdeliveryINFORMATIONAL      {color: green;}
 
 /* --- Translations --- */
 
