@@ -92,57 +92,20 @@ class UserDetailsStorageMixin:
         )
         return [row[0] for row in transaction.fetchall()]
 
-    def getSSHKeys(self, archiveName):
-        ri = self.connectionPool.runInteraction
-        return ri(self._getSSHKeysInteraction, archiveName)
+    def getSSHKeys(self, loginID):
+        return deferToThread(self._getSSHKeysInteraction, loginID)
 
-    def _getSSHKeysInteraction(self, transaction, loginID):
+    @read_only_transaction
+    def _getSSHKeysInteraction(self, loginID):
         """The interaction for getSSHKeys."""
-        if '@' in loginID:
-            # Bazaar 1.x logins.  Deprecated.
-            archiveName = loginID
-            # The PushMirrorAccess table explicitly says that a person may
-            # access a particular push mirror.
-            transaction.execute(utf8('''
-                SELECT keytype, keytext
-                FROM SSHKey
-                JOIN PushMirrorAccess ON SSHKey.person = PushMirrorAccess.person
-                WHERE PushMirrorAccess.name = %s'''
-                % sqlvalues(archiveName))
-            )
-            authorisedKeys = transaction.fetchall()
-
-            # A person can also access any archive named after a validated email
-            # address.
-            if '--' in archiveName:
-                email, suffix = archiveName.split('--', 1)
-            else:
-                email = archiveName
-
-            transaction.execute(utf8('''
-                SELECT keytype, keytext
-                FROM SSHKey
-                JOIN EmailAddress ON SSHKey.person = EmailAddress.person
-                WHERE EmailAddress.email = %s
-                AND EmailAddress.status in (%s, %s)'''
-                % sqlvalues(email, dbschema.EmailAddressStatus.VALIDATED,
-                            dbschema.EmailAddressStatus.PREFERRED))
-            )
-            authorisedKeys.extend(transaction.fetchall())
-        else:
-            transaction.execute(utf8('''
-                SELECT keytype, keytext
-                FROM SSHKey
-                JOIN Person ON SSHKey.person = Person.id
-                WHERE Person.name = %s'''
-                % sqlvalues(loginID))
-            )
-            authorisedKeys = transaction.fetchall()
-
-        # Replace keytype with correct DBSchema items.
-        authorisedKeys = [(dbschema.SSHKeyType.items[keytype].title, keytext)
-                          for keytype, keytext in authorisedKeys]
-        return authorisedKeys
+        person_data = self._getPerson(cursor(), loginID)
+        if person_data is None:
+            return []
+        person_id = person_data[0]
+        person = getUtility(IPersonSet).get(person_id)
+        return [
+            (key.keytype.title, key.keytext)
+            for key in person.sshkeys]
 
     def _getPerson(self, transaction, loginID):
         # We go through some contortions with assembling the SQL to ensure that

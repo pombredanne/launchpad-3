@@ -367,6 +367,34 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
             1, 'sabdfl', '+junk', 'foo')
         self.assertEqual(self._getTime(branchID), None)
 
+    def test_getSSHKeys_empty(self):
+        # getSSHKeys returns an empty list for users without SSH keys.
+        storage = DatabaseUserDetailsStorage(None)
+        keys = storage._getSSHKeysInteraction('no-priv')
+        self.assertEqual([], keys)
+
+    def test_getSSHKeys_no_such_user(self):
+        storage = DatabaseUserDetailsStorage(None)
+        keys = storage._getSSHKeysInteraction('no-such-user')
+        self.assertEqual([], keys)
+        
+    def test_getSSHKeys(self):
+        # getSSHKeys returns a list of keytype, keytext tuples for users with
+        # SSH keys.
+
+        cur = cursor()
+        cur.execute("""
+            SELECT keytext FROM SSHKey
+            JOIN Person ON (SSHKey.person = Person.id)
+            WHERE Person.name = 'sabdfl'
+            """)
+        [expected_keytext] = cur.fetchone()
+
+        storage = DatabaseUserDetailsStorage(None)
+        [(keytype, keytext)] = storage._getSSHKeysInteraction('sabdfl')
+        self.assertEqual('DSA', keytype)
+        self.assertEqual(expected_keytext, keytext)
+
 
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
     # Tests that do some database writes (but makes sure to roll them back)
@@ -463,73 +491,6 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         userDict = storage._authUserInteraction(self.cursor, 'mark@hbd.com',
                                                 ssha)
         self.assertEqual({}, userDict)
-
-    def test_getSSHKeys(self):
-        # FIXME: there should probably be some SSH keys in the sample data,
-        #        so that this test wouldn't need to add some.
-
-        self.cursor.execute(
-            "SELECT keytext FROM SSHKey WHERE person = 1")
-        [keytext] = self.cursor.fetchone()
-
-        # Add test push mirror access
-        self.cursor.execute(
-            "INSERT INTO PushMirrorAccess (name, person) "
-            "VALUES ("
-            "  'marks-archive@example.com',"
-            "  1) "
-        )
-
-        # Fred's SSH key should have access to freds-archive@example.com
-        storage = DatabaseUserDetailsStorage(None)
-        keys = storage._getSSHKeysInteraction(self.cursor,
-                                              'marks-archive@example.com')
-        self.assertEqual([('DSA', keytext)], keys)
-
-        # Fred's SSH key should also have access to an archive with his email
-        # address
-        keys = storage._getSSHKeysInteraction(self.cursor, 'mark@hbd.com')
-        self.assertEqual([('DSA', keytext)], keys)
-
-        # Fred's SSH key should also have access to an archive whose name
-        # starts with his email address + '--'.
-        keys = storage._getSSHKeysInteraction(self.cursor,
-                                              'mark@hbd.com--2005')
-        self.assertEqual([('DSA', keytext)], keys)
-
-        # No-one should have access to wilma@hbd.com
-        keys = storage._getSSHKeysInteraction(self.cursor, 'wilma@hbd.com')
-        self.assertEqual([], keys)
-
-        # Mark should not have access to wilma@hbd.com--2005, even if he has the
-        # email address wilma@hbd.com--2005.mark.is.a.hacker.com
-        self.cursor.execute(
-            "INSERT INTO EmailAddress (person, email, status) "
-            "VALUES ("
-            "  1, "
-            "  'wilma@hbd.com--2005.mark.is.a.hacker.com',"
-            "  2)"  # 2 == Validated
-        )
-        keys = storage._getSSHKeysInteraction(
-            self.cursor, 'wilma@mark@hbd.com--2005.mark.is.a.hacker.com'
-        )
-        self.assertEqual([], keys)
-        keys = storage._getSSHKeysInteraction(
-            self.cursor, 'wilma@mark@hbd.com--2005.mark.is.a.hacker.com--2005'
-        )
-        self.assertEqual([], keys)
-
-        # Fred should not have access to archives named after an unvalidated
-        # email address of his
-        self.cursor.execute(
-            "INSERT INTO EmailAddress (person, email, status) "
-            "VALUES ("
-            "  1, "
-            "  'mark@hotmail',"
-            "  1)"  # 1 == New (unvalidated)
-        )
-        keys = storage._getSSHKeysInteraction(self.cursor, 'mark@hotmail')
-        self.assertEqual([], keys)
 
     def test_getUserNoWikiname(self):
         # Ensure that the authserver copes gracefully with users with:
