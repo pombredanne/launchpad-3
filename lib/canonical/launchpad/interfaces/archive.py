@@ -34,6 +34,8 @@ class IArchive(Interface):
         title=_("Purpose of archive."), required=True, readonly=True,
         )
 
+    title = Attribute("The name of the archive purpose.")
+
 
     def getPubConfig(distribution):
         """Return an overridden Publisher Configuration instance.

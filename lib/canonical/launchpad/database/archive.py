@@ -75,6 +75,11 @@ class Archive(SQLBase):
         assert False, "Unknown archive purpose when getting publisher config."
 
     @property
+    def title(self):
+        """See `IArchive`."""
+        return self.purpose.title
+
+    @property
     def archive_url(self):
         """See IArchive."""
         return urlappend(

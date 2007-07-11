@@ -13,6 +13,7 @@ import stat
 import tempfile
 
 from Crypto.Hash.SHA256 import new as sha256
+from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
@@ -20,10 +21,10 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.config import LucilleConfigError
 from canonical.archivepublisher.domination import Dominator
 from canonical.archivepublisher.ftparchive import FTPArchiveHandler
-from canonical.launchpad.interfaces import pocketsuffix
+from canonical.launchpad.interfaces import IComponentSet, pocketsuffix
 from canonical.librarian.client import LibrarianClient
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus)
+    ArchivePurpose, PackagePublishingPocket, PackagePublishingStatus)
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
@@ -84,9 +85,9 @@ def getPublisher(archive, distribution, allowed_suites, log, distsroot=None):
     Optionally the user override the resulting indexes location via 'distroot'
     option.
     """
-    if distribution.main_archive.id == archive.id:
-        log.debug("Finding configuration for %s main_archive."
-                  % distribution.name)
+    if archive.purpose != ArchivePurpose.PPA:
+        log.debug("Finding configuration for %s %s."
+                  % (distribution.name, archive.title))
     else:
         log.debug("Finding configuration for '%s' PPA."
                   % archive.owner.name)

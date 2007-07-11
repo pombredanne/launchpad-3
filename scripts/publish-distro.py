@@ -130,9 +130,9 @@ def main():
             return
 
     for archive in archives:
-        if archive.purpose != ArchivePurpose.PPA
+        if archive.purpose != ArchivePurpose.PPA:
             log.info("Processing %s %s" % (
-                distribution.name, archive.purpose.title))
+                distribution.name, archive.title))
         else:
             log.info("Processing %s" % archive.archive_url)
 

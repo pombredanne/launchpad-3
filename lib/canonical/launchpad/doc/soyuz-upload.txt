@@ -648,10 +648,13 @@ publishing mode, publish-distro will attempt to publish files which are
 already marked as published in the database and, if the files are
 already on disk, verify the contents are as expected.
 
-  >>> stderr
-  '.../var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08... is already in pool with the same...
-  .../var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08... is already in pool with the same...
-  .../var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08... is already in pool with the same...'
+  >>> print stderr
+  INFO      Distribution: ubuntutest
+  ...
+  DEBUG   /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08.orig.tar.gz is already in pool with the same content.
+  DEBUG   /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08-1.diff.gz is already in pool with the same content.
+  DEBUG   /var/tmp/archive/ubuntutest/pool/main/e/etherwake/etherwake_1.08-1.dsc is already in pool with the same content.
+  ...
 
 Invalidates SQLObject cache to cope with publisher.
 
