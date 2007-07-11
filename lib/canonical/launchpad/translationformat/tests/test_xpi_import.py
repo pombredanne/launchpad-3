@@ -83,8 +83,9 @@ class XpiTestCase(unittest.TestCase):
             owner=self.importer)
         self.firefox_template = (
             firefox_potemplate_subset.getPOTemplateByName('firefox'))
+        self.spanish_firefox = self.firefox_template.newPOFile('es')
 
-    def setUpTranslationImportQueue(self):
+    def setUpTranslationImportQueueForTemplate(self):
         """Return an ITranslationImportQueueEntry for testing purposes."""
         # Get the file to import.
         en_US_xpi =  get_en_US_xpi_file_to_import()
@@ -95,12 +96,26 @@ class XpiTestCase(unittest.TestCase):
         entry = translation_import_queue.addOrUpdateEntry(
             self.firefox_template.path, en_US_xpi.read(), published,
             self.importer, productseries=self.firefox_template.productseries,
-            potemplate=self.firefox_template, format=TranslationFileFormat.XPI
-            )
+            potemplate=self.firefox_template)
 
-        # The file data is stored in the Librarian, so we have to commit the
-        # transaction to make sure it's stored properly.
-        transaction.commit()
+        # We must approve the entry to be able to import it.
+        entry.status = RosettaImportStatus.APPROVED
+
+        return entry
+
+    def setUpTranslationImportQueueForTranslation(self):
+        """Return an ITranslationImportQueueEntry for testing purposes."""
+        # Get the file to import. Given the way XPI file format works, we can
+        # just use the same template file like a translation one.
+        es_xpi =  get_en_US_xpi_file_to_import()
+
+        # Attach it to the import queue.
+        translation_import_queue = getUtility(ITranslationImportQueue)
+        published = True
+        entry = translation_import_queue.addOrUpdateEntry(
+            'translations/es.xpi', es_xpi.read(), published,
+            self.importer, productseries=self.firefox_template.productseries,
+            potemplate=self.firefox_template, pofile=self.spanish_firefox)
 
         # We must approve the entry to be able to import it.
         entry.status = RosettaImportStatus.APPROVED
@@ -130,10 +145,14 @@ class XpiTestCase(unittest.TestCase):
         # This format doesn't support any functionality like .po flags.
         self.assertEquals(message.flagscomment, u'')
 
-    def testImport(self):
-        """Test XPI file import."""
+    def testTemplateImport(self):
+        """Test XPI template file import."""
         # Prepare the import queue to handle a new .xpi import.
-        entry = self.setUpTranslationImportQueue()
+        entry = self.setUpTranslationImportQueueForTemplate()
+        # The file data is stored in the Librarian, so we have to commit the
+        # transaction to make sure it's stored properly.
+        transaction.commit()
+
 
         # Now, we tell the PO template to import from the file data it has.
         self.firefox_template.importFromQueue()
@@ -209,6 +228,83 @@ class XpiTestCase(unittest.TestCase):
                 # which is noted as the en_US translation.
                 self.assertEquals(
                     message.sourcecomment, u"Default key in en_US: 'm'")
+
+        # Check that we got all messages.
+        self.assertEquals(
+            [u'foozilla.happytitle', u'foozilla.menu.accesskey',
+             u'foozilla.menu.commandkey', u'foozilla.menu.title',
+             u'foozilla.name', u'foozilla.nocomment', u'foozilla.play.fire',
+             u'foozilla.play.ice', u'foozilla.title', u'foozilla.utf8',
+             u'foozilla_something'],
+            sorted(messages_msgid_list))
+
+    def testTranslationImport(self):
+        """Test XPI translation file import."""
+        # Prepare the import queue to handle a new .xpi import.
+        self.setUpTranslationImportQueueForTemplate()
+        translation_entry = self.setUpTranslationImportQueueForTranslation()
+        # The file data is stored in the Librarian, so we have to commit the
+        # transaction to make sure it's stored properly.
+        transaction.commit()
+
+        # Now, we tell the PO template to import from the file data it has.
+        self.firefox_template.importFromQueue()
+        # And the Spanish translation.
+        self.spanish_firefox.importFromQueue()
+
+        # The status is now IMPORTED:
+        self.assertEquals(translation_entry.status, RosettaImportStatus.IMPORTED)
+
+        # Let's validate the content of the messages.
+        potmsgsets = list(self.firefox_template.getPOTMsgSets())
+
+        messages_msgid_list = []
+        for message in potmsgsets:
+            translation_message = self.spanish_firefox.getPOMsgSetFromPOTMsgSet(message)
+            messages_msgid_list.append(message.msgid)
+
+            # Check the common values for all messages.
+            self._assertXpiMessageInvariant(message)
+
+            if message.msgid == u'foozilla.name':
+                # It's a normal message that lacks any comment.
+
+                self.assertEquals(message.singular_text, u'FooZilla!')
+                # Translation will match singular_text because we are using
+                # the same file for the template and translation.
+                self.assertEquals(
+                    translation_message.published_texts,
+                    translation_message.published_texts)
+                # With this first import, published and active texts must
+                # match.
+                self.assertEquals(
+                    translation_message.published_texts,
+                    translation_message.active_texts)
+
+            elif message.msgid == u'foozilla.menu.accesskey':
+                # access key is a special notation that is supposed to be
+                # translated with a key shortcut.
+                self.assertEquals(
+                    message.singular_text, u'foozilla.menu.accesskey')
+                # The comment shows the key used when there is no translation,
+                # which is noted as the en_US translation.
+                self.assertEquals(
+                    message.sourcecomment, u"Default key in en_US: 'M'")
+                # But for the translation import, we get the key directly.
+                self.assertEquals(
+                    translation_message.published_texts, [u'M'])
+            elif message.msgid == u'foozilla.menu.commandkey':
+                # command key is a special notation that is supposed to be
+                # translated with a key shortcut.
+                self.assertEquals(
+                    message.singular_text, u'foozilla.menu.commandkey')
+                # The comment shows the key used when there is no translation,
+                # which is noted as the en_US translation.
+                self.assertEquals(
+                    message.sourcecomment, u"Default key in en_US: 'm'")
+                # But for the translation import, we get the key directly.
+                self.assertEquals(
+                    translation_message.published_texts, [u'm'])
 
         # Check that we got all messages.
         self.assertEquals(
