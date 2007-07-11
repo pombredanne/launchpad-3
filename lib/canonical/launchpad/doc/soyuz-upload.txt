@@ -725,7 +725,7 @@ Testing archive-cruft-check-ng behaviour:
 Defining path to the script:
 
   >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
-  ...                       "archive-cruft-check-ng.py")
+  ...                       "archive-cruft-check.py")
   >>> process = subprocess.Popen([sys.executable, script, "-vvn",
   ...                             "-d", "ubuntutest",
   ...                             "-s", "breezy-autotest",
