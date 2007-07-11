@@ -28,14 +28,13 @@ presented with a warning.
     ...     print extract_text(message)
     Debian does not use Launchpad as its bug tracker.
 
-The bugtarget fields on the form will be highlighted to show the error:
+A link will be included to take the user back to the +filebug page:
 
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-    ...	    print extract_text(message)
-    Debian does not use...
-    ...
-    There is 1 error.
-    Debian does not use Launchpad as its bug tracker
+    >>> user_browser.getLink('refine and resubmit').click()
+    >>> user_browser.url
+    'http://bugs.launchpad.dev/bugs/+filebug'
+
+    >>> user_browser.getControl('Summary').value
 
 If we enter an non-existant source package, we get an error message.
 
