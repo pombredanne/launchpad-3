@@ -300,6 +300,9 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Product.project = %s""" % sqlvalues(self.id),
             clauseTables=['Question', 'Product'], distinct=True))
 
+    def hasProducts(self):
+        """Returns true if the project has products associated with it"""
+        return self.products.count() != 0
 
 class ProjectSet:
     implements(IProjectSet)

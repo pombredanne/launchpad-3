@@ -183,67 +183,32 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link(target, text, enabled=enabled)
 
     def bugs(self):
-        """Sets up the Bugs facet for a project
-
-        :return: A Link instance for the Bugs facet
-
-        If the project has < 1 product the Link will be disabled.
-        This is to avoid situations where users try to file bugs against
-        empty project groups (Malone bug #106523)
-        """
+        """Set up a link on the Bugs tab"""
         site = 'bugs'
         text = 'Bugs'
 
-        products = list(self.context.products)
-        enabled = len(products) > 0
-        return Link('', text, enabled=enabled, site=site)
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
 
     def answers(self):
-        """Sets up the Answers facet for a project
-
-        :return: A Link instance for the Answers facet
-
-        If the project has < 1 product the Link will be disabled.
-        This is to avoid situations where users try to file questions
-        against empty project groups (Answers bug #124434)
-        """
+        """Set up a link on the Answers tab"""
         site = 'answers'
         text = 'Answers'
 
-        products = list(self.context.products)
-        enabled = len(products) > 0
-        return Link('', text, enabled=enabled, site=site)
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
 
     def specifications(self):
-        """Sets up the Blueprints facet for a project
-
-        :return: A Link instance for the Blueprints facet
-
-        If the project has < 1 product the Link will be disabled.
-        This is to avoid situations where users try to file specs against
-        empty project groups (Answers bug #124428)
-        """
+        """Set up a link on the Blueprints tab"""
         site = 'blueprints'
         text = 'Blueprints'
 
-        products = list(self.context.products)
-        enabled = len(products) > 0
-        return Link('', text, enabled=enabled, site=site)
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
 
     def translations(self):
-        """Sets up the Translations facet for a project
-
-        :return: A Link instance for the Translations facet
-
-        If the project has < 1 product the Link will be disabled for the
-        sake of consistency with the behaviour of the other facets
-        """
+        """Sets up a link on the Translations tab"""
         site = 'translations'
         text = 'Translations'
 
-        products = list(self.context.products)
-        enabled = len(products) > 0
-        return Link('', text, enabled=enabled, site=site)
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
 
 
 class ProjectOverviewMenu(ApplicationMenu):
@@ -283,11 +248,10 @@ class ProjectOverviewMenu(ApplicationMenu):
         text = 'Mentoring available'
 
         # We disable this link if the project has no products. This is for
-        # consitency with the way the overview buttons behave in the same
+        # consistency with the way the overview buttons behave in the same
         # circumstances
-        products = list(self.context.products)
-        enabled = len(products) > 0
-        return Link('+mentoring', text, icon='info', enabled=enabled)
+        return Link('+mentoring', text, icon='info', 
+                    enabled=self.context.hasProducts())
 
     def rdf(self):
         text = structured(
