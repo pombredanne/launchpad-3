@@ -90,12 +90,12 @@ Specifying a project and submitting will file the bug on the project
 and not on the distribution:
 
     >>> user_browser.getControl(
-    ...     name='field.bugtarget.product').value = 'iso-codes'
+    ...     name='field.bugtarget.product').value = 'firefox'
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> user_browser.url
-    'http://bugs.launchpad.dev/iso-codes/+bug/...'
+    'http://bugs.launchpad.dev/firefox/+bug/...'
     >>> user_browser.title
-    'Bug #... in iso-codes (upstream)...'
+    'Bug #... in firefox (upstream)...'
 
 == Advanced filebug page ==
 
