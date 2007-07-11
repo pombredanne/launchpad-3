@@ -9,7 +9,7 @@ __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'PageTestLayer', 'TwistedLayer',
-    'BzrlibZopelessLayer', 'LaunchpadScriptLayer',
+    'BzrlibLayer', 'BzrlibZopelessLayer', 'LaunchpadScriptLayer',
     ]
 
 import logging
@@ -46,11 +46,12 @@ def reset_logging():
     import zope.testing.testrunner
     zope.testing.testrunner.configure_logging()
 
+
 # Imported here to avoid circular import issues
 from canonical.testing.layers import (
     BaseLayer, DatabaseLayer, LibrarianLayer, FunctionalLayer,
     LaunchpadLayer, ZopelessLayer, LaunchpadFunctionalLayer,
     LaunchpadZopelessLayer, PageTestLayer, TwistedLayer, BzrlibZopelessLayer,
-    LaunchpadScriptLayer)
+    BzrlibLayer, LaunchpadScriptLayer)
 
 

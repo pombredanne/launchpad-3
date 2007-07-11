@@ -194,7 +194,8 @@ slave has the requested file in cache.
 
   >>> class BuildingSlave(OkSlave):
   ...     def status(self):
-  ...         return ('BuilderStatus.BUILDING', '1-1', "This is a build log")
+  ...         buildlog = xmlrpclib.Binary("This is a build log")
+  ...         return ('BuilderStatus.BUILDING', '1-1', buildlog)
   ...     def getFile(self, sum):
   ...         if sum == "buildlog":
   ...             s = StringIO("This is a build log")
@@ -799,7 +800,7 @@ Both access methods work as expected, remove the temporary file used here.
 Check the log from the uploader run has made it into the upload directory:
 
   >>> failed_dir = os.path.join(config.builddmaster.root, 'failed')
-  >>> failed_uploads = os.listdir(failed_dir)
+  >>> failed_uploads = sorted(os.listdir(failed_dir))
   >>> len(failed_uploads)
   2
 
@@ -1010,7 +1011,7 @@ the current slave state. This tuple should contain, in this order:
  * slave status string:  'BuilderStatus.IDLE'
  * job identifier string: '1-1'
  * job status string: 'BuildStatus.OK' or None
- * logtail (last 1K output of the ongoing build): 'building ..' or None
+ * logtail (last 1K output of the ongoing build) as xmlrpclib.Binary or None
  * result file list: {'foo.deb', 'foo.changes'} or None
  * dependencies string: 'bar baz zaz' or None
 
@@ -1021,7 +1022,7 @@ the current slave state. This tuple should contain, in this order:
 
   >>> a_builder.setSlaveForTesting(BuildingSlave())
   >>> a_builder.slaveStatus()
-  ('BuilderStatus.BUILDING', '1-1', None, 'This is a build log', None, None)
+  ('BuilderStatus.BUILDING', '1-1', None, <xmlrpclib.Binary ...>, None, None)
 
   >>> a_builder.setSlaveForTesting(WaitingSlave(state='BuildStatus.OK'))
   >>> a_builder.slaveStatus()

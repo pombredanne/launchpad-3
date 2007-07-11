@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+"""Implementation classes for a Person."""
 
 __metaclass__ = type
 __all__ = [
@@ -40,9 +41,10 @@ from canonical.launchpad.helpers import (
 
 from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, EmailAddressStatus, LoginTokenType,
-    PersonCreationRationale, SpecificationFilter, SpecificationSort,
-    SpecificationStatus, ShippingRequestStatus, SSHKeyType,
-    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy)
+    PersonCreationRationale, ShippingRequestStatus, SpecificationFilter,
+    SpecificationDefinitionStatus, SpecificationImplementationStatus,
+    SpecificationSort, SSHKeyType, TeamMembershipRenewalPolicy,
+    TeamMembershipStatus, TeamSubscriptionPolicy)
 
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
@@ -100,7 +102,8 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     implements(IPerson, ICalendarOwner, IHasIcon, IHasLogo, IHasMugshot)
 
-    sortingColumns = SQLConstant("person_sort_key(Person.displayname, Person.name)")
+    sortingColumns = SQLConstant(
+        "person_sort_key(Person.displayname, Person.name)")
     # When doing any sort of set operations (union, intersect, except_) with
     # SQLObject we can't use sortingColumns because the table name Person is
     # not available in that context, so we use this one.
@@ -191,7 +194,7 @@ class Person(SQLBase, HasSpecificationsMixin):
     entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
 
     def _init(self, *args, **kw):
-        """Marks the person as a team when created or fetched from database."""
+        """Mark the person as a team when created or fetched from database."""
         SQLBase._init(self, *args, **kw)
         if self.teamownerID is not None:
             alsoProvides(self, ITeam)
@@ -239,16 +242,17 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def subscribed_specs(self):
+        specification_id = SpecificationSubscription.q.specificationID
         return shortlist(Specification.select(
-            AND(Specification.q.id == SpecificationSubscription.q.specificationID,
-                SpecificationSubscription.q.personID == self.id),
+            AND (Specification.q.id == specification_id,
+                 SpecificationSubscription.q.personID == self.id),
             clauseTables=['SpecificationSubscription'],
             orderBy=['-datecreated']))
 
     # mentorship
     @property
     def mentoring_offers(self):
-        """See IPerson"""
+        """See `IPerson`"""
         return MentoringOffer.select("""MentoringOffer.id IN
         (SELECT MentoringOffer.id
             FROM MentoringOffer
@@ -270,7 +274,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def team_mentorships(self):
-        """See IPerson"""
+        """See `IPerson`"""
         return MentoringOffer.select("""MentoringOffer.id IN
         (SELECT MentoringOffer.id
             FROM MentoringOffer
@@ -294,7 +298,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def unique_displayname(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return "%s (%s)" % (self.displayname, self.name)
 
     @property
@@ -309,7 +313,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def has_any_specifications(self):
-        """See IHasSpecifications."""
+        """See `IHasSpecifications`."""
         return self.all_specifications.count()
 
     @property
@@ -321,7 +325,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         return self.specifications(filter=[SpecificationFilter.VALID])
 
     def specifications(self, sort=None, quantity=None, filter=None):
-        """See IHasSpecifications."""
+        """See `IHasSpecifications`."""
 
         # Make a new list of the filter, so that we do not mutate what we
         # were passed as a filter
@@ -368,7 +372,8 @@ class Person(SQLBase, HasSpecificationsMixin):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status', 'Specification.name']
+            order = ['-priority', 'Specification.definition_status',
+                     'Specification.name']
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -414,7 +419,8 @@ class Person(SQLBase, HasSpecificationsMixin):
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+                quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -428,9 +434,9 @@ class Person(SQLBase, HasSpecificationsMixin):
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationStatus.OBSOLETE,
-                          SpecificationStatus.SUPERSEDED)
+            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                          SpecificationDefinitionStatus.SUPERSEDED)
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -452,7 +458,7 @@ class Person(SQLBase, HasSpecificationsMixin):
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, participation=None,
                         needs_attention=None):
-        """See IPerson."""
+        """See `IPerson`."""
         return QuestionPersonSearch(
                 person=self,
                 search_text=search_text,
@@ -462,7 +468,7 @@ class Person(SQLBase, HasSpecificationsMixin):
                 ).getResults()
 
     def getSupportedLanguages(self):
-        """See IPerson."""
+        """See `IPerson`."""
         languages = set()
         known_languages = shortlist(self.languages)
         if len(known_languages) != 0:
@@ -472,28 +478,28 @@ class Person(SQLBase, HasSpecificationsMixin):
         return languages
 
     def getQuestionLanguages(self):
-        """See IQuestionTarget."""
+        """See `IQuestionTarget`."""
         return set(Language.select(
-            '''Language.id = language AND Question.id IN (
+            """Language.id = language AND Question.id IN (
             SELECT id FROM Question
-                     WHERE owner = %(personID)s OR answerer = %(personID)s OR
+                      WHERE owner = %(personID)s OR answerer = %(personID)s OR
                            assignee = %(personID)s
             UNION SELECT question FROM QuestionSubscription
                   WHERE person = %(personID)s
             UNION SELECT question
-                    FROM QuestionMessage JOIN Message ON (message = Message.id)
-                   WHERE owner = %(personID)s
-            )''' % sqlvalues(personID=self.id),
+                  FROM QuestionMessage JOIN Message ON (message = Message.id)
+                  WHERE owner = %(personID)s
+            )""" % sqlvalues(personID=self.id),
             clauseTables=['Question'], distinct=True))
 
     def getDirectAnswerQuestionTargets(self):
-        """See IPerson."""
+        """See `IPerson`."""
         answer_contacts = AnswerContact.select(
             'person = %s' % sqlvalues(self))
         return self._getQuestionTargetsFromAnswerContacts(answer_contacts)
 
     def getTeamAnswerQuestionTargets(self):
-        """See IPerson."""
+        """See `IPerson`."""
         answer_contacts = AnswerContact.select(
             '''AnswerContact.person = TeamParticipation.team
             AND TeamParticipation.person = %(personID)s
@@ -530,14 +536,14 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def branches(self):
-        """See IPerson."""
+        """See `IPerson`."""
         ret = self.authored_branches.union(self.registered_branches)
         ret = ret.union(self.subscribed_branches)
         return ret.orderBy('-id')
 
     @property
     def registered_branches(self):
-        """See IPerson."""
+        """See `IPerson`."""
         query = """Branch.owner = %d AND
                    (Branch.author != %d OR Branch.author is NULL)"""
         return Branch.select(query % (self.id, self.id),
@@ -545,7 +551,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
 
     def getBugContactPackages(self):
-        """See IPerson."""
+        """See `IPerson`."""
         package_bug_contacts = shortlist(
             PackageBugContact.selectBy(bugcontact=self),
             longest_expected=25)
@@ -560,7 +566,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         return packages_for_bug_contact
 
     def getBugContactOpenBugCounts(self, user):
-        """See IPerson."""
+        """See `IPerson`."""
         # We could use IBugTask.search() to get all the counts, but
         # that's slow, since we'd need to issue one query per package
         # and count we want.
@@ -644,7 +650,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         return self.calendar
 
     def getBranch(self, product_name, branch_name):
-        """See IPerson."""
+        """See `IPerson`."""
         # import here to work around a circular import problem
         from canonical.launchpad.database import Product
 
@@ -660,7 +666,7 @@ class Person(SQLBase, HasSpecificationsMixin):
                                       name=branch_name)
 
     def findPathToTeam(self, team):
-        """See IPerson."""
+        """See `IPerson`."""
         # This is our guarantee that _getDirectMemberIParticipateIn() will
         # never return None
         assert self.hasParticipationEntryFor(team), (
@@ -699,17 +705,17 @@ class Person(SQLBase, HasSpecificationsMixin):
         return member
 
     def isTeam(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self.teamowner is not None
 
     @cachedproperty
     def is_trusted_on_shipit(self):
-        """See IPerson."""
+        """See `IPerson`."""
         min_entries = MIN_KARMA_ENTRIES_TO_BE_TRUSTED_ON_SHIPIT
         return Karma.selectBy(person=self).count() >= min_entries
 
     def shippedShipItRequestsOfCurrentSeries(self):
-        """See IPerson."""
+        """See `IPerson`."""
         query = '''
             ShippingRequest.recipient = %s
             AND ShippingRequest.id = RequestedCDs.request
@@ -721,13 +727,13 @@ class Person(SQLBase, HasSpecificationsMixin):
             orderBy='-daterequested')
 
     def lastShippedRequest(self):
-        """See IPerson."""
+        """See `IPerson`."""
         query = ("recipient = %s AND status = %s"
                  % sqlvalues(self.id, ShippingRequestStatus.SHIPPED))
         return ShippingRequest.selectFirst(query, orderBy=['-daterequested'])
 
     def pastShipItRequests(self):
-        """See IPerson."""
+        """See `IPerson`."""
         query = """
             recipient = %(id)s AND (
                 status IN (%(denied)s, %(cancelled)s, %(shipped)s))
@@ -737,7 +743,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         return ShippingRequest.select(query, orderBy=['id'])
 
     def currentShipItRequest(self):
-        """See IPerson."""
+        """See `IPerson`."""
         query = """
             recipient = %(id)s
             AND status NOT IN (%(denied)s, %(cancelled)s, %(shipped)s)
@@ -748,19 +754,19 @@ class Person(SQLBase, HasSpecificationsMixin):
             ShippingRequest.select(query, orderBy=['id'], limit=2))
         count = len(results)
         assert (self == getUtility(ILaunchpadCelebrities).shipit_admin or
-                count <= 1), ("Only the shipit-admins team is allowed to have "
-                              "more than one open shipit request")
+                count <= 1), ("Only the shipit-admins team is allowed to "
+                              "have more than one open shipit request")
         if count == 1:
             return results[0]
         else:
             return None
 
     def searchTasks(self, search_params, *args):
-        """See IPerson."""
+        """See `IPerson`."""
         return getUtility(IBugTaskSet).search(search_params, *args)
 
     def getProjectsAndCategoriesContributedTo(self, limit=5):
-        """See IPerson."""
+        """See `IPerson`."""
         contributions = []
         results = self._getProjectsWithTheMostKarma(limit=limit)
         for pillar_name, karma in results:
@@ -800,7 +806,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         return cur.fetchall()
 
     def getOwnedOrDrivenPillars(self):
-        """See IPerson."""
+        """See `IPerson`."""
         query = """
             SELECT name
             FROM product, teamparticipation
@@ -838,7 +844,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
-        for name, karmavalue in self._getProjectsWithTheMostKarma(limit=limit):
+        for name, ignored in self._getProjectsWithTheMostKarma(limit=limit):
             yield getByName(name)
 
     def _getContributedCategories(self, pillar):
@@ -871,7 +877,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def karma_category_caches(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return KarmaCache.select(
             AND(
                 KarmaCache.q.personID == self.id,
@@ -884,7 +890,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def karma(self):
-        """See IPerson."""
+        """See `IPerson`."""
         cache = KarmaTotalCache.selectOneBy(person=self)
         if cache is None:
             # Newly created accounts may not be in the cache yet, meaning the
@@ -895,7 +901,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def is_valid_person_or_team(self):
-        """See IPerson."""
+        """See `IPerson`."""
         try:
             if ValidPersonOrTeamCache.get(self.id) is not None:
                 return True
@@ -905,14 +911,14 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def is_valid_person(self):
-        """See IPerson."""
+        """See `IPerson`."""
         if self.isTeam():
             return False
         return self.is_valid_person_or_team
 
     @property
     def is_openid_enabled(self):
-        """See IPerson."""
+        """See `IPerson`."""
         if self.isTeam():
             return False
 
@@ -934,7 +940,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     def assignKarma(self, action_name, product=None, distribution=None,
                     sourcepackagename=None):
-        """See IPerson."""
+        """See `IPerson`."""
         # Teams don't get Karma. Inactive accounts don't get Karma.
         # No warning, as we don't want to place the burden on callsites
         # to check this.
@@ -962,7 +968,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         return karma
 
     def latestKarma(self, quantity=25):
-        """See IPerson."""
+        """See `IPerson`."""
         return Karma.selectBy(person=self,
             orderBy='-datecreated')[:quantity]
 
@@ -972,7 +978,7 @@ class Person(SQLBase, HasSpecificationsMixin):
     _inTeam_cache = None
 
     def inTeam(self, team):
-        """See IPerson."""
+        """See `IPerson`."""
         if team is None:
             return False
 
@@ -1002,11 +1008,11 @@ class Person(SQLBase, HasSpecificationsMixin):
         return in_team
 
     def hasParticipationEntryFor(self, team):
-        """See IPerson."""
+        """See `IPerson`."""
         return bool(TeamParticipation.selectOneBy(person=self, team=team))
 
     def leave(self, team):
-        """See IPerson."""
+        """See `IPerson`."""
         assert not ITeam.providedBy(self)
 
         self._inTeam_cache = {} # Flush the cache used by the inTeam method
@@ -1014,13 +1020,14 @@ class Person(SQLBase, HasSpecificationsMixin):
         active = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
         tm = TeamMembership.selectOneBy(person=self, team=team)
         if tm is None or tm.status not in active:
-            # Ok, we're done. You are not an active member and still not being.
+            # Ok, we're done. You are not an active member and still
+            # not being.
             return
 
         tm.setStatus(TeamMembershipStatus.DEACTIVATED, self)
 
     def join(self, team):
-        """See IPerson."""
+        """See `IPerson`."""
         assert not self.isTeam(), (
             "Teams take no actions in Launchpad, thus they can't join() "
             "another team. Instead, you have to addMember() them.")
@@ -1052,7 +1059,7 @@ class Person(SQLBase, HasSpecificationsMixin):
     # ITeam methods
     #
     def getSuperTeams(self):
-        """See IPerson."""
+        """See `IPerson`."""
         query = """
             Person.id = TeamParticipation.team AND
             TeamParticipation.person = %s AND
@@ -1061,7 +1068,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         return Person.select(query, clauseTables=['TeamParticipation'])
 
     def getSubTeams(self):
-        """See IPerson."""
+        """See `IPerson`."""
         query = """
             Person.id = TeamParticipation.person AND
             TeamParticipation.team = %s AND
@@ -1071,16 +1078,16 @@ class Person(SQLBase, HasSpecificationsMixin):
         return Person.select(query, clauseTables=['TeamParticipation'])
 
     def getTeamAdminsEmailAddresses(self):
-        """See IPerson."""
+        """See `IPerson`."""
         assert self.isTeam()
         to_addrs = set()
         for person in self.getDirectAdministrators():
             to_addrs.update(contactEmailAddresses(person))
         return sorted(to_addrs)
 
-    def addMember(self, person, reviewer, status=TeamMembershipStatus.APPROVED,
-                  comment=None, force_team_add=False):
-        """See IPerson."""
+    def addMember(self, person, reviewer, comment=None, force_team_add=False,
+                  status=TeamMembershipStatus.APPROVED):
+        """See `IPerson`."""
         assert self.isTeam(), "You cannot add members to a person."
         assert status in [TeamMembershipStatus.APPROVED,
                           TeamMembershipStatus.PROPOSED,
@@ -1172,14 +1179,14 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     def setMembershipData(self, person, status, reviewer, expires=None,
                           comment=None):
-        """See IPerson."""
+        """See `IPerson`."""
         tm = TeamMembership.selectOneBy(person=person, team=self)
         assert tm is not None
         tm.setExpirationDate(expires, reviewer)
         tm.setStatus(status, reviewer, reviewercomment=comment)
 
     def getAdministratedTeams(self):
-        """See IPerson."""
+        """See `IPerson`."""
         owner_of_teams = Person.select('''
             Person.teamowner = TeamParticipation.team
             AND TeamParticipation.person = %s
@@ -1196,14 +1203,14 @@ class Person(SQLBase, HasSpecificationsMixin):
             owner_of_teams, orderBy=self._sortingColumnsForSetOperations)
 
     def getDirectAdministrators(self):
-        """See IPerson."""
+        """See `IPerson`."""
         assert self.isTeam(), 'Method should only be called on a team.'
         owner = Person.select("id = %s" % sqlvalues(self.teamowner))
         return self.adminmembers.union(
             owner, orderBy=self._sortingColumnsForSetOperations)
 
     def getMembersByStatus(self, status, orderBy=None):
-        """See IPerson."""
+        """See `IPerson`."""
         query = ("TeamMembership.team = %s AND TeamMembership.status = %s "
                  "AND TeamMembership.person = Person.id" %
                  sqlvalues(self.id, status))
@@ -1219,12 +1226,12 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def ubuntuwiki(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return getUtility(IWikiNameSet).getUbuntuWikiByPerson(self)
 
     @property
     def otherwikis(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return getUtility(IWikiNameSet).getOtherWikisByPerson(self)
 
     @property
@@ -1233,12 +1240,12 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def title(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self.browsername
 
     @property
     def allmembers(self):
-        """See IPerson."""
+        """See `IPerson`."""
         query = """
             Person.id = TeamParticipation.person AND
             TeamParticipation.team = %s AND
@@ -1248,62 +1255,63 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def all_member_count(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self.allmembers.count()
 
     @property
     def invited_members(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self.getMembersByStatus(TeamMembershipStatus.INVITED)
 
     @property
     def deactivatedmembers(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self.getMembersByStatus(TeamMembershipStatus.DEACTIVATED)
 
     @property
     def expiredmembers(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self.getMembersByStatus(TeamMembershipStatus.EXPIRED)
 
     @property
     def proposedmembers(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self.getMembersByStatus(TeamMembershipStatus.PROPOSED)
 
     @property
     def adminmembers(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self.getMembersByStatus(TeamMembershipStatus.ADMIN)
 
     @property
     def approvedmembers(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self.getMembersByStatus(TeamMembershipStatus.APPROVED)
 
     @property
     def activemembers(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self.approvedmembers.union(
             self.adminmembers, orderBy=self._sortingColumnsForSetOperations)
 
     @property
     def active_member_count(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self.activemembers.count()
 
     @property
     def inactivemembers(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self.expiredmembers.union(
             self.deactivatedmembers,
             orderBy=self._sortingColumnsForSetOperations)
 
     @property
     def pendingmembers(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self.proposedmembers.union(
-            self.invited_members, orderBy=self._sortingColumnsForSetOperations)
+            self.invited_members,
+            orderBy=self._sortingColumnsForSetOperations)
 
     # XXX: myactivememberships and getActiveMemberships are rather
     # confusingly named, and I just fixed bug 2871 as a consequence of
@@ -1311,7 +1319,7 @@ class Person(SQLBase, HasSpecificationsMixin):
     #   -- kiko, 2005-10-07
     @property
     def myactivememberships(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return TeamMembership.select("""
             TeamMembership.person = %s AND status in %s AND
             Person.id = TeamMembership.team
@@ -1322,7 +1330,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def open_membership_invitations(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return TeamMembership.select("""
             TeamMembership.person = %s AND status = %s
             AND Person.id = TeamMembership.team
@@ -1331,21 +1339,21 @@ class Person(SQLBase, HasSpecificationsMixin):
             orderBy=Person.sortingColumns)
 
     def getActiveMemberships(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self._getMembershipsByStatuses(
             [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED])
 
     def getInactiveMemberships(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self._getMembershipsByStatuses(
             [TeamMembershipStatus.EXPIRED, TeamMembershipStatus.DEACTIVATED])
 
     def getInvitedMemberships(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self._getMembershipsByStatuses([TeamMembershipStatus.INVITED])
 
     def getProposedMemberships(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self._getMembershipsByStatuses([TeamMembershipStatus.PROPOSED])
 
     def _getMembershipsByStatuses(self, statuses):
@@ -1362,14 +1370,14 @@ class Person(SQLBase, HasSpecificationsMixin):
             query, clauseTables=['Person'], orderBy=Person.sortingColumns)
 
     def getLatestApprovedMembershipsForPerson(self, limit=5):
-        """See IPerson."""
+        """See `IPerson`."""
         result = self.myactivememberships
         result.orderBy(['-datejoined'])
         return result[:limit]
 
     @property
     def teams_participated_in(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return Person.select("""
             Person.id = TeamParticipation.team
             AND TeamParticipation.person = %s
@@ -1380,7 +1388,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def teams_indirectly_participated_in(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return Person.select("""
               -- we are looking for teams, so we want "people" that are on the
               -- teamparticipation.team side of teamparticipation
@@ -1405,7 +1413,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def teams_with_icons(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return Person.select("""
             Person.id = TeamParticipation.team
             AND TeamParticipation.person = %s
@@ -1418,7 +1426,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def defaultexpirationdate(self):
-        """See IPerson."""
+        """See `IPerson`."""
         days = self.defaultmembershipperiod
         if days:
             return datetime.now(pytz.timezone('UTC')) + timedelta(days)
@@ -1427,7 +1435,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def defaultrenewedexpirationdate(self):
-        """See IPerson."""
+        """See `IPerson`."""
         days = self.defaultrenewalperiod
         if days:
             return datetime.now(pytz.timezone('UTC')) + timedelta(days)
@@ -1436,7 +1444,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def translation_history(self):
-        """See IPerson."""
+        """See `IPerson`."""
         # Note that we can't use selectBy here because of the prejoins.
         history = POFileTranslator.select(
             "POFileTranslator.person = %s" % sqlvalues(self),
@@ -1451,11 +1459,11 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def translation_groups(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return getUtility(ITranslationGroupSet).getByPerson(self)
 
     def validateAndEnsurePreferredEmail(self, email):
-        """See IPerson."""
+        """See `IPerson`."""
         if not IEmailAddress.providedBy(email):
             raise TypeError, (
                 "Any person's email address must provide the IEmailAddress "
@@ -1479,7 +1487,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             email.status = EmailAddressStatus.VALIDATED
 
     def setPreferredEmail(self, email):
-        """See IPerson."""
+        """See `IPerson`."""
         if not IEmailAddress.providedBy(email):
             raise TypeError, (
                 "Any person's email address must provide the IEmailAddress "
@@ -1502,7 +1510,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @cachedproperty('_preferredemail_cached')
     def preferredemail(self):
-        """See IPerson."""
+        """See `IPerson`."""
         emails = self._getEmailsByStatus(EmailAddressStatus.PREFERRED)
         # There can be only one preferred email for a given person at a
         # given time, and this constraint must be ensured in the DB, but
@@ -1517,21 +1525,22 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def preferredemail_sha1(self):
-        """See IPerson."""
+        """See `IPerson`."""
         preferredemail = self.preferredemail
         if preferredemail:
-            return sha.new('mailto:' + preferredemail.email).hexdigest().upper()
+            return sha.new(
+                'mailto:' + preferredemail.email).hexdigest().upper()
         else:
             return None
 
     @property
     def validatedemails(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self._getEmailsByStatus(EmailAddressStatus.VALIDATED)
 
     @property
     def unvalidatedemails(self):
-        """See IPerson."""
+        """See `IPerson`."""
         query = """
             requester = %s
             AND (tokentype=%s OR tokentype=%s)
@@ -1542,34 +1551,34 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def guessedemails(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self._getEmailsByStatus(EmailAddressStatus.NEW)
 
     @property
     def pendinggpgkeys(self):
-        """See IPerson."""
+        """See `IPerson`."""
         logintokenset = getUtility(ILoginTokenSet)
         return sorted(set(token.fingerprint for token in
                       logintokenset.getPendingGPGKeys(requesterid=self.id)))
 
     @property
     def inactivegpgkeys(self):
-        """See IPerson."""
+        """See `IPerson`."""
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id, active=False)
 
     @property
     def gpgkeys(self):
-        """See IPerson."""
+        """See `IPerson`."""
         gpgkeyset = getUtility(IGPGKeySet)
         return gpgkeyset.getGPGKeys(ownerid=self.id)
 
     def latestMaintainedPackages(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self._latestSeriesQuery()
 
     def latestUploadedButNotMaintainedPackages(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return self._latestSeriesQuery(uploader_only=True)
 
     def _latestSeriesQuery(self, uploader_only=False):
@@ -1599,7 +1608,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             prejoins=['sourcepackagename', 'maintainer'])
 
     def isUploader(self, distribution):
-        """See IPerson."""
+        """See `IPerson`."""
         for acl in distribution.uploaders:
             if self in acl:
                 return True
@@ -1607,7 +1616,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @cachedproperty
     def is_ubuntero(self):
-        """See IPerson."""
+        """See `IPerson`."""
         sigset = getUtility(ISignedCodeOfConductSet)
         lastdate = sigset.getLastAcceptedDate()
 
@@ -1619,19 +1628,19 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def activesignatures(self):
-        """See IPerson."""
+        """See `IPerson`."""
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id)
 
     @property
     def inactivesignatures(self):
-        """See IPerson."""
+        """See `IPerson`."""
         sCoC_util = getUtility(ISignedCodeOfConductSet)
         return sCoC_util.searchByUser(self.id, active=False)
 
     @property
     def archive(self):
-        """See IPerson."""
+        """See `IPerson`."""
         return Archive.selectOneBy(owner=self)
 
 
@@ -1643,7 +1652,7 @@ class PersonSet:
         self.title = 'People registered with Launchpad'
 
     def topPeople(self):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         # The odd ordering here is to ensure we hit the PostgreSQL
         # indexes. It will not make any real difference outside of tests.
         query = """
@@ -1660,7 +1669,7 @@ class PersonSet:
     def newTeam(self, teamowner, name, displayname, teamdescription=None,
                 subscriptionpolicy=TeamSubscriptionPolicy.MODERATED,
                 defaultmembershipperiod=None, defaultrenewalperiod=None):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         assert teamowner
         team = Person(teamowner=teamowner, name=name, displayname=displayname,
                 teamdescription=teamdescription,
@@ -1678,7 +1687,7 @@ class PersonSet:
             self, email, rationale, comment=None, name=None,
             displayname=None, password=None, passwordEncrypted=False,
             hide_email_addresses=False, registrant=None):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         if name is None:
             try:
                 name = nickname.generate_nick(email)
@@ -1721,7 +1730,7 @@ class PersonSet:
 
     def ensurePerson(self, email, displayname, rationale, comment=None,
                      registrant=None):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         person = self.getByEmail(email)
         if person:
             return person
@@ -1731,7 +1740,7 @@ class PersonSet:
         return person
 
     def getByName(self, name, ignore_merged=True):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         query = (Person.q.name == name)
         if ignore_merged:
             query = AND(query, Person.q.mergedID==None)
@@ -1752,7 +1761,7 @@ class PersonSet:
             return None
 
     def updateStatistics(self, ztm):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         stats = getUtility(ILaunchpadStatisticSet)
         stats.update('people_count', self.getAllPersons().count())
         ztm.commit()
@@ -1760,18 +1769,18 @@ class PersonSet:
         ztm.commit()
 
     def peopleCount(self):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('people_count')
 
     def getAllPersons(self, orderBy=None):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person.sortingColumns
         query = AND(Person.q.teamownerID==None, Person.q.mergedID==None)
         return Person.select(query, orderBy=orderBy)
 
     def getAllValidPersons(self, orderBy=None):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person.sortingColumns
         return Person.select(
@@ -1780,17 +1789,17 @@ class PersonSet:
             )
 
     def teamsCount(self):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         return getUtility(ILaunchpadStatisticSet).value('teams_count')
 
     def getAllTeams(self, orderBy=None):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person.sortingColumns
         return Person.select(Person.q.teamownerID!=None, orderBy=orderBy)
 
     def find(self, text, orderBy=None):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
@@ -1806,12 +1815,13 @@ class PersonSet:
         return results.union(Person.select(name_query), orderBy=orderBy)
 
     def findPerson(self, text="", orderBy=None):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
-        base_query = ('Person.teamowner IS NULL AND Person.merged IS NULL AND '
-                      'EmailAddress.person = Person.id')
+        base_query = (
+            'Person.teamowner IS NULL AND Person.merged IS NULL '
+            'AND EmailAddress.person = Person.id')
         clauseTables = ['EmailAddress']
         if text:
             # We use a UNION here because this makes things *a lot* faster
@@ -1830,7 +1840,7 @@ class PersonSet:
         return results.orderBy(orderBy)
 
     def findTeam(self, text, orderBy=None):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
@@ -1850,14 +1860,14 @@ class PersonSet:
         return results.union(Person.select(name_query), orderBy=orderBy)
 
     def get(self, personid):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         try:
             return Person.get(personid)
         except SQLObjectNotFound:
             return None
 
     def getByEmail(self, email):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         emailaddress = getUtility(IEmailAddressSet).getByEmail(email)
         if emailaddress is None:
             return None
@@ -1865,7 +1875,7 @@ class PersonSet:
         return emailaddress.person
 
     def getUbunteros(self, orderBy=None):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         if orderBy is None:
             # The fact that the query below is unique makes it
             # impossible to use person_sort_key(), and rewriting it to
@@ -1881,7 +1891,7 @@ class PersonSet:
         return Person.select(query, distinct=True, orderBy=orderBy)
 
     def getPOFileContributors(self, pofile):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         contributors = Person.select("""
             POFileTranslator.person = Person.id AND
             POFileTranslator.pofile = %s""" % quote(pofile),
@@ -1896,7 +1906,7 @@ class PersonSet:
         return contributors
 
     def getPOFileContributorsByDistroSeries(self, distroseries, language):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         contributors = Person.select("""
             POFileTranslator.person = Person.id AND
             POFileTranslator.pofile = POFile.id AND
@@ -1913,7 +1923,7 @@ class PersonSet:
         return contributors
 
     def latest_teams(self, limit=5):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         return Person.select("Person.teamowner IS NOT NULL",
             orderBy=['-datecreated'], limit=limit)
 
@@ -1999,8 +2009,9 @@ class PersonSet:
 
         # Update GPGKey. It won't conflict, but our sanity checks don't
         # know that
-        cur.execute('UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
-                    % vars())
+        cur.execute(
+            'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d' 
+            % vars())
         skip.append(('gpgkey','owner'))
 
         # Update OpenID. Just trash the authorizations for from_id - don't
@@ -2361,9 +2372,10 @@ class PersonSet:
         # Transfer active team memberships
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
-        cur.execute('SELECT team, status FROM TeamMembership WHERE person = %s '
-                    'AND status IN (%s,%s)'
-                    % sqlvalues(from_person.id, approved, admin))
+        cur.execute(
+            'SELECT team, status FROM TeamMembership WHERE person = %s '
+            'AND status IN (%s,%s)'
+            % sqlvalues(from_person.id, approved, admin))
         for team_id, status in cur.fetchall():
             cur.execute('SELECT status FROM TeamMembership WHERE person = %s '
                         'AND team = %s'
@@ -2375,8 +2387,8 @@ class PersonSet:
                 # because we know to_person has a membership entry for this
                 # team, so may only need to change its status.
                 cur.execute(
-                    'DELETE FROM TeamMembership WHERE person = %s AND team = %s'
-                    % sqlvalues(from_person.id, team_id))
+                    'DELETE FROM TeamMembership WHERE person = %s '
+                    'AND team = %s' % sqlvalues(from_person.id, team_id))
 
                 if current_status == admin.value:
                     # to_person is already an administrator of this team, no
@@ -2389,7 +2401,8 @@ class PersonSet:
                 assert status in (approved.value, admin.value)
                 cur.execute(
                     'UPDATE TeamMembership SET status = %s WHERE person = %s '
-                    'AND team = %s' % sqlvalues(status, to_person.id, team_id))
+                    'AND team = %s' % sqlvalues(
+                        status, to_person.id, team_id))
             else:
                 # to_person is not a member of this team. just change
                 # from_person with to_person in the membership record.
@@ -2401,8 +2414,9 @@ class PersonSet:
         cur.execute('SELECT team FROM TeamParticipation WHERE person = %s '
                     'AND person != team' % sqlvalues(from_person.id))
         for team_id in cur.fetchall():
-            cur.execute('SELECT team FROM TeamParticipation WHERE person = %s '
-                        'AND team = %s' % sqlvalues(to_person.id, team_id))
+            cur.execute(
+                'SELECT team FROM TeamParticipation WHERE person = %s '
+                'AND team = %s' % sqlvalues(to_person.id, team_id))
             if not cur.fetchone():
                 cur.execute(
                     'UPDATE TeamParticipation SET person = %s WHERE '
@@ -2435,7 +2449,7 @@ class PersonSet:
         flush_database_caches()
 
     def getTranslatorsByLanguage(self, language):
-        """See IPersonSet."""
+        """See `IPersonSet`."""
         # XXX CarlosPerelloMarin 20070331: The KarmaCache table doesn't have a
         # field to store karma per language, so we are actually returning the
         # people with the most translation karma that have this language
@@ -2506,35 +2520,35 @@ class WikiNameSet:
     implements(IWikiNameSet)
 
     def getByWikiAndName(self, wiki, wikiname):
-        """See IWikiNameSet."""
+        """See `IWikiNameSet`."""
         return WikiName.selectOneBy(wiki=wiki, wikiname=wikiname)
 
     def getUbuntuWikiByPerson(self, person):
-        """See IWikiNameSet."""
+        """See `IWikiNameSet`."""
         return WikiName.selectOneBy(person=person, wiki=UBUNTU_WIKI_URL)
 
     def getOtherWikisByPerson(self, person):
-        """See IWikiNameSet."""
+        """See `IWikiNameSet`."""
         return WikiName.select(AND(WikiName.q.personID==person.id,
                                    WikiName.q.wiki!=UBUNTU_WIKI_URL))
 
     def getAllWikisByPerson(self, person):
-        """See IWikiNameSet."""
+        """See `IWikiNameSet`."""
         return WikiName.selectBy(person=person)
 
     def get(self, id, default=None):
-        """See IWikiNameSet."""
+        """See `IWikiNameSet`."""
         wiki = WikiName.selectOneBy(id=id)
         if wiki is None:
             return default
         return wiki
 
     def new(self, person, wiki, wikiname):
-        """See IWikiNameSet."""
+        """See `IWikiNameSet`."""
         return WikiName(person=person, wiki=wiki, wikiname=wikiname)
 
     def exists(self, wikiname, wiki=UBUNTU_WIKI_URL):
-        """See IWikiNameSet."""
+        """See `IWikiNameSet`."""
         return WikiName.selectOneBy(wiki=wiki, wikiname=wikiname) is not None
 
 
@@ -2552,18 +2566,18 @@ class JabberIDSet:
     implements(IJabberIDSet)
 
     def new(self, person, jabberid):
-        """See IJabberIDSet"""
+        """See `IJabberIDSet`"""
         return JabberID(person=person, jabberid=jabberid)
 
     def getByJabberID(self, jabberid, default=None):
-        """See IJabberIDSet"""
+        """See `IJabberIDSet`"""
         jabber = JabberID.selectOneBy(jabberid=jabberid)
         if jabber is None:
             return default
         return jabber
 
     def getByPerson(self, person):
-        """See IJabberIDSet"""
+        """See `IJabberIDSet`"""
         return JabberID.selectBy(person=person)
 
 

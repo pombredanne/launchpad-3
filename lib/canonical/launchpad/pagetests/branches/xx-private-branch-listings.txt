@@ -26,12 +26,10 @@ Adding a private branch that is only visible by No Privileges Person
     >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> landscape = getUtility(IProductSet).getByName('landscape')
     >>> branch = getUtility(IBranchSet).new(
-    ...     name='testing-branch',
-    ...     owner=no_priv,
-    ...     product=landscape,
-    ...     url=None,
-    ...     title='A Private Branch')
+    ...     name='testing-branch', creator=no_priv, owner=no_priv,
+    ...     product=None, url=None, title='A Private Branch')
     >>> branch.private = True
+    >>> branch.product = landscape
     >>> flush_database_updates()
     >>> logout()
 
