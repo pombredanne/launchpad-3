@@ -1870,6 +1870,10 @@ new imports with the information being copied.
     def main_archive(self):
         return self.distribution.main_archive
 
+    @property
+    def all_distro_archives(self):
+        return self.distribution.all_distro_archives
+
     def getFirstEntryToImport(self):
         """See IHasTranslationImports."""
         if self.defer_translation_imports:

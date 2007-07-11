@@ -141,6 +141,8 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     main_archive = Attribute('Main Archive')
 
+    all_distro_archives = Attribute("All archives for this distribution.")
+
     def isUnstable():
         """Return True if in unstable (or "development") phase, False otherwise.
 
