@@ -1,13 +1,20 @@
 #! /usr/bin/python2.4
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Populate POMsgSet's language column."""
+
+__metaclass__ = type
+__all__ = []
+
+import _pythonpath
+
+from zope.interface import implements
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.scripts.base import LaunchpadScript
 from canonical.launchpad.utilities.looptuner import LoopTuner
 
-from zope.interface import implements
 
 class FillLanguageColumn:
     """Initialize chunks of POMsgSet.language to matching POFile.language."""
