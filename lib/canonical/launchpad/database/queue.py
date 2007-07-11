@@ -143,7 +143,7 @@ class PackageUpload(SQLBase):
         """See IPackageUpload."""
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks for 'ubuntu' main distro.
-        if self.archive.id == self.distroseries.distribution.main_archive.id:
+        if self.archive.purpose != ArchivePurpose.PPA:
             assert self.distroseries.canUploadToPocket(self.pocket), (
                 "Not permitted acceptance in the %s pocket in a "
                 "series in the '%s' state." % (
@@ -285,7 +285,7 @@ class PackageUpload(SQLBase):
             "Can not publish a non-ACCEPTED queue record (%s)" % self.id)
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks
-        if self.archive.id == self.distroseries.distribution.main_archive.id:
+        if self.archive.purpose != ArchivePurpose.PPA:
             assert self.distroseries.canUploadToPocket(self.pocket), (
                 "Not permitted to publish to the %s pocket in a "
                 "series in the '%s' state." % (

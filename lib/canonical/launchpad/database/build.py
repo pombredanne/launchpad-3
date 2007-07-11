@@ -88,7 +88,7 @@ class Build(SQLBase):
     @property
     def is_trusted(self):
         """See IBuild"""
-        return self.archive == self.distribution.main_archive
+        return self.archive.purpose = ArchivePurpose.PPA
 
     @property
     def title(self):
