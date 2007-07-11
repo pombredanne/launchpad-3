@@ -6,8 +6,13 @@
       <form action="/+decide" method="post" accept-charset="UTF-8">
         <tal:widget replace="structure view/widgets/nonce/hidden" />
 
-        <div>
+        <p class="error message"
+          tal:repeat="form_wide_error view/form_wide_errors"
+          tal:content="structure form_wide_error">
+          Schema validation errors.
+        </p>
 
+        <div>
             <p>
               These details will be sent to
               <tal:title replace="rp_info/title" />:

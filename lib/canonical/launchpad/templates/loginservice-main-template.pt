@@ -66,6 +66,18 @@
         width: 50%;
         margin-left: 25%;
       }
+      .message {
+        background: 5px 0.5em no-repeat;
+        font-weight: bold;
+        margin: 0 0 0.5em;
+        padding: 0.5em 1em 0.5em 30px; /* 30px because the image has a pixel size */
+      }
+      .error.message {
+        color: #db1f22;
+        background-color: #ffffff;
+        background-image: url(/@@/error);
+        border: 1px solid #db1f22;
+      }
     </style>
     <style tal:condition="is_demo" type="text/css"
     >html, body {background: #ddd url(/@@/demo) !important;}</style>
