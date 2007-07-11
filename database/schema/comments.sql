@@ -641,7 +641,6 @@ COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribut
 COMMENT ON COLUMN Distribution.official_answers IS 'Whether or not this product upstream uses Answers officialy.';
 
 COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroRelease that should get the translation effort focus.';
-COMMENT ON COLUMN Distribution.main_archive IS 'The Archive used to publish this distribution.';
 
 -- DistroRelease
 
@@ -1451,10 +1450,13 @@ COMMENT ON COLUMN Archive.description IS 'Allow users to describe their PPAs con
 COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for accepting uploads.';
 COMMENT ON COLUMN Archive.authorized_size IS 'Size in bytes allowed for this PPA.';
 COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventions made in the PPA configuration.';
+COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
+COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
 COMMENT ON COLUMN Component.name IS 'Component name text';
+COMMENT ON COLUMN Component.description IS 'Description of this component.';
 
 
 -- Section

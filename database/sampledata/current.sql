@@ -572,16 +572,17 @@ ALTER TABLE archconfigentry ENABLE TRIGGER ALL;
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
 
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard) VALUES (1, NULL, NULL, true, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard) VALUES (2, NULL, NULL, true, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard) VALUES (3, NULL, NULL, true, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard) VALUES (4, NULL, NULL, true, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard) VALUES (5, NULL, NULL, true, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard) VALUES (7, NULL, NULL, true, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard) VALUES (8, NULL, NULL, true, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard) VALUES (9, 28, 'packages to help my friends.', true, NULL, NULL);
-INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, NULL, NULL);
-
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (1, NULL, NULL, true, NULL, NULL, 1, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (2, NULL, NULL, true, NULL, NULL, 2, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (3, NULL, NULL, true, NULL, NULL, 3, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (4, NULL, NULL, true, NULL, NULL, 4, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (5, NULL, NULL, true, NULL, NULL, 5, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (7, NULL, NULL, true, NULL, NULL, 7, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (8, NULL, NULL, true, NULL, NULL, 8, 1);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (9, 28, 'packages to help my friends.', true, NULL, NULL, 1, 2);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (10, 1, 'packages to help the humanity (you know, ubuntu)', true, NULL, NULL, 1, 2);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (11, NULL, 'Commercial archive', true, NULL, NULL, 1, 4);
+INSERT INTO archive (id, "owner", description, enabled, authorized_size, whiteboard, distribution, purpose) VALUES (12, NULL, 'Commercial archive', true, NULL, NULL, 8, 4);
 
 ALTER TABLE archive ENABLE TRIGGER ALL;
 
@@ -1184,10 +1185,11 @@ ALTER TABLE codeimport ENABLE TRIGGER ALL;
 
 ALTER TABLE component DISABLE TRIGGER ALL;
 
-INSERT INTO component (id, name) VALUES (1, 'main');
-INSERT INTO component (id, name) VALUES (2, 'restricted');
-INSERT INTO component (id, name) VALUES (3, 'universe');
-INSERT INTO component (id, name) VALUES (4, 'multiverse');
+INSERT INTO component (id, name, description) VALUES (1, 'main', NULL);
+INSERT INTO component (id, name, description) VALUES (2, 'restricted', NULL);
+INSERT INTO component (id, name, description) VALUES (3, 'universe', NULL);
+INSERT INTO component (id, name, description) VALUES (4, 'multiverse', NULL);
+INSERT INTO component (id, name, description) VALUES (5, 'commercial', 'This component contains commercial packages only, which are not in the main Ubuntu archive.');
 
 
 ALTER TABLE component ENABLE TRIGGER ALL;
@@ -1207,6 +1209,8 @@ INSERT INTO componentselection (id, distrorelease, component, date_created) VALU
 INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (10, 3, 2, '2006-10-16 18:31:43.261385');
 INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (11, 1, 1, '2006-10-16 18:31:43.261717');
 INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (12, 1, 3, '2006-10-16 18:31:43.262049');
+INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (13, 10, 5, '2007-06-24 13:12:05.04436');
+INSERT INTO componentselection (id, distrorelease, component, date_created) VALUES (14, 11, 5, '2007-06-24 13:12:10.692827');
 
 
 ALTER TABLE componentselection ENABLE TRIGGER ALL;
@@ -1546,7 +1550,7 @@ ALTER TABLE developmentmanifest ENABLE TRIGGER ALL;
 
 ALTER TABLE distribution DISABLE TRIGGER ALL;
 
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, main_archive) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers) VALUES (1, 'ubuntu', 'Ubuntu Linux', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 'ubuntulinux.org', 17, '[publishing]
 pendingremovalduration=5
 root=/var/tmp/archive
 archiveroot=/var/tmp/archive/ubuntu
@@ -1555,21 +1559,21 @@ distsroot=/var/tmp/archive/ubuntu/dists
 overrideroot=/var/tmp/archive/ubuntu-overrides
 cacheroot=/var/tmp/archive/ubuntu-cache
 miscroot=/var/tmp/archive/ubuntu-misc
-', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, true, true, NULL, NULL, 3, 59, NULL, NULL, '2006-10-16 18:31:43.415195', NULL, NULL, NULL, NULL, NULL, true, 1);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, main_archive) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.417928', NULL, NULL, NULL, NULL, NULL, false, 2);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, main_archive) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
+', 'Ubuntu', 'Ubuntu is a new approach to Linux Distribution that includes regular releases, and a simplified single-CD installation system.', 17, NULL, 1, NULL, true, true, NULL, NULL, 3, 59, NULL, NULL, '2006-10-16 18:31:43.415195', NULL, NULL, NULL, NULL, NULL, true);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers) VALUES (2, 'redhat', 'Redhat Advanced Server', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 'redhat.com', 1, NULL, 'Red Hat', 'Red Hat is a commercial distribution of the GNU/Linux Operating System.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.417928', NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers) VALUES (3, 'debian', 'Debian GNU/Linux', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
 platforms.', 'debian.org', 1, NULL, 'Debian', 'Debian GNU/Linux is
 a non commercial distribution of a GNU/Linux Operating System for many
-platforms.', 1, NULL, 1, NULL, false, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.418942', NULL, NULL, NULL, NULL, NULL, false, 3);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, main_archive) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
+platforms.', 1, NULL, 1, NULL, false, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.418942', NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers) VALUES (4, 'gentoo', 'The Gentoo Linux', 'Gentoo is a very
 customizeable GNU/Linux Distribution that is designed to let you build every
-single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, true, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.41974', NULL, NULL, NULL, NULL, NULL, false, 4);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, main_archive) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
+single package yourself, with your own preferences.', 'gentoo.org', 1, NULL, 'Gentoo', 'Gentoo is a very customizeable GNU/Linux Distribution that is designed to let you build every single package yourself, with your own preferences.', 1, NULL, 1, NULL, true, false, NULL, NULL, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.41974', NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers) VALUES (5, 'kubuntu', 'Kubuntu - Free KDE-based Linux', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
 Environment as its default desktop after install.', 'kubuntu.org', 1, NULL, 'Kubuntu', 'Kubuntu is an entirely free Linux distribution that uses the K Desktop
-Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.420551', NULL, NULL, NULL, NULL, NULL, false, 5);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, main_archive) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL, '2006-10-16 18:31:43.421329', NULL, NULL, NULL, NULL, NULL, false, 7);
-INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers, main_archive) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
+Environment as its default desktop after install.', 1, NULL, 1, NULL, false, false, NULL, 8, NULL, 1, NULL, NULL, '2006-10-16 18:31:43.420551', NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers) VALUES (7, 'guadalinex', 'GuadaLinex: Linux for Andalucia', 'GuadaLinex is based on Ubuntu and adds full support for applications specific to the local environment in Andalucia.', 'guadalinex.es', 4, NULL, 'GuadaLinex', 'The GuadaLinex team produces a high quality linux for the Andalucian marketplace.', 32, NULL, 1, NULL, false, false, NULL, NULL, NULL, 4, NULL, NULL, '2006-10-16 18:31:43.421329', NULL, NULL, NULL, NULL, NULL, false);
+INSERT INTO distribution (id, name, title, description, domainname, "owner", lucilleconfig, displayname, summary, members, translationgroup, translationpermission, bugcontact, official_malone, official_rosetta, security_contact, driver, translation_focus, mirror_admin, upload_admin, upload_sender, date_created, homepage_content, icon, mugshot, logo, fti, official_answers) VALUES (8, 'ubuntutest', 'Ubuntu Test', 'Ubuntu Test', 'ubuntulinux.org', 17, '[publishing]
 pendingremovalduration=5
 root=/var/tmp/archive
 archiveroot=/var/tmp/archive/ubuntutest
@@ -1578,7 +1582,7 @@ distsroot=/var/tmp/archive/ubuntutest/dists
 overrideroot=/var/tmp/archive/ubuntutest-overrides
 cacheroot=/var/tmp/archive/ubuntutest-cache
 miscroot=/var/tmp/archive/ubuntutest-misc
-', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL, '2006-10-16 18:31:43.422162', NULL, NULL, NULL, NULL, NULL, false, 8);
+', 'ubuntutest', 'Ubuntu Test summary', 17, NULL, 1, NULL, false, false, NULL, NULL, NULL, 17, NULL, NULL, '2006-10-16 18:31:43.422162', NULL, NULL, NULL, NULL, NULL, false);
 
 
 ALTER TABLE distribution ENABLE TRIGGER ALL;

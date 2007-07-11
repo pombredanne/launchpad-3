@@ -21,6 +21,7 @@ __metaclass__ = type
 __all__ = (
 'AccountStatus',
 'ArchArchiveType',
+'ArchivePurpose',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
 'BountyDifficulty',
@@ -3731,6 +3732,47 @@ class PersonCreationRationale(DBSchema):
         A user wanted to reference a person which is not a Launchpad user, so
         he created this "placeholder" profile.
         """)
+
+
+class ArchivePurpose(DBSchema):
+    """The purpose, or type, of an archive.
+
+    A distribution can be associated with different archives and this 
+    schema item enumerates the different archive types and their purpose.
+    For example, old distro releases may need to be obsoleted so their
+    archive would be OBSOLETE_ARCHIVE.
+    """
+
+    PRIMARY = Item(1, """
+        Primary Archive.
+
+        This is the primary Ubuntu archive.
+        """)
+
+    PPA = Item(2, """
+        PPA Archive.
+
+        This is a Personal Package Archive.
+        """)
+
+    EMBARGOED = Item(3, """
+        Embargoed Archive.
+
+        This is the archive for embargoed packages.
+        """)
+
+    COMMERCIAL = Item(4, """
+        Commercial Archive.
+
+        This is the archive for commercial packages.
+        """)
+
+    OBSOLETE = Item(5, """
+        Obsolete Archive.
+
+        This is the archive for obsolete packages.
+        """)
+
 
 class EntitlementType(DBSchema):
     """The set of features supported via entitlements.
