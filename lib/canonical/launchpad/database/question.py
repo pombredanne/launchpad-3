@@ -990,9 +990,15 @@ class QuestionTargetMixin:
 
         constraints.append("""
             AnswerContact.person = PersonLanguage.person AND
-            PersonLanguage.language = %s""" % sqlvalues(language))
+            PersonLanguage.Language = Language.id""")
+        if language.code == 'en':
+            constraints.append("""
+                Language.code LIKE %s""" % sqlvalues('%s%%' % language.code))
+        else:
+            constraints.append("""
+                Language.id = %s""" % sqlvalues(language))
         return set(self._selectPersonFromAnswerContacts(
-            constraints, ['PersonLanguage']))
+            constraints, ['PersonLanguage', 'Language']))
 
     def getAnswerContactRecipients(self, language):
         """See `IQuestionTarget`."""
