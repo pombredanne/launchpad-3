@@ -31,7 +31,7 @@ And the same for some blueprints.
     >>> from canonical.launchpad.database import Specification
     >>> spec = Specification.selectOneBy(name='media-integrity-check')
     >>> spec.assignee = sample_person
-    >>> spec.delivery = SpecificationImplementationStatus.STARTED
+    >>> spec.implementation_status = SpecificationImplementationStatus.STARTED
     >>> newstate = spec.updateLifecycleStatus(sample_person)
     >>> logout()
     >>> flush_database_updates()
