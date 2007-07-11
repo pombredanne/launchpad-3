@@ -421,6 +421,7 @@ class IBugAddForm(IBug):
             description=_("""The package you found this bug in,
             which was installed via apt-get, rpm, emerge or similar."""),
             vocabulary="BinaryAndSourcePackageName")
+    title = Title(title=_('Summary'), required=True)
     distribution = Choice(
             title=_("Linux Distribution"), required=True,
             description=_(
@@ -432,7 +433,10 @@ class IBugAddForm(IBug):
     comment = Text(
         title=_('Further information, steps to reproduce,'
                 ' version information, etc.'),
-        required=True)
+        required=False)
+    bug_already_reported_as = Choice(
+        title=_("This bug has already been reported as ..."), required=False,
+        vocabulary="Bug")
 
 
 class IProjectBugAddForm(IBugAddForm):

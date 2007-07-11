@@ -9,7 +9,6 @@ __all__ = [
     'SourcePackageSOP',
     'SourcePackageFacets',
     'SourcePackageView',
-    'linkify_changelog'
     ]
 
 # Python standard library imports
@@ -73,20 +72,6 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
             sourcepackage.name)
 
         return redirection(canonical_url(distro_sourcepackage) + "/+filebug")
-
-
-def linkify_changelog(changelog, sourcepkgnametxt):
-    if changelog is None:
-        return changelog
-    changelog = cgi.escape(changelog)
-    # XXX cprov 20060207: use re.match and fmt:url instead of this nasty
-    # url builder. Also we need an specification describing the syntax for
-    # changelog linkification and processing (mostly bug interface),
-    # bug # 30817
-    changelog = re.sub(r'%s \(([^)]+)\)' % re.escape(sourcepkgnametxt),
-                       r'%s (<a href="\1">\1</a>)' % sourcepkgnametxt,
-                       changelog)
-    return changelog
 
 
 class SourcePackageSOP(StructuralObjectPresentation):

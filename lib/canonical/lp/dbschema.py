@@ -19,7 +19,9 @@ __metaclass__ = type
 # If you do not do this, from canonical.lp.dbschema import * will not
 # work properly, and the thing/lp:SchemaClass will not work properly.
 __all__ = (
+'AccountStatus',
 'ArchArchiveType',
+'ArchivePurpose',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
 'BountyDifficulty',
@@ -30,7 +32,7 @@ __all__ = (
 'BranchReviewStatus',
 'BranchSubscriptionDiffSize',
 'BranchSubscriptionNotificationLevel',
-'BranchVisibilityPolicy',
+'BranchVisibilityRule',
 'BugBranchStatus',
 'BugNominationStatus',
 'BugTaskStatus',
@@ -84,13 +86,13 @@ __all__ = (
 'SourcePackageFormat',
 'SourcePackageRelationships',
 'SourcePackageUrgency',
-'SpecificationDelivery',
+'SpecificationImplementationStatus',
 'SpecificationFilter',
 'SpecificationGoalStatus',
 'SpecificationLifecycleStatus',
 'SpecificationPriority',
 'SpecificationSort',
-'SpecificationStatus',
+'SpecificationDefinitionStatus',
 'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
@@ -108,6 +110,37 @@ __all__ = (
 )
 
 from canonical.launchpad.webapp.enum import DBSchema, Item
+
+
+class AccountStatus(DBSchema):
+    """The status of a Launchpad account."""
+
+    NOACCOUNT = Item(10, """
+        No Launchpad account
+
+        There's no Launchpad account for this Person record.
+        """)
+
+    ACTIVE = Item(20, """
+        Active Launchpad account
+
+        There's an active Launchpad account associated with this Person.
+        """)
+
+    DEACTIVATED = Item(30, """
+        Deactivated Launchpad account
+
+        The account associated with this Person has been deactivated by the
+        Person himself.
+        """)
+
+    SUSPENDED = Item(40, """
+        Suspended Launchpad account
+
+        The account associated with this Person has been suspended by a
+        Launchpad admin.
+        """)
+
 
 class ArchArchiveType(DBSchema):
     """Arch Archive Type
@@ -970,7 +1003,7 @@ class SourcePackageUrgency(DBSchema):
         """)
 
 
-class SpecificationDelivery(DBSchema):
+class SpecificationImplementationStatus(DBSchema):
     # Note that some of the states associated with this schema correlate to
     # a "not started" definition. See Specification.started_clause for
     # further information, and make sure that it is updated (together with
@@ -1076,6 +1109,13 @@ class SpecificationDelivery(DBSchema):
         This functionality has been delivered for the targeted release, the
         code has been uploaded to the main archives or committed to the
         targeted product series, and no further work is necessary.
+        """)
+
+    INFORMATIONAL = Item(95, """
+        Informational
+
+        This specification is informational, and does not require
+        any implementation.
         """)
 
 
@@ -1304,7 +1344,7 @@ class SpecificationSort(DBSchema):
         """)
 
 
-class SpecificationStatus(DBSchema):
+class SpecificationDefinitionStatus(DBSchema):
     """The current status of a Specification
 
     This enum tells us whether or not a specification is approved, or still
@@ -2651,8 +2691,8 @@ class BranchSubscriptionNotificationLevel(DBSchema):
         """)
 
 
-class BranchVisibilityPolicy(DBSchema):
-    """Branch Visibility Policy"""
+class BranchVisibilityRule(DBSchema):
+    """Branch Visibility Rules for defining branch visibility policy."""
 
     PUBLIC = Item(1, """
         Public
@@ -3704,6 +3744,47 @@ class PersonCreationRationale(DBSchema):
         A user wanted to reference a person which is not a Launchpad user, so
         he created this "placeholder" profile.
         """)
+
+
+class ArchivePurpose(DBSchema):
+    """The purpose, or type, of an archive.
+
+    A distribution can be associated with different archives and this 
+    schema item enumerates the different archive types and their purpose.
+    For example, old distro releases may need to be obsoleted so their
+    archive would be OBSOLETE_ARCHIVE.
+    """
+
+    PRIMARY = Item(1, """
+        Primary Archive.
+
+        This is the primary Ubuntu archive.
+        """)
+
+    PPA = Item(2, """
+        PPA Archive.
+
+        This is a Personal Package Archive.
+        """)
+
+    EMBARGOED = Item(3, """
+        Embargoed Archive.
+
+        This is the archive for embargoed packages.
+        """)
+
+    COMMERCIAL = Item(4, """
+        Commercial Archive.
+
+        This is the archive for commercial packages.
+        """)
+
+    OBSOLETE = Item(5, """
+        Obsolete Archive.
+
+        This is the archive for obsolete packages.
+        """)
+
 
 class EntitlementType(DBSchema):
     """The set of features supported via entitlements.

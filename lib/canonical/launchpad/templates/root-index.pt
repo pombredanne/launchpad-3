@@ -29,6 +29,7 @@
         style="text-align: center;"
         action="/projects/"
         method="get"
+        accept-charset="UTF-8"
       >
         <label for="text">Is your project registered yet?</label>
         <input id="text" type="text" name="text" size="20" />
