@@ -14,10 +14,6 @@
 
 <div metal:fill-slot="main">
 
-  <tal:comment replace="nothing">
-    <tal:uses_malone tal:condition="view/contextUsesMalone" />
-  </tal:comment>
-
   <metal:not_uses_malone
       use-macro="context/@@+filebug-macros/not_uses_malone" />
 
