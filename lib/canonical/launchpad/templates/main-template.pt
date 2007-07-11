@@ -1,8 +1,9 @@
 <metal:page define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <metal:block define-slot="top_slot" />
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lpm="http://ns.launchpad.net/lpm" xml:lang="en" lang="en"
-    tal:attributes="lang default_language|default;
-                    xml:lang default_language|default;"
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lpm="http://ns.launchpad.net/lpm" xml:lang="en" lang="en" dir="ltr"
+    tal:attributes="lang view/lang|default_language|default;
+                    xml:lang view/lang|default_language|default;
+                    dir view/dir|string:ltr"
     tal:define="
         icingrev string:5;
         rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
@@ -48,12 +49,13 @@
     id="document"
     tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
   >
-    <div id="globalheader" tal:condition="site_message">
+    <div id="globalheader"  xml:lang="en" lang="en" dir="ltr"
+      tal:condition="site_message">
       <div class="sitemessage" tal:content="structure site_message"/>
       <img class="launchpad" width="90" height="20" tal:attributes="src string:${rooturl}+icing/globalheader_launchpad_bg.gif" alt="Launchpad"/>
     </div>
     <div id="topline" tal:condition="not: site_message"></div>
-    <div id="locationbar">
+    <div id="locationbar" xml:lang="en" lang="en" dir="ltr">
       <strong id="yourlocation">Your location:</strong>
       <ul id="menuroot">
         <tal:hierarchy content="structure context/@@+breadcrumbs" />
@@ -68,7 +70,7 @@
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <table
         tal:condition="view/macro:pagehas/applicationbuttons"
-        id="applications"
+        id="applications" xml:lang="en" lang="en" dir="ltr"
       >
         <tbody>
           <tr>
@@ -85,7 +87,7 @@
         </tbody>
       </table>
       <div
-        id="structuralobject"
+        id="structuralobject" xml:lang="en" lang="en" dir="ltr"
         tal:define="structuralheaderobject CONTEXTS/lp:structuralheaderobject"
         tal:condition="view/macro:pagehas/structuralheaderobject"
       >
@@ -98,9 +100,10 @@
       </div>
       <form
         tal:condition="view/macro:pagehas/globalsearch"
-        id="globalsearch"
+        id="globalsearch" xml:lang="en" lang="en" dir="ltr"
         action="/projects/"
         method="get"
+        accept-charset="UTF-8"
       >
         <div>
           <input
@@ -135,6 +138,7 @@
                       >
                         <ul
                           id="applicationchooser"
+                          xml:lang="en" lang="en" dir="ltr"
                           tal:define="facetmenu CONTEXTS/menu:facet"
                           tal:condition="facetmenu"
                         >
@@ -205,7 +209,7 @@
                           </tal:no_children>
                         </div>
                         <div
-                          id="portlets"
+                          id="portlets" xml:lang="en" lang="en" dir="ltr"
                           tal:condition="view/macro:pagehas/portlets"
                         >
                           <tal:menu replace="structure CONTEXTS/@@+menubox" />
@@ -238,7 +242,7 @@
           top margin for a cleared item is ignored.
         </tal:comment>
       </tal:noborder>
-      <div id="globalfooter">
+      <div id="globalfooter" xml:lang="en" lang="en" dir="ltr">
         <div id="applications-footer"
           tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
           tal:replace="nothing">
@@ -292,7 +296,7 @@
         </ul>
       </div><!--id="globalfooter"-->
     </div><!--id="nonhelp"-->
-    <div id="help" class="closed">
+    <div id="help" class="closed" xml:lang="en" lang="en" dir="ltr">
       <h2 id="help-tab">Help</h2>
       <div id="help-panel">
         <div id="help-content">
@@ -305,15 +309,16 @@
         <div id="help-bottom">&nbsp;</div>
       </div>
     </div>
-    <div id="menupreload" style="visibility:hidden">
+    <div id="menupreload" style="visibility:hidden" 
+      xml:lang="en" lang="en" dir="ltr">
       <ul class="menu" lpm:mid="root">
         <tal:condition condition="request/lp:person">
           <li class="item"
               tal:attributes="lpm:mid string:/~${request/lp:person/name}/+menudata/contributions"><a
-          class="container" href="/products">Projects</a></li>
+          class="container" href="/projects">Projects</a></li>
         </tal:condition>
         <tal:condition condition="not: request/lp:person">
-          <li class="item"><a href="/products">Projects</a></li>
+          <li class="item"><a href="/projects">Projects</a></li>
         </tal:condition>
         <li class="item"><a href="/distros">Distributions</a></li>
         <li class="item"><a href="/people">People</a></li>

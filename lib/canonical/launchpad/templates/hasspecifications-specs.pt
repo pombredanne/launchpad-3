@@ -5,10 +5,9 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/@@+portlet-details" />
-  <div tal:replace="structure context/@@+portlet-latestspecs" />
-</metal:leftportlets>
+    <metal:portlets fill-slot="portlets">
+      <div tal:replace="structure context/@@+portlet-latestspecs" />
+    </metal:portlets>
 
 <div metal:fill-slot="main"
      tal:define="specs view/specs;
@@ -18,6 +17,13 @@
      >Blueprints involving <tal:person replace="context/title" /></h1>
   <h1 tal:condition="not:view/is_person"
      >Blueprints for <tal:software replace="context/displayname" /></h1>
+
+  <div style="float: right;">
+    <a href="+addspec">
+    	<img alt="Register a blueprint" 
+    	     src="/+icing/but-sml-registerablueprint.gif"/>
+    </a>
+  </div>
 
   <tal:no_specs condition="not: has_any_specs">
 
@@ -128,7 +134,7 @@
   </tal:no_specs>
   <tal:has_specs condition="has_any_specs">
     <div>
-      <form name="spec_search" method="GET">
+      <form name="spec_search" class="primary search" method="GET">
 
         Show only blueprints containing:
 
@@ -175,16 +181,16 @@
                  tal:replace="structure spec/image:badges" />
           </td>
           <td tal:condition="view/show_design">
-            <span class="sortkey" tal:content="spec/status/sortkey" />
-            <span tal:content="spec/status/title"
+            <span class="sortkey" tal:content="spec/definition_status/sortkey" />
+            <span tal:content="spec/definition_status/title"
                   tal:attributes="
-                  class string:specstatus${spec/status/name}">Approved</span>
+                  class string:specstatus${spec/definition_status/name}">Approved</span>
           </td>
           <td tal:condition="view/show_implementation">
-            <span class="sortkey" tal:content="spec/delivery/sortkey" />
+            <span class="sortkey" tal:content="spec/implementation_status/sortkey" />
             <span
-              tal:attributes="class string:specdelivery${spec/delivery/name}"
-              tal:content="spec/delivery/title">Deployed</span>
+              tal:attributes="class string:specdelivery${spec/implementation_status/name}"
+              tal:content="spec/implementation_status/title">Deployed</span>
           </td>
           <td tal:condition="view/show_assignee">
             <a tal:condition="spec/assignee"
