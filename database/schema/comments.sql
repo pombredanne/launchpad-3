@@ -176,6 +176,11 @@ COMMENT ON COLUMN CodeImport.cvs_root IS 'The $CVSROOT details, probably of the 
 COMMENT ON COLUMN CodeImport.cvs_module IS 'The module in cvs_root to import, often the name of the project.';
 COMMENT ON COLUMN CodeImport.date_last_successful IS 'When this code import last succeeded. NULL if this import has never succeeded.';
 
+-- CodeImportMachine
+
+COMMENT ON TABLE CodeImportMachine IS 'The record of a machine capable of performing jobs for the code import system.';
+COMMENT ON COLUMN CodeImportMachine.hostname IS 'The (unique) hostname of the machine.';
+COMMENT ON COLUMN CodeImportMachine.online IS 'Whether the machine is capable of performing jobs at this time.';
 
 -- CVE
 
