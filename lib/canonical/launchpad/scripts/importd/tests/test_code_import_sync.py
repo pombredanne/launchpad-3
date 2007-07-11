@@ -143,7 +143,9 @@ class CodeImportSyncTestCase(TestCase):
 
 
 class TestGetImportSeries(CodeImportSyncTestCase):
-    """Unit tests for `CodeImportSync.getImportSeries`."""
+    """Test that `CodeImportSync.getImportSeries` yields all the ProductSeries
+    for which we want to have CodeImport, and nothing else.
+    """
 
     def assertGetImportSeriesYields(self, expected_series):
         """Fail if getImportSeries does not yield a single item equal to
@@ -227,7 +229,9 @@ class TestGetImportSeries(CodeImportSyncTestCase):
 
 
 class TestReviewStatusFromImportStatus(TestCase):
-    """Unit tests for `CodeImportSync.reviewStatusFromImportStatus`."""
+    """Test that reviewStatusFromImportStatus correctly maps ImportStatus to
+    ReviewStatus.
+    """
 
     def setUp(self):
         # reviewStatusFromImportStatus does not need database access.
@@ -281,7 +285,10 @@ class StubProductSeries:
 
 
 class TestDateLastSuccessfulFromProductSeries(TestCase):
-    """Unit tests for `CodeImportSync.dateLastSuccessfulFromProductSeries`."""
+    """Test that `CodeImportSync.dateLastSuccessfulFromProductSeries` gives the
+    right date_last_successful for the associated CodeImport given an import
+    ProductSeries.
+    """
 
     def setUp(self):
         # dateLastSuccessfulFromProductSeries does not need database access.
@@ -347,7 +354,9 @@ class TestDateLastSuccessfulFromProductSeries(TestCase):
 
 
 class TestCreateCodeImport(CodeImportSyncTestCase):
-    """Unit tests for `CodeImportSync.createCodeImport`."""
+    """Test that `CodeImportSync.createCodeImport` creates a CodeImport with
+    the right values from a given ProductSeries.
+    """
 
     def testSubversion(self):
         # Test correct creation of a CodeImport with Subversion details.
@@ -380,7 +389,9 @@ class TestCreateCodeImport(CodeImportSyncTestCase):
 
 
 class TestUpdateCodeImport(CodeImportSyncTestCase):
-    """Unit tests for `CodeImportSync.updateCodeImport`."""
+    """Test that `CodeImportSync.updateCodeImport` correctly updates an
+    existing CodeImport from its associated ProductSeries.
+    """
 
     def testSubversionToCvs(self):
         # Test updating a code import from Subversion to CVS.
