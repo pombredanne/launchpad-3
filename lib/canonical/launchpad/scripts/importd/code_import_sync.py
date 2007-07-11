@@ -130,8 +130,10 @@ class CodeImportSync:
 
             # This invariant is depended on by the logic in updateCodeImport
             # that decides if we need to create a new branch for an exiting
-            # CodeImport. See TestCodeImportSync.testReimportProcess for
-            # details
+            # CodeImport. A non-NULL last_successful means this import was
+            # successful, if a later update to this CodeImport sets
+            # last_successful to NULL, we must create a new branch. See
+            # TestCodeImportSync.testReimportProcess for details
             assert last_successful is not None
 
         elif series.importstatus in (ImportStatus.TESTING,
