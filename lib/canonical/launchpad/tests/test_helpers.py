@@ -173,14 +173,14 @@ class DummyLaunchBag:
         self.user = user
 
 
-def test_person_or_request_languages():
+def test_preferred_or_request_languages():
     '''
     >>> from zope.app.testing.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
     >>> from zope.i18n.interfaces import IUserPreferredLanguages
     >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
     >>> from canonical.launchpad.interfaces import IRequestLocalLanguages
-    >>> from canonical.launchpad.helpers import person_or_request_languages
+    >>> from canonical.launchpad.helpers import preferred_or_request_languages
 
     First, test with a person who has a single preferred language.
 
@@ -190,7 +190,7 @@ def test_person_or_request_languages():
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
-    >>> languages = person_or_request_languages(DummyRequest())
+    >>> languages = preferred_or_request_languages(DummyRequest())
     >>> len(languages)
     1
     >>> languages[0].code
@@ -206,7 +206,7 @@ def test_person_or_request_languages():
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
-    >>> languages = person_or_request_languages(DummyRequest())
+    >>> languages = preferred_or_request_languages(DummyRequest())
     >>> len(languages)
     6
     >>> languages[0].code

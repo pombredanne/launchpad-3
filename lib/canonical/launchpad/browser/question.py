@@ -44,7 +44,7 @@ from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
 from canonical.launchpad.helpers import (
-    is_english_variant, person_or_request_languages)
+    is_english_variant, preferred_or_request_languages)
 
 from canonical.launchpad.interfaces import (
     CreateBugParams, IAnswersFrontPageSearchForm, IBug, ILanguageSet,
@@ -214,7 +214,7 @@ class QuestionLanguageVocabularyFactory:
 
     def __call__(self, context):
         languages = set()
-        for lang in person_or_request_languages(self.view.request):
+        for lang in preferred_or_request_languages(self.view.request):
             if not is_english_variant(lang):
                 languages.add(lang)
         if context is not None and IQuestion.providedBy(context):

@@ -329,7 +329,7 @@ def shortlist(sequence, longest_expected=15, hardlimit=None):
     return L
 
 
-def person_or_request_languages(request):
+def preferred_or_request_languages(request):
     '''Turn a request into a list of languages to show.
 
     Return Person.languages when the user has preferred languages.

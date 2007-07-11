@@ -33,7 +33,7 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import (
-    browserLanguages, is_english_variant, person_or_request_languages)
+    browserLanguages, is_english_variant, preferred_or_request_languages)
 from canonical.launchpad.interfaces import (
     IDistribution, ILanguageSet, IProject, IQuestionCollection, IQuestionSet,
     IQuestionTarget, ISearchableByQuestionOwner, ISearchQuestionsForm,
@@ -75,15 +75,17 @@ class UserSupportLanguagesMixin:
     def user_support_languages(self):
         """The set of user support languages.
 
-        This set includes the user's preferred languages, converting
-        English variants to English. If the user is not logged in, or
-        doesn't have any preferred languages set, the languages will
-        be inferred from the request (the Accept-Language header and GeoIP
-        information).
+        This set includes the user's preferred languages, or request
+        languages, or GeoIP languages. When the user does not have
+        preferred languages, the languages will be inferred from the
+        request Accept-Language header. As a last resort, the code falls
+        back on GeoIP rules to determine the user's languages.
+        English is added to the list when an English variant is returned
+        by one of the three language sources.
         """
         english = getUtility(ILanguageSet)['en']
         languages = set()
-        for language in person_or_request_languages(self.request):
+        for language in preferred_or_request_languages(self.request):
             if is_english_variant(language):
                 languages.add(english)
             else:
