@@ -62,9 +62,6 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
     def breadcrumb(self):
         return self.context.displayname
 
-    def breadcrumb(self):
-        return self.context.displayname
-
     def traverse(self, name):
         return self.context.getProduct(name)
 
@@ -120,7 +117,8 @@ class ProjectDynMenu(DynMenu):
                     count += 1
                     if count >= self.MAX_SUB_PROJECTS:
                         break
-            yield self.makeLink('See all %s related projects...' % num_products)
+            yield self.makeLink(
+                'See all %s related projects...' % num_products)
 
 
 class ProjectSetNavigation(Navigation):
@@ -258,7 +256,7 @@ class ProjectSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'specifications'
-    links = ['listall', 'doc', 'roadmap', 'assignments',]
+    links = ['listall', 'doc', 'roadmap', 'assignments', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -277,6 +275,10 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
 
+    def new(self):
+        text = 'Register blueprint'
+        summary = 'Register a new blueprint for %s' % self.context.title
+        return Link('+addspec', text, summary, icon='add')
 
 class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
     """Menu for the answers facet of projects."""

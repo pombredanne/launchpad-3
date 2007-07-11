@@ -19,7 +19,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp.dbschema import (
-    BuildStatus, PackagePublishingPocket)
+    ArchivePurpose, BuildStatus, PackagePublishingPocket)
 
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -510,14 +510,17 @@ class BuildSet:
         # Only pick builds from the distribution's main archive to
         # exclude PPA builds
         clauseTables.extend(["DistroArchRelease",
+                             "Archive",
                              "DistroRelease",
                              "Distribution"])
         condition_clauses.append("""
             Build.distroarchrelease = DistroArchRelease.id AND
             DistroArchRelease.distrorelease = DistroRelease.id AND
             DistroRelease.distribution = Distribution.id AND
-            Distribution.main_archive = Build.archive
-            """)
+            Distribution.id = Archive.distribution AND
+            Archive.purpose = %s AND
+            Archive.id = Build.archive
+            """ % ArchivePurpose.PRIMARY)
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,

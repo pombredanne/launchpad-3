@@ -3,6 +3,7 @@
 An Archive models a Debian Archive ...
 
   >>> from zope.interface.verify import verifyObject
+  >>> from canonical.lp.dbschema import ArchivePurpose
   >>> from canonical.launchpad.interfaces import (
   ...     IPerson, IPersonSet, IArchiveSet, IArchive,
   ...     IDistributionSet)
@@ -14,13 +15,20 @@ Let get the IArchiveSet utility:
 A new Archive can be created by passing a name and an owner
 
   >>> name16 = getUtility(IPersonSet).getByName('name16')
-  >>> sandbox_archive = archive_set.new(owner=name16)
+  >>> sandbox_archive = archive_set.new(
+  ...    purpose=ArchivePurpose.PPA, owner=name16)
 
   >>> verifyObject(IArchive, sandbox_archive)
   True
 
   >>> sandbox_archive.owner == name16
   True
+
+An archive is also associated with a distribution.  This can be queried on
+the distribution property.  The default distribution is "ubuntu":
+
+  >> sandbox_archive.distribution.name
+  u'ubuntu'
 
 An Archive can be retrieved via IPerson.archive SingleJoin:
 
@@ -157,6 +165,14 @@ IArchiveSet.getAllPPAs provides all present *personal* archive:
   >>> [archive.owner.name for archive in archive_set.getAllPPAs()]
   [u'cprov', u'sabdfl', u'no-priv', u'name16']
 
+IArchiveSet.getByDistroPurpose retrieves an IArchive given a distribution
+and an ArchivePurpose:
+
+  >>> from canonical.lp.dbschema import ArchivePurpose
+  >>> commercial_archive = getUtility(IArchiveSet).getByDistroPurpose(
+  ...     ubuntutest, ArchivePurpose.COMMERCIAL)
+  >>> commercial_archive.description
+  u'Commercial archive'
 
 Iteration over the own utility is performed against all archives,
 including the *main_archives*:
@@ -169,4 +185,4 @@ including the *main_archives*:
   ...     else:
   ...          ppas += 1
   >>> main_archives, ppas
-  (7, 4)
+  (9, 4)

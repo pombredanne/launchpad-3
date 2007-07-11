@@ -15,7 +15,7 @@ if [ "x$1" == "x" ]; then
 fi
 
 if [ -e "${LPBRANCHES}/$1" ]; then
-    echo "Error: '$1' alreeady exists"
+    echo "Error: '$1' already exists"
     exit 1
 fi
 

@@ -15,15 +15,17 @@ from zope.interface import implements
 
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like, quote
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.database.librarian import LibraryFileContent
 from canonical.launchpad.interfaces import (
-    IArchive, IArchiveSet, IHasOwner, IHasBuildRecords, IBuildSet)
+    IArchive, IArchiveSet, IHasOwner, IHasBuildRecords, IBuildSet,
+    IDistributionSet)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackageUploadStatus)
+    ArchivePurpose, PackagePublishingStatus, PackageUploadStatus)
 
 
 class Archive(SQLBase):
@@ -36,22 +38,18 @@ class Archive(SQLBase):
 
     description = StringCol(dbName='description', notNull=False, default=None)
 
+    distribution = ForeignKey(
+        foreignKey='Distribution', dbName='distribution', notNull=False)
+
+    purpose = EnumCol(dbName='purpose', unique=False, notNull=True,
+        schema=ArchivePurpose)
+
     enabled = BoolCol(dbName='enabled', notNull=False, default=True)
 
     authorized_size = IntCol(
         dbName='authorized_size', notNull=False, default=104857600)
 
     whiteboard = StringCol(dbName='whiteboard', notNull=False, default=None)
-
-    @property
-    def distribution(self):
-        """See IArchive."""
-        # XXX cprov 20070606: Why our SQLObject is so broken and old ?
-        # Our SingleJoin is broken as described in #3424. See further
-        # fix in http://pythonpaste.org/archives/message/\
-        # 20050817.013453.5c129f83.en.html
-        from canonical.launchpad.database.distribution import Distribution
-        return Distribution.selectOneBy(main_archive=self.id)
 
     @property
     def title(self):
@@ -71,7 +69,7 @@ class Archive(SQLBase):
         """See IArchive."""
         pubconf = PubConfig(distribution)
 
-        if self.id == distribution.main_archive.id:
+        if self.purpose == ArchivePurpose.PRIMARY:
             return pubconf
 
         pubconf.distroroot = config.personalpackagearchive.root
@@ -195,20 +193,28 @@ class ArchiveSet:
         """See canonical.launchpad.interfaces.IArchiveSet."""
         return Archive.get(archive_id)
 
-    def new(self, owner=None, description=None):
-        """See canonical.launchpad.interfaces.IArchiveSet."""
-        return Archive(owner=owner, description=description)
+    def getByDistroPurpose(self, distribution, purpose):
+        return Archive.selectOneBy(distribution=distribution, purpose=purpose)
 
-    def ensure(self, owner):
+    def new(self, distribution=None, purpose=None, owner=None):
+        """See canonical.launchpad.interfaces.IArchiveSet."""
+        if purpose == ArchivePurpose.PPA:
+            assert owner, "Owner required when purpose is PPA."
+        if distribution is None:
+            distribution = getUtility(IDistributionSet)['ubuntu']
+        return Archive(owner=owner, distribution=distribution, purpose=purpose)
+
+    def ensure(self, owner, distribution, purpose):
         """See canonical.launchpad.interfaces.IArchiveSet."""
         archive = owner.archive
         if archive is None:
-            archive = self.new(owner=owner)
+            archive = self.new(
+                distribution=distribution, purpose=purpose, owner=owner)
         return archive
 
     def getAllPPAs(self):
         """See canonical.launchpad.interfaces.IArchiveSet."""
-        return Archive.select("owner is not NULL")
+        return Archive.selectBy(purpose=ArchivePurpose.PPA)
 
     def searchPPAs(self, text=None):
         """See canonical.launchpad.interfaces.IArchiveSet."""

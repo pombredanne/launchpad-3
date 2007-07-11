@@ -76,7 +76,7 @@ When a branch's URL is null, the user is not allowed to set it.
 >>> gterm_product = getUtility(IProductSet).getByName('gnome-terminal')
 >>> from canonical.launchpad.interfaces import IPersonSet
 >>> ddaa = getUtility(IPersonSet).getByName('ddaa')
->>> no_url = branchset.new('no_url', ddaa, gterm_product, None)
+>>> no_url = branchset.new('no_url', ddaa, ddaa, gterm_product, None)
 >>> no_url.url is None
 True
 >>> view = getMultiAdapter((no_url, TestRequest()), name='+edit')

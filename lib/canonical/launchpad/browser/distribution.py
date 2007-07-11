@@ -1,5 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
+"""Browser views for distributions."""
+
 __metaclass__ = type
 
 __all__ = [
@@ -473,7 +475,7 @@ class DistributionEditView(LaunchpadEditFormView):
 
     schema = IDistribution
     label = "Change distribution details"
-    field_names = ['displayname', 'title', 'summary', 'description',]
+    field_names = ['displayname', 'title', 'summary', 'description']
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -516,7 +518,6 @@ class DistributionAddView(LaunchpadFormView):
 
     @action("Save", name='save')
     def save_action(self, action, data):
-        archive = getUtility(IArchiveSet).new()
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
@@ -526,7 +527,6 @@ class DistributionAddView(LaunchpadFormView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
-            main_archive=archive,
             )
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
@@ -563,7 +563,7 @@ class DistributionBugContactEditView(SQLObjectEditView):
 
 
 class DistributionCountryArchiveMirrorsView(LaunchpadView):
-    """A text/plain page which lists the mirrors in the country of the request.
+    """A text/plain page that lists the mirrors in the country of the request.
 
     If there are no mirrors located in the country of the request, we fallback
     to the main Ubuntu repositories.
@@ -696,7 +696,8 @@ class DistributionDynMenu(
         """Show milestones more recently than one month ago,
         or with no due date.
         """
-        fairly_recent = datetime.datetime.utcnow() - datetime.timedelta(days=30)
+        fairly_recent = (
+            datetime.datetime.utcnow() - datetime.timedelta(days=30))
         for milestone in self.context.milestones:
             if (milestone.dateexpected is None or
                 milestone.dateexpected > fairly_recent):

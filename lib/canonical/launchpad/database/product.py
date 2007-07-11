@@ -6,8 +6,6 @@ __metaclass__ = type
 __all__ = ['Product', 'ProductSet']
 
 
-from operator import attrgetter
-
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -28,8 +26,7 @@ from canonical.lp.dbschema import (
 
 from canonical.launchpad.helpers import shortlist
 
-from canonical.launchpad.database.answercontact import AnswerContact
-from canonical.launchpad.database.branch import Branch, BranchSet
+from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
 from canonical.launchpad.database.bugtarget import BugTargetBase
@@ -42,12 +39,10 @@ from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtask import BugTaskSet
-from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.question import (
-    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet,
-    QuestionTargetMixin)
+    QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
@@ -117,8 +112,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
     downloadurl = StringCol(dbName='downloadurl', notNull=False, default=None)
     lastdoap = StringCol(dbName='lastdoap', notNull=False, default=None)
     translationgroup = ForeignKey(
-        dbName='translationgroup', foreignKey='TranslationGroup', notNull=False,
-        default=None)
+        dbName='translationgroup', foreignKey='TranslationGroup',
+        notNull=False, default=None)
     translationpermission = EnumCol(
         dbName='translationpermission', notNull=True,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
@@ -154,7 +149,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         return "BugTask.product = %d" % self.id
 
     def getExternalBugTracker(self):
-        """See IProduct."""
+        """See `IProduct`."""
         if self.official_malone:
             return None
         elif self.bugtracker is not None:
@@ -170,11 +165,11 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         return get_bug_tags("BugTask.product = %s" % sqlvalues(self))
 
     def getUsedBugTagsWithOpenCounts(self, user):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         return get_bug_tags_open_count(
             "BugTask.product = %s" % sqlvalues(self), user)
 
@@ -208,7 +203,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     @property
     def drivers(self):
-        """See IProduct."""
+        """See `IProduct`."""
         drivers = set()
         drivers.add(self.driver)
         if self.project is not None:
@@ -227,13 +222,13 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     @property
     def all_milestones(self):
-        """See IProduct."""
+        """See `IProduct`."""
         return Milestone.selectBy(
             product=self, orderBy=['dateexpected', 'name'])
 
     @property
     def milestones(self):
-        """See IProduct."""
+        """See `IProduct`."""
         return Milestone.selectBy(
             product=self, visible=True, orderBy=['dateexpected', 'name'])
 
@@ -277,17 +272,17 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     @property
     def bugtargetname(self):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         return '%s (upstream)' % self.name
 
     def getLatestBranches(self, quantity=5, visible_by_user=None):
-        """See IProduct."""
+        """See `IProduct`."""
         return shortlist(
             BranchSet().getLatestBranchesForProduct(
                 self, quantity, visible_by_user))
 
     def getPackage(self, distroseries):
-        """See IProduct."""
+        """See `IProduct`."""
         if isinstance(distroseries, Distribution):
             distroseries = distroseries.currentrelease
         for pkg in self.sourcepackages:
@@ -297,14 +292,14 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             raise NotFoundError(distroseries)
 
     def getMilestone(self, name):
-        """See IProduct."""
+        """See `IProduct`."""
         return Milestone.selectOne("""
             product = %s AND
             name = %s
             """ % sqlvalues(self.id, name))
 
     def createBug(self, bug_params):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         bug_params.setBugTarget(product=self)
         return BugSet().createBug(bug_params)
 
@@ -312,29 +307,11 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See BugTargetBase."""
         return 'BugTask.product = %s' % sqlvalues(self)
 
-    def newQuestion(self, owner, title, description, language=None,
-                    datecreated=None):
-        """See IQuestionTarget."""
-        return QuestionSet.new(title=title, description=description,
-            owner=owner, product=self, datecreated=datecreated,
-            language=language)
-
-    def getQuestion(self, question_id):
-        """See IQuestionTarget."""
-        try:
-            question = Question.get(question_id)
-        except SQLObjectNotFound:
-            return None
-        # Verify that the question is actually for this target.
-        if question.target != self:
-            return None
-        return question
-
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
                         needs_attention_from=None, unsupported=False):
-        """See IQuestionCollection."""
+        """See `IQuestionCollection`."""
         if unsupported:
             unsupported_target = self
         else:
@@ -347,47 +324,16 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             needs_attention_from=needs_attention_from,
             unsupported_target=unsupported_target).getResults()
 
-
-    def findSimilarQuestions(self, title):
-        """See IQuestionTarget."""
-        return SimilarQuestionsSearch(title, product=self).getResults()
-
-    def _getTargetTypes(self):
-        """See QuestionTargetMixin."""
+    def getTargetTypes(self):
+        """See `QuestionTargetMixin`.
+        
+        Defines product as self.
+        """
         return {'product': self}
-
-    def removeAnswerContact(self, person):
-        """See IQuestionTarget."""
-        if person not in self.answer_contacts:
-            return False
-        answer_contact = AnswerContact.selectOneBy(
-            product=self, person=person)
-        answer_contact.destroySelf()
-        return True
-
-    @property
-    def answer_contacts(self):
-        """See IQuestionTarget."""
-        answer_contacts = AnswerContact.selectBy(product=self)
-        return sorted(
-            [answer_contact.person for answer_contact in answer_contacts],
-            key=attrgetter('displayname'))
-
-    @property
-    def direct_answer_contacts(self):
-        """See IQuestionTarget."""
-        return self.answer_contacts
-
-    def getQuestionLanguages(self):
-        """See IQuestionTarget."""
-        return set(Language.select(
-            'Language.id = Question.language AND '
-            'Question.product = %s' % sqlvalues(self.id),
-            clauseTables=['Question'], distinct=True))
 
     @property
     def translatable_packages(self):
-        """See IProduct."""
+        """See `IProduct`."""
         packages = set(package for package in self.sourcepackages
                        if len(package.currentpotemplates) > 0)
         # Sort packages by distroseries.name and package.name
@@ -395,7 +341,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     @property
     def translatable_series(self):
-        """See IProduct."""
+        """See `IProduct`."""
         series = ProductSeries.select('''
             POTemplate.productseries = ProductSeries.id AND
             ProductSeries.product = %d
@@ -406,7 +352,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     @property
     def primary_translatable(self):
-        """See IProduct."""
+        """See `IProduct`."""
         packages = self.translatable_packages
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         targetseries = ubuntu.currentseries
@@ -430,20 +376,20 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     @property
     def mentoring_offers(self):
-        """See IProduct"""
-        via_specs = MentoringOffer.select('''
+        """See `IProduct`"""
+        via_specs = MentoringOffer.select("""
             Specification.product = %s AND
             Specification.id = MentoringOffer.specification
-            ''' % sqlvalues(self.id) + """ AND NOT
+            """ % sqlvalues(self.id) + """ AND NOT
             (""" + Specification.completeness_clause +")",
             clauseTables=['Specification'],
             distinct=True)
-        via_bugs = MentoringOffer.select('''
+        via_bugs = MentoringOffer.select("""
             BugTask.product = %s AND
             BugTask.bug = MentoringOffer.bug AND
             BugTask.bug = Bug.id AND
             Bug.private IS FALSE
-            ''' % sqlvalues(self.id) + """ AND NOT (
+            """ % sqlvalues(self.id) + """ AND NOT (
             """ + BugTask.completeness_clause + ")",
             clauseTables=['BugTask', 'Bug'],
             distinct=True)
@@ -473,7 +419,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
     @property
     def has_any_specifications(self):
-        """See IHasSpecifications."""
+        """See `IHasSpecifications`."""
         return self.all_specifications.count()
 
     @property
@@ -485,7 +431,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         return self.specifications(filter=[SpecificationFilter.VALID])
 
     def specifications(self, sort=None, quantity=None, filter=None):
-        """See IHasSpecifications."""
+        """See `IHasSpecifications`."""
 
         # Make a new list of the filter, so that we do not mutate what we
         # were passed as a filter
@@ -515,7 +461,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status', 'Specification.name']
+            order = (
+                ['-priority', 'Specification.status', 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -563,11 +510,11 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def getSpecification(self, name):
-        """See ISpecificationTarget."""
+        """See `ISpecificationTarget`."""
         return Specification.selectOneBy(product=self, name=name)
 
     def getSeries(self, name):
-        """See IProduct."""
+        """See `IProduct`."""
         return ProductSeries.selectOneBy(product=self, name=name)
 
     def newSeries(self, owner, name, summary, branch=None):
@@ -596,26 +543,15 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         return distros
 
     def ensureRelatedBounty(self, bounty):
-        """See IProduct."""
+        """See `IProduct`."""
         for curr_bounty in self.bounties:
             if bounty.id == curr_bounty.id:
                 return None
         ProductBounty(product=self, bounty=bounty)
         return None
 
-    def newBranch(self, name, title, url, home_page, lifecycle_status,
-                  summary, whiteboard):
-        """See IProduct."""
-        # XXX thumper-angry - FIX THIS!!!!
-        # use BranchSet
-        from canonical.launchpad.database import Branch
-        return Branch(
-            product=self, name=name, title=title, url=url, home_page=home_page,
-            lifecycle_status=lifecycle_status, summary=summary,
-            whiteboard=whiteboard)
-
     def getFirstEntryToImport(self):
-        """See IHasTranslationImports."""
+        """See `IHasTranslationImports`."""
         return TranslationImportQueueEntry.selectFirst(
             '''status=%s AND
             productseries=ProductSeries.id AND
@@ -652,7 +588,8 @@ class ProductSet:
 
     @property
     def all_active(self):
-        results = Product.selectBy(active=True, orderBy="-Product.datecreated")
+        results = Product.selectBy(
+            active=True, orderBy="-Product.datecreated")
         # The main product listings include owner, so we prejoin it in
         return results.prejoin(["owner"])
 
@@ -675,7 +612,7 @@ class ProductSet:
         return product
 
     def getProductsWithBranches(self):
-        """See IProductSet."""
+        """See `IProductSet`."""
         return Product.select(
             'Product.id in (select distinct(product) from Branch)',
             orderBy='name')
@@ -747,7 +684,7 @@ class ProductSet:
                               clauseTables=clauseTables)
 
     def getTranslatables(self):
-        """See IProductSet"""
+        """See `IProductSet`"""
         upstream = Product.select('''
             Product.id = ProductSeries.product AND
             POTemplate.productseries = ProductSeries.id AND
@@ -759,7 +696,7 @@ class ProductSet:
         return upstream
 
     def featuredTranslatables(self, maximumproducts=8):
-        """See IProductSet"""
+        """See `IProductSet`"""
         randomresults = Product.select('''id IN
             (SELECT Product.id FROM Product, ProductSeries, POTemplate
                WHERE Product.id = ProductSeries.product AND
@@ -770,7 +707,7 @@ class ProductSet:
             distinct=True)
 
         results = list(randomresults[:maximumproducts])
-        results.sort(lambda a,b: cmp(a.title, b.title))
+        results.sort(lambda a, b: cmp(a.title, b.title))
         return results
 
     @cachedproperty
