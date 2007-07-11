@@ -102,7 +102,8 @@ class CodeImportSyncTestCase(TestCase):
         """Create an import branch and associate it to an import series."""
         vcs_imports = LaunchpadCelebrities().vcs_imports
         branch = getUtility(IBranchSet).new(
-            series.name, vcs_imports, series.product, None)
+            name=series.name, creator=vcs_imports, owner=vcs_imports,
+            product=series.product, url=None)
         series.import_branch = branch
         return branch
 
@@ -369,7 +370,8 @@ class TestCreateCodeImport(CodeImportSyncTestCase):
         # the productseries, so we will attempt to create a new one.
         vcs_imports = LaunchpadCelebrities().vcs_imports
         branch = getUtility(IBranchSet).new(
-            series.name, vcs_imports, series.product, None)
+            name=series.name, creator=vcs_imports, owner=vcs_imports,
+            product=series.product, url=None)
         # Then, createCodeImport should fail and log an error.
         code_import = self.code_import_sync.createCodeImport(series)
         self.assertEqual(code_import, None)

@@ -244,7 +244,8 @@ class CodeImportSync:
             return None
         self.logger.debug("Name available, creating branch.")
         branch = getUtility(IBranchSet).new(
-            series.name, vcs_imports, series.product, None, None)
+            name=series.name, creator=vcs_imports, owner=vcs_imports,
+            product=series.product, url=None)
         self.logger.debug("Done creating import branch.")
         return branch
 
