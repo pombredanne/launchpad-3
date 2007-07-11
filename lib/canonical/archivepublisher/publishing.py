@@ -415,6 +415,13 @@ class Publisher(object):
 
         full_name = distroseries.name + pocketsuffix[pocket]
 
+        # XXX cprov 20070711: it will be affected by CommercialRepo changes
+        if self.archive == self.distro.main_archive:
+            index_suffixes = ('', '.gz', '.bz2')
+        else:
+            index_suffixes = ('.gz',)
+
+
         self.log.debug("Writing Release file for %s/%s/%s" % (
             full_name, component, architecture))
         if architecture != "source":
@@ -425,7 +432,7 @@ class Publisher(object):
             di_path = os.path.join(component, "debian-installer",
                                    architecture)
             di_file_stub = os.path.join(di_path, file_stub)
-            for suffix in ('', '.gz', '.bz2'):
+            for suffix in index_suffixes:
                 all_files.add(di_file_stub + suffix)
             # Strip "binary-" off the front of the architecture
             clean_architecture = architecture[7:]
@@ -436,8 +443,10 @@ class Publisher(object):
         # Now, grab the actual (non-di) files inside each of
         # the suite's architectures
         file_stub = os.path.join(component, architecture, file_stub)
-        for suffix in ('', '.gz', '.bz2'):
+
+        for suffix in index_suffixes:
             all_files.add(file_stub + suffix)
+
         all_files.add(os.path.join(component, architecture, "Release"))
 
         f = open(os.path.join(self._config.distsroot, full_name,
