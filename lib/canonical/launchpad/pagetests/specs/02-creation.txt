@@ -169,19 +169,18 @@ this case, the user is asked to specify a project from the list of all projects
 in Launchpad:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/specs/+new')
-    >>> control('For'     ).value = 'ubuntu'
-    >>> control('Name'    ).value = 'brandnewspec'
-    >>> control('Title'   ).value = 'Network Voodoo: Automatic Network Detection'
-    >>> control('URL'     ).value = 'http://wiki.ubuntu.com/NetworkVoodoo'
-    >>> control('Summary' ).value = summary
-    >>> control('Status'  ).value = ['Approved']
+    >>> control('For').value = 'ubuntu'
+    >>> control('Name').value = 'brandnewspec'
+    >>> control('Title').value = 'Network Voodoo: Automatic Network Detection'
+    >>> control('URL').value = 'http://wiki.ubuntu.com/NetworkVoodoo'
+    >>> control('Summary').value = summary
+    >>> control('Status').value = ['Approved']
     >>> control('Assignee').value = 'daf@canonical.com'
-    >>> control('Drafter' ).value = 'carlos@canonical.com'
+    >>> control('Drafter').value = 'carlos@canonical.com'
     >>> control('Approver').value = 'tsukimi@quaqua.net'
     >>> control('Register').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/brandnewspec'
-
 
 == Registration and sprint proposal ==
 
@@ -234,3 +233,4 @@ accept or reject the proposal from the agenda page.
     >>> browser.open('http://blueprints.launchpad.dev/sprints/futurista/+settopics')
     >>> 'another-spec-for-sprint' in browser.contents
     True
+

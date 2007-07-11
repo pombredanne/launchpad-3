@@ -45,7 +45,7 @@ from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation)
 from canonical.lp.dbschema import (
     SpecificationFilter, SpecificationPriority, SpecificationSort,
-    SpecificationStatus)
+    SpecificationDefinitionStatus)
 from canonical.widgets.textwidgets import LocalDateTimeWidget
 
 
@@ -455,9 +455,10 @@ class SprintMeetingExportView(LaunchpadView):
                 spec.priority < SpecificationPriority.LOW):
                 continue
 
-            if spec.status not in [SpecificationStatus.NEW,
-                                   SpecificationStatus.DISCUSSION,
-                                   SpecificationStatus.DRAFT]:
+            if (spec.definition_status not in
+                [SpecificationDefinitionStatus.NEW,
+                 SpecificationDefinitionStatus.DISCUSSION,
+                 SpecificationDefinitionStatus.DRAFT]):
                 continue
 
             # get the list of attendees that will attend the sprint

@@ -65,7 +65,7 @@ from canonical.launchpad.browser.launchpad import (
     AppFrontPageSearchView, StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
 
-from canonical.lp.dbschema import SpecificationStatus
+from canonical.lp.dbschema import SpecificationDefinitionStatus
 
 class SpecificationNavigation(Navigation):
 
@@ -451,13 +451,13 @@ class SpecificationSupersedingView(LaunchpadFormView):
         self.context.superseded_by = data['superseded_by']
         if data['superseded_by'] is not None:
             # set the state to superseded
-            self.context.status = SpecificationStatus.SUPERSEDED
+            self.context.definition_status = SpecificationDefinitionStatus.SUPERSEDED
         else:
             # if the current state is SUPERSEDED and we are now removing the
             # superseded-by then we should move this spec back into the
             # drafting pipeline by resetting its status to NEW
-            if self.context.status == SpecificationStatus.SUPERSEDED:
-                self.context.status = SpecificationStatus.NEW
+            if self.context.definition_status == SpecificationDefinitionStatus.SUPERSEDED:
+                self.context.definition_status = SpecificationDefinitionStatus.NEW
         newstate = self.context.updateLifecycleStatus(self.user)
         if newstate is not None:
             self.request.response.addNotification(
@@ -852,7 +852,41 @@ class SpecificationAddViewBase(LaunchpadFormView):
                 self.setFieldError(
                     'name',
                     self.schema['name'].errormessage % name
-                )        
+                )
+    @property
+    def field_names(self):
+        """This form is used sometimes on an IProject, IProduct or
+        IDistribution to get a new spec for them, and also on
+        ISpecificationSet as a system-wide "new spec" form. We need slightly
+        different field names in each case, so we make field_names a
+        property.
+        """
+        field_names = ['name', 'title', 'specurl', 'summary', 'definition_status',
+                       'assignee', 'drafter', 'approver']
+        if ISpecificationSet.providedBy(self.context):
+            field_names.insert(0, 'target')
+        elif IProject.providedBy(self.context):
+            field_names.insert(0, 'projecttarget')
+        return field_names
+
+    def validate(self, data):
+        """Validates the contents of the form.
+
+        Generally, we trust individual fields to perform validation in
+        isolation, but there are cases where fields must be validated
+        collectively. In the case where the current context does not
+        define a unique specification namespace, we need to identify
+        such a namespace from the user's specified target and check that
+        the specified name does not already exist in that namespace.
+        """
+        if ISpecificationSet.providedBy(self.context):
+            target = data.get('target')
+        elif IProject.providedBy(self.context):
+            target = data.get('projecttarget')
+        else:
+            # The context corresponds to a unique specification name-
+            # space. We can rely on the name field to validate itself.
+            target = None
 
     def _add_spec(self, data):
         """Add a new specification with the form values and return it."""
@@ -879,7 +913,7 @@ class SpecificationAddViewBase(LaunchpadFormView):
             data['title'],
             data['specurl'],
             data['summary'],
-            data['status'],
+            data['definition_status'],
             owner,
             product=product,
             distribution=distribution,
@@ -910,8 +944,9 @@ class SpecificationAddView(SpecificationAddViewBase):
         different field names in each case, so we make field_names a
         property.
         """
-        field_names = ['name', 'title', 'specurl', 'summary', 'status',
-                       'assignee', 'drafter', 'approver', 'sprint']
+        field_names = ['name', 'title', 'specurl', 'summary',
+                       'definition_status', 'assignee', 'drafter',
+                       'approver', 'sprint']
         if ISpecificationSet.providedBy(self.context):
             field_names.insert(0, 'target')
         elif IProject.providedBy(self.context):
@@ -948,7 +983,7 @@ class SprintSpecificationAddView(SpecificationAddViewBase):
         for a project and propose it for the sprint.
         """
         return ['target', 'name', 'title', 'specurl', 'summary',
-                'status', 'assignee', 'drafter', 'approver']
+                'definition_status', 'assignee', 'drafter', 'approver']
 
     def validate(self, data):
         """Validates the contents of the form."""
