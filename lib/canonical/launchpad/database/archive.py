@@ -42,19 +42,36 @@ class Archive(SQLBase):
         if self.purpose == ArchivePurpose.PRIMARY:
             return pubconf
 
-        pubconf.distroroot = config.personalpackagearchive.root
+        if self.purpose == ArchivePurpose.PPA:
+            pubconf.distroroot = config.personalpackagearchive.root
+            pubconf.archiveroot = os.path.join(
+                pubconf.distroroot, self.owner.name, distribution.name)
+            pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
+            pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
+            pubconf.overrideroot = None
+            pubconf.cacheroot = None
+            pubconf.miscroot = None
+            return pubconf
 
-        pubconf.archiveroot = os.path.join(
-            pubconf.distroroot, self.owner.name, distribution.name)
+        if self.purpose == ArchivePurpose.COMMERCIAL:
+            # Reset the list of components to commercial only.  This prevents
+            # any publisher runs from generating components not related to
+            # the commercial archive.
+            for distroseries in pubconf._distroserieses.keys():
+                pubconf._distroserieses[
+                    distroseries]['components'] = ['commercial']
 
-        pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
-        pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
+            pubconf.distroroot = config.archivepublisher.root
+            pubconf.archiveroot = os.path.join(pubconf.distroroot,
+                distribution.name, 'commercial')
+            pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
+            pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
+            pubconf.overrideroot = None
+            pubconf.cacheroot = None
+            pubconf.miscroot = None
+            return pubconf
 
-        pubconf.overrideroot = None
-        pubconf.cacheroot = None
-        pubconf.miscroot = None
-
-        return pubconf
+        assert False, "Unknown archive purpose when getting publisher config."
 
     @property
     def archive_url(self):

@@ -224,7 +224,12 @@ class Publisher(object):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
                             "Oops, indexing stable distroseries.")
-                for component in distroseries.components:
+                # Retrieve components from the publisher config because
+                # it gets overridden in IArchive.getPubConfig to set the
+                # correct components for the archive being used.
+                for component_name in self._config.componentsForSeries(
+                        distroseries.name):
+                    component = getUtility(IComponentSet)[component_name]
                     self._writeComponentIndexes(
                         distroseries, pocket, component)
 
