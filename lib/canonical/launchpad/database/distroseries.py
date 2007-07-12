@@ -30,7 +30,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.lp.dbschema import (
     DistroSeriesStatus, PackagePublishingPocket, PackagePublishingStatus,
     PackageUploadStatus, RosettaImportStatus, SpecificationFilter,
-    SpecificationGoalStatus, SpecificationSort)
+    SpecificationGoalStatus, SpecificationSort,
+    SpecificationImplementationStatus)
 
 from canonical.launchpad.interfaces import (
     IBinaryPackageName, IBuildSet, IDistroSeries, IDistroSeriesSet,
@@ -122,12 +123,31 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         orderBy='architecturetag')
     binary_package_caches = SQLMultipleJoin('DistroSeriesPackageCache',
         joinColumn='distroseries', orderBy='name')
-    components = SQLRelatedJoin(
-        'Component', joinColumn='distrorelease', otherColumn='component',
-        intermediateTable='ComponentSelection')
     sections = SQLRelatedJoin(
         'Section', joinColumn='distrorelease', otherColumn='section',
         intermediateTable='SectionSelection')
+
+    @property
+    def upload_components(self):
+        """See `IDistroSeries`."""
+        return Component.select("""
+            ComponentSelection.distrorelease = %s AND
+            Component.id = ComponentSelection.component
+            """ % self.id,
+            clauseTables=["ComponentSelection"])
+
+    @property
+    def components(self):
+        """See `IDistroSeries`."""
+        # XXX julian 2007-06-25
+        # This is filtering out the commercial component for now, until
+        # the second stage of the commercial repo arrives in 1.1.8.
+        return Component.select("""
+            ComponentSelection.distrorelease = %s AND
+            Component.id = ComponentSelection.component AND
+            Component.name != 'commercial'
+            """ % self.id,
+            clauseTables=["ComponentSelection"])
 
     @property
     def all_milestones(self):
@@ -384,7 +404,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status', 'Specification.name']
+            order = ['-priority', 'Specification.definition_status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
             # we are showing specs for a GOAL, so under some circumstances
             # we care about the order in which the specs were nominated for
@@ -419,7 +439,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+              quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
