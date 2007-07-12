@@ -218,7 +218,8 @@
         </tr>
       </tbody>
     </table>
-
+    <div class="lesser" tal:content="structure view/batchnav/@@+navigation-links-lower" />
+  
     <tal:nomatches condition="not: view/specs"
                    replace="structure context/@@+nomatches" />
 
