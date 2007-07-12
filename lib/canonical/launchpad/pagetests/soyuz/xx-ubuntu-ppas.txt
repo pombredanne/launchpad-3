@@ -49,10 +49,10 @@ No data matches the non-existent search string "bustmybuffers".
     >>> len(results)
     0
 
-In the three sample data PPAs, only one matches the search string "Mark".
+In the three sample data PPAs, only one matches the search string "Celso".
 
     >>> field = browser.getControl(name="name_filter")
-    >>> field.value = 'Mark'
+    >>> field.value = 'Celso'
     >>> browser.getControl("Search").click()
     >>> soup = find_main_content(browser.contents)
     >>> results = soup.findAll(attrs={'class': 'ppa_batch_row'})
@@ -63,7 +63,77 @@ In the three sample data PPAs, only one matches the search string "Mark".
 
 In the table rows, the "Owner" is a clickable link to his PPA page.
 
-    >>> browser.getLink("Mark Shuttleworth").click()
+    >>> browser.getLink("Celso Providelo").click()
     >>> browser.title
-    'PPA for Mark Shuttleworth'
+    'PPA for Celso Providelo'
 
+The page contains a source.list example for anyone who wants to use the
+packages.
+
+    >>> results = find_tag_by_id(browser.contents,'sources_list')
+    >>> text = extract_text(results)
+    >>> print text
+    deb http://ppa.launchpad.dev/cprov/ubuntu SUITE [COMPONENTS]
+    deb-src http://ppa.launchpad.dev/cprov/ubuntu SUITE [COMPONENTS]
+
+The page also shows some stats about Celso's PPA (number of sources. binaries
+and estimated size).
+
+    >>> results = find_tag_by_id(browser.contents,'package_counters')
+    >>> text = extract_text(results)
+    >>> print text
+    2 Sources
+    (9.5 MiB)
+    1 Binaries
+    (3 bytes)
+    Estimated archive size:
+    9.5 MiB
+
+The sample data has two packages belonging to Celso.
+
+    >>> soup = find_main_content(browser.contents)
+    >>> results = soup.findAll(attrs={'class': 'ppa_package_row'})
+    >>> len(results)
+    2
+
+    >>> texts = [extract_text(html) for html in results]
+    >>> texts.sort()
+    >>> for text in texts:
+    ...    print text
+    cdrkit - 1.0
+    2007-07-09
+    Published
+    breezy-autotest
+    Release
+    main
+    editors
+    iceweasel - 1.0
+    2007-07-09
+    Published
+    warty
+    Release
+    main
+    editors
+
+== Searching an archive ==
+
+We can search a PPA for a particular package.  A non-existent package shows
+no results.
+
+    >>> field = browser.getControl(name="name_filter")
+    >>> field.value = 'nonexistentpackage'
+    >>> browser.getControl("Search").click()
+    >>> soup = find_main_content(browser.contents)
+    >>> results = soup.findAll(attrs={'class': 'ppa_package_row'})
+    >>> len(results)
+    0
+
+Searching for the package "iceweasel" show's that Celso is providing this.
+
+    >>> field = browser.getControl(name="name_filter")
+    >>> field.value = 'iceweasel'
+    >>> browser.getControl("Search").click()
+    >>> soup = find_main_content(browser.contents)
+    >>> results = soup.findAll(attrs={'class': 'ppa_package_row'})
+    >>> len(results)
+    1
