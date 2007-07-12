@@ -14,13 +14,12 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
-from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool, Field
+from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (ContentNameField, Summary,
     Title)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner, IProject
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
@@ -28,41 +27,52 @@ from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 
 from canonical.lp.dbschema import (
-    SpecificationStatus, SpecificationPriority, SpecificationDelivery,
-    SpecificationGoalStatus)
+    SpecificationDefinitionStatus, SpecificationPriority,
+    SpecificationImplementationStatus, SpecificationGoalStatus)
 
 
 class SpecNameField(ContentNameField):
 
-    errormessage = _("%s is already in use by another specification.")
+    errormessage = _("%s is already in use by another blueprint.")
 
     @property
     def _content_iface(self):
         return ISpecification
 
     def _getByName(self, name):
-        if ISpecification.providedBy(self.context):
-            # the context is a spec, so we are editing the spec details and
-            # we want to know if we are change the name whether there is
-            # alread a spec with this name for the target.
-            return self.context.target.getSpecification(name)
-        elif ISpecificationSet.providedBy(self.context):
-            # in the case of a form on the spec set, we need to validate at
-            # a higher level, in the form validation routine
+        """Finds a specification by name from the current context.
+
+        Returns a specification if (and only if) the current context
+        defines a unique specification namespace and then if a matching
+        specification can be found within that namespace. Returns None
+        otherwise.
+        """
+        if ISpecificationSet.providedBy(self.context):
+            # The context is the set of all specifications. Since this
+            # set corresponds to multiple specification namespaces, we
+            # return None.
             return None
         elif IProject.providedBy(self.context):
-            # the context is a Project, so we will validate this at a higher
-            # level, in the form validation routine
+            # The context is a project group. Since a project group
+            # corresponds to multiple specification namespaces, we
+            # return None.
             return None
+        elif ISpecification.providedBy(self.context):
+            # The context is a specification. Since a specification's
+            # target defines a single specification namespace, we ask
+            # the target to perform the lookup.
+            return self.context.target.getSpecification(name)
         else:
-            # the context is a Product or Distro which can tell us if there
-            # are already specs with this name
+            # The context is a entity such as a product or distribution.
+            # Since this type of context is associated with exactly one
+            # specification namespace, we ask the context to perform the
+            # lookup.
             return self.context.getSpecification(name)
 
 
 class SpecURLField(TextLine):
 
-    errormessage = _("%s is already registered by another specification.")
+    errormessage = _("%s is already registered by another blueprint.")
 
     def _validate(self, specurl):
         TextLine._validate(self, specurl)
@@ -79,12 +89,19 @@ class SpecURLField(TextLine):
 class ISpecification(IHasOwner, ICanBeMentored):
     """A Specification."""
 
+    # XXX: TomBerger 2007-06-20, 'id' is required for
+    #      SQLObject to be able to assign a security-proxied
+    #      specification to an attribute of another SQL object
+    #      referencing it.
+    id = Int(title=_("Database ID"), required=True, readonly=True)
+
     name = SpecNameField(
-        title=_('Name'), required=True, description=_(
+        title=_('Name'), required=True, readonly=False,
+        description=_(
             "May contain lower-case letters, numbers, and dashes. "
             "It will be used in the specification url. "
-            "Examples: mozilla-type-ahead-find, postgres-smart-serial."),
-        constraint=name_validator)
+            "Examples: mozilla-type-ahead-find, postgres-smart-serial.")
+        )
     title = Title(
         title=_('Title'), required=True, description=_(
             "Describe the feature as clearly as possible in up to 70 characters. "
@@ -98,9 +115,9 @@ class ISpecification(IHasOwner, ICanBeMentored):
         title=_('Summary'), required=True, description=_(
             "A single-paragraph description of the feature. "
             "This will also be displayed in most feature listings."))
-    status = Choice(
-        title=_('Definition Status'), vocabulary='SpecificationStatus',
-        default=SpecificationStatus.NEW, description=_(
+    definition_status = Choice(
+        title=_('Definition Status'), vocabulary='SpecificationDefinitionStatus',
+        default=SpecificationDefinitionStatus.NEW, description=_(
             "The current status of the process to define the "
             "feature and get approval for the implementation plan."))
     priority = Choice(
@@ -187,9 +204,9 @@ class ISpecification(IHasOwner, ICanBeMentored):
         "number of developer days it will take to implement this feature. "
         "Please only provide an estimate if you are relatively confident "
         "in the number."))
-    delivery = Choice(title=_("Implementation Status"),
-        required=True, default=SpecificationDelivery.UNKNOWN,
-        vocabulary='SpecificationDelivery', description=_("The state of "
+    implementation_status = Choice(title=_("Implementation Status"),
+        required=True, default=SpecificationImplementationStatus.UNKNOWN,
+        vocabulary='SpecificationImplementationStatus', description=_("The state of "
         "progress being made on the actual implementation or delivery "
         "of this feature."))
     superseded_by = Choice(title=_("Superseded by"),
@@ -198,10 +215,6 @@ class ISpecification(IHasOwner, ICanBeMentored):
         "which supersedes this one. Note that selecting a specification "
         "here and pressing Continue will change the specification "
         "status to Superseded."))
-    informational = Bool(title=_('Is Informational'),
-        required=False, default=False, description=_('Check this box if '
-        'this specification is purely documentation or overview and does '
-        'not actually involve any implementation.'))
 
     # lifecycle
     starter = Attribute('The person who first set the state of the '
@@ -230,6 +243,8 @@ class ISpecification(IHasOwner, ICanBeMentored):
     branch_links = Attribute('The entries that link the branches to the spec')
 
     # emergent properties
+    informational = Attribute('Is True if this spec is purely informational '
+        'and requires no implementation.')
     is_complete = Attribute('Is True if this spec is already completely '
         'implemented. Note that it is True for informational specs, since '
         'they describe general functionality rather than specific '
@@ -348,7 +363,7 @@ class ISpecification(IHasOwner, ICanBeMentored):
     # branches
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
-    
+
     def linkBranch(branch, summary=None):
         """Link the given branch to this specification."""
 
@@ -398,7 +413,7 @@ class ISpecificationDelta(Interface):
     # items where we provide 'old' and 'new' values if they changed
     name = Attribute("Old and new names, or None.")
     priority = Attribute("Old and new priorities, or None")
-    status = Attribute("Old and new statuses, or None")
+    definition_status = Attribute("Old and new statuses, or None")
     target = Attribute("Old and new target, or None")
     approver = Attribute("Old and new approver, or None")
     assignee = Attribute("Old and new assignee, or None")

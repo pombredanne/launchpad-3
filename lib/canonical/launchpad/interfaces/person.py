@@ -627,7 +627,6 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         False otherwise.
         """
 
-
     def validateAndEnsurePreferredEmail(email):
         """Ensure this person has a preferred email.
 

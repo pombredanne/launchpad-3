@@ -29,6 +29,9 @@ from operator import attrgetter
 
 from zope.component import getUtility
 from zope.app.form.browser.itemswidgets import DropdownWidget
+from zope.formlib import form
+from zope.schema import Choice
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -53,14 +56,13 @@ from canonical.launchpad.browser.specificationtarget import (
 from canonical.launchpad.webapp import (
     ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
     Link, Navigation, action, canonical_url, enabled_with_permission,
-    safe_action, stepthrough, stepto)
+    safe_action, stepthrough, stepto, custom_widget)
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import (
     AppFrontPageSearchView, StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
 
-from canonical.lp.dbschema import SpecificationStatus
-
+from canonical.lp.dbschema import SpecificationDefinitionStatus
 
 class SpecificationNavigation(Navigation):
 
@@ -393,33 +395,6 @@ class SpecificationRetargetingView(LaunchpadFormView):
         return self._nextURL
 
 
-class SpecificationSupersedingView(GeneralFormView):
-
-    @property
-    def initial_values(self):
-        return {
-            'superseded_by': self.context.superseded_by,
-            }
-
-    def process(self, superseded_by=None):
-        self.context.superseded_by = superseded_by
-        if superseded_by is not None:
-            # set the state to superseded
-            self.context.status = SpecificationStatus.SUPERSEDED
-        else:
-            # if the current state is SUPERSEDED and we are now removing the
-            # superseded-by then we should move this spec back into the
-            # drafting pipeline by resetting its status to NEW
-            if self.context.status == SpecificationStatus.SUPERSEDED:
-                self.context.status = SpecificationStatus.NEW
-        newstate = self.context.updateLifecycleStatus(self.user)
-        if newstate is not None:
-            self.request.response.addNotification(
-                'Specification is now considered "%s".' % newstate.title)
-        self.request.response.redirect(canonical_url(self.context))
-        return 'Done.'
-
-
 class SupersededByWidget(DropdownWidget):
     """Custom select widget for specification superseding.
 
@@ -431,6 +406,60 @@ class SupersededByWidget(DropdownWidget):
     -- StuartBishop 20060704
     """
     _messageNoValue = _("(Not Superseded)")
+
+
+class SpecificationSupersedingView(LaunchpadFormView):
+    schema = ISpecification
+    field_names = ['superseded_by']
+    label = _('Mark specification superseded')
+    custom_widget('superseded_by', SupersededByWidget)
+
+    @property
+    def initial_values(self):
+        return {
+            'superseded_by': self.context.superseded_by,
+            }
+
+    def setUpFields(self):
+        """Override the setup to define own fields."""
+        if self.context.target is None:
+            raise AssertionError("No target found for this spec.")
+        specs = sorted(self.context.target.specifications(),
+                       key=attrgetter('name'))
+        terms = [SimpleTerm(spec, spec.name, spec.title)
+                 for spec in specs if spec != self.context]
+
+        self.form_fields = form.Fields(
+            Choice(
+                __name__='superseded_by',
+                title=_("Superseded by"),
+                vocabulary=SimpleVocabulary(terms),
+                required=False,
+                description=_(
+                    "The specification which supersedes this one. Note "
+                    "that selecting a specification here and pressing "
+                    "Continue will change the specification status "
+                    "to Superseded.")),
+            render_context=self.render_context,
+            custom_widget=self.custom_widgets['superseded_by'])
+
+    @action(_('Continue'), name='supersede')
+    def supersede_action(self, action, data):
+        self.context.superseded_by = data['superseded_by']
+        if data['superseded_by'] is not None:
+            # set the state to superseded
+            self.context.definition_status = SpecificationDefinitionStatus.SUPERSEDED
+        else:
+            # if the current state is SUPERSEDED and we are now removing the
+            # superseded-by then we should move this spec back into the
+            # drafting pipeline by resetting its status to NEW
+            if self.context.definition_status == SpecificationDefinitionStatus.SUPERSEDED:
+                self.context.definition_status = SpecificationDefinitionStatus.NEW
+        newstate = self.context.updateLifecycleStatus(self.user)
+        if newstate is not None:
+            self.request.response.addNotification(
+                'Specification is now considered "%s".' % newstate.title)
+        self.next_url = canonical_url(self.context)
 
 
 class SpecGraph:
@@ -821,7 +850,7 @@ class SpecificationNewView(LaunchpadFormView):
         different field names in each case, so we make field_names a
         property.
         """
-        field_names = ['name', 'title', 'specurl', 'summary', 'status',
+        field_names = ['name', 'title', 'specurl', 'summary', 'definition_status',
                        'assignee', 'drafter', 'approver']
         if ISpecificationSet.providedBy(self.context):
             field_names.insert(0, 'target')
@@ -830,29 +859,35 @@ class SpecificationNewView(LaunchpadFormView):
         return field_names
 
     def validate(self, data):
-        """Validate the contents of the form. In general we can trust the
-        field validation but for the name of the spec we need to check that
-        there is not already a spec with that name for the given target.
+        """Validates the contents of the form.
+
+        Generally, we trust individual fields to perform validation in
+        isolation, but there are cases where fields must be validated
+        collectively. In the case where the current context does not
+        define a unique specification namespace, we need to identify
+        such a namespace from the user's specified target and check that
+        the specified name does not already exist in that namespace.
         """
-        if not ISpecificationSet.providedBy(self.context):
-            return
-        name = data.get('name')
-        if name is None:
-            self.setFieldError('name',
-                'Please provide a name for this blueprint')
-        target = data.get('target')
-        projecttarget = data.get('projecttarget')
-        if projecttarget is not None:
-            target = projecttarget
-        if target is None:
-            self.setFieldError('target',
-                'Please select a valid project.')
+        if ISpecificationSet.providedBy(self.context):
+            target = data.get('target')
+        elif IProject.providedBy(self.context):
+            target = data.get('projecttarget')
         else:
-            name = name.strip().lower()
-            if target.getSpecification(name) is not None:
-                self.setFieldError('name',
-                    'There is already a blueprint with this name for %s. '
-                    'Please try another name.' % target.displayname)
+            # The context corresponds to a unique specification name-
+            # space. We can rely on the name field to validate itself.
+            target = None
+        if target:
+            # The context does not correspond to a unique specification
+            # namespace. Instead, ensure that the specified name does
+            # not exist within the namespace of the specified target.
+            name = data.get('name')
+            if target.getSpecification(name):
+                # The specified name already exists. Mark the field with
+                # an error.
+                self.setFieldError(
+                    'name',
+                    self.schema['name'].errormessage % name
+                )
 
     @action(_('Register Blueprint'), name='register')
     def register_action(self, action, data):
@@ -878,7 +913,7 @@ class SpecificationNewView(LaunchpadFormView):
             data['title'],
             data['specurl'],
             data['summary'],
-            data['status'],
+            data['definition_status'],
             owner,
             product=product,
             distribution=distribution,
