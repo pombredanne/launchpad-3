@@ -1,6 +1,6 @@
 = Notification of Confidentiality on Upstream Bugfix Requests =
 
-When a user files an upstream bugfix request agains a bug that is 
+When a user files an upstream bugfix request against a bug that is 
 confidential but not a security vulnerability, the user will be told that the
 upstream bug contact won't be notified. They will also be given a link to
 the Subscribe someone else page.
@@ -21,7 +21,7 @@ the Subscribe someone else page.
     <!DOCTYPE...
     ...This is a confidential bug...Foo Bar...won't be notified...
 
-    >>> admin_browser.getLink(url='+addsubscriber').click()
+    >>> admin_browser.getLink('additional contacts').click()
     >>> 'Page not found' not in admin_browser.contents
     True
 
