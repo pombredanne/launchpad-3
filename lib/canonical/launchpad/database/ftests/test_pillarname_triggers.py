@@ -45,11 +45,11 @@ class PillarNameTriggersTestCase(unittest.TestCase):
         cur.execute("""
             INSERT INTO Distribution (
                 name, description, domainname, owner, displayname,
-                summary, title, members, mirror_admin, main_archive
+                summary, title, members, mirror_admin
                 )
                 VALUES (
                     'whatever', 'whatever', 'whatever', 1, 'whatever',
-                    'whatever', 'whatever', 1, 1, 1
+                    'whatever', 'whatever', 1, 1
                     )
             """)
         self.failUnless(is_in_sync('whatever'))

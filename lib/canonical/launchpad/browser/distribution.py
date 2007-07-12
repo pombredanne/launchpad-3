@@ -507,7 +507,6 @@ class DistributionAddView(LaunchpadFormView):
 
     @action("Save", name='save')
     def save_action(self, action, data):
-        archive = getUtility(IArchiveSet).new()
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
@@ -517,7 +516,6 @@ class DistributionAddView(LaunchpadFormView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
-            main_archive=archive,
             )
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
