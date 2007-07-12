@@ -73,13 +73,13 @@ from canonical.lp.dbschema import EmailAddressStatus, DistroSeriesStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
     Distribution, DistroSeries, Person, SourcePackageRelease, Branch,
-    BugWatch, Sprint, DistroArchSeries, KarmaCategory, Language,
+    BranchSet, BugWatch, Sprint, DistroArchSeries, KarmaCategory, Language,
     Milestone, Product, Project, ProductRelease, ProductSeries,
     TranslationGroup, BugTracker, POTemplateName, Bounty, Country,
     Specification, Bug, Processor, ProcessorFamily, Component,
     PillarName)
 from canonical.launchpad.interfaces import (
-    IBranchSet, IBugTask, IDistribution, IDistributionSourcePackage,
+    IBugTask, IDistribution, IDistributionSourcePackage,
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
     ILaunchBag, IMilestoneSet, IPerson, IPersonSet, IPillarName, IProduct,
     IProject, ISourcePackage, ISpecification, ITeam, IUpstreamBugTask)
@@ -155,34 +155,45 @@ class BranchVocabulary(SQLObjectVocabularyBase):
         return SimpleTerm(obj, obj.unique_name, obj.displayname)
 
     def getTermByToken(self, token):
-        branchset = getUtility(IBranchSet)
-        branch = branchset.getByUniqueName(token)
+        branch_set = BranchSet()
+        branch = branch_set.getByUniqueName(token)
         # fall back to interpreting the token as a branch URL
         if branch is None:
             url = token.rstrip('/')
-            branch = branchset.getByUrl(url)
+            branch = branch_set.getByUrl(url)
         if branch is None:
             raise LookupError(token)
         return self.toTerm(branch)
 
     def search(self, query):
         """Return terms where query is a subtring of the name or URL."""
+        launch_bag = getUtility(ILaunchBag)
+        branch_set = BranchSet()
+        logged_in_user = launch_bag.user
         if not query:
-            return self.emptySelectResults()
+            query = branch_set._generateBranchClause(
+                query='', visible_by_user=logged_in_user)
+            return Branch.select(query)
 
-        sql_query = OR(CONTAINSSTRING(Branch.q.name, query),
-                       CONTAINSSTRING(Branch.q.url, query))
+        quoted_query = quote_like(query)
+        sql_query = ("""
+            (Branch.name LIKE '%%' || %s || '%%' OR
+             Branch.url LIKE '%%' || %s || '%%')
+            """
+            % (quoted_query, quoted_query))
 
-        # if the context is a product or we have a product in the
+        # If the context is a product or we have a product in the
         # LaunchBag, narrow the search appropriately.
         if IProduct.providedBy(self.context):
             product = self.context
         else:
-            product = getUtility(ILaunchBag).product
+            product = launch_bag.product
         if product is not None:
-            sql_query = AND(Branch.q.productID == product.id, sql_query)
+            sql_query = sql_query + (" AND Branch.product = %s" % product.id)
 
-        return self._table.select(sql_query, orderBy=self._orderBy)
+        sql_query = branch_set._generateBranchClause(
+            sql_query, visible_by_user=logged_in_user)
+        return Branch.select(sql_query, orderBy=self._orderBy)
 
 
 class BugVocabulary(SQLObjectVocabularyBase):
@@ -543,13 +554,21 @@ class ValidTeamOwnerVocabulary(ValidPersonOrTeamVocabulary):
     def __init__(self, context):
         if not context:
             raise AssertionError('ValidTeamOwnerVocabulary needs a context.')
-        if not ITeam.providedBy(context):
+
+        if ITeam.providedBy(context):
+            self.extra_clause = """
+                (person.teamowner != %d OR person.teamowner IS NULL) AND
+                person.id != %d""" % (context.id, context.id)
+        elif IPersonSet.providedBy(context):
+            # The context is an IPersonSet, which means we're creating a new
+            # team and thus we don't need any extra_clause --any valid person
+            # or team can be the owner of a newly created team.
+            pass
+        else:
             raise AssertionError(
-                    "ValidTeamOwnerVocabulary's context must be a team.")
+                "ValidTeamOwnerVocabulary's context must provide ITeam "
+                "or IPersonSet.")
         ValidPersonOrTeamVocabulary.__init__(self, context)
-        self.extra_clause = """
-            (person.teamowner != %d OR person.teamowner IS NULL) AND
-            person.id != %d""" % (context.id, context.id)
 
 
 class PersonActiveMembershipVocabulary:

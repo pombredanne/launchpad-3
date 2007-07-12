@@ -35,17 +35,18 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.bugtask import BugTaskSearchListingView
 from canonical.launchpad.event.sqlobjectevent import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IDistroSeriesSet,
-    IProduct, IProject, IDistributionSourcePackage, NotFoundError,
-    CreateBugParams, IBugAddForm, ILaunchpadCelebrities, IProductSeries,
-    ITemporaryStorageManager, IMaloneApplication, IFrontPageBugAddForm,
-    IProjectBugAddForm)
+    IBugTaskSet, ILaunchBag, IDistribution, IDistroSeries, IProduct,
+    IProject, IDistributionSourcePackage, NotFoundError,
+    CreateBugParams, IBugAddForm, ILaunchpadCelebrities,
+    IProductSeries, ITemporaryStorageManager, IMaloneApplication,
+    IFrontPageBugAddForm, IProjectBugAddForm, UNRESOLVED_BUGTASK_STATUSES)
 from canonical.launchpad.webapp import (
     canonical_url, LaunchpadView, LaunchpadFormView, action, custom_widget,
     safe_action, urlappend)
 from canonical.lp.dbschema import BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
+from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 
 class FileBugData:
     """Extra data to be added to the bug."""
@@ -54,6 +55,8 @@ class FileBugData:
         self.initial_summary = None
         self.initial_summary = None
         self.initial_tags = []
+        self.private = None
+        self.subscribers = []
         self.extra_description = None
         self.comments = []
         self.attachments = []
@@ -63,6 +66,8 @@ class FileBugData:
 
             * The Subject header is the initial bug summary.
             * The Tags header specifies the initial bug tags.
+            * The Private header sets the visibility of the bug.
+            * The Subscribers header specifies additional initial subscribers
             * The first inline part will be added to the description.
             * All other inline parts will be added as separate comments.
             * All attachment parts will be added as attachment.
@@ -72,6 +77,18 @@ class FileBugData:
             self.initial_summary = mime_msg.get('Subject')
             tags = mime_msg.get('Tags', '')
             self.initial_tags = tags.lower().split()
+            private = mime_msg.get('Private')
+            if private:
+                if private.lower() == 'yes':
+                    self.private = True
+                elif private.lower() == 'no':
+                    self.private = False
+                else:
+                    # If the value is anything other than yes or no we just
+                    # ignore it as we cannot currently give the user an error
+                    pass
+            subscribers = mime_msg.get('Subscribers', '')
+            self.subscribers = subscribers.split()
             for part in mime_msg.get_payload():
                 disposition_header = part.get('Content-Disposition', 'inline')
                 # Get the type, excluding any parameters.
@@ -140,7 +157,8 @@ class FileBugViewBase(LaunchpadFormView):
     def field_names(self):
         """Return the list of field names to display."""
         context = self.context
-        field_names = ['title', 'comment', 'tags', 'security_related']
+        field_names = ['title', 'comment', 'tags', 'security_related',
+                       'bug_already_reported_as']
         if (IDistribution.providedBy(context) or
             IDistributionSourcePackage.providedBy(context)):
             field_names.append('packagename')
@@ -173,6 +191,20 @@ class FileBugViewBase(LaunchpadFormView):
 
     def validate(self, data):
         """Make sure the package name, if provided, exists in the distro."""
+
+        # The comment field is only required if filing a new bug.
+        if self.submit_bug_action.submitted():
+            if not data.get('comment'):
+                self.setFieldError('comment', "Required input is missing.")
+        # Check a bug has been selected when the user wants to
+        # subscribe to an existing bug.
+        elif self.this_is_my_bug_action.submitted():
+            if not data.get('bug_already_reported_as'):
+                self.setFieldError('bug_already_reported_as', "Please choose a bug.")
+        else:
+            # We only care about those two actions.
+            pass
+
         # We have to poke at the packagename value directly in the
         # request, because if validation failed while getting the
         # widget's data, it won't appear in the data dict.
@@ -318,6 +350,9 @@ class FileBugViewBase(LaunchpadFormView):
             notifications.append(
                 'Additional information was added to the bug description.')
 
+        if extra_data.private:
+            params.private = extra_data.private
+
         self.added_bug = bug = context.createBug(params)
         notify(SQLObjectCreatedEvent(bug))
 
@@ -342,17 +377,56 @@ class FileBugViewBase(LaunchpadFormView):
                     'The file "%s" was attached to the bug report.' % 
                         cgi.escape(attachment['filename']))
 
+        if extra_data.subscribers:
+            # Subscribe additional subscribers to this bug
+            for subscriber in extra_data.subscribers:
+                valid_person_vocabulary = ValidPersonOrTeamVocabulary()
+                try:
+                    person = valid_person_vocabulary.getTermByToken(
+                        subscriber).value
+                except LookupError:
+                    # We cannot currently pass this error up to the user, so
+                    # we'll just ignore it.
+                    pass
+                else:
+                    bug.subscribe(person)
+                    notifications.append(
+                        '%s has been subscribed to this bug.' %
+                        person.displayname)
+
         # Give the user some feedback on the bug just opened.
         for notification in notifications:
             self.request.response.addNotification(notification)
-        if bug.private:
+        if bug.security_related:
             self.request.response.addNotification(
                 'Security-related bugs are by default <span title="Private '
                 'bugs are visible only to their direct subscribers.">private'
                 '</span>. You may choose to <a href="+secrecy">publically '
                 'disclose</a> this bug.')
+        if bug.private and not bug.security_related:
+            self.request.response.addNotification(
+                'This bug report has been marked as <span title="Private '
+                'bugs are visible only to their direct subscribers.">private'
+                '</span>. You may choose to <a href="+secrecy">change '
+                'this</a>.')
 
         self.request.response.redirect(canonical_url(bug.bugtasks[0]))
+
+    @action("Subscribe To This Bug", name="this_is_my_bug",
+            failure=handleSubmitBugFailure)
+    def this_is_my_bug_action(self, action, data):
+        """Subscribe to the bug suggested."""
+        bug = data.get('bug_already_reported_as')
+
+        if bug.isSubscribed(self.user):
+            self.request.response.addNotification(
+                "You are already subscribed to this bug.")
+        else:
+            bug.subscribe(self.user)
+            self.request.response.addNotification(
+                "You have been subscribed to this bug.")
+
+        self.next_url = canonical_url(bug.bugtasks[0])
 
     def showFileBugForm(self):
         """Override this method in base classes to show the filebug form."""
@@ -413,6 +487,18 @@ class FileBugViewBase(LaunchpadFormView):
             return context.distribution
         else:
             return None
+
+    def showOptionalMarker(self, field_name):
+        # The comment field _is_ required, but only when filing the
+        # bug. Since the same form is also used for subscribing to a
+        # bug, the comment field in the schema cannot be marked
+        # required=True. Instead it's validated in
+        # FileBugViewBase.validate. So... we need to suppress the
+        # "(Optional)" marker.
+        if field_name == 'comment':
+            return False
+        else:
+            return LaunchpadFormView.showOptionalMarker(self, field_name)
 
 
 class FileBugAdvancedView(FileBugViewBase):
@@ -481,7 +567,7 @@ class FileBugGuidedView(FileBugViewBase):
                 search_context = self.widgets['bugtarget'].getInputValue()
             else:
                 search_context = None
-        
+
         return search_context
 
     @cachedproperty
@@ -545,7 +631,6 @@ class FileBugGuidedView(FileBugViewBase):
     def found_possible_duplicates(self):
         return self.similar_bugs or self.most_common_bugs
 
-
     def getSearchText(self):
         """Return the search string entered by the user."""
         try:
@@ -577,6 +662,7 @@ class FileBugGuidedView(FileBugViewBase):
     def showFileBugForm(self):
         return self._FILEBUG_FORM()
 
+
 class ProjectFileBugGuidedView(FileBugGuidedView):
     """Guided filebug pages for IProject."""
 
@@ -594,9 +680,14 @@ class ProjectFileBugGuidedView(FileBugGuidedView):
     @cachedproperty
     def most_common_bugs(self):
         """Return a list of the most duplicated bugs."""
-        selected_product = self._getSelectedProduct()
-        return selected_product.getMostCommonBugs(
-            self.user, limit=self._MATCHING_BUGS_LIMIT)
+        # We can only discover the most common bugs when a product has
+        # been selected.
+        if self.widgets['product'].hasValidInput():
+            selected_product = self._getSelectedProduct()
+            return selected_product.getMostCommonBugs(
+                self.user, limit=self._MATCHING_BUGS_LIMIT)
+        else:
+            return []
 
     def getSecurityContext(self):
         """See FileBugViewBase."""
@@ -726,25 +817,20 @@ class BugTargetBugsView(BugTaskSearchListingView):
     #      unique color for each status in the pie chart
     #      -- Bjorn Tillenius, 2007-02-13
     status_color = {
-        BugTaskStatus.UNCONFIRMED: '#993300',
-        BugTaskStatus.NEEDSINFO: 'red',
+        BugTaskStatus.NEW: '#993300',
+        BugTaskStatus.INCOMPLETE: 'red',
         BugTaskStatus.CONFIRMED: 'orange',
+        BugTaskStatus.TRIAGED: 'black',
         BugTaskStatus.INPROGRESS: 'blue',
         BugTaskStatus.FIXCOMMITTED: 'green',
         BugTaskStatus.FIXRELEASED: 'magenta',
-        BugTaskStatus.REJECTED: 'yellow',
+        BugTaskStatus.INVALID: 'yellow',
         BugTaskStatus.UNKNOWN: 'purple',
     }
 
     def initialize(self):
         BugTaskSearchListingView.initialize(self)
-        bug_statuses_to_show = [
-            BugTaskStatus.UNCONFIRMED,
-            BugTaskStatus.NEEDSINFO,
-            BugTaskStatus.CONFIRMED,
-            BugTaskStatus.INPROGRESS,
-            BugTaskStatus.FIXCOMMITTED,
-            ]
+        bug_statuses_to_show = list(UNRESOLVED_BUGTASK_STATUSES)
         if IDistroSeries.providedBy(self.context):
             bug_statuses_to_show.append(BugTaskStatus.FIXRELEASED)
         bug_counts = sorted(
@@ -768,7 +854,7 @@ class BugTargetBugsView(BugTaskSearchListingView):
                 var plotter = PlotKit.EasyPlot(
                     "pie", options, $("bugs-chart"), [data]);
             }
-            MochiKit.DOM.addLoadEvent(drawGraph);
+            connect(window, 'onload', drawGraph);
             """
         # The color list should inlude only colors for slices that will
         # be drawn in the pie chart, so colors that don't have any bugs

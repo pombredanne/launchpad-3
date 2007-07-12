@@ -62,9 +62,6 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
     def breadcrumb(self):
         return self.context.displayname
 
-    def breadcrumb(self):
-        return self.context.displayname
-
     def traverse(self, name):
         return self.context.getProduct(name)
 
@@ -120,7 +117,8 @@ class ProjectDynMenu(DynMenu):
                     count += 1
                     if count >= self.MAX_SUB_PROJECTS:
                         break
-            yield self.makeLink('See all %s related projects...' % num_products)
+            yield self.makeLink(
+                'See all %s related projects...' % num_products)
 
 
 class ProjectSetNavigation(Navigation):
@@ -191,7 +189,7 @@ class ProjectOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'mentorship', 'administer', 'rdf']
+        'mentorship', 'administer', 'branch_visibility', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -233,6 +231,11 @@ class ProjectOverviewMenu(ApplicationMenu):
         text = 'Administer'
         return Link('+review', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Admin')
+    def branch_visibility(self):
+        text = 'Define branch visibility'
+        return Link('+branchvisibility', text, icon='edit')
+
 
 class ProjectBountiesMenu(ApplicationMenu):
 
@@ -253,7 +256,7 @@ class ProjectSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'specifications'
-    links = ['listall', 'doc', 'roadmap', 'assignments',]
+    links = ['listall', 'doc', 'roadmap', 'assignments', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -272,6 +275,10 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
 
+    def new(self):
+        text = 'Register blueprint'
+        summary = 'Register a new blueprint for %s' % self.context.title
+        return Link('+addspec', text, summary, icon='add')
 
 class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
     """Menu for the answers facet of projects."""

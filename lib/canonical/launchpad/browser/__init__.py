@@ -14,6 +14,7 @@ from canonical.launchpad.browser.branch import *
 from canonical.launchpad.browser.branchlisting import *
 from canonical.launchpad.browser.branchref import *
 from canonical.launchpad.browser.branchsubscription import *
+from canonical.launchpad.browser.branchvisibilitypolicy import *
 from canonical.launchpad.browser.bug import *
 from canonical.launchpad.browser.buglinktarget import *
 from canonical.launchpad.browser.bugattachment import *
@@ -30,6 +31,7 @@ from canonical.launchpad.browser.bugtask import *
 from canonical.launchpad.browser.bugtracker import *
 from canonical.launchpad.browser.bugwatch import *
 from canonical.launchpad.browser.cal import *
+from canonical.launchpad.browser.codeimport import *
 from canonical.launchpad.browser.codeofconduct import *
 from canonical.launchpad.browser.cve import *
 from canonical.launchpad.browser.cvereport import *

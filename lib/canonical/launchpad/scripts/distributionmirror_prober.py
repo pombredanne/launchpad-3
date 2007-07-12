@@ -536,7 +536,7 @@ def get_expected_cdimage_paths():
 
     ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
     paths = []
-    for key, value in d.items():
+    for key, value in sorted(d.items()):
         flavour, seriesname = key
         series = ubuntu.getSeries(seriesname)
         paths.append((series, flavour, value))

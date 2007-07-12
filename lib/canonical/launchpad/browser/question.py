@@ -142,7 +142,12 @@ class QuestionSetView(LaunchpadFormView):
         # XXX flacoste 2006/11/28 We should probably define a new
         # QuestionSort value allowing us to sort on dateanswered descending.
         return self.context.searchQuestions(
-            status=QuestionStatus.SOLVED, sort=QuestionSort.NEWEST_FIRST)[:10]
+            status=QuestionStatus.SOLVED, sort=QuestionSort.NEWEST_FIRST)[:5]
+
+    @property
+    def most_active_projects(self):
+        """Return the 5 most active projects."""
+        return self.context.getMostActiveProjects(limit=5)
 
 
 class QuestionSubscriptionView(LaunchpadView):
@@ -178,7 +183,7 @@ class QuestionSubscriptionView(LaunchpadView):
 
     @property
     def subscription(self):
-        """establish if this user has a subscription"""
+        """Establish if this user has a subscription"""
         if self.user is None:
             return False
         return self.context.isSubscribed(self.user)
@@ -211,13 +216,15 @@ class QuestionLanguageVocabularyFactory:
         for lang in request_languages(self.view.request):
             if not is_english_variant(lang):
                 languages.add(lang)
-        if (context is not None and IQuestion.providedBy(context) and
-            context.language.code != 'en'):
+        if context is not None and IQuestion.providedBy(context):
             languages.add(context.language)
         languages = list(languages)
 
         # Insert English as the first element, to make it the default one.
-        languages.insert(0, getUtility(ILanguageSet)['en'])
+        english = getUtility(ILanguageSet)['en']
+        if english in languages:
+            languages.remove(english)
+        languages.insert(0, english)
 
         # The vocabulary indicates which languages are supported.
         if context is not None and not IProject.providedBy(context):
@@ -566,7 +573,7 @@ class QuestionRejectView(LaunchpadFormView):
 
 
     def initialize(self):
-        """See LaunchpadFormView.
+        """See `LaunchpadFormView`.
 
         Abort early if the question is already rejected.
         """
@@ -589,13 +596,13 @@ class QuestionWorkflowView(LaunchpadFormView):
     initial_focus_widget = None
 
     def setUpFields(self):
-        """See LaunchpadFormView."""
+        """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpFields(self)
         if self.context.isSubscribed(self.user):
             self.form_fields = self.form_fields.omit('subscribe_me')
 
     def setUpWidgets(self):
-        """See LaunchpadFormView."""
+        """See `LaunchpadFormView`."""
         LaunchpadFormView.setUpWidgets(self)
         alsoProvides(self.widgets['message'], IAlwaysSubmittedWidget)
 
@@ -611,6 +618,16 @@ class QuestionWorkflowView(LaunchpadFormView):
         else:
             if not data.get('message'):
                 self.setFieldError('message', _('Please enter a message.'))
+
+    @property
+    def lang(self):
+        """The Question's language for the lang and xml:lang attributes."""
+        return self.context.language.dashedcode
+
+    @property
+    def dir(self):
+        """The Question's language direction for the dir attribute."""
+        return self.context.language.abbreviated_text_dir
 
     def hasActions(self):
         """Return True if some actions are possible for this user."""
@@ -752,6 +769,12 @@ class QuestionWorkflowView(LaunchpadFormView):
 
         self.next_url = canonical_url(self.context)
 
+    @property
+    def new_question_url(self):
+        """Return a URL to add a new question for the QuestionTarget."""
+        return '%s/+addquestion' % canonical_url(self.context.target,
+                                                 rootsite='answers')
+
 
 
 class QuestionConfirmAnswerView(QuestionWorkflowView):
@@ -828,7 +851,7 @@ class SearchAllQuestionsView(SearchQuestionsView):
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _('Questions matching "${search_text}"',
                      mapping=dict(search_text=self.search_text))
@@ -837,7 +860,7 @@ class SearchAllQuestionsView(SearchQuestionsView):
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         if self.search_text:
             return _("There are no questions matching "
                      '"${search_text}" with the requested statuses.',
@@ -868,7 +891,7 @@ class QuestionSOP(StructuralObjectPresentation):
     """Provides the structural heading for IQuestion."""
 
     def getMainHeading(self):
-        """See IStructuralHeaderPresentation."""
+        """See ```IStructuralHeaderPresentation`."""
         question = self.context
         return _('Question #${id} in ${target}',
                  mapping=dict(

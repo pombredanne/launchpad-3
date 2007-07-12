@@ -25,7 +25,6 @@ import datetime
 import logging
 import os
 import re
-import sys
 import time
 
 import pytz
@@ -49,8 +48,7 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IBugSet, IBugActivitySet, IBugAttachmentSet, IBugExternalRefSet,
     IEmailAddressSet, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IMessageSet, IMilestoneSet, IPersonSet, CreateBugParams,
-    NotFoundError)
+    IMessageSet, IPersonSet, CreateBugParams, NotFoundError)
 
 logger = logging.getLogger('canonical.launchpad.scripts.sftracker')
 
@@ -202,16 +200,16 @@ class TrackerItem:
             if self.resolution == 'Accepted' or self.assignee != 'nobody':
                 return BugTaskStatus.CONFIRMED
             else:
-                return BugTaskStatus.UNCONFIRMED
+                return BugTaskStatus.NEW
         elif self.status == 'Closed':
             if self.resolution in ['Accepted', 'Fixed', 'None']:
                 return BugTaskStatus.FIXRELEASED
             else:
-                return BugTaskStatus.REJECTED
+                return BugTaskStatus.INVALID
         elif self.status == 'Deleted':
-            # "Duplicate" bugs are marked deleted.  REJECTED is the
+            # "Duplicate" bugs are marked deleted.  INVALID is the
             # best fit for this.
-            return BugTaskStatus.REJECTED
+            return BugTaskStatus.INVALID
         elif self.status == 'Pending':
             if self.resolution in ['Fixed', 'None']:
                 return BugTaskStatus.FIXCOMMITTED
@@ -365,18 +363,17 @@ class TrackerImporter:
         logger.info('Creating Launchpad bug #%d', bug.id)
 
         # attach comments and create CVE links.
-        bug.findCvesInText(text)
+        bug.findCvesInText(text, bug.owner)
         for (date, userid, text) in comments:
             msg = self.createMessage(bug.followup_subject(), date,
                                       userid, text)
             bug.linkMessage(msg)
-            bug.findCvesInText(text)
             comments_by_date_and_user[(date, userid)] = msg
 
         # set up bug task
         bugtask.datecreated = item.datecreated
         bugtask.importance = item.lp_importance
-        bugtask.transitionToStatus(item.lp_status)
+        bugtask.transitionToStatus(item.lp_status, self.bug_importer)
         bugtask.transitionToAssignee(self.get_person(item.assignee))
 
         # Convert the category to a tag name

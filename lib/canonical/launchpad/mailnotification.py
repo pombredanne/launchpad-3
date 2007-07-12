@@ -26,9 +26,8 @@ from canonical.launchpad.components.branch import BranchDelta
 from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
-    IBranch, IBugTask, IDistributionSourcePackage, IEmailAddressSet,
-    ILanguageSet, INotificationRecipientSet, IPerson, ISourcePackage,
-    ISpecification, ITeamMembershipSet, IUpstreamBugTask,
+    IBranch, IBugTask, IEmailAddressSet, INotificationRecipientSet, IPerson,
+    ISpecification, ITeamMembershipSet, IUpstreamBugTask, 
     UnknownRecipientError)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
@@ -344,7 +343,8 @@ def construct_bug_notification(bug, from_address, address, body, subject,
     if references is not None:
         msg['References'] = ' '.join(references)
     msg['Sender'] = config.bounce_address
-    msg['Date'] = formatdate(rfc822.mktime_tz(email_date.utctimetuple() + (0,)))
+    msg['Date'] = formatdate(
+        rfc822.mktime_tz(email_date.utctimetuple() + (0,)))
     if msgid is not None:
         msg['Message-Id'] = msgid
     subject_prefix = "[Bug %d]" % bug.id
@@ -503,9 +503,9 @@ def send_process_error_notification(to_address, subject, error_msg,
 def notify_errors_list(message, file_alias_url):
     """Sends an error to the Launchpad errors list."""
     template = get_email_template('notify-unhandled-email.txt')
-    # We add the error message in as a header too (X-Launchpad-Unhandled-Email)
-    # so we can create filters in the Launchpad-Error-Reports Mailman
-    # mailing list.
+    # We add the error message in as a header too
+    # (X-Launchpad-Unhandled-Email) so we can create filters in the
+    # Launchpad-Error-Reports Mailman mailing list.
     simple_sendmail(
         get_bugmail_error_address(), [config.launchpad.errors_address],
         'Unhandled Email: %s' % file_alias_url,
@@ -539,7 +539,8 @@ def generate_bug_add_email(bug, new_recipients=False):
         if bugtask.assignee:
             # There's a person assigned to fix this task, so show that
             # information too.
-            bug_info.append(u"     Assignee: %s" % bugtask.assignee.displayname)
+            bug_info.append(
+                u"     Assignee: %s" % bugtask.assignee.displayname)
         bug_info.append(u"         Status: %s\n" % bugtask.status.title)
 
     if bug.tags:
@@ -662,7 +663,8 @@ def get_bug_edit_notification_texts(bug_delta):
 
     if bug_delta.security_related is not None:
         if bug_delta.security_related['new']:
-            changes.append(u"** This bug has been flagged as a security issue")
+            changes.append(
+                u"** This bug has been flagged as a security issue")
         else:
             changes.append(
                 u"** This bug is no longer flagged as a security issue")
@@ -779,7 +781,8 @@ def get_bug_edit_notification_texts(bug_delta):
                 assignee = added_bugtask.assignee
                 change_info += u"%13s: %s <%s>\n" % (
                     u"Assignee", assignee.name, assignee.preferredemail.email)
-            change_info += u"%13s: %s" % (u"Status", added_bugtask.status.title)
+            change_info += u"%13s: %s" % (
+                u"Status", added_bugtask.status.title)
             changes.append(change_info)
 
     return changes
@@ -865,7 +868,8 @@ def add_bug_change_notifications(bug_delta):
     """Generate bug notifications and add them to the bug."""
     changes = get_bug_edit_notification_texts(bug_delta)
     for text_change in changes:
-        bug_delta.bug.addChangeNotification(text_change, person=bug_delta.user)
+        bug_delta.bug.addChangeNotification(
+            text_change, person=bug_delta.user)
 
 
 def notify_bugtask_added(bugtask, event):
@@ -1081,7 +1085,7 @@ def notify_invitation_to_join_team(event):
 
 
 def notify_team_join(event):
-    """Notify team admins that a new person joined (or tried to join) the team.
+    """Notify team admins that a new person choose to join the team.
 
     If the team's policy is Moderated, the email will say that the membership
     is pending approval. Otherwise it'll say that the person has joined the
@@ -1135,7 +1139,8 @@ def notify_team_join(event):
 
     headers = {}
     if membership.status in [approved, admin]:
-        template = get_email_template('new-member-notification-for-admins.txt')
+        template = get_email_template(
+            'new-member-notification-for-admins.txt')
         subject = (
             'Launchpad: %s is now a member of %s' % (person.name, team.name))
     elif membership.status == proposed:
@@ -1157,50 +1162,6 @@ def dispatch_linked_question_notifications(bugtask, event):
     """
     for question in bugtask.bug.questions:
         QuestionLinkedBugStatusChangeNotification(question, event)
-
-class QuestionNotificationRecipientSet(NotificationRecipientSet):
-    """`NotificationRecipientSet` that knows how to add answer contact."""
-
-    # XXX flacoste 20070521 This should probably better live as a method
-    # on IQuestionTarget that returns an INotificationRecipientSet. Once
-    # curtis' branch that add getAnswerContactsForLanguage lands. Move that
-    # in that method.
-    def addAnswerContacts(self, target):
-        """Add the answer_contacts for a target as recipients."""
-        # We need to special case the source package case because some are
-        # contacts for the distro while others are only registered for the
-        # package. And we also want the name of the package in context in
-        # the header.
-        if (ISourcePackage.providedBy(target)
-            or IDistributionSourcePackage.providedBy(target)):
-            self._addAnswerContacts(
-                target.direct_answer_contacts, target.displayname,
-                target.displayname)
-            distribution = target.distribution
-            self._addAnswerContacts(
-                distribution.answer_contacts, distribution.name,
-                distribution.displayname)
-        else:
-            self._addAnswerContacts(
-                target.answer_contacts, target.name, target.displayname)
-
-    def _addAnswerContacts(self, answer_contacts, target_name,
-                           target_display_name):
-        # Take care of adding the contacts with the correct rationale.
-        for person in answer_contacts:
-            reason_start = (
-            "You received this question notification because you are ")
-            if person.isTeam():
-                reason = reason_start + (
-                    'a member of %s, which is an answer contact for %s.' % (
-                        person.displayname, target_display_name))
-                header = 'Answer Contact (%s) @%s' % (
-                    target_name, person.name)
-            else:
-                reason = reason_start + (
-                    'an answer contact for %s.' % target_display_name)
-                header = 'Answer Contact (%s)' % target_name
-            self.add(person, reason, header)
 
 
 class QuestionNotification:
@@ -1279,43 +1240,14 @@ class QuestionNotification:
     def getRecipients(self):
         """Return the recipient of the notification.
 
-        Default to the question's subscribers that speaks the request languages.
-        If the question owner is subscribed, he's always consider to speak the
-        language. When a subscriber is a team and it doesn't have an email
-        set nor supported languages, only contacts the members that speaks
-        the supported language.
+        Default to the question's subscribers that speaks the request
+        languages. If the question owner is subscribed, he's always consider
+        to speak the language.
 
         :return: A `INotificationRecipientSet` containing the recipients and
-            rationale.
+                 rationale.
         """
-        # Optimize the English case.
-        english = getUtility(ILanguageSet)['en']
-        question_language = self.question.language
-        if question_language == english:
-            return self.question.getSubscribers()
-
-        recipients = NotificationRecipientSet()
-        skipped = set()
-        original_recipients = self.question.getSubscribers()
-        subscribers = dict((person, original_recipients.getReason(person))
-                           for person in original_recipients)
-        while subscribers:
-            person, rationale = subscribers.popitem()
-            if person == self.question.owner:
-                recipients.add(person, *rationale)
-            elif question_language not in person.getSupportedLanguages():
-                skipped.add(person)
-            elif not person.preferredemail and not list(person.languages):
-                # For teams without an email address nor a set of supported
-                # languages, only notify the members that actually speak the
-                # language.
-                for member in person.activemembers:
-                    if member in recipients or member in skipped:
-                        continue
-                    subscribers[member] = rationale
-            else:
-                recipients.add(person, *rationale)
-        return recipients
+        return self.question.getSubscribers()
 
     def initialize(self):
         """Initialization hook for subclasses.
@@ -1404,7 +1336,8 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         new_messages = set(
             self.question.messages).difference(self.old_question.messages)
         assert len(new_messages) <= 1, (
-                "There shouldn't be more than one message for a notification.")
+                "There shouldn't be more than one message for a "
+                "notification.")
         if new_messages:
             self.new_message = new_messages.pop()
         else:
@@ -1621,9 +1554,7 @@ class QuestionUnsupportedLanguageNotification(QuestionNotification):
 
     def getRecipients(self):
         """Notify only the answer contacts."""
-        recipients = QuestionNotificationRecipientSet()
-        recipients.addAnswerContacts(self.question.target)
-        return recipients
+        return self.question.target.getAnswerContactRecipients(None)
 
     def getBody(self):
         """See QuestionNotification."""
@@ -1670,17 +1601,18 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
         else:
             statusexplanation = ''
 
-        return get_email_template('question-linked-bug-status-updated.txt') % {
-            'bugtask_target_name': self.bugtask.target.displayname,
-            'question_id': self.question.id,
-            'question_title':self.question.title,
-            'question_url': canonical_url(self.question),
-            'bugtask_url':canonical_url(self.bugtask),
-            'bug_id': self.bugtask.bug.id,
-            'bugtask_title': self.bugtask.bug.title,
-            'old_status': self.old_bugtask.status.title,
-            'new_status': self.bugtask.status.title,
-            'statusexplanation': statusexplanation}
+        return get_email_template(
+            'question-linked-bug-status-updated.txt') % {
+                'bugtask_target_name': self.bugtask.target.displayname,
+                'question_id': self.question.id,
+                'question_title':self.question.title,
+                'question_url': canonical_url(self.question),
+                'bugtask_url':canonical_url(self.bugtask),
+                'bug_id': self.bugtask.bug.id,
+                'bugtask_title': self.bugtask.bug.title,
+                'old_status': self.old_bugtask.status.title,
+                'new_status': self.bugtask.status.title,
+                'statusexplanation': statusexplanation}
 
 
 def notify_specification_modified(spec, event):
@@ -1693,7 +1625,7 @@ def notify_specification_modified(spec, event):
         #     -- Bjorn Tillenius, 2006-03-08
         return
 
-    subject = '[Spec %s] %s' % (spec.name, spec.title)
+    subject = '[Blueprint %s] %s' % (spec.name, spec.title)
     indent = ' '*4
     info_lines = []
     for dbitem_name in ('status', 'priority'):
@@ -1747,27 +1679,57 @@ def notify_specification_modified(spec, event):
 
 
 def email_branch_modified_notifications(branch, to_addresses,
-                                        from_address, contents):
+                                        from_address, contents,
+                                        recipients):
     """Send notification emails using the branch email template.
 
     Emails are sent one at a time to the listed addresses.
     """
-    subject = '[Branch %s] %s' % (branch.unique_name, branch.title)
+    branch_title = branch.title
+    if branch_title is None:
+        branch_title = '(no title)'
+    subject = '[Branch %s] %s' % (branch.unique_name, branch_title)
     headers = {'X-Launchpad-Branch': branch.unique_name}
-    body = get_email_template('branch-modified.txt') % {
+
+    template = get_email_template('branch-modified.txt')
+    params = {
         'contents': contents,
-        'branch_title': branch.title,
+        'branch_title': branch_title,
         'branch_url': canonical_url(branch),
-        'unsubscribe_url': canonical_url(branch) + '/+edit-subscription' }
+         }
     for address in to_addresses:
+        subscription, rationale = recipients.getReason(address)
+        if subscription.person.isTeam():
+            params['unsubscribe_url'] = canonical_url(subscription)
+        else:
+            params['unsubscribe_url'] = (
+                canonical_url(branch) + '/+edit-subscription')
+        headers['X-Launchpad-Message-Rationale'] = rationale
+
+        body = template % params
         simple_sendmail(from_address, address, subject, body, headers)
 
 
 def send_branch_revision_notifications(branch, from_address, message, diff):
     """Notify subscribers that a revision has been added (or removed)."""
     diff_size = diff.count('\n') + 1
-    details = branch.getRevisionNotificationDetails()
-    for max_diff in sorted(details.keys()):
+
+    diff_size_to_email = dict(
+        [(item, set()) for item in BranchSubscriptionDiffSize.items])
+
+    recipients = branch.getNotificationRecipients()
+    interested_levels = (
+        BranchSubscriptionNotificationLevel.DIFFSONLY,
+        BranchSubscriptionNotificationLevel.FULL)
+    for email_address in recipients.getEmails():
+        subscription, ignored = recipients.getReason(email_address)
+        if subscription.notification_level in interested_levels:
+            diff_size_to_email[subscription.max_diff_lines].add(email_address)
+
+    for max_diff in diff_size_to_email:
+        addresses = diff_size_to_email[max_diff]
+        if len(addresses) == 0:
+            continue
         if max_diff != BranchSubscriptionDiffSize.WHOLEDIFF:
             if max_diff == BranchSubscriptionDiffSize.NODIFF:
                 contents = message
@@ -1781,9 +1743,8 @@ def send_branch_revision_notifications(branch, from_address, message, diff):
                 contents = "%s\n%s" % (message, diff)
         else:
             contents = "%s\n%s" % (message, diff)
-        addresses = details[max_diff]
         email_branch_modified_notifications(
-            branch, addresses, from_address, contents)
+            branch, addresses, from_address, contents, recipients)
 
 
 def send_branch_modified_notifications(branch, event):
@@ -1793,9 +1754,16 @@ def send_branch_modified_notifications(branch, event):
     if branch_delta is None:
         return
     # If there is no one interested, then bail out early.
-    to_addresses = branch.getAttributeNotificationAddresses()
-    if not to_addresses:
-        return
+    recipients = branch.getNotificationRecipients()
+
+    to_addresses = set()
+    interested_levels = (
+        BranchSubscriptionNotificationLevel.ATTRIBUTEONLY,
+        BranchSubscriptionNotificationLevel.FULL)
+    for email_address in recipients.getEmails():
+        subscription, ignored = recipients.getReason(email_address)
+        if subscription.notification_level in interested_levels:
+            to_addresses.add(email_address)
 
     indent = ' '*4
     info_lines = []
@@ -1818,7 +1786,6 @@ def send_branch_modified_notifications(branch, event):
         info_lines.append("%s%s: %s => %s" % (
             indent, title, old_item.title, new_item.title))
 
-
     # Fields for which we only have the new value.
     for field_name in ('summary', 'whiteboard'):
         delta = getattr(branch_delta, field_name)
@@ -1837,4 +1804,4 @@ def send_branch_modified_notifications(branch, event):
         event.user.displayname, event.user.preferredemail.email)
     contents = '\n'.join(info_lines)
     email_branch_modified_notifications(
-        branch, to_addresses, from_address, contents)
+        branch, to_addresses, from_address, contents, recipients)

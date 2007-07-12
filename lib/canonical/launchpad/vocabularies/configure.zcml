@@ -41,8 +41,8 @@
     />
 
   <vocabulary
-    name="BranchVisibilityPolicy"
-    factory="canonical.launchpad.vocabularies.BranchVisibilityPolicyVocabulary"
+    name="BranchVisibilityRule"
+    factory="canonical.launchpad.vocabularies.BranchVisibilityRuleVocabulary"
     />
 
   <vocabulary
@@ -103,6 +103,11 @@
   <vocabulary
       name="Component"
       factory="canonical.launchpad.vocabularies.ComponentVocabulary"
+      />
+
+  <vocabulary
+      name="CodeImportReviewStatus"
+      factory="canonical.launchpad.vocabularies.CodeImportReviewStatusVocabulary"
       />
 
   <vocabulary
@@ -351,6 +356,11 @@
     />
 
   <vocabulary
+    name="TeamMembershipRenewalPolicy"
+    factory="canonical.launchpad.vocabularies.TeamMembershipRenewalPolicyVocabulary"
+    />
+
+  <vocabulary
     name="TeamSubscriptionPolicy"
     factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
     />
@@ -383,6 +393,11 @@
   <vocabulary
     name="TimezoneName"
     factory="canonical.launchpad.vocabularies.TimezoneNameVocabulary"
+    />
+
+  <vocabulary
+    name="TranslationFileFormat"
+    factory="canonical.launchpad.vocabularies.TranslationFileFormatVocabulary"
     />
 
   <vocabulary

@@ -47,14 +47,11 @@ above, failed being worst).
 
 __metaclass__ = type
 
-from email import message_from_string
 import os
 import shutil
 
 from zope.component import getUtility
 
-from canonical.launchpad.mail import sendmail
-from canonical.encoding import ascii_smash
 from canonical.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError)
 from canonical.archiveuploader.uploadpolicy import (
@@ -299,12 +296,15 @@ class UploadProcessor:
             # When bug #29744 is fixed (zopeless mails should only be sent
             # when transaction is committed) this will cause any emails sent
             # sent by do_reject to be lost.
+            notify = True
+            if self.options.dryrun or self.options.nomails:
+                notify = False
             if upload.is_rejected:
                 result = UploadStatusEnum.REJECTED
-                upload.do_reject()
+                upload.do_reject(notify)
                 self.ztm.abort()
             else:
-                successful = upload.do_accept()
+                successful = upload.do_accept(notify=notify)
                 if not successful:
                     result = UploadStatusEnum.REJECTED
                     self.log.info("Rejection during accept. "
@@ -349,32 +349,6 @@ class UploadProcessor:
             self.log.debug("Moving distro file %s to %s" % (distro_filename,
                                                             target_path))
             shutil.move(distro_filename, target_path)
-
-    def sendMails(self, mails):
-        """Send the mails provided using the launchpad mail infrastructure."""
-        for mail_text in mails:
-            mail_message = message_from_string(ascii_smash(mail_text))
-
-            if mail_message['To'] is None:
-                self.log.debug("Missing recipient: empty 'To' header")
-                print repr(mail_text)
-                continue
-
-            mail_message['X-Katie'] = "Launchpad actually"
-
-            logger = self.log.debug
-            if self.options.dryrun or self.options.nomails:
-                logger = self.log.info
-                logger("Would be sending a mail:")
-            else:
-                sendmail(mail_message)
-                logger("Sent a mail:")
-
-            logger("   Subject: %s" % mail_message['Subject'])
-            logger("   Recipients: %s" % mail_message['To'])
-            logger("   Body:")
-            for line in mail_message.get_payload().splitlines():
-                logger(line)
 
     def orderFilenames(self, fnames):
         """Order filenames, sorting *_source.changes before others.

@@ -1,7 +1,11 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['POTemplateSubset', 'POTemplateSet', 'POTemplate']
+__all__ = [
+    'POTemplateSubset',
+    'POTemplateSet',
+    'POTemplate',
+    ]
 
 import datetime
 import os.path
@@ -13,26 +17,26 @@ from zope.component import getUtility
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import SQLMultipleJoin, SQLObjectNotFound
 
+from canonical.lp.dbschema import (
+    RosettaImportStatus, TranslationFileFormat)
 from canonical.config import config
-
-from canonical.lp.dbschema import RosettaImportStatus
 
 from canonical.database.sqlbase import (
     SQLBase, quote, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.enumcol import EnumCol
 
-import canonical.launchpad
 from canonical.launchpad import helpers
+from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
-    IPOTemplateExporter, ILaunchpadCelebrities, LanguageNotFound,
-    TranslationConstants, NotFoundError)
+    ILaunchpadCelebrities, IPOTemplate, IPOTemplateExporter, IPOTemplateSet,
+    IPOTemplateSubset, ITranslationImporter, LanguageNotFound, NotFoundError,
+    TranslationConstants, TranslationFormatSyntaxError,
+    TranslationFormatInvalidInputError
+    )
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
-from canonical.librarian.interfaces import ILibrarianClient
-
-from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -41,12 +45,6 @@ from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
-
-from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.components.poimport import import_po
-from canonical.launchpad.components.poparser import (POSyntaxError,
-    POInvalidInputError)
-from canonical.launchpad.webapp import canonical_url
 
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
@@ -84,6 +82,11 @@ class POTemplate(SQLBase, RosettaStats):
     license = IntCol(dbName='license', notNull=False, default=None)
     datecreated = UtcDateTimeCol(dbName='datecreated', default=DEFAULT)
     path = StringCol(dbName='path', notNull=False, default=None)
+    source_file = ForeignKey(foreignKey='LibraryFileAlias',
+        dbName='source_file', notNull=False, default=None)
+    source_file_format = EnumCol(dbName='source_file_format',
+        schema=TranslationFileFormat, default=TranslationFileFormat.PO,
+        notNull=True)
     iscurrent = BoolCol(dbName='iscurrent', notNull=True, default=True)
     messagecount = IntCol(dbName='messagecount', notNull=True, default=0)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
@@ -394,8 +397,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def hasMessageID(self, messageID):
         """See IPOTemplate."""
-        results = POTMsgSet.selectBy(
-            potemplate=self, primemsgid_=messageID)
+        results = POTMsgSet.selectBy(potemplate=self, primemsgid_=messageID)
         return results.count() > 0
 
     def hasPluralMessage(self):
@@ -555,57 +557,53 @@ class POTemplate(SQLBase, RosettaStats):
                 orderBy='dateimported')
 
     def importFromQueue(self, logger=None):
-        """See IPOTemplate."""
-        librarian_client = getUtility(ILibrarianClient)
-
+        """See `IPOTemplate`."""
         entry_to_import = self.getNextToImport()
 
         if entry_to_import is None:
             # There is no new import waiting for being imported.
             return
 
-        file = librarian_client.getFileByAlias(entry_to_import.content.id)
+        translation_importer = getUtility(ITranslationImporter)
 
-        template_mail = None
+        subject = 'Translation template import - %s' % self.displayname
+        template_mail = 'poimport-template-confirmation.txt'
+        import_rejected = False
         try:
-            import_po(self, file, entry_to_import.importer)
-        except (POSyntaxError, POInvalidInputError):
-            # The import failed, we mark it as failed so we could review it
-            # later in case it's a bug in our code.
+            translation_importer.importFile(entry_to_import, logger)
+        except (TranslationFormatSyntaxError,
+                TranslationFormatInvalidInputError):
             if logger:
                 logger.warning(
                     'We got an error importing %s', self.title, exc_info=1)
             template_mail = 'poimport-syntax-error.txt'
-
-            replacements = {
-                'importer': entry_to_import.importer.displayname,
-                'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
-                'elapsedtime': entry_to_import.getElapsedTimeText(),
-                'file_link': entry_to_import.content.http_url,
-                'import_title':
-                    'translation templates for %s' % self.displayname
-                }
-
-            # We got an error that prevented us to import the template, we
-            # need to notify the user and set the status to FAILED.
             subject = 'Import problem - %s' % self.displayname
+            import_rejected = True
 
-            # Send the email.
-            template = helpers.get_email_template(template_mail)
-            message = template % replacements
+        replacements = {
+            'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
+            'elapsedtime': entry_to_import.getElapsedTimeText(),
+            'file_link': entry_to_import.content.http_url,
+            'import_title': 'translation templates for %s' % self.displayname,
+            'importer': entry_to_import.importer.displayname,
+            'template': self.displayname
+            }
 
-            fromaddress = config.rosetta.rosettaadmin.email
-            toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
+        # Send email: confirmation or error.
+        template = helpers.get_email_template(template_mail)
+        message = template % replacements
 
-            simple_sendmail(fromaddress,
-                toaddress,
-                subject,
-                MailWrapper().format(message))
+        fromaddress = config.rosetta.rosettaadmin.email
+        toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
 
+        simple_sendmail(fromaddress,
+            toaddress,
+            subject,
+            MailWrapper().format(message))
+
+        if import_rejected:
+            # Give up on this file.
             entry_to_import.status = RosettaImportStatus.FAILED
-
-
-            # We don't have anything to do here...
             return
 
         # The import has been done, we mark it that way.

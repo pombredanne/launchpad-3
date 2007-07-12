@@ -16,7 +16,7 @@ __all__ = [
     'BranchReviewStatusVocabulary',
     'BranchSubscriptionDiffSizeVocabulary',
     'BranchSubscriptionNotificationLevelVocabulary',
-    'BranchVisibilityPolicyVocabulary', 
+    'BranchVisibilityRuleVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugBranchStatusVocabulary',
@@ -24,8 +24,11 @@ __all__ = [
     'BugTaskImportanceVocabulary',
     'BugTaskStatusVocabulary',
     'BugTrackerTypeVocabulary',
+    'CodeImportReviewStatusVocabulary',
     'CveStatusVocabulary',
     'DistroSeriesStatusVocabulary',
+    'EntitlementStateVocabulary',
+    'EntitlementTypeVocabulary',
     'GPGKeyAlgorithmVocabulary',
     'InfestationStatusVocabulary',
     'MirrorContentVocabulary',
@@ -49,8 +52,10 @@ __all__ = [
     'SpecificationStatusVocabulary',
     'SpecificationGoalStatusVocabulary',
     'SprintSpecificationStatusVocabulary',
+    'TeamMembershipRenewalPolicyVocabulary',
     'TeamSubscriptionPolicyVocabulary',
     'TextDirectionVocabulary',
+    'TranslationFileFormatVocabulary',
     'TranslationPermissionVocabulary',
     'UpstreamFileTypeVocabulary',
     ]
@@ -74,7 +79,7 @@ BranchSubscriptionDiffSizeVocabulary = \
     sortkey_ordered_vocab_factory(dbschema.BranchSubscriptionDiffSize)
 BranchSubscriptionNotificationLevelVocabulary = \
     vocab_factory(dbschema.BranchSubscriptionNotificationLevel)
-BranchVisibilityPolicyVocabulary = vocab_factory(dbschema.BranchVisibilityPolicy)
+BranchVisibilityRuleVocabulary = vocab_factory(dbschema.BranchVisibilityRule)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
 BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
@@ -86,8 +91,12 @@ BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
 BugTrackerTypeVocabulary = vocab_factory(dbschema.BugTrackerType,
     noshow=[dbschema.BugTrackerType.DEBBUGS,
             dbschema.BugTrackerType.SOURCEFORGE])
+CodeImportReviewStatusVocabulary = vocab_factory(
+    dbschema.CodeImportReviewStatus)
 CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
 DistroSeriesStatusVocabulary = vocab_factory(dbschema.DistroSeriesStatus)
+EntitlementStateVocabulary = vocab_factory(dbschema.EntitlementState)
+EntitlementTypeVocabulary = vocab_factory(dbschema.EntitlementType)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 MirrorContentVocabulary = vocab_factory(dbschema.MirrorContent)
@@ -113,9 +122,11 @@ SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
 SpecificationStatusVocabulary =  vocab_factory(dbschema.SpecificationStatus)
 SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStatus)
 SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
+TeamMembershipRenewalPolicyVocabulary = vocab_factory(
+    dbschema.TeamMembershipRenewalPolicy)
 TeamSubscriptionPolicyVocabulary = vocab_factory(
-        dbschema.TeamSubscriptionPolicy)
+    dbschema.TeamSubscriptionPolicy)
 TextDirectionVocabulary =  vocab_factory(dbschema.TextDirection)
+TranslationFileFormatVocabulary = vocab_factory(dbschema.TranslationFileFormat)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
 UpstreamFileTypeVocabulary = vocab_factory(dbschema.UpstreamFileType)
-

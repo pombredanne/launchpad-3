@@ -11,7 +11,6 @@ COMMENT ON COLUMN AnswerContact.distribution IS 'The distribution that the answe
 COMMENT ON COLUMN AnswerContact.sourcepackagename IS 'The sourcepackagename that the answer contact supports.';
 COMMENT ON COLUMN AnswerContact.person IS 'The person or team associated with the question target.';
 COMMENT ON COLUMN AnswerContact.date_created IS 'The date the answer contact was submitted.';
---COMMENT ON COLUMN AnswerContact.want_english IS 'Whether or not the answer contact supports questions in English.';
 
 -- Branch 
 COMMENT ON TABLE Branch IS 'Bzr branch';
@@ -165,6 +164,18 @@ COMMENT ON COLUMN BugTracker.owner IS 'The person who created this bugtracker en
 COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone bug number, and a CVE entry.';
 
 
+-- CodeImport
+
+COMMENT ON TABLE CodeImport IS 'The persistent record of an import from a foreign version control system to Bazaar, from the initial request to the regularly updated import branch.';
+COMMENT ON COLUMN CodeImport.branch IS 'The Bazaar branch produced by the import system.  Always non-NULL: a placeholder branch is created when the import is created.  The import is associated to a Product and Series though the branch.';
+COMMENT ON COLUMN CodeImport.registrant IS 'The person who requested this import.';
+COMMENT ON COLUMN CodeImport.review_status IS 'Whether this code import request has been reviewed, and whether it was accepted.';
+COMMENT ON COLUMN CodeImport.rcs_type IS 'The revision control system used by the import source. The value is defined in dbschema.RevisionControlSystems.';
+COMMENT ON COLUMN CodeImport.svn_branch_url IS 'The URL of the Subversion branch for this import.';
+COMMENT ON COLUMN CodeImport.cvs_root IS 'The $CVSROOT details, probably of the form :pserver:user@host:/path.';
+COMMENT ON COLUMN CodeImport.cvs_module IS 'The module in cvs_root to import, often the name of the project.';
+
+
 -- CVE
 
 COMMENT ON TABLE CVE IS 'A CVE Entry. The formal database of CVE entries is available at http://cve.mitre.org/ and we sync that database into Launchpad on a regular basis.';
@@ -261,6 +272,8 @@ COMMENT ON COLUMN Product.homepage_content IS 'A home page for this product in t
 COMMENT ON COLUMN Product.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a product.';
 COMMENT ON COLUMN Product.mugshot IS 'The library file alias of a mugshot image to display as the branding of a product, on its home page.';
 COMMENT ON COLUMN Product.logo IS 'The library file alias of a smaller version of this product\'s mugshot.';
+COMMENT ON COLUMN Product.private_bugs IS 'Indicates whether bugs filed in this product are automatically marked as private.';
+COMMENT ON COLUMN Product.private_specs IS 'Indicates whether specs filed in this product are automatically marked as private.';
 
 -- ProductRelease
 
@@ -428,6 +441,7 @@ COMMENT ON COLUMN POFile.exportfile IS 'The Library file alias of an export of t
 COMMENT ON COLUMN POFile.exporttime IS 'The time at which the file referenced by exportfile was generated.';
 COMMENT ON COLUMN POFile.path IS 'The path (included the filename) inside the tree from where the content was imported.';
 COMMENT ON COLUMN POFile.from_sourcepackagename IS 'The sourcepackagename from where the last .po file came (only if it\'s different from POFile.potemplate.sourcepackagename)';
+COMMENT ON COLUMN POFile.unreviewed_count IS 'Number of POMsgSets with new, unreviewed POSubmissions.';
 
 -- POSubmission
 COMMENT ON TABLE POSubmission IS 'This table records the fact
@@ -513,6 +527,7 @@ COMMENT ON COLUMN Question.dateanswered IS 'The date this question was last "ans
 COMMENT ON COLUMN Question.dateclosed IS 'The date the requester marked this question CLOSED.';
 COMMENT ON COLUMN Question.language IS 'The language of the question''s title and description.';
 COMMENT ON COLUMN Question.whiteboard IS 'A general status whiteboard. This is a scratch space to which arbitrary data can be added (there is only one constant whiteboard with no history). It is displayed at the top of the question. So its a useful way for projects to add their own semantics or metadata to the Answer Tracker.';
+COMMENT ON COLUMN Question.faq IS 'The FAQ document that contains the long answer to this question.';
 
 -- QuestionBug
 
@@ -537,6 +552,22 @@ COMMENT ON COLUMN QuestionReopening.priorstate IS 'The state of the question bef
 COMMENT ON TABLE QuestionSubscription IS 'A subscription of a person to a particular question.';
 
 
+-- FAQ 
+COMMENT ON TABLE FAQ IS 'A technical document containing the answer to a common question.';
+COMMENT ON COLUMN FAQ.id IS 'The FAQ document sequence number.';
+COMMENT ON COLUMN FAQ.title IS 'The document title.';
+COMMENT ON COLUMN FAQ.tags IS 'White-space separated list of tags.';
+COMMENT ON COLUMN FAQ.content IS 'The content of FAQ. It can also contain a short summary and a link.';
+COMMENT ON COLUMN FAQ.product IS 'The product to which this document is
+related. Either "product" or "distribution" must be set.';
+COMMENT ON COLUMN FAQ.distribution IS 'The distribution to which this document
+is related. Either "product" or "distribution" must be set.';
+COMMENT ON COLUMN FAQ.owner IS 'The person who created the document.';
+COMMENT ON COLUMN FAQ.date_created IS 'The datetime when the document was created.';
+COMMENT ON COLUMN FAQ.last_updated_by IS 'The person who last modified the document.';
+COMMENT ON COLUMN FAQ.date_last_updated IS 'The datetime when the document was last modified.';
+
+
 -- DistroReleaseLanguage
 
 COMMENT ON TABLE DistroReleaseLanguage IS 'A cache of the current translation status of that language across an entire distrorelease.';
@@ -544,6 +575,7 @@ COMMENT ON COLUMN DistroReleaseLanguage.dateupdated IS 'The date these statistuc
 COMMENT ON COLUMN DistroReleaseLanguage.currentcount IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.updatescount IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.rosettacount IS 'As per IRosettaStats.';
+COMMENT ON COLUMN DistroReleaseLanguage.unreviewed_count IS 'As per IRosettaStats.';
 COMMENT ON COLUMN DistroReleaseLanguage.contributorcount IS 'The total number of contributors to the translation of this distrorelease into this language.';
 
 -- Manifest
@@ -768,6 +800,8 @@ COMMENT ON COLUMN Karma.sourcepackagename IS 'The SourcePackageName on which a p
 
 -- Person
 COMMENT ON TABLE Person IS 'Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
+COMMENT ON COLUMN Person.account_status IS 'The status of the account associated with this Person.';
+COMMENT ON COLUMN Person.account_status_comment IS 'The comment on the status of the account associated with this Person.';
 COMMENT ON COLUMN Person.subscriptionpolicy IS 'The policy for new members to join this team.';
 COMMENT ON COLUMN Person.renewal_policy IS 'The policy for membership renewal on this team.';
 COMMENT ON COLUMN Person.displayname IS 'Person or group''s name as it should be rendered to screen';
@@ -1406,8 +1440,11 @@ COMMENT ON TABLE PackageBugContact IS 'Defines the support contact for a given t
 
 -- Archive
 COMMENT ON TABLE Archive IS 'A package archive. Commonly either a distribution''s main_archive or a ppa''s archive.';
-COMMENT ON COLUMN Archive.owner IS 'Identifies the PPA owner when it is the case.';
+COMMENT ON COLUMN Archive.owner IS 'Identifies the PPA owner when it has one.';
 COMMENT ON COLUMN Archive.description IS 'Allow users to describe their PPAs content.';
+COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for accepting uploads.';
+COMMENT ON COLUMN Archive.authorized_size IS 'Size in bytes allowed for this PPA.';
+COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventions made in the PPA configuration.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
@@ -1457,4 +1494,20 @@ COMMENT ON TABLE RevisionProperty IS 'A collection of name and value pairs that 
 COMMENT ON COLUMN RevisionProperty.revision IS 'The revision which has properties.';
 COMMENT ON COLUMN RevisionProperty.name IS 'The name of the property.';
 COMMENT ON COLUMN RevisionProperty.value IS 'The value of the property.';
+
+-- Entitlement
+COMMENT ON TABLE Entitlement IS 'Entitlements and usage of privileged features.';
+COMMENT ON COLUMN Entitlement.person IS 'The person to which the entitlements apply.';
+COMMENT ON COLUMN Entitlement.registrant IS 'The person (admin) who registered this entitlement.  It is NULL if imported directly from an external sales system.';
+COMMENT ON COLUMN Entitlement.approved_by IS 'The person who approved this entitlement.  It is NULL if imported directly from an external sales system.';
+COMMENT ON COLUMN Entitlement.date_approved IS 'Approval date of entitlement.  It is NULL if imported directly from an external sales system.';
+COMMENT ON COLUMN Entitlement.date_created IS 'Creation date of entitlement.';
+COMMENT ON COLUMN Entitlement.date_starts IS 'When this entitlement becomes active.';
+COMMENT ON COLUMN Entitlement.date_expires IS 'When this entitlement expires.';
+COMMENT ON COLUMN Entitlement.entitlement_type IS 'The type of this entitlement (e.g. private bug).';
+COMMENT ON COLUMN Entitlement.quota IS 'Number of this entitlement allowed.';
+COMMENT ON COLUMN Entitlement.amount_used IS 'Quantity of this entitlement allocation that is used.';
+COMMENT ON COLUMN Entitlement.whiteboard IS 'A place for administrator notes.';
+COMMENT ON COLUMN Entitlement.state IS 'The state (REQUESTED, ACTIVE, INACTIVE) of the entitlement.';
+
 
