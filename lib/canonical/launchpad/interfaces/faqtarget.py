@@ -9,8 +9,6 @@ __all__ = [
     ]
 
 
-from zope.interface import Interface
-
 from canonical.launchpad.interfaces.faqcollection import IFAQCollection
 
 
