@@ -1,4 +1,4 @@
-s()# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Project-related interfaces for Launchpad."""
 
