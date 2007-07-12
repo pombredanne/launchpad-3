@@ -240,7 +240,7 @@ class FileBugViewBase(LaunchpadFormView):
 
         # If we've been called from the frontpage filebug forms we must check
         # that whatever product or distro is having a bug filed against it
-        # actually uses Malone for its bug tracking
+        # actually uses Malone for its bug tracking.
         product_or_distro = self.getProductOrDistroFromContext()
         if (product_or_distro is not None and
             not product_or_distro.official_malone):
