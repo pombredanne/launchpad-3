@@ -602,6 +602,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
     def isReportedInContext(self):
         """Is the bug reported in this context? Returns True or False.
 
+        It considers a nominated bug to be reported.
+
         This is particularly useful for views that may render a
         NullBugTask.
         """
