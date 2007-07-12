@@ -5,12 +5,13 @@
 
 cd ~/canonical/lp-branches
 for branch in *; do
-  if [ ${branch} != "trunk" ]; then
+  if [ ${branch} != "trunk" ] && test -d ${branch} ; then
     echo "Examining ${branch}"
     cd ${branch}
     bzr status --short
     cd ../trunk
     bzr missing --theirs-only --line ../${branch} | grep -v "^You are missing"
+    cd ..
   fi;
 done;
 

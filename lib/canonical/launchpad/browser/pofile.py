@@ -253,9 +253,16 @@ class POFileTranslateView(BaseTranslationView):
 
     def _buildPOMsgSetViews(self, for_potmsgsets):
         """Build POMsgSet views for all POTMsgSets in for_potmsgsets."""
+        for_potmsgsets = list(for_potmsgsets)
         po_to_pot_msg = self.context.getMsgSetsForPOTMsgSets(for_potmsgsets)
 
-        for potmsgset, pomsgset in po_to_pot_msg.items():
+        last = None
+        for potmsgset in for_potmsgsets:
+            assert last is None or potmsgset.sequence >= last.sequence, (
+                "POTMsgSets on page not in ascending sequence order")
+            last = potmsgset
+
+            pomsgset = po_to_pot_msg[potmsgset]
             view = self._prepareView(
                 POMsgSetView, pomsgset, self.errors.get(potmsgset))
             self.pomsgset_views.append(view)

@@ -32,7 +32,7 @@
       simpler.
   </p>
 
-  <form method="get">
+  <form method="get" accept-charset="UTF-8">
     <label for="text">Search projects:</label>
     <input name="text" tal:attributes="value view/text" />
     <input

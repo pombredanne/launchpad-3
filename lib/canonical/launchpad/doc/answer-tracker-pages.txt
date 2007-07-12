@@ -200,8 +200,9 @@ Let's say he confirms the previous answer, in this case, the question will
 move to the 'SOLVED' state. Note that the UI doesn't enable the user to
 enter a confirmation message at that stage.
 
+    >>> answer_message_number = firefox_question.messages.count() - 1
     >>> workflow_harness.submit(
-    ...     'confirm', {'answer_id': firefox_question.messages.count()-1,
+    ...     'confirm', {'answer_id': answer_message_number,
     ...                 'field.message': ''})
     >>> for notification in workflow_harness.request.response.notifications:
     ...     print notification.message
@@ -216,8 +217,9 @@ Since no confirmation message was given, a default one was used.
     >>> print firefox_question.messages[-1].text_contents
     Thanks No Privileges Person, that solved my question.
 
-Once in the SOLVED state, the owner can now only either add a comment
-or reopen the question:
+Once in the SOLVED state, when the answerer is a person other than the
+question owner, the owner can now only either add a comment or reopen
+the question:
 
     >>> getAvailableActionNames(workflow_harness.view)
     ['comment', 'reopen']
@@ -262,7 +264,8 @@ If the question owner reopens the question, its status is changed back to
     '.../+question/2'
 
 When the question owner answers his own question, it is moved straight to
-the SOLVED state.
+the SOLVED state. The question owner is attributed as the answerer, but
+no answer message is assigned to the answer.
 
     >>> workflow_harness.submit(
     ...     'selfanswer', {
@@ -270,9 +273,38 @@ the SOLVED state.
     ...         "SVG features that will only be available in Firefox 2.0."})
     >>> for notification in workflow_harness.request.response.notifications:
     ...     print notification.message
-    Thanks for sharing your solution.
+    Your question is solved, if a particular message helped you solved the 
+    problem, please use the <em>'This solved my problem'</em> button.
     >>> print firefox_question.status.name
     SOLVED
+    >>> print firefox_question.answerer.displayname
+    Sample Person
+    >>> firefox_question.answer is None
+    True
+    >>> workflow_harness.redirectionTarget()
+    '.../+question/2'
+
+When the answerer is the question owner, the owner can still confirm
+an answer, in addition to adding a comment or reopening the question.
+This path permits the question owner to state how the problem was
+solved, then attribute an answerer as a contributor to the solution.
+The answerer's message is attributed as the answer in this case.
+
+    >>> getAvailableActionNames(workflow_harness.view)
+    ['comment', 'confirm', 'reopen']
+
+    >>> workflow_harness.submit(
+    ...     'confirm', {'answer_id': answer_message_number,
+    ...                 'field.message': ''})
+    >>> print firefox_question.status.name
+    SOLVED
+    >>> print firefox_question.answerer.displayname
+    No Privileges Person
+    >>> print firefox_question.answer.owner.displayname
+    No Privileges Person
+    >>> answer_id = firefox_question.messages[answer_message_number].id
+    >>> firefox_question.answer.id == answer_id
+    True
     >>> workflow_harness.redirectionTarget()
     '.../+question/2'
 
@@ -858,7 +890,9 @@ The view adds notifications about the answer contacts added:
 
     >>> for notification in request.notifications:
     ...     print notification.message
+    <...Your preferred languages... were set to your browser ...English (en).
     You have been added as an answer contact for Ubuntu.
+    English was added to Ubuntu Team's ...preferred languages...
     Ubuntu Team has been added as an answer contact for Ubuntu.
 
 But Daniel Silverstone is only a regular member of Ubuntu Team, so he
@@ -882,6 +916,7 @@ can only subscribe himself:
 
     >>> for notification in request.notifications:
     ...     print notification.message
+    <...Your preferred languages... were set to your browser ...English (en).
     You have been added as an answer contact for Ubuntu.
 
 The same view is used to remove answer contact registrations. The user

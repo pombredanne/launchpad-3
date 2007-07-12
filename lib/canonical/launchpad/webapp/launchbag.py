@@ -66,6 +66,8 @@ class LaunchBag:
     @property
     def user(self):
         interaction = zope.security.management.queryInteraction()
+        if interaction is None:
+            return None
         principals = [
             participation.principal
             for participation in list(interaction.participations)
