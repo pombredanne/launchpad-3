@@ -235,9 +235,10 @@ class CodeHostingTestProviderAdapter:
     def __init__(self, servers):
         self._servers = servers
 
-    def adaptForServer(self, test, server):
+    def adaptForServer(self, test, serverFactory):
         from copy import deepcopy
         new_test = deepcopy(test)
+        server = serverFactory()
         new_test.installServer(server)
         def make_new_test_id():
             new_id = "%s(%s)" % (new_test.id(), server._schema)

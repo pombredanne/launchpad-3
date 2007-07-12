@@ -317,6 +317,15 @@ class SmartserverTests(SSHTestCase):
     def getDefaultServer(self):
         return make_bzr_ssh_server()
 
+    def _dump_authserver_log(self):
+        authserver_log = open(
+            self.server.authserver.tachandler.logfile, 'r')
+        print '-' * 8
+        print authserver_log.read()
+        print '-' * 8
+        authserver_log.close()
+        raise
+
     @deferToThread
     def test_can_read_readonly_branch(self):
         # We can get information from a read-only branch.
@@ -420,16 +429,11 @@ def make_server_tests(base_suite, servers):
 
 
 def test_suite():
-    # XXX: JonathanLange 2007-06-27, These tests are causing intermittent
-    # failures on PQM. They are being temporarily disabled until they can be
-    # made more reliable.
-    # See https://launchpad.net/bugs/122268 for more information.
-    return unittest.TestSuite()
-##     base_suite = unittest.makeSuite(AcceptanceTests)
-##     suite = unittest.TestSuite()
-##     suite.addTest(make_repository_tests(base_suite))
-##     suite.addTest(make_server_tests(
-##         base_suite, [make_sftp_server(), make_bzr_ssh_server()]))
-##     suite.addTest(make_server_tests(
-##         unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server()]))
-##     return suite
+    base_suite = unittest.makeSuite(AcceptanceTests)
+    suite = unittest.TestSuite()
+    suite.addTest(make_repository_tests(base_suite))
+    suite.addTest(make_server_tests(
+        base_suite, [make_sftp_server, make_bzr_ssh_server]))
+    suite.addTest(make_server_tests(
+        unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server]))
+    return suite
