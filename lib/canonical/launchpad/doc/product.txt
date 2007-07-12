@@ -82,7 +82,8 @@ getByName() also accepts an argument to ignore inactive products.
     None
 
 You can also use the IProductSet to see some statistics on products.
-The methods use ILaunchpadStatisticSet to get the values.
+The methods use ILaunchpadStatisticSet to get the values. The
+ILaunchpadStatisticSet is stored in the 'stats' attribute.
 
     >>> class FakeStatistics:
     ...     stats = {
@@ -94,6 +95,7 @@ The methods use ILaunchpadStatisticSet to get the values.
 
     >>> from canonical.launchpad.database import ProductSet
     >>> class FakeStatsProductSet(ProductSet):
+    ...     """Provide fake statistics, not to depend on sample data."""
     ...     stats = FakeStatistics()
 
     >>> print FakeStatsProductSet().count_translatable()
