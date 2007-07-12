@@ -6,10 +6,18 @@ project pages and from project group pages. It's also possible to create a
 blueprint from the Blueprints home page.
 
 Let's start by demonstrating that users can register blueprints while looking
-at a distribution. In this case, Ubuntu:
+at a distribution. In this case, we'll follow the textual "Register a blueprint" 
+link from the Ubuntu distribution's "Actions" menu:
 
   >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu')
   >>> user_browser.getLink('Register').click()
+  >>> user_browser.url
+  'http://blueprints.launchpad.dev/ubuntu/+addspec'
+
+Alternatively, we can use the graphical "Register a blueprint" link:
+
+  >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu')
+  >>> user_browser.getLink(id='addspec').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
 
@@ -24,18 +32,36 @@ Users can also register blueprints while looking at a project:
   >>> user_browser.getLink('Register').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/firefox/+addspec'
+  >>> user_browser.open('http://blueprints.launchpad.dev/firefox')
+  >>> user_browser.getLink(id='addspec').click()
+  >>> user_browser.url
+  'http://blueprints.launchpad.dev/firefox/+addspec'
 
-Finally, users can also register blueprints while looking at a project group:
+Or while looking at a project group:
 
   >>> user_browser.open('http://blueprints.launchpad.dev/mozilla')
   >>> user_browser.getLink('Register').click()  
   >>> user_browser.url
   'http://blueprints.launchpad.dev/mozilla/+addspec'
+  >>> user_browser.open('http://blueprints.launchpad.dev/mozilla')
+  >>> user_browser.getLink(id='addspec').click()
+  >>> user_browser.url
+  'http://blueprints.launchpad.dev/mozilla/+addspec'
+
+Finally, users can register blueprints from the Blueprints home page:
+
+  >>> user_browser.open('http://blueprints.launchpad.dev/')
+  >>> user_browser.getLink('Register').click()  
+  >>> user_browser.url
+  'http://blueprints.launchpad.dev/specs/+new'
 
 Let's go one step further and actually register a blueprint for the Ubuntu 
 distribution:
 
-  >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
+  >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu')
+  >>> user_browser.getLink('Register').click()
+  >>> user_browser.url
+  'http://blueprints.launchpad.dev/ubuntu/+addspec'
   >>> control = user_browser.getControl
   >>> summary = ("Users are increasingly using multiple networks. Being able "
   ...            "to seamlessly move between networks whilst remembering the "
