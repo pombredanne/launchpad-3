@@ -45,7 +45,7 @@ from canonical.librarian.interfaces import DownloadFailed
 from canonical.librarian.utils import copy_and_close
 from canonical.lp.dbschema import (
     PackageUploadStatus, PackageUploadCustomFormat, PackagePublishingPocket,
-    PackagePublishingStatus, SourcePackageFileType)
+    PackagePublishingStatus, SourcePackageFileType, ArchivePurpose)
 
 # There are imports below in PackageUploadCustom for various bits
 # of the archivepublisher which cause circular import errors if they
@@ -332,7 +332,7 @@ class PackageUpload(SQLBase):
 
     def isPPA(self):
         """See IPackageUpload."""
-        return self.archive.id != self.distroseries.main_archive.id
+        return self.archive.purpose == ArchivePurpose.PPA
 
     def _getChangesDict(self, changes_file_object=None):
         """Return a dictionary with changes file tags in it."""
@@ -446,7 +446,8 @@ class PackageUpload(SQLBase):
                 config.uploader.default_sender_name,
                 config.uploader.default_sender_address)
         else:
-            interpolations['MAINTAINERFROM'] = changes['maintainer']
+            interpolations['MAINTAINERFROM'] = guess_encoding(
+                changes['changed-by'])
 
         # The template is ready.  The remainder of this function deals with
         # whether to send a 'new' message, an acceptance message and/or an
@@ -639,7 +640,7 @@ class PackageUploadBuild(SQLBase):
         """See IPackageUploadBuild."""
         distroseries = self.packageupload.distroseries
         for binary in self.build.binarypackages:
-            if binary.component not in distroseries.components:
+            if binary.component not in distroseries.upload_components:
                 raise QueueBuildAcceptError(
                     'Component "%s" is not allowed in %s'
                     % (binary.component.name, distroseries.name))
@@ -763,7 +764,7 @@ class PackageUploadSource(SQLBase):
         component = self.sourcepackagerelease.component
         section = self.sourcepackagerelease.section
 
-        if component not in distroseries.components:
+        if component not in distroseries.upload_components:
             raise QueueSourceAcceptError(
                 'Component "%s" is not allowed in %s' % (component.name,
                                                          distroseries.name))

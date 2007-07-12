@@ -91,7 +91,7 @@ class IPOMsgSet(Interface):
     def isNewerThan(timestamp):
         """Whether the active translations are newer than the given timestamp.
 
-        :arg timestamp: A DateTime object with a timestamp.
+        :param timestamp: A DateTime object with a timestamp.
 
         """
 
@@ -115,11 +115,11 @@ class IPOMsgSet(Interface):
         Note that the actual caches are private to this object, which is
         visible only in a single thread.  This is why no locking is needed.
 
-        :related_submissions: list or iterator of all submissions attached to
-        this object, as well as all that should be presented as suggestions
-        for its translation.  If related_submissions is not given, they will
-        be fetched from the database.  Must yield POSubmissions in
-        newest-to-oldest order.
+        :param related_submissions: list or iterator of all submissions
+            attached to this object, as well as all that should be presented
+            as suggestions for its translation.  If related_submissions is not
+            given, they will be fetched from the database.  Must yield
+            `POSubmissions` in newest-to-oldest order.
         """
 
     def setActiveSubmission(pluralform, submission):
@@ -207,25 +207,37 @@ class IPOMsgSet(Interface):
     def updateReviewerInfo(reviewer):
         """Update a couple of fields to note there was an update.
 
-        :arg reviewer: The person who just reviewed this IPOMsgSet.
+        :param reviewer: The person who just reviewed this IPOMsgSet.
 
         The updated fields are:
-            - self.pofile.last_touched_pomsgset: To cache which message was
+            - `self.pofile.last_touched_pomsgset`: To cache which message was
               the last one updated so we can know when was an IPOFile last
                updated.
-            - self.reviewer: To note who did last review for this message.
-            - self.date_reviewed: To note when was done last review.
+            - `self.reviewer`: To note who did last review for this message.
+            - `self.date_reviewed`: To note when was done last review.
+        """
+
+    def makeHTMLId(suffix=None):
+        """Unique name for this `POMsgSet` for use in HTML element ids.
+
+        The name is an underscore-separated sequence of:
+         * the string 'msgset'
+         * unpadded, numerical `POTMsgSet.id` (not our own `id`!)
+         * language code
+         * caller-supplied suffix.
+
+        :param suffix: an identifier to be appended.  Must be suitable for use
+        in HTML element ids.
         """
 
 
 class IPOMsgSetSuggestions(Interface):
-    """Holds data of a specific kind of POSubmission for a POMsgSet's
-    plural form.
+    """Suggested `POSubmission`s for a `POMsgSet` in a particular plural form.
 
-    When displaying POMsgSets in POMsgSetView we display different types
+    When displaying `POMsgSet`s in `POMsgSetView` we display different types
     of suggestions: non-reviewer translations, translations that occur in
     other contexts, and translations in alternate languages. See
-    POMsgSetView._buildSuggestions for details.
+    `POMsgSetView._buildSuggestions` for details.
     """
     title = Attribute("The name displayed next to the suggestion, "
                       "indicating where it came from.")
