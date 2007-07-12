@@ -364,6 +364,9 @@ def is_english_variant(language):
     >>> is_english_variant(Language('enm'))
     False
     """
+    # XXX sinzui 2007-07-12 bug=125545
+    # We would not need to use this function so often if variant languages
+    # knew their parent language.
     return language.code[0:3] in ['en_']
 
 

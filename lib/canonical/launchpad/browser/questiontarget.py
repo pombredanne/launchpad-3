@@ -76,12 +76,17 @@ class UserSupportLanguagesMixin:
         """The set of user support languages.
 
         This set includes the user's preferred languages, or request
-        languages, or GeoIP languages. When the user does not have
-        preferred languages, the languages will be inferred from the
-        request Accept-Language header. As a last resort, the code falls
-        back on GeoIP rules to determine the user's languages.
-        English is added to the list when an English variant is returned
-        by one of the three language sources.
+        languages, or GeoIP languages, according to the implementation of
+        preferred_or_request_languages(), which specifies:
+
+        - When the user does not have preferred languages, the languages
+          will be inferred from the request Accept-Language header.
+
+        - As a last resort, the code falls back on GeoIP rules to determine
+          the user's languages.
+
+        English is added to the list instead when an English variant is
+        returned.
         """
         english = getUtility(ILanguageSet)['en']
         languages = set()

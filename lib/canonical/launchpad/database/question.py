@@ -1057,6 +1057,9 @@ class QuestionTargetMixin:
         constraints.append("""
             AnswerContact.person = PersonLanguage.person AND
             PersonLanguage.Language = Language.id""")
+        # XXX sinzui 2007-07-12 bug=125545
+        # Using a LIKE constraint is suboptimal. We would not need this
+        # if-else clause if variant languages knew their parent language.
         if language.code == 'en':
             constraints.append("""
                 Language.code LIKE %s""" % sqlvalues('%s%%' % language.code))
