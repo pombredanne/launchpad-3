@@ -39,8 +39,7 @@
       re-show their divs, once the children themselves have been collapsed.
     </tal:comment>
     <style type="text/css">
-      #portlets .portletBody {display: none;}
-      fieldset.collapsed div, fieldset div.collapsed {display: none;}
+      #portlets .portletBody, fieldset.collapsed div,
       fieldset div.collapsed {display: none;}
     </style>
     <noscript>
