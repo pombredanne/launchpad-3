@@ -24,9 +24,8 @@ WHERE branch_type IS NULL;
 ALTER TABLE Branch ALTER branch_type SET DEFAULT 0;
 ALTER TABLE Branch ALTER branch_type SET NOT NULL;
 
--- To be moved to comments.sql
-COMMENT ON COLUMN Branch.branch_type IS 'Branches are currently one of HOSTED (1), MIRRORED (2), or IMPORTED (3).';
+ALTER TABLE Branch
+ADD CONSTRAINT branch_type_url_consistent
+CHECK ((branch_type = 2 AND url IS NOT NULL) OR url IS NULL);
 
-
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
-
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 31, 0);
