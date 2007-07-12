@@ -193,13 +193,18 @@
   </tal:deptree>
 
       <div tal:replace="structure context/@@+portlet-feedbackqueue" />
-      <ul class="nearby menu" tal:condition="context/goal">
+      <div tal:condition="context/goal" class="related">
+        <h2>Nearby</h2>
+        <ul>
+
         <li>
           <a tal:attributes="href context/goal/fmt:url">
             Other <tal:goal replace="context/goal/displayname" /> blueprints
           </a>
         </li>
       </ul>
+
+      </div>
     </div>
   </body>
 </html>
