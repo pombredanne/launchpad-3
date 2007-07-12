@@ -143,6 +143,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
     # Note that files is actually only set inside verify().
     files = None
+    # Copyrigth is only set inside unpackAndCheckSource().
+    copyright = None
 
     def __init__(self, filepath, digest, size, component_and_section, priority,
                  package, version, changes, policy, logger):
@@ -172,7 +174,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                     mandatory_field, self.filename))
 
         self.maintainer = self.parseAddress(self._dict['maintainer'])
-        self.copyright = ''
 
         # If format is not present, assume 1.0. At least one tool in
         # the wild generates dsc files with format missing, and we need
@@ -404,6 +405,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
 
         # Copy debian/copyright file content. It will be stored in the
         # SourcePackageRelease records.
+
+        # Instead of trying to predict the unpacked source directory name,
+        # we simply use glob to retrive everything like:
+        # 'tempdir/*/debian/copyright'
         globpath = os.path.join(tmpdir, "*", "debian/copyright")
         for fullpath in glob.glob(globpath):
             if not os.path.exists(fullpath):
@@ -412,6 +417,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             self.copyright = open(fullpath).read().strip()
 
         if self.copyright is None:
+            self.copyright = ''
             yield UploadError("No copyright file found.")
 
         self.logger.debug("Cleaning up source tree.")
@@ -466,6 +472,8 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             changelog=guess_encoding(self.changes.simulated_changelog),
             section=self.section,
             archive=self.policy.archive,
+            # XXX cprov 20070712: we force copyright content to be transformed
+            # in unicode, there is a remote possibility of losing information.
             copyright=guess_encoding(self.copyright)
             # dateuploaded by default is UTC:now in the database
             )
