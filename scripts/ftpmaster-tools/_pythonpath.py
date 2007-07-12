@@ -2,8 +2,8 @@
 
 __metaclass__ = type
 
-import sys, os, os.path
+import sys, os
 
 sys.path.insert(0, os.path.join(
-    os.path.dirname(__file__), os.pardir, os.pardir, 'lib'
-    ))
+    os.path.dirname(__file__), os.pardir, os.pardir, 'lib'))
+
