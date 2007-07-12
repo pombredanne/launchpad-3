@@ -5,13 +5,17 @@ asked questions. Regular user questions can then be answered with a
 referral to the FAQ document.
 
 Objects that represents collection of FAQs provides the IFAQCollection
-interface.
+interface. (The test harness is responsible for providing an object
+providing this interface in the 'collection' variable of the test
+name space. That way we can verify that multiple implementation provide
+the interface correctly.)
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import IFAQCollection
 
     >>> verifyObject(IFAQCollection, collection)
     True
+
 
 == Population FAQs collection ==
 
@@ -33,12 +37,12 @@ the collection.
     ...     (no_priv, 'How do I install Foo?',
     ...      'See http://www.foo.org/install', 'foo install'),
     ...     (sample_person, 'What is The Meaning of Life?',
-    ...      'A Monthy Python film!', 'film monthy python'),
+    ...      'A Monty Python film!', 'film monty python'),
     ...     (foo_bar, 'How do I make money quickly off the Internet?',
     ...      'Install this really nice software that you can find at '
     ...      'http://www.getrichquick.com/.', None),
     ...     (no_priv, 'How do I play the Game of Life?',
-    ...      'Keep breathing!', None),
+    ...      'Keep breathing!', 'install'),
     ...     (sample_person, 'Who really shot JFK?',
     ...     'You decide: there were at least six conspiracies going on '
     ...     'in Dallas on Nov 22nd 1963.', None),
@@ -72,7 +76,7 @@ It returns None when there is FAQ with that ID in the context:
     >>> print collection.getFAQ(12345)
     None
 
-It also returns None when asking an ID for a FAQ that isn't in the
+It also returns None when using the ID of a FAQ that isn't in the
 requested collection:
 
     >>> from canonical.launchpad.interfaces import (
@@ -119,11 +123,12 @@ keywords field of the FAQ.
     >>> for faq in collection.searchFAQs(search_text='install'):
     ...     print faq.title
     How do I install Foo?
+    How do I play the Game of Life?
     How do I make money quickly off the Internet?
 
 By default, the results are sorted by relevancy. In the above example,
 the first result is more relevant because the keyword appear in the
-title.
+title, the second because it appears in the keywords.
 
 
 === owner ===
@@ -149,6 +154,7 @@ You can combine multiple criterias. Only FAQs matching all the criterias
     ...         search_text='install', owner=no_priv):
     ...     print faq.title
     How do I install Foo?    
+    How do I play the Game of Life?
 
 
 === sort ===
@@ -162,6 +168,7 @@ search by date of creation (most recent first):
     >>> for faq in collection.searchFAQs(
     ...         search_text='install', sort=FAQSort.NEWEST_FIRST):
     ...     print faq.title
+    How do I play the Game of Life?
     How do I make money quickly off the Internet?
     How do I install Foo?
 

@@ -103,6 +103,7 @@
         id="globalsearch" xml:lang="en" lang="en" dir="ltr"
         action="/projects/"
         method="get"
+        accept-charset="UTF-8"
       >
         <div>
           <input
@@ -121,8 +122,7 @@
         </div>
       </form>
       <div tal:condition="view/macro:pagehas/applicationborder" id="mainarea">
-        <div class="t">
-          <div class="u">
+
             <div class="v">
               <div class="w">
                 <div class="x">
@@ -224,8 +224,7 @@
                 </div><!--id="x"-->
               </div><!--id="w"-->
             </div><!--id="v"-->
-          </div><!--id="u"-->
-        </div><!--id="t"-->
+
       </div><!--id="mainarea"-->
       <tal:noborder condition="not:view/macro:pagehas/applicationborder">
         <tal:notifications

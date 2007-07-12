@@ -18,13 +18,14 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IFAQCollection, IProduct, IProject, IProjectSet, ICalendarOwner,
-    ISearchableByQuestionOwner, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH,
-    IHasLogo, IHasMugshot, IHasIcon)
+    ICalendarOwner, IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct,
+    IProject, IProjectSet, ISearchableByQuestionOwner, NotFoundError,
+    QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.lp.dbschema import (
     TranslationPermission, ImportStatus, SpecificationSort,
-    SpecificationFilter, SprintSpecificationStatus)
+    SpecificationFilter, SprintSpecificationStatus,
+    SpecificationImplementationStatus)
 
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -50,8 +51,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
               BranchVisibilityPolicyMixin):
     """A Project"""
 
-    implements(IProject, ICalendarOwner, IFAQCollection,
-               ISearchableByQuestionOwner, IHasLogo, IHasMugshot, IHasIcon)
+    implements(ICalendarOwner, IProject, IFAQCollection, IHasIcon, IHasLogo,
+               IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
 
@@ -192,7 +193,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = (
-                ['-priority', 'Specification.status', 'Specification.name'])
+                ['-priority', 'Specification.definition_status', 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -210,7 +211,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+              quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details

@@ -267,7 +267,7 @@ Linkified changelogs are available through SourcePackageReleaseView:
     >>> spr = sp['0.1-1']
     >>> spr_view = queryView(spr, "+changelog", request)
     >>> print spr_view.changelog()
-    pmount (<a href="0.1-1">0.1-1</a>) hoary; urgency=low
+    pmount (<a href="../../../hoary/+source/pmount/0.1-1">0.1-1</a>) hoary; urgency=low
     <BLANKLINE>
      * Fix description (Malone #1)
      * Fix debian (Debian #2000)

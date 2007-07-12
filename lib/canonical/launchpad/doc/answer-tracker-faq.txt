@@ -72,9 +72,9 @@ adaptation returns the IFAQTarget that should be use for the question.
 
 == IFAQCollection ==
 
-The `IFAQCollection` interface is provided by objects that represents
-a colletion of FAQ. This interface can be used to retrieve and search for
-FAQs. It is provided by product, distribution, and projects.
+The IFAQCollection interface is provided by objects that represents a
+collection of FAQs. This interface can be used to retrieve and search
+for FAQs. It is provided by product, distribution, and projects.
 
     >>> from canonical.launchpad.interfaces import IFAQCollection, IProjectSet
     >>> gnome = getUtility(IProjectSet).getByName('gnome')
