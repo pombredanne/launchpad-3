@@ -2,7 +2,9 @@
 
 If you visit a bug in a distroseries context to which the bug isn't
 targeted to, you get a message and button to indicate the bug needs
-fixing in this context.
+fixing in this context. You can't get to such a page by following links
+in the UI, but the user may end up there by hacking the URL (for example
+by simply changing the bug id).
 
     >>> user_browser.open(
     ...  'http://launchpad.dev/ubuntu/grumpy/+source/evolution/+bug/10')
