@@ -2,11 +2,10 @@
 
 Branches have connections to many things.  Particularly branches have
 links to bugs and blueprints.  Branches also have badges in listing views
-to show the links to bugs and blueprints (well not blueprints yet, but
-real soon now).
+to show the these associations.
 
-One of the main intentions for the page is to have somewhere useful for
-the badges to hyperlink to.
+One of the main intentions for the branch associations listing page is to
+have somewhere useful for the badges to hyperlink to.
 
 
 == Getting to the branch associations ==
@@ -60,34 +59,34 @@ Firstly make sure that the branch has some blueprint links and subscribers.
 The project link, if the branch is not junk, links back to the branch listing
 for the project.
 
-    >>> div = find_tag_by_id(browser.contents, 'branch-project')
-    >>> print div.renderContents()
-    <img alt="" width="14" height="14" src="/@@/product" />
-    <a href="/firefox">Mozilla Firefox</a>
+    >>> import re
+    >>> browser.getLink(re.compile('^Mozilla Firefox$')).click()
+    >>> browser.url
+    'http://code.launchpad.dev/firefox'
+    >>> browser.goBack()
+    >>> browser.reload()
 
 The listed bugs link to the main bug page.
 
-    >>> div = find_tag_by_id(browser.contents, 'bug-links')
-    >>> print div.renderContents()
-    <div class="indented">
-     <img src="/@@/bug" alt="" />
-     <a href="http://bugs.launchpad.dev/bugs/4">Reflow problems with
-      complex page layouts</a>
-    </div>
+    >>> browser.getLink('Reflow problems with complex page layouts').click()
+    >>> browser.url
+    'http://bugs.launchpad.dev/firefox/+bug/4'
+    >>> browser.goBack()
+    >>> browser.reload()
 
 The listed blueprints link to the main blueprint page.
 
-    >>> div = find_tag_by_id(browser.contents, 'blueprint-links')
-    >>> print div.renderContents()
-    <div class="indented">
-      <img height="14" width="14" alt="(medium)"
-           title="Medium priority" src="/@@/blueprint-medium" />
-      <a href="http://blueprints.launchpad.dev/firefox/+spec/canvas">Support
-         &lt;canvas&gt; Objects</a>
-    </div>
+    >>> browser.getLink('Support <canvas> Objects').click()
+    >>> browser.url
+    'http://blueprints.launchpad.dev/firefox/+spec/canvas'
+    >>> browser.goBack()
+    >>> browser.reload()
 
 The listed subscribers link to the code listing pages for the people or teams.
 
+    # Since we are logged in as Sample Person there are two links that
+    # have Sample Person, so checking the link by getting the surrounding
+    # div.
     >>> div = find_tag_by_id(browser.contents, 'branch-subscribers')
     >>> print div.renderContents()
     <div class="indented">
