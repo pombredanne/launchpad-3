@@ -336,7 +336,7 @@ component 'universe':
   <BLANKLINE>
 
 
-Test full source and binary override of package 'mozilla-firefox' in warty,
+This is a full source and binary override of package 'mozilla-firefox' in warty,
 moving to component 'universe':
 
   >>> process = subprocess.Popen([sys.executable, script, "-vS",
@@ -347,14 +347,6 @@ moving to component 'universe':
   >>> stdout, stderr = process.communicate()
   >>> process.returncode
   0
-  >>> print stderr
-  DEBUG   Acquiring lock
-  DEBUG   Initialising connection.
-  INFO    Override Component to: 'universe'
-  INFO    'mozilla-firefox/universe/web' source overridden
-  INFO    'mozilla-firefox/main/base/EXTRA' binary overridden in warty/i386
-  INFO    Commiting transaction, changes will be visible after next publisher run.
-  <BLANKLINE>
 
 It will only override binaries currently published from that source package 
 version.  In the sample data, mozilla-firefox source gives mozilla-firefox
