@@ -5,7 +5,7 @@ The Ubuntu Linux page contains a link to get to the Personal Package Archives.
     >>> browser.open("http://launchpad.dev/ubuntu")
     >>> browser.getLink("Personal Package Archives").click()
     >>> browser.title
-    'Personal Package Archive List'
+    'Personal Package Archive for Ubuntu Linux'
 
 == PPA main page ==
 
@@ -137,3 +137,19 @@ Searching for the package "iceweasel" show's that Celso is providing this.
     >>> results = soup.findAll(attrs={'class': 'ppa_package_row'})
     >>> len(results)
     1
+
+== Other Distribution PPAs ==
+
+PPAs are targeted to a specific distribution and currently we only
+allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
+
+
+    >>> browser.open("http://launchpad.dev/ubuntutest")
+    >>> browser.getLink("Personal Package Archives").click()
+    >>> browser.title
+    'Personal Package Archive for Ubuntu Test'
+
+    >>> soup = find_main_content(browser.contents)
+    >>> results = soup.findAll(attrs={'class': 'ppa_batch_row'})
+    >>> len(results)
+    0
