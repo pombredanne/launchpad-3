@@ -1,4 +1,4 @@
-  <tr>
+  <tr class="ppa_package_row">
      <td tal:content="context/sourcepackagerelease/title"
          >foo - 1.0</td>
      <td tal:attributes="title context/datepublished/fmt:datetime"

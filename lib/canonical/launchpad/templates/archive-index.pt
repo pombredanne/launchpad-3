@@ -30,9 +30,9 @@
 
       <p id="archive_url">
         You can install packages by adding the following line to your
-        /etc/apt/source.list:</p>
+        /etc/apt/sources.list:</p>
 
-      <pre>
+      <pre id="sources_list">
        deb <span tal:replace="context/archive_url" />/ubuntu SUITE [COMPONENTS]
        deb-src <span tal:replace="context/archive_url" />/ubuntu SUITE [COMPONENTS]
 
@@ -65,7 +65,7 @@
            <input id="name" title="Package Name" size="20"
                   type="text" name="name_filter"
                   tal:attributes="value view/name_filter"/>
-           <input type="submit" value="Update" />
+           <input type="submit" value="Search" />
         </form>
       </div>
 
