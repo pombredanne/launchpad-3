@@ -294,11 +294,7 @@ class Question(SQLBase, BugLinkTargetMixin):
         if self.owner == user:
             self.dateanswered = msg.datecreated
             self.answerer = user
-            self.answer = msg
-            self.owner.assignKarma(
-                'questionownersolved', product=self.product,
-                distribution=self.distribution,
-                sourcepackagename=self.sourcepackagename)
+
         return msg
 
     @property
@@ -306,8 +302,9 @@ class Question(SQLBase, BugLinkTargetMixin):
         """See `IQuestion`."""
         if self.status not in [
             QuestionStatus.OPEN, QuestionStatus.ANSWERED,
-            QuestionStatus.NEEDSINFO]:
-
+            QuestionStatus.NEEDSINFO, QuestionStatus.SOLVED]:
+            return False
+        if self.answerer is not None and self.answerer is not self.owner:
             return False
 
         for message in self.messages:
