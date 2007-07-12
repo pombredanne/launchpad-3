@@ -481,8 +481,18 @@ class POFile(SQLBase, POFileMixIn):
             # There is no IPOTMsgSet for this id.
             return None
 
-        return POMsgSet.selectOneBy(
-            potmsgset=potmsgset, pofile=self)
+        result = POMsgSet.selectOneBy(potmsgset=potmsgset, pofile=self)
+
+        # Check that language has been initialized correctly.
+        # XXX: JeroenVermeulen 2007-07-03, until language column in database
+        # is initialized, accept null values here.
+        has_language = (result is not None and result.language is not None)
+        if has_language and result.language != self.language:
+            raise AssertionError(
+                "POFile in language %d contains POMsgSet in language %d"
+                % (self.language, result.language))
+
+        return result
 
     def __getitem__(self, msgid_text):
         """See `IPOFile`."""
@@ -763,12 +773,15 @@ class POFile(SQLBase, POFileMixIn):
             obsolete=False,
             isfuzzy=False,
             publishedfuzzy=False,
-            potmsgset=potmsgset)
+            potmsgset=potmsgset,
+            language=self.language)
         return pomsgset
 
     def createMessageSetFromText(self, text):
         """See `IPOFile`."""
-        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(text, only_current=False)
+        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
+            text, only_current=False)
+
         if potmsgset is None:
             potmsgset = self.potemplate.createMessageSetFromText(text)
 
@@ -903,15 +916,15 @@ class POFile(SQLBase, POFileMixIn):
             'sequence > 0 AND pofile=%s' % (sqlvalues(self.id))).count()
 
         replacements = {
-            'importer': entry_to_import.importer.displayname,
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
             'elapsedtime': entry_to_import.getElapsedTimeText(),
-            'language': self.language.displayname,
-            'template': self.potemplate.displayname,
             'file_link': entry_to_import.content.http_url,
-            'numberofmessages': msgsets_imported,
             'import_title': '%s translations for %s' % (
-                self.language.displayname, self.potemplate.displayname)
+                self.language.displayname, self.potemplate.displayname),
+            'importer': entry_to_import.importer.displayname,
+            'language': self.language.displayname,
+            'numberofmessages': msgsets_imported,
+            'template': self.potemplate.displayname,
             }
 
         if import_rejected:
