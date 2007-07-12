@@ -3,8 +3,9 @@
   tal:condition="specs"
   class="portlet"
 >
+  <h2>Latest blueprints</h2>
+  <div class="portletBody">
 
-  <h2>Latest proposed features</h2>
   <table>
     <tbody>
       <tr tal:repeat="spec specs"
@@ -12,4 +13,6 @@
       </tr>
     </tbody>
   </table>
+
+  </div>
 </div>

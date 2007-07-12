@@ -27,7 +27,7 @@ Now, lets POST the form, saying we want extension-manager-upgrades as the
 dependency.
 
   >>> admin_browser.getControl(
-  ...     'Depends On').value = ['extension-manager-upgrades']
+  ...     'Depends On').value = 'extension-manager-upgrades'
   >>> admin_browser.getControl('Continue').click()
   >>> admin_browser.url
   'http://blueprints.launchpad.dev/firefox/+spec/canvas'
@@ -54,6 +54,46 @@ expect to be redirected to the blueprint page.
   >>> admin_browser.getControl('Continue').click()
   >>> admin_browser.url
   'http://blueprints.launchpad.dev/firefox/+spec/canvas'
+
+Blueprints can only depend on blueprints in the same project. To
+show this, we register a blueprint for a different project.
+
+  >>> admin_browser.open(
+  ...     'http://blueprints.launchpad.dev/jokosher/+addspec')
+  >>> admin_browser.getControl('Name').value = 'test-blueprint'
+  >>> admin_browser.getControl('Title').value = 'Test Blueprint'
+  >>> admin_browser.getControl('Summary').value = (
+  ...     'Another blueprint in a different project')
+  >>> admin_browser.getControl('Register Blueprint').click()
+  >>> admin_browser.url
+  'http://blueprints.launchpad.dev/jokosher/+spec/test-blueprint'
+
+We then try to make the canvas blueprint in firefox depend on the
+blueprint we registered in jokosher.
+
+  >>> admin_browser.open(
+  ...     'http://blueprints.launchpad.dev/firefox/'
+  ...     '+spec/canvas/+linkdependency')
+  >>> admin_browser.getControl(
+  ...     'Depends On').value = 'test-blueprint'
+  >>> admin_browser.getControl('Continue').click()
+  >>> 'no blueprint named "test-blueprint"' in admin_browser.contents
+  True
+
+In order to prevent circular dependencies, it is impossible to mark a
+blueprint A as depending on blueprint B, if B is already marked as
+depending on A.
+
+We know that "canvas" depends on "e4x". We try to make "e4x" depend on
+"canvas".
+
+  >>> admin_browser.open(
+  ...     'http://blueprints.launchpad.dev/firefox/+spec/e4x/+linkdependency')
+  >>> admin_browser.getControl(
+  ...     'Depends On').value = 'canvas'
+  >>> admin_browser.getControl('Continue').click()
+  >>> 'no blueprint named "canvas"' in admin_browser.contents
+  True
 
 We know that no blueprints depend on "canvas", but "canvas" depends on "e4x"
 and "e4x" depends on "svg-support". So the big picture is that "canvas"
