@@ -24,7 +24,8 @@ from canonical.launchpad.interfaces import (
     IBazaarApplication, IPackageUpload, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
     IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset,
-    IDistroSeriesLanguage, IBranch, IBranchSubscription, IEntitlement)
+    IDistroSeriesLanguage, IBranch, IBranchSubscription, ICodeImport,
+    ICodeImportSet, IEntitlement)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
@@ -662,6 +663,24 @@ class AdminTheBazaar(OnlyVcsImportsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = IBazaarApplication
 
+class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
+    """Control who can see the CodeImport listing page.
+
+    Currently, we don't let the general user see anything to do with
+    the new code import system.
+    """
+
+    permission = 'launchpad.View'
+    usedfor = ICodeImportSet
+
+class SeeCodeImports(OnlyVcsImportsAndAdmins):
+    """Control who can see the object view of a CodeImport.
+
+    Currently, we don't let the general user see anything to do with
+    the new code import system.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImport
 
 class EditPOTemplateDetails(EditByOwnersOrAdmins):
     usedfor = IPOTemplate
@@ -913,8 +932,9 @@ class AdminLanguage(OnlyRosettaExpertsAndAdmins):
 class AccessBranch(AuthorizationBase):
     """Controls visibility of branches.
 
-    A person can see the branch if the branch is public or they are the owner
-    of the branch, subscribed to the branch, or a launchpad administrator.
+    A person can see the branch if the branch is public, they are the owner
+    of the branch, they are in the team that owns the branch, subscribed to
+    the branch, or a launchpad administrator.
     """
     permission = 'launchpad.View'
     usedfor = IBranch
@@ -922,7 +942,7 @@ class AccessBranch(AuthorizationBase):
     def checkAuthenticated(self, user):
         if not self.obj.private:
             return True
-        if user == self.obj.owner:
+        if user.inTeam(self.obj.owner):
             return True
         for subscriber in self.obj.subscribers:
             if user.inTeam(subscriber):
