@@ -421,6 +421,11 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         is_editor = (force_edition_rights or
                      self.pofile.canEditTranslations(person))
 
+        assert (published or is_editor or
+                self.pofile.canAddSuggestions(person)), (
+            '%s cannot add translations nor can add suggestions' % (
+                person.displayname))
+
         # First, check that the translations are correct.
         potmsgset = self.potmsgset
         original_texts = [potmsgset.singular_text]

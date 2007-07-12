@@ -242,6 +242,20 @@ But the unprivileged account should not.
     >>> pofile_es.canEditTranslations(no_priv)
     False
 
+And if he tries to update translations, the system blocks such
+breakage.
+
+    >>> pomsgset = pofile_es.getPOMsgSet(u'evolution addressbook')
+    >>> fuzzy = False
+    >>> published = False
+    >>> lock_timestamp = None
+    >>> pomsgset.updateTranslationSet(
+    ...     no_priv, [u'foo'], fuzzy, published, lock_timestamp)
+    Traceback (most recent call last):
+    ...
+    AssertionError: No Privileges Person cannot add translations nor can...
+
+
 Now, we get an IPOFile that does not have a translation team assigned.
 
     >>> pofile_cy = potemplate.getDummyPOFile('cy')
@@ -295,7 +309,7 @@ And same thing with the unprivileged account.
     False
 
 Now, let's test the STRUCTURED mode. In this mode, only the defined
-translation teams can translate like the RESTRICTED and CLOSE mode, but in
+translation teams can translate like the RESTRICTED and CLOSED mode, but in
 addition, if we don't have any language team for one language, anyone can
 add translations.
 
@@ -393,6 +407,9 @@ handling suggestions because it allows anyone to add suggestions.
     >>> canAddSuggestionsCheck(TranslationPermission.OPEN)
     True
 
+    Leave the permission back to OPEN.
+    >>> product.translationpermission = TranslationPermission.OPEN
+    >>> transaction.commit()
 
 == uncachedExport ==
 
