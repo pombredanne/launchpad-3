@@ -32,6 +32,8 @@ As well as these actions, there are a number of error handling code paths:
     ...         return True
     ...     def renderOpenIdResponse(self, response):
     ...         pass
+    ...     def saveRequestInSession(self, token):
+    ...         pass
 
 A valid email address is required for any operation available on this form.
 
