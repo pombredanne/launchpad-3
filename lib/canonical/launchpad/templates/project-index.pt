@@ -71,7 +71,7 @@
         />
         <div class="portlet" id="products">
           <h2>Projects</h2>
-          <p tal:condition="not: context/products">
+          <p tal:condition="not: context/products" class="warning message"> 
             There are no projects registered for
             <span tal:replace="context/displayname">project displayname</span>.
           </p>
