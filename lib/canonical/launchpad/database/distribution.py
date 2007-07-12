@@ -60,7 +60,8 @@ from canonical.launchpad.webapp.url import urlparse
 from canonical.lp.dbschema import (
     ArchivePurpose, BugTaskStatus, DistroSeriesStatus, MirrorContent,
     TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationStatus, PackagePublishingStatus)
+    SpecificationDefinitionStatus, SpecificationImplementationStatus,
+    PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
     IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
@@ -459,7 +460,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = (
-                ['-priority', 'Specification.status', 'Specification.name'])
+                ['-priority', 'Specification.definition_status', 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -473,7 +474,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s ' %
+                quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -487,9 +489,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationStatus.OBSOLETE,
-                          SpecificationStatus.SUPERSEDED)
+            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                          SpecificationDefinitionStatus.SUPERSEDED)
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
