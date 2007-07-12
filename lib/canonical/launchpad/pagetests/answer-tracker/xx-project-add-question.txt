@@ -111,7 +111,8 @@ an appropriate message is displayed to inform him of this:
 
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> print soup.first('p').renderContents()
-    There are no existing questions similar to the summary you entered.
+    There are no existing FAQs or questions similar to the summary you
+    entered.
 
 The user then elaborates upon his question by entering a description
 of the problem. He submits the form using the 'Add' button.

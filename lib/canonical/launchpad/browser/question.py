@@ -352,7 +352,8 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
 
     template = search_template
 
-    _MAX_SIMILAR_ITEMS = 10
+    _MAX_SIMILAR_QUESTIONS = 10
+    _MAX_SIMILAR_FAQS = 10
 
     # Do not autofocus the title widget
     initial_focus_widget = None
@@ -415,10 +416,10 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
                  ignore_request=False)
         
         faqs = IFAQTarget(self.question_target).findSimilarFAQs(data['title'])
-        self.similar_faqs = faqs[:self._MAX_SIMILAR_ITEMS]
+        self.similar_faqs = list(faqs[:self._MAX_SIMILAR_FAQS])
 
         questions = self.question_target.findSimilarQuestions(data['title'])
-        self.similar_questions = questions[:self._MAX_SIMILAR_ITEMS]
+        self.similar_questions = list(questions[:self._MAX_SIMILAR_QUESTIONS])
 
         return self.add_template()
 
