@@ -78,7 +78,7 @@ class FAQ(SQLBase):
         """
         if not IPerson.providedBy(owner):
             raise AssertionError(
-                'owner parameter should be an IPerson: %r' % owner)
+                'owner parameter should be an IPerson, not %s' % type(owner))
         if product is not None and distribution is not None:
              raise AssertionError(
                 "only one of product or distribution should be provided")
@@ -158,36 +158,37 @@ class FAQSearch:
         """
         if search_text is not None:
             assert isinstance(search_text, basestring), (
-                'search_text should be a string: %r' % search_text)
+                'search_text should be a string, not %s' % type(search_text))
             self.search_text = search_text
 
         if owner is not None:
             assert IPerson.providedBy(owner), (
-                'owner should be an IPerson: %r' % owner)
+                'owner should be an IPerson, not %s' % type(owner))
             self.owner = owner
 
         if sort is not None:
             assert sort in FAQSort.items, (
-                'sort should be an item from FAQSort: %r' % sort)
+                'sort should be an item from FAQSort, not %s' % type(sort))
             self.sort = sort
 
         if product is not None:
             assert IProduct.providedBy(product), (
-                'product should be an IProduct: %r' % product)
+                'product should be an IProduct, not %s' % type(product))
             assert distribution is None and project is None, (
                 'can only use one of product, distribution, or project')
             self.product = product
 
         if distribution is not None:
             assert IDistribution.providedBy(distribution), (
-                'distribution should be an IDistribution: %r' % distribution)
+                'distribution should be an IDistribution, %s' %
+                type(distribution))
             assert product is None and project is None, (
                 'can only use one of product, distribution, or project')
             self.distribution = distribution
 
         if project is not None:
             assert IProject.providedBy(project), (
-                'project should be an IProject: %r' % project)
+                'project should be an IProject, not %s' % type(project))
             assert product is None and distribution is None, (
                 'can only use one of product, distribution, or project')
             self.project= project
@@ -252,14 +253,13 @@ class FAQSearch:
             else:
                 return "-FAQ.date_created"
         else:
-            raise AssertionError, "Unknown FAQSort value: %r" % sort
+            raise AssertionError("Unknown FAQSort value: %r" % sort)
 
 
 class FAQSet:
     """See `IFAQSet`."""
 
     implements(IFAQSet)
-
 
     def getFAQ(self, id):
         """See `IFAQSet`."""
