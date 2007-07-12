@@ -8,5 +8,5 @@ means.
 
 Status
 ------
-Database is not frozen. Database freeze is expected to be reenabled in a
-few days.
+Database is open for landing of database changes for 1.1.7.
+

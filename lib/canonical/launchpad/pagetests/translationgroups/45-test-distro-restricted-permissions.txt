@@ -23,10 +23,10 @@ Sotho. We expect them to be told they can only make contributions:
 
   >>> browser.addHeader('Authorization', 'Basic no-priv@canonical.com:test')
   >>> browser.open(
-  ...     'http://localhost/ubuntu/hoary/+source/evolution/'
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/st/+translate')
   >>> browser.url
-  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/st/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/st/+translate'
   >>> 'Your translations will be held for review' in browser.contents
   True
 
@@ -36,10 +36,10 @@ directly.
 First, we show that the message 137 is not translated.
 
   >>> browser.open(
-  ...     'http://localhost/ubuntu/hoary/+source/evolution/'
+  ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
   ...     '+pots/evolution-2.2/cy/8/+translate')
   >>> browser.url
-  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/cy/8/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/cy/8/+translate'
   >>> '(no translation yet)' in browser.contents
   True
 
@@ -53,13 +53,13 @@ POST and see that all goes well:
   ...     name='msgset_137_cy_translation_0_new').value = 'evolution minikaart'
   >>> browser.getControl(name='submit_translations').click()
   >>> browser.url
-  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/cy/9/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/cy/9/+translate'
 
 And finally, let's take a look again, and we should have a translation added.
 
   >>> browser.getLink('Previous').click()
   >>> browser.url
-  'http://localhost/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/cy/8/+translate'
+  'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/cy/8/+translate'
   >>> '(no translation yet)' in browser.contents
   False
   >>> 'evolution minikaart' in browser.contents

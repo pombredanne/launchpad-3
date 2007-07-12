@@ -62,10 +62,11 @@
                tal:replace="structure spec/assignee/fmt:link" />&nbsp;
           </td>
           <td>
-            <span class="sortkey" tal:content="spec/delivery/sortkey" />
-            <span tal:content="spec/delivery/title"
+            <span class="sortkey"
+	          tal:content="spec/implementation_status/sortkey" />
+            <span tal:content="spec/implementation_status/title"
                   tal:attributes="
-                  class string:specdelivery${spec/delivery/name}">
+                  class string:specdelivery${spec/implementation_status/name}">
               Deployment
             </span>
           </td>

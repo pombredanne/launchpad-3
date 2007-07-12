@@ -34,7 +34,7 @@ class NoRenderingOnRedirect:
         # Call update() here instead of from the template to avoid
         # rendering the page on redirects.
         self.update()
-        if self.request.response.getStatus() in [302, 303]:
+        if self.request.response.getStatus() in [301, 302, 303]:
             # Don't render the page on redirects.
             return u''
         else:

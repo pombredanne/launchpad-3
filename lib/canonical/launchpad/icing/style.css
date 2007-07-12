@@ -186,7 +186,7 @@ form.primary.search {
   .notforscreen {display:none;}
 }
 
-.highlighted, tr.highlight {background: #eee; border: 1px solid #ddd;}
+.highlighted, tr.highlight {background: #ddd; border: 1px solid #ddd;}
 .highlighted {padding: 0.5em;}
 .highlighted h3 {margin-top: 0;}
 .unhighlighted {padding: 0 0.5em;}
@@ -290,16 +290,13 @@ hr {
   font-weight: bold;
   color: #FFF;
 }
-/* padding-left adjusts the space between the home icon and the word
- * "Home".
- */
 ul#menuroot a#homebreadcrumb span {
   background: url(home-low-high.gif) left top no-repeat;
-  padding-left: 16px;
+  padding-left: 16px; /* space between home icon and the word "Home" */
 }
 ul#menuroot li a#homebreadcrumb:hover span,
 ul#menuroot li.selected a#homebreadcrumb span {
-  background: url(home-low-high.gif) -1014px top no-repeat;
+  background: url(home-low-high.gif) left -20px no-repeat;
   padding-left: 16px;
 }
 /* The location bar contains menus. */
@@ -562,18 +559,33 @@ So it's hidden initially, and then revealed if JavaScript is available.
 
 /* The rest of the page keeps clear of the collapsed help panel. */
 /* test: http://launchpad.dev/+logout */
-#nonhelp {margin: 10px 20px 0 38px;}
- 
+#nonhelp {
+  margin: 10px 20px 0 38px;
+  min-width: 752px; /* prevents search field from sliding under tabs */
+}
+
 /*- App home pages and pillar indexes both have a heading and app buttons, -*/
 table#applications {margin-bottom: -0.5em;}
-table#applications th, table#applications td {vertical-align: baseline;}
-table#applications th {padding-left: 60px; text-align: left;}
+table#applications th, table#applications td {vertical-align: bottom;}
+table#applications th {padding-top: 60px; padding-left: 60px; text-align: left;}
+table#applications th h1 {margin: 0; padding: 0;}
 table#applications td {text-align: right;}
+body.tab-branches #applications,
+body.tab-bugs #applications,
+body.tab-specifications #applications,
+body.tab-answers #applications,
+body.tab-translations #applications {
+  background-position: left bottom !important;
+}
 /* though the pillar indexes have no watermark, so no heading indenting. */
 body.pillarindex table#applications th {padding-left: 0;}
 
 /* Other page types have a global search field. */
-#globalsearch {float: right; margin-top: 5px; width: 220px;}
+#globalsearch {
+  float: right;
+  margin-top: 15px;
+  margin-right: 70px; /* should prevent search field from sliding under tabs */
+}
 #globalsearch #q {border: 1px solid #a7c2ce; width: 170px;}
 #globalsearch #searchbutton {
   position: relative;
@@ -693,20 +705,23 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 
 /* --- Portlets --- */
-
 #portlets {
+  position: relative;
+  display: inline;
   float: left;
   width: 200px;
   overflow: hidden;
-  margin: 0px 16px 0px 16px;
-  padding: 0;
+  margin: 0 0 20px -100%;
+  padding: 0 20px;
   list-style: none;
   font-size: 11px;
+  right: 240px;
 }
-#portlets .portlet {
-  clear: both;
-  float: left;
-}
+/* IE6 and  lower ignore the left padding, so we add extra positioning. */
+* html #portlets {left: 20px;}
+/* IE7 gets the padding right but overcalculates the left margin, so we use
+a conditional comment in main-template.pt to work around the above rule. */
+#portlets .portlet {clear: both; float: left;}
 #portlets .portlet h2 {
   display: block;
   width: 180px;
@@ -1211,6 +1226,7 @@ body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
 .specdeliveryNEEDSREVIEW        {color: purple;}
 .specdeliveryAWAITINGDEPLOYMENT {color: red;}
 .specdeliveryIMPLEMENTED        {color: green;}
+.specdeliveryINFORMATIONAL      {color: green;}
 
 /* --- Translations --- */
 
@@ -1346,26 +1362,16 @@ body.applicationhome #container {padding-left: 20px;}
   padding-left: 20px;
   padding-top: 50px;
 }
-#maincontent, #portlets {
+#maincontent {
+  width: 100%;
+  padding: 0 0 20px 0;
   display: inline;
   float: left;
   position: relative;
 }
-#maincontent {
-  width: 100%;
-  padding: 0 0 20px 0;
-}
-#portlets {
+#portlets .portlet {
   width: 200px;
-  margin: 0 0 20px -100%;
-  padding: 0 20px;
-  right: 240px;
 }
-/* IE6 and lower ignore the left padding, so we add extra positioning. */
-* html #portlets {left: 20px;}
-/* IE7 gets the padding right but overcalculates the left margin, so we use
-a conditional comment in main-template.pt to work around the above rule. */
-#portlets .portlet {width: 200px;}
 #singlecolumn {margin: 20px 20px 0 0;} /* test: front page, FAQ page */
 #mainarea #singlecolumn {margin-right: 0;}
 
@@ -1581,3 +1587,7 @@ th.descending {
 
 .vcsimportSUCCESS {} /* inherited text color */
 .vcsimportFAILURE {color: Red;}
+
+.lowerCaseText {
+  text-transform: lowercase
+}

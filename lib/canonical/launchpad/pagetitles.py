@@ -140,6 +140,11 @@ def branchsubscription_edit(context, view):
     return smartquote(
         'Edit subscription to branch "%s"' % context.branch.displayname)
 
+branch_visibility = ContextDisplayName('Set branch visibility policy for %s')
+
+def branch_visibility_edit(context, view):
+    return view.pagetitle
+
 branchtarget_branchlisting = ContextDisplayName('Details of Branches for %s')
 
 bug_activity = ContextBugId('Bug #%s - Activity log')
@@ -300,6 +305,11 @@ calendar_view_year = calendar_view
 canbementored_mentoringoffer = 'Offer to mentor this work'
 
 canbementored_retractmentoring = 'Retract offer of mentorship'
+
+def codeimport(context, view):
+    return view.title
+
+codeimport_list = 'Code Imports'
 
 codeofconduct_admin = 'Administer Codes of Conduct'
 

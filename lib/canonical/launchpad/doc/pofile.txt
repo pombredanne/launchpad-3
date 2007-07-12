@@ -5,8 +5,8 @@ Get evolution template for Ubuntu Hoary
 >>> from zope.component import getUtility
 >>> from zope.interface.verify import verifyObject
 >>> from canonical.launchpad.interfaces import (
-... IPOTemplateSet, ISourcePackageNameSet, IDistributionSet,
-... IPOFile, IPersonSet)
+...     IDistributionSet, IPersonSet, IPOFile, IPOTemplateSet,
+...     ISourcePackageNameSet)
 >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
 >>> sourcepackagename = sourcepackagenameset['evolution']
 >>> distributionset = getUtility(IDistributionSet)
@@ -931,6 +931,17 @@ new suggestions.
   >>> stats = evolution_es.updateStatistics()
   >>> print evolution_es.unreviewedCount()
   3
+
+And if we've got two new suggestions for the same message, POTMsgSet
+will not be listed twice in the returned result.
+
+  >>> pomsgset.updateTranslationSet(noneditor, {0: 'another'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
+  3
+  >>> len(set(evolution_es.getPOTMsgSetWithNewSuggestions()))
+  3
+
 
 = POFile Security tests =
 
