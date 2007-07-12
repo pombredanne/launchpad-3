@@ -16,7 +16,7 @@ __all__ = [
     'BranchReviewStatusVocabulary',
     'BranchSubscriptionDiffSizeVocabulary',
     'BranchSubscriptionNotificationLevelVocabulary',
-    'BranchVisibilityPolicyVocabulary',
+    'BranchVisibilityRuleVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugBranchStatusVocabulary',
@@ -47,9 +47,9 @@ __all__ = [
     'RemoteBugTaskStatusVocabulary',
     'RevisionControlSystemsVocabulary',
     'ShipItFlavourVocabulary',
-    'SpecificationDeliveryVocabulary',
+    'SpecificationImplementationStatusVocabulary',
     'SpecificationPriorityVocabulary',
-    'SpecificationStatusVocabulary',
+    'SpecificationDefinitionStatusVocabulary',
     'SpecificationGoalStatusVocabulary',
     'SprintSpecificationStatusVocabulary',
     'TeamMembershipRenewalPolicyVocabulary',
@@ -79,7 +79,7 @@ BranchSubscriptionDiffSizeVocabulary = \
     sortkey_ordered_vocab_factory(dbschema.BranchSubscriptionDiffSize)
 BranchSubscriptionNotificationLevelVocabulary = \
     vocab_factory(dbschema.BranchSubscriptionNotificationLevel)
-BranchVisibilityPolicyVocabulary = vocab_factory(dbschema.BranchVisibilityPolicy)
+BranchVisibilityRuleVocabulary = vocab_factory(dbschema.BranchVisibilityRule)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
 BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
@@ -117,9 +117,9 @@ RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 RevisionControlSystemsVocabulary = vocab_factory(
     dbschema.RevisionControlSystems)
 ShipItFlavourVocabulary = vocab_factory(dbschema.ShipItFlavour)
-SpecificationDeliveryVocabulary =  vocab_factory(dbschema.SpecificationDelivery)
+SpecificationImplementationStatusVocabulary =  vocab_factory(dbschema.SpecificationImplementationStatus)
 SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
-SpecificationStatusVocabulary =  vocab_factory(dbschema.SpecificationStatus)
+SpecificationDefinitionStatusVocabulary =  vocab_factory(dbschema.SpecificationDefinitionStatus)
 SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStatus)
 SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
 TeamMembershipRenewalPolicyVocabulary = vocab_factory(
