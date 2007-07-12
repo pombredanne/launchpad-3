@@ -67,6 +67,7 @@ class HasSpecificationsView(LaunchpadView):
     is_sprint = False
     has_drivers = False
 
+    # XXX: this method is in need of simplication. (JSK)
     def initialize(self):
         mapping = {'name': self.context.displayname}
         if self.is_person:
