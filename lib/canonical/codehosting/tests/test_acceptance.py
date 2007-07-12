@@ -277,11 +277,30 @@ class SmartserverTests(SSHTestCase):
     def getDefaultServer(self):
         return make_bzr_ssh_server()
 
+    def _dump_authserver_log(self):
+        authserver_log = open(
+            self.server.authserver.tachandler.logfile, 'r')
+        print '-' * 8
+        print authserver_log.read()
+        print '-' * 8
+        authserver_log.close()
+        raise
+
     @deferToThread
     def test_can_read_readonly_branch(self):
         # We can get information from a read-only branch.
-        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
-        sabdfl_id = authserver.getUser('sabdfl')['id']
+
+        # XXX: JonathanLange 2007-06-29, This test has been known to fail
+        # intermittently. The cause of the failure is unknown, due partly to a
+        # lack of information. To correct that, we dump the authserver log file
+        # to stdout in the event of an error, so that it will appear in the PQM
+        # output.
+        try:
+            authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
+            sabdfl_id = authserver.getUser('sabdfl')['id']
+        except:
+            self._dump_authserver_log()
+            raise
         ro_branch_id = authserver.createBranch(sabdfl_id, '', 'ro-branch')
         ro_branch_url = 'file://' + os.path.abspath(
             os.path.join(self.server._mirror_root,
@@ -298,8 +317,18 @@ class SmartserverTests(SSHTestCase):
     @deferToThread
     def test_cant_write_to_readonly_branch(self):
         # We can't write to a read-only branch.
-        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
-        sabdfl_id = authserver.getUser('sabdfl')['id']
+
+        # XXX: JonathanLange 2007-06-29, This test has been known to fail
+        # intermittently. The cause of the failure is unknown, due partly to a
+        # lack of information. To correct that, we dump the authserver log file
+        # to stdout in the event of an error, so that it will appear in the PQM
+        # output.
+        try:
+            authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
+            sabdfl_id = authserver.getUser('sabdfl')['id']
+        except:
+            self._dump_authserver_log()
+            raise
         ro_branch_id = authserver.createBranch(sabdfl_id, '', 'ro-branch')
         ro_branch_url = 'file://' + os.path.abspath(
             os.path.join(self.server._mirror_root,
@@ -362,16 +391,11 @@ def make_server_tests(base_suite, servers):
 
 
 def test_suite():
-    # XXX: JonathanLange 2007-06-27, These tests are causing intermittent
-    # failures on PQM. They are being temporarily disabled until they can be
-    # made more reliable.
-    # See https://launchpad.net/bugs/122268 for more information.
-    return unittest.TestSuite()
-##     base_suite = unittest.makeSuite(AcceptanceTests)
-##     suite = unittest.TestSuite()
-##     suite.addTest(make_repository_tests(base_suite))
-##     suite.addTest(make_server_tests(
-##         base_suite, [make_sftp_server(), make_bzr_ssh_server()]))
-##     suite.addTest(make_server_tests(
-##         unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server()]))
-##     return suite
+    base_suite = unittest.makeSuite(AcceptanceTests)
+    suite = unittest.TestSuite()
+    suite.addTest(make_repository_tests(base_suite))
+    suite.addTest(make_server_tests(
+        base_suite, [make_sftp_server, make_bzr_ssh_server]))
+    suite.addTest(make_server_tests(
+        unittest.makeSuite(SmartserverTests), [make_bzr_ssh_server]))
+    return suite
