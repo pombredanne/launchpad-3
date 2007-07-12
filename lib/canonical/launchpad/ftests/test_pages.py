@@ -68,8 +68,15 @@ def find_tag_by_id(content, id):
             'Found %d elements with id %r' % (len(elements_with_id), id))
 
 
-def find_tags_by_class(content, class_):
-    """Find and return the tags matching the given class(s)"""
+def find_tag_by_class(content, class_):
+    """Find and return the first tag matching the given class(es)"""
+    return find_tags_by_class(content, class_, BeautifulSoup.find)
+
+
+def find_tags_by_class(content, class_, find=BeautifulSoup.findAll):
+    """Find and return one or more tags matching the given class(es), 
+    using the specified BeautifulSoup find method.
+    """
     match_classes = set(class_.split())
     def class_matcher(value):
         if value is None: return False
@@ -77,7 +84,7 @@ def find_tags_by_class(content, class_):
         return match_classes.issubset(classes)
     soup = BeautifulSoup(
         content, parseOnlyThese=SoupStrainer(attrs={'class': class_matcher}))
-    return soup.findAll(attrs={'class': class_matcher})
+    return find(soup, attrs={'class': class_matcher})
 
 
 def find_portlet(content, name):
@@ -226,6 +233,7 @@ def setUpGlobs(test):
         auth="Basic foo.bar@canonical.com:test")
 
     test.globs['find_tag_by_id'] = find_tag_by_id
+    test.globs['find_tag_by_class'] = find_tag_by_class
     test.globs['find_tags_by_class'] = find_tags_by_class
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content
