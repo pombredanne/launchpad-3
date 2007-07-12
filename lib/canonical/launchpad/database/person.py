@@ -1447,13 +1447,16 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See `IPerson`."""
         # Note that we can't use selectBy here because of the prejoins.
         history = POFileTranslator.select(
-            "POFileTranslator.person = %s" % sqlvalues(self),
+            "POFileTranslator.person = %s AND "
+            "POFileTranslator.pofile = POFile.id AND "
+            "POFile.language = Language.id AND "
+            "Language.code != 'en'" % sqlvalues(self),
             prejoins=[
-                "pofile",
                 "pofile.potemplate",
                 "latest_posubmission",
                 "latest_posubmission.pomsgset.potmsgset.primemsgid_",
                 "latest_posubmission.potranslation"],
+            clauseTables=['Language', 'POFile'],
             orderBy="-date_last_touched")
         return history
 
