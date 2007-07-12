@@ -34,9 +34,7 @@ class TacTestSetup:
     You can override setUpRoot to set up a root directory for the daemon.
     """
     def setUp(self, spew=False):
-        self.killTac()
-        if os.path.exists(self.pidfile):
-            os.remove(self.pidfile)
+        self.tearDown()
         self.setUpRoot()
         args = [sys.executable, twistd_script, '-o', '-y', self.tacfile,
                 '--pidfile', self.pidfile, '--logfile', self.logfile]
@@ -69,6 +67,15 @@ class TacTestSetup:
 
     def tearDown(self):
         self.killTac()
+        self._removeFile(self.logfile)
+
+    def _removeFile(self, filename):
+        """Remove the given file if it exists."""
+        try:
+            os.remove(filename)
+        except OSError, e:
+            if e.errno != errno.ENOENT:
+                raise
 
     def killTac(self):
         """Kill the TAC file, if it is running, and clean up any mess"""
@@ -106,6 +113,7 @@ class TacTestSetup:
             except OSError:
                 # Already terminated
                 pass
+        self._removeFile(self.logfile)
 
     def setUpRoot(self):
         """Override this.
