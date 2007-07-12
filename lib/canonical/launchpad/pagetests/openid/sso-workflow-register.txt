@@ -32,7 +32,7 @@ trust roots during this test.
 
     >>> from canonical.launchpad.browser.openidserver import KNOWN_TRUST_ROOTS
     >>> orig_trust_roots = dict(**KNOWN_TRUST_ROOTS)
-    >>> shop_url = 'https://shop.canonical.com/'
+    >>> shop_url = 'https://shop.canonical.com'
     >>> KNOWN_TRUST_ROOTS[trust_root] = KNOWN_TRUST_ROOTS[shop_url]
 
 At this point, we are at the login page.  Lets try to create a new

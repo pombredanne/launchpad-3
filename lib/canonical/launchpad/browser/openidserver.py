@@ -87,7 +87,7 @@ KNOWN_TRUST_ROOTS = {
                      "so we can remember your order details and keep in "
                      "touch with you about your orders."),
              creation_rationale=rationale.OWNER_CREATED_UBUNTU_SHOP),
-    'https://shop.canonical.com/':
+    'https://shop.canonical.com':
         dict(title="The Ubuntu Store from Canonical",
              logo="/+icing/canonical-logo.png",
              sreg=['email', 'fullname', 'nickname',
