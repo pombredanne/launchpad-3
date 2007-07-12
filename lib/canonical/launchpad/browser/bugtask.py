@@ -1380,12 +1380,6 @@ class BugTaskSearchListingView(LaunchpadView):
             return IBugTaskSearch
 
     def initialize(self):
-        # If we're in a project that has no products, redirect to the project
-        # overview.
-        if self._projectContext() and not self.context.hasProducts():
-            self.request.response.redirect(
-                canonical_url(self.context, rootsite="mainsite"))
-
         # Look for old status names and redirect to a new location if
         # found.
         query_string = self.request.get('QUERY_STRING')
