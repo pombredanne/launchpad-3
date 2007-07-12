@@ -11,7 +11,7 @@ __all__ = [
     'CodeImportSet',
     ]
 
-from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
+from sqlobject import BoolCol, ForeignKey, StringCol, SQLObjectNotFound
 
 from zope.component import getUtility
 from zope.interface import implements
