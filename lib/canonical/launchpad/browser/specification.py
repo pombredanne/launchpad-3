@@ -62,7 +62,7 @@ from canonical.launchpad.browser.launchpad import (
     AppFrontPageSearchView, StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
 
-from canonical.lp.dbschema import SpecificationStatus
+from canonical.lp.dbschema import SpecificationDefinitionStatus
 
 class SpecificationNavigation(Navigation):
 
@@ -448,13 +448,13 @@ class SpecificationSupersedingView(LaunchpadFormView):
         self.context.superseded_by = data['superseded_by']
         if data['superseded_by'] is not None:
             # set the state to superseded
-            self.context.status = SpecificationStatus.SUPERSEDED
+            self.context.definition_status = SpecificationDefinitionStatus.SUPERSEDED
         else:
             # if the current state is SUPERSEDED and we are now removing the
             # superseded-by then we should move this spec back into the
             # drafting pipeline by resetting its status to NEW
-            if self.context.status == SpecificationStatus.SUPERSEDED:
-                self.context.status = SpecificationStatus.NEW
+            if self.context.definition_status == SpecificationDefinitionStatus.SUPERSEDED:
+                self.context.definition_status = SpecificationDefinitionStatus.NEW
         newstate = self.context.updateLifecycleStatus(self.user)
         if newstate is not None:
             self.request.response.addNotification(
@@ -850,7 +850,7 @@ class SpecificationNewView(LaunchpadFormView):
         different field names in each case, so we make field_names a
         property.
         """
-        field_names = ['name', 'title', 'specurl', 'summary', 'status',
+        field_names = ['name', 'title', 'specurl', 'summary', 'definition_status',
                        'assignee', 'drafter', 'approver']
         if ISpecificationSet.providedBy(self.context):
             field_names.insert(0, 'target')
@@ -913,7 +913,7 @@ class SpecificationNewView(LaunchpadFormView):
             data['title'],
             data['specurl'],
             data['summary'],
-            data['status'],
+            data['definition_status'],
             owner,
             product=product,
             distribution=distribution,

@@ -74,8 +74,7 @@ class FAQ(SQLBase):
             product=None, distribution=None):
         """Factory method to create a new FAQ.
 
-        Ensure that only one of url or content, and product or
-        distribution is given.
+        Ensure that only one of product or distribution is given.
         """
         if not IPerson.providedBy(owner):
             raise AssertionError(

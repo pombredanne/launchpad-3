@@ -24,7 +24,8 @@ from canonical.launchpad.interfaces import (
 
 from canonical.lp.dbschema import (
     TranslationPermission, ImportStatus, SpecificationSort,
-    SpecificationFilter, SprintSpecificationStatus)
+    SpecificationFilter, SprintSpecificationStatus,
+    SpecificationImplementationStatus)
 
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -192,7 +193,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = (
-                ['-priority', 'Specification.status', 'Specification.name'])
+                ['-priority', 'Specification.definition_status', 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -210,7 +211,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+              quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
