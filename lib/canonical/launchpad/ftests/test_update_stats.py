@@ -14,6 +14,7 @@ from canonical.launchpad.ftests.harness import (
 from canonical.launchpad.interfaces import (
     IDistributionSet, IDistroSeriesSet, ILanguageSet, IPOTemplateSet,
     IPersonSet)
+from canonical.testing import LaunchpadFunctionalLayer
 from canonical.config import config
 
 def get_script():
@@ -22,7 +23,9 @@ def get_script():
     return script
 
 class UpdateStatsTest(LaunchpadTestCase):
-
+    # XXX sinzui 2007-07-12 bug=125569
+    # This test should subclass unittest.TestCase. Some reworking
+    # is required to migrate this test.
     dbuser = 'statistician'
 
     def tearDown(self):
@@ -178,12 +181,10 @@ class UpdateStatsTest(LaunchpadTestCase):
             self.failUnless(row[0] >= 0, '%s is invalid' % key)
 
 
-class UpdateTranslationStatsWithDisabledTemplateTest(
-    LaunchpadFunctionalTestCase):
+class UpdateTranslationStatsWithDisabledTemplateTest(unittest.TestCase):
+    layer = LaunchpadFunctionalLayer
 
     def setUp(self):
-        LaunchpadFunctionalTestCase.setUp(self)
-
         self.distribution = getUtility(IDistributionSet)
         self.distroseriesset = getUtility(IDistroSeriesSet)
         self.languageset = getUtility(ILanguageSet)
@@ -322,7 +323,7 @@ class UpdateTranslationStatsWithDisabledTemplateTest(
         self.failIf(contributor_count <= new_contributor_count)
 
 
-class UpdateTranslationStatsForEnglishTest(LaunchpadFunctionalTestCase):
+class UpdateTranslationStatsForEnglishTest(unittest.TestCase):
     """Test that English is handled correctly by DistroSeries.
     
     English exists in the POFile data, but it cannot be used by Launchpad
@@ -330,9 +331,9 @@ class UpdateTranslationStatsForEnglishTest(LaunchpadFunctionalTestCase):
     A DistroSeriesLanguage can never be English since it represents a
     translation.
     """
+    layer = LaunchpadFunctionalLayer
 
-    def setUp(self):
-        LaunchpadFunctionalTestCase.setUp(self)
+    def setUp(self) :
         self.distribution = getUtility(IDistributionSet)
         self.distroseriesset = getUtility(IDistroSeriesSet)
         self.languageset = getUtility(ILanguageSet)
