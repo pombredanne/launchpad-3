@@ -183,28 +183,24 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         return Link(target, text, enabled=enabled)
 
     def bugs(self):
-        """Set up a link on the Bugs tab."""
         site = 'bugs'
         text = 'Bugs'
 
         return Link('', text, enabled=self.context.hasProducts(), site=site)
 
     def answers(self):
-        """Set up a link on the Answers tab."""
         site = 'answers'
         text = 'Answers'
 
         return Link('', text, enabled=self.context.hasProducts(), site=site)
 
     def specifications(self):
-        """Set up a link on the Blueprints tab."""
         site = 'blueprints'
         text = 'Blueprints'
 
         return Link('', text, enabled=self.context.hasProducts(), site=site)
 
     def translations(self):
-        """Sets up a link on the Translations tab."""
         site = 'translations'
         text = 'Translations'
 
