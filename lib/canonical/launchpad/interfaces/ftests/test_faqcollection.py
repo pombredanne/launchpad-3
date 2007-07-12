@@ -26,18 +26,20 @@ from canonical.launchpad.ftests.test_system_documentation import (
 def productSetUp(test):
     """Test environment for product."""
     setUp(test)
-    test.globs['collection'] = getUtility(IProductSet).getByName('thunderbird')
+    thunderbird = getUtility(IProductSet).getByName('thunderbird')
+    test.globs['collection'] = thunderbird
     login('foo.bar@canonical.com')
-    test.globs['newFAQ'] = test.globs['collection'].newFAQ
+    test.globs['newFAQ'] = thunderbird.newFAQ
     login(ANONYMOUS)
 
 
 def distributionSetUp(test):
     """Test environment for distribution."""
     setUp(test)
-    test.globs['collection'] = getUtility(IDistributionSet).getByName('kubuntu')
+    kubuntu = getUtility(IDistributionSet).getByName('kubuntu')
+    test.globs['collection'] = kubuntu
     login('foo.bar@canonical.com')
-    test.globs['newFAQ'] = test.globs['collection'].newFAQ
+    test.globs['newFAQ'] = kubuntu.newFAQ
     login(ANONYMOUS)
 
 

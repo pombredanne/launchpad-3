@@ -1225,33 +1225,30 @@ collection. It provides the IHugeVocabulary interface.
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
 
-    >>> vocab = vocabulary_registry.get(firefox, 'FAQ')
-    >>> verifyObject(IHugeVocabulary, vocab)
+    >>> vocabulary = vocabulary_registry.get(firefox, 'FAQ')
+    >>> verifyObject(IHugeVocabulary, vocabulary)
     True
 
-    >>> print vocab.displayname
+    >>> print vocabulary.displayname
     Select a FAQ
 
 It contains all the FAQs of the collection, but not those from other
 collections:
 
-    >>> for faq in firefox.searchFAQs():
-    ...     if faq not in vocab:
-    ...         print "'%s' is not in vocabulary." % faq.title
-
-    >>> ubuntu_faq = ubuntu.getFAQ(1)
-    >>> ubuntu_faq in vocab
-    False
+    >>> firefox_faqs = set(firefox.searchFAQs())
+    >>> vocabulary_faqs = set(term.value for term in vocabulary)
+    >>> firefox_faqs.symmetric_difference(vocabulary_faqs)
+    set([])
 
 And it only contains FAQs:
 
-    >>> u'10' in vocab
+    >>> u'10' in vocabulary
     False
 
 The term's token is the FAQ's id and its title is the FAQ's title:
 
     >>> firefox_faq = firefox.getFAQ(10)
-    >>> term = vocab.getTerm(firefox_faq)
+    >>> term = vocabulary.getTerm(firefox_faq)
     >>> term.token
     '10'
     >>> print term.title
@@ -1259,7 +1256,8 @@ The term's token is the FAQ's id and its title is the FAQ's title:
 
 Asking for something which isn't a FAQ of the target raises LookupError:
 
-    >>> vocab.getTerm(ubuntu_faq)
+    >>> ubuntu_faq = ubuntu.getFAQ(1)
+    >>> vocabulary.getTerm(ubuntu_faq)
     Traceback (most recent call last):
       ...
     LookupError:...
@@ -1267,18 +1265,18 @@ Asking for something which isn't a FAQ of the target raises LookupError:
 Since IHugeVocabulary extends IVocabularyTokenized, the term can also
 be retrieved by token:
 
-    >>> term = vocab.getTermByToken(u'10')
+    >>> term = vocabulary.getTermByToken(u'10')
     >>> print term.title
     How do I install plugins (Shockwave, QuickTime, etc.)?
 
 Trying to retrieve an invalid or non-existent token raises LookupError:
 
-    >>> vocab.getTermByToken('not a good token')
+    >>> vocabulary.getTermByToken('not a good token')
     Traceback (most recent call last):
       ...
     LookupError:...
 
-    >>> vocab.getTermByToken('1001')
+    >>> vocabulary.getTermByToken('1001')
     Traceback (most recent call last):
       ...
     LookupError:...
@@ -1287,7 +1285,7 @@ The searchForTerms() method returns a CountableIterator of terms that
 are similar to the query:
 
     >>> from canonical.launchpad.webapp.vocabulary import CountableIterator
-    >>> terms = vocab.searchForTerms('Problem showing SVG')
+    >>> terms = vocabulary.searchForTerms('Problem showing SVG')
     >>> isinstance(terms, CountableIterator)
     True
     >>> terms.count()
@@ -1296,5 +1294,100 @@ are similar to the query:
     ...     print term.title
     How do I troubleshoot problems with extensions/themes?
     How do I install Java?
+
+
+== SpecificationDepCandidatesVocabulary ==
+
+All blueprints that can be added as a dependency of the
+context blueprint.
+
+First, we set up a product with three blueprints.
+
+    >>> from canonical.lp.dbschema import SpecificationDefinitionStatus
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> foobar_person = getUtility(IPersonSet).getByName('name16')
+    >>> foobar_person.displayname
+    u'Foo Bar'
+    >>> specset = getUtility(ISpecificationSet)
+    >>> spec_a = specset.new('spec-a', 'Spec A',
+    ...     'http://www.example.org/SpecA', 'The first spec',
+    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
+    ...     product=evolution)
+    >>> spec_b = specset.new('spec-b', 'Spec B',
+    ...     'http://www.example.org/SpecB', 'The second spec',
+    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
+    ...     product=evolution)
+    >>> spec_c = specset.new('spec-c', 'Spec C',
+    ...     'http://www.example.org/SpecC', 'The third spec',
+    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
+    ...     product=evolution)
+    >>> sorted([spec.name for spec in evolution.specifications()])
+    [u'spec-a', u'spec-b', u'spec-c']
+
+The dependency candidates for spec_a are all blueprints for evolution
+except for spec_a itself.
+
+    >>> vocab = vocabulary_registry.get(
+    ...     spec_a, "SpecificationDepCandidates")
+    >>> sorted([term.value.name for term in vocab])
+    [u'spec-b', u'spec-c']
+
+Dependency candidate come only from the same product of the blueprint
+they depend on.
+
+    >>> unrelated_spec = specset.new('unrelated-spec', 'Unrelated Spec',
+    ...     'http://example.com/SpecU', 'A spec unrelated to Evolution',
+    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
+    ...     product=firefox)
+    >>> vocab = vocabulary_registry.get(
+    ...     spec_a, "SpecificationDepCandidates")
+    >>> unrelated_spec in vocab
+    False
+    >>> [term.value.product for term in vocab
+    ...  if term.value.product != evolution]
+    []
+
+We mark spec_b as a dependency of spec_a and spec_c as a dependency
+of spec_b.
+
+    >>> spec_a.createDependency(spec_b)
+    <SpecificationDependency at ...>
+    >>> [spec.name for spec in spec_a.dependencies]
+    [u'spec-b']
+
+    >>> spec_b.createDependency(spec_c)
+    <SpecificationDependency at ...>
+    >>> [spec.name for spec in spec_b.dependencies]
+    [u'spec-c']
+
+No circular dependencies - the vocabulary excludes specifications that 
+are a dependency of the context spec. 
+
+    >>> spec_a in spec_b.all_blocked
+    True
+    >>> spec_b in spec_c.all_blocked
+    True
+    >>> vocab = vocabulary_registry.get(
+    ...     spec_c, "SpecificationDepCandidates")
+    >>> spec_a in [term.value for term in vocab]
+    False
+
+This vocabulary provides the IHugeVocabulary interface.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+    >>> verifyObject(IHugeVocabulary, vocab)
+    True
+
+The search() method returns specifications within the vocabulary
+that matches the search string. The string is matched against the name,
+or fallbacks to a full text search.
+
+    >>> vocab = vocabulary_registry.get(
+    ...     spec_a, "SpecificationDepCandidates")
+    >>> list(vocab.search('ec-b')) == [spec_b]
+    True
+    >>> list(vocab.search('third')) == [spec_c]
+    True
 
 XXX: document more vocabularies here, particularly when they break!

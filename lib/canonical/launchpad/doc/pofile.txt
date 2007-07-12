@@ -390,8 +390,12 @@ Is time to create it.
 
 As we can see, is the msgid we were looking for.
 
-  >>> pomsgset.potmsgset.msgid == msgid
-  True
+  >>> print pomsgset.potmsgset.msgid
+  Found %i invalid file.
+  >>> print pofile_sr.language.id
+  358
+  >>> print pomsgset.language.id
+  358
 
 This entry is in fact one that is not used anymore, that means, its sequence
 is zero.

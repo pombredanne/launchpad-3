@@ -73,4 +73,8 @@ class IFAQ(IHasOwner):
 
 
 class IFAQSet(IFAQCollection):
-    """`IFAQCollection` of all the FAQs existing in Launchpad."""
+    """`IFAQCollection` of all the FAQs existing in Launchpad.
+
+    This interface is provided by a global utility object which can
+    be used to search or retrieve any FAQ registered in Launchpad.
+    """
