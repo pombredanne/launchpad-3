@@ -5,19 +5,21 @@
 __metaclass__ = type
 __all__ = ['check_script']
 
+from canonical.database.sqlbase import sqlvalues
+
 
 def check_script(con, log, hostname, scriptname, completed_from, completed_to):
     """Check whether a script ran on a specific host within stated timeframe.
 
-    Return nothing on success, or log an error message and return error message
+    Return nothing on success, or log an error message and return error message.
     """
     cur = con.cursor()
     cur.execute("""
         SELECT id
         FROM ScriptActivity
-        WHERE hostname='%s' AND name='%s'
-            AND date_completed BETWEEN '%s' AND '%s'
-        """ % (hostname, scriptname, completed_from, completed_to))
+        WHERE hostname=%s AND name=%s
+            AND date_completed BETWEEN %s AND %s
+        """ % sqlvalues(hostname, scriptname, completed_from, completed_to))
     try:
         script_id = cur.fetchone()[0]
         return None
@@ -26,8 +28,8 @@ def check_script(con, log, hostname, scriptname, completed_from, completed_to):
             cur.execute("""
                 SELECT MAX(date_completed)
                 FROM ScriptActivity
-                WHERE hostname='%s' AND name='%s'
-            """ % (hostname, scriptname))
+                WHERE hostname=%s AND name=%s
+            """ % sqlvalues(hostname, scriptname))
             date_last_seen = cur.fetchone()[0]
             if not date_last_seen:
                 raise

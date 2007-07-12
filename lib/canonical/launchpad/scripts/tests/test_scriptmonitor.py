@@ -1,3 +1,7 @@
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+
+"""Test scriptmonitor.py."""
+
 import unittest
 
 from canonical import lp

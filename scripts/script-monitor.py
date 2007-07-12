@@ -21,6 +21,9 @@ from canonical.launchpad.scripts.scriptmonitor import check_script
 
 
 def main():
+    # XXX: Tom Haddon 2007-07-12 
+    # There's a lot of untested stuff here: parsing options and sending
+    # emails - this should be moved into a testable location.
     parser = OptionParser(
             '%prog [options] (minutes) (host:scriptname) [host:scriptname]'
             )
@@ -42,10 +45,15 @@ def main():
         completed_from = strftime("%Y-%m-%d %H:%M:%S", start_date.timetuple())
         completed_to = strftime("%Y-%m-%d %H:%M:%S", datetime.now().timetuple())
 
+        hosts_scripts = []
         for arg in args:
-            if len(arg.split(":")) != 2:
-                raise
-    except:
+            try:
+                hostname, scriptname = arg.split(':')
+            except TypeError:
+                parser.error(
+                    "%r is not in the format 'host:scriptname'" % (arg,))
+            hosts_scripts.append((hostname, scriptname))
+    except ValueError:
         parser.error("Must specify time in minutes and "
             "at least one host and script")
 
@@ -54,21 +62,14 @@ def main():
     try:
         log.debug("Connecting to database")
         con = connect(options.dbuser)
-        hosts_scripts = []
-        for arg in args:
-            hosts_scripts.append({
-                'hostname': arg.split(":")[0],
-                'scriptname': arg.split(":")[1]
-                })
-
-        error_found = 0
+        error_found = False
         msg, subj = [], []
-        for hs in hosts_scripts:
-            failure_msg = check_script(con, log, hs['hostname'], 
-                hs['scriptname'], completed_from, completed_to)
-            if failure_msg:
+        for hostname, scriptname in hosts_scripts:
+            failure_msg = check_script(con, log, hostname, 
+                scriptname, completed_from, completed_to)
+            if failure_msg is not None:
                 msg.append(failure_msg)
-                subj.append("%s:%s" % (hs['hostname'], hs['scriptname']))
+                subj.append("%s:%s" % (hostname, scriptname))
                 error_found = 2
         if error_found:
             # Construct our email
@@ -82,7 +83,7 @@ def main():
             smtp.connect()
             smtp.sendmail('launchpad@lists.canonical.com', ['launchpad@lists.canonical.com'], msg.as_string())
             smtp.close()
-        return error_found
+            return 2
     except:
         log.exception("Unhandled exception")
         return 1
