@@ -103,3 +103,7 @@ You can use the following authorization lines:
 
   for Marilize Coetzee (shipit admin)
     >>> browser.addHeader('Authorization', 'Basic marilize@hbd.com:test')
+
+  for David Allouche (member of vcs-imports)
+    >>> browser.addHeader('Authorization',
+    ...                   'Basic david.allouche@canonical.com:test')
