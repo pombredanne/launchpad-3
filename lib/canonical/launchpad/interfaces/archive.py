@@ -41,9 +41,16 @@ class IArchive(Interface, IHasOwner):
         title=_("Whiteboard"), required=False,
         description=_("Administrator comments."))
 
+    purpose = Int(
+        title=_("Purpose of archive."), required=True, readonly=True,
+        )
+
+    distribution = Attribute(
+        "The distribution that uses or is used by this archive.")
+
     archive_url = Attribute("External archive URL.")
+
     title = Attribute("Archive Title.")
-    distribution = Attribute('Distribution related to this Archive.')
 
     number_of_sources = Attribute(
         'The number of sources published in the context archive.')
@@ -54,13 +61,6 @@ class IArchive(Interface, IHasOwner):
     binaries_size = Attribute(
         'The size of binaries published in the context archive.')
     estimated_size = Attribute('Estimated archive size.')
-
-    distribution = Attribute("The distribution that uses this archive.")
-
-    purpose = Int(
-        title=_("Purpose of archive."), required=True, readonly=True,
-        )
-
 
     def getPubConfig(distribution):
         """Return an overridden Publisher Configuration instance.
@@ -96,18 +96,6 @@ class IArchiveSet(Interface):
 
     def getByDistroPurpose(distribution, purpose):
         """Return the IArchive with the given distribution and purpose."""
-
-    def getAllPPAs():
-        """Return all existent personal archives."""
-
-    def searchPPAs(text=None):
-        """Return all existent personal archives matching the given text."""
-
-    def getPendingAcceptancePPAs():
-        """Return only pending acceptance personal archives."""
-
-    def getPendingPublicationPPAs():
-        """Return only pending publication personal archives."""
 
     def __iter__():
         """Iterates over existent archives, including the main_archives."""

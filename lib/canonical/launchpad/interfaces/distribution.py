@@ -22,8 +22,7 @@ from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces import (
     IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
-    ISpecificationTarget, IHasSecurityContact, PillarNameField,
-    IHasLogo, IHasMugshot, IHasIcon)
+    ISpecificationTarget, IHasSecurityContact, PillarNameField)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
@@ -320,6 +319,20 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         NotFoundError if it fails to find any package published with
         that name in the distribution.
         """
+
+    def getAllPPAs():
+        """Return all PPAs for this distribution."""
+
+    def searchPPAs(text=None):
+        """Return all PPAs matching the given text in this distribution."""
+
+    def getPendingAcceptancePPAs():
+        """Return only pending acceptance PPAs in this distribution."""
+
+    def getPendingPublicationPPAs(distribution=None):
+        """Return only pending publication PPAs in this distribution."""
+
+
 
 
 class IDistributionSet(Interface):

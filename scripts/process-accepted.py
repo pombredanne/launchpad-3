@@ -14,8 +14,7 @@ from optparse import OptionParser
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IDistributionSet, IArchiveSet)
+from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.scripts.processaccepted import close_bugs
@@ -65,8 +64,7 @@ def main():
         distribution = getUtility(IDistributionSet).getByName(distro_name)
 
         if options.ppa:
-            target_archives = getUtility(
-                IArchiveSet).getPendingAcceptancePPAs()
+            target_archives = distribution.getPendingAcceptancePPAs()
         else:
             target_archives = [distribution.main_archive]
 

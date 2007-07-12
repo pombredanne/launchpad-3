@@ -16,7 +16,7 @@ from zope.interface import implements
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like, quote
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
 from canonical.launchpad.database.librarian import LibraryFileContent
@@ -24,8 +24,7 @@ from canonical.launchpad.interfaces import (
     IArchive, IArchiveSet, IHasOwner, IHasBuildRecords, IBuildSet,
     IDistributionSet)
 from canonical.launchpad.webapp.url import urlappend
-from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingStatus, PackageUploadStatus)
+from canonical.lp.dbschema import ArchivePurpose
 
 
 class Archive(SQLBase):
@@ -56,7 +55,6 @@ class Archive(SQLBase):
         """See IArchive."""
         if self.owner is not None:
             return 'PPA for %s' % self.owner.displayname
-        # XXX cprov 20070606: We really need to have a FK to the distri
         return '%s main archive' % self.distribution.title
 
     @property
@@ -65,9 +63,9 @@ class Archive(SQLBase):
         return urlappend(
             config.personalpackagearchive.base_url, self.owner.name)
 
-    def getPubConfig(self, distribution):
+    def getPubConfig(self):
         """See IArchive."""
-        pubconf = PubConfig(distribution)
+        pubconf = PubConfig(self.distribution)
 
         if self.purpose == ArchivePurpose.PRIMARY:
             return pubconf
@@ -75,7 +73,7 @@ class Archive(SQLBase):
         pubconf.distroroot = config.personalpackagearchive.root
 
         pubconf.archiveroot = os.path.join(
-            pubconf.distroroot, self.owner.name, distribution.name)
+            pubconf.distroroot, self.owner.name, self.distribution.name)
 
         pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
         pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
@@ -215,61 +213,7 @@ class ArchiveSet:
                 distribution=distribution, purpose=purpose, owner=owner)
         return archive
 
-    def getAllPPAs(self):
-        """See canonical.launchpad.interfaces.IArchiveSet."""
-        return Archive.selectBy(purpose=ArchivePurpose.PPA)
-
-    def searchPPAs(self, text=None):
-        """See canonical.launchpad.interfaces.IArchiveSet."""
-        clauses = ['Archive.owner is not NULL AND Person.id = Archive.owner']
-        clauseTables = ['Person']
-        orderBy = ['Person.name']
-
-        if text:
-            clauses.append("""
-            ((Person.fti @@ ftq(%s) OR
-            Archive.description LIKE '%%' || %s || '%%'))
-            """ % (quote(text), quote_like(text)))
-
-        query = ' AND '.join(clauses)
-        return Archive.select(query, orderBy=orderBy, clauseTables=clauseTables)
-
-    def getPendingAcceptancePPAs(self):
-        """See canonical.launchpad.interfaces.IArchiveSet."""
-        query = """
-        Archive.owner is not NULL AND
-        PackageUpload.archive = Archive.id AND
-        PackageUpload.status = %s
-        """ % sqlvalues(PackageUploadStatus.ACCEPTED)
-
-        return Archive.select(
-            query, clauseTables=['PackageUpload'],
-            orderBy=['archive.id'], distinct=True)
-
-    def getPendingPublicationPPAs(self):
-        """See canonical.launchpad.interfaces.IArchiveSet."""
-        src_query = """
-        Archive.owner is not NULL AND
-        SourcePackagePublishingHistory.archive = archive.id AND
-        SourcePackagePublishingHistory.status = %s
-         """ % sqlvalues(PackagePublishingStatus.PENDING)
-
-        src_archives = Archive.select(
-            src_query, clauseTables=['SourcePackagePublishingHistory'],
-            orderBy=['archive.id'], distinct=True)
-
-        bin_query = """
-        Archive.owner is not NULL AND
-        BinaryPackagePublishingHistory.archive = archive.id AND
-        BinaryPackagePublishingHistory.status = %s
-        """ % sqlvalues(PackagePublishingStatus.PENDING)
-
-        bin_archives = Archive.select(
-            bin_query, clauseTables=['BinaryPackagePublishingHistory'],
-            orderBy=['archive.id'], distinct=True)
-
-        return src_archives.union(bin_archives)
-
     def __iter__(self):
         """See canonical.launchpad.interfaces.IArchiveSet."""
         return iter(Archive.select())
+

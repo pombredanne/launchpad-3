@@ -23,7 +23,7 @@ from canonical.archivepublisher.ftparchive import FTPArchiveHandler
 from canonical.launchpad.interfaces import pocketsuffix
 from canonical.librarian.client import LibrarianClient
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus)
+    PackagePublishingPocket, PackagePublishingStatus, ArchivePurpose)
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
@@ -78,20 +78,20 @@ def _getDiskPool(pubconf, log):
 
     return dp
 
-def getPublisher(archive, distribution, allowed_suites, log, distsroot=None):
+def getPublisher(archive, allowed_suites, log, distsroot=None):
     """Return an initialised Publisher instance according given context.
 
     Optionally the user override the resulting indexes location via 'distroot'
     option.
     """
-    if distribution.main_archive.id == archive.id:
+    if archive.purpose == ArchivePurpose.PRIMARY:
         log.debug("Finding configuration for %s main_archive."
-                  % distribution.name)
+                  % archive.distribution.name)
     else:
         log.debug("Finding configuration for '%s' PPA."
                   % archive.owner.name)
     try:
-        pubconf = archive.getPubConfig(distribution)
+        pubconf = archive.getPubConfig()
     except LucilleConfigError, info:
         log.error(info)
         raise
@@ -108,8 +108,7 @@ def getPublisher(archive, distribution, allowed_suites, log, distsroot=None):
 
     log.debug("Preparing publisher.")
 
-    return Publisher(log, pubconf, disk_pool, distribution, archive,
-                     allowed_suites)
+    return Publisher(log, pubconf, disk_pool, archive, allowed_suites)
 
 
 class Publisher(object):
@@ -119,8 +118,8 @@ class Publisher(object):
     the processing of each DistroSeries and DistroArchSeries in question
     """
 
-    def __init__(self, log, config, diskpool, distribution, archive,
-                 allowed_suites=None, library=None):
+    def __init__(self, log, config, diskpool, archive, allowed_suites=None,
+                 library=None):
         """Initialise a publisher.
 
         Publishers need the pool root dir and a DiskPool object.
@@ -131,7 +130,7 @@ class Publisher(object):
         """
         self.log = log
         self._config = config
-        self.distro = distribution
+        self.distro = archive.distribution
         self.archive = archive
         self.allowed_suites = allowed_suites
 

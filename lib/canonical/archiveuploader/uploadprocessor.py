@@ -427,6 +427,11 @@ class UploadProcessor:
                 raise UploadPathError(
                     "%s is disabled" % archive.title)
 
+            if archive.distribution != distribution:
+                raise UploadPathError(
+                    "%s only supports uploads to '%s'"
+                    % (archive.title, archive.distribution.name))
+
             if len(parts) > 2:
                 suite_name = parts[2]
                 # Check if the given suite name is valid.

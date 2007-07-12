@@ -471,7 +471,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.assertEqual(
             pending_queue.pocket, PackagePublishingPocket.RELEASE)
 
-        pending_ppas = getUtility(IArchiveSet).getPendingAcceptancePPAs()
+        pending_ppas = self.breezy.distribution.getPendingAcceptancePPAs()
         self.assertEqual(pending_ppas.count(), 1)
         self.assertEqual(pending_ppas[0], self.name16.archive)
 
@@ -541,7 +541,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.assertEqual(
             pending_queue.pocket, PackagePublishingPocket.RELEASE)
 
-        pending_ppas = getUtility(IArchiveSet).getPendingAcceptancePPAs()
+        pending_ppas = self.ubuntu.getPendingAcceptancePPAs()
         self.assertEqual(pending_ppas.count(), 1)
         self.assertEqual(pending_ppas[0], self.name16.archive)
 
@@ -565,7 +565,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             version="1.0-1", exact_match=True, archive=ubuntu_team.archive)
         self.assertEqual(queue_items.count(), 1)
 
-        pending_ppas = getUtility(IArchiveSet).getPendingAcceptancePPAs()
+        pending_ppas = self.ubuntu.getPendingAcceptancePPAs()
         self.assertEqual(pending_ppas.count(), 1)
         self.assertEqual(pending_ppas[0], ubuntu_team.archive)
 
@@ -588,7 +588,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         contents = [""]
         self.assertEmail(contents)
 
-        pending_ppas = getUtility(IArchiveSet).getPendingAcceptancePPAs()
+        pending_ppas = self.ubuntu.getPendingAcceptancePPAs()
         self.assertEqual(pending_ppas.count(), 0)
 
     def testUploadToSomeoneElsePPA(self):
@@ -643,6 +643,16 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
             "PPA is only allowed for members of launchpad-beta-testers team."]
+        self.assertEmail(contents)
+
+    def testUploadToAMismatchingDistribution(self):
+        """Check if we only accept uploads to the Archive.distribution."""
+        upload_dir = self.queueUpload("bar_1.0-1", "~cprov/ubuntutest")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected",
+            "PPA for Celso Providelo only supports uploads to 'ubuntu'"]
         self.assertEmail(contents)
 
     def testUploadToUnknownDistribution(self):

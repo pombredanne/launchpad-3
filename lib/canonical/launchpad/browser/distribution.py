@@ -42,7 +42,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     IDistribution, IDistributionSet, IPublishedPackageSet, ILaunchBag,
-    IArchiveSet, NotFoundError, IDistributionMirrorSet)
+    NotFoundError, IDistributionMirrorSet)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -447,7 +447,7 @@ class DistributionView(BuildRecordsView):
         invoke it in template.
         """
         self.name_filter = self.request.get('name_filter', None)
-        ppas = getUtility(IArchiveSet).searchPPAs(text=self.name_filter)
+        ppas = self.context.searchPPAs(text=self.name_filter)
         self.batchnav = BatchNavigator(ppas, self.request)
         self.search_results = self.batchnav.currentBatch()
 

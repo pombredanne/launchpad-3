@@ -389,7 +389,7 @@ distribution_builds = ContextTitle('%s builds')
 
 distribution_uploadadmin = ContextTitle('Change Upload Manager for %s')
 
-distribution_ppa_list = 'Personal Package Archive List'
+distribution_ppa_list = ContextTitle('Personal Package Archive for %s')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
