@@ -24,7 +24,7 @@ from zope.component import getUtility
 from zope.interface import implements, alsoProvides
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
@@ -1030,13 +1030,11 @@ class BugTaskSet:
             extra_clauses.append("BugAttachment.bug = BugTask.bug")
             extra_clauses.append(where_cond)
 
-        search_text_clause = self._buildSearchTextClause(params)
-        if search_text_clause:
-            extra_clauses.append(search_text_clause)
+        if params.searchtext:
+            extra_clauses.append(self._buildSearchTextClause(params))
 
-        bug_text_clause = self._buildBugTextClause(params)
-        if bug_text_clause:
-            extra_clauses.append(bug_text_clause)
+        if params.bug_text:
+            extra_clauses.append(self._buildBugTextClause(params))
 
         if params.subscriber is not None:
             clauseTables.append('BugSubscription')
@@ -1216,12 +1214,10 @@ class BugTaskSet:
 
     def _buildSearchTextClause(self, params):
         """Build the clause for searchtext."""
-        if not params.searchtext:
-            return None
         assert params.bug_text is None, (
-            'cannot use bug_text at the same time than searchtext')
+            'cannot use bug_text at the same time as searchtext')
 
-        [searchtext_quoted] = sqlvalues(params.searchtext)
+        searchtext_quoted = quote(params.searchtext)
         searchtext_like_quoted = quote_like(params.searchtext)
 
         if params.orderby is None:
@@ -1248,12 +1244,10 @@ class BugTaskSet:
 
     def _buildBugTextClause(self, params):
         """Build the clause to use for the bug_text criteria."""
-        if not params.bug_text:
-            return None
         assert params.searchtext is None, (
-            'cannot use searchtext at the same time than bug_text')
+            'cannot use searchtext at the same time as bug_text')
 
-        [bug_text_quoted] = sqlvalues(params.bug_text)
+        bug_text_quoted = quote(params.bug_text)
         
         if params.orderby is None:
             # Unordered search results aren't useful, so sort by relevance

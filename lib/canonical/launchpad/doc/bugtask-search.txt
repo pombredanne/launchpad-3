@@ -112,9 +112,10 @@ twice.
 == Searching using bug full-text index ==
 
 The search_text parameter does an extensive and expensive search (it
-looks through the bug's title and description, bug comments, bugtask
+looks through the bug's full text index, bug comments, bugtask
 target name, etc.) For some use cases, it is often easier and cheaper
-to simply search on the bug's full text index.
+to simply search on the bug's full text index and omit the more
+expensive search on other related information.
 
 For example, there are no bugs with the word 'Fnord' in Firefox.
 
