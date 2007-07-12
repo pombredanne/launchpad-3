@@ -102,8 +102,6 @@ class ExternalBugTracker:
     implements(IExternalBugtracker)
 
     def urlopen(self, request, data=None):
-        # XXX: Use the standard urlopen() function. Child classes can
-        # use ClientCookie.urlopen as necessary.
         return urllib.urlopen(request, data)
 
     def initializeRemoteBugDB(self, bug_ids):
@@ -536,18 +534,15 @@ class DebBugs(ExternalBugTracker):
 
 class Mantis(ExternalBugTracker):
     # Example sites:
-    #   http://www.atutor.ca/atutor/mantis/         1.0.6       OK  (418/2571)
-    #   http://bugs.mantisbt.org/                   1.1.0a2     OK  (2152/5574)
-    #   http://bugs.endian.it/                      1.0.3       OK  (48/53)
-    #   http://www.co-ode.org/mantis/               1.0.0rc1    OK  (322/472)
-    #   http://acme.able.cs.cmu.edu/mantis/         1.0.1       OK  (337/356)
-    #   http://bugs.netmrg.net/                     1.0.5       OK  (104/486)
-    #   http://bugs.busybox.net/                    ??? 2006    OK  (245/1109)
-    #   https://bugtrack.alsa-project.org/alsa-bug/ 1.0.6       OK  (1548/2672)
-
-    # Older version; I have been unable to get the filter resetting
-    # to work here yet..
-    #   https://gnunet.org/mantis/                  ??? 2004    XX  (59/766)
+    #   http://www.atutor.ca/atutor/mantis/         1.0.7       NOT OK
+    #   http://bugs.mantisbt.org/                   1.1.0a4-CVS NOT OK (login.php HTTP 404)
+    #   http://bugs.endian.it/                      -           NOT OK (HTTP 404)
+    #   http://www.co-ode.org/mantis/               1.0.0rc1    OK  (322 bugs)
+    #   http://acme.able.cs.cmu.edu/mantis/         1.0.6       OK  (531 bugs)
+    #   http://bugs.netmrg.net/                     1.0.7       NOT OK (login.php infinite HTTP 302 loop)
+    #   http://bugs.busybox.net/                    ??? 2006    NOT OK (login.php HTTP 404)
+    #   https://bugtrack.alsa-project.org/alsa-bug/ 1.0.6       NOT OK (csv_export.php yields no data)
+    #   https://gnunet.org/mantis/                  ??? 2006    OK (787 bugs)
 
     # These get set in initializeRemoteBugDB()
     headers = None
@@ -697,7 +692,7 @@ class Mantis(ExternalBugTracker):
                 return
             bug[header] = data
         for field in required_fields:
-            if field not in bug.keys():
+            if field not in bug:
                 log.warn("Bug %s lacked field %r" % (bug['id'], field))
                 return
             try:
@@ -730,10 +725,7 @@ class Mantis(ExternalBugTracker):
             status_and_resolution == UNKNOWN_REMOTE_STATUS):
             return BugTaskStatus.UNKNOWN
 
-        if ": " in status_and_resolution:
-            remote_status, remote_resolution = status_and_resolution.split(": ", 1)
-        else:
-            remote_status, remote_resolution = status_and_resolution, None
+        remote_status, remote_resolution = status_and_resolution.split(": ", 1)
 
         if remote_status == 'assigned':
             return BugTaskStatus.INPROGRESS
