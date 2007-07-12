@@ -29,7 +29,7 @@
         <strong tal:condition="context/bug/security_related"
         >- security vulnerability</strong>
       </div>
-      <div style="float: right;">
+      <div id="bug-properties" style="float: right;">
         <img
           tal:condition="context/bug/security_related"
           alt=""
