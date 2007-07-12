@@ -475,17 +475,20 @@ class Specification(SQLBase, BugLinkTargetMixin):
         return None
 
     def subscribe(self, person, essential=None, user=None):
-        """See ISpecification."""
+        """Create or modify a user's subscription to this blueprint."""
         # first see if a relevant subscription exists, and if so, return it
         sub = self.subscription(person)
-        if sub is not None and essential is not None:
-            if sub.essential != essential:
-                # XXX : The second argument should really be a copy
-                #     of sub with only the essential attribute changed,
-                #     though we know that we can get away with not
-                #     examining the attribute at all - it's a boolean!
-                #     -- 2007-07-06 Tom Berger
+        if sub is not None:
+            if bool(sub.essential) != bool(essential):
+                # If a subscription already exists, but the value for
+                # 'essential' changes, there's no need to create a new
+                # subscription, but we modify the existing subscription
+                # and notify the user about the change.
                 sub.essential = essential
+                # The second argument should really be a copy of sub with
+                # only the essential attribute changed, but we know
+                # that we can get away with not examining the attribute
+                # at all - it's a boolean!
                 notify(
                     SQLObjectModifiedEvent(sub, sub, ['essential'], user=user))
             return sub
