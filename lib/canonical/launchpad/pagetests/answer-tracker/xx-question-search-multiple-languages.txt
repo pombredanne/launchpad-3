@@ -233,7 +233,7 @@ English, and can use it to locate English questions.
     >>> daf_browser.getControl(name='field.language').options
     ['en']
 
-    >>> daf_browser.getControl('English (en)').selected = False
+    >>> daf_browser.getControl('English (en)').selected = True
     >>> daf_browser.getControl('Search').click()
     >>> content = find_main_content(daf_browser.contents)
     >>> for question in content.fetch('td', 'question'):
