@@ -733,7 +733,8 @@ class PackageUploadSource(SQLBase):
         for source_file in self.sourcepackagerelease.files:
             try:
                 published_file = distribution.getFileByName(
-                    source_file.libraryfile.filename, binary=False)
+                    source_file.libraryfile.filename, binary=False,
+                    archive=self.packageupload.archive)
             except NotFoundError:
                 # NEW files are *OK*.
                 continue
