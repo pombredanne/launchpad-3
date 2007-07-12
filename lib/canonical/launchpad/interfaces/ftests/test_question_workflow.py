@@ -521,7 +521,6 @@ class LinkFAQTestCase(BaseAnswerTrackerWorkflowTestCase):
             answers.
             """
             checkFAQ(message)
-            self.assertEquals(message, self.question.answer)
             self.assertEquals(self.owner, self.question.answerer)
             self.assertEquals(message.datecreated, self.question.dateanswered)
             
@@ -537,7 +536,7 @@ class LinkFAQTestCase(BaseAnswerTrackerWorkflowTestCase):
                 self.owner, self.faq, "I found the solution in that FAQ.",),
             transition_method_kwargs={'datecreated': self.nowPlus(3)},
             edited_fields=['status', 'messages', 'dateanswered', 'answerer',
-                           'answer', 'datelastquery'])
+                           'datelastquery'])
 
     def test_linkFAQPermission(self):
         """Test that only a logged in user can access linkFAQ()."""
