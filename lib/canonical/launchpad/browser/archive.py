@@ -28,6 +28,7 @@ from canonical.launchpad.webapp import (
     LaunchpadEditFormView, ApplicationMenu, enabled_with_permission,
     action, custom_widget, canonical_url, stepthrough)
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.lp.dbschema import ArchivePurpose
 
 
 class ArchiveNavigation(Navigation):
@@ -105,9 +106,14 @@ class ArchiveActivateView(AddView):
         self._nextURL = '.'
         AddView.__init__(self, context, request)
 
+        # Redirects to the PPA page if it already exists.
+        if self.context.archive is not None:
+            self.request.response.redirect(canonical_url(self.context.archive))
+
     def createAndAdd(self, data):
         ppa = getUtility(IArchiveSet).new(
-            owner=self.context, description=data['description'])
+            owner=self.context, purpose=ArchivePurpose.PPA,
+            description=data['description'])
         self._nextURL = canonical_url(ppa)
         return ppa
 

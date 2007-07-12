@@ -196,13 +196,16 @@ class ArchiveSet:
     def getByDistroPurpose(self, distribution, purpose):
         return Archive.selectOneBy(distribution=distribution, purpose=purpose)
 
-    def new(self, distribution=None, purpose=None, owner=None):
+    def new(self, distribution=None, purpose=None, owner=None, description=None):
         """See canonical.launchpad.interfaces.IArchiveSet."""
         if purpose == ArchivePurpose.PPA:
             assert owner, "Owner required when purpose is PPA."
+
         if distribution is None:
             distribution = getUtility(IDistributionSet)['ubuntu']
-        return Archive(owner=owner, distribution=distribution, purpose=purpose)
+
+        return Archive(owner=owner, distribution=distribution,
+                       description=description, purpose=purpose)
 
     def ensure(self, owner, distribution, purpose):
         """See canonical.launchpad.interfaces.IArchiveSet."""
