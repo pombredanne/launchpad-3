@@ -89,6 +89,22 @@ Also, the bugs, blueprints, translations and answers facets will be disabled:
       ..
     LinkNotFoundError...
 
+A warning message will be displayed at the top of the overview page when the 
+owner of the project group views it:
+
+    >>> admin_browser.open('http://launchpad.dev/a-test-group')
+    >>> for warning in find_tags_by_class(admin_browser.contents, 'warning'):
+    ...     extract_text(warning.renderContents())
+    u'There are no projects registered for\nTest Group...'
+
+A link is included in the warning message which will take the admin user to
+the new product form for the project group.
+
+    >>> admin_browser.getLink(
+    ...     'register another project that is part of Test Group').click()
+    >>> admin_browser.title
+    'Register a project in Launchpad'
+
 == Overview Fallback ==
 
 When a project is accessed through a facet not usually available on
