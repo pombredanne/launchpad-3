@@ -95,7 +95,7 @@ date_created values from the database.
     >>> title = "David Allouche's Main GNOME Terminal Branch"
     >>> summary = "Main line of development for David Allouche on GNOME Terminal."
     >>> home_page = "http://example.com/~ddaa/"
-    >>> gterm_dev = branchset.new('dev', ddaa, gterm_product, gterm_dev_url,
+    >>> gterm_dev = branchset.new('dev', ddaa, ddaa, gterm_product, gterm_dev_url,
     ...     title, summary=summary, home_page=home_page, date_created=now.next())
 
     >>> gterm_dev.name
@@ -118,7 +118,7 @@ no title, and no summary, and even no URL.
 Branches with no URL are primarily hosted on the supermirror.
 
     >>> url = 'http://example.com/~ddaa/junkcode'
-    >>> junkcode = branchset.new('junkcode', ddaa, None, None,
+    >>> junkcode = branchset.new('junkcode', ddaa, ddaa, None, None,
     ...                          date_created=now.next())
 
     >>> junkcode.name
@@ -140,9 +140,9 @@ Branches with no URL are primarily hosted on the supermirror.
 The IBranchSet can tell us how many public branches there are registered.
 
     >>> branchset.count()
-    30
+    32
 
-(28 public branches in the sample data, and two added above.)
+(30 public branches in the sample data, and two added above.)
 
 # XXX thumper 2007-05-28
 # Rework example so it doesn't get stuffed everytime we update sample data.
@@ -427,7 +427,7 @@ the branches registered, authored and subscribed to by this person.
     0
     >>> url = 'http://example.com/~lifeless/mesh-merge'
     >>> title = "Experimental mesh merging algorithm."
-    >>> meshmerge = branchset.new('mesh-merge', lifeless, None, url,
+    >>> meshmerge = branchset.new('mesh-merge', lifeless, lifeless, None, url,
     ...     title, summary=title, date_created=now.next())
     >>> junkcode.author = lifeless
     >>> syncUpdate(junkcode)
@@ -778,6 +778,7 @@ extra display information.
     Experimental ~name12/gnome-terminal/klingon
     New ~launchpad/gnome-terminal/launchpad
     New ~ddaa/gnome-terminal/dev
+    New ~vcs-imports/gnome-terminal/import
     New ~name12/gnome-terminal/mirrored
     New ~name12/gnome-terminal/pushed
     New ~name12/gnome-terminal/scanned
@@ -792,6 +793,7 @@ extra display information.
     Experimental ~name12/gnome-terminal/klingon
     New ~launchpad/gnome-terminal/launchpad
     New ~ddaa/gnome-terminal/dev
+    New ~vcs-imports/gnome-terminal/import
     New ~name12/gnome-terminal/mirrored
     New ~name12/gnome-terminal/pushed
     New ~name12/gnome-terminal/scanned

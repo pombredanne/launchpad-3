@@ -7,12 +7,11 @@ __all__ = [
     'HasSpecificationsView',
     ]
 
+from operator import itemgetter
+
 from canonical.lp.dbschema import (
     SpecificationFilter,
-    SpecificationGoalStatus,
     SpecificationSort,
-    SpecificationStatus,
-    SprintSpecificationStatus,
     )
 
 from canonical.launchpad.interfaces import (
@@ -119,8 +118,7 @@ class HasSpecificationsView(LaunchpadView):
             'distroseries',
             'direction_approved',
             'man_days',
-            'delivery',
-            'informational'
+            'delivery'
             ]
         def dbschema(item):
             """Format a dbschema sortably for a spreadsheet."""
@@ -138,7 +136,7 @@ class HasSpecificationsView(LaunchpadView):
             row.append(spec.title)
             row.append(canonical_url(spec))
             row.append(spec.specurl)
-            row.append(dbschema(spec.status))
+            row.append(dbschema(spec.definition_status))
             row.append(dbschema(spec.priority))
             row.append(fperson(spec.assignee))
             row.append(fperson(spec.drafter))
@@ -150,8 +148,7 @@ class HasSpecificationsView(LaunchpadView):
                 row.append(spec.distroseries.name)
             row.append(spec.direction_approved)
             row.append(spec.man_days)
-            row.append(dbschema(spec.delivery))
-            row.append(spec.informational)
+            row.append(dbschema(spec.implementation_status))
             writer.writerow([unicode(item).encode('utf8') for item in row])
         self.request.response.setHeader('Content-Type', 'text/plain')
         return output.getvalue()
@@ -279,16 +276,16 @@ class HasSpecificationsView(LaunchpadView):
         """
         categories = {}
         for spec in self.specs:
-            if categories.has_key(spec.status):
-                category = categories[spec.status]
+            if categories.has_key(spec.definition_status):
+                category = categories[spec.definition_status]
             else:
                 category = {}
-                category['status'] = spec.status
+                category['status'] = spec.definition_status
                 category['specs'] = []
-                categories[spec.status] = category
+                categories[spec.definition_status] = category
             category['specs'].append(spec)
         categories = categories.values()
-        return sorted(categories, key=lambda a: a['status'].value)
+        return sorted(categories, key=itemgetter('definition_status'))
 
     def getLatestSpecifications(self, quantity=5):
         """Return <quantity> latest specs created for this target. This

@@ -132,11 +132,14 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
     def test_directory_inside_branch(self):
         # We allow users to create new branches by pushing them beneath an
         # existing product directory.
-        transport = self.getTransport()
-        transport.mkdir('~testuser/firefox/banana')
-        transport.mkdir('~testuser/firefox/banana/.bzr')
-        self.assertTrue(transport.has('~testuser/firefox/banana'))
-        self.assertTrue(transport.has('~testuser/firefox/banana/.bzr'))
+        def make_directory_and_confirm_existence():
+            transport = self.getTransport()
+            transport.mkdir('~testuser/firefox/banana')
+            transport.mkdir('~testuser/firefox/banana/.bzr')
+            self.assertTrue(transport.has('~testuser/firefox/banana'))
+            self.assertTrue(transport.has('~testuser/firefox/banana/.bzr'))
+        return self.server.runAndWaitForDisconnect(
+            make_directory_and_confirm_existence)
 
     @deferToThread
     def test_non_bzr_directory_inside_branch(self):
@@ -162,27 +165,31 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
     def test_rename_directory_to_existing_directory_fails(self):
         # 'rename dir1 dir2' should fail if 'dir2' exists. Unfortunately, it
         # will only fail if they both contain files/directories.
-        transport = self.getTransport('~testuser/+junk')
-        transport.mkdir('branch')
-        transport.mkdir('branch/.bzr')
-        transport.mkdir('branch/.bzr/dir1')
-        transport.mkdir('branch/.bzr/dir1/foo')
-        transport.mkdir('branch/.bzr/dir2')
-        transport.mkdir('branch/.bzr/dir2/bar')
-        self.assertRaises(
-            (errors.FileExists, IOError),
-            transport.rename, 'branch/.bzr/dir1', 'branch/.bzr/dir2')
+        def rename_directory():
+            transport = self.getTransport('~testuser/+junk')
+            transport.mkdir('branch')
+            transport.mkdir('branch/.bzr')
+            transport.mkdir('branch/.bzr/dir1')
+            transport.mkdir('branch/.bzr/dir1/foo')
+            transport.mkdir('branch/.bzr/dir2')
+            transport.mkdir('branch/.bzr/dir2/bar')
+            self.assertRaises(
+                (errors.FileExists, IOError),
+                transport.rename, 'branch/.bzr/dir1', 'branch/.bzr/dir2')
+        return self.server.runAndWaitForDisconnect(rename_directory)
 
     @deferToThread
     def test_rename_directory_succeeds(self):
         # 'rename dir1 dir2' succeeds if 'dir2' doesn't exist.
-        transport = self.getTransport('~testuser/+junk')
-        transport.mkdir('branch')
-        transport.mkdir('branch/.bzr')
-        transport.mkdir('branch/.bzr/dir1')
-        transport.mkdir('branch/.bzr/dir1/foo')
-        transport.rename('branch/.bzr/dir1', 'branch/.bzr/dir2')
-        self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
+        def rename_directory():
+            transport = self.getTransport('~testuser/+junk')
+            transport.mkdir('branch')
+            transport.mkdir('branch/.bzr')
+            transport.mkdir('branch/.bzr/dir1')
+            transport.mkdir('branch/.bzr/dir1/foo')
+            transport.rename('branch/.bzr/dir1', 'branch/.bzr/dir2')
+            self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
+        return self.server.runAndWaitForDisconnect(rename_directory)
 
 
 class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
@@ -244,7 +251,7 @@ class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
 def test_suite():
     # Parametrize the tests so they run against the SFTP server and a Bazaar
     # smart server. This ensures that both services provide the same behaviour.
-    servers = [make_sftp_server(), make_launchpad_server()]
+    servers = [make_sftp_server, make_launchpad_server]
     adapter = CodeHostingTestProviderAdapter(servers)
     loader = unittest.TestLoader()
     filesystem_suite = loader.loadTestsFromTestCase(TestFilesystem)

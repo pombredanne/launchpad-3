@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+"""Implementation classes for a Person."""
 
 __metaclass__ = type
 __all__ = [
@@ -40,9 +41,10 @@ from canonical.launchpad.helpers import (
 
 from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, EmailAddressStatus, LoginTokenType,
-    PersonCreationRationale, SpecificationFilter, SpecificationSort,
-    SpecificationStatus, ShippingRequestStatus, SSHKeyType,
-    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy)
+    PersonCreationRationale, ShippingRequestStatus, SpecificationFilter,
+    SpecificationDefinitionStatus, SpecificationImplementationStatus,
+    SpecificationSort, SSHKeyType, TeamMembershipRenewalPolicy,
+    TeamMembershipStatus, TeamSubscriptionPolicy)
 
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
@@ -100,7 +102,8 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     implements(IPerson, ICalendarOwner, IHasIcon, IHasLogo, IHasMugshot)
 
-    sortingColumns = SQLConstant("person_sort_key(Person.displayname, Person.name)")
+    sortingColumns = SQLConstant(
+        "person_sort_key(Person.displayname, Person.name)")
     # When doing any sort of set operations (union, intersect, except_) with
     # SQLObject we can't use sortingColumns because the table name Person is
     # not available in that context, so we use this one.
@@ -191,7 +194,7 @@ class Person(SQLBase, HasSpecificationsMixin):
     entitlements = SQLMultipleJoin('Entitlement', joinColumn='person')
 
     def _init(self, *args, **kw):
-        """Marks the person as a team when created or fetched from database."""
+        """Mark the person as a team when created or fetched from database."""
         SQLBase._init(self, *args, **kw)
         if self.teamownerID is not None:
             alsoProvides(self, ITeam)
@@ -239,9 +242,10 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     @property
     def subscribed_specs(self):
+        specification_id = SpecificationSubscription.q.specificationID
         return shortlist(Specification.select(
-            AND(Specification.q.id == SpecificationSubscription.q.specificationID,
-                SpecificationSubscription.q.personID == self.id),
+            AND (Specification.q.id == specification_id,
+                 SpecificationSubscription.q.personID == self.id),
             clauseTables=['SpecificationSubscription'],
             orderBy=['-datecreated']))
 
@@ -368,7 +372,8 @@ class Person(SQLBase, HasSpecificationsMixin):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status', 'Specification.name']
+            order = ['-priority', 'Specification.definition_status',
+                     'Specification.name']
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -414,7 +419,8 @@ class Person(SQLBase, HasSpecificationsMixin):
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+                quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -428,9 +434,9 @@ class Person(SQLBase, HasSpecificationsMixin):
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationStatus.OBSOLETE,
-                          SpecificationStatus.SUPERSEDED)
+            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                          SpecificationDefinitionStatus.SUPERSEDED)
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -474,16 +480,16 @@ class Person(SQLBase, HasSpecificationsMixin):
     def getQuestionLanguages(self):
         """See `IQuestionTarget`."""
         return set(Language.select(
-            '''Language.id = language AND Question.id IN (
+            """Language.id = language AND Question.id IN (
             SELECT id FROM Question
-                     WHERE owner = %(personID)s OR answerer = %(personID)s OR
+                      WHERE owner = %(personID)s OR answerer = %(personID)s OR
                            assignee = %(personID)s
             UNION SELECT question FROM QuestionSubscription
                   WHERE person = %(personID)s
             UNION SELECT question
-                    FROM QuestionMessage JOIN Message ON (message = Message.id)
-                   WHERE owner = %(personID)s
-            )''' % sqlvalues(personID=self.id),
+                  FROM QuestionMessage JOIN Message ON (message = Message.id)
+                  WHERE owner = %(personID)s
+            )""" % sqlvalues(personID=self.id),
             clauseTables=['Question'], distinct=True))
 
     def getDirectAnswerQuestionTargets(self):
@@ -748,8 +754,8 @@ class Person(SQLBase, HasSpecificationsMixin):
             ShippingRequest.select(query, orderBy=['id'], limit=2))
         count = len(results)
         assert (self == getUtility(ILaunchpadCelebrities).shipit_admin or
-                count <= 1), ("Only the shipit-admins team is allowed to have "
-                              "more than one open shipit request")
+                count <= 1), ("Only the shipit-admins team is allowed to "
+                              "have more than one open shipit request")
         if count == 1:
             return results[0]
         else:
@@ -838,7 +844,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     def iterTopProjectsContributedTo(self, limit=10):
         getByName = getUtility(IPillarNameSet).getByName
-        for name, karmavalue in self._getProjectsWithTheMostKarma(limit=limit):
+        for name, ignored in self._getProjectsWithTheMostKarma(limit=limit):
             yield getByName(name)
 
     def _getContributedCategories(self, pillar):
@@ -1014,7 +1020,8 @@ class Person(SQLBase, HasSpecificationsMixin):
         active = [TeamMembershipStatus.ADMIN, TeamMembershipStatus.APPROVED]
         tm = TeamMembership.selectOneBy(person=self, team=team)
         if tm is None or tm.status not in active:
-            # Ok, we're done. You are not an active member and still not being.
+            # Ok, we're done. You are not an active member and still
+            # not being.
             return
 
         tm.setStatus(TeamMembershipStatus.DEACTIVATED, self)
@@ -1078,8 +1085,8 @@ class Person(SQLBase, HasSpecificationsMixin):
             to_addrs.update(contactEmailAddresses(person))
         return sorted(to_addrs)
 
-    def addMember(self, person, reviewer, status=TeamMembershipStatus.APPROVED,
-                  comment=None, force_team_add=False):
+    def addMember(self, person, reviewer, comment=None, force_team_add=False,
+                  status=TeamMembershipStatus.APPROVED):
         """See `IPerson`."""
         assert self.isTeam(), "You cannot add members to a person."
         assert status in [TeamMembershipStatus.APPROVED,
@@ -1303,7 +1310,8 @@ class Person(SQLBase, HasSpecificationsMixin):
     def pendingmembers(self):
         """See `IPerson`."""
         return self.proposedmembers.union(
-            self.invited_members, orderBy=self._sortingColumnsForSetOperations)
+            self.invited_members,
+            orderBy=self._sortingColumnsForSetOperations)
 
     # XXX: myactivememberships and getActiveMemberships are rather
     # confusingly named, and I just fixed bug 2871 as a consequence of
@@ -1520,7 +1528,8 @@ class Person(SQLBase, HasSpecificationsMixin):
         """See `IPerson`."""
         preferredemail = self.preferredemail
         if preferredemail:
-            return sha.new('mailto:' + preferredemail.email).hexdigest().upper()
+            return sha.new(
+                'mailto:' + preferredemail.email).hexdigest().upper()
         else:
             return None
 
@@ -1810,8 +1819,9 @@ class PersonSet:
         if orderBy is None:
             orderBy = Person._sortingColumnsForSetOperations
         text = text.lower()
-        base_query = ('Person.teamowner IS NULL AND Person.merged IS NULL AND '
-                      'EmailAddress.person = Person.id')
+        base_query = (
+            'Person.teamowner IS NULL AND Person.merged IS NULL '
+            'AND EmailAddress.person = Person.id')
         clauseTables = ['EmailAddress']
         if text:
             # We use a UNION here because this makes things *a lot* faster
@@ -1999,8 +2009,9 @@ class PersonSet:
 
         # Update GPGKey. It won't conflict, but our sanity checks don't
         # know that
-        cur.execute('UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d'
-                    % vars())
+        cur.execute(
+            'UPDATE GPGKey SET owner=%(to_id)d WHERE owner=%(from_id)d' 
+            % vars())
         skip.append(('gpgkey','owner'))
 
         # Update OpenID. Just trash the authorizations for from_id - don't
@@ -2361,9 +2372,10 @@ class PersonSet:
         # Transfer active team memberships
         approved = TeamMembershipStatus.APPROVED
         admin = TeamMembershipStatus.ADMIN
-        cur.execute('SELECT team, status FROM TeamMembership WHERE person = %s '
-                    'AND status IN (%s,%s)'
-                    % sqlvalues(from_person.id, approved, admin))
+        cur.execute(
+            'SELECT team, status FROM TeamMembership WHERE person = %s '
+            'AND status IN (%s,%s)'
+            % sqlvalues(from_person.id, approved, admin))
         for team_id, status in cur.fetchall():
             cur.execute('SELECT status FROM TeamMembership WHERE person = %s '
                         'AND team = %s'
@@ -2375,8 +2387,8 @@ class PersonSet:
                 # because we know to_person has a membership entry for this
                 # team, so may only need to change its status.
                 cur.execute(
-                    'DELETE FROM TeamMembership WHERE person = %s AND team = %s'
-                    % sqlvalues(from_person.id, team_id))
+                    'DELETE FROM TeamMembership WHERE person = %s '
+                    'AND team = %s' % sqlvalues(from_person.id, team_id))
 
                 if current_status == admin.value:
                     # to_person is already an administrator of this team, no
@@ -2389,7 +2401,8 @@ class PersonSet:
                 assert status in (approved.value, admin.value)
                 cur.execute(
                     'UPDATE TeamMembership SET status = %s WHERE person = %s '
-                    'AND team = %s' % sqlvalues(status, to_person.id, team_id))
+                    'AND team = %s' % sqlvalues(
+                        status, to_person.id, team_id))
             else:
                 # to_person is not a member of this team. just change
                 # from_person with to_person in the membership record.
@@ -2401,8 +2414,9 @@ class PersonSet:
         cur.execute('SELECT team FROM TeamParticipation WHERE person = %s '
                     'AND person != team' % sqlvalues(from_person.id))
         for team_id in cur.fetchall():
-            cur.execute('SELECT team FROM TeamParticipation WHERE person = %s '
-                        'AND team = %s' % sqlvalues(to_person.id, team_id))
+            cur.execute(
+                'SELECT team FROM TeamParticipation WHERE person = %s '
+                'AND team = %s' % sqlvalues(to_person.id, team_id))
             if not cur.fetchone():
                 cur.execute(
                     'UPDATE TeamParticipation SET person = %s WHERE '
