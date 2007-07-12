@@ -1,17 +1,17 @@
 = Build Candidates Lookup =
 
 
-IDistroSeries.getSourcesPublishedForAllArchives method is used for
-Build System, precisely for 'queue-builder' part, to retrieve the
-sources publications that should be considered on it checks.
+IDistroSeries.getSourcesPublishedForAllArchives method is used by the
+Build System ("queue-builder" to be precise) to retrieve the source
+publications that should be considered in its checks.
 
-'queue-builder' will verify if each retrieved publication has the
-respective Build/BuildQueue records according their DSC and P-a-s
-information. See further details in buildd-queuebuilder.txt.
+'queue-builder' will verify "if each retrieved publication has an
+associated Build and BuildQueue records based on their DSC and
+P-a-s (Package-architecture-specific) information. See further details
+in buildd-queuebuilder.txt.
 
-In this test we will simply verify if the IDistroSeries method is
-returning the expected records.
-
+This document explains which source publishing information are
+returned by the method depending on the archive state.
 
 First, we will create some functions to help creating and inspecting
 publications for a given distroseries:
@@ -34,7 +34,7 @@ publications for a given distroseries:
 
 Creating a single source publishing record:
 
-    >>> def createPublication(distroseries, pocket, archive, status):
+    >>> def create_publication(distroseries, pocket, archive, status):
     ...     SecureSourcePackagePublishingHistory(
     ...         sourcepackagerelease=the_spr, component=the_spr.component,
     ...         section=the_spr.section, datecreated=UTC_NOW, embargo=False,
@@ -48,31 +48,31 @@ archives, pockets and statuses. This function creates:
  * 1 PUBLISHED and 1 PENDING records in UPDATES pocket, main_archive;
  * 1 PUBLISHED and 1 PENDING records in RELEASE pocket, PPA archive;
 
-    >>> def createSamplePublications(distroseries):
-    ...      createPublication(
+    >>> def create_sample_publications(distroseries):
+    ...      create_publication(
     ...           distroseries, PackagePublishingPocket.RELEASE,
     ...           distroseries.main_archive, PackagePublishingStatus.PUBLISHED)
-    ...      createPublication(
+    ...      create_publication(
     ...           distroseries, PackagePublishingPocket.RELEASE,
     ...           distroseries.main_archive, PackagePublishingStatus.PENDING)
-    ...      createPublication(
+    ...      create_publication(
     ...           distroseries, PackagePublishingPocket.UPDATES,
     ...           distroseries.main_archive, PackagePublishingStatus.PUBLISHED)
-    ...      createPublication(
+    ...      create_publication(
     ...           distroseries, PackagePublishingPocket.UPDATES,
     ...           distroseries.main_archive, PackagePublishingStatus.PENDING)
-    ...      createPublication(
+    ...      create_publication(
     ...           distroseries, PackagePublishingPocket.RELEASE,
     ...           cprov.archive, PackagePublishingStatus.PUBLISHED)
-    ...      createPublication(
+    ...      create_publication(
     ...           distroseries, PackagePublishingPocket.RELEASE,
     ...           cprov.archive, PackagePublishingStatus.PENDING)
 
 This function will store previous publishing records that will be
-ignored later when inspecting the test results (sampledata already
-contains other records that are not relevant for this test).
+ignored later when inspecting the example results (sampledata already
+contains other records that are not relevant for this example).
 
-    >>> def resetCandidates(distroseries):
+    >>> def reset_candidates(distroseries):
     ...      global initial_candidates
     ...      initial_candidates =  [
     ...          pub.id for pub in
@@ -86,7 +86,7 @@ previous results and printing a lines containing:
 
 for each new publishing record.
 
-    >>> def inspectNewCandidates(distroseries):
+    >>> def inspect_new_candidates(distroseries):
     ...     global initial_candidates
     ...     for pub in distroseries.getSourcesPublishedForAllArchives():
     ...         if pub.id in initial_candidates:
@@ -96,10 +96,10 @@ for each new publishing record.
 
 Finally, a shortcut to do all the dirty-job:
 
-    >>> def probeCandidates(distroseries):
-    ...     resetCandidates(distroseries)
-    ...     createSamplePublications(distroseries)
-    ...     inspectNewCandidates(distroseries)
+    >>> def probe_candidates(distroseries):
+    ...     reset_candidates(distroseries)
+    ...     create_sample_publications(distroseries)
+    ...     inspect_new_candidates(distroseries)
 
 
 == CURRENT DistroSeries ==
@@ -112,13 +112,9 @@ retrieve the following publications:
  * Only those targeted to post-release pockets (UPDATES, SECURITY,
    BACKPORTS and PROPOSED) in main_archive (default ubuntu archive)
 
-
     >>> warty = ubuntu['warty']
     >>> warty.status.name
     'CURRENT'
-
-Note that, the records targeted to RELEASE pocket were ignored, only
-records targeted to post-release pocket in main_archive are returned.
 
 Both PUBLISHED and PENDING publication records are returned, this is
 important to accomplish building-accepted-sources specification:
@@ -127,7 +123,7 @@ important to accomplish building-accepted-sources specification:
 
 This will give us only 4 of the test publications:
 
-    >>> probeCandidates(warty)
+    >>> probe_candidates(warty)
     PUBLISHED UPDATES True
     PENDING UPDATES True
     PUBLISHED RELEASE False
@@ -154,7 +150,7 @@ post-release pocket in FROZEN state.
 
 Summing up, all the 6 test publications will be returned from the lookup:
 
-    >>> probeCandidates(hoary)
+    >>> probe_candidates(hoary)
     PUBLISHED RELEASE True
     PENDING RELEASE True
     PUBLISHED UPDATES True

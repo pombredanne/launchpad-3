@@ -16,7 +16,7 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.tests.util import FakeLogger
 
 from canonical.launchpad.ftests.harness import (
-    LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
+    LaunchpadZopelessTestCase)
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, SecureSourcePackagePublishingHistory,
     BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
@@ -24,7 +24,7 @@ from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IDistributionSet, IPersonSet, ISectionSet,
     IComponentSet, ISourcePackageNameSet, IBinaryPackageNameSet,
-    IGPGKeySet, IArchiveSet)
+    IGPGKeySet)
 
 from canonical.librarian.client import LibrarianClient
 
