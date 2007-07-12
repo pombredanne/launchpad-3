@@ -131,6 +131,7 @@ class FileBugViewBase(LaunchpadFormView):
 
     extra_data_token = None
     advanced_form = False
+    frontpage_form = False
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
@@ -715,6 +716,8 @@ class ProjectFileBugAdvancedView(FileBugAdvancedView):
 
 class FrontPageFileBugMixin:
     """Provides common methods for front-page bug-filing forms."""
+
+    frontpage_form = True
 
     def contextUsesMalone(self):
         """Checks whether the current context uses Malone for bug tracking.

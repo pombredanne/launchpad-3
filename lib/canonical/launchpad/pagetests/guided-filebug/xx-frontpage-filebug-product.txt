@@ -21,7 +21,9 @@ Selecting a product that doesn't use Launchpad Bugs will produce a warning.
     >>> user_browser.getControl('Continue').click()
     >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
     ...     print extract_text(message)
-    Mozilla Thunderbird does not use Launchpad as its bug tracker.
+    Mozilla Thunderbird does not use...
+    ...
+    You can refine and resubmit your bug report.
 
 A link will be included to take the user back to the +filebug page:
 
@@ -30,6 +32,7 @@ A link will be included to take the user back to the +filebug page:
     'http://bugs.launchpad.dev/bugs/+filebug'
 
     >>> user_browser.getControl('Summary').value
+    ''
 
 If we enter an non-existent product, we get an error message.
 
@@ -103,5 +106,7 @@ Launchpad Bugs results in an informational page being displayed.
     >>> user_browser.getControl('Submit Bug Report').click()
     >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
     ...     print extract_text(message)
-    Mozilla Thunderbird does not use Launchpad as its bug tracker.
- 
+    Mozilla Thunderbird does not use...
+    ...
+    You can refine and resubmit your bug report.
+

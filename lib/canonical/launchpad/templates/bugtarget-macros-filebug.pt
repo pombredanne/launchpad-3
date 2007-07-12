@@ -113,8 +113,8 @@
       <p class="warning message">
         <span tal:replace="product_or_distro/displayname">Alsa Utils</span> does not use
         Launchpad as its bug tracker.
-
-        <span tal:condition="not: view/contextIsProduct">
+        <br />
+        <span tal:condition="view/frontpage_form">
           You can <a href="+filebug">refine and resubmit</a> your bug report.
         </span>
       </p>
