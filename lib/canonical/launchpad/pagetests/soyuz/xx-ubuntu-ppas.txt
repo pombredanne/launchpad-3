@@ -1,0 +1,69 @@
+= Ubuntu PPAs =
+
+The Ubuntu Linux page contains a link to get to the Personal Package Archives.
+
+    >>> browser.open("http://launchpad.dev/ubuntu")
+    >>> browser.getLink("Personal Package Archives").click()
+    >>> browser.title
+    'Personal Package Archive List'
+
+== PPA main page ==
+
+The PPA page contains a search box and a table of known PPAs with columns
+Owner, Description, Sources and Binaries, the latter two being a count.
+
+The sample data contains three PPAs.  Only Celso has any packages, with two
+sources and one binary.
+
+    >>> soup = find_main_content(browser.contents)
+    >>> results = soup.findAll(attrs={'class': 'ppa_batch_row'})
+    >>> len(results)
+    3
+
+    >>> texts = [extract_text(html) for html in results]
+    >>> texts.sort()
+    >>> for text in texts:
+    ...    print text
+    Celso Providelo
+    packages to help my friends.
+    2
+    1
+    Mark Shuttleworth
+    packages to help the humanity (you know, ubuntu)
+    0
+    0
+    No Privileges Person
+    I am not allowed to say, I have no privs.
+    0
+    0
+
+== Searching PPAs ==
+
+No data matches the non-existent search string "bustmybuffers".
+
+    >>> field = browser.getControl(name="name_filter")
+    >>> field.value = 'bustmybuffers'
+    >>> browser.getControl("Search").click()
+    >>> soup = find_main_content(browser.contents)
+    >>> results = soup.findAll(attrs={'class': 'ppa_batch_row'})
+    >>> len(results)
+    0
+
+In the three sample data PPAs, only one matches the search string "Mark".
+
+    >>> field = browser.getControl(name="name_filter")
+    >>> field.value = 'Mark'
+    >>> browser.getControl("Search").click()
+    >>> soup = find_main_content(browser.contents)
+    >>> results = soup.findAll(attrs={'class': 'ppa_batch_row'})
+    >>> len(results)
+    1
+
+== Owner's PPA pages ==
+
+In the table rows, the "Owner" is a clickable link to his PPA page.
+
+    >>> browser.getLink("Mark Shuttleworth").click()
+    >>> browser.title
+    'PPA for Mark Shuttleworth'
+

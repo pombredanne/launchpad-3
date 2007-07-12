@@ -15,7 +15,7 @@
          <input id="name" title="Filter" size="20"
                 type="text" name="name_filter"
                 tal:attributes="value view/name_filter"/>
-         <input type="submit" value="Update" />
+         <input type="submit" value="Search" />
       </form>
 
       <tal:batch define="batch view/search_results">
@@ -32,7 +32,7 @@
           </tr>
         </thead>
         <tbody>
-	<tr tal:repeat="ppa batch">
+        <tr tal:repeat="ppa batch" class="ppa_batch_row">
            <td><a tal:content="ppa/owner/browsername"
                   tal:attributes="href ppa/fmt:url">FooBar</a></td>
            <td tal:content="ppa/description/fmt:shorten/65" />
