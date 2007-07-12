@@ -316,17 +316,13 @@
     permission="launchpad.AnyPerson"
     template="../templates/specification-unlinkbugs.pt" />
 
-  <browser:generalform
+  <browser:page
     name="+linkdependency"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISpecificationDependency"
     class="canonical.launchpad.browser.SpecificationDependencyAddView"
-    label="Add a dependency"
-    fields="dependency"
-    keyword_arguments="dependency"
     permission="launchpad.AnyPerson"
-    template="../templates/specification-dependency.pt">
-  </browser:generalform>
+    template="../templates/specification-dependency.pt"
+    />
 
   <browser:generalform
     name="+removedependency"

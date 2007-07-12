@@ -100,6 +100,7 @@ class ISpecification(IHasOwner, ICanBeMentored):
     #      specification to an attribute of another SQL object
     #      referencing it.
     id = Int(title=_("Database ID"), required=True, readonly=True)
+
     name = SpecNameField(
         title=_('Name'), required=True, readonly=False,
         description=_(
