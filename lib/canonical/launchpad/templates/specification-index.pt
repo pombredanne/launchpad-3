@@ -8,7 +8,6 @@
     <metal:portlets fill-slot="portlets">
       <div tal:replace="structure context/@@+portlet-lifecycle" />
 
-  <div tal:replace="structure context/@@+portlet-feedbackqueue" />
   <div tal:replace="structure context/@@+portlet-subscribers" />
 
   <div tal:replace="structure context/@@+portlet-bugs" />
@@ -193,6 +192,7 @@
 
   </tal:deptree>
 
+      <div tal:replace="structure context/@@+portlet-feedbackqueue" />
       <ul class="nearby menu" tal:condition="context/goal">
         <li>
           <a tal:attributes="href context/goal/fmt:url">
