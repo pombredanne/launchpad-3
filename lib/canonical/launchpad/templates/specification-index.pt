@@ -20,11 +20,14 @@
 <div metal:fill-slot="main">
 
   <div style="float: right;">
-    <img src="/@@/mentoring-large" title="Mentoring available"
+    <img id="mentoring-available-icon"
+	 src="/@@/mentoring-large" title="Mentoring available"
          tal:condition="context/mentoring_offers/count" />
-    <img src="/@@/branch-large" title="Branch available"
+    <img id="branch-available-icon"
+	 src="/@@/branch-large" title="Branch available"
          tal:condition="context/branch_links/count" />
-    <img src="/@@/info-large"
+    <img id="informational-icon"
+	 src="/@@/info-large"
          title="Informational blueprint, no implementation necessary"
          tal:condition="context/informational" />
   </div>
@@ -52,7 +55,7 @@
         <tr>
           <th>Definition:</th>
           <td>
-            <tal:definition replace="context/status/title" />
+            <tal:definition replace="context/definition_status/title" />
             <tal:guidance condition="not: context/direction_approved"
             >(Needs guidance)</tal:guidance>
           </td>
@@ -64,7 +67,7 @@
                  src="/@@/info" alt="Informational"
                  title="Informational blueprint, no implementation necessary"
                  />
-            <tal:impl content="context/delivery/title">Unknown</tal:impl>
+            <tal:impl content="context/implementation_status/title">Unknown</tal:impl>
           </td>
         </tr>
         <tr tal:condition="context/goal">
