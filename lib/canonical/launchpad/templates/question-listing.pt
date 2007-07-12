@@ -24,26 +24,25 @@
 </metal:css>
 
 <metal:heading fill-slot="pageheading">
+  
+  <tal:block condition="view/required:launchpad.Edit">
+    <tal:block condition="view/display_target_column">
+      <p tal:condition="not: context/products" class="warning message"> 
+        There are no projects registered for
+        <span tal:replace="context/displayname">project displayname</span>.
+        <br />
+        You need to <a href="+newproduct">register another project that is
+        part of <tal:project replace="context/displayname" /></a>.
+      </p>
+    </tal:block>
+  </tal:block>
+
   <h1 i18n:translate="" tal:content="view/pageheading">Questions</h1>
 </metal:heading>
 
 <div metal:fill-slot="main"
      tal:define="questions view/searchResults">
-
-  <tal:product_warning condition="view/display_target_column">
-    <p tal:condition="not: context/products" class="warning message"> 
-      There are no projects registered for
-      <span tal:replace="context/displayname">project displayname</span>.
-
-      <tal:block condition="context/required:launchpad.Edit">
-        <br />
-        If you are the owner of <span tal:replace="context/displayname">
-        project displayname</span>, please <a href="+newproduct">register
-        another project that is part of it</a>.
-      </tal:block>
-    </p>
-  </tal:product_warning>
-
+  
   <p tal:define="unspoken_languages view/unspoken_languages"
     tal:condition="unspoken_languages">
     <span tal:replace="context/displayname">Mozilla Firefox</span> has 
