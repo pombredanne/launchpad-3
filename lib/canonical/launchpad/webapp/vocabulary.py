@@ -43,7 +43,7 @@ class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
         'A name for this vocabulary, to be displayed in the popup window.')
 
     def searchForTerms(query=None):
-        """Return a CountableIterator of SimpleTerms that match the query.
+        """Return a `CountableIterator` of `SimpleTerm`s that match the query.
 
         Note that what is searched and how the match is the choice of the
         IHugeVocabulary implementation.

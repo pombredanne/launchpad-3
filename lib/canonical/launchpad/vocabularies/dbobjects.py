@@ -235,7 +235,7 @@ class FAQVocabulary:
         return self.context.searchFAQs().count()
 
     def __iter__(self):
-        """See `IITerableVocabulary`."""
+        """See `IIterableVocabulary`."""
         for faq in self.context.searchFAQs():
             yield self.toTerm(faq)
 

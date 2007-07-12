@@ -5,13 +5,17 @@ asked questions. Regular user questions can then be answered with a
 referral to the FAQ document.
 
 Objects that represents collection of FAQs provides the IFAQCollection
-interface.
+interface. (The test harness is responsible for providing an object
+providing this interface in the 'collection' variable of the test
+name space. That way we can verify that multiple implementation provide
+the interface correctly.)
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import IFAQCollection
 
     >>> verifyObject(IFAQCollection, collection)
     True
+
 
 == Population FAQs collection ==
 
@@ -33,7 +37,7 @@ the collection.
     ...     (no_priv, 'How do I install Foo?',
     ...      'See http://www.foo.org/install', 'foo install'),
     ...     (sample_person, 'What is The Meaning of Life?',
-    ...      'A Monthy Python film!', 'film monthy python'),
+    ...      'A Monty Python film!', 'film monty python'),
     ...     (foo_bar, 'How do I make money quickly off the Internet?',
     ...      'Install this really nice software that you can find at '
     ...      'http://www.getrichquick.com/.', None),
@@ -72,7 +76,7 @@ It returns None when there is FAQ with that ID in the context:
     >>> print collection.getFAQ(12345)
     None
 
-It also returns None when asking an ID for a FAQ that isn't in the
+It also returns None when using the ID of a FAQ that isn't in the
 requested collection:
 
     >>> from canonical.launchpad.interfaces import (
