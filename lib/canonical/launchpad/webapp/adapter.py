@@ -458,7 +458,6 @@ class LaunchpadCursor(ReconnectingCursor):
         transaction completes) and the RequestExpired exception will
         be raised.
         """
-        reset_hard_timeout(super(LaunchpadCursor, self).execute)
         if hard_timeout_expired():
             # make sure the current transaction can not be committed by
             # sending a broken SQL statement to the database
@@ -468,6 +467,9 @@ class LaunchpadCursor(ReconnectingCursor):
                 pass
             OpStats.stats['timeouts'] += 1
             raise RequestExpired(statement)
+
+        reset_hard_timeout(super(LaunchpadCursor, self).execute)
+
         try:
             starttime = time.time()
             if os.environ.get("LP_DEBUG_SQL_EXTRA"):
