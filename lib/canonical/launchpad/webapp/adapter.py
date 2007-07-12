@@ -306,7 +306,7 @@ def set_request_started(starttime=None):
         starttime = time.time()
     _local.request_start_time = starttime
     _local.request_statements = []
-    _local.last_statement_timeout = None
+    _local.current_statement_timeout = None
 
 
 def clear_request_started():
@@ -401,11 +401,12 @@ def reset_hard_timeout(execute_func):
     # to avoid too many database round trips.
     precision = config.launchpad.db_statement_timeout_precision
 
-    last_statement_timeout = getattr(_local, 'last_statement_timeout', None)
-    if (last_statement_timeout is None
-            or last_statement_timeout - remaining_ms > precision):
+    current_statement_timeout = getattr(
+            _local, 'current_statement_timeout', None)
+    if (current_statement_timeout is None
+            or current_statement_timeout - remaining_ms > precision):
         execute_func("SET statement_timeout TO %d" % remaining_ms)
-        _local.last_statement_timeout = remaining_ms
+        _local.current_statement_timeout = remaining_ms
 
 
 class RequestExpired(RuntimeError):
