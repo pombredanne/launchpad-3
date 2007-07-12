@@ -491,6 +491,7 @@ Rosetta has an active translation for every expected plural form of this
 message set.';
 COMMENT ON COLUMN POMsgSet.reviewer IS 'The person who last reviewd the translations for this message.';
 COMMENT ON COLUMN POMsgSet.date_reviewed IS 'Last time this message was reviewed.';
+COMMENT ON COLUMN POMsgSet.language IS 'Language this POMsgSet is in; copied from its POFile for performance reasons.';
 
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
@@ -500,7 +501,6 @@ COMMENT ON COLUMN Sprint.homepage_content IS 'A home page for this sprint in the
 COMMENT ON COLUMN Sprint.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a sprint.';
 COMMENT ON COLUMN Sprint.mugshot IS 'The library file alias of a mugshot image to display as the branding of a sprint, on its home page.';
 COMMENT ON COLUMN Sprint.logo IS 'The library file alias of a smaller version of this sprint\'s mugshot.';
-
 
 -- SprintAttendance
 COMMENT ON TABLE SprintAttendance IS 'The record that someone will be attending a particular sprint or meeting.';
