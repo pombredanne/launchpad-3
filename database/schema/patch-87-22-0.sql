@@ -6,7 +6,8 @@ ALTER TABLE person ADD COLUMN account_status_comment text;
 -- statuses. This is going to be solved once I get some time to fix
 -- https://bugs.launchpad.net/launchpad/+bug/123770.
 
--- This column needs to be set NOT NULL and DEFAULT 10 next cycle
+-- This column needs to be set NOT NULL and DEFAULT 10 next cycle.
+-- The values need to be populated by then.
 ALTER TABLE Person ADD COLUMN account_status integer;
 
 /*
