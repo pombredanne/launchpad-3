@@ -176,38 +176,37 @@ Despite of keeping the same permission schema we have for ubuntu
 builds (admins and lp-buildd-admins can modify them), for PPA build we
 also grant those rights to the PPA owner.
 
-
 Check if 'anonymous' and 'normal users' (authenticated user not
 related with the archive) are not allowed to modify the build record:
 
-  >>> anon_browser.open("http://localhost/+builds/+build/23")
+  >>> anon_browser.open("http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
   >>> anon_browser.getLink('Retry build')
   Traceback (most recent call last):
   ...
   LinkNotFoundError
 
-  >>> one_browser.open("http://localhost/+builds/+build/23")
+  >>> one_browser.open("http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
   >>> one_browser.getLink('Retry build')
   Traceback (most recent call last):
   ...
   LinkNotFoundError
 
-  >>> one_browser.open("http://localhost/+builds/+build/23/+retry")
+  >>> one_browser.open(
+  ...     "http://localhost/ubuntu/+source/cdrkit/1.0/+build/24/+retry")
   Traceback (most recent call last):
   ...
   HTTPError: HTTP Error 403: Forbidden
 
-
 Ensure 'admins' and 'lp-buildd-admins' (foo.bar is a member of
 lp-buildd-admins) still having access for retrying PPA build:
 
-  >>> admin_browser.open("http://localhost/+builds/+build/23")
+  >>> admin_browser.open("http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
   >>> print_action_links(admin_browser.contents)
-  Retry build: http://localhost/+builds/+build/23/+retry
+  Retry build: http://localhost/~no-priv/+archive/+build/24/+retry
 
-  >>> user_browser.open("http://localhost/+builds/+build/23")
+  >>> user_browser.open("http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
   >>> print_action_links(user_browser.contents)
-  Retry build: http://localhost/+builds/+build/23/+retry
+  Retry build: http://localhost/~no-priv/+archive/+build/24/+retry
 
 
 Let's check the PPA owner can 'retry' a build.
@@ -216,7 +215,8 @@ Let's check the PPA owner can 'retry' a build.
   >>> no_priv_browser.addHeader(
   ...    "Authorization", "Basic no-priv@canonical.com:test")
 
-  >>> no_priv_browser.open("http://localhost/+builds/+build/23")
+  >>> no_priv_browser.open(
+  ...     "http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
   >>> no_priv_browser.getLink('Retry build').click()
   >>> no_priv_browser.getControl("Retry Build").click()
   >>> no_priv_browser.contents
@@ -237,7 +237,7 @@ ability to assign *any* enormous score value)
 'admins' and 'lp-build-admins' are the only entities able to
 re-scoring PPA jobs:
 
-  >>> admin_browser.open("http://localhost/+builds/+build/23")
+  >>> admin_browser.open("http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
   >>> admin_browser.getLink('Rescore build').click()
   >>> admin_browser.getControl(name="SCORE").value
   '0'
@@ -248,7 +248,7 @@ re-scoring PPA jobs:
   ...Build Record rescored to 100...'
 
 
-  >>> cprov_browser.open("http://localhost/+builds/+build/23")
+  >>> cprov_browser.open("http://localhost/ubuntu/+source/cdrkit/1.0/+build/24")
   >>> cprov_browser.getLink('Rescore build').click()
   >>> cprov_browser.getControl(name="SCORE").value
   '100'
