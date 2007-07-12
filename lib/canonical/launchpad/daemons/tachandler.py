@@ -34,6 +34,9 @@ class TacTestSetup:
     You can override setUpRoot to set up a root directory for the daemon.
     """
     def setUp(self, spew=False):
+        # Before we run, we want to make sure that we have cleaned up any
+        # previous runs. Although tearDown() should have been called already,
+        # we can't guarantee it.
         self.tearDown()
         self.setUpRoot()
         args = [sys.executable, twistd_script, '-o', '-y', self.tacfile,
@@ -67,6 +70,10 @@ class TacTestSetup:
 
     def tearDown(self):
         self.killTac()
+        # setUp() watches the logfile to determine when the daemon has fully
+        # started. If it sees an old logfile, then it will find the LOG_MAGIC
+        # string and return immediately, provoking hard-to-diagnose race
+        # conditions. Delete the logfile to make sure this does not happen.
         self._removeFile(self.logfile)
 
     def _removeFile(self, filename):
