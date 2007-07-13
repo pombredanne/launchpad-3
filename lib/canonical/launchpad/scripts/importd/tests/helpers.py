@@ -9,13 +9,10 @@ __all__ = [
 
 
 import os
-import unittest
 
-from bzrlib.bzrdir import BzrDir
 from bzrlib.tests import TestCaseWithTransport
 
 from canonical.config import config
-from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.testing import LaunchpadZopelessLayer
 from importd.tests.helpers import SandboxHelper
 from importd.tests.test_bzrmanager import ProductSeriesHelper

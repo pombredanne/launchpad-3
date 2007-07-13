@@ -23,9 +23,8 @@ __all__ = [
     'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer'
     ]
 
-import shutil
-import sys
 from urllib import urlopen
+import time
 
 import psycopg
 import transaction
@@ -33,8 +32,6 @@ from zope.component import getUtility, getGlobalSiteManager
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
-
-from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 
 from canonical.config import config
 from canonical.database.sqlbase import ZopelessTransactionManager

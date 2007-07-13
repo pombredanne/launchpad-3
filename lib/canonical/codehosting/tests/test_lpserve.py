@@ -13,7 +13,6 @@ import shutil
 import unittest
 
 import bzrlib
-from bzrlib import errors
 from bzrlib.commands import get_cmd_object
 from bzrlib.smart import medium
 from bzrlib.tests import TestCaseInTempDir

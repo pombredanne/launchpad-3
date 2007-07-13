@@ -10,7 +10,6 @@ import random
 import time
 import unittest
 
-import bzrlib.osutils
 from bzrlib.revision import NULL_REVISION
 from bzrlib.uncommit import uncommit
 from bzrlib.tests import TestCaseWithTransport
