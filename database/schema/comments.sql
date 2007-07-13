@@ -260,7 +260,7 @@ COMMENT ON COLUMN MailingList.welcome_message_text IS 'Text sent to new members 
 
 COMMENT ON TABLE MailingListSubscription IS 'Track the subscriptions of a person to team mailing lists.';
 COMMENT ON COLUMN MailingListSubscription.person IS 'The person who is subscribed to the mailing list.';
-COMMENT ON COLUMN MailingListSubscription.team IS 'The team whose mailing list this person is subscribed to.';
+COMMENT ON COLUMN MailingListSubscription.mailing_list IS 'The mailing list this person is subscribed to.';
 COMMENT ON COLUMN MailingListSubscription.date_joined IS 'The date this person subscribed to the mailing list.';
 COMMENT ON COLUMN MailingListSubscription.email_address IS 'Which of the person\'s email addresses are subscribed to the mailing list.  This may be NULL to indicate that it\'s the person\'s preferred address.';
 
@@ -281,7 +281,7 @@ COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer o
 COMMENT ON TABLE MessageApproval IS 'Track mailing list postings awaiting approval from the team owner.';
 COMMENT ON COLUMN MessageApproval.message_id IS 'The Message-ID header of the held message.';
 COMMENT ON COLUMN MessageApproval.posted_by IS 'The person who posted the message.';
-COMMENT ON COLUMN MessageApproval.team IS 'The team mailing list to which the message was posted.';
+COMMENT ON COLUMN MessageApproval.mailing_list IS 'The mailing list to which the message was posted.';
 COMMENT ON COLUMN MessageApproval.posted_message IS 'Foreign key to libraryfilealias table pointing to where the posted message\'s text lives.';
 COMMENT ON COLUMN MessageApproval.posted_date IS 'The date the message was posted.';
 COMMENT ON COLUMN MessageApproval.status IS 'The status of the posted message.  Values are described in dbschema.PostedMessageStatus.';
