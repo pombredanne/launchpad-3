@@ -73,4 +73,23 @@
     permission="launchpad.View"
     />
 
+  <!-- CodeImportMachine -->
+
+  <content class="canonical.launchpad.database.CodeImportMachine">
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.ICodeImportMachine"
+      />
+  </content>
+
+  <!-- CodeImportMachineSet -->
+
+  <securedutility
+    class="canonical.launchpad.database.CodeImportMachineSet"
+    provides="canonical.launchpad.interfaces.ICodeImportMachineSet" >
+    <require
+      permission="launchpad.View"
+      interface="canonical.launchpad.interfaces.ICodeImportMachineSet" />
+  </securedutility>
+
 </configure>

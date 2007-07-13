@@ -317,15 +317,6 @@ class SmartserverTests(SSHTestCase):
     def getDefaultServer(self):
         return make_bzr_ssh_server()
 
-    def _dump_authserver_log(self):
-        authserver_log = open(
-            self.server.authserver.tachandler.logfile, 'r')
-        print '-' * 8
-        print authserver_log.read()
-        print '-' * 8
-        authserver_log.close()
-        raise
-
     @deferToThread
     def test_can_read_readonly_branch(self):
         # We can get information from a read-only branch.
@@ -340,42 +331,6 @@ class SmartserverTests(SSHTestCase):
         # We can't write to a read-only branch.
         ro_branch_url = self.pushNewBranch('sabdfl', '+junk', 'ro-branch')
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
-
-        # Create a new revision on the local branch.
-        tree = WorkingTree.open(self.local_branch.base)
-        tree.commit('Empty commit', rev_id='rev2')
-
-        # Push the local branch to the remote url
-        remote_url = self.getTransportURL('~sabdfl/+junk/ro-branch')
-        self.push(remote_url)
-        remote_revision = self.getLastRevision(remote_url)
-
-        # UNCHANGED!
-        self.assertEqual(revision, remote_revision)
-
-
-class SmartserverTests(SSHTestCase):
-    """Acceptance tests for the smartserver component of Launchpad codehosting
-    service's Bazaar support.
-    """
-
-    def getDefaultServer(self):
-        return make_bzr_ssh_server()
-
-    @deferToThread
-    def test_can_read_readonly_branch(self):
-        # We can get information from a read-only branch.
-        url = self.pushNewBranch('sabdfl', '+junk', 'ro-branch')
-        revision = bzrlib.branch.Branch.open(url).last_revision()
-        remote_revision = self.getLastRevision(
-            self.getTransportURL('~sabdfl/+junk/ro-branch'))
-        self.assertEqual(revision, remote_revision)
-
-    @deferToThread
-    def test_cant_write_to_readonly_branch(self):
-        # We can't write to a read-only branch.
-        url = self.pushNewBranch('sabdfl', '+junk', 'ro-branch')
-        revision = bzrlib.branch.Branch.open(url).last_revision()
 
         # Create a new revision on the local branch.
         tree = WorkingTree.open(self.local_branch.base)
