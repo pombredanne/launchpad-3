@@ -37,9 +37,6 @@
             </ul>
             </noscript>
           </div>
-          <div>
-            &raquo; <a href="+bugs">Show all open bugs</a>
-          </div>
         </div>
         <div class="two column right">
           <h2>Key contacts</h2>
@@ -94,6 +91,9 @@
                 <strong tal:content="cve_bugs/count"></strong>
                 open CVE bugs
               </a>
+            </li>
+            <li style="font-weight: bold;">
+              <a href="+bugs">List all open bugs</a>
             </li>
           </ul>
           <ul class="rollover buttons">

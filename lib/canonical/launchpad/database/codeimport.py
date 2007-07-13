@@ -6,11 +6,13 @@ __metaclass__ = type
 
 __all__ = [
     'CodeImport',
+    'CodeImportMachine',
+    'CodeImportMachineSet',
     'CodeImportSet',
     ]
 
 from sqlobject import (
-    BoolCol, ForeignKey, IntCol, StringCol)
+    BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound)
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -19,8 +21,10 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
+from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
-    ICodeImport, ICodeImportSet, ILaunchpadCelebrities)
+    ICodeImport, ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet,
+    ILaunchpadCelebrities, NotFoundError)
 from canonical.lp.dbschema import (
     CodeImportReviewStatus, RevisionControlSystems)
 
@@ -39,7 +43,13 @@ class CodeImport(SQLBase):
 
     @property
     def product(self):
+        """See `ICodeImport`."""
         return self.branch.product
+
+    @property
+    def series(self):
+        """See `ICodeImport`."""
+        return ProductSeries.selectOneBy(import_branch=self.branch)
 
     review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
         default=CodeImportReviewStatus.NEW)
@@ -80,8 +90,39 @@ class CodeImportSet:
 
     def get(self, id):
         """See `ICodeImportSet`."""
-        return CodeImport.get(id)
+        try:
+            return CodeImport.get(id)
+        except SQLObjectNotFound:
+            raise NotFoundError(id)
 
     def getByBranch(self, branch):
         """See `ICodeImportSet`."""
         return CodeImport.selectOneBy(branch=branch)
+
+    def search(self, review_status):
+        """See `ICodeImportSet`."""
+        return CodeImport.selectBy(review_status=review_status.value)
+
+
+class CodeImportMachine(SQLBase):
+    """See `ICodeImportMachine`."""
+
+    implements(ICodeImportMachine)
+
+    date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    hostname = StringCol(default=None)
+    online = BoolCol(default=False)
+
+
+class CodeImportMachineSet(object):
+    """See `ICodeImportMachineSet`."""
+
+    implements(ICodeImportMachineSet)
+
+    def getAll(self):
+        """See `ICodeImportMachineSet`."""
+        return CodeImportMachine.select()
+
+    def getByHostname(self, hostname):
+        """See `ICodeImportMachineSet`."""
+        return CodeImportMachine.selectOneBy(hostname=hostname)
