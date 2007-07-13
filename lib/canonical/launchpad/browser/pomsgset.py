@@ -1187,7 +1187,7 @@ class POMsgSetView(LaunchpadView):
         # For anonymous users, check the msgid.
         return self.context.potmsgset.hide_translations_from_anonymous
 
-    @cachedproperty
+    @property
     def translation_credits(self):
         """Return automatically created translation if defined, or None."""
         assert self.context.potmsgset.is_translation_credit

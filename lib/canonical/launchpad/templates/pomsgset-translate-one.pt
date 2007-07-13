@@ -545,6 +545,15 @@
          </label>
        </tal:not-locked>
        <tal:locked condition="context/potmsgset/is_translation_credit">
+         <tal:comment condition="nothing">
+           We can't reliably export any credits when upstream translation is
+           fuzzy (eg. we might use the same algorithm in that case, but then
+           upstreams will complain that we got it wrong; or, we might discard
+           their credits altogether, when they will complain that we just credit
+           ourselves; so, lets not change the fuzzy flag, and rather keep it,
+           since we are mostly automating this to fix our issues with upstreams,
+           and I'd rather not introduce more issues with them).
+         </tal:comment>
          <label class="fuzzy-checkbox">
            <input
              type="checkbox"

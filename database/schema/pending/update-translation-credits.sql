@@ -1,6 +1,9 @@
--- Delete existing, non-published submissions for translation credits
--- Do not remove from upstream products?
-DELETE FROM posubmission WHERE id IN (
+-- Delete existing, non-published submissions for translation credits.
+
+-- People have so far updated translation credits, often mis-crediting people,
+-- or removing credits to upstream translators: we want to disable all of these
+-- translation, so automatic handling will pick up from now on.
+UPDATE posubmission SET active=FALSE WHERE id IN (
     SELECT posubmission.id
         FROM posubmission,
 	     pomsgset,
