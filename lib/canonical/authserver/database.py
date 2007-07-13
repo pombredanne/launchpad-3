@@ -670,6 +670,6 @@ def datetime_from_tuple(time_tuple):
 
     The tm_isdst is (index 8) is ignored. The created datetime uses tzinfo=UTC.
     """
-    [year, month, day, hour, minute, second, weekday, yearday, is_dst] = (
+    [year, month, day, hour, minute, second, unused, unused, unused] = (
         time_tuple)
     return datetime.datetime(year, month, day, hour, minute, second)
