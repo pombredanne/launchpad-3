@@ -1,11 +1,13 @@
 = This is a FAQ =
 
-== Linking to a FAQ ==
-
 Even though similar questions are shown when a user creates a new
 question, common questions still happen for a number of reasons.
-The Answer Tracker can be used to manage common answers (aka FAQ) 
-which can be used to answer a particular question.
+The Answer Tracker can be used to manage common answers
+(a.k.a. Frequently Asked Question - FAQ) which can be used to answer
+a particular question.
+
+
+== Linking to a FAQ ==
 
 Any logged in user can use the 'This is a FAQ' action item to link
 the question to an existing FAQ.
@@ -14,6 +16,7 @@ For example, No Privileges Person comes across a question about SVG
 support in Firefox. That question has a well-known answer, so he clicks
 on 'This is a FAQ' to answer the question:
 
+    # We use backslashreplace because the page title includes smart quotes.
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> user_browser.open(
     ...     'http://answers.launchpad.dev/firefox/+question/2')
@@ -25,7 +28,7 @@ on 'This is a FAQ' to answer the question:
     >>> print backslashreplace(user_browser.title)
     Is question #2 a FAQ?
 
-That page lists the existing FAQs that matches the question's title. In
+This page lists the existing FAQs matching the question's title. In
 that listing, the radio labels only contain the FAQ id. The FAQ title is
 displayed in a link besides the label. The default selected FAQ is the
 one currently associated to the question. In this particular case, since
@@ -90,26 +93,26 @@ be appended to the message.
     >>> print user_browser.getControl('Message').value
     No Privileges Person suggests this article as an answer to your question:
 
-He can then clicks 'Link FAQ' to add an answer to the question linking
-the question to this FAQ. After clicking the button, the user is
-redirected to the question page.
+He can then click 'Link FAQ' to answer the question with the selected
+FAQ. After clicking the button, the user is redirected to the question
+page.
 
     >>> user_browser.getControl('Link FAQ').click()
     >>> print user_browser.url
     http://answers.launchpad.dev/firefox/+question/2
 
-Where he sees that the question's status was changed to 'Answered':
+He sees that the question's status was changed to 'Answered':
 
     >>> details_portlet = find_portlet(
     ...     user_browser.contents, 'Mozilla Firefox question #2')
     >>> print details_portlet.find('b', text='Status:').next.strip()
     Answered
 
-A link to the FAQ appears in the details portlet.
+A link to the FAQ appears under the question's description:
 
     >>> print extract_text(
-    ...     details_portlet.find('b', text='Related FAQ:').findNext('a'))
-    How do I install plugins (Shockwave, QuickTime, etc.)?
+    ...     find_tag_by_id(user_browser.contents, 'related-faq'))
+    Related FAQ: How do I install plugins (Shockwave, QuickTime, etc.)?
     >>> print user_browser.getLink('How do I install plugins').url
     http://answers.launchpad.dev/firefox/+faq/10
 
@@ -125,7 +128,7 @@ The answer message was added to the question's discussion:
 == Modifying the FAQ ==
 
 The link to the FAQ can be changed by using the same 'This is a FAQ'
-option. Continuing on the previous example, the user went on the read
+option. Continuing on the previous example, the user went on to read
 the FAQ that he just linked and found that it doesn't really answer
 the question. To correct the mistake, he uses the same 'This is a FAQ'
 action.
@@ -133,7 +136,7 @@ action.
     >>> user_browser.getLink('This is a FAQ').click()
 
 The existing linked FAQ is selected and the other FAQs matching the
-question's title is displayed:
+question's title are displayed:
 
     >>> printFAQOptions(user_browser.contents)
     ( ) No existing FAQs are relevant
@@ -141,12 +144,25 @@ question's title is displayed:
     ( ) 9: How do I troubleshoot problems with extensions/themes?
     ( ) 7: How do I install Java?
 
-To remove the FAQ, the user selects the 'No existing...' option, he
-changes the message and click 'Link FAQ'.
+He changes the message and click 'Link FAQ'.
 
-    >>> user_browser.getControl('No existing FAQs').selected = True
     >>> user_browser.getControl('Message').value = (
     ...     "Sorry, this document doesn't really answer your question.")
+    >>> user_browser.getControl('Link FAQ').click()
+
+But since, he forgot to change the link, the form is displayed again
+with an error message.
+
+    >>> print user_browser.url
+    http://answers.launchpad.dev/firefox/+question/2/+linkfaq
+    >>> for message in get_feedback_messages(user_browser):
+    ...     print message
+    You didn't modify the linked FAQ.
+
+To remove the FAQ, the user selects the 'No existing...' option and 
+submit the form again.
+
+    >>> user_browser.getControl('No existing FAQs').selected = True
     >>> user_browser.getControl('Link FAQ').click()
 
 The new message was added to the question:
@@ -158,10 +174,7 @@ The new message was added to the question:
 
 The link was also removed from the details portlet:
 
-    >>> details_portlet = find_portlet(
-    ...     user_browser.contents, 'Mozilla Firefox question #2')
-    >>> print extract_text(
-    ...     details_portlet.find('b', text='Related FAQ:').findNext('i'))
+    >>> print find_tag_by_id(user_browser.contents, 'related-faq')
     None
 
 
@@ -187,112 +200,111 @@ the project owner, he doesn't have the possibility to create a new FAQ.
       ...
     Unauthorized: ...
 
-Foo Bar (which is a site admin) does have that ability.
+Sample Person who is the project owner does have that ability.
 
-    >>> admin_browser.open(
+    >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> owner_browser.open(
     ...     'http://answers.launchpad.dev/firefox/+question/2')
-    >>> admin_browser.getLink('This is a FAQ').click()
-    >>> admin_browser.getLink('create a new FAQ').click()
-    >>> print admin_browser.url
+    >>> owner_browser.getLink('This is a FAQ').click()
+    >>> owner_browser.getLink('create a new FAQ').click()
+    >>> print owner_browser.url
     http://answers.launchpad.dev/firefox/+question/2/+createfaq
-    >>> print admin_browser.title
+    >>> print owner_browser.title
     Create a FAQ for Mozilla Firefox
 
 The FAQ title and content are pre-filled with the target question. He
 edits them to be more appropriate:
 
-    >>> print admin_browser.getControl('Title').value
+    >>> print owner_browser.getControl('Title').value
     Problem showing the SVG demo on W3C site
-    >>> admin_browser.getControl('Title').value = 'Displaying SVG in Firefox'
+    >>> owner_browser.getControl('Title').value = 'Displaying SVG in Firefox'
 
-    >>> print admin_browser.getControl('Content').value
+    >>> print owner_browser.getControl('Content').value
     Hi! I'm trying to learn about SVG but I can't get it to work at all in
     firefox. Maybe there is a plugin? Help! Thanks.
     
-    >>> admin_browser.getControl('Content').value = (
+    >>> owner_browser.getControl('Content').value = (
     ...     'Upgrade your browser to Firefox 2.0.')
 
-He can also enters keywords describing the FAQ:
+He can also enter keywords describing the FAQ:
 
-    >>> admin_browser.getControl('Keywords').value = (
+    >>> owner_browser.getControl('Keywords').value = (
     ...     'scalable vector graphic')
 
 There is a 'Message' field that will be used to answer the question.
 It is pre-filled, but he can change its value:
 
-    >>> print admin_browser.getControl('Message').value
-    Foo Bar suggests this article as an answer to your question:
-    >>> admin_browser.getControl('Message').value = 'Read the Fine Answer:'
+    >>> print owner_browser.getControl('Message').value
+    Sample Person suggests this article as an answer to your question:
+    >>> owner_browser.getControl('Message').value = 'Read the Fine Answer:'
 
 After clicking the 'Create' button, the FAQ is created and the user is
 returned to the question page.
 
-    >>> admin_browser.getControl('Create and Link').click()
-    >>> print admin_browser.url
+    >>> owner_browser.getControl('Create and Link').click()
+    >>> print owner_browser.url
     http://answers.launchpad.dev/firefox/+question/2
-
-The question's status was changed to 'Answered':
-
-    >>> details_portlet = find_portlet(
-    ...     admin_browser.contents, 'Mozilla Firefox question #2')
-    >>> print details_portlet.find('b', text='Status:').next.strip()
-    Answered
 
 The answer message was added to the question's discussion:
 
     >>> print extract_text(find_tags_by_class(
-    ...     admin_browser.contents, 'boardCommentBody')[-1]).encode(
+    ...     owner_browser.contents, 'boardCommentBody')[-1]).encode(
     ...     'ascii', 'backslashreplace')
     Read the Fine Answer:
     FAQ...: \u201cDisplaying SVG in Firefox\u201d.
 
+And the link to the created FAQ is displayed under the question's
+description:
+
+    >>> print extract_text(
+    ...     find_tag_by_id(owner_browser.contents, 'related-faq'))
+    Related FAQ: Displaying SVG in Firefox
+
 
 == Viewing a FAQ ==
 
-A link to the FAQ appears in the question details portlet:
+From a question page which has a related FAQ, the user can click on the
+FAQ title to display the FAQ content.
 
-    >>> print extract_text(
-    ...     details_portlet.find('b', text='Related FAQ:').findNext('a'))
-    Displaying SVG in Firefox
-    >>> admin_browser.getLink('Displaying SVG in Firefox').click()
-    >>> print admin_browser.url
+    >>> owner_browser.getLink('Displaying SVG in Firefox').click()
+    >>> print owner_browser.url
     http://answers.launchpad.dev/firefox/+faq/...
-    >>> print backslashreplace(admin_browser.title)
+    >>> print backslashreplace(owner_browser.title)
     Mozilla Firefox FAQ #...: \u201cDisplaying SVG in Firefox\u201d
 
 The FAQ's title appears as the prime heading:
 
-    >>> main_content = find_main_content(admin_browser.contents)
+    >>> main_content = find_main_content(owner_browser.contents)
     >>> print main_content.find('h1').renderContents()
     Displaying SVG in Firefox
 
 The FAQ keywords and content appears just below:
 
     >>> print extract_text(find_tag_by_id(
-    ...     admin_browser.contents, 'faq-keywords'))
+    ...     owner_browser.contents, 'faq-keywords'))
     Keywords: scalable vector graphic
 
     >>> print extract_text(find_tag_by_id(
-    ...     admin_browser.contents, 'faq-content'))
+    ...     owner_browser.contents, 'faq-content'))
     Upgrade your browser to Firefox 2.0.
 
 The FAQ's original author and creation date appears in the the
 'Lifecycle' portlet:
 
-    >>> print extract_text(find_portlet(admin_browser.contents, 'Lifecycle'))
+    >>> print extract_text(find_portlet(owner_browser.contents, 'Lifecycle'))
     Lifecycle
-    Created by: Foo Bar
+    Created by: Sample Person
     When: ...
 
 A 'Related questions' portlet contains links to the question answered by
 the FAQ:
 
     >>> print extract_text(find_portlet(
-    ...     admin_browser.contents, 'Related questions'))
+    ...     owner_browser.contents, 'Related questions'))
     Related questions
     #2 Problem showing the SVG demo on W3C site
 
-    >>> print admin_browser.getLink(
+    >>> print owner_browser.getLink(
     ...     'Problem showing the SVG demo on W3C site').url
     http://answers.launchpad.dev/firefox/+question/2
 
@@ -302,25 +314,25 @@ the FAQ:
 Questions asked about a distribution or distribution source package
 can also be linked to FAQs.
 
-    >>> admin_browser.open(
+    >>> user_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/+question/11')
-    >>> admin_browser.title
+    >>> user_browser.title
     'Ubuntu question #11:...'
-    >>> admin_browser.getLink('This is a FAQ').click()
-    >>> print admin_browser.title
+    >>> user_browser.getLink('This is a FAQ').click()
+    >>> print user_browser.title
     Is question #11 a FAQ?
 
-    >>> admin_browser.open(
+    >>> user_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox'
     ...     '/+question/8')
-    >>> admin_browser.title
+    >>> user_browser.title
     'mozilla-firefox in ubuntu question #8:...'
-    >>> admin_browser.getLink('This is a FAQ').click()
-    >>> print admin_browser.title
+    >>> user_browser.getLink('This is a FAQ').click()
+    >>> print user_browser.title
     Is question #8 a FAQ?
 
 
-== Solved question cannot be linked to a FAQ ==
+== Solved questions cannot be linked to a FAQ ==
 
 Since linking a question to a FAQ is like giving an answer, it cannot
 be used on solved questions:

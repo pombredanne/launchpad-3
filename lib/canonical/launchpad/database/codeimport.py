@@ -6,11 +6,13 @@ __metaclass__ = type
 
 __all__ = [
     'CodeImport',
+    'CodeImportMachine',
+    'CodeImportMachineSet',
     'CodeImportSet',
     ]
 
 from sqlobject import (
-    BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound)
+    BoolCol, ForeignKey, StringCol, SQLObjectNotFound)
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -21,7 +23,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
-    ICodeImport, ICodeImportSet, ILaunchpadCelebrities, NotFoundError)
+    ICodeImport, ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet,
+    ILaunchpadCelebrities, NotFoundError)
 from canonical.lp.dbschema import (
     CodeImportReviewStatus, RevisionControlSystems)
 
@@ -99,3 +102,27 @@ class CodeImportSet:
     def search(self, review_status):
         """See `ICodeImportSet`."""
         return CodeImport.selectBy(review_status=review_status.value)
+
+
+class CodeImportMachine(SQLBase):
+    """See `ICodeImportMachine`."""
+
+    implements(ICodeImportMachine)
+
+    date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
+    hostname = StringCol(default=None)
+    online = BoolCol(default=False)
+
+
+class CodeImportMachineSet(object):
+    """See `ICodeImportMachineSet`."""
+
+    implements(ICodeImportMachineSet)
+
+    def getAll(self):
+        """See `ICodeImportMachineSet`."""
+        return CodeImportMachine.select()
+
+    def getByHostname(self, hostname):
+        """See `ICodeImportMachineSet`."""
+        return CodeImportMachine.selectOneBy(hostname=hostname)

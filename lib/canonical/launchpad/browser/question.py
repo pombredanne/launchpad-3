@@ -47,7 +47,8 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
-from canonical.launchpad.helpers import is_english_variant, request_languages
+from canonical.launchpad.helpers import (
+    is_english_variant, preferred_or_request_languages)
 
 from canonical.launchpad.interfaces import (
     CreateBugParams, IAnswersFrontPageSearchForm, IBug, IFAQ, IFAQTarget,
@@ -218,7 +219,7 @@ class QuestionLanguageVocabularyFactory:
 
     def __call__(self, context):
         languages = set()
-        for lang in request_languages(self.view.request):
+        for lang in preferred_or_request_languages(self.view.request):
             if not is_english_variant(lang):
                 languages.add(lang)
         if context is not None and IQuestion.providedBy(context):
@@ -352,7 +353,8 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
 
     template = search_template
 
-    _MAX_SIMILAR_ITEMS = 10
+    _MAX_SIMILAR_QUESTIONS = 10
+    _MAX_SIMILAR_FAQS = 10
 
     # Do not autofocus the title widget
     initial_focus_widget = None
@@ -415,10 +417,10 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
                  ignore_request=False)
         
         faqs = IFAQTarget(self.question_target).findSimilarFAQs(data['title'])
-        self.similar_faqs = faqs[:self._MAX_SIMILAR_ITEMS]
+        self.similar_faqs = list(faqs[:self._MAX_SIMILAR_FAQS])
 
         questions = self.question_target.findSimilarQuestions(data['title'])
-        self.similar_questions = questions[:self._MAX_SIMILAR_ITEMS]
+        self.similar_questions = list(questions[:self._MAX_SIMILAR_QUESTIONS])
 
         return self.add_template()
 
@@ -646,6 +648,11 @@ class QuestionWorkflowView(LaunchpadFormView):
         """The Question's language direction for the dir attribute."""
         return self.context.language.abbreviated_text_dir
 
+    @property
+    def is_question_owner(self):
+        """Return True when this user is the question owner."""
+        return self.user == self.context.owner
+
     def hasActions(self):
         """Return True if some actions are possible for this user."""
         for action in self.actions:
@@ -688,13 +695,15 @@ class QuestionWorkflowView(LaunchpadFormView):
         return (self.user == self.context.owner and
                 self.context.can_give_answer)
 
-    @action(_('I Solved the Problem on My Own'), name="selfanswer",
+    @action(_('Problem Solved'), name="selfanswer",
             condition=canSelfAnswer)
     def selfanswer_action(self, action, data):
         """Action called when the owner provides the solution."""
         self.context.giveAnswer(self.user, data['message'])
         self._addNotificationAndHandlePossibleSubscription(
-            _('Thanks for sharing your solution.'), data)
+            _("Your question is solved, if a particular message helped you "
+              "solved the problem, please use the <em>'This solved my "
+              "problem'</em> button."), data)
 
     def canRequestInfo(self, action):
         """Return if the requestinfo action should be displayed."""
@@ -762,7 +771,7 @@ class QuestionWorkflowView(LaunchpadFormView):
         return (self.user == self.context.owner and
                 self.context.can_reopen)
 
-    @action(_("I'm Still Having This Problem"), name='reopen',
+    @action(_("I Still Need an Answer"), name='reopen',
             condition=canReopen)
     def reopen_action(self, action, data):
         """State that the problem is still occuring and provide new
@@ -830,8 +839,8 @@ class QuestionMessageDisplayView(LaunchpadView):
     @cachedproperty
     def isBestAnswer(self):
         """Return True when this message is marked as solving the question."""
-        return (self.context == self.question.answer and
-                self.context.action in [
+        return (self.context == self.question.answer
+                and self.context.action in [
                     QuestionAction.ANSWER, QuestionAction.CONFIRM])
 
     def renderAnswerIdFormElement(self):
@@ -935,7 +944,6 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
 
     custom_widget("message", TextAreaWidget, height=5)
 
-
     @property
     def initial_values(self):
         """Fill title and content based on the question."""
@@ -1017,7 +1025,7 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
             rendered_values.add(term.value)
             count += 1
 
-        # Some selected values may not be included in the search results,
+        # Some selected values may not be included in the search results;
         # insert them at the beginning of the list.
         for missing in set(values).difference(rendered_values):
             term = self.vocabulary.getTerm(missing)
@@ -1102,6 +1110,11 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
         """Sets the default query on the search widget to the question title."""
         super(QuestionLinkFAQView, self).setUpWidgets()
         self.widgets['faq'].default_query = self.context.title
+
+    def validate(self, data):
+        """Make sure that the FAQ link was changed."""
+        if self.context.faq == data.get('faq'):
+            self.setFieldError('faq', _("You didn't modify the linked FAQ."))
 
     @action(_('Link FAQ'), name="link")
     def link_action(self, action, data):

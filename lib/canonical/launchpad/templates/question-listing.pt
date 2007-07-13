@@ -7,7 +7,6 @@
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-answercontacts|nothing" />
-  <div tal:replace="structure context/@@+portlet-details|nothing" />
   <div tal:condition="context/distribution|nothing"
        tal:replace="structure context/distribution/@@+portlet-answercontacts" />
 </metal:leftportlets>
@@ -30,6 +29,14 @@
 
 <div metal:fill-slot="main"
      tal:define="questions view/searchResults">
+  <p tal:define="unspoken_languages view/unspoken_languages"
+    tal:condition="unspoken_languages">
+    <span tal:replace="context/displayname">Mozilla Firefox</span> has 
+    unsolved questions in the following languages:
+    <span tal:replace="structure unspoken_languages">
+     <a href="ubuntu/+unspoken?language=es">1 in Spanish</a>
+    </span>. Can you help?
+  </p>
 
   <div>
     <form method="get" id="question-search-form" action=""
@@ -44,13 +51,19 @@
 
       <input tal:replace="structure view/search_action/render" />
 
-      <div class="field"
-           tal:condition="view/show_language_control"
-           tal:define="widget nocall:view/widgets/language|nothing">
-        <label tal:content="widget/label">Label</label>
-        (<a href="/+editmylanguages">Change your preferred languages</a>)
-        <tal:languages replace="structure widget" />
-      </div>
+      <tal:language_control condition="view/show_language_control">
+        <input type="hidden" name="field.language" value="es" 
+               tal:attributes="value view/language/code"
+               tal:condition="not:view/widgets/language/visible"/>
+
+        <div class="field"
+             tal:condition="view/widgets/language/visible"
+             tal:define="widget nocall:view/widgets/language|nothing">
+          <label tal:content="widget/label">Label</label>
+          (<a href="/+editmylanguages">Change your preferred languages</a>)
+          <tal:languages replace="structure widget" />
+        </div>
+      </tal:language_control>
 
       <div class="field"
            tal:define="widget nocall:view/widgets/status|nothing"

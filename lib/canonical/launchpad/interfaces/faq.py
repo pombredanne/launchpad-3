@@ -10,8 +10,6 @@ __all__ = [
     ]
 
 from zope.interface import Attribute
-from zope.interface.exceptions import Invalid
-from zope.interface.interface import invariant
 from zope.schema import (
      Choice, Datetime,  Int, Object, Text, TextLine)
 
@@ -73,4 +71,8 @@ class IFAQ(IHasOwner):
 
 
 class IFAQSet(IFAQCollection):
-    """`IFAQCollection` of all the FAQs existing in Launchpad."""
+    """`IFAQCollection` of all the FAQs existing in Launchpad.
+
+    This interface is provided by a global utility object which can
+    be used to search or retrieve any FAQ registered in Launchpad.
+    """

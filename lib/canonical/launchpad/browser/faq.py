@@ -1,6 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""IFAQ browser views."""
+"""`IFAQ` browser views."""
 
 __metaclass__ = type
 
@@ -46,7 +46,7 @@ class FAQEditView(LaunchpadEditFormView):
 
 
 class FAQStructuralObjectPresentation(StructuralObjectPresentation):
-    """Provides the structural heading for IFAQ."""
+    """Provides the structural heading for `IFAQ`."""
 
     def getMainHeading(self):
         """See `IStructuralHeaderPresentation`."""

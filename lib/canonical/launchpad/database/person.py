@@ -41,15 +41,16 @@ from canonical.launchpad.helpers import (
 
 from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, EmailAddressStatus, LoginTokenType,
-    PersonCreationRationale, SpecificationFilter, SpecificationSort,
-    SpecificationStatus, ShippingRequestStatus, SSHKeyType,
-    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy)
+    PersonCreationRationale, ShippingRequestStatus, SpecificationFilter,
+    SpecificationDefinitionStatus, SpecificationImplementationStatus,
+    SpecificationSort, SSHKeyType, TeamMembershipRenewalPolicy,
+    TeamMembershipStatus, TeamSubscriptionPolicy)
 
 from canonical.launchpad.interfaces import (
     IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
     IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon,
     IHasLogo, IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet,
-    ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
+    ILanguageSet, ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
     ILoginTokenSet, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
     IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey,
     ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
@@ -371,7 +372,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status',
+            order = ['-priority', 'Specification.definition_status',
                      'Specification.name']
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
@@ -418,7 +419,8 @@ class Person(SQLBase, HasSpecificationsMixin):
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+                quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -432,9 +434,9 @@ class Person(SQLBase, HasSpecificationsMixin):
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationStatus.OBSOLETE,
-                          SpecificationStatus.SUPERSEDED)
+            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                          SpecificationDefinitionStatus.SUPERSEDED)
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -464,16 +466,6 @@ class Person(SQLBase, HasSpecificationsMixin):
                 participation=participation,
                 needs_attention=needs_attention
                 ).getResults()
-
-    def getSupportedLanguages(self):
-        """See `IPerson`."""
-        languages = set()
-        known_languages = shortlist(self.languages)
-        if len(known_languages) != 0:
-            for lang in known_languages:
-                if not is_english_variant(lang):
-                    languages.add(lang)
-        return languages
 
     def getQuestionLanguages(self):
         """See `IQuestionTarget`."""

@@ -284,11 +284,7 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['filebug', 'bugcontact', 'securitycontact', 'cve']
-
-    def filebug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='add')
+    links = ['bugcontact', 'securitycontact', 'cve']
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
