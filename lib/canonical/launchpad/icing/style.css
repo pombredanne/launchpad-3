@@ -943,6 +943,7 @@ ul.distro, li.distro                 {list-style-image: url(/@@/distribution);}
 ul.distroseries, li.distroseries   {list-style-image: url(/@@/distribution);}
 ul.download, li.download             {list-style-image: url(/@@/download);}
 ul.edit, li.edit                     {list-style-image: url(/@@/edit);}
+ul.faq, li.faq                       {list-style-image: url(/@@/faq);}
 ul.info, li.info                     {list-style-image: url(/@@/info);}
 ul.language, li.language             {list-style-image: url(/@@/language);}
 ul.locked, li.locked                 {list-style-image: url(/@@/locked);}
