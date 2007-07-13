@@ -449,7 +449,8 @@ def faq_index(context, view):
         smartquote('%s FAQ #%d: "%s"') %
         (context.target.displayname, context.id, context.title))
 
-def faq_listing(context, view): return view.heading
+def faq_listing(context, view):
+    return view.heading
 
 def hasmentoringoffers_mentoring(context, view):
     if IPerson.providedBy(context):

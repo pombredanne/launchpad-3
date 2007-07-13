@@ -387,7 +387,7 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
 
     # No point showing a matching FAQs link on this report.
     matching_faqs_count = 0
-    
+
     @property
     def pageheading(self):
         """See `SearchQuestionsView`."""
@@ -424,7 +424,7 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
     It displays and searches the questions needing attention from the
     logged in user in a questiontarget context.
     """
-    
+
     # No point showing a matching FAQs link on this report.
     matching_faqs_count = 0
 
@@ -462,9 +462,9 @@ class QuestionCollectionUnsupportedView(SearchQuestionsView):
     """SearchQuestionsView specialization for unsupported questions.
 
      It displays questions that are asked in an unsupported language for the
-     questiontarget context.
+    questiontarget context.
      """
-    
+
     # No point showing a matching FAQs link on this report.
     matching_faqs_count = 0
 
@@ -676,6 +676,7 @@ class QuestionTargetTraversalMixin:
 # But this is needed because of limitations in the current menu architecture.
 # Menu should be built by merging all menus applying to the context object
 # (-based on the interfaces it provides).
+# See bug #125851
 class QuestionCollectionAnswersMenu(FAQCollectionMenu):
     """Base menu definition for QuestionCollection searchable by owner."""
 

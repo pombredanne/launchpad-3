@@ -15,13 +15,14 @@ from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
     IFAQCollection, ISearchFAQsForm, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.webapp import (
-    action, canonical_url, ContextMenu, LaunchpadFormView, Link, safe_action)
+    action, ApplicationMenu, canonical_url, LaunchpadFormView, Link,
+    safe_action)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import QuestionSort
 
 
-class FAQCollectionMenu(ContextMenu):
-    """Base menu definition for FAQCollection."""
+class FAQCollectionMenu(ApplicationMenu):
+    """Base menu definition for `IFAQCollection`."""
 
     usedfor = IFAQCollection
     facet = 'answers'
@@ -30,7 +31,7 @@ class FAQCollectionMenu(ContextMenu):
     def list_all(self):
         """Return a Link to list all FAQs."""
         # We adapt to IFAQCollection so that the link can be used
-        # on object swhich don't provide IFAQCollection directly, but for
+        # on objects which don't provide `IFAQCollection` directly, but for
         # which an adapter exists that gives the proper context.
         collection = IFAQCollection(self.context)
         url = canonical_url(collection, rootsite='answers') + '/+faqs'
@@ -66,7 +67,7 @@ class SearchFAQsView(LaunchpadFormView):
         """Return the message to render when there are no FAQs to display."""
         replacements=dict(
             displayname=self.context.displayname,
-            search_text=self.search_text)        
+            search_text=self.search_text)
         if self.search_text:
             return _(u'There are no FAQs for $displayname matching '
                      u'\u201c${search_text}\u201d.', mapping=replacements)
