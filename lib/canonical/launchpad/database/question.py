@@ -312,6 +312,8 @@ class Question(SQLBase, BugLinkTargetMixin):
         if faq is not None:
             assert IFAQ.providedBy(faq), (
                 "faq parameter must provide IFAQ or be None")
+        assert self.faq != faq, (
+            'cannot call linkFAQ() with already linked FAQ')
         self.faq = faq
         return self._giveAnswer(user, comment, datecreated)
 

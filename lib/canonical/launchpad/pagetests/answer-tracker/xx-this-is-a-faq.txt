@@ -144,12 +144,25 @@ question's title are displayed:
     ( ) 9: How do I troubleshoot problems with extensions/themes?
     ( ) 7: How do I install Java?
 
-To remove the FAQ, the user selects the 'No existing...' option, he
-changes the message and click 'Link FAQ'.
+He changes the message and click 'Link FAQ'.
 
-    >>> user_browser.getControl('No existing FAQs').selected = True
     >>> user_browser.getControl('Message').value = (
     ...     "Sorry, this document doesn't really answer your question.")
+    >>> user_browser.getControl('Link FAQ').click()
+
+But since, he forgot to change the link, the form is displayed again
+with an error message.
+
+    >>> print user_browser.url
+    http://answers.launchpad.dev/firefox/+question/2/+linkfaq
+    >>> for message in get_feedback_messages(user_browser):
+    ...     print message
+    You didn't modify the linked FAQ.
+
+To remove the FAQ, the user selects the 'No existing...' option and 
+submit the form again.
+
+    >>> user_browser.getControl('No existing FAQs').selected = True
     >>> user_browser.getControl('Link FAQ').click()
 
 The new message was added to the question:

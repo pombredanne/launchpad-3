@@ -1098,6 +1098,11 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
         super(QuestionLinkFAQView, self).setUpWidgets()
         self.widgets['faq'].default_query = self.context.title
 
+    def validate(self, data):
+        """Make sure that the FAQ link was changed."""
+        if self.context.faq == data.get('faq'):
+            self.setFieldError('faq', _("You didn't modify the linked FAQ."))
+
     @action(_('Link FAQ'), name="link")
     def link_action(self, action, data):
         """Link the selected FAQ to the question."""
