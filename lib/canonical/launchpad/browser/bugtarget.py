@@ -504,6 +504,13 @@ class FileBugViewBase(LaunchpadFormView):
     def getRelevantBugTask(self, bug):
         """Return the first bugtask from this bug that's relevant in
         the current context.
+
+        XXX This is a pragmatic function, not general purpose. It
+        tries to find a bugtask that can be used to pretty-up the
+        page, making it more user-friendly and informative. It's not
+        concerned by total accuracy, and will return the first
+        'relevant' bugtask it finds even if there are other
+        candidates. Be warned!  -- Gavin Panella, 2007-07-13
         """
         context = self.context
         bugtasks = bug.bugtasks
