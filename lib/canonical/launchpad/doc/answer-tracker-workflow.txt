@@ -222,9 +222,10 @@ This again moves the question to the ANSWERED state.
     >>> print question.status.name
     ANSWERED
 
-The submitter will hopefully come back to confirm that his problem is
-solved. The submitter can specify which message helped him solved his
-problem. The confirmAnswer() method is used for that purpose.
+The question owner will hopefully come back to confirm that his
+problem is solved. He can specify which answer message helped him
+solved his problem. The confirmAnswer() method is used for that
+purpose.
 
     >>> login('no-priv@canonical.com')
     >>> two_weeks_from_now = now + timedelta(days=14)
@@ -239,8 +240,8 @@ problem. The confirmAnswer() method is used for that purpose.
     >>> print confirm_message.owner.displayname
     No Privileges Person
 
-The question is moved to the SOLVED state, the message that
-solved the question is saved in the answer attribute, the dateanswered
+The question is moved to the SOLVED state, the message that solved
+the question is saved in the answer attribute, the dateanswered
 and answerer attributes are also updated.
 
     >>> print question.status.name
@@ -252,12 +253,33 @@ and answerer attributes are also updated.
     >>> question.answer == answer_message
     True
 
+
 == 2) Self-answer ==
 
-Another scenario is for the case when the user comes back to answer the
-question himself. The giveAnswer() method is also used for that case.
+Another scenario is for the case when the user comes back to give the
+solution to the question himself. The giveAnswer() method is also used
+for that case. The question owner can choose a best answer message
+later on. The workflow permits the question owner to choose an answer
+before or after the question status is set to SOLVED.
+
+The question owner creates a question.
 
     >>> question = ubuntu.newQuestion(**new_question_args)
+
+The question answer provides an answer that eludes to a decision
+the question owner must make.
+
+    >>> login('test@canonical.com')
+    >>> tomorrow_plus_one_hour = tomorrow + timedelta(hours=1)
+    >>> alt_answer_message = question.giveAnswer(
+    ...     marilize, "Are you using a pre-G3 Mac? They are very difficult "
+    ...     "to install to. You must mess with the hardware to trick "
+    ...     "the core chips to let it install. You may not want to do this.")
+
+The question owner logs in, and explains that he has researched the
+problem, and come to a solution.
+
+    >>> login('no-priv@canonical.com')
     >>> self_answer_message = question.giveAnswer(
     ...     no_priv, "I found some instructions on the Wiki on how to "
     ...     "install BootX to boot the installation CD on OldWorld Mac: "
@@ -266,24 +288,53 @@ question himself. The giveAnswer() method is also used for that case.
     ...     "worth the trouble.",
     ...     datecreated=now_plus_one_hour)
 
-In that case, the user is considered to have confirmed that the problem
-is solved and the question is moved straight to the SOLVED state. The
-'dateanswered' attribute will contain the date of the message,
-the 'answerer' attribute will be identical to the question owner and
-the 'answer' attribute will contain the message that closed the question.
+In that case, the question owner is considered to have given
+information that the problem is solved and the question is moved to
+the SOLVED state. The 'answerer' attribute will be the question owner,
+the 'dateanswered' date of the message, but the 'answer' attribute
+will None.
 
     >>> print self_answer_message.action.name
     CONFIRM
     >>> print self_answer_message.new_status.name
     SOLVED
+
     >>> print question.status.name
     SOLVED
     >>> print question.answerer.displayname
     No Privileges Person
     >>> question.dateanswered == now_plus_one_hour
     True
-    >>> question.answer == self_answer_message
+    >>> question.answer is None
     True
+
+The question owner can still specify which message helped him solved
+his problem. The confirmAnswer() method is used when the question
+owner chooses another user's answer as a best answer. The status
+will remain SOLVED. The 'answerer' attribute will be the message
+owner, and the 'answer' will be the message. The question's
+'dateanswered' attribute will be the date of the answer message.
+
+    >>> confirm_message = question.confirmAnswer(
+    ...     "Thanks Marilize for your help. I don't think I'll put Ubuntu "
+    ...     "Ubuntu on my Mac.",
+    ...     datecreated=now_plus_one_hour, answer=alt_answer_message)
+    >>> print confirm_message.action.name
+    CONFIRM
+    >>> print confirm_message.new_status.name
+    SOLVED
+    >>> print confirm_message.owner.displayname
+    No Privileges Person
+
+    >>> print question.status.name
+    SOLVED
+    >>> print question.answerer.displayname
+    Marilize Coetzee
+    >>> question.answer == alt_answer_message
+    True
+    >>> question.dateanswered == now_plus_one_hour
+    True
+
 
 == 3) The question expires ==
 
