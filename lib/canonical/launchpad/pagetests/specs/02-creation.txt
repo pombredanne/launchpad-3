@@ -1,13 +1,13 @@
 = Creating Blueprints =
 
 Blueprints can be created from multiple locations within Launchpad. In
-particular, logged-in users can create blueprints from distribution pages, from 
-project pages and from project group pages. It's also possible to create a 
-blueprint from the Blueprints home page.
+particular, logged-in users can create blueprints from distribution pages, 
+from project pages and from project group pages. It's also possible to create
+a blueprint from the Blueprints home page.
 
 Let's start by demonstrating that users can register blueprints while looking
-at a distribution. In this case, we'll follow the textual "Register a blueprint" 
-link from the Ubuntu distribution's "Actions" menu:
+at a distribution. In this case, we'll follow the textual "Register a
+blueprint" link from the Ubuntu distribution's "Actions" menu:
 
   >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu')
   >>> user_browser.getLink('Register').click()
@@ -16,7 +16,7 @@ link from the Ubuntu distribution's "Actions" menu:
 
 Alternatively, we can use the graphical "Register a blueprint" link:
 
-  >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu')
+  >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu')  
   >>> user_browser.getLink(id='addspec').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/ubuntu/+addspec'
@@ -180,9 +180,9 @@ the user is asked to specify a project from the list of projects in the group:
   >>> control('Assignee').value = 'daf@canonical.com'
   >>> control('Drafter' ).value = 'carlos@canonical.com'
   >>> control('Approver').value = 'tsukimi@quaqua.net'
-  >>> control('Summary' ).value = ('This widget is the latest and greatest in '
-  ...                              'a long range of wotzits. All wotzits are '
-  ...                              'known to be particularly resilient.')
+  >>> control('Summary' ).value = ('This widget is the latest and greatest '
+  ...                              'in a long range of wotzits. All wotzits '
+  ...                              'are known to be particularly resilient.')
   >>> control('Register').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/thunderbird/+spec/gee-whizz-wotzit'
@@ -191,8 +191,8 @@ the user is asked to specify a project from the list of projects in the group:
 == System-wide blueprint registration ==
 
 Users can register blueprints while looking at the Blueprints home page. In
-this case, the user is asked to specify a project from the list of all projects
-in Launchpad:
+this case, the user is asked to specify a project from the list of all
+projects in Launchpad:
 
   >>> user_browser.open('http://blueprints.launchpad.dev/specs/+new')
   >>> control('For'     ).value = 'ubuntu'
@@ -207,3 +207,35 @@ in Launchpad:
   >>> control('Register').click()
   >>> user_browser.url
   'http://blueprints.launchpad.dev/ubuntu/+spec/brandnewspec'
+
+  
+ == Blueprint registration from other pages in Launchpad ==
+  
+There are some blueprint listings pages from which it's not possible to 
+register a blueprint. For example, it's not possible to register a blueprint
+while looking at an individual user's blueprint listing page:
+
+  >>> user_browser.open('http://blueprints.launchpad.dev/~sabdfl')
+  >>> print user_browser.getLink('Register')
+  Traceback (most recent call last):
+      ...
+  LinkNotFoundError...
+  >>> user_browser.open('http://blueprints.launchpad.dev/~sabdfl')
+  >>> print user_browser.getLink(id='addspec')
+  Traceback (most recent call last):
+      ...
+  LinkNotFoundError...
+  
+It's also not possible to register a blueprint while looking at a group's 
+blueprint listing page:
+  
+  >>> user_browser.open('http://blueprints.launchpad.dev/~admins')
+  >>> print user_browser.getLink('Register')
+  Traceback (most recent call last):
+      ...
+  LinkNotFoundError...
+  >>> user_browser.open('http://blueprints.launchpad.dev/~admins')
+  >>> print user_browser.getLink(id='addspec')
+  Traceback (most recent call last):
+      ...
+  LinkNotFoundError...
