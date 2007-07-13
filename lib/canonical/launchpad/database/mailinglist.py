@@ -80,7 +80,7 @@ class MailingList(SQLBase):
             'Only approved mailing lists may be constructed')
         self.status = MailingListStatus.CONSTRUCTING
 
-    def transitionState(self, target_state):
+    def transitionToStatus(self, target_state):
         """See `IMailingList`."""
         # State: From CONSTRUCTING to either ACTIVE or FAILED
         if self.status == MailingListStatus.CONSTRUCTING:

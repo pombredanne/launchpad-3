@@ -101,7 +101,7 @@ class IMailingList(Interface):
             mailing list is not `MailingListStatus.APPROVED`.
         """
 
-    def transitionState(target_state):
+    def transitionToStatus(target_state):
         """Transition the list's state after a remote action has taken place.
 
         This sets the status of the mailing list to reflect the results of

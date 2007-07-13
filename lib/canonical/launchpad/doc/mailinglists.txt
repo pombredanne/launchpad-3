@@ -284,8 +284,8 @@ After Mailman has worked at constructing lists for a while, it reports (again
 through XMLRPC not shown here) on the status of each list construction.  Most,
 if not all will succeed, thus activating the team's mailing list.
 
-    >>> list_one.transitionState(MailingListStatus.ACTIVE)
-    >>> list_three.transitionState(MailingListStatus.ACTIVE)
+    >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> list_three.transitionToStatus(MailingListStatus.ACTIVE)
     >>> flush_database_updates()
     >>> list_one.status.name
     'ACTIVE'
@@ -294,7 +294,7 @@ if not all will succeed, thus activating the team's mailing list.
 
 Some list constructions may fail.
 
-    >>> list_four.transitionState(MailingListStatus.FAILED)
+    >>> list_four.transitionToStatus(MailingListStatus.FAILED)
     >>> flush_database_updates()
     >>> list_four.status.name
     'FAILED'
@@ -333,7 +333,7 @@ and report the deactivation results.
 
     >>> sorted_lists(list_set.deactivated_lists)
     [<MailingList for team "team-three"; status=DEACTIVATING at ...>]
-    >>> list_three.transitionState(MailingListStatus.INACTIVE)
+    >>> list_three.transitionToStatus(MailingListStatus.INACTIVE)
     >>> list_three.status.name
     'INACTIVE'
 
@@ -373,7 +373,7 @@ Eventually, Mailman will get around to acting on this modification, and then
 it will set the status back to ACTIVE (or FAILED if the update failed for some
 reason).
 
-    >>> list_one.transitionState(MailingListStatus.ACTIVE)
+    >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
     >>> flush_database_updates()
     >>> list_one.status.name
     'ACTIVE'
