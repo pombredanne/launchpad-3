@@ -94,6 +94,7 @@
   </tal:no-results>
 
   <p i18n:translate=""
+     id="found-matching-faqs"
      tal:condition="view/matching_faqs_count">
     You can also consult the list of
     <a href="#" tal:attributes="href view/matching_faqs_url"

@@ -12,7 +12,7 @@ with a computer these days).
 
     >>> browser.open('http://answers.launchpad.dev/kubuntu')
     >>> browser.getLink('List all FAQs').click()
-    
+
 Unfortunately, it seems that nobody has problems or questions about
 Kubuntu:
 
@@ -115,7 +115,7 @@ matches.)
     >>> browser.getControl('Search').click()
 
     >>> message = find_main_content(browser.contents).find('p')
-    >>> print extract_text(message).encode('ascii', 'backslashreplace')
+    >>> print extract_text(message)
     You can also consult the list of 1 question(s)
         matching &ldquo;plugin&rdquo;.
 
@@ -133,8 +133,8 @@ Following the link will show the questions results:
 On the question page, there is also a link to consult the FAQs matching
 the same keywords.
 
-    >>> message = find_main_content(browser.contents).find('p')
-    >>> print extract_text(message).encode('ascii', 'backslashreplace')
+    >>> message = find_tag_by_id(browser.contents, 'found-matching-faqs')
+    >>> print extract_text(message)
     You can also consult the list of 1 FAQ(s)
         matching &ldquo;plugin&rdquo;.
 
