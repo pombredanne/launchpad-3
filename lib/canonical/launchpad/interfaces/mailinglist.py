@@ -112,7 +112,7 @@ class IMailingList(Interface):
 class IMailingListSet(Interface):
     """A set of mailing lists."""
 
-    def new(team, registrant):
+    def new(team, registrant=None):
         """Register a new team mailing list.
 
         A mailing list for the team is registered and the resulting
@@ -121,7 +121,8 @@ class IMailingListSet(Interface):
 
         :param team: The team to register a new mailing list for.
         :param registrant: The person registering the mailing list.  This must
-            be the team owner or one of the team admins.
+            be the team owner or one of the team admins.  If None, the team
+            owner is used.
         :raises AssertionError: When `team` is not a team, already has a
             mailing list registered for it, or the registrant is not a team
             owner or admin.

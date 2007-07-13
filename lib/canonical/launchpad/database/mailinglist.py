@@ -134,25 +134,28 @@ class MailingList(SQLBase):
 class MailingListSet:
     implements(IMailingListSet)
 
-    def new(self, team, registrant):
+    def new(self, team, registrant=None):
         """See `IMailingListSet`."""
         assert team.isTeam(), (
             'Cannot register a list for a person who is not a team')
-        assert self.getTeamMailingList(team.name) is None, (
+        assert self.get(team.name) is None, (
             'Mailing list for team "%s" already exists' % team.name)
-        # Check to make sure that registrant is a team owner or admin.  This
-        # gets tricky because an admin can be a team, and if the registrant is
-        # a member of that team, they are by definition an administrator of
-        # the team we're creating the mailing list for.  So you can't just do
-        # "registrant in team.getDirectAdministrators()".  It's okay to use
-        # .inTeam() for all cases because a person is always a member of
-        # himself.
-        for admin in team.getDirectAdministrators():
-            if registrant.inTeam(admin):
-                break
+        if registrant is None:
+            registrant = team.teamowner
         else:
-            raise AssertionError(
-                'registrant is not a team owner or administrator')
+            # Check to make sure that registrant is a team owner or admin.
+            # This gets tricky because an admin can be a team, and if the
+            # registrant is a member of that team, they are by definition an
+            # administrator of the team we're creating the mailing list for.
+            # So you can't just do "registrant in
+            # team.getDirectAdministrators()".  It's okay to use .inTeam() for
+            # all cases because a person is always a member of himself.
+            for admin in team.getDirectAdministrators():
+                if registrant.inTeam(admin):
+                    break
+            else:
+                raise AssertionError(
+                    'registrant is not a team owner or administrator')
         return MailingList(team=team, registrant=registrant,
                            date_registered=datetime.now(pytz.timezone('UTC')))
 
