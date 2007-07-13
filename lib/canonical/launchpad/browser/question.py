@@ -629,6 +629,11 @@ class QuestionWorkflowView(LaunchpadFormView):
         """The Question's language direction for the dir attribute."""
         return self.context.language.abbreviated_text_dir
 
+    @property
+    def is_question_owner(self):
+        """Return True when this user is the question owner."""
+        return self.user == self.context.owner
+
     def hasActions(self):
         """Return True if some actions are possible for this user."""
         for action in self.actions:
@@ -671,13 +676,15 @@ class QuestionWorkflowView(LaunchpadFormView):
         return (self.user == self.context.owner and
                 self.context.can_give_answer)
 
-    @action(_('I Solved the Problem on My Own'), name="selfanswer",
+    @action(_('Problem Solved'), name="selfanswer",
             condition=canSelfAnswer)
     def selfanswer_action(self, action, data):
         """Action called when the owner provides the solution."""
         self.context.giveAnswer(self.user, data['message'])
         self._addNotificationAndHandlePossibleSubscription(
-            _('Thanks for sharing your solution.'), data)
+            _("Your question is solved, if a particular message helped you "
+              "solved the problem, please use the <em>'This solved my "
+              "problem'</em> button."), data)
 
     def canRequestInfo(self, action):
         """Return if the requestinfo action should be displayed."""
@@ -745,7 +752,7 @@ class QuestionWorkflowView(LaunchpadFormView):
         return (self.user == self.context.owner and
                 self.context.can_reopen)
 
-    @action(_("I'm Still Having This Problem"), name='reopen',
+    @action(_("I Still Need an Answer"), name='reopen',
             condition=canReopen)
     def reopen_action(self, action, data):
         """State that the problem is still occuring and provide new
@@ -813,8 +820,8 @@ class QuestionMessageDisplayView(LaunchpadView):
     @cachedproperty
     def isBestAnswer(self):
         """Return True when this message is marked as solving the question."""
-        return (self.context == self.question.answer and
-                self.context.action in [
+        return (self.context == self.question.answer
+                and self.context.action in [
                     QuestionAction.ANSWER, QuestionAction.CONFIRM])
 
     def renderAnswerIdFormElement(self):
