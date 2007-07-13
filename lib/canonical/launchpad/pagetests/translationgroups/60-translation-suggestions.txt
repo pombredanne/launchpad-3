@@ -27,8 +27,6 @@ Let's add a new suggestion as a person without privileges.
 
 Now, we can see the added suggestion + others from the sample data.
 
-  >>> print browser.contents
-
   >>> print find_tag_by_id(browser.contents, "msgset_134_es_suggestion_709_0")
   <...<samp> </samp>new suggestion...
   >>> print find_tag_by_id(browser.contents, "msgset_134_es_suggestion_709_0_origin")
