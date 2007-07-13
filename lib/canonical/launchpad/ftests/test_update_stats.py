@@ -1,6 +1,6 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
-"""Module docstring goes here."""
+"""Test updates to Distroseries stats."""
 
 __metaclass__ = type
 
@@ -10,32 +10,37 @@ from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
 from canonical.launchpad.ftests.harness import (
-    LaunchpadTestCase, LaunchpadFunctionalTestCase)
+    LaunchpadFunctionalTestCase, LaunchpadTestSetup)
 from canonical.launchpad.interfaces import (
     IDistributionSet, IDistroSeriesSet, ILanguageSet, IPOTemplateSet,
     IPersonSet)
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.config import config
 
+
 def get_script():
+    """Return the path to update-stats.py."""
     script = os.path.join(config.root, 'cronscripts', 'update-stats.py')
     assert os.path.exists(script), '%s not found' % script
     return script
 
-class UpdateStatsTest(LaunchpadTestCase):
+
+class UpdateStatsTest(LaunchpadFunctionalTestCase):
+    """Test the update-stats.py script."""
     # XXX sinzui 2007-07-12 bug=125569
     # This test should subclass unittest.TestCase. Some reworking
     # is required to migrate this test.
     dbuser = 'statistician'
 
     def tearDown(self):
-        con = self.connect()
-        # Force a commit here so test harness optimizations know the database
-        # has been messed with by a subprocess.
-        con.commit()
-        LaunchpadTestCase.tearDown(self)
+        """Tear down this test and recylcle the database."""
+        # XXX sinzui 2007-07-12 bug=125569
+        # Use the DatabaseLayer mechanism to tear this test down.
+        LaunchpadTestSetup().force_dirty_database()
+        LaunchpadFunctionalTestCase.tearDown(self)
 
     def test_basic(self):
+        """Test insert and update operations to LaunchpadStatistic."""
         # Nuke some stats so we know that they are updated
         con = self.connect()
         cur = con.cursor()
@@ -182,9 +187,11 @@ class UpdateStatsTest(LaunchpadTestCase):
 
 
 class UpdateTranslationStatsWithDisabledTemplateTest(unittest.TestCase):
+    """Disabled PO message templates tests."""
     layer = LaunchpadFunctionalLayer
 
     def setUp(self):
+        """Setup the Distroseries related objects for these tests."""
         self.distribution = getUtility(IDistributionSet)
         self.distroseriesset = getUtility(IDistroSeriesSet)
         self.languageset = getUtility(ILanguageSet)
@@ -196,6 +203,7 @@ class UpdateTranslationStatsWithDisabledTemplateTest(unittest.TestCase):
 
 
     def test_basic(self):
+        """Test that Distroseries stats do not include disabled templates."""
         # First, we check current values of cached statistics.
 
         # We get some objects we will need for this test.
@@ -334,6 +342,7 @@ class UpdateTranslationStatsForEnglishTest(unittest.TestCase):
     layer = LaunchpadFunctionalLayer
 
     def setUp(self) :
+        """Setup the Distroseries related objects for these tests."""
         self.distribution = getUtility(IDistributionSet)
         self.distroseriesset = getUtility(IDistroSeriesSet)
         self.languageset = getUtility(ILanguageSet)
