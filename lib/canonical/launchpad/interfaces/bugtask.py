@@ -506,7 +506,7 @@ class BugTaskSearchParams:
     distribution = None
     distroseries = None
     productseries = None
-    def __init__(self, user, bug=None, searchtext=None, bug_text=None,
+    def __init__(self, user, bug=None, searchtext=None, fast_searchtext=None,
                  status=None, importance=None, milestone=None,
                  assignee=None, sourcepackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
@@ -517,7 +517,7 @@ class BugTaskSearchParams:
                  bug_contact=None, bug_reporter=None, nominated_for=None):
         self.bug = bug
         self.searchtext = searchtext
-        self.bug_text = bug_text
+        self.fast_searchtext = fast_searchtext
         self.status = status
         self.importance = importance
         self.milestone = milestone

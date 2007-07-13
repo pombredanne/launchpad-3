@@ -950,7 +950,7 @@ class BugTaskSet:
         if not summary:
             return BugTask.select('1 = 2')
 
-        search_params.bug_text = nl_phrase_search(
+        search_params.fast_searchtext = nl_phrase_search(
             summary, Bug, ' AND '.join(constraint_clauses), ['BugTask'])
         return self.search(search_params)
 
@@ -1033,8 +1033,8 @@ class BugTaskSet:
         if params.searchtext:
             extra_clauses.append(self._buildSearchTextClause(params))
 
-        if params.bug_text:
-            extra_clauses.append(self._buildBugTextClause(params))
+        if params.fast_searchtext:
+            extra_clauses.append(self._buildFastSearchTextClause(params))
 
         if params.subscriber is not None:
             clauseTables.append('BugSubscription')
@@ -1214,8 +1214,8 @@ class BugTaskSet:
 
     def _buildSearchTextClause(self, params):
         """Build the clause for searchtext."""
-        assert params.bug_text is None, (
-            'cannot use bug_text at the same time as searchtext')
+        assert params.fast_searchtext is None, (
+            'cannot use fast_searchtext at the same time as searchtext')
 
         searchtext_quoted = quote(params.searchtext)
         searchtext_like_quoted = quote_like(params.searchtext)
@@ -1242,20 +1242,21 @@ class BugTaskSet:
                 searchtext_quoted, searchtext_quoted, comment_clause,
                 searchtext_like_quoted)
 
-    def _buildBugTextClause(self, params):
-        """Build the clause to use for the bug_text criteria."""
+    def _buildFastSearchTextClause(self, params):
+        """Build the clause to use for the fast_searchtext criteria."""
         assert params.searchtext is None, (
-            'cannot use searchtext at the same time as bug_text')
+            'cannot use searchtext at the same time as fast_searchtext')
 
-        bug_text_quoted = quote(params.bug_text)
+        fast_searchtext_quoted = quote(params.fast_searchtext)
         
         if params.orderby is None:
             # Unordered search results aren't useful, so sort by relevance
             # instead.
             params.orderby = [
-                SQLConstant("-rank(Bug.fti, ftq(%s))" % bug_text_quoted)]
+                SQLConstant("-rank(Bug.fti, ftq(%s))" %
+                fast_searchtext_quoted)]
 
-        return "Bug.fti @@ ftq(%s)" % bug_text_quoted
+        return "Bug.fti @@ ftq(%s)" % fast_searchtext_quoted
 
     def search(self, params, *args):
         """See canonical.launchpad.interfaces.IBugTaskSet."""
