@@ -2379,6 +2379,11 @@ class CodeImportReviewStatus(DBSchema):
     This code import has been approved and will be processed.
     """)
 
+    SUSPENDED = Item(30, """Suspended
+
+    This code import has been approved, but it has been suspended and is not
+    processed.""")
+
 
 class BugInfestationStatus(DBSchema):
     """Bug Infestation Status

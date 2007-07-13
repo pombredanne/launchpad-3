@@ -3454,7 +3454,6 @@ INSERT INTO personlanguage (id, person, "language", date_created) VALUES (5, 14,
 INSERT INTO personlanguage (id, person, "language", date_created) VALUES (6, 29, 521, '2006-10-16 18:31:44.538238');
 INSERT INTO personlanguage (id, person, "language", date_created) VALUES (7, 16, 119, '2007-06-05 12:06:39.881444');
 INSERT INTO personlanguage (id, person, "language", date_created) VALUES (8, 18, 119, '2007-06-05 12:06:39.881444');
-INSERT INTO personlanguage (id, person, "language", date_created) VALUES (9, 14, 119, '2007-06-05 18:33:02.179204');
 INSERT INTO personlanguage (id, person, "language", date_created) VALUES (10, 13, 119, '2007-06-05 18:33:45.890718');
 INSERT INTO personlanguage (id, person, "language", date_created) VALUES (11, 29, 119, '2007-06-05 18:34:52.127945');
 
