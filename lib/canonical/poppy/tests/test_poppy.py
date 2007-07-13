@@ -69,7 +69,7 @@ class TestPoppy(unittest.TestCase):
 
         Only works for a single upload (poppy transaction).
         """
-        contents = os.listdir(self.root_dir)
+        contents = sorted(os.listdir(self.root_dir))
         upload_dir = contents[1]
         return os.path.join(self.root_dir, upload_dir, path)
 
@@ -180,10 +180,9 @@ class TestPoppy(unittest.TestCase):
         self.waitForClose()
 
         # Build a list of directories representing the 4 sessions.
-        upload_dirs = [leaf for leaf in os.listdir(self.root_dir)
+        upload_dirs = [leaf for leaf in sorted(os.listdir(self.root_dir))
                        if not leaf.startswith(".") and
                        not leaf.endswith(".distro")]
-        upload_dirs.sort()
         self.assertEqual(len(upload_dirs), 4)
 
         # Check the contents of files on each session.

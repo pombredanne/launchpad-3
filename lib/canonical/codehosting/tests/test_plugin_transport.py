@@ -10,7 +10,7 @@ import unittest
 from bzrlib import errors
 from bzrlib.transport import get_transport, _get_protocol_handlers
 from bzrlib.transport.memory import MemoryServer, MemoryTransport
-from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
+from bzrlib.tests import TestCase, TestCaseInTempDir
 
 from canonical.authserver.interfaces import READ_ONLY, WRITABLE
 from canonical.codehosting.tests.helpers import FakeLaunchpad
@@ -133,15 +133,15 @@ class TestLaunchpadServer(TestCaseInTempDir):
         self.assertEqual([1], self.server.authserver._request_mirror_log)
 
 
-class TestLaunchpadTransport(TestCaseWithMemoryTransport):
+class TestLaunchpadTransport(TestCase):
 
     layer = BzrlibLayer
 
     def setUp(self):
-        TestCaseWithMemoryTransport.setUp(self)
+        TestCase.setUp(self)
         self.authserver = FakeLaunchpad()
         self.user_id = 1
-        self.backing_transport = self.get_transport()
+        self.backing_transport = MemoryTransport()
         self.mirror_transport = MemoryTransport()
         self.server = LaunchpadServer(
             self.authserver, self.user_id, self.backing_transport,
@@ -275,13 +275,13 @@ class TestLaunchpadTransport(TestCaseWithMemoryTransport):
         self.assertEqual(set([]), self.server._dirty_branch_ids)
 
 
-class TestLaunchpadTransportReadOnly(TestCaseWithMemoryTransport):
+class TestLaunchpadTransportReadOnly(TestCase):
     """Tests for read-only operations on the LaunchpadTransport."""
 
     layer = BzrlibLayer
 
     def setUp(self):
-        TestCaseWithMemoryTransport.setUp(self)
+        TestCase.setUp(self)
         _memory_server = MemoryServer()
         _memory_server.setUp()
         self.addCleanup(_memory_server.tearDown)
@@ -289,7 +289,7 @@ class TestLaunchpadTransportReadOnly(TestCaseWithMemoryTransport):
 
         self.authserver = FakeLaunchpad()
         self.user_id = 1
-        self.backing_transport = self.get_transport()
+        self.backing_transport = MemoryTransport()
         self.server = LaunchpadServer(
             self.authserver, self.user_id, self.backing_transport,
             mirror_transport)

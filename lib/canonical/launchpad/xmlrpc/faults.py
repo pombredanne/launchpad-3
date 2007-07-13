@@ -14,6 +14,7 @@ __all__ = [
     'NoSuchBranch',
     'NoSuchBug',
     'RequiredParameterMissing',
+    'BranchCreationForbidden',
     'InvalidBranchUri',
     ]
 
@@ -149,10 +150,21 @@ class RequiredParameterMissing(LaunchpadFault):
         LaunchpadFault.__init__(self, parameter_name=parameter_name)
 
 
+class BranchCreationForbidden(LaunchpadFault):
+    """The user was not permitted to create a branch."""
+
+    error_code = 110
+    msg_template = (
+        "You are not allowed to create a branch for project: %(parameter_name)s")
+
+    def __init__(self, parameter_name):
+        LaunchpadFault.__init__(self, parameter_name=parameter_name)
+
+
 class InvalidBranchUri(LaunchpadFault):
     """The provided branch URL is not a valid URI."""
 
-    error_code = 110
+    error_code = 120
     msg_template = "Invalid URI: %(branch_url)s"
 
     def __init__(self, branch_url):

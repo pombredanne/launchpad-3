@@ -44,6 +44,10 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
+  <class class="canonical.launchpad.xmlrpc.faults.BranchCreationForbidden">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
   <class class="canonical.launchpad.xmlrpc.faults.InvalidBranchUri">
     <require like_class="xmlrpclib.Fault" />
   </class>
