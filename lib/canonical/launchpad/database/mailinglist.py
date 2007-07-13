@@ -73,19 +73,31 @@ class MailingList(SQLBase):
 
     def reportResult(self, status):
         """See `IMailingList`"""
-        assert self.status in (MailingListStatus.CONSTRUCTING,
-                               MailingListStatus.MODIFIED), (
-            'The mailing list is not waiting for results')
-        assert status in (MailingListStatus.ACTIVE,
-                          MailingListStatus.FAILED), (
-            'Status result must be active or failed')
+        # State 1: From CONSTRUCTING to either ACTIVE or FAILED
+        if self.status == MailingListStatus.CONSTRUCTING:
+            assert status in (MailingListStatus.ACTIVE,
+                              MailingListStatus.FAILED), (
+                'Status result must be active or failed')
+        # State 2: From MODIFIED to either ACTIVE or FAILED
+        elif self.status == MailingListStatus.MODIFIED:
+            assert status in (MailingListStatus.ACTIVE,
+                              MailingListStatus.FAILED), (
+                'Status result must be active or failed')
+        # State 3: From DEACTIVATING to INACTIVE or FAILED
+        elif self.status == MailingListStatus.DEACTIVATING:
+            assert status in (MailingListStatus.INACTIVE,
+                              MailingListStatus.FAILED), (
+                'Status result must be inactive or failed')
+        # This is not a valid state change.
+        else:
+            assert False, 'The mailing list is not waiting for results'
         self.status = status
 
     def deactivate(self):
         """See `IMailingList`"""
         assert self.status == MailingListStatus.ACTIVE, (
             'Only active mailing lists may be deactivated')
-        self.status = MailingListStatus.INACTIVE
+        self.status = MailingListStatus.DEACTIVATING
 
     def _get_welcome_message(self):
         return self.welcome_message_text
@@ -136,3 +148,8 @@ class MailingListRegistry:
     def modified_lists(self):
         """See `IMailingListRegistry`"""
         return MailingList.selectBy(status=MailingListStatus.MODIFIED)
+
+    @property
+    def deactivated_lists(self):
+        """See `IMailingListRegistry`"""
+        return MailingList.selectBy(status=MailingListStatus.DEACTIVATING)
