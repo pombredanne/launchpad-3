@@ -414,6 +414,9 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 'Unpacked source contains more than one directory: %r'
                 % temp_directories)
 
+        # XXX cprov 20070713: We should access only the expected directory
+        # name (<sourcename>-<no_epoch(no_revision(version))>).
+
         # Instead of trying to predict the unpacked source directory name,
         # we simply use glob to retrive everything like:
         # 'tempdir/*/debian/copyright'
@@ -449,10 +452,11 @@ class DSCFile(SourceUploadFile, SignableTagFile):
     def storeInDatabase(self):
         """Store DSC information as a SourcePackageRelease record.
 
-        It reencodes all fields extracted from DSC because old packages
-        contain latin-1 text and that sucks.
+        It reencodes all fields extracted from DSC, the simulated_changelog
+        and the copyright, because old packages contain latin-1 text and
+        that sucks.
         """
-        # Injecting other parameters that requires encoding transformation.
+        # Organize all the parameters requiring encoding transformation.
         pending = self._dict.copy()
         pending['simulated_changelog'] = self.changes.simulated_changelog
         pending['copyright'] = self.copyright

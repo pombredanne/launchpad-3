@@ -61,7 +61,7 @@ class ISourcePackageRelease(Interface):
         required=True)
     dsc = Attribute("The DSC file for this SourcePackageRelease")
     copyright = Attribute(
-        "The debian/copyright file for this SourcePackageRelease")
+        "Copyright information for this SourcePackageRelease, if available.")
     section = Attribute("Section this Source Package Release belongs to")
     builds = Attribute("Builds for this sourcepackagerelease")
     files = Attribute("IBinaryPackageFile entries for this "
