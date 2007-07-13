@@ -60,11 +60,7 @@ class DistributionSourcePackageOverviewMenu(ApplicationMenu):
 
     usedfor = IDistributionSourcePackage
     facet = 'overview'
-    links = ['reportbug', 'managebugcontacts']
-
-    def reportbug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='add')
+    links = ['managebugcontacts']
 
     def managebugcontacts(self):
         return Link('+subscribe', 'Bugmail Settings', icon='edit')
@@ -74,7 +70,7 @@ class DistributionSourcePackageBugsMenu(DistributionSourcePackageOverviewMenu):
 
     usedfor = IDistributionSourcePackage
     facet = 'bugs'
-    links = ['reportbug', 'managebugcontacts']
+    links = ['managebugcontacts']
 
 
 class DistributionSourcePackageNavigation(GetitemNavigation,
