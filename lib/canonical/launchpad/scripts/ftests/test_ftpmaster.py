@@ -255,45 +255,6 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Priority to: 'EXTRA'\n"
             "ERROR: 'mozilla-firefox' source isn't published in hoary")
 
-    def test_processBinaryChange_success(self):
-        """Check processBinaryChange() method call.
-
-        It simply wraps changeOverride method on
-        IDistroArchSeriesBinaryPackage, which is already tested in place.
-        Inspect the log messages, check if the correct binary was picked
-        and correct argument was passed.
-        """
-        changer = ArchiveOverrider(
-            self.log, distro_name='ubuntu', suite='hoary',
-            component_name='main', section_name='base', priority_name='extra')
-        changer.initialize()
-        changer.processBinaryChange('pmount')
-        self.assertEqual(
-            self.log.read(),
-            "INFO: Override Component to: 'main'\n"
-            "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'EXTRA'\n"
-            "INFO: 'pmount/main/base/EXTRA' binary overridden in hoary/hppa\n"
-            "INFO: 'pmount/universe/editors/IMPORTANT' binary "
-                "overridden in hoary/i386")
-
-    def test_processBinaryChange_error(self):
-        """processBinaryChange warns the user about an unpublished binary.
-
-        Inspect the log messages.
-        """
-        changer = ArchiveOverrider(
-            self.log, distro_name='ubuntu', suite='warty',
-            component_name='main', section_name='base', priority_name='extra')
-        changer.initialize()
-        changer.processBinaryChange('evolution')
-        self.assertEqual(
-            self.log.read(),
-            "INFO: Override Component to: 'main'\n"
-            "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'EXTRA'\n"
-            "ERROR: 'evolution' binary not found in warty/hppa")
-
     def test_processChildrenChange_success(self):
         """processChildrenChanges, modify the source and its binary children.
 
@@ -315,8 +276,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
-            "ERROR: 'mozilla-firefox' binary isn't published in warty/hppa\n"
-            "INFO: 'mozilla-firefox/main/base/IMPORTANT' "
+            "INFO: 'mozilla-firefox/main/base/EXTRA' "
                 "binary overridden in warty/i386")
 
     def test_processChildrenChange_error(self):
