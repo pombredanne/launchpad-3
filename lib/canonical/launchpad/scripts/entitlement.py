@@ -70,20 +70,6 @@ class EntitlementExchange:
         ]
 
     @staticmethod
-    def _checkVersion(read_version):
-        """Check the version number.  Raise an exception if not supported."""
-        supported = EntitlementExchange.version
-        reported = read_version
-
-        if supported != reported:
-            # if the versions do not match then
-            # an error has occured.
-            return False
-        else:
-            # The version is supported
-            return True
-
-    @staticmethod
     def _preprocessData(in_file):
         """Verify the version and remove comments."""
         version_line = in_file.readline()
@@ -92,7 +78,7 @@ class EntitlementExchange:
             raise InvalidFormat(
                 "The first line does not have valid version information.")
         read_version = int(match.group(1))
-        if EntitlementExchange._checkVersion(read_version) is False:
+        if EntitlementExchange.version != read_version:
             raise UnsupportedVersion(
                 "Version %d of the file format is not supported." %
                 read_version)
