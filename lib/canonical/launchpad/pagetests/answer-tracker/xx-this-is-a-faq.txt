@@ -190,61 +190,55 @@ the project owner, he doesn't have the possibility to create a new FAQ.
       ...
     Unauthorized: ...
 
-Foo Bar (which is a site admin) does have that ability.
+Sample Person who is the project owner does have that ability.
 
-    >>> admin_browser.open(
+    >>> owner_browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> owner_browser.open(
     ...     'http://answers.launchpad.dev/firefox/+question/2')
-    >>> admin_browser.getLink('This is a FAQ').click()
-    >>> admin_browser.getLink('create a new FAQ').click()
-    >>> print admin_browser.url
+    >>> owner_browser.getLink('This is a FAQ').click()
+    >>> owner_browser.getLink('create a new FAQ').click()
+    >>> print owner_browser.url
     http://answers.launchpad.dev/firefox/+question/2/+createfaq
-    >>> print admin_browser.title
+    >>> print owner_browser.title
     Create a FAQ for Mozilla Firefox
 
 The FAQ title and content are pre-filled with the target question. He
 edits them to be more appropriate:
 
-    >>> print admin_browser.getControl('Title').value
+    >>> print owner_browser.getControl('Title').value
     Problem showing the SVG demo on W3C site
-    >>> admin_browser.getControl('Title').value = 'Displaying SVG in Firefox'
+    >>> owner_browser.getControl('Title').value = 'Displaying SVG in Firefox'
 
-    >>> print admin_browser.getControl('Content').value
+    >>> print owner_browser.getControl('Content').value
     Hi! I'm trying to learn about SVG but I can't get it to work at all in
     firefox. Maybe there is a plugin? Help! Thanks.
     
-    >>> admin_browser.getControl('Content').value = (
+    >>> owner_browser.getControl('Content').value = (
     ...     'Upgrade your browser to Firefox 2.0.')
 
 He can also enter keywords describing the FAQ:
 
-    >>> admin_browser.getControl('Keywords').value = (
+    >>> owner_browser.getControl('Keywords').value = (
     ...     'scalable vector graphic')
 
 There is a 'Message' field that will be used to answer the question.
 It is pre-filled, but he can change its value:
 
-    >>> print admin_browser.getControl('Message').value
-    Foo Bar suggests this article as an answer to your question:
-    >>> admin_browser.getControl('Message').value = 'Read the Fine Answer:'
+    >>> print owner_browser.getControl('Message').value
+    Sample Person suggests this article as an answer to your question:
+    >>> owner_browser.getControl('Message').value = 'Read the Fine Answer:'
 
 After clicking the 'Create' button, the FAQ is created and the user is
 returned to the question page.
 
-    >>> admin_browser.getControl('Create and Link').click()
-    >>> print admin_browser.url
+    >>> owner_browser.getControl('Create and Link').click()
+    >>> print owner_browser.url
     http://answers.launchpad.dev/firefox/+question/2
-
-The question's status was changed to 'Answered':
-
-    >>> details_portlet = find_portlet(
-    ...     admin_browser.contents, 'Mozilla Firefox question #2')
-    >>> print details_portlet.find('b', text='Status:').next.strip()
-    Answered
 
 The answer message was added to the question's discussion:
 
     >>> print extract_text(find_tags_by_class(
-    ...     admin_browser.contents, 'boardCommentBody')[-1]).encode(
+    ...     owner_browser.contents, 'boardCommentBody')[-1]).encode(
     ...     'ascii', 'backslashreplace')
     Read the Fine Answer:
     FAQ...: \u201cDisplaying SVG in Firefox\u201d.
@@ -254,48 +248,50 @@ The answer message was added to the question's discussion:
 
 A link to the FAQ appears in the question details portlet:
 
+    >>> details_portlet = find_portlet(
+    ...     owner_browser.contents, 'Mozilla Firefox question #2')
     >>> print extract_text(
     ...     details_portlet.find('b', text='Related FAQ:').findNext('a'))
     Displaying SVG in Firefox
-    >>> admin_browser.getLink('Displaying SVG in Firefox').click()
-    >>> print admin_browser.url
+    >>> owner_browser.getLink('Displaying SVG in Firefox').click()
+    >>> print owner_browser.url
     http://answers.launchpad.dev/firefox/+faq/...
-    >>> print backslashreplace(admin_browser.title)
+    >>> print backslashreplace(owner_browser.title)
     Mozilla Firefox FAQ #...: \u201cDisplaying SVG in Firefox\u201d
 
 The FAQ's title appears as the prime heading:
 
-    >>> main_content = find_main_content(admin_browser.contents)
+    >>> main_content = find_main_content(owner_browser.contents)
     >>> print main_content.find('h1').renderContents()
     Displaying SVG in Firefox
 
 The FAQ keywords and content appears just below:
 
     >>> print extract_text(find_tag_by_id(
-    ...     admin_browser.contents, 'faq-keywords'))
+    ...     owner_browser.contents, 'faq-keywords'))
     Keywords: scalable vector graphic
 
     >>> print extract_text(find_tag_by_id(
-    ...     admin_browser.contents, 'faq-content'))
+    ...     owner_browser.contents, 'faq-content'))
     Upgrade your browser to Firefox 2.0.
 
 The FAQ's original author and creation date appears in the the
 'Lifecycle' portlet:
 
-    >>> print extract_text(find_portlet(admin_browser.contents, 'Lifecycle'))
+    >>> print extract_text(find_portlet(owner_browser.contents, 'Lifecycle'))
     Lifecycle
-    Created by: Foo Bar
+    Created by: Sample Person
     When: ...
 
 A 'Related questions' portlet contains links to the question answered by
 the FAQ:
 
     >>> print extract_text(find_portlet(
-    ...     admin_browser.contents, 'Related questions'))
+    ...     owner_browser.contents, 'Related questions'))
     Related questions
     #2 Problem showing the SVG demo on W3C site
 
-    >>> print admin_browser.getLink(
+    >>> print owner_browser.getLink(
     ...     'Problem showing the SVG demo on W3C site').url
     http://answers.launchpad.dev/firefox/+question/2
 
@@ -305,21 +301,21 @@ the FAQ:
 Questions asked about a distribution or distribution source package
 can also be linked to FAQs.
 
-    >>> admin_browser.open(
+    >>> user_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/+question/11')
-    >>> admin_browser.title
+    >>> user_browser.title
     'Ubuntu question #11:...'
-    >>> admin_browser.getLink('This is a FAQ').click()
-    >>> print admin_browser.title
+    >>> user_browser.getLink('This is a FAQ').click()
+    >>> print user_browser.title
     Is question #11 a FAQ?
 
-    >>> admin_browser.open(
+    >>> user_browser.open(
     ...     'http://answers.launchpad.dev/ubuntu/+source/mozilla-firefox'
     ...     '/+question/8')
-    >>> admin_browser.title
+    >>> user_browser.title
     'mozilla-firefox in ubuntu question #8:...'
-    >>> admin_browser.getLink('This is a FAQ').click()
-    >>> print admin_browser.title
+    >>> user_browser.getLink('This is a FAQ').click()
+    >>> print user_browser.title
     Is question #8 a FAQ?
 
 
