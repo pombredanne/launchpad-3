@@ -18,12 +18,8 @@
   <h1 tal:condition="not:view/is_person"
      >Blueprints for <tal:software replace="context/displayname" /></h1>
 
-  <div tal:condition="view/is_pillar" style="float: right;">
-    <a id="addspec" href="+addspec">
-    	<img alt="Register a blueprint" 
-    	     src="/+icing/but-sml-registerablueprint.gif"/>
-    </a>
-  </div>
+  <div style="float: right;"
+       tal:content="structure context/@@+register-a-blueprint-button|nothing" />
 
   <tal:no_specs condition="not: has_any_specs">
 
