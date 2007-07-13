@@ -44,13 +44,13 @@ distribution:
     ...            "dependent services should only be run when the system is "
     ...            "positive that it has a network. This would greatly enhance "
     ...            "the system's flexibility and responsiveness.")
-    >>> control('Name'    ).value = 'networkmagic'
-    >>> control('Title'   ).value = 'Network Magic: Automatic Network Detection'
-    >>> control('URL'     ).value = 'http://wiki.ubuntu.com/NetworkMagic'
-    >>> control('Status'  ).value = ['Approved']
-    >>> control('Summary' ).value = summary
+    >>> control('Name').value = 'networkmagic'
+    >>> control('Title').value = 'Network Magic: Automatic Network Detection'
+    >>> control('URL').value = 'http://wiki.ubuntu.com/NetworkMagic'
+    >>> control('Status').value = ['Approved']
+    >>> control('Summary').value = summary
     >>> control('Assignee').value = 'daf@canonical.com'
-    >>> control('Drafter' ).value = 'carlos@canonical.com'
+    >>> control('Drafter').value = 'carlos@canonical.com'
     >>> control('Approver').value = 'tsukimi@quaqua.net'
     >>> control('Register').click()
     >>> user_browser.url
@@ -67,13 +67,13 @@ It's not possible to register a blueprint with the same name as an existing
 blueprint:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
-    >>> control('Name'    ).value = 'networkmagic'
-    >>> control('Title'   ).value = 'Network Magic: Automatic Network Detection'
-    >>> control('URL'     ).value = 'http://wiki.ubuntu.com/NetworkMagicNew'
-    >>> control('Status'  ).value = ['Approved']
-    >>> control('Summary' ).value = summary
+    >>> control('Name').value = 'networkmagic'
+    >>> control('Title').value = 'Network Magic: Automatic Network Detection'
+    >>> control('URL').value = 'http://wiki.ubuntu.com/NetworkMagicNew'
+    >>> control('Status').value = ['Approved']
+    >>> control('Summary').value = summary
     >>> control('Assignee').value = 'daf@canonical.com'
-    >>> control('Drafter' ).value = 'carlos@canonical.com'
+    >>> control('Drafter').value = 'carlos@canonical.com'
     >>> control('Approver').value = 'tsukimi@quaqua.net'
     >>> control('Register').click()
     >>> user_browser.url
@@ -85,13 +85,13 @@ blueprint:
 Additionally, blueprint names must conform to a set pattern:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
-    >>> control('Name'    ).value = 'NetworkMagic!'
-    >>> control('Title'   ).value = 'Network Magic: Automatic Network Detection'
-    >>> control('URL'     ).value = 'http://wiki.ubuntu.com/NetworkMagicBang'
-    >>> control('Summary' ).value = summary
-    >>> control('Status'  ).value = ['Approved']
+    >>> control('Name').value = 'NetworkMagic!'
+    >>> control('Title').value = 'Network Magic: Automatic Network Detection'
+    >>> control('URL').value = 'http://wiki.ubuntu.com/NetworkMagicBang'
+    >>> control('Summary').value = summary
+    >>> control('Status').value = ['Approved']
     >>> control('Assignee').value = 'daf@canonical.com'
-    >>> control('Drafter' ).value = 'carlos@canonical.com'
+    >>> control('Drafter').value = 'carlos@canonical.com'
     >>> control('Approver').value = 'tsukimi@quaqua.net'
     >>> control('Register').click()
     >>> user_browser.url
@@ -124,13 +124,13 @@ It's not possible to register a blueprint with the same URL as an existing
 blueprint:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
-    >>> control('Name'    ).value = 'dupenetworkmagic'
-    >>> control('Title'   ).value = 'This is a dupe Network Magic Spec'
-    >>> control('URL'     ).value = 'http://wiki.ubuntu.com/NetworkMagic'
-    >>> control('Summary' ).value = summary
-    >>> control('Status'  ).value = ['Approved']
+    >>> control('Name').value = 'dupenetworkmagic'
+    >>> control('Title').value = 'This is a dupe Network Magic Spec'
+    >>> control('URL').value = 'http://wiki.ubuntu.com/NetworkMagic'
+    >>> control('Summary').value = summary
+    >>> control('Status').value = ['Approved']
     >>> control('Assignee').value = 'daf@canonical.com'
-    >>> control('Drafter' ).value = 'carlos@canonical.com'
+    >>> control('Drafter').value = 'carlos@canonical.com'
     >>> control('Approver').value = 'tsukimi@quaqua.net'
     >>> control('Register').click()
     >>> user_browser.url
@@ -146,15 +146,15 @@ Users can register blueprints while looking at a project group. In this case,
 the user is asked to specify a project from the list of projects in the group:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/mozilla/+addspec')
-    >>> control('For'     ).value = ['thunderbird']
-    >>> control('Name'    ).value = 'gee-whizz-wotzit'
-    >>> control('Title'   ).value = 'Grand amazing tool'
-    >>> control('URL'     ).value = 'http://wiki.mozilla.org/WhizzWotzit'
-    >>> control('Status'  ).value = ['Approved']
+    >>> control('For').value = ['thunderbird']
+    >>> control('Name').value = 'gee-whizz-wotzit'
+    >>> control('Title').value = 'Grand amazing tool'
+    >>> control('URL').value = 'http://wiki.mozilla.org/WhizzWotzit'
+    >>> control('Status').value = ['Approved']
     >>> control('Assignee').value = 'daf@canonical.com'
-    >>> control('Drafter' ).value = 'carlos@canonical.com'
+    >>> control('Drafter').value = 'carlos@canonical.com'
     >>> control('Approver').value = 'tsukimi@quaqua.net'
-    >>> control('Summary' ).value = ('This widget is the latest and greatest in '
+    >>> control('Summary').value = ('This widget is the latest and greatest in '
     ...                              'a long range of wotzits. All wotzits are '
     ...                              'known to be particularly resilient.')
     >>> control('Register').click()
@@ -193,19 +193,20 @@ When registering a blueprint for a project, we specify the `sprint` field to
 propose the blueprint we register for that sprint. If the user has permissions
 the blueprint will be automatically added to the agenda for the sprint.
 
-    >>> browser.addHeader('Authorization', 'Basic carlos@canonical.com:test')
-    >>> browser.open('http://blueprints.launchpad.dev/jokosher/+addspec')
-    >>> browser.getControl(name='field.name').value = 'spec-for-sprint'
-    >>> browser.getControl(name='field.title').value = 'Spec for Sprint'
+    >>> sample_browser = setupBrowser('Basic test@canonical.com:test')
+    >>> sample_browser.open('http://blueprints.launchpad.dev/jokosher')
+    >>> sample_browser.getLink('Register blueprint').click()
+    >>> sample_browser.getControl('Name').value = 'spec-for-sprint'
+    >>> sample_browser.getControl('Title').value = 'Spec for Sprint'
     >>> summary = "A spec to be discussed at a sprint"
-    >>> browser.getControl(name='field.summary').value = summary
-    >>> browser.getControl(name='field.sprint').value = ['paris']
-    >>> browser.getControl('Register Blueprint').click()
-    >>> browser.url
+    >>> sample_browser.getControl('Summary').value = summary
+    >>> sample_browser.getControl('Propose for sprint').value = ['paris']
+    >>> sample_browser.getControl('Register Blueprint').click()
+    >>> sample_browser.url
     'http://blueprints.launchpad.dev/jokosher/+spec/spec-for-sprint'
-    >>> browser.open('http://blueprints.launchpad.dev/sprints/paris')
-    >>> 'spec-for-sprint' in browser.contents
-    True
+    >>> sample_browser.open('http://blueprints.launchpad.dev/sprints/paris')
+    >>> find_tag_by_id(sample_browser.contents, 'speclisting')
+    <...spec-for-sprint...>
 
 === Registering and proposing for a sprint from a sprint ===
 
@@ -217,20 +218,19 @@ When a user without permissions to the sprint registers a new blueprint, it is
 proposed for this sprint, but not added to the agenda. A priviledged user can
 accept or reject the proposal from the agenda page.
 
-    >>> user_browser.open('http://blueprints.launchpad.dev/sprints/futurista/+addspec')
-    >>> 'No Privileges Person' in user_browser.contents
-    True
-    >>> user_browser.getControl(name='field.target').value = 'jokosher'
-    >>> user_browser.getControl(name='field.name').value = 'another-spec-for-sprint'
-    >>> user_browser.getControl(name='field.title').value = 'Another Spec for Sprint'
-    >>> user_browser.getControl(name='field.summary').value = (
+    >>> user_browser.open(
+    ...     'http://blueprints.launchpad.dev/sprints/futurista/+addspec')
+    >>> user_browser.getControl('For').value = 'jokosher'
+    >>> user_browser.getControl('Name').value = 'another-spec-for-sprint'
+    >>> user_browser.getControl('Title').value = 'Another Spec for Sprint'
+    >>> user_browser.getControl('Summary').value = (
     ...     "Another spec to be discussed at a sprint")
     >>> user_browser.getControl('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/sprints/futurista'
-    >>> 'another-spec-for-sprint' in browser.contents
+    >>> 'another-spec-for-sprint' in user_browser.contents
     False
-    >>> browser.open('http://blueprints.launchpad.dev/sprints/futurista/+settopics')
-    >>> 'another-spec-for-sprint' in browser.contents
-    True
-
+    >>> admin_browser.open(
+    ...     'http://blueprints.launchpad.dev/sprints/futurista/+settopics')
+    >>> find_tag_by_id(admin_browser.contents, 'speclisting')
+    <...another-spec-for-sprint...>

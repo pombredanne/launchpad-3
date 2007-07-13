@@ -8,13 +8,15 @@ __all__ = [
     ]
 
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from sqlobject import (
     ForeignKey, StringCol, SQLRelatedJoin)
 
 from canonical.launchpad.interfaces import (
-    IHasLogo, IHasMugshot, IHasIcon, ISprint, ISprintSet)
+    IHasLogo, IHasMugshot, IHasIcon, ILaunchpadCelebrities,
+    ISprint, ISprintSet)
 
 from canonical.database.sqlbase import (
     SQLBase, flush_database_updates, quote)
@@ -292,6 +294,13 @@ class Sprint(SQLBase):
             if speclink.spec.id == spec.id:
                 SprintSpecification.delete(speclink.id)
                 return speclink
+
+    def isDriver(self, user):
+        """See ISprint."""
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.owner) or
+                user.inTeam(self.driver) or
+                user.inTeam(admins))
 
 
 class SprintSet:

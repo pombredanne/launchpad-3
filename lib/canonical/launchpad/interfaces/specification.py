@@ -6,7 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'ISpecification',
-    'INewSpecification',
+    'INewSpecificationForm',
     'ISpecificationSet',
     'ISpecificationDelta',
     ]
@@ -368,7 +368,7 @@ class ISpecification(IHasOwner, ICanBeMentored):
         """Link the given branch to this specification."""
 
 
-class INewSpecification(ISpecification):
+class INewSpecificationForm(ISpecification):
     """ A schema for registering new blueprints"""
     sprint = Choice(
         title=_("Propose for sprint"),
@@ -377,7 +377,7 @@ class INewSpecification(ISpecification):
         required=False,
         vocabulary='FutureSprint')
     
-    projecttarget = Choice(
+    project_target = Choice(
         title=_("For"),
         description=_("The project for which this proposal is being made."),
         required=True,

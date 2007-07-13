@@ -1,5 +1,4 @@
-Sprints / Meetings
-==================
+= Sprints / Meetings =
 
 Sprints or meetings can be coordinated using Launchpad.
 
@@ -95,9 +94,7 @@ See, there are no ubuntu sprints.
     ...     print sprint.name, sprint.time_starts.strftime('%Y-%m-%d')
 
 
-
-Specification Listings
-======================
+== Specification Listings ==
 
 We should be able to get lists of specifications in different states
 related to a sprint.
@@ -169,3 +166,20 @@ Reset firefox so we don't mess up later tests.
  >>> firefox.active = True
  >>> flush_database_updates()
 
+
+== Sprint Driver ==
+
+Each sprint had a driver - the person (or team) that can decide
+on the list of blueprints for discussion.
+
+    >>> person_set = getUtility(IPersonSet)
+    >>> paris = sprintset["paris"]
+    >>> sample_person = person_set.getByEmail('test@canonical.com')
+    >>> nopriv_person = person_set.getByEmail('no-priv@canonical.com')
+    >>> admin_person = person_set.getByEmail('foo.bar@canonical.com')
+    >>> paris.isDriver(sample_person)
+    True
+    >>> paris.isDriver(admin_person)
+    True
+    >>> paris.isDriver(nopriv_person)
+    False

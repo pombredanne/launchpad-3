@@ -147,6 +147,9 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     def unlinkSpecification(spec):
         """Remove this specification from the sprint spec list."""
 
+    def isDriver(user):
+        """Returns True iff the specified user a driver of this sprint."""
+
 
 class IHasSprints(Interface):
     """An interface for things that have lists of sprints associated with
