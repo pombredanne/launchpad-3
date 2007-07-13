@@ -71,13 +71,14 @@ class MailingList(SQLBase):
             'Only approved mailing lists may be constructed')
         self.status = MailingListStatus.CONSTRUCTING
 
-    def reportConstructionResult(self, status):
+    def reportResult(self, status):
         """See `IMailingList`"""
-        assert self.status == MailingListStatus.CONSTRUCTING, (
-            'The mailing list is not under construction')
+        assert self.status in (MailingListStatus.CONSTRUCTING,
+                               MailingListStatus.MODIFIED), (
+            'The mailing list is not waiting for results')
         assert status in (MailingListStatus.ACTIVE,
                           MailingListStatus.FAILED), (
-            'Construction status must be active or failed')
+            'Status result must be active or failed')
         self.status = status
 
     def deactivate(self):
@@ -85,6 +86,17 @@ class MailingList(SQLBase):
         assert self.status == MailingListStatus.ACTIVE, (
             'Only active mailing lists may be deactivated')
         self.status = MailingListStatus.INACTIVE
+
+    def _get_welcome_message(self):
+        return self.welcome_message_text
+
+    def _set_welcome_message(self, text):
+        assert self.status == MailingListStatus.ACTIVE, (
+            'Only active mailing lists may be modified')
+        self.welcome_message_text = text
+        self.status = MailingListStatus.MODIFIED
+
+    welcome_message = property(_get_welcome_message, _set_welcome_message)
 
 
 class MailingListRegistry:

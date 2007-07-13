@@ -51,13 +51,16 @@ class IMailingList(Interface):
         required=True,
         )
 
-    welcome_message_text = Text(
+    welcome_message = Text(
         title=_('The welcome message text for new subscribers'),
 
         description=_('When a new member joins the mailing list, they are '
                       'sent this welcome message text.  It may contain '
                       'any instructions or additional links that a new '
-                      'subscriber might want to know about.')
+                      'subscriber might want to know about.  The welcome '
+                      'message may only be changed for active mailing lists '
+                      'and doing so changes the status of the list to '
+                      'MODIFIED.')
         )
 
     def review(reviewer, status):
@@ -77,8 +80,8 @@ class IMailingList(Interface):
         of the mailing list must be MailingListStatus.APPROVED.
         """
 
-    def reportConstructionResult(status):
-        """Set the status after construction has occurred.
+    def reportResult(status):
+        """Set the status after a remote action has taken place.
 
         This sets the status of the mailing list to reflect the results of
         construction by Mailman.  status may be either
