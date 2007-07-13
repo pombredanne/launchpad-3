@@ -14,17 +14,6 @@
     <b>Status:</b>
     <span tal:replace="context/status/title">Open</span><br />
 
-    <b>Related FAQ:</b><br />
-    <tal:block condition="context/faq">
-      <a href="#"
-         tal:attributes="href context/faq/fmt:url"
-         tal:content="context/faq/title">FAQ Title</a>
-    </tal:block>
-    <tal:block condition="not: context/faq">
-      <i>None</i>
-    </tal:block>
-    <br />
-
     <b>For:</b>
     <span tal:condition="context/product"
           tal:replace="context/product/name">Firefox</span>

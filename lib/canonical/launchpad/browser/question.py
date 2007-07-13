@@ -47,7 +47,8 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.questiontarget import SearchQuestionsView
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
-from canonical.launchpad.helpers import is_english_variant, request_languages
+from canonical.launchpad.helpers import (
+    is_english_variant, preferred_or_request_languages)
 
 from canonical.launchpad.interfaces import (
     CreateBugParams, IAnswersFrontPageSearchForm, IBug, IFAQ, IFAQTarget,
@@ -218,7 +219,7 @@ class QuestionLanguageVocabularyFactory:
 
     def __call__(self, context):
         languages = set()
-        for lang in request_languages(self.view.request):
+        for lang in preferred_or_request_languages(self.view.request):
             if not is_english_variant(lang):
                 languages.add(lang)
         if context is not None and IQuestion.providedBy(context):
@@ -943,7 +944,6 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
 
     custom_widget("message", TextAreaWidget, height=5)
 
-
     @property
     def initial_values(self):
         """Fill title and content based on the question."""
@@ -1025,7 +1025,7 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
             rendered_values.add(term.value)
             count += 1
 
-        # Some selected values may not be included in the search results,
+        # Some selected values may not be included in the search results;
         # insert them at the beginning of the list.
         for missing in set(values).difference(rendered_values):
             term = self.vocabulary.getTerm(missing)
@@ -1110,6 +1110,11 @@ class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
         """Sets the default query on the search widget to the question title."""
         super(QuestionLinkFAQView, self).setUpWidgets()
         self.widgets['faq'].default_query = self.context.title
+
+    def validate(self, data):
+        """Make sure that the FAQ link was changed."""
+        if self.context.faq == data.get('faq'):
+            self.setFieldError('faq', _("You didn't modify the linked FAQ."))
 
     @action(_('Link FAQ'), name="link")
     def link_action(self, action, data):

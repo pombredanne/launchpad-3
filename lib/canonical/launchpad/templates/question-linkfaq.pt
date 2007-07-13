@@ -34,7 +34,7 @@
 </div>
 
 <metal:help fill-slot="help">
-  <p>This page is used to answer the question by giving a link to a FAQ
+  <p>This page is used to answer the question by making a link to a FAQ
     document. 
   </p>
   <p>Select the appropriate FAQ using the radio buttons. The list of suggested

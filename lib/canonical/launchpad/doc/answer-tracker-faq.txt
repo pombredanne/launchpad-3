@@ -308,3 +308,11 @@ It is not possible to modify the faq attribute directly:
     Traceback (most recent call last):
       ...
     ForbiddenAttribute: ...
+
+And it is not allowed to call linkFAQ() when the FAQ is already linked:
+
+    >>> message = fnord_question.linkFAQ(
+    ...     no_priv, firefox_faq, 'See the FAQ.')
+    Traceback (most recent call last):
+      ...
+    AssertionError: cannot call linkFAQ() with already linked FAQ

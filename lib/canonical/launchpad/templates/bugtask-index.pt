@@ -200,6 +200,24 @@
     </div>
   </tal:not-logged-in>
 
+      <div class="related">
+        <h2>What next?</h2>
+        <ul>
+          <li>
+            <a
+              tal:attributes="href string:${context/target/fmt:url}/+filebug"
+            >Report another bug</a>
+            about <tal:context replace="context/target/displayname" />
+          </li>
+          <li>
+            <a
+              tal:attributes="href string:${context/target/fmt:url}/+bugs"
+            >List open bugs</a>
+            for <tal:context replace="context/target/displayname" />
+          </li>
+        </ul>
+      </div>
+
 </div>
 </body>
 </html>

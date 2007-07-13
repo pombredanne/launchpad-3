@@ -203,7 +203,7 @@
         name="+nominate"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugNominationView"
-        permission="launchpad.View"
+        permission="launchpad.Edit"
         template="../templates/bug-nominate-for-series.pt" />
 
     <browser:generalform
