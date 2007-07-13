@@ -37,7 +37,8 @@ class IFAQCollection(Interface):
         :param owner: A person that is matched against the owner of the FAQ.
             If None, owner is not included as a filter criteria.
 
-        :param sort:  One value from of FAQSort. If None, a default value
-            is used. When there is a search_text value, the default is to sort
-            by RELEVANCY, otherwise results are sorted NEWEST_FIRST.
+        :param sort:  One value from the FAQSort enumeration. If None, a
+            default value is used. When there is a search_text value, the
+            default is to sort by RELEVANCY, otherwise results are sorted
+            NEWEST_FIRST.
         """
