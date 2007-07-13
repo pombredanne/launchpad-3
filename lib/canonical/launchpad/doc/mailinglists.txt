@@ -60,6 +60,8 @@ request to have the list created, but it is not created right away.
     >>> utc = pytz.timezone('UTC')
     >>> registration_date = datetime.now(utc)
     >>> list_one = list_registry.register(team_one)
+    >>> verifyObject(IMailingList, list_one)
+    True
     >>> flush_database_updates()
     >>> list_one
     <MailingList for team "team-one"; status=REGISTERED at 0x...>
@@ -97,7 +99,8 @@ welcome message text.
     >>> print list_one.welcome_message_text
     None
 
-The mailing list's registrant does notchange even if the team's owner changes.
+The mailing list's registrant does not change even if the team's owner
+changes.
 
     >>> login('carlos@canonical.com')
     >>> carlos = personset.getByName('carlos')
