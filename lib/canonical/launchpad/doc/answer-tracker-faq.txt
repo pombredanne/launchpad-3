@@ -163,6 +163,8 @@ Only the project owners or answer contacts can edit an IFAQ.
 So Sample Person (the project owner) has edit permission:
 
     >>> login('test@canonical.com')
+    >>> print firefox.owner.displayname
+    Sample Person
     >>> check_permission('launchpad.Edit', firefox_faq)
     True
 
