@@ -474,12 +474,12 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 return sub
         return None
 
-    def subscribe(self, person, essential=None, user=None):
+    def subscribe(self, person, user, essential):
         """Create or modify a user's subscription to this blueprint."""
         # first see if a relevant subscription exists, and if so, return it
         sub = self.subscription(person)
         if sub is not None:
-            if bool(sub.essential) != bool(essential):
+            if sub.essential != essential:
                 # If a subscription already exists, but the value for
                 # 'essential' changes, there's no need to create a new
                 # subscription, but we modify the existing subscription
@@ -493,8 +493,6 @@ class Specification(SQLBase, BugLinkTargetMixin):
                     SQLObjectModifiedEvent(sub, sub, ['essential'], user=user))
             return sub
         # since no previous subscription existed, create and return a new one
-        if essential is None:
-            essential = False
         sub = SpecificationSubscription(specification=self,
             person=person, essential=essential)
         notify(SQLObjectCreatedEvent(sub, user=user))

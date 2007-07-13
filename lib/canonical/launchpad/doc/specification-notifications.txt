@@ -73,7 +73,7 @@ Let's set a different approver and add a subscriber.
     >>> sabdfl = getUtility(IPersonSet).getByEmail('mark@hbd.com')
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> svg_support.approver = sabdfl
-    >>> svg_support.subscribe(sample_person, essential=False)
+    >>> svg_support.subscribe(sample_person, sample_person, False)
     <...>
 
 Now if we edit the status, a notification will be sent to all the

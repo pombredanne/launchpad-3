@@ -253,10 +253,10 @@ class SpecificationView(LaunchpadView, CanBeMentoredView):
         essential = request.form.get('essential', False)
         if self.user and request.method == 'POST':
             if sub is not None:
-                self.context.subscribe(self.user, essential)
+                self.context.subscribe(self.user, self.user, essential)
                 self.notices.append("You have subscribed to this spec.")
             elif upd is not None:
-                self.context.subscribe(self.user, essential)
+                self.context.subscribe(self.user, self.user, essential)
                 self.notices.append('Your subscription has been updated.')
             elif unsub is not None:
                 self.context.unsubscribe(self.user)

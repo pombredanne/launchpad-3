@@ -1832,20 +1832,25 @@ def notify_specification_subscription_modified(specsub, event):
     """
     user = event.user
     spec = specsub.specification
-    address = specsub.person.preferredemail.email.encode('ascii')
-    subject = specification_notification_subject(spec)
-    if specsub.essential:
-        specsub_type = 'Participation essential'
-    else:
-        specsub_type = 'Participation non-essential'
-    mailwrapper = MailWrapper(width=72)
-    body = mailwrapper.format(        
-        'Your subscription to the blueprint '
-        '%(blueprint_name)s - %(blueprint_title)s '
-        'has changed to [%(specsub_type)s].\n\n'
-        '--\n  %(blueprint_url)s' %
-        {'blueprint_name' : spec.name,
-         'blueprint_title' : spec.title,
-         'specsub_type' : specsub_type,
-         'blueprint_url' : canonical_url(spec)})
-    simple_sendmail_from_person(user, [address], subject, body)
+    person = specsub.person
+
+    # Only send a notification if the
+    # subscription changed by someone else.
+    if person != user:
+        address = person.preferredemail.email.encode('ascii')
+        subject = specification_notification_subject(spec)
+        if specsub.essential:
+            specsub_type = 'Participation essential'
+        else:
+            specsub_type = 'Participation non-essential'
+        mailwrapper = MailWrapper(width=72)
+        body = mailwrapper.format(        
+            'Your subscription to the blueprint '
+            '%(blueprint_name)s - %(blueprint_title)s '
+            'has changed to [%(specsub_type)s].\n\n'
+            '--\n  %(blueprint_url)s' %
+            {'blueprint_name' : spec.name,
+             'blueprint_title' : spec.title,
+             'specsub_type' : specsub_type,
+             'blueprint_url' : canonical_url(spec)})
+        simple_sendmail_from_person(user, [address], subject, body)
