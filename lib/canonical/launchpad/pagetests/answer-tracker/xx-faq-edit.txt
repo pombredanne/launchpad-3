@@ -8,9 +8,10 @@ That action is only available to project owners and answer contacts.
 That's why the link doesn't appear for the anonymous user nor
 No Privileges Person:
 
+    >>> from canonical.launchpad.helpers import backslashreplace
     >>> anon_browser.open('http://answers.launchpad.dev/firefox/+faq/7')
-    >>> anon_browser.title
-    u'Mozilla Firefox FAQ #7: \u201cHow do I install Java?\u201d'
+    >>> print backslashreplace(anon_browser.title)
+    Mozilla Firefox FAQ #7: \u201cHow do I install Java?\u201d
 
     >>> anon_browser.getLink('Edit FAQ')
     Traceback (most recent call last):
@@ -45,7 +46,7 @@ project:
     >>> print browser.url
     http://answers.launchpad.dev/firefox/+faq/7/+edit
     >>> browser.title
-    u'Edit FAQ #7 details'
+    'Edit FAQ #7 details'
 
 The user can change the title, keywords and content fields. He then
 clicks 'Save' to save his changes.
