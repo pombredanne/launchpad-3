@@ -726,7 +726,7 @@ class ProductSet:
         return self.stats.value('reviewed_products')
 
     def count_buggy(self):
-        return self.stats.value('products_with_translations')
+        return self.stats.value('projects_with_bugs')
 
     def count_featureful(self):
         return self.stats.value('products_with_blueprints')
