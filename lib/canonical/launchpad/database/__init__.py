@@ -123,3 +123,4 @@ from canonical.launchpad.database.archive import *
 from canonical.launchpad.database.emailaddress import *
 from canonical.launchpad.database.openidserver import *
 from canonical.launchpad.database.entitlement import *
+from canonical.launchpad.database.mailinglist import *

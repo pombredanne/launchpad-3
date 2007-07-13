@@ -4,7 +4,7 @@ Teams may have zero or one team mailing list.  Creating a team mailing list
 requires several steps, starting with registration of the list by the owner of
 an existing team.  This is done through an IMailingListRegistry utility.
 
-    >>> from zope.interface.verifyObject import verifyObject
+    >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IMailingList, IMailingListRegistry)
     >>> list_registry = getUtility(IMailingListRegistry)
