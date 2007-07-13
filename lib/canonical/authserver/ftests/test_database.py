@@ -933,7 +933,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         success = self.storage._recordSuccessInteraction(
             self.cursor, 'test-recordsuccess', 'vostok',
             started_tuple, completed_tuple)
-        self.assertEqual(success, True)
+        self.assertEqual(success, True, '_recordSuccessInteraction failed')
 
         self.cursor.execute("""
             SELECT name, hostname, date_started, date_completed
