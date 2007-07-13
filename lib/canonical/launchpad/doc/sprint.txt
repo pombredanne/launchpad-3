@@ -169,17 +169,33 @@ Reset firefox so we don't mess up later tests.
 
 == Sprint Driver ==
 
-Each sprint had a driver - the person (or team) that can decide
-on the list of blueprints for discussion.
+Each sprint had a driver - the person (or team) that can decide on the
+list of blueprints for discussion. The driver is stored in the `driver`
+attribute.
 
     >>> person_set = getUtility(IPersonSet)
     >>> paris = sprintset["paris"]
     >>> sample_person = person_set.getByEmail('test@canonical.com')
     >>> nopriv_person = person_set.getByEmail('no-priv@canonical.com')
     >>> admin_person = person_set.getByEmail('foo.bar@canonical.com')
-    >>> paris.isDriver(sample_person)
-    True
-    >>> paris.isDriver(admin_person)
-    True
+
+We can use the `isDriver` method on sprint objects to determine whether
+a user is considered a driver for a sprint.
+
     >>> paris.isDriver(nopriv_person)
     False
+
+sample_person is the driver for the paris sprint.
+
+    >>> paris.driver == sample_person
+    True
+
+Obviously, we'd expect isDriver to return true for her.
+
+    >>> paris.isDriver(sample_person)
+    True
+
+Administrators are always considered drivers for any sprint.
+
+    >>> paris.isDriver(admin_person)
+    True

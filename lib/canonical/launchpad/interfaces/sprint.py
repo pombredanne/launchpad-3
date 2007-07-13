@@ -148,7 +148,13 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
         """Remove this specification from the sprint spec list."""
 
     def isDriver(user):
-        """Returns True iff the specified user a driver of this sprint."""
+        """Returns True if and only if the specified user
+        is a driver of this sprint.
+
+        A driver for a sprint is either the person in the
+        `driver` attribute, a person who is memeber of a team
+        in the `driver` attribute or an administrator.
+        """
 
 
 class IHasSprints(Interface):

@@ -33,7 +33,7 @@ from canonical.lp.dbschema import (
 
 
 class Sprint(SQLBase):
-    """See ISprint."""
+    """See `ISprint`."""
 
     implements(ISprint, IHasLogo, IHasMugshot, IHasIcon)
 
@@ -201,7 +201,7 @@ class Sprint(SQLBase):
         return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def specificationLinks(self, sort=None, quantity=None, filter=None):
-        """See ISprint."""
+        """See `ISprint`."""
 
         query = self.spec_filter_clause(filter=filter)
 
@@ -216,7 +216,7 @@ class Sprint(SQLBase):
         return results.prejoin(['specification'])
 
     def getSpecificationLink(self, speclink_id):
-        """See ISprint.
+        """See `ISprint`.
         
         NB: we expose the horrible speclink.id because there is no unique
         way to refer to a specification outside of a product or distro
@@ -228,7 +228,7 @@ class Sprint(SQLBase):
         return speclink
 
     def acceptSpecificationLinks(self, idlist, decider):
-        """See ISprint."""
+        """See `ISprint`."""
         for sprintspec in idlist:
             speclink = self.getSpecificationLink(sprintspec)
             speclink.acceptBy(decider)
@@ -242,7 +242,7 @@ class Sprint(SQLBase):
                         filter=[SpecificationFilter.PROPOSED]).count()
 
     def declineSpecificationLinks(self, idlist, decider):
-        """See ISprint."""
+        """See `ISprint`."""
         for sprintspec in idlist:
             speclink = self.getSpecificationLink(sprintspec)
             speclink.declineBy(decider)
@@ -257,7 +257,7 @@ class Sprint(SQLBase):
 
     # attendance
     def attend(self, person, time_starts, time_ends):
-        """See ISprint."""
+        """See `ISprint`."""
         # first see if a relevant attendance exists, and if so, update it
         for attendance in self.attendances:
             if attendance.attendee.id == person.id:
@@ -269,7 +269,7 @@ class Sprint(SQLBase):
             time_starts=time_starts, time_ends=time_ends)
 
     def removeAttendance(self, person):
-        """See ISprint."""
+        """See `ISprint`."""
         for attendance in self.attendances:
             if attendance.attendee.id == person.id:
                 attendance.destroySelf()
@@ -282,21 +282,21 @@ class Sprint(SQLBase):
 
     # linking to specifications
     def linkSpecification(self, spec):
-        """See ISprint."""
+        """See `ISprint`."""
         for speclink in self.spec_links:
             if speclink.spec.id == spec.id:
                 return speclink
         return SprintSpecification(sprint=self, specification=spec)
 
     def unlinkSpecification(self, spec):
-        """See ISprint."""
+        """See `ISprint`."""
         for speclink in self.spec_links:
             if speclink.spec.id == spec.id:
                 SprintSpecification.delete(speclink.id)
                 return speclink
 
     def isDriver(self, user):
-        """See ISprint."""
+        """See `ISprint`."""
         admins = getUtility(ILaunchpadCelebrities).admin
         return (user.inTeam(self.owner) or
                 user.inTeam(self.driver) or
@@ -309,15 +309,15 @@ class SprintSet:
     implements(ISprintSet)
 
     def __init__(self):
-        """See ISprintSet."""
+        """See `ISprintSet`."""
         self.title = 'Sprints and meetings'
 
     def __getitem__(self, name):
-        """See ISprintSet."""
+        """See `ISprintSet`."""
         return Sprint.selectOneBy(name=name)
 
     def __iter__(self):
-        """See ISprintSet."""
+        """See `ISprintSet`."""
         return iter(Sprint.select("time_ends > 'NOW'", orderBy='time_starts'))
 
     @property
@@ -327,7 +327,7 @@ class SprintSet:
     def new(self, owner, name, title, time_zone, time_starts, time_ends,
             summary=None, address=None, driver=None, home_page=None,
             mugshot=None, logo=None, icon=None):
-        """See ISprintSet."""
+        """See `ISprintSet`."""
         return Sprint(owner=owner, name=name, title=title,
             time_zone=time_zone, time_starts=time_starts,
             time_ends=time_ends, summary=summary, driver=driver,

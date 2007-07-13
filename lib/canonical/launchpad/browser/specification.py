@@ -978,7 +978,7 @@ class SprintSpecificationAddView(SpecificationAddViewBase):
     def field_names(self):
         """Return the list of fields participating in the form.
 
-        This form is used an ISprint to get a new spec
+        This form is used on an `ISprint` to get a new spec
         for a project and propose it for the sprint.
         """
         field_names = super(SprintSpecificationAddView, self).field_names
