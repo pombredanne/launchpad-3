@@ -11,8 +11,7 @@ __all__ = [
     'CodeImportSet',
     ]
 
-from sqlobject import (
-    BoolCol, ForeignKey, StringCol, SQLObjectNotFound)
+from sqlobject import BoolCol, ForeignKey, StringCol, SQLObjectNotFound
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -20,7 +19,7 @@ from zope.interface import implements
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import (cursor, SQLBase, sqlvalues)
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.interfaces import (
     ICodeImport, ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet,
@@ -60,6 +59,8 @@ class CodeImport(SQLBase):
     cvs_module = StringCol(default=None)
     svn_branch_url = StringCol(default=None)
 
+    date_last_successful = UtcDateTimeCol(default=None)
+
 
 class CodeImportSet:
     """See `ICodeImportSet`."""
@@ -83,6 +84,38 @@ class CodeImportSet:
         return CodeImport(registrant=registrant, branch=branch,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
+
+    # XXX: newWithId is only needed for code-import-sync-script. This method
+    # should be removed after the transition to the new code import system is
+    # complete. -- DavidAllouche 2007-07-05
+
+    def newWithId(self, id, registrant, branch, rcs_type, svn_branch_url=None,
+            cvs_root=None, cvs_module=None):
+        """See `ICodeImportSet`."""
+        assert branch.owner == getUtility(ILaunchpadCelebrities).vcs_imports
+        if rcs_type == RevisionControlSystems.CVS:
+            assert cvs_root is not None and cvs_module is not None
+            assert svn_branch_url is None
+        elif rcs_type == RevisionControlSystems.SVN:
+            assert cvs_root is None and cvs_module is None
+            assert svn_branch_url is not None
+        else:
+            raise AssertionError(
+                "Don't know how to sanity check source details for unknown "
+                "rcs_type %s"%rcs_type)
+        cur = cursor()
+        cur.execute("""
+            SELECT setval('codeimport_id_seq', GREATEST(%s, (
+                SELECT last_value from codeimport_id_seq)));"""
+            % sqlvalues(id))
+        assert len(cur.fetchall()) == 1
+        return CodeImport(id=id, registrant=registrant, branch=branch,
+            rcs_type=rcs_type, svn_branch_url=svn_branch_url,
+            cvs_root=cvs_root, cvs_module=cvs_module)
+
+    def delete(self, id):
+        """See `ICodeImportSet`."""
+        CodeImport.delete(id)
 
     def getAll(self):
         """See `ICodeImportSet`."""
