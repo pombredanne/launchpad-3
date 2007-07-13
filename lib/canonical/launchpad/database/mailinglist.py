@@ -10,22 +10,17 @@ __all__ = [
 import datetime
 import pytz
 
-from sqlobject import (
-    BoolCol, ForeignKey, IntCol, MultipleJoin, SQLMultipleJoin,
-    SQLObjectNotFound, SQLRelatedJoin, StringCol)
-from sqlobject.sqlbuilder import AND, OR, SQLConstant
+from sqlobject import ForeignKey, IntCol, StringCol
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.sqlbase import (
-    cursor, flush_database_caches, flush_database_updates, quote, quote_like,
-    sqlvalues, SQLBase)
-from canonical.database.constants import UTC_NOW, DEFAULT
+from canonical.database.constants import UTC_NOW
+from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
+from canonical.database.sqlbase import SQLBase
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IMailingList, IMailingListRegistry)
 from canonical.lp.dbschema import MailingListStatus
-from canonical.database.datetimecol import UtcDateTimeCol
 
 
 class MailingList(SQLBase):
