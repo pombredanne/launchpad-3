@@ -1,9 +1,9 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Subscribers for IFAQ."""
+"""Subscribers for `IFAQ`."""
 
 __metaclass__ = type
-__all__ = []
+__all__ = ['update_last_updated']
 
 
 from canonical.database.constants import UTC_NOW
