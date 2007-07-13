@@ -5,7 +5,7 @@ IDistroSeries.getSourcesPublishedForAllArchives method is used by the
 Build System ("queue-builder" to be precise) to retrieve the source
 publications that should be considered in its checks.
 
-'queue-builder' will verify "if each retrieved publication has an
+'queue-builder' will verify if each retrieved publication has an
 associated Build and BuildQueue records based on their DSC and
 P-a-s (Package-architecture-specific) information. See further details
 in buildd-queuebuilder.txt.

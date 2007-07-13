@@ -118,7 +118,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
     def checkPublicationsAreIgnored(self, pocket):
         """Check if publications are ignored for a given pocket.
 
-        Source and Binary publications to the given pocket are still PEDNING
+        Source and Binary publications to the given pocket are still PENDING
         in database.
         """
         pub_source, pub_bin = self._createLinkedPublication(
@@ -128,6 +128,30 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # The publications to pocket were ignored.
         self.assertEqual(pub_source.status, PackagePublishingStatus.PENDING)
         self.assertEqual(pub_bin.status, PackagePublishingStatus.PENDING)
+
+    def checkSourceLookupForPocket(self, pocket, expected_result,
+                                   is_careful=False):
+        """Check the results of an IDistroSeries publishing lookup."""
+        pub_records = self.breezy_autotest.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
+            pocket=pocket, is_careful=is_careful)
+
+        self.assertEqual(pub_records.count(), len(expected_result))
+        self.assertEqual(
+            [item.id for item in expected_result],
+            [pub.id for pub in pub_records])
+
+    def checkBinaryLookupForPocket(self, pocket, expected_result,
+                                   is_careful=False):
+        """Check the results of an IDistroArchSeries publishing lookup."""
+        pub_records = self.breezy_autotest_i386.getPendingPublications(
+            archive=self.breezy_autotest.main_archive,
+            pocket=pocket, is_careful=is_careful)
+
+        self.assertEqual(pub_records.count(), len(expected_result))
+        self.assertEqual(
+            [item.id for item in expected_result],
+            [pub.id for pub in pub_records])
 
     def testPublishUnstableDistroSeries(self):
         """Top level publication for IDistroSeries in 'unstable' states.
@@ -173,19 +197,6 @@ class TestIPublishingAPI(TestNativePublishingBase):
         self.checkPublicationsAreConsidered(PackagePublishingPocket.UPDATES)
         self.checkPublicationsAreConsidered(PackagePublishingPocket.RELEASE)
 
-    def checkLookupForPocket(self, pocket, is_careful=False, result=None):
-        """Perform """
-        if result is None:
-            result = []
-
-        pub_records = self.breezy_autotest.getPendingPublications(
-            archive=self.breezy_autotest.main_archive,
-            pocket=pocket, is_careful=is_careful)
-
-        self.assertEqual(pub_records.count(), len(result))
-        self.assertEqual(
-            [pub.id for pub in result], [pub.id for pub in pub_records])
-
     def testPublicationLookUpForUnstableDistroSeries(self):
         """Source publishing record lookup for a unstable DistroSeries.
 
@@ -198,25 +209,27 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # Usual publication procedure for a distroseries in development
         # state only 'pending' publishing records for pocket RELEASE
         # are published.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.RELEASE, result=[pub_pending_release])
+        self.checkSourceLookupForPocket(
+            PackagePublishingPocket.RELEASE,
+            expected_result=[pub_pending_release])
 
         # This step is unusual but checks if the pocket restriction also
         # work for other pockets than the RELEASE.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.UPDATES, result=[pub_pending_updates])
+        self.checkSourceLookupForPocket(
+            PackagePublishingPocket.UPDATES,
+            expected_result=[pub_pending_updates])
 
         # Restricting to a pocket with no publication returns an
         # empty SQLResult.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.BACKPORTS, result=[])
+        self.checkSourceLookupForPocket(
+            PackagePublishingPocket.BACKPORTS, expected_result=[])
 
         # Using the 'careful' mode results in the consideration
         # of every 'pending' and 'published' records present in
         # the given pocket. The order is also important, NEWER first.
-        self.checkLookupForPocket(
+        self.checkSourceLookupForPocket(
             PackagePublishingPocket.RELEASE, is_careful=True,
-            result=[pub_published_release, pub_pending_release])
+            expected_result=[pub_published_release, pub_pending_release])
 
     def testPublicationLookUpForStableDistroSeries(self):
         """Source publishing record lookup for a stable/released DistroSeries.
@@ -234,8 +247,8 @@ class TestIPublishingAPI(TestNativePublishingBase):
 
         # Since the distroseries is stable, nothing is returned because
         # RELEASE pocket is ignored, in both modes, careful or not.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.RELEASE, result=[])
+        self.checkSourceLookupForPocket(
+            PackagePublishingPocket.RELEASE, expected_result=[])
 
         # XXX cprov 20070105: it means that "careful" mode is useless for
         # rebuilding released archives.
@@ -243,13 +256,15 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # archive will, obviously contain new timestamps, which would freak
         # mirrors/clients out.
         # At the end, "careful" mode is such a gross hack.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.RELEASE, is_careful=True, result=[])
+        self.checkSourceLookupForPocket(
+            PackagePublishingPocket.RELEASE, is_careful=True,
+            expected_result=[])
 
         # Publications targeted to other pockets than RELEASE are
         # still reachable.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.UPDATES, result=[pub_pending_updates])
+        self.checkSourceLookupForPocket(
+            PackagePublishingPocket.UPDATES,
+            expected_result=[pub_pending_updates])
 
     def testPublicationLookUpForFrozenDistroSeries(self):
         """Source publishing record lookup for a frozen DistroSeries.
@@ -266,25 +281,27 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # Usual publication procedure for a distroseries in development
         # state only 'pending' publishing records for pocket RELEASE
         # are published.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.RELEASE, result=[pub_pending_release])
+        self.checkSourceLookupForPocket(
+            PackagePublishingPocket.RELEASE,
+            expected_result=[pub_pending_release])
 
         # This step is unusual but checks if the pocket restriction also
         # work for other pockets than the RELEASE.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.UPDATES, result=[pub_pending_updates])
+        self.checkSourceLookupForPocket(
+            PackagePublishingPocket.UPDATES,
+            expected_result=[pub_pending_updates])
 
         # Restricting to a pocket with no publication returns an
         # empty SQLResult.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.BACKPORTS, result=[])
+        self.checkSourceLookupForPocket(
+            PackagePublishingPocket.BACKPORTS, expected_result=[])
 
         # Using the 'careful' mode results in the consideration
         # of every 'pending' and 'published' records present in
         # the given pocket.
-        self.checkLookupForPocket(
+        self.checkSourceLookupForPocket(
             PackagePublishingPocket.RELEASE, is_careful=True,
-            result=[pub_published_release, pub_pending_release])
+            expected_result=[pub_published_release, pub_pending_release])
 
     def testPublicationLookUpForUnstableDistroArchSeries(self):
         """Binary publishing record lookup for a unstable DistroArchSeries.
@@ -300,25 +317,27 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # Usual publication procedure for a distroseries in development
         # state only 'pending' publishing records for pocket RELEASE
         # are published.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.RELEASE, result=[pub_pending_release])
+        self.checkBinaryLookupForPocket(
+            PackagePublishingPocket.RELEASE,
+            expected_result=[pub_pending_release])
 
         # This step is unusual but checks if the pocket restriction also
         # work for other pockets than the RELEASE.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.UPDATES, result=[pub_pending_updates])
+        self.checkBinaryLookupForPocket(
+            PackagePublishingPocket.UPDATES,
+            expected_result=[pub_pending_updates])
 
         # Restricting to a pocket with no publication returns an
         # empty SQLResult.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.BACKPORTS, result=[])
+        self.checkBinaryLookupForPocket(
+            PackagePublishingPocket.BACKPORTS, expected_result=[])
 
         # Using the 'careful' mode results in the consideration
         # of every 'pending' and 'published' records present in
         # the given pocket.
-        self.checkLookupForPocket(
+        self.checkBinaryLookupForPocket(
             PackagePublishingPocket.RELEASE, is_careful=True,
-            result=[pub_published_release, pub_pending_release])
+            expected_result=[pub_published_release, pub_pending_release])
 
     def testPublicationLookUpForStableDistroArchSeries(self):
         """Binary publishing record lookup for stable/released DistroArchSeries.
@@ -336,8 +355,8 @@ class TestIPublishingAPI(TestNativePublishingBase):
 
         # Since the distroseries is stable, nothing is returned because
         # RELEASE pocket is ignored, in both modes, careful or not.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.RELEASE, result=[])
+        self.checkBinaryLookupForPocket(
+            PackagePublishingPocket.RELEASE, expected_result=[])
 
         # XXX cprov 20070105: it means that "careful" mode is useless for
         # rebuilding released archives.
@@ -345,13 +364,14 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # archive will, obviously contain new timestamps, which would freak
         # mirrors/clients out.
         # At the end, "careful" mode is such a gross hack.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.RELEASE, is_careful=True, result=[])
+        self.checkBinaryLookupForPocket(
+            PackagePublishingPocket.RELEASE, is_careful=True, expected_result=[])
 
         # Publications targeted to other pockets than RELEASE are
         # still reachable.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.UPDATES, result=[pub_pending_updates])
+        self.checkBinaryLookupForPocket(
+            PackagePublishingPocket.UPDATES,
+            expected_result=[pub_pending_updates])
 
     def testPublicationLookUpForFrozenDistroArchSeries(self):
         """Binary publishing record lookup for a frozen DistroArchSeries.
@@ -368,25 +388,27 @@ class TestIPublishingAPI(TestNativePublishingBase):
         # Usual publication procedure for a distroseries in development
         # state only 'pending' publishing records for pocket RELEASE
         # are published.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.RELEASE, result=[pub_pending_release])
+        self.checkBinaryLookupForPocket(
+            PackagePublishingPocket.RELEASE,
+            expected_result=[pub_pending_release])
 
         # This step is unusual but checks if the pocket restriction also
         # work for other pockets than the RELEASE.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.UPDATES, result=[pub_pending_updates])
+        self.checkBinaryLookupForPocket(
+            PackagePublishingPocket.UPDATES,
+            expected_result=[pub_pending_updates])
 
         # Restricting to a pocket with no publication returns an
         # empty SQLResult.
-        self.checkLookupForPocket(
-            PackagePublishingPocket.BACKPORTS, result=[])
+        self.checkBinaryLookupForPocket(
+            PackagePublishingPocket.BACKPORTS, expected_result=[])
 
         # Using the 'careful' mode results in the consideration
         # of every 'pending' and 'published' records present in
         # the given pocket.
-        self.checkLookupForPocket(
+        self.checkBinaryLookupForPocket(
             PackagePublishingPocket.RELEASE, is_careful=True,
-            result=[pub_published_release, pub_pending_release])
+            expected_result=[pub_published_release, pub_pending_release])
 
 
 def test_suite():
