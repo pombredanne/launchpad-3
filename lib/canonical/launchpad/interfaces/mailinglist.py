@@ -123,3 +123,6 @@ class IMailingListRegistry(Interface):
 
     approved_lists = Attribute(
         'All mailing lists with the status of MailingListStatus.APPROVED.')
+
+    modified_lists = Attribute(
+        'All mailing lists with the status of MailingListStatus.MODIFIED.')
