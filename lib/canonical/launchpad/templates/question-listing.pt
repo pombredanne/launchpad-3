@@ -25,8 +25,8 @@
 
 <metal:heading fill-slot="pageheading">
   
-  <tal:block condition="view/required:launchpad.Edit">
-    <tal:block condition="view/display_target_column">
+  <tal:block condition="view/context_is_project">
+    <tal:block condition="view/required:launchpad.Edit">
       <p tal:condition="not: context/products" class="warning message"> 
         There are no projects registered for
         <span tal:replace="context/displayname">project displayname</span>.
