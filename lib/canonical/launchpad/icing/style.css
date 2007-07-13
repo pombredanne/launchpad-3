@@ -166,7 +166,7 @@ img {
   border: none;
 }
 
-/* see launchpad.js:activateCollapsables() */
+/* see launchpad.js:activateCollapsibles() */
 .collapsible legend a, .collapsible legend a:visited {
   text-decoration: none;
   color: #000088;
@@ -175,6 +175,8 @@ img.collapseIcon {text-decoration: none; margin-bottom: -3px;}
 .collapsible legend a span {text-decoration: underline;}
 .collapsible {padding: 0; margin: 0;}
 .collapsed {border: none; margin-bottom: 0;}
+fieldset .collapsed {display: none;}
+fieldset .expanded {display: block;}
 
 form.primary.search {
   margin-bottom: 2em;
@@ -602,7 +604,7 @@ body.pillarindex table#applications th {padding-left: 0;}
 #globalfooter {clear: both; margin-left: -20px;}
 /* It has a top border if the page doesn't already have a rounded border. */
 body.freeform #globalfooter {
-  border-top: 1px solid #ccc;
+  border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
   padding-top: 0.5em;
 }
 
@@ -734,6 +736,9 @@ a conditional comment in main-template.pt to work around the above rule. */
   color: #FFFFFF;
   font-weight: bold;
 }
+#portlets .portlet.expanded h2 {
+  background-image: url(leftnav_bg_expanded.gif);
+}
 #portlets #actions h2 {
   background-image: url(leftnav_bg_uncollapsible.gif);
 }
@@ -856,7 +861,7 @@ a conditional comment in main-template.pt to work around the above rule. */
   font-size: 0.75em;
   margin-top: 2em;
   padding: 2em 0 0;
-  border-top: 1px dotted #ccc;
+  border-top: 1px dotted #cbcbcb; /* matches color of mainarea_* images */
 }
 #applicationchooser {
   clear: both;
@@ -909,6 +914,22 @@ body.freeform #mainarea {top: 20px;} /*- no logo on freeform pages -*/
 #singlecolumn div.z {
   padding: 0 0 20px; /* XXX Makes the top right corner disappear */
 }
+
+/* Some pages end with links to related items. */
+/* Examples: branch page, bug page. */
+.related {
+  margin-top: 4em;
+  border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
+  padding-top: 1em;
+}
+.related ul {
+  list-style: none;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  text-indent: 0.5em;
+}
+.related ul li:before {content: "\00BB \0020";}
+
 /* --- Various custom list formats --- */
 
 #maincontent ol, #maincontent ul, #singlecolumn ul, #singlecolumn ol {
@@ -1426,7 +1447,7 @@ div.left, div.right {width: 50%;}
 div.left {clear: both; float: left;}
 div.right {clear: right; float: right;}
 div.left div.portlet, div.right div.portlet {
-  border: dotted #ccc;
+  border: dotted #cbcbcb; /* matches color of mainarea_* images */
   border-width: 1px 0 0 0;
   margin-top: 1em;
   padding-top: 1em;
@@ -1481,7 +1502,7 @@ table.summary {float: right; margin: 0 0 1em 1em;}
 table.listing table.summary {margin-top: 0.5em;}
 table.summary caption {font-style: italic; margin-left: 1em;}
 div.right table.summary {float: none; margin: 1em auto;}
-table.summary tr {border: dotted #ccc; border-width: 1px 0;}
+table.summary tr {border: dotted #cbcbcb; border-width: 1px 0;}
 table.summary td {padding-left: 0.5em;}
 table.summary ul, table.summary ul li {
   list-style-position: inside;

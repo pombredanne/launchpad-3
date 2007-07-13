@@ -584,10 +584,15 @@ Note that all variants of English are always excluded from the
 vocabulary (since we don't want to confuse people by providing multiple
 English options).
 
+Daf has en_GB listed among his languages:
+
     >>> login('daf@canonical.com')
     >>> user = getUtility(ILaunchBag).user
     >>> sorted(lang.code for lang in user.languages)
-    [u'cy', u'en', u'en_GB', u'ja']
+    [u'cy', u'en_GB', u'ja']
+
+But the vocabulary made from this languages has substituted the
+English variant with English:
 
     >>> vocab = QuestionLanguageVocabularyFactory(view)(None)
     >>> languages = [term.value for term in vocab]
@@ -890,7 +895,7 @@ The view adds notifications about the answer contacts added:
 
     >>> for notification in request.notifications:
     ...     print notification.message
-    <...Your preferred languages... were set to your browser ...English (en).
+    <...Your preferred languages... were updated to include ...English (en).
     You have been added as an answer contact for Ubuntu.
     English was added to Ubuntu Team's ...preferred languages...
     Ubuntu Team has been added as an answer contact for Ubuntu.
@@ -916,7 +921,7 @@ can only subscribe himself:
 
     >>> for notification in request.notifications:
     ...     print notification.message
-    <...Your preferred languages... were set to your browser ...English (en).
+    <...Your preferred languages... were updated to include ...English (en).
     You have been added as an answer contact for Ubuntu.
 
 The same view is used to remove answer contact registrations. The user
