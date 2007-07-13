@@ -1,6 +1,6 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""IFAQTarget browser views."""
+"""`IFAQTarget` browser views."""
 
 __metaclass__ = type
 
@@ -12,7 +12,7 @@ from canonical.launchpad.webapp import stepthrough
 
 
 class FAQTargetNavigationMixin:
-    """Navigation mixin for IFAQTarget."""
+    """Navigation mixin for `IFAQTarget`."""
 
     @stepthrough('+faq')
     def traverse_faq(self, name):

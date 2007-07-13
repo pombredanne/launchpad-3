@@ -1,11 +1,13 @@
 = This is a FAQ =
 
-== Linking to a FAQ ==
-
 Even though similar questions are shown when a user creates a new
 question, common questions still happen for a number of reasons.
-The Answer Tracker can be used to manage common answers (aka FAQ) 
-which can be used to answer a particular question.
+The Answer Tracker can be used to manage common answers
+(a.k.a. Frequently Asked Question - FAQ) which can be used to answer
+a particular question.
+
+
+== Linking to a FAQ ==
 
 Any logged in user can use the 'This is a FAQ' action item to link
 the question to an existing FAQ.
@@ -14,6 +16,7 @@ For example, No Privileges Person comes across a question about SVG
 support in Firefox. That question has a well-known answer, so he clicks
 on 'This is a FAQ' to answer the question:
 
+    # We use backslashreplace because the page title includes smart quotes.
     >>> from canonical.launchpad.helpers import backslashreplace
     >>> user_browser.open(
     ...     'http://answers.launchpad.dev/firefox/+question/2')
@@ -25,7 +28,7 @@ on 'This is a FAQ' to answer the question:
     >>> print backslashreplace(user_browser.title)
     Is question #2 a FAQ?
 
-That page lists the existing FAQs that matches the question's title. In
+This page lists the existing FAQs matching the question's title. In
 that listing, the radio labels only contain the FAQ id. The FAQ title is
 displayed in a link besides the label. The default selected FAQ is the
 one currently associated to the question. In this particular case, since
@@ -90,15 +93,15 @@ be appended to the message.
     >>> print user_browser.getControl('Message').value
     No Privileges Person suggests this article as an answer to your question:
 
-He can then clicks 'Link FAQ' to add an answer to the question linking
-the question to this FAQ. After clicking the button, the user is
-redirected to the question page.
+He can then click 'Link FAQ' to answer the question with the selected
+FAQ. After clicking the button, the user is redirected to the question
+page.
 
     >>> user_browser.getControl('Link FAQ').click()
     >>> print user_browser.url
     http://answers.launchpad.dev/firefox/+question/2
 
-Where he sees that the question's status was changed to 'Answered':
+He sees that the question's status was changed to 'Answered':
 
     >>> details_portlet = find_portlet(
     ...     user_browser.contents, 'Mozilla Firefox question #2')
@@ -125,7 +128,7 @@ The answer message was added to the question's discussion:
 == Modifying the FAQ ==
 
 The link to the FAQ can be changed by using the same 'This is a FAQ'
-option. Continuing on the previous example, the user went on the read
+option. Continuing on the previous example, the user went on to read
 the FAQ that he just linked and found that it doesn't really answer
 the question. To correct the mistake, he uses the same 'This is a FAQ'
 action.
@@ -133,7 +136,7 @@ action.
     >>> user_browser.getLink('This is a FAQ').click()
 
 The existing linked FAQ is selected and the other FAQs matching the
-question's title is displayed:
+question's title are displayed:
 
     >>> printFAQOptions(user_browser.contents)
     ( ) No existing FAQs are relevant
@@ -212,7 +215,7 @@ edits them to be more appropriate:
     >>> admin_browser.getControl('Content').value = (
     ...     'Upgrade your browser to Firefox 2.0.')
 
-He can also enters keywords describing the FAQ:
+He can also enter keywords describing the FAQ:
 
     >>> admin_browser.getControl('Keywords').value = (
     ...     'scalable vector graphic')
@@ -320,7 +323,7 @@ can also be linked to FAQs.
     Is question #8 a FAQ?
 
 
-== Solved question cannot be linked to a FAQ ==
+== Solved questions cannot be linked to a FAQ ==
 
 Since linking a question to a FAQ is like giving an answer, it cannot
 be used on solved questions:

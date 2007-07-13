@@ -27,11 +27,11 @@
     <p>FAQ documents contain a solution to a common problem (usually a question
       that appears often in the Answer Tracker.
     </p>
-    <p>Project owners and answer contacts can modify this document using the
-      <b>Edit FAQ</b> menu item.
+    <p>Project owners and answer contacts can modify FAQ documents by using
+      the <b>Edit FAQ</b> menu item.
     </p>
-    <p>The list of questions answered by this document can be found under the
-      <b>Related questions</b> portlet.
+    <p>The list of questions answered by this document can be found under
+      in the <b>Related questions</b> portlet.
     </p>
   </metal:help>
 </body>

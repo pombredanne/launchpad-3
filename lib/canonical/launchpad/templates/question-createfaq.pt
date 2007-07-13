@@ -22,11 +22,11 @@
 </div>
 
 <metal:help fill-slot="help">
-  <p>This will add a new FAQ document to this project and it will be used
+  <p>This will add a new FAQ document to this project that will be used
     to answer the question.
   </p>
-  <p>The FAQ <b>Title</b> should make it easy to understand what this document
-    is about. Using a question as title is often a good idea.
+  <p>The FAQ <b>Title</b> describes what this document is about. Using a
+    question as title is often a good idea.
   </p>
   <p>You can enter additional <b>keywords</b> that apply to this document. It
     is not necessary to use words already appearing in the title.

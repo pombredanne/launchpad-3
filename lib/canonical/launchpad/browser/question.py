@@ -931,7 +931,6 @@ class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
 
     custom_widget("message", TextAreaWidget, height=5)
 
-
     @property
     def initial_values(self):
         """Fill title and content based on the question."""
@@ -1013,7 +1012,7 @@ class SearchableFAQRadioWidget(LaunchpadRadioWidget):
             rendered_values.add(term.value)
             count += 1
 
-        # Some selected values may not be included in the search results,
+        # Some selected values may not be included in the search results;
         # insert them at the beginning of the list.
         for missing in set(values).difference(rendered_values):
             term = self.vocabulary.getTerm(missing)
