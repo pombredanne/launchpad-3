@@ -10,13 +10,13 @@ __all__ = [
 import pytz
 
 from datetime import datetime
-from sqlobject import ForeignKey, IntCol, StringCol
+from sqlobject import ForeignKey, StringCol
 from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IMailingList, IMailingListRegistry)
 from canonical.lp.dbschema import MailingListStatus
@@ -73,17 +73,17 @@ class MailingList(SQLBase):
 
     def reportResult(self, status):
         """See `IMailingList`"""
-        # State 1: From CONSTRUCTING to either ACTIVE or FAILED
+        # State: From CONSTRUCTING to either ACTIVE or FAILED
         if self.status == MailingListStatus.CONSTRUCTING:
             assert status in (MailingListStatus.ACTIVE,
                               MailingListStatus.FAILED), (
                 'Status result must be active or failed')
-        # State 2: From MODIFIED to either ACTIVE or FAILED
+        # State: From MODIFIED to either ACTIVE or FAILED
         elif self.status == MailingListStatus.MODIFIED:
             assert status in (MailingListStatus.ACTIVE,
                               MailingListStatus.FAILED), (
                 'Status result must be active or failed')
-        # State 3: From DEACTIVATING to INACTIVE or FAILED
+        # State: From DEACTIVATING to INACTIVE or FAILED
         elif self.status == MailingListStatus.DEACTIVATING:
             assert status in (MailingListStatus.INACTIVE,
                               MailingListStatus.FAILED), (
@@ -125,21 +125,29 @@ class MailingListRegistry:
         """See `IMailingListRegistry`"""
         assert team.isTeam(), (
             'Cannot register a list for a person who is not a team')
-        assert self.getTeamMailingList(team) is None, (
+        assert self.getTeamMailingList(team.name) is None, (
             'Mailing list for team "%s" already exists' % team.name)
         return MailingList(team=team, registrant=team.teamowner,
                            date_registered=datetime.now(pytz.timezone('UTC')))
 
-    def getTeamMailingList(self, team):
+    def getTeamMailingList(self, team_name):
         """See `IMailingListRegistry`"""
-        results = list(MailingList.selectBy(team=team))
+        assert isinstance(team_name, basestring), (
+            'team_name must be a string, not %s' % type(team_name))
+        results = MailingList.select("""
+            MailingList.team = Person.id
+            AND Person.name = %s
+            AND Person.teamowner IS NOT NULL
+            """ % sqlvalues(team_name),
+            clauseTables=['Person'])
+        results = list(results)
         if len(results) == 0:
             return None
         elif len(results) == 1:
             return results[0]
         else:
             assert len(results) <= 1, (
-                'Too many MailingLists registered for team "%s"' % team.name)
+                'Too many MailingLists registered for team "%s"' % team_name)
 
     @property
     def registered_lists(self):
