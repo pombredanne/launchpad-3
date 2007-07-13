@@ -222,7 +222,7 @@ and arch-independant binaries.
 
   >>> expect_okays('bar_1.0-1_binary', is_new=True)
 
-  >>> expect_okays('bar_1.0-2', upload_policy='sync')
+  >>> expect_okays('bar_1.0-2')
 
 Check the rejection of bar_1.0-2_binary when uploaded to the wrong build id.
 
@@ -264,7 +264,7 @@ Inspect the uploader log to find the rejection message.
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  DEBUG       Subject: bar_1.0-3_source.changes Rejected
+  DEBUG       Subject: bar_1.0-3_source.changes rejected
   DEBUG       Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   DEBUG       Body:
   DEBUG    Rejected:
@@ -290,7 +290,7 @@ testing, as unsigned uploads are allowed.
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  DEBUG       Subject: unstable_1.0-1_source.changes Rejected
+  DEBUG       Subject: unstable_1.0-1_source.changes rejected
   DEBUG       Recipients: Celso Providelo <celso.providelo@canonical.com>
   DEBUG       Body:
   DEBUG   Rejected:

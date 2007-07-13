@@ -76,6 +76,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         arbitraryownerid = 1
         self.db_branch = getUtility(IBranchSet).new(
             name="test",
+            creator=arbitraryownerid,
             owner=arbitraryownerid,
             product=None,
             url=self.bzr_branch_url,

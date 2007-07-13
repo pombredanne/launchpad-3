@@ -88,6 +88,9 @@ class IPOMsgSet(Interface):
     latest_change_person = Attribute(
         """Return the person who did the latest change in the `IPOMsgSet`.""")
 
+    language = Attribute(
+        "The language this msgset is in, copied from `POFile`.")
+
     def isNewerThan(timestamp):
         """Whether the active translations are newer than the given timestamp.
 
@@ -115,11 +118,11 @@ class IPOMsgSet(Interface):
         Note that the actual caches are private to this object, which is
         visible only in a single thread.  This is why no locking is needed.
 
-        :related_submissions: list or iterator of all submissions attached to
-        this object, as well as all that should be presented as suggestions
-        for its translation.  If related_submissions is not given, they will
-        be fetched from the database.  Must yield POSubmissions in
-        newest-to-oldest order.
+        :param related_submissions: list or iterator of all submissions
+            attached to this object, as well as all that should be presented
+            as suggestions for its translation.  If related_submissions is not
+            given, they will be fetched from the database.  Must yield
+            `POSubmissions` in newest-to-oldest order.
         """
 
     def setActiveSubmission(pluralform, submission):

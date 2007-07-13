@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = ['TacTestSetup', 'ReadyService', 'TacException']
 
+import errno
 import sys
 import os
 import time
@@ -35,8 +36,6 @@ class TacTestSetup:
     def setUp(self, spew=False):
         self.killTac()
         if os.path.exists(self.pidfile):
-            print ("Removing pidfile %r. Should have already been removed."
-                   % self.pidfile)
             os.remove(self.pidfile)
         self.setUpRoot()
         args = [sys.executable, twistd_script, '-o', '-y', self.tacfile,
@@ -76,18 +75,37 @@ class TacTestSetup:
         pidfile = self.pidfile
         if not os.path.exists(pidfile):
             return
+
+        # Get the pid.
         pid = open(pidfile, 'r').read().strip()
         try:
             pid = int(pid)
         except ValueError:
             # pidfile contains rubbish
             return
+
+        # Kill the process.
         try:
             os.kill(pid, SIGTERM)
-            os.waitpid(pid, 0)
-        except OSError:
-            # Already terminated
-            pass
+        except OSError, e:
+            if e.errno in (errno.ESRCH, errno.ECHILD):
+                # Process has already been killed.
+                return
+
+        # Poll until the process has ended.
+        for i in range(50):
+            try:
+                os.kill(pid, 0)
+                time.sleep(0.1)
+            except OSError, e:
+                break
+        else:
+            # The process is still around, so terminate it violently.
+            try:
+                os.kill(pid, SIGKILL)
+            except OSError:
+                # Already terminated
+                pass
 
     def setUpRoot(self):
         """Override this.

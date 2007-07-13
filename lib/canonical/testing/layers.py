@@ -23,8 +23,8 @@ __all__ = [
     'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer'
     ]
 
-from urllib import urlopen
 import time
+from urllib import urlopen
 
 import psycopg
 import transaction

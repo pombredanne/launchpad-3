@@ -84,13 +84,17 @@ able to renew it himself.
     >>> from datetime import datetime, timedelta
     >>> import pytz
     >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> day_after_tomorrow = now + timedelta(days=2)
 
     >>> team_admin_browser.open(
     ...     'http://launchpad.dev/~ubuntu-mirror-admins/+member/karl')
     >>> team_admin_browser.getControl(name='expires').value = ['date']
-    >>> team_admin_browser.getControl(name='day').value = [str(now.day + 2)]
-    >>> team_admin_browser.getControl(name='year').value = [str(now.year)]
-    >>> team_admin_browser.getControl(name='month').value = [str(now.month)]
+    >>> team_admin_browser.getControl(name='day').value = [
+    ...     str(day_after_tomorrow.day)]
+    >>> team_admin_browser.getControl(name='year').value = [
+    ...     str(day_after_tomorrow.year)]
+    >>> team_admin_browser.getControl(name='month').value = [
+    ...     str(day_after_tomorrow.month)]
     >>> team_admin_browser.getControl(name='change').click()
 
     >>> team_admin_browser.url
