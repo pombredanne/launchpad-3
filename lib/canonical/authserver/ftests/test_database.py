@@ -10,7 +10,7 @@ import transaction
 
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
-from zope.security.management import setSecurityPolicy
+from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.database.sqlbase import cursor, sqlvalues
@@ -186,10 +186,11 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
     def setUp(self):
         LaunchpadScriptLayer.switchDbConfig('authserver')
         super(NewDatabaseStorageTestCase, self).setUp()
+        self._old_policy = getSecurityPolicy()
         setSecurityPolicy(LaunchpadSecurityPolicy)
 
     def tearDown(self):
-        setSecurityPolicy(PermissiveSecurityPolicy)
+        setSecurityPolicy(self._old_policy)
         super(NewDatabaseStorageTestCase, self).tearDown()
 
     def _getTime(self, row_id):
