@@ -291,21 +291,7 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             # If there is an explicit rule for the team, then that overrides
             # any rule specified for other teams that the owner is a member
             # of.
-            rule = product.getBranchVisibilityRuleForTeam(branch.owner)
-            if rule is None:
-                # Determine the rule based on team membership.
-                rules = []
-                owner = branch.owner
-                for item in product.getBranchVisibilityTeamPolicies():
-                    if item.team is not None and owner.inTeam(item.team):
-                        rules.append(item.rule)
-                if len(rules) > 0:
-                    # max returns the most restrictive policy. The ordering
-                    # of the dbSchema items ensures this.
-                    rule = max(rules)
-                else:
-                    rule = product.getBaseBranchVisibilityRule()
-
+            rule = product.getBranchVisibilityRuleForBranch(branch)
             if rule == BranchVisibilityRule.PRIVATE_ONLY:
                 # If the branch is already private, then the user cannot
                 # make the branch public.  However if the branch is for

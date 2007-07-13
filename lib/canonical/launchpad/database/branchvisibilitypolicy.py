@@ -102,6 +102,29 @@ class BranchVisibilityPolicyMixin:
         else:
             return item.rule
 
+    def getBranchVisibilityRuleForBranch(self, branch):
+        """See `IHasBranchVisibilityPolicy`."""
+        rule = self.getBranchVisibilityRuleForTeam(branch.owner)
+        if rule is None:
+            # Determine the rule based on team membership.
+            # Given the number of branch policies that are likely
+            # for any given product, we are simply checking all the
+            # policies rather than crafting a query on the branch's
+            # owner's team memberships.
+            rules = []
+            owner = branch.owner
+            for item in self.getBranchVisibilityTeamPolicies():
+                if item.team is not None and owner.inTeam(item.team):
+                    rules.append(item.rule)
+            if len(rules) > 0:
+                # max returns the most restrictive policy. The ordering
+                # of the dbSchema items ensures this.
+                rule = max(rules)
+            else:
+                rule = self.getBaseBranchVisibilityRule()
+
+        return rule
+
     def isUsingInheritedBranchVisibilityPolicy(self):
         """See `IHasBranchVisibilityPolicy`."""
         # If there is no project to inherit a policy from,
