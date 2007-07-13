@@ -23,11 +23,16 @@ from canonical.lp.dbschema import MailingListStatus
 
 
 class MailingList(SQLBase):
-    implements(IMailingList)
+    """'The mailing list for a team.
 
-    def __repr__(self):
-        return '<MailingList for team "%s"; status=%s at %#x>' % (
-            self.team.name, self.status.name, id(self))
+    Teams may have at most one mailing list, and a mailing list is associated
+    with exactly one team.  This table manages the state changes that a team
+    mailing list can go through, and it contains information that will be used
+    to instruct Mailman how to create, delete, and modify mailing lists (via
+    XMLRPC).
+    """
+
+    implements(IMailingList)
 
     team = ForeignKey(dbName='team', foreignKey='Person')
 
@@ -46,8 +51,12 @@ class MailingList(SQLBase):
 
     welcome_message_text = StringCol(default=None)
 
+    def __repr__(self):
+        return '<MailingList for team "%s"; status=%s at %#x>' % (
+            self.team.name, self.status.name, id(self))
+
     def review(self, reviewer, status):
-        """See `IMailingList`"""
+        """See `IMailingList`."""
         # Only mailing lists which are in the REGISTERED state may be
         # reviewed.  This is the state for newly requested mailing lists.
         assert self.status == MailingListStatus.REGISTERED, (
@@ -66,13 +75,13 @@ class MailingList(SQLBase):
         self.date_reviewed = datetime.now(pytz.timezone('UTC'))
 
     def construct(self):
-        """See `IMailingList`"""
+        """See `IMailingList`."""
         assert self.status == MailingListStatus.APPROVED, (
             'Only approved mailing lists may be constructed')
         self.status = MailingListStatus.CONSTRUCTING
 
     def reportResult(self, status):
-        """See `IMailingList`"""
+        """See `IMailingList`."""
         # State: From CONSTRUCTING to either ACTIVE or FAILED
         if self.status == MailingListStatus.CONSTRUCTING:
             assert status in (MailingListStatus.ACTIVE,
@@ -94,7 +103,7 @@ class MailingList(SQLBase):
         self.status = status
 
     def deactivate(self):
-        """See `IMailingList`"""
+        """See `IMailingList`."""
         assert self.status == MailingListStatus.ACTIVE, (
             'Only active mailing lists may be deactivated')
         self.status = MailingListStatus.DEACTIVATING
@@ -110,7 +119,7 @@ class MailingList(SQLBase):
         elif self.status == MailingListStatus.ACTIVE:
             new_status = MailingListStatus.MODIFIED
         else:
-            assert False, (
+            raise AssertionError(
                 'Only registered or active mailing lists may be modified')
         self.welcome_message_text = text
         self.status = new_status

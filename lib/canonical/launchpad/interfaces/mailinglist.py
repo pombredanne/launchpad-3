@@ -23,37 +23,37 @@ class IMailingList(Interface):
     registrant = Attribute(_('The person who registered the mailing list.'))
 
     date_registered = Datetime(
-        title=_('The date on which this mailing list was registered'),
+        title=_('Registration date'),
+        description=_('The date on which this mailing list was registered.'),
         required=True, readonly=True)
 
     reviewer = Attribute(
         _('The person who reviewed this mailing list registration'))
 
     date_reviewed = Datetime(
-        title=_('The date on which this mailing list registration was '
-                'reviewed'),
+        title=_('Review date'),
         description=_('The date on which this mailing list registration was '
-                      'reviewed by reviewer.  This may be None to indicate '
-                      'that the list registration has not yet been reviewed.')
+                      'reviewed.  This may be None to indicate that the list '
+                      'registration has not yet been reviewed.')
         )
 
     date_activated = Datetime(
-        title=_('The date on which this mailing list registration was '
-                'activated'),
-        description=_("A team's mailing list is activated once (and if) the "
-                      'Mailman process has successfully created it.  This '
-                      'may be None to indicate that the list has not yet been '
-                      'activated, or that its activation has failed.')
+        title=_('Activation date'),
+        description=_('The date on which this mailing list was activated, '
+                      'meaning that the Mailman process has successfully '
+                      'created it.  This may be None to indicate that the '
+                      'mailing list has not yet been activated, or that its '
+                      'activation has failed.')
         )
 
     status = Int(
         title=_('The status of the mailing list'),
+        description=_('The status of the mailing list.'),
         required=True,
         )
 
     welcome_message = Text(
         title=_('The welcome message text for new subscribers'),
-
         description=_('When a new member joins the mailing list, they are '
                       'sent this welcome message text.  It may contain '
                       'any instructions or additional links that a new '

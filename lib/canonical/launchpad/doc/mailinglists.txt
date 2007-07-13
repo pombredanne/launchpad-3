@@ -1,6 +1,6 @@
 = Team Mailing Lists =
 
-Teams may have zero or one team mailing list.  Creating a team mailing list
+Teams may have at most one team mailing list.  Creating a team mailing list
 requires several steps, starting with registration of the list by the owner of
 an existing team.  This is done through an IMailingListRegistry utility.
 
@@ -8,12 +8,12 @@ an existing team.  This is done through an IMailingListRegistry utility.
     >>> from canonical.launchpad.interfaces import (
     ...     IMailingList, IMailingListRegistry)
     >>> from canonical.launchpad.database import MailingListRegistry
-    >>> list_registry = MailingListRegistry()
+    >>> list_registry = getUtility(IMailingListRegistry)
     >>> verifyObject(IMailingListRegistry, list_registry)
     True
 
 In the following description of how to use team mailing lists, we will need
-several team.
+several teams.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
@@ -270,13 +270,13 @@ Some list constructions may fail.
 
 You can then get the mailing list for a team, given the team name.
 
-    >>> print list_registry.getTeamMailingList(team_one.name)
+    >>> list_registry.getTeamMailingList(team_one.name)
     <MailingList for team "team-one"; status=ACTIVE at ...>
-    >>> print list_registry.getTeamMailingList(team_two.name)
+    >>> list_registry.getTeamMailingList(team_two.name)
     <MailingList for team "team-two"; status=DECLINED at ...>
-    >>> print list_registry.getTeamMailingList(team_three.name)
+    >>> list_registry.getTeamMailingList(team_three.name)
     <MailingList for team "team-three"; status=ACTIVE at ...>
-    >>> print list_registry.getTeamMailingList(team_four.name)
+    >>> list_registry.getTeamMailingList(team_four.name)
     <MailingList for team "team-four"; status=FAILED at ...>
 
 This method will return None for missing teams or non-team people.
