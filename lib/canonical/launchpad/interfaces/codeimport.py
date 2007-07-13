@@ -11,14 +11,13 @@ __all__ = [
     'ICodeImportSet',
     ]
 
-from zope.interface import Attribute, Interface
+from zope.interface import Interface
 from zope.schema import Datetime, Choice, Int, TextLine, Bool
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces.productseries import (
     validate_cvs_module, validate_cvs_root)
-from canonical.launchpad.validators.name import name_validator
 from canonical.lp.dbschema import CodeImportReviewStatus
 
 

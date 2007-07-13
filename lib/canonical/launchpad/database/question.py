@@ -51,6 +51,7 @@ from canonical.launchpad.database.questionsubscription import (
     QuestionSubscription)
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
 from canonical.launchpad.webapp.enum import Item
@@ -1072,9 +1073,18 @@ class QuestionTargetMixin:
 
         constraints.append("""
             AnswerContact.person = PersonLanguage.person AND
-            PersonLanguage.language = %s""" % sqlvalues(language))
+            PersonLanguage.Language = Language.id""")
+        # XXX sinzui 2007-07-12 bug=125545
+        # Using a LIKE constraint is suboptimal. We would not need this
+        # if-else clause if variant languages knew their parent language.
+        if language.code == 'en':
+            constraints.append("""
+                Language.code LIKE %s""" % sqlvalues('%s%%' % language.code))
+        else:
+            constraints.append("""
+                Language.id = %s""" % sqlvalues(language))
         return set(self._selectPersonFromAnswerContacts(
-            constraints, ['PersonLanguage']))
+            constraints, ['PersonLanguage', 'Language']))
 
     def getAnswerContactRecipients(self, language):
         """See `IQuestionTarget`."""
@@ -1113,6 +1123,8 @@ class QuestionTargetMixin:
         """See `IQuestionTarget`."""
         languages = set()
         for contact in self.answer_contacts:
-            languages |= contact.getSupportedLanguages()
+            languages |= set(contact.languages)
         languages.add(getUtility(ILanguageSet)['en'])
+        languages = set(
+            lang for lang in languages if not is_english_variant(lang))
         return languages

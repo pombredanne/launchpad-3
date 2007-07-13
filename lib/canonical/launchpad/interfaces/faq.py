@@ -10,8 +10,6 @@ __all__ = [
     ]
 
 from zope.interface import Attribute
-from zope.interface.exceptions import Invalid
-from zope.interface.interface import invariant
 from zope.schema import (
      Choice, Datetime,  Int, Object, Text, TextLine)
 

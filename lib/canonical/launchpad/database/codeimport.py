@@ -12,7 +12,7 @@ __all__ = [
     ]
 
 from sqlobject import (
-    BoolCol, ForeignKey, IntCol, StringCol, SQLObjectNotFound)
+    BoolCol, ForeignKey, StringCol, SQLObjectNotFound)
 
 from zope.component import getUtility
 from zope.interface import implements
