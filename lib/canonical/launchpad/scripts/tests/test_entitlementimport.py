@@ -21,22 +21,21 @@ class EntitlementExchangeTestCase(unittest.TestCase):
     """Test EntitlementExchange methods."""
     layer = LaunchpadZopelessLayer
 
-    def test_checkVersion(self):
-        """ Test the version tester works for all cases."""
-        version = EntitlementExchange.version
-        check = EntitlementExchange._checkVersion(version)
-        self.assertTrue(check)
-        check = EntitlementExchange._checkVersion(version - 1)
-        self.assertFalse(check)
-        check = EntitlementExchange._checkVersion(version + 1)
-
     def test_preprocessData(self):
         """The preprocessor verifies the header and removes comments."""
+        # Wrong header
         data = ("# bad format data\n"
                 "more data")
         in_file = StringIO(data)
         self.assertRaises(
             InvalidFormat, EntitlementExchange._preprocessData, in_file)
+
+        # Invalid version
+        data = ("# Entitlement exchange format version 0\n"
+                "more data")
+        in_file = StringIO(data)
+        self.assertRaises(
+            UnsupportedVersion, EntitlementExchange._preprocessData, in_file)
 
         # Only one line should remain after processing
         data = ("# Entitlement exchange format version 1\n"
