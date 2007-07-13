@@ -7,7 +7,7 @@ import sys
 import thread
 import threading
 import traceback
-import time
+from time import time
 import warnings
 
 from zope.component import getUtility
@@ -295,7 +295,7 @@ def set_request_started(starttime=None):
     thread.
 
     If the argument is given, it is used as the start time for the
-    request, as returned by time.time().  If it is not given, the
+    request, as returned by time().  If it is not given, the
     current time is used.
     """
     if getattr(_local, 'request_start_time', None) is not None:
@@ -303,7 +303,7 @@ def set_request_started(starttime=None):
                       'finished', stacklevel=1)
 
     if starttime is None:
-        starttime = time.time()
+        starttime = time()
     _local.request_start_time = starttime
     _local.request_statements = []
     _local.current_statement_timeout = None
@@ -336,7 +336,7 @@ def get_request_duration(now=None):
         return -1
 
     if now is None:
-        now = time.time()
+        now = time()
     return now - starttime
 
 
@@ -365,7 +365,7 @@ def _check_expired(timeout):
     if starttime is None:
         return False # no current request
 
-    requesttime = (time.time() - starttime) * 1000
+    requesttime = (time() - starttime) * 1000
     return requesttime > timeout
 
 
@@ -390,7 +390,7 @@ def reset_hard_timeout(execute_func):
     if start_time is None:
         return # Not in a request - nothing to do
 
-    now = time.time()
+    now = time()
     remaining_ms = (
             dbconfig.db_statement_timeout - int((now - start_time) * 1000))
 
@@ -428,18 +428,18 @@ class LaunchpadConnection(ReconnectingConnection):
         return LaunchpadCursor(self)
 
     def commit(self):
-        starttime = time.time()
+        starttime = time()
         try:
             super(LaunchpadConnection, self).commit()
         finally:
-            _log_statement(starttime, time.time(), self, 'COMMIT')
+            _log_statement(starttime, time(), self, 'COMMIT')
 
     def rollback(self):
-        starttime = time.time()
+        starttime = time()
         try:
             super(LaunchpadConnection, self).rollback()
         finally:
-            _log_statement(starttime, time.time(), self, 'ROLLBACK')
+            _log_statement(starttime, time(), self, 'ROLLBACK')
 
 
 class LaunchpadCursor(ReconnectingCursor):
@@ -471,7 +471,7 @@ class LaunchpadCursor(ReconnectingCursor):
         reset_hard_timeout(super(LaunchpadCursor, self).execute)
 
         try:
-            starttime = time.time()
+            starttime = time()
             if os.environ.get("LP_DEBUG_SQL_EXTRA"):
                 sys.stderr.write("-" * 70 + "\n")
                 traceback.print_stack()
@@ -484,7 +484,7 @@ class LaunchpadCursor(ReconnectingCursor):
                         statement, *args, **kwargs)
             finally:
                 _log_statement(
-                        starttime, time.time(),
+                        starttime, time(),
                         self.connection, statement
                         )
         except psycopg.ProgrammingError, error:

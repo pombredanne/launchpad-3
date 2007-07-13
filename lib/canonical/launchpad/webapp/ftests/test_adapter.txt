@@ -13,6 +13,7 @@ Imports and test setup:
     >>> from zope.app.rdb.interfaces import IZopeDatabaseAdapter
     >>> from sqlos.interfaces import IConnectionName
     >>> from canonical.config import config
+    >>> import canonical.launchpad.webapp.adapter
     >>> from canonical.launchpad.webapp.adapter import *
     >>> orig_db_statement_timeout = config.launchpad.db_statement_timeout
     >>> orig_db_statement_timeout_precision = (
@@ -48,6 +49,7 @@ which corresponds to no timeout:
     >>> print config.launchpad.db_statement_timeout
     None
 
+
 Connections created with the database adapter will use this timeout as
 the Postgres statement timeout (a value of zero means no timeout):
 
@@ -55,6 +57,7 @@ the Postgres statement timeout (a value of zero means no timeout):
     ...     cursor.execute('SHOW statement_timeout')
     ...     return cursor.fetchone()[0]
     ...
+
     >>> set_request_started()
     >>> conn = da()
     >>> cursor = conn.cursor()
@@ -82,25 +85,62 @@ timeout by sleeping for 200ms with a 100ms statement timeout:
 
 
 The statement_timeout will be adjusted during the transaction, within
-a certain precision:
+a certain precision. To test this reliably, we need a time machine to
+avoid random failures under load. Lets build one and plug it in:
 
-    >>> config.launchpad.db_statement_timeout = 200
-    >>> config.launchpad.db_statement_timeout_precision = 100
+    >>> _now = 0
+    >>> def fake_time():
+    ...     return float(_now)
+    >>> def time_travel(delta):
+    ...     global _now
+    ...     _now += delta
+    >>> canonical.launchpad.webapp.adapter.time = fake_time # Monkey patch
+
+
+Now issue three statements, the first one taking less than the precision
+time but the second going over the threshold. We use the time machine
+to fake how long things take.
+
+    >>> config.launchpad.db_statement_timeout = 10000
+    >>> config.launchpad.db_statement_timeout_precision = 1000
     >>> conn = da()
     >>> cursor = conn.cursor()
     >>> set_request_started()
-    >>> cursor.execute('SELECT pg_sleep(0.05)')
+
+    >>> cursor.execute('SELECT TRUE')
     >>> print current_statement_timeout(cursor)
-    200ms
-    >>> cursor.execute('SELECT pg_sleep(0.06)')
-    >>> current_statement_timeout(cursor) == '200ms'
-    False
-    >>> cursor.execute('SELECT pg_sleep(0.10)')
+    10s
+    >>> time_travel(0.5) # Forward in time 0.5 seconds
+
+    >>> cursor.execute('SELECT TRUE')
+    >>> print current_statement_timeout(cursor)
+    10s
+    >>> time_travel(0.6) # Forward in time 0.6 seconds, now over precision
+
+This invokation, the PostgreSQL statement timeout will be updated before
+issuing the SQL command as we have exceeded the precision period:
+
+    >>> cursor.execute('SELECT TRUE')
+    >>> print current_statement_timeout(cursor)
+    8900ms
+    >>> time_travel(8.89) # 0.01s remaining before hard timeout
+
+
+This final invokation, we will actually sleep to ensure that the
+timeout being reported by PostgreSQL is actually working:
+
+    >>> cursor.execute('SELECT pg_sleep(0.2)')
     Traceback (most recent call last):
       ...
-    RequestStatementTimedOut: SELECT pg_sleep(0.10)
+    RequestStatementTimedOut: SELECT pg_sleep(0.2)
     >>> da.disconnect()
     >>> clear_request_started()
+
+
+Turn off the timemachine so nobody hurts themselves:
+
+    >>> import time
+    >>> canonical.launchpad.webapp.adapter.time = time.time
 
 
 Set the timeout to 5000ms for the next tests:
