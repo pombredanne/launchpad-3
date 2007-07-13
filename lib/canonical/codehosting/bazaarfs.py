@@ -8,11 +8,10 @@ Currently assumes twisted.vfs as of SVN revision 15836.
 
 __metaclass__ = type
 
-from twisted.internet import defer
+import os
+
 from twisted.vfs.backends import adhoc, osfs
 from twisted.vfs.ivfs import VFSError, NotFoundError, PermissionError
-
-import os
 
 
 class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser

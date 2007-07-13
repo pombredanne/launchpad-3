@@ -28,7 +28,7 @@ from twisted.python import components
 from twisted.python.util import sibpath
 
 from canonical.config import config
-from canonical.database.sqlbase import commit, cursor
+from canonical.database.sqlbase import commit
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.daemons.sftp import SSHService
 from canonical.launchpad.daemons.authserver import AuthserverService

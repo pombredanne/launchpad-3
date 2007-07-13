@@ -10,7 +10,7 @@ from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    IPersonSet, IProductSet)
+    IBranchSet, IPersonSet, IProductSet)
 
 from canonical.lp.dbschema import (
     BranchLifecycleStatus, BranchVisibilityRule, PersonCreationRationale,
