@@ -141,8 +141,8 @@ class TestLaunchpadServerCommand(TwistedTestCase, TestCaseInTempDir):
 
     def get_bzr_path(self):
         bzr_path = ROCKETFUEL_ROOT + '/sourcecode/bzr/bzr'
-        assert os.path.isfile(bzr_path), \
-               "Bad Rocketfuel. Couldn't find bzr. %s" % bzr_path
+        assert os.path.isfile(bzr_path), (
+            "Bad Rocketfuel. Couldn't find bzr. %s" % bzr_path)
         return bzr_path
 
     def test_command_registered(self):
