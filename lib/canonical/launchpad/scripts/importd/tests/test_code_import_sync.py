@@ -24,7 +24,7 @@ from canonical.launchpad.scripts.importd.code_import_sync import CodeImportSync
 from canonical.launchpad.utilities import LaunchpadCelebrities
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
-    CodeImportReviewStatus, ImportStatus, RevisionControlSystems)
+    BranchType, CodeImportReviewStatus, ImportStatus, RevisionControlSystems)
 
 
 UTC = pytz.timezone('UTC')
@@ -102,6 +102,7 @@ class CodeImportSyncTestCase(TestCase):
         """Create an import branch and associate it to an import series."""
         vcs_imports = LaunchpadCelebrities().vcs_imports
         branch = getUtility(IBranchSet).new(
+            BranchType.IMPORTED,
             name=series.name, creator=vcs_imports, owner=vcs_imports,
             product=series.product, url=None)
         series.import_branch = branch
@@ -379,6 +380,7 @@ class TestCreateCodeImport(CodeImportSyncTestCase):
         # the productseries, so we will attempt to create a new one.
         vcs_imports = LaunchpadCelebrities().vcs_imports
         branch = getUtility(IBranchSet).new(
+            BranchType.IMPORTED,
             name=series.name, creator=vcs_imports, owner=vcs_imports,
             product=series.product, url=None)
         # Then, createCodeImport should fail and log an error.
