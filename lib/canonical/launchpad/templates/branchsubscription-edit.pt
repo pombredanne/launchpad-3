@@ -12,19 +12,15 @@
   <div tal:replace="structure view/branch/@@+portlet-subscribers" />
 </metal:leftportlets>
 
-<metal:heading fill-slot="pageheading">
-  <div>
-    <img alt="branch icon" src="/@@/branch" />
-    <a tal:attributes="href context/branch/fmt:url"
-       tal:content="context/branch/displayname" />
-  </div>
+<div metal:fill-slot="main">
+
+  <tal:branch-link define="branch context/branch">
+    <metal:branch-link use-macro="context/branch/@@+macros/branch-heading-link"/>
+  </tal:branch-link>
   <h1>
     Edit subscription to branch for
     <tal:person replace="context/person/displayname">Person</tal:person>
   </h1>
-</metal:heading>
-
-<div metal:fill-slot="main">
 
   <div metal:use-macro="context/@@launchpad_form/form" >
     <metal:extra fill-slot="extra_info">
