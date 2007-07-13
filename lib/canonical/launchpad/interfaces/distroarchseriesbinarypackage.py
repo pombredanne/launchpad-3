@@ -50,15 +50,3 @@ class IDistroArchSeriesBinaryPackage(Interface):
         version, in this architecture series.
         """
 
-    def changeOverride(new_component=None, new_section=None,
-                       new_priority=None):
-        """Change the component, section and/or priority.
-
-        It is changed only if the argument is not None.
-        """
-
-    def supersede():
-        """Supersede a DistroArchSeriesBinaryPackageRelease.
-
-        Return the modified IBinaryPackagePublishingHistory object.
-        """
