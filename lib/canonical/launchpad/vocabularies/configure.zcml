@@ -181,6 +181,11 @@
     />
 
   <vocabulary
+    name="MailingListStatus"
+    factory="canonical.launchpad.vocabularies.MailingListStatusVocabulary"
+    />
+
+  <vocabulary
     name="Milestone"
     factory="canonical.launchpad.vocabularies.MilestoneVocabulary"
     />
@@ -438,6 +443,11 @@
   <vocabulary
     name="ValidOwner"
     factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    />
+
+  <vocabulary
+    name="ValidTeam"
+    factory="canonical.launchpad.vocabularies.ValidTeamVocabulary"
     />
 
   <vocabulary

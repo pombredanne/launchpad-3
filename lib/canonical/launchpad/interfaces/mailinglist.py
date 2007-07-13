@@ -9,8 +9,8 @@ __all__ = [
     ]
 
 
-from zope.interface import Attribute, Interface
-from zope.schema import Datetime, Int, Text
+from zope.interface import Interface
+from zope.schema import Choice, Datetime, Int, Object, Set, Text
 
 from canonical.launchpad import _
 
@@ -18,42 +18,55 @@ from canonical.launchpad import _
 class IMailingList(Interface):
     """A mailing list."""
 
-    team = Attribute(_("The mailing list's team."))
+    team = Choice(
+        title=_('Team'),
+        description=_('The team that this mailing list is associated with.'),
+        vocabulary='ValidTeam',
+        required=True, readonly=True)
 
-    registrant = Attribute(_('The person who registered the mailing list.'))
+    registrant = Choice(
+        title=_('Registrant'),
+        description=_('The person who registered the mailing list.'),
+        vocabulary='ValidPersonOrTeam',
+        required=True, readonly=True)
 
     date_registered = Datetime(
         title=_('Registration date'),
         description=_('The date on which this mailing list was registered.'),
         required=True, readonly=True)
 
-    reviewer = Attribute(
-        _('The person who reviewed this mailing list registration'))
+    reviewer = Choice(
+        title=_('Reviewer'),
+        description=_(
+            'The person who reviewed this mailing list registration, or '
+            'None if the registration has not yet been reviewed.'),
+        vocabulary='ValidPersonOrTeam')
 
     date_reviewed = Datetime(
         title=_('Review date'),
         description=_('The date on which this mailing list registration was '
-                      'reviewed.  This may be None to indicate that the list '
-                      'registration has not yet been reviewed.')
+                      'reviewed, or None if the registration has not yet '
+                      'been reviewed.')
         )
 
     date_activated = Datetime(
         title=_('Activation date'),
         description=_('The date on which this mailing list was activated, '
                       'meaning that the Mailman process has successfully '
-                      'created it.  This may be None to indicate that the '
-                      'mailing list has not yet been activated, or that its '
-                      'activation has failed.')
+                      'created it.  This may be None if the mailing list '
+                      'has not yet been activated, or that its activation '
+                      'has failed.')
         )
 
-    status = Int(
-        title=_('The status of the mailing list'),
+    status = Choice(
+        title=_('Status'),
         description=_('The status of the mailing list.'),
+        vocabulary='MailingListStatus',
         required=True,
         )
 
     welcome_message = Text(
-        title=_('The welcome message text for new subscribers'),
+        title=_('Welcome message text'),
         description=_('When a new member joins the mailing list, they are '
                       'sent this welcome message text.  It may contain '
                       'any instructions or additional links that a new '
@@ -137,15 +150,30 @@ class IMailingListSet(Interface):
         :raises AssertionError: When `team_name` is not a string.
         """
 
-    registered_lists = Attribute(
-        'All mailing lists with a status of `MailingListStatus.REGISTERED`.')
+    registered_lists = Set(
+        title=_('Registered lists'),
+        description=_(
+            'All mailing lists with status `MailingListStatus.REGISTERED`.'),
+        value_type=Object(schema=IMailingList),
+        readonly=True)
 
-    approved_lists = Attribute(
-        'All mailing lists with the status of `MailingListStatus.APPROVED`.')
+    approved_lists = Set(
+        title=_('Approved lists'),
+        description=_(
+            'All mailing lists with status `MailingListStatus.APPROVED`.'),
+        value_type=Object(schema=IMailingList),
+        readonly=True)
 
-    modified_lists = Attribute(
-        'All mailing lists with the status of `MailingListStatus.MODIFIED`.')
+    modified_lists = Set(
+        title=_('Modified lists'),
+        description=_(
+            'All mailing lists with status `MailingListStatus.MODIFIED`.'),
+        value_type=Object(schema=IMailingList),
+        readonly=True)
 
-    deactivated_lists = Attribute(
-        'All mailing lists with the status of '
-        '`MailingListStatus.DEACTIVATING`.')
+    deactivated_lists = Set(
+        title=_('Deactivated lists'),
+        description=_(
+            'All mailing lists with status `MailingListStatus.DEACTIVATING`.'),
+        value_type=Object(schema=IMailingList),
+        readonly=True)
