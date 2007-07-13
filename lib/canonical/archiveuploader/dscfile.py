@@ -406,6 +406,14 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         # Copy debian/copyright file content. It will be stored in the
         # SourcePackageRelease records.
 
+        # Check if 'dpkg-source' created only one directory.
+        temp_directories = [dirname for dirname in os.listdir(tmpdir)
+                            if os.path.isdir(dirname)]
+        if len(temp_directories) > 1:
+            yield UploadError(
+                'Unpacked source contains more than one directory: %r'
+                % temp_directories)
+
         # Instead of trying to predict the unpacked source directory name,
         # we simply use glob to retrive everything like:
         # 'tempdir/*/debian/copyright'
@@ -417,7 +425,6 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             self.copyright = open(fullpath).read().strip()
 
         if self.copyright is None:
-            self.copyright = ''
             yield UploadError("No copyright file found.")
 
         self.logger.debug("Cleaning up source tree.")
@@ -445,8 +452,15 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         It reencodes all fields extracted from DSC because old packages
         contain latin-1 text and that sucks.
         """
+        # Injecting other parameters that requires encoding transformation.
+        pending = self._dict.copy()
+        pending['simulated_changelog'] = self.changes.simulated_changelog
+        pending['copyright'] = self.copyright
+
+        # We have no way of knowing what encoding the original copyright
+        # file is in, unfortunately, and there is no standard, so guess.
         encoded = {}
-        for key, value in self._dict.items():
+        for key, value in pending.items():
             encoded[key] = guess_encoding(value)
 
         source_name = getUtility(
@@ -469,12 +483,10 @@ class DSCFile(SourceUploadFile, SignableTagFile):
             dsc_binaries=encoded['binary'],
             dsc_standards_version=encoded.get('standards-version', None),
             component=self.component,
-            changelog=guess_encoding(self.changes.simulated_changelog),
+            changelog=encoded.get('simulated_changelog', None),
             section=self.section,
             archive=self.policy.archive,
-            # XXX cprov 20070712: we force copyright content to be transformed
-            # in unicode, there is a remote possibility of losing information.
-            copyright=guess_encoding(self.copyright)
+            copyright=encoded.get('copyright', None),
             # dateuploaded by default is UTC:now in the database
             )
 
