@@ -63,6 +63,7 @@
     <include file="emailaddress.zcml" />
     <include file="entitlement.zcml" />
     <include file="faq.zcml" />
+    <include file="faqcollection.zcml" />
     <include file="files.zcml" />
     <include file="gpgkey.zcml" />
     <include file="ircid.zcml" />

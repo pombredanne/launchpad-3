@@ -80,6 +80,12 @@ adaptation returns the IFAQTarget that should be use for the question.
     >>> verifyObject(IFAQTarget, removeSecurityProxy(question_faq_target))
     True
 
+Similarly, adapting an IFAQ into an IFAQTarget will return the target
+that was used to create the IFAQ:
+
+    >>> IFAQTarget(firefox_faq) == firefox
+    True
+
 
 == IFAQCollection ==
 

@@ -34,13 +34,14 @@ from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
 from canonical.launchpad.helpers import (
     browserLanguages, is_english_variant, preferred_or_request_languages)
+from canonical.launchpad.browser.faqcollection import FAQCollectionMenu
 from canonical.launchpad.interfaces import (
-    IDistribution, ILanguageSet, IProject, IQuestionCollection, IQuestionSet,
-    IQuestionTarget, ISearchableByQuestionOwner, ISearchQuestionsForm,
-    NotFoundError)
+    IDistribution, IFAQCollection, ILanguageSet, IProject,
+    IQuestionCollection, IQuestionSet, IQuestionTarget,
+    ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError)
 from canonical.launchpad.webapp import (
-    action, ApplicationMenu, canonical_url, custom_widget, LaunchpadFormView,
-    Link, safe_action, stepto, stepthrough, urlappend)
+    action, canonical_url, custom_widget, LaunchpadFormView, Link,
+    safe_action, stepto, stepthrough, urlappend)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import QuestionStatus
 from canonical.widgets import LabeledMultiCheckBoxWidget
@@ -346,6 +347,29 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         else:
             return True
 
+    @cachedproperty
+    def matching_faqs_count(self):
+        """Return the FAQs matching the same keywords."""
+        if not self.search_text:
+            return 0
+        try:
+            faq_collection = IFAQCollection(self.context)
+        except TypeError:
+            # The context is not adaptable to IFAQCollection.
+            return 0
+        return faq_collection.searchFAQs(search_text=self.search_text).count()
+
+    @property
+    def matching_faqs_url(self):
+        """Return the URL to use to display the list of matching FAQs."""
+        assert self.matching_faqs_count > 0, (
+            "can't call matching_faqs_url when matching_faqs_count == 0")
+        collection = IFAQCollection(self.context)
+        return canonical_url(collection) + '/+faqs?' + urlencode({
+            'field.search_text': self.search_text,
+            'field.actions.search': 'Search',
+            })
+
     @safe_action
     @action(_('Search'))
     def search_action(self, action, data):
@@ -403,6 +427,9 @@ class QuestionCollectionMyQuestionsView(SearchQuestionsView):
     in user in a questiontarget context.
     """
 
+    # No point showing a matching FAQs link on this report.
+    matching_faqs_count = 0
+
     @property
     def pageheading(self):
         """See `SearchQuestionsView`."""
@@ -439,6 +466,9 @@ class QuestionCollectionNeedAttentionView(SearchQuestionsView):
     It displays and searches the questions needing attention from the
     logged in user in a questiontarget context.
     """
+
+    # No point showing a matching FAQs link on this report.
+    matching_faqs_count = 0
 
     @property
     def pageheading(self):
@@ -478,6 +508,9 @@ class QuestionCollectionByLanguageView(SearchQuestionsView):
      """
 
     custom_widget('language', LabeledMultiCheckBoxWidget, visible=False)
+
+    # No point showing a matching FAQs link on this report.
+    matching_faqs_count = 0
 
     def __init__(self, context, request):
         """Initialize the view, and check that a language was submitted.
@@ -707,12 +740,19 @@ class QuestionTargetTraversalMixin:
         return self.redirectSubTree(target)
 
 
-class QuestionCollectionAnswersMenu(ApplicationMenu):
+
+# XXX flacoste 2007/07/08 This menu shouldn't "extend" FAQCollectionMenu.
+# But this is needed because of limitations in the current menu architecture.
+# Menu should be built by merging all menus applying to the context object
+# (-based on the interfaces it provides).
+# See bug #125851
+class QuestionCollectionAnswersMenu(FAQCollectionMenu):
     """Base menu definition for QuestionCollection searchable by owner."""
 
     usedfor = ISearchableByQuestionOwner
     facet = 'answers'
-    links = ['open', 'answered', 'myrequests', 'need_attention']
+    links = FAQCollectionMenu.links + [
+        'open', 'answered', 'myrequests', 'need_attention']
 
     def makeSearchLink(self, statuses, sort='by relevancy'):
         """Return the search parameters for a search link."""
