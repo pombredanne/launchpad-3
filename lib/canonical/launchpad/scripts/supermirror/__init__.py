@@ -30,7 +30,7 @@ def mirror(logger, managerClass):
         mymanager.addBranches(client)
         mymanager.run(logger)
         date_completed = datetime.datetime.now(UTC)
-        mymanager.recordActivity(date_started, date_completed)
+        mymanager.recordActivity(client, date_started, date_completed)
     finally:
         mymanager.unlock()
     return 0

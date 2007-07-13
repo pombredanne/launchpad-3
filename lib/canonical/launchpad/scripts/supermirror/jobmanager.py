@@ -65,7 +65,8 @@ class JobManager:
     def unlock(self):
         self.actualLock.release()
 
-    def recordActivity(self, date_started, date_completed):
+    def recordActivity(self, branch_status_client,
+                       date_started, date_completed):
         """Record successful completion of the script."""
         branch_status_client.recordSuccess(
             self.name, socket.gethostname(), date_started, date_completed)
