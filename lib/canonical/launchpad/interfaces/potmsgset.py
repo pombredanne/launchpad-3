@@ -131,12 +131,8 @@ class IPOTMsgSet(Interface):
         are shown only to logged-in users, and not to anonymous users.
         """)
 
-    locked_to_published = Attribute(
-        """Whether the translation updates are restricted to published ones.
-
-        Example of messages locked to published translations and future
-        published updates are translation credit strings.
-        """)
+    is_translation_credit = Attribute(
+        """Whether this is a message set for crediting translators.""")
 
     def makeHTMLId(suffix=None):
         """Unique name for this `POTMsgSet` for use in HTML element ids.

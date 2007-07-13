@@ -1,4 +1,5 @@
 -- Delete existing, non-published submissions for translation credits
+-- Do not remove from upstream products?
 DELETE FROM posubmission WHERE id IN (
     SELECT posubmission.id
         FROM posubmission,

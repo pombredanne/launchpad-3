@@ -291,10 +291,10 @@ class VPOExport:
             self.pofile = None
         else:
             self.pofile = POFile.get(pofile)
-            auto_translation = self.pofile.prepareTranslationCredits(
-                self.potemplate.getPOTMsgSetByMsgIDText(self.msgid))
-            if auto_translation:
-                self.translation = auto_translation
+            potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(self.msgid)
+            if potmsgset and potmsgset.is_translation_credit:
+                self.translation = self.pofile.prepareTranslationCredits(
+                    potmsgset)
                 self.activesubmission = True
                 self.translationpluralform = 0
 

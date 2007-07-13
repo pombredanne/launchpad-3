@@ -1188,24 +1188,13 @@ class POMsgSetView(LaunchpadView):
         return self.context.potmsgset.hide_translations_from_anonymous
 
     @cachedproperty
-    def locked(self):
-        """Whether the message should be locked for modifications/suggestions.
-
-        If it's automatically handled by Launchpad (such as
-        translation-credits), it's locked for editing.
-        """
-        return self.context.potmsgset.locked_to_published
-
-    @cachedproperty
-    def automatic_translation(self):
+    def translation_credits(self):
         """Return automatically created translation if defined, or None."""
-        if self.context.potmsgset.locked_to_published and self.context.pofile:
-            return text_to_html(
-                self.context.pofile.prepareTranslationCredits(
-                    self.context.potmsgset),
-                self.context.potmsgset.flags())
-        else:
-            return None
+        assert self.context.potmsgset.is_translation_credit
+        return text_to_html(
+            self.context.pofile.prepareTranslationCredits(
+                self.context.potmsgset),
+            self.context.potmsgset.flags())
 
     @cachedproperty
     def sequence(self):
