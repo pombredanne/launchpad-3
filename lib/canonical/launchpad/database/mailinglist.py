@@ -7,14 +7,13 @@ __all__ = [
     'MailingListRegistry',
     ]
 
-import datetime
 import pytz
 
+from datetime import datetime
 from sqlobject import ForeignKey, IntCol, StringCol
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
@@ -33,7 +32,8 @@ class MailingList(SQLBase):
     team = ForeignKey(dbName='team', foreignKey='Person')
 
     registrant = ForeignKey(dbName='registrant', foreignKey='Person')
-    date_registered = UtcDateTimeCol(notNull=True, default=UTC_NOW)
+
+    date_registered = UtcDateTimeCol(notNull=True, default=None)
 
     reviewer = ForeignKey(dbName='reviewer', foreignKey='Person', default=None)
 
@@ -63,7 +63,7 @@ class MailingList(SQLBase):
             'Reviewer must be a Launchpad administrator')
         self.reviewer = reviewer
         self.status = status
-        self.date_reviewed = datetime.datetime.now(pytz.timezone('UTC'))
+        self.date_reviewed = datetime.now(pytz.timezone('UTC'))
 
     def construct(self):
         """See `IMailingList`"""
@@ -96,7 +96,8 @@ class MailingListRegistry:
             'Cannot register a list for a person who is not a team')
         assert self.getTeamMailingList(team) is None, (
             'Mailing list for team "%s" already exists' % team.name)
-        return MailingList(team=team, registrant=team.teamowner)
+        return MailingList(team=team, registrant=team.teamowner,
+                           date_registered=datetime.now(pytz.timezone('UTC')))
 
     def getTeamMailingList(self, team):
         """See `IMailingListRegistry`"""
