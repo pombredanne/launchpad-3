@@ -54,11 +54,11 @@
                     class string:specpriority${spec/priority/name}" 
                     tal:content="spec/priority/title">High</span><br />
               <span tal:attributes="
-                    class string:specstatus${spec/status/name}"
-                    tal:content="spec/status/title">New</span><br />
+                    class string:specstatus${spec/definition_status/name}"
+                    tal:content="spec/definition_status/title">New</span><br />
               <span tal:attributes="
-                    class string:specdelivery${spec/delivery/name}"
-                    tal:content="spec/delivery/title">New</span><br />
+                    class string:specdelivery${spec/implementation_status/name}"
+                    tal:content="spec/implementation_status/title">New</span><br />
           </td>
           <td>
             <label tal:attributes="
