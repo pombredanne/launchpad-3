@@ -276,17 +276,17 @@ COMMENT ON COLUMN MailingListBan.reason_text IS 'The reason for the ban.';
 COMMENT ON TABLE MentoringOffer IS 'An offer to provide mentoring if someone wa nts to help get a specific bug fixed or blueprint implemented. These offers are specifically associated with a team in which the offeror is a member, so it beco mes possible to encourage people who want to join a team to start by working on things that existing team members are willing to mentor.';
 COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer of mentoring is associated. We associate each offer of mentoring with a team, de signated as "the team which will most benefit from the bug fix or spec implement ation", and this then allows us to provide a list of work for which mentoring is available for prospective members of those teams. This is really the "onramp" i dea - the list is the "onramp" to membership in the relevant team.';
 
--- MessagesAwaitingApproval
+-- MessageApproval
 
-COMMENT ON TABLE MessagesAwaitingApproval IS 'Track mailing list postings awaiting approval from the team owner.';
-COMMENT ON COLUMN MessagesAwaitingApproval.message_id IS 'The Message-ID header of the held message.';
-COMMENT ON COLUMN MessagesAwaitingApproval.posted_by IS 'The person who posted the message.';
-COMMENT ON COLUMN MessagesAwaitingApproval.team IS 'The team mailing list to which the message was posted.';
-COMMENT ON COLUMN MessagesAwaitingApproval.posted_message IS 'Foreign key to libraryfilealias table pointing to where the posted message\'s text lives.';
-COMMENT ON COLUMN MessagesAwaitingApproval.posted_date IS 'The date the message was posted.';
-COMMENT ON COLUMN MessagesAwaitingApproval.status IS 'The status of the posted message.  Values are described in dbschema.PostedMessageStatus.';
-COMMENT ON COLUMN MessagesAwaitingApproval.disposed_by IS 'The person who disposed of (i.e. approved or rejected) the message, or NULL if no disposition has yet been made.';
-COMMENT ON COLUMN MessagesAwaitingApproval.disposal_date IS 'The date on which this message was disposed, or NULL if no disposition has yet been made.';
+COMMENT ON TABLE MessageApproval IS 'Track mailing list postings awaiting approval from the team owner.';
+COMMENT ON COLUMN MessageApproval.message_id IS 'The Message-ID header of the held message.';
+COMMENT ON COLUMN MessageApproval.posted_by IS 'The person who posted the message.';
+COMMENT ON COLUMN MessageApproval.team IS 'The team mailing list to which the message was posted.';
+COMMENT ON COLUMN MessageApproval.posted_message IS 'Foreign key to libraryfilealias table pointing to where the posted message\'s text lives.';
+COMMENT ON COLUMN MessageApproval.posted_date IS 'The date the message was posted.';
+COMMENT ON COLUMN MessageApproval.status IS 'The status of the posted message.  Values are described in dbschema.PostedMessageStatus.';
+COMMENT ON COLUMN MessageApproval.disposed_by IS 'The person who disposed of (i.e. approved or rejected) the message, or NULL if no disposition has yet been made.';
+COMMENT ON COLUMN MessageApproval.disposal_date IS 'The date on which this message was disposed, or NULL if no disposition has yet been made.';
 
 -- Product
 COMMENT ON TABLE Product IS 'Product: a DOAP Product. This table stores core information about an open source product. In Launchpad, anything that can be shipped as a tarball would be a product, and in some cases there might be products for things that never actually ship, depending on the project. For example, most projects will have a \'website\' product, because that allows you to file a Malone bug against the project website. Note that these are not actual product releases, which are stored in the ProductRelease table.';

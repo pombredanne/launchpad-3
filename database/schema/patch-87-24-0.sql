@@ -183,7 +183,7 @@ CREATE INDEX mailinglistban__banned_by__idx
     ON MailingListBan(banned_by);
 
 
-CREATE TABLE MessagesAwaitingApproval (
+CREATE TABLE MessageApproval (
     id              serial NOT NULL,
     /* The Message-ID header of the held message. */
     message_id      text NOT NULL,
@@ -223,43 +223,43 @@ CREATE TABLE MessagesAwaitingApproval (
         timezone('UTC'::text, ('now'::text)::timestamp(6) with time zone)
 );
 
-ALTER TABLE ONLY MessagesAwaitingApproval
-    ADD CONSTRAINT MessagesAwaitingApproval_pkey PRIMARY KEY (id);
+ALTER TABLE ONLY MessageApproval
+    ADD CONSTRAINT MessageApproval_pkey PRIMARY KEY (id);
 
-ALTER TABLE ONLY MessagesAwaitingApproval
-    ADD CONSTRAINT MessagesAwaitingApproval_posted_by_fk
+ALTER TABLE ONLY MessageApproval
+    ADD CONSTRAINT MessageApproval_posted_by_fk
     FOREIGN KEY (posted_by) REFERENCES person(id);
 
-ALTER TABLE ONLY MessagesAwaitingApproval
-    ADD CONSTRAINT MessagesAwaitingApproval_team_fk
+ALTER TABLE ONLY MessageApproval
+    ADD CONSTRAINT MessageApproval_team_fk
     FOREIGN KEY (team) REFERENCES person(id);
 
-ALTER TABLE ONLY MessagesAwaitingApproval
-    ADD CONSTRAINT MessagesAwaitingApproval_disposed_by_fk
+ALTER TABLE ONLY MessageApproval
+    ADD CONSTRAINT MessageApproval_disposed_by_fk
     FOREIGN KEY (disposed_by) REFERENCES person(id);
 
-ALTER TABLE ONLY MessagesAwaitingApproval
-    ADD CONSTRAINT MessagesAwaitingApproval_posted_message_fk
+ALTER TABLE ONLY MessageApproval
+    ADD CONSTRAINT MessageApproval_posted_message_fk
     FOREIGN KEY (posted_message) REFERENCES libraryfilealias(id);
 
-ALTER TABLE MessagesAwaitingApproval ADD CONSTRAINT
-    messagesawaitingapproval__message_id__key UNIQUE (message_id);
+ALTER TABLE MessageApproval ADD CONSTRAINT
+    messageapproval__message_id__key UNIQUE (message_id);
 
 
-CREATE INDEX MessagesAwaitingApproval_message_id_idx
-    ON MessagesAwaitingApproval USING btree (message_id);
+CREATE INDEX MessageApproval_message_id_idx
+    ON MessageApproval USING btree (message_id);
 
-CREATE INDEX messagesawaitingapproval__posted_by__idx
-    ON MessagesAwaitingApproval(posted_by);
+CREATE INDEX messageapproval__posted_by__idx
+    ON MessageApproval(posted_by);
 
-CREATE INDEX messagesawaitingapproval__team__status__posted_date__idx
-    ON MessagesAwaitingApproval(team, status, posted_date);
+CREATE INDEX messageapproval__team__status__posted_date__idx
+    ON MessageApproval(team, status, posted_date);
 
 CREATE INDEX messageawaitingapproval__posted_message__idx
-    ON MessagesAwaitingApproval(posted_message);
+    ON MessageApproval(posted_message);
 
-CREATE INDEX messagesawaitingapproval__disposed_by__idx
-    ON MessagesAwaitingApproval(disposed_by) WHERE disposed_by IS NOT NULL;
+CREATE INDEX messageapproval__disposed_by__idx
+    ON MessageApproval(disposed_by) WHERE disposed_by IS NOT NULL;
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 24, 0);
