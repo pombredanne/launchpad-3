@@ -277,30 +277,11 @@ class SmartserverTests(SSHTestCase):
     def getDefaultServer(self):
         return make_bzr_ssh_server()
 
-    def _dump_authserver_log(self):
-        authserver_log = open(
-            self.server.authserver.tachandler.logfile, 'r')
-        print '-' * 8
-        print authserver_log.read()
-        print '-' * 8
-        authserver_log.close()
-        raise
-
     @deferToThread
     def test_can_read_readonly_branch(self):
         # We can get information from a read-only branch.
-
-        # XXX: JonathanLange 2007-06-29, This test has been known to fail
-        # intermittently. The cause of the failure is unknown, due partly to a
-        # lack of information. To correct that, we dump the authserver log file
-        # to stdout in the event of an error, so that it will appear in the PQM
-        # output.
-        try:
-            authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
-            sabdfl_id = authserver.getUser('sabdfl')['id']
-        except:
-            self._dump_authserver_log()
-            raise
+        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
+        sabdfl_id = authserver.getUser('sabdfl')['id']
         ro_branch_id = authserver.createBranch(sabdfl_id, '', 'ro-branch')
         ro_branch_url = 'file://' + os.path.abspath(
             os.path.join(self.server._mirror_root,
@@ -317,18 +298,8 @@ class SmartserverTests(SSHTestCase):
     @deferToThread
     def test_cant_write_to_readonly_branch(self):
         # We can't write to a read-only branch.
-
-        # XXX: JonathanLange 2007-06-29, This test has been known to fail
-        # intermittently. The cause of the failure is unknown, due partly to a
-        # lack of information. To correct that, we dump the authserver log file
-        # to stdout in the event of an error, so that it will appear in the PQM
-        # output.
-        try:
-            authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
-            sabdfl_id = authserver.getUser('sabdfl')['id']
-        except:
-            self._dump_authserver_log()
-            raise
+        authserver = xmlrpclib.ServerProxy(self.server.authserver.get_url())
+        sabdfl_id = authserver.getUser('sabdfl')['id']
         ro_branch_id = authserver.createBranch(sabdfl_id, '', 'ro-branch')
         ro_branch_url = 'file://' + os.path.abspath(
             os.path.join(self.server._mirror_root,
