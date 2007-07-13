@@ -1375,7 +1375,10 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
 
         if question.faq != old_question.faq:
             if question.faq is None:
-                info_fields.append(indent + 'Related FAQ was removed.')
+                info_fields.append(
+                    indent + 'Related FAQ was removed:\n' +
+                    indent + old_question.faq.title + '\n' +
+                    indent + canonical_url(old_question.faq))
             else:
                 info_fields.append(
                     indent + 'Related FAQ set to:\n' +

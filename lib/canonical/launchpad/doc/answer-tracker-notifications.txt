@@ -760,7 +760,9 @@ If the FAQ is unlinked, the notification will look like:
     Your question #... on Mozilla Firefox changed:
     http://answers.launchpad.dev/firefox/+question/...
     <BLANKLINE>
-        Related FAQ was removed.
+        Related FAQ was removed:
+        How do I install plugins (Shockwave, QuickTime, etc.)?
+        http://answers.launchpad.dev/firefox/+faq/10
     <BLANKLINE>
     Sample Person proposed the following answer:
     Sorry, this wasn't so useful.
