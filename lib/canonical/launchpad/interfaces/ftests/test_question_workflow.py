@@ -20,6 +20,7 @@ import traceback
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
@@ -149,6 +150,9 @@ class BaseAnswerTrackerWorkflowTestCase(unittest.TestCase):
                 self.setQuestionStatus(self.question, status)
 
             self.collected_events = []
+
+            # Make sure that there are no FAQ linked.
+            removeSecurityProxy(self.question).faq = None
 
             # Ensure ordering of the message.
             transition_method_kwargs['datecreated'] = (
