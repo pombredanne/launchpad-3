@@ -17,6 +17,7 @@
 
   <div>
     <form method="get" id="question-search-form" action=""
+          accept-charset="UTF-8"
           tal:attributes="action view/action_url">
 
       <tal:searchbox replace="structure view/widgets/search_text" />
