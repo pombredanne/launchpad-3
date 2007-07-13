@@ -13,9 +13,9 @@ details of that team.
     >>> browser.getLink('Change details').click()
     >>> browser.url
     'http://launchpad.dev/~ubuntu-team/+edit'
-    >>> browser.getControl('Launchpad ID').value
+    >>> browser.getControl('Name', index=0).value
     'ubuntu-team' 
-    >>> browser.getControl('Name').value
+    >>> browser.getControl('Display Name').value
     'Ubuntu Team'
     >>> browser.getControl('Team Description').value
     'This Team is responsible for the Ubuntu Distribution'
@@ -27,8 +27,8 @@ details of that team.
 
 Now we'll change some values.
 
-    >>> browser.getControl('Launchpad ID').value = 'ubuntuteam'
-    >>> browser.getControl('Name').value = 'The Ubuntu Team'
+    >>> browser.getControl('Name', index=0).value = 'ubuntuteam'
+    >>> browser.getControl('Display Name').value = 'The Ubuntu Team'
     >>> browser.getControl('Team Description').value = ''
     >>> browser.getControl('Restricted Team').selected = True
 
@@ -43,9 +43,9 @@ URL since we changed its name.
 
     >>> browser.url
     'http://launchpad.dev/~ubuntuteam/+edit'
-    >>> browser.getControl('Launchpad ID').value
+    >>> browser.getControl('Name', index=0).value
     'ubuntuteam'
-    >>> browser.getControl('Name').value
+    >>> browser.getControl('Display Name').value
     'The Ubuntu Team'
     >>> browser.getControl('Team Description').value
     ''
@@ -55,7 +55,7 @@ URL since we changed its name.
 If we try to use a name which is already in use, we'll get an error
 message explaining it.
 
-    >>> browser.getControl('Launchpad ID').value = 'sabdfl'
+    >>> browser.getControl('Name', index=0).value = 'sabdfl'
     >>> browser.getControl('Save').click()
 
     >>> browser.url
@@ -68,7 +68,7 @@ message explaining it.
 We also get an error message if we attempt to create a team with a renewal
 policy other than None and don't specify a default renewal period.
 
-    >>> browser.getControl('Launchpad ID').value = 'ubuntuteam'
+    >>> browser.getControl('Name', index=0).value = 'ubuntuteam'
     >>> browser.getControl(
     ...     'invite them to renew their own membership').selected = True
     >>> browser.getControl('Save').click()

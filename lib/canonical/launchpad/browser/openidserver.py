@@ -98,6 +98,17 @@ KNOWN_TRUST_ROOTS = {
                      "so we can remember your order details and keep in "
                      "touch with you about your orders."),
              creation_rationale=rationale.OWNER_CREATED_UBUNTU_SHOP),
+    'http://shop.canonical.com':
+        dict(title="The Ubuntu Store from Canonical",
+             logo="/+icing/canonical-logo.png",
+             sreg=['email', 'fullname', 'nickname',
+                   'x_address1', 'x_address2', 'x_organization',
+                   'x_city', 'x_province', 'country', 'postcode',
+                   'x_phone'],
+             reason=("For the Ubuntu Store, you need a Launchpad account "
+                     "so we can remember your order details and keep in "
+                     "touch with you about your orders."),
+             creation_rationale=rationale.OWNER_CREATED_UBUNTU_SHOP),
     #'https://shipit.ubuntu.com/':
     #    dict(title="Ubuntu Shipit",
     #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
