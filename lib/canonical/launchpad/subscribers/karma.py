@@ -202,7 +202,7 @@ def get_karma_context_parameters(context):
     else:
         raise AssertionError('Unknown karma context: %r' % context)
     return params
-    
+
 
 def faq_created(faq, event):
     """Assign karma to the user who created the FAQ."""
