@@ -13,8 +13,8 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet)
 
 from canonical.lp.dbschema import (
-    BranchLifecycleStatus, BranchVisibilityRule, PersonCreationRationale,
-    TeamSubscriptionPolicy)
+    BranchLifecycleStatus, BranchType, BranchVisibilityRule,
+    PersonCreationRationale, TeamSubscriptionPolicy)
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -141,7 +141,7 @@ class BranchVisibilityPolicyTestCase(TestCase):
     def assertBranchRule(self, creator, owner, expected_rule):
         """Check the getBranchVisibilityRuleForBranch results for a branch."""
         branch = BranchSet().new(
-            'test_rule', creator, owner, self.firefox, None)
+            BranchType.HOSTED, 'test_rule', creator, owner, self.firefox, None)
         rule = self.firefox.getBranchVisibilityRuleForBranch(branch)
         self.assertEqual(rule, expected_rule,
                          'Wrong visibililty rule returned: '
