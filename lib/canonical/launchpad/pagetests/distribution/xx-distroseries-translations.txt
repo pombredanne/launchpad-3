@@ -10,8 +10,6 @@ Here we can see that Spanish (Spain) is not visible.
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/+languages/es_ES/+admin')
-    >>> print admin_browser.url
-    http://translations.launchpad.dev/+languages/es_ES/+admin
     >>> print admin_browser.getControl('The English name').value
     Spanish (Spain)
     >>> admin_browser.getControl('Visible').selected
@@ -21,8 +19,6 @@ But Spanish is visible.
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/+languages/es/+admin')
-    >>> print admin_browser.url
-    http://translations.launchpad.dev/+languages/es/+admin
     >>> print admin_browser.getControl('The English name').value
     Spanish
     >>> admin_browser.getControl('Visible').selected
@@ -31,8 +27,6 @@ But Spanish is visible.
 In this case, we're asking for the translation overview for Hoary.
 
     >>> anon_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
-    >>> anon_browser.url
-    'http://translations.launchpad.dev/ubuntu/hoary'
 
 The system is not showing non visible languages:
 
@@ -72,8 +66,6 @@ And the page is not available either:
 ... but the link is available to administrators:
 
     >>> admin_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
-    >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/hoary
 
     >>> admin_browser.getLink('Admin translation options').click()
     >>> print admin_browser.url
@@ -91,8 +83,8 @@ Once the administrator hides all translations...
 
     >>> admin_browser.getLink('Spanish')
     Traceback (most recent call last):
-  ...
-  LinkNotFoundError
+    ...
+    LinkNotFoundError
 
     >>> main_content = find_main_content(admin_browser.contents)
     >>> 'hoary/+lang/' in main_content
@@ -127,8 +119,6 @@ Although, an administrator can see the same page.
 
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/+lang/es')
-    >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/hoary/+lang/es
 
 Non existing languages are still notified.
 
@@ -154,16 +144,12 @@ administrators.
     >>> admin_browser.open(
     ...     'http://translations.launchpad.dev/ubuntu/hoary/'
     ...     '+sources/evolution')
-    >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/hoary/+sources/evolution
 
 There is also an option to set/unset whether translation imports for a
 distribution should be deferred. That option is set also from the same
 form where we hide all translations and an admin is able to change it:
 
     >>> admin_browser.open('http://translations.launchpad.dev/ubuntu/hoary')
-    >>> print admin_browser.url
-    http://translations.launchpad.dev/ubuntu/hoary
     >>> admin_browser.getLink('Admin translation options').click()
     >>> print admin_browser.url
     http://translations.launchpad.dev/ubuntu/hoary/+admin
@@ -185,3 +171,7 @@ Once the system accepts the submission, we can see such change applied.
     >>> admin_browser.getControl(
     ...     'Defer translation imports').selected
     True
+
+There are no visible user interface changes once this flag is changed. It
+just prevents that the translation import script, which is executed by cron,
+handle translation imports for this distro series.

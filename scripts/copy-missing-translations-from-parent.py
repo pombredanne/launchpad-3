@@ -26,7 +26,7 @@ class TranslationsCopier(LaunchpadScript):
         self.parser.add_option('-d', '--distribution', dest='distro',
             default='ubuntu',
             help='Name of distribution to copy translations in.')
-        self.parser.add_option('-r', '--series', dest='series',
+        self.parser.add_option('-s', '--series', dest='series',
             help='Name of distroseries whose translations should be updated')
 
     def main(self):
