@@ -5,7 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'IMailingList',
-    'IMailingListRegistry',
+    'IMailingListSet',
     ]
 
 
@@ -66,63 +66,85 @@ class IMailingList(Interface):
     def review(reviewer, status):
         """Review the mailing list's registration.
 
-        The reviewer is the person reviewing the mailing list.  status may be
-        only MailingListStatus.APPROVED or MailingListStatus.DECLINED.  Prior
-        to the review, the status of the mailing list must be
-        MailingListStatus.REGISTERED.
+        :param reviewer: The person who reviewed the mailing list registration
+            request.
+        :param status: The status that the reviewer is giving this
+            registration request.  `status` must be be either
+            `MailingListStatus.APPROVED` or `MailingListStatus.DECLINED`.
+            Prior to the review, the status of the mailing list must be
+            `MailingListStatus.REGISTERED`.
+        :raises AssertionError: When the mailing list is not in the
+            `MailingListStatus.REGISTERED` state, or `status` is an invalid
+            value.
         """
 
-    def construct():
-        """Set the status to the MailingListStatus.CONSTRUCTING state.
+    def startConstructing():
+        """Set the status to the `MailingListStatus.CONSTRUCTING` state.
 
         This state change happens when Mailman pulls the list approved mailing
-        lists and begins constructing them.  Prior to constructing, the status
-        of the mailing list must be MailingListStatus.APPROVED.
+        lists and begins constructing them.
+
+        :raises AssertionError: When prior to constructing, the status of the
+            mailing list is not `MailingListStatus.APPROVED`.
         """
 
-    def reportResult(status):
-        """Set the status after a remote action has taken place.
+    def transitionState(target_state):
+        """Transition the list's state after a remote action has taken place.
 
         This sets the status of the mailing list to reflect the results of
         action by Mailman.  It handles various state changes, updating other
         attributes such as the activate date as necessary.
+
+        :param target_state: The new state.
+        :raises AssertionError: When an invalid state transition is made.
         """
 
     def deactivate():
         """Deactivate the mailing list.
 
-        This sets the status to MailingListStatus.INACTIVE.  Prior to
-        deactivation, the status of the mailing list must be
-        MailingListStatus.ACTIVE.
+        This sets the status to `MailingListStatus.INACTIVE`.
+
+        :raises AssertionError: When prior to deactivation, the status of the
+            mailing list is not `MailingListStatus.ACTIVE`.
         """
 
 
-class IMailingListRegistry(Interface):
-    """A mailing list registration service."""
+class IMailingListSet(Interface):
+    """A set of mailing lists."""
 
-    def register(team):
-        """Register a team mailing list.
+    def new(team, registrant):
+        """Register a new team mailing list.
 
         A mailing list for the team is registered and the resulting
-        `IMailingList` is returned.  The registrant will be the team's current
-        owner and the registration time will be set to the current time.  The
-        team must not yet have a mailing list.
+        `IMailingList` is returned.  The registration time will be set to the
+        current time.  The team must not yet have a mailing list.
+
+        :param team: The team to register a new mailing list for.
+        :param registrant: The person registering the mailing list.  This must
+            be the team owner or one of the team admins.
+        :raises AssertionError: When `team` is not a team, already has a
+            mailing list registered for it, or the registrant is not a team
+            owner or admin.
         """
 
-    def getTeamMailingList(team_name):
-        """Return the IMailingList associated with the given team name.
+    def get(team_name):
+        """Return the `IMailingList` associated with the given team name.
 
-        None is returned if the named team has no mailing list.
+        :param team_name: The name of the team to get the mailing list for.
+        :return: The `IMailingList` for the named team or None if no mailing
+            list is registered for the named team, or the team doesn't exist.
+        :raises AssertionError: When `team_name` is not a string.
         """
 
     registered_lists = Attribute(
-        'All mailing lists with a status of MailingListStatus.REGISTERED.')
+        'All mailing lists with a status of `MailingListStatus.REGISTERED`.')
 
     approved_lists = Attribute(
-        'All mailing lists with the status of MailingListStatus.APPROVED.')
+        'All mailing lists with the status of `MailingListStatus.APPROVED`.')
 
     modified_lists = Attribute(
-        'All mailing lists with the status of MailingListStatus.MODIFIED.')
+        'All mailing lists with the status of `MailingListStatus.MODIFIED`.')
 
     deactivated_lists = Attribute(
-        'All mailing lists with the status of MailingListStatus.DEACTIVATING.')
+        'All mailing lists with the status of '
+        '`MailingListStatus.DEACTIVATING`.')
