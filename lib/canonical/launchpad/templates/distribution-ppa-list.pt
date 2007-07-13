@@ -4,6 +4,12 @@
       i18n:domain="launchpad"
 >
   <body>
+
+    <metal:portlets fill-slot="portlets">
+      <tal:portlet replace="structure context/@@+portlet-lifecycle" />
+      <tal:portlet replace="structure context/@@+portlet-details" />
+    </metal:portlets>
+
     <metal:heading fill-slot="pageheading">
       <h1>Personal Package Archives for
           <span tal:replace="context/title" /></h1>
