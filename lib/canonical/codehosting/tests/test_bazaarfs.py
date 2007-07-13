@@ -36,10 +36,8 @@ class FakeLaunchpad:
             return defer.succeed(None)
 
     def createBranch(self, loginID, userName, productName, branchName):
-        """Check the given parameters and return a fake branch ID.
-
-        If not given 1, '123' and 'new-branch' as parameters, then raise an
-        AssertionError.
+        """Check the given parameters and return a fake branch ID in a
+        Deferred.
         """
         self.test.assertEqual('alice', userName)
         self.test.assertEqual('mozilla-firefox', productName)

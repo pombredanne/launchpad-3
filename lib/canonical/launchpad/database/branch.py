@@ -706,7 +706,7 @@ class BranchSet:
             self._generateBranchClause(query, visible_by_user))
 
     def getHostedBranchesForPerson(self, person):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         branches = Branch.select(
             "Branch.URL IS NULL "
             "AND Branch.owner IN ("
