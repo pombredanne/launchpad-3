@@ -1,13 +1,10 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
 import datetime
-import urllib
 
 import pytz
 
-from canonical.config import config
-from canonical.launchpad.scripts.supermirror.jobmanager import (
-    JobManager, LockError)
+from canonical.launchpad.scripts.supermirror.jobmanager import LockError
 from canonical.authserver.client.branchstatus import BranchStatusClient
 
 
