@@ -103,10 +103,17 @@ class MailingList(SQLBase):
         return self.welcome_message_text
 
     def _set_welcome_message(self, text):
-        assert self.status == MailingListStatus.ACTIVE, (
-            'Only active mailing lists may be modified')
+        if self.status == MailingListStatus.REGISTERED:
+            # Don't change the status to MODIFIED because the mailing list
+            # hasn't been created by Mailman yet.
+            new_status = MailingListStatus.REGISTERED
+        elif self.status == MailingListStatus.ACTIVE:
+            new_status = MailingListStatus.MODIFIED
+        else:
+            assert False, (
+                'Only registered or active mailing lists may be modified')
         self.welcome_message_text = text
-        self.status = MailingListStatus.MODIFIED
+        self.status = new_status
 
     welcome_message = property(_get_welcome_message, _set_welcome_message)
 
