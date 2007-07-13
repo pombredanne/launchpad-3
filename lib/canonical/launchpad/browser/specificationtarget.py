@@ -370,7 +370,7 @@ class RegisterABlueprintButtonView:
             target = ISpecificationTarget(self.context)
 
         return """
-              <a href="%s/+addspec">
+              <a href="%s/+addspec" id="addspec">
                 <img
                   alt="Register a blueprint"
                   src="/+icing/but-sml-registerablueprint.gif"
