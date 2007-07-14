@@ -41,6 +41,11 @@
     />
 
   <vocabulary
+    name="BranchType"
+    factory="canonical.launchpad.vocabularies.BranchTypeVocabulary"
+    />
+
+  <vocabulary
     name="BranchVisibilityRule"
     factory="canonical.launchpad.vocabularies.BranchVisibilityRuleVocabulary"
     />

@@ -13,6 +13,19 @@
      tal:define="specs view/specs;
                  has_any_specs view/has_any_specifications">
 
+  <tal:block condition="view/is_project">
+    <tal:block condition="view/required:launchpad.Edit">
+      <p tal:condition="not: context/products" class="warning message">
+        There are no projects registered for
+        <span tal:replace="context/displayname">project displayname</span>.
+        <br />
+        You need to <a href="+newproduct">register another project that is
+        part of <tal:project replace="context/displayname" /></a> or associate
+        an existing project with it.
+      </p>
+    </tal:block>
+  </tal:block>
+
   <h1 tal:condition="view/is_person"
      >Blueprints involving <tal:person replace="context/title" /></h1>
   <h1 tal:condition="not:view/is_person"
@@ -26,7 +39,6 @@
   </div>
 
   <tal:no_specs condition="not: has_any_specs">
-
     <p>
       Launchpad lets projects track the features they intend to implement over
       the next few releases. We call each feature proposal a "blueprint",

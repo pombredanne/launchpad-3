@@ -182,6 +182,30 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         enabled = ICalendarOwner(self.context).calendar is not None
         return Link(target, text, enabled=enabled)
 
+    def bugs(self):
+        site = 'bugs'
+        text = 'Bugs'
+
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
+
+    def answers(self):
+        site = 'answers'
+        text = 'Answers'
+
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
+
+    def specifications(self):
+        site = 'blueprints'
+        text = 'Blueprints'
+
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
+
+    def translations(self):
+        site = 'translations'
+        text = 'Translations'
+
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
+
 
 class ProjectOverviewMenu(ApplicationMenu):
 
@@ -218,7 +242,12 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     def mentorship(self):
         text = 'Mentoring available'
-        return Link('+mentoring', text, icon='info')
+
+        # We disable this link if the project has no products. This is for
+        # consistency with the way the overview buttons behave in the same
+        # circumstances.
+        return Link('+mentoring', text, icon='info', 
+                    enabled=self.context.hasProducts())
 
     def rdf(self):
         text = structured(

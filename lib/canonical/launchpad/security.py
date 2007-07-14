@@ -1043,7 +1043,7 @@ class ViewEntitlement(AuthorizationBase):
     usedfor = IEntitlement
 
     def checkAuthenticated(self, user):
-        """Is the user able to edit a branch subscription?
+        """Is the user able to view an Entitlement attribute?
 
         Any team member can edit a branch subscription for their team.
         Launchpad Admins can also edit any branch subscription.

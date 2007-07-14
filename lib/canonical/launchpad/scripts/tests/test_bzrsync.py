@@ -19,7 +19,8 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.lp.dbschema import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    BranchType)
 from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.mail import stub
@@ -76,6 +77,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         LaunchpadZopelessLayer.txn.begin()
         arbitraryownerid = 1
         self.db_branch = getUtility(IBranchSet).new(
+            branch_type=BranchType.MIRRORED,
             name="test",
             creator=arbitraryownerid,
             owner=arbitraryownerid,
