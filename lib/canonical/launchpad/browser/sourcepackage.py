@@ -123,17 +123,6 @@ class SourcePackageOverviewMenu(ApplicationMenu):
         return Link('+builds', text, icon='info')
 
 
-class SourcePackageBugsMenu(ApplicationMenu):
-
-    usedfor = ISourcePackage
-    facet = 'bugs'
-    links = ['reportbug']
-
-    def reportbug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='add')
-
-
 class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
 
     usedfor = ISourcePackage

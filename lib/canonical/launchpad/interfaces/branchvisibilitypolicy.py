@@ -33,6 +33,19 @@ class IHasBranchVisibilityPolicy(Interface):
         If there is no explicit team policy set for the team, return None.
         """
 
+    def getBranchVisibilityRuleForBranch(branch):
+        """Return the most specific visibility rule for a branch.
+
+        The owner of the branch is used to determine the team that the rule
+        applies to.  If there is a rule defined for the actual branch owner
+        then that rule is used in preference to other rules only applicable
+        through team membership.
+
+        If there are a number of rules that apply for the owner of the branch
+        then the most restrictive rule is retuned.
+        """
+
+
     def isUsingInheritedBranchVisibilityPolicy():
         """Return True if using policy from the inherited context.
 
