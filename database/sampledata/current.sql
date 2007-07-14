@@ -2001,14 +2001,14 @@ INSERT INTO karma (id, datecreated, person, "action", product, distribution, sou
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (60, '2000-03-13 20:45:51.817826', 16, 2, 20, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (61, '2000-03-13 20:46:49.83307', 16, 2, 20, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (62, '2001-07-03 21:30:51.583356', 12, 47, NULL, 1, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (63, '2007-07-12 21:31:37.206177', 13, 43, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (64, '2007-07-12 21:40:54.835065', 13, 43, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (65, '2007-07-12 21:41:20.001784', 13, 43, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (66, '2007-07-12 21:42:18.968503', 13, 43, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (67, '2007-07-12 21:43:07.388765', 13, 43, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (68, '2007-07-12 21:43:42.839315', 13, 43, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (69, '2007-07-12 21:44:09.195709', 13, 43, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (70, '2007-07-12 21:44:25.938314', 13, 43, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (63, '2001-07-12 21:31:37.206177', 13, 43, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (64, '2001-07-12 21:40:54.835065', 13, 43, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (65, '2001-07-12 21:41:20.001784', 13, 43, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (66, '2001-07-12 21:42:18.968503', 13, 43, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (67, '2001-07-12 21:43:07.388765', 13, 43, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (68, '2001-07-12 21:43:42.839315', 13, 43, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (69, '2001-07-12 21:44:09.195709', 13, 43, 4, NULL, NULL);
+INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (70, '2001-07-12 21:44:25.938314', 13, 43, 4, NULL, NULL);
 
 
 ALTER TABLE karma ENABLE TRIGGER ALL;
@@ -7153,7 +7153,7 @@ INSERT INTO potranslation (id, translation) VALUES (264, 'Uso:
   %s<dispositivo>. Si el punto de montaje no existe, se creará.
 
 ');
-INSERT INTO potranslation (id, translation) VALUES (265, '%s --lock <dispositivo> <pid>↵
+INSERT INTO potranslation (id, translation) VALUES (265, '%s --lock <dispositivo> <pid>〓
   Previene posteriores montajes del <dispositivo> hasta que se desbloquee.
   <pid> especifica el id del proceso que pone el bloqueo. Esto permite
   bloquear un dispositivo a varios procesos independendientes evitando
@@ -7552,7 +7552,7 @@ INSERT INTO potranslation (id, translation) VALUES (436, 'Utilisation :
   satisfaient ( voir pumount(1) pour les détails). Le répertoire du
   point de montage est supprimé après l''opération.
 
-Options:↵
+Options:〓
   -l, --lazy : démontage paresseux, voir umount(8)
   -d, --debug : autorise l''affichage des messages de debug (très verbeux)
   -h, --help : affiche ce message d''aide et termine avec succès
@@ -8288,7 +8288,7 @@ ALTER TABLE pushmirroraccess ENABLE TRIGGER ALL;
 ALTER TABLE question DISABLE TRIGGER ALL;
 
 INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (1, 11, 'Firefox cannot render Bank Site', 'Hello, I''m trying to access http://www.citibank.com/ and the page is not rendering correctly. Is there a setting I can use to get it right? Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:46:07.392021', '2005-09-05 18:46:07.392021', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 119, NULL);
-INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (2, 12, 'Problem showing the SVG demo on W3C site', 'Hi! I''m trying to learn about SVG but I can''t get it to work at all in firefox. Maybe there is a plugin? Help! Thanks.', NULL, NULL, 4, NULL, NULL, 18, 10, '2005-09-05 18:47:27.657124', '2005-09-05 18:47:27.657124', NULL, NULL, '2007-07-12 21:44:25.938314', NULL, NULL, NULL, NULL, NULL, 119, 7);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (2, 12, 'Problem showing the SVG demo on W3C site', 'Hi! I''m trying to learn about SVG but I can''t get it to work at all in firefox. Maybe there is a plugin? Help! Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:47:27.657124', '2005-09-05 18:47:27.657124', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 119, 7);
 INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (3, 16, 'Firefox is slow and consumes too much RAM', 'I''m running on a 486 with 32 MB ram. And Firefox is slow! What should I do?', NULL, 16, NULL, 1, 1, 30, 10, '2005-09-05 19:46:22.786269', '2005-09-05 19:46:22.786269', NULL, NULL, '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', NULL, NULL, NULL, 119, NULL);
 INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (4, 16, 'Firefox loses focus and gets stuck', 'Every now and then I can''t type anything in the fields on a web form, and I have to click my mouse in the URL bar. Is that normal?', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 20:03:10.967079', '2005-09-05 20:03:10.967079', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 119, NULL);
 INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (5, 12, 'Installation failed', 'I can''t install Ubuntu, it fails to find my CD-ROM drive.', NULL, NULL, NULL, 1, NULL, 10, 10, '2005-10-13 09:08:27.006633', '2005-10-13 09:08:27.006633', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 119, NULL);
@@ -8342,14 +8342,6 @@ INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES
 INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (6, 10, 21, 35, 18);
 INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (7, 9, 22, 40, 20);
 INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (8, 11, 23, 80, 10);
-INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (9, 2, 37, 35, 18);
-INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (10, 2, 38, 35, 18);
-INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (11, 2, 39, 35, 18);
-INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (12, 2, 40, 35, 18);
-INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (13, 2, 41, 35, 18);
-INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (14, 2, 42, 35, 18);
-INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (15, 2, 43, 35, 18);
-INSERT INTO questionmessage (id, question, message, "action", new_status) VALUES (16, 2, 44, 35, 18);
 
 
 ALTER TABLE questionmessage ENABLE TRIGGER ALL;
