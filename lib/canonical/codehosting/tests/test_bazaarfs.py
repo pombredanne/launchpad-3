@@ -120,13 +120,13 @@ class UserDirsTestCase(AvatarTestCase):
     def testInitialBranches(self):
         # Check that already existing branches owned by a user appear as
         # expected.
-        self.bobUserDict['teams'][0]['initialBranches'] = [ # bob
-            (1, 'mozilla-firefox', [(1, 'branch-one'), (2, 'branch-two')]),
-            (2, 'product-x', [(3, 'branch-y')]),
-        ]
-        self.bobUserDict['teams'][1]['initialBranches'] = [ # test-team
-            (3, 'thing', [(4, 'another-branch')]),
-        ]
+        self.bobUserDict['initialBranches'] = [
+            # bob
+            (2, [((1, 'mozilla-firefox'),
+                  [(1, 'branch-one'), (2, 'branch-two')]),
+                 ((2, 'product-x'), [(3, 'branch-y')])]),
+            # test team
+            (3, [((3, 'thing'), [(4, 'another-branch')])])]
         avatar = LaunchpadAvatar('bob', self.tmpdir, self.bobUserDict, None)
         root = avatar.makeFileSystem().root
 
