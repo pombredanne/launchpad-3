@@ -55,6 +55,7 @@ Firstly make sure that the branch has some blueprint links and subscribers.
     >>> browser.getLink('Subscribe').click()
     >>> browser.getControl('Subscribe').click()
     >>> browser.getLink('View branch associations').click()
+    >>> associations_url = browser.url
 
 The project link, if the branch is not junk, links back to the branch listing
 for the project.
@@ -63,24 +64,22 @@ for the project.
     >>> browser.getLink(re.compile('^Mozilla Firefox$')).click()
     >>> browser.url
     'http://code.launchpad.dev/firefox'
-    >>> browser.goBack()
-    >>> browser.reload()
+    >>> # goBack() and reload() seems to not work with PQM
+    >>> browser.open(associations_url)
 
 The listed bugs link to the main bug page.
 
     >>> browser.getLink('Reflow problems with complex page layouts').click()
     >>> browser.url
     'http://bugs.launchpad.dev/firefox/+bug/4'
-    >>> browser.goBack()
-    >>> browser.reload()
+    >>> browser.open(associations_url)
 
 The listed blueprints link to the main blueprint page.
 
     >>> browser.getLink('Support <canvas> Objects').click()
     >>> browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/canvas'
-    >>> browser.goBack()
-    >>> browser.reload()
+    >>> browser.open(associations_url)
 
 The listed subscribers link to the code listing pages for the people or teams.
 
