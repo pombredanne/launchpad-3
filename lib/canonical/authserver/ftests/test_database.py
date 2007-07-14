@@ -293,7 +293,8 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         login(login_email)
         try:
             branch = getUtility(IBranchSet).new(
-                'foo-branch', person, person, None, None, None)
+                dbschema.BranchType.HOSTED, 'foo-branch', person, person,
+                None, None, None)
         finally:
             logout()
             transaction.commit()

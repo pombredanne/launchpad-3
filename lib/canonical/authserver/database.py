@@ -477,8 +477,8 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             branch_set = getUtility(IBranchSet)
             try:
                 branch = branch_set.new(
-                    branchName, requester, owner, product, None, None,
-                    author=requester)
+                    dbschema.BranchType.HOSTED, branchName, requester, owner,
+                    product, None, None, author=requester)
             except BranchCreationForbidden:
                 return ''
             else:
