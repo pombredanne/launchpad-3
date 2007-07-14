@@ -11,9 +11,11 @@ from zope.component import getUtility
 from zope.interface import Interface, implements
 
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, IBranchSet, IBugSet, ILaunchBag, IProductSet,
-    IPersonSet, NotFoundError)
+    BranchCreationForbidden, IBranch, IBranchSet, IBugSet, ILaunchBag,
+    IPersonSet, IProductSet, NotFoundError)
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
+from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.xmlrpc import faults
 from canonical.lp.dbschema import BugBranchStatus, BranchType
 
@@ -55,6 +57,12 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         if existing_branch is not None:
             return faults.BranchAlreadyRegistered(branch_url)
 
+        try:
+            unicode_branch_url = branch_url.decode('utf-8')
+            url = IBranch['url'].validate(unicode_branch_url)
+        except LaunchpadValidationError, exc:
+            return faults.InvalidBranchUrl(branch_url, exc)
+
         # We want it to be None in the database, not ''.
         if not branch_description:
             branch_description = None
@@ -71,6 +79,13 @@ class BranchSetAPI(LaunchpadXMLRPCView):
         if author is None:
             return faults.NoSuchPerson(
                 type="author", email_address=author_email)
+
+        if product is None:
+            unique_name = '~%s/+junk/%s' % (owner.name, branch_name)
+        else:
+            unique_name = '~%s/%s/%s' % (owner.name, product.name, branch_name)
+        if getUtility(IBranchSet).getByUniqueName(unique_name) is not None:
+            return faults.BranchUniqueNameConflict(unique_name)
 
         try:
             if branch_url:
