@@ -12,7 +12,7 @@ __all__ = ['CodeImportSync']
 from zope.component import getUtility
 
 from canonical.lp.dbschema import (
-    CodeImportReviewStatus, ImportStatus, RevisionControlSystems)
+    BranchType, CodeImportReviewStatus, ImportStatus, RevisionControlSystems)
 from canonical.launchpad.interfaces import (
     IBranchSet, ICodeImportSet, ILaunchpadCelebrities, IProductSeriesSet)
 from canonical.launchpad.webapp import canonical_url
@@ -246,6 +246,7 @@ class CodeImportSync:
             return None
         self.logger.debug("Name available, creating branch.")
         branch = getUtility(IBranchSet).new(
+            BranchType.IMPORTED,
             name=series.name, creator=vcs_imports, owner=vcs_imports,
             product=series.product, url=None)
         self.logger.debug("Done creating import branch.")
