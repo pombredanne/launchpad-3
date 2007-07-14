@@ -50,6 +50,7 @@ __all__ = [
     'TranslationGroupVocabulary',
     'UserTeamsParticipationVocabulary',
     'ValidPersonOrTeamVocabulary',
+    'ValidTeamVocabulary',
     'ValidTeamMemberVocabulary',
     'ValidTeamOwnerVocabulary',
     ]
@@ -510,11 +511,32 @@ class ValidPersonOrTeamVocabulary(
             email_matches, orderBy=['displayname', 'name'])
 
     def search(self, text):
-        """Return people/teams whose fti or email address match :text."""
+        """Return people/teams whose fti or email address match :text:."""
         if not text:
             return self.emptySelectResults()
 
         text = text.lower()
+        return self._doSearch(text=text)
+
+
+class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
+    """The set of all valid teams in Launchpad."""
+
+    displayname = 'Select a Team'
+
+    # Because the base class does almost everything we need, we just need to
+    # restrict the search results to those Persons who have a non-NULL
+    # teamowner, i.e. a valid team.
+    extra_clause = 'Person.teamowner IS NOT NULL'
+
+    def search(self, text):
+        """Return all teams that match :text:.
+
+        Unlike ValidPersonOrTeamVocabulary, providing an empty string for text
+        does not return the empty result set.  Instead, it returns all teams.
+        """
+        if not text:
+            text = ''
         return self._doSearch(text=text)
 
 
