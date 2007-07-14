@@ -217,6 +217,11 @@ class SearchQuestionsView(UserSupportLanguagesMixin, LaunchpadFormView):
         return mapping
 
     @property
+    def context_is_project(self):
+        """Return True when the context is a project."""
+        return IProject.providedBy(self.context)
+
+    @property
     def pagetitle(self):
         """Page title."""
         return self.pageheading
