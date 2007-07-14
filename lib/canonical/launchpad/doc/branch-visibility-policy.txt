@@ -295,7 +295,9 @@ created as a private branch, but since there are two teams that specify
 privacy, the branch is created so only Foo Bar can see it.  It is up to
 Foo Bar to subscribe the appropriate team at a later date.
 
+    >>> from canonical.lp.dbschema import BranchType
     >>> branch = branch_set.new(
+    ...     branch_type=BranchType.HOSTED,
     ...     name="testing-1", creator=foo_bar, owner=foo_bar,
     ...     product=evolution, url=None)
     >>> branch.private
@@ -315,6 +317,7 @@ and are subscribed to by the Ubuntu Gnome Team.
     False
 
     >>> branch = branch_set.new(
+    ...     branch_type=BranchType.HOSTED,
     ...     name="testing-2", creator=stevea, owner=stevea,
     ...     product=evolution, url=None)
     >>> branch.private
@@ -334,6 +337,7 @@ teams that have private branches, David's branch will be public.
     True
 
     >>> branch = branch_set.new(
+    ...     branch_type=BranchType.HOSTED,
     ...     name="testing-3", creator=ddaa, owner=ddaa,
     ...     product=evolution, url=None)
     >>> branch.private
@@ -354,6 +358,7 @@ visibility policy, which for this product is Forbidden.
     False
 
     >>> branch = branch_set.new(
+    ...     branch_type=BranchType.HOSTED,
     ...     name="testing-4", creator=no_priv, owner=no_priv,
     ...     product=evolution, url=None)
     Traceback (most recent call last):
