@@ -474,3 +474,29 @@ Rejections with notify=False will also not generate any emails.
   >>> len(msgs)
   0
 
+
+Uploads with UTF-8 characters in email addresses in the changes file are 
+permitted.
+
+  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
+  >>> anything_policy = getPolicy(
+  ...     name='anything', distro='ubuntu', distroseries='hoary')
+  >>> bar_upload = NascentUpload(
+  ...     datadir(
+  ...         'suite/bar_1.0-10_utf8_changesfile/bar_1.0-10_source.changes'),
+  ...     anything_policy, mock_logger_quiet)
+  >>> bar_upload.process()
+
+  >>> bar_upload.logger = mock_logger
+  >>> result = bar_upload.do_accept()
+  DEBUG: Creating queue entry
+  ...
+
+  >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
+  >>> len(msgs)
+  2
+
+"Cihar" should actually be "Čihař" but the mailer will convert to ASCII.
+
+  >>> [message['From'] for message in msgs]
+  ['Root <root@localhost>', 'Non-ascii changed-by Cihar <daniel.silverstone@canonical.com>']

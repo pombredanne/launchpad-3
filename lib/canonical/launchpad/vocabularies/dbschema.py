@@ -16,6 +16,7 @@ __all__ = [
     'BranchReviewStatusVocabulary',
     'BranchSubscriptionDiffSizeVocabulary',
     'BranchSubscriptionNotificationLevelVocabulary',
+    'BranchTypeVocabulary',
     'BranchVisibilityRuleVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
@@ -80,6 +81,8 @@ BranchSubscriptionDiffSizeVocabulary = \
     sortkey_ordered_vocab_factory(dbschema.BranchSubscriptionDiffSize)
 BranchSubscriptionNotificationLevelVocabulary = \
     vocab_factory(dbschema.BranchSubscriptionNotificationLevel)
+BranchTypeVocabulary = vocab_factory(
+    dbschema.BranchType,noshow=[dbschema.BranchType.IMPORTED])
 BranchVisibilityRuleVocabulary = vocab_factory(dbschema.BranchVisibilityRule)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
