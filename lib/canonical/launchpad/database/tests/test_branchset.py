@@ -10,7 +10,7 @@ from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    IPersonSet, IProductSet)
+    IBranchSet, IPersonSet, IProductSet)
 
 from canonical.lp.dbschema import (
     BranchLifecycleStatus, BranchType, BranchVisibilityRule,
@@ -72,6 +72,24 @@ class TestBranchSet(TestCase):
         latest_branches = list(
             self.branch_set.getLatestBranchesForProduct(self.product, 5))
         self.assertEqual(original_branches[1:], latest_branches)
+
+    def test_getHostedBranchesForPerson(self):
+        """The hosted branches for a person are all of the branches without
+        urls that are owned by that person, or a team that the person is in.
+        """
+        branch_owner = getUtility(IPersonSet).get(12)
+        login(branch_owner.preferredemail.email)
+        try:
+            branch_set = getUtility(IBranchSet)
+            branches = list(
+                branch_set.getHostedBranchesForPerson(branch_owner))
+            expected_branches = branch_set.getBranchesForOwners(
+                list(branch_owner.teams_participated_in) + [branch_owner])
+            expected_branches = [
+                branch for branch in expected_branches if branch.url is None]
+            self.assertEqual(expected_branches, branches)
+        finally:
+            logout()
 
 
 class BranchVisibilityPolicyTestCase(TestCase):

@@ -708,6 +708,16 @@ class BranchSet:
         return Branch.select(
             self._generateBranchClause(query, visible_by_user))
 
+    def getHostedBranchesForPerson(self, person):
+        """See `IBranchSet`."""
+        branches = Branch.select(
+            "Branch.URL IS NULL "
+            "AND Branch.owner IN ("
+            "SELECT TeamParticipation.team "
+            "FROM TeamParticipation "
+            "WHERE TeamParticipation.person = %d)" % person.id)
+        return branches
+
     def getLatestBranchesForProduct(self, product, quantity,
                                     visible_by_user=None):
         """See `IBranchSet`."""

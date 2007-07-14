@@ -558,6 +558,9 @@ class IBranchSet(Interface):
         only public branches are returned.
         """
 
+    def getHostedBranchesForPerson(person):
+        """Return the hosted branches that the given person can write to."""
+
     def getLatestBranchesForProduct(product, quantity, visible_by_user=None):
         """Return the most recently created branches for the product.
 
