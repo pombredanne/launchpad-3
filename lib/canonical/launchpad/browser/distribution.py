@@ -360,8 +360,9 @@ class DistributionSpecificationsMenu(ApplicationMenu):
             icon='info')
 
     def new(self):
-        text = 'Register new blueprint'
-        return Link('+addspec', text, icon='add')
+        text = 'Register a blueprint'
+        summary = 'Register a new blueprint for %s' % self.context.title
+        return Link('+addspec', text, summary, icon='add')
 
 
 class DistributionTranslationsMenu(ApplicationMenu):
