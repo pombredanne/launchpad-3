@@ -880,9 +880,9 @@ Lets get Evolution Spanish translation in distribution Hoary.
   >>> noneditor = person_set.getByName('no-priv')
   >>> editor = person_set.getByName('carlos')
 
-  # Make sure the translation permission mode is closed
+  # Make sure the translation permission mode is restricted
   >>> from canonical.lp.dbschema import TranslationPermission
-  >>> product.translationpermission = TranslationPermission.CLOSED
+  >>> product.translationpermission = TranslationPermission.RESTRICTED
 
 Non-editor can only submit a new suggestion on untranslated message.
 
