@@ -358,9 +358,9 @@ class IBranchSet(Interface):
         Return the default value if there is no such branch.
         """
 
-    def new(name, creator, owner, product, url, title,
+    def new(branch_type, name, creator, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, home_page=None, date_created=None):
+            summary=None, home_page=None, whiteboard=None, date_created=None):
         """Create a new branch.
 
         Raises BranchCreationForbidden if the creator is not allowed
