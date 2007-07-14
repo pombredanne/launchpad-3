@@ -210,6 +210,10 @@ class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
         It also should have IProduct.official_rosetta flag set.
         """
 
+    def hasProducts():
+        """Returns True if a project has products associated with it, False
+        otherwise.
+        """
 
 # Interfaces for set
 

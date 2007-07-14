@@ -300,6 +300,15 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Product.project = %s""" % sqlvalues(self.id),
             clauseTables=['Question', 'Product'], distinct=True))
 
+    def hasProducts(self):
+        """Returns True if a project has products associated with it, False
+        otherwise.
+
+        If the project has < 1 product, selected links will be disabled.
+        This is to avoid situations where users try to file bugs against
+        empty project groups (Malone bug #106523).
+        """
+        return self.products.count() != 0
 
 class ProjectSet:
     implements(IProjectSet)
