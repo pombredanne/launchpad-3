@@ -259,7 +259,6 @@ been reported.
 >>> check("/netapplet/+bug/1")
 >>> check_not_found("/netapplet/+bug/1/+viewstatus")
 >>> check_not_found("/netapplet/+bug/1/+editstatus")
->>> check_not_found("/netapplet/+bug/1/+nominate")
 
 Check a bug is traversable by nickname:
 
@@ -275,7 +274,6 @@ yet been reported.
 >>> check_redirect("/ubuntu/+bug")
 >>> check_not_found("/ubuntu/+bug/3/+viewstatus")
 >>> check_not_found("/ubuntu/+bug/3/+editstatus")
->>> check_not_found("/ubuntu/+bug/3/+nominate")
 
 Viewing a bug in the context of a distorelease where the bug has not
 yet been reported.

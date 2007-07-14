@@ -280,6 +280,10 @@ class NullBugTask(BugTaskMixin):
             alsoProvides(self, IDistroBugTask)
         elif self.distroseries:
             alsoProvides(self, IDistroSeriesBugTask)
+        elif self.productseries:
+            alsoProvides(self, IProductSeriesBugTask)
+        else:
+            raise AssertionError('Unknown NullBugTask: %r' % self)
 
         # Set a bunch of attributes to None, because it doesn't make
         # sense for these attributes to have a value when there is no

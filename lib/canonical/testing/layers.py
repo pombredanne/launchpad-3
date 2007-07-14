@@ -26,6 +26,7 @@ __all__ = [
 
 import shutil
 import sys
+import time
 from urllib import urlopen
 
 import psycopg

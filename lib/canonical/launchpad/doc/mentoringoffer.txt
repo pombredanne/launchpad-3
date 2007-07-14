@@ -199,7 +199,7 @@ OK, let's mark the bug public again:
 When a spec or a bug is completed, it drops off the mentoring lists.
 
    >>> from canonical.lp.dbschema import BugTaskStatus
-   >>> from canonical.lp.dbschema import SpecificationDelivery
+   >>> from canonical.lp.dbschema import SpecificationImplementationStatus
    >>> bug2.is_complete
    False
    >>> from canonical.database.sqlbase import flush_database_updates
@@ -222,7 +222,7 @@ And lets see if we can eliminate the spec by making that complete too.
 
    >>> spec1.is_complete
    False
-   >>> spec1.delivery = SpecificationDelivery.IMPLEMENTED
+   >>> spec1.implementation_status = SpecificationImplementationStatus.IMPLEMENTED
    >>> newstate = spec1.updateLifecycleStatus(foo_bar)
    >>> syncUpdate(spec1)
    >>> spec1.is_complete

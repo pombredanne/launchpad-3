@@ -29,7 +29,8 @@ from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.lp.dbschema import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
-    BranchRelationships, BranchLifecycleStatus, BranchVisibilityRule)
+    BranchRelationships, BranchLifecycleStatus, BranchType,
+    BranchVisibilityRule)
 
 
 class Branch(SQLBase):
@@ -38,6 +39,8 @@ class Branch(SQLBase):
     implements(IBranch)
     _table = 'Branch'
     _defaultOrder = ['product', '-lifecycle_status', 'author', 'name']
+
+    branch_type = EnumCol(schema=BranchType, notNull=True)
 
     name = StringCol(notNull=False)
     title = StringCol(notNull=False)
@@ -393,7 +396,7 @@ class BranchSet:
         else:
             return PRIVATE_BRANCH
 
-    def new(self, name, creator, owner, product, url, title=None,
+    def new(self, branch_type, name, creator, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None, whiteboard=None, date_created=None):
         """See IBranchSet."""
@@ -409,7 +412,7 @@ class BranchSet:
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
             home_page=home_page, whiteboard=whiteboard, private=private,
-            date_created=date_created)
+            date_created=date_created, branch_type=branch_type)
 
         # Implicit subscriptions are to enable teams to see private branches
         # as soon as they are created.  The subscriptions can be edited at
@@ -704,6 +707,16 @@ class BranchSet:
 
         return Branch.select(
             self._generateBranchClause(query, visible_by_user))
+
+    def getHostedBranchesForPerson(self, person):
+        """See `IBranchSet`."""
+        branches = Branch.select(
+            "Branch.URL IS NULL "
+            "AND Branch.owner IN ("
+            "SELECT TeamParticipation.team "
+            "FROM TeamParticipation "
+            "WHERE TeamParticipation.person = %d)" % person.id)
+        return branches
 
     def getLatestBranchesForProduct(self, product, quantity,
                                     visible_by_user=None):

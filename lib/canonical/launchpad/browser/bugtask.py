@@ -555,6 +555,14 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
                 'plural_suffix': plural_suffix,
                 'dupe_links_string': dupe_links_string})
 
+    def _nominateBug(self, series):
+        """Nominate the bug for the series and redirect to the bug page."""
+        self.context.bug.addNomination(self.user, series)
+        self.request.response.addInfoNotification(
+            'This bug has been nominated to be fixed in %(target)s',
+            target=series.bugtargetname)
+        self.request.response.redirect(canonical_url(self.context))
+
     def reportBugInContext(self):
         form = self.request.form
         fake_task = self.context
@@ -577,11 +585,11 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
                     distribution=fake_task.distribution,
                     sourcepackagename=fake_task.sourcepackagename)
             elif IDistroSeriesBugTask.providedBy(fake_task):
-                # Create a real distro series bug task in this context.
-                real_task = getUtility(IBugTaskSet).createTask(
-                    bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
-                    distroseries=fake_task.distroseries,
-                    sourcepackagename=fake_task.sourcepackagename)
+                self._nominateBug(fake_task.distroseries)
+                return
+            elif IProductSeriesBugTask.providedBy(fake_task):
+                self._nominateBug(fake_task.productseries)
+                return
             else:
                 raise TypeError(
                     "Unknown bug task type: %s" % repr(fake_task))
@@ -594,13 +602,29 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
     def isReportedInContext(self):
         """Is the bug reported in this context? Returns True or False.
 
+        It considers a nominated bug to be reported.
+
         This is particularly useful for views that may render a
         NullBugTask.
         """
         params = BugTaskSearchParams(user=self.user, bug=self.context.bug)
         matching_bugtasks = self.context.target.searchTasks(params)
+        if self.context.productseries is not None:
+            nomination_target = self.context.productseries
+        elif self.context.distroseries is not None:
+            nomination_target = self.context.distroseries
+        else:
+            nomination_target = None
+        if nomination_target is not None:
+            try:
+                nomination = self.context.bug.getNominationFor(
+                    nomination_target)
+            except NotFoundError:
+                nomination = None
+        else:
+            nomination = None
 
-        return matching_bugtasks.count() > 0
+        return nomination is not None or matching_bugtasks.count() > 0
 
     def isSeriesTargetableContext(self):
         """Is the context something that supports Series targeting?

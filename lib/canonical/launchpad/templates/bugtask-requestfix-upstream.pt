@@ -98,8 +98,8 @@
            tal:content="product/bugcontact/displayname">Sample Person</a>,
          the bug contact for 
          <tal:product tal:replace="product/displayname">Firefox</tal:product>,
-         won't be notified about this bug. To notify additional contacts, 
-         please subscribe them using the Subscribe someone else interface.
+         won't be notified about this bug. You can also set up 
+           <a href="+addsubscriber">additional contacts</a> to be notified.
       </p>
 
       </tal:private_bug>

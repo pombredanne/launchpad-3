@@ -386,7 +386,7 @@ We are going to now poke into the back of the db's head, and "complete" the
 bug and the blueprint we have been using.
 
    >>> from canonical.launchpad.interfaces import ILaunchBag
-   >>> from canonical.lp.dbschema import SpecificationDelivery
+   >>> from canonical.lp.dbschema import SpecificationImplementationStatus
    >>> login('foo.bar@canonical.com')
    >>> spec_1 = kubuntu.getSpecification('cluster-installation')
    >>> bug_2.is_complete
@@ -400,7 +400,8 @@ bug and the blueprint we have been using.
    >>> flush_database_updates()
    >>> bug_2.is_complete
    True
-   >>> spec_1.delivery = SpecificationDelivery.IMPLEMENTED
+   >>> spec_1.implementation_status = \
+   ...     SpecificationImplementationStatus.IMPLEMENTED
    >>> newstate = spec_1.updateLifecycleStatus(foo_bar)
    >>> syncUpdate(spec_1)
    >>> spec_1.is_complete
@@ -512,7 +513,8 @@ cases.
    >>> flush_database_updates()
    >>> bug_2.is_complete
    False
-   >>> spec_1.delivery = SpecificationDelivery.NOTSTARTED
+   >>> spec_1.implementation_status = \
+   ...     SpecificationImplementationStatus.NOTSTARTED
    >>> newstate = spec_1.updateLifecycleStatus(foo_bar)
    >>> syncUpdate(spec_1)
    >>> spec_1.is_complete

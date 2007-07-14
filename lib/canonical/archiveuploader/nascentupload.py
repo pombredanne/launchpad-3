@@ -28,9 +28,9 @@ from canonical.archiveuploader.nascentuploadfile import (
     BaseBinaryUploadFile)
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
-    NotFoundError, IDistributionSet, QueueInconsistentStateError)
+    NotFoundError, IDistributionSet, IArchiveSet, QueueInconsistentStateError)
 from canonical.launchpad.scripts.processaccepted import closeBugsForQueueItem
-from canonical.lp.dbschema import PackagePublishingPocket
+from canonical.lp.dbschema import PackagePublishingPocket, ArchivePurpose
 
 
 class FatalUploadError(Exception):
@@ -181,7 +181,10 @@ class NascentUpload:
             # check rights for OLD packages, the NEW ones goes straight to queue
             self.verify_acl(signer_components)
 
-        # Perform policy checks
+        # Override archive location if necessary.
+        self.overrideArchive()
+
+        # Perform policy checks.
         self.policy.checkUpload(self)
 
         # That's all folks.
@@ -399,9 +402,7 @@ class NascentUpload:
         if not self.policy.distroseries:
             # Greasy hack until above bug is fixed.
             return False
-        if self.policy.archive.id != self.policy.distroseries.main_archive.id:
-            return True
-        return False
+        return self.policy.archive.purpose == ArchivePurpose.PPA
 
     def reject(self, msg):
         """Add the provided message to the rejection message."""
@@ -926,3 +927,40 @@ class NascentUpload:
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
                 self.queue_root.setUnapproved()
+
+    def overrideArchive(self):
+        """Override the archive set on the policy as necessary.
+
+        In some circumstances we may wish to change the archive that the
+        uploaded package is placed into based on various criteria.  This
+        includes decisions such as moving the package to the commercial
+        archive if the package's component is 'commercial'.
+
+        PPA uploads with commercial files and normal uploads with a mixture 
+        of commercial and non-commercial files will be rejected.
+        """
+
+        # Get a set of the components used in this upload:
+        components = set(file.component_name for file in self.changes.files)
+
+        if 'commercial' in components:
+            # Reject commercial uploads to PPAs.
+            if self.is_ppa:
+                self.reject("PPA does not support commercial uploads.")
+
+            # All files in the upload must be commercial if any one of them is.
+            if len(components) != 1:
+                self.reject("Cannot mix commercial files with non-commercial.")
+                return
+
+            # Reset the archive in the policy to the commercial archive.
+            self.policy.archive = getUtility(IArchiveSet).getByDistroPurpose(
+                self.policy.distroseries.distribution, 
+                ArchivePurpose.COMMERCIAL
+                )
+
+            # Check for data problems:
+            if not self.policy.archive:
+                self.reject("Commercial archive for distro '%s' not found" % 
+                    self.policy.distroseries.distribution.name)
+

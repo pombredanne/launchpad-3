@@ -9,7 +9,7 @@ can still access bug #3 in the Evolution context.
     '...Bug #3 is not in Evolution...'
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print extract_text(message.renderContents())
-    This bug is not recorded as needing to be fixed in the Evolution project.
+    This bug is not recorded as needing to be fixed in Evolution.
 
 We can still add a comment to the bug.
 
