@@ -5,6 +5,7 @@ __metaclass__ = type
 
 __all__ = [
     'HasSpecificationsView',
+    'RegisterABlueprintButtonView',
     ]
 
 from operator import itemgetter
@@ -23,13 +24,15 @@ from canonical.launchpad.interfaces import (
     IProductSeries,
     IProject,
     ISprint,
+    ISpecificationTarget,
     )
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.helpers import shortlist
 from canonical.cachedproperty import cachedproperty
-
+from canonical.launchpad.webapp import canonical_url
+from zope.component import queryMultiAdapter        
 
 class HasSpecificationsView(LaunchpadView):
     """Base class for several context-specific views that involve lists of
@@ -66,6 +69,7 @@ class HasSpecificationsView(LaunchpadView):
     is_sprint = False
     has_drivers = False
 
+    # XXX: this method is in need of simplication. (JSK)
     def initialize(self):
         mapping = {'name': self.context.displayname}
         if self.is_person:
@@ -353,3 +357,23 @@ class HasSpecificationsView(LaunchpadView):
         self._dangling = dangling
 
 
+class RegisterABlueprintButtonView:
+    """View that renders a button to register a blueprint on its context."""
+
+    def __call__(self):
+        # Check if the context has an +addspec view available.
+        if queryMultiAdapter(
+            (self.context, self.request), name='+addspec'):
+            target = self.context
+        else:
+            # otherwise find an adapter to ISpecificationTarget which will.
+            target = ISpecificationTarget(self.context)
+
+        return """
+              <a href="%s/+addspec" id="addspec">
+                <img
+                  alt="Register a blueprint"
+                  src="/+icing/but-sml-registerablueprint.gif"
+                />
+              </a>
+        """ % canonical_url(target, rootsite='blueprints')
