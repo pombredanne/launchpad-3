@@ -185,10 +185,6 @@
     </div>
   </tal:not-logged-in>
 
-<<<<<<< TREE
-    </div>
-  </body>
-=======
       <div class="related">
         <h2>What next?</h2>
         <ul>
@@ -206,8 +202,6 @@
           </li>
         </ul>
       </div>
-
-</div>
-</body>
->>>>>>> MERGE-SOURCE
+    </div>
+  </body>
 </html>
