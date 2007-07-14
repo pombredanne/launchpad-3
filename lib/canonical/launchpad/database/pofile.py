@@ -481,8 +481,18 @@ class POFile(SQLBase, POFileMixIn):
             # There is no IPOTMsgSet for this id.
             return None
 
-        return POMsgSet.selectOneBy(
-            potmsgset=potmsgset, pofile=self)
+        result = POMsgSet.selectOneBy(potmsgset=potmsgset, pofile=self)
+
+        # Check that language has been initialized correctly.
+        # XXX: JeroenVermeulen 2007-07-03, until language column in database
+        # is initialized, accept null values here.
+        has_language = (result is not None and result.language is not None)
+        if has_language and result.language != self.language:
+            raise AssertionError(
+                "POFile in language %d contains POMsgSet in language %d"
+                % (self.language, result.language))
+
+        return result
 
     def __getitem__(self, msgid_text):
         """See `IPOFile`."""
@@ -763,12 +773,15 @@ class POFile(SQLBase, POFileMixIn):
             obsolete=False,
             isfuzzy=False,
             publishedfuzzy=False,
-            potmsgset=potmsgset)
+            potmsgset=potmsgset,
+            language=self.language)
         return pomsgset
 
     def createMessageSetFromText(self, text):
         """See `IPOFile`."""
-        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(text, only_current=False)
+        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
+            text, only_current=False)
+
         if potmsgset is None:
             potmsgset = self.potemplate.createMessageSetFromText(text)
 

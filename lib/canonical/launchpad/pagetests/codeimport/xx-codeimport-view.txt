@@ -123,11 +123,13 @@ If we create a lot of imports, the listing view will be batched.
     >>> svn_url = 'svn://svn.example.com/trunk-%s'
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+    >>> from canonical.lp.dbschema import BranchType
     >>> def import_branch_for_new_product(name):
     ...     product = getUtility(IProductSet).createProduct(
     ...         nopriv, name, name, name, name, name)
     ...     return getUtility(IBranchSet).new(
-    ...         'trunk', vcs_imports, product, None, 'Import branch')
+    ...         BranchType.IMPORTED, 'trunk', vcs_imports, vcs_imports,
+    ...         product, None, 'Import branch')
     >>> for i in range(10):
     ...     new_branch = import_branch_for_new_product('import-%s' % i)
     ...     svn_import = code_import_set.new(

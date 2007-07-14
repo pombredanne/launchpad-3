@@ -1001,6 +1001,61 @@ search for 'team' should give us some of them:
     [u'name18', u'name19', u'name20', u'name21', u'no-team-memberships', u'simple-team', u'testing-spanish-team', u'ubuntu-team']
 
 
+=== ValidTeam ===
+
+The valid team vocabulary is just like the ValidPersonOrTeam vocabulary,
+except that its terms are limited only to teams.  No non-team Persons will be
+returned.
+
+    >>> vocab = vocabulary_registry.get(None, 'ValidTeam')
+    >>> vocab.displayname
+    'Select a Team'
+    >>> sorted((team.displayname, team.teamowner.displayname)
+    ...        for team in vocab.search(None))
+    [(u'GuadaMen', u'Foo Bar'),
+     (u'Hoary Gnome Team', u'Mark Shuttleworth'),
+     (u'Landscape Developers', u'Sample Person'),
+     (u'Launchpad Administrators', u'Mark Shuttleworth'),
+     (u'Launchpad Beta Testers', u'Launchpad Beta Testers Owner'),
+     (u'Launchpad Buildd Admins', u'Foo Bar'),
+     (u'Launchpad Developers', u'Foo Bar'),
+     (u'Mirror Administrators', u'Mark Shuttleworth'),
+     (u'Registry Administrators', u'Mark Shuttleworth'),
+     (u'Rosetta Administrators', u'Launchpad Administrators'),
+     (u'ShipIt Administrators', u'Mark Shuttleworth'),
+     (u'Simple Team', u'One Membership'),
+     (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Translators', u'Rosetta Administrators'),
+     (u'VCS imports', u'Robert Collins'),
+     (u'Warty Gnome Team', u'Mark Shuttleworth'),
+     (u'Warty Security Team', u'Mark Shuttleworth'),
+     (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
+
+Like with ValidPersonOrTeam, you can narrow your search down by providing some
+text to match against the team name.  Still, you only get teams back.
+
+    >>> sorted((team.displayname, team.teamowner.displayname)
+    ...         for team in vocab.search('spanish'))
+    [(u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
+    >>> sorted((team.displayname, team.teamowner.displayname)
+    ...        for team in vocab.search('spanish | ubuntu'))
+    [(u'Mirror Administrators', u'Mark Shuttleworth'),
+     (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Translators', u'Rosetta Administrators'),
+     (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
+    >>> sorted((team.displayname, team.teamowner.displayname)
+    ...        for team in vocab.search('team'))
+    [(u'Hoary Gnome Team', u'Mark Shuttleworth'),
+     (u'Simple Team', u'One Membership'),
+     (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Team', u'Mark Shuttleworth'),
+     (u'Warty Gnome Team', u'Mark Shuttleworth'),
+     (u'Warty Security Team', u'Mark Shuttleworth'),
+     (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
+
+
 === ValidTeamMember ===
 
 With the exception of all teams that have this team as a member and the
@@ -1215,5 +1270,99 @@ Inactive products and projects are not available
     Ubuntu (Product) - class Product
     The Ubuntu Project (Project) - class Project
     Ubuntu Test (Distribution) - class Distribution
+
+== SpecificationDepCandidatesVocabulary ==
+
+All blueprints that can be added as a dependency of the
+context blueprint.
+
+First, we set up a product with three blueprints.
+
+    >>> from canonical.lp.dbschema import SpecificationDefinitionStatus
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> foobar_person = getUtility(IPersonSet).getByName('name16')
+    >>> foobar_person.displayname
+    u'Foo Bar'
+    >>> specset = getUtility(ISpecificationSet)
+    >>> spec_a = specset.new('spec-a', 'Spec A',
+    ...     'http://www.example.org/SpecA', 'The first spec',
+    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
+    ...     product=evolution)
+    >>> spec_b = specset.new('spec-b', 'Spec B',
+    ...     'http://www.example.org/SpecB', 'The second spec',
+    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
+    ...     product=evolution)
+    >>> spec_c = specset.new('spec-c', 'Spec C',
+    ...     'http://www.example.org/SpecC', 'The third spec',
+    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
+    ...     product=evolution)
+    >>> sorted([spec.name for spec in evolution.specifications()])
+    [u'spec-a', u'spec-b', u'spec-c']
+
+The dependency candidates for spec_a are all blueprints for evolution
+except for spec_a itself.
+
+    >>> vocab = vocabulary_registry.get(
+    ...     spec_a, "SpecificationDepCandidates")
+    >>> sorted([term.value.name for term in vocab])
+    [u'spec-b', u'spec-c']
+
+Dependency candidate come only from the same product of the blueprint
+they depend on.
+
+    >>> unrelated_spec = specset.new('unrelated-spec', 'Unrelated Spec',
+    ...     'http://example.com/SpecU', 'A spec unrelated to Evolution',
+    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
+    ...     product=firefox)
+    >>> vocab = vocabulary_registry.get(
+    ...     spec_a, "SpecificationDepCandidates")
+    >>> unrelated_spec in vocab
+    False
+    >>> [term.value.product for term in vocab
+    ...  if term.value.product != evolution]
+    []
+
+We mark spec_b as a dependency of spec_a and spec_c as a dependency
+of spec_b.
+
+    >>> spec_a.createDependency(spec_b)
+    <SpecificationDependency at ...>
+    >>> [spec.name for spec in spec_a.dependencies]
+    [u'spec-b']
+
+    >>> spec_b.createDependency(spec_c)
+    <SpecificationDependency at ...>
+    >>> [spec.name for spec in spec_b.dependencies]
+    [u'spec-c']
+
+No circular dependencies - the vocabulary excludes specifications that 
+are a dependency of the context spec. 
+
+    >>> spec_a in spec_b.all_blocked
+    True
+    >>> spec_b in spec_c.all_blocked
+    True
+    >>> vocab = vocabulary_registry.get(
+    ...     spec_c, "SpecificationDepCandidates")
+    >>> spec_a in [term.value for term in vocab]
+    False
+
+This vocabulary provides the IHugeVocabulary interface.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+    >>> verifyObject(IHugeVocabulary, vocab)
+    True
+
+The search() method returns specifications within the vocabulary
+that matches the search string. The string is matched against the name,
+or fallbacks to a full text search.
+
+    >>> vocab = vocabulary_registry.get(
+    ...     spec_a, "SpecificationDepCandidates")
+    >>> list(vocab.search('ec-b')) == [spec_b]
+    True
+    >>> list(vocab.search('third')) == [spec_c]
+    True
 
 XXX: document more vocabularies here, particularly when they break!

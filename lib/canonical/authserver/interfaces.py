@@ -151,15 +151,16 @@ class IHostedBranchStorage(Interface):
         :returns: a product ID.
         """
 
-    def createBranch(personID, productID, branchName):
+    def createBranch(loginID, personName, productName, branchName):
         """Register a new hosted branch in Launchpad.
 
         This is called by the bazaar.launchpad.net server when a user pushes a
         new branch to it.  See also
         https://launchpad.canonical.com/SupermirrorFilesystemHierarchy.
 
-        :param personID: a person ID.
-        :param productID: a product ID.
+        :param loginID: the person ID of the logged in user.
+        :param personName: the unique name of a Person
+        :param productName: the unique name of a Product
         :param branchName: the name for this branch, to be used in URLs.
         :returns: the ID for the new branch.
         """

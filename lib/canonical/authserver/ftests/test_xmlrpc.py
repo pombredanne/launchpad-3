@@ -156,7 +156,7 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
         # XXX: This test just checks that createBranch doesn't error.  This test
         # should also check the result.
         #   - Andrew Bennetts, 2007-01-24
-        self.server.createBranch(12, 4, 'new-branch')
+        self.server.createBranch(12, 'name12', 'firefox', 'new-branch')
 
     def test_requestMirror(self):
         # XXX: Only checks that requestMirror doesn't error. Should instead
