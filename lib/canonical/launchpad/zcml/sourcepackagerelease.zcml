@@ -56,11 +56,11 @@
       template="../templates/sourcepackagerelease-changelog.pt"
     />
   </browser:pages>
-
-   <adapter
+  
+  <adapter
     for="canonical.launchpad.interfaces.ISourcePackageRelease"
     provides="canonical.launchpad.interfaces.IQuestionTarget"
-    factory="canonical.launchpad.components.question.sourcepackagerelease_to_questiontarget"
+    factory="canonical.launchpad.components.answertracker.sourcepackagerelease_to_questiontarget"
     />
 
 </configure>

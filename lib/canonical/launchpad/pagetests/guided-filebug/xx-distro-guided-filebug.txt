@@ -19,12 +19,11 @@ Submitting a bug title...
     ...     "Thunderbird crashes when opening large e-mails")
     >>> user_browser.getControl("Continue").click()
 
-...yields two similar bugs.
+...yields one similar bug.
 
     >>> from canonical.launchpad.ftests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
     #9: Thunderbird crashes
-    #2: Blackhole Trash folder
 
 Subscribing to one of the similar bugs takes us to the bug page.
 

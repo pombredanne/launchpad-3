@@ -272,10 +272,18 @@ class Bugzilla(ExternalBugTracker):
             malone_status = BugTaskStatus.INVALID
         elif remote_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:
-            if resolution in ['FIXED', 'CURRENTRELEASE', 'RAWHIDE',
-                              'ERRATA', 'NEXTRELEASE']:
-                # CURRENTRELEASE, RAWHIDE, ERRATA, NEXTRELEASE: bugzilla.redhat.com
+            if resolution in ['CODE_FIX', 'CURRENTRELEASE', 'ERRATA',
+                              'FIXED', 'NEXTRELEASE', 
+                              'PATCH_ALREADY_AVAILABLE', 'RAWHIDE']:
+ 
+                # The following resolutions come from bugzilla.redhat.com.
+                # All of them map to Malone's FIXRELEASED status:
+                #     CODE_FIX, CURRENTRELEASE, ERRATA, NEXTRELEASE,
+                #     PATCH_ALREADY_AVAILABLE, RAWHIDE
                 malone_status = BugTaskStatus.FIXRELEASED
+            elif resolution == 'WONTFIX':
+                # VERIFIED WONTFIX maps directly to WONTFIX
+                malone_status = BugTaskStatus.WONTFIX
             else:
                 #XXX: Which are the valid resolutions? We should fail
                 #     if we don't know of the resolution. Bug 31745.

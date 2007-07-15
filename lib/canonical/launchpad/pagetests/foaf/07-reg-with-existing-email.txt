@@ -45,7 +45,7 @@ on with the registration process.
     >>> browser.url == '%s/+newaccount' % token_url
     True
 
-    >>> browser.getControl('Display Name').value = 'My name'
+    >>> browser.getControl('Name').value = 'My name'
     >>> label = 'Hide my email addresses from other Launchpad users'
     >>> browser.getControl(label).selected = True
     >>> browser.getControl(name='field.password').value = 'foo'
@@ -96,7 +96,7 @@ this.
     >>> anon_browser.url == "%s/+newaccount" % token_url
     True
 
-    >>> anon_browser.getControl('Display Name').value = 'My name'
+    >>> anon_browser.getControl('Name').value = 'My name'
     >>> anon_browser.getControl(name='field.password').value = 'foo'
     >>> anon_browser.getControl(name='field.password_dupe').value = 'foo'
     >>> anon_browser.getControl('Continue').click()

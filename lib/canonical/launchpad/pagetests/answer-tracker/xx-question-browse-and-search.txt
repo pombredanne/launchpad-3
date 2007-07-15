@@ -18,20 +18,16 @@ He discovers that there are no questions on the Kubuntu Answers page:
     >>> print browser.title
     Questions for Kubuntu
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no questions for Kubuntu with the requested statuses.
 
-The same is true for Projects that do not have Products.
+For projects that don't have products, the Answers facet is disabled.
 
     >>> browser.open('http://launchpad.dev/aaa')
-    >>> browser.getLink('Answers').click()
-    >>> print browser.title
-    Questions for the Test Project
-
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> print find_main_content(browser.contents).first('p').renderContents()
-    There are no questions for the Test Project with the requested statuses.
+    >>> browser.getLink('Answers')
+    Traceback (most recent call last):
+     ...
+    LinkNotFoundError
 
 == Browsing Questions ==
 
@@ -44,7 +40,7 @@ Answers page and goes there to check.
 
 He sees a listing of the current questions posted on Ubuntu:
 
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> for question in soup.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
     Continue playing after shutdown
@@ -60,7 +56,7 @@ results. There, he finds only one other question:
     >>> browser.getLink('Next').click()
     >>> browser.title
     'Questions for Ubuntu'
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> for question in soup.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
     Installation failed
@@ -106,7 +102,7 @@ When he passes the mouse over the question's row, the beginning of the
 description appears in a small pop-up:
 
     >>> import re
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> question_link = soup.first('a', text=re.compile('Play DVDs'))
     >>> print question_link.findParent('tr')['title']
     How do you play DVDs in Totem..........?
@@ -126,7 +122,7 @@ details of the question are available.
     >>> browser.getLink('Slow system').click()
     >>> browser.title
     'Ubuntu question #7: ...Slow system...'
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> soup('div', 'report')
     [<div class="report"><p>I get really poor hard drive performance.</p></div>]
 
@@ -196,9 +192,12 @@ Unfortunately, the search doesn't return any similar questions:
 
     >>> print browser.title
     Questions matching "firefox is slow" for Ubuntu
-    >>> print find_main_content(browser.contents).first('p').renderContents()
-    There are no questions matching "firefox is slow" for Ubuntu with
-    the requested statuses.
+    >>> search_summary = find_main_content(browser.contents)
+    >>> print search_summary
+    <...
+    <p>There are no questions matching "firefox is slow" for Ubuntu with
+    the requested statuses.</p>
+    ...
 
 Joe observes under the search widget that there are checkboxes to select
 the question status to search. He notices that only some statuses are
@@ -211,7 +210,7 @@ selected. He adds 'Invalid' to the selection, and run his search again.
 
 This time, the search returns one item.
 
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> for question in soup.fetch('td', 'question'):
     ...     print question.first('a').renderContents()
     Firefox is slow and consumes too much RAM
@@ -248,7 +247,7 @@ source package's question listing.
     >>> browser.getLink('mozilla-firefox').click()
     >>> browser.title
     'Questions for mozilla-firefox in ubuntu'
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> soup('table', 'listing')
     [<table...
     ...mailto: problem in webpage...2006-07-20...
@@ -263,13 +262,14 @@ selects the 'oldest first' sort order.
     >>> browser.getControl('oldest first').selected = True
     >>> browser.getControl('Search').click()
 
-    >>> soup = BeautifulSoup(browser.contents)
+    >>> soup = find_main_content(browser.contents)
     >>> soup('table', 'listing')
     [<table...
     ...Firefox is slow and consumes too much RAM...2005-09-05...
     ...Installation of Java Runtime Environment for Mozilla...2006-07-20...
     ...mailto: problem in webpage...2006-07-20...
     </table>]
+
 
 == Common Reports ==
 
@@ -310,6 +310,7 @@ problems:
     ...     print question.first('a').renderContents()
     Problem showing the SVG demo on W3C site
 
+
 === Answered Questions ===
 
 A random user has a problem with firefox in Ubuntu. He uses the
@@ -336,8 +337,11 @@ he enters 'Evolution' as a keyword and hits the search button.
     >>> browser.getControl(name='field.search_text').value = 'Evolution'
     >>> browser.getControl('Search').click()
 
-    >>> print find_main_content(browser.contents).first('p').renderContents()
-    There are no answered questions matching "Evolution" for Ubuntu.
+    >>> search_summary = find_main_content(browser.contents)
+    >>> print search_summary
+    <...
+    <p>There are no answered questions matching "Evolution" for Ubuntu.</p>
+    ...
 
 
 === My questions ===
@@ -440,9 +444,11 @@ Like all other report, this one is searchable:
     >>> sample_person_browser.getControl('Search').click()
     >>> print sample_person_browser.title
     Questions matching "evolution" needing your attention for Ubuntu
-    >>> print find_main_content(
-    ...     sample_person_browser.contents).first('p').renderContents()
-    No questions matching "evolution" need your attention for Ubuntu.
+    >>> search_summary = find_main_content(sample_person_browser.contents)
+    >>> print search_summary
+    <...
+    <p>No questions matching "evolution" need your attention for Ubuntu.</p>
+    ...
 
 If there is no questions needing the user's attention, a message
 informing him of this fact is displayed.
@@ -529,6 +535,7 @@ assigned.
     Questions assigned to Foo Bar
     >>> print find_main_content(browser.contents).first('p').renderContents()
     No questions assigned to Foo Bar found with the requested statuses.
+
 
 === Answered ===
 
@@ -802,30 +809,3 @@ And also with products:
     >>> print anon_browser.title
     Questions matching "plugins" for Mozilla Firefox
 
-
-== Popular searches ==
-
-The action menu provides links to predefined searches; Unsupported is one
-of those searches.
-
-    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
-    >>> browser.open('http://launchpad.dev/firefox/+tickets')
-    >>> portlet = find_portlet(browser.contents, 'Actions')
-    >>> portlet.find(name='a', text='Unsupported')
-    u'Unsupported'
-
-Each product and distro can have questions asked in languages that
-none of the Answer Contacts speak.
-
-    >>> browser.getLink('Unsupported').click()
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> soup.first('h1')
-    <h1>Unsupported questions for Mozilla Firefox</h1>
-
-That page displays table listing the Unsupported Questions for Mozilla
-Firefox
-
-    >>> soup = BeautifulSoup(browser.contents)
-    >>> for question in soup.fetch('td', 'question'):
-    ...     question.first('a').renderContents()
-    'Problemas de Impress\xc3\xa3o no Firefox'
