@@ -232,11 +232,10 @@ class IPOFile(IRosettaStats):
         """Invalidate the cached export."""
 
     def canEditTranslations(person):
-        """Say if a person is able to edit existing translations.
+        """Whether the given person is able to add/edit translations."""
 
-        Return True or False indicating whether the person is allowed
-        to edit these translations.
-        """
+    def canAddSuggestions(person):
+        """Whether the given person is able to add new suggestions."""
 
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""
