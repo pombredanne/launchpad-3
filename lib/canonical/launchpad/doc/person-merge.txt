@@ -67,8 +67,9 @@ Marilize and save it for later comparison.
     >>> from canonical.launchpad.interfaces import IProductSet
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> marilize_karma = marilize.assignKarma('bugfixed', product=firefox)
-    >>> marilize_karma.id, marilize_karma.person.name
-    (66L, u'marilize')
+    >>> saved_marilize_karma_id = marilize_karma.id
+    >>> print marilize_karma.person.name
+    marilize
     >>> sampleperson_old_karma = sample.karma
 
 Branches whose owner is being merged are uniquified by appending '-N' where N
@@ -148,8 +149,10 @@ The Karma that was previously assigned to marilize is now assigned to name12
 
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
-    >>> marilize_karma.id, marilize_karma.person.name
-    (66L, u'name12')
+    >>> saved_marilize_karma_id == marilize_karma.id
+    True
+    >>> print marilize_karma.person.name
+    name12
 
 Note that we don't bother migrating karma caches - it will just be reset next
 time the caches are rebuilt.

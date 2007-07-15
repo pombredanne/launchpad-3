@@ -153,11 +153,18 @@
     <browser:page
       name="+addspec"
       for="canonical.launchpad.interfaces.IProject"
-      class="canonical.launchpad.browser.SpecificationNewView"
+      class="canonical.launchpad.browser.SpecificationAddView"
       facet="specifications"
       permission="launchpad.AnyPerson"
       template="../templates/specification-add.pt"
       />
+
+    <browser:page
+        name="+register-a-blueprint-button"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.RegisterABlueprintButtonView"
+        permission="zope.Public"
+        />
 
     <browser:page
         name="+edit"
