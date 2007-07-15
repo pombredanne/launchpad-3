@@ -108,6 +108,19 @@
     </p>
   </tal:no-results>
 
+  <p i18n:translate=""
+     id="found-matching-faqs"
+     tal:condition="view/matching_faqs_count">
+    You can also consult the list of
+    <a href="#" tal:attributes="href view/matching_faqs_url"
+       ><tal:count i18n:name="count"
+                   replace="view/matching_faqs_count" /> FAQ(s)</a>
+    matching
+    &ldquo;<tal:keywords i18n:name="search_text"
+                          replace="view/search_text"
+                          >Keywords</tal:keywords>&rdquo;.
+  </p>
+
   <tal:block condition="questions/batch">
     <table class="listing" id="question-listing">
       <thead>

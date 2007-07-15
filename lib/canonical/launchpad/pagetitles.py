@@ -445,6 +445,16 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
+faq_edit = ContextId('Edit FAQ #%s details')
+
+def faq_index(context, view):
+    return (
+        smartquote('%s FAQ #%d: "%s"') %
+        (context.target.displayname, context.id, context.title))
+
+def faq_listing(context, view):
+    return view.heading
+
 def hasmentoringoffers_mentoring(context, view):
     if IPerson.providedBy(context):
         if context.teamowner is None:
@@ -914,6 +924,9 @@ question_change_status = ContextId('Change status of question #%s')
 
 question_confirm_answer = ContextId('Confirm an answer to question #%s')
 
+def question_createfaq(context, view):
+    return "Create a FAQ for %s" % view.faq_target.displayname
+
 question_edit = ContextId('Edit question #%s details')
 
 question_history = ContextId('History of question #%s')
@@ -925,6 +938,8 @@ def question_index(context, view):
     return text
 
 question_linkbug = ContextId('Link question  #%s to a bug report')
+
+question_linkfaq = ContextId('Is question #%s a FAQ?')
 
 def question_listing(context, view):
     return view.pagetitle
