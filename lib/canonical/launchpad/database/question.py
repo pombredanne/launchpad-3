@@ -25,8 +25,8 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, IDistribution, IDistributionSet,
-    IDistributionSourcePackage, InvalidQuestionStateError, ILanguage,
+    IBugLinkTarget, IDistribution, IDistributionSet, 
+    IDistributionSourcePackage, IFAQ, InvalidQuestionStateError, ILanguage,
     ILanguageSet, ILaunchpadCelebrities, IMessage, IPerson, IProduct,
     IProductSet, IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
     QUESTION_STATUS_DEFAULT_SEARCH)
@@ -132,6 +132,9 @@ class Question(SQLBase, BugLinkTargetMixin):
         dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)
     whiteboard = StringCol(notNull=False, default=None)
+
+    faq = ForeignKey(
+        dbName='faq', foreignKey='FAQ', notNull=False, default=None)
 
     # useful joins
     subscriptions = SQLMultipleJoin('QuestionSubscription',
@@ -277,7 +280,12 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     @notify_question_modified()
     def giveAnswer(self, user, answer, datecreated=None):
-        """See `IQuestion`."""
+        """See IQuestion."""
+        return self._giveAnswer(user, answer, datecreated)
+
+    def _giveAnswer(self, user, answer, datecreated):
+        """Implementation of _giveAnswer that doesn't trigger notifications.
+        """
         if not self.can_give_answer:
             raise InvalidQuestionStateError(
             "Question status != OPEN, NEEDSINFO or ANSWERED")
@@ -297,6 +305,17 @@ class Question(SQLBase, BugLinkTargetMixin):
             self.answerer = user
 
         return msg
+
+    @notify_question_modified()
+    def linkFAQ(self, user, faq, comment, datecreated=None):
+        """See `IQuestion`."""
+        if faq is not None:
+            assert IFAQ.providedBy(faq), (
+                "faq parameter must provide IFAQ or be None")
+        assert self.faq != faq, (
+            'cannot call linkFAQ() with already linked FAQ')
+        self.faq = faq
+        return self._giveAnswer(user, comment, datecreated)
 
     @property
     def can_confirm_answer(self):

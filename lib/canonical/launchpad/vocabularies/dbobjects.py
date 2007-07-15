@@ -22,6 +22,7 @@ __all__ = [
     'DistributionOrProductOrProjectVocabulary',
     'DistributionUsingMaloneVocabulary',
     'DistroSeriesVocabulary',
+    'FAQVocabulary',
     'FilteredDistroArchSeriesVocabulary',
     'FilteredDistroSeriesVocabulary',
     'FilteredProductSeriesVocabulary',
@@ -67,8 +68,8 @@ from zope.security.proxy import isinstance as zisinstance
 from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectNotFound
 
 from canonical.launchpad.webapp.vocabulary import (
-    NamedSQLObjectHugeVocabulary, SQLObjectVocabularyBase,
-    NamedSQLObjectVocabulary, IHugeVocabulary, CountableIterator)
+    CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary, 
+    NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import EmailAddressStatus, DistroSeriesStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
@@ -81,9 +82,10 @@ from canonical.launchpad.database import (
     PillarName)
 from canonical.launchpad.interfaces import (
     IBugTask, IDistribution, IDistributionSourcePackage,
-    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
-    ILaunchBag, IMilestoneSet, IPerson, IPersonSet, IPillarName, IProduct,
-    IProject, ISourcePackage, ISpecification, ITeam, IUpstreamBugTask)
+    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IFAQ, IFAQTarget,
+    IEmailAddressSet, ILaunchBag, IMilestoneSet, IPerson, IPersonSet,
+    IPillarName, IProduct, IProject, ISourcePackage, ISpecification, ITeam,
+    IUpstreamBugTask)
 
 
 class BasePersonVocabulary:
@@ -213,6 +215,62 @@ class BugTrackerVocabulary(SQLObjectVocabularyBase):
 
     _table = BugTracker
     _orderBy = 'title'
+
+
+class FAQVocabulary:
+    """Vocabulary containing all the FAQs in an `IFAQTarget`."""
+
+    implements(IHugeVocabulary)
+
+    displayname = 'Select a FAQ'
+    
+    def __init__(self, context):
+        """Create a new vocabulary for the context.
+
+        :param context: It should adaptable to `IFAQTarget`.
+        """
+        self.context = IFAQTarget(context)
+
+    def __len__(self):
+        """See `IIterableVocabulary`."""
+        return self.context.searchFAQs().count()
+
+    def __iter__(self):
+        """See `IIterableVocabulary`."""
+        for faq in self.context.searchFAQs():
+            yield self.toTerm(faq)
+
+    def __contains__(self, value):
+        """See `IVocabulary`."""
+        if not IFAQ.providedBy(value):
+           return False
+        return self.context.getFAQ(value.id) is not None
+
+    def getTerm(self, value):
+        """See `IVocabulary`."""
+        if value not in self:
+            raise LookupError(value)
+        return self.toTerm(value)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        try:
+            faq_id = int(token)
+        except ValueError:
+            raise LookupError(token)
+        faq = self.context.getFAQ(token)
+        if faq is None:
+            raise LookupError(token)
+        return self.toTerm(faq)
+
+    def toTerm(self, faq):
+        """Return the term for a FAQ."""
+        return SimpleTerm(faq, faq.id, faq.title)
+
+    def searchForTerms(self, query=None):
+        """See `IHugeVocabulary`."""
+        results = self.context.findSimilarFAQs(query)
+        return CountableIterator(results.count(), results, self.toTerm)
 
 
 class LanguageVocabulary(SQLObjectVocabularyBase):
