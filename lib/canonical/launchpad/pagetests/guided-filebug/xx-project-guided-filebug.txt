@@ -74,9 +74,12 @@ bugs we filed recently.
 
     >>> from canonical.launchpad.ftests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
-    #7: A test bug
-    #...: Evolution crashes
-    #...: Evolution crashes lots
+    #7 A test bug
+    New, last updated 2006-05-19
+    #... Evolution crashes
+    New, last updated ...
+    #... Evolution crashes lots
+    New, last updated ...
 
 This one matches, so we subscribe.
 
