@@ -241,7 +241,7 @@ class XpiTestCase(unittest.TestCase):
     def testTranslationImport(self):
         """Test XPI translation file import."""
         # Prepare the import queue to handle a new .xpi import.
-        self.setUpTranslationImportQueueForTemplate()
+        template_enstry = self.setUpTranslationImportQueueForTemplate()
         translation_entry = self.setUpTranslationImportQueueForTranslation()
         # The file data is stored in the Librarian, so we have to commit the
         # transaction to make sure it's stored properly.
@@ -249,6 +249,7 @@ class XpiTestCase(unittest.TestCase):
 
         # Now, we tell the PO template to import from the file data it has.
         self.firefox_template.importFromQueue()
+        transaction.commit()
         # And the Spanish translation.
         self.spanish_firefox.importFromQueue()
 
