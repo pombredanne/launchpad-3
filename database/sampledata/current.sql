@@ -2001,14 +2001,6 @@ INSERT INTO karma (id, datecreated, person, "action", product, distribution, sou
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (60, '2000-03-13 20:45:51.817826', 16, 2, 20, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (61, '2000-03-13 20:46:49.83307', 16, 2, 20, NULL, NULL);
 INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (62, '2001-07-03 21:30:51.583356', 12, 47, NULL, 1, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (63, '2001-07-12 21:31:37.206177', 13, 43, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (64, '2001-07-12 21:40:54.835065', 13, 43, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (65, '2001-07-12 21:41:20.001784', 13, 43, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (66, '2001-07-12 21:42:18.968503', 13, 43, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (67, '2001-07-12 21:43:07.388765', 13, 43, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (68, '2001-07-12 21:43:42.839315', 13, 43, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (69, '2001-07-12 21:44:09.195709', 13, 43, 4, NULL, NULL);
-INSERT INTO karma (id, datecreated, person, "action", product, distribution, sourcepackagename) VALUES (70, '2001-07-12 21:44:25.938314', 13, 43, 4, NULL, NULL);
 
 
 ALTER TABLE karma ENABLE TRIGGER ALL;
@@ -2063,6 +2055,8 @@ INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (44,
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (45, 7, 3, 'questionownersolved', 'Solved own question', 'User post a message explaining how he solved his own problem.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (46, 7, 0, 'questionreopened', 'Reopened question', 'User posed a message to reopen his question in the Answer Tracker.');
 INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (47, 7, 1, 'questionasked', 'Asked question', 'User asked a question in the Answer Tracker.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (48, 7, 5, 'faqcreated', 'FAQ created', 'User create a new FAQ in Launchpad.');
+INSERT INTO karmaaction (id, category, points, name, title, summary) VALUES (49, 7, 1, 'faqedited', 'FAQ edited', 'User updated the details of a FAQ in Launchpad.');
 
 
 ALTER TABLE karmaaction ENABLE TRIGGER ALL;
@@ -3057,14 +3051,6 @@ INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rf
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (34, '2007-03-15 20:45:15.852052', 'Re: Copy, Cut and Delete operations should work on selections', 13, NULL, NULL, '<20070315204515.14326.38817.malone@localhost>', NULL, NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (35, '2007-03-15 20:45:51.817826', 'Re: Copy, Cut and Delete operations should work on selections', 9, NULL, NULL, '<20070315204551.14326.36994.malone@localhost>', NULL, NULL);
 INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (36, '2007-03-15 20:46:49.83307', 'Re: Copy, Cut and Delete operations should work on selections', 6, NULL, NULL, '<20070315204649.14326.69581.malone@localhost>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (37, '2007-07-12 21:31:37.206177', 'Re: Problem showing the SVG demo on W3C site', 13, NULL, NULL, '<20070712213137.28312.25061.lpquestions@mission.wooz.org>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (38, '2007-07-12 21:40:54.835065', 'Re: Problem showing the SVG demo on W3C site', 13, NULL, NULL, '<20070712214054.28312.24359.lpquestions@mission.wooz.org>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (39, '2007-07-12 21:41:20.001784', 'Re: Problem showing the SVG demo on W3C site', 13, NULL, NULL, '<20070712214120.28312.46965.lpquestions@mission.wooz.org>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (40, '2007-07-12 21:42:18.968503', 'Re: Problem showing the SVG demo on W3C site', 13, NULL, NULL, '<20070712214219.28312.30826.lpquestions@mission.wooz.org>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (41, '2007-07-12 21:43:07.388765', 'Re: Problem showing the SVG demo on W3C site', 13, NULL, NULL, '<20070712214307.28312.74898.lpquestions@mission.wooz.org>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (42, '2007-07-12 21:43:42.839315', 'Re: Problem showing the SVG demo on W3C site', 13, NULL, NULL, '<20070712214342.28312.44585.lpquestions@mission.wooz.org>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (43, '2007-07-12 21:44:09.195709', 'Re: Problem showing the SVG demo on W3C site', 13, NULL, NULL, '<20070712214409.28312.35842.lpquestions@mission.wooz.org>', NULL, NULL);
-INSERT INTO message (id, datecreated, subject, "owner", parent, distribution, rfc822msgid, fti, raw) VALUES (44, '2007-07-12 21:44:25.938314', 'Re: Problem showing the SVG demo on W3C site', 13, NULL, NULL, '<20070712214425.28312.86697.lpquestions@mission.wooz.org>', NULL, NULL);
 
 
 ALTER TABLE message ENABLE TRIGGER ALL;
@@ -3159,20 +3145,6 @@ INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (3
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (34, 34, 1, 'It would be a remarkable feat of engineering to do this before the 0.3 release. Lets target this for fixing before 1.0 though.', NULL, NULL);
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (35, 35, 1, 'Does it make sense to mark it critical if it''s not going to be fixed for a year, though?', NULL, NULL);
 INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (36, 36, 1, 'Yes, I think so, because that means it shows up near the top of our open bugs report and it really is a huge gaping omission.', NULL, NULL);
-INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (37, 37, 1, 'Carlos Perelló Marín suggests this article as an answer to your question:
-
-Something very inciteful.', NULL, NULL);
-INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (38, 38, 1, 'Carlos Perelló Marín suggests this article as an answer to your question:
-FAQ #9: “How do I troubleshoot problems with extensions/themes?”.', NULL, NULL);
-INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (39, 39, 1, 'Carlos Perelló Marín suggests this article as an answer to your question:', NULL, NULL);
-INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (40, 40, 1, 'Carlos Perelló Marín suggests this article as an answer to your question:', NULL, NULL);
-INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (41, 41, 1, 'Carlos Perelló Marín suggests this article as an answer to your question:', NULL, NULL);
-INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (42, 42, 1, 'Carlos Perelló Marín suggests this article as an answer to your question:
-FAQ #7: “How do I install Java?”.', NULL, NULL);
-INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (43, 43, 1, 'Carlos Perelló Marín suggests this article as an answer to your question:
-FAQ #7: “How do I install Java?”.', NULL, NULL);
-INSERT INTO messagechunk (id, message, "sequence", content, blob, fti) VALUES (44, 44, 1, 'Carlos Perelló Marín suggests this article as an answer to your question:
-FAQ #7: “How do I install Java?”.', NULL, NULL);
 
 
 ALTER TABLE messagechunk ENABLE TRIGGER ALL;
@@ -8320,7 +8292,7 @@ ALTER TABLE pushmirroraccess ENABLE TRIGGER ALL;
 ALTER TABLE question DISABLE TRIGGER ALL;
 
 INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (1, 11, 'Firefox cannot render Bank Site', 'Hello, I''m trying to access http://www.citibank.com/ and the page is not rendering correctly. Is there a setting I can use to get it right? Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:46:07.392021', '2005-09-05 18:46:07.392021', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 119, NULL);
-INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (2, 12, 'Problem showing the SVG demo on W3C site', 'Hi! I''m trying to learn about SVG but I can''t get it to work at all in firefox. Maybe there is a plugin? Help! Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:47:27.657124', '2005-09-05 18:47:27.657124', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 119, 7);
+INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (2, 12, 'Problem showing the SVG demo on W3C site', 'Hi! I''m trying to learn about SVG but I can''t get it to work at all in firefox. Maybe there is a plugin? Help! Thanks.', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 18:47:27.657124', '2005-09-05 18:47:27.657124', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 119, NULL);
 INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (3, 16, 'Firefox is slow and consumes too much RAM', 'I''m running on a 486 with 32 MB ram. And Firefox is slow! What should I do?', NULL, 16, NULL, 1, 1, 30, 10, '2005-09-05 19:46:22.786269', '2005-09-05 19:46:22.786269', NULL, NULL, '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', '2005-09-05 20:00:58.913139', NULL, NULL, NULL, 119, NULL);
 INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (4, 16, 'Firefox loses focus and gets stuck', 'Every now and then I can''t type anything in the fields on a web form, and I have to click my mouse in the URL bar. Is that normal?', NULL, NULL, 4, NULL, NULL, 10, 10, '2005-09-05 20:03:10.967079', '2005-09-05 20:03:10.967079', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 119, NULL);
 INSERT INTO question (id, "owner", title, description, assignee, answerer, product, distribution, sourcepackagename, status, priority, datecreated, datelastquery, dateaccepted, datedue, datelastresponse, dateanswered, dateclosed, whiteboard, fti, answer, "language", faq) VALUES (5, 12, 'Installation failed', 'I can''t install Ubuntu, it fails to find my CD-ROM drive.', NULL, NULL, NULL, 1, NULL, 10, 10, '2005-10-13 09:08:27.006633', '2005-10-13 09:08:27.006633', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 119, NULL);

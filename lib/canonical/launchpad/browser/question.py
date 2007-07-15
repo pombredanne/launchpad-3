@@ -10,7 +10,9 @@ __all__ = [
     'QuestionChangeStatusView',
     'QuestionConfirmAnswerView',
     'QuestionContextMenu',
+    'QuestionCreateFAQView',
     'QuestionEditView',
+    'QuestionLinkFAQView',
     'QuestionMakeBugView',
     'QuestionMessageDisplayView',
     'QuestionSetContextMenu',
@@ -25,8 +27,10 @@ __all__ = [
 import re
 
 from operator import attrgetter
+from xml.sax.saxutils import escape
 
 from zope.app.form.browser import TextAreaWidget, TextWidget
+from zope.app.form.browser.widget import renderElement
 from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.event import notify
@@ -47,18 +51,19 @@ from canonical.launchpad.helpers import (
     is_english_variant, preferred_or_request_languages)
 
 from canonical.launchpad.interfaces import (
-    CreateBugParams, IAnswersFrontPageSearchForm, IBug, ILanguageSet,
-    ILaunchpadStatisticSet, IProject, IQuestion, IQuestionAddMessageForm,
-    IQuestionChangeStatusForm, IQuestionSet, IQuestionTarget, NotFoundError,
-    UnexpectedFormData)
+    CreateBugParams, IAnswersFrontPageSearchForm, IBug, IFAQ, IFAQTarget,
+    ILanguageSet, ILaunchpadStatisticSet, IProject, IQuestion,
+    IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionLinkFAQForm,
+    IQuestionSet, IQuestionTarget, NotFoundError, UnexpectedFormData)
 
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
     LaunchpadView, action, LaunchpadFormView, LaunchpadEditFormView,
-    custom_widget, redirection, safe_action)
+    custom_widget, redirection, safe_action, smartquote)
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
+from canonical.widgets import LaunchpadRadioWidget
 from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
 
@@ -348,11 +353,16 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
 
     template = search_template
 
-    _MAX_SIMILAR_TICKETS = 10
+    _MAX_SIMILAR_QUESTIONS = 10
+    _MAX_SIMILAR_FAQS = 10
 
     # Do not autofocus the title widget
     initial_focus_widget = None
 
+    # The similar items will be held in the following properties.
+    similar_questions = None
+    similar_faqs = None
+    
     def setUpFields(self):
         """Set up the form_fields from the schema and custom_widgets."""
         # Add our language field with a vocabulary specialized for
@@ -391,18 +401,26 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
         return _('Ask a question about ${context}',
                  mapping=dict(context=self.context.displayname))
 
+    @property
+    def has_similar_items(self):
+        """Return True if similar FAQs or questions were found."""
+        return self.similar_questions or self.similar_faqs
+
     @action(_('Continue'))
     def continue_action(self, action, data):
-        """Search for questions similar to the entered summary."""
+        """Search for questions and FAQs similar to the entered summary."""
         # If the description widget wasn't setup, add it here
         if self.widgets.get('description') is None:
             self.widgets += form.setUpWidgets(
                 self.form_fields.select('description'), self.prefix,
                  self.context, self.request, data=self.initial_values,
                  ignore_request=False)
+        
+        faqs = IFAQTarget(self.question_target).findSimilarFAQs(data['title'])
+        self.similar_faqs = list(faqs[:self._MAX_SIMILAR_FAQS])
 
         questions = self.question_target.findSimilarQuestions(data['title'])
-        self.searchResults = questions[:self._MAX_SIMILAR_TICKETS]
+        self.similar_questions = list(questions[:self._MAX_SIMILAR_QUESTIONS])
 
         return self.add_template()
 
@@ -424,11 +442,11 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
     # which is fixed in 3.3.0b1 and 3.2.1
     @action(_('Add'), failure=handleAddError)
     def add_action(self, action, data):
-        """Add a Question to an IQuestionTarget."""
+        """Add a Question to an `IQuestionTarget`."""
         if self.shouldWarnAboutUnsupportedLanguage():
-            # Warn the user that the language is not supported.
-            self.searchResults = []
-            return self.add_template()
+            # Warn the user that the language is not supported, so redisplay
+            # last step.
+            return self.continue_action.success(data)
 
         question = self.question_target.newQuestion(
             self.user, data['title'], data['description'], data['language'])
@@ -895,8 +913,220 @@ class SearchAllQuestionsView(SearchQuestionsView):
                 self.request.response.redirect(canonical_url(question))
 
 
+class LinkFAQMixin:
+    """Mixin that contains common functionality for views linking a FAQ."""
+
+    @cachedproperty
+    def faq_target(self):
+        """Return the `IFAQTarget` that should be use for this question."""
+        return IFAQTarget(self.context)
+
+    @property
+    def default_message(self):
+        """The default link message to use."""
+        return '%s suggests this article as an answer to your question:' % (
+            self.user.displayname)
+
+
+    def getFAQMessageReference(self, faq):
+        """Return the reference for the FAQ to use in the linking message."""
+        return smartquote('FAQ #%s: "%s".' % (faq.id, faq.title))
+
+
+class QuestionCreateFAQView(LinkFAQMixin, LaunchpadFormView):
+    """View to create a new FAQ."""
+
+    schema = IFAQ
+
+    label = _('Create a new FAQ')
+
+    field_names = ['title', 'keywords', 'content']
+
+    custom_widget("message", TextAreaWidget, height=5)
+
+    @property
+    def initial_values(self):
+        """Fill title and content based on the question."""
+        question = self.context
+        return {
+            'title': question.title,
+            'content': question.description,
+            'message': self.default_message,
+            }
+
+    def setUpFields(self):
+        """See `LaunchpadFormView`.
+
+        Adds a message field to the form.
+        """
+        super(QuestionCreateFAQView, self).setUpFields()
+        self.form_fields += form.Fields(IQuestionLinkFAQForm['message'])
+        self.form_fields['message'].custom_widget = (
+            self.custom_widgets['message'])
+
+    @action(_('Create and Link'), name='create_and_link')
+    def create_and_link_action(self, action, data):
+        """Creates the FAQ and link it to the question."""
+
+        faq = self.faq_target.newFAQ(
+            self.user, data['title'], data['content'],
+            keywords=data['keywords'])
+
+        # Append FAQ link to message.
+        data['message'] += '\n' + self.getFAQMessageReference(faq)
+
+        self.context.linkFAQ(self.user, faq, data['message'])
+
+        # Redirect to the question.
+        self.next_url = canonical_url(self.context)
+
+
+class SearchableFAQRadioWidget(LaunchpadRadioWidget):
+    """Widget combining a set of radio buttons with a search text field.
+
+    The search field content is used to filter the vocabulary. The user can
+    select an element from this set using the radio buttons.
+    """
+
+    _messageNoValue=_('No existing FAQs are relevant')
+
+    searchDisplayWidth = 30
+
+    searchButtonLabel = _('Search')
+    
+    @property
+    def search_field_name(self):
+        """Return the name to use for the search field."""
+        return self.name + '-query'
+
+    @property
+    def search_button_name(self):
+        """Return the name to use for the search button."""
+        return self.name + '-search'
+
+    def renderValue(self, value):
+        """Render the widget with the value."""
+        content = super(SearchableFAQRadioWidget, self).renderValue(value)
+        return "<br />".join([content, self.renderSearchWidget()])
+
+    def renderItemsWithValues(self, values):
+        """Render the list of possible values.
+
+        Those found in `values` are marked as selected. The list of rendered
+        values is controlled by the search query. The currently selected
+        value is always added the the set.
+        """
+        rendered_items = []
+        rendered_values = set()
+        count = 0
+        for term in self.vocabulary.searchForTerms(self.getSearchQuery()):
+            selected = term.value in values
+            rendered_items.append(self.renderTerm(count, term, selected))
+            rendered_values.add(term.value)
+            count += 1
+
+        # Some selected values may not be included in the search results;
+        # insert them at the beginning of the list.
+        for missing in set(values).difference(rendered_values):
+            term = self.vocabulary.getTerm(missing)
+            rendered_items.insert(0, self.renderTerm(count, term, True))
+            count += 1
+
+        return rendered_items
+
+    def getSearchQuery(self):
+        """Return the search query."""
+        return self.request.form_ng.getOne(
+            self.search_field_name, self.default_query)
+
+    def renderTerm(self, index, term, selected):
+        """Render a term as a radio button.
+
+        The term's token is used as the radio button label. A link to the
+        term's value is added beside the button.
+        """
+        id = '%s.%s' % (self.name, index)
+        attributes = dict(
+            value=term.token,
+            id=id,
+            name=self.name,
+            cssClass=self.cssClass,
+            type='radio')
+        if selected:
+            attributes['checked'] = 'checked'
+        input = renderElement(u'input', **attributes)
+        button = '<label style="font-weight: normal">%s&nbsp;%s:</label>' % (
+            input, escape(term.token))
+        link = '<a href="%s">%s</a>' % (
+            canonical_url(term.value), escape(term.title))
+
+        return "\n".join([button, link])
+
+    def renderSearchWidget(self):
+        """Render the search entry field and the button."""
+        return " ".join([
+            self.renderSearchField(),
+            self.renderSearchButton()])
+
+    def renderSearchField(self):
+        """Render the search field."""
+        return renderElement(
+            'input',
+            type="text",
+            cssClass=self.cssClass,
+            value=self.getSearchQuery(),
+            name=self.search_field_name,
+            size=self.searchDisplayWidth)
+
+    def renderSearchButton(self):
+        """Render the search button."""
+        return renderElement(
+            'input',
+            type='submit',
+            name=self.search_button_name,
+            value=self.searchButtonLabel)
+
+
+class QuestionLinkFAQView(LinkFAQMixin, LaunchpadFormView):
+    """View to search for and link an existing FAQ to a question."""
+
+    schema = IQuestionLinkFAQForm
+
+    custom_widget('faq', SearchableFAQRadioWidget)
+
+    custom_widget("message", TextAreaWidget, height=5)
+
+    label = _('Is this a FAQ?')
+
+    @property
+    def initial_values(self):
+        """Sets initial form values."""
+        return {
+            'faq': self.context.faq,
+            'message': self.default_message,
+            }
+
+    def setUpWidgets(self):
+        """Sets the default query on the search widget to the question title."""
+        super(QuestionLinkFAQView, self).setUpWidgets()
+        self.widgets['faq'].default_query = self.context.title
+
+    def validate(self, data):
+        """Make sure that the FAQ link was changed."""
+        if self.context.faq == data.get('faq'):
+            self.setFieldError('faq', _("You didn't modify the linked FAQ."))
+
+    @action(_('Link FAQ'), name="link")
+    def link_action(self, action, data):
+        """Link the selected FAQ to the question."""
+        if data['faq'] is not None:
+            data['message'] += '\n' + self.getFAQMessageReference(data['faq'])
+        self.context.linkFAQ(self.user, data['faq'], data['message'])
+        self.next_url = canonical_url(self.context)
+
+
 class QuestionSOP(StructuralObjectPresentation):
-    """Provides the structural heading for IQuestion."""
+    """Provides the structural heading for `IQuestion`."""
 
     def getMainHeading(self):
         """See ```IStructuralHeaderPresentation`."""
@@ -918,6 +1148,7 @@ class QuestionContextMenu(ContextMenu):
         'linkbug',
         'unlinkbug',
         'makebug',
+        'linkfaq',
         ]
 
     def initialize(self):
@@ -972,6 +1203,13 @@ class QuestionContextMenu(ContextMenu):
         summary = 'Create a bug report from this question.'
         return Link('+makebug', text, summary, icon='add',
                     enabled=not self.has_bugs)
+
+    def linkfaq(self):
+        """Link for This is a FAQ."""
+        text = 'This is a FAQ'
+        summary = 'Answer this question using a FAQ.'
+        can_give_answer = self.context.can_give_answer
+        return Link('+linkfaq', text, summary, enabled=can_give_answer)
 
 
 class QuestionSetContextMenu(ContextMenu):

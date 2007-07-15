@@ -16,6 +16,8 @@ actions we consider to be a reasonable contribution.
     [u'Answered question',
      u'Asked question',
      u'Comment made on a question',
+     u'FAQ created',
+     u'FAQ edited',
      u'Gave answer on a question',
      u'Gave more information on a question',
      u'Question description changed',
@@ -195,7 +197,22 @@ persons who were awarded it in the past.
     ...     "instructions on http://tinyurl.com/cyus4",
     ...     datecreated=now.next())
 
-    >>> logout()
+
+=== Creating a FAQ ===
+
+    >>> firefox_faq = firefox.newFAQ(
+    ...     sample_person, 'A FAQ', 'About something important')
+    Karma added: action=faqcreated, product=firefox, person=name12
+
+
+=== Modifying a FAQ ===
+
+    >>> old_faq = Snapshot(firefox_faq, providing=providedBy(firefox_faq))
+    >>> firefox_faq.title = 'How can I make the Fnord appears?'
+    >>> firefox_faq.content = 'Install the Fnords highlighter extensions.'
+    >>> notify(SQLObjectModifiedEvent(
+    ...     firefox_faq, old_faq, ['title', 'content']))
+    Karma added: action=faqedited, product=firefox, person=name12
 
 
 == Final check and tear down ==
