@@ -542,8 +542,11 @@ class Specification(SQLBase, BugLinkTargetMixin):
             # sprints have unique names
             if sprint_link.sprint.name == sprint.name:
                 return sprint_link
-        return SprintSpecification(specification=self,
+        sprint_link = SprintSpecification(specification=self,
             sprint=sprint, registrant=user)
+        if sprint.isDriver(user):
+            sprint_link.acceptBy(user)
+        return sprint_link
 
     def unlinkSprint(self, sprint):
         """See ISpecification."""
