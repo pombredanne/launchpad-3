@@ -14,6 +14,7 @@ COMMENT ON COLUMN AnswerContact.date_created IS 'The date the answer contact was
 
 -- Branch 
 COMMENT ON TABLE Branch IS 'Bzr branch';
+COMMENT ON COLUMN Branch.branch_type IS 'Branches are currently one of HOSTED (1), MIRRORED (2), or IMPORTED (3).';
 COMMENT ON COLUMN Branch.whiteboard IS 'Notes on the current status of the branch';
 COMMENT ON COLUMN Branch.summary IS 'A single paragraph description of the branch';
 COMMENT ON COLUMN Branch.lifecycle_status IS 'Authors assesment of the branchs maturity';
@@ -174,7 +175,13 @@ COMMENT ON COLUMN CodeImport.rcs_type IS 'The revision control system used by th
 COMMENT ON COLUMN CodeImport.svn_branch_url IS 'The URL of the Subversion branch for this import.';
 COMMENT ON COLUMN CodeImport.cvs_root IS 'The $CVSROOT details, probably of the form :pserver:user@host:/path.';
 COMMENT ON COLUMN CodeImport.cvs_module IS 'The module in cvs_root to import, often the name of the project.';
+COMMENT ON COLUMN CodeImport.date_last_successful IS 'When this code import last succeeded. NULL if this import has never succeeded.';
 
+-- CodeImportMachine
+
+COMMENT ON TABLE CodeImportMachine IS 'The record of a machine capable of performing jobs for the code import system.';
+COMMENT ON COLUMN CodeImportMachine.hostname IS 'The (unique) hostname of the machine.';
+COMMENT ON COLUMN CodeImportMachine.online IS 'Whether the machine is capable of performing jobs at this time.';
 
 -- CVE
 
@@ -238,10 +245,49 @@ active.';
 
 COMMENT ON TABLE LaunchpadStatistic IS 'A store of system-wide statistics or other integer values, keyed by names. The names are unique and the values can be any integer. Each field has a place to store the timestamp when it was last updated, so it is possible to know how far out of date any given statistic is.';
 
+-- MailingList
+
+COMMENT ON TABLE MailingList IS 'The mailing list for a team.  Teams may have zero or one mailing list, and a mailing list is associated with exactly one team.  This table manages the state changes that a team mailing list can go through, and it contains information that will be used to instruct Mailman how to create, delete, and modify mailing lists (via XMLRPC).';
+COMMENT ON COLUMN MailingList.team IS 'The team this mailing list is associated with.';
+COMMENT ON COLUMN MailingList.registrant IS 'The id of the Person who requested this list be created.';
+COMMENT ON COLUMN MailingList.date_registered IS 'Date the list was requested to be created';
+COMMENT ON COLUMN MailingList.reviewer IS 'The id of the Person who reviewed the creation request, or NULL if not yet reviewed.';
+COMMENT ON COLUMN MailingList.date_reviewed IS 'The date the request was reviewed, or NULL if not yet reviewed.';
+COMMENT ON COLUMN MailingList.date_activated IS 'The date the list was (last) activated.  If the list is not yet active, this field will be NULL.';
+COMMENT ON COLUMN MailingList.status IS 'The current status of the mailing list, as a dbschema.MailingListStatus value.';
+COMMENT ON COLUMN MailingList.welcome_message_text IS 'Text sent to new members when they are subscribed to the team list.  If NULL, no welcome message is sent.';
+
+-- MailingListSubscription
+
+COMMENT ON TABLE MailingListSubscription IS 'Track the subscriptions of a person to team mailing lists.';
+COMMENT ON COLUMN MailingListSubscription.person IS 'The person who is subscribed to the mailing list.';
+COMMENT ON COLUMN MailingListSubscription.mailing_list IS 'The mailing list this person is subscribed to.';
+COMMENT ON COLUMN MailingListSubscription.date_joined IS 'The date this person subscribed to the mailing list.';
+COMMENT ON COLUMN MailingListSubscription.email_address IS 'Which of the person\'s email addresses are subscribed to the mailing list.  This may be NULL to indicate that it\'s the person\'s preferred address.';
+
+-- MailingListBan
+
+COMMENT ON TABLE MailingListBan IS 'Track explicit Launchpad-wide posting bans imposed on people by Launchpad administrators.';
+COMMENT ON COLUMN MailingListBan.person IS 'The person who was banned.';
+COMMENT ON COLUMN MailingListBan.banned_by IS 'The administrator who imposed the ban.';
+COMMENT ON COLUMN MailingListBan.date_banned IS 'When the ban was imposed.';
+COMMENT ON COLUMN MailingListBan.reason_text IS 'The reason for the ban.';
 
 -- MentoringOffer
 COMMENT ON TABLE MentoringOffer IS 'An offer to provide mentoring if someone wa nts to help get a specific bug fixed or blueprint implemented. These offers are specifically associated with a team in which the offeror is a member, so it beco mes possible to encourage people who want to join a team to start by working on things that existing team members are willing to mentor.';
 COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer of mentoring is associated. We associate each offer of mentoring with a team, de signated as "the team which will most benefit from the bug fix or spec implement ation", and this then allows us to provide a list of work for which mentoring is available for prospective members of those teams. This is really the "onramp" i dea - the list is the "onramp" to membership in the relevant team.';
+
+-- MessageApproval
+
+COMMENT ON TABLE MessageApproval IS 'Track mailing list postings awaiting approval from the team owner.';
+COMMENT ON COLUMN MessageApproval.message_id IS 'The Message-ID header of the held message.';
+COMMENT ON COLUMN MessageApproval.posted_by IS 'The person who posted the message.';
+COMMENT ON COLUMN MessageApproval.mailing_list IS 'The mailing list to which the message was posted.';
+COMMENT ON COLUMN MessageApproval.posted_message IS 'Foreign key to libraryfilealias table pointing to where the posted message\'s text lives.';
+COMMENT ON COLUMN MessageApproval.posted_date IS 'The date the message was posted.';
+COMMENT ON COLUMN MessageApproval.status IS 'The status of the posted message.  Values are described in dbschema.PostedMessageStatus.';
+COMMENT ON COLUMN MessageApproval.disposed_by IS 'The person who disposed of (i.e. approved or rejected) the message, or NULL if no disposition has yet been made.';
+COMMENT ON COLUMN MessageApproval.disposal_date IS 'The date on which this message was disposed, or NULL if no disposition has yet been made.';
 
 -- Product
 COMMENT ON TABLE Product IS 'Product: a DOAP Product. This table stores core information about an open source product. In Launchpad, anything that can be shipped as a tarball would be a product, and in some cases there might be products for things that never actually ship, depending on the project. For example, most projects will have a \'website\' product, because that allows you to file a Malone bug against the project website. Note that these are not actual product releases, which are stored in the ProductRelease table.';
@@ -485,6 +531,7 @@ Rosetta has an active translation for every expected plural form of this
 message set.';
 COMMENT ON COLUMN POMsgSet.reviewer IS 'The person who last reviewd the translations for this message.';
 COMMENT ON COLUMN POMsgSet.date_reviewed IS 'Last time this message was reviewed.';
+COMMENT ON COLUMN POMsgSet.language IS 'Language this POMsgSet is in; copied from its POFile for performance reasons.';
 
 -- Sprint
 COMMENT ON TABLE Sprint IS 'A meeting, sprint or conference. This is a convenient way to keep track of a collection of specs that will be discussed, and the people that will be attending.';
@@ -494,7 +541,6 @@ COMMENT ON COLUMN Sprint.homepage_content IS 'A home page for this sprint in the
 COMMENT ON COLUMN Sprint.icon IS 'The library file alias to a small image to be used as an icon whenever we are referring to a sprint.';
 COMMENT ON COLUMN Sprint.mugshot IS 'The library file alias of a mugshot image to display as the branding of a sprint, on its home page.';
 COMMENT ON COLUMN Sprint.logo IS 'The library file alias of a smaller version of this sprint\'s mugshot.';
-
 
 -- SprintAttendance
 COMMENT ON TABLE SprintAttendance IS 'The record that someone will be attending a particular sprint or meeting.';
@@ -527,6 +573,7 @@ COMMENT ON COLUMN Question.dateanswered IS 'The date this question was last "ans
 COMMENT ON COLUMN Question.dateclosed IS 'The date the requester marked this question CLOSED.';
 COMMENT ON COLUMN Question.language IS 'The language of the question''s title and description.';
 COMMENT ON COLUMN Question.whiteboard IS 'A general status whiteboard. This is a scratch space to which arbitrary data can be added (there is only one constant whiteboard with no history). It is displayed at the top of the question. So its a useful way for projects to add their own semantics or metadata to the Answer Tracker.';
+COMMENT ON COLUMN Question.faq IS 'The FAQ document that contains the long answer to this question.';
 
 -- QuestionBug
 
@@ -549,6 +596,22 @@ COMMENT ON COLUMN QuestionReopening.priorstate IS 'The state of the question bef
 -- QuestionSubscription
 
 COMMENT ON TABLE QuestionSubscription IS 'A subscription of a person to a particular question.';
+
+
+-- FAQ 
+COMMENT ON TABLE FAQ IS 'A technical document containing the answer to a common question.';
+COMMENT ON COLUMN FAQ.id IS 'The FAQ document sequence number.';
+COMMENT ON COLUMN FAQ.title IS 'The document title.';
+COMMENT ON COLUMN FAQ.tags IS 'White-space separated list of tags.';
+COMMENT ON COLUMN FAQ.content IS 'The content of FAQ. It can also contain a short summary and a link.';
+COMMENT ON COLUMN FAQ.product IS 'The product to which this document is
+related. Either "product" or "distribution" must be set.';
+COMMENT ON COLUMN FAQ.distribution IS 'The distribution to which this document
+is related. Either "product" or "distribution" must be set.';
+COMMENT ON COLUMN FAQ.owner IS 'The person who created the document.';
+COMMENT ON COLUMN FAQ.date_created IS 'The datetime when the document was created.';
+COMMENT ON COLUMN FAQ.last_updated_by IS 'The person who last modified the document.';
+COMMENT ON COLUMN FAQ.date_last_updated IS 'The datetime when the document was last modified.';
 
 
 -- DistroReleaseLanguage
@@ -618,7 +681,6 @@ COMMENT ON COLUMN Distribution.official_malone IS 'Whether or not this distribut
 COMMENT ON COLUMN Distribution.official_answers IS 'Whether or not this product upstream uses Answers officialy.';
 
 COMMENT ON COLUMN Distribution.translation_focus IS 'The DistroRelease that should get the translation effort focus.';
-COMMENT ON COLUMN Distribution.main_archive IS 'The Archive used to publish this distribution.';
 
 -- DistroRelease
 
@@ -783,6 +845,8 @@ COMMENT ON COLUMN Karma.sourcepackagename IS 'The SourcePackageName on which a p
 
 -- Person
 COMMENT ON TABLE Person IS 'Central user and group storage. A row represents a person if teamowner is NULL, and represents a team (group) if teamowner is set.';
+COMMENT ON COLUMN Person.account_status IS 'The status of the account associated with this Person.';
+COMMENT ON COLUMN Person.account_status_comment IS 'The comment on the status of the account associated with this Person.';
 COMMENT ON COLUMN Person.subscriptionpolicy IS 'The policy for new members to join this team.';
 COMMENT ON COLUMN Person.renewal_policy IS 'The policy for membership renewal on this team.';
 COMMENT ON COLUMN Person.displayname IS 'Person or group''s name as it should be rendered to screen';
@@ -800,6 +864,11 @@ COMMENT ON COLUMN Person.logo IS 'The library file alias of a smaller version of
 COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this person -- a dbschema value.';
 COMMENT ON COLUMN Person.creation_comment IS 'A text comment for the creation of this person.';
 COMMENT ON COLUMN Person.registrant IS 'The user who created this profile.';
+COMMENT ON COLUMN Person.personal_standing IS 'The standing of the person, which indicates (for now, just) whether the person can post to a mailing list without requiring first post moderation.  Values are documented in dbschema.PersonalStanding.';
+COMMENT ON COLUMN Person.personal_standing_reason_text IS 'The reason a person\'s standing has changed.';
+COMMENT ON COLUMN Person.mail_resumption_date IS 'A NULL resumption date or a date in the past indicates that there is no vacation in effect.  Vacations are granular to the day, so a datetime is not necessary.';
+COMMENT ON COLUMN Person.mailing_list_auto_subscribe_policy IS 'The auto-subscription policy for the person, i.e. whether and how the user is automatically subscribed to mailing lists for teams they join.  Values are described in dbschema.MailingListAutoSubscribePolicy.';
+COMMENT ON COLUMN Person.mailing_list_receive_duplicates IS 'True means the user wants to receive list copies of messages on which they are explicitly named as a recipient.';
 
 COMMENT ON TABLE ValidPersonOrTeamCache IS 'A materialized view listing the Person.ids of all valid people and teams.';
 
@@ -916,16 +985,12 @@ COMMENT ON COLUMN Specification.distribution IS 'The distribution for which this
 COMMENT ON COLUMN Specification.distrorelease IS 'If this is not NULL, then it means that the release managers have targeted this feature to be released in the given distrorelease. It is not necessary to target a distrorelease, but this is a useful way of know which specifications are, for example, BreezyGoals.';
 COMMENT ON COLUMN Specification.productseries IS 'This is an indicator that the specification is planned, or targeted, for implementation in a given product series. It is not necessary to target a spec to a series, but it is a useful way of showing which specs are planned to implement for a given series.';
 COMMENT ON COLUMN Specification.milestone IS 'This is an indicator that the feature defined in this specification is expected to be delivered for a given milestone. Note that milestones are not necessarily releases, they are a way of identifying a point in time and grouping bugs and features around that.';
-COMMENT ON COLUMN Specification.informational IS 'An indicator as to whether or not the spec is purely informational, or is actually supposed to be implemented. High level overview specs, for example, are often marked "informational" and will be considered implemented once the spec is approved.';
-COMMENT ON COLUMN Specification.status IS 'An enum called SpecificationStatus that shows what the current status (new, draft, implemented etc) the spec is currently in.';
+COMMENT ON COLUMN Specification.definition_status IS 'An enum called SpecificationDefinitionStatus that shows what the current status (new, draft, implemented etc) the spec is currently in.';
 COMMENT ON COLUMN Specification.priority IS 'An enum that gives the implementation priority (low, medium, high, emergency) of the feature defined in this specification.';
 COMMENT ON COLUMN Specification.specurl IS 'The URL where the specification itself can be found. This is usually a wiki page somewhere.';
 COMMENT ON COLUMN Specification.whiteboard IS 'As long as the specification is somewhere else (i.e. not in Launchpad) it will be useful to have a place to hold some arbitrary message or status flags that have meaning to the project, not Launchpad. This whiteboard is just the place for it.';
 COMMENT ON COLUMN Specification.superseded_by IS 'The specification which replaced this specification.';
-COMMENT ON COLUMN Specification.delivery IS 'The implementation status of this
-specification. This field is used to track the actual delivery of the feature
-(implementing the spec), as opposed to the definition of expected behaviour
-(writing the spec).';
+COMMENT ON COLUMN Specification.implementation_status IS 'The implementation status of this specification. This field is used to track the actual delivery of the feature (implementing the spec), as opposed to the definition of expected behaviour (writing the spec).';
 COMMENT ON COLUMN Specification.goalstatus IS 'Whether or not the drivers for the goal product series or distro release have accepted this specification as a goal.';
 COMMENT ON COLUMN Specification.goal_proposer IS 'The person who proposed this spec as a goal for the productseries or distrorelease.';
 COMMENT ON COLUMN Specification.date_goal_proposed IS 'The date the spec was proposed as a goal.';
@@ -933,7 +998,7 @@ COMMENT ON COLUMN Specification.goal_decider IS 'The person who approved or decl
 COMMENT ON COLUMN Specification.date_goal_decided IS 'The date this goal was accepted or declined.';
 COMMENT ON COLUMN Specification.completer IS 'The person who changed the state of the spec in such a way that it was determined to be completed.';
 COMMENT ON COLUMN Specification.date_completed IS 'The date this specification was completed or marked obsolete. This lets us chart the progress of a project (or a release) over time in terms of features implemented.';
-COMMENT ON CONSTRAINT specification_completion_recorded_chk ON Specification IS 'A constraint to ensure that we have recorded the date of completion if the specification is in fact considered completed. The SQL behind the completion test is repeated at a code level in database/specification.py: as Specification.completeness, please ensure that the constraint is kept in sync with the code.';
+-- COMMENT ON CONSTRAINT specification_completion_recorded_chk ON Specification IS 'A constraint to ensure that we have recorded the date of completion if the specification is in fact considered completed. The SQL behind the completion test is repeated at a code level in database/specification.py: as Specification.completeness, please ensure that the constraint is kept in sync with the code.';
 COMMENT ON CONSTRAINT specification_completion_fully_recorded_chk ON Specification IS 'A constraint that ensures, where we have a date_completed, that we also have a completer. This means that the resolution was fully recorded.';
 COMMENT ON COLUMN Specification.private IS 'Specification is private.';
 
@@ -1426,10 +1491,13 @@ COMMENT ON COLUMN Archive.description IS 'Allow users to describe their PPAs con
 COMMENT ON COLUMN Archive.enabled IS 'Whether or not the PPA is enabled for accepting uploads.';
 COMMENT ON COLUMN Archive.authorized_size IS 'Size in bytes allowed for this PPA.';
 COMMENT ON COLUMN Archive.whiteboard IS 'Administrator comments about interventions made in the PPA configuration.';
+COMMENT ON COLUMN Archive.distribution IS 'The distribution that uses this archive.';
+COMMENT ON COLUMN Archive.purpose IS 'The purpose of this archive, e.g. COMMERCIAL.  See the ArchivePurpose DBSchema item.';
 
 -- Component
 COMMENT ON TABLE Component IS 'Known components in Launchpad';
 COMMENT ON COLUMN Component.name IS 'Component name text';
+COMMENT ON COLUMN Component.description IS 'Description of this component.';
 
 
 -- Section
@@ -1490,5 +1558,6 @@ COMMENT ON COLUMN Entitlement.quota IS 'Number of this entitlement allowed.';
 COMMENT ON COLUMN Entitlement.amount_used IS 'Quantity of this entitlement allocation that is used.';
 COMMENT ON COLUMN Entitlement.whiteboard IS 'A place for administrator notes.';
 COMMENT ON COLUMN Entitlement.state IS 'The state (REQUESTED, ACTIVE, INACTIVE) of the entitlement.';
+COMMENT ON COLUMN Entitlement.is_dirty IS 'This entitlement has been modified and the state needst to be updated on the external system.';
 
 

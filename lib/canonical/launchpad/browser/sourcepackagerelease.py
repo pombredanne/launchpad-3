@@ -8,17 +8,32 @@ __all__ = [
     'SourcePackageReleaseView',
     ]
 
-# Python standard library imports
 import cgi
 import re
 
-# Canonical imports
 from canonical.launchpad.webapp import LaunchpadView
-from canonical.launchpad.browser import linkify_changelog
 
 
 class SourcePackageReleaseView(LaunchpadView):
 
     def changelog(self):
-        return linkify_changelog(
+        return self._linkify_changelog(
             self.context.changelog, self.context.name)
+
+    def _linkify_changelog(self, changelog, sourcepkgnametxt):
+        if changelog is None:
+            return ''
+        changelog = cgi.escape(changelog)
+        escaped_name = re.escape(sourcepkgnametxt)
+        matches = re.findall(r'%s (\(([^)]+)\) (\w+));' % escaped_name,
+            changelog)
+        for match_text, version, distroseries in matches:
+            # Rather ugly to construct this URL, but it avoids the need to
+            # look up database objects for each matching line of text here.
+            url = '../../../%s/+source/%s/%s' % (
+                distroseries, sourcepkgnametxt, version)
+            changelog = changelog.replace(match_text,
+                '(<a href="%s">%s</a>) %s' % (url, version, distroseries))
+        return changelog
+
+

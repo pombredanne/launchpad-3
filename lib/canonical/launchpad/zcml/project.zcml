@@ -160,6 +160,13 @@
       />
 
     <browser:page
+        name="+register-a-blueprint-button"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.RegisterABlueprintButtonView"
+        permission="zope.Public"
+        />
+
+    <browser:page
         name="+edit"
         for="canonical.launchpad.interfaces.IProject"
         class="canonical.launchpad.browser.ProjectEditView"

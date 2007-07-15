@@ -48,4 +48,12 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
+  <class class="canonical.launchpad.xmlrpc.faults.InvalidBranchUrl">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
+  <class class="canonical.launchpad.xmlrpc.faults.BranchUniqueNameConflict">
+    <require like_class="xmlrpclib.Fault" />
+  </class>
+
 </configure>

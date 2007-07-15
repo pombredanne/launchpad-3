@@ -41,6 +41,11 @@
     />
 
   <vocabulary
+    name="BranchType"
+    factory="canonical.launchpad.vocabularies.BranchTypeVocabulary"
+    />
+
+  <vocabulary
     name="BranchVisibilityRule"
     factory="canonical.launchpad.vocabularies.BranchVisibilityRuleVocabulary"
     />
@@ -178,6 +183,11 @@
   <vocabulary
     name="Language"
     factory="canonical.launchpad.vocabularies.LanguageVocabulary"
+    />
+
+  <vocabulary
+    name="MailingListStatus"
+    factory="canonical.launchpad.vocabularies.MailingListStatusVocabulary"
     />
 
   <vocabulary
@@ -321,8 +331,8 @@
     />
 
   <vocabulary
-    name="SpecificationDelivery"
-    factory="canonical.launchpad.vocabularies.SpecificationDeliveryVocabulary"
+    name="SpecificationImplementationStatus"
+    factory="canonical.launchpad.vocabularies.SpecificationImplementationStatusVocabulary"
     />
 
   <vocabulary
@@ -336,8 +346,8 @@
     />
 
   <vocabulary
-    name="SpecificationStatus"
-    factory="canonical.launchpad.vocabularies.SpecificationStatusVocabulary"
+    name="SpecificationDefinitionStatus"
+    factory="canonical.launchpad.vocabularies.SpecificationDefinitionStatusVocabulary"
     />
 
   <vocabulary
@@ -438,6 +448,11 @@
   <vocabulary
     name="ValidOwner"
     factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    />
+
+  <vocabulary
+    name="ValidTeam"
+    factory="canonical.launchpad.vocabularies.ValidTeamVocabulary"
     />
 
   <vocabulary
