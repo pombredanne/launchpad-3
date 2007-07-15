@@ -4,8 +4,6 @@
 
 __metaclass__ = type
 
-from zope.formlib import form
-from canonical.launchpad.webapp import LaunchpadFormView
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
 
@@ -17,7 +15,8 @@ class LaunchpadFormHarness:
         self._render(form_values)
 
     def _render(self, form_values=None, method='GET'):
-        self.request = LaunchpadTestRequest(method=method, form=form_values)
+        self.request = LaunchpadTestRequest(method=method, form=form_values,
+                                            PATH_INFO='/')
         self.view = self.view_class(self.context, self.request)
         self.view.initialize()
 

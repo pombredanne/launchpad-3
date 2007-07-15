@@ -17,6 +17,8 @@ from bzrlib.errors import DivergedBranches
 from bzrlib.urlutils import local_path_to_url
 from zope.component import getUtility
 
+from canonical.lp.dbschema import BranchType
+
 from canonical.database.sqlbase import commit
 from canonical.launchpad.interfaces import (
     IBranchSet, ILaunchpadCelebrities, IPersonSet)
@@ -79,7 +81,9 @@ class TestImportdPublisher(ImportdTestCase):
         self.setUpOneCommit()
         series = self.series_helper.series
         branch = getUtility(IBranchSet).new(
-            series.name, series.product.owner, series.product, url=None)
+            BranchType.HOSTED,
+            series.name, series.product.owner, series.product.owner,
+            series.product, url=None)
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         assert branch.owner != vcs_imports
         series.import_branch = branch

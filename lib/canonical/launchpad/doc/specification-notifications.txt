@@ -14,8 +14,9 @@ Changing the status:
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> svg_support = firefox.getSpecification('svg-support')
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Drafting',
-    ...     'field.delivery': svg_support.delivery.title,
+    ...     'UPDATE_SUBMIT': 'Change', 'field.definition_status': 'Drafting',
+    ...     'field.implementation_status':
+    ...         svg_support.implementation_status.title,
     ...     }
     >>> request = LaunchpadTestRequest(form=form)
     >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
@@ -80,8 +81,10 @@ previous people, and to the approver and the added subscriber:
 
     >>> stub.test_emails = []
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Pending Approval',
-    ...     'field.delivery': svg_support.delivery.title,
+    ...     'UPDATE_SUBMIT': 'Change',
+    ...     'field.definition_status': 'Pending Approval',
+    ...     'field.implementation_status':
+    ...         svg_support.implementation_status.title,
     ...     'field.needs_discussion': '1'}
     >>> request = LaunchpadTestRequest(form=form)
     >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
@@ -112,17 +115,16 @@ Now let's take a look at what the notification looks like:
     >>> status_notification['From']
     'Foo Bar <foo.bar@canonical.com>'
     >>> status_notification['Subject']
-    '[Spec svg-support] Support Native SVG Objects'
+    '[Blueprint svg-support] Support Native SVG Objects'
     >>> body = status_notification.get_payload(decode=True)
     >>> print body  #doctest: -NORMALIZE_WHITESPACE
-    Specification changed by Foo Bar:
+    Blueprint changed by Foo Bar:
     <BLANKLINE>
         Definition Status: Drafting => Pending Approval
     <BLANKLINE>
     -- 
-    Specification Details:
       Support Native SVG Objects
-      http://.../firefox/+spec/svg-support
+      http://blueprints.launchpad.dev/firefox/+spec/svg-support
     <BLANKLINE>
 
 Whiteboard change:
@@ -134,8 +136,10 @@ Whiteboard change:
     ...     "\n"
     ...     "Another paragraph")
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Pending Approval',
-    ...     'field.delivery': svg_support.delivery.title,
+    ...     'UPDATE_SUBMIT': 'Change',
+    ...     'field.definition_status': 'Pending Approval',
+    ...     'field.implementation_status':
+    ...         svg_support.implementation_status.title,
     ...     'field.whiteboard': new_whiteboard}
     >>> request = LaunchpadTestRequest(form=form)
     >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
@@ -152,10 +156,10 @@ Whiteboard change:
     >>> status_notification['From']
     'Foo Bar <foo.bar@canonical.com>'
     >>> status_notification['Subject']
-    '[Spec svg-support] Support Native SVG Objects'
+    '[Blueprint svg-support] Support Native SVG Objects'
     >>> body = status_notification.get_payload(decode=True)
     >>> print body  #doctest: -NORMALIZE_WHITESPACE
-    Specification changed by Foo Bar:
+    Blueprint changed by Foo Bar:
     <BLANKLINE>
     Whiteboard changed to:
     <BLANKLINE>
@@ -165,9 +169,8 @@ Whiteboard change:
     Another paragraph
     <BLANKLINE>
     -- 
-    Specification Details:
       Support Native SVG Objects
-      http://.../firefox/+spec/svg-support
+      http://blueprints.launchpad.dev/firefox/+spec/svg-support
     <BLANKLINE>
 
 
@@ -175,8 +178,10 @@ Definition status and whiteboard change:
 
     >>> stub.test_emails = []
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Approved',
-    ...     'field.delivery': svg_support.delivery.title,
+    ...     'UPDATE_SUBMIT': 'Change',
+    ...     'field.definition_status': 'Approved',
+    ...     'field.implementation_status':
+    ...         svg_support.implementation_status.title,
     ...     'field.whiteboard': 'Excellent work.'}
     >>> request = LaunchpadTestRequest(form=form)
     >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
@@ -193,10 +198,10 @@ Definition status and whiteboard change:
     >>> status_notification['From']
     'Foo Bar <foo.bar@canonical.com>'
     >>> status_notification['Subject']
-    '[Spec svg-support] Support Native SVG Objects'
+    '[Blueprint svg-support] Support Native SVG Objects'
     >>> body = status_notification.get_payload(decode=True)
     >>> print body  #doctest: -NORMALIZE_WHITESPACE
-    Specification changed by Foo Bar:
+    Blueprint changed by Foo Bar:
     <BLANKLINE>
         Definition Status: Pending Approval => Approved
     <BLANKLINE>
@@ -205,9 +210,8 @@ Definition status and whiteboard change:
     Excellent work.
     <BLANKLINE>
     -- 
-    Specification Details:
       Support Native SVG Objects
-      http://.../firefox/+spec/svg-support
+      http://blueprints.launchpad.dev/firefox/+spec/svg-support
     <BLANKLINE>
 
 Change priority:
@@ -232,17 +236,16 @@ Change priority:
     >>> status_notification['From']
     'Foo Bar <foo.bar@canonical.com>'
     >>> status_notification['Subject']
-    '[Spec svg-support] Support Native SVG Objects'
+    '[Blueprint svg-support] Support Native SVG Objects'
     >>> body = status_notification.get_payload(decode=True)
     >>> print body  #doctest: -NORMALIZE_WHITESPACE
-    Specification changed by Foo Bar:
+    Blueprint changed by Foo Bar:
     <BLANKLINE>
         Priority: High => Essential
     <BLANKLINE>
     -- 
-    Specification Details:
       Support Native SVG Objects
-      http://.../firefox/+spec/svg-support
+      http://blueprints.launchpad.dev/firefox/+spec/svg-support
     <BLANKLINE>
 
 Change approver, assignee and drafter:
@@ -268,19 +271,18 @@ Change approver, assignee and drafter:
     >>> status_notification['From']
     'Foo Bar <foo.bar@canonical.com>'
     >>> status_notification['Subject']
-    '[Spec svg-support] Support Native SVG Objects'
+    '[Blueprint svg-support] Support Native SVG Objects'
     >>> body = status_notification.get_payload(decode=True)
     >>> print body  #doctest: -NORMALIZE_WHITESPACE
-    Specification changed by Foo Bar:
+    Blueprint changed by Foo Bar:
     <BLANKLINE>
         Approver: Mark Shuttleworth => (none)
         Assignee: (none) => Mark Shuttleworth
         Drafter: Robert Collins => Foo Bar
     <BLANKLINE>
     -- 
-    Specification Details:
       Support Native SVG Objects
-      http://.../firefox/+spec/svg-support
+      http://blueprints.launchpad.dev/firefox/+spec/svg-support
     <BLANKLINE>
 
 If we do a change, which we don't yet support sending a notification

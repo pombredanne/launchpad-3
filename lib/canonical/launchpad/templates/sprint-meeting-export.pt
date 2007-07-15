@@ -16,7 +16,7 @@
   <unscheduled>
     <meeting tal:repeat="spec view/specifications"
              tal:attributes="name spec/spec/name;
-                             status spec/spec/status/name;
+                             status spec/spec/definition_status/name;
                              lpurl spec/spec/fmt:url;
                              specurl spec/spec/specurl;
                              assignee spec/spec/assignee/name|nothing;

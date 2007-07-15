@@ -61,8 +61,8 @@ class TranslationsCopier(LaunchpadScript):
 
 if __name__ == '__main__':
 
-    script = TranslationsCopier('copy-missing-translations',
-        dbuser=config.rosetta.poimport.dbuser)
+    script = TranslationsCopier(
+        'copy-missing-translations', dbuser=config.rosetta.poimport.dbuser)
 
     script.lock_and_run()
 

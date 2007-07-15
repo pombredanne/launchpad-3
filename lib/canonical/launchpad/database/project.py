@@ -18,13 +18,14 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IProject, IProjectSet, ICalendarOwner, ISearchableByQuestionOwner,
-    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH, IHasLogo, IHasMugshot,
-    IHasIcon)
+    ICalendarOwner, IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct,
+    IProject, IProjectSet, ISearchableByQuestionOwner, NotFoundError,
+    QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.lp.dbschema import (
     TranslationPermission, ImportStatus, SpecificationSort,
-    SpecificationFilter, SprintSpecificationStatus)
+    SpecificationFilter, SprintSpecificationStatus,
+    SpecificationImplementationStatus)
 
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -33,6 +34,7 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.cal import Calendar
+from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
@@ -49,8 +51,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
               BranchVisibilityPolicyMixin):
     """A Project"""
 
-    implements(IProject, ICalendarOwner, ISearchableByQuestionOwner,
-               IHasLogo, IHasMugshot, IHasIcon)
+    implements(ICalendarOwner, IProject, IFAQCollection, IHasIcon, IHasLogo,
+               IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
 
@@ -191,7 +193,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = (
-                ['-priority', 'Specification.status', 'Specification.name'])
+                ['-priority', 'Specification.definition_status', 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -209,7 +211,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+              quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -297,6 +300,34 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Question.product = Product.id AND
             Product.project = %s""" % sqlvalues(self.id),
             clauseTables=['Question', 'Product'], distinct=True))
+
+    # IFAQCollection
+    def getFAQ(self, id):
+        """See `IQuestionCollection`."""
+        faq = FAQ.getForTarget(id, None)
+        if (faq is not None
+            and IProduct.providedBy(faq.target)
+            and faq.target in self.products):
+            # Filter out faq not related to this project.
+            return faq
+        else:
+            return None
+
+    def searchFAQs(self, search_text=None, owner=None, sort=None):
+        """See `IQuestionCollection`."""
+        return FAQSearch(
+            search_text=search_text, owner=owner, sort=sort,
+            project=self).getResults()
+
+    def hasProducts(self):
+        """Returns True if a project has products associated with it, False
+        otherwise.
+
+        If the project has < 1 product, selected links will be disabled.
+        This is to avoid situations where users try to file bugs against
+        empty project groups (Malone bug #106523).
+        """
+        return self.products.count() != 0
 
 
 class ProjectSet:

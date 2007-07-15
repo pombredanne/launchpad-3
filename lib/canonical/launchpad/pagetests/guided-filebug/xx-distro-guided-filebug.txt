@@ -25,8 +25,6 @@ Submitting a bug title...
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
     #9 Thunderbird crashes
     Confirmed, last updated 2006-07-14
-    #2 Blackhole Trash folder
-    New, last updated 2006-07-14
 
 Subscribing to one of the similar bugs takes us to the bug page.
 

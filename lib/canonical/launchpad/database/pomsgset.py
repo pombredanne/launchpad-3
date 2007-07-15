@@ -179,6 +179,7 @@ class DummyPOMsgSet(POMsgSetMixIn):
         self.potmsgset = potmsgset
         self.isfuzzy = False
         self.commenttext = None
+        self.language = pofile.language
 
     @property
     def active_texts(self):
@@ -229,6 +230,9 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         foreignKey='Person', dbName='reviewer', notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(dbName='date_reviewed', notNull=False,
         default=None)
+    # XXX: JeroenVermeulen 2007-07-03, Make this notNull once the language
+    # column has been initialized
+    language = ForeignKey(foreignKey='Language', dbName='language')
 
     submissions = SQLMultipleJoin('POSubmission', joinColumn='pomsgset')
 
@@ -420,6 +424,11 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         # Is the person allowed to edit translations?
         is_editor = (force_edition_rights or
                      self.pofile.canEditTranslations(person))
+
+        assert (published or is_editor or
+                self.pofile.canAddSuggestions(person)), (
+            '%s cannot add translations nor can add suggestions' % (
+                person.displayname))
 
         # First, check that the translations are correct.
         potmsgset = self.potmsgset

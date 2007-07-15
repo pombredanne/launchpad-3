@@ -8,4 +8,3 @@ Check that the Bazaar home page works.
   6 projects
   3 imported branches
   2 branches associated with bug reports
-
