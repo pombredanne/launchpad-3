@@ -103,6 +103,7 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
             architecturehintlist=architecturehintlist,
             changelog=None,
             dsc=None,
+            copyright='placeholder ...',
             dscsigningkey=self.signingkey,
             manifest=None,
             dsc_maintainer_rfc822=dsc_maintainer_rfc822,
