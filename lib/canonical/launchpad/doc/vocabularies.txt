@@ -1001,6 +1001,61 @@ search for 'team' should give us some of them:
     [u'name18', u'name19', u'name20', u'name21', u'no-team-memberships', u'simple-team', u'testing-spanish-team', u'ubuntu-team']
 
 
+=== ValidTeam ===
+
+The valid team vocabulary is just like the ValidPersonOrTeam vocabulary,
+except that its terms are limited only to teams.  No non-team Persons will be
+returned.
+
+    >>> vocab = vocabulary_registry.get(None, 'ValidTeam')
+    >>> vocab.displayname
+    'Select a Team'
+    >>> sorted((team.displayname, team.teamowner.displayname)
+    ...        for team in vocab.search(None))
+    [(u'GuadaMen', u'Foo Bar'),
+     (u'Hoary Gnome Team', u'Mark Shuttleworth'),
+     (u'Landscape Developers', u'Sample Person'),
+     (u'Launchpad Administrators', u'Mark Shuttleworth'),
+     (u'Launchpad Beta Testers', u'Launchpad Beta Testers Owner'),
+     (u'Launchpad Buildd Admins', u'Foo Bar'),
+     (u'Launchpad Developers', u'Foo Bar'),
+     (u'Mirror Administrators', u'Mark Shuttleworth'),
+     (u'Registry Administrators', u'Mark Shuttleworth'),
+     (u'Rosetta Administrators', u'Launchpad Administrators'),
+     (u'ShipIt Administrators', u'Mark Shuttleworth'),
+     (u'Simple Team', u'One Membership'),
+     (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Translators', u'Rosetta Administrators'),
+     (u'VCS imports', u'Robert Collins'),
+     (u'Warty Gnome Team', u'Mark Shuttleworth'),
+     (u'Warty Security Team', u'Mark Shuttleworth'),
+     (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
+
+Like with ValidPersonOrTeam, you can narrow your search down by providing some
+text to match against the team name.  Still, you only get teams back.
+
+    >>> sorted((team.displayname, team.teamowner.displayname)
+    ...         for team in vocab.search('spanish'))
+    [(u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
+    >>> sorted((team.displayname, team.teamowner.displayname)
+    ...        for team in vocab.search('spanish | ubuntu'))
+    [(u'Mirror Administrators', u'Mark Shuttleworth'),
+     (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Translators', u'Rosetta Administrators'),
+     (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
+    >>> sorted((team.displayname, team.teamowner.displayname)
+    ...        for team in vocab.search('team'))
+    [(u'Hoary Gnome Team', u'Mark Shuttleworth'),
+     (u'Simple Team', u'One Membership'),
+     (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Team', u'Mark Shuttleworth'),
+     (u'Warty Gnome Team', u'Mark Shuttleworth'),
+     (u'Warty Security Team', u'Mark Shuttleworth'),
+     (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
+
+
 === ValidTeamMember ===
 
 With the exception of all teams that have this team as a member and the
@@ -1215,6 +1270,86 @@ Inactive products and projects are not available
     Ubuntu (Product) - class Product
     The Ubuntu Project (Project) - class Project
     Ubuntu Test (Distribution) - class Distribution
+
+
+=== FAQ ===
+
+The FAQ vocabulary contains all the FAQs available in a particular
+collection. It provides the IHugeVocabulary interface.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+
+    >>> vocabulary = vocabulary_registry.get(firefox, 'FAQ')
+    >>> verifyObject(IHugeVocabulary, vocabulary)
+    True
+
+    >>> print vocabulary.displayname
+    Select a FAQ
+
+It contains all the FAQs of the collection, but not those from other
+collections:
+
+    >>> firefox_faqs = set(firefox.searchFAQs())
+    >>> vocabulary_faqs = set(term.value for term in vocabulary)
+    >>> firefox_faqs.symmetric_difference(vocabulary_faqs)
+    set([])
+
+And it only contains FAQs:
+
+    >>> u'10' in vocabulary
+    False
+
+The term's token is the FAQ's id and its title is the FAQ's title:
+
+    >>> firefox_faq = firefox.getFAQ(10)
+    >>> term = vocabulary.getTerm(firefox_faq)
+    >>> term.token
+    '10'
+    >>> print term.title
+    How do I install plugins (Shockwave, QuickTime, etc.)?
+
+Asking for something which isn't a FAQ of the target raises LookupError:
+
+    >>> ubuntu_faq = ubuntu.getFAQ(1)
+    >>> vocabulary.getTerm(ubuntu_faq)
+    Traceback (most recent call last):
+      ...
+    LookupError:...
+
+Since IHugeVocabulary extends IVocabularyTokenized, the term can also
+be retrieved by token:
+
+    >>> term = vocabulary.getTermByToken(u'10')
+    >>> print term.title
+    How do I install plugins (Shockwave, QuickTime, etc.)?
+
+Trying to retrieve an invalid or non-existent token raises LookupError:
+
+    >>> vocabulary.getTermByToken('not a good token')
+    Traceback (most recent call last):
+      ...
+    LookupError:...
+
+    >>> vocabulary.getTermByToken('1001')
+    Traceback (most recent call last):
+      ...
+    LookupError:...
+
+The searchForTerms() method returns a CountableIterator of terms that
+are similar to the query:
+
+    >>> from canonical.launchpad.webapp.vocabulary import CountableIterator
+    >>> terms = vocabulary.searchForTerms('Problem showing SVG')
+    >>> isinstance(terms, CountableIterator)
+    True
+    >>> terms.count()
+    2
+    >>> for term in terms:
+    ...     print term.title
+    How do I troubleshoot problems with extensions/themes?
+    How do I install Java?
+
 
 == SpecificationDepCandidatesVocabulary ==
 

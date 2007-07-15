@@ -1,0 +1,114 @@
+= Unicode CSV =
+
+The Python library for supporting comma-separated value (CSV) files
+does not support unicode.  In the examples section (9.1.5) of the
+Python Libray documentation for version 2.5[1] they provide the code for
+a UnicodeReader and UnicodeWriter.
+
+In order to support direct reading of unicode into dictionaries, the
+standard DictReader and DictWriter have been extended to be
+UnicodeDictReader and UnicodeDictWriter.  These two classes are
+identical to their base classes except for they utilize the
+UnicodeReader and UnicodeWriter as their underlying workers.
+
+[1] http://docs.python.org/lib/csv-examples.html
+
+
+== UnicodeCSVReader and UnicodeCSVWriter ==
+
+    >>> from cStringIO import StringIO
+    >>> from tempfile import mkstemp
+    >>> from canonical.launchpad.utilities.unicode_csv import (
+    ...     UnicodeCSVReader, UnicodeCSVWriter)
+
+Create a test string with some non-ASCII content representing a row of
+CSV data.
+
+    >>> test_data = ["100", "A-101", u'La Pe\xf1a']
+    >>> test_string = ','.join(test_data)
+    >>> fd, fname = mkstemp()
+
+The data cannot be written using the standard csv.writer class as it
+raises a UnicodeEncodeError.
+
+    >>> import csv
+    >>> temp_file = open(fname, "wb")
+    >>> writer = csv.writer(temp_file)
+    >>> writer.writerow(test_data)
+    Traceback (most recent call last):
+    ...
+    UnicodeEncodeError: 'ascii' codec can't encode character u'\xf1'...
+
+Using the UnicodeWriter, write the single row to the temporary file.
+
+    >>> temp_file = open(fname, "wb")
+    >>> writer = UnicodeCSVWriter(temp_file, encoding="utf-8")
+    >>> writer.writerow(test_data)
+    >>> temp_file.close()
+
+The data in the file has been converted to UTF-8.  If the file is read
+in and compared to the original string they will not match due to the
+encoding difference -- in fact, you can't even compare them as the
+codec raises an error.
+
+    >>> file_data = open(fname, "rb").readline()
+    >>> file_data == test_string
+    Traceback (most recent call last):
+    ...
+    UnicodeDecodeError: 'ascii' codec can't decode byte 0xc3...
+
+The data is can be read back using the UnicodeCSVReader.
+
+    >>> temp_file = open(fname, "rb")
+    >>> reader = UnicodeCSVReader(temp_file, encoding="utf-8")
+    >>> file_data = reader.next()
+    >>> len(file_data)
+    3
+
+    >>> for orig, stored in zip(test_data, file_data):
+    ...     orig == stored
+    True
+    True
+    True
+
+== UnicodeDictReader and UnicodeDictWriter ==
+
+The dictionary-based versions of the unicode reader and writer work
+exactly like the standard versions, they just take a dictionary as
+input and present a dictionary as output as a convenience.
+
+    >>> from canonical.launchpad.utilities.unicode_csv import (
+    ...     UnicodeDictReader, UnicodeDictWriter)
+
+Construct a dict using the same data as before.
+
+    >>> test_dict = dict(
+    ...     id="100",
+    ...     ext_id="A-101",
+    ...     name=u'La Pe\xf1a')
+    >>> fieldnames = test_dict.keys()
+    >>> temp_file = open(fname, "wb")
+    >>> writer = UnicodeDictWriter(
+    ...    temp_file, fieldnames=fieldnames, encoding="utf-8")
+    >>> writer.writerow(test_dict)
+    >>> temp_file.close()
+
+Read the dictionary back in using the UnicodeDictReader.
+
+    >>> temp_file = open(fname, "rb")
+    >>> reader = UnicodeDictReader(
+    ...     temp_file, fieldnames=fieldnames, encoding="utf-8")
+    >>> read_dict = reader.next()
+    >>> len(read_dict)
+    3
+
+    >>> for key in fieldnames:
+    ...     test_dict[key] == read_dict[key]
+    True
+    True
+    True
+
+    >>> temp_file.close()
+    >>> import os
+    >>> os.unlink(fname)
+
