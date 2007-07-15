@@ -179,14 +179,14 @@ If no tags have the given class, then an empty list is returned:
   []
 
 
-== find_tag_by_class() ==
+== first_tag_by_class() ==
 
 At other times we're only interested in finding the first tag to match a 
-given class. The find_tag_by_class() behaves like the find_tags_by_class()
+given class. The first_tag_by_class() behaves like the find_tags_by_class()
 function, except that it returns only the first matching Tag object, if one
 exists:
 
-  >>> find_tag_by_class = test.globs['find_tag_by_class']
+  >>> first_tag_by_class = test.globs['first_tag_by_class']
   >>> content = '''
   ... <html>
   ...   <head><title>Foo</title</head>
@@ -199,7 +199,7 @@ exists:
   ... </html>
   ... '''
 
-  >>> print find_tag_by_class(content, 'light')
+  >>> print first_tag_by_class(content, 'light')
   <p class="light">Error message</p>
 
 If no tags have the given class, then "None" is returned.
@@ -216,7 +216,7 @@ If no tags have the given class, then "None" is returned.
   ... </html>
   ... '''
 
-  >>> print find_tag_by_class(content, 'light')
+  >>> print first_tag_by_class(content, 'light')
   None
 
 
