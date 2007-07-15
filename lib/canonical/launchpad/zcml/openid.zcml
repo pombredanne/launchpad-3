@@ -20,6 +20,13 @@
         classes="OpenIdApplicationNavigation"
         />
 
+    <browser:page
+        for="*"
+        permission="zope.Public"
+        name="main_template"
+        template="../templates/loginservice-main-template.pt"
+        layer="canonical.launchpad.layers.OpenIdLayer" />
+
     <!-- Root document -->
     <browser:page
         layer="canonical.launchpad.layers.OpenIdLayer"
@@ -41,6 +48,20 @@
         permission="zope.Public"
         name="+openid"
         class="canonical.launchpad.browser.openidserver.OpenIdView"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        permission="zope.Public"
+        name="+decide"
+        class="canonical.launchpad.browser.openidserver.LoginServiceAuthorizeView"
+        />
+
+    <browser:page
+        for="canonical.launchpad.interfaces.IOpenIdApplication"
+        permission="zope.Public"
+        name="+login-register"
+        class="canonical.launchpad.browser.openidserver.LoginServiceLoginView"
         />
 
     <content class="canonical.launchpad.database.OpenIdAuthorization">

@@ -283,13 +283,6 @@ k            </description>
                 Set to 'all' for open access.
             </description>
         </key>
-        <key name="openid_sreg_trustroots"
-             datatype="canonical.config.commalist" default="">
-            <description>
-                A list of OpenID trust roots for which we will send
-                simple registration information.
-            </description>
-        </key>
         <key name="non_restricted_hostname" datatype="string"
              default="launchpad.net">
             <description>

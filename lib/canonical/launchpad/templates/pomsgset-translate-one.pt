@@ -12,7 +12,7 @@
       <span tal:replace="view/sequence">1</span>.
       <input
         type="hidden"
-        tal:condition="request/lp:person"
+        tal:condition="view/form_is_writeable"
         tal:attributes="name string:${view/html_id}"
         />
     </div>
@@ -30,7 +30,7 @@
         alt="This message is handled automatically by Launchpad."
         title="This message is handled automatically by Launchpad." />
 
-    <tal:logged-in condition="request/lp:person">
+    <tal:form-writeable condition="view/form_is_writeable">
       <a href=""
          tal:condition="not:context/potmsgset/is_translation_credit"
          tal:attributes="
@@ -41,7 +41,7 @@
              selectWidget('${view/html_id_singular}_new_select', event);;
              return false;;
          "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
-    </tal:logged-in>
+    </tal:form-writeable>
   </td>
   <td>
     <div tal:content="structure view/singular_text"
@@ -55,7 +55,7 @@
     <label>English plural:</label>
   </th>
   <td class="icon left right">
-    <tal:logged-in condition="request/lp:person">
+    <tal:form-writeable condition="view/form_is_writeable">
     <a href=""
        tal:attributes="
          onClick string:
@@ -65,7 +65,7 @@
              ${context/pluralforms});;
            return false;;
       "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
-    </tal:logged-in>
+    </tal:form-writeable>
   </td>
   <td>
     <div tal:content="structure view/plural_text"
@@ -160,7 +160,7 @@
         <tal:with-content
              condition="translation_dictionary/active_translation">
           <td class="icon left right">
-            <tal:logged-in condition="request/lp:person">
+            <tal:form-writeable condition="view/form_is_writeable">
             <tal:user-is-official-translator condition="view/user_is_official_translator">
               <input
                 type="radio"
@@ -186,7 +186,7 @@
                      return false;;
                  "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
             </tal:is-not-editor>
-            </tal:logged-in>
+            </tal:form-writeable>
           </td>
           <td>
             <div tal:content="structure translation_dictionary/active_translation"
@@ -242,7 +242,7 @@
       <tal:locked condition="context/potmsgset/is_translation_credit">
         <td class="icon left right" />
         <td>
-          <tal:logged-in condition="request/lp:person">
+          <tal:form-writeable condition="view/form_is_writeable">
             <tal:automatic condition="view/translation_credits">
               <div tal:condition="not: view/user_is_official_translator"
                    tal:attributes="
@@ -271,8 +271,8 @@
                 (no translation yet)
               </label>
             </tal:no-automatic>
-          </tal:logged-in>
-          <tal:not-logged-in condition="not:request/lp:person">
+          </tal:form-writeable>
+          <tal:form-not-writeable condition="not:view/form_is_writeable">
             <div tal:condition="not: view/user_is_official_translator"
                  tal:attributes="
                    id string:${translation_dictionary/html_id_translation}"
@@ -286,7 +286,7 @@
                    tal:content="structure translation_dictionary/active_translation">
               translation credits
             </label>
-          </tal:not-logged-in>
+          </tal:form-not-writeable>
         </td>
       </tal:locked>
     </tr>
@@ -348,7 +348,7 @@
       Packaged:
     </th>
     <td class="icon left right">
-      <tal:logged-in condition="request/lp:person">
+      <tal:form-writeable condition="view/form_is_writeable">
       <tal:user-is-official-translator
         condition="view/user_is_official_translator">
         <input
@@ -374,7 +374,7 @@
             return false;;
           "><img alt="Copy text" title="Copy text" src="/@@/copy"></a>
       </tal:user-is-not-official-translator>
-      </tal:logged-in>
+      </tal:form-writeable>
     </td>
     <td>
       <div
@@ -431,7 +431,7 @@
         </tal:suggestions>
       </tal:suggestion_block>
       <tr class="secondary translation"
-          tal:condition="request/lp:person">
+          tal:condition="view/form_is_writeable">
         <th colspan="3">
           <label
             tal:condition="not:view/user_is_official_translator"
