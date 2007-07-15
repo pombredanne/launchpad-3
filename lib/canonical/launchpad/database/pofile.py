@@ -1188,7 +1188,7 @@ class DummyPOFile(POFileMixIn):
 
     def getPOMsgSet(self, key, only_current=False, context=None):
         """See `IPOFile`."""
-        query = 'potemplate = %d' % sqlvalues(self.potemplate)
+        query = 'potemplate = %s' % sqlvalues(self.potemplate)
         if only_current:
             query += ' AND sequence > 0'
 
@@ -1209,7 +1209,7 @@ class DummyPOFile(POFileMixIn):
                 query += ' AND context IS NULL'
 
             potmsgset = POTMsgSet.selectOne(query +
-                (' AND primemsgid = %d' % sqlvalues(pomsgid)))
+                (' AND primemsgid = %s' % sqlvalues(pomsgid)))
 
         if potmsgset is None:
             # There is no IPOTMsgSet for this id.
