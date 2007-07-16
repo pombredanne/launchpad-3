@@ -9,6 +9,8 @@ import shutil
 import tempfile
 import unittest
 
+from email import message_from_string
+
 from zope.component import getUtility
 
 from canonical.archiveuploader.tests.test_uploadprocessor import (
@@ -164,11 +166,12 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Check the mailer stub has a rejection email for Daniel
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg).get_payload(decode=True)
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         self.assertEqual(to_addrs, [daniel])
         self.assertTrue("Unhandled exception processing upload: Exception "
-                        "raised by BrokenUploadPoli=\ncy for testing." 
-                        in raw_msg)
+                        "raised by BrokenUploadPolicy for testing." 
+                        in msg)
 
     def testUploadToFrozenDistro(self):
         """Uploads to a frozen distroseries should work, but be unapproved.
@@ -298,15 +301,20 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             'Unexpected number of emails sent: %s' % len(stub.test_emails))
 
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        body = msg.get_payload(decode=True)
 
         clean_recipients = [r.strip() for r in to_addrs]
         for recipient in list(recipients):
             self.assertTrue(recipient in clean_recipients)
 
+        subject = "Subject: %s" % msg['Subject']
+        body = subject + body
+
         for content in list(contents):
             self.assertTrue(
-                content in raw_msg,
-                "Expect: '%s'\nGot:\n%s" % (content, raw_msg))
+                content in body,
+                "Expect: '%s'\nGot:\n%s" % (content, body))
 
     def testUploadToPPA(self):
         """Upload to a PPA gets there.
@@ -506,7 +514,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
             "Path mismatch 'ubuntu/one/two/three/four'. "
-            "Use ~<person>/<distro>/[distrose=\nries]/[files] for PPAs "
+            "Use ~<person>/<distro>/[distroseries]/[files] for PPAs "
             "and <distro>/[files] for normal uploads."]
         self.assertEmail(contents)
 
