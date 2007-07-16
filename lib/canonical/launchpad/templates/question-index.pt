@@ -74,6 +74,13 @@
         tal:content="structure context/description/fmt:text-to-html" 
         />
 
+      <div id="related-faq" tal:condition="context/faq">
+        <b>Related FAQ:</b>
+        <a href="#"
+           tal:attributes="href context/faq/fmt:url"
+           tal:content="context/faq/title">FAQ Title</a>
+      </div>
+
       <tal:message repeat="message context/messages">
         <div tal:replace="structure message/@@+display" />
       </tal:message>

@@ -51,6 +51,7 @@ __all__ = (
 'EmailAddressStatus',
 'EntitlementState',
 'EntitlementType',
+'FAQSort',
 'GPGKeyAlgorithm',
 'ImportTestStatus',
 'ImportStatus',
@@ -289,6 +290,11 @@ class BugTrackerType(DBSchema):
         support and request tracking.
         """)
 
+    MANTIS = Item(6, """
+        Mantis
+
+        Mantis is a web-based bug tracking system written in PHP.
+        """)
 
 class CveStatus(DBSchema):
     """The Status of this item in the CVE Database
@@ -1482,7 +1488,7 @@ class SprintSpecificationStatus(DBSchema):
         """)
 
 
-# Enumeration covered by bug 66633:
+# XXX flacoste 20070712 Enumeration covered by bug 66633:
 #   Need way to define enumerations outside of dbschema
 class QuestionParticipation(DBSchema):
     """The different ways a person can be involved in a question.
@@ -1626,7 +1632,7 @@ class QuestionAction(DBSchema):
         was changed.
         """)
 
-# Enumeration covered by bug 66633:
+# XXX flacoste 20070712 Enumeration covered by bug 66633:
 #   Need way to define enumerations outside of dbschema
 class QuestionSort(DBSchema):
     """An enumeration of the valid question search sort order.
@@ -1722,6 +1728,34 @@ class QuestionStatus(DBSchema):
         question, spam or anything that should not appear in the
         Answer Tracker.
         """)
+
+
+# XXX flacoste 20070712 Enumeration covered by bug 66633:
+#   Need way to define enumerations outside of dbschema
+class FAQSort(DBSchema):
+    """An enumeration of the valid FAQ search sort order.
+
+    This enumeration is part of the IFAQCollection.searchFAQs() API. The
+    titles are formatted for nice display in browser code.
+    """
+
+    RELEVANCY = Item(5, """
+    by relevancy
+
+    Sort by relevancy of the FAQ toward the search text.
+    """)
+
+    NEWEST_FIRST = Item(15, """
+    newest first
+
+    Sort FAQs from newest to oldest.
+    """)
+
+    OLDEST_FIRST = Item(20, """
+    oldest first
+
+    Sort FAQs from oldset to newest.
+    """)
 
 
 class ImportStatus(DBSchema):
@@ -1877,11 +1911,11 @@ class TranslationPermission(DBSchema):
     """Translation Permission System
 
     Projects, products and distributions can all have content that needs to
-    be translated. In this case, Rosetta allows them to decide how open they
-    want that translation process to be. At one extreme, anybody can add or
-    edit any translation, without review. At the other, only the designated
-    translator for that group in that language can edit its translation
-    files. This schema enumerates the options.
+    be translated. In this case, Launchpad Translations allows them to decide
+    how open they want that translation process to be. At one extreme, anybody
+    can add or edit any translation, without review. At the other, only the
+    designated translator for that group in that language can add or edit its
+    translation files. This schema enumerates the options.
     """
 
     OPEN = Item(1, """
@@ -1900,8 +1934,8 @@ class TranslationPermission(DBSchema):
         designated translator, anybody can edit the translations directly,
         with no further review.""")
 
-    CLOSED = Item(100, """
-        Closed
+    RESTRICTED = Item(100, """
+        Restricted
 
         This group allows only designated translators to edit the
         translations of its files. You can become a designated translator
@@ -1910,6 +1944,16 @@ class TranslationPermission(DBSchema):
         language. People who are not designated translators can still make
         suggestions for new translations, but those suggestions need to be
         reviewed before being accepted by the designated translator.""")
+
+    CLOSED = Item(200, """
+        Closed
+
+        This group allows only designated translators to edit or add
+        translations. You can become a designated translator either by
+        joining an existing language translation team for this
+        project, or by getting permission to start a new team for a new
+        language. People who are not designated translators will not be able
+        to add suggestions.""")
 
 
 class PackageUploadStatus(DBSchema):
@@ -3954,6 +3998,20 @@ class PersonCreationRationale(DBSchema):
 
         A user wanted to reference a person which is not a Launchpad user, so
         he created this "placeholder" profile.
+        """)
+
+    OWNER_CREATED_UBUNTU_SHOP = Item(12, """
+        Created by the owner himself, coming from the Ubuntu Shop.
+
+        Somebody went to the Ubuntu Shop and was directed to Launchpad to
+        create an account.
+        """)
+
+    OWNER_CREATED_UNKNOWN_TRUSTROOT = Item(13, """
+        Created by the owner himself, coming from unknown OpenID consumer.
+
+        Somebody went to an OpenID consumer we don't know about and was
+        directed to Launchpad to create an account.
         """)
 
 
