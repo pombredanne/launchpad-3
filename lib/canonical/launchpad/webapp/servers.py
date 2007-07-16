@@ -502,13 +502,16 @@ class LaunchpadTestRequest(TestRequest):
     >>> verifyObject(IBrowserFormNG, request.form_ng)
     True
     """
-    implements(INotificationRequest, canonical.launchpad.layers.LaunchpadLayer)
+    implements(INotificationRequest, IBasicLaunchpadRequest,
+               canonical.launchpad.layers.LaunchpadLayer)
 
     def __init__(self, body_instream=None, environ=None, form=None,
                  skin=None, outstream=None, method='GET', **kw):
         super(LaunchpadTestRequest, self).__init__(
             body_instream=body_instream, environ=environ, form=form,
             skin=skin, outstream=outstream, REQUEST_METHOD=method, **kw)
+        self.breadcrumbs = []
+        self.traversed_objects = []
 
     @property
     def uuid(self):
@@ -516,7 +519,17 @@ class LaunchpadTestRequest(TestRequest):
 
     @property
     def notifications(self):
+        """See INotificationRequest."""
         return self.response.notifications
+
+    @property
+    def stepstogo(self):
+        """See IBasicLaunchpadRequest."""
+        return StepsToGo(self)
+
+    def getNearest(self, *some_interfaces):
+        """See IBasicLaunchpadRequest."""
+        return None, None
 
     def _createResponse(self):
         """As per zope.publisher.browser.BrowserRequest._createResponse"""

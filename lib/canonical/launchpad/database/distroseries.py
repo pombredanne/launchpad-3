@@ -654,22 +654,32 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def getSourcesPublishedForAllArchives(self):
         """See IDistroSeries."""
-        queries = ['distrorelease=%s AND status=%s AND archive=%s' %
-                   sqlvalues(self, PackagePublishingStatus.PUBLISHED,
-                             self.main_archive)]
+        # Both, PENDING and PUBLISHED sources will be considered for
+        # as PUBLISHED. It's part of the assumptions made in:
+        # https://launchpad.net/soyuz/+spec/build-unpublished-source
+        pend_build_statuses = (
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED,
+            )
+
+        # 'main_archive' candidates.
+        main_clauses = ['distrorelease=%s AND archive=%s' %
+                        sqlvalues(self, self.main_archive)]
+        main_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
         if not self.isUnstable():
-            queries.append(
+            main_clauses.append(
                 'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
-
         main_sources = SourcePackagePublishingHistory.select(
-            " AND ".join(queries), orderBy="id")
+            " AND ".join(main_clauses), orderBy="id")
 
-        query = """
-        distrorelease=%s AND status=%s AND archive <> %s
-        """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED,
-                        self.main_archive)
-        ppa_sources = SourcePackagePublishingHistory.select(query, orderBy="id")
+        # PPA candidates.
+        ppa_clauses = ['distrorelease=%s AND archive!=%s' %
+                       sqlvalues(self, self.main_archive)]
+        ppa_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
+        ppa_sources = SourcePackagePublishingHistory.select(
+            " AND ".join(ppa_clauses), orderBy="id")
 
+        # Return all candidates.
         return main_sources.union(ppa_sources)
 
     def getSourcePackagePublishing(self, status, pocket, component=None,
@@ -1841,12 +1851,18 @@ new imports with the information being copied.
 
     def checkLegalPocket(self, publication, is_careful, log):
         """Check if the publication can happen in the archive."""
-        # careful re-publishes everything:
+        # 'careful' mode re-publishes everything:
         if is_careful:
             return True
+
         # PPA allows everything (aka Hotel California).
         if publication.archive != self.main_archive:
             return True
+
+        # FROZEN state also allow all pockets to be published.
+        if self.status == DistroSeriesStatus.FROZEN:
+            return True
+
         # If we're not republishing, we want to make sure that
         # we're not publishing packages into the wrong pocket.
         # Unfortunately for careful mode that can't hold true
