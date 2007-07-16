@@ -644,7 +644,7 @@ class PackageUpload(SQLBase):
             'X-Katie' : 'Launchpad actually'
         }
 
-        # `simple_sendmail`, despite handline unicode message bodies, can't 
+        # `simple_sendmail`, despite handling unicode message bodies, can't 
         # cope with non-ascii sender/recipient addresses, so ascii_smash 
         # is used on all addresses.
 
