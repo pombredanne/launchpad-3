@@ -37,6 +37,7 @@ __all__ = [
     'PillarSearchItem',
     ]
 
+import cgi
 from operator import attrgetter
 from warnings import warn
 
@@ -1006,9 +1007,9 @@ class ProductBugContactEditView(LaunchpadEditFormView):
                 " contact for %(project)s, please notify one of the "
                 "<a href=\"%(url)s\">%(team)s administrators</a>."
 
-                % {'team': contact.displayname,
-                   'project': self.context.displayname,
-                   'url': canonical_url(contact, rootsite='mainsite') 
+                % {'team': cgi.escape(contact.displayname),
+                   'project': cgi.escape(self.context.displayname),
+                   'url': canonical_url(contact, rootsite='mainsite')
                           + '/+members'})
             self.setFieldError('bugcontact', error)
 
