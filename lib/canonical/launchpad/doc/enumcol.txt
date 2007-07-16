@@ -85,7 +85,7 @@ But not items from another schema.
     >>> t.foo = AnotherType.ONE
     Traceback (most recent call last):
     ...
-    TypeError: DBItem from wrong type, 'FooType' not in ['AnotherType']
+    TypeError: DBItem from wrong type, 'FooType' != 'AnotherType'
 
 XXX: thumper 2007-06-14
 Need to think of a cleaner way to implement the extending assignment
@@ -109,7 +109,7 @@ enumeration.
     >>> t.foo = FooBarType.THREE
     Traceback (most recent call last):
     ...
-    TypeError: DBItem from wrong type, 'FooType' not in ['FooBarType']
+    TypeError: DBItem from wrong type, 'FooType' != 'FooBarType'
 
     >>> class FooBazType(EnumeratedType):
     ...     extends(FooType)
@@ -123,7 +123,7 @@ enumeration.
     >>> t.foo = FooBazType.THREE
     Traceback (most recent call last):
     ...
-    TypeError: DBItem from wrong type, 'FooType' not in ['FooBazType']
+    TypeError: DBItem from wrong type, 'FooType' != 'FooBazType'
 
     >>> t.foo = FooBazType.FOUR
     Traceback (most recent call last):

@@ -20,7 +20,7 @@ __all__ = [
 class SODBSchemaEnumCol(SOCol):
 
     enum = None
-    
+
     def __init__(self, **kw):
         # XXX: thumper 2007-03-23
         # While it would be great to just switch everything over at once,
@@ -54,7 +54,7 @@ class DBSchemaEnumCol(Col):
 
 
 class DBSchemaValidator(validators.Validator):
-            
+
     def __init__(self, **kw):
         self.schema = kw.pop('schema')
         validators.Validator.__init__(self, **kw)
@@ -96,7 +96,7 @@ class DBSchemaValidator(validators.Validator):
             raise TypeError('DBSchema Item from wrong class, %r != %r' % (
                 value.schema, self.schema))
         return value.value
-    
+
     def toPython(self, value, state):
         """Convert from int to DBSchema Item.
 
@@ -114,7 +114,7 @@ class DBSchemaValidator(validators.Validator):
 
 
 class DBEnumeratedTypeValidator(validators.Validator):
-            
+
     def __init__(self, enum):
         validators.Validator.__init__(self)
         self.enum = enum
@@ -126,14 +126,10 @@ class DBEnumeratedTypeValidator(validators.Validator):
         >>> validator = DBEnumeratedTypeValidator(enum=DBTestEnumeration)
         >>> validator.fromPython(DBTestEnumeration.VALUE1, None)
         1
-        >>> validator.fromPython(InheritedTestEnumeration.VALUE1, None)
-        1
-        >>> validator.fromPython(ExtendedTestEnumeration.VALUE1, None)
-        1
         >>> validator.fromPython(UnrelatedTestEnumeration.VALUE1, None)
         Traceback (most recent call last):
         ...
-        TypeError: DBItem from wrong type, 'DBTestEnumeration' not in ['UnrelatedTestEnumeration']
+        TypeError: DBItem from wrong type, 'DBTestEnumeration' != 'UnrelatedTestEnumeration'
 
         >>> validator.fromPython(1, None)
         Traceback (most recent call last):
@@ -160,11 +156,11 @@ class DBEnumeratedTypeValidator(validators.Validator):
             raise TypeError('Not a DBItem: %s' % repr(value))
         # Using != rather than 'is not' in order to cope with Security Proxy
         # proxied items and their schemas.
-        if not self.enum.name in value.used_in_enums:
-            raise TypeError('DBItem from wrong type, %r not in %r' % (
-                self.enum.name, value.used_in_enums))
+        if self.enum != value.enum:
+            raise TypeError('DBItem from wrong type, %r != %r' % (
+                self.enum.name, value.enum.name))
         return value.db_value
-    
+
     def toPython(self, value, state):
         """Convert from int to DBSchema Item.
 
@@ -190,7 +186,7 @@ class DBEnumeratedTypeValidator(validators.Validator):
             return None
         if value is DEFAULT:
             return value
-        return self.enum.getTerm(value)
+        return self.enum.getTermByValue(value)
 
 EnumCol = DBSchemaEnumCol
 

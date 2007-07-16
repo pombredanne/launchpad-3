@@ -1,6 +1,6 @@
 = Enumerated Types =
 
-Enumerated types are used primarily in two distinct places in the launchpad
+Enumerated types are used primarily in two distinct places in the Launchpad
 code: selector types; and database types.
 
 Simple enumerated types do not have values, whereas database enumerated
@@ -8,11 +8,9 @@ types are a mapping from an integer value to something meaningful in the
 code.
 
     >>> from canonical.launchpad.webapp.enum import (
-    ...     EnumeratedType, DBEnumeratedType, Item, DBItem, extends)
+    ...     EnumeratedType, DBEnumeratedType, Item, DBItem, use_template)
 
-Elements of an enumerated type are Items.  There is a metaclass associated
-with the enumerated type that enforces the rules of the type, and providing
-subsidery functions.
+The `enum` values of EnumeratedTypes are instances of Item.
 
     >>> class Fruit(EnumeratedType):
     ...     "A choice of fruit."
@@ -20,74 +18,64 @@ subsidery functions.
     ...     PEAR = Item('Pear')
     ...     ORANGE = Item('Orange')
 
+
 == IVocabulary support ==
 
-Enumerated types support IVocabulary.
+Enumerated types support IVocabularyTokenized.
 
     >>> from zope.interface.verify import verifyObject
-    >>> from zope.schema.interfaces import ITitledTokenizedTerm, IVocabulary
-    >>> verifyObject(IVocabulary, Fruit)
+    >>> from zope.schema.interfaces import (
+    ...     ITitledTokenizedTerm, IVocabularyTokenized)
+    >>> verifyObject(IVocabularyTokenized, Fruit)
     True
 
-Lets actually make sure that we get the appropriate values from the methods.
+The items themselves do not support any interface.  Items returned
+by the methods for vocabularies return wrapped items that support
+the ITitledTokenizedTerm interface.
 
-__contains__(self, value):
+The token used to identify terms in the vocabulary is the name of the
+Item variable.
 
-    >>> apple = Fruit.APPLE
-    >>> apple in Fruit
+    >>> item = Fruit.getTermByToken('APPLE')
+    >>> type(item)
+    <class 'canonical.launchpad.webapp.enum.TokenizedItem'>
+    >>> verifyObject(ITitledTokenizedTerm, item)
     True
 
-__iter__(self):
+TokenizedItems have three attributes (in order to support
+ITitledTokenizedTerm):
 
-    >>> for item in Fruit:
-    ...     print item
-    Apple
-    Pear
-    Orange
+    >>> item.value
+    <Item Fruit.APPLE, Apple>
+    >>> item.token
+    'APPLE'
+    >>> item.title
+    'Apple'
 
-__len__(self):
+The length of an EnumeratedType returns the number of items it has.
 
     >>> print len(Fruit)
     3
 
-getTerm(self, value)
-
-    >>> print repr(Fruit.getTerm(apple))
-    <Item Fruit.APPLE, Apple>
-    >>> print repr(Fruit.getTerm('Foo'))
-    Traceback (most recent call last):
-    ...
-    LookupError: Foo
-    
-getTermByToken(self, token):
-
-    >>> print repr(Fruit.getTermByToken('APPLE'))
-    <Item Fruit.APPLE, Apple>
-    >>> print repr(Fruit.getTermByToken('Foo'))
-    Traceback (most recent call last):
-    ...
-    LookupError: Foo
-
-Items implement ITitledTokenizedTerm.
-
-    >>> verifyObject(ITitledTokenizedTerm, Fruit.APPLE)
-    True
-    >>> print repr(Fruit.APPLE.token)
-    'APPLE'
-    >>> print repr(Fruit.APPLE.title)
-    'Apple'
-    
 
 == Enumerated Type basics ==
 
-    >>> print Fruit.description
-    A choice of fruit.
+An EnumeratedType has a name and a description.  The name is the same as the
+class name, and the description is the docstring for the class.
 
     >>> print Fruit.name
     Fruit
-    
+    >>> print Fruit.description
+    A choice of fruit.
+
+If you do not specify an explicit sort_order for the items of the
+EnumeratedType one is created for you.  This is tuple of the tokens.
+
     >>> print Fruit.sort_order
     ('APPLE', 'PEAR', 'ORANGE')
+
+The items of an enumerated type can be iterated over.  However the type that
+is returned by the iteration is the TokenizedItem, not the item itself.
 
     >>> for item in Fruit:
     ...     print item.token, item.title
@@ -113,10 +101,14 @@ Items in an enumerator support comparison and equality checks.
     >>> apple < orange
     True
 
+The string representation of an Item is the title, and the representation
+also shows the enumeration that the Item is from.
+
     >>> print apple
     Apple
     >>> print repr(apple)
     <Item Fruit.APPLE, Apple>
+
 
 == Database Enumerated Types ==
 
@@ -130,34 +122,48 @@ map integer values to python enumerated values.
     >>> class BranchType(DBEnumeratedType):
     ...     HOSTED = DBItem(1, """
     ...         Hosted
-    ...         
+    ...
     ...         Hosted braches use the supermirror as the main repository
     ...         for the branch.""")
-    ...         
+    ...
     ...     MIRRORED = DBItem(2, """
     ...         Mirrored
-    ...         
+    ...
     ...         Mirrored branches are "pulled" from a remote location.""")
-    ...         
+    ...
     ...     IMPORTED = DBItem(3, """
     ...         Imported
-    ...         
+    ...
     ...         Imported branches are natively maintained in CVS or SVN""")
 
-    >>> for item in BranchType:
-    ...     print item.db_value, item.title
-    1 Hosted
-    2 Mirrored
-    3 Imported
+Note carefully that the value of a DBItem is the integer represenation.  But the
+value of the TokenizedItem is the DBItem itself.
 
-Since DBEnumeratedType is derived from EnumeratedType and DBItem is derived
-from Item, they also provide the appropriate implementation of the interfaces
-defined above.
+    >>> hosted = BranchType.HOSTED
+    >>> hosted.value
+    1
+    >>> tokenized_item = BranchType.getTermByToken('HOSTED')
+    >>> tokenized_item.value
+    <DBItem BranchType.HOSTED, (1) Hosted>
 
-    >>> verifyObject(IVocabulary, BranchType)
+DBEnumeratedTypes also support IVocabularyTokenized
+
+    >>> verifyObject(IVocabularyTokenized, BranchType)
     True
-    >>> verifyObject(ITitledTokenizedTerm, BranchType.HOSTED)
-    True
+
+DBEnumeratedTypes also have a method to retrieve the item based on the database
+integer representation.
+
+    >>> BranchType.getDBItemByValue(3)
+    <DBItem BranchType.IMPORTED, (3) Imported>
+
+Items in a DBEnumeratedType class must be of type DBItem.
+
+    >>> class BadItemType(DBEnumeratedType):
+    ...     TESTING = Item("Testing")
+    Traceback (most recent call last):
+    ...
+    TypeError: Items must be of the appropriate type for the DBEnumeratedType, __builtin__.BadItemType.TESTING
 
 
 == Overriding the sort order ==
@@ -189,24 +195,28 @@ convention has it that it appears first, before the Item instances.
     ...     REPTILE = Item("Reptile")
 
 The items attribute of the enumerated type is ordered based on the sort_order.
+The items attribute is also used to control iteration using __iter__.
 
-    >>> for item in AnimalClassification:
+    >>> for item in AnimalClassification.items:
     ...     print item.title
     Reptile
     Fish
     Insect
     Mammal
 
+The sort order also drives the comparison operations.
+
     >>> reptile, fish, insect, mammal = AnimalClassification.items
     >>> reptile < fish < insect < mammal
     True
+
 
 == Extending enumerated types ==
 
 The simplest way to extend a class is to derive from it.
 
     >>> class AnimalClassificationExtended(AnimalClassification):
-    ...     INVERTEBRATE= Item("Invertebrate")
+    ...     INVERTEBRATE = Item("Invertebrate")
 
     >>> for item in AnimalClassificationExtended:
     ...     print item.title
@@ -216,15 +226,14 @@ The simplest way to extend a class is to derive from it.
     Mammal
     Invertebrate
 
-
-The extends function inserts the items from the specified enumerated type
+The use_template function inserts the items from the specified enumerated type
 into the new enumerated type.  The default case is to take all the enumerated
 items.
 
     >>> class UIBranchType(EnumeratedType):
-    ...     extends(BranchType)
+    ...     use_template(BranchType)
     >>> for item in UIBranchType:
-    ...     print item
+    ...     print item.title
     Hosted
     Mirrored
     Imported
@@ -234,50 +243,21 @@ in the exclude parameter.  This can be either a string referring to one name
 or a tuple or list that refers to multiple attribute names.
 
     >>> class UIBranchType(EnumeratedType):
-    ...     extends(BranchType, exclude='IMPORTED')
+    ...     use_template(BranchType, exclude='IMPORTED')
     >>> for item in UIBranchType:
-    ...     print item
+    ...     print item.title
     Hosted
     Mirrored
 
 Or limit the items to those specified:
 
     >>> class UIBranchType(EnumeratedType):
-    ...     extends(BranchType, include=('HOSTED', 'MIRRORED'))
+    ...     use_template(BranchType, include=('HOSTED', 'MIRRORED'))
     >>> for item in UIBranchType:
-    ...     print item
+    ...     print item.title
     Hosted
     Mirrored
 
-
-Equality of Items takes into consideration the extending of enumerated
-types through either inheritance or the extends function.
-
-    >>> BranchType.HOSTED == UIBranchType.HOSTED
-    True
-
-However if another enumerated type is created that doesn't use the same
-item, but does look identical, they are not the same.
-
-    >>> class BranchType2(DBEnumeratedType):
-    ...     HOSTED = DBItem(1, """
-    ...         Hosted
-    ...         
-    ...         Hosted braches use the supermirror as the main repository
-    ...         for the branch.""")
-    ...         
-    ...     MIRRORED = DBItem(2, """
-    ...         Mirrored
-    ...         
-    ...         Mirrored branches are "pulled" from a remote location.""")
-    ...         
-    ...     IMPORTED = DBItem(3, """
-    ...         Imported
-    ...         
-    ...         Imported branches are natively maintained in CVS or SVN""")
-
-    >>> BranchType.HOSTED == BranchType2.HOSTED
-    False
 
 == Getting from an item back to the enumerated type ==
 
@@ -288,14 +268,7 @@ Each Item in an EnumeratedType has a reference back to the EnumeratedType.
     >>> print repr(apple.enum)
     <EnumeratedType 'Fruit'>
     >>> for item in apple.enum:
-    ...     print item
+    ...     print item.title
     Apple
     Pear
     Orange
-
-
-
-
-
-XXX: thumper 2007-03-20:
-XXX: demonstrate IChoice use, EnumCol ...

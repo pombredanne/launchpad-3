@@ -3,6 +3,7 @@
 __metaclass__ = type
 
 import copy
+import itertools
 import operator
 import sys
 import warnings
@@ -15,10 +16,12 @@ from zope.security.proxy import isinstance as zope_isinstance
 __all__ = [
     'Item',
     'DBItem',
+    'TokenizedItem',
     'DBSchema',
     'DBSchemaItem',
     'DBEnumeratedType',
-    'EnumeratedType'
+    'EnumeratedType',
+    'use_template',
     ]
 
 def docstring_to_title_descr(string):
@@ -215,9 +218,115 @@ class DBSchema:
     items = ItemsDescriptor()
 
 
+class Item:
+    """Items are the primary elements of the enumerated types.
+
+    The enum attibute is a reference to the enumerated type that the
+    Item is a member of.
+
+    The token attribute is the name assigned to the Item.
+
+    The value is the short text string used to identify the Item.
+    """
+
+    sort_order = 0
+    name = None
+    description = None
+    title = None
+
+    def __init__(self, title, description=None):
+        """Items are the main elements of the EnumeratedType.
+
+        Where the value is passed in without a description,
+        and the value looks like a docstring (has embedded carriage returns),
+        the value is the first line, and the description is the rest.
+        """
+
+        self.sort_order = Item.sort_order
+        Item.sort_order += 1
+        self.title = title
+
+        self.description = description
+
+        if self.description is None:
+            # check value
+            if self.title.find('\n') != -1:
+                self.title, self.description = docstring_to_title_descr(
+                    self.title)
+
+    def __int__(self):
+        raise TypeError("Cannot cast Item to int.")
+
+    def __cmp__(self, other):
+        if zope_isinstance(other, Item):
+            return cmp(self.sort_order, other.sort_order)
+        else:
+            raise TypeError(
+                'Comparisons of Items are only valid with other Items')
+
+    def __eq__(self, other, stacklevel=2):
+        if isinstance(other, int):
+            warnings.warn('comparison of Item to an int: %r' % self,
+                stacklevel=stacklevel)
+            return False
+        elif zope_isinstance(other, Item):
+            return (self.name == other.name and
+                    self.enum == other.enum)
+        else:
+            return False
+
+    def __ne__(self, other):
+        return not self.__eq__(other, stacklevel=3)
+
+    def __hash__(self):
+        return hash(self.title)
+
+    def __str__(self):
+        return str(self.title)
+
+    def __repr__(self):
+        return "<Item %s.%s, %s>" % (
+            self.enum.name, self.name, self.title)
+
+
+class DBItem(Item):
+    """The DBItem refers to an enumerated item that is used in the database.
+
+    Database enumerations are stored in the database using integer columns.
+    """
+
+    def __init__(self, value, title, description=None):
+        Item.__init__(self, title, description)
+        self.value = value
+
+    def __hash__(self):
+        return self.value
+
+    def __repr__(self):
+        return "<DBItem %s.%s, (%d) %s>" % (
+            self.enum.name, self.name, self.value, self.title)
+
+    def __sqlrepr__(self, dbname):
+        return repr(self.value)
+
+
+class TokenizedItem:
+    """Wraps an `Item` or `DBItem` to provide `ITitledTokenizedTerm`."""
+
+    implements(ITitledTokenizedTerm)
+
+    def __init__(self, item):
+        self.value = item
+        self.token = item.name
+        self.title = item.title
+
+
 class MetaEnum(type):
 
     implements(IVocabularyTokenized)
+
+    item_type = Item
+    enum_name = 'EnumeratedType'
 
     def __new__(cls, classname, bases, classdict):
 
@@ -231,20 +340,27 @@ class MetaEnum(type):
         if len(bases) > 1:
             raise TypeError(
                 'Multiple inheritance is not allowed with '
-                'EnumeratedType, %s.%s' % (
-                classdict['__module__'], classname))
+                '%s, %s.%s' % (
+                cls.enum_name, classdict['__module__'], classname))
 
         if bases:
             base_class = bases[0]
             if hasattr(base_class, 'items'):
                 for item in base_class.items:
-                    if item.token not in classdict:
+                    if item.name not in classdict:
                         new_item = copy.copy(item)
-                        classdict[item.token] = new_item
+                        classdict[item.name] = new_item
 
         # grab all the items:
         items = [(key, value) for key, value in classdict.iteritems()
                  if isinstance(value, Item)]
+        # Enforce that all the items are of the appropriate type.
+        for key, value in items:
+            if not isinstance(value, cls.item_type):
+                raise TypeError(
+                    'Items must be of the appropriate type for the '
+                    '%s, %s.%s.%s' % (
+                    cls.enum_name, classdict['__module__'], classname, key))
 
         # Enforce capitalisation of items.
         for key, value in items:
@@ -253,24 +369,22 @@ class MetaEnum(type):
                     'Item instance variable names must be capitalised.'
                     '  %s.%s.%s' % (classdict['__module__'], classname, key))
 
-        # Override sort order if defined.
+        # Override item's default sort order if sort_order is defined.
         if 'sort_order' in classdict:
             sort_order = classdict['sort_order']
             item_names = sorted([key for key, value in items])
             if item_names != sorted(sort_order):
                 raise TypeError(
-                    'sort_order for EnumeratedType must contain all and '
+                    'sort_order for %s must contain all and '
                     'only Item instances  %s.%s' % (
-                    classdict['__module__'], classname))
+                    cls.enum_name, classdict['__module__'], classname))
             sort_id = 0
             for item_name in sort_order:
                 classdict[item_name].sort_order = sort_id
                 sort_id += 1
 
         for name, item in items:
-            # The token for an item is the name of the variable.
-            item.token = name
-            item.used_in_enums.append(classname)
+            item.name = name
 
         classdict['items'] = sorted([item for name, item in items],
                                     key=operator.attrgetter('sort_order'))
@@ -280,7 +394,7 @@ class MetaEnum(type):
         # If sort_order wasn't defined, define it based on the ordering.
         if 'sort_order' not in classdict:
             classdict['sort_order'] = tuple(
-                [item.token for item in classdict['items']])
+                [item.name for item in classdict['items']])
 
         instance = type.__new__(cls, classname, bases, classdict)
 
@@ -291,170 +405,79 @@ class MetaEnum(type):
         return instance
 
     def __contains__(self, value):
-        """Return whether the value is available in this source
-        """
+        """See `ISource`."""
         return value in self.items
 
     def __iter__(self):
-        """Return an iterator which provides the terms from the vocabulary."""
-        return self.items.__iter__()
+        """See `IIterableVocabulary`."""
+        return itertools.imap(TokenizedItem, self.items)
 
     def __len__(self):
-        """Return the number of valid terms, or sys.maxint."""
+        """See `IIterableVocabulary`."""
         return len(self.items)
 
     def getTerm(self, value):
-        """Return the ITerm object for the term 'value'.
-
-        If 'value' is not a valid term, this method raises LookupError.
-        """
+        """See `IBaseVocabulary`."""
         if value in self.items:
-            return value
+            return TokenizedItem(value)
         raise LookupError(value)
 
     def getTermByToken(self, token):
-        """Return an ITokenizedTerm for the passed-in token.
-
-        If `token` is not represented in the vocabulary, `LookupError`
-        is raised. 
-        """
+        """See `IVocabularyTokenized`."""
         # The sort_order of the enumerated type lists all the items.
-        if token not in self.sort_order:
-            raise LookupError(token)
-        # The token is the name of the attribute, so getattr suffices.
-        return getattr(self, token)
+        if token in self.sort_order:
+            return TokenizedItem(getattr(self, token))
+        else:
+            # If the token is not specified in the sort order then check
+            # the titles of the items.  This is to support the transition
+            # of accessing items by their titles.  To continue support
+            # of old URLs et al, this will probably stay for some time.
+            for item in self.items:
+                if item.title == token:
+                    return TokenizedItem(item)
+        # The token was not in the sort_order (and hence the name of a
+        # variable), nor was the token the title of one of the items.
+        raise LookupError(token)
 
     def __repr__(self):
         return "<EnumeratedType '%s'>" % self.name
-    
-
-class Item:
-    """Items are the primary elements of the enumerated types.
-
-    The enum attibute is a reference to the enumerated type that the
-    Item is a member of.
-
-    The token attribute is the name assigned to the Item.
-
-    The value is the short text string used to identify the Item.
-    """
-
-    implements(ITitledTokenizedTerm)
-
-    sort_order = 0
-    token = None
-    description = None
-    title = None
-    
-    def __init__(self, title, description=None):
-        """Items are the main elements of the EnumeratedType.
-
-        Where the value is passed in without a description,
-        and the value looks like a docstring (has embedded carriage returns),
-        the value is the first line, and the description is the rest.
-        """
-
-        self.sort_order = Item.sort_order
-        Item.sort_order += 1
-        # The Item knows which enums it is a member of.
-        self.used_in_enums = []
-        self.title = title
-        
-        self.description = description
-
-        if self.description is None:
-            # check value
-            if self.title.find('\n') != -1:
-                self.title, self.description = docstring_to_title_descr(
-                    self.title)
-
-    @property
-    def value(self):
-        return self
-    
-    def __int__(self):
-        raise TypeError("Cannot cast Item to int.")
-
-    def __eq__(self, other, stacklevel=2):
-        if isinstance(other, int):
-            warnings.warn('comparison of Item to an int: %r' % self,
-                stacklevel=stacklevel)
-            return False
-        elif zope_isinstance(other, Item):
-            return (self.token == other.token and
-                    self.used_in_enums == other.used_in_enums)
-        else:
-            return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other, stacklevel=3)
-
-    def __lt__(self, other):
-        return self.sort_order < other.sort_order
-
-    def __gt__(self, other):
-        return self.sort_order > other.sort_order
-
-    def __le__(self, other):
-        return self.sort_order <= other.sort_order
-
-    def __ge__(self, other):
-        return self.sort_order >= other.sort_order
-
-    def __hash__(self):
-        return hash(self.title)
-
-    def __str__(self):
-        return str(self.title)
-    
-    def __repr__(self):
-        return "<Item %s.%s, %s>" % (
-            self.enum.name, self.token, self.title)
 
 
-class DBItem(Item):
-    """The DBItem refers to an enumerated item that is used in the database.
+class MetaDBEnum(MetaEnum):
 
-    Database enumerations are stored in the database using integer columns.
-    """
+    item_type = DBItem
+    enum_name = 'DBEnumeratedType'
 
-    def __init__(self, db_value, title, description=None):
-        Item.__init__(self, title, description)
-        self.db_value = db_value
+    def getDBItemByValue(self, value):
+        """Return the `DBItem` object for the database 'value'."""
+        try:
+            return dict((item.value, item) for item in self.items)[value]
+        except KeyError:
+            raise LookupError(value)
 
-    def __hash__(self):
-        return self.db_value
-
-    def __repr__(self):
-        return "<DBItem %s.%s, (%d) %s>" % (
-            self.enum.name, self.token, self.db_value, self.title)
-
-    def __sqlrepr__(self, dbname):
-        return repr(self.db_value)
-            
 
 class EnumeratedType:
     __metaclass__ = MetaEnum
-
-    items = ()
-
-
-class DBEnumeratedType(EnumeratedType):
-    pass
+    # items = ()
 
 
-def extends(enum_type, include=None, exclude=None):
+class DBEnumeratedType:
+    __metaclass__ = MetaDBEnum
+    # items = ()
+
+def use_template(enum_type, include=None, exclude=None):
     """An alternative way to extend an enumerated type as opposed to inheritance.
 
-    The parameters include and exclude shoud either be the token values of the
+    The parameters include and exclude shoud either be the name values of the
     items (the parameter names), or a list or tuple that contains string values.
     """
     frame = sys._getframe(1)
     locals = frame.f_locals
-    
+
     # Try to make sure we were called from a class def.
     if (locals is frame.f_globals) or ('__module__' not in locals):
-        raise TypeError("extends can be used only from a class definition.")
+        raise TypeError(
+            "use_template can be used only from a class definition.")
 
     # You can specify either includes or excludes, not both.
     if include and exclude:
@@ -465,13 +488,13 @@ def extends(enum_type, include=None, exclude=None):
     else:
         if isinstance(include, str):
             include = [include]
-        items = [item for item in enum_type if item.token in include]
+        items = [item for item in enum_type.items if item.name in include]
 
     if exclude is None:
         exclude = []
     elif isinstance(exclude, str):
         exclude = [exclude]
-        
+
     for item in items:
-        if item.token not in exclude:
-            locals[item.token] = copy.copy(item)
+        if item.name not in exclude:
+            locals[item.name] = copy.copy(item)
