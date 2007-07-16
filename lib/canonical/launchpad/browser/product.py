@@ -950,11 +950,17 @@ class ProductAddView(LaunchpadFormView):
         return canonical_url(self.product)
 
 
-class ProductBugContactEditView(SQLObjectEditView, LaunchpadFormView):
+class ProductBugContactEditView(LaunchpadEditFormView):
     """Browser view class for editing the product bug contact."""
 
-    def changed(self):
+    schema = IProduct
+    field_names = ['bugcontact']
+
+    @action('Change', name='change')
+    def changed(self, action, data):
         """Redirect to the product page with a success message."""
+        self.updateContextFromData(data)
+
         product = self.context
 
         bugcontact = product.bugcontact
