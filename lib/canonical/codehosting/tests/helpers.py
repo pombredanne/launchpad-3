@@ -35,7 +35,8 @@ class AvatarTestCase(TwistedTestCase):
         self.aliceUserDict = {
             'id': 1,
             'name': 'alice',
-            'teams': [{'id': 1, 'name': 'alice', 'initialBranches': []}],
+            'teams': [{'id': 1, 'name': 'alice'}],
+            'initialBranches': [(1, [])]
         }
 
         # An slightly more complex user dict for a user, 'bob', who is also a
@@ -43,8 +44,9 @@ class AvatarTestCase(TwistedTestCase):
         self.bobUserDict = {
             'id': 2,
             'name': 'bob',
-            'teams': [{'id': 2, 'name': 'bob', 'initialBranches': []},
-                      {'id': 3, 'name': 'test-team', 'initialBranches': []}],
+            'teams': [{'id': 2, 'name': 'bob'},
+                      {'id': 3, 'name': 'test-team'}],
+            'initialBranches': [(2, []), (3, [])]
         }
 
     def tearDown(self):
@@ -235,9 +237,10 @@ class CodeHostingTestProviderAdapter:
     def __init__(self, servers):
         self._servers = servers
 
-    def adaptForServer(self, test, server):
+    def adaptForServer(self, test, serverFactory):
         from copy import deepcopy
         new_test = deepcopy(test)
+        server = serverFactory()
         new_test.installServer(server)
         def make_new_test_id():
             new_id = "%s(%s)" % (new_test.id(), server._schema)

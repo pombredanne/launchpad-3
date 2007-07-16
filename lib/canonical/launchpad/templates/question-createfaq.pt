@@ -1,0 +1,46 @@
+<html
+    xmlns="http://www.w3.org/1999/xhtml"
+    xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+
+<body>
+
+<metal:portlets fill-slot="portlets">
+  <div tal:replace="structure context/@@+portlet-details" />
+</metal:portlets>
+
+<div metal:fill-slot="main">
+  <div>
+    <img alt="" src="/@@/question" />
+    <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+  </div>
+
+  <div metal:use-macro="context/@@launchpad_form/form" />
+
+</div>
+
+<metal:help fill-slot="help">
+  <p>This will add a new FAQ document to this project that will be used
+    to answer the question.
+  </p>
+  <p>The FAQ <b>Title</b> describes what this document is about. Using a
+    question as title is often a good idea.
+  </p>
+  <p>You can enter additional <b>keywords</b> that apply to this document. It
+    is not necessary to use words already appearing in the title.
+  </p>
+  <p>In the <b>content</b> field, enter a complete explanation on how to solve
+    the question or problem. If the answer already exists on an external page
+    (like a wiki), you can enter a short description of the document's content
+    and provide a link to it.
+  </p>
+  <p>The <b>Answer Message</b> contains the message that will be added as an
+    answer to the question. The FAQ's title will be automatically appended to
+    this message.
+  </p>
+</metal:help>
+
+</body>
+</html>

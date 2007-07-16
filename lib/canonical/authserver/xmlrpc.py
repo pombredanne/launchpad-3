@@ -157,4 +157,10 @@ class BranchDetailsResource(xmlrpc.XMLRPC):
             print 'mirrorFailed(%r, %r)' % (branchID, reason)
         return self.storage.mirrorFailed(branchID, reason)
 
-        
+    def xmlrpc_recordSuccess(self, name, hostname,
+                             date_started, date_completed):
+        if self.debug:
+            print 'recordSuccess(%r, %r, %r, %r)' % (
+                name, hostname, date_started, date_completed)
+        return self.storage.recordSuccess(
+            name, hostname, date_started, date_completed)

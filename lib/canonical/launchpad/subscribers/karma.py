@@ -3,6 +3,7 @@
 """ karma.py -- handles all karma assignments done in the launchpad
 application."""
 
+from canonical.launchpad.interfaces import IDistribution, IProduct
 from canonical.launchpad.mailnotification import get_bug_delta
 from canonical.lp.dbschema import BugTaskStatus, QuestionAction
 
@@ -190,3 +191,30 @@ def question_bug_added(questionbug, event):
     question = questionbug.question
     _assignKarmaUsingQuestionContext(event.user, question, 'questionlinkedtobug')
 
+# XXX flacoste 20070713 This should go away once bug #125849 is fixed.
+def get_karma_context_parameters(context):
+    """Return the proper karma context parameters based on the object."""
+    params = dict(product=None, distribution=None)
+    if IProduct.providedBy(context):
+        params['product'] = context
+    elif IDistribution.providedBy(context):
+        params['distribution'] = context
+    else:
+        raise AssertionError('Unknown karma context: %r' % context)
+    return params
+
+
+def faq_created(faq, event):
+    """Assign karma to the user who created the FAQ."""
+    context = get_karma_context_parameters(faq.target)
+    faq.owner.assignKarma('faqcreated', **context)
+
+
+def faq_edited(faq, event):
+    """Assign karma to user who edited a FAQ."""
+    user = event.user
+    old_faq = event.object_before_modification
+
+    context = get_karma_context_parameters(faq.target)
+    if old_faq.content != faq.content or old_faq.title != faq.title:
+        user.assignKarma('faqedited', **context)

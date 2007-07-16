@@ -28,7 +28,7 @@ from twisted.python import components
 from twisted.python.util import sibpath
 
 from canonical.config import config
-from canonical.database.sqlbase import commit, cursor
+from canonical.database.sqlbase import commit
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.daemons.sftp import SSHService
 from canonical.launchpad.daemons.authserver import AuthserverService
@@ -169,11 +169,13 @@ class AuthserverWithKeysMixin:
         self.testTeam = testTeam
 
     def setUpKeys(self):
-        if os.path.isdir(config.codehosting.host_key_pair_path):
-            shutil.rmtree(config.codehosting.host_key_pair_path)
-        shutil.copytree(
-            sibpath(__file__, 'keys'),
-            os.path.join(config.codehosting.host_key_pair_path))
+        key_pair_path = config.codehosting.host_key_pair_path
+        if os.path.isdir(key_pair_path):
+            shutil.rmtree(key_pair_path)
+        parent = os.path.dirname(key_pair_path)
+        if not os.path.isdir(parent):
+            os.makedirs(parent)
+        shutil.copytree(sibpath(__file__, 'keys'), os.path.join(key_pair_path))
 
     def setUpTestUser(self):
         """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a known
@@ -258,6 +260,9 @@ class FakeLaunchpadServer(LaunchpadServer):
     def tearDown(self):
         LaunchpadServer.tearDown(self)
         return defer.succeed(None)
+
+    def runAndWaitForDisconnect(self, func, *args, **kwargs):
+        return func(*args, **kwargs)
 
 
 class CodeHostingServer(Server):

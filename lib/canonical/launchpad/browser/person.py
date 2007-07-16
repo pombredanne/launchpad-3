@@ -368,6 +368,10 @@ class TeamInvitationView(LaunchpadFormView):
 
     @action(_("Accept"), name="accept")
     def accept_action(self, action, data):
+        if self.context.status != TeamMembershipStatus.INVITED:
+            self.request.response.addInfoNotification(
+                _("This invitation has already been processed."))
+            return
         member = self.context.person
         member.acceptInvitationToBeMemberOf(
             self.context.team, data['reviewercomment'])
@@ -377,6 +381,10 @@ class TeamInvitationView(LaunchpadFormView):
 
     @action(_("Decline"), name="decline")
     def decline_action(self, action, data):
+        if self.context.status != TeamMembershipStatus.INVITED:
+            self.request.response.addInfoNotification(
+                _("This invitation has already been processed."))
+            return
         member = self.context.person
         member.declineInvitationToBeMemberOf(
             self.context.team, data['reviewercomment'])

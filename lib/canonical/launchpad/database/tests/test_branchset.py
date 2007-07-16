@@ -10,11 +10,11 @@ from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    IPersonSet, IProductSet)
+    IBranchSet, IPersonSet, IProductSet)
 
 from canonical.lp.dbschema import (
-    BranchLifecycleStatus, BranchVisibilityRule, PersonCreationRationale,
-    TeamSubscriptionPolicy)
+    BranchLifecycleStatus, BranchType, BranchVisibilityRule,
+    PersonCreationRationale, TeamSubscriptionPolicy)
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -155,6 +155,16 @@ class BranchVisibilityPolicyTestCase(TestCase):
         """Shortcut to help define team policies."""
         for team, rule in team_policies:
             self.firefox.setBranchVisibilityTeamPolicy(team, rule)
+
+    def assertBranchRule(self, creator, owner, expected_rule):
+        """Check the getBranchVisibilityRuleForBranch results for a branch."""
+        branch = BranchSet().new(
+            BranchType.HOSTED, 'test_rule', creator, owner, self.firefox, None)
+        rule = self.firefox.getBranchVisibilityRuleForBranch(branch)
+        self.assertEqual(rule, expected_rule,
+                         'Wrong visibililty rule returned: '
+                         'expected %s, got %s'
+                         % (expected_rule.name, rule.name))
 
     def assertVisibilityPolicy(self, creator, owner, private, subscriber):
         """Check the visibility policy for branch creation.
@@ -393,6 +403,20 @@ class PolicyForbidden(BranchVisibilityPolicyTestCase):
             (self.yankee, BranchVisibilityRule.PUBLIC),
             ))
 
+    def test_rule_for_branch_most_specific(self):
+        """Since Albert is in both xray and yankee, the PRIVATE rule is
+        returned in preference to the PUBLIC one.
+        """
+        self.assertBranchRule(
+            self.albert, self.albert, BranchVisibilityRule.PRIVATE)
+
+    def test_rule_for_branch_exact_defined(self):
+        """Branches in the yankee namespace will return the PUBLIC rule as it
+        is defined for the branch owner.
+        """
+        self.assertBranchRule(
+            self.albert, self.yankee, BranchVisibilityRule.PUBLIC)
+
     def test_branch_creation_forbidden_non_members(self):
         """People who are not members of Xray or Yankee are not allowed to
         create branches.
@@ -509,6 +533,24 @@ class ComplexPolicyStructure(BranchVisibilityPolicyTestCase):
             (self.yankee, BranchVisibilityRule.PRIVATE_ONLY),
             (self.zulu, BranchVisibilityRule.PUBLIC),
             ))
+
+    def test_rule_for_branch_most_specific(self):
+        """Since Albert is in both xray and yankee, the PRIVATE_ONLY rule is
+        returned in preference to the PUBLIC or PRIVATE one.
+        """
+        self.assertBranchRule(
+            self.albert, self.albert, BranchVisibilityRule.PRIVATE_ONLY)
+
+    def test_rule_for_branch_exact_defined(self):
+        """Branches in the zulu namespace will return the PUBLIC rule as it is
+        defined for the branch owner.
+        """
+        self.assertBranchRule(
+            self.albert, self.xray, BranchVisibilityRule.PRIVATE)
+        self.assertBranchRule(
+            self.albert, self.yankee, BranchVisibilityRule.PRIVATE_ONLY)
+        self.assertBranchRule(
+            self.albert, self.zulu, BranchVisibilityRule.PUBLIC)
 
     def test_non_membership_cannot_create_branches(self):
         """A user who is not a member of any specified team gets the

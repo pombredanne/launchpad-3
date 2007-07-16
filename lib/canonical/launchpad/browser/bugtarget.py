@@ -131,6 +131,7 @@ class FileBugViewBase(LaunchpadFormView):
 
     extra_data_token = None
     advanced_form = False
+    frontpage_form = False
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
@@ -236,6 +237,16 @@ class FileBugViewBase(LaunchpadFormView):
                         self.setFieldError("packagename", packagename_error)
             else:
                 self.setFieldError("packagename", "Please enter a package name")
+
+        # If we've been called from the frontpage filebug forms we must check
+        # that whatever product or distro is having a bug filed against it
+        # actually uses Malone for its bug tracking.
+        product_or_distro = self.getProductOrDistroFromContext()
+        if (product_or_distro is not None and
+            not product_or_distro.official_malone):
+            self.setFieldError('bugtarget',
+                               "%s does not use Launchpad as its bug tracker " %
+                               product_or_distro.displayname)
 
     def setUpWidgets(self):
         """Customize the onKeyPress event of the package name chooser."""
@@ -489,6 +500,7 @@ class FileBugViewBase(LaunchpadFormView):
             return None
 
     def showOptionalMarker(self, field_name):
+        """See `LaunchpadFormView`."""
         # The comment field _is_ required, but only when filing the
         # bug. Since the same form is also used for subscribing to a
         # bug, the comment field in the schema cannot be marked
@@ -499,6 +511,36 @@ class FileBugViewBase(LaunchpadFormView):
             return False
         else:
             return LaunchpadFormView.showOptionalMarker(self, field_name)
+
+    def getRelevantBugTask(self, bug):
+        """Return the first bugtask from this bug that's relevant in
+        the current context.
+
+        XXX This is a pragmatic function, not general purpose. It
+        tries to find a bugtask that can be used to pretty-up the
+        page, making it more user-friendly and informative. It's not
+        concerned by total accuracy, and will return the first
+        'relevant' bugtask it finds even if there are other
+        candidates. Be warned!  -- Gavin Panella, 2007-07-13
+        """
+        context = self.context
+        bugtasks = bug.bugtasks
+
+        if IDistribution.providedBy(context):
+            def isRelevant(bugtask, context):
+                return bugtask.distribution == context
+        elif IProject.providedBy(context):
+            def isRelevant(bugtask, context):
+                return bugtask.pillar.project == context
+        else:
+            def isRelevant(bugtask, context):
+                return bugtask.target == context
+
+        for bugtask in bugtasks:
+            if isRelevant(bugtask, context):
+                return bugtask
+        else:
+            return None
 
 
 class FileBugAdvancedView(FileBugViewBase):
@@ -703,7 +745,60 @@ class ProjectFileBugAdvancedView(FileBugAdvancedView):
     can_decide_security_contact = False
 
 
-class FrontPageFileBugGuidedView(FileBugGuidedView):
+class FrontPageFileBugMixin:
+    """Provides common methods for front-page bug-filing forms."""
+
+    frontpage_form = True
+
+    def contextUsesMalone(self):
+        """Checks whether the current context uses Malone for bug tracking.
+
+        If a bug is being filed against a product or distro then that product
+        or distro's official_malone property is used to determine the return
+        value of contextUsesMalone(). Otherwise, contextUsesMalone() will
+        always return True, since doing otherwise will cause the front page
+        file bug forms to be hidden.
+        """
+        product_or_distro = self.getProductOrDistroFromContext()
+
+        if product_or_distro is None:
+            return True
+        else:
+            return product_or_distro.official_malone
+
+    def contextIsProduct(self):
+        """Is the context a product?"""
+        product_or_distro = self.getProductOrDistroFromContext()
+        return IProduct.providedBy(product_or_distro)
+
+    def getProductOrDistroFromContext(self):
+        """Return the product or distribution relative to the context.
+
+        For instance, if the context is an IDistroSeries, return the
+        distribution related to it. This method will return None if the
+        context is not related to a product or a distro.
+        """
+        context = self.context
+
+        # We need to find a product or distribution from what we've had
+        # submitted to us.
+        if self.widgets['bugtarget'].hasValidInput():
+            context = self.widgets['bugtarget'].getInputValue()
+        else:
+            return None
+
+        if IProduct.providedBy(context) or IDistribution.providedBy(context):
+            return context
+        elif IProductSeries.providedBy(context):
+            return context.product
+        elif (IDistroSeries.providedBy(context) or
+              IDistributionSourcePackage.providedBy(context)):
+            return context.distribution
+        else:
+            return None
+
+
+class FrontPageFileBugGuidedView(FrontPageFileBugMixin, FileBugGuidedView):
     """Browser view class for the top-level +filebug page."""
     schema = IFrontPageBugAddForm
     custom_widget('bugtarget', LaunchpadTargetWidget)
@@ -715,14 +810,31 @@ class FrontPageFileBugGuidedView(FileBugGuidedView):
     def initial_values(self):
         return {"bugtarget": getUtility(ILaunchpadCelebrities).ubuntu}
 
-    def contextUsesMalone(self):
-        """Say context uses Malone so that the filebug form is shown!"""
-        return True
-
     def validate_search(self, action, data):
+        """Validates the parameters for the similar-bug search."""
         errors = FileBugGuidedView.validate_search(self, action, data)
         try:
             data['bugtarget'] = self.widgets['bugtarget'].getInputValue()
+
+            # Check that Malone is actually used by this bugtarget.
+            if (IProduct.providedBy(data['bugtarget']) or 
+                IDistribution.providedBy(data['bugtarget'])):
+                product_or_distro = data['bugtarget']
+            elif IProductSeries.providedBy(data['bugtarget']):
+                product_or_distro = data['bugtarget'].product
+            elif (IDistroSeries.providedBy(data['bugtarget']) or
+                  IDistributionSourcePackage.providedBy(data['bugtarget'])):
+                product_or_distro = data['bugtarget'].distribution
+            else:
+                product_or_distro = None
+
+            if (product_or_distro is not None and 
+                not product_or_distro.official_malone):
+                self.setFieldError('bugtarget',
+                                    "%s does not use Launchpad as its bug "
+                                    "tracker" %
+                                    product_or_distro.displayname)
+
         except InputErrors, error:
             self.setFieldError("bugtarget", error.doc())
             errors.append(error)
@@ -744,7 +856,7 @@ class FrontPageFileBugGuidedView(FileBugGuidedView):
             return bugtarget
 
 
-class FrontPageFileBugAdvancedView(FileBugAdvancedView):
+class FrontPageFileBugAdvancedView(FrontPageFileBugMixin, FileBugAdvancedView):
     """Browser view class for the top-level +filebug-advanced page."""
     schema = IFrontPageBugAddForm
     custom_widget('bugtarget', LaunchpadTargetWidget)
@@ -757,9 +869,22 @@ class FrontPageFileBugAdvancedView(FileBugAdvancedView):
     def initial_values(self):
         return {"bugtarget": getUtility(ILaunchpadCelebrities).ubuntu}
 
-    def contextUsesMalone(self):
-        """Say context uses Malone so that the filebug form is shown!"""
-        return True
+    def validate(self, data):
+        """Ensures that the target uses Malone for its bug tracking.
+
+        If the target does use Malone, further validation is carried out by
+        FileBugViewBase.validate()
+        """
+        product_or_distro = self.getProductOrDistroFromContext()
+
+        # If we have a context that we can test for Malone use, we do so.
+        if (product_or_distro is not None and 
+            not product_or_distro.official_malone):
+            self.setFieldError('bugtarget',
+                               "%s does not use Launchpad as its bug tracker" %
+                               product_or_distro.displayname)
+        else:
+            return super(FrontPageFileBugAdvancedView, self).validate(data)
 
 
 class BugTargetBugListingView:
@@ -854,7 +979,7 @@ class BugTargetBugsView(BugTaskSearchListingView):
                 var plotter = PlotKit.EasyPlot(
                     "pie", options, $("bugs-chart"), [data]);
             }
-            connect(window, 'onload', drawGraph);
+            registerLaunchpadFunction(drawGraph);
             """
         # The color list should inlude only colors for slices that will
         # be drawn in the pie chart, so colors that don't have any bugs
