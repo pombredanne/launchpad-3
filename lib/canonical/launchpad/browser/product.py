@@ -1010,7 +1010,7 @@ class ProductBugContactEditView(LaunchpadEditFormView):
                    'project': self.context.displayname,
                    'url': canonical_url(contact, rootsite='mainsite') 
                           + '/+members'})
-            raise WidgetsError([LaunchpadValidationError(error)])
+            self.setFieldError('bugcontact', error)
 
 class ProductReassignmentView(ObjectReassignmentView):
     """Reassign product to a new owner."""
