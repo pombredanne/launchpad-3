@@ -33,17 +33,17 @@ Retrieving bug status from the debbugs database
 -----------------------------------------------
 
 The retrieval of the remote status is done through the
-_getRemoteStatus() method. If we pass a bug number that doesn't exist in
+getRemoteStatus() method. If we pass a bug number that doesn't exist in
 the debbugs db, BugNotFound is raised.
 
-    >>> external_debbugs._getRemoteStatus('42')
+    >>> external_debbugs.getRemoteStatus('42')
     Traceback (most recent call last):
     ...
     BugNotFound: 42
 
 If we pass a non-integer bug id, InvalidBugId is raised.
 
-    >>> external_debbugs._getRemoteStatus('foo')
+    >>> external_debbugs.getRemoteStatus('foo')
     Traceback (most recent call last):
     ...
     InvalidBugId: Debbugs bug number not an integer: foo
@@ -53,12 +53,12 @@ contains current bugs, while the archive contains older bugs that have
 been moved there manually. The DebBugs wrapper fetches bugs from them
 transparently. Bug 237001 lives in db-h:
 
-    >>> external_debbugs._getRemoteStatus('237001')
+    >>> external_debbugs.getRemoteStatus('237001')
     'open normal'
 
 Bug 563 resides in the archive. It is also fetchable:
 
-    >>> external_debbugs._getRemoteStatus('563')
+    >>> external_debbugs.getRemoteStatus('563')
     'done normal'
 
 Checking debbugs bug watches
@@ -112,7 +112,7 @@ in debbugs.
     >>> 'Severity' not in summary
     True
 
-    >>> external_debbugs._getRemoteStatus('237001')
+    >>> external_debbugs.getRemoteStatus('237001')
     'open normal'
 
 Debbugs status conversions

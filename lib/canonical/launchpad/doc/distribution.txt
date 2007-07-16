@@ -419,14 +419,14 @@ We can filter for specifications that contain specific text:
 
 We can get only valid specs (those that are not obsolete or superseded):
 
- >>> from canonical.lp.dbschema import SpecificationStatus
+ >>> from canonical.lp.dbschema import SpecificationDefinitionStatus
  >>> from canonical.launchpad.ftests import login
  >>> login('mark@hbd.com')
  >>> for spec in kubuntu.specifications():
  ...     if spec.name in ['cluster-installation', 'revu']:
- ...         spec.status = SpecificationStatus.OBSOLETE
+ ...         spec.definition_status = SpecificationDefinitionStatus.OBSOLETE
  ...     if spec.name in ['krunch-desktop-plan']:
- ...         spec.status = SpecificationStatus.SUPERSEDED
+ ...         spec.definition_status = SpecificationDefinitionStatus.SUPERSEDED
  ...     shim = spec.updateLifecycleStatus(spec.owner)
  >>> flush_database_updates()
  >>> for spec in kubuntu.valid_specifications:

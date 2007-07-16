@@ -101,8 +101,8 @@
            tal:content="product/bugcontact/displayname">Sample Person</a>,
          the bug contact for 
          <tal:product tal:replace="product/displayname">Firefox</tal:product>,
-         won't be notified about this bug. If you want him to know
-         about this bug you have to subscribe him to it.
+         won't be notified about this bug. You can also set up 
+           <a href="+addsubscriber">additional contacts</a> to be notified.
       </p>
 
       </tal:private_bug>

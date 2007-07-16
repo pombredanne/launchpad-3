@@ -9,7 +9,7 @@ product or distribution home page, showing latest specs.
   ... GET /firefox HTTP/1.1
   ... """)
   HTTP/1.1 200 Ok
-  ...Latest proposed features...
+  ...Latest blueprints...
   ...Support E4X in EcmaScript...
 
 If there are no specifications, then we should not see the "latest
@@ -18,7 +18,7 @@ specifications" portlet.
   >>> result = http(r"""
   ... GET /debian/ HTTP/1.1
   ... """)
-  >>> 'Latest proposed features' not in str(result)
+  >>> 'Latest blueprints' not in str(result)
   True
 
 

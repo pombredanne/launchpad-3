@@ -18,6 +18,8 @@ from bzrlib.errors import NotBranchError
 from bzrlib.transport import get_transport
 from zope.component import getUtility
 
+from canonical.lp.dbschema import BranchType
+
 from canonical.database.sqlbase import begin, commit
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IBranchSet, IProductSeriesSet)
@@ -75,7 +77,8 @@ def create_branch_for_series(series):
     name = series.name
     vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     product = series.product
-    branch = getUtility(IBranchSet).new(name, vcs_imports, product, url=None)
+    branch = getUtility(IBranchSet).new(
+        BranchType.IMPORTED, name, vcs_imports, vcs_imports, product, url=None)
     return branch
 
 

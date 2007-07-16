@@ -6,8 +6,6 @@ __metaclass__ = type
 __all__ = ['Product', 'ProductSet']
 
 
-from operator import attrgetter
-
 from zope.interface import implements
 from zope.component import getUtility
 
@@ -24,11 +22,11 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.lp.dbschema import (
     TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationStatus, RosettaImportStatus)
+    SpecificationDefinitionStatus, SpecificationImplementationStatus,
+    RosettaImportStatus)
 
 from canonical.launchpad.helpers import shortlist
 
-from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -37,17 +35,16 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
 from canonical.launchpad.database.productrelease import ProductRelease
 from canonical.launchpad.database.bugtask import BugTaskSet
-from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.question import (
-    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet,
-    QuestionTargetMixin)
+    QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
@@ -57,6 +54,7 @@ from canonical.launchpad.database.translationimportqueue import (
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     ICalendarOwner,
+    IFAQTarget,
     IHasIcon,
     IHasLogo,
     IHasMugshot,
@@ -77,7 +75,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
               QuestionTargetMixin):
     """A Product."""
 
-    implements(IProduct, ICalendarOwner, IQuestionTarget,
+    implements(IProduct, ICalendarOwner, IFAQTarget, IQuestionTarget,
                IHasLogo, IHasMugshot, IHasIcon, IHasTranslationImports)
 
     _table = 'Product'
@@ -312,24 +310,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """See BugTargetBase."""
         return 'BugTask.product = %s' % sqlvalues(self)
 
-    def newQuestion(self, owner, title, description, language=None,
-                    datecreated=None):
-        """See `IQuestionTarget`."""
-        return QuestionSet.new(title=title, description=description,
-            owner=owner, product=self, datecreated=datecreated,
-            language=language)
-
-    def getQuestion(self, question_id):
-        """See `IQuestionTarget`."""
-        try:
-            question = Question.get(question_id)
-        except SQLObjectNotFound:
-            return None
-        # Verify that the question is actually for this target.
-        if question.target != self:
-            return None
-        return question
-
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
@@ -347,43 +327,32 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             needs_attention_from=needs_attention_from,
             unsupported_target=unsupported_target).getResults()
 
-
-    def findSimilarQuestions(self, title):
-        """See `IQuestionTarget`."""
-        return SimilarQuestionsSearch(title, product=self).getResults()
-
-    def _getTargetTypes(self):
-        """See QuestionTargetMixin."""
+    def getTargetTypes(self):
+        """See `QuestionTargetMixin`.
+        
+        Defines product as self.
+        """
         return {'product': self}
 
-    def removeAnswerContact(self, person):
-        """See `IQuestionTarget`."""
-        if person not in self.answer_contacts:
-            return False
-        answer_contact = AnswerContact.selectOneBy(
-            product=self, person=person)
-        answer_contact.destroySelf()
-        return True
+    def newFAQ(self, owner, title, content, keywords=None, date_created=None):
+        """See `IFAQTarget`."""
+        return FAQ.new(
+            owner=owner, title=title, content=content, keywords=keywords,
+            date_created=date_created, product=self)
 
-    @property
-    def answer_contacts(self):
-        """See `IQuestionTarget`."""
-        answer_contacts = AnswerContact.selectBy(product=self)
-        return sorted(
-            [answer_contact.person for answer_contact in answer_contacts],
-            key=attrgetter('displayname'))
+    def findSimilarFAQs(self, summary):
+        """See `IFAQTarget`."""
+        return FAQ.findSimilar(summary, product=self)
 
-    @property
-    def direct_answer_contacts(self):
-        """See `IQuestionTarget`."""
-        return self.answer_contacts
+    def getFAQ(self, id):
+        """See `IFAQCollection`."""
+        return FAQ.getForTarget(id, self)
 
-    def getQuestionLanguages(self):
-        """See `IQuestionTarget`."""
-        return set(Language.select(
-            'Language.id = Question.language AND '
-            'Question.product = %s' % sqlvalues(self.id),
-            clauseTables=['Question'], distinct=True))
+    def searchFAQs(self, search_text=None, owner=None, sort=None):
+        """See `IFAQCollection`."""
+        return FAQSearch(
+            search_text=search_text, owner=owner, sort=sort,
+            product=self).getResults()
 
     @property
     def translatable_packages(self):
@@ -516,7 +485,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = (
-                ['-priority', 'Specification.status', 'Specification.name'])
+                ['-priority', 'Specification.definition_status', 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -530,7 +499,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+              quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -544,9 +514,9 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationStatus.OBSOLETE,
-                          SpecificationStatus.SUPERSEDED)
+            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                          SpecificationDefinitionStatus.SUPERSEDED)
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -603,17 +573,6 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
                 return None
         ProductBounty(product=self, bounty=bounty)
         return None
-
-    def newBranch(self, name, title, url, home_page, lifecycle_status,
-                  summary, whiteboard):
-        """See `IProduct`."""
-        # XXX thumper-angry - FIX THIS!!!!
-        # use BranchSet
-        from canonical.launchpad.database import Branch
-        return Branch(
-            product=self, name=name, title=title, url=url,
-            home_page=home_page, lifecycle_status=lifecycle_status,
-            summary=summary, whiteboard=whiteboard)
 
     def getFirstEntryToImport(self):
         """See `IHasTranslationImports`."""
@@ -789,7 +748,7 @@ class ProductSet:
         return self.stats.value('reviewed_products')
 
     def count_buggy(self):
-        return self.stats.value('products_with_translations')
+        return self.stats.value('projects_with_bugs')
 
     def count_featureful(self):
         return self.stats.value('products_with_blueprints')
