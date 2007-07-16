@@ -131,6 +131,9 @@ class IPOTMsgSet(Interface):
         are shown only to logged-in users, and not to anonymous users.
         """)
 
+    is_translation_credit = Attribute(
+        """Whether this is a message set for crediting translators.""")
+
     def makeHTMLId(suffix=None):
         """Unique name for this `POTMsgSet` for use in HTML element ids.
 
@@ -142,4 +145,3 @@ class IPOTMsgSet(Interface):
         :param suffix: an optional suffix to be appended.  Must be suitable
             for use in HTML element ids.
         """
-

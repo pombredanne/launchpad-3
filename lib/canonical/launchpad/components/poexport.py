@@ -345,7 +345,7 @@ def export_rows(rows, pofile_output, force_utf8=False):
         if row.language != language or row.variant != variant:
             new_pofile = True
 
-        # If the PO file has changed, we have to outptut its last message set.
+        # If the PO file has changed, we have to output its last message set.
 
         if new_pofile:
             new_msgset = True
