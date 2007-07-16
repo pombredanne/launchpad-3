@@ -20,6 +20,24 @@ We should be completely sure that a .po file with an empty header is reported.
   ...
   TranslationFormatSyntaxError:...
 
+PO files with context after msgid's are reported as broken.
+
+  >>> parser = POParser()
+  >>> parser.write('msgid ""\nmsgstr ""\n'
+  ...              'msgid "blah"\nmsgctxt "foo"\nmsgstr "bar"\n')
+  Traceback (most recent call last):
+  ...
+  TranslationFormatSyntaxError:...
+
+And a msgctxt followed by msgctxt is caught as well.
+
+  >>> parser = POParser()
+  >>> parser.write('msgid ""\nmsgstr ""\n'
+  ...              'msgctxt "foo"\nmsgctxt "foo1"\n'
+  ...              'msgid "blah"\nmsgstr "bar"\n')
+  Traceback (most recent call last):
+  ...
+  TranslationFormatSyntaxError:...
 
 == POHeader ==
 
@@ -70,7 +88,7 @@ revision date:
 
 == Parsing a PO template ==
 
-Parsing a PO template:
+Parsing a PO template with message contexts:
 
   >>> content = """
   ... msgid ""
@@ -104,6 +122,8 @@ Parsing a PO template:
   2
   >>> print parser.messages[0].msgid
   Foo
+  >>> print parser.messages[0].msgctxt
+  None
   >>> print parser.messages[1].msgid
   Foo
   >>> print parser.messages[1].msgctxt

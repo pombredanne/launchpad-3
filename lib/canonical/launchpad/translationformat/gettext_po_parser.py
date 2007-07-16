@@ -834,7 +834,7 @@ class POParser(object):
                 # msgctxt is internally split from msgid with \2 in
                 # gettext MO files, so this guarantees that it will be unique
                 msgkey = self._partial_transl['msgctxt'] + '\2' + msgkey
-            if self._messageids.has_key(msgkey):
+            if msgkey in self._messageids:
                 lineno = self._partial_transl['_lineno']
                 # XXX: I changed the exception below to use %r
                 # because the original %d returned "<unprintable
@@ -1066,10 +1066,8 @@ class POParser(object):
 
         if not l:
             return
-        # If we get a comment line after a msgstr or a line starting with
-        # msgid/msgctxt, this is a new entry
-        # XXX: l.startswith('msgid') is needed because not all msgid/msgstr
-        # pairs have a leading comment
+        # A new entry starts either with a comment (#...), "msgctxt" or
+        # "msgid" keywords
         if ((l.startswith('#') or l.startswith('msgid') or
              l.startswith('msgctxt')) and (self._section == 'msgstr')):
             if self._partial_transl is None:
