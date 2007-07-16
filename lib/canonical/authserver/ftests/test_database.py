@@ -351,13 +351,23 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         self.assertEqual(13, branch_id)
         self.assertEqual(READ_ONLY, permissions)
 
-    def test_getBranchInformation_nonhosted(self):
-        # All non-hosted branches are read-only.
+    def test_getBranchInformation_mirrored(self):
+        # Mirrored branches cannot be written to by the smartserver or SFTP
+        # server.
         store = DatabaseUserDetailsStorageV2(None)
         branch_id, permissions = store._getBranchInformationInteraction(
             12, 'name12', 'firefox', 'main')
         self.assertEqual(1, branch_id)
         self.assertEqual(READ_ONLY, permissions)
+
+    def test_getBranchInformation_mirrored(self):
+        # Imported branches cannot be written to by the smartserver or SFTP
+        # server.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'vcs-imports', 'gnome-terminal', 'import')
+        self.assertEqual(75, branch_id)
+        self.assertEqual(READ_ONLY, permissions)        
 
     def test_getBranchInformation_private(self):
         # When we get the branch information for a private branch that is
