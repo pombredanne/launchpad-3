@@ -156,6 +156,7 @@ class XpiTestCase(unittest.TestCase):
 
         # Now, we tell the PO template to import from the file data it has.
         self.firefox_template.importFromQueue()
+        transaction.commit()
 
         # The status is now IMPORTED:
         self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
@@ -252,6 +253,7 @@ class XpiTestCase(unittest.TestCase):
         transaction.commit()
         # And the Spanish translation.
         self.spanish_firefox.importFromQueue()
+        transaction.commit()
 
         # The status is now IMPORTED:
         self.assertEquals(translation_entry.status, RosettaImportStatus.IMPORTED)
