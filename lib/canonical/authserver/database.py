@@ -289,16 +289,16 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
         Returns a list of team dicts (see IUserDetailsStorageV2).
         """
-        transaction.execute(utf8('''
-            SELECT TeamParticipation.team, Person.name, Person.displayname
-            FROM TeamParticipation
-            INNER JOIN Person ON TeamParticipation.team = Person.id
-            WHERE TeamParticipation.person = %s
-            '''
-            % sqlvalues(personID))
-        )
-        return [{'id': row[0], 'name': row[1], 'displayname': row[2]}
-                for row in transaction.fetchall()]
+        person_id = self._getPerson(cursor(), personID)[0]
+        person = getUtility(IPersonSet).get(person_id)
+
+        teams = [
+            dict(id=person.id, name=person.name,
+                 displayname=person.displayname)]
+
+        return teams + [
+            dict(id=team.id, name=team.name, displayname=team.displayname)
+            for team in person.teams_participated_in]
 
     def getUser(self, loginID):
         ri = self.connectionPool.runInteraction
