@@ -1,5 +1,6 @@
-Introduction
-============
+= Vocabularies =
+
+== Introduction ==
 
 Vocabularies are lists of terms. In Launchpad's Component Architecture
 (CA), a vocabulary is a list of terms that a widget (normally a selection
@@ -15,8 +16,7 @@ style widget) "speaks", i.e., its allowed values.
     >>> launchbag.clear()
 
 
-Values, Tokens, and Titles
-==========================
+=== Values, Tokens, and Titles ===
 
 In Launchpad, we generally use "tokenized vocabularies." Each term in
 a vocabulary has a value, token and title. A term is rendered in a
@@ -29,8 +29,7 @@ used to uniquely identify a Term, and the Title is the thing you display
 to the user.
 
 
-Launchpad Vocabularies
-======================
+== Launchpad Vocabularies ==
 
 There are two kinds of vocabularies in Launchpad: enumerable and
 non-enumerable. Enumerable vocabularies are short enough to render in a
@@ -48,8 +47,7 @@ vocabulary registry.
     'Select a project'
 
 
-Enumerable Vocabularies
-=======================
+== Enumerable Vocabularies ==
 
 Creating a new Enumeratable Vocabulary based on an existent dbschema
 constant:
@@ -62,15 +60,16 @@ The right place to do it is in the file vocabularies/dbschema.py.
 Note: don't forget to registry your brand new instance for zope lookup
 in configure.zcml.
 
-PackagingVocabulary
--------------------
+
+=== PackagingVocabulary ===
+
 Reflects the available constants for Packaging.packaging field.
 
 In cases where we won't have many rows, some of the database
 vocabularies can be enumerated over.
 
-DistroSeriesVocabulary
------------------------
+=== DistroSeriesVocabulary ===
+
 Reflects the available distribution serieses.  Results are ordered by
 `name`
 
@@ -112,8 +111,9 @@ Reflects the available distribution serieses.  Results are ordered by
     >> [term.token for term in distroseries_vocabulary.search('')]
     []
 
-DistributionUsingMaloneVocabulary
----------------------------------
+
+=== DistributionUsingMaloneVocabulary ===
+
 All the distributions that use Malone as their main bug tracker.
 
     >>> using_malone_vocabulary = vocabulary_registry.get(
@@ -154,8 +154,9 @@ All the distributions that use Malone as their main bug tracker.
     ...
     LookupError:...
 
-PersonActiveMembership
-----------------------
+
+=== PersonActiveMembership ===
+
 All the teams the person is an active member of.
 
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
@@ -202,7 +203,8 @@ All the teams the person is an active member of.
     ...
     LookupError:...
 
-== PersonTeamParticipations ==
+
+=== PersonTeamParticipations ===
 
 This vocabulary contains all the teams a person participates in. Either
 through direct or indirect participations.
@@ -223,8 +225,9 @@ through direct or indirect participations.
     name18: Ubuntu Gnome Team (name18)
     name20: Warty  Security Team (name20)
 
-Milestone
----------
+
+=== Milestone ===
+
 All the milestone in a context.
 
 If no context is given, all milestones in the database are in the
@@ -326,8 +329,8 @@ non-visible milestone, that milestone will be in the vocabulary.
     firefox: 1.0
 
 
-BugNominatableSeriesVocabulary
--------------------------------
+=== BugNominatableSeriesVocabulary ===
+
 All the serieses that can be nominated for fixing.
 
 This vocabulary needs either a product or distribution in the launchbag
@@ -466,8 +469,9 @@ Trying to get a non-existant release will result in a LookupError:
     ...
     LookupError...
 
-ProjectProductsVocabulary
--------------------------
+
+=== ProjectProductsVocabulary ===
+
 All the products in a project.
 
     >>> mozilla_project = getUtility(IProjectSet).getByName('mozilla')
@@ -479,8 +483,9 @@ All the products in a project.
     firefox: Mozilla Firefox
     thunderbird: Mozilla Thunderbird
 
-ProjectProductsVocabularyUsingMalone
------------------------------------
+
+=== ProjectProductsVocabularyUsingMalone ===
+
 All the products in a project using Malone.
 
 
@@ -496,15 +501,16 @@ All the products in a project using Malone.
     ...     print "%s: %s" %(term.token, term.title)
     firefox: Mozilla Firefox
 
-Non-Enumerable Vocabularies
-===========================
+
+== Non-Enumerable Vocabularies ==
 
 Iterating over non-enumerable vocabularies, while possible, will
 probably kill the database. Instead, these vocabularies are
 search-driven.
 
-BinaryAndSourcePackageNameVocabulary
-------------------------------------
+
+=== BinaryAndSourcePackageNameVocabulary ===
+
 The list of binary and source package names, ordered by name.
 
     >>> package_name_vocabulary = vocabulary_registry.get(
@@ -547,8 +553,9 @@ The search does a case-insensitive, substring match.
     [('linux-2.6.12', u'this kernel is like the crystal method: a temple o...'),
      ('linux-source-2.6.15', u'Source of: linux-2.6.12')]
 
-BinaryPackageNameVocabulary
----------------------------
+
+=== BinaryPackageNameVocabulary ===
+
 All the binary packages in Launchpad.
 
     >>> bpn_vocabulary = vocabulary_registry.get(None, 'BinaryPackageName')
@@ -561,8 +568,9 @@ All the binary packages in Launchpad.
     >>> [(term.token, term.title) for term in bpn_terms]
     [('mozilla-firefox', u'iceweasel huh ?')]
 
-SourcePackageNameVocabulary
----------------------------
+
+=== SourcePackageNameVocabulary ===
+
 All the source packages in Launchpad.
 
     >>> spn_vocabulary = vocabulary_registry.get(None, 'SourcePackageName')
@@ -581,9 +589,10 @@ All the source packages in Launchpad.
     >>> [(term.token, term.title) for term in spn_terms]
     [('pmount', u'Source of: pmount')]
 
-LanguageVocabulary
-------------------
-All the languages know by Launchpad
+
+=== LanguageVocabulary ===
+
+All the languages known by Launchpad
 
     >>> from canonical.launchpad.interfaces import ILanguageSet
     >>> language_set = getUtility(ILanguageSet)
@@ -616,8 +625,9 @@ All the languages know by Launchpad
     ...
     LookupError:...
 
-BranchVocabulary
-----------------
+
+=== BranchVocabulary ===
+
 The list of bzr branches registered in Launchpad.
 
 Searchable by branch name or URL, and searched within the context of a
@@ -727,8 +737,8 @@ able to see.
     >>> login('foo.bar@canonical.com')
 
 
-ProjectVocabulary
------------------
+=== ProjectVocabulary ===
+
 The list of selectable projects. The results are ordered by displayname.
 
     >>> project_vocabulary = vocabulary_registry.get(None, "Project")
@@ -760,8 +770,9 @@ The list of selectable projects. The results are ordered by displayname.
     >>> moz_project.active = True
     >>> flush_database_updates()
 
-ProductVocabulary
------------------
+
+=== ProductVocabulary ===
+
 The list of selectable products. Results are ordered by displayname.
 
     >>> product_vocabulary = vocabulary_registry.get(None, "Product")
@@ -800,8 +811,9 @@ The ProductVocabulary does not list inactive products.
     >>> arch_product.active = True
     >>> flush_database_updates()
 
-ProductReleaseVocabulary
-------------------------
+
+=== ProductReleaseVocabulary ===
+
 The list of selectable products releases.
 
     >>> productrelease_vocabulary = vocabulary_registry.get(None,
@@ -818,8 +830,9 @@ The list of selectable products releases.
     >>> release.title
     u'evolution trunk 2.1.6'
 
-PersonAccountToMergeVocabulary
-------------------------------
+
+=== PersonAccountToMergeVocabulary ===
+
 All non-merged people. This vocabulary is meant to be used only in the
 people merge form.
 
@@ -887,8 +900,9 @@ Any person that's already merged is not part of this vocabulary:
     >>> fooperson in vocab
     False
 
-NonMergedPeopleAndTeams
------------------------
+
+=== NonMergedPeopleAndTeams ===
+
 All non-merged people and teams.
 
     >>> vocab = vocabulary_registry.get(None, "NonMergedPeopleAndTeams")
@@ -915,8 +929,9 @@ But it doesn't include merged accounts:
     >>> fooperson in vocab
     False
 
-ValidPersonOrTeam
------------------
+
+=== ValidPersonOrTeam ===
+
 All 'valid' persons or teams. This is currently defined as people with a
 password, a preferred email address and not merged (Person.merged is
 None) or any team.
@@ -967,8 +982,9 @@ The vocabulary also allows us to search by IRC nickname.
     >>> [ircid.nickname for ircid in cjwatson.ircnicknames]
     [u'cjwatson']
 
-ValidOwner
-----------
+
+=== ValidOwner ===
+
 All valid persons and teams are also valid owners.
 
     >>> vocab = vocabulary_registry.get(None, "ValidOwner")
@@ -984,8 +1000,64 @@ search for 'team' should give us some of them:
     >>> sorted(person.name for person in vocab.search('team'))
     [u'name18', u'name19', u'name20', u'name21', u'no-team-memberships', u'simple-team', u'testing-spanish-team', u'ubuntu-team']
 
-ValidTeamMember
----------------
+
+=== ValidTeam ===
+
+The valid team vocabulary is just like the ValidPersonOrTeam vocabulary,
+except that its terms are limited only to teams.  No non-team Persons will be
+returned.
+
+    >>> vocab = vocabulary_registry.get(None, 'ValidTeam')
+    >>> vocab.displayname
+    'Select a Team'
+    >>> sorted((team.displayname, team.teamowner.displayname)
+    ...        for team in vocab.search(None))
+    [(u'GuadaMen', u'Foo Bar'),
+     (u'Hoary Gnome Team', u'Mark Shuttleworth'),
+     (u'Landscape Developers', u'Sample Person'),
+     (u'Launchpad Administrators', u'Mark Shuttleworth'),
+     (u'Launchpad Beta Testers', u'Launchpad Beta Testers Owner'),
+     (u'Launchpad Buildd Admins', u'Foo Bar'),
+     (u'Launchpad Developers', u'Foo Bar'),
+     (u'Mirror Administrators', u'Mark Shuttleworth'),
+     (u'Registry Administrators', u'Mark Shuttleworth'),
+     (u'Rosetta Administrators', u'Launchpad Administrators'),
+     (u'ShipIt Administrators', u'Mark Shuttleworth'),
+     (u'Simple Team', u'One Membership'),
+     (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Translators', u'Rosetta Administrators'),
+     (u'VCS imports', u'Robert Collins'),
+     (u'Warty Gnome Team', u'Mark Shuttleworth'),
+     (u'Warty Security Team', u'Mark Shuttleworth'),
+     (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
+
+Like with ValidPersonOrTeam, you can narrow your search down by providing some
+text to match against the team name.  Still, you only get teams back.
+
+    >>> sorted((team.displayname, team.teamowner.displayname)
+    ...         for team in vocab.search('spanish'))
+    [(u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
+    >>> sorted((team.displayname, team.teamowner.displayname)
+    ...        for team in vocab.search('spanish | ubuntu'))
+    [(u'Mirror Administrators', u'Mark Shuttleworth'),
+     (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Translators', u'Rosetta Administrators'),
+     (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
+    >>> sorted((team.displayname, team.teamowner.displayname)
+    ...        for team in vocab.search('team'))
+    [(u'Hoary Gnome Team', u'Mark Shuttleworth'),
+     (u'Simple Team', u'One Membership'),
+     (u'Ubuntu Gnome Team', u'Mark Shuttleworth'),
+     (u'Ubuntu Team', u'Mark Shuttleworth'),
+     (u'Warty Gnome Team', u'Mark Shuttleworth'),
+     (u'Warty Security Team', u'Mark Shuttleworth'),
+     (u'testing Spanish team', u'Carlos Perell\xf3 Mar\xedn')]
+
+
+=== ValidTeamMember ===
+
 With the exception of all teams that have this team as a member and the
 team itself, all valid persons and teams are valid members.
 
@@ -1033,8 +1105,9 @@ of 'ubuntu-team'.
     >>> [person.name for person in vocab.search('guadamen')]
     []
 
-ValidTeamOwner
---------------
+
+=== ValidTeamOwner ===
+
 With the exception of the team itself and all teams owned by that team,
 all valid persons and teams are valid owners for the team in context.
 
@@ -1071,8 +1144,9 @@ ValidTeamOwner's context must be a team.
     >>> [person.name for person in vocab.search('foo.bar')]
     [u'name16']
 
-Processor
----------
+
+=== Processor ===
+
 All processors type available in Launchpad.
 
     >>> vocab = vocabulary_registry.get(None, "Processor")
@@ -1082,8 +1156,9 @@ All processors type available in Launchpad.
     >>> [term.token for term in vocab.searchForTerms('386')]
     ['386']
 
-BugWatchVocabulary
-------------------
+
+=== BugWatchVocabulary ===
+
 All bug watches associated with a bugtask's bug
 
     >>> bug_one = getUtility(IBugSet).get(1)
@@ -1096,8 +1171,9 @@ All bug watches associated with a bugtask's bug
     The Mozilla.org Bug Tracker <a...>#42</a>
     Debian Bug tracker <a...>#304014</a>
 
-DistributionOrProductVocabulary
--------------------------------
+
+=== DistributionOrProductVocabulary ===
+
 All products and distributions. Note that the value type is
 heterogeneous.
 
@@ -1143,8 +1219,9 @@ Projects are not contained in this vocabulary:
     >>> ubuntu_project in vocab
     False
 
-DistributionOrProductOrProjectVocabulary
-----------------------------------------
+
+=== DistributionOrProductOrProjectVocabulary ===
+
 All products, projects and distributions. Note that the value type is
 heterogeneous.
 
@@ -1193,5 +1270,179 @@ Inactive products and projects are not available
     Ubuntu (Product) - class Product
     The Ubuntu Project (Project) - class Project
     Ubuntu Test (Distribution) - class Distribution
+
+
+=== FAQ ===
+
+The FAQ vocabulary contains all the FAQs available in a particular
+collection. It provides the IHugeVocabulary interface.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+
+    >>> vocabulary = vocabulary_registry.get(firefox, 'FAQ')
+    >>> verifyObject(IHugeVocabulary, vocabulary)
+    True
+
+    >>> print vocabulary.displayname
+    Select a FAQ
+
+It contains all the FAQs of the collection, but not those from other
+collections:
+
+    >>> firefox_faqs = set(firefox.searchFAQs())
+    >>> vocabulary_faqs = set(term.value for term in vocabulary)
+    >>> firefox_faqs.symmetric_difference(vocabulary_faqs)
+    set([])
+
+And it only contains FAQs:
+
+    >>> u'10' in vocabulary
+    False
+
+The term's token is the FAQ's id and its title is the FAQ's title:
+
+    >>> firefox_faq = firefox.getFAQ(10)
+    >>> term = vocabulary.getTerm(firefox_faq)
+    >>> term.token
+    '10'
+    >>> print term.title
+    How do I install plugins (Shockwave, QuickTime, etc.)?
+
+Asking for something which isn't a FAQ of the target raises LookupError:
+
+    >>> ubuntu_faq = ubuntu.getFAQ(1)
+    >>> vocabulary.getTerm(ubuntu_faq)
+    Traceback (most recent call last):
+      ...
+    LookupError:...
+
+Since IHugeVocabulary extends IVocabularyTokenized, the term can also
+be retrieved by token:
+
+    >>> term = vocabulary.getTermByToken(u'10')
+    >>> print term.title
+    How do I install plugins (Shockwave, QuickTime, etc.)?
+
+Trying to retrieve an invalid or non-existent token raises LookupError:
+
+    >>> vocabulary.getTermByToken('not a good token')
+    Traceback (most recent call last):
+      ...
+    LookupError:...
+
+    >>> vocabulary.getTermByToken('1001')
+    Traceback (most recent call last):
+      ...
+    LookupError:...
+
+The searchForTerms() method returns a CountableIterator of terms that
+are similar to the query:
+
+    >>> from canonical.launchpad.webapp.vocabulary import CountableIterator
+    >>> terms = vocabulary.searchForTerms('Problem showing SVG')
+    >>> isinstance(terms, CountableIterator)
+    True
+    >>> terms.count()
+    2
+    >>> for term in terms:
+    ...     print term.title
+    How do I troubleshoot problems with extensions/themes?
+    How do I install Java?
+
+
+== SpecificationDepCandidatesVocabulary ==
+
+All blueprints that can be added as a dependency of the
+context blueprint.
+
+First, we set up a product with three blueprints.
+
+    >>> from canonical.lp.dbschema import SpecificationDefinitionStatus
+    >>> evolution = getUtility(IProductSet).getByName('evolution')
+    >>> foobar_person = getUtility(IPersonSet).getByName('name16')
+    >>> foobar_person.displayname
+    u'Foo Bar'
+    >>> specset = getUtility(ISpecificationSet)
+    >>> spec_a = specset.new('spec-a', 'Spec A',
+    ...     'http://www.example.org/SpecA', 'The first spec',
+    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
+    ...     product=evolution)
+    >>> spec_b = specset.new('spec-b', 'Spec B',
+    ...     'http://www.example.org/SpecB', 'The second spec',
+    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
+    ...     product=evolution)
+    >>> spec_c = specset.new('spec-c', 'Spec C',
+    ...     'http://www.example.org/SpecC', 'The third spec',
+    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
+    ...     product=evolution)
+    >>> sorted([spec.name for spec in evolution.specifications()])
+    [u'spec-a', u'spec-b', u'spec-c']
+
+The dependency candidates for spec_a are all blueprints for evolution
+except for spec_a itself.
+
+    >>> vocab = vocabulary_registry.get(
+    ...     spec_a, "SpecificationDepCandidates")
+    >>> sorted([term.value.name for term in vocab])
+    [u'spec-b', u'spec-c']
+
+Dependency candidate come only from the same product of the blueprint
+they depend on.
+
+    >>> unrelated_spec = specset.new('unrelated-spec', 'Unrelated Spec',
+    ...     'http://example.com/SpecU', 'A spec unrelated to Evolution',
+    ...     SpecificationDefinitionStatus.APPROVED, foobar_person,
+    ...     product=firefox)
+    >>> vocab = vocabulary_registry.get(
+    ...     spec_a, "SpecificationDepCandidates")
+    >>> unrelated_spec in vocab
+    False
+    >>> [term.value.product for term in vocab
+    ...  if term.value.product != evolution]
+    []
+
+We mark spec_b as a dependency of spec_a and spec_c as a dependency
+of spec_b.
+
+    >>> spec_a.createDependency(spec_b)
+    <SpecificationDependency at ...>
+    >>> [spec.name for spec in spec_a.dependencies]
+    [u'spec-b']
+
+    >>> spec_b.createDependency(spec_c)
+    <SpecificationDependency at ...>
+    >>> [spec.name for spec in spec_b.dependencies]
+    [u'spec-c']
+
+No circular dependencies - the vocabulary excludes specifications that 
+are a dependency of the context spec. 
+
+    >>> spec_a in spec_b.all_blocked
+    True
+    >>> spec_b in spec_c.all_blocked
+    True
+    >>> vocab = vocabulary_registry.get(
+    ...     spec_c, "SpecificationDepCandidates")
+    >>> spec_a in [term.value for term in vocab]
+    False
+
+This vocabulary provides the IHugeVocabulary interface.
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.vocabulary import IHugeVocabulary
+    >>> verifyObject(IHugeVocabulary, vocab)
+    True
+
+The search() method returns specifications within the vocabulary
+that matches the search string. The string is matched against the name,
+or fallbacks to a full text search.
+
+    >>> vocab = vocabulary_registry.get(
+    ...     spec_a, "SpecificationDepCandidates")
+    >>> list(vocab.search('ec-b')) == [spec_b]
+    True
+    >>> list(vocab.search('third')) == [spec_c]
+    True
 
 XXX: document more vocabularies here, particularly when they break!

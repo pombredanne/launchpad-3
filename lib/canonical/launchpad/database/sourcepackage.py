@@ -12,7 +12,6 @@ from warnings import warn
 
 from zope.interface import implements
 
-from sqlobject import SQLObjectNotFound
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.database.constants import UTC_NOW
@@ -30,14 +29,12 @@ from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.bug import get_bug_tags_open_count
 from canonical.launchpad.database.bugtask import BugTaskSet
-from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.packaging import Packaging
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.question import (
-    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet,
-    QuestionTargetMixin)
+    QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagerelease import (
@@ -50,26 +47,26 @@ from canonical.launchpad.database.build import Build
 class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
     """Implementation of IQuestionTarget for SourcePackage."""
 
-    def newQuestion(self, owner, title, description, language=None,
-                    datecreated=None):
-        """See `IQuestionTarget`."""
-        return QuestionSet.new(
-            title=title, description=description, owner=owner,
-            language=language, distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename, datecreated=datecreated)
+    def getTargetTypes(self):
+        """See `QuestionTargetMixin`.
+        
+        Defines distribution and sourcepackagename as this object's
+        distribution and sourcepackagename.
+        """
+        return {'distribution': self.distribution,
+                'sourcepackagename': self.sourcepackagename}
 
-    def getQuestion(self, question_id):
-        """See `IQuestionTarget`."""
-        try:
-            question = Question.get(question_id)
-        except SQLObjectNotFound:
-            return None
-        # Verify that this question is actually for this target.
-        if question.distribution != self.distribution:
-            return None
-        if question.sourcepackagename != self.sourcepackagename:
-            return None
-        return question
+    def questionIsForTarget(self, question):
+        """See `QuestionTargetMixin`.
+        
+        Return True when the question's distribution and sourcepackagename
+        are this object's distribution and sourcepackagename.
+        """
+        if question.distribution is not self.distribution:
+            return False
+        if question.sourcepackagename is not self.sourcepackagename:
+            return False
+        return True
 
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
@@ -88,17 +85,6 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
             language=language, sort=sort, owner=owner,
             needs_attention_from=needs_attention_from,
             unsupported_target=unsupported_target).getResults()
-
-    def findSimilarQuestions(self, title):
-        """See `IQuestionTarget`."""
-        return SimilarQuestionsSearch(
-            title, distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename).getResults()
-
-    def _getTargetTypes(self):
-        """See QuestionTargetMixin."""
-        return {'distribution': self.distribution,
-                'sourcepackagename': self.sourcepackagename}
 
     def getAnswerContactsForLanguage(self, language):
         """See `IQuestionTarget`."""
@@ -120,18 +106,6 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
             self, language))
         return recipients
 
-    def removeAnswerContact(self, person):
-        """See `IQuestionTarget`."""
-        answer_contact = AnswerContact.selectOneBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename,
-            person=person)
-        if not answer_contact:
-            return False
-
-        answer_contact.destroySelf()
-        return True
-
     @property
     def answer_contacts(self):
         """See `IQuestionTarget`."""
@@ -143,21 +117,10 @@ class SourcePackageQuestionTargetMixin(QuestionTargetMixin):
     @property
     def direct_answer_contacts(self):
         """See `IQuestionTarget`."""
-        answer_contacts = AnswerContact.selectBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
+        answer_contacts = AnswerContact.selectBy(**self.getTargetTypes())
         return sorted(
             [contact.person for contact in answer_contacts],
             key=attrgetter('displayname'))
-
-    def getQuestionLanguages(self):
-        """See `IQuestionTarget`."""
-        return set(Language.select(
-            'Language.id = Question.language AND '
-            'Question.distribution = %s AND '
-            'Question.sourcepackagename = %s'
-                % sqlvalues(self.distribution, self.sourcepackagename),
-            clauseTables=['Question'], distinct=True))
 
 
 class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):

@@ -5,7 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
-    'BranchVisibilityPolicyItem',
+    'BranchVisibilityTeamPolicy',
     'BranchVisibilityPolicyMixin',
     ]
 
@@ -18,25 +18,25 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
-from canonical.lp.dbschema import BranchVisibilityPolicy
+from canonical.lp.dbschema import BranchVisibilityRule
 
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    IBranchVisibilityPolicyItem, IProduct, IProject)
+    IBranchVisibilityTeamPolicy, IProduct, IProject)
 
 
-class BranchVisibilityPolicyItem(SQLBase):
+class BranchVisibilityTeamPolicy(SQLBase):
     """A sequence of ordered revisions in Bazaar."""
 
-    implements(IBranchVisibilityPolicyItem)
+    implements(IBranchVisibilityTeamPolicy)
     _table = 'BranchVisibilityPolicy'
 
     project = ForeignKey(dbName='project', foreignKey='Project')
     product = ForeignKey(dbName='product', foreignKey='Product')
     team = ForeignKey(dbName='team', foreignKey='Person', default=None)
-    policy = EnumCol(
-        schema=BranchVisibilityPolicy, notNull=True,
-        default=BranchVisibilityPolicy.PUBLIC)
+    rule = EnumCol(
+        dbName="policy", schema=BranchVisibilityRule, notNull=True,
+        default=BranchVisibilityRule.PUBLIC)
 
 
 def policy_item_key(item):
@@ -60,16 +60,15 @@ class BranchVisibilityPolicyMixin:
 
     @property
     def _policy_items(self):
-        return BranchVisibilityPolicyItem.selectBy(
+        return BranchVisibilityTeamPolicy.selectBy(
             **self._policy_visibility_context)
 
-    @property
-    def branch_visibility_policy_items(self):
-        """See IHasBranchVisibilityPolicy."""
+    def getBranchVisibilityTeamPolicies(self):
+        """See `IHasBranchVisibilityPolicy`."""
         # If we are using the inherited policy return the items
         # from the inherited context.
         if self.isUsingInheritedBranchVisibilityPolicy():
-            return self.project.branch_visibility_policy_items
+            return self.project.getBranchVisibilityTeamPolicies()
         # Use shortlist here for policy items as we don't expect
         # many items, and want a warning emitted if we start
         # getting many items being created for projects as it
@@ -77,24 +76,57 @@ class BranchVisibilityPolicyMixin:
         items = shortlist(self._policy_items)
         return sorted(items, key=policy_item_key)
 
-    @property
-    def branch_visibility_base_policy(self):
-        """See IHasBranchVisibilityPolicy."""
+    def _selectOneBranchVisibilityTeamPolicy(self, team):
+        """Finds one particular policy item."""
         if self.isUsingInheritedBranchVisibilityPolicy():
-            item = BranchVisibilityPolicyItem.selectOneBy(
-                team=None, **self.project._policy_visibility_context)
+            policy_visibility_context = self.project._policy_visibility_context
         else:
-            item = BranchVisibilityPolicyItem.selectOneBy(
-                team=None, **self._policy_visibility_context)
+            policy_visibility_context = self._policy_visibility_context
+        return BranchVisibilityTeamPolicy.selectOneBy(
+                team=team, **policy_visibility_context)
 
+    def getBaseBranchVisibilityRule(self):
+        """See `IHasBranchVisibilityPolicy`."""
+        item = self._selectOneBranchVisibilityTeamPolicy(None)
         # If there is no explicit item set, then public is the default.
         if item is None:
-            return BranchVisibilityPolicy.PUBLIC
+            return BranchVisibilityRule.PUBLIC
         else:
-            return item.policy
+            return item.rule
+
+    def getBranchVisibilityRuleForTeam(self, team):
+        """See `IHasBranchVisibilityPolicy`."""
+        item = self._selectOneBranchVisibilityTeamPolicy(team)
+        if item is None:
+            return None
+        else:
+            return item.rule
+
+    def getBranchVisibilityRuleForBranch(self, branch):
+        """See `IHasBranchVisibilityPolicy`."""
+        rule = self.getBranchVisibilityRuleForTeam(branch.owner)
+        if rule is None:
+            # Determine the rule based on team membership.
+            # Given the number of branch policies that are likely
+            # for any given product, we are simply checking all the
+            # policies rather than crafting a query on the branch's
+            # owner's team memberships.
+            rules = []
+            owner = branch.owner
+            for item in self.getBranchVisibilityTeamPolicies():
+                if item.team is not None and owner.inTeam(item.team):
+                    rules.append(item.rule)
+            if len(rules) > 0:
+                # max returns the most restrictive policy. The ordering
+                # of the dbSchema items ensures this.
+                rule = max(rules)
+            else:
+                rule = self.getBaseBranchVisibilityRule()
+
+        return rule
 
     def isUsingInheritedBranchVisibilityPolicy(self):
-        """See IHasBranchVisibilityPolicy."""
+        """See `IHasBranchVisibilityPolicy`."""
         # If there is no project to inherit a policy from,
         # then we cannot be using an inherited policy.
         if getattr(self, 'project', None) is None:
@@ -103,19 +135,19 @@ class BranchVisibilityPolicyMixin:
         # inherited policy.
         return self._policy_items.count() == 0
 
-    def setTeamBranchVisibilityPolicy(self, team, policy):
-        """See IHasBranchVisibilityPolicy."""
-        item = BranchVisibilityPolicyItem.selectOneBy(
+    def setBranchVisibilityTeamPolicy(self, team, rule):
+        """See `IHasBranchVisibilityPolicy`."""
+        item = BranchVisibilityTeamPolicy.selectOneBy(
             team=team, **self._policy_visibility_context)
         if item is None:
-            item = BranchVisibilityPolicyItem(
-                team=team, policy=policy, **self._policy_visibility_context)
+            item = BranchVisibilityTeamPolicy(
+                team=team, rule=rule, **self._policy_visibility_context)
         else:
-            item.policy = policy
+            item.rule = rule
 
     def removeTeamFromBranchVisibilityPolicy(self, team):
-        """See IHasBranchVisibilityPolicy."""
-        item = BranchVisibilityPolicyItem.selectOneBy(
+        """See `IHasBranchVisibilityPolicy`."""
+        item = BranchVisibilityTeamPolicy.selectOneBy(
             team=team, **self._policy_visibility_context)
         if item is not None:
-            BranchVisibilityPolicyItem.delete(item.id)
+            BranchVisibilityTeamPolicy.delete(item.id)

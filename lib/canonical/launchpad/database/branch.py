@@ -20,14 +20,17 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchSet,
-    ILaunchpadCelebrities, NotFoundError)
+    BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    IBranchSet, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.lp.dbschema import (
-    BranchRelationships, BranchLifecycleStatus)
+    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
+    BranchRelationships, BranchLifecycleStatus, BranchType,
+    BranchVisibilityRule)
 
 
 class Branch(SQLBase):
@@ -36,6 +39,8 @@ class Branch(SQLBase):
     implements(IBranch)
     _table = 'Branch'
     _defaultOrder = ['product', '-lifecycle_status', 'author', 'name']
+
+    branch_type = EnumCol(schema=BranchType, notNull=True)
 
     name = StringCol(notNull=False)
     title = StringCol(notNull=False)
@@ -282,7 +287,116 @@ class BranchSet:
         except SQLObjectNotFound:
             return default
 
-    def new(self, name, owner, product, url, title=None,
+    def _checkVisibilityPolicy(self, creator, owner, product):
+        """Return a tuple of private flag and person or team to subscribe.
+
+        This method checks the branch visibility policy of the product.  The
+        product can define any number of policies that apply to particular
+        teams.  Each team can have only one policy, and that policy is defined
+        by the enumerated type BranchVisibilityRule.  The possibilities are
+        PUBLIC, PRIVATE, PRIVATE_ONLY, and FORBIDDEN.
+
+        PUBLIC: branches default to public for the team.
+        PRIVATE: branches default to private for the team.
+        PRIVATE_ONLY: branches are created private, and cannot be changed to
+            public.
+        FORBIDDEN: users cannot create branches for that product. The forbidden
+            policy can only apply to all people, not specific teams.
+
+        As well as specifying a policy for particular teams, there can be a
+        policy that applies to everyone.  Since there is no team for everyone,
+        a team policy where the team is None applies to everyone.  If there is
+        no explicit policy set for everyone, then the default applies, which is
+        for branches to be created PUBLIC.
+
+        The user must be in the team of the owner in order to create a branch
+        in the owner's namespace.
+
+        If there is a policy that applies specificly to the owner of the
+        branch, then that policy is applied for the branch.  This is to handle
+        the situation where TeamA is a member of TeamB, TeamA has a PUBLIC
+        policy, and TeamB has a PRIVATE policy.  By pushing to TeamA's branch
+        area, the PUBLIC policy is used.
+
+        If a owner is a member of more than one team that has a specified
+        policy the PRIVATE and PRIVATE_ONLY override PUBLIC policies.
+
+        If the owner is a member of more than one team that has PRIVATE or
+        PRIVATE_ONLY set as the policy, then the branch is created private, and
+        no team is subscribed to it as we can't guess which team the user means
+        to have the visibility.
+        """
+        PUBLIC_BRANCH = (False, None)
+        PRIVATE_BRANCH = (True, None)
+        # If the product is None, then the branch is a +junk branch.
+        # All junk branches are public.
+        if product is None:
+            return PUBLIC_BRANCH
+        # You are not allowed to specify an owner that you are not a member of.
+        if not creator.inTeam(owner):
+            raise BranchCreatorNotMemberOfOwnerTeam(
+                "%s is not a member of %s"
+                % (creator.displayname, owner.displayname))
+        # First check if the owner has a defined visibility rule.
+        policy = product.getBranchVisibilityRuleForTeam(owner)
+        if policy is not None:
+            if policy in (BranchVisibilityRule.PRIVATE,
+                          BranchVisibilityRule.PRIVATE_ONLY):
+                return PRIVATE_BRANCH
+            else:
+                return PUBLIC_BRANCH
+
+        rule_memberships = dict(
+            [(item, []) for item in BranchVisibilityRule.items])
+
+        # Here we ignore the team policy that applies to everyone as
+        # that is the base visibility rule and it is checked only if there
+        # are no team policies that apply to the owner.
+        for item in product.getBranchVisibilityTeamPolicies():
+            if item.team is not None and owner.inTeam(item.team):
+                rule_memberships[item.rule].append(item.team)
+
+        private_teams = (
+            rule_memberships[BranchVisibilityRule.PRIVATE] +
+            rule_memberships[BranchVisibilityRule.PRIVATE_ONLY])
+
+        # Private trumps public.
+        if len(private_teams) == 1:
+            # The owner is a member of only one team that has private branches
+            # enabled.  The case where the private_team is the same as the
+            # owner of the branch is caught above where a check is done for a
+            # defined policy for the owner.  So if we get to here, the owner
+            # of the branch is a member of another team that has private
+            # branches enabled, so subscribe the private_team to the branch.
+            return (True, private_teams[0])
+        elif len(private_teams) > 1:
+            # If the owner is a member of multiple teams that specify private
+            # branches, then we cannot guess which team should get subscribed
+            # automatically, so subscribe no-one.
+            return PRIVATE_BRANCH
+        elif len(rule_memberships[BranchVisibilityRule.PUBLIC]) > 0:
+            # If the owner is not a member of any teams that specify private
+            # branches, but is a member of a team that is allowed public
+            # branches, then the branch is created as a public branch.
+            return PUBLIC_BRANCH
+        else:
+            membership_teams = rule_memberships.itervalues()
+            owner_membership = reduce(lambda x,y: x+y, membership_teams)
+            assert len(owner_membership) == 0, (
+                'The owner should not be a member of any team that has '
+                'a specified team policy.')
+
+        # Need to check the base branch visibility policy since there were no
+        # team policies that matches the owner.
+        base_visibility_rule = product.getBaseBranchVisibilityRule()
+        if base_visibility_rule == BranchVisibilityRule.FORBIDDEN:
+            raise BranchCreationForbidden()
+        elif base_visibility_rule == BranchVisibilityRule.PUBLIC:
+            return PUBLIC_BRANCH
+        else:
+            return PRIVATE_BRANCH
+
+    def new(self, branch_type, name, creator, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None, whiteboard=None, date_created=None):
         """See IBranchSet."""
@@ -290,11 +404,26 @@ class BranchSet:
             home_page = None
         if date_created is None:
             date_created = UTC_NOW
-        return Branch(
+        # Check the policy for the person creating the branch.
+        private, implicit_subscription = self._checkVisibilityPolicy(
+            creator, owner, product)
+
+        branch = Branch(
             name=name, owner=owner, author=author, product=product, url=url,
             title=title, lifecycle_status=lifecycle_status, summary=summary,
-            home_page=home_page, whiteboard=whiteboard,
-            date_created=date_created)
+            home_page=home_page, whiteboard=whiteboard, private=private,
+            date_created=date_created, branch_type=branch_type)
+
+        # Implicit subscriptions are to enable teams to see private branches
+        # as soon as they are created.  The subscriptions can be edited at
+        # a later date if desired.
+        if implicit_subscription is not None:
+            branch.subscribe(
+                implicit_subscription,
+                BranchSubscriptionNotificationLevel.NOEMAIL,
+                BranchSubscriptionDiffSize.NODIFF)
+
+        return branch
 
     def getByUrl(self, url, default=None):
         """See IBranchSet."""
@@ -464,16 +593,23 @@ class BranchSet:
         if visible_by_user is None:
             return '%sNOT Branch.private' % query
 
-        # Logged in people can see public branches and branches they
-        # are the owner of (first part of the union)
-        # and all branches they are subscribed to (second part).
+        # Logged in people can see public branches (first part of the union),
+        # branches owned by teams they are in (second part),
+        # and all branches they are subscribed to (third part).
         clause = ('''
             %sBranch.id IN (
                 SELECT Branch.id
                 FROM Branch
                 WHERE
                     NOT Branch.private
-                    OR Branch.owner = %d
+
+                UNION
+
+                SELECT Branch.id
+                FROM Branch, TeamParticipation
+                WHERE
+                    Branch.owner = TeamParticipation.team
+                AND TeamParticipation.person = %d
 
                 UNION
 
@@ -572,11 +708,23 @@ class BranchSet:
         return Branch.select(
             self._generateBranchClause(query, visible_by_user))
 
+    def getHostedBranchesForPerson(self, person):
+        """See `IBranchSet`."""
+        branches = Branch.select(
+            "Branch.URL IS NULL "
+            "AND Branch.owner IN ("
+            "SELECT TeamParticipation.team "
+            "FROM TeamParticipation "
+            "WHERE TeamParticipation.person = %d)" % person.id)
+        return branches
+
     def getLatestBranchesForProduct(self, product, quantity,
                                     visible_by_user=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         assert product is not None, "Must have a valid product."
-        query = "Branch.product = %d" % product.id
+        lifecycle_clause = self._lifecycleClause(
+            DEFAULT_BRANCH_STATUS_IN_LISTING)
+        query = "Branch.product = %d%s" % (product.id, lifecycle_clause)
         return Branch.select(
             self._generateBranchClause(query, visible_by_user),
             limit=quantity,

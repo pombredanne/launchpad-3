@@ -183,8 +183,10 @@ Distribution main_archive (PPAs).
 
   >>> from canonical.launchpad.interfaces import (
   ...    IPersonSet, IArchiveSet)
+  >>> from canonical.lp.dbschema import ArchivePurpose
 
   >>> foobar_archive = getUtility(IArchiveSet).new(
+  ...     purpose=ArchivePurpose.PPA,
   ...     owner=getUtility(IPersonSet).getByName('name16'))
 
   >>> dapper = getUtility(IDistributionSet)['ubuntu']['dapper']

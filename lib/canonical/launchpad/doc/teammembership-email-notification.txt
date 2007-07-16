@@ -38,6 +38,7 @@ for the member.
     >>> personset = getUtility(IPersonSet)
     >>> membershipset = getUtility(ITeamMembershipSet)
     >>> sabdfl = personset.getByName('sabdfl')
+    >>> kamion = personset.getByName('kamion')
     >>> sampleperson = personset.getByName('name12')
     >>> ubuntu_team = personset.getByName('ubuntu-team')
 
@@ -419,30 +420,44 @@ passing force_team_add=True to the addMember() method.
 
 When we get close to the expiration date of a given membership, an expiration
 warning is sent to the member, so that he can contact the team's
-administrators in case he wants to retain that membership. This is done by
-the flag-expired-memberships cronscript, which uses
+administrators (or renew it himself when he has necessary rights) in case
+he wants to retain that membership. This is done by the
+flag-expired-memberships cronscript, which uses
 ITeamMembership.sendExpirationWarningEmail to do its job.
 
-    >>> sabdfl_on_ubuntu_team = membershipset.getByPersonAndTeam(
-    ...     sabdfl, ubuntu_team)
-    >>> sabdfl_on_ubuntu_team.sendExpirationWarningEmail()
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> utc_now = datetime.now(pytz.timezone('UTC'))
+    >>> kamion_on_ubuntu_team = membershipset.getByPersonAndTeam(
+    ...     kamion, ubuntu_team)
+    >>> kamion_on_ubuntu_team.setExpirationDate(
+    ...     utc_now + timedelta(days=9), sabdfl)
+    >>> flush_database_updates()
+
+Kamion is an admin of the Ubuntu team, but team admins can't change the
+expiration date of their own memberships, so he still has to contact one of
+the other team admins.
+
+    >>> kamion_on_ubuntu_team.status.name
+    'ADMIN' 
+    >>> kamion_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
     >>> [notification] = pop_notifications()
     >>> notification['To']
-    'Mark Shuttleworth <mark@hbd.com>'
+    'colin.watson@ubuntulinux.com'
     >>> notification['Subject']
     'Launchpad: ubuntu-team team membership about to expire'
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hi Mark Shuttleworth
+    Hi Colin Watson
     <BLANKLINE>
-    On 2050-03-03, ... weeks from now, your membership of the
-    Ubuntu Team (ubuntu-team) Launchpad team is due to expire.
+    On ... your membership
+    of the Ubuntu Team (ubuntu-team) Launchpad team
+    is due to expire.
     <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     To prevent this membership from expiring, you should get in touch
     with one of the team's administrators:
     Alexander Limi (limi) <http://launchpad.dev/~limi>
-    Colin Watson (kamion) <http://launchpad.dev/~kamion>
     Foo Bar (name16) <http://launchpad.dev/~name16>
     Jeff Waugh (jdub) <http://launchpad.dev/~jdub>
     Mark Shuttleworth (sabdfl) <http://launchpad.dev/~sabdfl>
@@ -453,28 +468,40 @@ ITeamMembership.sendExpirationWarningEmail to do its job.
     Thanks for using Launchpad!
     <BLANKLINE>
 
-    >>> guadamen = personset.getByName('guadamen')
-    >>> ubuntu_team_on_guadamen = membershipset.getByPersonAndTeam(
-    ...     ubuntu_team, guadamen)
-    >>> ubuntu_team_on_guadamen.sendExpirationWarningEmail()
+In the case of the beta-testers team, the email is sent only to the
+team's owner, which doesn't have the necessary rights to renew the
+membership of his team, so he's instructed to contact one of the
+ubuntu-team's admins.
+
+    >>> beta_testers = personset.getByName('launchpad-beta-testers')
+    >>> beta_testers_on_ubuntu_team = membershipset.getByPersonAndTeam(
+    ...     beta_testers, ubuntu_team)
+    >>> beta_testers_on_ubuntu_team.setExpirationDate(
+    ...     utc_now + timedelta(days=9), sabdfl)
+    >>> flush_database_updates()
+    >>> beta_testers_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
     >>> [notification] = pop_notifications()
     >>> notification['To']
-    'mark@hbd.com'
+    'beta-admin@launchpad.net'
     >>> notification['Subject']
-    'Launchpad: guadamen team membership about to expire'
+    'Launchpad: ubuntu-team team membership about to expire'
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hi,
     <BLANKLINE>
-    On 2049-02-03, ... weeks from now, the membership of
-    Ubuntu Team (ubuntu-team) (which you are the owner of) in the
-    GuadaMen (guadamen) Launchpad team is due to expire.
-    <http://launchpad.dev/~guadamen>
+    On ..., nine days from now, the membership
+    of Launchpad Beta Testers (launchpad-beta-testers) (which you are
+    the owner of) in the Ubuntu Team (ubuntu-team) Launchpad team
+    is due to expire.
+    <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     To prevent this membership from expiring, you should get in touch
     with one of the team's administrators:
+    Alexander Limi (limi) <http://launchpad.dev/~limi>
+    Colin Watson (kamion) <http://launchpad.dev/~kamion>
     Foo Bar (name16) <http://launchpad.dev/~name16>
-    Ubuntu Team (ubuntu-team) <http://launchpad.dev/~ubuntu-team>
+    Jeff Waugh (jdub) <http://launchpad.dev/~jdub>
+    Mark Shuttleworth (sabdfl) <http://launchpad.dev/~sabdfl>
     <BLANKLINE>
     If the membership does expire, we'll send you one more message to let
     you know it's happened.
@@ -489,22 +516,23 @@ renew his own membership.
     >>> ubuntu_team.renewal_policy = TeamMembershipRenewalPolicy.ONDEMAND
     >>> ubuntu_team.defaultrenewalperiod = 365
     >>> flush_database_updates()
-    >>> sabdfl_on_ubuntu_team.sendExpirationWarningEmail()
+    >>> kamion_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
     >>> [notification] = pop_notifications()
     >>> notification['To']
-    'Mark Shuttleworth <mark@hbd.com>'
+    'colin.watson@ubuntulinux.com'
     >>> notification['Subject']
     'Launchpad: ubuntu-team team membership about to expire'
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
-    Hi Mark Shuttleworth
+    Hi Colin Watson
     <BLANKLINE>
-    On 2050-03-03, ... from now, your membership of the
-    Ubuntu Team (ubuntu-team) Launchpad team is due to expire.
+    On ... from now, your membership
+    of the Ubuntu Team (ubuntu-team) Launchpad team
+    is due to expire.
     <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     If you want, you can renew this membership at
-    <http://launchpad.dev/~sabdfl/+expiringmembership/ubuntu-team>
+    <http://launchpad.dev/~kamion/+expiringmembership/ubuntu-team>
     <BLANKLINE>
     If your membership does expire, we'll send you one more message to let
     you know it's happened.
@@ -512,34 +540,68 @@ renew his own membership.
     Thanks for using Launchpad!
     <BLANKLINE>
 
-    >>> guadamen.renewal_policy = TeamMembershipRenewalPolicy.ONDEMAND
-    >>> guadamen.defaultrenewalperiod = 365
-    >>> flush_database_updates()
-    >>> ubuntu_team_on_guadamen = membershipset.getByPersonAndTeam(
-    ...     ubuntu_team, guadamen)
-    >>> ubuntu_team_on_guadamen.sendExpirationWarningEmail()
+    >>> beta_testers_on_ubuntu_team.sendExpirationWarningEmail()
     >>> transaction.commit()
     >>> [notification] = pop_notifications()
     >>> notification['To']
-    'mark@hbd.com'
+    'beta-admin@launchpad.net'
     >>> notification['Subject']
-    'Launchpad: guadamen team membership about to expire'
+    'Launchpad: ubuntu-team team membership about to expire'
     >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
     Hi,
     <BLANKLINE>
-    On 2049-02-03, ... from now, the membership of
-    Ubuntu Team (ubuntu-team) (which you are the owner of) in the
-    GuadaMen (guadamen) Launchpad team is due to expire.
-    <http://launchpad.dev/~guadamen>
+    On ..., nine days from now, the membership
+    of Launchpad Beta Testers (launchpad-beta-testers) (which you are
+    the owner of) in the Ubuntu Team (ubuntu-team) Launchpad team
+    is due to expire.
+    <http://launchpad.dev/~ubuntu-team>
     <BLANKLINE>
     If you want, you can renew this membership at
-    <http://launchpad.dev/~ubuntu-team/+expiringmembership/guadamen>
+    <http://.../~launchpad-beta-testers/+expiringmembership/...>
     <BLANKLINE>
     If the membership does expire, we'll send you one more message to let
     you know it's happened.
     <BLANKLINE>
     Thanks for using Launchpad!
     <BLANKLINE>
+
+If the team's renewal policy is NONE but the member has the necessary rights
+to change the expiration date of his own membership (i.e. by being the team's
+owner), the notification he gets will contain a link to his memberhip page,
+where he can extend it.
+
+    >>> landscape.renewal_policy = TeamMembershipRenewalPolicy.NONE
+    >>> landscape.teamowner.preferredemail.email
+    u'test@canonical.com'
+    >>> sampleperson_on_landscape = membershipset.getByPersonAndTeam(
+    ...     sampleperson, landscape)
+    >>> sampleperson_on_landscape.setExpirationDate(
+    ...     utc_now + timedelta(days=9), sampleperson)
+    >>> flush_database_updates()
+    >>> sampleperson_on_landscape.sendExpirationWarningEmail()
+    >>> transaction.commit()
+    >>> [notification] = pop_notifications()
+    >>> notification['To']
+    'test@canonical.com'
+    >>> notification['Subject']
+    'Launchpad: landscape-developers team membership about to expire'
+    >>> print notification.get_payload() #doctest: -NORMALIZE_WHITESPACE
+    Hi Sample Person
+    <BLANKLINE>
+    On ..., nine days from now, your membership
+    of the Landscape Developers (landscape-developers) Launchpad team
+    is due to expire.
+    <http://launchpad.dev/~landscape-developers>
+    <BLANKLINE>
+    To stay a member of this team you should extend your membership at
+    <http://launchpad.dev/~landscape-developers/+member/name12>
+    <BLANKLINE>
+    If your membership does expire, we'll send you one more message to let
+    you know it's happened.
+    <BLANKLINE>
+    Thanks for using Launchpad!
+    <BLANKLINE>
+
 
 == Membership expiration notification ==
 
@@ -551,8 +613,6 @@ should expire will retain their status and have their dateexpires update. A
 notification is also sent to the member and to team admins when a membership
 is automatically renewed.
 
-    >>> import pytz
-    >>> from datetime import datetime, timedelta
     >>> from zope.security.proxy import removeSecurityProxy
     >>> from canonical.lp.dbschema import TeamMembershipRenewalPolicy
     >>> utc_now = datetime.now(pytz.timezone('UTC'))

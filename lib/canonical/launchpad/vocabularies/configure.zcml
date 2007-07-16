@@ -41,8 +41,13 @@
     />
 
   <vocabulary
-    name="BranchVisibilityPolicy"
-    factory="canonical.launchpad.vocabularies.BranchVisibilityPolicyVocabulary"
+    name="BranchType"
+    factory="canonical.launchpad.vocabularies.BranchTypeVocabulary"
+    />
+
+  <vocabulary
+    name="BranchVisibilityRule"
+    factory="canonical.launchpad.vocabularies.BranchVisibilityRuleVocabulary"
     />
 
   <vocabulary
@@ -106,6 +111,11 @@
       />
 
   <vocabulary
+      name="CodeImportReviewStatus"
+      factory="canonical.launchpad.vocabularies.CodeImportReviewStatusVocabulary"
+      />
+
+  <vocabulary
       name="CountryName"
       factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
       />
@@ -134,8 +144,11 @@
     name="DistroSeriesStatus"
     factory="canonical.launchpad.vocabularies.DistroSeriesStatusVocabulary"
     />
-
   <vocabulary
+    name="FAQ"
+    factory="canonical.launchpad.vocabularies.FAQVocabulary"
+    />
+   <vocabulary
     name="FilteredDistroArchSeries"
     factory="canonical.launchpad.vocabularies.FilteredDistroArchSeriesVocabulary"
     />
@@ -173,6 +186,11 @@
   <vocabulary
     name="Language"
     factory="canonical.launchpad.vocabularies.LanguageVocabulary"
+    />
+
+  <vocabulary
+    name="MailingListStatus"
+    factory="canonical.launchpad.vocabularies.MailingListStatusVocabulary"
     />
 
   <vocabulary
@@ -316,8 +334,8 @@
     />
 
   <vocabulary
-    name="SpecificationDelivery"
-    factory="canonical.launchpad.vocabularies.SpecificationDeliveryVocabulary"
+    name="SpecificationImplementationStatus"
+    factory="canonical.launchpad.vocabularies.SpecificationImplementationStatusVocabulary"
     />
 
   <vocabulary
@@ -331,8 +349,8 @@
     />
 
   <vocabulary
-    name="SpecificationStatus"
-    factory="canonical.launchpad.vocabularies.SpecificationStatusVocabulary"
+    name="SpecificationDefinitionStatus"
+    factory="canonical.launchpad.vocabularies.SpecificationDefinitionStatusVocabulary"
     />
 
   <vocabulary
@@ -433,6 +451,11 @@
   <vocabulary
     name="ValidOwner"
     factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    />
+
+  <vocabulary
+    name="ValidTeam"
+    factory="canonical.launchpad.vocabularies.ValidTeamVocabulary"
     />
 
   <vocabulary

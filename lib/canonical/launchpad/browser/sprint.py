@@ -45,7 +45,7 @@ from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation)
 from canonical.lp.dbschema import (
     SpecificationFilter, SpecificationPriority, SpecificationSort,
-    SpecificationStatus)
+    SpecificationDefinitionStatus)
 from canonical.widgets.textwidgets import LocalDateTimeWidget
 
 
@@ -110,13 +110,13 @@ class SprintOverviewMenu(ApplicationMenu):
         text = 'Change branding'
         summary = 'Modify the imagery used to represent this meeting'
         return Link('+branding', text, summary, icon='edit')
-
+    
 
 class SprintSpecificationsMenu(ApplicationMenu):
 
     usedfor = ISprint
     facet = 'specifications'
-    links = ['assignments', 'declined', 'settopics', 'roadmap']
+    links = ['assignments', 'declined', 'settopics', 'roadmap', 'addspec']
 
     def assignments(self):
         text = 'Assignments'
@@ -138,6 +138,11 @@ class SprintSpecificationsMenu(ApplicationMenu):
         text = 'Roadmap'
         summary = 'Suggest a sequence of implementation for these features'
         return Link('+roadmap', text, summary, icon='info')
+
+    def addspec(self):
+        text = 'Register blueprint'
+        summary = 'Register a new blueprint for this meeting'
+        return Link('+addspec', text, summary, icon='info')
 
 
 class SprintSetNavigation(GetitemNavigation):
@@ -450,9 +455,10 @@ class SprintMeetingExportView(LaunchpadView):
                 spec.priority < SpecificationPriority.LOW):
                 continue
 
-            if spec.status not in [SpecificationStatus.NEW,
-                                   SpecificationStatus.DISCUSSION,
-                                   SpecificationStatus.DRAFT]:
+            if (spec.definition_status not in
+                [SpecificationDefinitionStatus.NEW,
+                 SpecificationDefinitionStatus.DISCUSSION,
+                 SpecificationDefinitionStatus.DRAFT]):
                 continue
 
             # get the list of attendees that will attend the sprint

@@ -14,6 +14,18 @@
   </metal:rightportlets>
 
   <metal:heading fill-slot="pageheading">
+
+    <tal:block condition="view/required:launchpad.Edit">
+      <p tal:condition="not: context/products" class="warning message"> 
+        There are no projects registered for
+        <span tal:replace="context/displayname">project displayname</span>.
+        <br />
+        You need to <a href="+newproduct">register another project that is
+        part of <tal:project replace="context/displayname" /></a> or associate
+        an existing project with it.
+      </p>
+    </tal:block>
+
     <tal:untranslatable condition="not: context/translatables">
       <h1 tal:condition="context/required:launchpad.Edit">
         How to set up translations
