@@ -137,6 +137,13 @@
     template="../templates/sprint-meeting-export.pt"
     />
 
+  <browser:page
+    name="+addspec"
+    for="canonical.launchpad.interfaces.ISprint"
+    class="canonical.launchpad.browser.SprintSpecificationAddView"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+    />
 
   <!-- IHasSprints -->
   <browser:pages

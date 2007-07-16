@@ -7,6 +7,7 @@ __metaclass__ = type
 __all__ = [
     'ILoginToken',
     'ILoginTokenSet',
+    'IGPGKeyValidationForm',
     ]
 
 from zope.schema import Datetime, Int, Text, TextLine
@@ -103,6 +104,22 @@ class ILoginToken(Interface):
         him to finish the Launchpad registration process.
         """
 
+    def sendPasswordResetNeutralEmail():
+        """Identical to ILoginToken.sendPasswordResetEmail but in this case
+        the email sent is neutral --it doesn't mention Launchpad.
+
+        This is needed when Launchpad is acting as an OpenID provider for the
+        Ubuntu Shop/Wiki.
+        """
+
+    def sendNewUserNeutralEmail():
+        """Identical to ILoginToken.sendNewUserEmail but in this case
+        the email sent is neutral --it doesn't mention Launchpad.
+
+        This is needed when Launchpad is acting as an OpenID provider for the
+        Ubuntu Shop/Wiki.
+        """
+
     def sendProfileCreatedEmail(profile, comment):
         """Notify the profile's email owner that a new profile was created.
 
@@ -192,4 +209,10 @@ class ILoginTokenSet(Interface):
 
         Returns the default value if there is no such LoginToken.
         """
+
+
+class IGPGKeyValidationForm(Interface):
+    """The schema used by ILoginToken's +validategpg form."""
+
+    signed_text = Text(title=_('Signed text'), required=True)
 
