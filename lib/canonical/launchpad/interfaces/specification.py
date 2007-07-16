@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'ISpecification',
+    'INewSpecificationForm',
     'ISpecificationSet',
     'ISpecificationDelta',
     ]
@@ -23,6 +24,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces import IHasOwner, IProject
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
+from canonical.launchpad.interfaces.sprint import ISprint
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 
@@ -62,6 +64,10 @@ class SpecNameField(ContentNameField):
             # target defines a single specification namespace, we ask
             # the target to perform the lookup.
             return self.context.target.getSpecification(name)
+        elif ISprint.providedBy(self.context):
+            # The context is a sprint. Since a sprint corresponds
+            # to multiple specification namespaces, we return None.
+            return None
         else:
             # The context is a entity such as a product or distribution.
             # Since this type of context is associated with exactly one
@@ -149,12 +155,6 @@ class ISpecification(IHasOwner, ICanBeMentored):
         description=_("The project for which this proposal is being made."),
         required=True,
         vocabulary='DistributionOrProduct')
-    projecttarget = Choice(
-        title=_("For"),
-        description=_("The project for which this proposal is being made."),
-        required=True,
-        vocabulary='ProjectProducts')
-
 
     # series
     productseries = Choice(title=_('Series Goal'), required=False,
@@ -366,6 +366,22 @@ class ISpecification(IHasOwner, ICanBeMentored):
 
     def linkBranch(branch, summary=None):
         """Link the given branch to this specification."""
+
+
+class INewSpecificationForm(ISpecification):
+    """ A schema for registering new blueprints"""
+    sprint = Choice(
+        title=_("Propose for sprint"),
+        description=_("the sprint to which agenda this blueprint is "
+                      "being suggested."),
+        required=False,
+        vocabulary='FutureSprint')
+    
+    project_target = Choice(
+        title=_("For"),
+        description=_("The project for which this proposal is being made."),
+        required=True,
+        vocabulary='ProjectProducts')
 
 
 # Interfaces for containers

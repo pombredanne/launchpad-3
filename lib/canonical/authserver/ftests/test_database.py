@@ -5,12 +5,21 @@
 __metaclass__ = type
 
 import unittest
+import datetime
 
+import pytz
+import transaction
+from zope.component import getUtility
 from zope.interface.verify import verifyObject
+from zope.security.management import getSecurityPolicy, setSecurityPolicy
+from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.database.sqlbase import cursor, sqlvalues
 
+from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.launchpad.interfaces import IBranchSet, IPersonSet
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
+from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
@@ -23,6 +32,9 @@ from canonical.lp import dbschema
 from canonical.launchpad.ftests.harness import LaunchpadTestCase
 
 from canonical.testing.layers import LaunchpadScriptLayer
+
+
+UTC = pytz.timezone('UTC')
 
 
 class TestDatabaseSetup(LaunchpadTestCase):
@@ -168,6 +180,67 @@ class DatabaseStorageTestCase(unittest.TestCase):
         userDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
         self.assertEqual('sabdfl', userDict['name'])
 
+
+class NewDatabaseStorageTestCase(unittest.TestCase):
+    # Tests that call database methods that use the new-style database
+    # connection infrastructure.
+
+    layer = LaunchpadScriptLayer
+
+    def setUp(self):
+        LaunchpadScriptLayer.switchDbConfig('authserver')
+        super(NewDatabaseStorageTestCase, self).setUp()
+        self._old_policy = getSecurityPolicy()
+        setSecurityPolicy(LaunchpadSecurityPolicy)
+
+    def tearDown(self):
+        setSecurityPolicy(self._old_policy)
+        super(NewDatabaseStorageTestCase, self).tearDown()
+
+    def _getTime(self, row_id):
+        cur = cursor()
+        cur.execute("""
+            SELECT mirror_request_time FROM Branch
+            WHERE id = %d""" % row_id)
+        [mirror_request_time] = cur.fetchone()
+        return mirror_request_time
+
+    def test_createBranch(self):
+        storage = DatabaseUserDetailsStorageV2(None)
+        branchID = storage._createBranchInteraction(
+            12, 'name12', 'firefox', 'foo')
+        # Assert branchID now appears in database.  Note that title and summary
+        # should be NULL, and author should be set to the owner.
+        cur = cursor()
+        cur.execute("""
+            SELECT Person.name, Product.name, Branch.name, Branch.title,
+                Branch.summary, Branch.author
+            FROM Branch, Person, Product
+            WHERE Branch.id = %d
+            AND Person.id = Branch.owner
+            AND Product.id = Branch.product
+            """
+            % branchID)
+        self.assertEqual(
+            ['name12', 'firefox', 'foo', None, None, 12], cur.fetchone())
+
+    def test_createBranch_junk(self):
+        # Create a branch with NULL product too:
+        storage = DatabaseUserDetailsStorageV2(None)
+        branchID = storage._createBranchInteraction(
+            1, 'sabdfl', '+junk', 'foo')
+        cur = cursor()
+        cur.execute("""
+            SELECT Person.name, Branch.product, Branch.name, Branch.title,
+                Branch.summary, Branch.author
+            FROM Branch, Person
+            WHERE Branch.id = %d
+            AND Person.id = Branch.owner
+            """
+            % branchID)
+        self.assertEqual(
+            ['sabdfl', None, 'foo', None, None, 1], cur.fetchone())
+
     def test_fetchProductID(self):
         storage = DatabaseUserDetailsStorageV2(None)
         productID = storage._fetchProductIDInteraction('firefox')
@@ -178,68 +251,75 @@ class DatabaseStorageTestCase(unittest.TestCase):
         self.assertEqual('', productID)
 
     def test_getBranchesForUser(self):
-        # Although user 12 has lots of branches in the sample data, they only
-        # have three push branches: "pushed", "mirrored" and "scanned" on the
-        # "gnome-terminal" product, and another branch on "landscape".
+        # getBranchesForUser returns all of the hosted branches that a user may
+        # write to. The branches are grouped by product, and are specified by
+        # name and id. The name and id of the products are also included.
         storage = DatabaseUserDetailsStorageV2(None)
-        branches = storage._getBranchesForUserInteraction(self.cursor, 12)
-        self.assertEqual(
-            2, len(branches), "Expected 2 products but got %s" % len(branches))
-        gnomeTermProduct = branches[0]
-        gnomeTermID, gnomeTermName, gnomeTermBranches = gnomeTermProduct
-        self.assertEqual(6, gnomeTermID)
-        self.assertEqual('gnome-terminal', gnomeTermName)
-        self.assertEqual(
-            set([(25, 'pushed'), (26, 'mirrored'), (27, 'scanned')]),
-            set(gnomeTermBranches))
+        fetched_branches = storage._getBranchesForUserInteraction(12)
+
+        # Flatten the structured return value of getBranchesForUser so that we
+        # can easily compare it to the data from our SQLObject methods.
+        flattened = []
+        for user_id, branches_by_product in fetched_branches:
+            for (product_id, product_name), branches in branches_by_product:
+                for branch_id, branch_name in branches:
+                    flattened.append(
+                        (user_id, product_id, product_name, branch_id,
+                         branch_name))
+
+        # Get the hosted branches for user 12 from SQLObject classes.
+        login(ANONYMOUS)
+        try:
+            person = getUtility(IPersonSet).get(12)
+            login(person.preferredemail.email)
+            expected_branches = getUtility(
+                IBranchSet).getHostedBranchesForPerson(person)
+            expected_branches = [
+                (branch.owner.id, branch.product.id, branch.product.name,
+                 branch.id, branch.name)
+                for branch in expected_branches]
+        finally:
+            logout()
+
+        self.assertEqual(set(expected_branches), set(flattened))
 
     def test_getBranchesForUserNullProduct(self):
         # getBranchesForUser returns branches for hosted branches with no
         # product.
+        login(ANONYMOUS)
+        try:
+            person = getUtility(IPersonSet).get(12)
+            login_email = person.preferredemail.email
+        finally:
+            logout()
 
-        # First, insert a push branch (url is NULL) with a NULL product.
-        self.cursor.execute("""
-            INSERT INTO Branch
-                (owner, product, name, title, summary, author, url)
-            VALUES
-                (12, NULL, 'foo-branch', NULL, NULL, 12, NULL)
-            """)
+        transaction.begin()
+        login(login_email)
+        try:
+            branch = getUtility(IBranchSet).new(
+                dbschema.BranchType.HOSTED, 'foo-branch', person, person,
+                None, None, None)
+        finally:
+            logout()
+            transaction.commit()
 
         storage = DatabaseUserDetailsStorageV2(None)
-        branchInfo = storage._getBranchesForUserInteraction(self.cursor, 12)
-        self.assertEqual(3, len(branchInfo))
+        branchInfo = storage._getBranchesForUserInteraction(12)
 
-        gnomeTermProduct, landscapeProduct, junkProduct = branchInfo
-        # Check that the details and branches for the junk product are correct:
-        # empty ID and name for the product, with a single branch named
-        # 'foo-branch'.
-        junkID, junkName, junkBranches = junkProduct
-        self.assertEqual('', junkID)
-        self.assertEqual('', junkName)
-        self.assertEqual(1, len(junkBranches))
-        fooBranchID, fooBranchName = junkBranches[0]
-        self.assertEqual('foo-branch', fooBranchName)
-
-    def test_createBranch(self):
-        storage = DatabaseUserDetailsStorageV2(None)
-        branchID = storage._createBranchInteraction(self.cursor, 12, 6, 'foo')
-        # Assert branchID now appears in database.  Note that title and summary
-        # should be NULL, and author should be set to the owner.
-        self.cursor.execute("""
-            SELECT owner, product, name, title, summary, author FROM Branch
-            WHERE id = %d"""
-            % branchID)
-        self.assertEqual(
-            [12, 6, 'foo', None, None, 12], self.cursor.fetchone())
-
-        # Create a branch with NULL product too:
-        branchID = storage._createBranchInteraction(self.cursor, 1, None, 'foo')
-        self.cursor.execute("""
-            SELECT owner, product, name, title, summary, author FROM Branch
-            WHERE id = %d"""
-            % branchID)
-        self.assertEqual(
-            [1, None, 'foo', None, None, 1], self.cursor.fetchone())
+        for person_id, by_product in branchInfo:
+            if person_id == 12:
+                for (product_id, product_name), branches in by_product:
+                    if product_id == '':
+                        self.assertEqual('', product_name)
+                        self.assertEqual(1, len(branches))
+                        branch_id, branch_name = branches[0]
+                        self.assertEqual('foo-branch', branch_name)
+                        break
+                else:
+                    self.fail("Couldn't find +junk branch")
+                break
+        else:
+            self.fail("Couldn't find user 12")
 
     def test_getBranchInformation_owned(self):
         # When we get the branch information for one of our own branches (i.e.
@@ -271,9 +351,34 @@ class DatabaseStorageTestCase(unittest.TestCase):
         self.assertEqual(13, branch_id)
         self.assertEqual(READ_ONLY, permissions)
 
+    def test_getBranchInformation_private(self):
+        # When we get the branch information for a private branch that is
+        # hidden to us, it is an if the branch doesn't exist at all.
+        store = DatabaseUserDetailsStorageV2(None)
+        # salgado is a member of landscape-developers.
+        store._createBranchInteraction(
+            'salgado', 'landscape-developers', 'landscape',
+            'some-branch')
+        # ddaa is not an admin, not a Landscape developer.
+        branch_id, permissions = store._getBranchInformationInteraction(
+            'ddaa', 'landscape-developers', 'landscape', 'some-branch')
+        self.assertEqual('', branch_id)
+        self.assertEqual('', permissions)
+
+    def test_initialMirrorRequest(self):
+        # The default 'mirror_request_time' for a newly created hosted branch
+        # should be None.
+        storage = DatabaseUserDetailsStorageV2(None)
+        branchID = storage._createBranchInteraction(
+            1, 'sabdfl', '+junk', 'foo')
+        self.assertEqual(self._getTime(branchID), None)
+
 
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
     # Tests that do some database writes (but makes sure to roll them back)
+
+    layer = LaunchpadScriptLayer
+
     def setUp(self):
         TestDatabaseSetup.setUp(self)
         # This is the salt for Mark's password in the sample data.
@@ -285,14 +390,6 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
             WHERE id = %d""" % row_id)
         [mirror_request_time] = self.cursor.fetchone()
         return mirror_request_time
-
-    def test_initialMirrorRequest(self):
-        # The default 'mirror_request_time' for a newly created hosted branch
-        # should be None.
-        storage = DatabaseUserDetailsStorageV2(None)
-        branchID = storage._createBranchInteraction(self.cursor, 1, None,
-                                                    'foo')
-        self.assertEqual(self._getTime(branchID), None)
 
     def test_requestMirror(self):
         # requestMirror should set the mirror_request_time field to be the
@@ -918,6 +1015,26 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.connection.commit()
         self.failIf(self.isBranchInPullQueue(14),
             "import branch mirrored <1 day ago in pull queue.")
+
+    def test_recordSuccess(self):
+        # recordSuccess must insert the given data into BranchActivity.
+        started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
+        completed = datetime.datetime(2007, 07, 05, 19, 34, 24, tzinfo=UTC)
+        started_tuple = tuple(started.utctimetuple())
+        completed_tuple = tuple(completed.utctimetuple())
+        success = self.storage._recordSuccessInteraction(
+            self.cursor, 'test-recordsuccess', 'vostok',
+            started_tuple, completed_tuple)
+        self.assertEqual(success, True, '_recordSuccessInteraction failed')
+
+        self.cursor.execute("""
+            SELECT name, hostname, date_started, date_completed
+                FROM ScriptActivity where name = 'test-recordsuccess'""")
+        row = self.cursor.fetchone()
+        self.assertEqual(row[0], 'test-recordsuccess')
+        self.assertEqual(row[1], 'vostok')
+        self.assertEqual(row[2], started.replace(tzinfo=None))
+        self.assertEqual(row[3], completed.replace(tzinfo=None))
 
 
 def test_suite():

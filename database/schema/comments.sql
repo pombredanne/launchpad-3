@@ -14,6 +14,7 @@ COMMENT ON COLUMN AnswerContact.date_created IS 'The date the answer contact was
 
 -- Branch 
 COMMENT ON TABLE Branch IS 'Bzr branch';
+COMMENT ON COLUMN Branch.branch_type IS 'Branches are currently one of HOSTED (1), MIRRORED (2), or IMPORTED (3).';
 COMMENT ON COLUMN Branch.whiteboard IS 'Notes on the current status of the branch';
 COMMENT ON COLUMN Branch.summary IS 'A single paragraph description of the branch';
 COMMENT ON COLUMN Branch.lifecycle_status IS 'Authors assesment of the branchs maturity';
@@ -597,7 +598,7 @@ COMMENT ON COLUMN QuestionReopening.priorstate IS 'The state of the question bef
 COMMENT ON TABLE QuestionSubscription IS 'A subscription of a person to a particular question.';
 
 
--- FAQ 
+-- FAQ
 COMMENT ON TABLE FAQ IS 'A technical document containing the answer to a common question.';
 COMMENT ON COLUMN FAQ.id IS 'The FAQ document sequence number.';
 COMMENT ON COLUMN FAQ.title IS 'The document title.';

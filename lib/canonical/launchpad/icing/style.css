@@ -166,7 +166,7 @@ img {
   border: none;
 }
 
-/* see launchpad.js:activateCollapsables() */
+/* see launchpad.js:activateCollapsibles() */
 .collapsible legend a, .collapsible legend a:visited {
   text-decoration: none;
   color: #000088;
@@ -175,6 +175,8 @@ img.collapseIcon {text-decoration: none; margin-bottom: -3px;}
 .collapsible legend a span {text-decoration: underline;}
 .collapsible {padding: 0; margin: 0;}
 .collapsed {border: none; margin-bottom: 0;}
+fieldset .collapsed {display: none;}
+fieldset .expanded {display: block;}
 
 form.primary.search {
   margin-bottom: 2em;
@@ -734,6 +736,9 @@ a conditional comment in main-template.pt to work around the above rule. */
   color: #FFFFFF;
   font-weight: bold;
 }
+#portlets .portlet.expanded h2 {
+  background-image: url(leftnav_bg_expanded.gif);
+}
 #portlets #actions h2 {
   background-image: url(leftnav_bg_uncollapsible.gif);
 }
@@ -943,6 +948,7 @@ ul.distro, li.distro                 {list-style-image: url(/@@/distribution);}
 ul.distroseries, li.distroseries   {list-style-image: url(/@@/distribution);}
 ul.download, li.download             {list-style-image: url(/@@/download);}
 ul.edit, li.edit                     {list-style-image: url(/@@/edit);}
+ul.faq, li.faq                       {list-style-image: url(/@@/faq);}
 ul.info, li.info                     {list-style-image: url(/@@/info);}
 ul.language, li.language             {list-style-image: url(/@@/language);}
 ul.locked, li.locked                 {list-style-image: url(/@@/locked);}
@@ -1480,7 +1486,7 @@ li {
 }
 */
 
-.bug-summary {
+.bug-summary, .summary {
   font-weight: bold;
 }
 
