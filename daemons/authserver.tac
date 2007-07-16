@@ -12,7 +12,7 @@ from canonical.config import dbconfig
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 
 dbconfig.setConfigSection('authserver')
-execute_zcml_for_scripts()
+execute_zcml_for_scripts(use_web_security=True)
 
 application = service.Application("authserver")
 svc = AuthserverService()

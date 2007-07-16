@@ -47,6 +47,7 @@ from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.components.request_country import request_country
 from canonical.launchpad.browser.questiontarget import (
@@ -66,7 +67,8 @@ from canonical.lp.dbschema import DistroSeriesStatus, MirrorContent
 
 
 class DistributionNavigation(
-    GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin):
+    GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin,
+    FAQTargetNavigationMixin):
 
     usedfor = IDistribution
 
@@ -301,15 +303,11 @@ class DistributionBugsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = ['new', 'bugcontact', 'securitycontact', 'cve_list']
+    links = ['bugcontact', 'securitycontact', 'cve_list']
 
     def cve_list(self):
         text = 'CVE reports'
         return Link('+cve', text, icon='cve')
-
-    def new(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def bugcontact(self):
@@ -362,8 +360,9 @@ class DistributionSpecificationsMenu(ApplicationMenu):
             icon='info')
 
     def new(self):
-        text = 'Register new blueprint'
-        return Link('+addspec', text, icon='add')
+        text = 'Register a blueprint'
+        summary = 'Register a new blueprint for %s' % self.context.title
+        return Link('+addspec', text, summary, icon='add')
 
 
 class DistributionTranslationsMenu(ApplicationMenu):

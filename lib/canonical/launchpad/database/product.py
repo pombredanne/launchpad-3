@@ -22,7 +22,8 @@ from canonical.cachedproperty import cachedproperty
 
 from canonical.lp.dbschema import (
     TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationStatus, RosettaImportStatus)
+    SpecificationDefinitionStatus, SpecificationImplementationStatus,
+    RosettaImportStatus)
 
 from canonical.launchpad.helpers import shortlist
 
@@ -34,6 +35,7 @@ from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask
+from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.productseries import ProductSeries
 from canonical.launchpad.database.productbounty import ProductBounty
 from canonical.launchpad.database.distribution import Distribution
@@ -52,6 +54,7 @@ from canonical.launchpad.database.translationimportqueue import (
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     ICalendarOwner,
+    IFAQTarget,
     IHasIcon,
     IHasLogo,
     IHasMugshot,
@@ -72,7 +75,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
               QuestionTargetMixin):
     """A Product."""
 
-    implements(IProduct, ICalendarOwner, IQuestionTarget,
+    implements(IProduct, ICalendarOwner, IFAQTarget, IQuestionTarget,
                IHasLogo, IHasMugshot, IHasIcon, IHasTranslationImports)
 
     _table = 'Product'
@@ -331,6 +334,26 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         """
         return {'product': self}
 
+    def newFAQ(self, owner, title, content, keywords=None, date_created=None):
+        """See `IFAQTarget`."""
+        return FAQ.new(
+            owner=owner, title=title, content=content, keywords=keywords,
+            date_created=date_created, product=self)
+
+    def findSimilarFAQs(self, summary):
+        """See `IFAQTarget`."""
+        return FAQ.findSimilar(summary, product=self)
+
+    def getFAQ(self, id):
+        """See `IFAQCollection`."""
+        return FAQ.getForTarget(id, self)
+
+    def searchFAQs(self, search_text=None, owner=None, sort=None):
+        """See `IFAQCollection`."""
+        return FAQSearch(
+            search_text=search_text, owner=owner, sort=sort,
+            product=self).getResults()
+
     @property
     def translatable_packages(self):
         """See `IProduct`."""
@@ -462,7 +485,7 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = (
-                ['-priority', 'Specification.status', 'Specification.name'])
+                ['-priority', 'Specification.definition_status', 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -476,7 +499,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+              quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -490,9 +514,9 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationStatus.OBSOLETE,
-                          SpecificationStatus.SUPERSEDED)
+            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                          SpecificationDefinitionStatus.SUPERSEDED)
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -724,7 +748,7 @@ class ProductSet:
         return self.stats.value('reviewed_products')
 
     def count_buggy(self):
-        return self.stats.value('products_with_translations')
+        return self.stats.value('projects_with_bugs')
 
     def count_featureful(self):
         return self.stats.value('products_with_blueprints')
