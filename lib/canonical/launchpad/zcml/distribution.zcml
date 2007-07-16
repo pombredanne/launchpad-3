@@ -21,11 +21,21 @@
     <!-- IQuestionTarget -->
     <allow attributes="getQuestion searchQuestions findSimilarQuestions
       answer_contacts direct_answer_contacts getSupportedLanguages
-      getQuestionLanguages"
+      getQuestionLanguages getAnswerContactsForLanguage
+      getAnswerContactRecipients"
       />
     <require
       permission="launchpad.AnyPerson"
       attributes="newQuestion addAnswerContact removeAnswerContact"
+      />
+    <!-- IFAQTarget -->
+    <allow
+      interface="canonical.launchpad.interfaces.IFAQCollection"
+      attributes="findSimilarFAQs"
+      />
+    <require
+      permission="launchpad.Moderate"
+      attributes="newFAQ"
       />
   </content>
 

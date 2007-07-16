@@ -12,9 +12,9 @@ This table effectively creates tuples of (Project or Product, Team,
 Policy).  Since there is no team that is used to define everyone, the
 non-specifying of a team means *everyone*.
 
-The Policy is defined by the enumerated type BranchVisibilityPolicy.
+The Policy is defined by the enumerated type BranchVisibilityRule.
 
-    >>> from canonical.lp.dbschema import BranchVisibilityPolicy
+    >>> from canonical.lp.dbschema import BranchVisibilityRule
 
 There are currently four visibility policies:
  * Public - branches are public by default for the specified team.
@@ -22,9 +22,11 @@ There are currently four visibility policies:
  * Private only - branches are private by default, and the owner
      of the branch is not able to make them public.
  * Forbidden - members of the specified team are not able to create
-     branches in the context.
+     branches in the context.  This is only valid as a base policy
+     that applies to everyone, and cannot be used as a selective
+     discriminator against certain teams.
 
-    >>> for item in BranchVisibilityPolicy.items:
+    >>> for item in BranchVisibilityRule.items:
     ...     print repr(item)
     <Item PUBLIC (1) from ...>
     <Item PRIVATE (2) from ...>
@@ -74,9 +76,9 @@ products can set branch visibility policies.
     ...     else:
     ...         return team.displayname
 
-    >>> def print_policy_items(context):
-    ...     for item in context.branch_visibility_policy_items:
-    ...         print "%s: %s" % (teamname(item.team), item.policy.title)
+    >>> def print_team_policies(context):
+    ...     for item in context.getBranchVisibilityTeamPolicies():
+    ...         print "%s: %s" % (teamname(item.team), item.rule.title)
 
 
 == Default policy ==
@@ -87,11 +89,15 @@ is not returned with the items attribute.  In order to override this
 implicit policy you need to explicitly define a policy for everyone, and
 this is done by specifying None for the team.
 
-    >>> print_policy_items(evolution)
-    >>> evolution.setTeamBranchVisibilityPolicy(
-    ...     None, BranchVisibilityPolicy.PUBLIC)
-    >>> print_policy_items(evolution)
+    >>> print_team_policies(evolution)
+    >>> evolution.getBaseBranchVisibilityRule()
+    <Item PUBLIC ...BranchVisibilityRule...
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     None, BranchVisibilityRule.PUBLIC)
+    >>> print_team_policies(evolution)
     *everyone*: Public
+    >>> evolution.getBaseBranchVisibilityRule()
+    <Item PUBLIC ...BranchVisibilityRule...
 
 
 == Setting the policy for teams ==
@@ -99,81 +105,83 @@ this is done by specifying None for the team.
 Setting the policy for a team overrides any existing policy that may
 exist for that team.
 
-    >>> evolution.setTeamBranchVisibilityPolicy(
-    ...     launchpad_team, BranchVisibilityPolicy.PUBLIC)
-    >>> print_policy_items(evolution)
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     launchpad_team, BranchVisibilityRule.PUBLIC)
+    >>> print_team_policies(evolution)
     *everyone*: Public
     Launchpad Developers: Public
 
 Setting again replaces the policy.
 
-    >>> evolution.setTeamBranchVisibilityPolicy(
-    ...     launchpad_team, BranchVisibilityPolicy.PRIVATE)
-    >>> print_policy_items(evolution)
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     launchpad_team, BranchVisibilityRule.PRIVATE)
+    >>> print_team_policies(evolution)
     *everyone*: Public
     Launchpad Developers: Private
 
 Setting the policy for *everyone* is done by passing None for the team.
 
-    >>> evolution.setTeamBranchVisibilityPolicy(
-    ...     None, BranchVisibilityPolicy.FORBIDDEN)
-    >>> print_policy_items(evolution)
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     None, BranchVisibilityRule.FORBIDDEN)
+    >>> print_team_policies(evolution)
     *everyone*: Forbidden
     Launchpad Developers: Private
+    >>> evolution.getBaseBranchVisibilityRule()
+    <Item FORBIDDEN ...BranchVisibilityRule...
 
 
 == Removing teams from the policy object ==
 
     >>> evolution.removeTeamFromBranchVisibilityPolicy(launchpad_team)
-    >>> print_policy_items(evolution)
+    >>> print_team_policies(evolution)
     *everyone*: Forbidden
 
 Attempting to remove a team that doesn't exist is allowed, but does not
 change the state of the policy object.
 
     >>> evolution.removeTeamFromBranchVisibilityPolicy(launchpad_team)
-    >>> print_policy_items(evolution)
+    >>> print_team_policies(evolution)
     *everyone*: Forbidden
 
 In order to remove a policy assigned to everyone you pass None in for
 the team name.
 
     >>> evolution.removeTeamFromBranchVisibilityPolicy(None)
-    >>> print_policy_items(evolution)
+    >>> print_team_policies(evolution)
 
 
-== Listing the policy items ==
+== Listing the team policies ==
 
-Policy items are listed in alphabetical order of the team display name
+Team policies are listed in alphabetical order of the team display name
 with the policy for *everybody* being first.
 
-    >>> evolution.setTeamBranchVisibilityPolicy(
-    ...     ubuntu_gnome_team, BranchVisibilityPolicy.PRIVATE)
-    >>> evolution.setTeamBranchVisibilityPolicy(
-    ...     launchpad_team, BranchVisibilityPolicy.PRIVATE)
-    >>> print_policy_items(evolution)
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     ubuntu_gnome_team, BranchVisibilityRule.PRIVATE)
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     launchpad_team, BranchVisibilityRule.PRIVATE)
+    >>> print_team_policies(evolution)
     Launchpad Developers: Private
     Ubuntu Gnome Team: Private
 
-    >>> evolution.setTeamBranchVisibilityPolicy(
-    ...     None, BranchVisibilityPolicy.PUBLIC)
-    >>> print_policy_items(evolution)
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     None, BranchVisibilityRule.PUBLIC)
+    >>> print_team_policies(evolution)
     *everyone*: Public
     Launchpad Developers: Private
     Ubuntu Gnome Team: Private
 
 
-== Inherited policy items ==
+== Inherited team policies ==
 
-Products can inherit the branch visibility policy items of their
+Products can inherit the branch visibility team policies of their
 projects.  If a product has no project, then there are no inherited
-items to inherit.
+team policies to inherit.
 
     >>> print mozilla.isUsingInheritedBranchVisibilityPolicy()
     False
 
-The inherited behaviour is only used if there are no explicit policy
-items set
+The inherited behaviour is only used if there are no explicit team
+policies set.
 
     >>> print thunderbird.isUsingInheritedBranchVisibilityPolicy()
     True
@@ -188,27 +196,171 @@ Adding a team to the mozilla project will also affect products
 associated with the mozilla project that are inheriting the project's
 branch policy.
 
-    >>> mozilla.setTeamBranchVisibilityPolicy(
-    ...     ubuntu_gnome_team, BranchVisibilityPolicy.PRIVATE)
-    >>> mozilla.setTeamBranchVisibilityPolicy(
-    ...     None, BranchVisibilityPolicy.PRIVATE)
+    >>> mozilla.setBranchVisibilityTeamPolicy(
+    ...     ubuntu_gnome_team, BranchVisibilityRule.PRIVATE)
+    >>> mozilla.setBranchVisibilityTeamPolicy(
+    ...     None, BranchVisibilityRule.PRIVATE)
 
-    >>> print_policy_items(mozilla)
+    >>> print_team_policies(mozilla)
     *everyone*: Private
     Ubuntu Gnome Team: Private
 
-    >>> print_policy_items(thunderbird)
+    >>> print_team_policies(thunderbird)
     *everyone*: Private
     Ubuntu Gnome Team: Private
 
 In order to avoid inheriting the policy of the project, there just needs
-to be an explicit policy item for the product.  This explicit item could
-even be the same as the default policy.
+to be an explicit team policy for the product.  This explicit team
+policy could even be the same as the default policy.
 
-    >>> thunderbird.setTeamBranchVisibilityPolicy(
-    ...     None, BranchVisibilityPolicy.PUBLIC)
+    >>> thunderbird.setBranchVisibilityTeamPolicy(
+    ...     None, BranchVisibilityRule.PUBLIC)
     >>> print thunderbird.isUsingInheritedBranchVisibilityPolicy()
     False
-    >>> print_policy_items(thunderbird)
+    >>> print_team_policies(thunderbird)
     *everyone*: Public
 
+
+== Determining the defined policy for a team ==
+
+You can get the defined policy for any given team using the method
+getBranchVisibilityRuleForTeam.  If there is not a policy explicity
+defined, then None is returned.
+
+    >>> mozilla.getBranchVisibilityRuleForTeam(ubuntu_gnome_team)
+    <Item PRIVATE ...BranchVisibilityRule...
+    >>> mozilla.getBranchVisibilityRuleForTeam(None)
+    <Item PRIVATE ...BranchVisibilityRule...
+    >>> print mozilla.getBranchVisibilityRuleForTeam(launchpad_team)
+    None
+
+
+== Policy checks during branch creation ==
+
+The branch visibility policy is checked during branch creation through
+the IBranchSet utility.
+
+    >>> from canonical.launchpad.ftests import login
+    >>> login('foo.bar@canonical.com')
+    >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> branch_set = getUtility(IBranchSet)
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     None, BranchVisibilityRule.FORBIDDEN)
+    >>> vcs_imports_team = person_set.getByName('vcs-imports')
+    >>> evolution.setBranchVisibilityTeamPolicy(
+    ...     vcs_imports_team, BranchVisibilityRule.PUBLIC)
+    >>> print_team_policies(evolution)
+    *everyone*: Forbidden
+    Launchpad Developers: Private
+    Ubuntu Gnome Team: Private
+    VCS imports: Public
+
+    >>> foo_bar = person_set.getByEmail("foo.bar@canonical.com")
+    >>> stevea = person_set.getByName("stevea")
+    >>> ddaa = person_set.getByName("ddaa")
+
+When creating a branch, both the creator and owner need to be specified.
+The creator must be in the team of the owner in order to create a branch
+in the owner's namespace.
+
+If there is a policy that applies specificly to the owner of the branch,
+then that policy is applied for the branch.  This is to handle the
+situation where TeamA is a member of TeamB, TeamA has a PUBLIC policy,
+and TeamB has a PRIVATE policy.  By pushing to TeamA's branch area, the
+PUBLIC policy is used.
+
+If a owner is a member of more than one team that has a specified policy
+the PRIVATE and PRIVATE_ONLY override PUBLIC policies.
+
+If the owner is a member of more than one team that has PRIVATE or
+PRIVATE_ONLY set as the policy, then the branch is created private, and
+no team is subscribed to it as we can't guess which team the user means
+to have the visibility.
+
+Extensive behavioural tests for the determination of branch visibility
+can be found in the file:
+  lib/canonical/launchpad/database/tests/test_branchset.py
+
+Foo Bar is a member of all the teams.
+
+    >>> foo_bar.inTeam(launchpad_team)
+    True
+    >>> foo_bar.inTeam(ubuntu_gnome_team)
+    True
+    >>> foo_bar.inTeam(vcs_imports_team)
+    True
+
+If Foo Bar is creating a branch for evolution, the branch would be
+created as a private branch, but since there are two teams that specify
+privacy, the branch is created so only Foo Bar can see it.  It is up to
+Foo Bar to subscribe the appropriate team at a later date.
+
+    >>> from canonical.lp.dbschema import BranchType
+    >>> branch = branch_set.new(
+    ...     branch_type=BranchType.HOSTED,
+    ...     name="testing-1", creator=foo_bar, owner=foo_bar,
+    ...     product=evolution, url=None)
+    >>> branch.private
+    True
+    >>> branch.subscribers.count()
+    0
+
+Steve is a member of the Ubuntu Gnome Team, but not the Launchpad
+Developers team, so branches that are created by Steve are private
+and are subscribed to by the Ubuntu Gnome Team.
+
+    >>> stevea.inTeam(launchpad_team)
+    False
+    >>> stevea.inTeam(ubuntu_gnome_team)
+    True
+    >>> stevea.inTeam(vcs_imports_team)
+    False
+
+    >>> branch = branch_set.new(
+    ...     branch_type=BranchType.HOSTED,
+    ...     name="testing-2", creator=stevea, owner=stevea,
+    ...     product=evolution, url=None)
+    >>> branch.private
+    True
+    >>> for subscriber in branch.subscribers:
+    ...     print subscriber.browsername
+    Ubuntu Gnome Team
+
+Since David is a member of VCS Imports but not a member of the other two
+teams that have private branches, David's branch will be public.
+
+    >>> ddaa.inTeam(launchpad_team)
+    False
+    >>> ddaa.inTeam(ubuntu_gnome_team)
+    False
+    >>> ddaa.inTeam(vcs_imports_team)
+    True
+
+    >>> branch = branch_set.new(
+    ...     branch_type=BranchType.HOSTED,
+    ...     name="testing-3", creator=ddaa, owner=ddaa,
+    ...     product=evolution, url=None)
+    >>> branch.private
+    False
+    >>> branch.subscribers.count()
+    0
+
+People that are not members of any of the specified teams get the base
+visibility policy, which for this product is Forbidden.
+
+    >>> no_priv = person_set.getByEmail("no-priv@canonical.com")
+
+    >>> no_priv.inTeam(launchpad_team)
+    False
+    >>> no_priv.inTeam(ubuntu_gnome_team)
+    False
+    >>> no_priv.inTeam(vcs_imports_team)
+    False
+
+    >>> branch = branch_set.new(
+    ...     branch_type=BranchType.HOSTED,
+    ...     name="testing-4", creator=no_priv, owner=no_priv,
+    ...     product=evolution, url=None)
+    Traceback (most recent call last):
+    ...
+    BranchCreationForbidden

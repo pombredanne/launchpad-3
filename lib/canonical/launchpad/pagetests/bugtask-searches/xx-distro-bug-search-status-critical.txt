@@ -2,7 +2,7 @@ A list of critical bugs reported in a given upstream can be viewed by
 clicking the "critical" quick search link.
 
   >>> print http(r"""
-  ... GET /debian/+bugs?field.status%3Alist=Unconfirmed&field.status%3Alist=Confirmed&field.importance%3Alist=Critical&search=Search HTTP/1.1
+  ... GET /debian/+bugs?field.status%3Alist=New&field.status%3Alist=Confirmed&field.importance%3Alist=Critical&search=Search HTTP/1.1
   ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

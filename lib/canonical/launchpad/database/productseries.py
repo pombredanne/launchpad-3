@@ -24,7 +24,7 @@ from canonical.database.sqlbase import (
 from canonical.lp.dbschema import (
     ImportStatus, PackagingType, RevisionControlSystems,
     SpecificationSort, SpecificationGoalStatus, SpecificationFilter,
-    SpecificationStatus)
+    SpecificationDefinitionStatus, SpecificationImplementationStatus)
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.interfaces import (
@@ -259,7 +259,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
+            order = ['-priority', 'definition_status', 'name']
         elif sort == SpecificationSort.DATE:
             # we are showing specs for a GOAL, so under some circumstances
             # we care about the order in which the specs were nominated for
@@ -294,7 +294,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+              quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -320,9 +321,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationStatus.OBSOLETE,
-                          SpecificationStatus.SUPERSEDED)
+            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                          SpecificationDefinitionStatus.SUPERSEDED)
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -424,6 +425,47 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                                  % self.rcstype.title)
         self.importstatus = ImportStatus.PROCESSING
 
+    def markTestFailed(self):
+        """See `IProductSeriesSourceAdmin`."""
+        self.importstatus = ImportStatus.TESTFAILED
+        self.import_branch = None
+        self.dateautotested = None
+        self.dateprocessapproved = None
+        self.datesyncapproved = None
+        self.datelastsynced = None
+        self.syncinterval = None
+
+    def markDontSync(self):
+        """See `IProductSeriesSourceAdmin`."""
+        self.importstatus = ImportStatus.DONTSYNC
+        self.import_branch = None
+        self.dateautotested = None
+        self.dateprocessapproved = None
+        self.datesyncapproved = None
+        self.datelastsynced = None
+        self.datestarted = None
+        self.datefinished = None
+        self.syncinterval = None
+
+    def deleteImport(self):
+        """See `IProductSeriesSourceAdmin`."""
+        self.importstatus = None
+        self.import_branch = None
+        self.dateautotested = None
+        self.dateprocessapproved = None
+        self.datesyncapproved = None
+        self.datelastsynced = None
+        self.date_published_sync = None
+        self.syncinterval = None
+        self.datestarted = None
+        self.datefinished = None
+        self.rcstype = None
+        self.cvsroot = None
+        self.cvsmodule = None
+        self.cvsbranch = None
+        self.cvstarfileurl = None
+        self.svnrepository = None
+
     def syncCertified(self):
         """Return true or false indicating if the sync is enabled"""
         return self.dateprocessapproved is not None
@@ -433,7 +475,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         return self.importstatus == ImportStatus.SYNCING
 
     def enableAutoSync(self):
-        """Enable autosyncing?"""
+        """Enable autosyncing."""
         self.datesyncapproved = UTC_NOW
         self.importstatus = ImportStatus.SYNCING
 

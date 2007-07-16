@@ -80,7 +80,7 @@ Launchpad sample data, we have an upstream product called Ubuntu).
 
 Now, it gets more interesting.
 
-Let us add a REJECTED bugtask for Bug #2 on the Firefox product.
+Let us add a INVALID bugtask for Bug #2 on the Firefox product.
 So the offer of mentoring is NOT relevant to Firefox, and should not
 show up there.
 
@@ -90,7 +90,7 @@ show up there.
     >>> bugtaskset = getUtility(IBugTaskSet)
     >>> ff_task = bugtaskset.createTask(
     ...     bug=bug2, product=firefox, owner=sabdfl,
-    ...     status=BugTaskStatus.REJECTED,
+    ...     status=BugTaskStatus.INVALID,
     ...     importance=BugTaskImportance.MEDIUM)
     >>> syncUpdate(ff_task)
     >>> ff_task.product == firefox
@@ -98,7 +98,7 @@ show up there.
     >>> for task in bug2.bugtasks:
     ...     if task.product == firefox:
     ...         print 'Found firefox task with status', task.status.name
-    Found firefox task with status REJECTED
+    Found firefox task with status INVALID
 
     >>> print firefox.mentoring_offers.count()
     0
@@ -200,13 +200,14 @@ OK, let's mark the bug public again:
 When a spec or a bug is completed, it drops off the mentoring lists.
 
    >>> from canonical.lp.dbschema import BugTaskStatus
-   >>> from canonical.lp.dbschema import SpecificationDelivery
+   >>> from canonical.lp.dbschema import SpecificationImplementationStatus
    >>> bug2.is_complete
    False
    >>> from canonical.database.sqlbase import flush_database_updates
    >>> for task in bug2.bugtasks:
    ...   if task.conjoined_master is None:
-   ...     task.transitionToStatus(BugTaskStatus.FIXRELEASED)
+   ...     task.transitionToStatus(
+   ...       BugTaskStatus.FIXRELEASED, getUtility(ILaunchBag).user)
    >>> flush_database_updates()
    >>> bug2.is_complete
    True
@@ -222,7 +223,7 @@ And lets see if we can eliminate the spec by making that complete too.
 
    >>> spec1.is_complete
    False
-   >>> spec1.delivery = SpecificationDelivery.IMPLEMENTED
+   >>> spec1.implementation_status = SpecificationImplementationStatus.IMPLEMENTED
    >>> newstate = spec1.updateLifecycleStatus(foo_bar)
    >>> syncUpdate(spec1)
    >>> spec1.is_complete

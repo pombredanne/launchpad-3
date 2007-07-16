@@ -4,12 +4,19 @@
 
 __metaclass__ = type
 __all__ = [
-        'IOpenIdAuthorization', 'IOpenIdAuthorizationSet',
+        'IOpenIdAuthorization',
+        'IOpenIdAuthorizationSet',
         'ILaunchpadOpenIdStoreFactory',
+        'ILoginServiceAuthorizeForm',
+        'ILoginServiceLoginForm',
         ]
 
-from zope.schema import Int, TextLine, Datetime
-from zope.interface import Interface, Attribute
+from zope.schema import Choice, Datetime, Int, TextLine
+from zope.interface import Attribute, Interface
+from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
+
+from canonical.launchpad import _
+from canonical.launchpad.fields import PasswordField
 
 class IOpenIdAuthorization(Interface):
     id = Int(title=u'ID', required=True)
@@ -46,10 +53,37 @@ class IOpenIdAuthorizationSet(Interface):
         This method overrides any existing authorization for the given
         (person, trust_root, client_id).
         """
- 
+
+
 class ILaunchpadOpenIdStoreFactory(Interface):
     """Factory to create LaunchpadOpenIdStore instances."""
 
     def __call__():
         """Create a LaunchpadOpenIdStore instance."""
 
+
+class ILoginServiceAuthorizeForm(Interface):
+    """A schema used for the authorisation form showed to
+    authenticated users."""
+
+    nonce = TextLine(title=u'Nonce', required=False,
+                     description=u'Unique value')
+
+
+login_actions_vocabulary = SimpleVocabulary([
+    SimpleTerm('login', 'login', 'Yes, my password is:'),
+    SimpleTerm('createaccount', 'createaccount',
+               'No, I want to create an account now'),
+    SimpleTerm('resetpassword', 'resetpassword',
+               "I've forgotten my password"),
+    ])
+
+
+class ILoginServiceLoginForm(ILoginServiceAuthorizeForm):
+    """A schema used for the login/register form showed to
+    unauthenticated users."""
+
+    email = TextLine(title=u'What is your e-mail address?', required=True)
+    password = PasswordField(title=u'Password', required=False)
+    action = Choice(title=_('Action'), required=True,
+                    vocabulary=login_actions_vocabulary)

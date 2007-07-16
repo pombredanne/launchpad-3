@@ -114,8 +114,10 @@ class ShippingRequest(SQLBase):
             # necessarily have a preferredemail, so we have to special case it
             # here.
             return config.shipit.admins_email_address
-        else:
+        elif self.recipient.preferredemail is not None:
             return self.recipient.preferredemail.email
+        else:
+            return u'inactive account -- no email address'
 
     @property
     def countrycode(self):

@@ -121,6 +121,9 @@ bounty_index = ContextTitle(smartquote('Bounty "%s" in Launchpad'))
 
 bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
+branch_associations = ContextDisplayName(smartquote(
+    '"%s" branch associations'))
+
 branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
 
 branch_edit_subscription = ContextDisplayName(smartquote(
@@ -135,6 +138,15 @@ def branch_index(context, view):
 
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
+
+def branchsubscription_edit(context, view):
+    return smartquote(
+        'Edit subscription to branch "%s"' % context.branch.displayname)
+
+branch_visibility = ContextDisplayName('Set branch visibility policy for %s')
+
+def branch_visibility_edit(context, view):
+    return view.pagetitle
 
 branchtarget_branchlisting = ContextDisplayName('Details of Branches for %s')
 
@@ -297,6 +309,11 @@ canbementored_mentoringoffer = 'Offer to mentor this work'
 
 canbementored_retractmentoring = 'Retract offer of mentorship'
 
+def codeimport(context, view):
+    return view.title
+
+codeimport_list = 'Code Imports'
+
 codeofconduct_admin = 'Administer Codes of Conduct'
 
 codeofconduct_index = ContextTitle('%s')
@@ -318,6 +335,8 @@ debug_root_changelog = 'Launchpad changelog'
 debug_root_index = 'Launchpad Debug Home Page'
 
 default_editform = 'Default "Edit" Page'
+
+distributionmirror_delete = ContextTitle('Delete mirror %s')
 
 distributionmirror_edit = ContextTitle('Edit mirror %s')
 
@@ -402,7 +421,7 @@ distroseries_search = ContextDisplayName('Search packages in %s')
 
 distroseries_translations = ContextTitle('Translations of %s in Launchpad')
 
-distroseries_translationsadmin = ContextTitle('Admin translation options of %s')
+distroseries_translationsadmin = ContextTitle('Admin translation options for %s')
 
 distroseries_builds = ContextTitle('Builds for %s')
 
@@ -425,6 +444,16 @@ errorservice_index = 'Error log report'
 errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
+
+faq_edit = ContextId('Edit FAQ #%s details')
+
+def faq_index(context, view):
+    return (
+        smartquote('%s FAQ #%d: "%s"') %
+        (context.target.displayname, context.id, context.title))
+
+def faq_listing(context, view):
+    return view.heading
 
 def hasmentoringoffers_mentoring(context, view):
     if IPerson.providedBy(context):
@@ -508,6 +537,17 @@ launchpad_librarianfailure = "Sorry, you can't do this right now"
 # launchpad_widget_macros doesn't need a title.
 
 launchpadstatisticset_index = 'Launchpad statistics'
+
+loginservice_email_sent = 'Launchpad Login Service - Email sent'
+
+def loginservice_authorize(context, view):
+    return 'Authenticate to %s' % view.rp_info['title']
+
+loginservice_login = 'Launchpad Login Service'
+
+loginservice_newaccount = 'Create a new account'
+
+loginservice_resetpassword = 'Reset your password'
 
 logintoken_claimprofile = 'Claim Launchpad profile'
 
@@ -692,7 +732,9 @@ person_packagebugs_overview = person_packagebugs
 
 person_packagebugs_search = person_packagebugs
 
-person_participation = ContextTitle("Team partipation by %s")
+person_participation = ContextTitle("Team participation by %s")
+
+person_projects = ContextTitle("Projects %s is involved with")
 
 person_review = ContextDisplayName("Review %s")
 
@@ -893,6 +935,9 @@ question_change_status = ContextId('Change status of question #%s')
 
 question_confirm_answer = ContextId('Confirm an answer to question #%s')
 
+def question_createfaq(context, view):
+    return "Create a FAQ for %s" % view.faq_target.displayname
+
 question_edit = ContextId('Edit question #%s details')
 
 question_history = ContextId('History of question #%s')
@@ -904,6 +949,8 @@ def question_index(context, view):
     return text
 
 question_linkbug = ContextId('Link question  #%s to a bug report')
+
+question_linkfaq = ContextId('Is question #%s a FAQ?')
 
 def question_listing(context, view):
     return view.pagetitle
@@ -921,6 +968,8 @@ questions_index = 'Launchpad Answers'
 questiontarget_manage_answercontacts = ContextTitle("Answer contact for %s")
 
 securitycontact_edit = ContextDisplayName("Edit %s security contact")
+
+series_bug_nominations = ContextDisplayName('Bugs nominated for %s')
 
 shipit_adminrequest = 'ShipIt admin request'
 
@@ -1124,6 +1173,10 @@ def teammembership_index(context, view):
 
 def teammembership_invitation(context, view):
     return "Make %s a member of %s" % (
+        context.person.browsername, context.team.browsername)
+
+def teammembership_self_renewal(context, view):
+    return "Renew membership of %s in %s" % (
         context.person.browsername, context.team.browsername)
 
 team_mentoringoffers = ContextTitle('Mentoring available for newcomers to %s')

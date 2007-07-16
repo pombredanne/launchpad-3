@@ -19,6 +19,9 @@
 
 <div metal:fill-slot="main">
 
+  <metal:not_uses_malone
+    use-macro="context/@@+filebug-macros/not_uses_malone" />
+
   <tal:uses_malone tal:condition="view/contextUsesMalone">
 
     <div metal:use-macro="context/@@launchpad_form/form">
@@ -38,9 +41,6 @@
     </div>
 
   </tal:uses_malone>
-
-  <metal:not_uses_malone
-    use-macro="context/@@+filebug-macros/not_uses_malone" />
 
 </div>
 

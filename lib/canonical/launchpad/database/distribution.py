@@ -1,9 +1,8 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+"""Database classes for implementing distribution items."""
 
 __metaclass__ = type
 __all__ = ['Distribution', 'DistributionSet']
-
-from operator import attrgetter
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -13,6 +12,8 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -21,14 +22,15 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
-from canonical.launchpad.database.answercontact import AnswerContact
+from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.question import (
-    SimilarQuestionsSearch, Question, QuestionTargetSearch, QuestionSet)
+    QuestionTargetSearch, QuestionTargetMixin)
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
@@ -46,7 +48,6 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.distributionsourcepackagecache import (
     DistributionSourcePackageCache)
-from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.sourcepackagename import (
     SourcePackageName)
 from canonical.launchpad.database.sourcepackagerelease import (
@@ -58,15 +59,16 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    BugTaskStatus, DistroSeriesStatus, MirrorContent,
+    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, MirrorContent,
     TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationStatus, PackagePublishingStatus)
+    SpecificationDefinitionStatus, SpecificationImplementationStatus,
+    PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
-    IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
-    ILaunchpadCelebrities, ISourcePackageName, IQuestionTarget, NotFoundError,
-    get_supported_languages, QUESTION_STATUS_DEFAULT_SEARCH,\
-    IHasLogo, IHasMugshot, IHasIcon)
+    IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IFAQTarget, 
+    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, 
+    ISourcePackageName, IQuestionTarget, NotFoundError, 
+    QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.archivepublisher.debversion import Version
 
@@ -74,10 +76,10 @@ from canonical.launchpad.validators.name import valid_name, sanitize_name
 
 
 class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
-                   HasSprintsMixin, KarmaContextMixin):
+                   HasSprintsMixin, KarmaContextMixin, QuestionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IHasBuildRecords, IQuestionTarget,
+        IDistribution, IFAQTarget, IHasBuildRecords, IQuestionTarget,
         IHasLogo, IHasMugshot, IHasIcon)
 
     _table = 'Distribution'
@@ -108,8 +110,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     mirror_admin = ForeignKey(
         dbName='mirror_admin', foreignKey='Person', notNull=True)
     translationgroup = ForeignKey(
-        dbName='translationgroup', foreignKey='TranslationGroup', notNull=False,
-        default=None)
+        dbName='translationgroup', foreignKey='TranslationGroup',
+        notNull=False, default=None)
     translationpermission = EnumCol(
         dbName='translationpermission', notNull=True,
         schema=TranslationPermission, default=TranslationPermission.OPEN)
@@ -118,7 +120,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     upload_sender = StringCol(
         dbName='upload_sender', notNull=False, default=None)
     upload_admin = ForeignKey(
-        dbName='upload_admin', foreignKey='Person', default=None, notNull=False)
+        dbName='upload_admin', foreignKey='Person', default=None,
+        notNull=False)
     bounties = SQLRelatedJoin(
         'Bounty', joinColumn='distribution', otherColumn='bounty',
         intermediateTable='DistributionBounty')
@@ -137,18 +140,22 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
-    main_archive = ForeignKey(dbName='main_archive',
-        foreignKey='Archive', notNull=True)
+
+    @cachedproperty
+    def main_archive(self):
+        """See IDistribution."""
+        return Archive.selectOneBy(distribution=self,
+                                   purpose=ArchivePurpose.PRIMARY)
 
     @property
     def all_milestones(self):
-        """See IDistribution."""
+        """See `IDistribution`."""
         return Milestone.selectBy(
             distribution=self, orderBy=['dateexpected', 'name'])
 
     @property
     def milestones(self):
-        """See IDistribution."""
+        """See `IDistribution`."""
         return Milestone.selectBy(
             distribution=self, visible=True, orderBy=['dateexpected', 'name'])
 
@@ -183,14 +190,14 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def full_functionality(self):
-        """See IDistribution."""
+        """See `IDistribution`."""
         if self == getUtility(ILaunchpadCelebrities).ubuntu:
             return True
         return False
 
     @property
     def drivers(self):
-        """See IDistribution."""
+        """See `IDistribution`."""
         if self.driver is not None:
             return [self.driver]
         else:
@@ -198,7 +205,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def is_read_only(self):
-        """See IDistribution."""
+        """See `IDistribution`."""
         return self.name in ['debian', 'redhat', 'gentoo']
 
     @property
@@ -219,7 +226,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def serieses(self):
-        """See IDistribution."""
+        """See `IDistribution`."""
         # This is used in a number of places and given it's already
         # listified, why not spare the trouble of regenerating?
         ret = DistroSeries.selectBy(distribution=self)
@@ -227,7 +234,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def mentoring_offers(self):
-        """See IDistribution"""
+        """See `IDistribution`"""
         via_specs = MentoringOffer.select("""
             Specification.distribution = %s AND
             Specification.id = MentoringOffer.specification
@@ -248,7 +255,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def bugtargetname(self):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         return self.displayname
 
     def _getBugTaskContextWhereClause(self):
@@ -261,23 +268,23 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return BugTaskSet().search(search_params)
 
     def getUsedBugTags(self):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         return get_bug_tags("BugTask.distribution = %s" % sqlvalues(self))
 
     def getUsedBugTagsWithOpenCounts(self, user):
-        """See IBugTarget."""
+        """See `IBugTarget`."""
         return get_bug_tags_open_count(
             "BugTask.distribution = %s" % sqlvalues(self), user)
 
     def getMirrorByName(self, name):
-        """See IDistribution."""
+        """See `IDistribution`."""
         return DistributionMirror.selectOneBy(distribution=self, name=name)
 
     def newMirror(self, owner, speed, country, content, displayname=None,
                   description=None, http_base_url=None, ftp_base_url=None,
                   rsync_base_url=None, official_candidate=False,
                   enabled=False):
-        """See IDistribution."""
+        """See `IDistribution`."""
         # NB this functionality is only available to distributions that have
         # the full functionality of Launchpad enabled. This is Ubuntu and
         # commercial derivatives that have been specifically given this
@@ -315,7 +322,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def currentseries(self):
-        """See IDistribution."""
+        """See `IDistribution`."""
         # XXX: this should be just a selectFirst with a case in its
         # order by clause -- kiko, 2006-03-18
 
@@ -348,12 +355,12 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     @property
     def bugCounter(self):
-        """See IDistribution."""
+        """See `IDistribution`."""
         counts = []
 
-        severities = [BugTaskStatus.UNCONFIRMED,
+        severities = [BugTaskStatus.NEW,
                       BugTaskStatus.CONFIRMED,
-                      BugTaskStatus.REJECTED,
+                      BugTaskStatus.INVALID,
                       BugTaskStatus.FIXRELEASED]
 
         querystr = ("BugTask.distribution = %s AND "
@@ -367,7 +374,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return counts
 
     def getSeries(self, name_or_version):
-        """See IDistribution."""
+        """See `IDistribution`."""
         distroseries = DistroSeries.selectOneBy(
             distribution=self, name=name_or_version)
         if distroseries is None:
@@ -378,20 +385,20 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return distroseries
 
     def getDevelopmentSerieses(self):
-        """See IDistribution."""
+        """See `IDistribution`."""
         return DistroSeries.selectBy(
             distribution=self,
             status=DistroSeriesStatus.DEVELOPMENT)
 
     def getMilestone(self, name):
-        """See IDistribution."""
+        """See `IDistribution`."""
         return Milestone.selectOne("""
             distribution = %s AND
             name = %s
             """ % sqlvalues(self.id, name))
 
     def getSourcePackage(self, name):
-        """See IDistribution."""
+        """See `IDistribution`."""
         if ISourcePackageName.providedBy(name):
             sourcepackagename = name
         else:
@@ -402,21 +409,21 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return DistributionSourcePackage(self, sourcepackagename)
 
     def getSourcePackageRelease(self, sourcepackagerelease):
-        """See IDistribution."""
+        """See `IDistribution`."""
         return DistributionSourcePackageRelease(self, sourcepackagerelease)
 
     @property
     def has_any_specifications(self):
-        """See IHasSpecifications."""
+        """See `IHasSpecifications`."""
         return self.all_specifications.count()
 
     @property
     def all_specifications(self):
-        """See IHasSpecifications."""
+        """See `IHasSpecifications`."""
         return self.specifications(filter=[SpecificationFilter.ALL])
 
     def specifications(self, sort=None, quantity=None, filter=None):
-        """See IHasSpecifications.
+        """See `IHasSpecifications`.
 
         In the case of distributions, there are two kinds of filtering,
         based on:
@@ -453,7 +460,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status', 'Specification.name']
+            order = (
+                ['-priority', 'Specification.definition_status', 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -467,7 +475,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s ' %
+                quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -481,9 +490,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationStatus.OBSOLETE,
-                          SpecificationStatus.SUPERSEDED)
+            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                          SpecificationDefinitionStatus.SUPERSEDED)
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -501,41 +510,19 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return results.prejoin(['assignee', 'approver', 'drafter'])
 
     def getSpecification(self, name):
-        """See ISpecificationTarget."""
+        """See `ISpecificationTarget`."""
         return Specification.selectOneBy(distribution=self, name=name)
-
-    def getSupportedLanguages(self):
-        """See IQuestionTarget."""
-        return get_supported_languages(self)
-
-    def newQuestion(self, owner, title, description, language=None,
-                  datecreated=None):
-        """See IQuestionTarget."""
-        return QuestionSet.new(
-            title=title, description=description, owner=owner,
-            distribution=self, datecreated=datecreated, language=language)
-
-    def getQuestion(self, question_id):
-        """See IQuestionTarget."""
-        try:
-            question = Question.get(question_id)
-        except SQLObjectNotFound:
-            return None
-        # Verify that the question is actually for this distribution.
-        if question.distribution != self:
-            return None
-        return question
 
     def searchQuestions(self, search_text=None,
                         status=QUESTION_STATUS_DEFAULT_SEARCH,
                         language=None, sort=None, owner=None,
                         needs_attention_from=None, unsupported=False):
-        """See IQuestionCollection."""
+        """See `IQuestionCollection`."""
         if unsupported:
             unsupported_target = self
         else:
             unsupported_target = None
-            
+
         return QuestionTargetSearch(
             distribution=self,
             search_text=search_text, status=status,
@@ -543,62 +530,52 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             needs_attention_from=needs_attention_from,
             unsupported_target=unsupported_target).getResults()
 
+    def getTargetTypes(self):
+        """See `QuestionTargetMixin`.
+        
+        Defines distribution as self and sourcepackagename as None.
+        """
+        return {'distribution': self,
+                'sourcepackagename': None}
 
-    def findSimilarQuestions(self, title):
-        """See IQuestionTarget."""
-        return SimilarQuestionsSearch(title, distribution=self).getResults()
-
-    def addAnswerContact(self, person):
-        """See IQuestionTarget."""
-        if person in self.answer_contacts:
+    def questionIsForTarget(self, question):
+        """See `QuestionTargetMixin`.
+        
+        Return True when the Question's distribution is self.
+        """
+        if question.distribution is not self:
             return False
-        AnswerContact(
-            product=None, person=person,
-            sourcepackagename=None, distribution=self)
         return True
 
-    def removeAnswerContact(self, person):
-        """See IQuestionTarget."""
-        if person not in self.answer_contacts:
-            return False
-        answer_contact = AnswerContact.selectOne(
-            "distribution = %d AND person = %d"
-            " AND sourcepackagename IS NULL" % (self.id, person.id))
-        answer_contact.destroySelf()
-        return True
+    def newFAQ(self, owner, title, content, keywords=None, date_created=None):
+        """See `IFAQTarget`."""
+        return FAQ.new(
+            owner=owner, title=title, content=content, keywords=keywords,
+            date_created=date_created, distribution=self)
 
-    @property
-    def answer_contacts(self):
-        """See IQuestionTarget."""
-        answer_contacts = AnswerContact.select(
-            """distribution = %d AND sourcepackagename IS NULL""" % self.id)
+    def findSimilarFAQs(self, summary):
+        """See `IFAQTarget`."""
+        return FAQ.findSimilar(summary, distribution=self)
 
-        return sorted(
-            [answer_contact.person for answer_contact in answer_contacts],
-            key=attrgetter('displayname'))
+    def getFAQ(self, id):
+        """See `IFAQCollection`."""
+        return FAQ.getForTarget(id, self)
 
-    @property
-    def direct_answer_contacts(self):
-        """See IQuestionTarget."""
-        return self.answer_contacts
-
-    def getQuestionLanguages(self):
-        """See IQuestionTarget."""
-        return set(Language.select(
-            'Language.id = Question.language AND '
-            'Question.distribution = %s AND '
-            'Question.sourcepackagename IS NULL' % sqlvalues(self.id),
-            clauseTables=['Question'], distinct=True))
-
+    def searchFAQs(self, search_text=None, owner=None, sort=None):
+        """See `IFAQCollection`."""
+        return FAQSearch(
+            search_text=search_text, owner=owner, sort=sort,
+            distribution=self).getResults()
+    
     def ensureRelatedBounty(self, bounty):
-        """See IDistribution."""
+        """See `IDistribution`."""
         for curr_bounty in self.bounties:
             if bounty.id == curr_bounty.id:
                 return None
         DistributionBounty(distribution=self, bounty=bounty)
 
     def getDistroSeriesAndPocket(self, distroseries_name):
-        """See IDistribution."""
+        """See `IDistribution`."""
         from canonical.archivepublisher.publishing import suffixpocket
 
         # Get the list of suffixes.
@@ -619,7 +596,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         raise NotFoundError(distroseries_name)
 
     def getFileByName(self, filename, archive=None, source=True, binary=True):
-        """See IDistribution."""
+        """See `IDistribution`."""
         assert (source or binary), "searching in an explicitly empty " \
                "space is pointless"
         if archive is None:
@@ -642,7 +619,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         raise NotFoundError(filename)
 
     def getBuildRecords(self, status=None, name=None, pocket=None):
-        """See IHasBuildRecords"""
+        """See `IHasBuildRecords`"""
         # Find out the distroarchseriess in question.
         arch_ids = []
         # concatenate architectures list since they are distinct.
@@ -654,7 +631,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             arch_ids, status, name, pocket)
 
     def removeOldCacheItems(self, log):
-        """See IDistribution."""
+        """See `IDistribution`."""
 
         # Get the set of source package names to deal with.
         spns = set(SourcePackageName.select("""
@@ -682,7 +659,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 cache.destroySelf()
 
     def updateCompleteSourcePackageCache(self, log, ztm):
-        """See IDistribution."""
+        """See `IDistribution`."""
         # Get the set of source package names to deal with.
         spns = list(SourcePackageName.select("""
             SourcePackagePublishingHistory.distrorelease =
@@ -712,7 +689,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 ztm.commit()
 
     def updateSourcePackageCache(self, sourcepackagename, log):
-        """See IDistribution."""
+        """See `IDistribution`."""
 
         # Get the set of published sourcepackage releases.
         sprs = list(SourcePackageRelease.select("""
@@ -782,7 +759,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         cache.changelog = ' '.join(sorted(sprchangelog))
 
     def searchSourcePackages(self, text):
-        """See IDistribution."""
+        """See `IDistribution`."""
         # The query below tries exact matching on the source package
         # name as well; this is because source package names are
         # notoriously bad for fti matching -- they can contain dots, or
@@ -797,7 +774,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return [dspc.distributionsourcepackage for dspc in dspcaches]
 
     def guessPackageNames(self, pkgname):
-        """See IDistribution"""
+        """See `IDistribution`"""
         assert isinstance(pkgname, basestring), (
             "Expected string. Got: %r" % pkgname)
 
@@ -943,7 +920,7 @@ class DistributionSet:
         return Distribution.get(distributionid)
 
     def count(self):
-        """See IDistributionSet."""
+        """See `IDistributionSet`."""
         return Distribution.select().count()
 
     def getDistros(self):
@@ -958,9 +935,9 @@ class DistributionSet:
             return None
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, main_archive, mugshot=None, logo=None, icon=None):
-        """See IDistributionSet."""
-        return Distribution(
+            members, owner, mugshot=None, logo=None, icon=None):
+        """See `IDistributionSet`."""
+        distro = Distribution(
             name=name,
             displayname=displayname,
             title=title,
@@ -970,7 +947,9 @@ class DistributionSet:
             members=members,
             mirror_admin=owner,
             owner=owner,
-            main_archive=main_archive,
             mugshot=mugshot,
             logo=logo,
             icon=icon)
+        archive = getUtility(IArchiveSet).new(distribution=distro,
+            purpose=ArchivePurpose.PRIMARY)
+        return distro

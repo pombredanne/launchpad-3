@@ -3,14 +3,22 @@
 # TODO:
 #  - exercise a bit more of the authUser interface
 
+import datetime
 import unittest
 import xmlrpclib
 
+import pytz
+
 from twisted.application import strports
+from canonical.authserver.interfaces import WRITABLE
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 from canonical.launchpad.ftests.harness import LaunchpadTestCase
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.config import config
+
+
+UTC = pytz.timezone('UTC')
+
 
 def _getPort():
     portDescription = config.authserver.port
@@ -24,7 +32,7 @@ class XMLRPCv1TestCase(LaunchpadTestCase):
         LaunchpadTestCase.setUp(self)
         AuthserverTacTestSetup().setUp()
         self.server = xmlrpclib.Server('http://localhost:%s/' % _getPort())
-    
+
     def tearDown(self):
         AuthserverTacTestSetup().tearDown()
         LaunchpadTestCase.tearDown(self)
@@ -36,7 +44,7 @@ class XMLRPCv1TestCase(LaunchpadTestCase):
         self.assertEqual(['mark@hbd.com'], markDict['emailaddresses'])
         self.assert_(markDict.has_key('id'))
         self.assert_(markDict.has_key('salt'))
-        
+
         # Check that the salt is base64 encoded
         # FIXME: This is a pretty weak test, because this particular salt is ''
         #        (the sample data specifies no pw for Mark)
@@ -108,7 +116,7 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
         LaunchpadTestCase.setUp(self)
         AuthserverTacTestSetup().setUp()
         self.server = xmlrpclib.Server('http://localhost:%s/v2/' % _getPort())
-    
+
     def tearDown(self):
         AuthserverTacTestSetup().tearDown()
         LaunchpadTestCase.tearDown(self)
@@ -122,7 +130,7 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
 
         # Check specifically that there's no 'salt' entry in the user dict.
         self.failIf(markDict.has_key('salt'))
-        
+
         # Check that the failure case (no such user) returns {}
         emptyDict = self.server.getUser('invalid@email')
         self.assertEqual({}, emptyDict)
@@ -148,7 +156,7 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
         # XXX: This test just checks that createBranch doesn't error.  This test
         # should also check the result.
         #   - Andrew Bennetts, 2007-01-24
-        self.server.createBranch(12, 4, 'new-branch')
+        self.server.createBranch(12, 'name12', 'firefox', 'new-branch')
 
     def test_requestMirror(self):
         # XXX: Only checks that requestMirror doesn't error. Should instead
@@ -156,18 +164,27 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
         #   - Andrew Bennetts, 2007-01-24
         hosted_branch_id = 25
         self.server.requestMirror(hosted_branch_id)
-        
+
+    def test_getBranchInformation(self):
+        # Don't test the full range of values for getBranchInformation, as we
+        # rely on the database tests to do that. This test just confirms it's
+        # all hooked up correctly.
+        branch_id, permissions = self.server.getBranchInformation(
+            12, 'name12', 'gnome-terminal', 'pushed')
+        self.assertEqual(25, branch_id)
+        self.assertEqual(WRITABLE, permissions)
+
 
 class BranchAPITestCase(LaunchpadTestCase):
     """Tests for the branch details API."""
-    
+
     def setUp(self):
         LaunchpadTestCase.setUp(self)
         self.tac = AuthserverTacTestSetup()
         self.tac.setUp()
-        self.server = xmlrpclib.Server('http://localhost:%s/branch/' 
+        self.server = xmlrpclib.Server('http://localhost:%s/branch/'
                                        % _getPort())
-        
+
     def tearDown(self):
         self.tac.tearDown()
         LaunchpadTestCase.tearDown(self)
@@ -182,14 +199,22 @@ class BranchAPITestCase(LaunchpadTestCase):
 
     def testStartMirroring(self):
         self.server.startMirroring(18)
-        
+
     def testMirrorComplete(self):
         self.server.mirrorComplete(18, 'rev-1')
-        
+
     def testMirrorFailedUnicode(self):
         # Ensure that a unicode doesn't cause mirrorFailed to raise an
         # exception.
         self.server.mirrorFailed(18, u'it broke\N{INTERROBANG}')
+
+    def testRecordSuccess(self):
+        started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
+        completed = datetime.datetime(2007, 07, 05, 19, 34, 24, tzinfo=UTC)
+        started_tuple = tuple(started.utctimetuple())
+        completed_tuple = tuple(completed.utctimetuple())
+        self.server.recordSuccess(
+            'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
 
 
 def test_suite():

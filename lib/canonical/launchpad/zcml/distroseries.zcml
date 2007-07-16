@@ -47,7 +47,7 @@
   <adapter
     for="canonical.launchpad.interfaces.IDistroSeries"
     provides="canonical.launchpad.interfaces.IQuestionTarget"
-    factory="canonical.launchpad.components.question.series_to_questiontarget"
+    factory="canonical.launchpad.components.answertracker.series_to_questiontarget"
     />
 
   <browser:navigation
@@ -106,6 +106,15 @@
       template="../templates/bugtask-portlet-seriesbugs.pt"
       />
   </browser:pages>
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    name="+nominations"
+    class="canonical.launchpad.browser.BugNominationsView"
+    permission="zope.Public"
+    facet="bugs"
+    template="../templates/series-bug-nominations.pt"
+    />
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistroSeries"

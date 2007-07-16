@@ -65,6 +65,7 @@ from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
@@ -88,7 +89,7 @@ from canonical.widgets.textwidgets import StrippedTextWidget
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin, CalendarTraversalMixin,
-    QuestionTargetTraversalMixin):
+    FAQTargetNavigationMixin, QuestionTargetTraversalMixin):
 
     usedfor = IProduct
 
@@ -205,7 +206,8 @@ class ProductOverviewMenu(ApplicationMenu):
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
-        'series_add', 'launchpad_usage', 'administer', 'rdf']
+        'series_add', 'launchpad_usage', 'administer', 'branch_visibility',
+        'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -272,16 +274,17 @@ class ProductOverviewMenu(ApplicationMenu):
         text = 'Administer'
         return Link('+review', text, icon='edit')
 
+    @enabled_with_permission('launchpad.Admin')
+    def branch_visibility(self):
+        text = 'Define branch visibility'
+        return Link('+branchvisibility', text, icon='edit')
+
 
 class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['filebug', 'bugcontact', 'securitycontact', 'cve']
-
-    def filebug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='add')
+    links = ['bugcontact', 'securitycontact', 'cve']
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
@@ -306,7 +309,7 @@ class ProductBranchesMenu(ApplicationMenu):
     def branch_add(self):
         text = 'Register branch'
         summary = 'Register a new Bazaar branch for this project'
-        return Link('+addbranch', text, icon='add')
+        return Link('+addbranch', text, summary, icon='add')
 
 
 class ProductSpecificationsMenu(ApplicationMenu):
@@ -328,7 +331,8 @@ class ProductSpecificationsMenu(ApplicationMenu):
 
     def roadmap(self):
         text = 'Roadmap'
-        summary = 'Show the recommended sequence of specification implementation'
+        summary = (
+            'Show the recommended sequence of specification implementation')
         return Link('+roadmap', text, summary, icon='info')
 
     def table(self):
@@ -337,7 +341,7 @@ class ProductSpecificationsMenu(ApplicationMenu):
         return Link('+assignments', text, summary, icon='info')
 
     def new(self):
-        text = 'Register blueprint'
+        text = 'Register a blueprint'
         summary = 'Register a new blueprint for %s' % self.context.title
         return Link('+addspec', text, summary, icon='add')
 
@@ -400,7 +404,7 @@ class ProductSetFacets(StandardLaunchpadFacets):
 
     usedfor = IProductSet
 
-    enable_only = ['overview',]
+    enable_only = ['overview']
 
 
 class ProductSetContextMenu(ContextMenu):
@@ -474,7 +478,7 @@ class ProductView(LaunchpadView):
                 object_translatable = {
                     'title': productseries.title,
                     'potemplates': productseries.currentpotemplates,
-                    'base_url': '/projects/%s/%s' %(
+                    'base_url': '/projects/%s/%s' % (
                         self.context.name,
                         productseries.name)
                     }
@@ -549,7 +553,7 @@ class ProductView(LaunchpadView):
         return sorted(potemplatenames, key=lambda item: item.name)
 
     def sorted_serieses(self):
-        """Return the series list from the product with the dev focus first."""
+        """Return the series list of the product with the dev focus first."""
         series_list = list(self.context.serieses)
         series_list.remove(self.context.development_focus)
         # now sort the list by name with newer versions before older
@@ -562,6 +566,10 @@ class ProductView(LaunchpadView):
         status = [status.title for status in RESOLVED_BUGTASK_STATUSES]
         url = canonical_url(series) + '/+bugs'
         return get_buglisting_search_filter_url(url, status=status)
+
+    def getLatestBranches(self):
+        return self.context.getLatestBranches(visible_by_user=self.user)
+
 
 class ProductDownloadFilesView(LaunchpadView):
 
@@ -592,7 +600,7 @@ class ProductDownloadFilesView(LaunchpadView):
                     del_count)
 
     def delete_files(self, data):
-        del_keys = [int(v) for k,v in data.items()
+        del_keys = [int(v) for k, v in data.items()
                     if k.startswith('checkbox')]
         del_count = 0
         for series in self.product.serieses:
@@ -611,7 +619,7 @@ class ProductDownloadFilesView(LaunchpadView):
 
     @cachedproperty
     def milestones(self):
-        """Compute a mapping between series and releases that are milestones."""
+        """A mapping between series and releases that are milestones."""
         result = dict()
         for series in self.product.serieses:
             result[series] = dict()
@@ -662,7 +670,8 @@ class ProductChangeTranslatorsView(ProductEditView):
 
 class ProductReviewView(ProductEditView):
     label = "Administer project details"
-    field_names = ["name", "owner", "active", "autoupdate", "reviewed"]
+    field_names = ["name", "owner", "active", "autoupdate", "reviewed",
+                   "private_bugs"]
 
 
 class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
@@ -768,7 +777,8 @@ class Icon:
         self.library_id = library_id
 
     def getURL(self):
-        http_url = getUtility(ILibrarianClient).getURLForAlias(self.library_id)
+        http_url = getUtility(
+            ILibrarianClient).getURLForAlias(self.library_id)
         if config.launchpad.vhosts.use_https:
             return http_url.replace('http', 'https', 1)
         else:
@@ -861,7 +871,8 @@ class ProductSetView(LaunchpadView):
                 pillar_type=item['type'], name=item['name'],
                 displayname=item['title'], summary=item['description'],
                 icon_id=item['icon'])
-            for item in getUtility(IPillarNameSet).search(search_string, limit)
+            for item in getUtility(IPillarNameSet).search(search_string,
+                                                          limit)
         ]
 
     def tooManyResultsFound(self):
@@ -950,10 +961,11 @@ class ProductBugContactEditView(SQLObjectEditView):
                 # The bug contact was set to a new person or team.
                 contact_display_value = bugcontact.preferredemail.email
             else:
-                # The bug contact doesn't have a preferred email address, so it
-                # must be a team.
+                # The bug contact doesn't have a preferred email address,
+                # so it must be a team.
                 assert bugcontact.isTeam(), (
-                    "Expected bug contact with no email address to be a team.")
+                    "Expected bug contact with no email address "
+                    "to be a team.")
                 contact_display_value = bugcontact.browsername
 
             self.request.response.addNotification(
@@ -1008,7 +1020,7 @@ class ProductBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForProduct(
-            self.context, self.selected_lifecycle_status)
+            self.context, self.selected_lifecycle_status, self.user)
 
     @property
     def no_branch_message(self):

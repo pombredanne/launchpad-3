@@ -112,8 +112,10 @@ not, according the distroseries status and the upload target pocket.
    >>> from canonical.launchpad.interfaces import IDistributionSet
    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
    >>> breezy_autotest = ubuntu['breezy-autotest']
+   >>> hoary = ubuntu['hoary']
 
-   >>> from canonical.lp.dbschema import PackagePublishingPocket
+   >>> from canonical.lp.dbschema import (
+   ...     PackagePublishingPocket, DistroSeriesStatus)
 
    >>> warty.status.name
    'CURRENT'
@@ -128,6 +130,20 @@ not, according the distroseries status and the upload target pocket.
    True
    >>> breezy_autotest.canUploadToPocket(PackagePublishingPocket.SECURITY)
    False
+
+The FROZEN status is special.  Uploads are allowed for all pockets as
+the upload will have to wait for manual approval anyway:
+
+   >>> from zope.security.proxy import removeSecurityProxy
+   >>> removeSecurityProxy(hoary).status = DistroSeriesStatus.FROZEN
+
+   >>> hoary.status.name
+   'FROZEN'
+   >>> hoary.canUploadToPocket(PackagePublishingPocket.RELEASE)
+   True
+   >>> hoary.canUploadToPocket(PackagePublishingPocket.SECURITY)
+   True
+
 
 Package searching
 -----------------
@@ -172,17 +188,14 @@ other things) the uploader for validating incoming uploads.
 
    >>> from canonical.launchpad.interfaces import (
    ...    IComponentSet, ISectionSet)
-   >>> univ = getUtility(IComponentSet).ensure('universe')
    >>> python = getUtility(ISectionSet).ensure('python')
 
-   >>> hoary.addComponent(univ)
    >>> hoary.addSection(python)
 
    >>> for c in hoary.components:
    ...     print c.name
    main
    restricted
-   universe
 
    >>> for s in hoary.sections:
    ...     print s.name
@@ -193,6 +206,27 @@ other things) the uploader for validating incoming uploads.
    devel
    python
    translations
+
+Breezy-autotest has got a commercial component, which is not reported:
+
+    >>> breezyautotest = distroseriesset.queryByName(ubuntu, "breezy-autotest")
+    >>> for c in breezyautotest.components:
+    ...     print c.name
+    main
+    restricted
+    universe
+    multiverse
+
+The upload_components property, however, reports all the available
+components since commercial is allowed for upload:
+
+    >>> for c in breezyautotest.upload_components:
+    ...     print c.name
+    main
+    restricted
+    universe
+    multiverse
+    commercial
 
 
 DistroSeriess can be initialised from their parents
@@ -582,12 +616,14 @@ Update a string in the children release.
     ...     carlos, { 0: u'humpy updated string' }, fuzzy=False,
     ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
 
-Let's update the statistics.
+Let's update the statistics, and print out the values for the number
+of translated, changed in Launchpad, newly translated in Launchpad,
+and with unreviewed suggestions.
 
     >>> pofile_es_hoary.updateStatistics()
-    (7, 2, 1)
+    (7, 2, 1, 1)
     >>> pofile_es_humpy.updateStatistics()
-    (7, 2, 0)
+    (7, 2, 0, 0)
 
 We can also see that the statistics show differences between each distribution
 release for the rosetta count of translations:
@@ -766,6 +802,8 @@ allows the callsite to specify one and then the result will be
 restricted to it.
 
    >>> debian_archive = getUtility(IDistributionSet)['debian'].main_archive
+   >>> debian_archive.purpose
+   <Item PRIMARY (1) from <class 'canonical.lp.dbschema.ArchivePurpose'>>
 
    >>> hoary.getSourcePackagePublishing(
    ...     PackagePublishingStatus.PUBLISHED,
