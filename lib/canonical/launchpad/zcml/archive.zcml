@@ -57,8 +57,8 @@
         class="canonical.launchpad.browser.ArchiveBuildsView">
         <browser:page
             name="+builds"
-	    facet="overview"
-	    template="../templates/archive-builds.pt"
+            facet="overview"
+            template="../templates/archive-builds.pt"
             />
         <browser:page
             name="+builds-list"
@@ -70,8 +70,8 @@
         name="+edit"
         for="canonical.launchpad.interfaces.IArchive"
         class="canonical.launchpad.browser.ArchiveEditView"
-	permission="launchpad.Edit"
-	template="../templates/archive-edit.pt"
+        permission="launchpad.Edit"
+        template="../templates/archive-edit.pt"
         />
 
     <browser:page
@@ -80,7 +80,7 @@
         class="canonical.launchpad.browser.ArchiveAdminView"
         permission="launchpad.Admin"
         template="../templates/archive-admin.pt"
-	/>
+        />
 
 
     <!-- ArchiveSet -->
