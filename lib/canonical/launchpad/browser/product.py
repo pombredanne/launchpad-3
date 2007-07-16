@@ -65,6 +65,7 @@ from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
@@ -88,7 +89,7 @@ from canonical.widgets.textwidgets import StrippedTextWidget
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin, CalendarTraversalMixin,
-    QuestionTargetTraversalMixin):
+    FAQTargetNavigationMixin, QuestionTargetTraversalMixin):
 
     usedfor = IProduct
 
@@ -283,11 +284,7 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['filebug', 'bugcontact', 'securitycontact', 'cve']
-
-    def filebug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='add')
+    links = ['bugcontact', 'securitycontact', 'cve']
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
@@ -344,7 +341,7 @@ class ProductSpecificationsMenu(ApplicationMenu):
         return Link('+assignments', text, summary, icon='info')
 
     def new(self):
-        text = 'Register blueprint'
+        text = 'Register a blueprint'
         summary = 'Register a new blueprint for %s' % self.context.title
         return Link('+addspec', text, summary, icon='add')
 

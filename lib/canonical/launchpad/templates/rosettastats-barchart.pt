@@ -2,6 +2,7 @@
 <img
   tal:condition="not: context/messageCount"
   src="/@@/red-bar"
+  height="10"
   width="100"
   style="height: 1em;"
   >
@@ -12,6 +13,7 @@
     title string:Unchanged: ${context/nonUpdatesPercentage} %;
     width context/nonUpdatesPercentage;
   "
+  height="10"
   src="/@@/green-bar"
   style="height: 1em;"
 /><img
@@ -21,6 +23,7 @@
     width context/updatesPercentage;
     title string: Changed: ${context/updatesPercentage} %
   "
+  height="10"
   src="/@@/blue-bar"
   style="height: 1em;"
 /><img
@@ -30,6 +33,7 @@
     width context/rosettaPercentage;
     title string: New: ${context/rosettaPercentage} %
   "
+  height="10"
   src="/@@/purple-bar"
   style="height: 1em;"
 /><img
@@ -39,6 +43,7 @@
     width context/untranslatedPercentage;
     title string: Untranslated: ${context/untranslatedPercentage} %
   "
+  height="10"
   src="/@@/red-bar"
   style="height: 1em;"
 />

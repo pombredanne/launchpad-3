@@ -151,15 +151,16 @@ class IHostedBranchStorage(Interface):
         :returns: a product ID.
         """
 
-    def createBranch(personID, productID, branchName):
+    def createBranch(loginID, personName, productName, branchName):
         """Register a new hosted branch in Launchpad.
 
         This is called by the bazaar.launchpad.net server when a user pushes a
         new branch to it.  See also
         https://launchpad.canonical.com/SupermirrorFilesystemHierarchy.
 
-        :param personID: a person ID.
-        :param productID: a product ID.
+        :param loginID: the person ID of the logged in user.
+        :param personName: the unique name of a Person
+        :param productName: the unique name of a Product
         :param branchName: the name for this branch, to be used in URLs.
         :returns: the ID for the new branch.
         """
@@ -216,4 +217,18 @@ class IBranchDetailsStorage(Interface):
         :param branchID: The database ID of the given branch.
         :param reason: A string giving the reason for the failure.
         :returns: True if the branch status was successfully updated.
+        """
+
+    def recordSuccess(name, hostname, date_started, date_completed):
+        """Notify Launchpad that a mirror script has successfully completed.
+
+        Create an entry in the ScriptActivity table with the provided data.
+
+        :param name: Name of the script.
+        :param hostname: Where the script was running.
+
+        :param date_started: When the script started, as an UTC time tuple.
+        :param date_completed: When the script completed (now), as an UTC time
+            tuple.
+        :returns: True if the ScriptActivity record was successfully inserted.
         """

@@ -26,6 +26,7 @@ from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.question import (
@@ -64,10 +65,10 @@ from canonical.lp.dbschema import (
     PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
-    ILaunchpadCelebrities, ISourcePackageName, IQuestionTarget, NotFoundError,
-    QUESTION_STATUS_DEFAULT_SEARCH,\
-    IHasLogo, IHasMugshot, IHasIcon)
+    IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IFAQTarget, 
+    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, 
+    ISourcePackageName, IQuestionTarget, NotFoundError, 
+    QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.archivepublisher.debversion import Version
 
@@ -78,7 +79,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasSprintsMixin, KarmaContextMixin, QuestionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IHasBuildRecords, IQuestionTarget,
+        IDistribution, IFAQTarget, IHasBuildRecords, IQuestionTarget,
         IHasLogo, IHasMugshot, IHasIcon)
 
     _table = 'Distribution'
@@ -554,6 +555,26 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return False
         return True
 
+    def newFAQ(self, owner, title, content, keywords=None, date_created=None):
+        """See `IFAQTarget`."""
+        return FAQ.new(
+            owner=owner, title=title, content=content, keywords=keywords,
+            date_created=date_created, distribution=self)
+
+    def findSimilarFAQs(self, summary):
+        """See `IFAQTarget`."""
+        return FAQ.findSimilar(summary, distribution=self)
+
+    def getFAQ(self, id):
+        """See `IFAQCollection`."""
+        return FAQ.getForTarget(id, self)
+
+    def searchFAQs(self, search_text=None, owner=None, sort=None):
+        """See `IFAQCollection`."""
+        return FAQSearch(
+            search_text=search_text, owner=owner, sort=sort,
+            distribution=self).getResults()
+    
     def ensureRelatedBounty(self, bounty):
         """See `IDistribution`."""
         for curr_bounty in self.bounties:

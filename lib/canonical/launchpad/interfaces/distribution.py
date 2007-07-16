@@ -22,9 +22,10 @@ from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces import (
     IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
-    ISpecificationTarget, IHasSecurityContact, PillarNameField,
-    IHasLogo, IHasMugshot, IHasIcon)
+    ISpecificationTarget, IHasSecurityContact, PillarNameField)
 from canonical.launchpad.interfaces.sprint import IHasSprints
+from canonical.launchpad.interfaces.translationgroup import (
+    IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload)
@@ -39,7 +40,8 @@ class DistributionNameField(PillarNameField):
 
 class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                     ISpecificationTarget, IHasSecurityContact,
-                    IKarmaContext, IHasMentoringOffers, IHasSprints):
+                    IKarmaContext, IHasMentoringOffers, IHasSprints,
+                    IHasTranslationGroup):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -95,26 +97,6 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     domainname = TextLine(
         title=_("Domain name"),
         description=_("The distro's domain name."), required=True)
-    translationgroup = Choice(
-        title = _("Translation group"),
-        description = _("The translation group for this distribution. This group "
-            "is made up of a set of translators for all the languages "
-            "approved by the group manager. These translators then have "
-            "permission to edit the groups translation files, based on the "
-            "permission system selected below."),
-        required=False,
-        vocabulary='TranslationGroup')
-    translationpermission = Choice(
-        title=_("Translation Permission System"),
-        description=_("The permissions this group requires for "
-            "translators. If 'Open', then anybody can edit translations "
-            "in any language. If 'Reviewed', then anybody can make "
-            "suggestions but only the designated translators can edit "
-            "or confirm translations. And if 'Closed' then only the "
-            "designated translation group will be able to touch the "
-            "translation files at all."),
-        required=True,
-        vocabulary='TranslationPermission')
     owner = Int(
         title=_("Owner"),
         description=_("The distro's owner."), required=True)
