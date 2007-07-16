@@ -625,13 +625,15 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(self, self.main_archive,
+            """ % sqlvalues(self, 
+                            [archive.id for archive in 
+                                self.all_distro_archives],
                             PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
@@ -652,13 +654,15 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackagePublishingHistory.status != %s AND
             SourcePackageRelease.sourcepackagename =
                 SourcePackageName.id
-            """ % sqlvalues(self, self.main_archive,
+            """ % sqlvalues(self, 
+                            [archive.id for archive in 
+                                self.all_distro_archives],
                             PackagePublishingStatus.REMOVED),
             distinct=True,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease',
@@ -686,9 +690,11 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.status != %s
-            """ % sqlvalues(sourcepackagename, self, self.main_archive,
+            """ % sqlvalues(sourcepackagename, self, 
+                            [archive.id for archive in 
+                                self.all_distro_archives],
                             PackagePublishingStatus.REMOVED),
             orderBy='id',
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
@@ -803,12 +809,15 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                 SourcePackagePublishingHistory.distrorelease =
                     DistroRelease.id AND
                 DistroRelease.distribution = %s AND
-                SourcePackagePublishingHistory.archive = %s AND
+                SourcePackagePublishingHistory.archive IN %s AND
                 SourcePackagePublishingHistory.sourcepackagerelease =
                     SourcePackageRelease.id AND
                 SourcePackageRelease.sourcepackagename = %s AND
                 SourcePackagePublishingHistory.status = %s
-                ''' % sqlvalues(self, self.main_archive, sourcepackagename,
+                ''' % sqlvalues(self, 
+                                [archive.id for archive in 
+                                    self.all_distro_archives],
+                                sourcepackagename,
                                 PackagePublishingStatus.PUBLISHED),
                 clauseTables=['SourcePackageRelease', 'DistroRelease'],
                 distinct=True,

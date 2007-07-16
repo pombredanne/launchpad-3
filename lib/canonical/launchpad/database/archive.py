@@ -107,10 +107,16 @@ class ArchiveSet:
 
     def ensure(self, owner, distribution, purpose):
         """See canonical.launchpad.interfaces.IArchiveSet."""
-        archive = owner.archive
-        if archive is None:
-            archive = self.new(distribution=distribution, purpose=purpose,
-                owner=owner)
+        archive = None
+        if owner:
+            archive = owner.archive
+            if archive is None:
+                archive = self.new(distribution=distribution, purpose=purpose,
+                    owner=owner)
+        else:
+            archive = self.getByDistroPurpose(distribution, purpose)
+            if not archive:
+                archive = self.new(distribution, purpose)
         return archive
 
     def getAllPPAs(self):

@@ -63,13 +63,6 @@ class IBinaryPackageRelease(Interface):
         and attach the provided library file alias (file).
         """
 
-    def publish(priority, status, pocket, embargo, distroarchseries=None):
-        """Publish this BinaryPackageRelease according the given parameters.
-
-        The optional distroarchseries argument defaults to the one choosen
-        originally for the build record (helps on derivative procedures).
-        """
-
     def override(component=None, section=None, priority=None):
         """Uniform method to override binarypackagerelease attribute.
 

@@ -163,9 +163,10 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
                    SourcePackageRelease.id AND
                    SourcePackageRelease.sourcepackagename = %s AND
                    SourcePackagePublishingHistory.distrorelease = %s AND
-                   SourcePackagePublishingHistory.archive = %s
+                   SourcePackagePublishingHistory.archive IN %s
                 """ % sqlvalues(self.sourcepackagename, self.distroseries,
-                                self.distroseries.main_archive))
+                                [archive.id for archive in
+                                    self.distroseries.all_distro_archives]))
         if version:
             clauses.append(
                 "SourcePackageRelease.version = %s" % sqlvalues(version))
@@ -284,13 +285,14 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.status != %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id
             ''' % sqlvalues(self.sourcepackagename,
                             self.distribution,
-                            self.distribution.main_archive,
+                            [archive.id for archive in
+                                self.distribution.all_distro_archives],
                             PackagePublishingStatus.REMOVED),
             clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'],
             selectAlso="%s" % (SQLConstant(order_const)),
@@ -480,13 +482,14 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         Build.sourcepackagerelease = SourcePackageRelease.id AND
         SourcePackageRelease.sourcepackagename = %s AND
         SourcePackagePublishingHistory.distrorelease = %s AND
-        SourcePackagePublishingHistory.archive = %s AND
+        SourcePackagePublishingHistory.archive IN %s AND
         SourcePackagePublishingHistory.status = %s AND
         SourcePackagePublishingHistory.sourcepackagerelease =
         SourcePackageRelease.id
         """ % sqlvalues(self.sourcepackagename,
                         self.distroseries,
-                        self.distroseries.main_archive,
+                        [archive.id for archive in
+                            self.distroseries.all_distro_archives],
                         PackagePublishingStatus.PUBLISHED)]
 
         # XXX cprov 20060925: It would be nice if we could encapsulate

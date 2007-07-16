@@ -177,8 +177,8 @@ But an upload to the UPDATE pocket will add items to the import queue:
 
 == Translations from PPA build ==
 
-For now we simply ignore translations for other archive than the
-Distribution main_archive (PPAs).
+For now we simply ignore translations for archives other than the
+Distribution archives (i.e. PPAs).
 
   >>> from canonical.launchpad.interfaces import (
   ...    IPersonSet, IArchiveSet)

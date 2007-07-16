@@ -82,12 +82,14 @@ class DistributionSourcePackage(BugTargetBase,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.version = %s
-            """ % sqlvalues(self.distribution, self.distribution.main_archive,
+            """ % sqlvalues(self.distribution, 
+                            [archive.id for archive in 
+                                self.distribution.all_distro_archives],
                             self.sourcepackagename, version),
             orderBy='-datecreated',
             prejoinClauseTables=['SourcePackageRelease'],
@@ -110,10 +112,11 @@ class DistributionSourcePackage(BugTargetBase,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.status != %s
             """ % sqlvalues(self.sourcepackagename, self.distribution,
-                            self.distribution.main_archive,
+                            [archive.id for archive in 
+                                self.distribution.all_distro_archives],
                             PackagePublishingStatus.REMOVED),
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             orderBy=[SQLConstant(order_const),
@@ -225,14 +228,15 @@ class DistributionSourcePackage(BugTargetBase,
     def _getPublishingHistoryQuery(self, status=None):
         query = """
             DistroRelease.distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
+            SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s
             """ % sqlvalues(self.distribution,
-                            self.distribution.main_archive,
+                            [archive.id for archive in 
+                                self.distribution.all_distro_archives],
                             self.sourcepackagename)
 
         if status is not None:
@@ -251,12 +255,13 @@ class DistributionSourcePackage(BugTargetBase,
         ret = SourcePackagePublishingHistory.select("""
             sourcepackagepublishinghistory.distrorelease = DistroRelease.id AND
             DistroRelease.distribution = %s AND
-            sourcepackagepublishinghistory.archive = %s AND
+            sourcepackagepublishinghistory.archive IN %s AND
             sourcepackagepublishinghistory.sourcepackagerelease =
                 sourcepackagerelease.id AND
             sourcepackagerelease.sourcepackagename = %s
             """ % sqlvalues(self.distribution,
-                            self.distribution.main_archive,
+                            [archive.id for archive in 
+                                self.distribution.all_distro_archives],
                             self.sourcepackagename),
             orderBy='-datecreated',
             clauseTables=['distrorelease', 'sourcepackagerelease'])

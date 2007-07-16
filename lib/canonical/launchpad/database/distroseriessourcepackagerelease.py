@@ -95,10 +95,11 @@ class DistroSeriesSourcePackageRelease:
         """See IDistroSeriesSourcePackage."""
         return SourcePackagePublishingHistory.select("""
             distrorelease = %s AND
-            archive = %s AND
+            archive IN %s AND
             sourcepackagerelease = %s
             """ % sqlvalues(self.distroseries,
-                            self.distroseries.main_archive,
+                            [archive.id for archive in
+                                self.distroseries.all_distro_archives],
                             self.sourcepackagerelease),
             orderBy='-datecreated')
 
@@ -138,10 +139,11 @@ class DistroSeriesSourcePackageRelease:
         BinaryPackagePublishingHistory.binarypackagerelease=
             BinaryPackageRelease.id AND
         DistroArchRelease.distrorelease=%s AND
-        BinaryPackagePublishingHistory.archive = %s AND
+        BinaryPackagePublishingHistory.archive IN %s AND
         Build.sourcepackagerelease=%s
         """ % sqlvalues(self.distroseries,
-                        self.distroseries.main_archive,
+                        [archive.id for archive in
+                            self.distroseries.all_distro_archives],
                         self.sourcepackagerelease)
 
         return BinaryPackageRelease.select(
@@ -183,11 +185,12 @@ class DistroSeriesSourcePackageRelease:
         # Retrieve current publishing info
         current = SourcePackagePublishingHistory.selectFirst("""
         distrorelease = %s AND
-        archive = %s AND
+        archive IN %s AND
         sourcepackagerelease = %s AND
         status = %s
         """ % sqlvalues(self.distroseries,
-                        self.distroseries.main_archive,
+                        [archive.id for archive in
+                            self.distroseries.all_distro_archives],
                         self.sourcepackagerelease,
                         PackagePublishingStatus.PUBLISHED),
             orderBy='-datecreated')
@@ -225,7 +228,7 @@ class DistroSeriesSourcePackageRelease:
             pocket=current.pocket,
             component=new_component,
             section=new_section,
-            archive=current.distroseries.main_archive
+            archive=current.archive
         )
 
     def supersede(self):

@@ -116,11 +116,12 @@ class BinaryPackageRelease(SQLBase):
             BinaryPackageName.id AND
         BinaryPackageName.id = %s AND
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
-        BinaryPackagePublishingHistory.archive = %s AND
+        BinaryPackagePublishingHistory.archive IN %s AND
         BinaryPackagePublishingHistory.status = %s
         """ % sqlvalues(self.binarypackagename,
                         self.build.distroarchseries,
-                        self.build.distroarchseries.main_archive,
+                        [archive.id for archive in 
+                            self.build.distroarchseries.all_distro_archives],
                         dbschema.PackagePublishingStatus.SUPERSEDED)
 
         return shortlist(BinaryPackageRelease.select(
@@ -139,25 +140,6 @@ class BinaryPackageRelease(SQLBase):
         return BinaryPackageFile(binarypackagerelease=self,
                                  filetype=determined_filetype,
                                  libraryfile=file)
-
-    def publish(self, priority, status, pocket, embargo,
-                distroarchseries=None):
-        """See IBinaryPackageRelease."""
-        # XXX: completely untested code
-        if not distroarchseries:
-            distroarchseries = self.build.distroarchseries
-
-        return SecureBinaryPackagePublishingHistory(
-            binarypackagerelease=self,
-            distroarchseries=distroarchseries,
-            component=self.build.sourcepackagerelease.component,
-            section=self.build.sourcepackagerelease.section,
-            priority=priority,
-            status=status,
-            pocket=pocket,
-            embargo=embargo,
-            archive=distroarchseries.main_archive
-            )
 
     def override(self, component=None, section=None, priority=None):
         """See IBinaryPackageRelease."""
@@ -232,13 +214,14 @@ class BinaryPackageReleaseSet:
            BinaryPackageRelease.id AND
         BinaryPackagePublishingHistory.distroarchrelease =
            DistroArchRelease.id AND
-        BinaryPackagePublishingHistory.archive = %s AND
+        BinaryPackagePublishingHistory.archive IN %s AND
         DistroArchRelease.distrorelease = %s AND
         BinaryPackageRelease.binarypackagename =
            BinaryPackageName.id AND
         BinaryPackagePublishingHistory.status != %s
-        """ % sqlvalues(distroseries.main_archive, distroseries,
-                        dbschema.PackagePublishingStatus.REMOVED)
+        """ % sqlvalues([archive.id for archive in 
+                            distroseries.all_distro_archives], 
+                        distroseries, dbschema.PackagePublishingStatus.REMOVED)
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
                         'BinaryPackageRelease', 'BinaryPackageName']

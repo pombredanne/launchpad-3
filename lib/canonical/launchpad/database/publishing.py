@@ -355,11 +355,12 @@ class SourcePackagePublishingHistory(SQLBase, ArchivePublisherBase):
                 BinaryPackageName.id AND
             Build.sourcepackagerelease=%s AND
             DistroArchRelease.distrorelease=%s AND
-            BinaryPackagePublishingHistory.archive=%s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.status=%s
             """ % sqlvalues(self.sourcepackagerelease,
                             self.distroseries,
-                            self.distroseries.main_archive,
+                            [archive.id for archive in
+                                self.distroseries.all_distro_archives],
                             PackagePublishingStatus.PUBLISHED)
 
         orderBy = ['BinaryPackageName.name',

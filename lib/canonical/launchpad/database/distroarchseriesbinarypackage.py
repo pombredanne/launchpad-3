@@ -105,13 +105,14 @@ class DistroArchSeriesBinaryPackage:
         """See IDistroArchSeriesBinaryPackage."""
         query = """
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
-        BinaryPackagePublishingHistory.archive = %s AND
+        BinaryPackagePublishingHistory.archive IN %s AND
         BinaryPackagePublishingHistory.binarypackagerelease =
             BinaryPackageRelease.id AND
         BinaryPackageRelease.version = %s AND
         BinaryPackageRelease.binarypackagename = %s
         """ % sqlvalues(self.distroarchseries,
-                        self.distroarchseries.main_archive,
+                        [archive.id for archive in
+                            self.distroarchseries.all_distro_archives],
                         version,
                         self.binarypackagename)
 
@@ -131,12 +132,13 @@ class DistroArchSeriesBinaryPackage:
         """See IDistroArchSeriesBinaryPackage."""
         ret = BinaryPackageRelease.select("""
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename = %s
             """ % sqlvalues(self.distroarchseries,
-                            self.distroarchseries.main_archive,
+                            [archive.id for archive in
+                                self.distroarchseries.all_distro_archives],
                             self.binarypackagename),
             orderBy='-datecreated',
             distinct=True,
@@ -160,11 +162,12 @@ class DistroArchSeriesBinaryPackage:
             BinaryPackageRelease.id =
                 BinaryPackagePublishingHistory.binarypackagerelease AND
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.status = %s
             """ % sqlvalues(self.binarypackagename,
                             self.distroarchseries,
-                            self.distroarchseries.main_archive,
+                            [archive.id for archive in
+                                self.distroarchseries.all_distro_archives],
                             PackagePublishingStatus.PUBLISHED,
                             ),
             orderBy='datecreated',
@@ -183,12 +186,13 @@ class DistroArchSeriesBinaryPackage:
         """See IDistroArchSeriesBinaryPackage."""
         return BinaryPackagePublishingHistory.select("""
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease = 
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename = %s
             """ % sqlvalues(self.distroarchseries,
-                            self.distroarchseries.main_archive,
+                            [archive.id for archive in
+                                self.distroarchseries.all_distro_archives],
                             self.binarypackagename),
             distinct=True,
             clauseTables=['BinaryPackageRelease'],
@@ -199,13 +203,14 @@ class DistroArchSeriesBinaryPackage:
         """See IDistroArchSeriesBinaryPackage."""
         current = BinaryPackagePublishingHistory.selectFirst("""
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename = %s AND
             BinaryPackagePublishingHistory.status = %s
             """ % sqlvalues(self.distroarchseries,
-                            self.distroarchseries.main_archive,
+                            [archive.id for archive in
+                                self.distroarchseries.all_distro_archives],
                             self.binarypackagename,
                             PackagePublishingStatus.PUBLISHED),
             clauseTables=['BinaryPackageRelease'],

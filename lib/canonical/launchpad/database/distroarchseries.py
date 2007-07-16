@@ -88,12 +88,12 @@ class DistroArchSeries(SQLBase):
         """See IDistroArchSeries """
         query = """
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.status = %s AND
             BinaryPackagePublishingHistory.pocket = %s
             """ % sqlvalues(
                     self,
-                    self.main_archive,
+                    [archive.id for archive in self.all_distro_archives],
                     PackagePublishingStatus.PUBLISHED,
                     PackagePublishingPocket.RELEASE
                  )
@@ -145,9 +145,10 @@ class DistroArchSeries(SQLBase):
 
     def searchBinaryPackages(self, text):
         """See IDistroArchSeries."""
+        archives = [archive.id for archive in self.all_distro_archives]
         bprs = BinaryPackageRelease.select("""
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                 BinaryPackageRelease.id AND
             BinaryPackagePublishingHistory.status != %s AND
@@ -156,7 +157,7 @@ class DistroArchSeries(SQLBase):
             (BinaryPackageRelease.fti @@ ftq(%s) OR
              BinaryPackageName.name ILIKE '%%' || %s || '%%')
             """ % (quote(self),
-                   quote(self.main_archive),
+                   quote(archives),
                    quote(PackagePublishingStatus.REMOVED),
                    quote(text),
                    quote_like(text)),
@@ -220,9 +221,12 @@ class DistroArchSeries(SQLBase):
             queries.append("status=%s" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED))
 
+        archives = []
         if archive is None:
-            archive = self.main_archive
-        queries.append("archive=%s" % sqlvalues(archive))
+            archives = [archive.id for archive in self.all_distro_archives]
+        else:
+            archives = [archive.id]
+        queries.append("archive IN %s" % sqlvalues(archives))
 
         published = BinaryPackagePublishingHistory.select(
             " AND ".join(queries),
@@ -256,7 +260,7 @@ class DistroArchSeries(SQLBase):
         # exclude RELEASE pocket if the distroseries was already released,
         # since it should not change.
         if (not self.distroseries.isUnstable() and
-            self.main_archive == archive):
+            archive in self.all_distro_archives):
             queries.append(
             'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
@@ -284,6 +288,10 @@ class DistroArchSeries(SQLBase):
     @property
     def main_archive(self):
         return self.distroseries.distribution.main_archive
+
+    @property
+    def all_distro_archives(self):
+        return self.distroseries.distribution.all_distro_archives
 
 
 class DistroArchSeriesSet:

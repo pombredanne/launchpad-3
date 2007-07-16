@@ -84,10 +84,11 @@ class DistroArchSeriesBinaryPackageRelease:
 
     def _latest_publishing_record(self, status=None):
         query = ("binarypackagerelease = %s AND distroarchrelease = %s "
-                 "AND archive = %s"
+                 "AND archive IN %s"
                  % sqlvalues(self.binarypackagerelease,
                              self.distroarchseries,
-                             self.distroarchseries.main_archive))
+                             [archive.id for archive in
+                                self.distroarchseries.all_distro_archives]))
         if status is not None:
             query += " AND status = %s" % sqlvalues(status)
 
@@ -99,10 +100,11 @@ class DistroArchSeriesBinaryPackageRelease:
         """See IDistroArchSeriesBinaryPackage."""
         return BinaryPackagePublishingHistory.select("""
             distroarchrelease = %s AND
-            archive = %s AND
+            archive IN %s AND
             binarypackagerelease = %s
             """ % sqlvalues(self.distroarchseries,
-                            self.distroarchseries.main_archive,
+                            [archive.id for archive in
+                                self.distroarchseries.all_distro_archives],
                             self.binarypackagerelease),
             orderBy='-datecreated')
 

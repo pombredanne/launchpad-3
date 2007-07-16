@@ -22,7 +22,7 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    SourcePackageUrgency, SourcePackageFormat,
+    ArchivePurpose, SourcePackageUrgency, SourcePackageFormat,
     SourcePackageFileType, BuildStatus, QuestionStatus,
     PackagePublishingStatus)
 
@@ -167,9 +167,8 @@ class SourcePackageRelease(SQLBase):
             # imports us, so avoid circular import
             from canonical.launchpad.database.sourcepackage import \
                  SourcePackage
-            # Only process main archive to skip PPA publishings.
-            if (publishing.distroseries.main_archive.id !=
-                publishing.archive.id):
+            # Only process main archives to skip PPA publishings.
+            if publishing.archive.purpose == ArchivePurpose.PPA:
                 continue
             sp = SourcePackage(self.sourcepackagename,
                                publishing.distroseries)
@@ -228,12 +227,15 @@ class SourcePackageRelease(SQLBase):
             BinaryPackagePublishingHistory.distroarchrelease =
                DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %d AND
-            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.archive IN %s AND
             BinaryPackagePublishingHistory.binarypackagerelease =
                BinaryPackageRelease.id AND
             BinaryPackageRelease.build = Build.id AND
             Build.sourcepackagerelease = %d
-            """ % (distroseries, distroseries.main_archive, self),
+            """ % (distroseries, 
+                   [archive.id for archive in
+                       distroseries.all_distro_archives],
+                   self),
             clauseTables=clauseTables))
 
         return archSerieses
