@@ -17,13 +17,19 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
+
+      <div>
+        <img alt="" src="/@@/question" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+      </div>
+
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <h1 i18n:translate=""
         metal:fill-slot="heading">Link question to a bug report</h1>
 
     <div metal:fill-slot="extra_info">
-      <p i18n:translate="">Enter the number or nickname of the Malone bug report
+      <p i18n:translate="">Enter the number or nickname of the Launchpad bug report
         that should be linked to question #<tal:id i18n:name="id" replace="context/id" />
         &ldquo;<tal:title i18n:name="title" replace="context/title"/>&rdquo;.
       </p>

@@ -11,21 +11,11 @@ Change some details of the Ubuntu distribution that were incorrect.
   'Ubuntu'
   >>> admin_browser.getControl("Display Name").value = 'Test Distro'
 
-  >>> find_tag_by_id(
-  ...     admin_browser.contents, 'field.emblem_current_img').get('src')
-  u'/@@/distribution'
-  >>> find_tag_by_id(
-  ...     admin_browser.contents, 'field.gotchi_current_img').get('src')
-  u'/@@/distribution-mugshot'
-
-  >>> from canonical.launchpad.ftests import set_gotchi_and_emblem
-  >>> set_gotchi_and_emblem(admin_browser)
-
   >>> admin_browser.getControl("Title").value = 'The Test Distribution'
   >>> admin_browser.getControl("Summary").value = 'Test Distro Summary'
   >>> admin_browser.getControl("Description").value = 'Test Distro Description'
 
-  >>> admin_browser.getControl("Change", index=2).click()
+  >>> admin_browser.getControl("Change").click()
   >>> admin_browser.url
   'http://launchpad.dev/ubuntu'
 
@@ -36,9 +26,3 @@ The changed values can be seen on the distribution's +edit page.
   >>> admin_browser.getControl("Display Name").value
   'Test Distro'
 
-  >>> find_tag_by_id(
-  ...     admin_browser.contents, 'field.gotchi_current_img').get('src')
-  u'.../icon.png'
-  >>> find_tag_by_id(
-  ...     admin_browser.contents, 'field.emblem_current_img').get('src')
-  u'.../emblem.png'

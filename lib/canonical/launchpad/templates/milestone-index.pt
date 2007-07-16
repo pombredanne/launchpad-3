@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad"
 >
 
@@ -62,10 +62,11 @@
                tal:replace="structure spec/assignee/fmt:link" />&nbsp;
           </td>
           <td>
-            <span class="sortkey" tal:content="spec/delivery/sortkey" />
-            <span tal:content="spec/delivery/title"
+            <span class="sortkey"
+	          tal:content="spec/implementation_status/sortkey" />
+            <span tal:content="spec/implementation_status/title"
                   tal:attributes="
-                  class string:specdelivery${spec/delivery/name}">
+                  class string:specdelivery${spec/implementation_status/name}">
               Deployment
             </span>
           </td>
@@ -92,7 +93,7 @@
         <tr tal:repeat="bugtask bugtasks">
           <td class="icon left">
             <span class="sortkey" tal:content="bugtask/bug/id" />
-            <span tal:content="structure bugtask/fmt:icon" />
+            <span tal:content="structure bugtask/image:icon" />
           </td>
           <td tal:content="bugtask/bug/id" class="amount">12345</td>
           <td>

@@ -102,7 +102,7 @@ Right now this search is done across Products, Projects and Distributions.
     ...            % (row['type'], row['title'], row['name'], rank))
     distribution: Ubuntu Linux (ubuntu) [relevance: perfect]
     project: Ubuntu (ubuntu-product) [relevance: perfect]
-    project: The Ubuntu Project (ubuntu-project) [relevance: high]
+    project group: The Ubuntu Project (ubuntu-project) [relevance: high]
     distribution: Ubuntu Test (ubuntutest) [relevance: low]
     project: The Evolution Groupware Application (evolution) [relevance: low]
     project: The Gnome Panel Applets (applets) [relevance: low]
@@ -131,4 +131,22 @@ Note that inactive products and projects won't be included in the results.
     project: The Gnome Panel Applets (applets) [relevance: low]
     distribution: GuadaLinex: Linux for Andalucia (guadalinex) [relevance: low]
 
+
+== PillarName objects ==
+
+PillarName objects have a pillar attribute that returns the object referenced
+by that pillar name
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     IDistributionSet, IProjectSet)
+    >>> from canonical.launchpad.database import PillarName
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> gnome = getUtility(IProjectSet).getByName('gnome')
+    >>> ubuntu_pillarname = PillarName.selectOneBy(name='ubuntu')
+    >>> ubuntu_pillarname.pillar == ubuntu
+    True
+    >>> gnome_pillarname = PillarName.selectOneBy(name='gnome')
+    >>> gnome_pillarname.pillar == gnome
+    True
 

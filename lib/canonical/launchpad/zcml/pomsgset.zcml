@@ -25,6 +25,13 @@
       <allow interface="canonical.launchpad.interfaces.IPOMsgSetSuggestions" />
     </content>
 
+    <adapter
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      for="canonical.launchpad.interfaces.IPOMsgSet"
+      factory="canonical.launchpad.browser.POMsgSetSOP"
+      permission="zope.Public"
+      />
+
     <browser:url
         for="canonical.launchpad.interfaces.IPOMsgSet"
         path_expression="string:${potmsgset/sequence}"

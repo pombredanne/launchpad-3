@@ -1,11 +1,6 @@
-<html
-    xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
->
-<body>
+<html metal:use-macro="view/macro:page/pillarindex" i18n:domain="launchpad">
+  <body>
+    <h1 metal:fill-slot="heading">Registered distributions</h1>
 
 <metal:rightportlets fill-slot="portlets_two">
   <div class="portlet">
@@ -23,8 +18,6 @@
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
-
-      <h1>Registered distributions</h1>
 
     <div id="application-summary">
       Launchpad can keep track of the software packages in a distribution,

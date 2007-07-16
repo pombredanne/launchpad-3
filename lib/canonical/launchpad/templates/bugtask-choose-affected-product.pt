@@ -7,14 +7,18 @@
 
 <body>
 
-<metal:leftportlets fill-slot="portlets_one">
-</metal:leftportlets>
-
 <metal:rightportlets fill-slot="portlets_two">
   <div tal:replace="structure context/bug/@@+portlet-details" />
 </metal:rightportlets>
 
 <div metal:fill-slot="main">
+
+      <div>
+        <img alt="" src="/@@/bug" />
+        <a tal:attributes="href context/fmt:url"
+        >Bug #<tal:bug replace="context/bug/id">3252543</tal:bug></a>:
+        <tal:title replace="context/bug/title">Foo doesn't work</tal:title>
+      </div>
 
   <div metal:use-macro="context/@@launchpad_form/form">
 

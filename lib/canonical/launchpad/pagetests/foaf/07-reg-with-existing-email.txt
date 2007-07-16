@@ -1,0 +1,110 @@
+
+When registering new accounts, we always check if the email address used
+is not already registered in Launchpad.
+
+If the email address is registered and assigned to an account that has
+been validated, we show a message and point the user to the forgotten
+password page.
+
+    >>> browser.open('http://launchpad.dev/')
+    >>> browser.getLink('Log In / Register').click()
+
+    >>> browser.getControl('E-mail address:', index=1).value = (
+    ...     'test@canonical.com')
+    >>> browser.getControl('Register').click()
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> for tag in soup('p', 'error message'):
+    ...     print tag.renderContents()
+    Sorry, someone with the address test@canonical.com already has a
+    Launchpad account. If this is you and you've forgotten your password,
+    Launchpad can <a href="/+forgottenpassword">reset it for you.</a>
+
+
+On the other hand, if the email is assigned to a profile that has not
+been validated, we pretend that we have never seen this email and move
+on with the registration process.
+
+    >>> browser.getControl('E-mail address:', index=1).value = 'mpo@iki.fi'
+    >>> browser.getControl('Register').click()
+
+    >>> print browser.contents
+    <...
+    ...Instructions on completing your registration have been sent to...
+
+    >>> from canonical.launchpad.mail import stub
+    >>> from canonical.launchpad.ftests.logintoken import (
+    ...     get_token_url_from_email)
+    >>> from_addr, to_addr, msg = stub.test_emails.pop()
+    >>> token_url = get_token_url_from_email(msg)
+    >>> token_url
+    'http://launchpad.dev/token/...'
+
+    >>> browser.open(token_url)
+    >>> browser.url == '%s/+newaccount' % token_url
+    True
+
+    >>> browser.getControl('Name').value = 'My name'
+    >>> label = 'Hide my email addresses from other Launchpad users'
+    >>> browser.getControl(label).selected = True
+    >>> browser.getControl(name='field.password').value = 'foo'
+    >>> browser.getControl(name='field.password_dupe').value = 'foo'
+
+    >>> browser.getControl('Continue').click()
+    >>> browser.url
+    'http://launchpad.dev'
+
+    >>> soup = BeautifulSoup(browser.contents)
+    >>> for tag in soup('div', 'informational message'):
+    ...     print tag.renderContents()
+    Registration completed successfully
+
+
+It's also possible that a person tries to register a new account using an
+email address that is already set as the preferred email of an existing
+unvalidated profile, like some accounts imported from Ubuntu's bugzilla.
+Although these accounts are not considered valid (that's why we allow the
+users to proceed with the registration as if we haven't heard of the given
+email address before), they /do/ have a preferred email and we need to handle
+this.
+
+    (To see spiv's email we must be logged in, so we'll use user_browser)
+    >>> user_browser.open('http://launchpad.dev/~spiv')
+    >>> print user_browser.contents
+    <...
+    ...<a...Hey, I'm Andrew Bennetts</a>...
+    ...Confirmed e-mail addresses...
+    ...andrew.bennetts@ubuntulinux.com...
+    ...
+
+    >>> anon_browser.open('http://launchpad.dev/')
+    >>> anon_browser.getLink('Log In / Register').click()
+
+    >>> anon_browser.getControl('E-mail address:', index=1).value = (
+    ...     'andrew.bennetts@ubuntulinux.com')
+    >>> anon_browser.getControl('Register').click()
+
+    >>> from_addr, to_addr, msg = stub.test_emails.pop()
+    >>> to_addr
+    ['andrew.bennetts@ubuntulinux.com']
+    >>> token_url = get_token_url_from_email(msg)
+    >>> token_url
+    'http://launchpad.dev/token/...'
+
+    >>> anon_browser.open(token_url)
+    >>> anon_browser.url == "%s/+newaccount" % token_url
+    True
+
+    >>> anon_browser.getControl('Name').value = 'My name'
+    >>> anon_browser.getControl(name='field.password').value = 'foo'
+    >>> anon_browser.getControl(name='field.password_dupe').value = 'foo'
+    >>> anon_browser.getControl('Continue').click()
+
+    >>> anon_browser.url
+    'http://launchpad.dev'
+    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> for tag in soup('div', 'informational message'):
+    ...     print tag.renderContents()
+    Registration completed successfully
+

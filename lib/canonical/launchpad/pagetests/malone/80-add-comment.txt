@@ -17,7 +17,7 @@ Bar. First, let's clear out the notification table:
   >>> user_browser.getControl('Save Changes', index=-1).click()
 
   >>> user_browser.url
-  'http://localhost/debian/+source/mozilla-firefox/+bug/2'
+  'http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/2'
 
   >>> print user_browser.contents
   <...

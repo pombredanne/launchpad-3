@@ -1,0 +1,24 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+<body>
+    <div metal:fill-slot="main">
+        <p tal:define="vhosts
+            modules/canonical.launchpad.webapp.vhosts/allvhosts/configs">
+            A site identifying as
+            <strong tal:content="view/openid_request/trust_root" />
+            has asked us for confirmation that
+            <strong tal:content="view/openid_request/identity" />
+            is your identity URL. However, that is not a valid Launchpad
+            OpenID identity URL, such as <strong
+                tal:content="string:${vhosts/mainsite/rooturl}~${view/user/name|string:USER}"
+                />
+        </p>
+
+        <form tal:attributes="action view/openid_request/getCancelURL">
+            <input type="submit" value="Continue" />
+        </form>
+    </div>
+</body>
+</html>

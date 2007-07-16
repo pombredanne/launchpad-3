@@ -28,7 +28,9 @@ from canonical.database.sqlbase import quote
 from canonical.database.constants import UTC_NOW
 
 from canonical.archivepublisher.diskpool import poolify
-from canonical.archivepublisher.tagfiles import parse_tagfile
+from canonical.archiveuploader.tagfiles import parse_tagfile
+
+from canonical.database.sqlbase import sqlvalues
 
 from canonical.lp.dbschema import (
     PackagePublishingStatus, BuildStatus, SourcePackageFormat,
@@ -40,8 +42,8 @@ from canonical.launchpad.scripts.gina.packages import (SourcePackageData,
     urgencymap, prioritymap, get_dsc_path, licence_cache, read_dsc,
     PoolFileNotFound)
 
-from canonical.launchpad.database import (Distribution, DistroRelease,
-    DistroArchRelease,Processor, SourcePackageName, SourcePackageRelease,
+from canonical.launchpad.database import (Distribution, DistroSeries,
+    DistroArchSeries,Processor, SourcePackageName, SourcePackageRelease,
     Build, BinaryPackageRelease, BinaryPackageName,
     SecureBinaryPackagePublishingHistory,
     Component, Section, SourcePackageReleaseFile,
@@ -108,14 +110,14 @@ class ImporterHandler:
 
     This class is used to handle the import process.
     """
-    def __init__(self, ztm, distro_name, distrorelease_name, dry_run,
+    def __init__(self, ztm, distro_name, distroseries_name, dry_run,
                  ktdb, archive_root, keyrings, pocket):
         self.dry_run = dry_run
         self.pocket = pocket
         self.ztm = ztm
 
         self.distro = self._get_distro(distro_name)
-        self.distrorelease = self._get_distrorelease(distrorelease_name)
+        self.distroseries = self._get_distroseries(distroseries_name)
 
         self.archinfo = {}
         self.imported_sources = []
@@ -126,7 +128,7 @@ class ImporterHandler:
         self.bphandler = BinaryPackageHandler(self.sphandler, archive_root,
                                               pocket)
 
-        self.sppublisher = SourcePackagePublisher(self.distrorelease, pocket)
+        self.sppublisher = SourcePackagePublisher(self.distroseries, pocket)
         # This is initialized in ensure_archinfo
         self.bppublishers = {}
 
@@ -141,17 +143,17 @@ class ImporterHandler:
             self.ztm.abort()
 
     def ensure_archinfo(self, archtag):
-        """Append retrived distroarchrelease info to a dict."""
+        """Append retrived distroarchseries info to a dict."""
         if archtag in self.archinfo.keys():
             return
 
-        """Get distroarchrelease and processor from the architecturetag"""
-        dar = DistroArchRelease.selectOneBy(
-                distroreleaseID=self.distrorelease.id,
+        """Get distroarchseries and processor from the architecturetag"""
+        dar = DistroArchSeries.selectOneBy(
+                distroseriesID=self.distroseries.id,
                 architecturetag=archtag)
         if not dar:
-            raise DataSetupError("Error finding distroarchrelease for %s/%s"
-                                 % (self.distrorelease.name, archtag))
+            raise DataSetupError("Error finding distroarchseries for %s/%s"
+                                 % (self.distroseries.name, archtag))
 
         # XXX: is this really a selectOneBy? Can't there be multiple
         # proessors per family?
@@ -160,9 +162,9 @@ class ImporterHandler:
             raise DataSetupError("Unable to find a processor from the "
                                  "processor family %s chosen from %s/%s"
                                  % (dar.processorfamily.name,
-                                    self.distrorelease.name, archtag))
+                                    self.distroseries.name, archtag))
 
-        info = {'distroarchrelease': dar, 'processor': processor}
+        info = {'distroarchseries': dar, 'processor': processor}
         self.archinfo[archtag] = info
 
         self.bppublishers[archtag] = BinaryPackagePublisher(dar, self.pocket)
@@ -179,12 +181,12 @@ class ImporterHandler:
             raise DataSetupError("Error finding distribution %r" % name)
         return distro
 
-    def _get_distrorelease(self, name):
-        """Return the distrorelease database object by name."""
-        dr = DistroRelease.selectOneBy(name=name,
+    def _get_distroseries(self, name):
+        """Return the distroseries database object by name."""
+        dr = DistroSeries.selectOneBy(name=name,
                                        distributionID=self.distro.id)
         if not dr:
-            raise DataSetupError("Error finding distrorelease %r" % name)
+            raise DataSetupError("Error finding distroseries %r" % name)
         return dr
 
     #
@@ -204,7 +206,7 @@ class ImporterHandler:
         sourcepackagerelease = self.sphandler.checkSource(
                                    sourcepackagedata.package,
                                    sourcepackagedata.version,
-                                   self.distrorelease)
+                                   self.distroseries)
         if not sourcepackagerelease:
             log.debug('SPR not found in preimport: %r %r' %
                 (sourcepackagedata.package, sourcepackagedata.version))
@@ -217,10 +219,10 @@ class ImporterHandler:
         """Handler the sourcepackage import process"""
         assert not self.sphandler.checkSource(sourcepackagedata.package,
                                               sourcepackagedata.version,
-                                              self.distrorelease)
+                                              self.distroseries)
         handler = self.sphandler.createSourcePackageRelease
         sourcepackagerelease = handler(sourcepackagedata,
-                                       self.distrorelease)
+                                       self.distroseries)
 
         self.publish_sourcepackage(sourcepackagerelease, sourcepackagedata)
         return sourcepackagerelease
@@ -252,9 +254,9 @@ class ImporterHandler:
         assert not self.bphandler.checkBin(binarypackagedata, distroarchinfo)
 
         # Find the sourcepackagerelease that generated this binarypackage.
-        distrorelease = distroarchinfo['distroarchrelease'].distrorelease
+        distroseries = distroarchinfo['distroarchseries'].distroseries
         sourcepackage = self.locate_sourcepackage(binarypackagedata,
-                                                  distrorelease)
+                                                  distroseries)
         if not sourcepackage:
             # XXX: untested
             # If the sourcepackagerelease is not imported, not way to import
@@ -273,7 +275,7 @@ class ImporterHandler:
     binnmu_re = re.compile(r"^(.+)\.\d+$")
     binnmu_re2 = re.compile(r"^(.+)\.\d+\.\d+$")
 
-    def locate_sourcepackage(self, binarypackagedata, distrorelease):
+    def locate_sourcepackage(self, binarypackagedata, distroseries):
         # This function uses a list of versions to deal with the fact
         # that we may need to munge the version number as we search for
         # bin-only-NMUs. The fast path is dealt with the first cycle of
@@ -299,7 +301,7 @@ class ImporterHandler:
 
         for version in versions:
             sourcepackage = self.sphandler.checkSource(
-                binarypackagedata.source, version, distrorelease)
+                binarypackagedata.source, version, distroseries)
             if sourcepackage:
                 return sourcepackage
 
@@ -317,7 +319,7 @@ class ImporterHandler:
             sourcepackage = self.sphandler.findUnlistedSourcePackage(
                 binarypackagedata.source, version,
                 binarypackagedata.component, binarypackagedata.section,
-                distrorelease)
+                distroseries)
             if sourcepackage:
                 return sourcepackage
 
@@ -395,7 +397,7 @@ class SourcePackageHandler:
         return SourcePackageName.ensure(name)
 
     def findUnlistedSourcePackage(self, sp_name, sp_version,
-                                  sp_component, sp_section, distrorelease):
+                                  sp_component, sp_section, distroseries):
         """Try to find a sourcepackagerelease in the archive for the
         provided binarypackage data.
 
@@ -412,7 +414,7 @@ class SourcePackageHandler:
         in the database. I.E. the binary import will fail but the
         process as a whole will continue okay.
         """
-        assert not self.checkSource(sp_name, sp_version, distrorelease)
+        assert not self.checkSource(sp_name, sp_version, distroseries)
 
         log.debug("Looking for source package %r (%r) in %r" %
                   (sp_name, sp_version, sp_component))
@@ -426,7 +428,7 @@ class SourcePackageHandler:
         sp_data.process_package(self.ktdb, self.archive_root, self.keyrings)
         sp_data.ensure_complete(self.ktdb)
 
-        spr = self.createSourcePackageRelease(sp_data, distrorelease)
+        spr = self.createSourcePackageRelease(sp_data, distroseries)
 
         # Publish it because otherwise we'll have problems later.
         # Essentially this routine is only ever called when a binary
@@ -437,7 +439,7 @@ class SourcePackageHandler:
         # the binary import is started. Thusly since this source is
         # being imported "late" in the process, we publish it immediately
         # to make sure it doesn't get lost.
-        SourcePackagePublisher(distrorelease, self.pocket).publish(spr, sp_data)
+        SourcePackagePublisher(distroseries, self.pocket).publish(spr, sp_data)
         return spr
 
     def _getSourcePackageDataFromDSC(self, sp_name, sp_version,
@@ -479,7 +481,7 @@ class SourcePackageHandler:
 
         return SourcePackageData(**capitalized_dsc)
 
-    def checkSource(self, source, version, distrorelease):
+    def checkSource(self, source, version, distroseries):
         """Check if a sourcepackagerelease is already on lp db.
 
         Returns the sourcepackagerelease if exists or none if not.
@@ -491,14 +493,14 @@ class SourcePackageHandler:
 
         # Check if this sourcepackagerelease already exists using name and
         # version
-        return self._getSource(spname, version, distrorelease)
+        return self._getSource(spname, version, distroseries)
 
-    def _getSource(self, sourcepackagename, version, distrorelease):
+    def _getSource(self, sourcepackagename, version, distroseries):
         """Returns a sourcepackagerelease by its name and version."""
         # XXX: we use the source package publishing tables here, but I
         # think that's a bit flawed. We should have a way of saying "my
-        # distrorelease overlays the version namespace of that
-        # distrorelease" and use that to decide on whether we've seen
+        # distroseries overlays the version namespace of that
+        # distroseries" and use that to decide on whether we've seen
         # this package before or not. The publishing tables may be
         # wrong, for instance, in the context of proper derivation.
         #   -- kiko, 2005-XX-XX
@@ -506,15 +508,17 @@ class SourcePackageHandler:
         # Check here to see if this release has ever been published in
         # the distribution, no matter what status.
         query = """
-                sourcepackagerelease.sourcepackagename = %s AND
-                sourcepackagerelease.version = %s AND
-                sourcepackagepublishinghistory.sourcepackagerelease =
-                    sourcepackagerelease.id AND
-                sourcepackagepublishinghistory.distrorelease = 
-                    distrorelease.id AND
-                distrorelease.distribution = %s
-                """ % (sourcepackagename.id, quote(version),
-                       distrorelease.distribution.id)
+                SourcePackageRelease.sourcepackagename = %s AND
+                SourcePackageRelease.version = %s AND
+                SourcePackagePublishingHistory.sourcepackagerelease =
+                    SourcePackageRelease.id AND
+                SourcePackagePublishingHistory.distrorelease = 
+                    DistroRelease.id AND
+                SourcePackagePublishingHistory.archive = %s AND
+                DistroRelease.distribution = %s
+                """ % sqlvalues(sourcepackagename, version,
+                                distroseries.main_archive,
+                                distroseries.distribution)
         ret = SourcePackageRelease.select(query,
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             orderBy=["-SourcePackagePublishingHistory.datecreated"])
@@ -522,14 +526,14 @@ class SourcePackageHandler:
             return None
         return ret[0]
 
-    def createSourcePackageRelease(self, src, distrorelease):
+    def createSourcePackageRelease(self, src, distroseries):
         """Create a SourcePackagerelease and db dependencies if needed.
 
         Returns the created SourcePackageRelease, or None if it failed.
         """
         displayname, emailaddress = src.maintainer
         maintainer = ensure_person(
-            displayname, emailaddress, src.package, distrorelease.displayname)
+            displayname, emailaddress, src.package, distroseries.displayname)
 
         # XXX: Check it later -- Debonzi 20050516
         #         if src.dsc_signing_key_owner:
@@ -567,11 +571,12 @@ class SourcePackageHandler:
                                    builddependsindep=src.build_depends_indep,
                                    architecturehintlist=src.architecture,
                                    format=SourcePackageFormat.DPKG,
-                                   uploaddistrorelease=distrorelease.id,
+                                   uploaddistroseries=distroseries.id,
                                    dsc_format=src.format,
                                    dsc_maintainer_rfc822=maintainer_line,
                                    dsc_standards_version=src.standards_version,
-                                   dsc_binaries=" ".join(src.binaries))
+                                   dsc_binaries=" ".join(src.binaries),
+                                   upload_archive=distroseries.main_archive)
         log.info('Source Package Release %s (%s) created' %
                  (name.name, src.version))
 
@@ -590,9 +595,9 @@ class SourcePackageHandler:
 class SourcePackagePublisher:
     """Class to handle the sourcepackagerelease publishing process."""
 
-    def __init__(self, distrorelease, pocket):
-        # Get the distrorelease where the sprelease will be published.
-        self.distrorelease = distrorelease
+    def __init__(self, distroseries, pocket):
+        # Get the distroseries where the sprelease will be published.
+        self.distroseries = distroseries
         self.pocket = pocket
         self.distro_handler = DistroHandler()
 
@@ -619,14 +624,15 @@ class SourcePackagePublisher:
         # Create the Publishing entry with status PENDING so that we can
         # republish this later into a Soyuz archive.
         entry = SecureSourcePackagePublishingHistory(
-            distrorelease=self.distrorelease.id,
+            distroseries=self.distroseries.id,
             sourcepackagerelease=sourcepackagerelease.id,
             status=PackagePublishingStatus.PENDING,
             component=component.id,
             section=section.id,
             datecreated=UTC_NOW,
             datepublished=UTC_NOW,
-            pocket=self.pocket
+            pocket=self.pocket,
+            archive=self.distroseries.main_archive
             )
         log.info('Source package %s (%s) published' % (
             entry.sourcepackagerelease.sourcepackagename.name,
@@ -637,10 +643,12 @@ class SourcePackagePublisher:
         ret = SecureSourcePackagePublishingHistory.select(
                 """sourcepackagerelease = %s
                    AND distrorelease = %s
+                   AND archive = %s
                    AND status in (%s, %s)""" %
-                (sourcepackagerelease.id, self.distrorelease.id,
-                 PackagePublishingStatus.PUBLISHED,
-                 PackagePublishingStatus.PENDING),
+                sqlvalues(sourcepackagerelease, self.distroseries,
+                          self.distroseries.main_archive,
+                          PackagePublishingStatus.PUBLISHED,
+                          PackagePublishingStatus.PENDING),
                 orderBy=["-datecreated"])
         ret = list(ret)
         if ret:
@@ -671,11 +679,11 @@ class BinaryPackageHandler:
 
         clauseTables = ["BinaryPackageRelease", "DistroRelease", "Build",
                         "DistroArchRelease"]
-        distrorelease = distroarchinfo['distroarchrelease'].distrorelease
+        distroseries = distroarchinfo['distroarchseries'].distroseries
 
         # When looking for binaries, we need to remember that they are
         # shared between distribution releases, so match on the
-        # distribution and the architecture tag of the distroarchrelease
+        # distribution and the architecture tag of the distroarchseries
         # they were built for
         query = ("BinaryPackageRelease.binarypackagename=%s AND "
                  "BinaryPackageRelease.version=%s AND "
@@ -684,7 +692,7 @@ class BinaryPackageHandler:
                  "DistroArchRelease.distrorelease = DistroRelease.id AND "
                  "DistroRelease.distribution = %d" %
                  (binaryname.id, quote(version),
-                  distrorelease.distribution.id))
+                  distroseries.distribution.id))
 
         if architecture != "all":
             query += ("AND DistroArchRelease.architecturetag = %s" %
@@ -698,7 +706,7 @@ class BinaryPackageHandler:
             raise MultiplePackageReleaseError("Found more than one "
                     "entry for %s (%s) for %s in %s" %
                     (binaryname.name, version, architecture,
-                     distrorelease.distribution.name))
+                     distroseries.distribution.name))
         return bpr
 
     def readLicence(self, bin_name, src_name, version, component):
@@ -793,8 +801,8 @@ class BinaryPackageHandler:
 
     def ensureBuild(self, binary, srcpkg, distroarchinfo, archtag):
         """Ensure a build record."""
-        distroarchrelease = distroarchinfo['distroarchrelease']
-        distribution = distroarchrelease.distrorelease.distribution
+        distroarchseries = distroarchinfo['distroarchseries']
+        distribution = distroarchseries.distroseries.distribution
         clauseTables = ["Build", "DistroArchRelease", "DistroRelease"]
 
         # XXX: this method doesn't work for real bin-only NMUs that are
@@ -840,21 +848,22 @@ class BinaryPackageHandler:
 
             processor = distroarchinfo['processor']
             build = Build(processor=processor.id,
-                          distroarchrelease=distroarchrelease.id,
+                          distroarchseries=distroarchseries.id,
                           buildstate=BuildStatus.FULLYBUILT,
                           sourcepackagerelease=srcpkg.id,
                           buildduration=None,
                           buildlog=None,
                           builder=None,
                           datebuilt=None,
-                          pocket=self.pocket)
+                          pocket=self.pocket,
+                          archive=distroarchseries.main_archive)
         return build
 
 
 class BinaryPackagePublisher:
     """Binarypackage publisher class."""
-    def __init__(self, distroarchrelease, pocket):
-        self.distroarchrelease = distroarchrelease
+    def __init__(self, distroarchseries, pocket):
+        self.distroarchseries = distroarchseries
         self.pocket = pocket
         self.distro_handler = DistroHandler()
 
@@ -862,7 +871,7 @@ class BinaryPackagePublisher:
         """Create the publishing entry on db if does not exist."""
         # These need to be pulled from the binary package data, not the
         # binary package release: the data represents data from /this
-        # specific distrorelease/, whereas the package represents data
+        # specific distroseries/, whereas the package represents data
         # from when it was first built.
         component = self.distro_handler.getComponentByName(bpdata.component)
         section = self.distro_handler.ensureSection(bpdata.section)
@@ -890,7 +899,7 @@ class BinaryPackagePublisher:
             component = component.id,
             section = section.id,
             priority = priority,
-            distroarchrelease = self.distroarchrelease.id,
+            distroarchseries = self.distroarchseries.id,
             status = PackagePublishingStatus.PENDING,
             datecreated = UTC_NOW,
             datepublished = UTC_NOW,
@@ -899,21 +908,24 @@ class BinaryPackagePublisher:
             supersededby = None,
             datemadepending = None,
             dateremoved = None,
+            archive=self.distroarchseries.main_archive
             )
 
         log.info('BinaryPackage %s-%s published into %s.' % (
             binarypackage.binarypackagename.name, binarypackage.version,
-            self.distroarchrelease.architecturetag))
+            self.distroarchseries.architecturetag))
 
     def _checkPublishing(self, binarypackage):
         """Query for the publishing entry"""
         ret = SecureBinaryPackagePublishingHistory.select(
                 """binarypackagerelease = %s
                    AND distroarchrelease = %s
+                   AND archive = %s
                    AND status in (%s, %s)""" %
-                (binarypackage.id, self.distroarchrelease.id,
-                 PackagePublishingStatus.PUBLISHED,
-                 PackagePublishingStatus.PENDING),
+                sqlvalues(binarypackage, self.distroarchseries,
+                          self.distroarchseries.main_archive,
+                          PackagePublishingStatus.PUBLISHED,
+                          PackagePublishingStatus.PENDING),
                 orderBy=["-datecreated"])
         ret = list(ret)
         if ret:
@@ -922,12 +934,12 @@ class BinaryPackagePublisher:
 
 
 
-def ensure_person(displayname, emailaddress, package_name, distrorelease_name):
+def ensure_person(displayname, emailaddress, package_name, distroseries_name):
     """Return a person by its email.
 
     :package_name: The imported package that mentions the person with the
                    given email address.
-    :distrorelease_name: The distrorelease into which the package is to be
+    :distroseries_name: The distroseries into which the package is to be
                          imported.
 
     Create and return a new Person if it does not exist.
@@ -935,7 +947,7 @@ def ensure_person(displayname, emailaddress, package_name, distrorelease_name):
     person = getUtility(IPersonSet).getByEmail(emailaddress)
     if person is None:
         comment=('when the %s package was imported into %s'
-                 % (package_name, distrorelease_name))
+                 % (package_name, distroseries_name))
         person, email = getUtility(IPersonSet).createPersonAndEmail(
             emailaddress, PersonCreationRationale.SOURCEPACKAGEIMPORT,
             comment=comment, displayname=displayname)

@@ -20,33 +20,24 @@ When choosing to search all the projects, all open bug reports in
 Launchpad will be searched, and the bug target will be visible in the
 bug listing.
 
-    >>> def print_bugtasks(soup):
-    ...     """Print all the bugtasks in the text."""
-    ...     table = soup.find('table', {'id': 'buglisting'})
-    ...     if table is None:
-    ...         return
-    ...     for tr in table('tr'):
-    ...         if not tr.td:
-    ...             continue
-    ...         print extract_text(tr)
-
+    >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> anon_browser.open('http://bugs.launchpad.dev/')
     >>> anon_browser.getControl('All projects').selected = True
     >>> anon_browser.getControl(name='field.searchtext').value = 'test bug'
     >>> anon_browser.getControl('Search Bug Reports').click()
     >>> anon_browser.title
     'Search all bug reports'
-    >>> print_bugtasks(find_main_content(anon_browser.contents))
+    >>> print_bugtasks(anon_browser.contents)
     3 Bug Title Test
-      mozilla-firefox (Debian) Unknown Unconfirmed
+      mozilla-firefox (Debian) Unknown New
     3 Bug Title Test
-      mozilla-firefox (Debian Woody) Medium Unconfirmed
+      mozilla-firefox (Debian Woody) Medium New
     3 Bug Title Test
-      mozilla-firefox (Debian Sarge) Medium Unconfirmed
+      mozilla-firefox (Debian Sarge) Medium New
     7 A test bug
-      evolution (upstream) Medium Unconfirmed
+      evolution (upstream) Medium New
     10 another test bug
-       linux-source-2.6.15 (Ubuntu) Medium Unconfirmed
+       linux-source-2.6.15 (Ubuntu) Medium New
 
 Even if a product is specified in the bug target widget, all bug reports
 will be searched.
@@ -145,9 +136,9 @@ project.
     'Bugs in The Evolution Groupware Application'
     >>> anon_browser.url
     'http://bugs.launchpad.dev/evolution/+bugs?field.searchtext=test+bug...'
-    >>> print_bugtasks(find_main_content(anon_browser.contents))
+    >>> print_bugtasks(anon_browser.contents)
     7 A test bug
-      Medium Unconfirmed
+      Medium New
 
 === Searching a project ===
 
@@ -160,9 +151,9 @@ project.
     'Bugs in The GNOME Project'
     >>> anon_browser.url
     'http://bugs.launchpad.dev/gnome/+bugs?field.searchtext=test+bug...'
-    >>> print_bugtasks(find_main_content(anon_browser.contents))
+    >>> print_bugtasks(anon_browser.contents)
     7 A test bug
-      evolution Medium Unconfirmed
+      evolution Medium New
 
 === Searching a distribution ===
 
@@ -175,9 +166,9 @@ project.
     'Bugs in Ubuntu Linux'
     >>> anon_browser.url
     'http://bugs.launchpad.dev/ubuntu/+bugs?field.searchtext=test+bug...'
-    >>> print_bugtasks(find_main_content(anon_browser.contents))
+    >>> print_bugtasks(anon_browser.contents)
     10 another test bug
-       linux-source-2.6.15  Medium  Unconfirmed
+       linux-source-2.6.15  Medium  New
 
 === Jumping to a bug ===
 

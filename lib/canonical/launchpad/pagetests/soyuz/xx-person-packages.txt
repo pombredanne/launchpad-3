@@ -1,0 +1,47 @@
+= Person Packages =
+
+All packages maintained or uploaded by a given person can be seen on that
+person's +packages page, which is linked to from the person's home page.
+
+  >>> browser.open("http://launchpad.dev/~name16/+packages")
+  >>> browser.title
+  'Packages maintained by Foo Bar'
+
+name16, aka the esteemed Foo Bar, has 9 maintained packages in the sample
+data.  The page lists columns of data, "Name", "Uploaded To" and "Version"
+that link to a distributionsourcepackage, distroseriessourcepackage and
+distrosourcepackagerelease respectively.
+
+Following a link on any item in the name column should take us to a
+distribution source package page.  We'll use "foobar" on the second line here
+as it has working links in the sample data:
+
+  >>> link = browser.getLink("foobar")
+  >>> print link
+  <Link text='foobar' url='http://launchpad.dev/ubuntu/+source/foobar'>
+  >>> link.click()
+  >>> browser.title
+  'Source Package "foobar" in Ubuntu Linux'
+
+Same process for the second column should take us to a distribution series 
+source package page:
+
+  >>> browser.open("http://launchpad.dev/~name16/+packages")
+  >>> link = browser.getLink(url="/ubuntu/breezy-autotest/+source/foobar")
+  >>> print link
+  <Link text='Ubuntu Breezy-autotest' url='http://launchpad.dev/ubuntu/breezy-autotest/+source/foobar'>
+  >>> link.click()
+  >>> browser.title
+  'Breezy Badger Autotest source packages'
+
+Same again for the third column should take us to a distribution source 
+package release page:
+
+  >>> browser.open("http://launchpad.dev/~name16/+packages")
+  >>> link = browser.getLink(url="/ubuntu/+source/foobar/1.0")
+  >>> print link
+  <Link text='1.0' url='http://launchpad.dev/ubuntu/+source/foobar/1.0'>
+  >>> link.click()
+  >>> browser.title
+  'foobar 1.0 (source) in Ubuntu'
+

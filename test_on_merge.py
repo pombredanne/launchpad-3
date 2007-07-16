@@ -12,10 +12,10 @@ from subprocess import Popen, PIPE, STDOUT
 from signal import SIGKILL, SIGTERM
 from select import select
 
-# Die and kill the kids if no output for 10 minutes. Tune this if if your
+# Die and kill the kids if no output for 60 minutes. Tune this if if your
 # slow arsed machine needs it. The main use for this is to keep the pqm
 # queue flowing without having to give it a lifeless enema.
-TIMEOUT = 10 * 60 
+TIMEOUT = 60 * 60 
 
 def main():
     """Call test.py with whatever arguments this script was run with.
@@ -135,6 +135,10 @@ def main():
     os.chdir(here)
     cmd = [sys.executable, 'test.py'] + sys.argv[1:]
     print ' '.join(cmd)
+
+    # Run the test suite and return the error code
+    #return call(cmd)
+
     proc = Popen(cmd, stdin=PIPE, stdout=PIPE, stderr=STDOUT)
     proc.stdin.close()
 
@@ -147,12 +151,14 @@ def main():
         if len(rlist) == 0:
             if proc.poll() is not None:
                 break
-            print 'Tests hung - no output for %d seconds. Killing.' % TIMEOUT
+            print '\nTests hung - no output for %d seconds. Killing.' % TIMEOUT
             killem(proc.pid, SIGTERM)
             time.sleep(3)
             if proc.poll() is not None:
-                print 'Not dead yet! - slaughtering mercilessly'
+                print '\nNot dead yet! - slaughtering mercilessly'
                 killem(proc.pid, SIGKILL)
+            # Drain the subprocess's stdout and stderr.
+            sys.stdout.write(proc.stdout.read())
             break
 
         if proc.stdout in rlist:

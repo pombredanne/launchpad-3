@@ -12,7 +12,7 @@ from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    BranchSubscriptionNotificationLevel)
+    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize)
 
 from canonical.launchpad.interfaces import IBranchSubscription
 
@@ -28,4 +28,5 @@ class BranchSubscription(SQLBase):
     branch = ForeignKey(dbName='branch', foreignKey='Branch', notNull=True)
     notification_level = EnumCol(schema=BranchSubscriptionNotificationLevel,
                                  notNull=True, default=DEFAULT)
-    max_diff_lines = IntCol(default=None)
+    max_diff_lines = EnumCol(schema=BranchSubscriptionDiffSize,
+                             notNull=True)

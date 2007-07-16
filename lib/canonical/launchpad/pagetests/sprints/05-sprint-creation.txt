@@ -10,7 +10,7 @@ We should also be able to create a new sprint. We do this off the Sprints
 
 First we'll test the name field validator.
 
-  >>> user_browser.getControl('Name').value = 'LTSponsteroids'
+  >>> user_browser.getControl('Name').value = 'ltsp_on_steroids!'
   >>> user_browser.getControl('Title').value = 'LTSP On Steroids'
   >>> summary = 'This is a sprint summary. Some words about the sprint'
   >>> user_browser.getControl('Summary').value = summary
@@ -27,7 +27,7 @@ First we'll test the name field validator.
   ...     print tag.renderContents()
   There is 1 error.
   <BLANKLINE>
-  Invalid name 'LTSponsteroids'. Names must start with a letter or
+  Invalid name 'ltsp_on_steroids!'. Names must start with a letter or
   number and be lowercase. The characters <samp>+</samp>,
   <samp>-</samp> and <samp>.</samp> are also allowed after the
   first character.
@@ -119,37 +119,3 @@ Add a new sprint with a different timezone is also handled correctly.
   2006-07-13 16:00:00 SAST...
   ...
 
-== Sprints icons/emblems ==
-
-When creating a new sprint we can also specify an icon and/or an emblem to the
-sprint.
-
-  >>> user_browser.open('http://launchpad.dev/sprints/+new')
-  >>> user_browser.getControl('Name').value = 'sprint-with-icon'
-  >>> user_browser.getControl('Title').value = 'Iconified Summit'
-  >>> summary = 'This is a sprint summary. Some words about the sprint'
-  >>> user_browser.getControl('Summary').value = summary
-  >>> user_browser.getControl(
-  ...     'Starting Date and Time').value = '10 Jul 2016 09:15'
-  >>> user_browser.getControl(
-  ...     'Finishing Date and Time').value = '13 Jul 2016 16:00'
-
-  >>> from canonical.launchpad.ftests import set_gotchi_and_emblem
-  >>> set_gotchi_and_emblem(user_browser)
-
-  >>> user_browser.getControl('Add Sprint').click()
-  >>> user_browser.url
-  'http://launchpad.dev/sprints/sprint-with-icon'
-
-The uploaded icon and emblem can be seen on the sprint's edit page:
-
-  >>> user_browser.getLink('Change details').click()
-  >>> user_browser.url
-  'http://launchpad.dev/sprints/sprint-with-icon/+edit'
-
-  >>> find_tag_by_id(
-  ...     user_browser.contents, 'field.gotchi_current_img').get('src')
-  u'.../icon.png'
-  >>> find_tag_by_id(
-  ...     user_browser.contents, 'field.emblem_current_img').get('src')
-  u'.../emblem.png'

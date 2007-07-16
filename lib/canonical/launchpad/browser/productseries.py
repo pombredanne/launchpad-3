@@ -3,9 +3,11 @@
 __metaclass__ = type
 
 __all__ = ['ProductSeriesNavigation',
+           'ProductSeriesDynMenu',
            'ProductSeriesSOP',
            'ProductSeriesFacets',
            'ProductSeriesOverviewMenu',
+           'ProductSeriesBugsMenu',
            'ProductSeriesSpecificationsMenu',
            'ProductSeriesTranslationMenu',
            'ProductSeriesView',
@@ -15,29 +17,31 @@ __all__ = ['ProductSeriesNavigation',
            'ProductSeriesSourceSetView',
            'ProductSeriesReviewView',
            'ProductSeriesShortLink',
+           'ProductSeriesFileBugRedirect',
            'get_series_branch_error']
 
 import cgi
-
+import os.path
+import pytz
+from datetime import datetime
 from BeautifulSoup import BeautifulSoup
-
 from zope.component import getUtility
 from zope.app.form.browser import TextAreaWidget
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.publisher.browser import FileUpload
 
 from canonical.lp.dbschema import ImportStatus, RevisionControlSystems
-
-from canonical.launchpad.helpers import (
-    browserLanguages, is_tar_filename, request_languages)
+from canonical.launchpad.helpers import browserLanguages, is_tar_filename
 from canonical.launchpad.interfaces import (
     ICountry, IPOTemplateSet, ILaunchpadCelebrities,
-    ISourcePackageNameSet, IProductSeries,
+    ISourcePackageNameSet, IProductSeries, ITranslationImporter,
     ITranslationImportQueue, IProductSeriesSet, NotFoundError)
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
-from canonical.launchpad.browser.launchpad import StructuralObjectPresentation, DefaultShortLink
+from canonical.launchpad.browser.launchpad import (
+    StructuralObjectPresentation, DefaultShortLink)
+from canonical.launchpad.browser.rosetta import TranslationsMixin
 from canonical.launchpad.webapp import (
     Link, enabled_with_permission, Navigation, ApplicationMenu, stepto,
     canonical_url, LaunchpadView, StandardLaunchpadFacets,
@@ -45,11 +49,16 @@ from canonical.launchpad.webapp import (
     )
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.dynmenu import DynMenu
 
 from canonical.widgets.itemswidgets import LaunchpadRadioWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
 
 from canonical.launchpad import _
+
+
+def quote(text):
+    return cgi.escape(text, quote=True)
 
 
 class ProductSeriesNavigation(Navigation, BugTargetTraversalMixin):
@@ -160,6 +169,19 @@ class ProductSeriesOverviewMenu(ApplicationMenu):
         return Link('+review', text, icon='edit')
 
 
+class ProductSeriesBugsMenu(ApplicationMenu):
+
+    usedfor = IProductSeries
+    facet = 'bugs'
+    links = ['new', 'nominations']
+
+    def new(self):
+        return Link('+filebug', 'Report a bug', icon='add')
+
+    def nominations(self):
+        return Link('+nominations', 'Review nominations', icon='bug')
+
+
 class ProductSeriesSpecificationsMenu(ApplicationMenu):
     """Specs menu for ProductSeries.
 
@@ -226,8 +248,8 @@ def get_series_branch_error(product, branch):
     """
     if branch.product != product:
         return ('<a href="%s">%s</a> is not a branch of <a href="%s">%s</a>.'
-                % (canonical_url(branch), cgi.escape(branch.unique_name),
-                   canonical_url(product), cgi.escape(product.displayname)))
+                % (canonical_url(branch), quote(branch.unique_name),
+                   canonical_url(product), quote(product.displayname)))
     return None
 
 
@@ -237,7 +259,7 @@ def get_series_branch_error(product, branch):
 # this becomes maintainable and form validation handled for us.
 # Currently, the pages just return 'System Error' as they trigger database
 # constraints. -- StuartBishop 20050502
-class ProductSeriesView(LaunchpadView):
+class ProductSeriesView(LaunchpadView, TranslationsMixin):
 
     def initialize(self):
         self.form = self.request.form
@@ -249,15 +271,11 @@ class ProductSeriesView(LaunchpadView):
         # let's find out what source package is associated with this
         # productseries in the current release of ubuntu
         ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
-        self.curr_ubuntu_release = ubuntu.currentrelease
+        self.curr_ubuntu_series = ubuntu.currentseries
         self.setUpPackaging()
 
         # Check the form submission.
         self.processForm()
-
-    @property
-    def languages(self):
-        return request_languages(self.request)
 
     def processForm(self):
         """Process a form if it was submitted."""
@@ -292,18 +310,18 @@ class ProductSeriesView(LaunchpadView):
         self.curr_ubuntu_package = None
         self.curr_ubuntu_pkgname = ''
         try:
-            cr = self.curr_ubuntu_release
+            cr = self.curr_ubuntu_series
             self.curr_ubuntu_package = self.context.getPackage(cr)
             cp = self.curr_ubuntu_package
             self.curr_ubuntu_pkgname = cp.sourcepackagename.name
         except NotFoundError:
             pass
-        ubuntu = self.curr_ubuntu_release.distribution
+        ubuntu = self.curr_ubuntu_series.distribution
         self.ubuntu_history = self.context.getPackagingInDistribution(ubuntu)
 
     def setCurrentUbuntuPackage(self):
         """Set the Packaging record for this product series in the current
-        Ubuntu distrorelease to be for the source package name that is given
+        Ubuntu distroseries to be for the source package name that is given
         in the form.
         """
         form = self.form
@@ -328,8 +346,8 @@ class ProductSeriesView(LaunchpadView):
             self.has_errors = True
             return
         # set the packaging record for this productseries in the current
-        # ubuntu release. if none exists, one will be created
-        self.context.setPackaging(self.curr_ubuntu_release, spn, self.user)
+        # ubuntu series. if none exists, one will be created
+        self.context.setPackaging(self.curr_ubuntu_series, spn, self.user)
         self.setUpPackaging()
 
     def requestCountry(self):
@@ -372,7 +390,9 @@ class ProductSeriesView(LaunchpadView):
 
         translation_import_queue_set = getUtility(ITranslationImportQueue)
 
-        if filename.endswith('.pot') or filename.endswith('.po'):
+        root, ext = os.path.splitext(filename)
+        translation_importer = getUtility(ITranslationImporter)
+        if (ext in translation_importer.file_extensions_with_importer):
             # Add it to the queue.
             translation_import_queue_set.addOrUpdateEntry(
                 filename, content, True, self.user,
@@ -380,7 +400,7 @@ class ProductSeriesView(LaunchpadView):
 
             self.request.response.addInfoNotification(
                 'Thank you for your upload. The file content will be'
-                ' reviewed soon by an admin and then imported into Rosetta.'
+                ' reviewed soon by an admin and then imported into Launchpad.'
                 ' You can track its status from the <a href="%s">Translation'
                 ' Import Queue</a>' %
                     canonical_url(translation_import_queue_set))
@@ -395,7 +415,7 @@ class ProductSeriesView(LaunchpadView):
                 self.request.response.addInfoNotification(
                     'Thank you for your upload. %d files from the tarball'
                     ' will be reviewed soon by an admin and then imported'
-                    ' into Rosetta. You can track its status from the'
+                    ' into Launchpad. You can track its status from the'
                     ' <a href="%s">Translation Import Queue</a>' % (
                         num,
                         canonical_url(translation_import_queue_set)))
@@ -407,6 +427,56 @@ class ProductSeriesView(LaunchpadView):
             self.request.response.addWarningNotification(
                 "Ignored your upload because the file you uploaded was not"
                 " recognised as a file that can be imported.")
+
+    def hasVcsImportSuccessStatus(self):
+        """Whether we know if the the last import attempt was successful."""
+        return (
+            self.context.importstatus is not None
+            and self.context.importstatus >= ImportStatus.PROCESSING
+            and self.context.datefinished is not None
+            and self.context.datelastsynced is not None
+            and self.context.datefinished >= self.context.datelastsynced)
+
+    def lastVcsImportSuccessful(self):
+        """Whether the last attempt to sync with upstream succeeded."""
+        assert self.context.datefinished is not None
+        assert self.context.datelastsynced is not None
+        return self.context.datefinished == self.context.datelastsynced
+
+    @property
+    def lastVcsImportAttemptAge(self):
+        """How long ago was a vcs-import sync last attempted."""
+        assert self.context.datefinished is not None
+        now = datetime.now(pytz.timezone('UTC'))
+        return now - self.context.datefinished
+
+    def hasVcsImportBranchAge(self):
+        """Whether we know when the published branch was last synced."""
+        if (self.context.datelastsynced is None
+                or self.context.import_branch is None
+                or self.context.import_branch.last_mirrored is None):
+            return False
+        last_mirrored = self.context.import_branch.last_mirrored
+        return (last_mirrored > self.context.datelastsynced
+                or self.context.datepublishedsync is not None)
+
+    @property
+    def currentVcsImportBranchAge(self):
+        """How long ago the published Bazaar branch was last synced."""
+        branch = self.context.import_branch
+        assert branch is not None
+        assert branch.last_mirrored is not None
+        assert self.context.datelastsynced is not None
+        if branch.last_mirrored > self.context.datelastsynced:
+            # Branch was published since last successful sync.
+            timestamp = self.context.datelastsynced
+        else:
+            # The currently published branch still has the data from the
+            # previous sync.
+            timestamp = self.context.datepublishedsync
+        assert timestamp is not None
+        now = datetime.now(pytz.timezone('UTC'))
+        return now - timestamp
 
 
 class ProductSeriesEditView(LaunchpadEditFormView):
@@ -490,33 +560,39 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
             # are unset.
             if not (cvsroot or self.getWidgetError('cvsroot')):
                 self.setFieldError('cvsroot',
-                                   'Please enter a CVS root.')
+                                   'Enter a CVS root.')
             if not (cvsmodule or self.getWidgetError('cvsmodule')):
                 self.setFieldError('cvsmodule',
-                                   'Please enter a CVS module.')
+                                   'Enter a CVS module.')
             if not (cvsbranch or self.getWidgetError('cvsbranch')):
                 self.setFieldError('cvsbranch',
-                                   'Please enter a CVS branch.')
+                                   'Enter a CVS branch.')
             if cvsroot and cvsmodule and cvsbranch:
                 series = getUtility(IProductSeriesSet).getByCVSDetails(
                     cvsroot, cvsmodule, cvsbranch)
                 if self.context != series and series is not None:
-                    self.addError('CVS repository details already in use '
-                                  'by another product.')
+                    self.addError(
+                        "Those CVS details are already specified for"
+                        " <a href=\"%s\">%s %s</a>."
+                        % (quote(canonical_url(series)),
+                           quote(series.product.displayname),
+                           quote(series.displayname)))
 
         elif rcstype == RevisionControlSystems.SVN:
             svnrepository = data.get('svnrepository')
             if not (svnrepository or self.getWidgetError('svnrepository')):
                 self.setFieldError('svnrepository',
-                                   'Please give valid Subversion server '
-                                   'details.')
+                    "Enter the URL of a Subversion branch.")
             if svnrepository:
                 series = getUtility(IProductSeriesSet).getBySVNDetails(
                     svnrepository)
                 if self.context != series and series is not None:
                     self.setFieldError('svnrepository',
-                                       'Subversion repository details '
-                                       'already in use by another product.')
+                        "This Subversion branch URL is already specified for"
+                        " <a href=\"%s\">%s %s</a>."
+                        % (quote(canonical_url(series)),
+                           quote(series.product.displayname),
+                           quote(series.displayname)))
 
         if self.resettoautotest_action.submitted():
             if rcstype is None:
@@ -529,7 +605,10 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
             if self.context.syncCertified():
                 self.addError('Import has already been approved.')
 
-    def isAdmin(self):
+    def isAdmin(self, action=None):
+        # The optional action parameter is so this method can be
+        # supplied as the condition argument to an @action.  We treat
+        # all such actions the same though, so we ignore it.
         return check_permission('launchpad.Admin', self.context)
 
     @action(_('Update RCS Details'), name='update')
@@ -566,6 +645,31 @@ class ProductSeriesSourceView(LaunchpadEditFormView):
         self.context.certifyForSync()
         self.request.response.addInfoNotification(
             'Source import certified for publication')
+
+    @action(_('Mark Import TESTFAILED'), name='testfailed',
+            condition=isAdmin)
+    def testfailed_action(self, action, data):
+        self.updateContextFromData(data)
+        self.context.markTestFailed()
+        self.request.response.addInfoNotification(
+            'Source import marked as TESTFAILED.')
+
+    @action(_('Mark Import DONTSYNC'), name='dontsync',
+            condition=isAdmin)
+    def dontsync_action(self, action, data):
+        self.updateContextFromData(data)
+        self.context.markDontSync()
+        self.request.response.addInfoNotification(
+            'Source import marked as DONTSYNC.')
+
+    @action(_('Delete Import'), name='delete',
+            condition=isAdmin)
+    def delete_action(self, action, data):
+        # No need to update the details from the submitted data when
+        # we're about to clear them all anyway.
+        self.context.deleteImport()
+        self.request.response.addInfoNotification(
+            'Source import deleted.')
 
     @property
     def next_url(self):
@@ -684,3 +788,18 @@ class ProductSeriesShortLink(DefaultShortLink):
 
     def getLinkText(self):
         return self.context.displayname
+
+
+class ProductSeriesDynMenu(DynMenu):
+
+    def mainMenu(self):
+        for release in self.context.releases:
+            yield self.makeLink(release.title, context=release)
+
+
+class ProductSeriesFileBugRedirect(LaunchpadView):
+    """Redirect to the product's +filebug page."""
+
+    def initialize(self):
+        filebug_url = "%s/+filebug" % canonical_url(self.context.product)
+        self.request.response.redirect(filebug_url)

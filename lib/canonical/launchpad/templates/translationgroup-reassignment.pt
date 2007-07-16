@@ -1,0 +1,23 @@
+<tal:do-this-first: tal:condition="view/processForm" />
+<html metal:use-macro="view/macro:page/applicationhome"
+      i18n:domain="launchpad">
+  <body>
+    <h1 metal:fill-slot="heading">Translation groups</h1>
+    <div metal:fill-slot="main">
+      <div>
+        <a tal:attributes="href context/fmt:url">
+          <tal:translation-group replace="context/title">
+            Foo bar
+          </tal:translation-group> translation group
+        </a>
+      </div>
+      <h1>
+        Change the
+        <tal:role replace="view/ownerOrMaintainerAttr" /> of
+        <tal:thing replace="view/contextName" />
+      </h1>
+
+      <div metal:use-macro="context/@@+object-reassignment/object-reassignment" />
+    </div>
+  </body>
+</html>

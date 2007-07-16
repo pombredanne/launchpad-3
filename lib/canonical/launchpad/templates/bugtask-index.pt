@@ -25,7 +25,7 @@
 <div metal:fill-slot="main">
 
       <div>
-        <tal:icon replace="structure context/fmt:icon" />
+        <tal:icon replace="structure context/image:icon" />
         Bug #<tal:bug replace="context/bug/id">3252543</tal:bug>,
         first reported
         <span
@@ -34,6 +34,14 @@
         by
         <a tal:attributes="href context/bug/owner/fmt:url"
            tal:content="context/bug/owner/browsername">Foo Bar</a>
+      </div>
+      <div style="float: right;">
+        <img src="/@@/locked-large" title="Private"
+             tal:condition="context/bug/private" />
+        <img src="/@@/mentoring-large" title="Mentoring available"
+             tal:condition="context/bug/mentoring_offers/count" />
+        <img src="/@@/branch-large" title="Branch available"
+             tal:condition="context/bug/bug_branches/count" />
       </div>
       <h1 tal:content="context/bug/title">Foo doesn't work</h1>
 
@@ -70,14 +78,9 @@
         method="POST"
       >
 
-    This bug is not recorded as needing to be fixed in the
+    This bug is not recorded as needing to be fixed in
     <a tal:attributes="href string:${context/target/fmt:url}/+bugs"
-       tal:content="context/targetname">upstream firefox</a>
-    <tal:product condition="context/product">project.</tal:product>
-    <tal:package condition="context/sourcepackagename">package.</tal:package>
-    <tal:distribution
-      condition="python: (not context.product) and (not context.sourcepackagename)"
-    >distribution.</tal:distribution>
+       tal:content="context/targetname">upstream firefox</a>.
 
     <tal:loggedin condition="request/lp:person">
 
@@ -123,14 +126,36 @@
       This description was updated. <a href="comments/0">View original description</a>.</span>
   </div>
 
-  <tal:branches define="bug_branches context/bug/bug_branches"
-              condition="bug_branches">
+  <tal:mentors define="mentoring_offers context/bug/mentoring_offers"
+               condition="mentoring_offers">
+    <p>
+      <img src="/@@/mentoring" alt="Mentoring"
+           title="People have offered to mentor this work" />
+      <b>Mentors:</b>
+      <tal:block repeat="mentoring_offer mentoring_offers">
+        <a tal:replace="structure mentoring_offer/owner/fmt:link">foobar</a>
+      </tal:block>
+    </p>
+    <tal:block condition="not: context/bug/is_complete">
+      <p tal:condition="view/userIsMentor">
+        &raquo;
+        <a href="+retractmentoring">Retract my offer of mentorship</a>
+      </p>
+    </tal:block>
+  </tal:mentors>
+
+  <p tal:condition="view/userCanMentor">
+    &raquo; <a href="+mentor">Offer to mentor someone fixing this bug</a>
+  </p>
+
+  <tal:branches define="bug_branches view/bug_branches"
+                condition="bug_branches">
     <p tal:condition="context/bug/private"
          class="warning message">
       This bug is private, so avoid adding public branches here.
     </p>
 
-    <table class="listing">
+    <table class="listing" id="bug_branch_details">
       <thead>
         <tr>
           <th>Related Branch</th>
@@ -169,6 +194,24 @@
       To post a comment you must <a href="+login">log in</a>.
     </div>
   </tal:not-logged-in>
+
+      <div class="related">
+        <h2>What next?</h2>
+        <ul>
+          <li>
+            <a
+              tal:attributes="href string:${context/target/fmt:url}/+filebug"
+            >Report another bug</a>
+            about <tal:context replace="context/target/displayname" />
+          </li>
+          <li>
+            <a
+              tal:attributes="href string:${context/target/fmt:url}/+bugs"
+            >List open bugs</a>
+            for <tal:context replace="context/target/displayname" />
+          </li>
+        </ul>
+      </div>
 
 </div>
 </body>

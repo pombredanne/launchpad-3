@@ -1,11 +1,12 @@
 <tr>
-  <td class="icon left" tal:content="structure context/fmt:icon" />
+  <td class="icon left" tal:content="structure context/image:icon" />
   <td>
     <div>
       #<span tal:replace="context/bug/id">4</span>
       <a tal:attributes="href context/fmt:url"
          tal:content="context/bug/title">Bug Title Here
       </a>
+      <tal:badges replace="structure context/image:badges" />
     </div>
     <div class="lesser">
       <tal:affected_pillars define="also_in context/other_affected_pillars"

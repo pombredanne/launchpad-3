@@ -31,8 +31,23 @@
     />
 
   <vocabulary
+    name="BranchSubscriptionDiffSize"
+    factory="canonical.launchpad.vocabularies.BranchSubscriptionDiffSizeVocabulary"
+    />
+
+  <vocabulary
     name="BranchSubscriptionNotificationLevel"
     factory="canonical.launchpad.vocabularies.BranchSubscriptionNotificationLevelVocabulary"
+    />
+
+  <vocabulary
+    name="BranchType"
+    factory="canonical.launchpad.vocabularies.BranchTypeVocabulary"
+    />
+
+  <vocabulary
+    name="BranchVisibilityRule"
+    factory="canonical.launchpad.vocabularies.BranchVisibilityRuleVocabulary"
     />
 
   <vocabulary
@@ -51,8 +66,8 @@
     />
 
   <vocabulary
-    name="BugNominatableReleases"
-    factory="canonical.launchpad.vocabularies.BugNominatableReleasesVocabulary"
+    name="BugNominatableSerieses"
+    factory="canonical.launchpad.vocabularies.BugNominatableSeriesesVocabulary"
     />
 
   <vocabulary
@@ -96,6 +111,11 @@
       />
 
   <vocabulary
+      name="CodeImportReviewStatus"
+      factory="canonical.launchpad.vocabularies.CodeImportReviewStatusVocabulary"
+      />
+
+  <vocabulary
       name="CountryName"
       factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
       />
@@ -116,23 +136,26 @@
     />
 
   <vocabulary
-    name="DistroRelease"
-    factory="canonical.launchpad.vocabularies.DistroReleaseVocabulary"
+    name="DistroSeries"
+    factory="canonical.launchpad.vocabularies.DistroSeriesVocabulary"
     />
 
   <vocabulary
-    name="DistributionReleaseStatus"
-    factory="canonical.launchpad.vocabularies.DistributionReleaseStatusVocabulary"
+    name="DistroSeriesStatus"
+    factory="canonical.launchpad.vocabularies.DistroSeriesStatusVocabulary"
+    />
+  <vocabulary
+    name="FAQ"
+    factory="canonical.launchpad.vocabularies.FAQVocabulary"
+    />
+   <vocabulary
+    name="FilteredDistroArchSeries"
+    factory="canonical.launchpad.vocabularies.FilteredDistroArchSeriesVocabulary"
     />
 
   <vocabulary
-    name="FilteredDistroArchRelease"
-    factory="canonical.launchpad.vocabularies.FilteredDistroArchReleaseVocabulary"
-    />
-
-  <vocabulary
-    name="FilteredDistroRelease"
-    factory="canonical.launchpad.vocabularies.FilteredDistroReleaseVocabulary"
+    name="FilteredDistroSeries"
+    factory="canonical.launchpad.vocabularies.FilteredDistroSeriesVocabulary"
     />
 
   <vocabulary
@@ -163,6 +186,11 @@
   <vocabulary
     name="Language"
     factory="canonical.launchpad.vocabularies.LanguageVocabulary"
+    />
+
+  <vocabulary
+    name="MailingListStatus"
+    factory="canonical.launchpad.vocabularies.MailingListStatusVocabulary"
     />
 
   <vocabulary
@@ -306,8 +334,8 @@
     />
 
   <vocabulary
-    name="SpecificationDelivery"
-    factory="canonical.launchpad.vocabularies.SpecificationDeliveryVocabulary"
+    name="SpecificationImplementationStatus"
+    factory="canonical.launchpad.vocabularies.SpecificationImplementationStatusVocabulary"
     />
 
   <vocabulary
@@ -321,8 +349,8 @@
     />
 
   <vocabulary
-    name="SpecificationStatus"
-    factory="canonical.launchpad.vocabularies.SpecificationStatusVocabulary"
+    name="SpecificationDefinitionStatus"
+    factory="canonical.launchpad.vocabularies.SpecificationDefinitionStatusVocabulary"
     />
 
   <vocabulary
@@ -341,8 +369,18 @@
     />
 
   <vocabulary
+    name="TeamMembershipRenewalPolicy"
+    factory="canonical.launchpad.vocabularies.TeamMembershipRenewalPolicyVocabulary"
+    />
+
+  <vocabulary
     name="TeamSubscriptionPolicy"
     factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
+    />
+
+  <vocabulary
+    name="TextDirection"
+    factory="canonical.launchpad.vocabularies.TextDirectionVocabulary"
     />
 
   <vocabulary
@@ -371,6 +409,11 @@
     />
 
   <vocabulary
+    name="TranslationFileFormat"
+    factory="canonical.launchpad.vocabularies.TranslationFileFormatVocabulary"
+    />
+
+  <vocabulary
     name="TranslationGroup"
     factory="canonical.launchpad.vocabularies.TranslationGroupVocabulary"
     />
@@ -383,6 +426,11 @@
   <vocabulary
     name="UpstreamFileType"
     factory="canonical.launchpad.vocabularies.UpstreamFileTypeVocabulary"
+    />
+
+  <vocabulary
+    name="UserTeamsParticipation"
+    factory="canonical.launchpad.vocabularies.UserTeamsParticipationVocabulary"
     />
 
   <vocabulary
@@ -403,6 +451,11 @@
   <vocabulary
     name="ValidOwner"
     factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    />
+
+  <vocabulary
+    name="ValidTeam"
+    factory="canonical.launchpad.vocabularies.ValidTeamVocabulary"
     />
 
   <vocabulary

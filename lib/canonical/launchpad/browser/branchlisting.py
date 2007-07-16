@@ -13,6 +13,7 @@ from datetime import datetime
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.config import config
 from canonical.lp import decorates
 from canonical.lp.dbschema import (BranchLifecycleStatus,
                                    BranchLifecycleStatusFilter)
@@ -50,7 +51,8 @@ class BranchListingBatchNavigator(TableBatchNavigator):
     def __init__(self, view):
         TableBatchNavigator.__init__(
             self, view._branches(), view.request,
-            columns_to_show=view.extra_columns)
+            columns_to_show=view.extra_columns,
+            size=config.launchpad.branchlisting_batch_size)
         self.view = view
         self.column_count = 4 + len(view.extra_columns)
         self._now = datetime.now()

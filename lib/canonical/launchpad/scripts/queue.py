@@ -15,22 +15,24 @@ __all__ = [
 import os
 import sys
 import tempfile
+import errno
 from email import message_from_string
 import pytz
 from datetime import datetime
+from sha import sha
 
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    NotFoundError, IDistributionSet, IDistroReleaseQueueSet,
+    NotFoundError, IDistributionSet, IPackageUploadSet,
     IComponentSet, ISectionSet, QueueInconsistentStateError,
     IPersonSet)
 
-from canonical.archivepublisher.tagfiles import (
+from canonical.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
-from canonical.archivepublisher.template_messages import (
+from canonical.archiveuploader.template_messages import (
     announce_template, rejection_template)
-from canonical.archivepublisher.utils import (
+from canonical.archiveuploader.utils import (
     safe_fix_maintainer, ParseMaintError)
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -39,16 +41,16 @@ from canonical.launchpad.mail import sendmail
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 from canonical.librarian.utils import filechunks
 from canonical.lp.dbschema import (
-    DistroReleaseQueueStatus, PackagePublishingPriority,
+    PackageUploadStatus, PackagePublishingPriority,
     PackagePublishingPocket)
 
 
 name_queue_map = {
-    "new": DistroReleaseQueueStatus.NEW,
-    "unapproved": DistroReleaseQueueStatus.UNAPPROVED,
-    "accepted": DistroReleaseQueueStatus.ACCEPTED,
-    "done": DistroReleaseQueueStatus.DONE,
-    "rejected": DistroReleaseQueueStatus.REJECTED
+    "new": PackageUploadStatus.NEW,
+    "unapproved": PackageUploadStatus.UNAPPROVED,
+    "accepted": PackageUploadStatus.ACCEPTED,
+    "done": PackageUploadStatus.DONE,
+    "rejected": PackageUploadStatus.REJECTED
     }
 
 name_priority_map = {
@@ -89,7 +91,7 @@ class QueueAction:
     """Queue Action base class.
 
     Implements a bunch of common/useful method designed to provide easy
-    DistroReleaseQueue handling.
+    PackageUpload handling.
     """
 
     def __init__(self, distribution_name, suite_name, queue, terms,
@@ -113,12 +115,12 @@ class QueueAction:
     @cachedproperty
     def size(self):
         """Return the size of the queue in question."""
-        return getUtility(IDistroReleaseQueueSet).count(
-            status=self.queue, distrorelease=self.distrorelease,
+        return getUtility(IPackageUploadSet).count(
+            status=self.queue, distroseries=self.distroseries,
             pocket=self.pocket)
 
     def setDefaultContext(self):
-        """Set default distribuiton, distrorelease, announcelist."""
+        """Set default distribuiton, distroseries, announcelist."""
         # if not found defaults to 'ubuntu'
         distroset = getUtility(IDistributionSet)
         try:
@@ -127,22 +129,22 @@ class QueueAction:
             self.distribution = distroset['ubuntu']
 
         if self.suite_name:
-            # defaults to distro.currentrelease if passed distrorelease is
+            # defaults to distro.currentseries if passed distroseries is
             # misapplied or not found.
             try:
-                self.distrorelease, self.pocket = (
-                    self.distribution.getDistroReleaseAndPocket(
+                self.distroseries, self.pocket = (
+                    self.distribution.getDistroSeriesAndPocket(
                     self.suite_name))
             except NotFoundError, info:
                 raise QueueActionError('Context not found: "%s/%s"'
                                        % (self.distribution.name,
                                           self.suite_name))
         else:
-            self.distrorelease = self.distribution.currentrelease
+            self.distroseries = self.distribution.currentseries
             self.pocket = PackagePublishingPocket.RELEASE
 
         if not self.announcelist:
-            self.announcelist = self.distrorelease.changeslist
+            self.announcelist = self.distroseries.changeslist
 
 
     def initialize(self):
@@ -162,9 +164,9 @@ class QueueAction:
             self.displayUsage(FILTERMSG)
 
         if term.isdigit():
-            # retrieve DistroReleaseQueue item by id
+            # retrieve PackageUpload item by id
             try:
-                item = getUtility(IDistroReleaseQueueSet).get(int(term))
+                item = getUtility(IPackageUploadSet).get(int(term))
             except NotFoundError, info:
                 raise QueueActionError('Queue Item not found: %s' % info)
 
@@ -172,25 +174,25 @@ class QueueAction:
                 raise QueueActionError(
                     'Item %s is in queue %s' % (item.id, item.status.name))
 
-            if (item.distrorelease != self.distrorelease or
+            if (item.distroseries != self.distroseries or
                 item.pocket != self.pocket):
                 raise QueueActionError(
                     'Item %s is in %s/%s-%s not in %s/%s-%s'
-                    % (item.id, item.distrorelease.distribution.name,
-                       item.distrorelease.name, item.pocket.name,
-                       self.distrorelease.distribution.name,
-                       self.distrorelease.name, self.pocket.name))
+                    % (item.id, item.distroseries.distribution.name,
+                       item.distroseries.name, item.pocket.name,
+                       self.distroseries.distribution.name,
+                       self.distroseries.name, self.pocket.name))
 
             self.items = [item]
             self.items_size = 1
             self.term = None
         else:
-            # retrieve DistroReleaseQueue item by name/version key
+            # retrieve PackageUpload item by name/version key
             version = None
             if '/' in term:
                 term, version = term.strip().split('/')
 
-            self.items = self.distrorelease.getQueueItems(
+            self.items = self.distroseries.getQueueItems(
                 status=self.queue, name=term, version=version,
                 exact_match=self.exact_match, pocket=self.pocket)
             self.items_size = self.items.count()
@@ -269,7 +271,7 @@ class QueueAction:
             for bpr in queue_build.build.binarypackages:
                 if only and only != bpr.name:
                     continue
-                dar = queue_build.build.distroarchrelease
+                dar = queue_build.build.distroarchseries
                 binarypackagename = bpr.binarypackagename.name
                 # inspect the publication history of each binary
                 darbp = dar.getBinaryPackage(binarypackagename)
@@ -352,7 +354,7 @@ class QueueAction:
 
     def find_addresses_from(self, changesfile):
         """Given a libraryfilealias which is a changes file, find a
-        set of permitted recipients for the current distrorelease.
+        set of permitted recipients for the current distroseries.
         """
         full_set = set()
         recipient_addresses = []
@@ -444,11 +446,11 @@ class QueueActionReport(QueueAction):
     def run(self):
         """Display the queues size."""
         self.display("Report for %s/%s" % (self.distribution.name,
-                                           self.distrorelease.name))
+                                           self.distroseries.name))
 
         for queue in name_queue_map.values():
-            size = getUtility(IDistroReleaseQueueSet).count(
-                status=queue, distrorelease=self.distrorelease,
+            size = getUtility(IPackageUploadSet).count(
+                status=queue, distroseries=self.distroseries,
                 pocket=self.pocket)
             self.display("\t%s -> %s entries" % (queue.name, size))
 
@@ -482,19 +484,9 @@ class QueueActionFetch(QueueAction):
         self.displayTitle('Fetching')
         self.displayRule()
         for queue_item in self.items:
-            self.display("Constructing %s" % queue_item.changesfile.filename)
-            changes_file_alias = queue_item.changesfile
-            # do not overwrite files on disk (bug # 62976)
-            if os.path.exists(queue_item.changesfile.filename):
-                raise CommandRunnerError("%s already present on disk"
-                                         % queue_item.changesfile.filename)
-            changes_file_alias.open()
-            changes_file = open(queue_item.changesfile.filename, "w")
-            changes_file.write(changes_file_alias.read())
-            changes_file.close()
-            changes_file_alias.close()
-
             file_list = []
+            file_list.append(queue_item.changesfile)
+
             for source in queue_item.sources:
                 for spr_file in source.sourcepackagerelease.files:
                     file_list.append(spr_file.libraryfile)
@@ -510,15 +502,34 @@ class QueueActionFetch(QueueAction):
             for libfile in file_list:
                 self.display("Constructing %s" % libfile.filename)
                 # do not overwrite files on disk (bug # 62976)
-                if os.path.exists(libfile.filename):
-                    raise CommandRunnerError("%s already present on disk"
-                                             % libfile.filename)
-                libfile.open()
-                out_file = open(libfile.filename, "w")
-                for chunk in filechunks(libfile):
-                    out_file.write(chunk)
-                out_file.close()
-                libfile.close()
+                try:
+                    existing_file = open(libfile.filename, "r")
+                except IOError, e:
+                    if not e.errno == errno.ENOENT:
+                        raise
+                    # File does not already exist, so read file from librarian
+                    # and write to disk.
+                    libfile.open()
+                    out_file = open(libfile.filename, "w")
+                    for chunk in filechunks(libfile):
+                        out_file.write(chunk)
+                    out_file.close()
+                    libfile.close()
+                else:
+                    # Check sha against existing file (bug #67014)
+                    existing_sha = sha()
+                    for chunk in filechunks(existing_file):
+                        existing_sha.update(chunk)
+                    existing_file.close()
+
+                    # bail out if the sha1 differs
+                    if libfile.content.sha1 != existing_sha.hexdigest():
+                        raise CommandRunnerError("%s already present on disk "
+                                                 "and differs from new file"
+                                                 % libfile.filename)
+                    else:
+                        self.display("%s already on disk and checksum "
+                                     "matches, skipping.")
 
         self.displayRule()
         self.displayBottom()
@@ -808,8 +819,8 @@ class QueueActionOverride(QueueAction):
         overridden = None
         for queue_item in self.items:
             for build in queue_item.builds:
-                # Different than DistroReleaseQueueSources
-                # DistroReleaseQueueBuild points to a Build, that can,
+                # Different than PackageUploadSources
+                # PackageUploadBuild points to a Build, that can,
                 # and usually does, point to multiple BinaryPackageReleases.
                 # So we need to carefully select the requested package to be
                 # overridden

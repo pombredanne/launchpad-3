@@ -82,12 +82,13 @@ class DistributionSourcePackage(BugTargetBase,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.version = %s
-            """ % sqlvalues(self.distribution, self.sourcepackagename,
-                            version),
+            """ % sqlvalues(self.distribution, self.distribution.main_archive,
+                            self.sourcepackagename, version),
             orderBy='-datecreated',
             prejoinClauseTables=['SourcePackageRelease'],
             clauseTables=['DistroRelease', 'SourcePackageRelease'])
@@ -109,8 +110,10 @@ class DistributionSourcePackage(BugTargetBase,
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.status != %s
             """ % sqlvalues(self.sourcepackagename, self.distribution,
+                            self.distribution.main_archive,
                             PackagePublishingStatus.REMOVED),
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             orderBy=[SQLConstant(order_const),
@@ -138,9 +141,15 @@ class DistributionSourcePackage(BugTargetBase,
         """See IDistributionSourcePackage."""
         # Use "list" here because it's possible that this list will be longer
         # than a "shortlist", though probably uncommon.
-        contacts = PackageBugContact.selectBy(
-            distribution=self.distribution,
-            sourcepackagename=self.sourcepackagename)
+        query = """
+            PackageBugContact.distribution=%s
+            AND PackageBugContact.sourcepackagename = %s
+            AND PackageBugContact.bugcontact = Person.id
+            """ % sqlvalues(self.distribution, self.sourcepackagename)
+        contacts = PackageBugContact.select(
+            query,
+            orderBy='Person.displayname',
+            clauseTables=['Person'])
         contacts.prejoin(["bugcontact"])
         return list(contacts)
 
@@ -192,11 +201,11 @@ class DistributionSourcePackage(BugTargetBase,
 
     # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
     @property
-    def by_distroreleases(self):
+    def by_distroseriess(self):
         """See IDistributionSourcePackage."""
         result = []
-        for release in self.distribution.releases:
-            candidate = SourcePackage(self.sourcepackagename, release)
+        for series in self.distribution.serieses:
+            candidate = SourcePackage(self.sourcepackagename, series)
             if candidate.currentrelease:
                 result.append(candidate)
         return result
@@ -216,13 +225,15 @@ class DistributionSourcePackage(BugTargetBase,
     def _getPublishingHistoryQuery(self, status=None):
         query = """
             DistroRelease.distribution = %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.distrorelease =
                 DistroRelease.id AND
             SourcePackagePublishingHistory.sourcepackagerelease =
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s
-            """ % sqlvalues(self.distribution.id,
-                            self.sourcepackagename.id)
+            """ % sqlvalues(self.distribution,
+                            self.distribution.main_archive,
+                            self.sourcepackagename)
 
         if status is not None:
             query += ("AND SourcePackagePublishingHistory.status = %s"
@@ -238,12 +249,15 @@ class DistributionSourcePackage(BugTargetBase,
     def releases(self):
         """See IDistributionSourcePackage."""
         ret = SourcePackagePublishingHistory.select("""
-            sourcepackagepublishinghistory.distrorelease = distrorelease.id AND
-            distrorelease.distribution = %s AND
+            sourcepackagepublishinghistory.distrorelease = DistroRelease.id AND
+            DistroRelease.distribution = %s AND
+            sourcepackagepublishinghistory.archive = %s AND
             sourcepackagepublishinghistory.sourcepackagerelease =
                 sourcepackagerelease.id AND
             sourcepackagerelease.sourcepackagename = %s
-            """ % sqlvalues(self.distribution.id, self.sourcepackagename.id),
+            """ % sqlvalues(self.distribution,
+                            self.distribution.main_archive,
+                            self.sourcepackagename),
             orderBy='-datecreated',
             clauseTables=['distrorelease', 'sourcepackagerelease'])
         result = []

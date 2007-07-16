@@ -18,13 +18,18 @@
 
 <div metal:fill-slot="main">
 
+      <div>
+        <img alt="" src="/@@/question" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+      </div>
+
   <h1 tal:condition="not: view/subscription">Subscribe to question</h1>
   <h1 tal:condition="view/subscription">Unsubscribe from question</h1>
 
 
   <p>
     Subscribing to a question makes it show up on
-    <a tal:attributes="href string:/~${request/lp:person/name}/+tickets"
+    <a tal:attributes="href string:/~${request/lp:person/name}/+questions"
     >your Answers page</a>.
   </p>
 
@@ -33,9 +38,6 @@
         method="post">
 
     <div class="actions">
-      <input type="submit"
-             name="cancel"
-             value="Cancel" />
       <input tal:condition="not: view/subscription"
              type="submit"
              name="subscribe"

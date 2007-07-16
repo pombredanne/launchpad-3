@@ -7,32 +7,18 @@ __metaclass__ = type
 __all__ = [
     'IAnswersFrontPageSearchForm',
     'IQuestionTarget',
-    'IManageAnswerContactsForm',
     'ISearchQuestionsForm',
-    'get_supported_languages',
     ]
 
 import sets
 
-from zope.component import getUtility
 from zope.interface import Interface
-from zope.schema import Bool, Choice, List, Set, TextLine
+from zope.schema import Choice, List, Set, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces.language import ILanguageSet
-from canonical.launchpad.interfaces.question import (
+from canonical.launchpad.interfaces.questioncollection import (
     ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.lp.dbschema import QuestionSort
-
-
-def get_supported_languages(question_target):
-    """Common implementation for IQuestionTarget.getSupportedLanguages()."""
-    assert IQuestionTarget.providedBy(question_target)
-    langs = set()
-    for contact in question_target.answer_contacts:
-        langs |= contact.getSupportedLanguages()
-    langs.add(getUtility(ILanguageSet)['en'])
-    return langs
 
 
 class IQuestionTarget(ISearchableByQuestionOwner):
@@ -80,7 +66,8 @@ class IQuestionTarget(ISearchableByQuestionOwner):
         :person: An IPerson.
 
         Returns True if the person was added, False if the person already was
-        an answer contact.
+        an answer contact. A person must have at least one preferred
+        language to be an answer contact.
         """
 
     def removeAnswerContact(person):
@@ -90,6 +77,24 @@ class IQuestionTarget(ISearchableByQuestionOwner):
 
         Returns True if the person was removed, False if the person wasn't an
         answer contact.
+        """
+
+    def getAnswerContactsForLanguage(language):
+        """Return the list of Persons that provide support for a language.
+
+        An answer contact supports questions in his preferred languages.
+        """
+
+    def getAnswerContactRecipients(language):
+        """Return an `INotificationRecipientSet` of answer contacts.
+
+        :language: an ILanguage or None. When language is none, all
+                   answer contacts are returned.
+
+        Return an INotificationRecipientSet of the answer contacts and the 
+        reason they are recipients of an email. The answer contacts are
+        selected by their language and the fact that they are answer contacts
+        for the QuestionTarget.
         """
 
     def getSupportedLanguages():
@@ -116,21 +121,8 @@ class IQuestionTarget(ISearchableByQuestionOwner):
             "inherited from other context.)"),
         value_type=Choice(vocabulary="ValidPersonOrTeam"))
 
-
 # These schemas are only used by browser/questiontarget.py and should really
 # live there. See Bug #66950.
-class IManageAnswerContactsForm(Interface):
-    """Schema for managing answer contacts."""
-
-    want_to_be_answer_contact = Bool(
-        title=_("Subscribe me automatically to new question"),
-        required=False)
-    answer_contact_teams = List(
-        title=_("Team answer contacts"),
-        value_type=Choice(vocabulary="PersonTeamParticipations"),
-        required=False)
-
-
 class ISearchQuestionsForm(Interface):
     """Schema for the search question form."""
 

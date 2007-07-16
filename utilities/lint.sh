@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # Runs pyflakes and pylint on files changed in tree
 #
@@ -61,8 +61,6 @@ PYLINTOPTS_SCRIPT="$PYLINTOPTS,W0702,W0703"
 # R0911 (Too many return statements)
 PYLINTOPTS_TRAVERSERS="$PYLINTOPTS,W0613,R0911"
 
-export PYTHONPATH=lib:$PYTHONPATH
-
 if [ -z "$1" ]; then
     files=`bzr added ; bzr modified`
 else
@@ -90,7 +88,8 @@ if [ -z "$pyfiles" ]; then
 fi
 
 if which pyflakes >/dev/null; then
-    output=`pyflakes $pyfiles`
+    output=`pyflakes $pyfiles \
+            | grep -v "unable to detect undefined names"`
     if [ ! -z "$output" ]; then
         echo "============================================================="
         echo "Pyflakes notices"

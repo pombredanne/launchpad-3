@@ -24,13 +24,33 @@ login page when they go to any page.
 
     >>> browser.open("http://launchpad.dev/people")
     >>> print browser.url
-    http://launchpad.dev/+restricted-login
+    http://launchpad.dev/+restricted-login?production=http%3A//launchpad.net/people
+
+A link is provided to the equivalent page on the non-restricted
+Launchpad instance:
+
+    >>> print browser.contents
+    <...
+    <p>
+    You may be able to access this page
+    <a href="http://launchpad.net/people">on the main
+    Launchpad site</a> instead.
+    </p>
+    ...
 
 This includes nonsense URLs and not-found URLs.
 
-    >>> browser.open("http://launchpad.dev/p/p/p/p")
+    >>> browser.open("http://bugs.launchpad.dev/p/p/p/p?key=value")
     >>> print browser.url
-    http://launchpad.dev/+restricted-login
+    http://bugs.launchpad.dev/+restricted-login?production=http%3A//bugs.launchpad.net/p/p/p/p%3Fkey%3Dvalue
+    >>> print browser.contents
+    <...
+    <p>
+    You may be able to access this page
+    <a href="http://bugs.launchpad.net/p/p/p/p?key=value">on the main
+    Launchpad site</a> instead.
+    </p>
+    ...
 
 That is, any page except an information page about the restriction.
 
@@ -53,7 +73,7 @@ is in the admin team, and gets redirected to the front page.
 
     >>> browser.open("http://launchpad.dev/p/p/p/p")
     >>> print browser.url
-    http://launchpad.dev/+restricted-login
+    http://launchpad.dev/+restricted-login?production=http%3A//launchpad.net/p/p/p/p
     >>> submit_login(browser, 'foo.bar@canonical.com', 'test')
     >>> print browser.url
     http://launchpad.dev
@@ -64,7 +84,7 @@ be able to log in.
 
     >>> browser.getControl(name="logout").click()
     >>> print browser.url
-    http://launchpad.dev/+restricted-login
+    http://launchpad.dev/+restricted-login?production=http%3A//launchpad.net/%3Floggingout%3D1
     >>> submit_login(browser, 'test@canonical.com', 'test')
     >>> print browser.url
     http://launchpad.dev
@@ -75,10 +95,24 @@ page to explain why he can't use the server.
 
     >>> browser.getControl(name="logout").click()
     >>> print browser.url
-    http://launchpad.dev/+restricted-login
+    http://launchpad.dev/+restricted-login?production=http%3A//launchpad.net/%3Floggingout%3D1
     >>> submit_login(browser, 'celso.providelo@canonical.com', 'cprov')
     >>> print browser.url
-    http://launchpad.dev/+restricted-info
+    http://launchpad.dev/+restricted-info?production=http%3A//launchpad.net/
+
+Now that the user is logged in, they will be directed to the
++restricted-info page if they try to browse other pages:
+
+    >>> browser.open("http://bugs.launchpad.dev/evolution")
+    >>> print browser.url
+    http://bugs.launchpad.dev/+restricted-info?production=http%3A//bugs.launchpad.net/evolution
+    >>> print browser.contents
+    <...
+    <p>You may be able to
+    access this page
+    <a href="http://bugs.launchpad.net/evolution">on the main
+    Launchpad site</a> instead.</p>
+    ...
 
 Set restrict_to_team back to being a server that is open to anyone.
 

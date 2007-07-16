@@ -7,23 +7,31 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
+# XXX: thumper 2007-05-25
+# This import should really be tidied up. Made into alphabetical
+# order ideally.
 from canonical.launchpad.interfaces import (
     IHasOwner, IPerson, ITeam, ISprint, ISprintSpecification,
-    IDistribution, ITeamMembership, IMilestone, IBug, ITranslator,
-    IProduct, IProductSeries, IPOTemplate, IPOFile, IPOTemplateName,
-    IPOTemplateNameSet, ISourcePackage, ILaunchpadCelebrities, IDistroRelease,
-    IBugTracker, IBugAttachment, IPoll, IPollSubset, IPollOption,
-    IProductRelease, IShippingRequest, IShippingRequestSet, IRequestedCDs,
+    IDistribution, IFAQ, IFAQTarget, ITeamMembership, IMilestone, IBug,
+    ITranslator, ITranslationGroup, ITranslationGroupSet, IProduct,
+    IProductSeries, IPOTemplate, IPOFile, IPOTemplateName, IPOTemplateNameSet,
+    ISourcePackage, ILaunchpadCelebrities, IDistroSeries, IBugTracker,
+    IBugAttachment, IPoll, IPollSubset, IPollOption, IProductRelease,
+    IQuestion, IQuestionTarget,
+    IShippingRequest, IShippingRequestSet, IRequestedCDs,
     IStandardShipItRequestSet, IStandardShipItRequest, IShipItApplication,
-    IShippingRun, ISpecification, IQuestion, ITranslationImportQueueEntry,
+    IShippingRun, ISpecification, ITranslationImportQueueEntry,
     ITranslationImportQueue, IDistributionMirror, IHasBug,
-    IBazaarApplication, IDistroReleaseQueue, IBuilderSet, IPackageUploadQueue,
+    IBazaarApplication, IPackageUpload, IBuilderSet, IPackageUploadQueue,
     IBuilder, IBuild, IBugNomination, ISpecificationSubscription, IHasDrivers,
-    IBugBranch)
+    IBugBranch, ILanguage, ILanguageSet, IPOTemplateSubset,
+    IDistroSeriesLanguage, IBranch, IBranchSubscription, ICodeImport,
+    ICodeImportMachine, ICodeImportMachineSet, ICodeImportSet, IEntitlement)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import IAuthorization
 
-from canonical.lp.dbschema import DistroReleaseQueueStatus
+from canonical.lp.dbschema import PackageUploadStatus
+
 
 class AuthorizationBase:
     implements(IAuthorization)
@@ -58,7 +66,7 @@ class EditBugNominationStatus(AuthorizationBase):
     usedfor = IBugNomination
 
     def checkAuthenticated(self, user):
-        return check_permission("launchpad.Driver", self.obj.target)
+        return self.obj.canApprove(user)
 
 
 class EditByOwnersOrAdmins(AuthorizationBase):
@@ -97,7 +105,7 @@ class EditDistributionMirrorByOwnerOrDistroOwnerOrMirrorAdminsOrAdmins(
 class EditSpecificationByTargetOwnerOrOwnersOrAdmins(AuthorizationBase):
     """We want everybody "related" to a specification to be able to edit it.
     You are related if you have a role on the spec, or if you have a role on
-    the spec target (distro/product) or goal (distrorelease/productseries).
+    the spec target (distro/product) or goal (distroseries/productseries).
     """
 
     permission = 'launchpad.Edit'
@@ -296,7 +304,7 @@ class AdminMilestoneByLaunchpadAdmins(AuthorizationBase):
 
     def checkAuthenticated(self, user):
         """Only the Launchpad admins need this, we are only going to use it
-        for connecting up series and distroreleases where we did not have
+        for connecting up series and distroseriess where we did not have
         them."""
         admins = getUtility(ILaunchpadCelebrities).admin
         return user.inTeam(admins)
@@ -323,7 +331,7 @@ class EditTeamByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
 
         The Launchpad admins also have launchpad.Edit on all teams.
         """
-        return can_admin_team(self.obj, user)
+        return can_edit_team(self.obj, user)
 
 
 class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
@@ -331,7 +339,7 @@ class EditTeamMembershipByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     usedfor = ITeamMembership
 
     def checkAuthenticated(self, user):
-        return can_admin_team(self.obj.team, user)
+        return can_edit_team(self.obj.team, user)
 
 
 class EditPersonBySelfOrAdmins(AuthorizationBase):
@@ -373,13 +381,13 @@ class EditPollOptionByTeamOwnerOrTeamAdminsOrAdmins(AuthorizationBase):
     usedfor = IPollOption
 
     def checkAuthenticated(self, user):
-        return can_admin_team(self.obj.poll.team, user)
+        return can_edit_team(self.obj.poll.team, user)
 
 
 class AdminDistribution(AdminByAdminsTeam):
     """Soyuz involves huge chunks of data in the archive and librarian,
     so for the moment we are locking down admin and edit on distributions
-    and distroreleases to the Launchpad admin team."""
+    and distroseriess to the Launchpad admin team."""
     permission = 'launchpad.Admin'
     usedfor = IDistribution
 
@@ -388,7 +396,7 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
     """The owner of a distribution should be able to edit its
     information; it is mainly administrative data, such as bug
     contacts. Note that creation of new distributions and distribution
-    releases is still protected with launchpad.Admin"""
+    series is still protected with launchpad.Admin"""
     permission = 'launchpad.Edit'
     usedfor = IDistribution
 
@@ -398,10 +406,10 @@ class EditDistributionByDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(admins))
 
 
-class AdminDistroRelease(AdminByAdminsTeam):
+class AdminDistroSeries(AdminByAdminsTeam):
     """Soyuz involves huge chunks of data in the archive and librarian,
     so for the moment we are locking down admin and edit on distributions
-    and distroreleases to the Launchpad admin team.
+    and distroseriess to the Launchpad admin team.
 
     NB: Please consult with SABDFL before modifying this permission because
         changing it could cause the archive to get rearranged, with tons of
@@ -409,18 +417,18 @@ class AdminDistroRelease(AdminByAdminsTeam):
         upset. Then James T would be on your case.
     """
     permission = 'launchpad.Admin'
-    usedfor = IDistroRelease
+    usedfor = IDistroSeries
 
 
-class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
-    """The owner of the distro release should be able to modify some of the
-    fields on the IDistroRelease
+class EditDistroSeriesByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
+    """The owner of the distro series should be able to modify some of the
+    fields on the IDistroSeries
 
     NB: there is potential for a great mess if this is not done correctly so
     please consult with SABDFL before modifying these permissions.
     """
     permission = 'launchpad.Edit'
-    usedfor = IDistroRelease
+    usedfor = IDistroSeries
 
     def checkAuthenticated(self, user):
         admins = getUtility(ILaunchpadCelebrities).admin
@@ -429,10 +437,10 @@ class EditDistroReleaseByOwnersOrDistroOwnersOrAdmins(AuthorizationBase):
                 user.inTeam(admins))
 
 
-class ReleaseAndSeriesDrivers(AuthorizationBase):
+class SeriesDrivers(AuthorizationBase):
     """Drivers can approve or decline features and target bugs.
 
-    Drivers exist for distribution releases and product series.
+    Drivers exist for distribution and product series.
     """
     permission = 'launchpad.Driver'
     usedfor = IHasDrivers
@@ -658,6 +666,48 @@ class AdminTheBazaar(OnlyVcsImportsAndAdmins):
     usedfor = IBazaarApplication
 
 
+class SeeCodeImportSet(OnlyVcsImportsAndAdmins):
+    """Control who can see the CodeImport listing page.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+
+    permission = 'launchpad.View'
+    usedfor = ICodeImportSet
+
+
+class SeeCodeImports(OnlyVcsImportsAndAdmins):
+    """Control who can see the object view of a CodeImport.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImport
+
+
+class SeeCodeImportMachineSet(OnlyVcsImportsAndAdmins):
+    """Control who can see the CodeImportMachine listing page.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+
+    permission = 'launchpad.View'
+    usedfor = ICodeImportMachineSet
+
+
+class SeeCodeImportMachines(OnlyVcsImportsAndAdmins):
+    """Control who can see the object view of a CodeImportMachine.
+
+    Currently, we restrict the visibility of the new code import
+    system to members of ~vcs-imports and Launchpad admins.
+    """
+    permission = 'launchpad.View'
+    usedfor = ICodeImportMachine
+
+
 class EditPOTemplateDetails(EditByOwnersOrAdmins):
     usedfor = IPOTemplate
 
@@ -713,6 +763,22 @@ class ChangeTranslatorInGroup(OnlyRosettaExpertsAndAdmins):
                 OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user))
 
 
+class EditTranslationGroup(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Edit'
+    usedfor = ITranslationGroup
+
+    def checkAuthenticated(self, user):
+        """Allow the owner of a translation group to edit the translator
+        of any language in the group."""
+        return (user.inTeam(self.obj.owner) or
+                OnlyRosettaExpertsAndAdmins.checkAuthenticated(self, user))
+
+
+class EditTranslationGroupSet(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = ITranslationGroupSet
+
+
 # XXX: Carlos Perello Marin 2005-05-24: This should be using
 # SuperSpecialPermissions when implemented.
 # See: https://launchpad.ubuntu.com/malone/bugs/753/
@@ -765,16 +831,17 @@ class AdminTranslationImportQueue(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ITranslationImportQueue
 
+
 class EditPackageUploadQueue(AdminByAdminsTeam):
     permission = 'launchpad.Edit'
     usedfor = IPackageUploadQueue
 
     def checkAuthenticated(self, user):
-        """Check user presence in admins or distrorelease upload admin team."""
+        """Check user presence in admins or distroseries upload admin team."""
         if AdminByAdminsTeam.checkAuthenticated(self, user):
             return True
 
-        return user.inTeam(self.obj.distrorelease.distribution.upload_admin)
+        return user.inTeam(self.obj.distroseries.distribution.upload_admin)
 
 
 class ViewPackageUploadQueue(EditPackageUploadQueue):
@@ -789,20 +856,20 @@ class ViewPackageUploadQueue(EditPackageUploadQueue):
         if EditPackageUploadQueue.checkAuthenticated(self, user):
             return True
         # deny access to non-admin on unapproved records
-        if self.obj.status == DistroReleaseQueueStatus.UNAPPROVED:
+        if self.obj.status == PackageUploadStatus.UNAPPROVED:
             return False
 
         return True
 
 
-class EditDistroReleaseQueue(EditPackageUploadQueue):
+class EditPackageUpload(EditPackageUploadQueue):
     permission = 'launchpad.Edit'
-    usedfor = IDistroReleaseQueue
+    usedfor = IPackageUpload
 
 
-class ViewDistroReleaseQueue(ViewPackageUploadQueue):
+class ViewPackageUpload(ViewPackageUploadQueue):
     permission = 'launchpad.View'
-    usedfor = IDistroReleaseQueue
+    usedfor = IPackageUpload
 
 
 class AdminByBuilddAdmin(AuthorizationBase):
@@ -870,13 +937,118 @@ class QuestionOwner(AuthorizationBase):
         return user.inTeam(self.obj.owner)
 
 
-def can_admin_team(team, user):
-    """Return True if the given user has admin rights for the given team."""
+class ModerateFAQTarget(EditByOwnersOrAdmins):
+    permission = 'launchpad.Moderate'
+    usedfor = IFAQTarget
+
+    def checkAuthenticated(self, user):
+        """Allow people with launchpad.Edit or an answer contact."""
+        if EditByOwnersOrAdmins.checkAuthenticated(self, user):
+            return True
+        if IQuestionTarget.providedBy(self.obj):
+            for answer_contact in self.obj.answer_contacts:
+                if user.inTeam(answer_contact):
+                    return True
+        return False
+
+
+class EditFAQ(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IFAQ
+
+    def checkAuthenticated(self, user):
+        """Everybody who has launchpad.Moderate on the FAQ target is allowed.
+        """
+        return ModerateFAQTarget(self.obj.target).checkAuthenticated(user)
+
+
+def can_edit_team(team, user):
+    """Return True if the given user has edit rights for the given team."""
     if user.inTeam(getUtility(ILaunchpadCelebrities).admin):
         return True
     else:
-        for person in team.getEffectiveAdministrators():
-            if user.inTeam(person):
-                return True
-    return False
+        return team in user.getAdministratedTeams()
 
+
+class AdminLanguageSet(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = ILanguageSet
+
+
+class AdminLanguage(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = ILanguage
+
+
+class AccessBranch(AuthorizationBase):
+    """Controls visibility of branches.
+
+    A person can see the branch if the branch is public, they are the owner
+    of the branch, they are in the team that owns the branch, subscribed to
+    the branch, or a launchpad administrator.
+    """
+    permission = 'launchpad.View'
+    usedfor = IBranch
+
+    def checkAuthenticated(self, user):
+        if not self.obj.private:
+            return True
+        if user.inTeam(self.obj.owner):
+            return True
+        for subscriber in self.obj.subscribers:
+            if user.inTeam(subscriber):
+                return True
+        return user.inTeam(getUtility(ILaunchpadCelebrities).admin)
+
+    def checkUnauthenticated(self):
+        return not self.obj.private
+
+
+class AdminPOTemplateSubset(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = IPOTemplateSubset
+
+
+class AdminDistroSeriesLanguage(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.Admin'
+    usedfor = IDistroSeriesLanguage
+
+
+class AdminDistroSeriesTranslations(OnlyRosettaExpertsAndAdmins):
+    permission = 'launchpad.TranslationsAdmin'
+    usedfor = IDistroSeries
+
+
+class BranchSubscriptionEdit(AuthorizationBase):
+    permission = 'launchpad.Edit'
+    usedfor = IBranchSubscription
+
+    def checkAuthenticated(self, user):
+        """Is the user able to edit a branch subscription?
+
+        Any team member can edit a branch subscription for their team.
+        Launchpad Admins can also edit any branch subscription.
+        """
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return user.inTeam(self.obj.person) or user.inTeam(admins)
+
+
+class ViewEntitlement(AuthorizationBase):
+    """Permissions to view IEntitlement objects.
+
+    Allow the owner of the entitlement, the entitlement registrant,
+    or any member of the team or any admin to view the entitlement.
+    """
+    permission = 'launchpad.View'
+    usedfor = IEntitlement
+
+    def checkAuthenticated(self, user):
+        """Is the user able to view an Entitlement attribute?
+
+        Any team member can edit a branch subscription for their team.
+        Launchpad Admins can also edit any branch subscription.
+        """
+        admins = getUtility(ILaunchpadCelebrities).admin
+        return (user.inTeam(self.obj.person) or
+                user.inTeam(self.obj.registrant) or
+                user.inTeam(admins))

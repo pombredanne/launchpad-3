@@ -1,5 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+"""SQLBase implementation of IQuestionReopening."""
+
 __metaclass__ = type
 
 __all__ = ['QuestionReopening',
@@ -27,9 +29,10 @@ class QuestionReopening(SQLBase):
 
     implements(IQuestionReopening)
 
-    _table = 'TicketReopening'
+    _table = 'QuestionReopening'
 
-    question = ForeignKey(dbName='ticket', foreignKey='Question', notNull=True)
+    question = ForeignKey(
+        dbName='question', foreignKey='Question', notNull=True)
     datecreated = UtcDateTimeCol(notNull=True, default=DEFAULT)
     reopener = ForeignKey(dbName='reopener', foreignKey='Person',
         notNull=True)
@@ -68,7 +71,8 @@ def create_questionreopening(question, event):
 
     reopening = QuestionReopening(
             question=question, reopener=reopen_msg.owner,
-            datecreated=reopen_msg.datecreated, answerer=old_question.answerer,
+            datecreated=reopen_msg.datecreated,
+            answerer=old_question.answerer,
             dateanswered=old_question.dateanswered,
             priorstate=old_question.status)
 

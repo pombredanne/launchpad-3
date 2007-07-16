@@ -13,7 +13,7 @@ common external bug tracker.
 == Creating new projects ==
 
 When creating a new project there are a bunch of things we need to provide.
-While some of them (homepageurl, gotchi and emblem) are optional, others
+While some of them (homepageurl, icon, logo and mugshot) are optional, others
 (name, displayname, title, summary, description and owner) are required).
 
     >>> from canonical.launchpad.interfaces import IPersonSet
@@ -22,7 +22,7 @@ While some of them (homepageurl, gotchi and emblem) are optional, others
     ...     name='project-test', displayname='Test Project', 
     ...     title='Just a test project', homepageurl=None,
     ...     summary='Mandatory summary', description='blah',
-    ...     owner=no_priv, gotchi=None, gotchi_heading=None, emblem=None)
+    ...     owner=no_priv)
     >>> test_project.name
     u'project-test'
 
@@ -82,6 +82,25 @@ getByName() also accepts an argument to ignore inactive projects.
 
     >>> print getUtility(IProjectSet).getByName('gnome', ignore_inactive=True)
     None
+
+== Products which are part of a project ==
+
+The products which are part of a given project are given by a project's
+.products property. Note that only active products are included and they're
+ordered by their names.
+
+    >>> [product.name for product in gnome.products]
+    [u'applets', u'evolution', u'gnome-terminal', u'gnomebaker', u'netapplet']
+
+    >>> netapplet = gnome.getProduct('netapplet')
+    >>> netapplet.active = False
+    >>> flush_database_updates()
+    >>> [product.name for product in gnome.products]
+    [u'applets', u'evolution', u'gnome-terminal', u'gnomebaker']
+
+    # Re-activate netapplet so that we don't interfere in other tests below.
+    >>> netapplet.active = True
+    >>> flush_database_updates()
 
 
 == Specification Listings ==

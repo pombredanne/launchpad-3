@@ -462,6 +462,10 @@ class SVNStrategy(CSCVSStrategy):
             'https://numexp.org/svn/numexp-core',
             'svn://svn.berlios.de/sax/sax-head',
             'http://codespeak.net/svn/pypy/dist',
+            ('https://mailman.svn.sourceforge.net/svnroot/mailman/'
+             'branches/Release_2_1-maint/mailman'),
+            ('https://stage.maemo.org/svn/maemo/projects/haf/branches/'
+             'hildon-control-panel/refactoring'),
          ])
 
     def getSVNDirPath(self, aJob, dir):

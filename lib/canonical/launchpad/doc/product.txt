@@ -53,7 +53,7 @@ translatable for that product:
 
 We can also see how many translatables it has:
 
-But for a52dec, where we have no translatable release or Ubuntu package, the
+But for a52dec, where we have no translatable series or Ubuntu package, the
 primary_translatable is nonexistent:
 
     >>> print a52dec.primary_translatable
@@ -82,23 +82,35 @@ getByName() also accepts an argument to ignore inactive products.
     None
 
 You can also use the IProductSet to see some statistics on products.
+The methods use ILaunchpadStatisticSet to get the values. The
+ILaunchpadStatisticSet is stored in the 'stats' attribute.
 
-    >>> print productset.count_translatable()
-    3
-    >>> print productset.count_bounties()
-    2
-    >>> print productset.count_buggy()
-    5
-    >>> print productset.count_reviewed()
-    1
+    >>> class FakeStatistics:
+    ...     stats = {
+    ...         'products_with_translations': 1000,
+    ...         'projects_with_bugs': 2000,
+    ...         'reviewed_products': 3000}
+    ...     def value(self, name):
+    ...         return self.stats[name]
+
+    >>> from canonical.launchpad.database import ProductSet
+    >>> class FakeStatsProductSet(ProductSet):
+    ...     """Provide fake statistics, not to depend on sample data."""
+    ...     stats = FakeStatistics()
+
+    >>> print FakeStatsProductSet().count_translatable()
+    1000
+    >>> print FakeStatsProductSet().count_buggy()
+    2000
+    >>> print FakeStatsProductSet().count_reviewed()
+    3000
 
 It provides information on all the translatables available, too:
 
-    >>> for product in productset.translatables():
+    >>> for product in productset.getTranslatables():
     ...    print product.name
-    evolution
-    netapplet
     alsa-utils
+    evolution
 
 
 == Package links ==
@@ -107,7 +119,7 @@ The packaging table allows us to list source and distro source packages
 related to a certain upstream:
 
    >>> alsa = productset.getByName('alsa-utils')
-   >>> [(sp.name, sp.distrorelease.name) for sp in alsa.sourcepackages]
+   >>> [(sp.name, sp.distroseries.name) for sp in alsa.sourcepackages]
    [(u'alsa-utils', u'sid'), (u'alsa-utils', u'warty')]
    >>> [(sp.name, sp.distribution.name) for sp in alsa.distrosourcepackages]
    [(u'alsa-utils', u'debian'), (u'alsa-utils', u'ubuntu')]
@@ -167,6 +179,20 @@ None will of course be returned.
     True
 
 
+== Answer Tracking ==
+
+Firefox uses the Answer Tracker as the official application to provide
+answers to questions.
+
+    >>> firefox.official_answers
+    True
+    
+Alsa does not use Launchpad to track answers.
+
+    >>> alsa.official_answers
+    False
+
+
 == Product Creation ==
 
 We can create new products with the createProduct() method:
@@ -182,9 +208,9 @@ We can create new products with the createProduct() method:
 
 When creating a product, a default product series is created for it:
 
-    >>> product.serieslist.count()
+    >>> product.serieses.count()
     1
-    >>> trunk = product.serieslist[0]
+    >>> trunk = product.serieses[0]
     >>> print trunk.name
     trunk
 
@@ -234,16 +260,49 @@ We can filter for specifications that contain specific text:
  e4x
 
 
+== Milestones ==
+
+We can use IProduct.milestones to get all milestones associated with any
+ProductSeries of a product.
+
+    >>> from datetime import datetime
+    >>> [milestone.name for milestone in firefox.milestones]
+    [u'1.0']
+
+    >>> firefox_one_zero = firefox.getSeries('1.0')
+    >>> firefox_milestone = firefox_one_zero.newMilestone(
+    ...     name='1.0-rc1', dateexpected=datetime(2018, 10, 1))
+
+They're ordered by dateexpected.
+
+    >>> [(milestone.name, milestone.dateexpected.strftime('%Y-%m-%d'))
+    ...  for milestone in firefox.milestones]
+    [(u'1.0-rc1', '2018-10-01'), (u'1.0', '2056-10-16')]
+
+Only milestones which have visible=True are returned by the .milestones
+property.
+
+    >>> firefox_milestone.visible = False
+    >>> flush_database_updates()
+    >>> [milestone.name for milestone in firefox.milestones]
+    [u'1.0']
+
+To get all milestones of a given product we have the .all_milestones property.
+
+    >>> [milestone.name for milestone in firefox.all_milestones]
+    [u'1.0-rc1', u'1.0']
+
 == Products With Branches ==
 
 We can also find all the products that have branches.
 
- >>> productset.getProductsWithBranches().count()
- 5
- >>> for product in productset.getProductsWithBranches():
- ...     print product.name
- evolution
- firefox
- gnome-terminal
- iso-codes
- thunderbird
+    >>> productset.getProductsWithBranches().count()
+    6
+    >>> for product in productset.getProductsWithBranches():
+    ...     print product.name
+    evolution
+    firefox
+    gnome-terminal
+    iso-codes
+    landscape
+    thunderbird

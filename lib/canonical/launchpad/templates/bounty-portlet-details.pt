@@ -4,9 +4,8 @@
 
   <div class="portletBody portletContent">
 
-    <b>Registrant:</b>
+    <b>Registered by:</b>
     <a tal:replace="structure context/owner/fmt:link">Foo Bar</a><br />
-	
   </div>
 
 </div>

@@ -9,11 +9,12 @@
 
     <!-- <include package="zope.app.exception.browser" /> -->
     <include package="zope.app.traversing.browser" />
+    <!--
     <include package="zope.app.security.browser" />
-
+      -->
     <!-- <include package="zope.app.container.browser" /> -->
     <include package="zope.app.form.browser" />
-
+<!--
     <include package="zope.app.component.browser" />
-
+-->
 </configure>

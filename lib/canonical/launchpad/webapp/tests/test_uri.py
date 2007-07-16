@@ -100,6 +100,22 @@ class URITestCase(unittest.TestCase):
         # without a hostname component.
         #self.assertEqual(resolve('http:g'),       'http:g')
 
+    def test_underDomain_matches_subdomain(self):
+        # URI.underDomain should return True when asked whether the url is
+        # under one of its parent domains.
+        uri = URI('http://code.launchpad.dev/foo')
+        self.assertTrue(uri.underDomain('code.launchpad.dev'))
+        self.assertTrue(uri.underDomain('launchpad.dev'))
+        self.assertTrue(uri.underDomain(''))
+
+    def test_underDomain_doesnt_match_non_subdomain(self):
+        # URI.underDomain should return False when asked whether the url is
+        # under a domain which isn't one of its parents.
+        uri = URI('http://code.launchpad.dev/foo')
+        self.assertFalse(uri.underDomain('beta.code.launchpad.dev'))
+        self.assertFalse(uri.underDomain('google.com'))
+        self.assertFalse(uri.underDomain('unchpad.dev'))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

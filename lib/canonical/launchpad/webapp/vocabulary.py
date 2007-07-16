@@ -13,10 +13,13 @@ __all__ = [
     'SQLObjectVocabularyBase',
     'NamedSQLObjectVocabulary',
     'NamedSQLObjectHugeVocabulary',
+    'sortkey_ordered_vocab_factory',
     'CountableIterator',
     'BatchedCountableIterator',
     'vocab_factory'
 ]
+
+import operator
 
 from sqlobject import AND, CONTAINSSTRING
 
@@ -40,15 +43,16 @@ class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
         'A name for this vocabulary, to be displayed in the popup window.')
 
     def searchForTerms(query=None):
-        """Return an iterable of SimpleTerms that match the search string.
-
-        The iterable must have a count() method.
+        """Return a `CountableIterator` of `SimpleTerm`s that match the query.
 
         Note that what is searched and how the match is the choice of the
         IHugeVocabulary implementation.
         """
 
 
+# XXX flacoste 2007/07/06 A proper interface should be implemented for
+# this, either ISelectResults or define an interface expressing the
+# required subset.
 class CountableIterator:
     """Implements a wrapping iterator with a count() method.
 
@@ -57,7 +61,7 @@ class CountableIterator:
     BatchNavigator.
     """
 
-    def __init__(self, count, iterator, item_wrapper):
+    def __init__(self, count, iterator, item_wrapper=None):
         """Construct a CountableIterator instance.
 
         Arguments:
@@ -85,7 +89,10 @@ class CountableIterator:
         # currently here because popup.py:matches() doesn't slice into
         # the results, though it should. -- kiko, 2007-01-18
         for item in self._iterator:
-            yield self._item_wrapper(item)
+            if self._item_wrapper is not None:
+                yield self._item_wrapper(item)
+            else:
+                yield item
 
     def __getitem__(self, arg):
         """Return a slice or item of my collection.
@@ -93,7 +100,10 @@ class CountableIterator:
         This is used by BatchNavigator when it slices into us; we just
         pass on the buck down to our _iterator."""
         for item in self._iterator[arg]:
-            yield self._item_wrapper(item)
+            if self._item_wrapper is not None:
+                yield self._item_wrapper(item)
+            else:
+                yield item
 
     def __len__(self):
         # XXX: __len__ is required to make BatchNavigator work; we
@@ -346,3 +356,17 @@ def vocab_factory(schema, noshow=[]):
         return SimpleVocabulary.fromItems(items)
     return factory
 
+def sortkey_ordered_vocab_factory(schema, noshow=[]):
+    """Another factory for IDBSchema -> IVocabulary.
+
+    This function returns a callable object that creates a vocabulary
+    from a dbschema ordered by that schema's sortkey.
+    """
+    def factory(context, schema=schema, noshow=noshow):
+        """Adapt IDBSchema to IVocabulary."""
+        items = [(item.title, item)
+                 for item in sorted(
+                     schema.items, key=operator.attrgetter('sortkey'))
+                 if item not in noshow]
+        return SimpleVocabulary.fromItems(items)
+    return factory

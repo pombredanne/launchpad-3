@@ -1,9 +1,8 @@
-Person
-======
+= Person =
 
-The Person class is overloaded to represent both people and teams. Let's
-log in as Robert Collins to ensure we have the privileges to do what
-we're going to demonstrate.
+The Person class is what we use to represent Launchpad users, teams and
+some people which have done work on the free software community but are not
+Launchpad users.
 
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
@@ -11,22 +10,23 @@ we're going to demonstrate.
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IPerson, IEmailAddressSet)
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
-    >>> from canonical.launchpad.helpers import contactEmailAddresses
-    >>> from canonical.lp.dbschema import EmailAddressStatus
-
     >>> login(ANONYMOUS)
 
+Any Person object (either a person or a team) implements IPerson.
+
     >>> personset = getUtility(IPersonSet)
-    >>> emailset = getUtility(IEmailAddressSet)
-
-Verify that foobar (a Person object) correctly implements IPerson.
-
     >>> foobar = personset.getByName('name16')
+    >>> foobar.isTeam()
+    False
     >>> verifyObject(IPerson, foobar)
     True
+    >>> ubuntu_team = personset.getByName('ubuntu-team')
+    >>> ubuntu_team.isTeam()
+    True
+    >>> verifyObject(IPerson, ubuntu_team)
+    True
 
-The IPersonSet component
-------------------------
+== The IPersonSet utility ==
 
 Access to people (Persons or Teams) is done through the IPersonSet
 utility:
@@ -50,6 +50,7 @@ followed by a description of the action that caused the entry to be created.
     ...     hide_email_addresses=True)
     >>> p.teamowner is None
     True
+    >>> from canonical.lp.dbschema import EmailAddressStatus
     >>> email.status == EmailAddressStatus.NEW
     True
     >>> p.is_valid_person # Not valid because no preferred email address
@@ -96,14 +97,127 @@ And now with the same name of a existing account
     >>> lifeless.teamowner is None
     True
 
-An IPerson has an inTeam method to allow us to easily check if a
-person is a member of a team. It accepts an object implementing
-IPerson, which is the common use case when checking permissions.
+=== Ubunteros ===
 
+Anybody who signed the last version of Ubuntu's Code of Conduct is considered
+an Ubuntero.  To list all Ubunteros, use IPersonSet.getUbunteros():
+
+    >>> [p.name for p in personset.getUbunteros()]
+    [u'name16']
+
+To check if a person is an Ubuntero, use IPerson.is_ubuntero:
+
+    >>> foobar.is_ubuntero
+    True
+
+== Teams ==
+
+As we said above, the Person class is overloaded to represent teams so
+we may have Person objects which are, in fact, teams. To find out
+whether a given object is a person or a team we can use the isTeam()
+method of IPerson or check if the object provides the ITeam interface.
+
+    >>> from canonical.launchpad.interfaces import ITeam
     >>> ddaa = personset.getByName('ddaa')
+    >>> ddaa.isTeam()
+    False
+    >>> ITeam.providedBy(ddaa)
+    False
+
+    >>> landscape_devs = personset.getByName('landscape-developers')
+    >>> landscape_devs.isTeam()
+    True
+    >>> ITeam.providedBy(landscape_devs)
+    True
+    >>> verifyObject(ITeam, landscape_devs)
+    True
+
+=== Team members ===
+
+The relationship between a person and a team is stored in TeamMemberships
+table. TeamMemberships have a status (which can be any item of
+TeamMembershipStatus) and represent the current state of the relationship
+between that person and that team. Only TeamMembershipStatus with an ADMIN
+or APPROVED status are considered active.
+
+    >>> [member.displayname for member in landscape_devs.approvedmembers]
+    [u'Guilherme Salgado']
+    >>> [member.displayname for member in landscape_devs.adminmembers]
+    [u'Sample Person']
+
+The IPerson.activemembers property will always include all approved and admin
+members of that team.
+
+    >>> [member.displayname for member in landscape_devs.activemembers]
+    [u'Guilherme Salgado', u'Sample Person']
+
+TeamMemberships with a PROPOSED or INVITED status represent a person/team
+which has proposed himself as a member or which has been invited to join
+the team.
+
+    >>> [member.displayname for member in landscape_devs.proposedmembers]
+    [u'Foo Bar']
+    >>> [member.displayname for member in landscape_devs.invited_members]
+    [u'Launchpad Developers']
+
+Similarly, we have IPerson.pendingmembers which includes both invited and
+proposed members.
+
+    >>> [member.displayname for member in landscape_devs.pendingmembers]
+    [u'Foo Bar', u'Launchpad Developers']
+
+Finally, we have EXPIRED and DEACTIVATED TeamMemberships, which represent
+former (inactive) members of a team.
+
+    >>> [member.displayname for member in landscape_devs.expiredmembers]
+    [u'Karl Tilbury']
+    >>> [member.displayname for member in landscape_devs.deactivatedmembers]
+    [u'No Privileges Person']
+
+We can get a list of all inactive members of a team with the
+IPerson.inactivemembers property.
+
+    >>> [member.displayname for member in landscape_devs.inactivemembers]
+    [u'Karl Tilbury', u'No Privileges Person']
+
+We can also iterate over the TeamMemberships themselves, which is useful
+when we want to display details about them rather than just the member.
+
+    >>> [(membership.person.displayname, membership.status.name)
+    ...  for membership in landscape_devs.getActiveMemberships()]
+    [(u'Guilherme Salgado', 'APPROVED'), (u'Sample Person', 'ADMIN')]
+    >>> [(membership.person.displayname, membership.status.name)
+    ...  for membership in landscape_devs.getInvitedMemberships()]
+    [(u'Launchpad Developers', 'INVITED')]
+    >>> [(membership.person.displayname, membership.status.name)
+    ...  for membership in landscape_devs.getProposedMemberships()]
+    [(u'Foo Bar', 'PROPOSED')]
+    >>> [(membership.person.displayname, membership.status.name)
+    ...  for membership in landscape_devs.getInactiveMemberships()]
+    [(u'Karl Tilbury', 'EXPIRED'), (u'No Privileges Person', 'DEACTIVATED')]
+
+An IPerson has an inTeam method to allow us to easily check if a
+person is a member (directly or through other teams) of a team. It
+accepts an object implementing IPerson, which is the common use case
+when checking permissions.
+
     >>> ddaa.is_valid_person
     True
     >>> lifeless.inTeam(vcs_imports) and ddaa.inTeam(vcs_imports)
+    True
+
+That method can also be used to check that a given IPerson is a member of
+itself. We can do that because people and teams have TeamParticipation
+entries for themselves.
+
+    >>> ddaa.inTeam(ddaa)
+    True
+    >>> ddaa.hasParticipationEntryFor(ddaa)
+    True
+
+    >>> vcs_imports.inTeam(vcs_imports)
+    True
+    >>> vcs_imports.hasParticipationEntryFor(vcs_imports)
     True
 
 The inTeam method is cached to avoid unnecessary database lookups - this
@@ -120,58 +234,38 @@ was a cause of a number of timeouts
     >>> lifeless.inTeam(vcs_imports)
     True
 
-If a Person is not a Team then the Person object will not provide the
-ITeam interface.
+** See lib/canonical/launchpad/doc/teammembership.txt for more information
+   about team membership/participation.
 
-    >>> from canonical.launchpad.interfaces import ITeam
-    >>> ITeam.providedBy(lifeless)
-    False
 
-If a Person is a Team then the Person will provide the ITeam interface.
+=== Email notifications to teams ===
 
-    >>> ITeam.providedBy(vcs_imports)
+If a team has a contact email address, all notifications we send to the
+team will go to that address.
+
+    >>> ubuntu_team = personset.getByName('ubuntu-team')
+    >>> ubuntu_team.preferredemail.email
+    u'support@ubuntu.com'
+    >>> from canonical.launchpad.helpers import contactEmailAddresses
+    >>> contactEmailAddresses(ubuntu_team)
+    set(['support@ubuntu.com'])
+
+On the other hand, if a team doesn't have a contact email address, all
+notifications we send to the team will go to the preferred email of
+each direct member of that team.
+
+    >>> vcs_imports.preferredemail is None
     True
-
-If a team doesn't have a contact email address, all notifications we send to
-the team will go to the preferred email of each member.
-
-    >>> contactEmailAddresses(vcs_imports)
-    set(['david.allouche@canonical.com', 'robertc@robertcollins.net',
-         'foo.bar@canonical.com'])
-
-
-Renaming persons
-----------------
-
-All persons have a unique name in launchpad, so to allow them to change their
-names, we must make sure that name is not already in use by someone else.
-
-    >>> from canonical.launchpad.interfaces.person import PersonNameField
-    >>> field = PersonNameField(__name__='name', title=u'Unique name',
-    ...                         description=u'', readonly=False, required=True)
-    >>> field = field.bind(lifeless)
-    >>> field.context == lifeless
-    True
-
-You can always use your own name.
-
-    >>> field.validate(lifeless.name)
-
-Or a name that is not already in use.
-
-    >>> field.validate(u'namenotinuse')
-
-But you can't use Mark's name, of course. ;)
-
-    >>> field.validate(u'sabdfl')
-    Traceback (most recent call last):
-      ...
-    LaunchpadValidationError: ...sabdfl is already in use by another
-    person or team...
+    >>> sorted(member.preferredemail.email
+    ...        for member in vcs_imports.activemembers)
+    [u'david.allouche@canonical.com', u'foo.bar@canonical.com',
+     u'robertc@robertcollins.net']
+    >>> sorted(contactEmailAddresses(vcs_imports))
+    ['david.allouche@canonical.com', 'foo.bar@canonical.com',
+     'robertc@robertcollins.net']
 
 
-Searching
----------
+== Searching ==
 
 You can search based on a person's name or displayname, or any of the email
 addresses that belongs to a person using the methods provided by IPersonSet.
@@ -179,6 +273,7 @@ addresses that belongs to a person using the methods provided by IPersonSet.
 While we don't have Full Text Indexes in the emailaddress table, we'll be
 trying to match the text only against the beginning of an email address:
 
+    >>> emailset = getUtility(IEmailAddressSet)
     >>> results = personset.find('ubuntu')
     >>> for person in results:
     ...     emails = [email.email for email in emailset.getByPerson(person)]
@@ -224,8 +319,7 @@ Searching only for Teams based on their names or email addresses:
     (u'Ubuntu Translators', u'ubuntu-translators', [])
 
 
-Packages related to a person
-----------------------------
+== Packages related to a person ==
 
 To obtain the packages a person is related to, we can use the
 latestMaintainedPackages() and latestUploadedButNotMaintainedPackages()
@@ -236,7 +330,7 @@ person uploaded (where he isn't the maintainer).
 
     >>> sabdfl = personset.getByName('sabdfl')
     >>> for sprelease in sabdfl.latestMaintainedPackages():
-    ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
+    ...     print (sprelease.name, sprelease.uploaddistroseries.fullseriesname,
     ...            sprelease.version)
     (u'alsa-utils', u'Debian Sid', u'1.0.9a-4')
     (u'pmount', u'Ubuntu Hoary', u'0.1-2')
@@ -247,12 +341,13 @@ person uploaded (where he isn't the maintainer).
     (u'evolution', u'Ubuntu Hoary', u'1.0')
 
     >>> for sprelease in sabdfl.latestUploadedButNotMaintainedPackages():
-    ...     print (sprelease.name, sprelease.uploaddistrorelease.fullreleasename,
+    ...     print (sprelease.name, sprelease.uploaddistroseries.fullseriesname,
     ...            sprelease.version)
     (u'language-pack-de', u'Ubuntu Breezy-autotest', u'1.0')
     (u'foobar', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cdrkit', u'Ubuntu Breezy-autotest', u'1.0')
     (u'cnews', u'Ubuntu Breezy-autotest', u'1.0')
+    (u'iceweasel', u'Ubuntu Warty', u'1.0')
     (u'libstdc++', u'Ubuntu Hoary', u'b8p')
     (u'cnews', u'Ubuntu Hoary', u'cr.g7-37')
     (u'linux-source-2.6.15', u'Ubuntu Hoary', u'2.6.15.3')
@@ -260,53 +355,120 @@ person uploaded (where he isn't the maintainer).
     (u'alsa-utils', u'Ubuntu Hoary', u'1.0.9a-4ubuntu1')
 
 
-Translations
-------------
+== Pillars owned or driven by a person or team ==
+
+To obtain all distributions, project groups and projects owned or driven by a
+person or team, we can use the getOwnedOrDrivenPillars() method of IPerson.
+This method returns PillarNames ordered by distribution, project groups and
+projects.
+
+    >>> from canonical.launchpad.interfaces import (IDistribution, IProject,
+    ...     IProduct)
+
+    >>> def print_pillar(pillarname):
+    ...     pillar = pillarname.pillar
+    ...     if IDistribution.providedBy(pillar):
+    ...         pillar_type = 'distribution'
+    ...     elif IProject.providedBy(pillar):
+    ...         pillar_type = 'project group'
+    ...     elif IProduct.providedBy(pillar):
+    ...         pillar_type = 'project'
+    ...     print "%s: %s (%s)" % (
+    ...         pillar_type, pillar.title, pillar.name)
+
+    >>> for pillarname in sabdfl.getOwnedOrDrivenPillars():
+    ...     print_pillar(pillarname)
+    distribution: Ubuntu Linux (ubuntu)
+    distribution: Redhat Advanced Server (redhat)
+    distribution: Debian GNU/Linux (debian)
+    distribution: The Gentoo Linux (gentoo)
+    distribution: Kubuntu - Free KDE-based Linux (kubuntu)
+    distribution: Ubuntu Test (ubuntutest)
+    project group: The Ubuntu Project (ubuntu-project)
+    project: Ubuntu (ubuntu-product)
+    project: ALSA utilities (alsa-utils)
+
+    >>> for pillarname in ubuntu_team.getOwnedOrDrivenPillars():
+    ...     print_pillar(pillarname)
+    distribution: Ubuntu Linux (ubuntu)
+    distribution: Ubuntu Test (ubuntutest)
+    project: Ubuntu (ubuntu-product)
+
+
+== Translations ==
 
 The IPerson interface offers a way of returning POFileTranslator records
 for a Person:
 
-  >>> carlos = getUtility(IPersonSet).getByName('carlos')
-  >>> [pt.pofile.title for pt in carlos.translation_history]
-  [u'Spanish (es) translation of man in Ubuntu Hoary package "evolution"',
-   u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
-   u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
-   u'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"']
+    >>> carlos = getUtility(IPersonSet).getByName('carlos')
+    >>> [pt.pofile.title for pt in carlos.translation_history]
+    [u'Spanish (es) translation of alsa-utils in alsa-utils trunk',
+     u'Spanish (es) translation of man in Ubuntu Hoary package "evolution"',
+     u'Spanish (es) translation of evolution-2.2 in Evolution trunk',
+     u'Japanese (ja) translation of evolution-2.2 in Ubuntu Hoary package "evolution"',
+     u'Spanish (es) translation of evolution-2.2 in Ubuntu Hoary package "evolution"']
 
 The IPersonSet component contains a few convenience methods to return
 Person objects that have contributed translations.
 
-  >>> from canonical.launchpad.database import POFile
-  >>> pofile = POFile.get(12)
-  >>> [p.name for p in personset.getPOFileContributors(pofile)]
-  [u'carlos', u'name16', u'tsukimi']
+    >>> from canonical.launchpad.database import POFile
+    >>> pofile = POFile.get(12)
+    >>> [p.name for p in personset.getPOFileContributors(pofile)]
+    [u'carlos', u'name16', u'tsukimi']
 
-getPOFileContributorsByDistroRelease gives the list of people that did
-contributions to templates that are current in the given IDistroRelease
+getPOFileContributorsByDistroSeries gives the list of people that did
+contributions to templates that are current in the given IDistroSeries
 and ILanguage.
 
-  >>> from canonical.launchpad.database import DistroRelease, Language
-  >>> hoary = DistroRelease.selectOneBy(name="hoary")
-  >>> spanish = Language.selectOneBy(code="es")
-  >>> [p.name for p in personset.getPOFileContributorsByDistroRelease(hoary, spanish)]
-  [u'jorge-gonzalez-gonzalez', u'carlos', u'valyag', u'danner', u'name16',
-   u'name12', u'tsukimi']
+    >>> from canonical.launchpad.database import DistroSeries, Language
+    >>> hoary = DistroSeries.selectOneBy(name="hoary")
+    >>> spanish = Language.selectOneBy(code="es")
+    >>> [p.name for p in personset.getPOFileContributorsByDistroSeries(hoary, spanish)]
+    [u'jorge-gonzalez-gonzalez', u'carlos', u'valyag', u'danner', u'name16',
+     u'name12', u'tsukimi']
 
-  # We can see that there is another translator that doesn't appear in
-  # previous list because the template he translated is not current.
-  >>> non_current_pofile = POFile.get(31)
-  >>> non_current_pofile.potemplate.iscurrent
-  False
-  >>> [p.name for p in personset.getPOFileContributors(non_current_pofile)]
-  [u'jordi']
-  >>> non_current_pofile.potemplate.distrorelease == hoary
-  True
-  >>> non_current_pofile.language == spanish
-  True
+    # We can see that there is another translator that doesn't appear in
+    # previous list because the template he translated is not current.
+    >>> non_current_pofile = POFile.get(31)
+    >>> non_current_pofile.potemplate.iscurrent
+    False
+    >>> [p.name for p in personset.getPOFileContributors(non_current_pofile)]
+    [u'jordi']
+    >>> non_current_pofile.potemplate.distroseries == hoary
+    True
+    >>> non_current_pofile.language == spanish
+    True
+
+=== Translators for a given language ===
+
+We can get the list of translators that did some translation in Launchpad and
+expressed their interest for a concrete language.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     ILanguageSet, IPersonSet, IKarmaCacheManager)
+ 
+    # Sample data is not complete for this test, so we need to note that another
+    # Spanish translator expressed its interest on doing Spanish translations.
+    # That other person is Foo Bar (name16).
+    >>> personset = getUtility(IPersonSet)
+    >>> foo_bar = personset.getByName('name16')
+    >>> print foo_bar.displayname
+    Foo Bar
+    >>> languageset = getUtility(ILanguageSet)
+    >>> spanish = languageset.getLanguageByCode('es')
+    >>> foo_bar.addLanguage(spanish)
+    >>> translators = personset.getTranslatorsByLanguage(spanish)
+    >>> for translator in translators:
+    ...     karma = 0
+    ...     for karma_category_cache in translator.karma_category_caches:
+    ...         if (karma_category_cache.category.name == 'translations'):
+    ...             karma = karma_category_cache.karmavalue
+    ...     print (translator.displayname, karma)
+    (u'Foo Bar', 164)
+    (u'Carlos Perell\xf3 Mar\xedn', 9)
 
 
-Specification Lists
--------------------
+== Specification Lists ==
 
 We should be able to generate lists of specifications for people based on
 certain criteria:
@@ -405,21 +567,26 @@ Reset firefox so we don't mess up later tests.
     >>> firefox.active = True
     >>> flush_database_updates()
 
-Ubunteros
----------
 
-To list all Ubunteros, use IPersonSet.getUbunteros():
-
-    >>> [p.name for p in personset.getUbunteros()]
-    [u'name16']
-
-To check if a person is an Ubuntero, use IPerson.is_ubuntero:
-
-    >>> foobar.is_ubuntero
-    True
-
-Branches
---------
+== Branches ==
 
 ** See branch.txt for API related to branches.
+
+
+== Distribution uploaders ==
+
+We can ascertain whether a person has uploader rights to a distribution
+or not.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> cprov.isUploader(ubuntu)
+    True
+
+'kiko' is not an uploader to Ubuntu:
+
+    >>> kiko = getUtility(IPersonSet).getByName('kiko')
+    >>> kiko.isUploader(ubuntu)
+    False
 

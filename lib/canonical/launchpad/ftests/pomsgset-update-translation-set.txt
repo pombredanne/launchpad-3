@@ -1,0 +1,195 @@
+  >>> import datetime
+  >>> import pytz
+  >>> from zope.component import getUtility
+  >>> from canonical.launchpad.database import POMsgID
+  >>> from canonical.launchpad.database import POTemplate
+  >>> from canonical.launchpad.interfaces import IPersonSet
+  >>> UTC = pytz.timezone('UTC')
+
+Get the PO msgid we will be working with.
+
+  >>> pomsgid = POMsgID.byMsgid('evolution addressbook')
+
+Carlos is the one that will do the uploads.
+
+  >>> carlos = getUtility(IPersonSet).getByName('carlos')
+
+Now find the po template.
+
+  >>> upstream_evo = POTemplate.get(1)
+  >>> upstream_evo.productseries is not None
+  True
+  >>> upstream_evo.productseries.product.name
+  u'evolution'
+
+And the Spanish translation.
+
+  >>> pofile_es = upstream_evo.getPOFileByLang('es')
+
+This method will only overwrite translations in Launchpad with upstream
+ones if the previous upstream translation matches the translation used in
+Launchpad or there is no complete translation.
+
+  >>> pomsgset = pofile_es.getPOMsgSet(u'EncFS Password: ')
+
+We can see that this is actually the case:
+
+  >>> pomsgset.active_texts
+  [u'Contrase\xf1a de EncFS: ']
+  >>> pomsgset.isfuzzy
+  False
+  >>> pomsgset.iscomplete
+  True
+  >>> pomsgset.published_texts
+  [u'Contrase\xf1a de EncFS: ']
+  >>> pomsgset.publishedfuzzy
+  False
+  >>> pomsgset.publishedcomplete
+  True
+
+We change the published one, and thus, the one in Launchpad will be changed
+too at the same time.
+
+  >>> pomsgset.updateTranslationSet(
+  ...     carlos, {0: u'foo '}, fuzzy=False, published=True,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
+
+  >>> pomsgset.active_texts
+  [u'foo ']
+  >>> pomsgset.isfuzzy
+  False
+  >>> pomsgset.iscomplete
+  True
+  >>> pomsgset.published_texts
+  [u'foo ']
+  >>> pomsgset.publishedfuzzy
+  False
+  >>> pomsgset.publishedcomplete
+  True
+
+If the translation in Launchpad is fuzzy, we keep update it.
+
+  >>> pomsgset.isfuzzy = True
+  >>> pomsgset.updateTranslationSet(
+  ...     carlos, {0: u'bar '}, fuzzy=False, published=True,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
+  >>> pomsgset.active_texts
+  [u'bar ']
+  >>> pomsgset.isfuzzy
+  False
+  >>> pomsgset.iscomplete
+  True
+  >>> pomsgset.published_texts
+  [u'bar ']
+  >>> pomsgset.publishedfuzzy
+  False
+  >>> pomsgset.publishedcomplete
+  True
+
+Even more, if there is no translation at all in Launchpad, we still get
+the update from upstream.
+
+  >>> pomsgset.updateTranslationSet(
+  ...     carlos, {}, fuzzy=False, published=False,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
+  >>> pomsgset.active_texts
+  [None]
+  >>> pomsgset.isfuzzy
+  False
+  >>> pomsgset.iscomplete
+  False
+  >>> pomsgset.updateTranslationSet(
+  ...     carlos, {0: u'foobar '}, fuzzy=False, published=True,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
+  >>> pomsgset.active_texts
+  [u'foobar ']
+  >>> pomsgset.isfuzzy
+  False
+  >>> pomsgset.iscomplete
+  True
+  >>> pomsgset.published_texts
+  [u'foobar ']
+  >>> pomsgset.publishedfuzzy
+  False
+  >>> pomsgset.publishedcomplete
+  True
+
+Now, is turn to do the oposite, the system should prevent that,
+when a translation coming from upstream with the fuzzy flag is imported, we
+revert a valid translation in Launchpad.
+
+  >>> pomsgset.updateTranslationSet(
+  ...     carlos, {0: u'foos '}, fuzzy=True, published=True,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
+  >>> pomsgset.active_texts
+  [u'foobar ']
+  >>> pomsgset.isfuzzy
+  False
+  >>> pomsgset.iscomplete
+  True
+  >>> pomsgset.published_texts
+  [u'foos ']
+  >>> pomsgset.publishedfuzzy
+  True
+  >>> pomsgset.publishedcomplete
+  True
+
+Even when the upstream translation is the same as current translation
+in Launchpad, if the only difference is the fuzzy flag, the one
+in Launchpad should not get the fuzzy flag because otherwise, we will
+be losing translations.
+
+  >>> pomsgset.updateTranslationSet(
+  ...     carlos, {0: u'foobar '}, fuzzy=True, published=True,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
+  >>> pomsgset.active_texts
+  [u'foobar ']
+  >>> pomsgset.isfuzzy
+  False
+  >>> pomsgset.iscomplete
+  True
+  >>> pomsgset.published_texts
+  [u'foobar ']
+  >>> pomsgset.publishedfuzzy
+  True
+  >>> pomsgset.publishedcomplete
+  True
+
+When we get no translations at all, Launchpad should keep its active
+translation.
+
+  >>> pomsgset.updateTranslationSet(
+  ...     carlos, {}, fuzzy=False, published=True,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
+  >>> pomsgset.active_texts
+  [u'foobar ']
+  >>> pomsgset.isfuzzy
+  False
+  >>> pomsgset.iscomplete
+  True
+  >>> pomsgset.published_texts
+  [None]
+  >>> pomsgset.publishedfuzzy
+  False
+  >>> pomsgset.publishedcomplete
+  False
+
+And finally, now that published and active translations diverged,
+if we get a new upstream translation, the one in Launchpad will be keep
+untouched.
+
+  >>> pomsgset.updateTranslationSet(
+  ...     carlos, {0: u'bars '}, fuzzy=False, published=True,
+  ...     lock_timestamp=datetime.datetime.now(UTC))
+  >>> pomsgset.active_texts
+  [u'foobar ']
+  >>> pomsgset.isfuzzy
+  False
+  >>> pomsgset.iscomplete
+  True
+  >>> pomsgset.published_texts
+  [u'bars ']
+  >>> pomsgset.publishedfuzzy
+  False
+  >>> pomsgset.publishedcomplete
+  True

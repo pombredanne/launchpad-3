@@ -116,6 +116,9 @@ class LibraryFileAlias(SQLBase):
         This method relies on the system clock being vaguely sane, but
         does not cause real harm if this is not the case.
         """
+        # XXX: Feature disabled due to Bug #86171 -- stub 20070410
+        return
+
         # Update last_accessed no more than once every 6 hours.
         precision = timedelta(hours=6)
         UTC = pytz.timezone('UTC')

@@ -32,7 +32,9 @@ __all__ = ['SQLBase', 'quote', 'quote_like', 'quoteIdentifier', 'sqlvalues',
 AUTOCOMMIT_ISOLATION=0
 READ_COMMITTED_ISOLATION=1
 SERIALIZABLE_ISOLATION=3
-DEFAULT_ISOLATION=SERIALIZABLE_ISOLATION
+# Default we want for scripts, and the PostgreSQL default. Note psycopg1 will
+# use SERIALIZABLE unless we override, but psycopg2 will not.
+DEFAULT_ISOLATION=READ_COMMITTED_ISOLATION
 
 # First, let's monkey-patch SQLObject a little:
 import zope.security.proxy
@@ -310,7 +312,33 @@ class ZopelessTransactionManager(object):
             self.begin()
 
     def set_isolation_level(self, level):
-        return self.sqlClass._connection._connection.set_isolation_level(level)
+        """Set the transaction isolation level.
+        
+        Level can be one of AUTOCOMMIT_ISOLATION, READ_COMMITTED_ISOLATION
+        or SERIALIZABLE_ISOLATION. As changing the isolation level must be
+        done before any other queries are issued in the current transaction,
+        this method automatically issues a rollback to ensure this is the
+        case.
+        """
+        con = self.conn()
+        # Changing the isolation level must be done before any other queries
+        # in the transaction. To ensure this is the case, we rollback.
+        con.rollback()
+        con.set_isolation_level(level)
+        # Make the isolation level stick
+        self.desc.isolation = level
+        cur = con.cursor()
+        cur.execute('SHOW transaction_isolation')
+        isolation_str = cur.fetchone()[0]
+        if level == AUTOCOMMIT_ISOLATION:
+            # psycopg implements autocommit using read committed and commits.
+            assert isolation_str == 'read committed', 'Got ' + isolation_str
+        elif level == READ_COMMITTED_ISOLATION:
+            assert isolation_str == 'read committed', 'Got ' + isolation_str
+        elif level == SERIALIZABLE_ISOLATION:
+            assert isolation_str == 'serializable', 'Got ' + isolation_str
+        else:
+            raise AssertionError("Unknown transaction isolation level")
 
     def conn(self):
         return self.sqlClass._connection._connection
@@ -610,7 +638,7 @@ def rollback():
 def commit():
     ZopelessTransactionManager._installed.commit()
 
-def connect(user, dbname=None):
+def connect(user, dbname=None, isolation=DEFAULT_ISOLATION):
     """Return a fresh DB-API connecction to the database.
 
     Use None for the user to connect as the default PostgreSQL user.
@@ -623,7 +651,10 @@ def connect(user, dbname=None):
         con_str += ' user=%s' % user
     if config.dbhost:
         con_str += ' host=%s' % config.dbhost
-    return psycopg.connect(con_str)
+    con = psycopg.connect(con_str)
+    con.set_isolation_level(isolation)
+    return con
+
 
 def cursor():
     '''Return a cursor from the current database connection.

@@ -16,14 +16,19 @@
 
 <div metal:fill-slot="main">
 
+      <div>
+        <img alt="" src="/@@/question" />
+        <a tal:attributes="href context/fmt:url" tal:content="context/title" />
+      </div>
+
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <h1 metal:fill-slot="heading"
         i18n:translate="">Change question status</h1>
 
     <p metal:fill-slot="extra_info" class="documentDescription">
-      Normally, the question status should be changed through the
-      comment workflow. But if a mistake was made, e.g. a question was wrongly
+      You can change a question's status while making a comment. 
+      If a mistake was made, e.g. a question was wrongly
       rejected, you can use this page to correct it.
     </p>
   </div>

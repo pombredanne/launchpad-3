@@ -3,20 +3,22 @@
 __metaclass__ = type
 
 __all__ = [
-    'BugSetNavigation',
-    'BugView',
-    'MaloneView',
-    'BugEditView',
-    'BugRelatedObjectEditView',
     'BugAlsoReportInView',
     'BugContextMenu',
-    'BugWithoutContextView',
-    'DeprecatedAssignedBugsView',
+    'BugEditView',
+    'BugFacets',
+    'BugMarkAsDuplicateView',
+    'BugNavigation',
+    'BugRelatedObjectEditView',
+    'BugSecrecyEditView',
+    'BugSetNavigation',
     'BugTextView',
     'BugURL',
-    'BugMarkAsDuplicateView',
-    'BugSecrecyEditView',
+    'BugView',
+    'BugWithoutContextView',
     'ChooseAffectedProductView',
+    'DeprecatedAssignedBugsView',
+    'MaloneView',
     ]
 
 import cgi
@@ -32,18 +34,32 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IAddBugTaskForm, IBug, IBugSet, IBugTaskSet,
-    IBugWatchSet, ICveSet, IDistributionSourcePackage, IFrontPageBugTaskSearch,
-    ILaunchBag, ILaunchpadCelebrities, IProductSet, IUpstreamBugTask,
-    NoBugTrackerFound, NotFoundError, UnrecognizedBugTrackerURL,
-    valid_distrotask, valid_upstreamtask)
+    BugTaskSearchParams,
+    IAddBugTaskForm,
+    IBug,
+    IBugSet,
+    IBugTaskSet,
+    IBugWatchSet,
+    ICveSet,
+    IDistributionSourcePackage,
+    IFrontPageBugTaskSearch,
+    ILaunchBag,
+    ILaunchpadCelebrities,
+    IProductSet,
+    IUpstreamBugTask,
+    NoBugTrackerFound,
+    NotFoundError,
+    UnrecognizedBugTrackerURL,
+    valid_distrotask,
+    valid_upstreamtask,
+    )
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
     LaunchpadFormView, LaunchpadView,LaunchpadEditFormView, stepthrough,
-    Link, Navigation, structured)
+    Link, Navigation, structured, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
@@ -51,6 +67,40 @@ from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
+
+
+class BugNavigation(Navigation):
+
+    # It would be easier, since there is no per-bug sequence for a BugWatch
+    # and we have to leak the BugWatch.id anyway, to hang bugwatches off a
+    # global /bugwatchs/nnnn
+
+    # However, we want in future to have them at /bugs/nnn/+watch/p where p
+    # is not the BugWatch.id but instead a per-bug sequence number (1, 2,
+    # 3...) for the 1st, 2nd and 3rd watches added for this bug,
+    # respectively. So we are going ahead and hanging this off the bug to
+    # which it belongs as a first step towards getting the basic URL schema
+    # correct.
+
+    usedfor = IBug
+
+    @stepthrough('+watch')
+    def traverse_watches(self, name):
+        if name.isdigit():
+            # in future this should look up by (bug.id, watch.seqnum)
+            return getUtility(IBugWatchSet)[name]
+
+
+class BugFacets(StandardLaunchpadFacets):
+    """The links that will appear in the facet menu for an IBug.
+
+    However, we never show this, but it does apply to things like
+    bug nominations, by 'acquisition'.
+    """
+
+    usedfor = IBug
+
+    enable_only = []
 
 
 class BugSetNavigation(Navigation):
@@ -84,8 +134,8 @@ class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
-             'nominate', 'addbranch', 'linktocve', 'unlinkcve', 'filebug',
-             'activitylog']
+             'nominate', 'addbranch', 'linktocve', 'unlinkcve',
+             'offermentoring', 'retractmentoring', 'activitylog']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -169,11 +219,19 @@ class BugContextMenu(ContextMenu):
         text = 'Remove CVE link'
         return Link('+unlinkcve', text, icon='remove', enabled=enabled)
 
-    def filebug(self):
-        bugtarget = self.context.target
-        linktarget = '%s/%s' % (canonical_url(bugtarget), '+filebug')
-        text = 'Report a bug in %s' % bugtarget.displayname
-        return Link(linktarget, text, icon='add')
+    def offermentoring(self):
+        text = 'Offer mentorship'
+        user = getUtility(ILaunchBag).user
+        enabled = self.context.bug.canMentor(user)
+        return Link('+mentor', text, icon='add', enabled=enabled)
+
+    def retractmentoring(self):
+        text = 'Retract mentorship'
+        user = getUtility(ILaunchBag).user
+        enabled = (self.context.bug.isMentor(user) and
+                   not self.context.bug.is_complete and
+                   user)
+        return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def activitylog(self):
         text = 'View activity log'
@@ -347,12 +405,12 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
 
     schema = IUpstreamBugTask
     field_names = ['product']
-    label = u"Add affected product to bug"
+    label = u"Add affected project to bug"
 
     def _getUpstream(self, distro_package):
         """Return the upstream if there is a packaging link."""
-        for distrorelease in distro_package.distribution.releases:
-            source_package = distrorelease.getSourcePackage(
+        for distroseries in distro_package.distribution.serieses:
+            source_package = distroseries.getSourcePackage(
                 distro_package.sourcepackagename)
             if source_package.direct_packaging is not None:
                 return source_package.direct_packaging.productseries.product
@@ -367,9 +425,9 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
         elif IDistributionSourcePackage.providedBy(bugtask.target):
             upstream = self._getUpstream(bugtask.target)
             if upstream is None:
-                distrorelease = bugtask.distribution.currentrelease
-                if distrorelease is not None:
-                    sourcepackage = distrorelease.getSourcePackage(
+                distroseries = bugtask.distribution.currentseries
+                if distroseries is not None:
+                    sourcepackage = distroseries.getSourcePackage(
                         bugtask.sourcepackagename)
                     self.request.response.addInfoNotification(
                         'Please select the appropriate upstream project.'
@@ -405,7 +463,7 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
                 search_url = self.widgets['product'].popupHref()
                 self.setFieldError(
                     'product',
-                    'There is no product in Launchpad named "%s". You may'
+                    'There is no project in Launchpad named "%s". You may'
                     ' want to <a href="%s">search for it</a>, or'
                     ' <a href="%s">register it</a> if you can\'t find it.' % (
                         cgi.escape(entered_product),
@@ -451,7 +509,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             if field_name not in target_field_names]
 
     def render_upstreamtask(self):
-        self.setUpLabelAndWidgets("Add affected product to bug", ['product'])
+        self.setUpLabelAndWidgets("Add affected project to bug", ['product'])
         self.index = self.upstream_page
 
         # It's not possible to enter the product on this page, so
@@ -560,9 +618,9 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         bug_url = data.get('bug_url')
         if bug_url and target.official_malone:
             self.addError(
-                "Bug watches can not be added for %s, as it uses Malone"
+                "Bug watches can not be added for %s, as it uses Launchpad"
                 " as its official bug tracker. Alternatives are to add a"
-                " watch for another product, or a comment containing a"
+                " watch for another project, or a comment containing a"
                 " URL to the related bug report." % cgi.escape(
                     target.displayname))
 
@@ -615,7 +673,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             #     doing it now, though, since it might go away completely
             #     soon. -- Bjorn Tillenius, 2006-09-13
             self.notifications.append(
-                "%s doesn't use Malone as its bug tracker. If you don't add"
+                "%s doesn't use Launchpad as its bug tracker. If you don't add"
                 " a bug watch now you have to keep track of the status"
                 " manually. You can however link to an external bug tracker"
                 " at a later stage in order to get automatic status updates."
@@ -668,7 +726,8 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         if not target.official_malone and taskadded.bugwatch is not None:
             # A remote bug task gets its from a bug watch, so we want
             # its status to be None when created.
-            taskadded.transitionToStatus(BugTaskStatus.UNKNOWN)
+            taskadded.transitionToStatus(
+                BugTaskStatus.UNKNOWN, self.user)
             taskadded.importance = BugTaskImportance.UNKNOWN
 
         notify(SQLObjectCreatedEvent(taskadded))
@@ -836,6 +895,12 @@ class BugTextView(LaunchpadView):
         else:
             text.append('duplicate-of: ')
 
+        if bug.duplicates:
+            dupes = ' '.join(str(dupe.id) for dupe in bug.duplicates)
+            text.append('duplicates: %s' % dupes)
+        else:
+            text.append('duplicates: ')
+
         text.append('subscribers: ')
 
         for subscription in bug.subscriptions:
@@ -875,7 +940,7 @@ class BugURL:
     implements(ICanonicalUrlData)
 
     inside = None
-    rootsite = 'mainsite'
+    rootsite = 'bugs'
 
     def __init__(self, context):
         self.context = context
@@ -883,3 +948,4 @@ class BugURL:
     @property
     def path(self):
         return u"bugs/%d" % self.context.id
+

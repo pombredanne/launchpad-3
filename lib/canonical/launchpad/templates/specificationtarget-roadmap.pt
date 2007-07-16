@@ -34,10 +34,10 @@
   </tal:block>
 
   <tal:block condition="view/danglingSpecs">
-    <h2>Dangling specifications</h2>
+    <h2>Dangling blueprints</h2>
 
     <p>
-      These specifications are "dangling", in that they are currently
+      These blueprints are &#8220;dangling&#8221;, in that they are currently
       in a state which cannot be scheduled. For example, they may have
       circular dependencies.
     </p>
@@ -49,9 +49,9 @@
 </div>
 
     <p metal:fill-slot="help">
-      Specifications should be implemented in the order given.
-      This will ensure that the most important specifications are implemented
-      first, and that specification dependencies are respected.
+      Blueprints should be implemented in the order given.
+      This will ensure that the most important blueprints are implemented
+      first, and that blueprint dependencies are respected.
     </p>
   </body>
 </html>

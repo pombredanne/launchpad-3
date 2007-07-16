@@ -20,9 +20,10 @@ class QuestionBug(SQLBase):
 
     implements(IQuestionBug)
 
-    _table='TicketBug'
+    _table = 'QuestionBug'
 
-    question = ForeignKey(dbName='ticket', foreignKey='Question', notNull=True)
+    question = ForeignKey(
+        dbName='question', foreignKey='Question', notNull=True)
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
 
     @property

@@ -10,6 +10,9 @@ an account on Launchpad.
 First, check that the edit link is visible on the branch page and click on
 that link to load the +edit form for the branch.
 
+  >>> from canonical.launchpad.mail import stub
+  >>> stub.test_emails = []
+
   >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
   >>> browser.open('http://launchpad.dev'
   ...     '/~name12/+branch/gnome-terminal/klingon')
@@ -41,18 +44,21 @@ slash to the URL.
 We should be redirected to the branch page, check that our changes were taken
 into account. The trailing slash added to the URL must have been ignored.
 
+Since the details have been changed, emails should have been sent out.
+Emails go out to the all the subscribers.  Now there
+are no subscribers so there whould be no emails.
+
+  >>> len(stub.test_emails)
+  0
+
   >>> browser.url
   'http://code.launchpad.dev/~name12/gnome-terminal/klingon'
-  >>> print http(r"""
-  ... GET /~name12/gnome-terminal/klingon HTTP/1.1
-  ... Host: launchpad.dev
-  ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
-  ...>http://trekkies.example.com/gnome-terminal/klingon<...
-  ...Warriors' branch for developping and testing Klingon support in GNOME Terminal....
-  ...>Ubuntu Gnome Team<...
+  >>> div = find_tag_by_id(browser.contents, 'maincontent')
+  >>> print div.renderContents()
+  <div...
+  ...http://trekkies.example.com/gnome-terminal/klingon...
+  ...Warriors' branch for developping and testing Klingon support in GNOME Terminal...
+  ...Other branches authored by Ubuntu Gnome Team...
 
 Finally, set the author and summary back to their previous values.
 
@@ -97,8 +103,8 @@ The branch page is displayed with the new status and the whiteboard content:
   >>> print status_tag.renderContents()
   Merged
   >>> whiteboard_tag = find_tag_by_id(contents, 'branch-whiteboard-value')
-  >>> print whiteboard_tag.renderContents()
-  <p>The brave shall prevail. Ka'plah!</p>
+  >>> print extract_text(whiteboard_tag)
+  The brave shall prevail. Ka'plah!
 
 Set the branch status back to its initial state.
 
@@ -114,7 +120,7 @@ The edit form allows changing the product of a branch.
 
   >>> browser.open('http://launchpad.dev/~name12/+junk/junk.dev')
   >>> browser.getLink('Change branch details').click()
-  >>> browser.getControl('Product').value = 'ubuntu-product'
+  >>> browser.getControl('Project').value = 'ubuntu-product'
   >>> browser.getControl('Change Branch').click()
 
 Posting this form should redirect us to the branch page, which is a new URL
@@ -139,7 +145,7 @@ branch was moved back to its original location.
 
   >>> browser.getLink('Change branch details').click()
   >>> browser.getControl('Name').value = 'junk.dev'
-  >>> browser.getControl('Product').value = ''
+  >>> browser.getControl('Project').value = ''
   >>> browser.getControl('Change Branch').click()
   >>> browser.url
   'http://code.launchpad.dev/~name12/+junk/junk.dev'
@@ -164,7 +170,7 @@ but that is just for the needs of the demonstration.
 
   >>> browser.open('http://launchpad.dev'
   ...     '/~name12/gnome-terminal/main/+edit')
-  >>> browser.getControl('Product').value = 'firefox'
+  >>> browser.getControl('Project').value = 'firefox'
   >>> browser.getControl('Change Branch').click()
   >>> browser.url
   'http://launchpad.dev/%7Ename12/gnome-terminal/main/+edit'
@@ -187,7 +193,7 @@ branch, and changing the product and the branch name at the same time.
   ...     '/~name12/+junk/junk.dev')
   >>> browser.open('http://launchpad.dev'
   ...     '/~name12/gnome-terminal/main/+edit')
-  >>> browser.getControl('Product').value = ''
+  >>> browser.getControl('Project').value = ''
   >>> browser.getControl('Name').value = 'junk.dev'
   >>> browser.getControl('Change Branch').click()
   >>> browser.url
@@ -218,7 +224,7 @@ If the user enters an invalid product name they will get an error
 message about that, but no error about the branch name since we don't
 know if it conflicts or not:
 
-  >>> browser.getControl('Product').value = 'no-such-product'
+  >>> browser.getControl('Project').value = 'no-such-product'
   >>> browser.getControl('Change Branch').click()
   >>> browser.url
   'http://launchpad.dev/%7Ename12/gnome-terminal/main/+edit'

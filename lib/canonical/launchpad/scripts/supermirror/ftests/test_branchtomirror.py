@@ -17,7 +17,7 @@ import bzrlib.branch
 import bzrlib.bzrdir
 import bzrlib.errors
 from bzrlib.revision import NULL_REVISION
-from bzrlib.tests import TestCaseInTempDir
+from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 from bzrlib.tests.repository_implementations.test_repository import (
             TestCaseWithRepository)
 from bzrlib.transport import get_transport
@@ -31,7 +31,7 @@ from canonical.launchpad import database
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.scripts.supermirror.ftests import createbranch
 from canonical.launchpad.scripts.supermirror.branchtomirror import (
-    BranchToMirror)
+    BranchToMirror, BadUrlSsh, BadUrlLaunchpad)
 from canonical.authserver.client.branchstatus import BranchStatusClient
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 from canonical.testing import LaunchpadFunctionalLayer, reset_logging
@@ -125,47 +125,47 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
     def tearDown(self):
         self.authserver.tearDown()
         super(TestBranchToMirrorFormats, self).tearDown()
-        test_root = TestCaseInTempDir.TEST_ROOT
+        test_root = TestCaseWithMemoryTransport.TEST_ROOT
         if test_root is not None and os.path.exists(test_root):
             shutil.rmtree(test_root)
-        # Set the TEST_ROOT back to None, to tell TestCaseInTempDir we need it
-        # to create a new root when the next test is run.
-        # The TestCaseInTempDir is part of bzr's test infrastructure and the
-        # bzr test runner normally does this cleanup, but here we have to do
-        # that ourselves.
-        TestCaseInTempDir.TEST_ROOT = None
+        # Set the TEST_ROOT back to None, to tell TestCaseWithMemoryTransport
+        # we need it to create a new root when the next test is run.
+        # The TestCaseWithMemoryTransport is part of bzr's test infrastructure
+        # and the bzr test runner normally does this cleanup, but here we have
+        # to do that ourselves.
+        TestCaseWithMemoryTransport.TEST_ROOT = None
 
     def testMirrorKnitAsKnit(self):
         # Create a source branch in knit format, and check that the mirror is in
         # knit format.
         self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
-        self.repository_format = bzrlib.repository.RepositoryFormatKnit1()
+        self.repository_format = bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
         self._testMirrorFormat()
 
     def testMirrorMetaweaveAsMetaweave(self):
         # Create a source branch in metaweave format, and check that the mirror
         # is in metaweave format.
         self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
-        self.repository_format = bzrlib.repository.RepositoryFormat7()
+        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
         self._testMirrorFormat()
 
     def testMirrorWeaveAsWeave(self):
         # Create a source branch in weave format, and check that the mirror is
         # in weave format.
         self.bzrdir_format = bzrlib.bzrdir.BzrDirFormat6()
-        self.repository_format = bzrlib.repository.RepositoryFormat6()
+        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat6()
         self._testMirrorFormat()
 
     def testSourceFormatChange(self):
         # Create and mirror a branch in weave format.
         self.bzrdir_format = bzrlib.bzrdir.BzrDirMetaFormat1()
-        self.repository_format = bzrlib.repository.RepositoryFormat7()
+        self.repository_format = bzrlib.repofmt.weaverepo.RepositoryFormat7()
         self._createSourceBranch()
         self._mirror()
         
         # Change the branch to knit format.
         shutil.rmtree('src-branch')
-        self.repository_format = bzrlib.repository.RepositoryFormatKnit1()
+        self.repository_format = bzrlib.repofmt.knitrepo.RepositoryFormatKnit1()
         self._createSourceBranch()
 
         # Mirror again.  The mirrored branch should now be in knit format.
@@ -186,8 +186,9 @@ class TestBranchToMirrorFormats(TestCaseWithRepository):
     def _mirror(self):
         # Mirror src-branch to dest-branch
         client = BranchStatusClient()
+        source_url = os.path.abspath('src-branch')
         to_mirror = BranchToMirror(
-            'src-branch', 'dest-branch', client, 1, None)
+            source_url, 'dest-branch', client, 1, None)
         to_mirror.mirror(logging.getLogger())
         mirrored_branch = bzrlib.branch.Branch.open(to_mirror.dest)
         return mirrored_branch
@@ -225,32 +226,33 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
     def tearDown(self):
         self.authserver.tearDown()
         TestCaseInTempDir.tearDown(self)
-        test_root = TestCaseInTempDir.TEST_ROOT
+        test_root = TestCaseWithMemoryTransport.TEST_ROOT
         if test_root is not None and os.path.exists(test_root):
             shutil.rmtree(test_root)
-        # Set the TEST_ROOT back to None, to tell TestCaseInTempDir we need it
-        # to create a new root when the next test is run.
-        # The TestCaseInTempDir is part of bzr's test infrastructure and the
-        # bzr test runner normally does this cleanup, but here we have to do
-        # that ourselves.
-        TestCaseInTempDir.TEST_ROOT = None
+        # Set the TEST_ROOT back to None, to tell TestCaseWithMemoryTransport
+        # we need it to create a new root when the next test is run.
+        # The TestCaseWithMemoryTransport is part of bzr's test infrastructure
+        # and the bzr test runner normally does this cleanup, but here we have
+        # to do that ourselves.
+        TestCaseWithMemoryTransport.TEST_ROOT = None
 
     def testUnopenableSourceDoesNotCreateMirror(self):
-        non_existant_branch = "nonsensedir"
-        dest_dir = "dest-dir"
+        non_existant_branch = os.path.abspath('nonsensedir')
+        dest_dir = 'dest-dir'
         client = BranchStatusClient()
         mybranch = BranchToMirror(
-            non_existant_branch, dest_dir, client, 1, None)
+            non_existant_branch, dest_dir, client, 1, 'foo/bar/baz')
         mybranch.mirror(logging.getLogger())
         self.failIf(os.path.exists(dest_dir), 'dest-dir should not exist')
 
     def testMissingSourceWhines(self):
-        non_existant_branch = "nonsensedir"
+        non_existant_branch = os.path.abspath('nonsensedir')
         client = BranchStatusClient()
         # ensure that we have no errors muddying up the test
         client.mirrorComplete(1, NULL_REVISION)
         mybranch = BranchToMirror(
-            non_existant_branch, "anothernonsensedir", client, 1, None)
+            non_existant_branch, "anothernonsensedir", client, 1,
+            'foo/bar/baz')
         mybranch.mirror(logging.getLogger())
         transaction.abort()
         branch = database.Branch.get(1)
@@ -273,15 +275,17 @@ class TestBranchToMirror_SourceProblems(TestCaseInTempDir):
         client = BranchStatusClient()
         # clear the error status
         client.mirrorComplete(1, NULL_REVISION)
+        source_url = os.path.abspath('missingrevision')
         mybranch = BranchToMirror(
-            'missingrevision', "missingrevisiontarget", client, 1, None)
+            source_url, "missingrevisiontarget", client, 1,
+            'foo/bar/baz')
         mybranch.mirror(logging.getLogger())
         transaction.abort()
         branch = database.Branch.get(1)
         self.assertEqual(1, branch.mirror_failures)
 
 
-class TestErrorHandling(unittest.TestCase):
+class ErrorHandlingTestCase(unittest.TestCase):
 
     def setUp(self):
         client = BranchStatusClient()
@@ -307,9 +311,77 @@ class TestErrorHandling(unittest.TestCase):
         self.branch.mirror(logging.getLogger())
         self.assertEqual(len(self.errors), 1)
         error = str(self.errors[0])
+        self.errors = []
         if not error.startswith(expected_error):
             self.fail('Expected "%s" but got "%s"' % (expected_error, error))
         return error
+
+
+class TestBadUrl(ErrorHandlingTestCase):
+    """Test that BranchToMirror does not try mirroring from bad URLs.
+
+    Bad URLs use schemes like sftp or bzr+ssh that usually require
+    authentication, and hostnames in the launchpad.net domains.
+
+    That prevents errorspam produced by ssh when it cannot connect and saves
+    timing out when trying to connect to chinstrap, sodium (always using a
+    ssh-based scheme) or launchpad.net.
+
+    That also allows us to display a more informative error message to the
+    user.
+    """
+
+    def testBadUrlSftp(self):
+        # If the scheme of the source url is sftp, _openSourceBranch raises
+        # BadUrlSsh.
+        self.branch.source = 'sftp://example.com/foo'
+        self.assertRaises(BadUrlSsh, self.branch._checkSourceUrl)
+
+    def testBadUrlBzrSsh(self):
+        # If the scheme of the source url is bzr+ssh, _openSourceBracnh raises
+        # BadUrlSsh.
+        self.branch.source = 'bzr+ssh://example.com/foo'
+        self.assertRaises(BadUrlSsh, self.branch._checkSourceUrl)
+
+    def testBadUrlBzrSshCaught(self):
+        # The exception raised if the scheme of the source url is sftp or
+        # bzr+ssh is caught and an informative error message is displayed to
+        # the user.
+        expected_msg = "Launchpad cannot mirror branches from SFTP "
+        self.branch.source = 'sftp://example.com/foo'
+        self._runMirrorAndCheckError(expected_msg)
+        self.branch.source = 'bzr+ssh://example.com/foo'
+        self._runMirrorAndCheckError(expected_msg)
+
+    def testBadUrlLaunchpadDomain(self):
+        # If the host of the source branch is in the launchpad.net domain,
+        # _openSourceBranch raises BadUrlLaunchpad.
+        self.branch.source = 'http://bazaar.launchpad.net/foo'
+        self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
+
+    def testBadUrlLaunchpadHost(self):
+        # If the host of the source branch is launchpad.net, _openSourceBranch
+        # raises BadUrlLaunchpad.
+        self.branch.source = 'http://launchpad.net/foo'
+        self.assertRaises(BadUrlLaunchpad, self.branch._checkSourceUrl)
+
+    def testBadUrlLaunchpadCaught(self):
+        # The exception raised if the host of the source url is launchpad.net
+        # or a host in this domain is caught, and an informative error message
+        # is displayed to the user.
+        expected_msg = "Launchpad does not mirror branches from Launchpad."
+        self.branch.source = 'http://bazaar.launchpad.net/foo'
+        self._runMirrorAndCheckError(expected_msg)
+        self.branch.source = 'http://launchpad.net/foo'
+        self._runMirrorAndCheckError(expected_msg)
+
+
+class TestErrorHandling(ErrorHandlingTestCase):
+
+    def setUp(self):
+        ErrorHandlingTestCase.setUp(self)
+        # We do not care about the value the source URL in those tests
+        self.branch._checkSourceUrl = lambda: None
 
     def testHTTPError(self):
         def stubOpenSourceBranch():
@@ -332,7 +404,7 @@ class TestErrorHandling(unittest.TestCase):
         def stubOpenSourceBranch():
             raise UnsupportedFormatError('Bazaar-NG branch, format 0.0.4')
         self.branch._openSourceBranch = stubOpenSourceBranch
-        expected_msg = 'The supermirror does not support branches'
+        expected_msg = 'Launchpad does not support branches '
         self._runMirrorAndCheckError(expected_msg)
 
     def testUnknownFormatError(self):
@@ -346,7 +418,7 @@ class TestErrorHandling(unittest.TestCase):
         def stubOpenSourceBranch():
             raise ParamikoNotPresent('No module named paramiko')
         self.branch._openSourceBranch = stubOpenSourceBranch
-        expected_msg = 'The supermirror does not support mirroring branches'
+        expected_msg = 'Launchpad cannot mirror branches from SFTP '
         self._runMirrorAndCheckError(expected_msg)
 
     def testNotBranchError(self):

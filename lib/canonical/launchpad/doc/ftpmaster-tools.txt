@@ -59,7 +59,7 @@ INFO by ID, return an error if it's not present in the specified queue:
   Aborting current transaction
   <BLANKLINE>
 
-Same for wrong distribution/distrorelease
+Same for wrong distribution/distroseries
 
   >>> process = subprocess.Popen([sys.executable, script,
   ...                             "-s", "hoary",
@@ -213,7 +213,7 @@ REJECT
   ---------------------------------------------------------------------------
   Rejecting alsa-utils
   Would be sending a mail:
-     Subject: netapplet-1.0.0.tar.gz Rejected
+     Subject: netapplet-1.0.0.tar.gz rejected
      Sender: Root <root@localhost>
      Recipients: Root <root@localhost>
      Bcc:
@@ -229,13 +229,17 @@ REJECT
   If you don't understand why your files were rejected, or if the
   override file requires editing, reply to this email.
   <BLANKLINE>
+  -- 
+  You are receiving this email because you are the uploader, maintainer or
+  signer of the above package.
+  <BLANKLINE>
   ---------------------------------------------------------------------------
                                                                 1/6 total
   DRY RUN requested, not committing.
   <BLANKLINE>
 
 
-Also works for rejecting DistroReleaseQueueBuilds (issue mentioned in
+Also works for rejecting PackageUploadBuilds (issue mentioned in
 bug #57662)
 
   >>> process = subprocess.Popen([sys.executable, script, "-N", "reject",
@@ -251,7 +255,7 @@ bug #57662)
   ---------------------------------------------------------------------------
   Rejecting pmount
   Would be sending a mail:
-     Subject: netapplet-1.0.0.tar.gz Rejected
+     Subject: netapplet-1.0.0.tar.gz rejected
      Sender: Root <root@localhost>
      Recipients: Root <root@localhost>
      Bcc:
@@ -265,6 +269,10 @@ bug #57662)
   <BLANKLINE>
   If you don't understand why your files were rejected, or if the
   override file requires editing, reply to this email.
+  <BLANKLINE>
+  -- 
+  You are receiving this email because you are the uploader, maintainer or
+  signer of the above package.
   <BLANKLINE>
   ---------------------------------------------------------------------------
                                                                  1/6 total
@@ -326,6 +334,31 @@ component 'universe':
   INFO    'mozilla-firefox/main/base' source overridden
   INFO    Commiting transaction, changes will be visible after next publisher run.
   <BLANKLINE>
+
+
+This is a full source and binary override of package 'mozilla-firefox' in warty,
+moving to component 'universe':
+
+  >>> process = subprocess.Popen([sys.executable, script, "-vS",
+  ...                             "-s", "warty", "-c", "universe",
+  ...                             "mozilla-firefox"],
+  ...                             stdout=subprocess.PIPE,
+  ...                             stderr=subprocess.PIPE,)
+  >>> stdout, stderr = process.communicate()
+  >>> process.returncode
+  0
+
+It will only override binaries currently published from that source package 
+version.  In the sample data, mozilla-firefox source gives mozilla-firefox
+binary version 0.9.  The 1.0 version comes from the "iceweasel" source, so
+only the 0.9 version is overridden:
+
+  >>> from canonical.launchpad.interfaces import IDistributionSet
+  >>> warty386 = getUtility(IDistributionSet)['ubuntu']['warty']['i386']
+  >>> for release in warty386.getBinaryPackage('mozilla-firefox').releases:
+  ...     (release.version, release.component.name)
+  (u'1.0', u'main')
+  (u'0.9', u'universe')
 
 
 Testing full (source and binary) override of package 'pmount', moving

@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<tour next="answers">
+  <title>Translations</title>
+  <screen>
+    <title>Translation for everyone</title>
+    <summary>Translators shouldn't have to be coders. Launchpad's simple web
+      interface makes it easy for anyone to translate software into their own
+      language.
+    </summary>
+    <screenshot>/+icing/translations-tour-screenshot1.png</screenshot>
+    <callout top="" left="">New contributors want to know where their work is
+      needed. Launchpad gives an overview of the translation status of each
+      application: purple, green and blue represent translated strings, red is
+      untranslated.
+    </callout>
+  </screen>
+  <screen>
+    <title>Automation and organisation</title>
+    <headline>Automating and organising translations</headline>
+    <summary>Launchpad helps you share the work of translating your software,
+      both within your own community and with other communities.
+    </summary>
+    <screenshot>/+icing/translations-tour-screenshot2.png</screenshot>
+    <transition>
+      <p>Maintaining the quality of your translations is
+        vital. Balancing quality with low barriers to entry can be difficult.
+        Launchpad offers you three translation policies, from fully open to
+        restricted.
+      </p>
+      <p>If you choose a fully open policy, anyone can make
+        a translation and anyone can review a translation. Alternatively, you
+        can appoint individuals or teams as trusted translators for each
+        language.
+      </p>
+      <p>Common phrases reoccur in the interfaces of many
+        applications. When you're translating a string, Launchpad finds other
+        places where it has already been translated and tells you how it
+        appears there. You're free to accept Launchpad's suggestion or to
+        enter your own translation.
+      </p>
+      <p >When you begin work on a new release of your
+        software, translators should be free to continue work on previous
+        releases. With Launchpad, you can maintain separate translation
+        efforts for each release.
+      </p>
+    </transition>
+  </screen>
+
+</tour>

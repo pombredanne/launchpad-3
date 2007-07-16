@@ -12,7 +12,7 @@ from canonical.launchpad.ftests import login
 from canonical.launchpad.ftests.harness import (
     LaunchpadTestCase, LaunchpadFunctionalTestCase)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IDistroReleaseSet, ILanguageSet, IPOTemplateSet,
+    IDistributionSet, IDistroSeriesSet, ILanguageSet, IPOTemplateSet,
     IPersonSet)
 from canonical.config import config
 
@@ -45,11 +45,11 @@ class UpdateStatsTest(LaunchpadTestCase):
             SET value=-1, dateupdated=now()-'10 weeks'::interval
             """)
 
-        # Destroy the messagecount caches on distrorelease so we can confirm
+        # Destroy the messagecount caches on distroseries so we can confirm
         # they are all updated.
         cur.execute("UPDATE DistroRelease SET messagecount=-1")
 
-        # Delete half the entries in the DistroReleaseLanguage cache so we
+        # Delete half the entries in the DistroSeriesLanguage cache so we
         # can confirm they are created as required, and set the remainders
         # to invalid values so we can confirm they are updated.
         cur.execute("""
@@ -60,13 +60,14 @@ class UpdateStatsTest(LaunchpadTestCase):
             UPDATE DistroReleaseLanguage
             SET
                 currentcount=-1, updatescount=-1, rosettacount=-1,
-                contributorcount=-1, dateupdated=now()-'10 weeks'::interval
+                unreviewed_count=-1,contributorcount=-1,
+                dateupdated=now()-'10 weeks'::interval
             """)
 
-        # Update stats should create missing distroreleaselanguage,
+        # Update stats should create missing distroserieslanguage,
         # so remember how many there are before the run.
         cur.execute("SELECT COUNT(*) FROM DistroReleaseLanguage")
-        num_distroreleaselanguage = cur.fetchone()[0]
+        num_distroserieslanguage = cur.fetchone()[0]
 
         # Commit our changes so the subprocess can see them
         con.commit()
@@ -96,15 +97,15 @@ class UpdateStatsTest(LaunchpadTestCase):
         # Now confirm it did stuff it is supposed to
         cur = con.cursor()
 
-        # Make sure all DistroRelease.messagecount entries are updated
+        # Make sure all DistroSeries.messagecount entries are updated
         cur.execute("SELECT COUNT(*) FROM DistroRelease WHERE messagecount=-1")
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
-        # Make sure we have created missing DistroReleaseLanguage entries
+        # Make sure we have created missing DistroSeriesLanguage entries
         cur.execute("SELECT COUNT(*) FROM DistroReleaseLanguage")
-        self.failUnless(cur.fetchone()[0] > num_distroreleaselanguage)
+        self.failUnless(cur.fetchone()[0] > num_distroserieslanguage)
 
-        # Make sure existing DistroReleaseLanauge entries have been updated.
+        # Make sure existing DistroSeriesLanauge entries have been updated.
         cur.execute("""
             SELECT COUNT(*) FROM DistroReleaseLanguage, Language
             WHERE DistroReleaseLanguage.language = Language.id AND
@@ -123,6 +124,13 @@ class UpdateStatsTest(LaunchpadTestCase):
             SELECT COUNT(*) FROM DistroReleaseLanguage, Language
             WHERE DistroReleaseLanguage.language = Language.id AND
                   Language.visible = TRUE AND rosettacount = -1
+            """)
+        self.failUnlessEqual(cur.fetchone()[0], 0)
+
+        cur.execute("""
+            SELECT COUNT(*) FROM DistroReleaseLanguage, Language
+            WHERE DistroReleaseLanguage.language = Language.id AND
+                  Language.visible = TRUE AND unreviewed_count = -1
             """)
         self.failUnlessEqual(cur.fetchone()[0], 0)
 
@@ -159,6 +167,7 @@ class UpdateStatsTest(LaunchpadTestCase):
             'people_count', 'teams_count', 'rosetta_translator_count',
             'products_with_potemplates', 'projects_with_bugs',
             'products_using_malone', 'products_using_rosetta',
+            'shared_bug_count',
             ]
 
         for key in keys:
@@ -177,7 +186,7 @@ class UpdateTranslationStatsWithDisabledTemplateTest(
         LaunchpadFunctionalTestCase.setUp(self)
 
         self.distribution = getUtility(IDistributionSet)
-        self.distroreleaseset = getUtility(IDistroReleaseSet)
+        self.distroseriesset = getUtility(IDistroSeriesSet)
         self.languageset = getUtility(ILanguageSet)
         self.potemplateset = getUtility(IPOTemplateSet)
         self.personset = getUtility(IPersonSet)
@@ -191,14 +200,14 @@ class UpdateTranslationStatsWithDisabledTemplateTest(
 
         # We get some objects we will need for this test.
         ubuntu = self.distribution['ubuntu']
-        hoary = self.distroreleaseset.queryByName(ubuntu, 'hoary')
+        hoary = self.distroseriesset.queryByName(ubuntu, 'hoary')
         spanish = self.languageset['es']
-        spanish_hoary = hoary.getDistroReleaseLanguage(spanish)
+        spanish_hoary = hoary.getDistroSeriesLanguage(spanish)
         # We need pmount's template.
         templates = self.potemplateset.getAllByName('pmount')
         pmount_template = None
         for template in templates:
-            if template.distrorelease == hoary:
+            if template.distroseries == hoary:
                 pmount_template = template
 
         self.failIfEqual(pmount_template, None)
@@ -217,7 +226,7 @@ class UpdateTranslationStatsWithDisabledTemplateTest(
                 assert pofile.variant is None
                 currentcount += pofile.currentCount()
         contributor_count = (
-            self.personset.getPOFileContributorsByDistroRelease(
+            self.personset.getPOFileContributorsByDistroSeries(
                 hoary, spanish).count())
 
         # As noted in the for loop, we don't count IPOFile objects with
@@ -279,9 +288,9 @@ class UpdateTranslationStatsWithDisabledTemplateTest(
 
         # The transaction changed, we need to refetch SQLObjects.
         ubuntu = self.distribution['ubuntu']
-        hoary = self.distroreleaseset.queryByName(ubuntu, 'hoary')
+        hoary = self.distroseriesset.queryByName(ubuntu, 'hoary')
         spanish = self.languageset['es']
-        spanish_hoary = hoary.getDistroReleaseLanguage(spanish)
+        spanish_hoary = hoary.getDistroSeriesLanguage(spanish)
 
         # Let's recalculate the statistics ourselved to validate what the
         # script run recalculated.
@@ -294,7 +303,7 @@ class UpdateTranslationStatsWithDisabledTemplateTest(
                 new_currentcount += pofile.currentCount()
 
         new_contributor_count = (
-            self.personset.getPOFileContributorsByDistroRelease(
+            self.personset.getPOFileContributorsByDistroSeries(
                 hoary, spanish).count())
 
         # The amount of messages to translate in Hoary is now lower because we

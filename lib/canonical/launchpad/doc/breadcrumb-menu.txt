@@ -19,8 +19,8 @@ attribute.
     ...     def __init__(self):
     ...         self.breadcrumbs = []
     ...
-    ...     def addCrumb(self, url, text):
-    ...         self.breadcrumbs.append(Breadcrumb(url, text))
+    ...     def addCrumb(self, url, text, has_menu=True):
+    ...         self.breadcrumbs.append(Breadcrumb(url, text, has_menu))
     ...
     ...     def clearCrumbs(self):
     ...         self.breadcrumbs[:] = []
@@ -32,38 +32,28 @@ attribute.
 
 
 With no breadcrumbs, we get a single <li> element for Launchpad, containing
-the sitemap.  As there is just a single <li> element, it gets the CSS class
-"last".  The URL of "/" is hardcoded for the first breadcrumb.
+the sitemap.  The URL of the mainsite is hardcoded for the first breadcrumb.
 
     >>> render_breadcrumbs()
-    <li lpm:mid="root" class="item"><a href="/"><em>Home</em></a></li>
+    <li lpm:mid="root" class="item"><a href="http://launchpad.dev/" class="breadcrumb container" id="homebreadcrumb"><em><span>Home</span></em></a></li>
 
 
-With a single breadcrumb, we get the "Launchpad" breadcrumb and the
-popup site map.  As it is the only breadcrumb, it gets the CSS class "last".
+When we add a breadcrumb, it appears as a top level <li> after the
+initial "Launchpad" <li>.  Note that this one is defined as not having a menu,
+so its CSS class doesn't contain the text "container".
 
-    >>> request.addCrumb('http://localhost', 'Launchpad')
+    >>> request.addCrumb('http://localhost/people', 'People', has_menu=False)
     >>> render_breadcrumbs()
-    <li lpm:mid="root" class="item"><a href="/"><em>Home</em></a></li>
+    <li lpm:mid="root" class="item"><a href="http://launchpad.dev/" class="breadcrumb container" id="homebreadcrumb"><em><span>Home</span></em></a></li>
+    <li class="item"><a href="http://localhost/people" class="breadcrumb"><em>People</em></a></li>
 
 
 When we add another breadcrumb, it appears as a top level <li> after the
-initial "Launchpad" <li>.  Note that the last crumb's <li> has a CSS class
-of "last".
-
-    >>> request.addCrumb('http://localhost/people', 'People')
-    >>> render_breadcrumbs()
-    <li lpm:mid="root" class="item"><a href="/"><em>Home</em></a></li>
-    <li class="item"><a href="http://localhost/people"><em>People</em></a></li>
-
-
-When we add another breadcrumb, it appears as a top level <li> after the
-other two <li> elements.  Note that only the last crumb's <li> has a CSS
-class of "last".
+other two <li> elements.
 
     >>> request.addCrumb('http://localhost/people/someone', 'Someone')
     >>> render_breadcrumbs()
-    <li lpm:mid="root" class="item"><a href="/"><em>Home</em></a></li>
-    <li class="item"><a href="http://localhost/people"><em>People</em></a></li>
-    <li class="item"><a href="http://localhost/people/someone"><em>Someone</em></a></li>
+    <li lpm:mid="root" class="item"><a href="http://launchpad.dev/" class="breadcrumb container" id="homebreadcrumb"><em><span>Home</span></em></a></li>
+    <li class="item"><a href="http://localhost/people" class="breadcrumb"><em>People</em></a></li>
+    <li class="item" lpm:mid="http://localhost/people/someone/+menudata"><a href="http://localhost/people/someone" class="breadcrumb container"><em>Someone</em></a></li>
 

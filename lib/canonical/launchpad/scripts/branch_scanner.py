@@ -57,7 +57,7 @@ class BranchScanner:
             self.logScanFailure(branch, "No branch found")
             return
         try:
-            bzrsync.syncHistoryAndClose()
+            bzrsync.syncBranchAndClose()
         except ConnectionError:
             # A network glitch occured. Yes, that does happen.
             self.logScanFailure(branch, "Internal network failure")

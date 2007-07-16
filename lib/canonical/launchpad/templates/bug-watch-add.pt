@@ -32,7 +32,7 @@
     <p metal:fill-slot="extra_info">
       Monitoring a bug report in an external bug tracker, such as debbugs or
       Bugzilla, will let you receive updates from
-      Malone when the status of the external bug report changes.
+      Launchpad when the status of the external bug report changes.
     </p>
 
   </div>

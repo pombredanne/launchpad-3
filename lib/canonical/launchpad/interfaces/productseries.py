@@ -8,6 +8,8 @@ __all__ = [
     'IProductSeries',
     'IProductSeriesSet',
     'IProductSeriesSourceAdmin',
+    'validate_cvs_root',
+    'validate_cvs_module',
     ]
 
 import re
@@ -62,7 +64,7 @@ def validate_cvs_module(cvsmodule):
     if cvsmodule == 'CVS':
         raise LaunchpadValidationError('A CVS module can not be called "CVS".')
     return True
-    
+
 def validate_cvs_branch(branch):
     if branch and re.match('^[a-zA-Z][a-zA-Z0-9_-]*$', branch):
         return True
@@ -84,7 +86,8 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     # instead of using object.id.
     id = Int(title=_('ID'))
     # field names
-    product = Choice(title=_('Product'), required=True, vocabulary='Product')
+    product = Choice(title=_('Project'), required=True, vocabulary='Product')
+    parent = Attribute('The structural parent of this series - the product')
     name = ProductSeriesNameField(title=_('Name'), required=True,
         description=_("The name of the series is a short, unique name "
         "that identifies it, being used in URLs. It must be all "
@@ -93,7 +96,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     datecreated = Datetime(title=_('Date Registered'), required=True,
         readonly=True)
     owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
-        description=_('Product owner, either a valid Person or Team'))
+        description=_('Project owner, either a valid Person or Team'))
     driver = Choice(
         title=_("Driver"),
         description=_(
@@ -106,7 +109,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     displayname = Attribute(
         'Display name, in this case we have removed the underlying '
         'database field, and this attribute just returns the name.')
-    summary = Text(title=_("Summary"), 
+    summary = Text(title=_("Summary"),
         description=_('A single paragraph introduction or overview '
         'of this series. For example: "The 2.0 series of Apache represents '
         'the current stable series, and is recommended for all new '
@@ -114,10 +117,14 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     releases = Attribute("An iterator over the releases in this "
         "Series, sorted with latest release first.")
+
+    release_files = Attribute("An iterator over the release files in this "
+        "Series, sorted with latest release first.")
+
     potemplates = Attribute(
-        _("Return an iterator over this productrelease's PO templates."))
+        _("Return an iterator over this series' PO templates."))
     currentpotemplates = Attribute(
-        _("Return an iterator over this productrelease's PO templates that "
+        _("Return an iterator over this series' PO templates that "
           "have the 'iscurrent' flag set'."))
     packagings = Attribute("An iterator over the Packaging entries "
         "for this product series.")
@@ -126,27 +133,35 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     sourcepackages = Attribute(_("List of distribution packages for this "
         "product series"))
 
-    milestones = Attribute(
-        'The milestones associated with this series.')
+    milestones = Attribute(_(
+        "The visible milestones associated with this productseries, "
+        "ordered by date expected."))
+    all_milestones = Attribute(_(
+        "All milestones associated with this productseries, ordered by "
+        "date expected."))
 
     drivers = Attribute(
         'A list of the people or teams who are drivers for this series. '
         'This list is made up of any drivers or owners from this '
         'ProductSeries, the Product and if it exists, the relevant '
         'Project.')
+    bugcontact = Attribute(
+        'Currently just a reference to the Product bug contact.')
+    security_contact = Attribute(
+        'Currently just a reference to the Product security contact.')
 
     # XXX: 2006-09-05 jamesh
     # While it would be more sensible to call this ProductSeries.branch,
     # I've used this name to make sure code that works with the
     # vcs-imports branch (which used to be called branch) doesn't use
     # this attribute by accident.
-    
+
     series_branch = Choice(
         title=_('Series Branch'),
         vocabulary='Branch',
         readonly=True,
         description=_("The Bazaar branch for this series."))
-        
+
     user_branch = Choice(
         title=_('Branch'),
         vocabulary='Branch',
@@ -159,21 +174,21 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         Return None is there is no such release.
         """
 
-    def getPackage(distrorelease):
+    def getPackage(distroseries):
         """Return the SourcePackage for this productseries in the supplied
-        distrorelease. This will use a Packaging record if one exists, but
-        it will also work through the ancestry of the distrorelease to try
+        distroseries. This will use a Packaging record if one exists, but
+        it will also work through the ancestry of the distroseries to try
         to find a Packaging entry that may be relevant."""
 
-    def setPackaging(distrorelease, sourcepackagename, owner):
+    def setPackaging(distroseries, sourcepackagename, owner):
         """Create or update a Packaging record for this product series,
-        connecting it to the given distrorelease and source package name.
+        connecting it to the given distroseries and source package name.
         """
 
     def getPackagingInDistribution(distribution):
         """Return all the Packaging entries for this product series for the
         given distribution. Note that this only returns EXPLICT packaging
-        entries, it does not look at distro release ancestry in the same way
+        entries, it does not look at distro series ancestry in the same way
         that IProductSeries.getPackage() does.
         """
 
@@ -181,7 +196,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """Return the POTemplate with this name for the series."""
 
     def newMilestone(name, dateexpected=None):
-        """Create a new milestone for this DistroRelease."""
+        """Create a new milestone for this DistroSeries."""
 
     # revision control items
     import_branch = Choice(
@@ -201,8 +216,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     rcstype = Choice(title=_("Type of RCS"),
         required=False, vocabulary='RevisionControlSystems',
         description=_("The type of revision control used for "
-        "the upstream branch of this series. Can be CVS, SVN, BK or "
-        "Arch."))
+        "the upstream branch of this series. Can be CVS or Subversion."))
     cvsroot = TextLine(title=_("Repository"), required=False,
         constraint=validate_cvs_root,
         description=_('The CVSROOT. '
@@ -210,7 +224,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     cvsmodule = TextLine(title=_("Module"), required=False,
         constraint=validate_cvs_module,
         description=_('The path to import within the repository.'
-            ' Usually, it is the name of the product.'))
+            ' Usually, it is the name of the project.'))
     cvstarfileurl = Text(title=_("A URL where a tarball of the CVS "
         "repository can be found. This can sometimes be faster than "
         "trying to query the server for commit-by-commit data."))
@@ -235,7 +249,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                       'site to import new releases.  Example: '
                       'http://ftp.gnu.org/gnu/emacs/emacs-21.*.tar.gz'))
     releaseverstyle = Attribute("The version numbering style for this "
-        "product series of releases.")
+        "series of releases.")
     # Key dates on the road to import happiness
     dateautotested = Attribute("The date this upstream passed automatic "
         "testing.")
@@ -255,9 +269,8 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         "successfully synced the upstream RCS. The date of the currently "
         "published branch data if it is older than "
         "import_branch.last_mirrored"))
-    datepublishedsync = Attribute(_("The date of the currently published "
-        "branch data, in case import_branch.last_mirrored is older than "
-        "datelastsynced."))
+    datepublishedsync = Attribute(_("The date of the published code was last "
+        "synced, at the time of the last sync."))
 
     def syncCertified():
         """is the series source sync enabled?"""
@@ -286,8 +299,29 @@ class IProductSeriesSourceAdmin(Interface):
     def certifyForSync():
         """enable this to sync"""
 
+    def markTestFailed():
+        """Mark this import as TESTFAILED.
+
+        See `dbschema.ImportStatus` for what this means.  This method also
+        clears timestamps and other ancillary data.
+        """
+
+    def markDontSync():
+        """Mark this import as DONTSYNC.
+
+        See `dbschema.ImportStatus` for what this means.  This method also
+        clears timestamps and other ancillary data.
+        """
+
+    def deleteImport():
+        """Do our best to forget that this series ever had an import
+        associated with it.
+
+        Use with care!
+        """
+
     def enableAutoSync():
-        """enable this series RCS for automatic baz syncronisation"""
+        """Enable this series RCS for automatic synchronisation."""
 
 
 class IProductSeriesSet(Interface):
@@ -319,7 +353,7 @@ class IProductSeriesSet(Interface):
     def getByCVSDetails(cvsroot, cvsmodule, cvsbranch, default=None):
         """Return the ProductSeries with the given CVS details.
 
-        Return the default value if there is no ProductSeries with the 
+        Return the default value if there is no ProductSeries with the
         given details.
         """
 
