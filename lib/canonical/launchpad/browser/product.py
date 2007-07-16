@@ -958,7 +958,7 @@ class ProductBugContactEditView(LaunchpadEditFormView):
     field_names = ['bugcontact']
 
     @action('Change', name='change')
-    def changed(self, action, data):
+    def change_action(self, action, data):
         """Redirect to the product page with a success message."""
         self.updateContextFromData(data)
 
@@ -1012,6 +1012,7 @@ class ProductBugContactEditView(LaunchpadEditFormView):
                    'url': canonical_url(contact, rootsite='mainsite')
                           + '/+members'})
             self.setFieldError('bugcontact', error)
+
 
 class ProductReassignmentView(ObjectReassignmentView):
     """Reassign product to a new owner."""
