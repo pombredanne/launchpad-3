@@ -522,6 +522,9 @@ def export_rows(rows, pofile_output, force_utf8=False):
                 continue
 
             msgset = OutputMsgSet(exported_file)
+            if row.context is not None:
+                msgset.set_context(row.context)
+
             if row.isfuzzy is not None:
                 msgset.fuzzy = row.isfuzzy
 
@@ -696,6 +699,8 @@ def export_pot_rows(rows, pofile_output, force_utf8=False):
                 continue
 
             msgset = OutputMsgSet(exported_file)
+            if row.context is not None:
+                msgset.set_context(row.context)
 
             msgset.sequence = row.sequence
             msgset.obsolete = False

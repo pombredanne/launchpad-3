@@ -6447,7 +6447,7 @@ INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, file
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (195, 23, 20, 9, '', 'encfs/FileUtils.cpp:535', '', 'c-format', NULL, NULL);
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (196, 24, 21, 9, '', 'encfs/encfsctl.cpp:346', '', 'c-format', NULL, NULL);
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (197, 26, 22, 9, '', 'modules/aggregator.module:15', '', '', NULL, NULL);
-INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (198, 147, 1, 10, '', 'test_browserwidget.py:34', '', '', NULL, NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (198, 147, 1, 10, '', 'test_browserwidget.py:34', '', '', NULL, 'Something');
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (199, 156, 2, 10, '', '', '', '', NULL, NULL);
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid, context) VALUES (200, 157, 3, 10, '', '', '', '', NULL, NULL);
 
