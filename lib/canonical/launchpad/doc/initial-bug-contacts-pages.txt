@@ -1,0 +1,30 @@
+= Bug Contacts =
+
+The list of teams that a user may add to a package as a bug contact will
+only contain those teams of which the user is an administrator.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from zope.component import getMultiAdapter
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> package = ubuntu.getSourcePackage('mozilla-firefox')
+
+    >>> login('test@canonical.com')
+    >>> request = LaunchpadTestRequest()
+    >>> view = getMultiAdapter((package, request), name='+subscribe') 
+
+Sample person is a member of two teams:
+
+    >>> sample_person = view.user
+    >>> ["%s: %s" % (membership.team.displayname, membership.status.name)
+    ...  for membership in sample_person.myactivememberships]
+    [u'Landscape Developers: ADMIN', u'Warty Security Team: APPROVED']
+
+But is only an administrator of Landscape Developers, so that is the only
+team that will be listed when the user is changing a package bug contact:
+
+    >>> for team in view.user_teams:
+    ...     print team.displayname
+    Landscape Developers
+

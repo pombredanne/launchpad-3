@@ -31,7 +31,7 @@ from canonical.launchpad.webapp import (
     custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets import LabeledMultiCheckBoxWidget
-
+from canonical.lp.dbschema import TeamMembershipStatus
 
 class DistributionSourcePackageSOP(StructuralObjectPresentation):
 
@@ -122,8 +122,8 @@ class DistributionSourcePackageBugContactsView(LaunchpadFormView):
         team_contacts_field = List(
             __name__='bugmail_contact_team',
             title=u'Team bug contacts',
-            description=u'You can add the teams you are a member of '
-                         'to the bug contacts.',
+            description=(u'You can add the teams of which you are an '
+                          'administrator to the bug contacts.'),
             value_type=Choice(vocabulary=team_vocabulary),
             required=False)
         return form.FormField(
@@ -285,4 +285,5 @@ class DistributionSourcePackageBugContactsView(LaunchpadFormView):
     def user_teams(self):
         """Return the teams that the current user is a member of."""
         return [membership.team
-                for membership in self.user.myactivememberships]
+                for membership in self.user.myactivememberships
+                if membership.status == TeamMembershipStatus.ADMIN]
