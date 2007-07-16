@@ -29,7 +29,8 @@ from canonical.authserver.database import (
     DatabaseBranchDetailsStorage)
 from canonical.lp import dbschema
 
-from canonical.launchpad.ftests.harness import LaunchpadTestCase
+from canonical.launchpad.ftests.harness import (
+    LaunchpadTestCase, LaunchpadTestSetup)
 
 from canonical.testing.layers import LaunchpadScriptLayer
 
@@ -630,6 +631,11 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
     def setUp(self):
         TestDatabaseSetup.setUp(self)
         self.storage = DatabaseBranchDetailsStorage(None)
+
+    def tearDown(self):
+        """Tear down the test and reset the database."""
+        LaunchpadTestSetup().force_dirty_database()
+        TestDatabaseSetup.tearDown(self)
 
     def test_getBranchPullQueue(self):
         # Set up the database so the vcs-import branch will appear in the queue.
