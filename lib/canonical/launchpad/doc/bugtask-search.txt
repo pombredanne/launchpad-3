@@ -390,3 +390,21 @@ comments will produce eight found bug tasks (three for bug 1, five for bug 2).
     >>> sorted([bugtask.bug.id for bugtask in found_bugtasks])
     [1, 1, 1, 2, 2, 2, 2, 2]
 
+If No Privileges Person reports a bug and does not comment on it, that bug
+will not be included in the results returned by the bug commenter search.
+
+    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from canonical.launchpad.interfaces import IProductSet
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox.createBug(
+    ...     CreateBugParams(no_priv, "Some bug", "Some comment"))
+    <Bug at ...>
+
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_commenter)
+    >>> found_bugtasks.count()
+    8
+
+    >>> sorted([bugtask.bug.id for bugtask in found_bugtasks])
+    [1, 1, 1, 2, 2, 2, 2, 2]
+
