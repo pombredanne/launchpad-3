@@ -115,7 +115,7 @@ class SSHTestCase(ServerTestCase, TestCaseWithTransport):
         branch_url = 'file://' + os.path.abspath(
             os.path.join(branch_root, branch_id_to_path(branch_id)))
         self.runInChdir(
-            self.run_bzr_captured, ['push', '--create-prefix', branch_url],
+            self.run_bzr, ['push', '--create-prefix', branch_url],
             retcode=None)
         return branch_url
 
