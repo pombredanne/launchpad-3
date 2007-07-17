@@ -196,6 +196,10 @@ class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
         otherwise.
         """
 
+    def allProductsUseMalone():
+        """Returns True if all the products in the Project use Malone for bug
+        tracking, False otherwise."""
+
 # Interfaces for set
 
 class IProjectSet(Interface):

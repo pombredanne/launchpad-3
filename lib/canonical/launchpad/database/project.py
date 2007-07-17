@@ -329,6 +329,10 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """
         return self.products.count() != 0
 
+    def allProductsUseMalone(self):
+        """Returns True if all the Products in this Project use Malone for bug
+        tracking, otherwise returns False."""
+
 
 class ProjectSet:
     implements(IProjectSet)
