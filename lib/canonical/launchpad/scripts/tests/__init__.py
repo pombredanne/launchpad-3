@@ -5,4 +5,4 @@
 # Make this a package.
 
 # Note: by adding one's name to the copyright section, one is arguably making a
-# subtantial modification.
+# substantial modification.

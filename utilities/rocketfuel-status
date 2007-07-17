@@ -5,7 +5,7 @@
 
 cd ~/canonical/lp-branches
 for branch in *; do
-  if [ ${branch} != "trunk" ]; then
+  if [ ${branch} != "trunk" ] && test -d ${branch} ; then
     echo "Examining ${branch}"
     cd ${branch}
     bzr status --short
