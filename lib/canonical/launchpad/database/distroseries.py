@@ -28,7 +28,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    DistroSeriesStatus, PackagePublishingPocket, PackagePublishingStatus,
+    ArchivePurpose, DistroSeriesStatus, 
+    PackagePublishingPocket, PackagePublishingStatus,
     PackageUploadStatus, RosettaImportStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationSort,
     SpecificationImplementationStatus)
@@ -662,22 +663,27 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             PackagePublishingStatus.PUBLISHED,
             )
 
-        # 'main_archive' candidates.
-        main_clauses = ['distrorelease=%s AND archive=%s' %
-                        sqlvalues(self, self.main_archive)]
+        # Distribution archive candidates.
+        main_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
+            sqlvalues(self)]
+        main_clauses.append('Archive.id=SourcePackagePublishingHistory.archive')
+        main_clauses.append('Archive.purpose=%s' % 
+            sqlvalues(ArchivePurpose.PRIMARY))
         main_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
         if not self.isUnstable():
             main_clauses.append(
                 'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
         main_sources = SourcePackagePublishingHistory.select(
-            " AND ".join(main_clauses), orderBy="id")
+            " AND ".join(main_clauses), clauseTables=['Archive'], orderBy="id")
 
         # PPA candidates.
-        ppa_clauses = ['distrorelease=%s AND archive!=%s' %
-                       sqlvalues(self, self.main_archive)]
+        ppa_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
+            sqlvalues(self)]
+        ppa_clauses.append('Archive.id=SourcePackagePublishingHistory.archive')
+        ppa_clauses.append('Archive.purpose=%s' % sqlvalues(ArchivePurpose.PPA))
         ppa_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
         ppa_sources = SourcePackagePublishingHistory.select(
-            " AND ".join(ppa_clauses), orderBy="id")
+            " AND ".join(ppa_clauses), clauseTables=['Archive'], orderBy="id")
 
         # Return all candidates.
         return main_sources.union(ppa_sources)
