@@ -1418,6 +1418,420 @@ new imports with the information being copied.
         # Now pour the holding tables back into the originals
         copier.pour(ztm)
 
+    def _copyActiveTranslationsAsUpdate_new(self, ztm):
+        """Receive active, updated translations from parent series."""
+        full_name = "%s_%s" % (self.distribution.name, self.name)
+        tables = ['POFile', 'POMsgSet', 'POSubmission']
+        copier = MultiTableCopy(full_name, tables, restartable=False)
+
+        # Map parent POTemplates to corresponding POTemplates in self.  This
+        # will come in handy later.
+        cur = cursor()
+        cur.execute("""
+            CREATE TEMP TABLE equiv_template AS
+            SELECT DISTINCT pt1.id AS id, pt2.id AS new_id
+            FROM POTemplate pt1, POTemplate pt2
+            WHERE
+                pt1.potemplatename = pt2.potemplatename AND
+                (pt1.sourcepackagename = pt2.sourcepackagename OR
+                 (pt1.sourcepackagename IS NULL AND
+                  pt2.sourcepackagename IS NULL)) AND
+                pt1.distrorelease = %d AND
+                pt2.distrorelease = %d
+            """ % sqlvalues(self.parent, self))
+        cur.execute(
+            "CREATE UNIQUE INDEX equiv_template_pkey ON equiv_template(id)")
+        cur.execute("""
+            CREATE UNIQUE INDEX equiv_template_new_id
+            ON equiv_template(new_id)""")
+
+        # Map parent POTMsgSets to corresponding POTMsgSets in self.
+        cur.execute("""
+            CREATE TEMP TABLE equiv_potmsgset AS
+            SELECT DISTINCT ptms1.id AS id, ptms2.id AS new_id
+            FROM POTMsgSet ptms1, POTMsgSet ptms2, equiv_template
+            WHERE
+                ptms1.potemplate = equiv_template.id AND
+                ptms2.potemplate = equiv_template.new_id AND
+                (ptms1.alternative_msgid = ptms2.alternative_msgid OR
+                 (ptms1.alternative_msgid IS NULL AND
+                  ptms2.alternative_msgid IS NULL))
+            """)
+        cur.execute(
+            "CREATE UNIQUE INDEX equiv_template_pkey ON equiv_template(id)")
+
+        holding_tables = {
+            'pofile': copier.getHoldingTableName('POFile'),
+            'pomsgset': copier.getHoldingTableName('POMsgSet'),
+            'posubmission': copier.getHoldingTableName('POSubmission'),
+            }
+
+        query_parameters = {
+            'pofile_holding_table' = holding_tables['pofile'],
+            'pomsgset_holding_table' = holding_tables['pomsgset'],
+            'posubmission_holding_table' = holding_tables['posubmission'],
+            }
+
+        # ### POFile ###
+
+        def prepare_pofile_batch(
+            holding_table, source_table, batch_size, start_id, end_id):
+            """Prepare pouring of a batch of POfiles.
+
+            Deletes any POFiles in the batch that already have equivalents in
+            the source table.  Such rows would violate a unique constraint on
+            the tuple (potemplate, language, variant), where null variants are
+            considered equal.
+
+            Any such POFiles must have been added after the POFiles were
+            extracted, so we assume they are newer and better than what we
+            have in our holding table.
+            """
+            cursor().execute("""
+                DELETE FROM %s AS holding
+                USING POFile pf
+                WHERE
+                    holding.potemplate = pf.potemplate AND
+                    holding.language = pf.language AND
+                    COALESCE(holding.variant, ''::text) =
+                        COALESCE(pf.variant, ''::text) AND
+                    holding.id >= %d AND
+                    holding.id < %d
+                """ % (holding_table, sqlvalues(start_id, end_id)))
+
+        # Extract POFiles from parent whose potemplate has an equivalent in
+        # self.  Some of those POFiles will have equivalents in self, in which
+        # case we'll want to link to them in following extractions, but we
+        # won't be pouring those POFiles themselves.
+        inert_pofiles = """
+            EXISTS (
+                SELECT *
+                FROM equiv_template, POFile
+                WHERE
+                    holding.potemplate = equiv_template.id AND
+                    POFile.potemplate = equiv_template.new_id AND
+                    POFile.language = holding.language AND
+                    COALESCE(POFile.variant, ''::text) =
+                        COALESCE(holding.variant, ''::text)
+            )
+            """
+
+        copier.extract(
+            'POFile',
+            "potemplate = equiv_template.id",
+            inert_pofiles,
+            prepare_batch=prepare_pofile_batch,
+            external_joins=['equiv_template'])
+        cur = cursor()
+
+        # The new POFiles have their unreviewed_count set to zero.  Also,
+        # we're not copying templates, but we need to update the copied
+        # POFiles' potemplate references much in the same way as
+        # MultiTableCopy would do for us had we also been copying templates.
+        cur.execute("""
+            UPDATE %(pofile_holding_table)s
+            SET
+                unreviewed_count = 0,
+                potemplate = equiv_template.new_id
+            FROM equiv_template
+            WHERE
+                potemplate = equiv_template.id AND
+                %(pofile_holding_table)s.new_id IS NOT NULL
+            """ % query_parameters)
+
+        # To make our linking between holding tables work, we'll want the
+        # POFiles we're not copying (i.e. the inert ones) to have new_id
+        # pointing to the already-existing equivalent POFiles in the child
+        # distroseries.  MultiTableCopy.extract initialized these to null for
+        # us.  We're going to set them here to make the next extract() pick up
+        # the new foreign key values.  We'll simply delete those rows before
+        # the pouring stage to avoid confusing MultiTableCopy.
+
+        # Remember which rows we'll need to delete.
+        cur.execute("""
+            CREATE TEMP TABLE inert_pofiles AS
+            SELECT id FROM %(pofile_holding_table)s
+            WHERE new_id IS NULL
+            """ % query_parameters)
+
+        # Since we have that information anyway, map POFiles of the parent
+        # that need not be copied to their equivalents in the child
+        # distroseries.
+        cur.execute("""
+            CREATE TEMP TABLE equiv_pofile AS
+            SELECT pf1.id, pf2.id
+            FROM %(pofile_holding_table)s pf1, POFile pf2, equiv_template
+            WHERE
+                pf1.potemplate = equiv_template.id AND
+                pf2.potemplate = equiv_template.new_id AND
+                pf1.language = pf2.language AND
+                COALESCE(pf1.variant, ''::text) =
+                    COALESCE(pf2.variant, ''::text) AND
+                new_id IS NULL
+            """)
+        cur.execute(
+            "CREATE UNIQUE INDEX equiv_pofile_pkey ON equiv_pofile (id)")
+
+        # Now re-map our holding table's new_ids.
+        cur.execute("""
+            UPDATE %(pofile_holding_table)s AS holding
+            SET new_id = equiv_pofile.new_id
+            FROM equiv_pofile
+            WHERE holding.id = equiv_pofile.id
+            """ % query_parameters)
+
+        # XXX: JeroenVermeulen 2007-07-16, Fix POFile.last_touched_pomsgset
+        # somehow!  Can't do that here because we'd be pouring POFiles with
+        # foreign keys that pointed to POMsgSets that hadn't been poured yet.
+
+        # ### POMsgSet ###
+
+        def prepare_pomsgset_batch(
+            holding_table, source_table, batch_size, start_id, end_id):
+            """Prepare pouring of a batch of POMsgSets.
+
+            Deletes any POMsgSets in the batch that already have equivalents
+            in the source table (same potmsgset and pofile, on which the
+            source table has a unique index).  Any such POMsgSets must have
+            been added after the POMsgSets were extracted, so we assume they
+            are newer and better than what we have in our holding table.
+
+            Also deletes POMsgSets in the batch that refer to POFiles that do
+            not exist.  Any such POFiles must have been deleted from their
+            holding table after they were extracted.
+            """
+            cur = cursor()
+            cur.execute("""
+                DELETE FROM %s AS holding
+                USING equiv_potmsgset, POMsgSet pms
+                WHERE
+                    holding.potmsgset = equiv_potmsgset.id AND
+                    pms.potmsgset = equiv_potmsgset.new_id AND
+                    holding.pofile = equiv_pofile.id AND
+                    pms.pofile = equiv_pofile.new_id AND
+                    holding.id >= %d AND
+                    holding.id < %d
+                """ % (holding_table, sqlvalues(start_id, end_id)))
+            cur.execute("""
+                DELETE FROM %s AS holding
+                WHERE
+                    NOT EXISTS (
+                        SELECT *
+                        FROM POFile
+                        WHERE holding.pofile = POFile.id
+                        ) AND
+                    holding.id >= %d AND
+                    holding.id < %d
+                """ % (holding_table, sqlvalues(start_id, end_id)))
+
+        # We'll extract POMsgSets that already have equivalents in the child
+        # distroseries, to make it easier to copy POSubmissions for them
+        # later, but we won't actually copy those POMsgSets.
+        inert_pomsgsets = """
+            EXISTS (
+                SELECT *
+                FROM
+                    equiv_potmsgset,
+                    POMsgSet pms,
+                    %(pofile_holding_table)s pfh
+                WHERE
+                    holding.potmsgset = equiv_potmsgset.id AND
+                    equiv_potmsgset.new_id = pms.potmsgset AND
+                    holding.pofile = pfh.id AND
+                    pms.id = pfh.new_id
+                )
+            """ % query_parameters
+
+        copier.extract(
+            'POMsgSet', pomsgset_where_clause, joins=['pofile'],
+            inert_where=inert_pomsgsets, prepare_batch=prepare_pomsgset_batch)
+        cur = cursor()
+
+        cur.execute("""
+            UPDATE %(pomsgset_holding_table)s
+            SET datereviewed = NULL, reviewer = NULL
+            WHERE new_id IS NOT NULL
+            """ % query_parameters)
+
+        # Set potmsgset to point to equivalent POTMsgSet in copy's POFile.
+        # This is similar to what MultiTableCopy would have done for us had we
+        # included POTMsgSet in the copy operation.
+        cur.execute("""
+            UPDATE %(pomsgset_holding_table)s AS holding
+            FROM equiv_potmsgset
+            SET potmsgset = equiv_potmsgset.new_id
+            WHERE
+                holding.potmsgset = equiv_potmsgset.id AND
+                holding.new_id IS NOT NULL
+            """ % query_parameters)
+
+        # Prepare to remove inert POMsgSets from holding before pouring...
+        cur.execute("""
+            CREATE TEMP TABLE inert_pomsgsets AS
+            SELECT id
+            FROM %(pomsgset_holding_table)s
+            WHERE new_id IS NULL
+            """ % query_parameters)
+        cur.execute(
+            "CREATE UNIQUE INDEX inert_pomsgset_idx ON inert_pomsgsets(id)")
+
+        # ...and map new_ids in holding to those of child distroseries'
+        # corresponding POMsgSets.
+        cur.execute("""
+            UPDATE %(pomsgset_holding_table)s AS holding
+            SET new_id = pms.id
+            FROM %(pofile_holding_table)s pfh, equiv_potmsgset, POMsgSet pms
+            WHERE
+                holding.pofile = pfh.id AND
+                pms.pofile = pfh.new_id AND
+                holding.potmsgset = equiv_potmsgset.id AND
+                pms.potmsgset = equiv_potmsgset.new_id
+                holding.new_id IS NULL
+            """ % query_parameters)
+
+        # Where corresponding POMsgSets already exist but are not complete,
+        # and parent's version is complete, update review-related status.
+        # XXX: JeroenVermeulen 2007-07-16, Rewrite this to use a LoopTuner.
+        class UpdatePOMsgSets:
+            """Loop body for LoopTuner: update incomplet POMsgSets in child.
+            """
+            implements(ITunableLoop)
+
+            def __init__(self, holding_table, transaction_manager):
+                self.holding_table = holding_table
+                self.transaction_manager = transaction_manager
+                cur = cursor()
+
+                cur.execute("SELECT min(id), max(id) FROM inert_pomsgsets")
+                self.lowest_id, self.highest_id = cur.fetchone()
+
+            def isDone(self):
+                """See `ITunableLoop`."""
+                return (self.lowest_id is None or
+                    self.lowest_id > self.highest_id)
+
+            def __call__(self):
+                """See `ITunableLoop`."""
+                batch_size = int(batch_size)
+
+                # Figure out what id lies exactly batch_size rows ahead.
+                self.cur.execute("""
+                    SELECT id
+                    FROM inert_pomsgsets
+                    WHERE id >= %d
+                    ORDER BY id
+                    OFFSET %d
+                    LIMIT 1
+                    """ % (sqlvalues(self.lowest_id, batch_size)))
+                end_id = cur.fetchone()
+                if end_id is not None:
+                    next = end_id[0]
+                else:
+                    next = highest_id
+
+                next += 1
+
+                cursor().execute("""
+                    UPDATE POMsgSet AS target
+                    FROM %s original, inert_pomsgsets
+                    SET
+                        iscomplete = TRUE,
+                        isfuzzy = original.isfuzzy,
+                        updated = original.updated,
+                        reviewer = original.reviewer,
+                        date_reviewed = original.date_reviewed,
+                    WHERE
+                        original.id = inert_pomsgsets.id AND
+                        original.new_id = target.id AND
+                        target.id = original.new_id AND
+                        original.iscomplete AND
+                        NOT target.iscomplete AND
+                        inert_pomsgsets.id >= %d AND
+                        inert_pomsgsets.id < %d
+                    """ % (self.holding_table, sqlvalues(self.lowest_id, next)))
+
+                self.transaction_manager.commit()
+                self.transaction_manager.begin()
+
+        # ### POSubmission ###
+
+        def prepare_posubmission_batch(
+            holding_table, source_table, batch_size, start_id, end_id):
+            """Prepare pouring of a batch of POSubmissions.
+
+            Deletes any POSubmissions in the batch that already have 
+            equivalents in the source table (same potranslation, pomsgset, and
+            pluralform; or active and same pomsgset and pluralform).  Any such
+            equivalents must have been added or made active after the
+            POMsgSets were extracted, so we assume they are newer and better
+            than what we have in our holding table.
+
+            Also deletes POSubmissions in the batch that refer to POMsgSets
+            that do not exist.  Any such POSubmissions must have been deleted
+            from their holding table after they were extracted.
+            """
+            cur = cursor()
+            cur.execute("""
+                DELETE FROM %s AS holding
+                USING POSubmission ps
+                WHERE
+                    (ps.active OR
+                        holding.potranslation = ps.potranslation) AND
+                    holding.pomsgset = ps.pomsgset AND
+                    holding.pluralform = ps.pluralform AND
+                    id >= %d AND
+                    id < %d
+                """ % (holding_table, sqlvalues(start_id, end_id)))
+            cur.execute("""
+                DELETE FROM %s AS holding
+                WHERE
+                    NOT EXISTS (
+                        SELECT *
+                        FROM POMsgSet
+                        WHERE holding.pomsgset = POMsgSet.id
+                        ) AND
+                    holding.id >= %d AND
+                    holding.id < %d
+                """ % (holding_table, sqlvalues(start_id, end_id)))
+
+
+        # XXX: JeroenVermeulen 2007-07-06, Exclude POSubmissions for which an
+        # equivalent (potranslation, pomsgset, pluralform) or equivalent
+        # active one (active and same pomsgset, pluralform) already exists.
+        # XXX: JeroenVermeulen 2007-07-06, Extraction condition must also
+        # check for corresponding POSubmissions in self that have greater
+        # datecreated.
+        copier.extract(
+            'POSubmission', "active AND NOT published", joins=['pomsgset'],
+            prepare_batch=prepare_posubmission_batch)
+        cur = cursor()
+
+        # Update existing incomplete POMsgSets that need not be replaced by
+        # copies from parent, but whose parents are complete.
+        # XXX: JeroenVermeulen 2007-07-16, this may still be a "hole" in the
+        # algorithm.  We're marking POMsgSets as complete, which really won't
+        # be true until after pouring.  Can we close it?  Do something safe?
+        # Problem is we need information from a holding table.
+        updater = UpdatePOMsgSets(holding_tables['pomsgset'], ztm)
+        LoopTuner(updater, 2, 500).run()
+
+        # Now get rid of those inert rows whose new_ids we messed with, or
+        # horrible things will happen during pouring.
+        cur.execute("""
+            DELETE FROM %(pofile_holding_table)s
+            WHERE id IN (SELECT id FROM inert_pofiles)
+            """ % query_parameters)
+        cur.execute("""
+            DELETE FROM %(pomsgset_holding_table)s
+            WHERE id IN (SELECT id FROM inert_pomsgsets)
+            """ % query_parameters)
+
+        # Pour copied rows back to source tables.  Contrary to appearances,
+        # this is where the real work happens.
+        # XXX: JeroenVermeulen 2007-07-06, implement retry logic to deal with
+        # unique constraints that were broken in the meantime.
+        copier.pour()
+
     def _copyActiveTranslationsAsUpdate(self):
         """Receive active, updated translations from parent series."""
 
@@ -1477,8 +1891,8 @@ new imports with the information being copied.
                 LEFT OUTER JOIN POFile AS pf2 ON
                     pf2.potemplate = pt2.id AND
                     pf2.language = pf1.language AND
-                    (pf2.variant = pf1.variant OR
-                     (pf2.variant IS NULL AND pf1.variant IS NULL))
+                    COALESCE(pf2.variant, ''::text) =
+                        COALESCE(pf1.variant, ''::text)
             WHERE
                 pt1.distrorelease = %s AND
                 pf2.id IS NULL''' % sqlvalues(self, self.parentseries))
@@ -1501,8 +1915,8 @@ new imports with the information being copied.
                 JOIN POFile AS pf2 ON
                     pf2.potemplate = pt2.id AND
                     pf2.language = pf1.language AND
-                    (pf2.variant = pf1.variant OR
-                     (pf2.variant IS NULL AND pf1.variant IS NULL))
+                    COALESCE(pf2.variant, ''::text) =
+                        COALESCE(pf1.variant, ''::text)
                 JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
                 JOIN POMsgSet AS pms1 ON
                     pms1.potmsgset = ptms1.id AND
@@ -1544,8 +1958,8 @@ new imports with the information being copied.
                 JOIN POFile AS pf2 ON
                     pf2.potemplate = pt2.id AND
                     pf2.language = pf1.language AND
-                    (pf2.variant = pf1.variant OR
-                     (pf2.variant IS NULL AND pf1.variant IS NULL))
+                    COALESCE(pf2.variant, ''::text) =
+                        COALESCE(pf1.variant, ''::text)
                 JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
                 JOIN POMsgSet AS pms1 ON
                     pms1.potmsgset = ptms1.id AND
@@ -1578,8 +1992,8 @@ new imports with the information being copied.
                 JOIN POFile AS pf2 ON
                     pf2.potemplate = pt2.id AND
                     pf2.language = pf1.language AND
-                    (pf2.variant = pf1.variant OR
-                     (pf2.variant IS NULL AND pf1.variant IS NULL))
+                    COALESCE(pf2.variant, ''::text) =
+                        COALESCE(pf1.variant, ''::text)
                 JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
                 JOIN POMsgSet AS pms1 ON
                     pms1.potmsgset = ptms1.id AND
@@ -1636,8 +2050,8 @@ new imports with the information being copied.
                 JOIN POFile AS pf2 ON
                     pf2.potemplate = pt2.id AND
                     pf2.language = pf1.language AND
-                    (pf2.variant = pf1.variant OR
-                     (pf2.variant IS NULL AND pf1.variant IS NULL))
+                    COALESCE(pf2.variant, ''::text) =
+                        COALESCE(pf1.variant, ''::text)
                 JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
                 JOIN POMsgSet AS pms1 ON
                     pms1.potmsgset = ptms1.id AND
@@ -1677,8 +2091,8 @@ new imports with the information being copied.
                     JOIN POFile AS pf2 ON
                         pf2.potemplate = pt2.id AND
                         pf2.language = pf1.language AND
-                        (pf2.variant = pf1.variant OR
-                         (pf2.variant IS NULL AND pf1.variant IS NULL))
+                        COALESCE(pf2.variant, ''::text) =
+                            COALESCE(pf1.variant, ''::text)
                     JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
                     JOIN POMsgSet AS pms1 ON
                         pms1.potmsgset = ptms1.id AND
@@ -1719,8 +2133,8 @@ new imports with the information being copied.
                     JOIN POFile AS pf2 ON
                         pf2.potemplate = pt2.id AND
                         pf2.language = pf1.language AND
-                        (pf2.variant = pf1.variant OR
-                         (pf2.variant IS NULL AND pf1.variant IS NULL))
+                        COALESCE(pf2.variant, ''::text) =
+                            COALESCE(pf1.variant, ''::text)
                     JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
                     JOIN POMsgSet AS pms1 ON
                         pms1.potmsgset = ptms1.id AND
