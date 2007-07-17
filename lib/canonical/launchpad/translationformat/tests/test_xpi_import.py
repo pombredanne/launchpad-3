@@ -5,12 +5,13 @@ __metaclass__ = type
 
 import os.path
 import tempfile
-import transaction
 import unittest
 import zipfile
 
 from zope.component import getUtility
+
 import canonical.launchpad
+from canonical.database.sqlbase import commit, flush_database_caches
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, IPOTemplateNameSet, IPOTemplateSet,
     ITranslationImportQueue)
@@ -100,6 +101,12 @@ class XpiTestCase(unittest.TestCase):
 
         # We must approve the entry to be able to import it.
         entry.status = RosettaImportStatus.APPROVED
+        # The file data is stored in the Librarian, so we have to commit the
+        # transaction to make sure it's stored properly.
+        commit()
+        # We need this flush call here to prevent random failures of the tests
+        # because it was showing a non importing template.
+        flush_database_caches()
 
         return entry
 
@@ -119,6 +126,13 @@ class XpiTestCase(unittest.TestCase):
 
         # We must approve the entry to be able to import it.
         entry.status = RosettaImportStatus.APPROVED
+
+        # The file data is stored in the Librarian, so we have to commit the
+        # transaction to make sure it's stored properly.
+        commit()
+        # We need this flush call here to prevent random failures of the tests
+        # because it was showing a non importing template.
+        flush_database_caches()
 
         return entry
 
@@ -149,14 +163,9 @@ class XpiTestCase(unittest.TestCase):
         """Test XPI template file import."""
         # Prepare the import queue to handle a new .xpi import.
         entry = self.setUpTranslationImportQueueForTemplate()
-        # The file data is stored in the Librarian, so we have to commit the
-        # transaction to make sure it's stored properly.
-        transaction.commit()
-
 
         # Now, we tell the PO template to import from the file data it has.
         self.firefox_template.importFromQueue()
-        transaction.commit()
 
         # The status is now IMPORTED:
         self.assertEquals(entry.status, RosettaImportStatus.IMPORTED)
@@ -242,21 +251,17 @@ class XpiTestCase(unittest.TestCase):
     def testTranslationImport(self):
         """Test XPI translation file import."""
         # Prepare the import queue to handle a new .xpi import.
-        template_enstry = self.setUpTranslationImportQueueForTemplate()
+        template_entry = self.setUpTranslationImportQueueForTemplate()
         translation_entry = self.setUpTranslationImportQueueForTranslation()
-        # The file data is stored in the Librarian, so we have to commit the
-        # transaction to make sure it's stored properly.
-        transaction.commit()
 
         # Now, we tell the PO template to import from the file data it has.
         self.firefox_template.importFromQueue()
-        transaction.commit()
         # And the Spanish translation.
         self.spanish_firefox.importFromQueue()
-        transaction.commit()
 
         # The status is now IMPORTED:
         self.assertEquals(translation_entry.status, RosettaImportStatus.IMPORTED)
+        self.assertEquals(template_entry.status, RosettaImportStatus.IMPORTED)
 
         # Let's validate the content of the messages.
         potmsgsets = list(self.firefox_template.getPOTMsgSets())
