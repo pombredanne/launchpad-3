@@ -703,7 +703,7 @@ class QuestionWorkflowView(LaunchpadFormView):
         if self.context.can_confirm_answer:
             self._addNotificationAndHandlePossibleSubscription(
                 _("Your question is solved, if a particular message helped "
-                  "you solved the problem, please use the <em>'This solved "
+                  "you solve the problem, use the <em>'This solved "
                   "my problem'</em> button."), data)
 
     def canRequestInfo(self, action):

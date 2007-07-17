@@ -117,7 +117,7 @@
                 <input tal:replace="structure view/reopen_action/render" />
               </div>
               <p id="answer-button-hint" 
-                tal:condition="view/confirm_action/render">
+                tal:condition="view/confirm_action/available">
                 To confirm an answer, use the 
                 <strong>'This Solved My Problem'</strong> button located at
                 the bottom of the answer.
