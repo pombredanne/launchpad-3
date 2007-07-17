@@ -403,7 +403,7 @@ class POTemplate(SQLBase, RosettaStats):
         """See IPOTemplate."""
         results = POTMsgSet.selectBy(potemplate=self, primemsgid_=messageID,
                                      context=context)
-        return results.count() > 0
+        return bool(results)
 
     def hasPluralMessage(self):
         """See IPOTemplate."""
