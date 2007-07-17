@@ -360,7 +360,7 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         self.assertEqual(1, branch_id)
         self.assertEqual(READ_ONLY, permissions)
 
-    def test_getBranchInformation_mirrored(self):
+    def test_getBranchInformation_imported(self):
         # Imported branches cannot be written to by the smartserver or SFTP
         # server.
         store = DatabaseUserDetailsStorageV2(None)

@@ -319,6 +319,17 @@ class SmartserverTests(SSHTestCase):
     def getDefaultServer(self):
         return make_bzr_ssh_server()
 
+    def makeMirroredBranch(self, person_name, product_name, branch_name):
+        ro_branch_url = self.pushNewBranch(
+            person_name, product_name, branch_name)
+
+        # Mark as mirrored.
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = self.getDatabaseBranch(person_name, product_name, branch_name)
+        branch.branch_type = dbschema.BranchType.MIRRORED
+        LaunchpadZopelessTestSetup().txn.commit()
+        return ro_branch_url
+
     @deferToThread
     def test_can_read_readonly_branch(self):
         # We can get information from a read-only branch.
@@ -350,14 +361,7 @@ class SmartserverTests(SSHTestCase):
     def test_can_read_mirrored_branch(self):
         # Users should be able to read mirrored branches that they own.
         # Added to catch bug 126245.
-        ro_branch_url = self.pushNewBranch('testuser', 'firefox', 'mirror')
-
-        # Mark as mirrored.
-        LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getDatabaseBranch('testuser', 'firefox', 'mirror')
-        branch.branch_type = dbschema.BranchType.MIRRORED
-        LaunchpadZopelessTestSetup().txn.commit()
-
+        ro_branch_url = self.makeMirroredBranch('testuser', 'firefox', 'mirror')
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
         remote_revision = self.getLastRevision(
             self.getTransportURL('~testuser/firefox/mirror'))
@@ -365,16 +369,9 @@ class SmartserverTests(SSHTestCase):
 
     @deferToThread
     def test_can_read_unowned_mirrored_branch(self):
-        # Users should be able to read mirrored branches that they own.
-        # Added to catch bug 126245.
-        ro_branch_url = self.pushNewBranch('sabdfl', 'firefox', 'mirror')
-
-        # Mark as mirrored.
-        LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getDatabaseBranch('sabdfl', 'firefox', 'mirror')
-        branch.branch_type = dbschema.BranchType.MIRRORED
-        LaunchpadZopelessTestSetup().txn.commit()
-
+        # Users should be able to read mirrored branches even if they don't own
+        # those branches.
+        ro_branch_url = self.makeMirroredBranch('sabdfl', 'firefox', 'mirror')
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
         remote_revision = self.getLastRevision(
             self.getTransportURL('~sabdfl/firefox/mirror'))
@@ -383,14 +380,8 @@ class SmartserverTests(SSHTestCase):
     @deferToThread
     def test_cant_write_to_mirrored_branch(self):
         # You should not ever be able to write directly to a mirrored branch.
-        ro_branch_url = self.pushNewBranch('testuser', 'firefox', 'mirror')
+        ro_branch_url = self.makeMirroredBranch('testuser', 'firefox', 'mirror')
         revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
-
-        # Mark as mirrored.
-        LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getDatabaseBranch('testuser', 'firefox', 'mirror')
-        branch.branch_type = dbschema.BranchType.MIRRORED
-        LaunchpadZopelessTestSetup().txn.commit()
 
         # Create a new revision on the local branch.
         tree = WorkingTree.open(self.local_branch.base)
