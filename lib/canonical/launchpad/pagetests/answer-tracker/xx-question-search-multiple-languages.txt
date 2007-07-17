@@ -263,7 +263,7 @@ showing no questions when there could be in other languages.)
 
 == Questions by language ==
 
-When unsolved questions are in languages that no answer contacts
+When open questions are in languages that no answer contacts
 speak, the project questions page displays links to see those 
 questions. Each link is to a page that displays the questions
 for a specific language. No Privileges Person is looking for a
@@ -279,7 +279,7 @@ questions going unanswered.
     >>> user_browser.open('http://answers.launchpad.dev/firefox')
     >>> paragraph = find_main_content(user_browser.contents).find('p')
     >>> print extract_text(paragraph)
-    Mozilla Firefox has unsolved questions in the following languages:
+    Mozilla Firefox has open questions in the following languages:
     1 in Portuguese (Brazil). Can you help?
 
 No Privileges Person follows the 'Portuguese (Brazil)' link to view
