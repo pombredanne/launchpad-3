@@ -11,7 +11,7 @@ import zipfile
 from zope.component import getUtility
 
 import canonical.launchpad
-from canonical.database.sqlbase import commit
+from canonical.database.sqlbase import commit, flush_database_caches
 from canonical.launchpad.interfaces import (
     IPersonSet, IProductSet, IPOTemplateNameSet, IPOTemplateSet,
     ITranslationImportQueue)
@@ -104,7 +104,8 @@ class XpiTestCase(unittest.TestCase):
         # The file data is stored in the Librarian, so we have to commit the
         # transaction to make sure it's stored properly.
         commit()
-        from canonical.database.sqlbase import flush_database_caches
+        # We need this flush call here to prevent random failures of the tests
+        # because it was showing a non importing template.
         flush_database_caches()
 
         return entry
@@ -129,8 +130,10 @@ class XpiTestCase(unittest.TestCase):
         # The file data is stored in the Librarian, so we have to commit the
         # transaction to make sure it's stored properly.
         commit()
-        from canonical.database.sqlbase import flush_database_caches
+        # We need this flush call here to prevent random failures of the tests
+        # because it was showing a non importing template.
         flush_database_caches()
+
         return entry
 
     def _assertXpiMessageInvariant(self, message):
