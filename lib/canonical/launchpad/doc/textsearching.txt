@@ -636,3 +636,40 @@ is done.
     >>> nl_phrase_search('firefox is very slow on flickr', Question,
     ...                  'product = -1')
     'firefox|slow|flickr'
+
+
+==== No keywords filtering with few rows ====
+
+The 50% rule is really useful only when there are many rows. When there
+only very few rows, that keyword elimination becomes a problem since
+keywords could be eliminated. For that reason, when there are less than
+5 candidates rows, keywords elimination is skipped.
+
+For example, there are less than 5 questions filed on the
+mozilla-firefox source package.
+
+    >>> from canonical.launchpad.interfaces import IDistributionSet
+    >>> from canonical.database.sqlbase import sqlvalues
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> firefox_package = ubuntu.getSourcePackage('mozilla-firefox')
+    >>> firefox_package_questions = Question.select(
+    ...     'distribution = %s AND sourcepackagename = %s' % sqlvalues(
+    ...     ubuntu, firefox_package.sourcepackagename))
+    >>> firefox_package_questions.count() < 5
+    True
+
+And more than half of these contain the keyword "firefox" in them:
+
+    >>> firefox_questions = Question.select(
+    ...     'fti @@ ftq(%s)' % quote('firefox')).count()
+    >>> float(get_questions) / firefox_package_questions.count() > 0.50
+    True
+
+But the keyword is still keep because there are only less than 5
+questions:
+
+    >>> nl_phrase_search(
+    ...     'firefox is slow', Question,
+    ...     'distribution = %s AND sourcepackagename = %s' % sqlvalues(
+    ...     ubuntu, firefox_package.sourcepackagename))
+    'firefox|slow'
