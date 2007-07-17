@@ -964,6 +964,80 @@ will not be listed twice in the returned result.
   3
 
 
+== Translations credits ==
+
+Translation credits are handled automatically, and cannot be
+translated in any other way except through a published upload.
+
+Lets get Spanish translation for alsa-utils.
+
+  >>> alsautils = getUtility(IProductSet).getByName('alsa-utils')
+  >>> alsa_trunk = alsautils.getSeries('trunk')
+  >>> alsa_template = alsa_trunk.getPOTemplate('alsa-utils')
+  >>> alsa_translation = alsa_template.getPOFileByLang('es')
+
+This translation file contains untranslated translation-credits message.
+
+  >>> translation_credits = (
+  ...     alsa_translation.getPOMsgSet(u"translation-credits"))
+  >>> print translation_credits.active_texts
+  [None]
+
+If we submit a published translation, the translation for this message
+is updated.
+
+  >>> translation_credits.updateTranslationSet(
+  ...     alsa_translation.owner, {0: u'Happy translator'}, fuzzy=False,
+  ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
+  >>> print translation_credits.active_texts
+  [u'Happy translator']
+
+If we submit non-published translation, it's refused.
+
+  >>> translation_credits.updateTranslationSet(
+  ...     alsa_translation.owner, {0: u'Unhappy translator'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> print translation_credits.active_texts
+  [u'Happy translator']
+
+In automatically generated credits, alsa_translation.owner is now
+credited as well.
+
+  >>> alsa_translation.prepareTranslationCredits(translation_credits.potmsgset)
+  u'Happy translator\n\nLaunchpad Contributions:\n  Carlos Perell\xf3 Mar\xedn <http://launchpad.dev/~carlos>'
+
+Emails of translators is translated already.
+
+  >>> emails_of_translators = (
+  ...     alsa_translation.getPOMsgSet(u"_: EMAIL OF TRANSLATORS\nYour emails"))
+  >>> print emails_of_translators.active_texts
+  [u'danilo@canonical.com']
+
+But now credits Carlos when prepared automatically.
+
+  >>> alsa_translation.prepareTranslationCredits(
+  ...     emails_of_translators.potmsgset)
+  u'danilo@canonical.com,carlos@canonical.com'
+
+Names of translators are untranslated and there is no message set for them yet.
+
+  >>> names_of_translators = (
+  ...     alsa_translation.getPOMsgSet(u"_: NAME OF TRANSLATORS\nYour names"))
+  >>> print names_of_translators
+  None
+  >>> names_of_translators_potmsgset = alsa_template.getPOTMsgSetByMsgIDText(
+  ...    u"_: NAME OF TRANSLATORS\nYour names")
+  >>> names_of_translators = alsa_translation.createMessageSetFromMessageSet(
+  ...    names_of_translators_potmsgset)
+  >>> names_of_translators.active_texts
+  [None]
+
+But now names credit Carlos when prepared automatically.
+
+  >>> alsa_translation.prepareTranslationCredits(
+  ...     names_of_translators.potmsgset)
+  u'Carlos Perell\xf3 Mar\xedn'
+
 = POFile Security tests =
 
 Import the function that will help us to do this test.
