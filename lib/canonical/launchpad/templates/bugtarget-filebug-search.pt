@@ -138,7 +138,7 @@
               Sample Product
           </a>.
 
-          <ul>
+          <ul id="product-bug-options">
             <tal:external-tracker
                 define="bugtracker product/getExternalBugTracker">
 
@@ -185,6 +185,15 @@
         </li>
       </ul>
 
+      <script type="text/javascript">
+        product_bug_options = concat(
+          getElementsByTagAndClassName('ul', null, 'product-bug-options'));
+
+        forEach(product_bug_options, function(element) {
+          element.style.display = 'none';
+          element.style.visibility = 'hidden';
+        });
+      </script>
     </tal:has-products>
 
     <p tal:condition="nothing" class="warning message">
