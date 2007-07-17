@@ -159,7 +159,7 @@ class DBEnumeratedTypeValidator(validators.Validator):
         if self.enum != value.enum:
             raise TypeError('DBItem from wrong type, %r != %r' % (
                 self.enum.name, value.enum.name))
-        return value.db_value
+        return value.value
 
     def toPython(self, value, state):
         """Convert from int to DBSchema Item.
@@ -186,7 +186,7 @@ class DBEnumeratedTypeValidator(validators.Validator):
             return None
         if value is DEFAULT:
             return value
-        return self.enum.getTermByValue(value)
+        return self.enum.getDBItemByValue(value)
 
 EnumCol = DBSchemaEnumCol
 

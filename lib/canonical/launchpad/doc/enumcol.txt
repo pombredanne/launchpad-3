@@ -23,7 +23,7 @@ The enumerated type that is used with the EnumCol must be a
 DBEnumeratedType, with items that are instances of DBItem.
 
     >>> from canonical.launchpad.webapp.enum import (
-    ...     EnumeratedType, DBEnumeratedType, DBItem, Item, extends)
+    ...     DBEnumeratedType, DBItem)
     >>> class FooType(DBEnumeratedType):
     ...     """Enumerated type for the foo column."""
     ...     ONE = DBItem(1, """
@@ -86,47 +86,3 @@ But not items from another schema.
     Traceback (most recent call last):
     ...
     TypeError: DBItem from wrong type, 'FooType' != 'AnotherType'
-
-XXX: thumper 2007-06-14
-Need to think of a cleaner way to implement the extending assignment
-problem.
-
-But it will allow setting from an item from an enumerated type that
-inherits or extends the original enumerated type where the item was in
-that original type.
-
-    >>> class FooBarType(FooType):
-    ...     THREE = DBItem(3, "Three")
-
-    >>> t.foo = FooBarType.ONE
-
-Even though the assignment is from a derived enumeration, the value
-that is available through the EnumCol is the item from the assigned
-enumeration.
-
-    >>> t.foo
-    <DBItem FooType.ONE, (1) One>
-    >>> t.foo = FooBarType.THREE
-    Traceback (most recent call last):
-    ...
-    TypeError: DBItem from wrong type, 'FooType' != 'FooBarType'
-
-    >>> class FooBazType(EnumeratedType):
-    ...     extends(FooType)
-    ...     THREE = DBItem(3, "Three")
-    ...     FOUR = Item("Four")
-
-    >>> t.foo = FooBazType.ONE
-    >>> t.foo
-    <DBItem FooType.ONE, (1) One>
-
-    >>> t.foo = FooBazType.THREE
-    Traceback (most recent call last):
-    ...
-    TypeError: DBItem from wrong type, 'FooType' != 'FooBazType'
-
-    >>> t.foo = FooBazType.FOUR
-    Traceback (most recent call last):
-    ...
-    TypeError: Not a DBItem: <Item FooBazType.FOUR, Four>
-

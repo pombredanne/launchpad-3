@@ -322,20 +322,22 @@ class TokenizedItem:
 
 
 class MetaEnum(type):
+    """The metaclass for `EnumeratedType`.
 
+    This metaclass defines methods that allow the enumerated types to implement
+    the IVocabularyTokenized interface.
+
+    The metaclass also enforces "correct" definitions of enumerated types by
+    enforcing capitalisation of Item variable names and defining an appropriate
+    ordering.
+    """
     implements(IVocabularyTokenized)
 
     item_type = Item
     enum_name = 'EnumeratedType'
 
     def __new__(cls, classname, bases, classdict):
-
-        # enforce items of dbenums have values
-        # and items of others don't
-
-        # if a sort_order is defined, make sure that it covers
-        # all the items
-
+        """Called when defining a new class."""
         # only allow one base class
         if len(bases) > 1:
             raise TypeError(
@@ -444,12 +446,16 @@ class MetaEnum(type):
 
 
 class MetaDBEnum(MetaEnum):
+    """The meta class for `DBEnumeratedType`.
 
+    Provides a method for getting the item based on the database identifier in
+    addition to all the normal enumerated type methods.
+    """
     item_type = DBItem
     enum_name = 'DBEnumeratedType'
 
     def getDBItemByValue(self, value):
-        """Return the `DBItem` object for the database 'value'."""
+        """Return the `DBItem` object for the database `value`."""
         try:
             return dict((item.value, item) for item in self.items)[value]
         except KeyError:
@@ -457,19 +463,35 @@ class MetaDBEnum(MetaEnum):
 
 
 class EnumeratedType:
+    """An enumeration of items.
+
+    The items of the enumeration must be instances of the class `Item`.
+    These items are accessible through a class attribute `items`.  The ordering
+    of the items attribute is the same order that the items are defined in the
+    class.
+
+    A `sort_order` attribute can be defined to override the default ordering.
+    The sort_order should contain the names of the all the items in the
+    ordering that is desired.
+    """
     __metaclass__ = MetaEnum
-    # items = ()
 
 
 class DBEnumeratedType:
+    """An enumeration with additional mapping from an integer to `Item`.
+
+    The items of a class inheriting from DBEnumeratedType must be of type
+    `DBItem`.
+    """
     __metaclass__ = MetaDBEnum
-    # items = ()
+
 
 def use_template(enum_type, include=None, exclude=None):
-    """An alternative way to extend an enumerated type as opposed to inheritance.
+    """An alternative way to extend an enumerated type other than inheritance.
 
     The parameters include and exclude shoud either be the name values of the
-    items (the parameter names), or a list or tuple that contains string values.
+    items (the parameter names), or a list or tuple that contains string
+    values.
     """
     frame = sys._getframe(1)
     locals = frame.f_locals

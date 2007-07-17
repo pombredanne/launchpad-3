@@ -11,7 +11,8 @@ __all__ = [
     ]
 
 
-from canonical.launchpad.webapp.enum import DBEnumeratedType, DBItem, extends
+from canonical.launchpad.webapp.enum import (
+    DBEnumeratedType, DBItem, use_template)
 
 
 class DBTestEnumeration(DBEnumeratedType):
@@ -24,7 +25,7 @@ class InheritedTestEnumeration(DBTestEnumeration):
 
 
 class ExtendedTestEnumeration(DBEnumeratedType):
-    extends(DBTestEnumeration)
+    use_template(DBTestEnumeration)
     VALUE3 = DBItem(3, 'Yet another item')
 
 
