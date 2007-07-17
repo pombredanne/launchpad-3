@@ -145,8 +145,17 @@ When the owner comes back on the question page, he will now see a new
     <input type="submit" name="field.actions.confirm"
      value="This Solved My Problem" />
 
-(Not although we have three comments on the question, that's the only
+(Note although we have three comments on the question, that's the only
 one that has this button. Only answers have this button.)
+
+There is also a hint below the form to the question owner about using
+the 'This Solved My Problem' button.
+
+    >>> answer_button_paragraph = find_tag_by_id(
+    ...     owner_browser.contents, 'answer-button-hint')
+    >>> print extract_text(answer_button_paragraph)
+    To confirm an answer, use the 'This Solved My Problem' button located at
+    the bottom of the answer.
 
 Clicking that button will confirm that the answer solved the problem.
 
@@ -336,6 +345,41 @@ It lists all the actions performed through workflow on the question:
     Sample Person        Confirm                      Solved
     Sample Person        Confirm                      Solved
 
+
+== Solving a question without an answer ==
+
+The user that asks a questions may solve the question before another
+user can submit an answer. Without any answer messages, the user does
+not see a notification to choose a 'This solved my problem' button.
+
+Carlos has an open question that no one has submitted an answer for.
+He is able to solve the problem on his own, and submits the solution
+for other users with similar problems. He does not see a notice about
+choosing an answer that helped him solve his problem. 
+
+    >>> carlos_browser = Browser()
+    >>> carlos_browser.handleErrors = False
+    >>> carlos_browser.addHeader(
+    ...     'Authorization', 'Basic carlos@canonical.com:test')
+    >>> carlos_browser.open('http://launchpad.dev/firefox/+question/12')
+    >>> print find_request_status(carlos_browser.contents)
+    Open
+
+    >>> answer_button_paragraph = find_tag_by_id(
+    ...     carlos_browser.contents, 'answer-button-hint')
+    >>> answer_button_paragraph is None
+    True
+    
+    >>> carlos_browser.getControl('Message').value = (
+    ...     "There is a bug in that version. SMP is fine after upgrading.")
+    >>> carlos_browser.getControl("Problem Solved").click()
+    >>> print find_request_status(carlos_browser.contents)
+    Solved
+
+    >>> content = find_main_content(carlos_browser.contents)
+    >>> messages = content.findAll('div', 'informational message')
+    >>> messages
+    []
 
 == Asking a separate question ==
 

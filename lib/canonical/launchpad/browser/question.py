@@ -700,10 +700,11 @@ class QuestionWorkflowView(LaunchpadFormView):
     def selfanswer_action(self, action, data):
         """Action called when the owner provides the solution."""
         self.context.giveAnswer(self.user, data['message'])
-        self._addNotificationAndHandlePossibleSubscription(
-            _("Your question is solved, if a particular message helped you "
-              "solved the problem, please use the <em>'This solved my "
-              "problem'</em> button."), data)
+        if self.context.can_confirm_answer:
+            self._addNotificationAndHandlePossibleSubscription(
+                _("Your question is solved, if a particular message helped "
+                  "you solved the problem, please use the <em>'This solved "
+                  "my problem'</em> button."), data)
 
     def canRequestInfo(self, action):
         """Return if the requestinfo action should be displayed."""
