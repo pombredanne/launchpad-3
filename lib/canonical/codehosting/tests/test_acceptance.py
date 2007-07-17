@@ -63,6 +63,9 @@ class SSHTestCase(ServerTestCase, TestCaseWithRepository):
         the SFTP server, which is running in the Twisted reactor in the main
         thread.
         """
+
+        # XXX: JonathanLange 2007-07-17, This swallows errors. It should
+        # re-raise errors instead.
         self.runInChdir(
             self.server.runAndWaitForDisconnect,
             self.run_bzr_captured, ['push', remote_url], retcode=None)
@@ -389,6 +392,9 @@ class SmartserverTests(SSHTestCase):
 
         # Push the local branch to the remote url
         remote_url = self.getTransportURL('~testuser/firefox/mirror')
+
+        # This push fails, but the helper method captures the error (which is
+        # reported via stderr and exit codes).
         self.push(remote_url)
         remote_revision = self.getLastRevision(remote_url)
 
