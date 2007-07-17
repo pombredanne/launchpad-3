@@ -43,15 +43,16 @@ class IHugeVocabulary(IVocabulary, IVocabularyTokenized):
         'A name for this vocabulary, to be displayed in the popup window.')
 
     def searchForTerms(query=None):
-        """Return an iterable of SimpleTerms that match the search string.
-
-        The iterable must have a count() method.
+        """Return a `CountableIterator` of `SimpleTerm`s that match the query.
 
         Note that what is searched and how the match is the choice of the
         IHugeVocabulary implementation.
         """
 
 
+# XXX flacoste 2007/07/06 A proper interface should be implemented for
+# this, either ISelectResults or define an interface expressing the
+# required subset.
 class CountableIterator:
     """Implements a wrapping iterator with a count() method.
 

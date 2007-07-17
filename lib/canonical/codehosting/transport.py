@@ -125,6 +125,8 @@ class LaunchpadServer(Server):
         if len(path_segments) != 3:
             raise NoSuchFile(virtual_path)
         branch_id = self._make_branch(*path_segments)
+        if branch_id == '':
+            raise NoSuchFile(virtual_path)
         makedirs(self.backing_transport, branch_id_to_path(branch_id))
 
     def _make_branch(self, user, product, branch):
@@ -144,15 +146,13 @@ class LaunchpadServer(Server):
             raise TransportNotPossible(
                 'Path must start with user or team directory: %r' % (user,))
         user = user[1:]
-        user_dict = self.authserver.getUser(user)
-        if not user_dict:
-            raise NoSuchFile("%s doesn't exist" % (user,))
-        user_id = user_dict['id']
-        # If product is '+junk', then product_id should be '', which is
-        # XML-RPC's way of saying None.
         if product == '+junk':
+            user_dict = self.authserver.getUser(user)
+            if not user_dict:
+                raise NoSuchFile("%s doesn't exist" % (user,))
+            user_id = user_dict['id']
             if user_id == self.user_id:
-                product_id = ''
+                product = '+junk'
             else:
                 # XXX: JonathanLange 2007-06-04, This should perhaps be
                 # 'PermissionDenied', not 'NoSuchFile'. However bzrlib doesn't
@@ -162,18 +162,8 @@ class LaunchpadServer(Server):
                 raise NoSuchFile(
                     "+junk is only allowed under user directories, not team "
                     "directories.")
-        else:
-            product_id = self.authserver.fetchProductID(product)
-            if not product_id:
-                # XXX: JonathanLange 2007-06-04, This should perhaps be
-                # 'PermissionDenied', not 'NoSuchFile'. However bzrlib doesn't
-                # translate PermissionDenied errors. See _translate_error in
-                # bzrlib/transport/remote.py.
-                raise NoSuchFile(
-                    "Directories directly under a user directory must be "
-                    "named after a product name registered in Launchpad "
-                    "<https://launchpad.net/>.")
-        return self.authserver.createBranch(user_id, product_id, branch)
+        return self.authserver.createBranch(
+            self.user_id, user, product, branch)
 
     def _translate_path(self, virtual_path):
         """Translate a virtual path into an internal branch id, permissions and

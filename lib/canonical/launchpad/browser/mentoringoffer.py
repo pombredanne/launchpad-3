@@ -31,6 +31,7 @@ from canonical.launchpad.interfaces import (
     IPerson,
     IProduct,
     IProject,
+    ISpecification,
     ITeam,
     )
 from canonical.launchpad.webapp import (
@@ -117,7 +118,20 @@ class MentoringOfferAddView(LaunchpadFormView):
         subscribe = data.get('subscription_request')
         if subscribe:
             if not self.context.isSubscribed(user):
-                self.context.subscribe(user)
+                # XXX Tom Berger 2007-07-15: IBugTask
+                # and ISpecification (and everything
+                # else you can subscribe to) should
+                # implement a common interface and
+                # have the same signature for their
+                # subscribe method.
+                if IBugTask.providedBy(self.context):
+                    self.context.subscribe(user)
+                elif ISpecification.providedBy(self.context):
+                    self.context.subscribe(user, user, False)
+                else:
+                    raise AssertionError, (
+                        '%s does not provide IBugTask or ISpecification' %
+                        self.context)
                 self.request.response.addInfoNotification(
                     'You have subscribed to this item.')
         self.request.response.addInfoNotification(

@@ -74,6 +74,13 @@
         tal:content="structure context/description/fmt:text-to-html" 
         />
 
+      <div id="related-faq" tal:condition="context/faq">
+        <b>Related FAQ:</b>
+        <a href="#"
+           tal:attributes="href context/faq/fmt:url"
+           tal:content="context/faq/title">FAQ Title</a>
+      </div>
+
       <tal:message repeat="message context/messages">
         <div tal:replace="structure message/@@+display" />
       </tal:message>
@@ -125,8 +132,12 @@
         </tal:not-logged-in>
       </div>
 
-      <div id="ask-your-own-question" xml:lang="en" lang="en" dir="ltr"
-        tal:condition="not: view/is_question_owner">
+      <div
+        class="related"
+        id="ask-your-own-question"
+        xml:lang="en" lang="en" dir="ltr"
+        tal:condition="not: view/is_question_owner"
+      >
         <h2>Got a question of your own?</h2>
 
         <p>For best results,

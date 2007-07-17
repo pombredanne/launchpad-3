@@ -16,6 +16,7 @@ __all__ = [
     'BranchReviewStatusVocabulary',
     'BranchSubscriptionDiffSizeVocabulary',
     'BranchSubscriptionNotificationLevelVocabulary',
+    'BranchTypeVocabulary',
     'BranchVisibilityRuleVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
@@ -31,6 +32,7 @@ __all__ = [
     'EntitlementTypeVocabulary',
     'GPGKeyAlgorithmVocabulary',
     'InfestationStatusVocabulary',
+    'MailingListStatusVocabulary',
     'MirrorContentVocabulary',
     'MirrorPulseTypeVocabulary',
     'MirrorSpeedVocabulary',
@@ -79,6 +81,8 @@ BranchSubscriptionDiffSizeVocabulary = \
     sortkey_ordered_vocab_factory(dbschema.BranchSubscriptionDiffSize)
 BranchSubscriptionNotificationLevelVocabulary = \
     vocab_factory(dbschema.BranchSubscriptionNotificationLevel)
+BranchTypeVocabulary = vocab_factory(
+    dbschema.BranchType,noshow=[dbschema.BranchType.IMPORTED])
 BranchVisibilityRuleVocabulary = vocab_factory(dbschema.BranchVisibilityRule)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
@@ -99,6 +103,7 @@ EntitlementStateVocabulary = vocab_factory(dbschema.EntitlementState)
 EntitlementTypeVocabulary = vocab_factory(dbschema.EntitlementType)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
+MailingListStatusVocabulary = vocab_factory(dbschema.MailingListStatus)
 MirrorContentVocabulary = vocab_factory(dbschema.MirrorContent)
 MirrorPulseTypeVocabulary = vocab_factory(dbschema.MirrorPulseType)
 MirrorSpeedVocabulary = vocab_factory(dbschema.MirrorSpeed)
