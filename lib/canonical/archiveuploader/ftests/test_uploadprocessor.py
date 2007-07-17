@@ -404,8 +404,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(foocomm_bpr.component.name, 'commercial')
 
         # Publish the upload so we can check the publishing record.
-        self._publishPackage("foocomm", "1.0-1", source=False,
-            archive=commercial_archive)
+        self._publishPackage("foocomm", "1.0-1", source=False)
 
         # Check the publishing record's archive and component.
         foocomm_bpph = BinaryPackagePublishingHistory.selectOneBy(

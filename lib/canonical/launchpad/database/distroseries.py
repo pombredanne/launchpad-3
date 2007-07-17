@@ -1031,7 +1031,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # Restrict result to given archives.
         archives = []
         if archive is None:
-            archives = [archive.id for archive in self.all_distro_archives]
+            archives = [archive.id for archive in 
+                self.distribution.all_distro_archives]
         else:
             archives = [archive.id]
 
@@ -1896,10 +1897,6 @@ new imports with the information being copied.
     @property
     def main_archive(self):
         return self.distribution.main_archive
-
-    @property
-    def all_distro_archives(self):
-        return self.distribution.all_distro_archives
 
     def getFirstEntryToImport(self):
         """See IHasTranslationImports."""
