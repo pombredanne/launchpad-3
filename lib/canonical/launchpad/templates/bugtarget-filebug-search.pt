@@ -120,8 +120,8 @@
       </tal:plural>
       <tal:singular condition="python:context.products.count() == 1">
         <p>
-          There is 1 project registered as part of 
-          <tal:project replace="context/displayname" />
+          There is 1 project registered as part of
+          <tal:project replace="context/displayname">Project</tal:project>.
           but it does not use Launchpad as its bug tracker.
         </p>
         <p>
@@ -129,48 +129,58 @@
           packages with which it is registered and its external bug tracker,
           if it uses one. If you can't find an appropriate place to file
           your bug, please contact the administrator of
-          <tal:project replace="context/displayname" />.
+          <tal:project replace="context/displayname">Project</tal:project>.
       </tal:singular>
       <ul tal:repeat="product context/products">
         <li>
-          <a tal:attributes="href product/fmt:url" 
+          <a tal:attributes="href product/fmt:url"
               tal:content="product/displayname">
               Sample Product
           </a>.
 
           <ul>
             <tal:external-tracker
-                define="bugtracker product/getExternalBugTracker"
-                condition="bugtracker">
-              <li>
+                define="bugtracker product/getExternalBugTracker">
+
+              <li tal:condition="bugtracker">
                 External bug tracker:
                 <a tal:attributes="href bugtracker/baseurl"
                     tal:content="bugtracker/title">
                   Bug Tracker
                 </a>.
               </li>
+
+              <li tal:condition="not: bugtracker">
+                 <tal:product replace="product/displayname">
+                   Project
+                 </tal:product>
+                 does not use an external bug tracker.
+              </li>
             </tal:external-tracker>
 
-            <li>
-              Source packages:
+            <tal:packages define="packages product/distrosourcepackages">
 
-              <tal:dsp define="dsp_list product/distrosourcepackages"
-                  condition="dsp_list">
-
-                <ul class="source package" tal:repeat="dsp dsp_list">
+              <li tal:condition="packages">
+                <ul class="source package" tal:repeat="package packages">
                   <li>
-                    <a tal:attributes="href dsp/fmt:url">
-                      <span tal:replace="dsp/distribution/displayname" /> 
-                      <span tal:replace="dsp/sourcepackagename" />
+                    <a tal:attributes="href package/fmt:url">
+                      <span tal:replace="package/distribution/displayname" />
+                      <span tal:replace="package/sourcepackagename" />
                     </a>
 
-                    (<a tal:attributes="href string:${dsp/fmt:url}/+filebug">File
-                     a bug here</a>)
+                    (<a tal:attributes="href string:${package/fmt:url}/+filebug">File a bug here</a>)
                   </li>
                 </ul>
+              </li>
 
-              </tal:dsp>
-            </li>
+              <li tal:condition="not: packages">
+                <tal:product replace="product/displayname">
+                  Project
+                </tal:product>
+                is not registered with any source packages.
+              </li>
+
+            </tal:packages>
           </ul>
         </li>
       </ul>
