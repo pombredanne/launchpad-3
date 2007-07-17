@@ -281,6 +281,39 @@ class TestUploadProcessor(TestUploadProcessorBase):
             queue_item.status, PackageUploadStatus.UNAPPROVED,
             "Expected queue item to be in UNAPPROVED status.")
 
+    def testCommercialArchiveMissingForCommercialUploadFails(self):
+        """A missing commercial archive should produce a rejection email.
+
+        If the commercial archive is missing (ie there is a data problem)
+        when a commercial package is uploaded to it, a sensible rejection
+        error email should be generated.
+        """
+        # Extra setup for breezy
+        self.setupBreezy()
+
+        # Set up the uploadprocessor with appropriate options and logger.
+        self.options.context = 'anything' # upload policy allows anything
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Fudge the commercial archive in the sample data temporarily so that
+        # it's now an embargoed archive instead.
+        archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distribution=self.ubuntu, purpose=ArchivePurpose.COMMERCIAL)
+        removeSecurityProxy(archive).purpose = ArchivePurpose.EMBARGOED
+
+        self.layer.txn.commit()
+
+        # Upload a package.
+        upload_dir = self.queueUpload("foocomm_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check that it was rejected appropriately.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "Commercial archive for distro '%s' not found" % self.ubuntu.name
+                in raw_msg)
+
     def testMixedCommercialUploadFails(self):
         """Uploads with commercial and non-commercial files are rejected.
         

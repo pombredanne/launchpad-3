@@ -1022,12 +1022,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         default_clauses = ["""
             packageupload.distrorelease = %s""" % sqlvalues(self)]
 
-        # restrict result to a given archive
+        # Restrict result to given archives.
+        archives = []
         if archive is None:
-            archive = self.main_archive
+            archives = [archive.id for archive in self.all_distro_archives]
+        else:
+            archives = [archive.id]
 
         default_clauses.append("""
-        packageupload.archive = %s""" % sqlvalues(archive))
+        packageupload.archive IN %s""" % sqlvalues(archives))
 
         # restrict result to a given pocket
         if pocket is not None:
@@ -1887,6 +1890,10 @@ new imports with the information being copied.
     @property
     def main_archive(self):
         return self.distribution.main_archive
+
+    @property
+    def all_distro_archives(self):
+        return self.distribution.all_distro_archives
 
     def getFirstEntryToImport(self):
         """See IHasTranslationImports."""
