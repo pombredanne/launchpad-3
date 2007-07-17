@@ -332,6 +332,9 @@ class IBugTaskSearchBase(Interface):
         title=_('Show only bugs associated with a CVE'), required=False)
     bug_contact = Choice(
         title=_('Bug contact'), vocabulary='ValidPersonOrTeam', required=False)
+    bug_commenter = Choice(
+        title=_('Bug commenter'), vocabulary='ValidPersonOrTeam',
+        required=False)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):

@@ -1395,6 +1395,7 @@ class BugTaskSearchListingView(LaunchpadView):
     owner_error = ""
     assignee_error = ""
     bug_contact_error = ""
+    bug_commenter_error = ""
 
     @property
     def schema(self):
@@ -1540,7 +1541,8 @@ class BugTaskSearchListingView(LaunchpadView):
                 "searchtext", "status", "assignee", "importance",
                 "omit_dupes", "has_patch", "bug_reporter",
                 "milestone", "component", "has_no_package",
-                "status_upstream", "tag", "has_cve", "bug_contact"
+                "status_upstream", "tag", "has_cve", "bug_contact",
+                "bug_commenter"
                 ]
         # widget_names are the possible widget names, only include the
         # ones that are actually in the schema.
