@@ -961,7 +961,7 @@ class NascentUpload:
 
             # Check for data problems:
             if not archive:
-                # Don't override the archive to "None" here or the rest of the
+                # Don't override the archive to None here or the rest of the
                 # processing will throw exceptions.
                 self.reject("Commercial archive for distro '%s' not found" % 
                     self.policy.distroseries.distribution.name)

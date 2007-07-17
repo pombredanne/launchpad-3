@@ -666,7 +666,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # Distribution archive candidates.
         main_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
             sqlvalues(self)]
-        main_clauses.append('Archive.id=SourcePackagePublishingHistory.archive')
+        main_clauses.append(
+            'Archive.id=SourcePackagePublishingHistory.archive')
         main_clauses.append('Archive.purpose=%s' % 
             sqlvalues(ArchivePurpose.PRIMARY))
         main_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
@@ -680,7 +681,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         ppa_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
             sqlvalues(self)]
         ppa_clauses.append('Archive.id=SourcePackagePublishingHistory.archive')
-        ppa_clauses.append('Archive.purpose=%s' % sqlvalues(ArchivePurpose.PPA))
+        ppa_clauses.append('Archive.purpose=%s' % 
+            sqlvalues(ArchivePurpose.PPA))
         ppa_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
         ppa_sources = SourcePackagePublishingHistory.select(
             " AND ".join(ppa_clauses), clauseTables=['Archive'], orderBy="id")

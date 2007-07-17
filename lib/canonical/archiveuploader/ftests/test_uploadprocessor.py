@@ -284,7 +284,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
     def testCommercialArchiveMissingForCommercialUploadFails(self):
         """A missing commercial archive should produce a rejection email.
 
-        If the commercial archive is missing (ie there is a data problem)
+        If the commercial archive is missing (i.e. there is a data problem)
         when a commercial package is uploaded to it, a sensible rejection
         error email should be generated.
         """

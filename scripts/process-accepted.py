@@ -6,8 +6,6 @@ distribution and then gets on and deals with any accepted items, preparing them
 for publishing as appropriate.
 """
 
-import _pythonpath
-
 import sys
 from optparse import OptionParser
 
@@ -23,7 +21,7 @@ from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
 
 from contrib.glock import GlobalLock
-from canonical.lp.dbschema import ArchivePurpose, PackageUploadStatus
+from canonical.lp.dbschema import PackageUploadStatus
 
 def main():
     # Parse command-line arguments
