@@ -23,7 +23,7 @@ from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
 
 from contrib.glock import GlobalLock
-from canonical.lp.dbschema import PackageUploadStatus
+from canonical.lp.dbschema import ArchivePurpose, PackageUploadStatus
 
 def main():
     # Parse command-line arguments
@@ -68,13 +68,14 @@ def main():
             target_archives = getUtility(
                 IArchiveSet).getPendingAcceptancePPAs()
         else:
-            target_archives = [distribution.main_archive]
+            target_archives = distribution.all_distro_archives
 
         for archive in target_archives:
             for distrorelease in distribution.serieses:
 
-                if archive == distrorelease.main_archive:
-                    log.debug("Processing queue for %s" % distrorelease.name)
+                if archive.purpose != ArchivePurpose.PPA:
+                    log.debug("Processing queue for %s %s" % (
+                        distrorelease.name, archive.title))
                 else:
                     log.debug("Processing queue for %s (%s)" % (
                         distrorelease.name, archive.archive_url))
