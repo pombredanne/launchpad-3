@@ -132,8 +132,12 @@
         </tal:not-logged-in>
       </div>
 
-      <div id="ask-your-own-question" xml:lang="en" lang="en" dir="ltr"
-        tal:condition="not: view/is_question_owner">
+      <div
+        class="related"
+        id="ask-your-own-question"
+        xml:lang="en" lang="en" dir="ltr"
+        tal:condition="not: view/is_question_owner"
+      >
         <h2>Got a question of your own?</h2>
 
         <p>For best results,

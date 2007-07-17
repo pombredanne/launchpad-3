@@ -523,7 +523,8 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
                 branch_id = branch.id
             except Unauthorized:
                 return '', ''
-            if requester.inTeam(branch.owner):
+            if (requester.inTeam(branch.owner)
+                and branch.branch_type == dbschema.BranchType.HOSTED):
                 return branch_id, WRITABLE
             else:
                 return branch_id, READ_ONLY
