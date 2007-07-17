@@ -502,8 +502,7 @@ an arbitrary constant that seemed appropriate).
     Printing doesn't work     0.70
 
 
-Natural Language Phrase Query
------------------------------
+== Natural Language Phrase Query ==
 
 The standard boolean searches of tsearch2 are fine, but sometime you
 want more fuzzy searches.
@@ -539,6 +538,9 @@ of the words (in the case of rank_cd()). Both scoring functions can
 normalize based on document length. So the only part left to implement
 is the >50% filtering part.
 
+
+=== nl_term_candidates() ===
+
 To find the terms in a search phrase that are canditates for the search,
 we can use the nl_term_candidates() function. This function uses ftq()
 internally to removes stop words and other words that will be ignored
@@ -565,6 +567,9 @@ Except for the hyphenation character, all non-word caracters are ignored:
     ...     "Will the \'\'|\'\' character (inside a ''quoted'' string) work???")
     ['charact', 'insid', 'quot', 'string', 'work']
 
+
+=== nl_phrase_search() ===
+
 To get the actual tsearch2 query that should be run, you will use the
 nl_phrase_search() function. This one takes two mandatory parameters and
 two optional ones. You pass in the search phrase and a SQLObject class.
@@ -589,6 +594,9 @@ So firefox will be removed from the final query:
 
     >>> nl_phrase_search('system is slow when running firefox', Question)
     'system|slow|run'
+
+
+==== Using other constraints ====
 
 You can pass a third parameter to the function that will be use as
 an additional constraint to determine the total number of rows that
