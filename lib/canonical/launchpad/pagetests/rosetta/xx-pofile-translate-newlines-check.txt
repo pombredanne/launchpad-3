@@ -60,7 +60,7 @@ change the test, to be 100% sure that the textarea content is the right one.
   ...     browser.contents,
   ...     'msgset_149_es_translation_0_new') #doctest: -NORMALIZE_WHITESPACE
   <textarea ... name="msgset_149_es_translation_0_new" ...>
-  foo</textarea>
+  ...foo</textarea>
 
 Now, Check that even though the user forgot the trailing new line char, Rosetta
 adds it automatically

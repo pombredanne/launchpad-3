@@ -39,6 +39,9 @@ from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
+
+from canonical.launchpad.webapp import canonical_url
+
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.translationformat import POHeader
 from canonical.librarian.interfaces import (
@@ -416,6 +419,54 @@ class POFile(SQLBase, POFileMixIn):
     def contributors(self):
         """See `IPOFile`."""
         return getUtility(IPersonSet).getPOFileContributors(self)
+
+    def prepareTranslationCredits(self, potmsgset):
+        """See `IPOFile`."""
+        msgid = potmsgset.singular_text
+        assert potmsgset.is_translation_credit, (
+            "Calling prepareTranslationCredits on a message with "
+            "msgid '%s'." % msgid)
+        text = potmsgset.translationsForLanguage(self.language.code)[0]
+        if (msgid == u'_: EMAIL OF TRANSLATORS\nYour emails'):
+            emails = []
+            if text is not None:
+                emails.append(text)
+
+            for contributor in self.contributors:
+                preferred_email = contributor.preferredemail
+                if (contributor.hide_email_addresses or
+                    preferred_email is None):
+                    emails.append('')
+                else:
+                    emails.append(preferred_email.email)
+            return u','.join(emails)
+        elif (msgid == u'_: NAME OF TRANSLATORS\nYour names'):
+            names = []
+            if text is not None:
+                names.append(text)
+            names.extend([
+                contributor.displayname
+                for contributor in self.contributors])
+            return u','.join(names)
+        elif (msgid in [u'translation-credits',
+                        u'translator-credits',
+                        u'translator_credits']):
+            if len(list(self.contributors)):
+                if text is None:
+                    text = u''
+                else:
+                    text += u'\n\n'
+
+                text += 'Launchpad Contributions:'
+                for contributor in self.contributors:
+                    text += ("\n  %s <%s>" %
+                             (contributor.displayname,
+                              canonical_url(contributor)))
+            return text
+        else:
+            raise AssertionError(
+                "Calling prepareTranslationCredits on a message with "
+                "msgid '%s'." % (msgid))
 
     def canEditTranslations(self, person):
         """See `IPOFile`."""
@@ -1367,6 +1418,9 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
+    def prepareTranslationCredits(self, potmsgset):
+        """See `IPOFile`."""
+        return None
 
 class POFileSet:
     implements(IPOFileSet)
