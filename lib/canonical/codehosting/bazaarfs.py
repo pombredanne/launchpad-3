@@ -106,7 +106,7 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
             if productID is None:
                 raise PermissionError(
                     "Directories directly under a user directory must be named "
-                    "after a product name registered in Launchpad "
+                    "after a project name registered in Launchpad "
                     "<https://launchpad.net/>.")
             productID = str(productID)
             productDir = SFTPServerProductDir(
