@@ -28,13 +28,8 @@ class PouringLoop:
         self.transaction_manager = transaction_manager
         self.cur = cursor()
 
-        # We batch simply by breaking the range of ids in our table down
-        # into fixed-size intervals.  Some of those fixed-size intervals
-        # may not have any rows in them, or very few.  That's not likely
-        # to be a problem though since we allocated all these ids in one
-        # single SQL statement.  No time for gaps to form.
         self.cur.execute("SELECT min(id), max(id) FROM %s" % from_table)
-        self.lowest_id, self.highest_id = self.cur.fetchall()[0]
+        self.lowest_id, self.highest_id = self.cur.fetchone()
 
         if self.lowest_id is None:
             # Table is empty.
@@ -45,12 +40,32 @@ class PouringLoop:
                      % (self.highest_id + 1 - self.lowest_id))
 
     def isDone(self):
-        return self.lowest_id > self.highest_id
+        return self.lowest_id is None or self.lowest_id > self.highest_id
 
     def __call__(self, batch_size):
         """Loop body: pour rows with ids up to "next" over to to_table."""
         batch_size = int(batch_size)
-        next = self.lowest_id + batch_size
+
+        # Figure out what id lies exactly batch_size rows ahead.
+        self.cur.execute("""
+            SELECT id
+            FROM %s
+            WHERE id >= %d
+            ORDER BY id
+            OFFSET %d
+            LIMIT 1
+            """ % (self.from_table, sqlvalues(self.lowest_id, batch_size)))
+        end_id = cur.fetchone()
+
+        if end_id is not None:
+            next = end_id[0]
+        else:
+            next = highest_id
+
+        next += 1
+
+        self.prepareBatch(
+            self.from_table, self.to_table, batch_size, self.lowest_id, next)
 
         logging.info("pouring %s: %d rows (%d-%d)"
                      % (self.from_table, batch_size, self.lowest_id, next))
@@ -68,6 +83,9 @@ class PouringLoop:
         self.transaction_manager.commit()
         self.transaction_manager.begin()
         self.cur = cursor()
+
+    def prepareBatch(self, batch_size, begin_id, end_id):
+        pass
 
 
 class MultiTableCopy:
@@ -158,24 +176,34 @@ class MultiTableCopy:
     while the multi-table copy is running, for instance.
     """
     # XXX: JeroenVermeulen 2007-05-24, More quoting, fewer assumptions!
+    # XXX: JeroenVermeulen 2007-07-06, Test case for inert_where feature
 
     def __init__(self, name, tables, seconds_per_batch=2.0,
-            minimum_batch_size=500):
+            minimum_batch_size=500, restartable=True):
         """Define a MultiTableCopy, including an in-order list of tables.
 
-        The name parameter is a unique identifier for this MultiTableCopy
-        operation, e.g. "ubuntu_feisty".  The name will be included in the
-        names of holding tables.
-
-        You must provide a list of tables that will be extracted and poured,
-        in the order in which they will be extracted (and later, poured).
-        This is essential when analyzing recoverable state.  You may perform
-        multiple extractions from the same table, but all tables listed must
-        be extracted.  If you do not wish to copy any rows from a source
-        table, extract with "false" in its where clause.
-
-        Pass a time goal (in seconds) to define how long, ideally, the
-        algorithm should be allowed to hold locks on the source tables.
+        :param name: a unique identifier for this MultiTableCopy operation,
+            e.g. "ubuntu_feisty".  The name will be included in the names of
+            holding tables.
+        :param tables: a list of tables that will be extracted and poured,
+            in the order in which they will be extracted (and later, poured).
+            This is essential when analyzing recoverable state.  You may
+            attempt multiple extractions from the same table, but all tables
+            listed must be extracted.  If you do not wish to copy any rows
+            from a source table, extract with "false" as its where clause.
+        :param seconds_per_batch: a time goal (in seconds) to define how long,
+            ideally, the algorithm should be allowed to hold locks on the
+            source tables.  It will try to do the work in batches that take
+            about this long.
+        :param minimum_batch_size: minimum number of rows to pour in one
+            batch.  You may want to set this to stop the algorithm from
+            resorting to endless single-row batches in situations where
+            response times are too slow but batch size turns out not to matter
+            much.
+        :param restartable: whether you want the remaining data to be
+            available for recovery if the connection (or the process) fails
+            while in the pouring stage.  If False, will extract to temp
+            tables.
         """
         self.name = str(name)
         self.tables = tables
@@ -183,6 +211,8 @@ class MultiTableCopy:
         self.seconds_per_batch = seconds_per_batch
         self.minimum_batch_size = minimum_batch_size
         self.last_extracted_table = None
+        self.restartable = restartable
+        self.prepare_functions = {}
 
     def dropHoldingTables(self):
         """Drop any holding tables that may exist for this MultiTableCopy."""
@@ -216,8 +246,9 @@ class MultiTableCopy:
         """
         return foreign_key
 
-    def extract(
-        self, source_table, joins=None, where_clause=None, id_sequence=None):
+    def extract( self, source_table, joins=None, where_clause=None,
+        id_sequence=None, inert_where=None, prepare_batch=None,
+        external_joins=None):
         """Extract (selected) rows from source_table into a holding table.
 
         The holding table gets an additional new_id column with identifiers
@@ -255,12 +286,43 @@ class MultiTableCopy:
             appended, which by SQLObject/Launchpad convention is the sequence
             that provides `source_table`'s primary key values.  Used verbatim,
             without quoting.
+        :param inert_where: Boolean SQL expression characterizing rows that
+            are extracted, but should not poured back into `source_table`
+            during the pouring stage.  For these rows, new_id will be null.
+            This clause is executed in a separate query, therefore will have
+            no access to any tables other than the newly created holding
+            table.  The clause can reference the holding table under the name
+            "holding"
+        :param prepare_batch: a callback that is called before each batch of
+            rows is poured, within the same transaction that pours those rows.
+            It takes as arguments the holding table's name; the source table's
+            name; current batch size; the id of the first row being poured;
+            and the id where the batch stops.  The "end id" is exclusive, so a
+            row with that id is not copied (and in fact may not even exist).
+            The time spent by `prepare_batch` is counted as part of the
+            batch's processing time.
+        :param external_joins: a list of tables to join into the extraction
+            query, so that the extraction condition can select on them.  Each
+            entry must be a string either simply naming a table ("Person"), or
+            naming a table and providing a name for it in the query (e.g.,
+            "Person p").  Do the latter if the same table also occurs
+            elsewhere in the same query.  Your `where_clause` can refer to the
+            rows included in this way by the names you give or by their table
+            name, SQL rules permitting.  If your join yields multiple rows
+            that have the same `source_table` id, only one arbitrary pick of
+            those will be extracted.
         """
         if id_sequence is None:
             id_sequence = "%s_id_seq" % source_table.lower()
 
         if joins is None:
             joins = []
+
+        if prepare_batch is not None:
+            self.prepare_functions[table] = prepare_batch
+
+        if external_joins is None:
+            external_joins = []
 
         source_table = str(source_table)
         self._checkExtractionOrder(source_table)
@@ -272,8 +334,8 @@ class MultiTableCopy:
 
         starttime = time.time()
 
-        cur = self._selectToHolding(
-            source_table, joins, where_clause, holding_table, id_sequence)
+        cur = self._selectToHolding(source_table, joins, external_joins,
+            where_clause, holding_table, id_sequence, inert_where)
 
         if len(joins) > 0:
             self._retargetForeignKeys(holding_table, joins, cur)
@@ -283,8 +345,8 @@ class MultiTableCopy:
 
         logging.info('...Extracted in %.3f seconds' % (time.time()-starttime))
 
-    def _selectToHolding(self, source_table, joins, where_clause,
-            holding_table, id_sequence):
+    def _selectToHolding(self, source_table, joins, external_joins,
+            where_clause, holding_table, id_sequence, inert_where):
         """Create holding table based on data from source table.
 
         We don't need to know what's in the source table exactly; we just
@@ -306,8 +368,10 @@ class MultiTableCopy:
             self._checkForeignKeyOrder(column, referenced_table)
 
             select.append('%s.new_id AS new_%s' % (referenced_holding, column))
-            from_list.append(referenced_holding) 
-            where.append('%s = %s.id' % (column, referenced_holding)) 
+            from_list.append(referenced_holding)
+            where.append('%s = %s.id' % (column, referenced_holding))
+
+        from_list.extend(external_joins)
 
         if where_clause is not None:
             where.append('(%s)' % where_clause)
@@ -321,17 +385,45 @@ class MultiTableCopy:
         # is allocated from the original table's id sequence, so it will be
         # unique in the original table.
         table_creation_parameters = {
-            'holding_table': holding_table,
             'columns': ','.join(select),
-            'id_sequence': id_sequence,
+            'holding_table': holding_table,
+            'id_sequence': "nextval('%s'::regclass)" % sid_sequence,
+            'inert_where': inert_where,
             'source_tables': ','.join(from_list),
-            'where': where_text}
+            'where': where_text,
+            'temp': '',
+            }
+        if self.restartable:
+            table_creation_parameters['temp'] = 'TEMP'
+
         cur = cursor()
-        cur.execute('''
-            CREATE TABLE %(holding_table)s AS
-            SELECT %(columns)s, nextval('%(id_sequence)s'::regclass) AS new_id
-            FROM %(source_tables)s
-            %(where)s''' % table_creation_parameters)
+
+        # Create holding table directly from select result.
+        if inert_when is None:
+            # We'll be pouring all rows from this table.  To avoid a costly
+            # second write pass (which would rewrite all records in the
+            # holding table), we assign new_ids right in the same query.
+            cur.execute('''
+                CREATE %(temp)s TABLE %(holding_table)s AS
+                SELECT DISTINCT ON (id) %(columns)s, %(id_sequence)s AS new_id
+                FROM %(source_tables)s
+                %(where)s''' % table_creation_parameters)
+        else:
+            # Some of the rows may have to have null new_ids.  To avoid
+            # wasting "address space" on the sequence, we populate the entire
+            # holding table with null new_ids, then fill in new_id only for
+            # rows that do not match the "inert_where" condition.
+            cur.execute('''
+                CREATE %(temp)s TABLE %(holding_table)s AS
+                SELECT %(columns)s, NULL AS new_id
+                FROM %(source_tables)s
+                %(where)s''' % table_creation_parameters)
+            cur.execute('''
+                UPDATE %(holding_table)s AS holding
+                SET new_id = %(id_sequence)s
+                WHERE NOT (%(inert_where)s)
+                ''' % table_creation_parameters)
+
         return cur
 
     def _indexIdColumn(self, holding_table, source_table, cur):
@@ -394,6 +486,9 @@ class MultiTableCopy:
     def pour(self, transaction_manager):
         """Pour data from holding tables back into source tables.
 
+        Rows in the holding table that have their new_id set to null are
+        skipped.
+
         The transaction manager is committed and re-opened after every batch
         run.
 
@@ -438,6 +533,9 @@ class MultiTableCopy:
 
             self._pourTable(
                 holding_table, table, has_new_id, transaction_manager)
+
+            # Drop holding table.  It may still contain rows with id set to
+            # null.  Those must not be poured.
             postgresql.drop_tables(cursor(), holding_table)
 
             logging.info(
@@ -453,13 +551,14 @@ class MultiTableCopy:
         This will commit transaction_manager, typically multiple times.
         """
         if has_new_id:
-            # Update ids in holding table from originals to copies.
-            # (If this is where we got interrupted by a failure in a
-            # previous run, no harm in doing it again)
+            # Update ids in holding table from originals to copies.  To
+            # broaden the caller's opportunity to manipulate rows in the
+            # holding tables, we skip rows that have new_id set to null.
             cur = cursor()
             cur.execute("UPDATE %s SET id=new_id" % holding_table)
             # Restore table to original schema
             cur.execute("ALTER TABLE %s DROP COLUMN new_id" % holding_table)
+            self._commit(transaction_manager)
             logging.info("...rearranged ids...")
 
         # Now pour holding table's data into its source table.  This is where
@@ -470,6 +569,8 @@ class MultiTableCopy:
         # five seconds or so each; we aim for four just to be sure.
 
         pourer = PouringLoop(holding_table, table, transaction_manager)
+        if self.prepare_functions.get(table):
+            pourer.prepareBatch = self.prepare_functions[table]
         LoopTuner(
             pourer, self.seconds_per_batch, self.minimum_batch_size).run()
 
