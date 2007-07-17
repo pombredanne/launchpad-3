@@ -82,7 +82,7 @@
     <adapter
       for="canonical.launchpad.interfaces.IProductSeries"
       provides="canonical.launchpad.interfaces.IQuestionTarget"
-      factory="canonical.launchpad.components.question.series_to_questiontarget"
+      factory="canonical.launchpad.components.answertracker.series_to_questiontarget"
       />
 
     <browser:pages

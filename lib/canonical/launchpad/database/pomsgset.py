@@ -425,11 +425,22 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         is_editor = (force_edition_rights or
                      self.pofile.canEditTranslations(person))
 
+        assert (published or is_editor or
+                self.pofile.canAddSuggestions(person)), (
+            '%s cannot add translations nor can add suggestions' % (
+                person.displayname))
+
         # First, check that the translations are correct.
         potmsgset = self.potmsgset
         original_texts = [potmsgset.singular_text]
         if potmsgset.plural_text is not None:
             original_texts.append(potmsgset.plural_text)
+
+        # If the update is on the translation credits message, yet
+        # update is not published, silently return
+        # XXX 20070626 Danilo: do we want to raise an exception here?
+        if potmsgset.is_translation_credit and not published:
+            return
 
         # By default all translations are correct.
         validation_status = TranslationValidationStatus.OK

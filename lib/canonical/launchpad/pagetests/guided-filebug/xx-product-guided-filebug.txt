@@ -47,7 +47,8 @@ the current context.
     >>> from canonical.launchpad.ftests.bug import print_bugs_list
 
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
-    #1: Firefox does not support SVG
+    #1 Firefox does not support SVG
+    New, last updated 2006-05-19
 
 If the user doesn't see their bug already reported, they can proceed to
 file the bug.
@@ -102,12 +103,13 @@ a "me too" vote.
 As before, we get a list of similar bugs to choose from.
 
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
-    #1: Firefox does not support SVG
+    #1 Firefox does not support SVG
+    New, last updated 2006-05-19
 
 This one matches, so we subscribe.
 
     >>> user_browser.getControl(
-    ...     '#1: Firefox does not support SVG').selected = True
+    ...     '#1 Firefox does not support SVG').selected = True
     >>> user_browser.getControl('Subscribe To This Bug').click()
 
     >>> print user_browser.url

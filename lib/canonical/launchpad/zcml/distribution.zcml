@@ -28,6 +28,15 @@
       permission="launchpad.AnyPerson"
       attributes="newQuestion addAnswerContact removeAnswerContact"
       />
+    <!-- IFAQTarget -->
+    <allow
+      interface="canonical.launchpad.interfaces.IFAQCollection"
+      attributes="findSimilarFAQs"
+      />
+    <require
+      permission="launchpad.Moderate"
+      attributes="newFAQ"
+      />
   </content>
 
   <browser:menus

@@ -1,0 +1,48 @@
+= Dissecting the Action Radio Button on Login Form =
+
+The login page of the Login Service contains a set of radio buttons
+where the user can choose to log in with an existing account, create
+an account or reset their password.
+
+Zope makes it easy to display these radio buttons together in a group,
+but we want to be able to show the password entry field next to the
+first option.
+
+To do this, we get the Zope widget to render itself, then dissect the
+radio button group into its individual buttons.  This is performed
+in the setUpWidgets() routine.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.browser.openidserver import (
+    ...     LoginServiceLoginView)
+    >>> from canonical.launchpad.interfaces import IOpenIdApplication
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+
+    >>> class TestingLoginServiceLoginView(LoginServiceLoginView):
+    ...     def restoreRequestFromSession(self, key):
+    ...         # This is stubbed out so we don't have to bother with
+    ...         # session handling.
+    ...         self.openid_request = None
+
+    >>> context = getUtility(IOpenIdApplication)
+    >>> request = LaunchpadTestRequest()
+    >>> view = TestingLoginServiceLoginView(context, request, 'fake-nonce')
+    >>> view.setUpFields()
+    >>> view.setUpWidgets()
+
+We can now access each of the individual radio buttons:
+
+    >>> print view.login_radio_button
+    <label style="..."><input class="radioType" checked="checked"
+      id="field.action.0" name="field.action"
+      type="radio" value="login" />...</label>
+
+    >>> print view.createaccount_radio_button
+    <label style="..."><input class="radioType"
+      id="field.action.1" name="field.action"
+      type="radio" value="createaccount" />...</label>
+
+    >>> print view.resetpassword_radio_button
+    <label style="..."><input class="radioType"
+      id="field.action.2" name="field.action"
+      type="radio" value="resetpassword" />...</label>

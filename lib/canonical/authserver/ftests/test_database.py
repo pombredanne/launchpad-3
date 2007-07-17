@@ -5,9 +5,10 @@
 __metaclass__ = type
 
 import unittest
+import datetime
 
+import pytz
 import transaction
-
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
@@ -31,6 +32,9 @@ from canonical.lp import dbschema
 from canonical.launchpad.ftests.harness import LaunchpadTestCase
 
 from canonical.testing.layers import LaunchpadScriptLayer
+
+
+UTC = pytz.timezone('UTC')
 
 
 class TestDatabaseSetup(LaunchpadTestCase):
@@ -346,6 +350,24 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
             12, 'sabdfl', 'firefox', 'release-0.8')
         self.assertEqual(13, branch_id)
         self.assertEqual(READ_ONLY, permissions)
+
+    def test_getBranchInformation_mirrored(self):
+        # Mirrored branches cannot be written to by the smartserver or SFTP
+        # server.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'name12', 'firefox', 'main')
+        self.assertEqual(1, branch_id)
+        self.assertEqual(READ_ONLY, permissions)
+
+    def test_getBranchInformation_imported(self):
+        # Imported branches cannot be written to by the smartserver or SFTP
+        # server.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'vcs-imports', 'gnome-terminal', 'import')
+        self.assertEqual(75, branch_id)
+        self.assertEqual(READ_ONLY, permissions)        
 
     def test_getBranchInformation_private(self):
         # When we get the branch information for a private branch that is
@@ -1011,6 +1033,26 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.connection.commit()
         self.failIf(self.isBranchInPullQueue(14),
             "import branch mirrored <1 day ago in pull queue.")
+
+    def test_recordSuccess(self):
+        # recordSuccess must insert the given data into BranchActivity.
+        started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
+        completed = datetime.datetime(2007, 07, 05, 19, 34, 24, tzinfo=UTC)
+        started_tuple = tuple(started.utctimetuple())
+        completed_tuple = tuple(completed.utctimetuple())
+        success = self.storage._recordSuccessInteraction(
+            self.cursor, 'test-recordsuccess', 'vostok',
+            started_tuple, completed_tuple)
+        self.assertEqual(success, True, '_recordSuccessInteraction failed')
+
+        self.cursor.execute("""
+            SELECT name, hostname, date_started, date_completed
+                FROM ScriptActivity where name = 'test-recordsuccess'""")
+        row = self.cursor.fetchone()
+        self.assertEqual(row[0], 'test-recordsuccess')
+        self.assertEqual(row[1], 'vostok')
+        self.assertEqual(row[2], started.replace(tzinfo=None))
+        self.assertEqual(row[3], completed.replace(tzinfo=None))
 
 
 def test_suite():

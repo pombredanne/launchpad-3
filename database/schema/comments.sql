@@ -245,10 +245,49 @@ active.';
 
 COMMENT ON TABLE LaunchpadStatistic IS 'A store of system-wide statistics or other integer values, keyed by names. The names are unique and the values can be any integer. Each field has a place to store the timestamp when it was last updated, so it is possible to know how far out of date any given statistic is.';
 
+-- MailingList
+
+COMMENT ON TABLE MailingList IS 'The mailing list for a team.  Teams may have zero or one mailing list, and a mailing list is associated with exactly one team.  This table manages the state changes that a team mailing list can go through, and it contains information that will be used to instruct Mailman how to create, delete, and modify mailing lists (via XMLRPC).';
+COMMENT ON COLUMN MailingList.team IS 'The team this mailing list is associated with.';
+COMMENT ON COLUMN MailingList.registrant IS 'The id of the Person who requested this list be created.';
+COMMENT ON COLUMN MailingList.date_registered IS 'Date the list was requested to be created';
+COMMENT ON COLUMN MailingList.reviewer IS 'The id of the Person who reviewed the creation request, or NULL if not yet reviewed.';
+COMMENT ON COLUMN MailingList.date_reviewed IS 'The date the request was reviewed, or NULL if not yet reviewed.';
+COMMENT ON COLUMN MailingList.date_activated IS 'The date the list was (last) activated.  If the list is not yet active, this field will be NULL.';
+COMMENT ON COLUMN MailingList.status IS 'The current status of the mailing list, as a dbschema.MailingListStatus value.';
+COMMENT ON COLUMN MailingList.welcome_message_text IS 'Text sent to new members when they are subscribed to the team list.  If NULL, no welcome message is sent.';
+
+-- MailingListSubscription
+
+COMMENT ON TABLE MailingListSubscription IS 'Track the subscriptions of a person to team mailing lists.';
+COMMENT ON COLUMN MailingListSubscription.person IS 'The person who is subscribed to the mailing list.';
+COMMENT ON COLUMN MailingListSubscription.mailing_list IS 'The mailing list this person is subscribed to.';
+COMMENT ON COLUMN MailingListSubscription.date_joined IS 'The date this person subscribed to the mailing list.';
+COMMENT ON COLUMN MailingListSubscription.email_address IS 'Which of the person\'s email addresses are subscribed to the mailing list.  This may be NULL to indicate that it\'s the person\'s preferred address.';
+
+-- MailingListBan
+
+COMMENT ON TABLE MailingListBan IS 'Track explicit Launchpad-wide posting bans imposed on people by Launchpad administrators.';
+COMMENT ON COLUMN MailingListBan.person IS 'The person who was banned.';
+COMMENT ON COLUMN MailingListBan.banned_by IS 'The administrator who imposed the ban.';
+COMMENT ON COLUMN MailingListBan.date_banned IS 'When the ban was imposed.';
+COMMENT ON COLUMN MailingListBan.reason_text IS 'The reason for the ban.';
 
 -- MentoringOffer
 COMMENT ON TABLE MentoringOffer IS 'An offer to provide mentoring if someone wa nts to help get a specific bug fixed or blueprint implemented. These offers are specifically associated with a team in which the offeror is a member, so it beco mes possible to encourage people who want to join a team to start by working on things that existing team members are willing to mentor.';
 COMMENT ON COLUMN MentoringOffer.team IS 'This is the team to which this offer of mentoring is associated. We associate each offer of mentoring with a team, de signated as "the team which will most benefit from the bug fix or spec implement ation", and this then allows us to provide a list of work for which mentoring is available for prospective members of those teams. This is really the "onramp" i dea - the list is the "onramp" to membership in the relevant team.';
+
+-- MessageApproval
+
+COMMENT ON TABLE MessageApproval IS 'Track mailing list postings awaiting approval from the team owner.';
+COMMENT ON COLUMN MessageApproval.message_id IS 'The Message-ID header of the held message.';
+COMMENT ON COLUMN MessageApproval.posted_by IS 'The person who posted the message.';
+COMMENT ON COLUMN MessageApproval.mailing_list IS 'The mailing list to which the message was posted.';
+COMMENT ON COLUMN MessageApproval.posted_message IS 'Foreign key to libraryfilealias table pointing to where the posted message\'s text lives.';
+COMMENT ON COLUMN MessageApproval.posted_date IS 'The date the message was posted.';
+COMMENT ON COLUMN MessageApproval.status IS 'The status of the posted message.  Values are described in dbschema.PostedMessageStatus.';
+COMMENT ON COLUMN MessageApproval.disposed_by IS 'The person who disposed of (i.e. approved or rejected) the message, or NULL if no disposition has yet been made.';
+COMMENT ON COLUMN MessageApproval.disposal_date IS 'The date on which this message was disposed, or NULL if no disposition has yet been made.';
 
 -- Product
 COMMENT ON TABLE Product IS 'Product: a DOAP Product. This table stores core information about an open source product. In Launchpad, anything that can be shipped as a tarball would be a product, and in some cases there might be products for things that never actually ship, depending on the project. For example, most projects will have a \'website\' product, because that allows you to file a Malone bug against the project website. Note that these are not actual product releases, which are stored in the ProductRelease table.';
@@ -559,7 +598,7 @@ COMMENT ON COLUMN QuestionReopening.priorstate IS 'The state of the question bef
 COMMENT ON TABLE QuestionSubscription IS 'A subscription of a person to a particular question.';
 
 
--- FAQ 
+-- FAQ
 COMMENT ON TABLE FAQ IS 'A technical document containing the answer to a common question.';
 COMMENT ON COLUMN FAQ.id IS 'The FAQ document sequence number.';
 COMMENT ON COLUMN FAQ.title IS 'The document title.';
@@ -825,6 +864,11 @@ COMMENT ON COLUMN Person.logo IS 'The library file alias of a smaller version of
 COMMENT ON COLUMN Person.creation_rationale IS 'The rationale for the creation of this person -- a dbschema value.';
 COMMENT ON COLUMN Person.creation_comment IS 'A text comment for the creation of this person.';
 COMMENT ON COLUMN Person.registrant IS 'The user who created this profile.';
+COMMENT ON COLUMN Person.personal_standing IS 'The standing of the person, which indicates (for now, just) whether the person can post to a mailing list without requiring first post moderation.  Values are documented in dbschema.PersonalStanding.';
+COMMENT ON COLUMN Person.personal_standing_reason_text IS 'The reason a person\'s standing has changed.';
+COMMENT ON COLUMN Person.mail_resumption_date IS 'A NULL resumption date or a date in the past indicates that there is no vacation in effect.  Vacations are granular to the day, so a datetime is not necessary.';
+COMMENT ON COLUMN Person.mailing_list_auto_subscribe_policy IS 'The auto-subscription policy for the person, i.e. whether and how the user is automatically subscribed to mailing lists for teams they join.  Values are described in dbschema.MailingListAutoSubscribePolicy.';
+COMMENT ON COLUMN Person.mailing_list_receive_duplicates IS 'True means the user wants to receive list copies of messages on which they are explicitly named as a recipient.';
 
 COMMENT ON TABLE ValidPersonOrTeamCache IS 'A materialized view listing the Person.ids of all valid people and teams.';
 
