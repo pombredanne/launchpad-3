@@ -102,7 +102,7 @@ class ExternalBugTracker:
     implements(IExternalBugtracker)
 
     def urlopen(self, request, data=None):
-        return urllib.urlopen(request, data)
+        return urllib2.urlopen(request, data)
 
     def initializeRemoteBugDB(self, bug_ids):
         """Do any initialization before each bug watch is updated.
