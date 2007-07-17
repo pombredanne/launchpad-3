@@ -14,12 +14,6 @@
 
     <div tal:condition="not: view/successfullyProcessed">
 
-        <p
-          tal:condition="view/errormessage"
-          tal:content="view/errormessage"
-          class="error message"
-        />
-
       <p>You&#8217;re trying to merge the Launchpad account named
       <code tal:content="view/dupe/name">foo</code> into the
       account named <code tal:content="context/requester/name">bar</code>.

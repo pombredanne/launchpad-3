@@ -11,11 +11,7 @@ Alsa-utils, for instance, doesn't use Launchpad Bugs:
     >>> for message in find_tags_by_class(user_browser.contents, 'warning'):
     ...     print extract_text(message)
     alsa-utils does not use Launchpad as its bug tracker.
-    >>> user_browser.getControl(name="field.title")
-    Traceback (most recent call last):
-      ..
-    LookupError: name 'field.title'
-
+ 
 But it's packaged in Ubuntu and Debian, and we suggest those packages
 for filing bugs:
 
