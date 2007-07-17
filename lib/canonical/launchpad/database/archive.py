@@ -9,15 +9,18 @@ __all__ = ['Archive', 'ArchiveSet']
 import os
 
 from sqlobject import StringCol, ForeignKey
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.archivepublisher.config import Config as PubConfig
 from canonical.config import config
+from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
-from canonical.launchpad.interfaces import IArchive, IArchiveSet
+from canonical.launchpad.interfaces import (IArchive, IArchiveSet, 
+    IDistributionSet)
 from canonical.launchpad.webapp.url import urlappend
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackageUploadStatus)
+    ArchivePurpose, PackagePublishingStatus, PackageUploadStatus)
 
 
 class Archive(SQLBase):
@@ -28,12 +31,16 @@ class Archive(SQLBase):
     owner = ForeignKey(
         foreignKey='Person', dbName='owner', notNull=False)
     description = StringCol(dbName='description', notNull=False, default=None)
+    distribution = ForeignKey(
+        foreignKey='Distribution', dbName='distribution', notNull=False)
+    purpose = EnumCol(dbName='purpose', unique=False, notNull=True,
+        schema=ArchivePurpose)
 
     def getPubConfig(self, distribution):
         """See IArchive."""
         pubconf = PubConfig(distribution)
 
-        if self.id == distribution.main_archive.id:
+        if self.purpose == ArchivePurpose.PRIMARY:
             return pubconf
 
         pubconf.distroroot = config.personalpackagearchive.root
@@ -65,20 +72,28 @@ class ArchiveSet:
         """See canonical.launchpad.interfaces.IArchiveSet."""
         return Archive.get(archive_id)
 
-    def new(self, owner=None):
-        """See canonical.launchpad.interfaces.IArchiveSet."""
-        return Archive(owner=owner)
+    def getByDistroPurpose(self, distribution, purpose):
+        return Archive.selectOneBy(distribution=distribution, purpose=purpose)
 
-    def ensure(self, owner):
+    def new(self, distribution=None, purpose=None, owner=None):
+        """See canonical.launchpad.interfaces.IArchiveSet."""
+        if purpose == ArchivePurpose.PPA:
+            assert owner, "Owner required when purpose is PPA."
+        if distribution is None:
+            distribution = getUtility(IDistributionSet)['ubuntu']
+        return Archive(owner=owner, distribution=distribution, purpose=purpose)
+
+    def ensure(self, owner, distribution, purpose):
         """See canonical.launchpad.interfaces.IArchiveSet."""
         archive = owner.archive
         if archive is None:
-            archive = self.new(owner=owner)
+            archive = self.new(distribution=distribution, purpose=purpose,
+                owner=owner)
         return archive
 
     def getAllPPAs(self):
         """See canonical.launchpad.interfaces.IArchiveSet."""
-        return Archive.select("owner is not NULL")
+        return Archive.selectBy(purpose=ArchivePurpose.PPA)
 
     def getPendingAcceptancePPAs(self):
         """See canonical.launchpad.interfaces.IArchiveSet."""

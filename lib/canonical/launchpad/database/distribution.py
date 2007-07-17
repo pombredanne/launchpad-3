@@ -12,6 +12,8 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -20,9 +22,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.question import (
@@ -55,15 +59,16 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    BugTaskStatus, DistroSeriesStatus, MirrorContent,
+    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, MirrorContent,
     TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationStatus, PackagePublishingStatus)
+    SpecificationDefinitionStatus, SpecificationImplementationStatus,
+    PackagePublishingStatus)
 
 from canonical.launchpad.interfaces import (
-    IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
-    ILaunchpadCelebrities, ISourcePackageName, IQuestionTarget, NotFoundError,
-    QUESTION_STATUS_DEFAULT_SEARCH,\
-    IHasLogo, IHasMugshot, IHasIcon)
+    IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IFAQTarget, 
+    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, 
+    ISourcePackageName, IQuestionTarget, NotFoundError, 
+    QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.archivepublisher.debversion import Version
 
@@ -74,7 +79,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasSprintsMixin, KarmaContextMixin, QuestionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IHasBuildRecords, IQuestionTarget,
+        IDistribution, IFAQTarget, IHasBuildRecords, IQuestionTarget,
         IHasLogo, IHasMugshot, IHasIcon)
 
     _table = 'Distribution'
@@ -135,8 +140,12 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
-    main_archive = ForeignKey(dbName='main_archive',
-        foreignKey='Archive', notNull=True)
+
+    @cachedproperty
+    def main_archive(self):
+        """See IDistribution."""
+        return Archive.selectOneBy(distribution=self,
+                                   purpose=ArchivePurpose.PRIMARY)
 
     @property
     def all_milestones(self):
@@ -452,7 +461,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = (
-                ['-priority', 'Specification.status', 'Specification.name'])
+                ['-priority', 'Specification.definition_status', 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -466,7 +475,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s ' %
+                quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -480,9 +490,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationStatus.OBSOLETE,
-                          SpecificationStatus.SUPERSEDED)
+            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                          SpecificationDefinitionStatus.SUPERSEDED)
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -537,6 +547,26 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return False
         return True
 
+    def newFAQ(self, owner, title, content, keywords=None, date_created=None):
+        """See `IFAQTarget`."""
+        return FAQ.new(
+            owner=owner, title=title, content=content, keywords=keywords,
+            date_created=date_created, distribution=self)
+
+    def findSimilarFAQs(self, summary):
+        """See `IFAQTarget`."""
+        return FAQ.findSimilar(summary, distribution=self)
+
+    def getFAQ(self, id):
+        """See `IFAQCollection`."""
+        return FAQ.getForTarget(id, self)
+
+    def searchFAQs(self, search_text=None, owner=None, sort=None):
+        """See `IFAQCollection`."""
+        return FAQSearch(
+            search_text=search_text, owner=owner, sort=sort,
+            distribution=self).getResults()
+    
     def ensureRelatedBounty(self, bounty):
         """See `IDistribution`."""
         for curr_bounty in self.bounties:
@@ -905,9 +935,9 @@ class DistributionSet:
             return None
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, main_archive, mugshot=None, logo=None, icon=None):
+            members, owner, mugshot=None, logo=None, icon=None):
         """See `IDistributionSet`."""
-        return Distribution(
+        distro = Distribution(
             name=name,
             displayname=displayname,
             title=title,
@@ -917,7 +947,9 @@ class DistributionSet:
             members=members,
             mirror_admin=owner,
             owner=owner,
-            main_archive=main_archive,
             mugshot=mugshot,
             logo=logo,
             icon=icon)
+        archive = getUtility(IArchiveSet).new(distribution=distro,
+            purpose=ArchivePurpose.PRIMARY)
+        return distro
