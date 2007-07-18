@@ -62,6 +62,21 @@ person.
     2 Blackhole Trash folder
         mozilla-firefox (Debian) Low Confirmed
 
+=== Commented bugs ===
+
+    >>> anon_browser.getLink('List commented bugs').click()
+    >>> print anon_browser.title
+    Bugs commented on by Sample Person
+    >>> print anon_browser.url
+    http://bugs.launchpad.dev/~name12/+commentedbugs
+
+    >>> print_bugtasks(anon_browser.contents)
+    1 Firefox does not support SVG
+        mozilla-firefox (Ubuntu) Medium New
+    2 Blackhole Trash folder
+        mozilla-firefox (Debian Woody) Medium New
+    ...
+
 === Reported bugs ===
 
     >>> anon_browser.getLink('List reported bugs').click()
