@@ -111,7 +111,8 @@ an appropriate message is displayed to inform him of this:
 
     >>> soup = BeautifulSoup(user_browser.contents)
     >>> print soup.first('p').renderContents()
-    There are no existing questions similar to the summary you entered.
+    There are no existing FAQs or questions similar to the summary you
+    entered.
 
 The user then elaborates upon his question by entering a description
 of the problem. He submits the form using the 'Add' button.
@@ -165,9 +166,9 @@ non-English languages. Dafydd speaks Japanese, so we will use him.
     >>> daf_browser.getControl('I want to be an answer contact for '
     ...                        'Mozilla Thunderbird').selected = True
     >>> daf_browser.getControl('Continue').click()
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> soup = BeautifulSoup(daf_browser.contents)
-    >>> print soup.first('div', 'informational message').renderContents()
+    >>> content = find_main_content(daf_browser.contents)
+    >>> for message in content.findAll('div', 'informational message'):
+    ...      print message.renderContents()
     You have been added as an answer contact for Mozilla Thunderbird.
 
 And we add Japanese to No Privileges Person's preferred languages. We

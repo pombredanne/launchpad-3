@@ -22,9 +22,9 @@ a list of possible duplicates.
     >>> user_browser.getControl('Summary').value = 'Evolution crashes'
     >>> user_browser.getControl('Continue').click()
 
-    >>> from canonical.launchpad.ftests.bug import print_bugs_list
-    >>> print_bugs_list(user_browser.contents, "similar-bugs")
-    #7: A test bug
+    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+    ...     print message.renderContents()
+    No similar bugs were found.
 
 Entering a description and submitting the bug takes the user to the bug
 page.
@@ -72,10 +72,12 @@ a "me too" vote.
 As before, we get a list of similar bugs to choose from, including the
 bugs we filed recently.
 
+    >>> from canonical.launchpad.ftests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
-    #7: A test bug
-    #...: Evolution crashes
-    #...: Evolution crashes lots
+    #... Evolution crashes
+    New, last updated ...
+    #... Evolution crashes lots
+    New, last updated ...
 
 This one matches, so we subscribe.
 

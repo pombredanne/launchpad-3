@@ -57,7 +57,8 @@ class BuilddSlaveTestSetup(TacTestSetup):
     def tearDown(self):
         """Tear down the system normally and additionaly remove the root."""
         TacTestSetup.tearDown(self)
-        shutil.rmtree(self.root)
+        if os.path.isdir(self.root):
+            shutil.rmtree(self.root)
 
     @property
     def root(self):

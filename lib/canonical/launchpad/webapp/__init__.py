@@ -81,10 +81,14 @@ def smartquote(str):
     u'""foo " bar "" baz""'
     >>> smartquote('" foo "')
     u'" foo "'
+    >>> smartquote('"foo".')
+    u'\u201cfoo\u201d.'
+    >>> smartquote('a lot of "foo"?')
+    u'a lot of \u201cfoo\u201d?'
     """
     str = unicode(str)
     str = re.compile(u'(^| )(")([^" ])').sub(u'\\1\u201c\\3', str)
-    str = re.compile(u'([^ "])(")($| )').sub(u'\\1\u201d\\3', str)
+    str = re.compile(u'([^ "])(")($|[\s.,;:!?])').sub(u'\\1\u201d\\3', str)
     return str
 
 
