@@ -401,10 +401,6 @@ will not be included in the results returned by the bug commenter search.
     ...     CreateBugParams(no_priv, "Some bug", "Some comment"))
     <Bug at ...>
 
-    >>> found_bugtasks = bugtask_set.search(no_priv_bug_commenter)
-    >>> found_bugtasks.count()
-    8
-
     >>> sorted([bugtask.bug.id for bugtask in found_bugtasks])
     [1, 1, 1, 2, 2, 2, 2, 2]
 
