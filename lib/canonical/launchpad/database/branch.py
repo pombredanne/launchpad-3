@@ -66,6 +66,7 @@ class Branch(SQLBase):
     last_mirror_attempt = UtcDateTimeCol(default=None)
     mirror_failures = IntCol(default=0, notNull=True)
     pull_disabled = BoolCol(default=False, notNull=True)
+    mirror_request_time = UtcDateTimeCol(default=None)
 
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
@@ -251,6 +252,12 @@ class Branch(SQLBase):
             if sequence is not None:
                 history.append(revision_id)
         return ancestry, history, branch_revision_map
+
+    def requestMirror(self):
+        """See `IBranch`."""
+        self.mirror_request_time = UTC_NOW
+        self.syncUpdate()
+        return self.mirror_request_time
 
 
 class BranchSet:

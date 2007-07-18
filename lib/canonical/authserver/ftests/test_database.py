@@ -204,6 +204,15 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         [mirror_request_time] = cur.fetchone()
         return mirror_request_time
 
+    def isBranchInPullQueue(self, branch_id):
+        """Whether the branch with this id is present in the pull queue."""
+        storage = DatabaseBranchDetailsStorage(None)
+        cur = cursor()
+        results = storage._getBranchPullQueueInteraction(cur)
+        return branch_id in (
+            result_branch_id
+            for result_branch_id, result_pull_url, unique_name in results)
+
     def test_createBranch(self):
         storage = DatabaseUserDetailsStorageV2(None)
         branchID = storage._createBranchInteraction(
@@ -436,6 +445,73 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         userDict2 = storage._getUserInteraction('test@canonical.com')
         self.assertEqual(userDict, userDict2)
 
+    def test_requestMirror(self):
+        # requestMirror should set the mirror_request_time field to be the
+        # current time.
+        hosted_branch_id = 25
+        # make sure the sample data is sane
+        self.assertEqual(self._getTime(hosted_branch_id), None)
+
+        cur = cursor()
+        cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
+        [current_db_time] = cur.fetchone()
+
+        storage = DatabaseUserDetailsStorageV2(None)
+        storage._requestMirrorInteraction(hosted_branch_id)
+
+        self.assertTrue(current_db_time < self._getTime(hosted_branch_id),
+                        "Branch mirror_request_time not updated.")
+
+    def test_mirrorComplete_resets_mirror_request(self):
+        # After successfully mirroring a branch, mirror_request_time should be
+        # set to NULL.
+
+        # Request that 25 (a hosted branch) be mirrored. This sets
+        # mirror_request_time.
+        storage = DatabaseUserDetailsStorageV2(None)
+        storage._requestMirrorInteraction(25)
+
+        # Simulate successfully mirroring branch 25
+        storage = DatabaseBranchDetailsStorage(None)
+        cur = cursor()
+        storage._startMirroringInteraction(cur, 25)
+        storage._mirrorCompleteInteraction(cur, 25, 'rev-1')
+
+        self.assertEqual(None, self._getTime(25))
+
+    def test_mirrorFailed_resets_mirror_request(self):
+        # After failing to mirror a branch, mirror_request_time for that branch
+        # should be set to NULL.
+
+        # Request that 25 (a hosted branch) be mirrored. This sets
+        # mirror_request_time.
+        storage = DatabaseUserDetailsStorageV2(None)
+        storage._requestMirrorInteraction(25)
+
+        # Simulate successfully mirroring branch 25
+        storage = DatabaseBranchDetailsStorage(None)
+        cur = cursor()
+        storage._startMirroringInteraction(cur, 25)
+        storage._mirrorFailedInteraction(cur, 25, 'failed')
+
+        self.assertEqual(None, self._getTime(25))
+
+    def test_requested_hosted_branches(self):
+        # Hosted branches that HAVE had a mirror requested should be in
+        # the branch queue
+
+        # Mark 25 (a hosted branch) as recently mirrored.
+        storage = DatabaseBranchDetailsStorage(None)
+        cur = cursor()
+        storage._startMirroringInteraction(cur, 25)
+        storage._mirrorCompleteInteraction(cur, 25, 'rev-1')
+
+        # Request a mirror
+        storage = DatabaseUserDetailsStorageV2(None)
+        storage._requestMirrorInteraction(25)
+
+        self.failUnless(self.isBranchInPullQueue(25), "Should be in queue")
+
 
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
     # Tests that do some database writes (but makes sure to roll them back)
@@ -453,19 +529,6 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
             WHERE id = %d""" % row_id)
         [mirror_request_time] = self.cursor.fetchone()
         return mirror_request_time
-
-    def test_requestMirror(self):
-        # requestMirror should set the mirror_request_time field to be the
-        # current time.
-        hosted_branch_id = 25
-        # make sure the sample data is sane
-        self.assertEqual(self._getTime(hosted_branch_id), None)
-
-        storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(self.cursor, hosted_branch_id)
-        self.cursor.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
-        [current_db_time] = self.cursor.fetchone()
-        self.assertEqual(current_db_time, self._getTime(hosted_branch_id))
 
     def test_authUser(self):
         # Authenticating a user with the right password should work
@@ -740,36 +803,6 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual(row[2], 0)
         self.assertEqual(row[3], 'rev-1')
 
-    def test_mirrorComplete_resets_mirror_request(self):
-        # After successfully mirroring a branch, mirror_request_time should be
-        # set to NULL.
-
-        # Request that 25 (a hosted branch) be mirrored. This sets
-        # mirror_request_time.
-        storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(self.cursor, 25)
-
-        # Simulate successfully mirroring branch 25
-        self.storage._startMirroringInteraction(self.cursor, 25)
-        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
-
-        self.assertEqual(None, self.getMirrorRequestTime(25))
-
-    def test_mirrorFailed_resets_mirror_request(self):
-        # After failing to mirror a branch, mirror_request_time for that branch
-        # should be set to NULL.
-
-        # Request that 25 (a hosted branch) be mirrored. This sets
-        # mirror_request_time.
-        storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(self.cursor, 25)
-
-        # Simulate successfully mirroring branch 25
-        self.storage._startMirroringInteraction(self.cursor, 25)
-        self.storage._mirrorFailedInteraction(self.cursor, 25, 'failed')
-
-        self.assertEqual(None, self.getMirrorRequestTime(25))
-
     def test_mirrorComplete_resets_failure_count(self):
         # this increments the failure count ...
         self.test_mirrorFailed()
@@ -803,20 +836,6 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
 
         self.failIf(self.isBranchInPullQueue(25),
                     "Shouldn't be in queue until mirror requested")
-
-    def test_requested_hosted_branches(self):
-        # Hosted branches that HAVE had a mirror requested should be in
-        # the branch queue
-
-        # Mark 25 (a hosted branch) as recently mirrored.
-        self.storage._startMirroringInteraction(self.cursor, 25)
-        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
-
-        # Request a mirror
-        storage = DatabaseUserDetailsStorageV2(None)
-        storage._requestMirrorInteraction(self.cursor, 25)
-
-        self.failUnless(self.isBranchInPullQueue(25), "Should be in queue")
 
     def test_mirror_stale_hosted_branches(self):
         # Hosted branches which haven't been mirrored for a whole day should be

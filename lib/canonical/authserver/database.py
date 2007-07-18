@@ -453,17 +453,13 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
     def requestMirror(self, branchID):
         """See IHostedBranchStorage."""
-        ri = self.connectionPool.runInteraction
-        return ri(self._requestMirrorInteraction, branchID)
+        return deferToThread(self._requestMirrorInteraction, branchID)
 
-    def _requestMirrorInteraction(self, transaction, branchID):
+    @writing_transaction
+    def _requestMirrorInteraction(self, branchID):
         """The interaction for requestMirror."""
-        transaction.execute("""
-            UPDATE Branch
-            SET mirror_request_time = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-            WHERE id = %s
-        """ % sqlvalues(branchID))
-        # xmlrpc doesn't let us return None. True is an acceptable substitute.
+        branch = getUtility(IBranchSet).get(branchID)
+        branch.requestMirror()
         return True
 
     def getBranchInformation(self, loginID, userName, productName, branchName):

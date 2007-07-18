@@ -217,6 +217,10 @@ class IBranch(IHasOwner):
         description=_("Disable periodic pulling of this branch by Launchpad. "
                       "That will prevent connection attempts to the branch "
                       "URL. Use this if the branch is no longer available."))
+    mirror_request_time = Datetime(
+        title=_("If this value is more recent than the last mirror attempt, "
+                "then the branch will be mirrored on the next mirror run."),
+        required=False)
 
     # Scanning attributes
     last_scanned = Datetime(
@@ -325,6 +329,11 @@ class IBranch(IHasOwner):
                bzrlib.Branch.revision_history().
             3. Dictionnary mapping bzr bzr revision-ids to the database ids of
                the corresponding BranchRevision rows for this branch.
+        """
+
+    def requestMirror():
+        """Request that this branch be mirrored on the next run of the branch
+        puller.
         """
 
 
