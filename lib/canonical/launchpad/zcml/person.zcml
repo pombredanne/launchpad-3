@@ -348,7 +348,7 @@
     />
 
   <browser:addform
-    name="+activatearchive"
+    name="+activate-ppa"
     for="canonical.launchpad.interfaces.IPerson"
     facet="overview"
     schema="canonical.launchpad.interfaces.IArchive"

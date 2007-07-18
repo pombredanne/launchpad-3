@@ -732,17 +732,17 @@ class CommonMenuLinks:
         return Link(target, text, summary, icon='packages')
 
     @enabled_with_permission('launchpad.Edit')
-    def activatearchive(self):
+    def activate_ppa(self):
         enabled = True
         if self.context.archive is not None:
             enabled = False
-        target = "+activatearchive"
+        target = "+activate-ppa"
         text = 'Activate PPA'
-        summary = ('Aknowledge terms of service for Launchpad Personal '
+        summary = ('Acknowledge terms of service for Launchpad Personal '
                    'Package Archive.')
         return Link(target, text, summary, icon='edit', enabled=enabled)
 
-    def showarchive(self):
+    def show_ppa(self):
         enabled = True
         if self.context.archive is None:
             enabled = False
@@ -762,7 +762,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editsshkeys', 'editpgpkeys',
              'memberships', 'mentoringoffers',
              'codesofconduct', 'karma', 'common_packages', 'administer',
-             'related_projects', 'activatearchive', 'showarchive']
+             'related_projects', 'activate_ppa', 'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):

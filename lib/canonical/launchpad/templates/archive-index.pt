@@ -16,34 +16,27 @@
 
     <div metal:fill-slot="main" tal:condition="not: view/searchPackages">
 
-      <p>Description:</p>
+      <p>Owner Description:</p>
 
-      <div id="description" tal:condition="context/description">
-         <tal:archive-description
-            replace="structure context/description/fmt:text-to-html" />
-      </div>
-
-      <div id="description" tal:condition="not:context/description">
+      <div class="informational" id="description"
+           tal:condition="context/description">
+         <i><tal:archive-description
+            replace="structure context/description/fmt:text-to-html" /></i>
          <p tal:condition="python: view.user == context.owner"
-            ><a href="+edit">Add a PPA description</a>.</p>
+            ><a href="+edit">Add/Edit PPA description</a>.</p>
       </div>
 
-      <p id="archive_url">
-        You can install packages by adding the following line to your
-        /etc/apt/sources.list:</p>
-
-      <pre id="sources_list">
-       deb <span tal:replace="context/archive_url" />/ubuntu SUITE [COMPONENTS]
-       deb-src <span tal:replace="context/archive_url" />/ubuntu SUITE [COMPONENTS]
-
-      </pre>
-
-       <p>Replace <b>SUITE</b> by <i>feisty</i> or <i>gutsy</i>.</p>
-       <p>Replace <b>[COMPONENTS]</b> by a list of component names
-          separated by spaces, like: <i>main universe</i></p>
-
+      <p>For more information about how to configure your system see
+        <a href="https://help.launchpad.net/PPAQuickStart">PPA Quick
+        Start</a>.</p>
 
       <h2>Packages</h2>
+
+      <p condition="not: context/number_of_sources">
+        This PPA does not contain any package yet.
+      </p>
+
+      <tal:active_ppa condition="context/number_of_sources">
 
       <div>
         <ul id="package_counters">
@@ -58,6 +51,10 @@
              <span tal:replace="context/estimated_size/fmt:bytes" /></li>
         <ul>
       </div>
+
+      <p>Browse the archive in
+         <a tal:attributes="href context/archive_url"
+            tal:content="context/archive_url" />.</p>
 
       <div>
         <form name="package_search" action="" method="GET">
@@ -96,12 +93,21 @@
       <tal:navigation_bottom
            replace="structure view/batchnav/@@+navigation-links-lower" />
 
-      <div id="empty-result" tal:condition="not: batch">
-         No packages for '<span tal:replace="view/name_filter|nothing" />'.
-      </div>
+        <div id="empty-result" tal:condition="not: batch">
+           No packages for '<span tal:replace="view/name_filter" />'.
+        </div>
 
       </div>
+
+      </tal:active_ppa>
 
     </div>
+
+    <p metal:fill-slot="help">
+      Here you can find instructions about how to make this PPA
+      packages available in your current system. You can also search
+      for sources matching a given filter.
+    </p>
+
   </body>
 </html>

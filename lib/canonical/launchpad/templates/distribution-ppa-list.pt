@@ -71,7 +71,7 @@
   <p metal:fill-slot="help">
      You can browse for any interesting <i>PPA</i> by accessing its page
      or even create your own
-     <a tal:attributes="href string:${view/user/fmt:url}/+activatearchive"
+     <a tal:attributes="href string:${view/user/fmt:url}/+activate-ppa"
      >here</a>. Currently we only support <i>PPAs</i> for Ubuntu Linux.
   </p>
 
