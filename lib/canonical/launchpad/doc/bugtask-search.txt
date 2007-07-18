@@ -383,10 +383,6 @@ comments will produce eight found bug tasks (three for bug 1, five for bug 2).
     >>> bug_two.newMessage(no_priv, 'No subject', 'yet another comment')
     <Message at ...>
 
-    >>> found_bugtasks = bugtask_set.search(no_priv_bug_commenter)
-    >>> found_bugtasks.count()
-    8
-
     >>> sorted([bugtask.bug.id for bugtask in found_bugtasks])
     [1, 1, 1, 2, 2, 2, 2, 2]
 
