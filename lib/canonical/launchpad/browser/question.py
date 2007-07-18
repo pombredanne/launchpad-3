@@ -700,9 +700,13 @@ class QuestionWorkflowView(LaunchpadFormView):
     def selfanswer_action(self, action, data):
         """Action called when the owner provides the solution."""
         self.context.giveAnswer(self.user, data['message'])
+        # Owners frequently solve their questions, but their messages imply
+        # that another user provided an answer. When a question has answers
+        # that can be confirmed, we display a notice to the owner to confirm
+        # a message as the answer if one helped the owner solve the problem.
         if self.context.can_confirm_answer:
             self._addNotificationAndHandlePossibleSubscription(
-                _("Your question is solved, if a particular message helped "
+                _("Your question is solved. If a particular message helped "
                   "you solve the problem, use the <em>'This solved "
                   "my problem'</em> button."), data)
 

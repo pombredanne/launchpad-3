@@ -282,8 +282,8 @@ the question owner to solve the his problem.
 
     >>> for message in soup.findAll('div', 'informational message'):
     ...     print extract_text(message)
-    Your question is solved, if a particular message helped you solved the 
-    problem, please use the 'This solved my problem' button.
+    Your question is solved. If a particular message helped you solve the 
+    problem, use the 'This solved my problem' button.
 
 If the user chooses a best answer, the author of that answer
 is attributed as the answerer.
