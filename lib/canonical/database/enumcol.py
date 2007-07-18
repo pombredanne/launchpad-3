@@ -32,14 +32,11 @@ class SODBSchemaEnumCol(SOCol):
                 raise TypeError(
                     'enum must be a DBEnumeratedType: %r' % self.enum)
         except KeyError:
-            self.schema = kw.pop('schema')
-            if not issubclass(self.schema, DBSchema):
-                raise TypeError('schema must be a DBSchema: %r' % self.schema)
+            self.enum = kw.pop('schema')
+            if not issubclass(self.enum, DBEnumeratedType):
+                raise TypeError('schema must be a DBEnumeratedType: %r' % self.enum)
         SOCol.__init__(self, **kw)
-        if self.enum is not None:
-            validator = DBEnumeratedTypeValidator(self.enum)
-        else:
-            validator = DBSchemaValidator(schema=self.schema)
+        validator = DBEnumeratedTypeValidator(self.enum)
         self.validator = validators.All.join(validator, self.validator)
 
     def autoConstraints(self):
@@ -51,66 +48,6 @@ class SODBSchemaEnumCol(SOCol):
 
 class DBSchemaEnumCol(Col):
     baseClass = SODBSchemaEnumCol
-
-
-class DBSchemaValidator(validators.Validator):
-
-    def __init__(self, **kw):
-        self.schema = kw.pop('schema')
-        validators.Validator.__init__(self, **kw)
-
-    def fromPython(self, value, state):
-        """Convert from DBSchema Item to int.
-
-        >>> from canonical.lp.dbschema import BugTaskStatus, ImportTestStatus
-        >>> validator = DBSchemaValidator(schema=BugTaskStatus)
-        >>> validator.fromPython(BugTaskStatus.FIXCOMMITTED, None)
-        25
-        >>> validator.fromPython(tuple(), None)
-        Traceback (most recent call last):
-        ...
-        TypeError: Not a DBSchema Item: ()
-        >>> validator.fromPython(ImportTestStatus.NEW, None)
-        Traceback (most recent call last):
-        ...
-        TypeError: DBSchema Item from wrong class, <class 'canonical.lp.dbschema.ImportTestStatus'> != <class 'canonical.lp.dbschema.BugTaskStatus'>
-        >>>
-
-        """
-        if value is None:
-            return None
-        if value is DEFAULT:
-            return value
-        if isinstance(value, int):
-            raise TypeError(
-                'Need to set a dbschema Enum column to a dbschema Item,'
-                ' not an int')
-        if not zope_isinstance(value, Item):
-            # We use repr(value) because if it's a tuple (yes, it has been
-            # seen in some cases) then the interpolation would swallow that
-            # fact, confusing poor programmers like Daniel.
-            raise TypeError('Not a DBSchema Item: %s' % repr(value))
-        # Using != rather than 'is not' in order to cope with Security Proxy
-        # proxied items and their schemas.
-        if value.schema != self.schema:
-            raise TypeError('DBSchema Item from wrong class, %r != %r' % (
-                value.schema, self.schema))
-        return value.value
-
-    def toPython(self, value, state):
-        """Convert from int to DBSchema Item.
-
-        >>> from canonical.lp.dbschema import BugTaskStatus
-        >>> validator = DBSchemaValidator(schema=BugTaskStatus)
-        >>> validator.toPython(25, None) is BugTaskStatus.FIXCOMMITTED
-        True
-
-        """
-        if value is None:
-            return None
-        if value is DEFAULT:
-            return value
-        return self.schema.items[value]
 
 
 class DBEnumeratedTypeValidator(validators.Validator):

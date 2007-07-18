@@ -79,7 +79,7 @@
 
     <!-- TALES enum-value: namespace -->
     <adapter
-        for="canonical.lp.dbschema.Item"
+        for="canonical.launchpad.webapp.enum.Item"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.EnumValueAPI"
         name="enumvalue"
@@ -490,6 +490,13 @@
     <class class="canonical.launchpad.webapp.enum.DBSchemaItem">
         <allow attributes="name title value description schema
                            schema_items schema_name sortkey __sqlrepr__" />
+    </class>
+
+    <class class="canonical.launchpad.webapp.enum.DBItem">
+        <allow attributes="name title value description sortkey enum __sqlrepr__" />
+    </class>
+    <class class="canonical.launchpad.webapp.enum.Item">
+        <allow attributes="name title description enum sortkey __sqlrepr__" />
     </class>
 
     <class class="canonical.launchpad.webapp.enum.OrderedMapping">

@@ -42,7 +42,7 @@ class BranchListingItem:
         self.elapsed_time = elapsed
         self.bugbranches = bugbranches
         self.role = role
-        
+
 
 class BranchListingBatchNavigator(TableBatchNavigator):
     """Batch up the branch listings."""
@@ -84,7 +84,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
     def branches(self):
         "Return a list of BranchListingItems"
-        return [self._createItem(branch) for branch in self.currentBatch()] 
+        return [self._createItem(branch) for branch in self.currentBatch()]
 
     @cachedproperty
     def multiple_pages(self):
@@ -96,7 +96,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             return "listing"
         else:
             return "listing sortable"
-        
+
 
 class BranchListingView(LaunchpadFormView):
     """A base class for views of branch listings."""
@@ -110,7 +110,7 @@ class BranchListingView(LaunchpadFormView):
     def page_title(self):
         return '%s branches for %s' % (
             self.title_prefix, self.context.displayname)
-    
+
     @property
     def initial_values(self):
         return {
@@ -122,7 +122,6 @@ class BranchListingView(LaunchpadFormView):
         widget = self.widgets['lifecycle']
 
         if widget.hasValidInput():
-            import pdb; pdb.set_trace()
             lifecycle_filter = widget.getInputValue()
         else:
             lifecycle_filter = BranchLifecycleStatusFilter.CURRENT
@@ -132,7 +131,8 @@ class BranchListingView(LaunchpadFormView):
         elif lifecycle_filter == BranchLifecycleStatusFilter.CURRENT:
             return DEFAULT_BRANCH_STATUS_IN_LISTING
         else:
-            return (BranchLifecycleStatus.items[lifecycle_filter.value], )
+            # return (BranchLifecycleStatus.items[lifecycle_filter.value], )
+            return (lifecycle_filter, )
 
     def branches(self):
         """All branches related to this target, sorted for display."""

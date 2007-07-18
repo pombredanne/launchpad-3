@@ -21,6 +21,7 @@ __all__ = [
     'DBSchemaItem',
     'DBEnumeratedType',
     'EnumeratedType',
+    'enumerated_type_registry',
     'use_template',
     ]
 
@@ -229,7 +230,7 @@ class Item:
     The value is the short text string used to identify the Item.
     """
 
-    sort_order = 0
+    sortkey = 0
     name = None
     description = None
     title = None
@@ -242,10 +243,12 @@ class Item:
         the value is the first line, and the description is the rest.
         """
 
-        self.sort_order = Item.sort_order
-        Item.sort_order += 1
+        self.sortkey = Item.sortkey
+        Item.sortkey += 1
         self.title = title
-
+        self.enum = type.__new__(type, 'uninitialized', (), {})()
+        self.enum.name = 'uninitialized'
+        
         self.description = description
 
         if self.description is None:
@@ -259,7 +262,7 @@ class Item:
 
     def __cmp__(self, other):
         if zope_isinstance(other, Item):
-            return cmp(self.sort_order, other.sort_order)
+            return cmp(self.sortkey, other.sortkey)
         else:
             raise TypeError(
                 'Comparisons of Items are only valid with other Items')
@@ -321,6 +324,34 @@ class TokenizedItem:
         self.title = item.title
 
 
+# The enumerated_type_registry is a mapping of all enumerated types to the
+# actual class.  There should only ever be one EnumeratedType or
+# DBEnumerateType with a particular name.
+enumerated_type_registry = {}
+
+
+class EnumItems:
+    """Allow access to Items of an enumerated type using names or db values.
+
+    Access can be made to the items using the name of the Item.
+
+    If the enumerated type has DBItems then the mapping includes a mapping of
+    the database integer values to the DBItems.
+    """
+    def __init__(self, items, mapping):
+        self.items = items
+        self.mapping = mapping
+    def __getitem__(self, key):
+        if key in self.mapping:
+            return self.mapping[key]
+        else:
+            raise KeyError(key)
+    def __iter__(self):
+        return self.items.__iter__()
+    def __len__(self):
+        return len(self.items)
+
+
 class MetaEnum(type):
     """The metaclass for `EnumeratedType`.
 
@@ -371,6 +402,26 @@ class MetaEnum(type):
                     'Item instance variable names must be capitalised.'
                     '  %s.%s.%s' % (classdict['__module__'], classname, key))
 
+        # Record mapping for the items, and name the items.
+        mapping = {}
+        for item_name, item in items:
+            item.name = item_name
+            # Map the name of the item for both Items and DBItems.
+            mapping[item_name] = item
+            # Map the numeric value of the item for DBItems.
+            if isinstance(item, DBItem):
+                # If the value is already in the mapping then we have two
+                # different items attempting to map the same number.
+                if item.value in mapping:
+                    # We really want to provide the names in alphabetical order.
+                    args = [item.value] + sorted(
+                        [item_name, mapping[item.value].name])
+                    raise TypeError(
+                        'Two DBItems with the same value %s (%s, %s)'
+                        % tuple(args))
+                else:
+                    mapping[item.value] = item
+
         # Override item's default sort order if sort_order is defined.
         if 'sort_order' in classdict:
             sort_order = classdict['sort_order']
@@ -382,14 +433,12 @@ class MetaEnum(type):
                     cls.enum_name, classdict['__module__'], classname))
             sort_id = 0
             for item_name in sort_order:
-                classdict[item_name].sort_order = sort_id
+                classdict[item_name].sortkey = sort_id
                 sort_id += 1
 
-        for name, item in items:
-            item.name = name
-
-        classdict['items'] = sorted([item for name, item in items],
-                                    key=operator.attrgetter('sort_order'))
+        sorted_items = sorted([item for name, item in items],
+                              key=operator.attrgetter('sortkey'))
+        classdict['items'] = EnumItems(sorted_items, mapping)
         classdict['name'] = classname
         classdict['description'] = classdict.get('__doc__', None)
 
@@ -398,11 +447,21 @@ class MetaEnum(type):
             classdict['sort_order'] = tuple(
                 [item.name for item in classdict['items']])
 
+        global enumerated_type_registry
+        if classname in enumerated_type_registry:
+            other = enumerated_type_registry[classname]
+            raise TypeError(
+                'An enumerated type already exists with the name %s (%s.%s).'
+                % (classname, other.__module__, other.name))
+
         instance = type.__new__(cls, classname, bases, classdict)
 
         # Add a reference to the enumerated type to each item.
         for item in instance.items:
             item.enum = instance
+
+        # Add the enumerated type to the registry.
+        enumerated_type_registry[classname] = instance
 
         return instance
 
@@ -460,6 +519,9 @@ class MetaDBEnum(MetaEnum):
             return dict((item.value, item) for item in self.items)[value]
         except KeyError:
             raise LookupError(value)
+
+    def __repr__(self):
+        return "<DBEnumeratedType '%s'>" % self.name
 
 
 class EnumeratedType:

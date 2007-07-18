@@ -115,8 +115,11 @@ __all__ = (
 'UpstreamReleaseVersionStyle',
 )
 
-from canonical.launchpad.webapp.enum import DBSchema
-from canonical.launchpad.webapp.enum import DBSchemaItem as Item
+#from canonical.launchpad.webapp.enum import DBSchema
+#from canonical.launchpad.webapp.enum import DBSchemaItem as Item
+
+from canonical.launchpad.webapp.enum import DBEnumeratedType as DBSchema
+from canonical.launchpad.webapp.enum import DBItem as Item
 
 
 class AccountStatus(DBSchema):
@@ -482,6 +485,8 @@ class PackagingType(DBSchema):
         """)
 
 
+## XXX: thumper: FIXME
+
 ##XXX: (gpg+dbschema) cprov 20041004
 ## the data structure should be rearranged to support 4 field
 ## needed: keynumber(1,16,17,20), keyalias(R,g,D,G), title and description
@@ -505,10 +510,10 @@ class GPGKeyAlgorithm(DBSchema):
 
         RSA""")
 
-    g = Item(16, """
-        g
+#     g = Item(16, """
+#         g
 
-        ElGamal""")
+#         ElGamal""")
 
     D = Item(17, """
         D
@@ -2495,13 +2500,15 @@ class BranchLifecycleStatus(DBSchema):
     Essentially, this tells us what the author of the branch thinks of the
     code in the branch.
     """
+    sort_order = (
+        'MATURE', 'DEVELOPMENT', 'EXPERIMENTAL', 'MERGED', 'ABANDONED', 'NEW')
 
     NEW = Item(1, """
         New
 
         This branch has just been created, and we know nothing else about
         it.
-        """, sortkey=60)
+        """)
 
     EXPERIMENTAL = Item(10, """
         Experimental
@@ -2509,7 +2516,7 @@ class BranchLifecycleStatus(DBSchema):
         This branch contains code that is considered experimental. It is
         still under active development and should not be merged into
         production infrastructure.
-        """, sortkey=30)
+        """)
 
     DEVELOPMENT = Item(30, """
         Development
@@ -2517,7 +2524,7 @@ class BranchLifecycleStatus(DBSchema):
         This branch contains substantial work that is shaping up nicely, but
         is not yet ready for merging or production use. The work is
         incomplete, or untested.
-        """, sortkey=20)
+        """)
 
     MATURE = Item(50, """
         Mature
@@ -2526,32 +2533,35 @@ class BranchLifecycleStatus(DBSchema):
         completely addresses the issues it is supposed to, that it is tested,
         and that it has been found to be stable enough for the developer to
         recommend it to others for inclusion in their work.
-        """, sortkey=10)
+        """)
 
     MERGED = Item(70, """
         Merged
 
         This code has successfully been merged into its target branch(es),
         and no further development is anticipated on the branch.
-        """, sortkey=40)
+        """)
 
     ABANDONED = Item(80, """
         Abandoned
 
         This branch contains work which the author has abandoned, likely
         because it did not prove fruitful.
-        """, sortkey=50)
+        """)
 
 
 # XXX thumper 2006-12-15 Has copies of BranchLifecycleStatus
 # until I find a better way of extending an existing list.
 # The dbschema refactoring should make this all become simple.
-class BranchLifecycleStatusFilter(DBSchema):
+class BranchLifecycleStatusFilter(BranchLifecycleStatus):
     """Branch Lifecycle Status Filter
 
     Used to populate the branch lifecycle status filter widget.
     UI only.
     """
+    sort_order = (
+        'CURRENT', 'ALL', 'MATURE', 'DEVELOPMENT', 'EXPERIMENTAL', 'MERGED',
+        'ABANDONED', 'NEW')
 
     CURRENT = Item(-1, """
         New, Experimental, Development or Mature
@@ -2564,53 +2574,6 @@ class BranchLifecycleStatusFilter(DBSchema):
 
         Show all the branches.
         """)
-
-    NEW = Item(1, """
-        New
-
-        This branch has just been created, and we know nothing else about
-        it.
-        """, sortkey=60)
-
-    EXPERIMENTAL = Item(10, """
-        Experimental
-
-        This branch contains code that is considered experimental. It is
-        still under active development and should not be merged into
-        production infrastructure.
-        """, sortkey=30)
-
-    DEVELOPMENT = Item(30, """
-        Development
-
-        This branch contains substantial work that is shaping up nicely, but
-        is not yet ready for merging or production use. The work is
-        incomplete, or untested.
-        """, sortkey=20)
-
-    MATURE = Item(50, """
-        Mature
-
-        The developer considers this code mature. That means that it
-        completely addresses the issues it is supposed to, that it is tested,
-        and that it has been found to be stable enough for the developer to
-        recommend it to others for inclusion in their work.
-        """, sortkey=10)
-
-    MERGED = Item(70, """
-        Merged
-
-        This code has successfully been merged into its target branch(es),
-        and no further development is anticipated on the branch.
-        """, sortkey=40)
-
-    ABANDONED = Item(80, """
-        Abandoned
-
-        This branch contains work which the author has abandoned, likely
-        because it did not prove fruitful.
-        """, sortkey=50)
-
 
 
 class BranchReviewStatus(DBSchema):
@@ -2677,31 +2640,31 @@ class BranchSubscriptionDiffSize(DBSchema):
         Don't send diffs
 
         Don't send generated diffs with the revision notifications.
-        """, sortkey=0)
+        """)
 
     HALFKLINES = Item(500, """
         500 lines
 
         Limit the generated diff to 500 lines.
-        """, sortkey=500)
+        """)
 
     ONEKLINES  = Item(1000, """
         1000 lines
 
         Limit the generated diff to 1000 lines.
-        """, sortkey=1000)
+        """)
 
     FIVEKLINES = Item(5000, """
         5000 lines
 
         Limit the generated diff to 5000 lines.
-        """, sortkey=5000)
+        """)
 
     WHOLEDIFF  = Item(-1, """
         Send entire diff
 
         Don't limit the size of the diff.
-        """, sortkey=1000000)
+        """)
 
 
 class BranchSubscriptionNotificationLevel(DBSchema):

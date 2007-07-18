@@ -349,7 +349,7 @@ def vocab_factory(schema, noshow=[]):
         """Adapt IDBSchema to IVocabulary."""
         # XXX kiko: we should use sort's built-in DSU here.
         items = [(item.value, item.title, item)
-            for item in schema.items
+            for item in sorted(schema.items, key=operator.attrgetter('title'))
             if item not in noshow]
         items.sort()
         items = [(title, value) for sortkey, title, value in items]
@@ -365,8 +365,7 @@ def sortkey_ordered_vocab_factory(schema, noshow=[]):
     def factory(context, schema=schema, noshow=noshow):
         """Adapt IDBSchema to IVocabulary."""
         items = [(item.title, item)
-                 for item in sorted(
-                     schema.items, key=operator.attrgetter('sortkey'))
+                 for item in schema.items
                  if item not in noshow]
         return SimpleVocabulary.fromItems(items)
     return factory

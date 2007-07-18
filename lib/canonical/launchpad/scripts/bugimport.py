@@ -75,7 +75,8 @@ def get_text(node):
 def get_enum_value(enumtype, name):
     """Get the dbschema enum value with the given name."""
     try:
-        return enumtype.items[name]
+        # return enumtype.items[name]
+        return getattr(enumtype, name)
     except KeyError:
         raise BugXMLSyntaxError('%s is not a valid %s enumeration value' %
                                 (name, enumtype.__name__))
