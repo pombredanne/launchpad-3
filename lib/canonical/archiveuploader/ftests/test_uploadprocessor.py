@@ -452,8 +452,13 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
 
-    def assertEmail(self, contents=[], recipients=[]):
+    def assertEmail(self, contents=None, recipients=None):
         """Check email last email content and recipients."""
+        if contents is None:
+            contents = []
+        if recipients is None:
+            recipients = []
+
         if not recipients:
             recipients = self.default_recipients
 
