@@ -26,7 +26,7 @@ and SourceForge because there is only one instance (SourceForge.net).
   Bugzilla
   Roundup
   Trac
-
+  Mantis
 
 We're not allowed to enter a name with invalid characters, if we do so, we
 get a nice error message.

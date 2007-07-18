@@ -28,9 +28,11 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    DistroSeriesStatus, PackagePublishingPocket, PackagePublishingStatus,
+    ArchivePurpose, DistroSeriesStatus, 
+    PackagePublishingPocket, PackagePublishingStatus,
     PackageUploadStatus, RosettaImportStatus, SpecificationFilter,
-    SpecificationGoalStatus, SpecificationSort)
+    SpecificationGoalStatus, SpecificationSort,
+    SpecificationImplementationStatus)
 
 from canonical.launchpad.interfaces import (
     IBinaryPackageName, IBuildSet, IDistroSeries, IDistroSeriesSet,
@@ -403,7 +405,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status', 'Specification.name']
+            order = ['-priority', 'Specification.definition_status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
             # we are showing specs for a GOAL, so under some circumstances
             # we care about the order in which the specs were nominated for
@@ -438,7 +440,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+              quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -660,22 +663,29 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             PackagePublishingStatus.PUBLISHED,
             )
 
-        # 'main_archive' candidates.
-        main_clauses = ['distrorelease=%s AND archive=%s' %
-                        sqlvalues(self, self.main_archive)]
+        # Distribution archive candidates.
+        main_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
+            sqlvalues(self)]
+        main_clauses.append(
+            'Archive.id=SourcePackagePublishingHistory.archive')
+        main_clauses.append('Archive.purpose=%s' % 
+            sqlvalues(ArchivePurpose.PRIMARY))
         main_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
         if not self.isUnstable():
             main_clauses.append(
                 'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
         main_sources = SourcePackagePublishingHistory.select(
-            " AND ".join(main_clauses), orderBy="id")
+            " AND ".join(main_clauses), clauseTables=['Archive'], orderBy="id")
 
         # PPA candidates.
-        ppa_clauses = ['distrorelease=%s AND archive!=%s' %
-                       sqlvalues(self, self.main_archive)]
+        ppa_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
+            sqlvalues(self)]
+        ppa_clauses.append('Archive.id=SourcePackagePublishingHistory.archive')
+        ppa_clauses.append('Archive.purpose=%s' % 
+            sqlvalues(ArchivePurpose.PPA))
         ppa_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
         ppa_sources = SourcePackagePublishingHistory.select(
-            " AND ".join(ppa_clauses), orderBy="id")
+            " AND ".join(ppa_clauses), clauseTables=['Archive'], orderBy="id")
 
         # Return all candidates.
         return main_sources.union(ppa_sources)
@@ -1020,12 +1030,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         default_clauses = ["""
             packageupload.distrorelease = %s""" % sqlvalues(self)]
 
-        # restrict result to a given archive
+        # Restrict result to given archives.
+        archives = []
         if archive is None:
-            archive = self.main_archive
+            archives = [archive.id for archive in 
+                self.distribution.all_distro_archives]
+        else:
+            archives = [archive.id]
 
         default_clauses.append("""
-        packageupload.archive = %s""" % sqlvalues(archive))
+        packageupload.archive IN %s""" % sqlvalues(archives))
 
         # restrict result to a given pocket
         if pocket is not None:

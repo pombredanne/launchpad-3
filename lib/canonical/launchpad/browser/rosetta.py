@@ -35,7 +35,7 @@ class TranslationsMixin:
     def translatable_languages(self):
         """Return a set of the Person's translatable languages."""
         english = getUtility(ILanguageSet)['en']
-        languages = helpers.request_languages(self.request)
+        languages = helpers.preferred_or_request_languages(self.request)
         if english in languages:
             return [lang for lang in languages if lang != english]
         return languages
