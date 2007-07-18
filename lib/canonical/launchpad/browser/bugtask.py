@@ -1420,6 +1420,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
                 self.request.response.redirect(str(redirect_uri), status=301)
                 return
 
+        self._migrateOldUpstreamStatus()
         LaunchpadFormView.initialize(self)
 
         # We call self._validate() here because LaunchpadFormView only
@@ -1471,7 +1472,6 @@ class BugTaskSearchListingView(LaunchpadFormView):
         An UnexpectedFormData exception is raised if the user submitted a URL
         that could not have been created from the UI itself.
         """
-        self._migrateOldUpstreamStatus()
         # The only way the user should get these field values incorrect is
         # through a stale bookmark or a hand-hacked URL.
         for field_name in ("status", "importance", "milestone", "component",
