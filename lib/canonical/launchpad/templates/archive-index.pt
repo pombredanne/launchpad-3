@@ -32,7 +32,7 @@
 
       <h2>Packages</h2>
 
-      <p condition="not: context/number_of_sources">
+      <p tal:condition="not:context/number_of_sources">
         This PPA does not contain any package yet.
       </p>
 
