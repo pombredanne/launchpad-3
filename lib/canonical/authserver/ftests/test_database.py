@@ -17,7 +17,8 @@ from zope.security.simplepolicies import PermissiveSecurityPolicy
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.launchpad.interfaces import IBranchSet, IPersonSet
+from canonical.launchpad.interfaces import (
+    IBranchSet, IEmailAddressSet, IPersonSet, IWikiNameSet)
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 
@@ -77,36 +78,35 @@ class DatabaseStorageTestCase(unittest.TestCase):
         # Note: we access _getUserInteraction directly to avoid mucking around
         # with setting up a ConnectionPool
         storage = DatabaseUserDetailsStorage(None)
-        userDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
+        userDict = storage._getUserInteraction('mark@hbd.com')
         self.assertEqual('Mark Shuttleworth', userDict['displayname'])
         self.assertEqual(['mark@hbd.com'], userDict['emailaddresses'])
         self.assertEqual('MarkShuttleworth', userDict['wikiname'])
         self.failUnless(userDict.has_key('salt'))
 
         # Getting by ID should give the same result as getting by email
-        userDict2 = storage._getUserInteraction(self.cursor, userDict['id'])
+        userDict2 = storage._getUserInteraction(userDict['id'])
         self.assertEqual(userDict, userDict2)
 
         # Getting by nickname should also give the same result
-        userDict3 = storage._getUserInteraction(self.cursor, 'sabdfl')
+        userDict3 = storage._getUserInteraction('sabdfl')
         self.assertEqual(userDict, userDict3)
 
     def test_getUserMissing(self):
         # Getting a non-existent user should return {}
         storage = DatabaseUserDetailsStorage(None)
-        userDict = storage._getUserInteraction(self.cursor, 'noone@fake.email')
+        userDict = storage._getUserInteraction('noone@fake.email')
         self.assertEqual({}, userDict)
 
         # Ditto for getting a non-existent user by id :)
-        userDict = storage._getUserInteraction(self.cursor, 9999)
+        userDict = storage._getUserInteraction(9999)
         self.assertEqual({}, userDict)
 
     def test_getUserMultipleAddresses(self):
         # Getting a user with multiple addresses should return all the
         # confirmed addresses.
         storage = DatabaseUserDetailsStorage(None)
-        userDict = storage._getUserInteraction(self.cursor,
-                                               'stuart.bishop@canonical.com')
+        userDict = storage._getUserInteraction('stuart.bishop@canonical.com')
         self.assertEqual('Stuart Bishop', userDict['displayname'])
         self.assertEqual(['stuart.bishop@canonical.com',
                           'stuart@stuartbishop.net'],
@@ -116,41 +116,41 @@ class DatabaseStorageTestCase(unittest.TestCase):
         # Unconfirmed addresses should not be returned, so if we add a NEW
         # address, it won't change the result.
         storage = DatabaseUserDetailsStorage(None)
-        userDict = storage._getUserInteraction(self.cursor,
-                                               'stuart.bishop@canonical.com')
+        userDict = storage._getUserInteraction('stuart.bishop@canonical.com')
         self.cursor.execute('''
             INSERT INTO EmailAddress (email, person, status)
             VALUES ('sb@example.com', %d, %d)
             ''' % (userDict['id'], dbschema.EmailAddressStatus.NEW.value))
-        userDict2 = storage._getUserInteraction(self.cursor,
-                                                'stuart.bishop@canonical.com')
+        userDict2 = storage._getUserInteraction('stuart.bishop@canonical.com')
         self.assertEqual(userDict, userDict2)
 
     def test_preferredEmailFirst(self):
         # If there's a PREFERRED address, it should be first in the
         # emailaddresses list.  Let's make stuart@stuartbishop.net PREFERRED
         # rather than stuart.bishop@canonical.com.
+        transaction.begin()
+        email_set = getUtility(IEmailAddressSet)
+
+        email = email_set.getByEmail('stuart.bishop@canonical.com')
+        email.status = dbschema.EmailAddressStatus.VALIDATED
+        email.syncUpdate()
+
+        email = email_set.getByEmail('stuart@stuartbishop.net')
+        email.status = dbschema.EmailAddressStatus.PREFERRED
+        email.syncUpdate()
+        transaction.commit()
+
         storage = DatabaseUserDetailsStorage(None)
-        self.cursor.execute('''
-            UPDATE EmailAddress SET status = %d
-            WHERE email = 'stuart.bishop@canonical.com'
-            ''' % (dbschema.EmailAddressStatus.VALIDATED.value,))
-        self.cursor.execute('''
-            UPDATE EmailAddress SET status = %d
-            WHERE email = 'stuart@stuartbishop.net'
-            ''' % (dbschema.EmailAddressStatus.PREFERRED.value,))
-        userDict = storage._getUserInteraction(self.cursor,
-                                               'stuart.bishop@canonical.com')
-        self.assertEqual(['stuart@stuartbishop.net',
-                          'stuart.bishop@canonical.com'],
-                         userDict['emailaddresses'])
+        userDict = storage._getUserInteraction('stuart.bishop@canonical.com')
+        self.assertEqual(
+            ['stuart@stuartbishop.net', 'stuart.bishop@canonical.com'],
+            userDict['emailaddresses'])
 
     def test_authUserNoUser(self):
         # Authing a user that doesn't exist should return {}
         storage = DatabaseUserDetailsStorage(None)
         ssha = SSHADigestEncryptor().encrypt('supersecret!')
-        userDict = storage._authUserInteraction(self.cursor, 'noone@fake.email',
-                                                ssha)
+        userDict = storage._authUserInteraction('noone@fake.email', ssha)
         self.assertEqual({}, userDict)
 
     def test_authUserNullPassword(self):
@@ -158,7 +158,7 @@ class DatabaseStorageTestCase(unittest.TestCase):
         storage = DatabaseUserDetailsStorage(None)
         ssha = SSHADigestEncryptor().encrypt('supersecret!')
         # The 'admins' user in the sample data has no password, so we use that.
-        userDict = storage._authUserInteraction(self.cursor, 'admins', ssha)
+        userDict = storage._authUserInteraction('admins', ssha)
         self.assertEqual({}, userDict)
 
     def test_authUserUnconfirmedEmail(self):
@@ -170,14 +170,13 @@ class DatabaseStorageTestCase(unittest.TestCase):
             WHERE id = (SELECT person FROM EmailAddress WHERE email =
                         'justdave@bugzilla.org')'''
             % (ssha,))
-        userDict = storage._authUserInteraction(self.cursor,
-                                                'justdave@bugzilla.org', ssha)
+        userDict = storage._authUserInteraction('justdave@bugzilla.org', ssha)
         self.assertEqual({}, userDict)
 
     def test_nameInV2UserDict(self):
         # V2 user dicts should have a 'name' field.
         storage = DatabaseUserDetailsStorageV2(None)
-        userDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
+        userDict = storage._getUserInteraction('mark@hbd.com')
         self.assertEqual('sabdfl', userDict['name'])
 
 
@@ -401,6 +400,42 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         self.assertEqual('DSA', keytype)
         self.assertEqual(expected_keytext, keytext)
 
+    def test_getUserNoWikiname(self):
+        # Ensure that the authserver copes gracefully with users with:
+        #    a) no wikinames at all
+        #    b) no wikiname for http://www.ubuntulinux.com/wiki/
+        # (even though in the long run we want to make sure these situations can
+        # never happen, until then the authserver should be robust).
+
+        # First, make sure that the sample user has no wikiname.
+        transaction.begin()
+        person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        wiki_names = getUtility(IWikiNameSet).getAllWikisByPerson(person)
+        for wiki_name in wiki_names:
+            wiki_name.destroySelf()
+        transaction.commit()
+
+        # Get the user dict for Sample Person (test@canonical.com).
+        storage = DatabaseUserDetailsStorageV2(None)
+        userDict = storage._getUserInteraction('test@canonical.com')
+
+        # The user dict has results, even though the wikiname is empty
+        self.assertNotEqual({}, userDict)
+        self.assertEqual('', userDict['wikiname'])
+        self.assertEqual(12, userDict['id'])
+
+        # Now lets add a wikiname, but for a different wiki.
+        transaction.begin()
+        login(ANONYMOUS)
+        person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        getUtility(IWikiNameSet).new(person, 'http://foowiki/', 'SamplePerson')
+        logout()
+        transaction.commit()
+
+        # The authserver should return exactly the same results.
+        userDict2 = storage._getUserInteraction('test@canonical.com')
+        self.assertEqual(userDict, userDict2)
+
 
 class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
     # Tests that do some database writes (but makes sure to roll them back)
@@ -436,12 +471,11 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         # Authenticating a user with the right password should work
         storage = DatabaseUserDetailsStorage(None)
         ssha = SSHADigestEncryptor().encrypt('test', self.salt)
-        userDict = storage._authUserInteraction(self.cursor, 'mark@hbd.com',
-                                                ssha)
+        userDict = storage._authUserInteraction('mark@hbd.com', ssha)
         self.assertNotEqual({}, userDict)
 
         # In fact, it should return the same dict as getUser
-        goodDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
+        goodDict = storage._getUserInteraction('mark@hbd.com')
         self.assertEqual(goodDict, userDict)
 
         # Unicode email addresses are handled too.
@@ -453,9 +487,8 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
             "  2)"  # 2 == Validated
             % (u'm\xe3rk@hbd.com'.encode('utf-8'),)
         )
-        userDict = storage._authUserInteraction(self.cursor, u'm\xe3rk@hbd.com',
-                                                ssha)
-        goodDict = storage._getUserInteraction(self.cursor, u'm\xe3rk@hbd.com')
+        userDict = storage._authUserInteraction(u'm\xe3rk@hbd.com', ssha)
+        goodDict = storage._getUserInteraction(u'm\xe3rk@hbd.com')
         self.assertEqual(goodDict, userDict)
 
     def test_authUserByNickname(self):
@@ -463,16 +496,16 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         # address in test_authUser.
         storage = DatabaseUserDetailsStorage(None)
         ssha = SSHADigestEncryptor().encrypt('test', self.salt)
-        userDict = storage._authUserInteraction(self.cursor, 'sabdfl', ssha)
+        userDict = storage._authUserInteraction('sabdfl', ssha)
         self.assertNotEqual({}, userDict)
 
         # In fact, it should return the same dict as getUser
-        goodDict = storage._getUserInteraction(self.cursor, 'sabdfl')
+        goodDict = storage._getUserInteraction('sabdfl')
         self.assertEqual(goodDict, userDict)
 
         # And it should be the same as returned by looking them up by email
         # address.
-        goodDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
+        goodDict = storage._getUserInteraction('mark@hbd.com')
         self.assertEqual(goodDict, userDict)
 
     def test_authUserByNicknameNoEmailAddr(self):
@@ -483,55 +516,19 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         )
         storage = DatabaseUserDetailsStorage(None)
         ssha = SSHADigestEncryptor().encrypt('test', self.salt)
-        userDict = storage._authUserInteraction(self.cursor, 'sabdfl', ssha)
+        userDict = storage._authUserInteraction('sabdfl', ssha)
         self.assertNotEqual({}, userDict)
 
         # In fact, it should return the same dict as getUser
-        goodDict = storage._getUserInteraction(self.cursor, 'sabdfl')
+        goodDict = storage._getUserInteraction('sabdfl')
         self.assertEqual(goodDict, userDict)
 
     def test_authUserBadPassword(self):
         # Authing a real user with the wrong password should return {}
         storage = DatabaseUserDetailsStorage(None)
         ssha = SSHADigestEncryptor().encrypt('wrong', self.salt)
-        userDict = storage._authUserInteraction(self.cursor, 'mark@hbd.com',
-                                                ssha)
+        userDict = storage._authUserInteraction('mark@hbd.com', ssha)
         self.assertEqual({}, userDict)
-
-    def test_getUserNoWikiname(self):
-        # Ensure that the authserver copes gracefully with users with:
-        #    a) no wikinames at all
-        #    b) no wikiname for http://www.ubuntulinux.com/wiki/
-        # (even though in the long run we want to make sure these situations can
-        # never happen, until then the authserver should be robust).
-
-        # First, make sure that the sample user has no wikiname.
-        self.cursor.execute("""
-            DELETE FROM WikiName
-            WHERE id = (SELECT id FROM Person
-                        WHERE displayname = 'Sample Person')
-            """)
-
-        # Get the user dict for Sample Person (test@canonical.com).
-        storage = DatabaseUserDetailsStorageV2(None)
-        userDict = storage._getUserInteraction(self.cursor,
-                                               'test@canonical.com')
-
-        # The user dict has results, even though the wikiname is empty
-        self.assertNotEqual({}, userDict)
-        self.assertEqual('', userDict['wikiname'])
-        self.assertEqual(12, userDict['id'])
-
-        # Now lets add a wikiname, but for a different wiki.
-        self.cursor.execute(
-            "INSERT INTO WikiName (person, wiki, wikiname) "
-            "VALUES (12, 'http://foowiki/', 'SamplePerson')"
-        )
-
-        # The authserver should return exactly the same results.
-        userDict2 = storage._getUserInteraction(self.cursor,
-                                                'test@canonical.com')
-        self.assertEqual(userDict, userDict2)
 
     def testTeamDict(self):
         # The user dict from a V2 storage should include a 'teams' element with
@@ -540,7 +537,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
 
         # Get a user dict
         storage = DatabaseUserDetailsStorageV2(None)
-        userDict = storage._getUserInteraction(self.cursor, 'mark@hbd.com')
+        userDict = storage._getUserInteraction('mark@hbd.com')
 
         # Sort the teams by id, they may be returned in any order.
         teams = sorted(userDict['teams'], key=lambda teamDict: teamDict['id'])
@@ -561,8 +558,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
             ], teams)
 
         # The dict returned by authUser should be identical.
-        userDict2 = storage._authUserInteraction(self.cursor,
-                                                 'mark@hbd.com', 'test')
+        userDict2 = storage._authUserInteraction('mark@hbd.com', 'test')
         self.assertEqual(userDict, userDict2)
 
     def test_authUserUnconfirmedEmail(self):
@@ -575,7 +571,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
                         WHERE email = 'justdave@bugzilla.org')'''
             % (ssha,))
         userDict = storage._authUserInteraction(
-            self.cursor, 'justdave@bugzilla.org', 'supersecret!')
+            'justdave@bugzilla.org', 'supersecret!')
         self.assertEqual({}, userDict)
 
 

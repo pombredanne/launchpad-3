@@ -80,9 +80,9 @@ class UserDetailsStorageMixin:
     """Functions that are shared between DatabaseUserDetailsStorage and
     DatabaseUserDetailsStorageV2"""
 
-    def _getEmailAddresses(self, transaction, personID):
+    def _getEmailAddresses(self, cursor, personID):
         """Get the email addresses for a person"""
-        transaction.execute(utf8('''
+        cursor.execute(utf8('''
             SELECT EmailAddress.email FROM EmailAddress
             WHERE EmailAddress.person = %s
             AND EmailAddress.status IN (%s, %s)
@@ -91,7 +91,7 @@ class UserDetailsStorageMixin:
                         dbschema.EmailAddressStatus.VALIDATED,
                         dbschema.EmailAddressStatus.PREFERRED))
         )
-        return [row[0] for row in transaction.fetchall()]
+        return [row[0] for row in cursor.fetchall()]
 
     def getSSHKeys(self, loginID):
         return deferToThread(self._getSSHKeysInteraction, loginID)
@@ -108,7 +108,7 @@ class UserDetailsStorageMixin:
             (key.keytype.title, key.keytext)
             for key in person.sshkeys]
 
-    def _getPerson(self, transaction, loginID):
+    def _getPerson(self, cursor, loginID):
         # We go through some contortions with assembling the SQL to ensure that
         # the OUTER JOIN happens after the INNER JOIN.  This should allow
         # postgres to optimise the query as much as possible (approx 10x faster
@@ -132,7 +132,7 @@ class UserDetailsStorageMixin:
         except UnicodeDecodeError:
             row = None
         else:
-            transaction.execute(utf8(
+            cursor.execute(utf8(
                 select +
                 "INNER JOIN EmailAddress ON EmailAddress.person = Person.id " +
                 wikiJoin +
@@ -143,7 +143,7 @@ class UserDetailsStorageMixin:
                             dbschema.EmailAddressStatus.VALIDATED)))
             )
 
-            row = transaction.fetchone()
+            row = cursor.fetchone()
 
         if row is None:
             # Fallback: try looking up by id, rather than by email
@@ -152,18 +152,18 @@ class UserDetailsStorageMixin:
             except ValueError:
                 pass
             else:
-                transaction.execute(utf8(
+                cursor.execute(utf8(
                     select + wikiJoin +
                     ("WHERE Person.id = %s " % sqlvalues(personID)))
                 )
-                row = transaction.fetchone()
+                row = cursor.fetchone()
         if row is None:
             # Fallback #2: try treating loginID as a nickname
-            transaction.execute(utf8(
+            cursor.execute(utf8(
                 select + wikiJoin +
                 ("WHERE Person.name = %s " % sqlvalues(loginID)))
             )
-            row = transaction.fetchone()
+            row = cursor.fetchone()
         if row is None:
             # Fallback #3: give up!
             return None
@@ -196,19 +196,20 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         self.encryptor = SSHADigestEncryptor()
 
     def getUser(self, loginID):
-        ri = self.connectionPool.runInteraction
-        return ri(self._getUserInteraction, loginID)
+        return deferToThread(self._getUserInteraction, loginID)
 
-    def _getUserInteraction(self, transaction, loginID):
+    @read_only_transaction
+    def _getUserInteraction(self, loginID):
         """The interaction for getUser."""
-        row = self._getPerson(transaction, loginID)
+        cur = cursor()
+        row = self._getPerson(cur, loginID)
         try:
             personID, displayname, name, passwordDigest, wikiname, salt = row
         except TypeError:
             # No-one found
             return {}
 
-        emailaddresses = self._getEmailAddresses(transaction, personID)
+        emailaddresses = self._getEmailAddresses(cur, personID)
 
         if wikiname is None:
             # None/nil isn't standard XML-RPC
@@ -223,13 +224,13 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         }
 
     def authUser(self, loginID, sshaDigestedPassword):
-        ri = self.connectionPool.runInteraction
-        return ri(self._authUserInteraction, loginID,
-                  sshaDigestedPassword.encode('base64'))
+        return deferToThread(
+            self._authUserInteraction, loginID, sshaDigestedPassword)
 
-    def _authUserInteraction(self, transaction, loginID, sshaDigestedPassword):
+    @read_only_transaction
+    def _authUserInteraction(self, loginID, sshaDigestedPassword):
         """The interaction for authUser."""
-        row = self._getPerson(transaction, loginID)
+        row = self._getPerson(cursor(), loginID)
         try:
             personID, displayname, name, passwordDigest, wikiname, salt = row
         except TypeError:
@@ -244,7 +245,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
             # Wrong password
             return {}
 
-        emailaddresses = self._getEmailAddresses(transaction, personID)
+        emailaddresses = self._getEmailAddresses(cursor(), personID)
 
         if wikiname is None:
             # None/nil isn't standard XML-RPC
@@ -284,7 +285,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         self.connectionPool = connectionPool
         self.encryptor = SSHADigestEncryptor()
 
-    def _getTeams(self, transaction, personID):
+    def _getTeams(self, personID):
         """Get list of teams a person is in.
 
         Returns a list of team dicts (see IUserDetailsStorageV2).
@@ -301,19 +302,19 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             for team in person.teams_participated_in]
 
     def getUser(self, loginID):
-        ri = self.connectionPool.runInteraction
-        return ri(self._getUserInteraction, loginID)
+        return deferToThread(self._getUserInteraction, loginID)
 
-    def _getUserInteraction(self, transaction, loginID):
+    @read_only_transaction
+    def _getUserInteraction(self, loginID):
         """The interaction for getUser."""
-        row = self._getPerson(transaction, loginID)
+        row = self._getPerson(cursor(), loginID)
         try:
             personID, displayname, name, passwordDigest, wikiname = row
         except TypeError:
             # No-one found
             return {}
 
-        emailaddresses = self._getEmailAddresses(transaction, personID)
+        emailaddresses = self._getEmailAddresses(cursor(), personID)
 
         if wikiname is None:
             # None/nil isn't standard XML-RPC
@@ -325,10 +326,10 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             'name': name,
             'emailaddresses': emailaddresses,
             'wikiname': wikiname,
-            'teams': self._getTeams(transaction, personID),
+            'teams': self._getTeams(personID),
         }
 
-    def _getPerson(self, transaction, loginID):
+    def _getPerson(self, cursor, loginID):
         """Look up a person by loginID.
 
         The loginID will be first tried as an email address, then as a numeric
@@ -337,7 +338,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         :returns: a tuple of (person ID, display name, password, wikiname) or
             None if not found.
         """
-        row = UserDetailsStorageMixin._getPerson(self, transaction, loginID)
+        row = UserDetailsStorageMixin._getPerson(self, cursor, loginID)
         if row is None:
             return None
         else:
@@ -345,12 +346,12 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             return row[:-1]
 
     def authUser(self, loginID, password):
-        ri = self.connectionPool.runInteraction
-        return ri(self._authUserInteraction, loginID, password)
+        return deferToThread(self._authUserInteraction, loginID, password)
 
-    def _authUserInteraction(self, transaction, loginID, password):
+    @read_only_transaction
+    def _authUserInteraction(self, loginID, password):
         """The interaction for authUser."""
-        row = self._getPerson(transaction, loginID)
+        row = self._getPerson(cursor(), loginID)
         try:
             personID, displayname, name, passwordDigest, wikiname = row
         except TypeError:
@@ -361,7 +362,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             # Wrong password
             return {}
 
-        emailaddresses = self._getEmailAddresses(transaction, personID)
+        emailaddresses = self._getEmailAddresses(cursor(), personID)
 
         if wikiname is None:
             # None/nil isn't standard XML-RPC
@@ -373,7 +374,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             'displayname': displayname,
             'emailaddresses': emailaddresses,
             'wikiname': wikiname,
-            'teams': self._getTeams(transaction, personID),
+            'teams': self._getTeams(personID),
         }
 
     def getBranchesForUser(self, personID):
