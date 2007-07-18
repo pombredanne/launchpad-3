@@ -1837,7 +1837,7 @@ def notify_specification_subscription_created(specsub, event):
          'blueprint_title' : spec.title,
          'blueprint_url' : canonical_url(spec)})
     for address in contactEmailAddresses(person):
-        simple_sendmail_from_person(user, [address], subject, body)
+        simple_sendmail_from_person(user, address, subject, body)
 
 def notify_specification_subscription_modified(specsub, event):
     """Notify a subscriber to a blueprint that their
@@ -1866,4 +1866,4 @@ def notify_specification_subscription_modified(specsub, event):
          'specsub_type' : specsub_type,
          'blueprint_url' : canonical_url(spec)})
     for address in contactEmailAddresses(person):
-        simple_sendmail_from_person(user, [address], subject, body)
+        simple_sendmail_from_person(user, address, subject, body)
