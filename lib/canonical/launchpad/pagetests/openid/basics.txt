@@ -15,8 +15,9 @@ an informative message is displayed as per the OpenID spec.
     >>> print '\n' + anon_browser.contents
     <BLANKLINE>
     ...
-    This is an OpenID server endpoint. For more information,
-    see http://openid.net/
+    This is the Launchpad login service.  This site allows you
+    to use your Launchpad account to log into other services
+    related to Canonical and Ubuntu.
     ...
 
 
@@ -166,60 +167,21 @@ URL for the checkid_setup from the result of the previous test.
     ...     )
 
 
-To proceed, the user will need to login.
+Lets start a new browser session so we don't have any credentials.
+When we go to the OpenID setup URL, we are presented with a login
+form.  By entering an email address and password, we are directed back
+to the consumer, completing the OpenID request:
 
     >>> sabdfl_browser = setupBrowser()
-    >>> sabdfl_browser.handleErrors = True
     >>> sabdfl_browser.open(setup_url)
     >>> print sabdfl_browser.url
-    http://openid.launchpad.dev/+openid/+login?...
-    >>> sabdfl_browser.handleErrors = False
-    >>> sabdfl_browser.getControl('E-mail address',
-    ...                           index=0).value = 'mark@hbd.com'
-    >>> sabdfl_browser.getControl('Password', index=0).value = 'test'
-    >>> sabdfl_browser.getControl('Log In', index=0).click()
+    http://openid.launchpad.dev/+openid?...
+    >>> print sabdfl_browser.title
+    Launchpad Login Service
+    >>> sabdfl_browser.getControl(name='field.email').value = 'mark@hbd.com'
+    >>> sabdfl_browser.getControl(name='field.password').value = 'test'
+    >>> sabdfl_browser.getControl('Continue').click()
 
-
-Once logged in, the user is redirected to the 'decide' page, where the
-user is informed about what is going on and they are given the oppertunity
-to allow authorization or decline.
-
-    >>> print find_main_content(sabdfl_browser.contents)
-    <...
-    <form method="post" action="http://openid.launchpad.dev/+openid">
-        <input type="hidden" name="nonce"
-            value="..." />
-        <select name="allow_duration">
-            <option value="once">Once only</option>
-            ...
-            <option value="10800">3 hours</option>
-            ...
-            <option value="forever">Forever</option>
-        </select>
-        <input type="submit" name="action_allow" value="Allow" />
-        <input type="submit" name="action_deny" value="Deny" />
-    </form>
-    ...
-
-
-Lets deny the request. This will return us to the consumer without
-authentication.
-
-    >>> sabdfl_browser.getControl('Deny').click()
-    >>> print sabdfl_browser.url
-    http://launchpad.dev/+openid-consumer?openid.mode=cancel
-    >>> print sabdfl_browser.contents
-    Consumer received GET
-    openid.mode:cancel
-    <BLANKLINE>
-
-
-Now, lets do that again but allow the request. This will require us
-to log in to Launchpad before being redirected back to the consumer
-informing it that the request is valid.
-
-    >>> sabdfl_browser.open(setup_url)
-    >>> sabdfl_browser.getControl('Allow').click()
     >>> print sabdfl_browser.url
     http://launchpad.dev/+openid-consumer?...
     >>> print sabdfl_browser.contents
@@ -232,29 +194,25 @@ informing it that the request is valid.
     openid.signed:return_to,mode,identity
     <BLANKLINE>
 
-
-Grab some results for the later check_authentication tests.
+We will record the signature from this response to use in the next test:
 
     >>> [sig] = re.findall('sig:(.*)', sabdfl_browser.contents)
 
 
-Note that the return_to URL must be in the trust_root, or an error is
-returned.
+If we had been logged into Launchpad, we would instead have seen a
+simple approve/deny form since Launchpad already knows who we are.
+This can be seen using the existing browser session:
 
-    >>> args = urlencode({
-    ...     'openid.mode': 'checkid_setup',
-    ...     'openid.identity':
-    ...         'http://openid.launchpad.dev/+id/sabdfl_oid',
-    ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
-    ...     'openid.trust_root': 'http://com',
-    ...     'whatever': 'blah',
-    ...     })
-    >>> sabdfl_browser.handleErrors = True
-    >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
+    >>> sabdfl_browser.open(setup_url)
+    >>> print sabdfl_browser.title
+    Authenticate to http://launchpad.dev/+openid-consumer
+    >>> sabdfl_browser.getControl("Not Now").click()
+
+    >>> print sabdfl_browser.url
+    http://launchpad.dev/+openid-consumer?openid.mode=cancel
     >>> print sabdfl_browser.contents
     Consumer received GET
-    openid.error:...
-    openid.mode:error
+    openid.mode:cancel
     <BLANKLINE>
 
 
@@ -291,7 +249,7 @@ Mode.
     ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
     ...     })
     >>> sabdfl_browser.open('http://openid.launchpad.dev/+openid?%s' % args)
-    >>> sabdfl_browser.getControl('Allow').click()
+    >>> sabdfl_browser.getControl('Sign In', index=0).click()
     >>> print sabdfl_browser.contents
     Consumer received GET
     openid.assoc_handle:...
@@ -323,32 +281,36 @@ Mode.
 
 == Sticky Authorization ==
 
+XXX: 2007-06-13 jamesh
+Tests disabled because we are hiding sticky authorizations during
+phase 1.
+
 Users can select how long our OpenID server will continue to authorize
 them to a particular consumer.
 
-    >>> sabdfl_browser.open(setup_url)
-    >>> sabdfl_browser.getControl(name='allow_duration').value=['3600']
-    >>> sabdfl_browser.getControl('Allow').click()
-    >>> print sabdfl_browser.contents
-    Consumer received GET
-    ...
-    openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
-    openid.mode:id_res
-    openid.return_to:http://launchpad.dev/+openid-consumer
-    ...
+#    >>> sabdfl_browser.open(setup_url)
+#    >>> sabdfl_browser.getControl(name='allow_duration').value=['3600']
+#    >>> sabdfl_browser.getControl('Sign In', index=0).click()
+#    >>> print sabdfl_browser.contents
+#    Consumer received GET
+#    ...
+#    openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
+#    openid.mode:id_res
+#    openid.return_to:http://launchpad.dev/+openid-consumer
+#    ...
 
 
 Now that we have authorized for 1 hour, further auth requests
 automatically succeed without user intervention.
 
-    >>> sabdfl_browser.open(setup_url)
-    >>> print sabdfl_browser.contents
-    Consumer received GET
-    ...
-    openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
-    openid.mode:id_res
-    openid.return_to:http://launchpad.dev/+openid-consumer
-    ...
+#    >>> sabdfl_browser.open(setup_url)
+#    >>> print sabdfl_browser.contents
+#    Consumer received GET
+#    ...
+#    openid.identity:http://openid.launchpad.dev/+id/sabdfl_oid
+#    openid.mode:id_res
+#    openid.return_to:http://launchpad.dev/+openid-consumer
+#    ...
 
 
 == Identity Ownership ==
@@ -378,12 +340,20 @@ Interactive mode:
     >>> [setup_url] = re.findall(
     ...     '(?m)^openid.user_setup_url:(.*)$', sabdfl_browser.contents
     ...     )
-    >>> sabdfl_browser.handleErrors = False
+
+#    >>> sabdfl_browser.handleErrors = False
+#    >>> sabdfl_browser.open(setup_url)
+#    Traceback (most recent call last):
+#    ...
+#    Unauthorized: You are not authorized to use this OpenID identifier.
+#    >>> sabdfl_browser.handleErrors = True
+
     >>> sabdfl_browser.open(setup_url)
-    Traceback (most recent call last):
-    ...
-    Unauthorized: You are not authorized to use this OpenID identifier.
-    >>> sabdfl_browser.handleErrors = True
+    >>> print sabdfl_browser.url
+    http://launchpad.dev/+openid-consumer?openid.mode=cancel
+    >>> print sabdfl_browser.contents
+    Consumer received GET
+    openid.mode:cancel
 
 
 == Invalid identities ==
@@ -394,7 +364,7 @@ identifier, you get a nice error page.
     >>> args = urlencode({
     ...     'openid.mode': 'checkid_immediate',
     ...     'openid.identity':
-    ...         'http://openid.launchpad.dev/+id/limi_oid',
+    ...         'http://some/other/site',
     ...     'openid.assoc_handle': assoc_handle,
     ...     'openid.return_to': 'http://launchpad.dev/+openid-consumer',
     ...     })

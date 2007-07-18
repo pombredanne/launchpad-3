@@ -19,7 +19,11 @@
       attributes="newQuestion addAnswerContact removeAnswerContact"
       />
   </content>
-
+  <adapter
+    provides="canonical.launchpad.interfaces.IFAQTarget"
+    for="canonical.launchpad.interfaces.ISourcePackage"
+    factory="canonical.launchpad.components.answertracker.sourcepackage_to_faqtarget"
+    />
   <browser:defaultView
     for="canonical.launchpad.interfaces.ISourcePackage"
     name="+index"
@@ -62,7 +66,7 @@
    <browser:menus
     module="canonical.launchpad.browser.sourcepackage"
     classes="
-      SourcePackageFacets SourcePackageOverviewMenu SourcePackageBugsMenu
+      SourcePackageFacets SourcePackageOverviewMenu
       SourcePackageAnswersMenu SourcePackageTranslationsMenu"
     />
 

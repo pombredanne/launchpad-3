@@ -58,6 +58,7 @@ from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
 from canonical.launchpad.interfaces import (
     IDistributionSet, IPersonSet, IArchiveSet, NotFoundError)
+from canonical.lp.dbschema import ArchivePurpose
 
 from contrib.glock import GlobalLock
 
@@ -417,7 +418,8 @@ class UploadProcessor:
                 raise UploadPathError(
                     "Could not find distribution '%s'" % distribution_name)
 
-            archive = getUtility(IArchiveSet).ensure(owner=person)
+            archive = getUtility(IArchiveSet).ensure(owner=person, 
+                distribution=distribution, purpose=ArchivePurpose.PPA)
             if archive is None:
                 raise UploadPathError(
                     "Could not find PPA for '%s'" % person_name)

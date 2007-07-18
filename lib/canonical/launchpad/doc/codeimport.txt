@@ -43,10 +43,12 @@ read.
     >>> from canonical.launchpad.interfaces import (
     ...     IBranchSet, ILaunchpadCelebrities, IPersonSet, IProductSet)
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+    >>> from canonical.lp.dbschema import BranchType
     >>> def new_import_branch(name):
     ...     product = getUtility(IProductSet).getByName('firefox')
     ...     return getUtility(IBranchSet).new(
-    ...         name, vcs_imports, product,
+    ...         BranchType.IMPORTED,
+    ...         name, vcs_imports, vcs_imports, product,
     ...         None, 'Import branch')
 
 

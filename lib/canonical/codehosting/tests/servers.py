@@ -16,6 +16,8 @@ import shutil
 import tempfile
 import threading
 
+from zope.component import getUtility
+
 from bzrlib.transport import get_transport, sftp, ssh, Server
 from bzrlib.transport.memory import MemoryServer
 
@@ -26,10 +28,12 @@ from twisted.python import components
 from twisted.python.util import sibpath
 
 from canonical.config import config
-from canonical.database.sqlbase import commit, cursor
+from canonical.database.sqlbase import commit
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.daemons.sftp import SSHService
 from canonical.launchpad.daemons.authserver import AuthserverService
+from canonical.launchpad.interfaces import IPersonSet, ISSHKeySet
+from canonical.lp.dbschema import SSHKeyType, TeamSubscriptionPolicy
 
 from canonical.codehosting.smartserver import launch_smart_server
 from canonical.codehosting.sshserver import (
@@ -165,30 +169,34 @@ class AuthserverWithKeysMixin:
         self.testTeam = testTeam
 
     def setUpKeys(self):
-        if os.path.isdir(config.codehosting.host_key_pair_path):
-            shutil.rmtree(config.codehosting.host_key_pair_path)
-        shutil.copytree(
-            sibpath(__file__, 'keys'),
-            os.path.join(config.codehosting.host_key_pair_path))
+        key_pair_path = config.codehosting.host_key_pair_path
+        if os.path.isdir(key_pair_path):
+            shutil.rmtree(key_pair_path)
+        parent = os.path.dirname(key_pair_path)
+        if not os.path.isdir(parent):
+            os.makedirs(parent)
+        shutil.copytree(sibpath(__file__, 'keys'), os.path.join(key_pair_path))
 
     def setUpTestUser(self):
         """Prepare 'testUser' and 'testTeam' Persons, giving 'testUser' a known
         SSH key.
         """
-        # insert SSH keys for testuser -- and insert testuser!
-        cur = cursor()
-        cur.execute(
-            "UPDATE Person SET name = '%s' WHERE name = 'spiv';"
-            % self.testUser)
-        cur.execute(
-            "UPDATE Person SET name = '%s' WHERE name = 'name18';"
-            % self.testTeam)
-        cur.execute("""
-            INSERT INTO SSHKey (person, keytype, keytext, comment)
-            VALUES (7, 2,
-            'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1ktFPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeVYHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViTaalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==',
-            'testuser');
-            """)
+        person_set = getUtility(IPersonSet)
+        testUser = person_set.getByName('no-priv')
+        testUser.name = self.testUser
+        testTeam = person_set.newTeam(
+            testUser, self.testTeam, self.testTeam,
+            subscriptionpolicy=TeamSubscriptionPolicy.OPEN)
+        testUser.join(testTeam)
+        ssh_key_set = getUtility(ISSHKeySet)
+        ssh_key_set.new(
+            testUser, SSHKeyType.DSA,
+            'AAAAB3NzaC1kc3MAAABBAL5VoWG5sy3CnLYeOw47L8m9A15hA/PzdX2u0B7c2Z1kt'
+            'FPcEaEuKbLqKVSkXpYm7YwKj9y88A9Qm61CdvI0c50AAAAVAKGY0YON9dEFH3DzeV'
+            'YHVEBGFGfVAAAAQCoe0RhBcefm4YiyQVwMAxwTlgySTk7FSk6GZ95EZ5Q8/OTdViT'
+            'aalvGXaRIsBdaQamHEBB+Vek/VpnF1UGGm8YAAABAaCXDl0r1k93JhnMdF0ap4UJQ'
+            '2/NnqCyoE8Xd5KdUWWwqwGdMzqB1NOeKN6ladIAXRggLc2E00UsnUXh3GE3Rgw==',
+            'testuser')
         commit()
         self.setUpKeys()
 
@@ -252,6 +260,9 @@ class FakeLaunchpadServer(LaunchpadServer):
     def tearDown(self):
         LaunchpadServer.tearDown(self)
         return defer.succeed(None)
+
+    def runAndWaitForDisconnect(self, func, *args, **kwargs):
+        return func(*args, **kwargs)
 
 
 class CodeHostingServer(Server):
