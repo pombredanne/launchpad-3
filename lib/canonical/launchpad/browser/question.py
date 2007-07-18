@@ -702,8 +702,8 @@ class QuestionWorkflowView(LaunchpadFormView):
         self.context.giveAnswer(self.user, data['message'])
         # Owners frequently solve their questions, but their messages imply
         # that another user provided an answer. When a question has answers
-        # that can be confirmed, we display a notice to the owner to confirm
-        # a message as the answer if one helped the owner solve the problem.
+        # that can be confirmed, suggest to the owner that he use the
+        # confirmation button.
         if self.context.can_confirm_answer:
             self._addNotificationAndHandlePossibleSubscription(
                 _("Your question is solved. If a particular message helped "
