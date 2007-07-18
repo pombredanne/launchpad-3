@@ -93,9 +93,9 @@ def main():
         args_list = [args]
 
     cmd_runner = CommandRunner(
-        queue, options.distribution_name, options.suite_name, 
-        options.announcelist, no_mail, component_name, section_name,
-        priority_name)
+        queue, options.distribution_name, options.suite_name,
+        options.announcelist, no_mail, options.component_name,
+        options.section_name, options.priority_name)
 
     print ("Initialising connection to queue %s" % options.queue_name)
 

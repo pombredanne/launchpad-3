@@ -200,7 +200,6 @@ class QueueAction:
                            self.distroseries.name, self.pocket.name))
 
                 self.items.append(item)
-                self.items_size += 1
                 self.explicit_ids_specified = True
             else:
                 # retrieve PackageUpload item by name/version key
@@ -208,11 +207,14 @@ class QueueAction:
                 if '/' in term:
                     term, version = term.strip().split('/')
 
-                self.items.append(self.distroseries.getQueueItems(
+                # Expand SQLObject results.
+                for item in self.distroseries.getQueueItems(
                     status=self.queue, name=term, version=version,
-                    exact_match=self.exact_match, pocket=self.pocket))
-                self.items_size += self.items.count()
+                    exact_match=self.exact_match, pocket=self.pocket):
+                    self.items.append(item)
                 self.package_names.append(term)
+
+        items_size = len(self.items)
 
     def run(self):
         """Place holder for command action."""
@@ -765,11 +767,11 @@ class QueueActionOverride(QueueAction):
         # class has a command at the start of the terms.
         # Our first term is "binary" or "source" to specify the type of
         # over-ride.
-        self.terms_start_index = 1
         QueueAction.__init__(self, distribution_name, suite_name, queue, terms,
                              component_name, section_name, priority_name,
                              announcelist, display, no_mail=True, 
                              exact_match=False)
+        self.terms_start_index = 1
 
     def run(self):
         """Perform Override action."""
@@ -801,9 +803,9 @@ class QueueActionOverride(QueueAction):
         section = None
         try:
             if self.component_name:
-                component = getUtility(IComponentSet)[component_name]
+                component = getUtility(IComponentSet)[self.component_name]
             if self.section_name:
-                section = getUtility(ISectionSet)[section_name]
+                section = getUtility(ISectionSet)[self.section_name]
         except NotFoundError, info:
             raise QueueActionError('Not Found: %s' % info)
 
@@ -824,17 +826,16 @@ class QueueActionOverride(QueueAction):
         priority = None
         try:
             if self.component_name:
-                component = getUtility(IComponentSet)[component_name]
+                component = getUtility(IComponentSet)[self.component_name]
             if self.section_name:
-                section = getUtility(ISectionSet)[section_name]
+                section = getUtility(ISectionSet)[self.section_name]
             if self.priority_name:
-                priority = name_priority_map[priority_name]
+                priority = name_priority_map[self.priority_name]
         except (NotFoundError, KeyError), info:
             raise QueueActionError('Not Found: %s' % info)
 
         overridden = []
         for queue_item in self.items:
-            name = None
             for build in queue_item.builds:
                 # Different than PackageUploadSources
                 # PackageUploadBuild points to a Build, that can,
@@ -853,14 +854,11 @@ class QueueActionOverride(QueueAction):
                                         priority=priority)
                         # break loop, just in case
                         break
+                self.displayInfo(queue_item, only=binary.name)
 
-        for name in overridden:
-            self.displayInfo(queue_item, only=name)
-
-        not_overridden = set(package_names) - set(overridden)
+        not_overridden = set(self.package_names) - set(overridden)
         if len(not_overridden) > 0:
             self.displayUsage('No matches for %s' % ",".join(not_overridden))
-
 
 
 queue_actions = {
