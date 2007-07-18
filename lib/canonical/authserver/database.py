@@ -10,6 +10,7 @@ __all__ = [
 
 import datetime
 import os
+import pytz
 
 import transaction
 
@@ -20,6 +21,7 @@ from zope.security.interfaces import Unauthorized
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
+from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (
     UBUNTU_WIKI_URL, BranchCreationForbidden, IBranchSet, IPersonSet,
     IProductSet)
@@ -36,6 +38,8 @@ from canonical.authserver.interfaces import (
 
 from twisted.internet.threads import deferToThread
 from twisted.python.util import mergeFunctionMetadata
+
+UTC = pytz.timezone('UTC')
 
 
 def utf8(x):
@@ -588,17 +592,16 @@ class DatabaseBranchDetailsStorage:
         return ri(self._recordSuccessInteraction,
                   name, hostname, date_started, date_completed)
 
-    def _recordSuccessInteraction(self, transaction, name, hostname,
-            started_tuple, completed_tuple):
+    @writing_transaction
+    def _recordSuccessInteraction(self, name, hostname, started_tuple,
+                                  completed_tuple):
         """The interaction for recordSuccess."""
         date_started = datetime_from_tuple(started_tuple)
         date_completed = datetime_from_tuple(completed_tuple)
-        transaction.execute(utf8("""
-            INSERT INTO ScriptActivity
-              (name, hostname, date_started, date_completed)
-              VALUES (%s, %s, %s, %s)""" % sqlvalues(
-            name, hostname, date_started, date_completed)))
-        return transaction.rowcount == 1
+        ScriptActivity(
+            name=name, hostname=hostname, date_started=date_started,
+            date_completed=date_completed)
+        return True
 
 
 def datetime_from_tuple(time_tuple):
@@ -608,4 +611,5 @@ def datetime_from_tuple(time_tuple):
     """
     [year, month, day, hour, minute, second, unused, unused, unused] = (
         time_tuple)
-    return datetime.datetime(year, month, day, hour, minute, second)
+    return datetime.datetime(
+        year, month, day, hour, minute, second, tzinfo=UTC)

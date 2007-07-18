@@ -805,6 +805,25 @@ class NewBranchDetailsDatabaseStorageTestCase(unittest.TestCase):
         self.failIf(self.isBranchInPullQueue(25),
                     "hosted branch no longer in pull list")
 
+    def test_recordSuccess(self):
+        # recordSuccess must insert the given data into BranchActivity.
+        started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
+        completed = datetime.datetime(2007, 07, 05, 19, 34, 24, tzinfo=UTC)
+        started_tuple = tuple(started.utctimetuple())
+        completed_tuple = tuple(completed.utctimetuple())
+        success = self.storage._recordSuccessInteraction(
+            'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
+        self.assertEqual(success, True, '_recordSuccessInteraction failed')
+
+        self.cursor.execute("""
+            SELECT name, hostname, date_started, date_completed
+                FROM ScriptActivity where name = 'test-recordsuccess'""")
+        row = self.cursor.fetchone()
+        self.assertEqual(row[0], 'test-recordsuccess')
+        self.assertEqual(row[1], 'vostok')
+        self.assertEqual(row[2], started.replace(tzinfo=None))
+        self.assertEqual(row[3], completed.replace(tzinfo=None))
+
 
 class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
 
@@ -1022,26 +1041,6 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         self.connection.commit()
         self.failIf(self.isBranchInPullQueue(14),
             "import branch mirrored <1 day ago in pull queue.")
-
-    def test_recordSuccess(self):
-        # recordSuccess must insert the given data into BranchActivity.
-        started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
-        completed = datetime.datetime(2007, 07, 05, 19, 34, 24, tzinfo=UTC)
-        started_tuple = tuple(started.utctimetuple())
-        completed_tuple = tuple(completed.utctimetuple())
-        success = self.storage._recordSuccessInteraction(
-            self.cursor, 'test-recordsuccess', 'vostok',
-            started_tuple, completed_tuple)
-        self.assertEqual(success, True, '_recordSuccessInteraction failed')
-
-        self.cursor.execute("""
-            SELECT name, hostname, date_started, date_completed
-                FROM ScriptActivity where name = 'test-recordsuccess'""")
-        row = self.cursor.fetchone()
-        self.assertEqual(row[0], 'test-recordsuccess')
-        self.assertEqual(row[1], 'vostok')
-        self.assertEqual(row[2], started.replace(tzinfo=None))
-        self.assertEqual(row[3], completed.replace(tzinfo=None))
 
 
 def test_suite():
