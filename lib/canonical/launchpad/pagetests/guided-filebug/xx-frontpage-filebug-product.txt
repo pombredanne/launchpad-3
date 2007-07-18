@@ -69,6 +69,8 @@ Selecting a valid product will take us to the next filebug step.
     Closed, last updated ... seconds ago
     #1 Firefox does not support SVG
     Open, last updated 2006-05-19
+    #5 Firefox install instructions should be complete
+    Open, last updated 2006-07-14
 
 Entering a description and submitting the bug takes the user to the bug
 page.
