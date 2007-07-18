@@ -1392,13 +1392,10 @@ class BugTaskSearchListingView(LaunchpadFormView):
     search.
     """
 
-    owner_error = ""
-    assignee_error = ""
-    bug_contact_error = ""
-
     custom_widget('searchtext', NewLineToSpacesWidget)
     custom_widget('status_upstream', LabeledMultiCheckBoxWidget)
     custom_widget('tag', BugTagsWidget)
+    custom_widget('component', LabeledMultiCheckBoxWidget)
 
     @property
     def schema(self):
@@ -1428,20 +1425,6 @@ class BugTaskSearchListingView(LaunchpadFormView):
         # can be called through a query string, we don't want to require an
         # action.
         self._validate(None, {})
-
-        if self.shouldShowComponentWidget():
-            # CustomWidgetFactory doesn't work with
-            # MultiCheckBoxWidget, so we work around this by manually
-            # instantiating the widget.
-            #
-            # XXX, Brad Bollenbach, 2006-03-22: Integrate BjornT's
-            # MultiCheckBoxWidget workaround once that lands, which
-            # will also fix the widget to use <label>'s.
-            self.component_widget = MultiCheckBoxWidget(
-                self.schema['component'].bind(self.context),
-                getVocabularyRegistry().get(None, "Component"),
-                self.request)
-
 
     @property
     def columns_to_show(self):
@@ -1479,7 +1462,8 @@ class BugTaskSearchListingView(LaunchpadFormView):
             if self.getWidgetError(field_name):
                 raise UnexpectedFormData(
                     "Unexpected value for field '%s'. Perhaps your bookmarks "
-                    "are out of date or you changed the URL by hand?" % field_name)
+                    "are out of date or you changed the URL by hand?" %
+                    field_name)
 
         orderby = get_sortorder_from_request(self.request)
         bugset = getUtility(IBugTaskSet)
@@ -1499,8 +1483,10 @@ class BugTaskSearchListingView(LaunchpadFormView):
         self.validate_search_params()
 
     def _migrateOldUpstreamStatus(self):
-        """ Before Launchpad version 1.1.6 (build 4412), the upstream parameter
-        in the requets was a single string value, coming from a set of
+        """Converts old upstream status value parameters to new ones.
+
+        Before Launchpad version 1.1.6 (build 4412), the upstream parameter
+        in the request was a single string value, coming from a set of
         radio buttons. From that version on, the user can select multiple
         values in the web UI. In order to keep old bookmarks working,
         convert the old string parameter into a list.
@@ -1517,8 +1503,8 @@ class BugTaskSearchListingView(LaunchpadFormView):
             del self.request.form['field.status_upstream']
         else:
             # The value of status_upstream is either correct, so nothing to
-            # do, or it has some other error, which is handled in the "for"
-            # loop below
+            # do, or it has some other error, which is handled in
+            # LaunchpadFormView's own validation.
             pass
 
     def _getDefaultSearchParams(self):
@@ -1537,16 +1523,6 @@ class BugTaskSearchListingView(LaunchpadFormView):
         """Build the BugTaskSearchParams object for the given arguments and
         values specified by the user on this form's widgets.
         """
-        widget_names = [
-                "searchtext", "status", "assignee", "importance",
-                "omit_dupes", "has_patch", "bug_reporter",
-                "milestone", "component", "has_no_package",
-                "status_upstream", "tag", "has_cve", "bug_contact"
-                ]
-        # widget_names are the possible widget names, only include the
-        # ones that are actually in the schema.
-        widget_names = [name for name in widget_names if name in self.schema]
-
         data = {}
         self._validate(None, data)
 
@@ -1800,19 +1776,10 @@ class BugTaskSearchListingView(LaunchpadFormView):
 
     @property
     def form_has_errors(self):
-        has_errors = (
-            self.assignee_error or
-            self.owner_error or
-            self.bug_contact_error or
-            self.widgets['tag'].error())
         return len(self.errors) > 0
 
     def validateVocabulariesAdvancedForm(self):
-        """Validate person vocabularies in advanced form.
-
-        If a vocabulary lookup fail set a custom error message, which is more
-        informative than the default 'invalid value' error message.
-        """
+        """Provides a meaningful message for vocabulary validation errors."""
         error_message = _(
             "There's no person with the name or email address '%s'")
 
