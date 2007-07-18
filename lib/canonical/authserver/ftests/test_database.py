@@ -475,7 +475,7 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         storage = DatabaseBranchDetailsStorage(None)
         cur = cursor()
         storage._startMirroringInteraction(25)
-        storage._mirrorCompleteInteraction(cur, 25, 'rev-1')
+        storage._mirrorCompleteInteraction(25, 'rev-1')
 
         self.assertEqual(None, self._getTime(25))
 
@@ -504,7 +504,7 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         storage = DatabaseBranchDetailsStorage(None)
         cur = cursor()
         storage._startMirroringInteraction(25)
-        storage._mirrorCompleteInteraction(cur, 25, 'rev-1')
+        storage._mirrorCompleteInteraction(25, 'rev-1')
 
         # Request a mirror
         storage = DatabaseUserDetailsStorageV2(None)
@@ -744,7 +744,7 @@ class NewBranchDetailsDatabaseStorageTestCase(unittest.TestCase):
 
         success = self.storage._startMirroringInteraction(1)
         self.assertEqual(success, True)
-        success = self.storage._mirrorCompleteInteraction(self.cursor, 1, 'rev-1')
+        success = self.storage._mirrorCompleteInteraction(1, 'rev-1')
         self.assertEqual(success, True)
 
         self.cursor.execute("""
@@ -763,8 +763,7 @@ class NewBranchDetailsDatabaseStorageTestCase(unittest.TestCase):
 
         success = self.storage._startMirroringInteraction(1)
         self.assertEqual(success, True)
-        success = self.storage._mirrorCompleteInteraction(
-            self.cursor, 1, 'rev-1')
+        success = self.storage._mirrorCompleteInteraction(1, 'rev-1')
         self.assertEqual(success, True)
 
         self.cursor.execute("""
@@ -786,7 +785,7 @@ class NewBranchDetailsDatabaseStorageTestCase(unittest.TestCase):
 
         # Mark 25 as recently mirrored.
         self.storage._startMirroringInteraction(25)
-        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
+        self.storage._mirrorCompleteInteraction(25, 'rev-1')
 
         self.failIf(self.isBranchInPullQueue(25),
                     "Shouldn't be in queue until mirror requested")
@@ -801,7 +800,7 @@ class NewBranchDetailsDatabaseStorageTestCase(unittest.TestCase):
 
         # Mark 25 as recently mirrored.
         self.storage._startMirroringInteraction(25)
-        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
+        self.storage._mirrorCompleteInteraction(25, 'rev-1')
 
         # 25 should only be in the pull queue if a mirror has been requested
         self.failIf(self.isBranchInPullQueue(25),
