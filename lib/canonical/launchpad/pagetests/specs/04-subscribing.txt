@@ -139,8 +139,8 @@ contact email address, a notification is sent to that address, but if the team
 has no contact address we'll send one notification for each active member of
 the team.
 
-The  team has no contact address, so subscribing it to a spec
-will cause email notifications to be sent to each of its members.
+The Launchpad Admins team has no contact address, so subscribing it to
+a spec will cause email notifications to be sent to each of its members.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.ftests import login, logout
