@@ -130,3 +130,27 @@ When we change a user's subscription, they get notified by email.
     >>> last_email = pop_notifications()[-1]
     >>> '[Participation essential]' in last_email.get_payload()
     True
+
+But only if they have a preferred email, so for teams no
+notification is sent.
+
+    >>> browser.open("http://blueprints.launchpad.dev/kubuntu/+spec/krunch-desktop-plan")
+    >>> browser.getLink('Subscribe someone else').click()
+    >>> browser.getControl('Subscriber').value = 'admins'
+    >>> browser.getControl(name='field.essential').value = None
+    >>> browser.getControl('Continue').click()
+
+We created a subscription for the admins team, but no email is sent.
+
+    >>> pop_notifications()
+    []
+
+    >>> browser.getLink('Subscribe someone else').click()
+    >>> browser.getControl('Subscriber').value = 'admins'
+    >>> browser.getControl(name='field.essential').value = 'yes'
+    >>> browser.getControl('Continue').click()
+
+We modified the admins team's subscription and again, no email is sent.
+
+    >>> pop_notifications()
+    []
