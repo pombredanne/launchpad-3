@@ -1251,26 +1251,21 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
     columns_to_show = ["id", "summary", "importance", "status"]
 
-    def initialize(self):
-        # Set schema here to avoid ZCML magic overriding it.
-        self.schema = IPersonBugTaskSearch
-        BugTaskSearchListingView.initialize(self)
-
     @property
     def current_package(self):
         """Get the package whose bugs are currently being searched."""
         if not (
-            self.distribution_widget.hasInput() and
-            self.distribution_widget.getInputValue()):
+            self.widgets['distribution'].hasInput() and
+            self.widgets['distribution'].getInputValue()):
             raise UnexpectedFormData("A distribution is required")
         if not (
-            self.sourcepackagename_widget.hasInput() and
-            self.sourcepackagename_widget.getInputValue()):
+            self.widgets['sourcepackagename'].hasInput() and
+            self.widgets['sourcepackagename'].getInputValue()):
             raise UnexpectedFormData("A sourcepackagename is required")
 
-        distribution = self.distribution_widget.getInputValue()
+        distribution = self.widgets['distribution'].getInputValue()
         return distribution.getSourcePackage(
-            self.sourcepackagename_widget.getInputValue())
+            self.widgets['sourcepackagename'].getInputValue())
 
     def search(self, searchtext=None):
         distrosourcepackage = self.current_package
@@ -1322,9 +1317,9 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         """Overridden from BugTaskSearchListingView, to filter the search."""
         search_params = {}
 
-        if self.status_widget.hasInput():
-            search_params['status'] = any(*self.status_widget.getInputValue())
-        if self.unassigned_widget.hasInput():
+        if self.widgets['status'].hasInput():
+            search_params['status'] = any(*self.widgets['status'].getInputValue())
+        if self.widgets['unassigned'].hasInput():
             search_params['assignee'] = NULL
 
         return search_params
