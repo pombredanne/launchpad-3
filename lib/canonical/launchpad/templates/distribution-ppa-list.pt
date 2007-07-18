@@ -6,8 +6,6 @@
   <body>
 
     <metal:portlets fill-slot="portlets">
-      <tal:portlet replace="structure context/@@+portlet-lifecycle" />
-      <tal:portlet replace="structure context/@@+portlet-details" />
     </metal:portlets>
 
     <metal:heading fill-slot="pageheading">
@@ -16,6 +14,17 @@
     </metal:heading>
 
   <div metal:fill-slot="main" tal:condition="not: view/searchPPAs">
+
+     <p>Personal Package Archives (<i>PPA</i>) is a Launchpad feature
+        that allows users to design they own packages or work on fixes
+        to exitent packages and provide <b>work-in-progess</b>
+        packages for testing before they reach main distribution
+        archive. For more information see
+        <a href="https://help.launchpad.net/PPAQuickStart">PPA Quick
+        Start</a>.</p>
+
+     <p>You can search for <i>PPA</i> by the onwer name or by any word
+     in its description.</p>
 
       <form name="ppa_search" action="" method="GET">
          <label for="name"> PPAs containing:</label>
@@ -57,8 +66,15 @@
       </div>
 
       </tal:batch>
-
   </div>
+
+  <p metal:fill-slot="help">
+     You can browse for any interesting <i>PPA</i> by accessing its page
+     or even create your own
+     <a tal:attributes="href string:${view/user/fmt:url}/+activatearchive"
+     >here</a>. Currently we only support <i>PPAs</i> for Ubuntu Linux.
+  </p>
+
 </body>
 </html>
 
