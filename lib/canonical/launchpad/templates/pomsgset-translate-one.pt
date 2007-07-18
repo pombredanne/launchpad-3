@@ -480,7 +480,7 @@
               onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
               onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
               " />
-          <input type="button" value='Add more lines' title="Let's you add more than one line"
+          <input type="button" value="Add more lines" title="Lets you add more than one line"
             tal:condition="not:translation_dictionary/is_multi_line"
             tal:attributes="
               name string:${translation_dictionary/html_id_translation}_new_to_textarea;
