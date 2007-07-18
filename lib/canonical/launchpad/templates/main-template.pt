@@ -59,7 +59,9 @@
                            [], '1.3em', 16, true);
         sortables_init();
         initHelpPanel();
-        initPortlets();
+        // XXX: 20070718 jamesh
+        // This should also set a domain for the cookie scope.
+        PortletManager.initialize('; path=/; secure');
       }
       registerLaunchpadFunction(onLoadFunction);
     </script>
