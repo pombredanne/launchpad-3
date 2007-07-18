@@ -20,7 +20,7 @@ ALTER TABLE specification
 DROP COLUMN informational;
 
 UPDATE Specification
-SET date_started = NULL
+SET date_started = NULL, starter=NULL
 WHERE NOT ((implementation_status NOT IN ( 0, 5, 10, 95 ) OR
            (implementation_status = 95 AND definition_status = 10)));
 
