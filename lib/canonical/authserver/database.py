@@ -477,24 +477,6 @@ class DatabaseBranchDetailsStorage:
         # - any hosted branches which have requested that they be mirrored
         # - any import branches which have been synced since their last mirror
 
-        # XXX Andrew Bennetts 2006-06-14:
-        # 'vcs-imports' should not be hard-coded in this function.  Instead this
-        # ought to use getUtility(LaunchpadCelebrities), but the authserver
-        # currently does not setup sqlobject etc.  Even nicer would be if the
-        # Branch table had an enum column for the branch type.
-
-        # XXX Andrew Bennetts 2006-06-15:
-        # This query special cases hosted branches (url is NULL AND Person.name
-        # <> 'vcs-imports') so that they are always in the queue, regardless of
-        # last_mirror_attempt.  This is a band-aid fix for bug #48813, but we'll
-        # need to do something more scalable eventually.
-
-        # NOTE: The import-branch case is separated by testing
-        # ProductSeries.id, but the 'vcs-imports' test is still relevant to
-        # prevent obsolete vcs-imports branches that are no longer associated
-        # to a ProductSeries from being mirrored every time.
-        # -- DavidAllouche 2006-12-22
-
         # XXX: Hosted branches (see Andrew's comment dated 2006-06-15) are
         # mirrored if their mirror_request_time is not NULL or if they haven't
         # been mirrored in the last 6 hours. The latter behaviour is a
@@ -509,24 +491,30 @@ class DatabaseBranchDetailsStorage:
         transaction.execute(utf8("""
             SELECT Branch.id, Branch.name, Branch.url, Person.name,
                    Product.name
-            FROM Branch INNER JOIN Person ON Branch.owner = Person.id
+            FROM Branch
+            INNER JOIN Person ON Branch.owner = Person.id
             LEFT OUTER JOIN ProductSeries
                 ON ProductSeries.import_branch = Branch.id
             LEFT OUTER JOIN Product
                 ON Branch.product = Product.id
-            WHERE (ProductSeries.id is NULL AND (
-                      last_mirror_attempt is NULL
-                      OR (%(utc_now)s - last_mirror_attempt > '6 hours')
-                      OR (url is NULL AND Person.name <> 'vcs-imports'
-                          AND mirror_request_time IS NOT NULL)))
-                   OR (ProductSeries.id IS NOT NULL AND (
-                      (datelastsynced IS NOT NULL
-                          AND last_mirror_attempt IS NULL)
-                       OR (datelastsynced > last_mirror_attempt)
-                       OR (datelastsynced IS NULL
+            WHERE
+                (branch_type != %(imported)s AND
+                    (last_mirror_attempt is NULL
+                    OR (%(utc_now)s - last_mirror_attempt > '6 hours')
+                    OR (branch_type = %(hosted)s
+                        AND mirror_request_time IS NOT NULL)))
+                OR (branch_type = %(hosted)s
+                    AND mirror_request_time IS NOT NULL)
+                OR (branch_type = %(imported)s
+                    AND ((datelastsynced IS NOT NULL
+                          AND last_mirror_attempt IS NULL) OR
+                         (datelastsynced > last_mirror_attempt) OR
+                         (datelastsynced IS NULL
                           AND (%(utc_now)s - last_mirror_attempt > '1 day'))))
             ORDER BY last_mirror_attempt IS NOT NULL, last_mirror_attempt
-            """ % {'utc_now': UTC_NOW}))
+            """ % {'utc_now': UTC_NOW,
+                   'hosted': dbschema.BranchType.HOSTED.value,
+                   'imported': dbschema.BranchType.IMPORTED.value}))
         result = []
         for row in transaction.fetchall():
             branch_id, branch_name, url, owner_name, product_name = row
