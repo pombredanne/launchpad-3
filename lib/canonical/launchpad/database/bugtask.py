@@ -618,7 +618,8 @@ class BugTask(SQLBase, BugTaskMixin):
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
         if (user.inTeam(self.pillar.bugcontact) or
-            user.inTeam(self.pillar.owner)):
+            user.inTeam(self.pillar.owner) or
+            user == getUtility(ILaunchpadCelebrities).bug_watch_updater):
             return True
         else:
             return new_status not in BUG_CONTACT_BUGTASK_STATUSES
