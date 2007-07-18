@@ -61,7 +61,7 @@
         initHelpPanel();
         // XXX: 20070718 jamesh
         // This should also set a domain for the cookie scope.
-        PortletManager.initialize('; path=/; secure');
+        PortletManager.initialize('; path=/');
       }
       registerLaunchpadFunction(onLoadFunction);
     </script>
