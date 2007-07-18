@@ -100,7 +100,7 @@ for distro in ubuntu kubuntu edubuntu xubuntu; do
     done
 
     # Generate apt-ftparchive 'extra' overrides for Build-Essential: fields
-    if [ -e build-essential ]; then
+    if [ -e build-essential ] && [ "$distro" = ubuntu ]; then
       # Keep a copy, just for convenience
       cp build-essential build-essential_"$distro"_"$suite"_"$arch"
       egrep -v -- "^(-|Package| )" build-essential_"$distro"_"$suite"_"$arch" | awk '{print $1}' | sed -e "s,$,/$arch  Build-Essential  yes," | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"

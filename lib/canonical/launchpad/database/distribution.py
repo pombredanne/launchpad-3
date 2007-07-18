@@ -147,6 +147,14 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return Archive.selectOneBy(distribution=self,
                                    purpose=ArchivePurpose.PRIMARY)
 
+    @cachedproperty
+    def all_distro_archives(self):
+        """See `IDistribution`."""
+        return Archive.select("""
+            Distribution = %s AND
+            Purpose != %s""" % (self.id, ArchivePurpose.PPA)
+            )
+
     @property
     def all_milestones(self):
         """See `IDistribution`."""

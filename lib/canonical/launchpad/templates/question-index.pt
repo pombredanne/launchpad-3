@@ -47,7 +47,6 @@
       <div tal:condition="context/reopenings"
            tal:replace="structure context/@@+portlet-reopenings" />
       <div tal:replace="structure context/@@+portlet-subscribers" />
-      <div tal:replace="structure context/target/@@+portlet-details" />
     </metal:leftportlets>
 
     <metal:rightportlets fill-slot="portlets_two">
@@ -132,8 +131,12 @@
         </tal:not-logged-in>
       </div>
 
-      <div id="ask-your-own-question" xml:lang="en" lang="en" dir="ltr"
-        tal:condition="not: view/is_question_owner">
+      <div
+        class="related"
+        id="ask-your-own-question"
+        xml:lang="en" lang="en" dir="ltr"
+        tal:condition="not: view/is_question_owner"
+      >
         <h2>Got a question of your own?</h2>
 
         <p>For best results,
