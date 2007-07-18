@@ -1826,8 +1826,8 @@ def notify_specification_subscription_created(specsub, event):
     """Notify a user that they have been subscribed to a blueprint."""
     user = event.user
     spec = specsub.specification
-    # If this is a team, or a person without a preferred
-    # email address, don't try to send an email
+    # If this isa person without a preferred email address,
+    # don't try to send an email
     if specsub.person.preferredemail is None:
         return
     address = specsub.person.preferredemail.email.encode('ascii')
@@ -1853,8 +1853,8 @@ def notify_specification_subscription_modified(specsub, event):
     # subscription changed by someone else.
     if person == user:
         return
-    # If this is a team, or a person without a preferred
-    # email address, don't try to send an email
+    # If this isa person without a preferred email address,
+    # don't try to send an email
     if person.preferredemail is None:
         return
     address = person.preferredemail.email.encode('ascii')

@@ -131,8 +131,7 @@ When we change a user's subscription, they get notified by email.
     >>> '[Participation essential]' in last_email.get_payload()
     True
 
-But only if they have a preferred email, so for teams no
-notification is sent.
+The admins team does not have a preferred email address, though.
 
     >>> browser.open("http://blueprints.launchpad.dev/kubuntu/+spec/krunch-desktop-plan")
     >>> browser.getLink('Subscribe someone else').click()
