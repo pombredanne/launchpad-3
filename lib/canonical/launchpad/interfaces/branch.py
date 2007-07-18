@@ -336,6 +336,16 @@ class IBranch(IHasOwner):
         puller.
         """
 
+    def startMirroring():
+        """Signal that this branch is being mirrored."""
+
+    def mirrorComplete(last_revision_id):
+        """Signal that a mirror attempt has completed successfully.
+
+        :param last_revision_id: The revision ID of the tip of the mirrored
+            branch.
+        """
+
 
 class IBranchSet(Interface):
     """Interface representing the set of branches."""

@@ -474,7 +474,7 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         # Simulate successfully mirroring branch 25
         storage = DatabaseBranchDetailsStorage(None)
         cur = cursor()
-        storage._startMirroringInteraction(cur, 25)
+        storage._startMirroringInteraction(25)
         storage._mirrorCompleteInteraction(cur, 25, 'rev-1')
 
         self.assertEqual(None, self._getTime(25))
@@ -491,7 +491,7 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         # Simulate successfully mirroring branch 25
         storage = DatabaseBranchDetailsStorage(None)
         cur = cursor()
-        storage._startMirroringInteraction(cur, 25)
+        storage._startMirroringInteraction(25)
         storage._mirrorFailedInteraction(cur, 25, 'failed')
 
         self.assertEqual(None, self._getTime(25))
@@ -503,7 +503,7 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         # Mark 25 (a hosted branch) as recently mirrored.
         storage = DatabaseBranchDetailsStorage(None)
         cur = cursor()
-        storage._startMirroringInteraction(cur, 25)
+        storage._startMirroringInteraction(25)
         storage._mirrorCompleteInteraction(cur, 25, 'rev-1')
 
         # Request a mirror
@@ -645,6 +645,169 @@ class BranchDetailsDatabaseStorageInterfaceTestCase(TestDatabaseSetup):
                                      DatabaseBranchDetailsStorage(None)))
 
 
+class NewBranchDetailsDatabaseStorageTestCase(unittest.TestCase):
+
+    layer = LaunchpadScriptLayer
+
+    def setUp(self):
+        super(NewBranchDetailsDatabaseStorageTestCase, self).setUp()
+        LaunchpadScriptLayer.switchDbConfig('authserver')
+        self.storage = DatabaseBranchDetailsStorage(None)
+        self.cursor = cursor()
+
+    def tearDown(self):
+        super(NewBranchDetailsDatabaseStorageTestCase, self).tearDown()
+
+    def getMirrorRequestTime(self, branch_id):
+        """Return the value of mirror_request_time for the branch with the
+        given id.
+
+        :param branch_id: The id of a row in the Branch table. An int.
+        :return: A timestamp or None.
+        """
+        self.cursor.execute(
+            "SELECT mirror_request_time FROM branch WHERE id = %s"
+            % sqlvalues(branch_id))
+        return self.cursor.fetchone()[0]
+
+    def isBranchInPullQueue(self, branch_id):
+        """Whether the branch with this id is present in the pull queue."""
+        results = self.storage._getBranchPullQueueInteraction(self.cursor)
+        return branch_id in (
+            result_branch_id
+            for result_branch_id, result_pull_url, unique_name in results)
+
+    def test_startMirroring(self):
+        # verify that the last mirror time is None before hand.
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertEqual(row[0], None)
+        self.assertEqual(row[1], None)
+
+        success = self.storage._startMirroringInteraction(1)
+        self.assertEqual(success, True)
+
+        # verify that last_mirror_attempt is set
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertNotEqual(row[0], None)
+        self.assertEqual(row[1], None)
+
+    def test_startMirroring_invalid_branch(self):
+        # verify that no branch exists with id == -1
+        self.cursor.execute("""
+            SELECT id FROM branch WHERE id = -1""")
+        self.assertEqual(self.cursor.rowcount, 0)
+
+        success = self.storage._startMirroringInteraction(-11)
+        self.assertEqual(success, False)
+
+    def test_mirrorFailed(self):
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
+                mirror_status_message
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertEqual(row[0], None)
+        self.assertEqual(row[1], None)
+        self.assertEqual(row[2], 0)
+        self.assertEqual(row[3], None)
+
+        success = self.storage._startMirroringInteraction(1)
+        self.assertEqual(success, True)
+        success = self.storage._mirrorFailedInteraction(
+            self.cursor, 1, "failed")
+        self.assertEqual(success, True)
+
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
+                mirror_status_message
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertNotEqual(row[0], None)
+        self.assertEqual(row[1], None)
+        self.assertEqual(row[2], 1)
+        self.assertEqual(row[3], 'failed')
+
+    def test_mirrorComplete(self):
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertEqual(row[0], None)
+        self.assertEqual(row[1], None)
+        self.assertEqual(row[2], 0)
+
+        success = self.storage._startMirroringInteraction(1)
+        self.assertEqual(success, True)
+        success = self.storage._mirrorCompleteInteraction(self.cursor, 1, 'rev-1')
+        self.assertEqual(success, True)
+
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
+                   last_mirrored_id
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertNotEqual(row[0], None)
+        self.assertEqual(row[0], row[1])
+        self.assertEqual(row[2], 0)
+        self.assertEqual(row[3], 'rev-1')
+
+    def test_mirrorComplete_resets_failure_count(self):
+        # this increments the failure count ...
+        self.test_mirrorFailed()
+
+        success = self.storage._startMirroringInteraction(1)
+        self.assertEqual(success, True)
+        success = self.storage._mirrorCompleteInteraction(
+            self.cursor, 1, 'rev-1')
+        self.assertEqual(success, True)
+
+        self.cursor.execute("""
+            SELECT last_mirror_attempt, last_mirrored, mirror_failures
+                FROM branch WHERE id = 1""")
+        row = self.cursor.fetchone()
+        self.assertNotEqual(row[0], None)
+        self.assertEqual(row[0], row[1])
+        self.assertEqual(row[2], 0)
+
+    def test_unrequested_hosted_branches(self):
+        # Hosted branches that haven't had a mirror requested should NOT be
+        # included in the branch queue
+
+        # Branch 25 is a hosted branch.
+        # Double check that its mirror_request_time is NULL. The sample data
+        # should guarantee this.
+        self.assertEqual(None, self.getMirrorRequestTime(25))
+
+        # Mark 25 as recently mirrored.
+        self.storage._startMirroringInteraction(25)
+        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
+
+        self.failIf(self.isBranchInPullQueue(25),
+                    "Shouldn't be in queue until mirror requested")
+
+    def test_mirror_stale_hosted_branches(self):
+        # Hosted branches which haven't been mirrored for a whole day should be
+        # mirrored even if they haven't asked for it.
+
+        # Branch 25 is a hosted branch, hasn't been mirrored for over 1 day
+        # and has not had a mirror requested
+        self.failUnless(self.isBranchInPullQueue(25))
+
+        # Mark 25 as recently mirrored.
+        self.storage._startMirroringInteraction(25)
+        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
+
+        # 25 should only be in the pull queue if a mirror has been requested
+        self.failIf(self.isBranchInPullQueue(25),
+                    "hosted branch no longer in pull list")
+
+
 class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
 
     def setUp(self):
@@ -722,136 +885,6 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # All 10 branches should be in the list in order of descending
         # ID due to the last_mirror_attempt values.
         self.assertEqual(list(reversed(branches)), range(16, 26))
-
-    def test_startMirroring(self):
-        # verify that the last mirror time is None before hand.
-        self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored
-                FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
-        self.assertEqual(row[0], None)
-        self.assertEqual(row[1], None)
-
-        success = self.storage._startMirroringInteraction(self.cursor, 1)
-        self.assertEqual(success, True)
-
-        # verify that last_mirror_attempt is set
-        self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored
-                FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
-        self.assertNotEqual(row[0], None)
-        self.assertEqual(row[1], None)
-
-    def test_startMirroring_invalid_branch(self):
-        # verify that no branch exists with id == -1
-        self.cursor.execute("""
-            SELECT id FROM branch WHERE id = -1""")
-        self.assertEqual(self.cursor.rowcount, 0)
-
-        success = self.storage._startMirroringInteraction(self.cursor, -11)
-        self.assertEqual(success, False)
-
-    def test_mirrorFailed(self):
-        self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
-                mirror_status_message
-                FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
-        self.assertEqual(row[0], None)
-        self.assertEqual(row[1], None)
-        self.assertEqual(row[2], 0)
-        self.assertEqual(row[3], None)
-
-        success = self.storage._startMirroringInteraction(self.cursor, 1)
-        self.assertEqual(success, True)
-        success = self.storage._mirrorFailedInteraction(
-            self.cursor, 1, "failed")
-        self.assertEqual(success, True)
-
-        self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
-                mirror_status_message
-                FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
-        self.assertNotEqual(row[0], None)
-        self.assertEqual(row[1], None)
-        self.assertEqual(row[2], 1)
-        self.assertEqual(row[3], 'failed')
-
-    def test_mirrorComplete(self):
-        self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored, mirror_failures
-                FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
-        self.assertEqual(row[0], None)
-        self.assertEqual(row[1], None)
-        self.assertEqual(row[2], 0)
-
-        success = self.storage._startMirroringInteraction(self.cursor, 1)
-        self.assertEqual(success, True)
-        success = self.storage._mirrorCompleteInteraction(self.cursor, 1, 'rev-1')
-        self.assertEqual(success, True)
-
-        self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored, mirror_failures,
-                   last_mirrored_id
-                FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
-        self.assertNotEqual(row[0], None)
-        self.assertEqual(row[0], row[1])
-        self.assertEqual(row[2], 0)
-        self.assertEqual(row[3], 'rev-1')
-
-    def test_mirrorComplete_resets_failure_count(self):
-        # this increments the failure count ...
-        self.test_mirrorFailed()
-
-        success = self.storage._startMirroringInteraction(self.cursor, 1)
-        self.assertEqual(success, True)
-        success = self.storage._mirrorCompleteInteraction(
-            self.cursor, 1, 'rev-1')
-        self.assertEqual(success, True)
-
-        self.cursor.execute("""
-            SELECT last_mirror_attempt, last_mirrored, mirror_failures
-                FROM branch WHERE id = 1""")
-        row = self.cursor.fetchone()
-        self.assertNotEqual(row[0], None)
-        self.assertEqual(row[0], row[1])
-        self.assertEqual(row[2], 0)
-
-    def test_unrequested_hosted_branches(self):
-        # Hosted branches that haven't had a mirror requested should NOT be
-        # included in the branch queue
-
-        # Branch 25 is a hosted branch.
-        # Double check that its mirror_request_time is NULL. The sample data
-        # should guarantee this.
-        self.assertEqual(None, self.getMirrorRequestTime(25))
-
-        # Mark 25 as recently mirrored.
-        self.storage._startMirroringInteraction(self.cursor, 25)
-        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
-
-        self.failIf(self.isBranchInPullQueue(25),
-                    "Shouldn't be in queue until mirror requested")
-
-    def test_mirror_stale_hosted_branches(self):
-        # Hosted branches which haven't been mirrored for a whole day should be
-        # mirrored even if they haven't asked for it.
-
-        # Branch 25 is a hosted branch, hasn't been mirrored for over 1 day
-        # and has not had a mirror requested
-        self.failUnless(self.isBranchInPullQueue(25))
-
-        # Mark 25 as recently mirrored.
-        self.storage._startMirroringInteraction(self.cursor, 25)
-        self.storage._mirrorCompleteInteraction(self.cursor, 25, 'rev-1')
-
-        # 25 should only be in the pull queue if a mirror has been requested
-        self.failIf(self.isBranchInPullQueue(25),
-                    "hosted branch no longer in pull list")
 
     def getMirrorRequestTime(self, branch_id):
         """Return the value of mirror_request_time for the branch with the

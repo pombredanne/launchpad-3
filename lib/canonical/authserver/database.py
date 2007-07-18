@@ -544,18 +544,16 @@ class DatabaseBranchDetailsStorage:
 
     def startMirroring(self, branchID):
         """See IBranchDetailsStorage"""
-        ri = self.connectionPool.runInteraction
-        return ri(self._startMirroringInteraction, branchID)
+        return deferToThread(self._startMirroringInteraction, branchID)
 
-    def _startMirroringInteraction(self, transaction, branchID):
+    @writing_transaction
+    def _startMirroringInteraction(self, branchID):
         """The interaction for startMirroring."""
-        transaction.execute(utf8("""
-            UPDATE Branch
-              SET last_mirror_attempt = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
-              WHERE id = %d""" % (branchID,)))
-        # how many rows were updated?
-        assert transaction.rowcount in [0, 1]
-        return transaction.rowcount == 1
+        branch = getUtility(IBranchSet).get(branchID)
+        if branch is None:
+            return False
+        branch.startMirroring()
+        return True
 
     def mirrorComplete(self, branchID, lastRevisionID):
         """See IBranchDetailsStorage"""
