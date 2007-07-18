@@ -82,16 +82,11 @@ class UserDetailsStorageMixin:
 
     def _getEmailAddresses(self, cursor, personID):
         """Get the email addresses for a person"""
-        cursor.execute(utf8('''
-            SELECT EmailAddress.email FROM EmailAddress
-            WHERE EmailAddress.person = %s
-            AND EmailAddress.status IN (%s, %s)
-            ORDER BY (EmailAddress.status = %s) DESC, EmailAddress.email'''
-            % sqlvalues(personID, dbschema.EmailAddressStatus.PREFERRED,
-                        dbschema.EmailAddressStatus.VALIDATED,
-                        dbschema.EmailAddressStatus.PREFERRED))
-        )
-        return [row[0] for row in cursor.fetchall()]
+        person = getUtility(IPersonSet).get(personID)
+        emails = [person.preferredemail] + list(person.validatedemails)
+        return (
+            [person.preferredemail.email] +
+            [email.email for email in person.validatedemails])
 
     def getSSHKeys(self, loginID):
         return deferToThread(self._getSSHKeysInteraction, loginID)
@@ -109,75 +104,42 @@ class UserDetailsStorageMixin:
             for key in person.sshkeys]
 
     def _getPerson(self, cursor, loginID):
-        # We go through some contortions with assembling the SQL to ensure that
-        # the OUTER JOIN happens after the INNER JOIN.  This should allow
-        # postgres to optimise the query as much as possible (approx 10x faster
-        # according to my tests with EXPLAIN on the production database).
-        select = '''
-            SELECT Person.id, Person.displayname, Person.name, Person.password,
-                   Wikiname.wikiname
-            FROM Person '''
-
-        wikiJoin = ('''
-            LEFT OUTER JOIN Wikiname ON Wikiname.person = Person.id
-            AND Wikiname.wiki = %s '''
-            % sqlvalues(UBUNTU_WIKI_URL))
-
-        # First, try to look the person up by using loginID as an email
-        # address
         try:
             if not isinstance(loginID, unicode):
                 # Refuse to guess encoding, so we decode as 'ascii'
                 loginID = str(loginID).decode('ascii')
         except UnicodeDecodeError:
-            row = None
-        else:
-            cursor.execute(utf8(
-                select +
-                "INNER JOIN EmailAddress ON EmailAddress.person = Person.id " +
-                wikiJoin +
-                ("WHERE lower(EmailAddress.email) = %s "
-                 "AND EmailAddress.status IN (%s, %s) "
-                % sqlvalues(loginID.lower(),
-                            dbschema.EmailAddressStatus.PREFERRED,
-                            dbschema.EmailAddressStatus.VALIDATED)))
-            )
+            return None
 
-            row = cursor.fetchone()
+        person_set = getUtility(IPersonSet)
 
-        if row is None:
-            # Fallback: try looking up by id, rather than by email
+        # Try as email first.
+        person = person_set.getByEmail(loginID)
+
+        # If email didn't work, try as id.
+        if person is None:
             try:
-                personID = int(loginID)
+                person_id = int(loginID)
             except ValueError:
                 pass
             else:
-                cursor.execute(utf8(
-                    select + wikiJoin +
-                    ("WHERE Person.id = %s " % sqlvalues(personID)))
-                )
-                row = cursor.fetchone()
-        if row is None:
-            # Fallback #2: try treating loginID as a nickname
-            cursor.execute(utf8(
-                select + wikiJoin +
-                ("WHERE Person.name = %s " % sqlvalues(loginID)))
-            )
-            row = cursor.fetchone()
-        if row is None:
-            # Fallback #3: give up!
+                person = person_set.get(person_id)
+
+        # If id didn't work, try as nick-name.
+        if person is None:
+            person = person_set.getByName(loginID)
+
+        if person is None:
             return None
 
-        row = list(row)
-        assert isinstance(row[1], unicode)
-
-        passwordDigest = row[3]
-        if passwordDigest:
-            salt = saltFromDigest(passwordDigest)
+        if person.password:
+            salt = saltFromDigest(person.password)
         else:
             salt = ''
 
-        return row + [salt]
+        wikiname = getattr(person.ubuntuwiki, 'wikiname', None)
+        return [person.id, person.displayname, person.name, person.password,
+                wikiname] + [salt]
 
 
 class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
