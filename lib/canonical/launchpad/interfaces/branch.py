@@ -346,6 +346,13 @@ class IBranch(IHasOwner):
             branch.
         """
 
+    def mirrorFailed(reason):
+        """Signal that a mirror attempt failed.
+
+        :param reason: An error message that will be displayed on the branch
+            detail page.
+        """
+
 
 class IBranchSet(Interface):
     """Interface representing the set of branches."""

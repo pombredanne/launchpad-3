@@ -492,7 +492,7 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         storage = DatabaseBranchDetailsStorage(None)
         cur = cursor()
         storage._startMirroringInteraction(25)
-        storage._mirrorFailedInteraction(cur, 25, 'failed')
+        storage._mirrorFailedInteraction(25, 'failed')
 
         self.assertEqual(None, self._getTime(25))
 
@@ -719,8 +719,7 @@ class NewBranchDetailsDatabaseStorageTestCase(unittest.TestCase):
 
         success = self.storage._startMirroringInteraction(1)
         self.assertEqual(success, True)
-        success = self.storage._mirrorFailedInteraction(
-            self.cursor, 1, "failed")
+        success = self.storage._mirrorFailedInteraction(1, "failed")
         self.assertEqual(success, True)
 
         self.cursor.execute("""

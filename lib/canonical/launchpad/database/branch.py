@@ -273,6 +273,13 @@ class Branch(SQLBase):
         self.last_mirrored_id = last_revision_id
         self.syncUpdate()
 
+    def mirrorFailed(self, reason):
+        """See `IBranch`."""
+        self.mirror_failures += 1
+        self.mirror_status_message = reason
+        self.mirror_request_time = None
+        self.syncUpdate()
+
 
 class BranchSet:
     """The set of all branches."""
