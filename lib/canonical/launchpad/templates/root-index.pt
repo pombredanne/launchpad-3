@@ -4,8 +4,16 @@
 
   <div class="informational message" tal:condition="view/isBetaUser">
     <tal:redirect_inhibited condition="view/isRedirectInhibited">
-      <script type="text/javascript"
-              tal:content="view/getEnableRedirectScript"></script>
+      <script type="text/javascript">
+        function enable_beta_redirect() {
+            var expire = new Date();
+            expire.setTime(expire.getTime() + 1000);
+            document.cookie = ('inhibit_beta_redirect=0; Expires=' +
+                               expire.toGMTString() + cookie_scope_params);
+            alert('Redirection to the beta site has been enabled');
+            return false;
+        }
+      </script>
       <p>As a member of the Launchpad Beta Testers team, you would
       normally be redirected to the beta site when viewing Launchpad
       pages.  However, you currently have this disabled.</p>
@@ -13,8 +21,16 @@
       redirection</button></p>
     </tal:redirect_inhibited>
     <tal:redirect_enabled condition="not:view/isRedirectInhibited">
-      <script type="text/javascript"
-              tal:content="view/getInhibitRedirectScript"></script>
+      <script type="text/javascript">
+        function inhibit_beta_redirect() {
+            var expire = new Date();
+            expire.setTime(expire.getTime() + 2 * 60 * 60 * 1000);
+            document.cookie = ('inhibit_beta_redirect=1; Expires=' +
+                               expire.toGMTString() + cookie_scope_params);
+            alert('You will not be redirected to the beta site for 2 hours');
+            return false;
+         }
+      </script>
       <p>As a member of the Launchpad Beta Testers team, you will be
       redirected to the beta site when viewing Launchpad pages other
       than the front page.</p>
