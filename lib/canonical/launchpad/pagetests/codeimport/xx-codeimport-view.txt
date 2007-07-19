@@ -30,6 +30,8 @@ users cannot:
 There are two CodeImports in the sample data and they both show up in
 the page:
 
+# XXX change this
+
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
     >>> ids = [extract_text(tr.td) for tr in table.tbody('tr')]
     >>> ids
@@ -38,9 +40,9 @@ the page:
 If we click on the code import's name, we go to the page for that
 import:
 
-    >>> browser.getLink('1').click()
+    >>> browser.getLink('1').click() # XXX wrong
     >>> browser.url
-    'http://code.launchpad.dev/+code-imports/1'
+    'http://code.launchpad.dev/~vcs-imports/gnome-terminal/import/+code-import'
     >>> browser.title
     'Code Import for gnome-terminal'
 
@@ -66,10 +68,10 @@ and to the person requesting the import:
 
 There's a similar page for the other import, which uses CVS:
 
-    >>> browser.getLink('Code Imports').click()
-    >>> browser.getLink('2').click()
+    >>> browser.open('http://code.launchpad.dev/+code-imports')
+    >>> browser.getLink('2').click() # XXX change
     >>> browser.url
-    'http://code.launchpad.dev/+code-imports/2'
+    'http://code.launchpad.dev/~vcs-imports/evolution/import/+code-import'
     >>> extract_text(
     ...     find_tag_by_id(browser.contents, 'review-status'))
     u'Pending Review'
@@ -87,7 +89,7 @@ ensuring that the control for filtering on review status reads "Any"
 by default, as the code that ensures this is poking at Zope 3
 internals a bit.
 
-    >>> browser.getLink('Code Imports').click()
+    >>> browser.open('http://code.launchpad.dev/+code-imports')
     >>> control = browser.getControl(name="field.status")
     >>> control.displayValue
     ['Any']
@@ -99,6 +101,8 @@ internals a bit.
 
 Of course selecting the "Any" filtering option ensures that all
 imports appear again.
+
+# XXX this needs to change
 
     >>> browser.getControl(name="field.status").displayValue = ["Any"]
     >>> browser.getControl(name="submit").click()

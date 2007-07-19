@@ -37,7 +37,7 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, IBranch, IBranchSet, IBranchSubscription, IBugSet,
-    ILaunchpadCelebrities, IPersonSet)
+    ICodeImportSet, ILaunchpadCelebrities, IPersonSet)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
@@ -81,6 +81,11 @@ class BranchNavigation(Navigation):
 
         if person is not None:
             return self.context.getSubscription(person)
+
+    @stepto("+code-import")
+    def traverse_code_import(self):
+        """Traverses to an `ICodeImport`."""
+        return getUtility(ICodeImportSet).getByBranch(self.context)
 
 
 class BranchContextMenu(ContextMenu):
