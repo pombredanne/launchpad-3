@@ -8,19 +8,18 @@ import operator
 import sys
 import warnings
 
-from zope.interface import implements
+from zope.interface import Attribute, Interface, implements
 from zope.interface.advice import addClassAdvisor
 from zope.schema.interfaces import ITitledTokenizedTerm, IVocabularyTokenized
 from zope.security.proxy import isinstance as zope_isinstance
 
 __all__ = [
-    'Item',
-    'DBItem',
-    'TokenizedItem',
-    'DBSchema',
-    'DBSchemaItem',
     'DBEnumeratedType',
+    'DBItem',
     'EnumeratedType',
+    'IEnumeratedType',
+    'Item',
+    'TokenizedItem',
     'enumerated_type_registry',
     'use_template',
     ]
@@ -76,149 +75,6 @@ def docstring_to_title_descr(string):
     return title, descr
 
 
-class OrderedMapping:
-
-    def __init__(self, mapping):
-        self.mapping = mapping
-
-    def __getitem__(self, key):
-        if key in self.mapping:
-            return self.mapping[key]
-        else:
-            for k, v in self.mapping.iteritems():
-                if v.name == key:
-                    return v
-            raise KeyError, key
-
-    def __iter__(self):
-        L = self.mapping.items()
-        L.sort()
-        for k, v in L:
-            yield v
-
-
-class ItemsDescriptor:
-
-    def __get__(self, inst, cls=None):
-        return OrderedMapping(cls._items)
-
-
-class DBSchemaItem:
-    """An item in an enumerated type.
-
-    An item has a name, title and description.  It also has an integer value.
-
-    An item has a sortkey, which defaults to its integer value, but can be
-    set specially in the constructor.
-
-    """
-
-    def __init__(self, value, title, description=None, sortkey=None):
-        frame = sys._getframe(1)
-        locals = frame.f_locals
-
-        # Try to make sure we were called from a class def
-        if (locals is frame.f_globals) or ('__module__' not in locals):
-            raise TypeError("Item can be used only from a class definition.")
-
-        addClassAdvisor(self._setClassFromAdvice)
-        try:
-            self.value = int(value)
-        except ValueError:
-            raise TypeError("value must be an int, not %r" % (value,))
-        if description is None:
-            self.title, self.description = docstring_to_title_descr(title)
-        else:
-            self.title = title
-            self.description = description
-        if sortkey is None:
-            self.sortkey = self.value
-        else:
-            self.sortkey = sortkey
-
-    def _setClassFromAdvice(self, cls):
-        self.schema = cls
-        names = [k for k, v in cls.__dict__.iteritems() if v is self]
-        assert len(names) == 1
-        self.name = names[0]
-        if not hasattr(cls, '_items'):
-            cls._items = {}
-        cls._items[self.value] = self
-        return cls
-
-    def __int__(self):
-        raise TypeError("Cannot cast Item to int.  Use item.value instead.")
-
-    def __str__(self):
-        return str(self.value)
-
-    def __repr__(self):
-        return "<Item %s (%d) from %s>" % (self.name, self.value, self.schema)
-
-    def __sqlrepr__(self, dbname):
-        return repr(self.value)
-
-    def __eq__(self, other, stacklevel=2):
-        if isinstance(other, int):
-            warnings.warn('comparison of DBSchema Item to an int: %r' % self,
-                stacklevel=stacklevel)
-            return False
-        elif zope_isinstance(other, DBSchemaItem):
-            return self.value == other.value and self.schema == other.schema
-        else:
-            return False
-
-    def __ne__(self, other):
-        return not self.__eq__(other, stacklevel=3)
-
-    def __lt__(self, other):
-        return self.sortkey < other.sortkey
-
-    def __gt__(self, other):
-        return self.sortkey > other.sortkey
-
-    def __le__(self, other):
-        return self.sortkey <= other.sortkey
-
-    def __ge__(self, other):
-        return self.sortkey >= other.sortkey
-
-    def __hash__(self):
-        return self.value
-
-    # These properties are provided as a way to get at the other
-    # schema items and name from a security wrapped Item instance when
-    # there are no security declarations for the DBSchema class.  They
-    # are used by the enumvalue TALES expression.
-    @property
-    def schema_items(self):
-        return self.schema.items
-
-    @property
-    def schema_name(self):
-        return self.schema.__name__
-
-# TODO: make a metaclass for dbschemas that looks for ALLCAPS attributes
-#       and makes the introspectible.
-#       Also, makes the description the same as the docstring.
-#       Also, sets the name on each Item based on its name.
-#       (Done by crufty class advice at present.)
-#       Also, set the name on the DBSchema according to the class name.
-#
-#       Also, make item take just one string, optionally, and parse that
-#       to make something appropriate.
-
-class DBSchema:
-    """Base class for database schemas."""
-
-    # TODO: Make description a descriptor that automatically refers to the
-    #       docstring.
-    description = "See body of class's __doc__ docstring."
-    title = "See first line of class's __doc__ docstring."
-    name = "See lower-cased-spaces-inserted class name."
-    items = ItemsDescriptor()
-
-
 class Item:
     """Items are the primary elements of the enumerated types.
 
@@ -246,9 +102,11 @@ class Item:
         self.sortkey = Item.sortkey
         Item.sortkey += 1
         self.title = title
+        # XXX remove before review
         self.enum = type.__new__(type, 'uninitialized', (), {})()
         self.enum.name = 'uninitialized'
-        
+        # XXX used to get appropriate values in pdb
+
         self.description = description
 
         if self.description is None:
@@ -352,6 +210,21 @@ class EnumItems:
         return len(self.items)
 
 
+class IEnumeratedType(Interface):
+    """Defines the attributes that EnumeratedTypes have."""
+    name = Attribute(
+        "The name of the EnumeratedType is the same as the name of the class.")
+    description = Attribute(
+        "The description is the docstring of the EnumeratedType class.")
+    sort_order = Attribute(
+        "A tuple of Item names that is used to determine the ordering of the "
+        "Items.")
+    items = Attribute(
+        "An instance of `EnumItems` which allows access to the enumerated "
+        "types items by either name of database value if the items are "
+        "DBItems.")
+
+
 class MetaEnum(type):
     """The metaclass for `EnumeratedType`.
 
@@ -362,7 +235,7 @@ class MetaEnum(type):
     enforcing capitalisation of Item variable names and defining an appropriate
     ordering.
     """
-    implements(IVocabularyTokenized)
+    implements(IEnumeratedType, IVocabularyTokenized)
 
     item_type = Item
     enum_name = 'EnumeratedType'
@@ -512,13 +385,6 @@ class MetaDBEnum(MetaEnum):
     """
     item_type = DBItem
     enum_name = 'DBEnumeratedType'
-
-    def getDBItemByValue(self, value):
-        """Return the `DBItem` object for the database `value`."""
-        try:
-            return dict((item.value, item) for item in self.items)[value]
-        except KeyError:
-            raise LookupError(value)
 
     def __repr__(self):
         return "<DBEnumeratedType '%s'>" % self.name

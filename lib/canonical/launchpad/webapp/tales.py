@@ -276,7 +276,7 @@ class DBSchemaAPI:
     def traverse(self, name, furtherPath):
         if name in enumerated_type_registry:
             enum = enumerated_type_registry[name]
-            return enum.getDBItemByValue(self._number).title
+            return enum.items[self._number].title
         else:
             raise TraversalError(name)
 

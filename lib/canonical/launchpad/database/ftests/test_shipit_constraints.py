@@ -5,6 +5,7 @@ __metaclass__ = type
 import unittest
 import psycopg
 
+from canonical.database.sqlbase import quote
 from canonical.lp.dbschema import ShippingRequestStatus
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 
@@ -53,7 +54,7 @@ class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
             """)
 
         # Create some denied orders
-        denied = ShippingRequestStatus.DENIED
+        denied = quote(ShippingRequestStatus.DENIED)
         for i in range(0, 3):
             disallowed_id = self.insert(cur)
             cur.execute("""
@@ -62,7 +63,7 @@ class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
                 """, vars())
 
         # Create some cancelled orders
-        cancelled = ShippingRequestStatus.CANCELLED
+        cancelled = quote(ShippingRequestStatus.CANCELLED)
         for i in range(0, 3):
             cancelled_id = self.insert(cur)
             cur.execute("""
@@ -80,7 +81,7 @@ class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
         # second should still fail.
         cur.execute("SAVEPOINT attempt2")
         req1_id = self.insert(cur)
-        approved = ShippingRequestStatus.APPROVED
+        approved = quote(ShippingRequestStatus.APPROVED)
         cur.execute("""
             UPDATE ShippingRequest SET status=%(approved)s, whoapproved=1
             WHERE id = %(req1_id)s

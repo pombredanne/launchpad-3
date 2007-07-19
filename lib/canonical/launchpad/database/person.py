@@ -1348,7 +1348,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     def _getMembershipsByStatuses(self, statuses):
         assert self.isTeam(), 'This method is only available for teams.'
-        statuses = ",".join(str(status) for status in statuses)
+        statuses = ",".join(quote(status) for status in statuses)
         # We don't want to escape 'statuses' so we can't easily use
         # sqlvalues() on the query below.
         query = """

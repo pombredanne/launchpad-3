@@ -10,8 +10,7 @@ import sqlobject.constraints as consts
 
 from canonical.database.constants import DEFAULT
 
-from canonical.launchpad.webapp.enum import DBSchema, DBEnumeratedType, DBItem
-from canonical.launchpad.webapp.enum import DBSchemaItem as Item
+from canonical.launchpad.webapp.enum import DBEnumeratedType, DBItem
 
 __all__ = [
 'EnumCol',
@@ -110,20 +109,20 @@ class DBEnumeratedTypeValidator(validators.Validator):
         <DBItem DBTestEnumeration.VALUE2, (2) Some other value>
 
         Even though it should never happen if the database and
-        the associated types are in sync, a LookupError is raised
+        the associated types are in sync, a KeyError is raised
         if the value is not found.
 
         >>> validator.toPython(3, None)
         Traceback (most recent call last):
         ...
-        LookupError: 3
+        KeyError: 3
 
         """
         if value is None:
             return None
         if value is DEFAULT:
             return value
-        return self.enum.getDBItemByValue(value)
+        return self.enum.items[value]
 
 EnumCol = DBSchemaEnumCol
 
