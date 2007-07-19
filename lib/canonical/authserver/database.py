@@ -489,7 +489,7 @@ class DatabaseBranchDetailsStorage:
                    Product.name, Branch.last_mirror_attempt
             FROM Branch
             INNER JOIN Person ON Branch.owner = Person.id
-            LEFT OUTER JOIN ProductSeries
+            INNER JOIN ProductSeries
                 ON ProductSeries.import_branch = Branch.id
             LEFT OUTER JOIN Product
                 ON Branch.product = Product.id
