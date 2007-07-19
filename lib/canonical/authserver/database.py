@@ -16,6 +16,7 @@ import transaction
 from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.database import ScriptActivity
@@ -185,7 +186,8 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
 
     def authUser(self, loginID, sshaDigestedPassword):
         return deferToThread(
-            self._authUserInteraction, loginID, sshaDigestedPassword)
+            self._authUserInteraction, loginID,
+            sshaDigestedPassword.encode('base64'))
 
     @read_only_transaction
     def _authUserInteraction(self, loginID, sshaDigestedPassword):
@@ -470,7 +472,7 @@ class DatabaseBranchDetailsStorage:
     def _getBranchPullQueueInteraction(self):
         """The interaction for getBranchPullQueue."""
         branches = getUtility(IBranchSet).getPullQueue()
-        return [branch.pullInfo() for branch in branches]
+        return [removeSecurityProxy(branch.pullInfo()) for branch in branches]
 
     def startMirroring(self, branchID):
         """See IBranchDetailsStorage"""
@@ -514,9 +516,9 @@ class DatabaseBranchDetailsStorage:
 
     def recordSuccess(self, name, hostname, date_started, date_completed):
         """See `IBranchDetailsStorage`."""
-        ri = self.connectionPool.runInteraction
-        return ri(self._recordSuccessInteraction,
-                  name, hostname, date_started, date_completed)
+        return deferToThread(
+            self._recordSuccessInteraction, name, hostname, date_started,
+            date_completed)
 
     @writing_transaction
     def _recordSuccessInteraction(self, name, hostname, started_tuple,
