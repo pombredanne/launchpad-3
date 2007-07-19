@@ -27,8 +27,6 @@ __all__ = (
 'BountyDifficulty',
 'BountyStatus',
 'BranchRelationships',
-'BranchLifecycleStatus',
-'BranchLifecycleStatusFilter',
 'BranchReviewStatus',
 'BranchSubscriptionDiffSize',
 'BranchSubscriptionNotificationLevel',
@@ -2488,91 +2486,6 @@ class BugInfestationStatus(DBSchema):
         Unknown
 
         We don't know if this bug infests that coderelease.
-        """)
-
-
-class BranchLifecycleStatus(DBSchema):
-    """Branch Lifecycle Status
-
-    This indicates the status of the branch, as part of an overall
-    "lifecycle". The idea is to indicate to other people how mature this
-    branch is, or whether or not the code in the branch has been deprecated.
-    Essentially, this tells us what the author of the branch thinks of the
-    code in the branch.
-    """
-    sort_order = (
-        'MATURE', 'DEVELOPMENT', 'EXPERIMENTAL', 'MERGED', 'ABANDONED', 'NEW')
-
-    NEW = Item(1, """
-        New
-
-        This branch has just been created, and we know nothing else about
-        it.
-        """)
-
-    EXPERIMENTAL = Item(10, """
-        Experimental
-
-        This branch contains code that is considered experimental. It is
-        still under active development and should not be merged into
-        production infrastructure.
-        """)
-
-    DEVELOPMENT = Item(30, """
-        Development
-
-        This branch contains substantial work that is shaping up nicely, but
-        is not yet ready for merging or production use. The work is
-        incomplete, or untested.
-        """)
-
-    MATURE = Item(50, """
-        Mature
-
-        The developer considers this code mature. That means that it
-        completely addresses the issues it is supposed to, that it is tested,
-        and that it has been found to be stable enough for the developer to
-        recommend it to others for inclusion in their work.
-        """)
-
-    MERGED = Item(70, """
-        Merged
-
-        This code has successfully been merged into its target branch(es),
-        and no further development is anticipated on the branch.
-        """)
-
-    ABANDONED = Item(80, """
-        Abandoned
-
-        This branch contains work which the author has abandoned, likely
-        because it did not prove fruitful.
-        """)
-
-
-# XXX thumper 2006-12-15 Has copies of BranchLifecycleStatus
-# until I find a better way of extending an existing list.
-# The dbschema refactoring should make this all become simple.
-class BranchLifecycleStatusFilter(BranchLifecycleStatus):
-    """Branch Lifecycle Status Filter
-
-    Used to populate the branch lifecycle status filter widget.
-    UI only.
-    """
-    sort_order = (
-        'CURRENT', 'ALL', 'MATURE', 'DEVELOPMENT', 'EXPERIMENTAL', 'MERGED',
-        'ABANDONED', 'NEW')
-
-    CURRENT = Item(-1, """
-        New, Experimental, Development or Mature
-
-        Show the currently active branches.
-        """)
-
-    ALL = Item(0, """
-        Any Status
-
-        Show all the branches.
         """)
 
 

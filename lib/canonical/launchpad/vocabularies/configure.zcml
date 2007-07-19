@@ -16,16 +16,6 @@
     />
 
   <vocabulary
-    name="BranchLifecycleStatus"
-    factory="canonical.launchpad.vocabularies.BranchLifecycleStatusVocabulary"
-    />
-
-  <vocabulary
-    name="BranchLifecycleStatusFilter"
-    factory="canonical.launchpad.vocabularies.BranchLifecycleStatusFilterVocabulary"
-    />
-
-  <vocabulary
     name="BranchReviewStatus"
     factory="canonical.launchpad.vocabularies.BranchReviewStatusVocabulary"
     />

@@ -8,11 +8,11 @@ __all__ = [
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreatorNotMemberOfOwnerTeam',
+    'BranchLifecycleStatus',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
     'IBranchDelta',
-    'IBranchLifecycleFilter',
     'IBranchBatchNavigator',
     ]
 
@@ -22,15 +22,73 @@ from zope.component import getUtility
 from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 
 from canonical.config import config
-from canonical.lp.dbschema import (
-    BranchLifecycleStatus, BranchLifecycleStatusFilter)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.webapp.enum import DBEnumeratedType, DBItem
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+
+
+class BranchLifecycleStatus(DBEnumeratedType):
+    """Branch Lifecycle Status
+
+    This indicates the status of the branch, as part of an overall
+    "lifecycle". The idea is to indicate to other people how mature this
+    branch is, or whether or not the code in the branch has been deprecated.
+    Essentially, this tells us what the author of the branch thinks of the
+    code in the branch.
+    """
+    sort_order = (
+        'MATURE', 'DEVELOPMENT', 'EXPERIMENTAL', 'MERGED', 'ABANDONED', 'NEW')
+
+    NEW = DBItem(1, """
+        New
+
+        This branch has just been created, and we know nothing else about
+        it.
+        """)
+
+    EXPERIMENTAL = DBItem(10, """
+        Experimental
+
+        This branch contains code that is considered experimental. It is
+        still under active development and should not be merged into
+        production infrastructure.
+        """)
+
+    DEVELOPMENT = DBItem(30, """
+        Development
+
+        This branch contains substantial work that is shaping up nicely, but
+        is not yet ready for merging or production use. The work is
+        incomplete, or untested.
+        """)
+
+    MATURE = DBItem(50, """
+        Mature
+
+        The developer considers this code mature. That means that it
+        completely addresses the issues it is supposed to, that it is tested,
+        and that it has been found to be stable enough for the developer to
+        recommend it to others for inclusion in their work.
+        """)
+
+    MERGED = DBItem(70, """
+        Merged
+
+        This code has successfully been merged into its target branch(es),
+        and no further development is anticipated on the branch.
+        """)
+
+    ABANDONED = DBItem(80, """
+        Abandoned
+
+        This branch contains work which the author has abandoned, likely
+        because it did not prove fruitful.
+        """)
 
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
@@ -188,7 +246,7 @@ class IBranch(IHasOwner):
 
     # Stats and status attributes
     lifecycle_status = Choice(
-        title=_('Status'), vocabulary='BranchLifecycleStatus',
+        title=_('Status'), vocabulary=BranchLifecycleStatus,
         default=BranchLifecycleStatus.NEW,
         description=_(
         "The author's assessment of the branch's maturity. "
@@ -592,20 +650,3 @@ class IBranchDelta(Interface):
     lifecycle_status = Attribute("Old and new lifecycle status, or None.")
     revision_count = Attribute("Old and new revision counts, or None.")
     last_scanned_id = Attribute("The revision id of the tip revision.")
-
-
-class IBranchLifecycleFilter(Interface):
-    """A helper interface to render lifecycle filter choice."""
-
-    # Stats and status attributes
-    lifecycle = Choice(
-        title=_('Lifecycle Filter'), vocabulary='BranchLifecycleStatusFilter',
-        default=BranchLifecycleStatusFilter.CURRENT,
-        description=_(
-        "The author's assessment of the branch's maturity. "
-        " Mature: recommend for production use."
-        " Development: useful work that is expected to be merged eventually."
-        " Experimental: not recommended for merging yet, and maybe ever."
-        " Merged: integrated into mainline, of historical interest only."
-        " Abandoned: no longer considered relevant by the author."
-        " New: unspecified maturity."))

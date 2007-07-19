@@ -91,7 +91,7 @@ subset of the branches are shown.
    >>> filter_control = browser.getControl('Show branches with status of')
    >>> filter_control
    <ListControl name='field.lifecycle' type='select'>
-   >>> filter_control.value
+   >>> filter_control.displayValue
    ['New, Experimental, Development or Mature']
    >>> filter_control.displayOptions
    ['New, Experimental, Development or Mature', 'Any Status', 'New', 'Experimental', 'Development', 'Mature', 'Merged', 'Abandoned']
