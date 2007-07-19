@@ -433,10 +433,10 @@ is replaced with the message '<email address hidden>'.
     >>> # XPath expressions are not email addresses.
     >>> test_tales('foo/fmt:obfuscate-email', foo='element/@attribute')
     'element/@attribute'
-    >>> # An invalid address, some chracters, followed by many dots, and
-    >>> # some more characters. This pattern caused the re to hang the
-    >>> # servers and the test suite.
-    >>> # The re used one-or-none (?) in a grouping, which is very expensive.
+    >>> # An invalid address, some characters, followed by many dots, and
+    >>> # some more characters. This pattern (derived from a real example)
+    >>> # caused the re to hang the servers and the test suite.
+    >>> # The re used one-or-none in a grouping (\.?), which is expensive.
     >>> bad_address = (
     ...     "medicalwei@sara:~$ Spinning................................"
     ...     "...........................................................not")
