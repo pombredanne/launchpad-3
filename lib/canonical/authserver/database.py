@@ -478,19 +478,9 @@ class DatabaseBranchDetailsStorage:
             for branch in getUtility(IBranchSet).getHostedPullQueue()]
 
     def _getMirroredQueue(self):
-        cur = cursor()
-        cur.execute(utf8("""
-            SELECT Branch.id, Branch.name, Branch.url, Person.name,
-                   Product.name, Branch.last_mirror_attempt
-            FROM Branch
-            INNER JOIN Person ON Branch.owner = Person.id
-            LEFT OUTER JOIN Product ON Branch.product = Product.id
-            WHERE branch_type = %(mirrored)s
-            AND (last_mirror_attempt is NULL
-                OR (%(utc_now)s - last_mirror_attempt > '6 hours'))
-            """ % {'utc_now': UTC_NOW,
-                   'mirrored': dbschema.BranchType.MIRRORED.value}))
-        return cur.fetchall()
+        return [
+            branch.pullInfo()
+            for branch in getUtility(IBranchSet).getMirroredPullQueue()]
 
     def _getImportedQueue(self):
         cur = cursor()

@@ -775,6 +775,15 @@ class BranchSet:
                    'hosted': BranchType.HOSTED.value},
             prejoins=['owner', 'product'])
 
+    def getMirroredPullQueue(self):
+        """See `IBranchSet`."""
+        return Branch.select(
+            """branch_type = %(mirrored)s
+            AND (last_mirror_attempt is NULL
+                OR (%(utc_now)s - last_mirror_attempt > '6 hours'))
+            """ % {'utc_now': UTC_NOW,
+                   'mirrored': BranchType.MIRRORED.value})
+
 
 class BranchRelationship(SQLBase):
     """A relationship between branches.
