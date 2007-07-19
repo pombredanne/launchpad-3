@@ -1,4 +1,4 @@
-<html xmlns="http://www.w3.org/1999/xhtml"
+<html xmlns="http://www.w3.org/1999/xhtml" 
       xmlns:tal="http://xml.zope.org/namespaces/tal"
       xmlns:metal="http://xml.zope.org/namespaces/metal"
       xmlns:i18n="http://xml.zope.org/namespaces/i18n"
@@ -47,7 +47,6 @@
       <div tal:condition="context/reopenings"
            tal:replace="structure context/@@+portlet-reopenings" />
       <div tal:replace="structure context/@@+portlet-subscribers" />
-      <div tal:replace="structure context/target/@@+portlet-details" />
     </metal:leftportlets>
 
     <metal:rightportlets fill-slot="portlets_two">
@@ -74,20 +73,30 @@
         tal:content="structure context/description/fmt:text-to-html" 
         />
 
+      <div id="related-faq" tal:condition="context/faq">
+        <b>Related FAQ:</b>
+        <a href="#"
+           tal:attributes="href context/faq/fmt:url"
+           tal:content="context/faq/title">FAQ Title</a>
+      </div>
+
       <tal:message repeat="message context/messages">
         <div tal:replace="structure message/@@+display" />
       </tal:message>
 
       <div xml:lang="en" lang="en" dir="ltr">
-        <h2>
-          Can you help with this problem?
-        </h2>
+        <div id="can-you-help-with-this-problem"
+          tal:condition="not: view/is_question_owner">
+          <h2>
+            Can you help with this problem?
+          </h2>
 
-        <p>
-          Provide an answer of your own, or ask 
-          <span tal:replace="context/owner/browsername"></span>
-          for more information if necessary.
-        </p>
+          <p>
+            Provide an answer of your own, or ask 
+            <span tal:replace="context/owner/browsername"></span>
+            for more information if necessary.
+          </p>
+        </div>
         
         <div tal:condition="view/hasActions">
           <div metal:use-macro="context/@@launchpad_form/form">
@@ -122,7 +131,12 @@
         </tal:not-logged-in>
       </div>
 
-      <div id="ask-your-own-question" xml:lang="en" lang="en" dir="ltr">
+      <div
+        class="related"
+        id="ask-your-own-question"
+        xml:lang="en" lang="en" dir="ltr"
+        tal:condition="not: view/is_question_owner"
+      >
         <h2>Got a question of your own?</h2>
 
         <p>For best results,

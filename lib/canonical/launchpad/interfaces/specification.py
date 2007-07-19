@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'ISpecification',
+    'INewSpecificationForm',
     'ISpecificationSet',
     'ISpecificationDelta',
     ]
@@ -14,7 +15,7 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
-from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool, Field
+from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (ContentNameField, Summary,
@@ -23,12 +24,13 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces import IHasOwner, IProject
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
+from canonical.launchpad.interfaces.sprint import ISprint
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 
 from canonical.lp.dbschema import (
-    SpecificationStatus, SpecificationPriority, SpecificationDelivery,
-    SpecificationGoalStatus)
+    SpecificationDefinitionStatus, SpecificationPriority,
+    SpecificationImplementationStatus, SpecificationGoalStatus)
 
 
 class SpecNameField(ContentNameField):
@@ -62,6 +64,10 @@ class SpecNameField(ContentNameField):
             # target defines a single specification namespace, we ask
             # the target to perform the lookup.
             return self.context.target.getSpecification(name)
+        elif ISprint.providedBy(self.context):
+            # The context is a sprint. Since a sprint corresponds
+            # to multiple specification namespaces, we return None.
+            return None
         else:
             # The context is a entity such as a product or distribution.
             # Since this type of context is associated with exactly one
@@ -94,6 +100,7 @@ class ISpecification(IHasOwner, ICanBeMentored):
     #      specification to an attribute of another SQL object
     #      referencing it.
     id = Int(title=_("Database ID"), required=True, readonly=True)
+
     name = SpecNameField(
         title=_('Name'), required=True, readonly=False,
         description=_(
@@ -114,9 +121,9 @@ class ISpecification(IHasOwner, ICanBeMentored):
         title=_('Summary'), required=True, description=_(
             "A single-paragraph description of the feature. "
             "This will also be displayed in most feature listings."))
-    status = Choice(
-        title=_('Definition Status'), vocabulary='SpecificationStatus',
-        default=SpecificationStatus.NEW, description=_(
+    definition_status = Choice(
+        title=_('Definition Status'), vocabulary='SpecificationDefinitionStatus',
+        default=SpecificationDefinitionStatus.NEW, description=_(
             "The current status of the process to define the "
             "feature and get approval for the implementation plan."))
     priority = Choice(
@@ -148,12 +155,6 @@ class ISpecification(IHasOwner, ICanBeMentored):
         description=_("The project for which this proposal is being made."),
         required=True,
         vocabulary='DistributionOrProduct')
-    projecttarget = Choice(
-        title=_("For"),
-        description=_("The project for which this proposal is being made."),
-        required=True,
-        vocabulary='ProjectProducts')
-
 
     # series
     productseries = Choice(title=_('Series Goal'), required=False,
@@ -203,9 +204,9 @@ class ISpecification(IHasOwner, ICanBeMentored):
         "number of developer days it will take to implement this feature. "
         "Please only provide an estimate if you are relatively confident "
         "in the number."))
-    delivery = Choice(title=_("Implementation Status"),
-        required=True, default=SpecificationDelivery.UNKNOWN,
-        vocabulary='SpecificationDelivery', description=_("The state of "
+    implementation_status = Choice(title=_("Implementation Status"),
+        required=True, default=SpecificationImplementationStatus.UNKNOWN,
+        vocabulary='SpecificationImplementationStatus', description=_("The state of "
         "progress being made on the actual implementation or delivery "
         "of this feature."))
     superseded_by = Choice(title=_("Superseded by"),
@@ -214,10 +215,6 @@ class ISpecification(IHasOwner, ICanBeMentored):
         "which supersedes this one. Note that selecting a specification "
         "here and pressing Continue will change the specification "
         "status to Superseded."))
-    informational = Bool(title=_('Is Informational'),
-        required=False, default=False, description=_('Check this box if '
-        'this specification is purely documentation or overview and does '
-        'not actually involve any implementation.'))
 
     # lifecycle
     starter = Attribute('The person who first set the state of the '
@@ -246,6 +243,8 @@ class ISpecification(IHasOwner, ICanBeMentored):
     branch_links = Attribute('The entries that link the branches to the spec')
 
     # emergent properties
+    informational = Attribute('Is True if this spec is purely informational '
+        'and requires no implementation.')
     is_complete = Attribute('Is True if this spec is already completely '
         'implemented. Note that it is True for informational specs, since '
         'they describe general functionality rather than specific '
@@ -369,6 +368,22 @@ class ISpecification(IHasOwner, ICanBeMentored):
         """Link the given branch to this specification."""
 
 
+class INewSpecificationForm(ISpecification):
+    """ A schema for registering new blueprints"""
+    sprint = Choice(
+        title=_("Propose for sprint"),
+        description=_("the sprint to which agenda this blueprint is "
+                      "being suggested."),
+        required=False,
+        vocabulary='FutureSprint')
+    
+    project_target = Choice(
+        title=_("For"),
+        description=_("The project for which this proposal is being made."),
+        required=True,
+        vocabulary='ProjectProducts')
+
+
 # Interfaces for containers
 class ISpecificationSet(IHasSpecifications):
     """A container for specifications."""
@@ -414,7 +429,7 @@ class ISpecificationDelta(Interface):
     # items where we provide 'old' and 'new' values if they changed
     name = Attribute("Old and new names, or None.")
     priority = Attribute("Old and new priorities, or None")
-    status = Attribute("Old and new statuses, or None")
+    definition_status = Attribute("Old and new statuses, or None")
     target = Attribute("Old and new target, or None")
     approver = Attribute("Old and new approver, or None")
     assignee = Attribute("Old and new assignee, or None")

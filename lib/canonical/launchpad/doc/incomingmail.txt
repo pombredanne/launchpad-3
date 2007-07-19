@@ -211,7 +211,7 @@ out:
     ERROR:...:An exception was raised inside the handler: http://...
     ERROR: new row for relation "product" violates check constraint "valid_name"
     <BLANKLINE>
-    /*...*/ UPDATE Product SET name = 'invalid name' WHERE id = 4
+    UPDATE Product SET name = 'invalid name' WHERE id = 4
     WARNING...
 
 

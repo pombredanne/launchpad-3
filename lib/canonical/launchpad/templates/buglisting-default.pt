@@ -4,7 +4,20 @@
       i18n:domain="malone"
 >
   <body>
-    <metal:heading fill-slot="pageheading">
+    <metal:heading fill-slot="pageheading"> 
+
+      <tal:block condition="view/_projectContext">
+        <tal:block condition="view/required:launchpad.Edit">
+          <p tal:condition="not: context/products" class="warning message">
+            There are no projects registered for
+            <span tal:replace="context/displayname">project displayname</span>.
+            <br />
+            You need to <a href="+newproduct">register another project that is
+            part of <tal:project replace="context/displayname" /></a>or
+            associate an existing project with it.
+          </p>
+        </tal:block>
+      </tal:block>
       <h1
         tal:condition="view/shouldShowAdvancedForm"
         tal:content="view/getAdvancedSearchPageHeading"
@@ -34,6 +47,8 @@
   </metal:leftportlets>
 
   <div metal:fill-slot="main">
+
+
       <tal:do_not_show_advanced_form
         condition="not: view/shouldShowAdvancedForm">
       <div tal:define="batch_navigator view/search">

@@ -9,6 +9,7 @@ __all__ = [
     'IQuestion',
     'IQuestionAddMessageForm',
     'IQuestionChangeStatusForm',
+    'IQuestionLinkFAQForm',
     ]
 
 from zope.interface import Interface, Attribute
@@ -17,6 +18,7 @@ from zope.schema import (
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.faq import IFAQ
 from canonical.launchpad.interfaces.questionmessage import IQuestionMessage
 from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
 from canonical.lp.dbschema import QuestionStatus, QuestionPriority
@@ -114,6 +116,12 @@ class IQuestion(IHasOwner):
     target = Object(title=_('Project'), required=True, schema=IQuestionTarget,
         description=_('The distribution, source package, or product the '
                       'question pertains to.'))
+
+    faq = Object(
+        title=_('Linked FAQ'),
+        description=_('The FAQ document containing the long answer to this '
+                      'question.'),
+        readonly=True, required=False, schema=IFAQ)
 
     # joins
     subscriptions = Attribute(
@@ -236,6 +244,25 @@ class IQuestion(IHasOwner):
         :user: IPerson giving the answer.
         :answer: A string or IMessage containing the answer.
         :datecreated: Date for the message. Defaults to the current time.
+        """
+
+    def linkFAQ(user, faq, comment, datecreated=None):
+        """Link a FAQ as an answer to this question.
+
+        Exactly like giveAnswer() but also link the IFAQ faq object to this
+        question.
+        
+        Return the created IQuestionMessage.
+
+        This method should fire an ISQLObjectCreatedEvent for the created
+        IQuestionMessage and an ISQLObjectModifiedEvent for the question.
+
+        :param user: IPerson linking the faq.
+        :param faq: The IFAQ containing the answer.
+        :param comment: A string or IMessage explaining how the FAQ is
+            relevant.
+        :param datecreated: Date for the message. Defaults to the current
+            time.
         """
 
     can_confirm_answer = Attribute(
@@ -428,3 +455,22 @@ class IQuestionChangeStatusForm(Interface):
         description=_('Enter an explanation for the status change'),
         required=True)
 
+
+class IQuestionLinkFAQForm(Interface):
+    """Form schema for the `QuestionLinkFAQView`."""
+
+    faq = Choice(
+        title=_('Which is the relevant FAQ?'),
+        description=_(
+            'Select the FAQ that is the most relevant for this question. '
+            'You can modify the list of suggested FAQs by editing the search '
+            'field and clicking "Search".'),
+        vocabulary='FAQ', required=False, default=None)
+
+    message = Text(
+        title=_('Answer Message'),
+        description=_(
+            'Enter a message that will be added as the question answer. '
+            'The title of the FAQ will be automatically appended to this '
+            'message.'),
+        required=True)
