@@ -44,7 +44,9 @@ class TestQueueBase(TestCase):
 
     def execute_command(self, argument, queue_name='new', no_mail=True,
                         distribution_name='ubuntu',announcelist=None,
-                        suite_name='breezy-autotest', quiet=True):
+                        component_name=None, section_name=None, 
+                        priority_name=None, suite_name='breezy-autotest', 
+                        quiet=True):
         """Helper method to execute a queue command.
 
         Initialise output buffer and execute a command according
@@ -56,6 +58,7 @@ class TestQueueBase(TestCase):
         queue = name_queue_map[queue_name]
         runner = CommandRunner(
             queue, distribution_name, suite_name, announcelist, no_mail,
+            component_name, section_name, priority_name,
             display=self._test_display)
 
         return runner.execute(argument.split())
@@ -142,22 +145,30 @@ class TestQueueTool(TestQueueBase):
          * specified ID doesn't match the queue name
         """
         queue_action = self.execute_command('info 1')
-        # check if only one item was retrieved
+        # Check if only one item was retrieved.
         self.assertEqual(1, queue_action.items_size)
 
         displaynames = [item.displayname for item in queue_action.items]
         self.assertEqual(['mozilla-firefox'], displaynames)
 
-        # not found ID
+        # Check passing multiple IDs.
+        queue_action = self.execute_command('info 1 3 4')
+        self.assertEqual(3, queue_action.items_size)
+        [mozilla, netapplet, alsa] = queue_action.items
+        self.assertEqual('mozilla-firefox', mozilla.displayname)
+        self.assertEqual('netapplet', netapplet.displayname)
+        self.assertEqual('alsa-utils', alsa.displayname)
+
+        # Check not found ID.
         self.assertRaises(
             CommandRunnerError, self.execute_command, 'info 100')
 
-        # looking in the wrong suite
+        # Check looking in the wrong suite.
         self.assertRaises(
             CommandRunnerError, self.execute_command, 'info 1',
             suite_name='breezy-autotest-backports')
 
-        # looking in the wrong queue
+        # Check looking in the wrong queue.
         self.assertRaises(
             CommandRunnerError, self.execute_command, 'info 1',
             queue_name='done')
@@ -171,6 +182,31 @@ class TestQueueTool(TestQueueBase):
 
         displaynames = [item.displayname for item in queue_action.items]
         self.assertEqual(['pmount'], displaynames)
+
+        # Check looking for multiple names.
+        queue_action = self.execute_command('info pmount alsa-utils')
+        self.assertEqual(2, queue_action.items_size)
+        [pmount, alsa] = queue_action.items
+        self.assertEqual('pmount', pmount.displayname)
+        self.assertEqual('alsa-utils', alsa.displayname)
+
+    def testAcceptActionWithMultipleIDs(self):
+        """Check if accepting multiple items at once works.
+
+        We can specify multiple items to accept, even mixing IDs and names.
+        e.g. queue accept alsa-utils 1 3
+        """
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+        queue_action = self.execute_command('accept 1 pmount 3')
+        self.assertEqual(3, queue_action.items_size)
+        self.assertQueueLength(1, breezy_autotest, 
+            PackageUploadStatus.ACCEPTED, 'mozilla-firefox')
+        self.assertQueueLength(1, breezy_autotest, 
+            PackageUploadStatus.ACCEPTED, 'pmount')
+        self.assertQueueLength(1, breezy_autotest, 
+            PackageUploadStatus.ACCEPTED, 'netapplet')
+
 
     def testRemovedPublishRecordDoesNotAffectQueueNewness(self):
         """Check if REMOVED published record does not affect file NEWness.
@@ -513,6 +549,17 @@ class TestQueueToolInJail(TestQueueBase):
             queue_name='unapproved', suite_name='breezy-autotest')
 
         self.assertEqual(['netapplet-1.0.0.tar.gz'], self._listfiles())
+
+    def testFetchMultipleItems(self):
+        """Check if fetching multiple items at once works.
+
+        We can specify multiple items to fetch, even mixing IDs and names.
+        e.g. queue fetch alsa-utils 1 3
+        """
+        queue_action = self.execute_command('fetch 3 mozilla-firefox')
+        self.assertEqual(
+            ['mozilla-firefox_0.9_i386.changes', 'netapplet-1.0.0.tar.gz'],
+            self._listfiles())
 
 
 def test_suite():

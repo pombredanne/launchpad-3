@@ -214,7 +214,7 @@ class QueueAction:
                     self.items.append(item)
                 self.package_names.append(term)
 
-        items_size = len(self.items)
+        self.items_size = len(self.items)
 
     def run(self):
         """Place holder for command action."""
