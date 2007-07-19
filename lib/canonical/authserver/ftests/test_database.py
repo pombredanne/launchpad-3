@@ -207,8 +207,7 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
     def isBranchInPullQueue(self, branch_id):
         """Whether the branch with this id is present in the pull queue."""
         storage = DatabaseBranchDetailsStorage(None)
-        cur = cursor()
-        results = storage._getBranchPullQueueInteraction(cur)
+        results = storage._getBranchPullQueueInteraction()
         return branch_id in (
             result_branch_id
             for result_branch_id, result_pull_url, unique_name in results)
@@ -672,10 +671,44 @@ class NewBranchDetailsDatabaseStorageTestCase(unittest.TestCase):
 
     def isBranchInPullQueue(self, branch_id):
         """Whether the branch with this id is present in the pull queue."""
-        results = self.storage._getBranchPullQueueInteraction(self.cursor)
+        results = self.storage._getBranchPullQueueInteraction()
         return branch_id in (
             result_branch_id
             for result_branch_id, result_pull_url, unique_name in results)
+
+    def setSeriesDateLastSynced(self, series_id, value=None, now_minus=None):
+        """Helper to set the datelastsynced of a ProductSeries.
+
+        :param series_id: Database id of the ProductSeries to update.
+        :param value: SQL expression to set datelastsynced to.
+        :param now_minus: shorthand to set a value before the current time.
+        """
+        # Exactly one of value or now_minus must be set.
+        cur = cursor()
+        assert int(value is None) + int(now_minus is None) == 1
+        if now_minus is not None:
+            value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
+                     % now_minus)
+        cur.execute(
+            "UPDATE ProductSeries SET datelastsynced = (%s) WHERE id = %d"
+            % (value, series_id))
+
+    def setBranchLastMirrorAttempt(self, branch_id, value=None, now_minus=None):
+        """Helper to set the last_mirror_attempt of a Branch.
+
+        :param branch_id: Database id of the Branch to update.
+        :param value: SQL expression to set last_mirror_attempt to.
+        :param now_minus: shorthand to set a value before the current time.
+        """
+        # Exactly one of value or now_minus must be set.
+        assert int(value is None) + int(now_minus is None) == 1
+        if now_minus is not None:
+            value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
+                     % now_minus)
+        cur = cursor()
+        cur.execute(
+            "UPDATE Branch SET last_mirror_attempt = (%s) WHERE id = %d"
+            % (value, branch_id))
 
     def test_startMirroring(self):
         # verify that the last mirror time is None before hand.
@@ -824,20 +857,14 @@ class NewBranchDetailsDatabaseStorageTestCase(unittest.TestCase):
         self.assertEqual(row[2], started.replace(tzinfo=None))
         self.assertEqual(row[3], completed.replace(tzinfo=None))
 
-
-class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
-
-    def setUp(self):
-        TestDatabaseSetup.setUp(self)
-        self.storage = DatabaseBranchDetailsStorage(None)
-
     def test_getBranchPullQueue(self):
         # Set up the database so the vcs-import branch will appear in the queue.
+        transaction.begin()
         self.setSeriesDateLastSynced(3, now_minus='1 second')
         self.setBranchLastMirrorAttempt(14, now_minus='1 day')
-        self.connection.commit()
+        transaction.commit()
 
-        results = self.storage._getBranchPullQueueInteraction(self.cursor)
+        results = self.storage._getBranchPullQueueInteraction()
 
         # The first item in the row is the id.
         results_dict = dict((row[0], row) for row in results)
@@ -861,11 +888,12 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # If a branch doesn't have an associated product the unique name
         # returned should have +junk in the product segment. See
         # Branch.unique_name for precedent.
+        transaction.begin()
         self.setSeriesDateLastSynced(3, now_minus='1 second')
         self.setBranchLastMirrorAttempt(14, now_minus='1 day')
-        self.connection.commit()
+        transaction.commit()
 
-        results = self.storage._getBranchPullQueueInteraction(self.cursor)
+        results = self.storage._getBranchPullQueueInteraction()
 
         # The first item in the row is the id.
         results_dict = dict((row[0], row) for row in results)
@@ -879,6 +907,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # then that rows are ordered so that older last_mirror_attempts are
         # listed earlier.
 
+        transaction.begin()
         # Clear last_mirror_attempt on all rows
         self.cursor.execute("UPDATE Branch SET last_mirror_attempt = NULL")
 
@@ -892,9 +921,10 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
                                            - interval '%d days')
                 WHERE id = %d"""
                 % (branchID, branchID))
+        transaction.commit()
 
         # Call getBranchPullQueue
-        results = self.storage._getBranchPullQueueInteraction(self.cursor)
+        results = self.storage._getBranchPullQueueInteraction()
 
         # Get the branch IDs from the results for the branches we modified:
         branches = [row[0] for row in results if row[0] in range(16, 26)]
@@ -914,45 +944,6 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
             "SELECT mirror_request_time FROM branch WHERE id = %s"
             % sqlvalues(branch_id))
         return self.cursor.fetchone()[0]
-
-    def isBranchInPullQueue(self, branch_id):
-        """Whether the branch with this id is present in the pull queue."""
-        results = self.storage._getBranchPullQueueInteraction(self.cursor)
-        return branch_id in (
-            result_branch_id
-            for result_branch_id, result_pull_url, unique_name in results)
-
-    def setSeriesDateLastSynced(self, series_id, value=None, now_minus=None):
-        """Helper to set the datelastsynced of a ProductSeries.
-
-        :param series_id: Database id of the ProductSeries to update.
-        :param value: SQL expression to set datelastsynced to.
-        :param now_minus: shorthand to set a value before the current time.
-        """
-        # Exactly one of value or now_minus must be set.
-        assert int(value is None) + int(now_minus is None) == 1
-        if now_minus is not None:
-            value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
-                     % now_minus)
-        self.cursor.execute(
-            "UPDATE ProductSeries SET datelastsynced = (%s) WHERE id = %d"
-            % (value, series_id))
-
-    def setBranchLastMirrorAttempt(self, branch_id, value=None, now_minus=None):
-        """Helper to set the last_mirror_attempt of a Branch.
-
-        :param branch_id: Database id of the Branch to update.
-        :param value: SQL expression to set last_mirror_attempt to.
-        :param now_minus: shorthand to set a value before the current time.
-        """
-        # Exactly one of value or now_minus must be set.
-        assert int(value is None) + int(now_minus is None) == 1
-        if now_minus is not None:
-            value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
-                     % now_minus)
-        self.cursor.execute(
-            "UPDATE Branch SET last_mirror_attempt = (%s) WHERE id = %d"
-            % (value, branch_id))
 
     def test_import_branches_only_listed_when_due(self):
         # Import branches (branches owned by vcs-imports) are only listed when
@@ -979,9 +970,10 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
 
         # Mark ProductSeries 3 as never successfully synced, and branch 14 as
         # never mirrored.
+        transaction.begin()
         self.setSeriesDateLastSynced(3, 'NULL')
         self.setBranchLastMirrorAttempt(14, 'NULL')
-        self.connection.commit()
+        transaction.commit()
 
         # Since the import was never successful, the branch should not be in
         # the pull queue.
@@ -991,7 +983,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # Mark ProductSeries 3 as just synced, and branch 14 as never mirrored.
         self.setSeriesDateLastSynced(3, now_minus='1 second')
         self.setBranchLastMirrorAttempt(14, 'NULL')
-        self.connection.commit()
+        transaction.commit()
 
         # We have a new import! We must mirror it as soon as possible.
         self.failUnless(self.isBranchInPullQueue(14),
@@ -1002,7 +994,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # that we are no exercising the 'one mirror per day' logic.
         self.setSeriesDateLastSynced(3, now_minus='1 day 15 minutes')
         self.setBranchLastMirrorAttempt(14, now_minus='1 day 10 minutes')
-        self.connection.commit()
+        transaction.commit()
 
         # Since the the import was not successfully synced since the last
         # mirror, we do not have anything new to mirror.
@@ -1013,7 +1005,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # mirrored before this sync.
         self.setSeriesDateLastSynced(3, now_minus='1 second')
         self.setBranchLastMirrorAttempt(14, now_minus='1 day')
-        self.connection.commit()
+        transaction.commit()
 
         # The import was updated since the last mirror attempt. There might be
         # new revisions to mirror.
@@ -1030,7 +1022,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # mirrored more than 1 day ago.
         self.setSeriesDateLastSynced(3, 'NULL')
         self.setBranchLastMirrorAttempt(14, now_minus='1 day 1 minute')
-        self.connection.commit()
+        transaction.commit()
         self.failUnless(self.isBranchInPullQueue(14),
             "import branch last mirrored >1 day ago not in pull queue.")
 
@@ -1038,7 +1030,7 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
         # mirrored recently.
         self.setSeriesDateLastSynced(3, 'NULL')
         self.setBranchLastMirrorAttempt(14, now_minus='5 minutes')
-        self.connection.commit()
+        transaction.commit()
         self.failIf(self.isBranchInPullQueue(14),
             "import branch mirrored <1 day ago in pull queue.")
 

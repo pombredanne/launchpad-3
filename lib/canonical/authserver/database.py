@@ -470,11 +470,11 @@ class DatabaseBranchDetailsStorage:
         self.connectionPool = connectionPool
 
     def getBranchPullQueue(self):
-        ri = self.connectionPool.runInteraction
-        return ri(self._getBranchPullQueueInteraction)
+        return deferToThread(self._getBranchPullQueueInteraction)
 
-    def _getHostedQueue(self, transaction):
-        transaction.execute(utf8("""
+    def _getHostedQueue(self):
+        cur = cursor()
+        cur.execute(utf8("""
             SELECT Branch.id, Branch.name, Branch.url, Person.name,
                    Product.name, Branch.last_mirror_attempt
             FROM Branch
@@ -486,10 +486,11 @@ class DatabaseBranchDetailsStorage:
                 OR mirror_request_time IS NOT NULL)
             """ % {'utc_now': UTC_NOW,
                    'hosted': dbschema.BranchType.HOSTED.value}))
-        return transaction.fetchall()
+        return cur.fetchall()
 
-    def _getMirroredQueue(self, transaction):
-        transaction.execute(utf8("""
+    def _getMirroredQueue(self):
+        cur = cursor()
+        cur.execute(utf8("""
             SELECT Branch.id, Branch.name, Branch.url, Person.name,
                    Product.name, Branch.last_mirror_attempt
             FROM Branch
@@ -500,10 +501,11 @@ class DatabaseBranchDetailsStorage:
                 OR (%(utc_now)s - last_mirror_attempt > '6 hours'))
             """ % {'utc_now': UTC_NOW,
                    'mirrored': dbschema.BranchType.MIRRORED.value}))
-        return transaction.fetchall()
+        return cur.fetchall()
 
-    def _getImportedQueue(self, transaction):
-        transaction.execute(utf8("""
+    def _getImportedQueue(self):
+        cur = cursor()
+        cur.execute(utf8("""
             SELECT Branch.id, Branch.name, Branch.url, Person.name,
                    Product.name, Branch.last_mirror_attempt
             FROM Branch
@@ -520,9 +522,10 @@ class DatabaseBranchDetailsStorage:
             ORDER BY last_mirror_attempt IS NOT NULL, last_mirror_attempt
             """ % {'utc_now': UTC_NOW,
                    'imported': dbschema.BranchType.IMPORTED.value}))
-        return transaction.fetchall()
+        return cur.fetchall()
 
-    def _getBranchPullQueueInteraction(self, transaction):
+    @read_only_transaction
+    def _getBranchPullQueueInteraction(self):
         """The interaction for getBranchPullQueue."""
         # The following types of branches are included in the queue:
         # - any branches which have not yet been mirrored
@@ -541,11 +544,8 @@ class DatabaseBranchDetailsStorage:
         # between frequency of mirroring and not hammering servers with
         # requests to check whether mirror branches are up to date.
 
-        rows = (self._getHostedQueue(transaction)
-                + self._getMirroredQueue(transaction)
-                + self._getImportedQueue(transaction))
-
-        rows.extend(list(transaction.fetchall()))
+        rows = (self._getHostedQueue() + self._getMirroredQueue()
+                + self._getImportedQueue())
 
         def mirror_attempt(branch_tuple):
             return branch_tuple[-1] is not None, branch_tuple[-1]
