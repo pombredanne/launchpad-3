@@ -97,6 +97,7 @@ COMMENT ON COLUMN BugTask.datecreated IS 'A timestamp for the creation of this b
 COMMENT ON COLUMN BugTask.date_confirmed IS 'The date when this bug transitioned from an unconfirmed status to a confirmed one. If the state regresses to a one that logically occurs before Confirmed, e.g., Unconfirmed, this date is cleared.';
 COMMENT ON COLUMN BugTask.date_inprogress IS 'The date on which this bug transitioned from not being in progress to a state >= In Progress. If the status moves back to a pre-In Progress state, this date is cleared';
 COMMENT ON COLUMN BugTask.date_closed IS 'The date when this bug transitioned to a resolved state, e.g., Rejected, Fix Released, etc. If the state changes back to a pre-closed state, this date is cleared';
+COMMENT ON COLUMN BugTask.date_incomplete IS 'The date on which this bug''s status was marked as incomplete. If the status changes again, this date is cleared';
 COMMENT ON COLUMN BugTask.milestone IS 'A way to mark a bug for grouping purposes, e.g. to say it needs to be fixed by version 1.2';
 COMMENT ON COLUMN BugTask.statusexplanation IS 'A place to store bug task specific information as free text';
 COMMENT ON COLUMN BugTask.bugwatch IS 'This column allows us to link a bug
