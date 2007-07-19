@@ -433,23 +433,15 @@ is replaced with the message '<email address hidden>'.
     >>> # XPath expressions are not email addresses.
     >>> test_tales('foo/fmt:obfuscate-email', foo='element/@attribute')
     'element/@attribute'
-    >>> # An invalid address that caused the re to hang the servers.
+    >>> # An invalid address, some chracters, followed by many dots, and
+    >>> # some more characters. This pattern caused the re to hang the
+    >>> # servers and the test suite.
     >>> # The re used one-or-none (?) in a grouping, which is very expensive.
     >>> bad_address = (
-    ...     'medicalwei@sara:~$ dmesg |tail -30\n[ 4242.222510] scsi 5:0:0:2:'
-    ...     ' Direct-Access  Zynet  USB Storage-MMC I03A PQ: 0 ANSI: 0 '
-    ...     'CCS\n[ 4242.246502] sd 5:0:0:0: Attached scsi removable disk '
-    ...     'sdb\n[ 4242.246574] sd 5:0:0:0: Attached scsi generic sg2 type '
-    ...     '0\n[ 4242.251486] sd 5:0:0:1: Attached scsi removable disk '
-    ...     'sdc\n[ 4242.251545] sd 5:0:0:1: Attached scsi generic sg3 type '
-    ...     '0\n[ 4242.256490] sd 5:0:0:2: Attached scsi removable disk '
-    ...     'sdd\n[ 4242.256555] sd 5:0:0:2: Attached scsi generic sg4 type '
-    ...     '0\n[ 4242.261454] sd 5:0:0:3: Attached scsi removable disk '
-    ...     'sde\n[ 4242.261516] sd 5:0:0:3: Attached scsi generic sg5 type '
-    ...     '0\n[ 4276.920767] SCSI device sdd: 499712 512-byte hdwr sectors '
-    ...     '(256 MB)\n[ 4276.923765] sdd: Write Protect is off\n[')
+    ...     "medicalwei@sara:~$ Spinning................................"
+    ...     "...........................................................not")
     >>> test_tales('foo/fmt:obfuscate-email', foo=bad_address)
-    'medicalwei@sara:~$ dmesg |tail -30\n[ 4242.222510] scsi 5:0:0:2: ...'
+    'medicalwei@sara:~$ ...'
 
 
 == Test the 'fmt:' namespace where the context is a dict. ==
