@@ -473,6 +473,55 @@ class DatabaseBranchDetailsStorage:
         ri = self.connectionPool.runInteraction
         return ri(self._getBranchPullQueueInteraction)
 
+    def _getHostedQueue(self, transaction):
+        transaction.execute(utf8("""
+            SELECT Branch.id, Branch.name, Branch.url, Person.name,
+                   Product.name, Branch.last_mirror_attempt
+            FROM Branch
+            INNER JOIN Person ON Branch.owner = Person.id
+            LEFT OUTER JOIN Product ON Branch.product = Product.id
+            WHERE branch_type = %(hosted)s
+            AND (last_mirror_attempt is NULL
+                OR (%(utc_now)s - last_mirror_attempt > '6 hours')
+                OR mirror_request_time IS NOT NULL)
+            """ % {'utc_now': UTC_NOW,
+                   'hosted': dbschema.BranchType.HOSTED.value}))
+        return transaction.fetchall()
+
+    def _getMirroredQueue(self, transaction):
+        transaction.execute(utf8("""
+            SELECT Branch.id, Branch.name, Branch.url, Person.name,
+                   Product.name, Branch.last_mirror_attempt
+            FROM Branch
+            INNER JOIN Person ON Branch.owner = Person.id
+            LEFT OUTER JOIN Product ON Branch.product = Product.id
+            WHERE branch_type = %(mirrored)s
+            AND (last_mirror_attempt is NULL
+                OR (%(utc_now)s - last_mirror_attempt > '6 hours'))
+            """ % {'utc_now': UTC_NOW,
+                   'mirrored': dbschema.BranchType.MIRRORED.value}))
+        return transaction.fetchall()
+
+    def _getImportedQueue(self, transaction):
+        transaction.execute(utf8("""
+            SELECT Branch.id, Branch.name, Branch.url, Person.name,
+                   Product.name, Branch.last_mirror_attempt
+            FROM Branch
+            INNER JOIN Person ON Branch.owner = Person.id
+            LEFT OUTER JOIN ProductSeries
+                ON ProductSeries.import_branch = Branch.id
+            LEFT OUTER JOIN Product
+                ON Branch.product = Product.id
+            WHERE branch_type = %(imported)s
+            AND ((datelastsynced IS NOT NULL AND last_mirror_attempt IS NULL)
+                OR (datelastsynced > last_mirror_attempt)
+                OR (datelastsynced IS NULL
+                    AND (%(utc_now)s - last_mirror_attempt > '1 day')))
+            ORDER BY last_mirror_attempt IS NOT NULL, last_mirror_attempt
+            """ % {'utc_now': UTC_NOW,
+                   'imported': dbschema.BranchType.IMPORTED.value}))
+        return transaction.fetchall()
+
     def _getBranchPullQueueInteraction(self, transaction):
         """The interaction for getBranchPullQueue."""
         # The following types of branches are included in the queue:
@@ -492,54 +541,9 @@ class DatabaseBranchDetailsStorage:
         # between frequency of mirroring and not hammering servers with
         # requests to check whether mirror branches are up to date.
 
-        rows = []
-        transaction.execute(utf8("""
-            SELECT Branch.id, Branch.name, Branch.url, Person.name,
-                   Product.name, Branch.last_mirror_attempt
-            FROM Branch
-            INNER JOIN Person ON Branch.owner = Person.id
-            LEFT OUTER JOIN Product ON Branch.product = Product.id
-            WHERE branch_type = %(hosted)s
-            AND (last_mirror_attempt is NULL
-                OR (%(utc_now)s - last_mirror_attempt > '6 hours')
-                OR mirror_request_time IS NOT NULL)
-            """ % {'utc_now': UTC_NOW,
-                   'hosted': dbschema.BranchType.HOSTED.value}))
-
-
-        rows.extend(list(transaction.fetchall()))
-
-        transaction.execute(utf8("""
-            SELECT Branch.id, Branch.name, Branch.url, Person.name,
-                   Product.name, Branch.last_mirror_attempt
-            FROM Branch
-            INNER JOIN Person ON Branch.owner = Person.id
-            LEFT OUTER JOIN Product ON Branch.product = Product.id
-            WHERE branch_type = %(mirrored)s
-            AND (last_mirror_attempt is NULL
-                OR (%(utc_now)s - last_mirror_attempt > '6 hours'))
-            """ % {'utc_now': UTC_NOW,
-                   'mirrored': dbschema.BranchType.MIRRORED.value}))
-
-        rows.extend(list(transaction.fetchall()))
-
-        transaction.execute(utf8("""
-            SELECT Branch.id, Branch.name, Branch.url, Person.name,
-                   Product.name, Branch.last_mirror_attempt
-            FROM Branch
-            INNER JOIN Person ON Branch.owner = Person.id
-            LEFT OUTER JOIN ProductSeries
-                ON ProductSeries.import_branch = Branch.id
-            LEFT OUTER JOIN Product
-                ON Branch.product = Product.id
-            WHERE branch_type = %(imported)s
-            AND ((datelastsynced IS NOT NULL AND last_mirror_attempt IS NULL)
-                OR (datelastsynced > last_mirror_attempt)
-                OR (datelastsynced IS NULL
-                    AND (%(utc_now)s - last_mirror_attempt > '1 day')))
-            ORDER BY last_mirror_attempt IS NOT NULL, last_mirror_attempt
-            """ % {'utc_now': UTC_NOW,
-                   'imported': dbschema.BranchType.IMPORTED.value}))
+        rows = (self._getHostedQueue(transaction)
+                + self._getMirroredQueue(transaction)
+                + self._getImportedQueue(transaction))
 
         rows.extend(list(transaction.fetchall()))
 
