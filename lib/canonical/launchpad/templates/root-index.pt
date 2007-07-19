@@ -49,31 +49,24 @@
           <h2>What&#8217;s new</h2>
           <ul class="news">
             <li>
-              <a href="https://help.launchpad.net/MentoringManagement">
-                NEW! Mentoring management to help new contributors to your
-                project
+              <a href="https://help.launchpad.net/FrequentlyAskedQuestions"
+                 >Frequently Asked Questions: create standard answers to FAQs
+                in the Answer Tracker
               </a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/FeatureHighlights/">
-                Feature Highlight Guide for Launchpad 1.0 (web
-                and PDF)
+              <a href="https://help.launchpad.net/Mantis">Mantis bug tracker
+                support: watch remote bugs in ALSA and other projects
+              </a>
+            <li>
+              <a href="https://help.launchpad.net/FileDownloadsOverview">File
+                downloads: make installers, documentation and other files
+                available from project release pages
               </a>
             </li>
             <li>
-              <a href="https://help.launchpad.net/KarmaCalculation">
-                Learn how we calculate your Launchpad karma
-              </a>
-            </li>
-            <li>
-              <a href="/~launchpad-beta-testers/">
-                Join the Launchpad Beta Testers team to help test and debug
-                new Launchpad features
-              </a>
-            </li>
-            <li tal:replace="nothing">
-              <a
-              href="">
+             <a href="https://help.launchpad.net/BugStatuses">New clearer bug
+                status names
               </a>
             </li>
           </ul>
