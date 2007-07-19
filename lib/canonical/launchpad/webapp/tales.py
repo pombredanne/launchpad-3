@@ -8,6 +8,7 @@ __metaclass__ = type
 
 import bisect
 import cgi
+from cookielib import domain_match
 from email.Utils import formatdate
 import math
 import os.path
@@ -247,6 +248,7 @@ class IRequestAPI(Interface):
     """Launchpad lp:... API available for an IApplicationRequest."""
 
     person = Attribute("The IPerson for the request's principal.")
+    cookie_scope = Attribute("The scope parameters for cookies.")
 
 
 class RequestAPI:
@@ -258,9 +260,28 @@ class RequestAPI:
     def __init__(self, request):
         self.request = request
 
+    @property
     def person(self):
         return IPerson(self.request.principal, None)
-    person = property(person)
+
+    @property
+    def cookie_scope(self):
+        params = '; Path=/'
+        uri = URI(self.request.getURL())
+        if uri.scheme == 'https':
+            params += '; Secure'
+        # XXX: 20070206 jamesh
+        # This code to select the cookie domain comes from webapp/session.py
+        # It should probably be factored out.
+        for domain in config.launchpad.cookie_domains:
+            assert not domain.startswith('.'), \
+                   "domain should not start with '.'"
+            dotted_domain = '.' + domain
+            if (domain_match(uri.host, domain) or
+                domain_match(uri.host, dotted_domain)):
+                params += '; Domain=%s' % dotted_domain
+                break
+        return params
 
 
 class DBSchemaAPI:

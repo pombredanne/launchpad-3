@@ -53,15 +53,15 @@
     <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/lpmenu.js"></script>
     <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
+    <script type="text/javascript"
+        tal:content="string:var cookie_scope_params = '${request/lp:cookie_scope}';"></script>
     <script type="text/javascript">
       function onLoadFunction() {
         lpmenu.initialize(['menuroot'], '/', 'menupreload',
                            [], '1.3em', 16, true);
         sortables_init();
         initHelpPanel();
-        // XXX: 20070718 jamesh
-        // This should also set a domain for the cookie scope.
-        PortletManager.initialize('; path=/');
+        PortletManager.initialize(cookie_scope_params);
       }
       registerLaunchpadFunction(onLoadFunction);
     </script>
