@@ -11,6 +11,7 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
+from sqlobject.sqlbuilder import AND, OR
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -767,35 +768,34 @@ class BranchSet:
     def getHostedPullQueue(self):
         """See `IBranchSet`."""
         return Branch.select(
-            """branch_type = %(hosted)s 
-            AND (last_mirror_attempt is NULL 
-            OR (%(utc_now)s - last_mirror_attempt > '6 hours') 
-            OR mirror_request_time IS NOT NULL)
-            """ % {'utc_now': UTC_NOW,
-                   'hosted': BranchType.HOSTED.value},
+            AND(Branch.q.branch_type == BranchType.HOSTED,
+                OR(Branch.q.last_mirror_attempt == None,
+                   UTC_NOW - Branch.q.last_mirror_attempt > '6 hours',
+                   Branch.q.mirror_request_time != None)),
             prejoins=['owner', 'product'])
 
     def getMirroredPullQueue(self):
         """See `IBranchSet`."""
         return Branch.select(
-            """branch_type = %(mirrored)s
-            AND (last_mirror_attempt is NULL
-                OR (%(utc_now)s - last_mirror_attempt > '6 hours'))
-            """ % {'utc_now': UTC_NOW,
-                   'mirrored': BranchType.MIRRORED.value})
+            AND(Branch.q.branch_type == BranchType.MIRRORED,
+                OR(Branch.q.last_mirror_attempt == None,
+                   UTC_NOW - Branch.q.last_mirror_attempt > '6 hours')),
+            prejoins=['owner', 'product'])
 
     def getImportedPullQueue(self):
         """See `IBranchSet`."""
+        # XXX: JonathanLange 2007-07-19, Circular import.
+        from canonical.launchpad.database.productseries import ProductSeries
         return Branch.select(
-            """branch_type = %(imported)s
-            AND ProductSeries.import_branch = Branch.id
-            AND ((datelastsynced IS NOT NULL AND last_mirror_attempt IS NULL)
-                OR (datelastsynced > last_mirror_attempt)
-                OR (datelastsynced IS NULL
-                    AND (%(utc_now)s - last_mirror_attempt > '1 day')))
-            """ % {'utc_now': UTC_NOW,
-                   'imported': BranchType.IMPORTED.value},
-            clauseTables=['ProductSeries'])
+            AND(Branch.q.branch_type == BranchType.IMPORTED,
+                ProductSeries.q.import_branchID == Branch.q.id,
+                OR(AND(ProductSeries.q.datelastsynced != None,
+                       Branch.q.last_mirror_attempt == None),
+                   ProductSeries.q.datelastsynced > Branch.q.last_mirror_attempt,
+                   AND(ProductSeries.q.datelastsynced == None,
+                       UTC_NOW - Branch.q.last_mirror_attempt > '1 day'))),
+            clauseTables=['ProductSeries'],
+            prejoins=['owner', 'product'])
 
 
 class BranchRelationship(SQLBase):
