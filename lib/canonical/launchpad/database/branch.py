@@ -781,6 +781,18 @@ class BranchSet:
 
     def getHostedPullQueue(self):
         """See `IBranchSet`."""
+
+        # XXX: Hosted branches (see Andrew's comment dated 2006-06-15) are
+        # mirrored if their mirror_request_time is not NULL or if they haven't
+        # been mirrored in the last 6 hours. The latter behaviour is a
+        # fail-safe and should probably be removed once we trust the
+        # mirror_request_time behavior. See test_mirror_stale_hosted_branches.
+        # -- jml, 2007-01-31
+
+        # The mirroring interval is 6 hours. we think this is a safe balance
+        # between frequency of mirroring and not hammering servers with
+        # requests to check whether mirror branches are up to date.
+
         return Branch.select(
             AND(Branch.q.branch_type == BranchType.HOSTED,
                 OR(Branch.q.last_mirror_attempt == None,
@@ -790,6 +802,11 @@ class BranchSet:
 
     def getMirroredPullQueue(self):
         """See `IBranchSet`."""
+
+        # The mirroring interval is 6 hours. we think this is a safe balance
+        # between frequency of mirroring and not hammering servers with
+        # requests to check whether mirror branches are up to date.
+
         return Branch.select(
             AND(Branch.q.branch_type == BranchType.MIRRORED,
                 OR(Branch.q.last_mirror_attempt == None,
@@ -813,6 +830,11 @@ class BranchSet:
 
     def getPullQueue(self):
         """See `IBranchSet`."""
+        # The following types of branches are included in the queue:
+        # - any branches which have not yet been mirrored
+        # - any branches that were last mirrored over 6 hours ago
+        # - any hosted branches which have requested that they be mirrored
+        # - any import branches which have been synced since their last mirror
         return self.getHostedPullQueue().union(
             self.getMirroredPullQueue()).union(
             self.getImportedPullQueue()).orderBy('last_mirror_attempt')

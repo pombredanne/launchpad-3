@@ -469,25 +469,7 @@ class DatabaseBranchDetailsStorage:
     @read_only_transaction
     def _getBranchPullQueueInteraction(self):
         """The interaction for getBranchPullQueue."""
-        # The following types of branches are included in the queue:
-        # - any branches which have not yet been mirrored
-        # - any branches that were last mirrored over 6 hours ago
-        # - any hosted branches which have requested that they be mirrored
-        # - any import branches which have been synced since their last mirror
-
-        # XXX: Hosted branches (see Andrew's comment dated 2006-06-15) are
-        # mirrored if their mirror_request_time is not NULL or if they haven't
-        # been mirrored in the last 6 hours. The latter behaviour is a
-        # fail-safe and should probably be removed once we trust the
-        # mirror_request_time behavior. See test_mirror_stale_hosted_branches.
-        # -- jml, 2007-01-31
-
-        # The mirroring interval is 6 hours. we think this is a safe balance
-        # between frequency of mirroring and not hammering servers with
-        # requests to check whether mirror branches are up to date.
-
         branches = getUtility(IBranchSet).getPullQueue()
-
         return [branch.pullInfo() for branch in branches]
 
     def startMirroring(self, branchID):
