@@ -356,6 +356,13 @@ class PropertyFile:
                         raise TranslationFormatSyntaxError(
                             line_number=line_num,
                             message=u"invalid msgid: '%s'" % key)
+                else:
+                    # Got a line that is not a valid message nor a valid
+                    # commnet. Ignore it because main en-US.xpi catalog from
+                    # Firefox has such line/error. We follow the 'be strict
+                    # with what you export, be permisive with what you import'
+                    # policy.
+                    break
             if is_message:
                 # We just parsed a message, so we need to add it to the list
                 # of messages.

@@ -11,7 +11,7 @@ information the bugs in it. It doesn't display the list of bugs.
 
 The page has a link to see all open bugs.
 
-    >>> anon_browser.getLink('Show all open bugs').click()
+    >>> anon_browser.getLink('List all open bugs').click()
     >>> anon_browser.url
     'http://bugs.launchpad.dev/ubuntu/+bugs'
     >>> find_tag_by_id(anon_browser.contents, 'buglisting') is not None
@@ -75,5 +75,6 @@ as normal text:
     3 New bugs
     0 Incomplete bugs
     1 Confirmed bugs
+    0 Triaged bugs
     0 In Progress bugs
     0 Fix Committed bugs

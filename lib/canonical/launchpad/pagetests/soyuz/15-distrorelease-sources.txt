@@ -196,10 +196,8 @@ page is provided by an DistroSeriesSourcePackageRelease instance:
 
 There we can see the respective 'changelog' content for this version:
 
-  >>> print find_tag_by_id(browser.contents, 'mozilla-firefox_0.9')
-  <pre id="mozilla-firefox_0.9">
-    Mozilla dummy Changelog......
-  </pre>
+  >>> print find_tag_by_id(browser.contents, 'changelog')
+  <pre id="changelog">Mozilla dummy Changelog......</pre>
 
 With the possibility to download the entire changesfile (if available):
 

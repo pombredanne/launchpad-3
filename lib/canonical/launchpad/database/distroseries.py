@@ -28,9 +28,11 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    DistroSeriesStatus, PackagePublishingPocket, PackagePublishingStatus,
+    ArchivePurpose, DistroSeriesStatus, 
+    PackagePublishingPocket, PackagePublishingStatus,
     PackageUploadStatus, RosettaImportStatus, SpecificationFilter,
-    SpecificationGoalStatus, SpecificationSort)
+    SpecificationGoalStatus, SpecificationSort,
+    SpecificationImplementationStatus)
 
 from canonical.launchpad.interfaces import (
     IBinaryPackageName, IBuildSet, IDistroSeries, IDistroSeriesSet,
@@ -122,12 +124,31 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         orderBy='architecturetag')
     binary_package_caches = SQLMultipleJoin('DistroSeriesPackageCache',
         joinColumn='distroseries', orderBy='name')
-    components = SQLRelatedJoin(
-        'Component', joinColumn='distrorelease', otherColumn='component',
-        intermediateTable='ComponentSelection')
     sections = SQLRelatedJoin(
         'Section', joinColumn='distrorelease', otherColumn='section',
         intermediateTable='SectionSelection')
+
+    @property
+    def upload_components(self):
+        """See `IDistroSeries`."""
+        return Component.select("""
+            ComponentSelection.distrorelease = %s AND
+            Component.id = ComponentSelection.component
+            """ % self.id,
+            clauseTables=["ComponentSelection"])
+
+    @property
+    def components(self):
+        """See `IDistroSeries`."""
+        # XXX julian 2007-06-25
+        # This is filtering out the commercial component for now, until
+        # the second stage of the commercial repo arrives in 1.1.8.
+        return Component.select("""
+            ComponentSelection.distrorelease = %s AND
+            Component.id = ComponentSelection.component AND
+            Component.name != 'commercial'
+            """ % self.id,
+            clauseTables=["ComponentSelection"])
 
     @property
     def all_milestones(self):
@@ -225,23 +246,25 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def canUploadToPocket(self, pocket):
         """See IDistroSeries."""
-        # frozen/released states
-        released_states = [
-            DistroSeriesStatus.SUPPORTED,
-            DistroSeriesStatus.CURRENT
-            ]
+        # Allow everything for distroseries in FROZEN state.
+        if self.status == DistroSeriesStatus.FROZEN:
+            return True
 
-        # deny uploads for released RELEASE pockets
+        # Define stable/released states.
+        stable_states = (DistroSeriesStatus.SUPPORTED,
+                         DistroSeriesStatus.CURRENT)
+
+        # Deny uploads for RELEASE pocket in stable states.
         if (pocket == PackagePublishingPocket.RELEASE and
-            self.status in released_states):
+            self.status in stable_states):
             return False
 
-        # deny uploads for non-RELEASE unreleased pockets
+        # Deny uploads for post-release pockets in unstable states.
         if (pocket != PackagePublishingPocket.RELEASE and
-            self.status not in released_states):
+            self.status not in stable_states):
             return False
 
-        # allow anything else
+        # Allow anything else.
         return True
 
     def updatePackageCount(self):
@@ -382,7 +405,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status', 'Specification.name']
+            order = ['-priority', 'Specification.definition_status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
             # we are showing specs for a GOAL, so under some circumstances
             # we care about the order in which the specs were nominated for
@@ -417,7 +440,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+              quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -631,22 +655,39 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def getSourcesPublishedForAllArchives(self):
         """See IDistroSeries."""
-        queries = ['distrorelease=%s AND status=%s AND archive=%s' %
-                   sqlvalues(self, PackagePublishingStatus.PUBLISHED,
-                             self.main_archive)]
+        # Both, PENDING and PUBLISHED sources will be considered for
+        # as PUBLISHED. It's part of the assumptions made in:
+        # https://launchpad.net/soyuz/+spec/build-unpublished-source
+        pend_build_statuses = (
+            PackagePublishingStatus.PENDING,
+            PackagePublishingStatus.PUBLISHED,
+            )
+
+        # Distribution archive candidates.
+        main_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
+            sqlvalues(self)]
+        main_clauses.append(
+            'Archive.id=SourcePackagePublishingHistory.archive')
+        main_clauses.append('Archive.purpose=%s' % 
+            sqlvalues(ArchivePurpose.PRIMARY))
+        main_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
         if not self.isUnstable():
-            queries.append(
+            main_clauses.append(
                 'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
-
         main_sources = SourcePackagePublishingHistory.select(
-            " AND ".join(queries), orderBy="id")
+            " AND ".join(main_clauses), clauseTables=['Archive'], orderBy="id")
 
-        query = """
-        distrorelease=%s AND status=%s AND archive <> %s
-        """ % sqlvalues(self, PackagePublishingStatus.PUBLISHED,
-                        self.main_archive)
-        ppa_sources = SourcePackagePublishingHistory.select(query, orderBy="id")
+        # PPA candidates.
+        ppa_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
+            sqlvalues(self)]
+        ppa_clauses.append('Archive.id=SourcePackagePublishingHistory.archive')
+        ppa_clauses.append('Archive.purpose=%s' % 
+            sqlvalues(ArchivePurpose.PPA))
+        ppa_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
+        ppa_sources = SourcePackagePublishingHistory.select(
+            " AND ".join(ppa_clauses), clauseTables=['Archive'], orderBy="id")
 
+        # Return all candidates.
         return main_sources.union(ppa_sources)
 
     def getSourcePackagePublishing(self, status, pocket, component=None,
@@ -989,12 +1030,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         default_clauses = ["""
             packageupload.distrorelease = %s""" % sqlvalues(self)]
 
-        # restrict result to a given archive
+        # Restrict result to given archives.
+        archives = []
         if archive is None:
-            archive = self.main_archive
+            archives = [archive.id for archive in 
+                self.distribution.all_distro_archives]
+        else:
+            archives = [archive.id]
 
         default_clauses.append("""
-        packageupload.archive = %s""" % sqlvalues(archive))
+        packageupload.archive IN %s""" % sqlvalues(archives))
 
         # restrict result to a given pocket
         if pocket is not None:
@@ -1453,7 +1498,8 @@ new imports with the information being copied.
         logging.info('Updating POMsgSet table...')
         cur.execute('''
             UPDATE POMsgSet SET
-                iscomplete = pms1.iscomplete, isfuzzy = pms1.isfuzzy,
+                iscomplete = pms1.iscomplete,
+                isfuzzy = pms1.isfuzzy,
                 isupdated = pms1.isupdated,
                 reviewer = pms1.reviewer,
                 date_reviewed = pms1.date_reviewed
@@ -1817,12 +1863,18 @@ new imports with the information being copied.
 
     def checkLegalPocket(self, publication, is_careful, log):
         """Check if the publication can happen in the archive."""
-        # careful re-publishes everything:
+        # 'careful' mode re-publishes everything:
         if is_careful:
             return True
+
         # PPA allows everything (aka Hotel California).
         if publication.archive != self.main_archive:
             return True
+
+        # FROZEN state also allow all pockets to be published.
+        if self.status == DistroSeriesStatus.FROZEN:
+            return True
+
         # If we're not republishing, we want to make sure that
         # we're not publishing packages into the wrong pocket.
         # Unfortunately for careful mode that can't hold true

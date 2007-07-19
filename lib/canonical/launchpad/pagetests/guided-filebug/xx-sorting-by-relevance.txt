@@ -11,11 +11,17 @@ matches the bug's summary and description.
     ...     "Firefox does not support complex SVG images")
     >>> user_browser.getControl("Continue").click()
 
-    >>> from canonical.launchpad.ftests.bug import print_bugs_table
+    >>> from canonical.launchpad.ftests.bug import print_bugs_list
 
-    >>> print_bugs_table(user_browser.contents, "similar-bugs")
-    1 Firefox does not support SVG
-    4 Reflow problems with complex page layouts
+    >>> print_bugs_list(user_browser.contents, "similar-bugs")
+    #1 Firefox does not support SVG
+    New, last updated 2006-05-19
+    #4 Reflow problems with complex page layouts
+    New, last updated 2006-07-14
+    #5 Firefox install instructions should be complete
+    New, last updated 2006-07-14
+    #6 Firefox crashes when Save As dialog for a nonexistent window is closed
+    New, last updated 2006-05-19
 
 If we instead enter a summary that matches bug #4 better, the result will
 be reversed.
@@ -26,6 +32,10 @@ be reversed.
     ...     "Reflow problems when there are SVG images on the page")
     >>> user_browser.getControl("Continue").click()
 
-    >>> print_bugs_table(user_browser.contents, "similar-bugs")
-    4 Reflow problems with complex page layouts
-    1 Firefox does not support SVG
+    >>> print_bugs_list(user_browser.contents, "similar-bugs")
+    #4 Reflow problems with complex page layouts
+    New, last updated 2006-07-14
+    #1 Firefox does not support SVG
+    New, last updated 2006-05-19
+    #5 Firefox install instructions should be complete
+    New, last updated 2006-07-14

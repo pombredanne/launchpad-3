@@ -555,6 +555,14 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
                 'plural_suffix': plural_suffix,
                 'dupe_links_string': dupe_links_string})
 
+    def _nominateBug(self, series):
+        """Nominate the bug for the series and redirect to the bug page."""
+        self.context.bug.addNomination(self.user, series)
+        self.request.response.addInfoNotification(
+            'This bug has been nominated to be fixed in %(target)s',
+            target=series.bugtargetname)
+        self.request.response.redirect(canonical_url(self.context))
+
     def reportBugInContext(self):
         form = self.request.form
         fake_task = self.context
@@ -577,11 +585,11 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
                     distribution=fake_task.distribution,
                     sourcepackagename=fake_task.sourcepackagename)
             elif IDistroSeriesBugTask.providedBy(fake_task):
-                # Create a real distro series bug task in this context.
-                real_task = getUtility(IBugTaskSet).createTask(
-                    bug=fake_task.bug, owner=getUtility(ILaunchBag).user,
-                    distroseries=fake_task.distroseries,
-                    sourcepackagename=fake_task.sourcepackagename)
+                self._nominateBug(fake_task.distroseries)
+                return
+            elif IProductSeriesBugTask.providedBy(fake_task):
+                self._nominateBug(fake_task.productseries)
+                return
             else:
                 raise TypeError(
                     "Unknown bug task type: %s" % repr(fake_task))
@@ -594,13 +602,29 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
     def isReportedInContext(self):
         """Is the bug reported in this context? Returns True or False.
 
+        It considers a nominated bug to be reported.
+
         This is particularly useful for views that may render a
         NullBugTask.
         """
         params = BugTaskSearchParams(user=self.user, bug=self.context.bug)
         matching_bugtasks = self.context.target.searchTasks(params)
+        if self.context.productseries is not None:
+            nomination_target = self.context.productseries
+        elif self.context.distroseries is not None:
+            nomination_target = self.context.distroseries
+        else:
+            nomination_target = None
+        if nomination_target is not None:
+            try:
+                nomination = self.context.bug.getNominationFor(
+                    nomination_target)
+            except NotFoundError:
+                nomination = None
+        else:
+            nomination = None
 
-        return matching_bugtasks.count() > 0
+        return nomination is not None or matching_bugtasks.count() > 0
 
     def isSeriesTargetableContext(self):
         """Is the context something that supports Series targeting?
@@ -1220,7 +1244,7 @@ def getInitialValuesFromSearchParams(search_params, form_schema):
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'status': any(*UNRESOLVED_BUGTASK_STATUSES)}, IBugTaskSearch)
     >>> [status.name for status in initial['status']]
-    ['NEW', 'CONFIRMED', 'INPROGRESS', 'INCOMPLETE', 'FIXCOMMITTED']
+    ['NEW', 'INCOMPLETE', 'CONFIRMED', 'TRIAGED', 'INPROGRESS', 'FIXCOMMITTED']
 
     >>> initial = getInitialValuesFromSearchParams(
     ...     {'status': dbschema.BugTaskStatus.INVALID}, IBugTaskSearch)
@@ -1442,6 +1466,7 @@ class BugTaskSearchListingView(LaunchpadView):
         An UnexpectedFormData exception is raised if the user submitted a URL
         that could not have been created from the UI itself.
         """
+        self._migrateOldUpstreamStatus()
         # The only way the user should get these field values incorrect is
         # through a stale bookmark or a hand-hacked URL.
         for field_name in ("status", "importance", "milestone", "component",
@@ -1452,7 +1477,6 @@ class BugTaskSearchListingView(LaunchpadView):
                 raise UnexpectedFormData(
                     "Unexpected value for field '%s'. Perhaps your bookmarks "
                     "are out of date or you changed the URL by hand?" % field_name)
-
 
         try:
             getWidgetsData(self, schema=self.schema, names=['tag'])
@@ -1472,6 +1496,29 @@ class BugTaskSearchListingView(LaunchpadView):
             except KeyError:
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)
+
+    def _migrateOldUpstreamStatus(self):
+        """ Before Launchpad version 1.1.6 (build 4412), the upstream parameter
+        in the requets was a single string value, coming from a set of
+        radio buttons. From that version on, the user can select multiple
+        values in the web UI. In order to keep old bookmarks working,
+        convert the old string parameter into a list.
+        """
+        old_upstream_status_values_to_new_values = {
+            'pending_bugwatch': 'pending_bugwatch',
+            'hide_upstream': 'hide_upstream',
+            'only_resolved_upstream': 'resolved_upstream'}
+        status_upstream = self.request.get('field.status_upstream')
+        if status_upstream in old_upstream_status_values_to_new_values.keys():
+            self.request.form['field.status_upstream'] = [
+                old_upstream_status_values_to_new_values[status_upstream]]
+        elif status_upstream == '':
+            del self.request.form['field.status_upstream']
+        else:
+            # The value of status_upstream is either correct, so nothing to
+            # do, or it has some other error, which is handled in the "for"
+            # loop below
+            pass
 
     def _getDefaultSearchParams(self):
         """Return a BugTaskSearchParams instance with default values.

@@ -22,6 +22,7 @@ __all__ = [
     'DistributionOrProductOrProjectVocabulary',
     'DistributionUsingMaloneVocabulary',
     'DistroSeriesVocabulary',
+    'FAQVocabulary',
     'FilteredDistroArchSeriesVocabulary',
     'FilteredDistroSeriesVocabulary',
     'FilteredProductSeriesVocabulary',
@@ -50,6 +51,7 @@ __all__ = [
     'TranslationGroupVocabulary',
     'UserTeamsParticipationVocabulary',
     'ValidPersonOrTeamVocabulary',
+    'ValidTeamVocabulary',
     'ValidTeamMemberVocabulary',
     'ValidTeamOwnerVocabulary',
     ]
@@ -66,8 +68,8 @@ from zope.security.proxy import isinstance as zisinstance
 from sqlobject import AND, OR, CONTAINSSTRING, SQLObjectNotFound
 
 from canonical.launchpad.webapp.vocabulary import (
-    NamedSQLObjectHugeVocabulary, SQLObjectVocabularyBase,
-    NamedSQLObjectVocabulary, IHugeVocabulary)
+    CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary, 
+    NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import EmailAddressStatus, DistroSeriesStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
@@ -80,9 +82,10 @@ from canonical.launchpad.database import (
     PillarName)
 from canonical.launchpad.interfaces import (
     IBugTask, IDistribution, IDistributionSourcePackage,
-    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IEmailAddressSet,
-    ILaunchBag, IMilestoneSet, IPerson, IPersonSet, IPillarName, IProduct,
-    IProject, ISourcePackage, ISpecification, ITeam, IUpstreamBugTask)
+    IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IFAQ, IFAQTarget,
+    IEmailAddressSet, ILaunchBag, IMilestoneSet, IPerson, IPersonSet,
+    IPillarName, IProduct, IProject, ISourcePackage, ISpecification, ITeam,
+    IUpstreamBugTask)
 
 
 class BasePersonVocabulary:
@@ -212,6 +215,62 @@ class BugTrackerVocabulary(SQLObjectVocabularyBase):
 
     _table = BugTracker
     _orderBy = 'title'
+
+
+class FAQVocabulary:
+    """Vocabulary containing all the FAQs in an `IFAQTarget`."""
+
+    implements(IHugeVocabulary)
+
+    displayname = 'Select a FAQ'
+    
+    def __init__(self, context):
+        """Create a new vocabulary for the context.
+
+        :param context: It should adaptable to `IFAQTarget`.
+        """
+        self.context = IFAQTarget(context)
+
+    def __len__(self):
+        """See `IIterableVocabulary`."""
+        return self.context.searchFAQs().count()
+
+    def __iter__(self):
+        """See `IIterableVocabulary`."""
+        for faq in self.context.searchFAQs():
+            yield self.toTerm(faq)
+
+    def __contains__(self, value):
+        """See `IVocabulary`."""
+        if not IFAQ.providedBy(value):
+           return False
+        return self.context.getFAQ(value.id) is not None
+
+    def getTerm(self, value):
+        """See `IVocabulary`."""
+        if value not in self:
+            raise LookupError(value)
+        return self.toTerm(value)
+
+    def getTermByToken(self, token):
+        """See `IVocabularyTokenized`."""
+        try:
+            faq_id = int(token)
+        except ValueError:
+            raise LookupError(token)
+        faq = self.context.getFAQ(token)
+        if faq is None:
+            raise LookupError(token)
+        return self.toTerm(faq)
+
+    def toTerm(self, faq):
+        """Return the term for a FAQ."""
+        return SimpleTerm(faq, faq.id, faq.title)
+
+    def searchForTerms(self, query=None):
+        """See `IHugeVocabulary`."""
+        results = self.context.findSimilarFAQs(query)
+        return CountableIterator(results.count(), results, self.toTerm)
 
 
 class LanguageVocabulary(SQLObjectVocabularyBase):
@@ -510,11 +569,32 @@ class ValidPersonOrTeamVocabulary(
             email_matches, orderBy=['displayname', 'name'])
 
     def search(self, text):
-        """Return people/teams whose fti or email address match :text."""
+        """Return people/teams whose fti or email address match :text:."""
         if not text:
             return self.emptySelectResults()
 
         text = text.lower()
+        return self._doSearch(text=text)
+
+
+class ValidTeamVocabulary(ValidPersonOrTeamVocabulary):
+    """The set of all valid teams in Launchpad."""
+
+    displayname = 'Select a Team'
+
+    # Because the base class does almost everything we need, we just need to
+    # restrict the search results to those Persons who have a non-NULL
+    # teamowner, i.e. a valid team.
+    extra_clause = 'Person.teamowner IS NOT NULL'
+
+    def search(self, text):
+        """Return all teams that match :text:.
+
+        Unlike ValidPersonOrTeamVocabulary, providing an empty string for text
+        does not return the empty result set.  Instead, it returns all teams.
+        """
+        if not text:
+            text = ''
         return self._doSearch(text=text)
 
 
@@ -935,8 +1015,7 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
             for spec in sorted(curr_spec.dependencies, key=lambda a: a.title):
                 yield SimpleTerm(spec, spec.name, spec.title)
 
-
-class SpecificationDepCandidatesVocabulary(NamedSQLObjectVocabulary):
+class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     """Specifications that could be dependencies of this spec.
 
     This includes only those specs that are not blocked by this spec
@@ -944,25 +1023,64 @@ class SpecificationDepCandidatesVocabulary(NamedSQLObjectVocabulary):
 
     The current spec is not included.
     """
+    
+    implements(IHugeVocabulary)
 
     _table = Specification
-    _orderBy = 'title'
+    _orderBy = 'name'
+    displayname = 'Select a blueprint'
 
+    def _filter_specs(self, specs):
+        # XXX: is 100 a reasonable count before starting
+        #   to warn?  -- intellectronica, 2007-07-05
+        speclist = shortlist(specs, 100)
+        return [spec for spec in speclist
+                if (spec != self.context and
+                    spec.product == self.context.product
+                    and spec not in self.context.all_blocked)]
+
+    def _doSearch(self, query):
+        """Return terms where query is in the text of name
+        or title, or matches the full text index.
+        """
+
+        if not query:
+            return []
+
+        quoted_query = quote_like(query)
+        sql_query = ("""
+            (Specification.name ~ %s OR
+             Specification.title ~ %s OR
+             fti @@ ftq(%s))
+            """
+            % (quoted_query, quoted_query, quoted_query))
+        all_specs = Specification.select(sql_query, orderBy=self._orderBy)
+
+        return self._filter_specs(all_specs)
+
+    def toTerm(self, obj):
+        return SimpleTerm(obj, obj.name, obj.title)
+
+    def getTermByToken(self, token):
+        search_results = self._doSearch(token)
+        for search_result in search_results:
+            if search_result.name == token:
+                return self.toTerm(search_result)
+        raise LookupError(token)
+
+    def search(self, query):
+        candidate_specs = self._doSearch(query)
+        return CountableIterator(len(candidate_specs),
+                                 candidate_specs)
+
+    def _all_specs(self):
+        return self._filter_specs(self.context.product.specifications())
+    
     def __iter__(self):
-        assert ISpecification.providedBy(self.context)
-        curr_spec = self.context
+        return (self.toTerm(spec) for spec in self._all_specs())
 
-        if curr_spec is not None:
-            target = curr_spec.target
-            curr_blocks = set(curr_spec.all_blocked)
-            curr_deps = set(curr_spec.dependencies)
-            excluded_specs = curr_blocks.union(curr_deps)
-            excluded_specs.add(curr_spec)
-            for spec in sorted(target.valid_specifications,
-                key=lambda spec: spec.title):
-                if spec not in excluded_specs:
-                    yield SimpleTerm(spec, spec.name, spec.title)
-
+    def __contains__(self, obj):
+        return obj in self._all_specs()
 
 class SprintVocabulary(NamedSQLObjectVocabulary):
     _table = Sprint

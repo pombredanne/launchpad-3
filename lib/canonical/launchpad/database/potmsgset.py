@@ -342,7 +342,7 @@ class POTMsgSet(SQLBase):
 
     @property
     def hide_translations_from_anonymous(self):
-        """See IPOTMsgSet."""
+        """See `IPOTMsgSet`."""
         # primemsgid_.msgid is pre-joined everywhere where
         # hide_translations_from_anonymous is used
         return self.primemsgid_.msgid in [
@@ -351,3 +351,23 @@ class POTMsgSet(SQLBase):
             u'translator_credits',
             u'_: EMAIL OF TRANSLATORS\nYour emails'
             ]
+
+    @property
+    def is_translation_credit(self):
+        """See `IPOTMsgSet`."""
+        # primemsgid_.msgid is pre-joined everywhere where
+        # is_translation_credit is used
+        return self.primemsgid_.msgid in [
+            u'translation-credits',
+            u'translator-credits',
+            u'translator_credits',
+            u'_: EMAIL OF TRANSLATORS\nYour emails',
+            u'_: NAME OF TRANSLATORS\nYour names'
+            ]
+
+    def makeHTMLId(self, suffix=None):
+        """See `IPOTMsgSet`."""
+        elements = ['msgset', str(self.id)]
+        if suffix is not None:
+            elements.append(suffix)
+        return '_'.join(elements)

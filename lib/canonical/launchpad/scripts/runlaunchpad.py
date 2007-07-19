@@ -16,12 +16,11 @@ from canonical.pidfile import make_pidfile, pidfile_path
 from zope.app.server.main import main
 
 
-ROCKETFUEL_ROOT = None
 TWISTD_SCRIPT = None
 
 
 def make_abspath(path):
-    return os.path.abspath(os.path.join(ROCKETFUEL_ROOT, *path.split('/')))
+    return os.path.abspath(os.path.join(config.root, *path.split('/')))
 
 
 class Service(object):
@@ -200,8 +199,7 @@ def split_out_runlaunchpad_arguments(args):
 
 
 def start_launchpad(argv=list(sys.argv)):
-    global ROCKETFUEL_ROOT, TWISTD_SCRIPT
-    ROCKETFUEL_ROOT = os.path.dirname(os.path.abspath(argv[0]))
+    global TWISTD_SCRIPT
     TWISTD_SCRIPT = make_abspath('sourcecode/twisted/bin/twistd')
 
     # Disgusting hack to use our extended config file schema rather than the

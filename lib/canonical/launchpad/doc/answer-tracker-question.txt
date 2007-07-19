@@ -348,5 +348,6 @@ Questions in languages that are not supported
     >>> unsupported_questions = warty_question_target.searchQuestions(
     ...     unsupported=True)
     >>> sorted([question.title for question in unsupported_questions])
-    [u'Problema al recompilar kernel con soporte smp (doble-n\xfacleo)']
+    [u'Problema al recompilar kernel con soporte smp (doble-n\xfacleo)',
+     u'\u0639\u0643\u0633 \u0627\u0644\u062a\u063a\u064a\u064a\u0631...]
 
