@@ -50,24 +50,24 @@
           <ul class="news">
             <li>
               <a href="https://help.launchpad.net/FrequentlyAskedQuestions"
-                 >Frequently Asked Questions: create standard answers to FAQ
+                 >Frequently Asked Questions: create standard answers to FAQs
                 in the Answer Tracker
-              </a>.
+              </a>
             </li>
             <li>
               <a href="https://help.launchpad.net/Mantis">Mantis bug tracker
                 support: watch remote bugs in ALSA and other projects
-              </a>.
+              </a>
             <li>
               <a href="https://help.launchpad.net/FileDownloadsOverview">File
                 downloads: make installers, documentation and other files
                 available from project release pages
-              </a>.
+              </a>
             </li>
             <li>
              <a href="https://help.launchpad.net/BugStatuses">New clearer bug
                 status names
-              </a>.
+              </a>
             </li>
           </ul>
         </div>
