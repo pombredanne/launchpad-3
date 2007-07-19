@@ -10,7 +10,6 @@ __all__ = [
     'PackageUploadSet',
     ]
 
-from email import message_from_string
 import os
 import shutil
 import tempfile
@@ -664,7 +663,7 @@ class PackageUpload(SQLBase):
         for line in mail_text.splitlines():
             debug(self.logger, line)
 
-        if not isinstance(from_addr, str):
+        if isinstance(from_addr, unicode):
             # ascii_smash only works on unicode strings.
             from_addr = ascii_smash(from_addr)
 
