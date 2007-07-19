@@ -1478,8 +1478,7 @@ class FormattersAPI:
         # See https://lists.ubuntu.com
         #     /mailman/private/launchpad-reviews/2007-June/006081.html
         r"([\b]|[\"']?)[-/=0-9A-Z_a-z]" # first character of localname
-        r"[.\"'-/=0-9A-Z_a-z+]*@"
-        #r"(\.?[\"'-/=0-9A-Z_a-z+])*@" # possible . and + in localname
+        r"[.\"'-/=0-9A-Z_a-z+]*@" # possible . and + in localname
         r"[a-zA-Z]" # first character of host or domain
         r"(-?[a-zA-Z0-9])*" # possible - and numbers in host or domain
         r"(\.[a-zA-Z](-?[a-zA-Z0-9])*)+\b") # dot starts one or more domains.
