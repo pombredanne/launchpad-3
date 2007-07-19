@@ -157,7 +157,6 @@ class BzrSync:
         # of a branch, not one for each revision.
         self.initial_scan = not bool(self.db_history)
 
-
     def retrieveBranchDetails(self):
         """Retrieve ancestry from the the bzr branch on disk."""
         self.logger.info("Retrieving ancestry from bzrlib.")
@@ -208,15 +207,15 @@ class BzrSync:
         # When the history is shortened, and email is sent that says this.
         # This will never happen for a newly scanned branch, so not checking
         # that here.
-        number_removed = len(removed_history)
-        if number_removed > 0:
-            if number_removed == 1:
-                contents = '1 revision was removed from the branch.'
-            else:
-                contents = ('%d revisions were removed from the branch.'
-                            % number_removed)
-            # No diff is associated with the removed email.
-            if self.generate_emails:
+        if self.generate_emails:
+            number_removed = len(removed_history)
+            if number_removed > 0:
+                if number_removed == 1:
+                    contents = '1 revision was removed from the branch.'
+                else:
+                    contents = ('%d revisions were removed from the branch.'
+                                % number_removed)
+                # No diff is associated with the removed email.
                 self.pending_emails.append((contents, ''))
 
         # Merged (non-history) revisions in the database and the bzr branch.
