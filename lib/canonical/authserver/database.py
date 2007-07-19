@@ -483,25 +483,9 @@ class DatabaseBranchDetailsStorage:
             for branch in getUtility(IBranchSet).getMirroredPullQueue()]
 
     def _getImportedQueue(self):
-        cur = cursor()
-        cur.execute(utf8("""
-            SELECT Branch.id, Branch.name, Branch.url, Person.name,
-                   Product.name, Branch.last_mirror_attempt
-            FROM Branch
-            INNER JOIN Person ON Branch.owner = Person.id
-            INNER JOIN ProductSeries
-                ON ProductSeries.import_branch = Branch.id
-            LEFT OUTER JOIN Product
-                ON Branch.product = Product.id
-            WHERE branch_type = %(imported)s
-            AND ((datelastsynced IS NOT NULL AND last_mirror_attempt IS NULL)
-                OR (datelastsynced > last_mirror_attempt)
-                OR (datelastsynced IS NULL
-                    AND (%(utc_now)s - last_mirror_attempt > '1 day')))
-            ORDER BY last_mirror_attempt IS NOT NULL, last_mirror_attempt
-            """ % {'utc_now': UTC_NOW,
-                   'imported': dbschema.BranchType.IMPORTED.value}))
-        return cur.fetchall()
+        return [
+            branch.pullInfo()
+            for branch in getUtility(IBranchSet).getImportedPullQueue()]
 
     @read_only_transaction
     def _getBranchPullQueueInteraction(self):

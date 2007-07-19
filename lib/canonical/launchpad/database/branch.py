@@ -784,6 +784,19 @@ class BranchSet:
             """ % {'utc_now': UTC_NOW,
                    'mirrored': BranchType.MIRRORED.value})
 
+    def getImportedPullQueue(self):
+        """See `IBranchSet`."""
+        return Branch.select(
+            """branch_type = %(imported)s
+            AND ProductSeries.import_branch = Branch.id
+            AND ((datelastsynced IS NOT NULL AND last_mirror_attempt IS NULL)
+                OR (datelastsynced > last_mirror_attempt)
+                OR (datelastsynced IS NULL
+                    AND (%(utc_now)s - last_mirror_attempt > '1 day')))
+            """ % {'utc_now': UTC_NOW,
+                   'imported': BranchType.IMPORTED.value},
+            clauseTables=['ProductSeries'])
+
 
 class BranchRelationship(SQLBase):
     """A relationship between branches.
