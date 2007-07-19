@@ -492,36 +492,66 @@ class DatabaseBranchDetailsStorage:
         # between frequency of mirroring and not hammering servers with
         # requests to check whether mirror branches are up to date.
 
+        rows = []
         transaction.execute(utf8("""
             SELECT Branch.id, Branch.name, Branch.url, Person.name,
-                   Product.name
+                   Product.name, Branch.last_mirror_attempt
+            FROM Branch
+            INNER JOIN Person ON Branch.owner = Person.id
+            LEFT OUTER JOIN Product ON Branch.product = Product.id
+            WHERE branch_type = %(hosted)s
+            AND (last_mirror_attempt is NULL
+                OR (%(utc_now)s - last_mirror_attempt > '6 hours')
+                OR mirror_request_time IS NOT NULL)
+            """ % {'utc_now': UTC_NOW,
+                   'hosted': dbschema.BranchType.HOSTED.value}))
+
+
+        rows.extend(list(transaction.fetchall()))
+
+        transaction.execute(utf8("""
+            SELECT Branch.id, Branch.name, Branch.url, Person.name,
+                   Product.name, Branch.last_mirror_attempt
+            FROM Branch
+            INNER JOIN Person ON Branch.owner = Person.id
+            LEFT OUTER JOIN Product ON Branch.product = Product.id
+            WHERE branch_type = %(mirrored)s
+            AND (last_mirror_attempt is NULL
+                OR (%(utc_now)s - last_mirror_attempt > '6 hours'))
+            """ % {'utc_now': UTC_NOW,
+                   'mirrored': dbschema.BranchType.MIRRORED.value}))
+
+        rows.extend(list(transaction.fetchall()))
+
+        transaction.execute(utf8("""
+            SELECT Branch.id, Branch.name, Branch.url, Person.name,
+                   Product.name, Branch.last_mirror_attempt
             FROM Branch
             INNER JOIN Person ON Branch.owner = Person.id
             LEFT OUTER JOIN ProductSeries
                 ON ProductSeries.import_branch = Branch.id
             LEFT OUTER JOIN Product
                 ON Branch.product = Product.id
-            WHERE
-                (branch_type != %(imported)s AND
-                    (last_mirror_attempt is NULL
-                    OR (%(utc_now)s - last_mirror_attempt > '6 hours')
-                    OR (branch_type = %(hosted)s
-                        AND mirror_request_time IS NOT NULL)))
-                OR (branch_type = %(hosted)s
-                    AND mirror_request_time IS NOT NULL)
-                OR (branch_type = %(imported)s
-                    AND ((datelastsynced IS NOT NULL
-                          AND last_mirror_attempt IS NULL) OR
-                         (datelastsynced > last_mirror_attempt) OR
-                         (datelastsynced IS NULL
-                          AND (%(utc_now)s - last_mirror_attempt > '1 day'))))
+            WHERE branch_type = %(imported)s
+            AND ((datelastsynced IS NOT NULL AND last_mirror_attempt IS NULL)
+                OR (datelastsynced > last_mirror_attempt)
+                OR (datelastsynced IS NULL
+                    AND (%(utc_now)s - last_mirror_attempt > '1 day')))
             ORDER BY last_mirror_attempt IS NOT NULL, last_mirror_attempt
             """ % {'utc_now': UTC_NOW,
-                   'hosted': dbschema.BranchType.HOSTED.value,
                    'imported': dbschema.BranchType.IMPORTED.value}))
+
+        rows.extend(list(transaction.fetchall()))
+
+        def mirror_attempt(branch_tuple):
+            return branch_tuple[-1] is not None, branch_tuple[-1]
+
+        rows.sort(key=mirror_attempt)
+
         result = []
-        for row in transaction.fetchall():
-            branch_id, branch_name, url, owner_name, product_name = row
+        for row in rows:
+            (branch_id, branch_name, url, owner_name, product_name,
+             last_mirror_attempt) = row
             # XXX - this logic is almost identical to that in
             # Branch.unique_name. Ideally, they should use the same code. Also,
             # it would be nice to guarantee that this points to a branch.
