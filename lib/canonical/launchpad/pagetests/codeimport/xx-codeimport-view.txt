@@ -30,17 +30,15 @@ users cannot:
 There are two CodeImports in the sample data and they both show up in
 the page:
 
-# XXX change this
-
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
     >>> ids = [extract_text(tr.td) for tr in table.tbody('tr')]
     >>> ids
-    [u'1', u'2']
+    [u'gnome-terminal/import', u'evolution/import']
 
 If we click on the code import's name, we go to the page for that
 import:
 
-    >>> browser.getLink('1').click() # XXX wrong
+    >>> browser.getLink('gnome-terminal/import').click()
     >>> browser.url
     'http://code.launchpad.dev/~vcs-imports/gnome-terminal/import/+code-import'
     >>> browser.title
@@ -69,7 +67,7 @@ and to the person requesting the import:
 There's a similar page for the other import, which uses CVS:
 
     >>> browser.open('http://code.launchpad.dev/+code-imports')
-    >>> browser.getLink('2').click() # XXX change
+    >>> browser.getLink('evolution/import').click()
     >>> browser.url
     'http://code.launchpad.dev/~vcs-imports/evolution/import/+code-import'
     >>> extract_text(
@@ -102,14 +100,12 @@ internals a bit.
 Of course selecting the "Any" filtering option ensures that all
 imports appear again.
 
-# XXX this needs to change
-
     >>> browser.getControl(name="field.status").displayValue = ["Any"]
     >>> browser.getControl(name="submit").click()
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
     >>> ids = [extract_text(tr.td) for tr in table.tbody('tr')]
     >>> ids
-    [u'1', u'2']
+    [u'gnome-terminal/import', u'evolution/import']
 
 If we create a lot of imports, the listing view will be batched.
 
