@@ -4,6 +4,7 @@ __metaclass__ = type
 __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 
 import re
+import os
 
 from zope.interface import implements
 from zope.component import getUtility
@@ -32,6 +33,8 @@ from canonical.lp.dbschema import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
     BranchRelationships, BranchLifecycleStatus, BranchType,
     BranchVisibilityRule)
+from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
+from canonical.launchpad.webapp import urlappend
 
 
 class Branch(SQLBase):
@@ -283,9 +286,20 @@ class Branch(SQLBase):
 
     def pullInfo(self):
         # XXX: JonathanLange 2007-07-19, REMOVE THIS BEFORE MERGING.
-        return (
-            self.id, self.name, self.url, self.owner.name, self.product_name,
-            self.last_mirror_attempt)
+        if self.url is not None:
+            # This is a pull branch, hosted externally.
+            pull_url = self.url
+        elif self.owner.name == 'vcs-imports':
+            # This is an import branch, imported into bzr from
+            # another RCS system such as CVS.
+            prefix = config.launchpad.bzr_imports_root_url
+            pull_url = urlappend(prefix, '%08x' % self.id)
+        else:
+            # This is a push branch, hosted on the supermirror
+            # (pushed there by users via SFTP).
+            prefix = config.codehosting.branches_root
+            pull_url = os.path.join(prefix, split_branch_id(self.id))
+        return (self.id, pull_url, self.unique_name[1:])
 
 
 class BranchSet:
@@ -796,6 +810,12 @@ class BranchSet:
                        UTC_NOW - Branch.q.last_mirror_attempt > '1 day'))),
             clauseTables=['ProductSeries'],
             prejoins=['owner', 'product'])
+
+    def getPullQueue(self):
+        """See `IBranchSet`."""
+        return self.getHostedPullQueue().union(
+            self.getMirroredPullQueue()).union(
+            self.getImportedPullQueue()).orderBy('last_mirror_attempt')
 
 
 class BranchRelationship(SQLBase):

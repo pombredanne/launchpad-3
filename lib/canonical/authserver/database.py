@@ -9,7 +9,6 @@ __all__ = [
     ]
 
 import datetime
-import os
 import pytz
 
 import transaction
@@ -18,19 +17,14 @@ from zope.component import getUtility
 from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 
-from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
-from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (
-    UBUNTU_WIKI_URL, BranchCreationForbidden, IBranchSet, IPersonSet,
-    IProductSet)
+    BranchCreationForbidden, IBranchSet, IPersonSet, IProductSet)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.database.sqlbase import (
-    cursor, sqlvalues, clear_current_connection_cache)
-from canonical.database.constants import UTC_NOW
+    cursor, clear_current_connection_cache)
 from canonical.lp import dbschema
-from canonical.config import config
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
@@ -472,21 +466,6 @@ class DatabaseBranchDetailsStorage:
     def getBranchPullQueue(self):
         return deferToThread(self._getBranchPullQueueInteraction)
 
-    def _getHostedQueue(self):
-        return [
-            branch.pullInfo()
-            for branch in getUtility(IBranchSet).getHostedPullQueue()]
-
-    def _getMirroredQueue(self):
-        return [
-            branch.pullInfo()
-            for branch in getUtility(IBranchSet).getMirroredPullQueue()]
-
-    def _getImportedQueue(self):
-        return [
-            branch.pullInfo()
-            for branch in getUtility(IBranchSet).getImportedPullQueue()]
-
     @read_only_transaction
     def _getBranchPullQueueInteraction(self):
         """The interaction for getBranchPullQueue."""
@@ -507,45 +486,9 @@ class DatabaseBranchDetailsStorage:
         # between frequency of mirroring and not hammering servers with
         # requests to check whether mirror branches are up to date.
 
-        rows = (
-            self._getHostedQueue() + self._getMirroredQueue()
-            + self._getImportedQueue())
+        branches = getUtility(IBranchSet).getPullQueue()
 
-        def mirror_attempt(branch_tuple):
-            last_mirror_attempt = branch_tuple[-1]
-            if last_mirror_attempt is None:
-                return False, None
-            return True, last_mirror_attempt.replace(tzinfo=UTC)
-
-        rows.sort(key=mirror_attempt)
-
-        result = []
-        for row in rows:
-            (branch_id, branch_name, url, owner_name, product_name,
-             last_mirror_attempt) = row
-            # XXX - this logic is almost identical to that in
-            # Branch.unique_name. Ideally, they should use the same code. Also,
-            # it would be nice to guarantee that this points to a branch.
-            # Jonathan Lange, 2007-03-01
-            if product_name is None:
-                product_name = u'+junk'
-            unique_name = u'%s/%s/%s' % (owner_name, product_name, branch_name)
-
-            if url is not None:
-                # This is a pull branch, hosted externally.
-                pull_url = url
-            elif owner_name == 'vcs-imports':
-                # This is an import branch, imported into bzr from
-                # another RCS system such as CVS.
-                prefix = config.launchpad.bzr_imports_root_url
-                pull_url = urlappend(prefix, '%08x' % branch_id)
-            else:
-                # This is a push branch, hosted on the supermirror
-                # (pushed there by users via SFTP).
-                prefix = config.codehosting.branches_root
-                pull_url = os.path.join(prefix, split_branch_id(branch_id))
-            result.append((branch_id, pull_url, unique_name))
-        return result
+        return [branch.pullInfo() for branch in branches]
 
     def startMirroring(self, branchID):
         """See IBranchDetailsStorage"""

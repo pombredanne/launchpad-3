@@ -611,6 +611,9 @@ class IBranchSet(Interface):
     def getImportedPullQueue():
         """Return the queue of imported branches to mirror using the puller."""
 
+    def getPullQueue():
+        """Return the entire queue of branches to mirror using the puller."""
+
 
 class IBranchDelta(Interface):
     """The quantitative changes made to a branch that was edited or altered."""
