@@ -280,6 +280,12 @@ class Branch(SQLBase):
         self.mirror_request_time = None
         self.syncUpdate()
 
+    def pullInfo(self):
+        # XXX: JonathanLange 2007-07-19, REMOVE THIS BEFORE MERGING.
+        return (
+            self.id, self.name, self.url, self.owner.name, self.product_name,
+            self.last_mirror_attempt)
+
 
 class BranchSet:
     """The set of all branches."""
@@ -757,6 +763,17 @@ class BranchSet:
             self._generateBranchClause(query, visible_by_user),
             limit=quantity,
             orderBy=['-date_created', '-id'])
+
+    def getHostedPullQueue(self):
+        """See `IBranchSet`."""
+        return Branch.select(
+            """branch_type = %(hosted)s 
+            AND (last_mirror_attempt is NULL 
+            OR (%(utc_now)s - last_mirror_attempt > '6 hours') 
+            OR mirror_request_time IS NOT NULL)
+            """ % {'utc_now': UTC_NOW,
+                   'hosted': BranchType.HOSTED.value},
+            prejoins=['owner', 'product'])
 
 
 class BranchRelationship(SQLBase):

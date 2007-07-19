@@ -473,20 +473,9 @@ class DatabaseBranchDetailsStorage:
         return deferToThread(self._getBranchPullQueueInteraction)
 
     def _getHostedQueue(self):
-        cur = cursor()
-        cur.execute(utf8("""
-            SELECT Branch.id, Branch.name, Branch.url, Person.name,
-                   Product.name, Branch.last_mirror_attempt
-            FROM Branch
-            INNER JOIN Person ON Branch.owner = Person.id
-            LEFT OUTER JOIN Product ON Branch.product = Product.id
-            WHERE branch_type = %(hosted)s
-            AND (last_mirror_attempt is NULL
-                OR (%(utc_now)s - last_mirror_attempt > '6 hours')
-                OR mirror_request_time IS NOT NULL)
-            """ % {'utc_now': UTC_NOW,
-                   'hosted': dbschema.BranchType.HOSTED.value}))
-        return cur.fetchall()
+        return [
+            branch.pullInfo()
+            for branch in getUtility(IBranchSet).getHostedPullQueue()]
 
     def _getMirroredQueue(self):
         cur = cursor()
@@ -544,11 +533,15 @@ class DatabaseBranchDetailsStorage:
         # between frequency of mirroring and not hammering servers with
         # requests to check whether mirror branches are up to date.
 
-        rows = (self._getHostedQueue() + self._getMirroredQueue()
-                + self._getImportedQueue())
+        rows = (
+            self._getHostedQueue() + self._getMirroredQueue()
+            + self._getImportedQueue())
 
         def mirror_attempt(branch_tuple):
-            return branch_tuple[-1] is not None, branch_tuple[-1]
+            last_mirror_attempt = branch_tuple[-1]
+            if last_mirror_attempt is None:
+                return False, None
+            return True, last_mirror_attempt.replace(tzinfo=UTC)
 
         rows.sort(key=mirror_attempt)
 

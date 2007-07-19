@@ -653,8 +653,11 @@ class NewBranchDetailsDatabaseStorageTestCase(unittest.TestCase):
         LaunchpadScriptLayer.switchDbConfig('authserver')
         self.storage = DatabaseBranchDetailsStorage(None)
         self.cursor = cursor()
+        self._old_policy = getSecurityPolicy()
+        setSecurityPolicy(LaunchpadSecurityPolicy)
 
     def tearDown(self):
+        setSecurityPolicy(self._old_policy)
         super(NewBranchDetailsDatabaseStorageTestCase, self).tearDown()
 
     def getMirrorRequestTime(self, branch_id):

@@ -602,6 +602,15 @@ class IBranchSet(Interface):
         only public branches are returned.
         """
 
+    def getHostedPullQueue():
+        """Return the queue of hosted branches to mirror using the puller."""
+
+    def getMirroredPullQueue():
+        """Return the queue of mirrored branches to mirror using the puller."""
+
+    def getImportedPullQueue():
+        """Return the queue of imported branches to mirror using the puller."""
+
 
 class IBranchDelta(Interface):
     """The quantitative changes made to a branch that was edited or altered."""
