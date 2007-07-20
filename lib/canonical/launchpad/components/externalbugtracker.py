@@ -91,6 +91,8 @@ def get_external_bugtracker(bugtracker, version=None):
         return Bugzilla(bugtracker.baseurl, version)
     elif bugtrackertype == BugTrackerType.DEBBUGS:
         return DebBugs()
+    elif bugtrackertype == BugTrackerType.MANTIS:
+        return Mantis(bugtracker.baseurl)
     else:
         raise UnknownBugTrackerTypeError(bugtrackertype.name,
             bugtracker.name)
@@ -102,7 +104,7 @@ class ExternalBugTracker:
     implements(IExternalBugtracker)
 
     def urlopen(self, request, data=None):
-        return urllib.urlopen(request, data)
+        return urllib2.urlopen(request, data)
 
     def initializeRemoteBugDB(self, bug_ids):
         """Do any initialization before each bug watch is updated.
