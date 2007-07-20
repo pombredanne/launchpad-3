@@ -289,12 +289,32 @@ class WriteLoggingFile(osfs.OSFile):
         osfs.OSFile.writeChunk(self, offset, data)
 
 
+class _RenameProtectionDecorator:
+    """A decorator for OSFile and OSDirectory to prevent users from creating
+    forbidden files or directories.
+    """
+
+    def __init__(self, original):
+        self.original = original
+    
+    def __getattr__(self, name):
+        return getattr(self.original, name)
+
+    def rename(self, newName):
+        if newName not in ALLOWED_DIRECTORIES:
+            raise PermissionError(
+                "Can only create .bzr directories in branch directories: %s"
+                % (newName,))
+        return self.original.rename(newName)
+
+
 class SFTPServerBranch(WriteLoggingDirectory):
     """For /~username/product/branch, and below.
 
     Only allows '.bzr' and '.bzr.backup' directories to be made directly.
     Underneath that, anything goes.
     """
+
     def __init__(self, avatar, branchID, branchName, parent):
         self.branchID = branchID
         # XXX AndrewBennetts 2006-02-06: this snippet is duplicated in a few
@@ -309,6 +329,10 @@ class SFTPServerBranch(WriteLoggingDirectory):
                                        branchName, parent)
         if not os.path.exists(self.realPath):
             os.makedirs(self.realPath)
+
+    def child(self, childName):
+        return _RenameProtectionDecorator(
+            WriteLoggingDirectory.child(self, childName))
 
     def remove(self):
         raise PermissionError(
@@ -332,4 +356,5 @@ class SFTPServerBranch(WriteLoggingDirectory):
             raise PermissionError(
                 "Can only create .bzr directories in branch directories: %s"
                 % (name,))
-        return WriteLoggingDirectory.createDirectory(self, name)
+        return _RenameProtectionDecorator(
+            WriteLoggingDirectory.createDirectory(self, name))

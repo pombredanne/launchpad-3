@@ -8,8 +8,9 @@ from twisted.vfs.ivfs import PermissionError, NotFoundError
 
 from canonical.codehosting.sshserver import LaunchpadAvatar
 from canonical.codehosting.bazaarfs import (
-    SFTPServerRoot, SFTPServerBranch, SFTPServerProductDir,
-    SFTPServerProductDirPlaceholder, WriteLoggingDirectory)
+    _RenameProtectionDecorator, SFTPServerRoot, SFTPServerBranch,
+    SFTPServerProductDir, SFTPServerProductDirPlaceholder,
+    WriteLoggingDirectory)
 from canonical.codehosting.tests.helpers import AvatarTestCase
 
 
@@ -283,9 +284,13 @@ class TestSFTPServerBranch(AvatarTestCase):
     def testCreateBazaarDirectoryWorks(self):
         """Creating a '.bzr' directory underneath a branch directory works."""
         directory = self.server_branch.createDirectory('.bzr')
-        self.failUnless(isinstance(directory, WriteLoggingDirectory),
-                        "%r not instance of WriteLoggingDirectory (%r)"
+        self.failUnless(isinstance(directory, _RenameProtectionDecorator),
+                        "%r not instance of _RenameProtectionDecorator (%r)"
                         % (directory, type(directory)))
+        self.failUnless(isinstance(directory.original, WriteLoggingDirectory),
+                        "Wrapped directory %r not instance of "
+                        "WriteLoggingDirectory (%r)"
+                        % (directory.original, type(directory)))
 
     def testCreateNonBazaarDirectoryFails(self):
         """Creating a non-'.bzr' directory fails.

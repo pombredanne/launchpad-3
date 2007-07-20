@@ -204,6 +204,13 @@ class LaunchpadServer(Server):
 
         :return: The equivalent real path on the backing transport.
         """
+        segments = get_path_segments(virtual_path)
+        if (len(segments) == 4 and len(segments[-1]) > 0
+            and segments[-1] not in ALLOWED_DIRECTORIES):
+            raise NoSuchFile(path=segments[-1],
+                             extra=("Only .bzr and .bzr.backup directories "
+                                    "are allowed beneath branch directories."))
+        
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
         # a branch'.
@@ -351,17 +358,10 @@ class LaunchpadTransport(Transport):
         # If we can't translate the path, then perhaps we are being asked to
         # create a new branch directory. Delegate to the server, as it knows
         # how to deal with absolute virtual paths.
-        abspath = self._abspath(relpath)
-        segments = get_path_segments(abspath)
-        if len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES:
-            raise NoSuchFile(path=relpath,
-                             extra=("Can only create .bzr and .bzr.backup "
-                                    "directories directly beneath branch "
-                                    "directories."))
         try:
             return self._writing_call('mkdir', relpath, mode)
         except NoSuchFile:
-            return self.server.mkdir(abspath)
+            return self.server.mkdir(self._abspath(relpath))
 
     def put_file(self, relpath, f, mode=None):
         return self._writing_call('put_file', relpath, f, mode)
