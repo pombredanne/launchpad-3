@@ -715,7 +715,7 @@ class BranchSet:
             AND Branch.owner IN (
             SELECT TeamParticipation.team
             FROM TeamParticipation
-            WHERE TeamParticipation.person = %s
+            WHERE TeamParticipation.person = %s)
             """ % sqlvalues(person.id))
         return branches
 
