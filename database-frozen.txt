@@ -8,5 +8,6 @@ means.
 
 Status
 ------
-Database is open for landing of database changes for 1.1.7.
+Database is closed for landing of database changes until week 3 of
+1.1.8.
 
