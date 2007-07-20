@@ -991,27 +991,38 @@ class ProductBugContactEditView(LaunchpadEditFormView):
         self.request.response.redirect(canonical_url(product))
 
     def validate(self, data):
-        """Validates the new bug contact for the product
+        """Validates the new bug contact for the product.
 
-        If the bug contact is a team of which the user is not an 
+        If the bug contact is a team of which the user is not an
         administrator then the submission will fail and the user will be
         notified of the error.
         """
-        contact = data['bugcontact']
-        user_teams = self.user.getAdministratedTeams()
-        if contact.isTeam() and contact not in user_teams:
-            error = (
-                "You cannot set %(team)s as the bug contact for "
-                "%(project)s because you are not an administrator of that "
-                "team.<br />If you believe that %(team)s should be the bug"
-                " contact for %(project)s, please notify one of the "
-                "<a href=\"%(url)s\">%(team)s administrators</a>."
+        if data.has_key('bugcontact'):
+            contact = data['bugcontact']
 
-                % {'team': cgi.escape(contact.displayname),
-                   'project': cgi.escape(self.context.displayname),
-                   'url': canonical_url(contact, rootsite='mainsite')
-                          + '/+members'})
-            self.setFieldError('bugcontact', error)
+            # We accept None as a bug contact value because we use it to clear
+            # the product's bug contact field.
+            if (contact is not None and
+                contact.isTeam() and
+                contact not in self.user.getAdministratedTeams()):
+                error = (
+                    "You cannot set %(team)s as the bug contact for "
+                    "%(project)s because you are not an administrator of that "
+                    "team.<br />If you believe that %(team)s should be the bug"
+                    " contact for %(project)s, please notify one of the "
+                    "<a href=\"%(url)s\">%(team)s administrators</a>."
+
+                    % {'team': cgi.escape(contact.displayname),
+                       'project': cgi.escape(self.context.displayname),
+                       'url': canonical_url(contact, rootsite='mainsite')
+                              + '/+members'})
+                self.setFieldError('bugcontact', error)
+
+        else:
+            self.setFieldError('bugcontact',
+                               'You must choose a valid person or team to be '
+                               'the bug contact for %s.' %
+                               cgi.escape(self.context.displayname))
 
 
 class ProductReassignmentView(ObjectReassignmentView):
