@@ -18,6 +18,8 @@ from bzrlib.transport import (
 
 from canonical.authserver.interfaces import READ_ONLY
 
+from canonical.codehosting.bazaarfs import ALLOWED_DIRECTORIES
+
 
 def branch_id_to_path(branch_id):
     """Convert the given branch ID into NN/NN/NN/NN form, where NN is a two
@@ -351,10 +353,11 @@ class LaunchpadTransport(Transport):
         # how to deal with absolute virtual paths.
         abspath = self._abspath(relpath)
         segments = get_path_segments(abspath)
-        if len(segments) == 4 and segments[-1] != '.bzr':
+        if len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES:
             raise NoSuchFile(path=relpath,
-                             extra=("Can only create .bzr directories "
-                                    "directly beneath branch directories."))
+                             extra=("Can only create .bzr and .bzr.backup "
+                                    "directories directly beneath branch "
+                                    "directories."))
         try:
             return self._writing_call('mkdir', relpath, mode)
         except NoSuchFile:

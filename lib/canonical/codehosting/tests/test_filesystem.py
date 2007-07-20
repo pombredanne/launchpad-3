@@ -142,6 +142,21 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
             make_directory_and_confirm_existence)
 
     @deferToThread
+    def test_bzr_backup_directory_inside_branch(self):
+        # Bazaar sometimes needs to create .bzr.backup directories directly
+        # underneath the branch directory. Thus, we allow the creation of
+        # .bzr.backup directories.
+        def make_directory_and_confirm_existence():
+            transport = self.getTransport()
+            transport.mkdir('~testuser/firefox/banana')
+            transport.mkdir('~testuser/firefox/banana/.bzr.backup')
+            self.assertTrue(transport.has('~testuser/firefox/banana'))
+            self.assertTrue(
+                transport.has('~testuser/firefox/banana/.bzr.backup'))
+        return self.server.runAndWaitForDisconnect(
+            make_directory_and_confirm_existence)
+
+    @deferToThread
     def test_non_bzr_directory_inside_branch(self):
         # Users can only create '.bzr' directories inside a branch. Other
         # directories are strictly forbidden.

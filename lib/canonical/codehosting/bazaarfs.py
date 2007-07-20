@@ -14,6 +14,10 @@ from twisted.vfs.backends import adhoc, osfs
 from twisted.vfs.ivfs import VFSError, NotFoundError, PermissionError
 
 
+# The directories allowed directly beneath a branch directory.
+ALLOWED_DIRECTORIES = ('.bzr', '.bzr.backup')
+
+
 class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
     """For /
 
@@ -288,8 +292,8 @@ class WriteLoggingFile(osfs.OSFile):
 class SFTPServerBranch(WriteLoggingDirectory):
     """For /~username/product/branch, and below.
 
-    Only allows '.bzr' directories to be made directly. Underneath that,
-    anything goes.
+    Only allows '.bzr' and '.bzr.backup' directories to be made directly.
+    Underneath that, anything goes.
     """
     def __init__(self, avatar, branchID, branchName, parent):
         self.branchID = branchID
@@ -324,7 +328,7 @@ class SFTPServerBranch(WriteLoggingDirectory):
         self._listener()
 
     def createDirectory(self, name):
-        if name != '.bzr':
+        if name not in ALLOWED_DIRECTORIES:
             raise PermissionError(
                 "Can only create .bzr directories in branch directories: %s"
                 % (name,))
