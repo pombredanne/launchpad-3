@@ -98,7 +98,10 @@ class UserDetailsStorageMixin:
         return ri(self._getSSHKeysInteraction, archiveName)
 
     def _getSSHKeysInteraction(self, transaction, loginID):
-        """The interaction for getSSHKeys."""
+        """The synchronous implementation of `getSSHKeys`.
+
+        See `IUserDetailsStorage`.
+        """
         if '@' in loginID:
             # Bazaar 1.x logins.  Deprecated.
             archiveName = loginID
@@ -233,11 +236,15 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         self.encryptor = SSHADigestEncryptor()
 
     def getUser(self, loginID):
+        """See `IUserDetailsStorage`."""
         ri = self.connectionPool.runInteraction
         return ri(self._getUserInteraction, loginID)
 
     def _getUserInteraction(self, transaction, loginID):
-        """The interaction for getUser."""
+        """Synchronous implementation of `getUser`.
+
+        See `IUserDetailsStorage`.
+        """
         row = self._getPerson(transaction, loginID)
         try:
             personID, displayname, name, passwordDigest, wikiname, salt = row
@@ -260,12 +267,16 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         }
 
     def authUser(self, loginID, sshaDigestedPassword):
+        """See `IUserDetailsStorage`."""
         ri = self.connectionPool.runInteraction
         return ri(self._authUserInteraction, loginID,
                   sshaDigestedPassword.encode('base64'))
 
     def _authUserInteraction(self, transaction, loginID, sshaDigestedPassword):
-        """The interaction for authUser."""
+        """Synchronous implementation of `authUser`.
+
+        See `IUserDetailsStorage`.
+        """
         row = self._getPerson(transaction, loginID)
         try:
             personID, displayname, name, passwordDigest, wikiname, salt = row
@@ -338,11 +349,15 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
                 for row in transaction.fetchall()]
 
     def getUser(self, loginID):
+        """See `IUserDetailsStorageV2`."""
         ri = self.connectionPool.runInteraction
         return ri(self._getUserInteraction, loginID)
 
     def _getUserInteraction(self, transaction, loginID):
-        """The interaction for getUser."""
+        """Synchronous implementation of `getUser`.
+
+        See `IUserDetailsStorageV2`.
+        """
         row = self._getPerson(transaction, loginID)
         try:
             personID, displayname, name, passwordDigest, wikiname = row
@@ -382,11 +397,15 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             return row[:-1]
 
     def authUser(self, loginID, password):
+        """See `IUserDetailsStorageV2`."""
         ri = self.connectionPool.runInteraction
         return ri(self._authUserInteraction, loginID, password)
 
     def _authUserInteraction(self, transaction, loginID, password):
-        """The interaction for authUser."""
+        """Synchronous implementation of `authUser`.
+
+        See `IUserDetailsStorageV2`.
+        """
         row = self._getPerson(transaction, loginID)
         try:
             personID, displayname, name, passwordDigest, wikiname = row
@@ -414,12 +433,15 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         }
 
     def getBranchesForUser(self, personID):
-        """See IHostedBranchStorage."""
+        """See `IHostedBranchStorage`."""
         return deferToThread(self._getBranchesForUserInteraction, personID)
 
     @read_only_transaction
     def _getBranchesForUserInteraction(self, personID):
-        """The interaction for getBranchesForUser."""
+        """Synchronous implementation of `getBranchesForUser`.
+
+        See `IHostedBranchStorage`.
+        """
         person = getUtility(IPersonSet).get(personID)
         login(person.preferredemail.email)
         try:
@@ -441,12 +463,15 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             logout()
 
     def fetchProductID(self, productName):
-        """See IHostedBranchStorage."""
+        """See `IHostedBranchStorage`."""
         return deferToThread(self._fetchProductIDInteraction, productName)
 
     @read_only_transaction
     def _fetchProductIDInteraction(self, productName):
-        """The interaction for fetchProductID."""
+        """The synchronous implementation of `fetchProductID`.
+
+        See `IHostedBranchStorage`.
+        """
         product = getUtility(IProductSet).getByName(productName)
         if product is None:
             return ''
@@ -454,7 +479,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             return product.id
 
     def createBranch(self, loginID, personName, productName, branchName):
-        """See IHostedBranchStorage."""
+        """See `IHostedBranchStorage`."""
         return deferToThread(
             self._createBranchInteraction, loginID, personName, productName,
             branchName)
@@ -462,7 +487,10 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     @writing_transaction
     def _createBranchInteraction(self, loginID, personName, productName,
                                  branchName):
-        """The interaction for createBranch."""
+        """The synchronous implementation of `createBranch`.
+
+        See `IHostedBranchStorage`.
+        """
         requester_id = self._getPerson(cursor(), loginID)[0]
         requester = getUtility(IPersonSet).get(requester_id)
         login(requester.preferredemail.email)
@@ -488,12 +516,15 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             logout()
 
     def requestMirror(self, branchID):
-        """See IHostedBranchStorage."""
+        """See `IHostedBranchStorage`."""
         ri = self.connectionPool.runInteraction
         return ri(self._requestMirrorInteraction, branchID)
 
     def _requestMirrorInteraction(self, transaction, branchID):
-        """The interaction for requestMirror."""
+        """The synchronous implementation of `requestMirror`.
+
+        See `IHostedBranchStorage`.
+        """
         transaction.execute("""
             UPDATE Branch
             SET mirror_request_time = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
@@ -503,7 +534,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return True
 
     def getBranchInformation(self, loginID, userName, productName, branchName):
-        """See IHostedBranchStorage."""
+        """See `IHostedBranchStorage`."""
         return deferToThread(
             self._getBranchInformationInteraction, loginID, userName,
             productName, branchName)
@@ -511,6 +542,10 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     @read_only_transaction
     def _getBranchInformationInteraction(self, loginID, userName, productName,
                                          branchName):
+        """The synchronous implementation of `getBranchInformation`.
+
+        See `IHostedBranchStorage`.
+        """
         requester_id = self._getPerson(cursor(), loginID)[0]
         requester = getUtility(IPersonSet).get(requester_id)
         login(requester.preferredemail.email)
@@ -545,11 +580,15 @@ class DatabaseBranchDetailsStorage:
         self.connectionPool = connectionPool
 
     def getBranchPullQueue(self):
+        """See `IBranchDetailsStorage`."""
         ri = self.connectionPool.runInteraction
         return ri(self._getBranchPullQueueInteraction)
 
     def _getBranchPullQueueInteraction(self, transaction):
-        """The interaction for getBranchPullQueue."""
+        """The synchronous implementation for `getBranchPullQueue`.
+
+        See `IBranchDetailsStorage`.
+        """
         # The following types of branches are included in the queue:
         # - any branches which have not yet been mirrored
         # - any branches that were last mirrored over 6 hours ago
@@ -634,12 +673,15 @@ class DatabaseBranchDetailsStorage:
         return result
 
     def startMirroring(self, branchID):
-        """See IBranchDetailsStorage"""
+        """See `IBranchDetailsStorage`."""
         ri = self.connectionPool.runInteraction
         return ri(self._startMirroringInteraction, branchID)
 
     def _startMirroringInteraction(self, transaction, branchID):
-        """The interaction for startMirroring."""
+        """The synchronous implementation of `startMirroring`.
+
+        See `IBranchDetailsStorage`.
+        """
         transaction.execute(utf8("""
             UPDATE Branch
               SET last_mirror_attempt = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
@@ -649,13 +691,16 @@ class DatabaseBranchDetailsStorage:
         return transaction.rowcount == 1
 
     def mirrorComplete(self, branchID, lastRevisionID):
-        """See IBranchDetailsStorage"""
+        """See `IBranchDetailsStorage`."""
         ri = self.connectionPool.runInteraction
         return ri(self._mirrorCompleteInteraction, branchID, lastRevisionID)
 
     def _mirrorCompleteInteraction(self, transaction, branchID,
                                    lastRevisionID):
-        """The interaction for mirrorComplete."""
+        """The synchronous implementation of `mirrorComplete`.
+
+        See `IBranchDetailsStorage`.
+        """
         transaction.execute(utf8("""
             UPDATE Branch
               SET last_mirrored = last_mirror_attempt, mirror_failures = 0,
@@ -667,12 +712,15 @@ class DatabaseBranchDetailsStorage:
         return transaction.rowcount == 1
 
     def mirrorFailed(self, branchID, reason):
-        """See IBranchDetailsStorage"""
+        """See `IBranchDetailsStorage`."""
         ri = self.connectionPool.runInteraction
         return ri(self._mirrorFailedInteraction, branchID, reason)
 
     def _mirrorFailedInteraction(self, transaction, branchID, reason):
-        """The interaction for mirrorFailed."""
+        """The synchronous implementation of `mirrorFailed`.
+
+        See `IBranchDetailsStorage`.
+        """
         transaction.execute(utf8("""
             UPDATE Branch
               SET mirror_failures = mirror_failures + 1,
@@ -690,7 +738,10 @@ class DatabaseBranchDetailsStorage:
 
     def _recordSuccessInteraction(self, transaction, name, hostname,
             started_tuple, completed_tuple):
-        """The interaction for recordSuccess."""
+        """The synchronous implementation of `recordSuccess`.
+
+        See `IBranchDetailsStorage`.
+        """
         date_started = datetime_from_tuple(started_tuple)
         date_completed = datetime_from_tuple(completed_tuple)
         transaction.execute(utf8("""
