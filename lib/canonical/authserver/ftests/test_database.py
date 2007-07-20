@@ -372,7 +372,15 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         # When we get the branch information for a private branch that is
         # hidden to us, it is an if the branch doesn't exist at all.
         store = DatabaseUserDetailsStorageV2(None)
+
         # salgado is a member of landscape-developers.
+        person_set = getUtility(IPersonSet)
+        salgado = person_set.getByName('salgado')
+        landscape_dev = person_set.getByName('landscape-developers')
+        self.assertTrue(
+            salgado.inTeam(landscape_dev),
+            "salgado should be in landscape-developers team, but isn't.")
+
         store._createBranchInteraction(
             'salgado', 'landscape-developers', 'landscape',
             'some-branch')
