@@ -9,6 +9,7 @@
     </metal:portlets>
 
     <metal:heading fill-slot="pageheading">
+
       <h1>Personal Package Archives for
           <span tal:replace="context/title" /></h1>
     </metal:heading>
@@ -17,13 +18,13 @@
 
      <p>Personal Package Archives (<i>PPA</i>) is a Launchpad feature
         that allows users to design they own packages or work on fixes
-        to exitent packages and provide <b>work-in-progess</b>
+        to existent packages and provide <b>work-in-progress</b>
         packages for testing before they reach main distribution
         archive. For more information see
         <a href="https://help.launchpad.net/PPAQuickStart">PPA Quick
         Start</a>.</p>
 
-     <p>You can search for <i>PPA</i> by the onwer name or by any word
+     <p>You can search for <i>PPA</i> by the owner name or by any word
      in its description.</p>
 
       <form name="ppa_search" action="" method="GET">
@@ -62,7 +63,7 @@
            replace="structure view/batchnav/@@+navigation-links-lower" />
 
       <div id="empty-result" tal:condition="not: batch">
-         No PPA contaning '<span tal:replace="view/name_filter|nothing" />'.
+         No PPA containing '<span tal:replace="view/name_filter|nothing" />'.
       </div>
 
       </tal:batch>
