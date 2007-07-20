@@ -28,4 +28,8 @@ ALTER TABLE Branch
 ADD CONSTRAINT branch_type_url_consistent
 CHECK ((branch_type = 2 AND url IS NOT NULL) OR url IS NULL);
 
+-- Add some indexes we need to BranchSubscription
+CREATE INDEX branchsubscription__person__idx ON BranchSubscription(person);
+CREATE INDEX branchsubscription__branch__idx ON BranchSubscription(branch);
+
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 31, 0);

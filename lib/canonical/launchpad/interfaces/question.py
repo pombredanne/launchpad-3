@@ -266,7 +266,7 @@ class IQuestion(IHasOwner):
         """
 
     can_confirm_answer = Attribute(
-        'Whether the question is in a state where the question owner to '
+        'Whether the question is in a state for the question owner to '
         'confirm that an answer solved his problem.')
 
     def confirmAnswer(comment, answer=None, datecreated=None):
