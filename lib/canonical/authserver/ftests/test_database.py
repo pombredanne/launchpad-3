@@ -12,7 +12,6 @@ import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
-from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.database.sqlbase import cursor, sqlvalues
 
