@@ -710,12 +710,13 @@ class BranchSet:
 
     def getHostedBranchesForPerson(self, person):
         """See `IBranchSet`."""
-        branches = Branch.select(
-            "Branch.URL IS NULL "
-            "AND Branch.owner IN ("
-            "SELECT TeamParticipation.team "
-            "FROM TeamParticipation "
-            "WHERE TeamParticipation.person = %d)" % person.id)
+        branches = Branch.select("""
+            Branch.url IS NULL
+            AND Branch.owner IN (
+            SELECT TeamParticipation.team
+            FROM TeamParticipation
+            WHERE TeamParticipation.person = %s
+            """ % sqlvalues(person.id))
         return branches
 
     def getLatestBranchesForProduct(self, product, quantity,
