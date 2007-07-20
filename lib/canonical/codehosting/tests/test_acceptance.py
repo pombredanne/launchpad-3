@@ -299,8 +299,15 @@ class AcceptanceTests(SSHTestCase):
         # Trying to get information about a private branch should fail as if
         # the branch doesn't exist.
 
-        # Make a private branch. 'salgado' is a member of
-        # landscape-developers.
+        # 'salgado' is a member of landscape-developers.
+        salgado = database.Person.selectOneBy(name='salgado')
+        landscape_dev = database.Person.selectOneBy(
+            name='landscape-developers')
+        self.assertTrue(
+            salgado.inTeam(landscape_dev),
+            "salgado should be a member of landscape-developers, but isn't.")
+
+        # Make a private branch.
         branch_url = self.pushNewBranch(
             'landscape-developers', 'landscape', 'some-branch',
             creator='salgado')
