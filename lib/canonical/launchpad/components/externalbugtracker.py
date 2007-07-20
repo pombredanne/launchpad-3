@@ -491,7 +491,7 @@ class DebBugs(ExternalBugTracker):
             malone_status = BugTaskStatus.UNKNOWN
         if status == 'open':
             confirmed_tags = [
-                'help', 'confirmed', 'upstream', 'fixed-upstream', 'wontfix']
+                'help', 'confirmed', 'upstream', 'fixed-upstream']
             fix_committed_tags = ['pending', 'fixed', 'fixed-in-experimental']
             if 'moreinfo' in tags:
                 malone_status = BugTaskStatus.INCOMPLETE
@@ -503,6 +503,8 @@ class DebBugs(ExternalBugTracker):
                 if fix_committed_tag in tags:
                     malone_status = BugTaskStatus.FIXCOMMITTED
                     break
+            if 'wontfix' in tags:
+                malone_status = BugTaskStatus.WONTFIX
 
         return malone_status
 
