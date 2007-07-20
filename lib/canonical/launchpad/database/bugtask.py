@@ -783,7 +783,7 @@ class BugTask(SQLBase, BugTaskMixin):
             raise AssertionError('Unknown BugTask context: %r' % self)
 
         # We only want to have a milestone field in the header if there's
-        # a milestone set for the bug
+        # a milestone set for the bug.
         if self.milestone:
             header_value += ' milestone=%s;' % self.milestone.name
 
