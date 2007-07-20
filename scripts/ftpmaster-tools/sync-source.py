@@ -727,7 +727,7 @@ def options_setup():
                       help="be even more verbose")
 
     # Options controlling where to sync packages to:
-    parser.add_option("-c", "--in-component", dest="incomponent",
+    parser.add_option("-c", "--to-component", dest="tocomponent",
                       help="limit syncs to packages in COMPONENT")
     parser.add_option("-d", "--to-distro", dest="todistro",
                       help="sync to DISTRO")
@@ -776,21 +776,22 @@ def objectize_options():
     Convert 'target_distro', 'target_suite' and 'target_component' to objects
     rather than strings.
     """
-    Options.target_distro = getUtility(IDistributionSet)[Options.target_distro]
+    Options.todistro = getUtility(IDistributionSet)[Options.todistro]
 
-    if not Options.target_suite:
-        Options.target_suite = Options.target_distro.currentseries.name
-    Options.target_suite = Options.target_distro.getSeries(Options.target_suite)
+    if not Options.tosuite:
+        Options.tosuite = Options.todistro.currentseries.name
+    Options.tosuite = Options.todistro.getSeries(Options.tosuite)
 
     valid_components = (
-        dict([(c.name,c) for c in Options.target_suite.components]))
-    if (Options.target_component and
-        Options.target_component not in valid_components):
+        dict([(component.name, component)
+              for component in Options.tosuite.components]))
+    if (Options.tocomponent and
+        Options.tocomponent not in valid_components):
         dak_utils.fubar(
             "%s is not a valid component for %s/%s."
-            % (Options.target_component, Options.target_distro.name,
-               Options.target_suite.name))
-    Options.target_component = valid_components[Options.target_component]
+            % (Options.tocomponent, Options.todistro.name,
+               Options.tosuite.name))
+    Options.tocomponent = valid_components[Options.tocomponent]
 
     # Fix up Options.requestor
     if not Options.requestor:
