@@ -1,8 +1,11 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-#
+"""tales.py doc and unit tests."""
 
+import time
+import re
 import unittest
 from zope.testing.doctestunit import DocTestSuite
+from canonical.launchpad.webapp.tales import FormattersAPI
 
 def test_requestapi():
     """
@@ -157,8 +160,51 @@ def test_break_long_words():
       <tag>1234567890123456</tag>
     """
 
+
+class testObfuscateEmail(unittest.TestCase):
+    """Show that the current re is faster than the previous re."""
+    def re_time_check(self, test_re, text):
+        """Return the time the re takes to complete in CPU seconds.
+        
+        We use time.time(). time.clock() lacks the precision required to
+        measure one call to re.sub.
+        """
+        start_time = time.time()
+        test_re.sub(r'<email address hidden>', text)
+        end_time = time.time()
+        return end_time - start_time
+
+    def test_time(self):
+        """Test that the current _re_email is faster than the original."""
+        # This is string was extracted from an actual message that hung
+        # the server as it waited for the re to complete its sub().
+        bad_address = (
+            'b "medi-cal.wei@sa-raSpinning...............................'
+            '............................................................'
+            '............................................................'
+            '............................................................'
+            '............................................................'
+            '.........................................................not')
+        # This version of _re_email was created in response to bad_address.
+        orginal_re = re.compile(r"""
+            ([\b]|[\"']?)[-/=0-9A-Z_a-z]     # First character of localname.
+            [.\"'-/=0-9A-Z_a-z+]*@           # Remainder of the localname.
+            [a-zA-Z]                         # First character of hostname.
+            (-?[a-zA-Z0-9])*                 # Remainder of the hosename.
+            (\.[a-zA-Z](-?[a-zA-Z0-9])*)+\b  # Dot starts one or more domains.
+            """, re.VERBOSE)
+        current_re = FormattersAPI._re_email
+
+        orginal_time = self.re_time_check(orginal_re, bad_address)
+        current_time = self.re_time_check(current_re, bad_address)
+        self.failIf(orginal_time < current_time,
+                    'original_re is faster than the current email_re: '
+                    '%s < %s' % (orginal_time, current_time))
+
 def test_suite():
+    """Return this module's test Suite."""
     suite = DocTestSuite()
+    suite.addTest(unittest.makeSuite(testObfuscateEmail))
     return suite
 
 
