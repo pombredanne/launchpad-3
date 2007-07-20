@@ -20,12 +20,14 @@ publications for a given distroseries:
     >>> from canonical.launchpad.database.publishing import (
     ...      SecureSourcePackagePublishingHistory)
     >>> from canonical.lp.dbschema import (
-    ...     PackagePublishingStatus, PackagePublishingPocket)
+    ...     ArchivePurpose, PackagePublishingStatus, PackagePublishingPocket)
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IDistributionSet)
+    ...     IArchiveSet, IPersonSet, IDistributionSet)
 
     >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
     >>> cprov = getUtility(IPersonSet).getByName('cprov')
+    >>> commercial_archive = getUtility(IArchiveSet).getByDistroPurpose(
+    ...     distribution=ubuntu, purpose=ArchivePurpose.COMMERCIAL)
 
     >>> dspr = ubuntu.getSourcePackage('mozilla-firefox')['0.9']
     >>> the_spr = dspr.sourcepackagerelease
@@ -47,6 +49,7 @@ archives, pockets and statuses. This function creates:
  * 1 PUBLISHED and 1 PENDING records in RELEASE pocket, main_archive;
  * 1 PUBLISHED and 1 PENDING records in UPDATES pocket, main_archive;
  * 1 PUBLISHED and 1 PENDING records in RELEASE pocket, PPA archive;
+ * 1 PUBLISHED and 1 PENDING records in RELEASE pocket, COMMERCIAL archive;
 
     >>> def create_sample_publications(distroseries):
     ...      create_publication(
@@ -67,6 +70,12 @@ archives, pockets and statuses. This function creates:
     ...      create_publication(
     ...           distroseries, PackagePublishingPocket.RELEASE,
     ...           cprov.archive, PackagePublishingStatus.PENDING)
+    ...      create_publication(
+    ...           distroseries, PackagePublishingPocket.RELEASE,
+    ...           commercial_archive, PackagePublishingStatus.PUBLISHED)
+    ...      create_publication(
+    ...           distroseries, PackagePublishingPocket.RELEASE,
+    ...           commercial_archive, PackagePublishingStatus.PENDING)
 
 This function will store previous publishing records that will be
 ignored later when inspecting the example results (sampledata already
