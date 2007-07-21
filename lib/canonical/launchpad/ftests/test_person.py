@@ -6,12 +6,11 @@ import unittest
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.database import Person
-from canonical.testing import LaunchpadFunctionalLayer
 
 
-class TestPerson(unittest.TestCase):
-    layer = LaunchpadFunctionalLayer
+class TestPerson(LaunchpadFunctionalTestCase):
 
     def test_getDirectMemberIParticipateIn(self):
         sample_person = Person.byName('name12')

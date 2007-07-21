@@ -9,17 +9,16 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login, ANONYMOUS
+from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.interfaces import (
     IBugTaskSet, IBugTrackerSet, IBugWatchSet, IPersonSet, NoBugTrackerFound,
     UnrecognizedBugTrackerURL)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.lp.dbschema import BugTrackerType
-from canonical.testing import LaunchpadFunctionalLayer
 
 
-class ExtractBugTrackerAndBugTestBase(unittest.TestCase):
+class ExtractBugTrackerAndBugTestBase(LaunchpadFunctionalTestCase):
     """Test base for testing BugWatchSet.extractBugTrackerAndBug."""
-    layer = LaunchpadFunctionalLayer
 
     # A URL to an unregistered bug tracker.
     base_url = None
@@ -34,6 +33,7 @@ class ExtractBugTrackerAndBugTestBase(unittest.TestCase):
     bug_id = None
 
     def setUp(self):
+        LaunchpadFunctionalTestCase.setUp(self)
         login(ANONYMOUS)
         self.bugwatch_set = getUtility(IBugWatchSet)
         self.bugtracker_set = getUtility(IBugTrackerSet)

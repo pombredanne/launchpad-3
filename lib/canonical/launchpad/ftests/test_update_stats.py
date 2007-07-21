@@ -14,16 +14,13 @@ from canonical.launchpad.ftests.harness import (
 from canonical.launchpad.interfaces import (
     IDistributionSet, IDistroSeriesSet, ILanguageSet, IPOTemplateSet,
     IPersonSet)
-from canonical.testing import LaunchpadFunctionalLayer
 from canonical.config import config
-
 
 def get_script():
     """Return the path to update-stats.py."""
     script = os.path.join(config.root, 'cronscripts', 'update-stats.py')
     assert os.path.exists(script), '%s not found' % script
     return script
-
 
 class UpdateStatsTest(LaunchpadFunctionalTestCase):
     """Test the update-stats.py script."""
@@ -33,7 +30,7 @@ class UpdateStatsTest(LaunchpadFunctionalTestCase):
     dbuser = 'statistician'
 
     def tearDown(self):
-        """Tear down this test and recylcle the database."""
+        """Tear down this test and recycle the database."""
         # XXX sinzui 2007-07-12 bug=125569
         # Use the DatabaseLayer mechanism to tear this test down.
         LaunchpadTestSetup().force_dirty_database()
@@ -84,9 +81,8 @@ class UpdateStatsTest(LaunchpadFunctionalTestCase):
         # Run the update-stats.py script
         cmd = [sys.executable, get_script(), '--quiet']
         process = subprocess.Popen(
-                cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT
-                )
+            cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT)
         (stdout, empty_stderr) = process.communicate()
 
         # Ensure it returned a success code
@@ -186,12 +182,12 @@ class UpdateStatsTest(LaunchpadFunctionalTestCase):
             self.failUnless(row[0] >= 0, '%s is invalid' % key)
 
 
-class UpdateTranslationStatsWithDisabledTemplateTest(unittest.TestCase):
-    """Disabled PO message templates tests."""
-    layer = LaunchpadFunctionalLayer
-
+class UpdateTranslationStatsTest(LaunchpadFunctionalTestCase):
+    """Test exceptional update-stats.py rules."""
     def setUp(self):
         """Setup the Distroseries related objects for these tests."""
+        LaunchpadFunctionalTestCase.setUp(self)
+
         self.distribution = getUtility(IDistributionSet)
         self.distroseriesset = getUtility(IDistroSeriesSet)
         self.languageset = getUtility(ILanguageSet)
@@ -201,8 +197,14 @@ class UpdateTranslationStatsWithDisabledTemplateTest(unittest.TestCase):
         # This test needs to do some changes that require admin permissions.
         login('carlos@canonical.com')
 
+    def tearDown(self):
+        """Tear down this test and recycle the database."""
+        # XXX sinzui 2007-07-12 bug=125569
+        # Use the DatabaseLayer mechanism to tear this test down.
+        LaunchpadTestSetup().force_dirty_database()
+        LaunchpadFunctionalTestCase.tearDown(self)
 
-    def test_basic(self):
+    def test_disabled_template(self):
         """Test that Distroseries stats do not include disabled templates."""
         # First, we check current values of cached statistics.
 
@@ -330,29 +332,14 @@ class UpdateTranslationStatsWithDisabledTemplateTest(unittest.TestCase):
             spanish_hoary.contributor_count, new_contributor_count)
         self.failIf(contributor_count <= new_contributor_count)
 
-
-class UpdateTranslationStatsForEnglishTest(unittest.TestCase):
-    """Test that English is handled correctly by DistroSeries.
-    
-    English exists in the POFile data, but it cannot be used by Launchpad
-    since the messages that are to be translated are stored as English.
-    A DistroSeriesLanguage can never be English since it represents a
-    translation.
-    """
-    layer = LaunchpadFunctionalLayer
-
-    def setUp(self) :
-        """Setup the Distroseries related objects for these tests."""
-        self.distribution = getUtility(IDistributionSet)
-        self.distroseriesset = getUtility(IDistroSeriesSet)
-        self.languageset = getUtility(ILanguageSet)
-        self.potemplateset = getUtility(IPOTemplateSet)
-        self.personset = getUtility(IPersonSet)
-        # This test needs to do some changes that require admin permissions.
-        login('carlos@canonical.com')
-
     def test_english(self):
-        """Test that an English DistroSeriesLanguage is not created."""
+        """Test that English is handled correctly by DistroSeries.
+        
+        English exists in the POFile data, but it cannot be used by Launchpad
+        since the messages that are to be translated are stored as English.
+        A DistroSeriesLanguage can never be English since it represents a
+        translation.
+        """
         ubuntu = self.distribution['ubuntu']
         hoary = self.distroseriesset.queryByName(ubuntu, 'hoary')
 
@@ -392,12 +379,11 @@ class UpdateTranslationStatsForEnglishTest(unittest.TestCase):
 
 
 def test_suite():
-    """Run all tests."""
+    """Return this module's test suite."""
     suite = unittest.TestSuite()
     suite.addTest(unittest.makeSuite(UpdateStatsTest))
     suite.addTest(
-        unittest.makeSuite(UpdateTranslationStatsWithDisabledTemplateTest))
-    suite.addTest(unittest.makeSuite(UpdateTranslationStatsForEnglishTest))
+        unittest.makeSuite(UpdateTranslationStatsTest))
     return suite
 
 

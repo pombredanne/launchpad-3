@@ -7,15 +7,15 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.interfaces import IPersonSet, ITeamMembershipSet
 from canonical.lp.dbschema import TeamMembershipStatus
-from canonical.testing import LaunchpadFunctionalLayer
 
 
-class TestTeamMembershipSet(unittest.TestCase):
-    layer = LaunchpadFunctionalLayer
+class TestTeamMembershipSet(LaunchpadFunctionalTestCase):
 
     def setUp(self):
+        LaunchpadFunctionalTestCase.setUp(self)
         login('test@canonical.com')
         self.membershipset = getUtility(ITeamMembershipSet)
         self.personset = getUtility(IPersonSet)
