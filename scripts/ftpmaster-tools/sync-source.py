@@ -854,7 +854,7 @@ def main():
     origin["component"] = Options.fromcomponent
 
     Sources = read_Sources("Sources", origin)
-    Suite = read_current_source(Options.tosuite, Options.incomponent, arguments)
+    Suite = read_current_source(Options.tosuite, Options.tocomponent, arguments)
     current_binaries = read_current_binaries(Options.tosuite)
     do_diff(Sources, Suite, origin, arguments, current_binaries)
 
