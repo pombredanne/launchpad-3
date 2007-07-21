@@ -1,7 +1,7 @@
 SET client_min_messages=ERROR;
 
 -- Populated by trigger
-ALTER TABLE Person ALTER COLUMN openid_identifier NOT NULL;
+ALTER TABLE Person ALTER COLUMN openid_identifier SET NOT NULL;
 
 ALTER TABLE Person ALTER COLUMN account_status SET DEFAULT 10;
 ALTER TABLE Person ALTER COLUMN account_status SET NOT NULL;
