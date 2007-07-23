@@ -10,7 +10,7 @@ from zope.schema.vocabulary import getVocabularyRegistry
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IPerson, IBug, ISourcePackageRelease, IProductRelease, IBugActivitySet)
-from canonical.launchpad.webapp.enum import Item
+from canonical.launchpad.webapp.enum import BaseItem
 
 vocabulary_registry = getVocabularyRegistry()
 
@@ -30,7 +30,7 @@ def get_string_representation(obj):
         return "%s %s" % (obj.sourcepackagename.name, obj.version)
     elif IProductRelease.providedBy(obj):
         return "%s %s" % (obj.product.name, obj.version)
-    elif isinstance(obj, Item):
+    elif isinstance(obj, BaseItem):
         return obj.title
     elif isinstance(obj, basestring):
         return obj

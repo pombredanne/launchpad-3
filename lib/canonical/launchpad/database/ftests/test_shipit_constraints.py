@@ -1,4 +1,5 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+"""Shipping constraint tests."""
 
 __metaclass__ = type
 
@@ -7,9 +8,14 @@ import psycopg
 
 from canonical.database.sqlbase import quote
 from canonical.lp.dbschema import ShippingRequestStatus
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
+from canonical.launchpad.ftests.harness import (
+    LaunchpadFunctionalTestCase, LaunchpadTestSetup)
+
 
 class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
+    # XXX sinzui 2007-07-12 bug=125569
+    # This test should subclass unittest.TestCase. Some reworking
+    # is required to migrate this test.
     def shipped(self, cur, id):
         cur.execute("""
             SELECT shipped IS NOT NULL FROM ShippingRequest WHERE id=%(id)s
@@ -89,7 +95,15 @@ class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
         self.failUnlessRaises(psycopg.Error, self.insert, cur)
         cur.execute("ROLLBACK TO SAVEPOINT attempt2")
 
+    def tearDown(self):
+        """Tear down this test and recycle the database."""
+        # XXX sinzui 2007-07-12 bug=125569
+        # Use the DatabaseLayer mechanism to tear this test down.
+        LaunchpadTestSetup().force_dirty_database()
+        LaunchpadFunctionalTestCase.tearDown(self)
+
 
 def test_suite():
+    """Create the test suite.."""
     return unittest.makeSuite(ShipitConstraintsTestCase)
 

@@ -266,3 +266,8 @@ Finally, let's make sure that bug notifications were added:
 
     >>> event_listener.unregister()
 
+The Bug Watch Updater can transition a bug to any status:
+
+    >>> for status in BugTaskStatus.items:
+    ...     debian_bugwatch.updateStatus(u'nothing', status)
+

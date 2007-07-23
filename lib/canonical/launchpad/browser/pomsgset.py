@@ -1204,6 +1204,15 @@ class POMsgSetView(LaunchpadView):
         # For anonymous users, check the msgid.
         return self.context.potmsgset.hide_translations_from_anonymous
 
+    @property
+    def translation_credits(self):
+        """Return automatically created translation if defined, or None."""
+        assert self.context.potmsgset.is_translation_credit
+        return text_to_html(
+            self.context.pofile.prepareTranslationCredits(
+                self.context.potmsgset),
+            self.context.potmsgset.flags())
+
     @cachedproperty
     def sequence(self):
         """Return the position number of this potmsgset in the pofile."""
@@ -1353,7 +1362,7 @@ class POMsgSetSuggestions:
                 'suggestion_html_id':
                     submission.makeHTMLId('suggestion', pomsgset.potmsgset),
                 'translation_html_id':
-                    pomsgset.makeHTMLId('translation_%d'
-                                       % submission.pluralform),
+                    pomsgset.makeHTMLId(
+                        'translation_%s' % (submission.pluralform)),
                 })
 

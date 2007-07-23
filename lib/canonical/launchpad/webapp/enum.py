@@ -12,6 +12,7 @@ from zope.schema.interfaces import ITitledTokenizedTerm, IVocabularyTokenized
 from zope.security.proxy import isinstance as zope_isinstance
 
 __all__ = [
+    'BaseItem',
     'DBEnumeratedType',
     'DBItem',
     'EnumeratedType',
