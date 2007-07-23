@@ -109,7 +109,8 @@ is returned by the iteration is the TokenizedItem, not the item itself.
     PEAR Pear
     ORANGE Orange
 
-Items in an enumerator support comparison and equality checks.
+Items in an enumerator support comparison and equality checks.  Comparison
+is based on the sort order of the items.
 
     >>> apple = Fruit.APPLE
     >>> pear = Fruit.PEAR
@@ -118,6 +119,8 @@ Items in an enumerator support comparison and equality checks.
     True
     >>> apple == pear
     False
+    >>> apple == apple
+    True
     >>> apple != pear
     True
     >>> apple > pear
@@ -183,6 +186,8 @@ value of the TokenizedItem is the DBItem itself.
     >>> hosted = BranchType.HOSTED
     >>> hosted.value
     1
+    >>> hosted == BranchType.HOSTED
+    True
     >>> tokenized_item = BranchType.getTermByToken('HOSTED')
     >>> tokenized_item.value
     <DBItem BranchType.HOSTED, (1) Hosted>

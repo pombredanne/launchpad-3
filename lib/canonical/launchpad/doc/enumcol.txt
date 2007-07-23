@@ -22,6 +22,26 @@ Firstly we need an example table.
 The enumerated type that is used with the EnumCol must be a
 DBEnumeratedType, with items that are instances of DBItem.
 
+Attempting to use a normal enumerated type for an enumcol will
+result in an error.
+
+    >>> from canonical.launchpad.webapp.enum import (
+    ...     EnumeratedType, Item)
+    >>> class PlainFooType(EnumeratedType):
+    ...     """Enumerated type for the foo column."""
+    ...     ONE = Item("One")
+    ...     TWO = Item("Two")
+
+    >>> from canonical.database.constants import DEFAULT
+    >>> from canonical.database.enumcol import EnumCol
+    >>> from canonical.database.sqlbase import SQLBase
+    >>> class BadFooTest(SQLBase):
+    ...     foo = EnumCol(enum=PlainFooType, default=DEFAULT)
+    Traceback (most recent call last):
+    ...
+    TypeError: enum must be a DBEnumeratedType:
+    <class 'canonical.launchpad.webapp.enum.MetaEnum'>
+
     >>> from canonical.launchpad.webapp.enum import (
     ...     DBEnumeratedType, DBItem)
     >>> class FooType(DBEnumeratedType):
@@ -40,9 +60,6 @@ DBEnumeratedType, with items that are instances of DBItem.
 
 The database implementation class then refers to the enumerated type.
 
-    >>> from canonical.database.constants import DEFAULT
-    >>> from canonical.database.enumcol import EnumCol
-    >>> from canonical.database.sqlbase import SQLBase
     >>> class FooTest(SQLBase):
     ...     foo = EnumCol(enum=FooType, default=DEFAULT)
 
@@ -66,7 +83,7 @@ You cannot use integers or strings as EnumCol values:
     >>> t.foo = "TWO"
     Traceback (most recent call last):
     ...
-    TypeError: Not a DBItem: 'TWO'
+    TypeError: Not a DBItem: <type 'str'>
 
 You can of course use items from FooType.
 
@@ -86,3 +103,19 @@ But not items from another schema.
     Traceback (most recent call last):
     ...
     TypeError: DBItem from wrong type, 'FooType' != 'AnotherType'
+
+The type assigned in must be the exact type, not a derived types.
+
+    >>> class DerivedType(FooType):
+    ...     """A derived DB enumerated type."""
+
+    >>> item = DerivedType.ONE
+    >>> t.foo = item
+    Traceback (most recent call last):
+    ...
+    TypeError: DBItem from wrong type, 'FooType' != 'DerivedType'
+
+A simple way to assign in the correct item is to use the name of the derived
+item to access the correct item from the base type.
+
+    >>> t.foo = FooType.items[item.name]

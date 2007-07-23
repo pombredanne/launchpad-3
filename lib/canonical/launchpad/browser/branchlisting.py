@@ -11,64 +11,18 @@ __all__ = [
 from datetime import datetime
 
 from zope.component import getUtility
-from zope.interface import Interface, implements
-from zope.schema import Choice
+from zope.interface import implements
 
 from canonical.config import config
 from canonical.lp import decorates
 
 from canonical.cachedproperty import cachedproperty
-from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    BranchLifecycleStatus,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchSet, IBugBranchSet, IBranchBatchNavigator)
+    BranchLifecycleStatusFilter, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    IBranchSet, IBugBranchSet, IBranchBatchNavigator, IBranchLifecycleFilter)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.enum import EnumeratedType, Item, use_template
 from canonical.widgets import LaunchpadDropdownWidget
-
-
-class BranchLifecycleStatusFilter(EnumeratedType):
-    """Branch Lifecycle Status Filter
-
-    Used to populate the branch lifecycle status filter widget.
-    UI only.
-    """
-    use_template(BranchLifecycleStatus)
-
-    sort_order = (
-        'CURRENT', 'ALL', 'NEW', 'EXPERIMENTAL', 'DEVELOPMENT', 'MATURE',
-        'MERGED', 'ABANDONED')
-
-    CURRENT = Item("""
-        New, Experimental, Development or Mature
-
-        Show the currently active branches.
-        """)
-
-    ALL = Item("""
-        Any Status
-
-        Show all the branches.
-        """)
-
-
-class IBranchLifecycleFilter(Interface):
-    """A helper interface to render lifecycle filter choice."""
-
-    # Stats and status attributes
-    lifecycle = Choice(
-        title=_('Lifecycle Filter'), vocabulary=BranchLifecycleStatusFilter,
-        default=BranchLifecycleStatusFilter.CURRENT,
-        description=_(
-        "The author's assessment of the branch's maturity. "
-        " Mature: recommend for production use."
-        " Development: useful work that is expected to be merged eventually."
-        " Experimental: not recommended for merging yet, and maybe ever."
-        " Merged: integrated into mainline, of historical interest only."
-        " Abandoned: no longer considered relevant by the author."
-        " New: unspecified maturity."))
 
 
 class BranchListingItem:

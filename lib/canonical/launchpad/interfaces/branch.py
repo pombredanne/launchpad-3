@@ -9,11 +9,13 @@ __all__ = [
     'BranchCreationForbidden',
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchLifecycleStatus',
+    'BranchLifecycleStatusFilter',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
     'IBranchDelta',
     'IBranchBatchNavigator',
+    'IBranchLifecycleFilter',
     ]
 
 from zope.interface import Interface, Attribute
@@ -28,7 +30,8 @@ from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
-from canonical.launchpad.webapp.enum import DBEnumeratedType, DBItem
+from canonical.launchpad.webapp.enum import (
+    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 
 
@@ -650,3 +653,48 @@ class IBranchDelta(Interface):
     lifecycle_status = Attribute("Old and new lifecycle status, or None.")
     revision_count = Attribute("Old and new revision counts, or None.")
     last_scanned_id = Attribute("The revision id of the tip revision.")
+
+
+# XXX: thumper 2007-07-23
+# Both BranchLifecycleStatusFilter and IBranchLifecycleFilter
+# are used only in browser/branchlisting.py, see bug 66950.
+class BranchLifecycleStatusFilter(EnumeratedType):
+    """Branch Lifecycle Status Filter
+
+    Used to populate the branch lifecycle status filter widget.
+    UI only.
+    """
+    use_template(BranchLifecycleStatus)
+
+    sort_order = (
+        'CURRENT', 'ALL', 'NEW', 'EXPERIMENTAL', 'DEVELOPMENT', 'MATURE',
+        'MERGED', 'ABANDONED')
+
+    CURRENT = Item("""
+        New, Experimental, Development or Mature
+
+        Show the currently active branches.
+        """)
+
+    ALL = Item("""
+        Any Status
+
+        Show all the branches.
+        """)
+
+
+class IBranchLifecycleFilter(Interface):
+    """A helper interface to render lifecycle filter choice."""
+
+    # Stats and status attributes
+    lifecycle = Choice(
+        title=_('Lifecycle Filter'), vocabulary=BranchLifecycleStatusFilter,
+        default=BranchLifecycleStatusFilter.CURRENT,
+        description=_(
+        "The author's assessment of the branch's maturity. "
+        " Mature: recommend for production use."
+        " Development: useful work that is expected to be merged eventually."
+        " Experimental: not recommended for merging yet, and maybe ever."
+        " Merged: integrated into mainline, of historical interest only."
+        " Abandoned: no longer considered relevant by the author."
+        " New: unspecified maturity."))

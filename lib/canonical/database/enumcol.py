@@ -27,13 +27,14 @@ class SODBSchemaEnumCol(SOCol):
         # enum, and fall back to schema.
         try:
             self.enum = kw.pop('enum')
-            if not issubclass(self.enum, DBEnumeratedType):
-                raise TypeError(
-                    'enum must be a DBEnumeratedType: %r' % self.enum)
+            source = 'enum'
         except KeyError:
             self.enum = kw.pop('schema')
-            if not issubclass(self.enum, DBEnumeratedType):
-                raise TypeError('schema must be a DBEnumeratedType: %r' % self.enum)
+            source = 'schema'
+        if not issubclass(self.enum, DBEnumeratedType):
+            raise TypeError(
+                '%s must be a DBEnumeratedType: %r'
+                % (source, type(self.enum)))
         SOCol.__init__(self, **kw)
         validator = DBEnumeratedTypeValidator(self.enum)
         self.validator = validators.All.join(validator, self.validator)
@@ -74,7 +75,7 @@ class DBEnumeratedTypeValidator(validators.Validator):
         >>> validator.fromPython(tuple(), None)
         Traceback (most recent call last):
         ...
-        TypeError: Not a DBItem: ()
+        TypeError: Not a DBItem: <type 'tuple'>
 
         """
         if value is None:
@@ -89,7 +90,7 @@ class DBEnumeratedTypeValidator(validators.Validator):
             # We use repr(value) because if it's a tuple (yes, it has been
             # seen in some cases) then the interpolation would swallow that
             # fact, confusing poor programmers like Daniel.
-            raise TypeError('Not a DBItem: %s' % repr(value))
+            raise TypeError('Not a DBItem: %r' % type(value))
         # Using != rather than 'is not' in order to cope with Security Proxy
         # proxied items and their schemas.
         if self.enum != value.enum:
