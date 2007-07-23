@@ -730,7 +730,7 @@ def options_setup():
     parser.add_option("-c", "--to-component", dest="tocomponent",
                       help="limit syncs to packages in COMPONENT")
     parser.add_option("-d", "--to-distro", dest="todistro",
-                      help="sync to DISTRO")
+                      default='ubuntu', help="sync to DISTRO")
     parser.add_option("-s", "--to-suite", dest="tosuite",
                       help="sync to SUITE (aka distroseries)")
 
@@ -738,23 +738,12 @@ def options_setup():
     parser.add_option("-C", "--from-component", dest="fromcomponent",
                       help="sync from COMPONENT")
     parser.add_option("-D", "--from-distro", dest="fromdistro",
-                      help="sync from DISTRO")
+                      default='debian', help="sync from DISTRO")
     parser.add_option("-S", "--from-suite", dest="fromsuite",
                       help="sync from SUITE (aka distroseries)")
 
 
     (Options, arguments) = parser.parse_args()
-
-    # Defaults
-    if not Options.todistro:
-        Options.todistro = "ubuntu"
-
-    # XXX FIXME: use distro.currentseries
-    if not Options.tosuite:
-        Options.tosuite = "dapper"
-
-    if not Options.fromdistro:
-        Options.fromdistro = "debian"
 
     distro = Options.fromdistro.lower()
     if not Options.fromcomponent:
