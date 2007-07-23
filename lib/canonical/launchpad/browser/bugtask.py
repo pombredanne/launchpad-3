@@ -36,7 +36,7 @@ import urllib
 from operator import attrgetter
 
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
+from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
     IInputWidget, IDisplayWidget, InputErrors, WidgetsError, ConversionError)
 from zope.app.form.utility import (
@@ -1488,9 +1488,8 @@ class BugTaskSearchListingView(LaunchpadFormView):
         convert the old string parameter into a list.
         """
         old_upstream_status_values_to_new_values = {
-            'pending_bugwatch': 'pending_bugwatch',
-            'hide_upstream': 'hide_upstream',
             'only_resolved_upstream': 'resolved_upstream'}
+
         status_upstream = self.request.get('field.status_upstream')
         if status_upstream in old_upstream_status_values_to_new_values.keys():
             self.request.form['field.status_upstream'] = [
@@ -1519,6 +1518,8 @@ class BugTaskSearchListingView(LaunchpadFormView):
         """Build the BugTaskSearchParams object for the given arguments and
         values specified by the user on this form's widgets.
         """
+        # Calling _validate populates the data dictionary as a side-effect
+        # of validation.
         data = {}
         self._validate(None, data)
 
@@ -1777,7 +1778,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
     def validateVocabulariesAdvancedForm(self):
         """Provides a meaningful message for vocabulary validation errors."""
         error_message = _(
-            "There's no person with the name or email address '%s'")
+            "There's no person with the name or email address '%s'.")
 
         for name in ('assignee', 'bug_reporter', 'bug_contact'):
             if self.getWidgetError(name):

@@ -124,7 +124,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    BugTaskSearchParams, IPersonBugTaskSearch, IBranchSet, ITeamMembership,
+    BugTaskSearchParams, IBranchSet, ITeamMembership,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
 
 from canonical.launchpad.browser.bugtask import (
