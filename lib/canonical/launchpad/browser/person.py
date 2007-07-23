@@ -1313,17 +1313,6 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
         return package_links
 
-    def getExtraSearchParams(self):
-        """Overridden from BugTaskSearchListingView, to filter the search."""
-        search_params = {}
-
-        if self.widgets['status'].hasInput():
-            search_params['status'] = any(*self.widgets['status'].getInputValue())
-        if self.widgets['unassigned'].hasInput():
-            search_params['assignee'] = NULL
-
-        return search_params
-
     def getBugContactPackageSearchURL(self, distributionsourcepackage=None,
                                       advanced=False, extra_params=None):
         """Construct a default search URL for a distributionsourcepackage.

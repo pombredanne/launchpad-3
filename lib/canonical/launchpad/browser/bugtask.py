@@ -1386,11 +1386,7 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
 
 
 class BugTaskSearchListingView(LaunchpadFormView):
-    """Base class for bug listings.
-
-    Subclasses should define getExtraSearchParams() to filter the
-    search.
-    """
+    """Base class for bug listings."""
 
     custom_widget('searchtext', NewLineToSpacesWidget)
     custom_widget('status_upstream', LabeledMultiCheckBoxWidget)
