@@ -1388,6 +1388,9 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
 class BugTaskSearchListingView(LaunchpadFormView):
     """Base class for bug listings."""
 
+    # These widgets are customised so as to keep the presentation of this view
+    # and its descendants consistent after refactoring to use
+    # LaunchpadFormView as a parent.
     custom_widget('searchtext', NewLineToSpacesWidget)
     custom_widget('status_upstream', LabeledMultiCheckBoxWidget)
     custom_widget('tag', BugTagsWidget)
@@ -1419,7 +1422,8 @@ class BugTaskSearchListingView(LaunchpadFormView):
         # We call self._validate() here because LaunchpadFormView only
         # validates the form if an action is submitted but, because this form
         # can be called through a query string, we don't want to require an
-        # action.
+        # action. We pass an empty dict to _validate() because all the data
+        # needing validation is already available internally to self.
         self._validate(None, {})
 
     @property
