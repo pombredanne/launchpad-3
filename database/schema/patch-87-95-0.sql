@@ -2,7 +2,7 @@ SET client_min_messages=ERROR;
 
 CREATE TABLE OpenIdRPConfig (
   id serial PRIMARY KEY,
-  realm text NOT NULL,
+  trust_root text NOT NULL,
   displayname text NOT NULL,
   logo integer,
   allowed_sreg text,
@@ -11,6 +11,7 @@ CREATE TABLE OpenIdRPConfig (
     FOREIGN KEY (logo) REFERENCES LibraryFileAlias(id)
 );
 
-CREATE UNIQUE INDEX openidrpconfig__realm__key ON OpenIdRPConfig(realm);
+CREATE UNIQUE INDEX openidrpconfig__trust_root__key
+  ON OpenIdRPConfig(trust_root);
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 95, 0);
