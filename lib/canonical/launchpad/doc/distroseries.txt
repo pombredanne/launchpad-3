@@ -802,8 +802,8 @@ allows the callsite to specify one and then the result will be
 restricted to it.
 
    >>> debian_archive = getUtility(IDistributionSet)['debian'].main_archive
-   >>> debian_archive.purpose
-   <Item PRIMARY (1) from <class 'canonical.lp.dbschema.ArchivePurpose'>>
+   >>> print debian_archive.purpose.title
+   Primary Archive.
 
    >>> hoary.getSourcePackagePublishing(
    ...     PackagePublishingStatus.PUBLISHED,

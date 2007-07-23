@@ -801,7 +801,7 @@ potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
 
 potemplatenames_index = 'Template names in Launchpad'
 
-ppa_list = 'Personal Package Archive List'
+ppa_list = ContextTitle('%s Personal Package Archives')
 
 product_add = 'Register a project in Launchpad'
 

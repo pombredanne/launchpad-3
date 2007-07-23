@@ -22,6 +22,7 @@ from canonical.codehosting.tests.servers import (
 from canonical.codehosting.transport import branch_id_to_path
 from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+from canonical.lp import dbschema
 
 
 class SSHTestCase(ServerTestCase, TestCaseWithRepository):
@@ -62,6 +63,9 @@ class SSHTestCase(ServerTestCase, TestCaseWithRepository):
         the SFTP server, which is running in the Twisted reactor in the main
         thread.
         """
+
+        # XXX: JonathanLange 2007-07-17, This swallows errors. It should
+        # re-raise errors instead.
         self.runInChdir(
             self.server.runAndWaitForDisconnect,
             self.run_bzr_captured, ['push', remote_url], retcode=None)
@@ -83,9 +87,9 @@ class SSHTestCase(ServerTestCase, TestCaseWithRepository):
             relpath = ''
         return self.server.get_url(username) + relpath
 
-    def getHostedBranch(self, personName, productName, branchName):
+    def getDatabaseBranch(self, personName, productName, branchName):
         """Look up and return the specified branch from the database."""
-        owner = database.Person.byName('testuser')
+        owner = database.Person.byName(personName)
         if productName is None:
             product = None
         else:
@@ -179,7 +183,7 @@ class AcceptanceTests(SSHTestCase):
 
         # Rename branch in the database
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getHostedBranch('testuser', None, 'test-branch')
+        branch = self.getDatabaseBranch('testuser', None, 'test-branch')
         branch_id = branch.id
         branch.name = 'renamed-branch'
         LaunchpadZopelessTestSetup().txn.commit()
@@ -235,7 +239,7 @@ class AcceptanceTests(SSHTestCase):
         self.push(self.getTransportURL('~testuser/+junk/test-branch'))
 
         # Retrieve the branch from the database.
-        branch = self.getHostedBranch('testuser', None, 'test-branch')
+        branch = self.getDatabaseBranch('testuser', None, 'test-branch')
 
         self.assertEqual(None, branch.url)
         # If we get this far, the branch has been correctly inserted into the
@@ -256,7 +260,7 @@ class AcceptanceTests(SSHTestCase):
 
         # Retrieve the branch from the database.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getHostedBranch('testuser', None, 'totally-new-branch')
+        branch = self.getDatabaseBranch('testuser', None, 'totally-new-branch')
         LaunchpadZopelessTestSetup().txn.abort()
 
         self.assertEqual(
@@ -270,7 +274,7 @@ class AcceptanceTests(SSHTestCase):
 
         # Retrieve the branch from the database.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getHostedBranch('testuser', None, 'totally-new-branch')
+        branch = self.getDatabaseBranch('testuser', None, 'totally-new-branch')
         # Confirm that the branch hasn't had a mirror requested yet. Not core
         # to the test, but helpful for checking internal state.
         self.assertNotEqual(None, branch.mirror_request_time)
@@ -286,7 +290,7 @@ class AcceptanceTests(SSHTestCase):
 
         # Retrieve the branch from the database.
         LaunchpadZopelessTestSetup().txn.begin()
-        branch = self.getHostedBranch('testuser', None, 'totally-new-branch')
+        branch = self.getDatabaseBranch('testuser', None, 'totally-new-branch')
         self.assertNotEqual(None, branch.mirror_request_time)
         LaunchpadZopelessTestSetup().txn.abort()
 
@@ -295,7 +299,8 @@ class AcceptanceTests(SSHTestCase):
         # Trying to get information about a private branch should fail as if
         # the branch doesn't exist.
 
-        # Make a private branch. 'salgado' is a member of landscape-developers.
+        # Make a private branch. 'salgado' is a member of
+        # landscape-developers.
         branch_url = self.pushNewBranch(
             'landscape-developers', 'landscape', 'some-branch',
             creator='salgado')
@@ -316,6 +321,17 @@ class SmartserverTests(SSHTestCase):
 
     def getDefaultServer(self):
         return make_bzr_ssh_server()
+
+    def makeMirroredBranch(self, person_name, product_name, branch_name):
+        ro_branch_url = self.pushNewBranch(
+            person_name, product_name, branch_name)
+
+        # Mark as mirrored.
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = self.getDatabaseBranch(person_name, product_name, branch_name)
+        branch.branch_type = dbschema.BranchType.MIRRORED
+        LaunchpadZopelessTestSetup().txn.commit()
+        return ro_branch_url
 
     @deferToThread
     def test_can_read_readonly_branch(self):
@@ -338,6 +354,47 @@ class SmartserverTests(SSHTestCase):
 
         # Push the local branch to the remote url
         remote_url = self.getTransportURL('~sabdfl/+junk/ro-branch')
+        self.push(remote_url)
+        remote_revision = self.getLastRevision(remote_url)
+
+        # UNCHANGED!
+        self.assertEqual(revision, remote_revision)
+
+    @deferToThread
+    def test_can_read_mirrored_branch(self):
+        # Users should be able to read mirrored branches that they own.
+        # Added to catch bug 126245.
+        ro_branch_url = self.makeMirroredBranch('testuser', 'firefox', 'mirror')
+        revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
+        remote_revision = self.getLastRevision(
+            self.getTransportURL('~testuser/firefox/mirror'))
+        self.assertEqual(revision, remote_revision)
+
+    @deferToThread
+    def test_can_read_unowned_mirrored_branch(self):
+        # Users should be able to read mirrored branches even if they don't own
+        # those branches.
+        ro_branch_url = self.makeMirroredBranch('sabdfl', 'firefox', 'mirror')
+        revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
+        remote_revision = self.getLastRevision(
+            self.getTransportURL('~sabdfl/firefox/mirror'))
+        self.assertEqual(revision, remote_revision)
+
+    @deferToThread
+    def test_cant_write_to_mirrored_branch(self):
+        # You should not ever be able to write directly to a mirrored branch.
+        ro_branch_url = self.makeMirroredBranch('testuser', 'firefox', 'mirror')
+        revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
+
+        # Create a new revision on the local branch.
+        tree = WorkingTree.open(self.local_branch.base)
+        tree.commit('Empty commit', rev_id='rev2')
+
+        # Push the local branch to the remote url
+        remote_url = self.getTransportURL('~testuser/firefox/mirror')
+
+        # This push fails, but the helper method captures the error (which is
+        # reported via stderr and exit codes).
         self.push(remote_url)
         remote_revision = self.getLastRevision(remote_url)
 

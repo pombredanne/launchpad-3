@@ -34,7 +34,7 @@ class PouringLoop:
         # to be a problem though since we allocated all these ids in one
         # single SQL statement.  No time for gaps to form.
         self.cur.execute("SELECT min(id), max(id) FROM %s" % from_table)
-        self.lowest_id, self.highest_id = self.cur.fetchall()[0]
+        self.lowest_id, self.highest_id = self.cur.fetchone()
 
         if self.lowest_id is None:
             # Table is empty.

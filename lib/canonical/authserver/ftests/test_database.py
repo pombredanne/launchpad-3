@@ -29,7 +29,8 @@ from canonical.authserver.database import (
     DatabaseBranchDetailsStorage)
 from canonical.lp import dbschema
 
-from canonical.launchpad.ftests.harness import LaunchpadTestCase
+from canonical.launchpad.ftests.harness import (
+    LaunchpadTestCase, LaunchpadTestSetup)
 
 from canonical.testing.layers import LaunchpadScriptLayer
 
@@ -351,6 +352,24 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         self.assertEqual(13, branch_id)
         self.assertEqual(READ_ONLY, permissions)
 
+    def test_getBranchInformation_mirrored(self):
+        # Mirrored branches cannot be written to by the smartserver or SFTP
+        # server.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'name12', 'firefox', 'main')
+        self.assertEqual(1, branch_id)
+        self.assertEqual(READ_ONLY, permissions)
+
+    def test_getBranchInformation_imported(self):
+        # Imported branches cannot be written to by the smartserver or SFTP
+        # server.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'vcs-imports', 'gnome-terminal', 'import')
+        self.assertEqual(75, branch_id)
+        self.assertEqual(READ_ONLY, permissions)        
+
     def test_getBranchInformation_private(self):
         # When we get the branch information for a private branch that is
         # hidden to us, it is an if the branch doesn't exist at all.
@@ -630,6 +649,11 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
     def setUp(self):
         TestDatabaseSetup.setUp(self)
         self.storage = DatabaseBranchDetailsStorage(None)
+
+    def tearDown(self):
+        """Tear down the test and reset the database."""
+        LaunchpadTestSetup().force_dirty_database()
+        TestDatabaseSetup.tearDown(self)
 
     def test_getBranchPullQueue(self):
         # Set up the database so the vcs-import branch will appear in the queue.

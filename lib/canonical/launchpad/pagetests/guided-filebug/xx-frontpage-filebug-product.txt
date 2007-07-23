@@ -34,6 +34,14 @@ A link will be included to take the user back to the +filebug page:
     >>> user_browser.getControl('Summary').value
     ''
 
+We show a list of similar bugs later and it would be good to show at
+least one completed bug. We need to prepare here:
+
+    >>> user_browser.open(
+    ...     'http://bugs.launchpad.dev/firefox/+bug/6/+editstatus')
+    >>> user_browser.getControl('Status').value = ['Fix Released']
+    >>> user_browser.getControl('Save Changes').click()
+
 If we enter an non-existent product, we get an error message.
 
     >>> user_browser.open('http://bugs.launchpad.dev/bugs/+filebug/')
@@ -58,9 +66,11 @@ Selecting a valid product will take us to the next filebug step.
     >>> from canonical.launchpad.ftests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
     #6 Firefox crashes when Save As dialog for a nonexistent window is closed
-    Open, last updated 2006-05-19
+    Closed, last updated ... seconds ago
     #1 Firefox does not support SVG
     Open, last updated 2006-05-19
+    #5 Firefox install instructions should be complete
+    Open, last updated 2006-07-14
 
 Entering a description and submitting the bug takes the user to the bug
 page.

@@ -62,7 +62,7 @@ The GNOME standard string for credits is now available:
   >>> translation = find_tag_by_id(
   ...     user_browser.contents, 'msgset_199_es_translation_0')
   >>> print translation.renderContents().strip()
-  carlos@canonical.com
+  (no translation yet)
 
 And the same for KDE one.
 
@@ -80,5 +80,5 @@ Also, suggestions should not appear.
 
   >>> suggestion = find_tag_by_id(
   ...     user_browser.contents, 'msgset_199_es_suggestion_709_0')
-  >>> print suggestion.renderContents().strip()
-  jtv@canonical.com
+  >>> print suggestion
+  None

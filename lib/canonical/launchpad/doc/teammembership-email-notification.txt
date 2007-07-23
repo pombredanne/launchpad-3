@@ -617,8 +617,8 @@ is automatically renewed.
     >>> from canonical.lp.dbschema import TeamMembershipRenewalPolicy
     >>> utc_now = datetime.now(pytz.timezone('UTC'))
     >>> lp_admins = personset.getByName('admins')
-    >>> lp_admins.renewal_policy
-    <Item NONE ...TeamMembershipRenewalPolicy...
+    >>> print lp_admins.renewal_policy.title
+    invite them to apply for renewal
 
     >>> sabdfl_on_admins = membershipset.getByPersonAndTeam(sabdfl, lp_admins)
 
