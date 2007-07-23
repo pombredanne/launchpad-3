@@ -129,8 +129,7 @@ class BranchListingView(LaunchpadFormView):
         elif lifecycle_filter == BranchLifecycleStatusFilter.CURRENT:
             return DEFAULT_BRANCH_STATUS_IN_LISTING
         else:
-            # return (BranchLifecycleStatus.items[lifecycle_filter.value], )
-            return (lifecycle_filter, )
+            return (BranchLifecycleStatus.items[lifecycle_filter.value], )
 
     def branches(self):
         """All branches related to this target, sorted for display."""
