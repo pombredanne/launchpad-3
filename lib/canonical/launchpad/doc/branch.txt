@@ -344,7 +344,7 @@ The owner's name is usually not displayed in branch listings, but it is used in
 the sort key to guarantee a predictable sort order. This relies on the fact
 that (owner, product, name) is unique for all branches.
 
-    >>> from canonical.lp.dbschema import BranchLifecycleStatus
+    >>> from canonical.launchpad.interfaces import BranchLifecycleStatus
     >>> gterm_slowness = branchset[19]
     >>> gterm_slowness.sort_key
     (u'gnome-terminal', ..., u'Sample Person', u'slowness', u'name12')

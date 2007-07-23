@@ -1303,11 +1303,11 @@ Invalid importance:
         importance foo
     ...
     The 'importance' command expects any of the following arguments:
-    undecided, wishlist, low, medium, high, critical
+    critical, high, medium, low, wishlist, undecided
     <BLANKLINE>
     For example:
     <BLANKLINE>
-        importance undecided
+        importance critical
     ...
 
 XXX mpt 20060516: "importance undecided" is a silly example, but customizing it

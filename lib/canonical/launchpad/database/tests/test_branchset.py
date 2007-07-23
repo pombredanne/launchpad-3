@@ -9,11 +9,12 @@ from unittest import TestCase, TestLoader
 from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
+    BranchLifecycleStatus, BranchCreationForbidden,
+    BranchCreatorNotMemberOfOwnerTeam,
     IBranchSet, IPersonSet, IProductSet)
 
 from canonical.lp.dbschema import (
-    BranchLifecycleStatus, BranchType, BranchVisibilityRule,
+    BranchType, BranchVisibilityRule,
     PersonCreationRationale, TeamSubscriptionPolicy)
 
 from canonical.testing import LaunchpadFunctionalLayer
