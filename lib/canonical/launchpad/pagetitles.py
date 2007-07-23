@@ -121,6 +121,9 @@ bounty_index = ContextTitle(smartquote('Bounty "%s" in Launchpad'))
 
 bounty_subscription = ContextTitle(smartquote('Subscription to bounty "%s"'))
 
+branch_associations = ContextDisplayName(smartquote(
+    '"%s" branch associations'))
+
 branch_edit = ContextDisplayName(smartquote('Change "%s" branch details'))
 
 branch_edit_subscription = ContextDisplayName(smartquote(
@@ -442,6 +445,16 @@ errorservice_tbentry = 'Traceback entry'
 
 faq = 'Launchpad Frequently Asked Questions'
 
+faq_edit = ContextId('Edit FAQ #%s details')
+
+def faq_index(context, view):
+    return (
+        smartquote('%s FAQ #%d: "%s"') %
+        (context.target.displayname, context.id, context.title))
+
+def faq_listing(context, view):
+    return view.heading
+
 def hasmentoringoffers_mentoring(context, view):
     if IPerson.providedBy(context):
         if context.teamowner is None:
@@ -524,6 +537,17 @@ launchpad_librarianfailure = "Sorry, you can't do this right now"
 # launchpad_widget_macros doesn't need a title.
 
 launchpadstatisticset_index = 'Launchpad statistics'
+
+loginservice_email_sent = 'Launchpad Login Service - Email sent'
+
+def loginservice_authorize(context, view):
+    return 'Authenticate to %s' % view.rp_info['title']
+
+loginservice_login = 'Launchpad Login Service'
+
+loginservice_newaccount = 'Create a new account'
+
+loginservice_resetpassword = 'Reset your password'
 
 logintoken_claimprofile = 'Claim Launchpad profile'
 
@@ -777,7 +801,7 @@ potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
 
 potemplatenames_index = 'Template names in Launchpad'
 
-ppa_list = 'Personal Package Archive List'
+ppa_list = ContextTitle('%s Personal Package Archives')
 
 product_add = 'Register a project in Launchpad'
 
@@ -911,6 +935,9 @@ question_change_status = ContextId('Change status of question #%s')
 
 question_confirm_answer = ContextId('Confirm an answer to question #%s')
 
+def question_createfaq(context, view):
+    return "Create a FAQ for %s" % view.faq_target.displayname
+
 question_edit = ContextId('Edit question #%s details')
 
 question_history = ContextId('History of question #%s')
@@ -922,6 +949,8 @@ def question_index(context, view):
     return text
 
 question_linkbug = ContextId('Link question  #%s to a bug report')
+
+question_linkfaq = ContextId('Is question #%s a FAQ?')
 
 def question_listing(context, view):
     return view.pagetitle
