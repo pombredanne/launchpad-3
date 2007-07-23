@@ -55,7 +55,7 @@ def main():
             try:
                 hostname, scriptname = arg.split(':')
             except TypeError:
-                print "%r is not in the format 'host:scriptname'" % (arg,))
+                print "%r is not in the format 'host:scriptname'" % arg
                 return 3
             hosts_scripts.append((hostname, scriptname))
     except ValueError:
@@ -75,7 +75,7 @@ def main():
                 scriptname, completed_from, completed_to)
             if failure_msg is not None:
                 msg.append("%s:%s" % (hostname, scriptname))
-                error_found = 2
+                error_found = True
         if error_found:
             # Construct our return message
             print "Scripts failed to run: %s" % ', '.join(msg)
