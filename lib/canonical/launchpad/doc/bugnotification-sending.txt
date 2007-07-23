@@ -997,10 +997,10 @@ filled with data about that bug:
 If we take a closer look at a notification, we can see that
 X-Launchpad-Bug headers were added:
 
-    >>> for bug_notifications, messages in get_email_notifications(
-    ...     notifications):
-    ...     for message in messages:
-    ...         sorted(message.get_all('X-Launchpad-Bug'))
+    >>> [(bug_notifications, messages)] = get_email_notifications(
+    ...     notifications)
+    >>> [message] = messages
+    >>> sorted(message.get_all('X-Launchpad-Bug'))
     [u'distribution=debian; distroseries=sarge;... milestone=3.1;...',
      u'distribution=debian; distroseries=woody;...',
      u'distribution=debian; sourcepackage=mozilla-firefox; component=...']
