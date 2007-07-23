@@ -48,7 +48,7 @@ PER_HOST_REQUESTS = 2
 # We limit the overall number of simultaneous requests as well to prevent
 # them from stalling and timing out before they even get a chance to
 # start connecting.
-OVERALL_REQUESTS = 200
+OVERALL_REQUESTS = 100
 overall_semaphore = DeferredSemaphore(OVERALL_REQUESTS)
 
 
