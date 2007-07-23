@@ -1792,7 +1792,7 @@ def send_branch_modified_notifications(branch, event):
             old_item = delta['old']
             new_item = delta['new']
             info_lines.append("%s%s: %s => %s" % (
-                indent, title, str(old_item), str(new_item)))
+                indent, title, old_item, new_item))
 
     # lifecycle_status is different as it is an Enum type.
     if branch_delta.lifecycle_status is not None:
