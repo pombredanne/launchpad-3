@@ -605,7 +605,7 @@ DBSchema the item comes from.
     >>> test_tales('deb/enumvalue:CHEESEFISH', deb=udeb)
     Traceback (most recent call last):
     ...
-    TraversalError: 'The BinaryPackageFormat dbschema does not have a value CHEESEFISH.'
+    TraversalError: 'The enumerated type BinaryPackageFormat does not have a value CHEESEFISH.'
 
 It is possible for dbschemas to have a 'None' value.  This is a bit awkward,
 because when the value is None, we can't do any checking whether a new value
@@ -623,4 +623,4 @@ wrapped dbschema items too:
     >>> test_tales('deb/enumvalue:CHEESEFISH', deb=wrapped_deb)
     Traceback (most recent call last):
     ...
-    TraversalError: 'The BinaryPackageFormat dbschema does not have a value CHEESEFISH.'
+    TraversalError: 'The enumerated type BinaryPackageFormat does not have a value CHEESEFISH.'
