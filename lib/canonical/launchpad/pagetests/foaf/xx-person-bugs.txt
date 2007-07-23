@@ -27,6 +27,8 @@ more than one target (https://launchpad.net/bugs/1357).
         mozilla-firefox (Debian Woody) Medium New
     9 Thunderbird crashes
         thunderbird (Ubuntu) Medium Confirmed
+    2 Blackhole Trash folder
+        Ubuntu Medium New
     1 Firefox does not support SVG
         firefox (upstream) Low New
     2 Blackhole Trash folder
@@ -35,6 +37,8 @@ more than one target (https://launchpad.net/bugs/1357).
         mozilla-firefox (Debian) Low Confirmed
     2 Blackhole Trash folder
         mozilla-firefox (Debian) Low Confirmed
+    2 Blackhole Trash folder
+        Ubuntu Hoary Undecided New
 
 This report is also the default page in the person context on the bugs
 virtual host:
@@ -43,10 +47,12 @@ virtual host:
     >>> print anon_browser.title
     Bugs related to Sample Person
 
+
 == More specific listings ==
 
 On a person bugs facet we get links to all listings of bugs we have for that
 person.
+
 
 === Assigned bugs ===
 
@@ -62,6 +68,7 @@ person.
     2 Blackhole Trash folder
         mozilla-firefox (Debian) Low Confirmed
 
+
 === Commented bugs ===
 
     >>> anon_browser.getLink('List commented bugs').click()
@@ -70,12 +77,18 @@ person.
     >>> print anon_browser.url
     http://bugs.launchpad.dev/~name12/+commentedbugs
 
+No Privileges Person has commented on two bugs, which will be returned by the
+commented bug search (the bugs will be listed several times over; it is enough
+for us to test for the first instances of each here. This is an instance of Bug
+1357).
+
     >>> print_bugtasks(anon_browser.contents)
     1 Firefox does not support SVG
         mozilla-firefox (Ubuntu) Medium New
     2 Blackhole Trash folder
         mozilla-firefox (Debian Woody) Medium New
     ...
+
 
 === Reported bugs ===
 
@@ -102,6 +115,7 @@ person.
         mozilla-firefox (Debian) Low Confirmed
     2 Blackhole Trash folder
         mozilla-firefox (Debian) Low Confirmed
+
 
 === Subscribed bugs ===
 

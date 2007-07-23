@@ -289,6 +289,7 @@ render the overview report.
     >>> ubuntu_firefox_bugcounts['inprogress_bugs_url']
     u'.../~name16/+packagebugs-search?field.distribution=ubuntu&field.sourcepackagename=mozilla-firefox&field.status=In+Progress&search=Search'
 
+
 == Bugs commented on by a Person ==
 
 It is possible to search for all the bugs commented on by a specific Person
@@ -303,7 +304,8 @@ commented on any bugs, viewing his +commentedbugs page will return no bugs:
 
 If No Privileges Person comments on bug one, his +commentedbugs page will list
 that bug as being one of the bugs on which he has commented. The bug will be
-listed three times since there are three BugTasks for that particular bug:
+listed three times since there are three BugTasks for that particular bug (see
+bug 1357):
 
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> bug_one = getUtility(IBugSet).get(1)

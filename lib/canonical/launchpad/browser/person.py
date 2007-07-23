@@ -1535,7 +1535,7 @@ class PersonCommentedBugTaskSearchListingView(BugTaskSearchListingView):
         return "Search bugs commented on by %s" % self.context.displayname
 
     def getSimpleSearchURL(self):
-        """Return a URL that can be usedas an href to the simple search."""
+        """Return a URL that can be used as an href to the simple search."""
         return canonical_url(self.context) + "/+commentedbugs"
 
 
