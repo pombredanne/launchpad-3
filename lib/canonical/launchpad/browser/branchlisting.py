@@ -18,7 +18,8 @@ from canonical.lp import decorates
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    BranchLifecycleStatusFilter, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    BranchLifecycleStatus, BranchLifecycleStatusFilter,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchSet, IBugBranchSet, IBranchBatchNavigator, IBranchLifecycleFilter)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
@@ -129,7 +130,7 @@ class BranchListingView(LaunchpadFormView):
         elif lifecycle_filter == BranchLifecycleStatusFilter.CURRENT:
             return DEFAULT_BRANCH_STATUS_IN_LISTING
         else:
-            return (BranchLifecycleStatus.items[lifecycle_filter.value], )
+            return (BranchLifecycleStatus.items[lifecycle_filter.name], )
 
     def branches(self):
         """All branches related to this target, sorted for display."""
