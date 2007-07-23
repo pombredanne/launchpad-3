@@ -63,6 +63,7 @@ class BugWatch(SQLBase):
             BugTrackerType.DEBBUGS:     'cgi-bin/bugreport.cgi?bug=%s',
             BugTrackerType.ROUNDUP:     'issue%s',
             BugTrackerType.SOURCEFORGE: 'support/tracker.php?aid=%s',
+            BugTrackerType.MANTIS:      'view.php?id=%s',
         }
         bt = self.bugtracker.bugtrackertype
         if not url_formats.has_key(bt):
@@ -119,6 +120,7 @@ class BugWatchSet(BugSetBase):
             BugTrackerType.ROUNDUP: self.parseRoundupURL,
             BugTrackerType.SOURCEFORGE: self.parseSourceForgeURL,
             BugTrackerType.TRAC: self.parseTracURL,
+            BugTrackerType.MANTIS: self.parseMantisURL,
         }
 
     def get(self, watch_id):
@@ -193,6 +195,19 @@ class BugWatchSet(BugSetBase):
         elif query.get('issue'):
             # This is a Issuezilla URL.
             remote_bug = query['issue']
+        else:
+            return None
+        base_path = path[:-len(bug_page)]
+        base_url = urlunsplit((scheme, host, base_path, '', ''))
+        return base_url, remote_bug
+
+    def parseMantisURL(self, scheme, host, path, query):
+        """Extract the Mantis base URL and bug ID."""
+        bug_page = 'view.php'
+        if not path.endswith(bug_page):
+            return None
+        if query.get('id'):
+            remote_bug = query['id']
         else:
             return None
         base_path = path[:-len(bug_page)]

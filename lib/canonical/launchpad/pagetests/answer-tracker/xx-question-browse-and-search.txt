@@ -21,16 +21,13 @@ He discovers that there are no questions on the Kubuntu Answers page:
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no questions for Kubuntu with the requested statuses.
 
-The same is true for Projects that do not have Products.
+For projects that don't have products, the Answers facet is disabled.
 
     >>> browser.open('http://launchpad.dev/aaa')
-    >>> browser.getLink('Answers').click()
-    >>> print browser.title
-    Questions for the Test Project
-
-    >>> print find_main_content(browser.contents).first('p').renderContents()
-    There are no questions for the Test Project with the requested statuses.
-
+    >>> browser.getLink('Answers')
+    Traceback (most recent call last):
+     ...
+    LinkNotFoundError
 
 == Browsing Questions ==
 

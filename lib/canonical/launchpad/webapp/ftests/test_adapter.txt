@@ -13,7 +13,11 @@ Imports and test setup:
     >>> from zope.app.rdb.interfaces import IZopeDatabaseAdapter
     >>> from sqlos.interfaces import IConnectionName
     >>> from canonical.config import config
+    >>> import canonical.launchpad.webapp.adapter
     >>> from canonical.launchpad.webapp.adapter import *
+    >>> orig_db_statement_timeout = config.launchpad.db_statement_timeout
+    >>> orig_db_statement_timeout_precision = (
+    ...     config.launchpad.db_statement_timeout_precision)
 
 
 The Launchpad database connection is created by getting the
@@ -45,15 +49,22 @@ which corresponds to no timeout:
     >>> print config.launchpad.db_statement_timeout
     None
 
+
 Connections created with the database adapter will use this timeout as
 the Postgres statement timeout (a value of zero means no timeout):
 
+    >>> def current_statement_timeout(cursor):
+    ...     cursor.execute('SHOW statement_timeout')
+    ...     return cursor.fetchone()[0]
+    ...
+
+    >>> set_request_started()
     >>> conn = da()
     >>> cursor = conn.cursor()
-    >>> cursor.execute('SHOW statement_timeout')
-    >>> print cursor.fetchone()[0]
+    >>> print current_statement_timeout(cursor)
     0
     >>> da.disconnect()
+    >>> clear_request_started()
 
 
 Using the builtin pg_sleep() function, we can trigger the
@@ -62,11 +73,74 @@ timeout by sleeping for 200ms with a 100ms statement timeout:
     >>> config.launchpad.db_statement_timeout = 100
     >>> conn = da()
     >>> cursor = conn.cursor()
+    >>> set_request_started()
+    >>> print current_statement_timeout(cursor)
+    100ms
     >>> cursor.execute('SELECT pg_sleep(0.200)')
     Traceback (most recent call last):
       ...
     RequestStatementTimedOut: SELECT pg_sleep(0.200)
     >>> da.disconnect()
+    >>> clear_request_started()
+
+
+The statement_timeout will be adjusted during the transaction, within
+a certain precision. To test this reliably, we need a time machine to
+avoid random failures under load. Lets build one and plug it in:
+
+    >>> _now = 0
+    >>> def fake_time():
+    ...     return float(_now)
+    >>> def time_travel(delta):
+    ...     global _now
+    ...     _now += delta
+    >>> canonical.launchpad.webapp.adapter.time = fake_time # Monkey patch
+
+
+Now issue three statements, the first one taking less than the precision
+time but the second going over the threshold. We use the time machine
+to fake how long things take.
+
+    >>> config.launchpad.db_statement_timeout = 10000
+    >>> config.launchpad.db_statement_timeout_precision = 1000
+    >>> conn = da()
+    >>> cursor = conn.cursor()
+    >>> set_request_started()
+
+    >>> cursor.execute('SELECT TRUE')
+    >>> print current_statement_timeout(cursor)
+    10s
+    >>> time_travel(0.5) # Forward in time 0.5 seconds
+
+    >>> cursor.execute('SELECT TRUE')
+    >>> print current_statement_timeout(cursor)
+    10s
+    >>> time_travel(0.6) # Forward in time 0.6 seconds, now over precision
+
+This invokation, the PostgreSQL statement timeout will be updated before
+issuing the SQL command as we have exceeded the precision period:
+
+    >>> cursor.execute('SELECT TRUE')
+    >>> print current_statement_timeout(cursor)
+    8900ms
+    >>> time_travel(8.89) # 0.01s remaining before hard timeout
+
+
+This final invokation, we will actually sleep to ensure that the
+timeout being reported by PostgreSQL is actually working:
+
+    >>> cursor.execute('SELECT pg_sleep(0.2)')
+    Traceback (most recent call last):
+      ...
+    RequestStatementTimedOut: SELECT pg_sleep(0.2)
+    >>> da.disconnect()
+    >>> clear_request_started()
+
+
+Turn off the timemachine so nobody hurts themselves:
+
+    >>> import time
+    >>> canonical.launchpad.webapp.adapter.time = time.time
 
 
 Set the timeout to 5000ms for the next tests:
@@ -74,9 +148,10 @@ Set the timeout to 5000ms for the next tests:
     >>> config.launchpad.db_statement_timeout = 5000
     >>> conn = da()
     >>> cursor = conn.cursor()
-    >>> cursor.execute('SHOW statement_timeout')
-    >>> print cursor.fetchone()[0]
+    >>> set_request_started()
+    >>> print current_statement_timeout(cursor)
     5s
+    >>> clear_request_started()
 
 
 Request Timeout
@@ -126,7 +201,7 @@ transaction will be doomed, and future queries will fail:
     ...     print str(e)
     ERROR:  current transaction is aborted, commands ignored until end of transaction block
     <BLANKLINE>
-    /*...*/ SELECT 1
+    SELECT 1
 
 Cleanup:
 
@@ -208,8 +283,8 @@ Now begin a request, and issue a number of statements:
     >>> cursor.execute('SELECT 2')
     >>> for starttime, endtime, statement in get_request_statements():
     ...     print statement
-    /*...*/ SELECT 1
-    /*...*/ SELECT 2
+    SELECT 1
+    SELECT 2
 
 After we complete the request, the statement log is cleared:
 
@@ -343,7 +418,7 @@ continue functioning as normal.
     canonical.launchpad.webapp.adapter.RetryPsycopgIntegrityError raised
     ERROR:  duplicate key violates unique constraint "jabberid_jabberid_key"
     <BLANKLINE>
-    /*...*/ UPDATE JabberID SET jabberid='dupe' WHERE id=2
+    UPDATE JabberID SET jabberid='dupe' WHERE id=2
 
 Early versions of psycopg would raise some integrity violations as
 ProgrammingErrors. We should confirm we are running a version of psycopg
@@ -465,3 +540,12 @@ thread will have succeeded.
     Traceback (most recent call last):
     ...
     Retry: ...
+
+
+Reset out config:
+
+    >>> config.launchpad.db_statement_timeout = orig_db_statement_timeout
+    >>> config.launchpad.db_statement_timeout_precision = (
+    ...     orig_db_statement_timeout_precision)
+
+
