@@ -79,7 +79,7 @@
 
     <!-- TALES enum-value: namespace -->
     <adapter
-        for="canonical.launchpad.webapp.enum.Item"
+        for="canonical.launchpad.webapp.enum.BaseItem"
         provides="zope.app.traversing.interfaces.IPathAdapter"
         factory="canonical.launchpad.webapp.tales.EnumValueAPI"
         name="enumvalue"
