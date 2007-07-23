@@ -30,7 +30,11 @@
     <require permission="launchpad.AnyPerson"
       attributes="newQuestion addAnswerContact removeAnswerContact" />
   </content>
-
+  <adapter
+    provides="canonical.launchpad.interfaces.IFAQTarget"
+    for="canonical.launchpad.interfaces.IDistributionSourcePackage"
+    factory="canonical.launchpad.components.answertracker.distrosourcepackage_to_faqtarget"
+    />
   <browser:defaultView
     for="canonical.launchpad.interfaces.IDistributionSourcePackage"
     name="+index" />

@@ -73,7 +73,7 @@ Let's set a different approver and add a subscriber.
     >>> sabdfl = getUtility(IPersonSet).getByEmail('mark@hbd.com')
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> svg_support.approver = sabdfl
-    >>> svg_support.subscribe(sample_person, essential=False)
+    >>> svg_support.subscribe(sample_person, sample_person, False)
     <...>
 
 Now if we edit the status, a notification will be sent to all the
@@ -92,6 +92,9 @@ previous people, and to the approver and the added subscriber:
     u'Updated...'
     >>> transaction.commit()
 
+The added subscriber will also receive a notification that they
+are now subscribed.
+
     >>> x = sorted([toaddrs for fromaddr, toaddrs, message in stub.test_emails])
     >>> for addr in x: print addr
     ['andrew.bennetts@ubuntulinux.com']
@@ -101,6 +104,7 @@ previous people, and to the approver and the added subscriber:
     ['mark@hbd.com']
     ['robertc@robertcollins.net']
     ['stuart.bishop@canonical.com']
+    ['test@canonical.com']
     ['test@canonical.com']
 
 Now let's take a look at what the notification looks like:

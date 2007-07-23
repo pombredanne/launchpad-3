@@ -24,7 +24,7 @@ from zope.component import getUtility
 from zope.interface import implements, alsoProvides
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
@@ -632,7 +632,8 @@ class BugTask(SQLBase, BugTaskMixin):
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
         if (user.inTeam(self.pillar.bugcontact) or
-            user.inTeam(self.pillar.owner)):
+            user.inTeam(self.pillar.owner) or
+            user == getUtility(ILaunchpadCelebrities).bug_watch_updater):
             return True
         else:
             return new_status not in BUG_CONTACT_BUGTASK_STATUSES
@@ -968,7 +969,7 @@ class BugTaskSet:
         if not summary:
             return BugTask.select('1 = 2')
 
-        search_params.searchtext = nl_phrase_search(
+        search_params.fast_searchtext = nl_phrase_search(
             summary, Bug, ' AND '.join(constraint_clauses), ['BugTask'])
         return self.search(search_params)
 
@@ -1049,28 +1050,10 @@ class BugTaskSet:
             extra_clauses.append(where_cond)
 
         if params.searchtext:
-            searchtext_quoted = sqlvalues(params.searchtext)[0]
-            searchtext_like_quoted = quote_like(params.searchtext)
-            comment_clause = """BugTask.id IN (
-                SELECT BugTask.id
-                FROM BugTask, BugMessage,Message, MessageChunk
-                WHERE BugMessage.bug = BugTask.bug
-                    AND BugMessage.message = Message.id
-                    AND Message.id = MessageChunk.message
-                    AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
-            extra_clauses.append("""
-                ((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s) OR (%s))
-                 OR (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))
-                """ % (
-                    searchtext_quoted,searchtext_quoted, comment_clause,
-                    searchtext_like_quoted))
-            if params.orderby is None:
-                # Unordered search results aren't useful, so sort by relevance
-                # instead.
-                params.orderby = [
-                    SQLConstant("-rank(Bug.fti, ftq(%s))" % searchtext_quoted),
-                    SQLConstant(
-                        "-rank(BugTask.fti, ftq(%s))" % searchtext_quoted)]
+            extra_clauses.append(self._buildSearchTextClause(params))
+
+        if params.fast_searchtext:
+            extra_clauses.append(self._buildFastSearchTextClause(params))
 
         if params.subscriber is not None:
             clauseTables.append('BugSubscription')
@@ -1247,6 +1230,52 @@ class BugTaskSet:
             upstream_clause = " OR ".join(upstream_clauses)
             return '(%s)' % upstream_clause
         return None
+
+    def _buildSearchTextClause(self, params):
+        """Build the clause for searchtext."""
+        assert params.fast_searchtext is None, (
+            'cannot use fast_searchtext at the same time as searchtext')
+
+        searchtext_quoted = quote(params.searchtext)
+        searchtext_like_quoted = quote_like(params.searchtext)
+
+        if params.orderby is None:
+            # Unordered search results aren't useful, so sort by relevance
+            # instead.
+            params.orderby = [
+                SQLConstant("-rank(Bug.fti, ftq(%s))" % searchtext_quoted),
+                SQLConstant(
+                    "-rank(BugTask.fti, ftq(%s))" % searchtext_quoted)]
+        
+        comment_clause = """BugTask.id IN (
+            SELECT BugTask.id
+            FROM BugTask, BugMessage,Message, MessageChunk
+            WHERE BugMessage.bug = BugTask.bug
+                AND BugMessage.message = Message.id
+                AND Message.id = MessageChunk.message
+                AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
+        return """
+            ((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s) OR (%s))
+            OR (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))
+            """ % (
+                searchtext_quoted, searchtext_quoted, comment_clause,
+                searchtext_like_quoted)
+
+    def _buildFastSearchTextClause(self, params):
+        """Build the clause to use for the fast_searchtext criteria."""
+        assert params.searchtext is None, (
+            'cannot use searchtext at the same time as fast_searchtext')
+
+        fast_searchtext_quoted = quote(params.fast_searchtext)
+        
+        if params.orderby is None:
+            # Unordered search results aren't useful, so sort by relevance
+            # instead.
+            params.orderby = [
+                SQLConstant("-rank(Bug.fti, ftq(%s))" %
+                fast_searchtext_quoted)]
+
+        return "Bug.fti @@ ftq(%s)" % fast_searchtext_quoted
 
     def search(self, params, *args):
         """See canonical.launchpad.interfaces.IBugTaskSet."""

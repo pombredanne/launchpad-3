@@ -500,6 +500,7 @@ class FileBugViewBase(LaunchpadFormView):
             return None
 
     def showOptionalMarker(self, field_name):
+        """See `LaunchpadFormView`."""
         # The comment field _is_ required, but only when filing the
         # bug. Since the same form is also used for subscribing to a
         # bug, the comment field in the schema cannot be marked
@@ -510,6 +511,36 @@ class FileBugViewBase(LaunchpadFormView):
             return False
         else:
             return LaunchpadFormView.showOptionalMarker(self, field_name)
+
+    def getRelevantBugTask(self, bug):
+        """Return the first bugtask from this bug that's relevant in
+        the current context.
+
+        XXX This is a pragmatic function, not general purpose. It
+        tries to find a bugtask that can be used to pretty-up the
+        page, making it more user-friendly and informative. It's not
+        concerned by total accuracy, and will return the first
+        'relevant' bugtask it finds even if there are other
+        candidates. Be warned!  -- Gavin Panella, 2007-07-13
+        """
+        context = self.context
+        bugtasks = bug.bugtasks
+
+        if IDistribution.providedBy(context):
+            def isRelevant(bugtask, context):
+                return bugtask.distribution == context
+        elif IProject.providedBy(context):
+            def isRelevant(bugtask, context):
+                return bugtask.pillar.project == context
+        else:
+            def isRelevant(bugtask, context):
+                return bugtask.target == context
+
+        for bugtask in bugtasks:
+            if isRelevant(bugtask, context):
+                return bugtask
+        else:
+            return None
 
 
 class FileBugAdvancedView(FileBugViewBase):

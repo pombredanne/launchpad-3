@@ -3,15 +3,23 @@
 # TODO:
 #  - exercise a bit more of the authUser interface
 
+import datetime
 import unittest
 import xmlrpclib
+
+import pytz
 
 from twisted.application import strports
 from canonical.authserver.interfaces import WRITABLE
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
-from canonical.launchpad.ftests.harness import LaunchpadTestCase
+from canonical.launchpad.ftests.harness import (
+    LaunchpadTestCase, LaunchpadTestSetup)
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.config import config
+
+
+UTC = pytz.timezone('UTC')
+
 
 def _getPort():
     portDescription = config.authserver.port
@@ -27,7 +35,9 @@ class XMLRPCv1TestCase(LaunchpadTestCase):
         self.server = xmlrpclib.Server('http://localhost:%s/' % _getPort())
 
     def tearDown(self):
+        """Tear down the test and reset the database."""
         AuthserverTacTestSetup().tearDown()
+        LaunchpadTestSetup().force_dirty_database()
         LaunchpadTestCase.tearDown(self)
 
     def test_getUser(self):
@@ -111,7 +121,9 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
         self.server = xmlrpclib.Server('http://localhost:%s/v2/' % _getPort())
 
     def tearDown(self):
+        """Tear down the test and reset the database."""
         AuthserverTacTestSetup().tearDown()
+        LaunchpadTestSetup().force_dirty_database()
         LaunchpadTestCase.tearDown(self)
 
     def test_getUser(self):
@@ -179,7 +191,9 @@ class BranchAPITestCase(LaunchpadTestCase):
                                        % _getPort())
 
     def tearDown(self):
+        """Tear down the test and reset the database."""
         self.tac.tearDown()
+        LaunchpadTestSetup().force_dirty_database()
         LaunchpadTestCase.tearDown(self)
 
     def testGetBranchPullQueue(self):
@@ -200,6 +214,14 @@ class BranchAPITestCase(LaunchpadTestCase):
         # Ensure that a unicode doesn't cause mirrorFailed to raise an
         # exception.
         self.server.mirrorFailed(18, u'it broke\N{INTERROBANG}')
+
+    def testRecordSuccess(self):
+        started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
+        completed = datetime.datetime(2007, 07, 05, 19, 34, 24, tzinfo=UTC)
+        started_tuple = tuple(started.utctimetuple())
+        completed_tuple = tuple(completed.utctimetuple())
+        self.server.recordSuccess(
+            'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
 
 
 def test_suite():

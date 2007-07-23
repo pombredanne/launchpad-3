@@ -1003,5 +1003,5 @@ ProgrammingError
     ... except DatabaseError: print sys.exc_value
     ERROR:  new row for relation "bugtask" violates check constraint "bugtask_assignment_checks"
     <BLANKLINE>
-    /*...*/ INSERT INTO BugTask ...
+    INSERT INTO BugTask ...
 

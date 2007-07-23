@@ -17,6 +17,7 @@ method accepts a single parameter; an BugTaskSearchParams instance.
     >>> found_bugtasks.count() == all_public_bugtasks.count()
     True
 
+
 == Searching by bug contact ==
 
 The 'bug_contact' parameter allows you to search bugtasks that a certain
@@ -31,6 +32,7 @@ isn't a bug contact, so no bugs are found for him:
     >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
     >>> found_bugtasks.count()
     0
+
 
 === Product bug contact ===
 
@@ -59,6 +61,7 @@ bugs return all of Firefox' bugs.
     >>> for target_name in sorted(found_targets):
     ...     print target_name
     Mozilla Firefox
+
 
 === Package bug contact ===
 
@@ -90,6 +93,7 @@ previous bugs (since he is also a bug contact for the Firefox product).
     Mozilla Firefox
     mozilla-firefox (Ubuntu)
 
+
 === Distribution bug contact ===
 
 If someone is bug contact for Firefox, Firefox in Ubuntu, and Ubuntu,
@@ -107,6 +111,7 @@ twice.
     >>> found_bugtasks = bugtask_set.search(no_priv_bug_contact)
     >>> found_bugtasks.count() == firefox_bugs.count() + ubuntu_bugs.count()
     True
+
 
 == Searching in comments ==
 
@@ -145,6 +150,36 @@ will be returned by the search.
     >>> found_bugtasks.count()
     0
 
+
+== Searching using bug full-text index ==
+
+The searchtext parameter does an extensive and expensive search (it
+looks through the bug's full text index, bug comments, bugtask
+target name, etc.) For some use cases, it is often easier and cheaper
+to simply search on the bug's full text index and omit the more
+expensive search on other related information.
+
+For example, there are no bugs with the word 'Fnord' in Firefox.
+
+    >>> text_search = BugTaskSearchParams(user=None, fast_searchtext='Fnord')
+    >>> found_bugtasks = firefox.searchTasks(text_search)
+    >>> found_bugtasks.count()
+    0
+
+But if we put that word in the bug #4 description, it will be found.
+
+    >>> bug_four = getUtility(IBugSet).get(4)
+    >>> bug_four.description += (
+    ...     '\nThat happens pretty often with the Fnord Highlighter '
+    ...     'extension installed.')
+    >>> syncUpdate(bug_four)
+
+    >>> found_bugtasks = firefox.searchTasks(text_search)
+    >>> for bugtask in found_bugtasks:
+    ...     print "#%s" % bugtask.bug.id
+    #4
+
+
 == Searching by bug reporter ==
 
 The 'bug_reporter' parameter allows you to search for bugs reported by a
@@ -161,6 +196,7 @@ certain person.
     ...         bugtask.bug.owner.displayname)
     #9 in thunderbird (Ubuntu) reported by Foo Bar
     #10 in linux-source-2.6.15 (Ubuntu) reported by Foo Bar
+
 
 == Searching for nominated bugs ==
 
