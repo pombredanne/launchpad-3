@@ -785,13 +785,16 @@ def objectize_options():
     valid_components = (
         dict([(component.name, component)
               for component in Options.tosuite.components]))
-    if (Options.tocomponent and
-        Options.tocomponent not in valid_components):
-        dak_utils.fubar(
-            "%s is not a valid component for %s/%s."
-            % (Options.tocomponent, Options.todistro.name,
-               Options.tosuite.name))
-    Options.tocomponent = valid_components[Options.tocomponent]
+
+    if Options.tocomponent is not None:
+
+        if Options.tocomponent not in valid_components:
+            dak_utils.fubar(
+                "%s is not a valid component for %s/%s."
+                % (Options.tocomponent, Options.todistro.name,
+                   Options.tosuite.name))
+
+        Options.tocomponent = valid_components[Options.tocomponent]
 
     # Fix up Options.requestor
     if not Options.requestor:
