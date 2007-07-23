@@ -52,6 +52,7 @@ import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
     canonical_url, nearest_context_with_adapter, nearest_adapter)
+from canonical.launchpad.webapp.enum import enumerated_type_registry
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, nearest)
@@ -162,13 +163,13 @@ class CountAPI:
 
 
 class EnumValueAPI:
-    """Namespace to test whether a DBSchema Item has a particular value.
+    """Namespace to test whether an EnumeratedType Item has a particular value.
 
     The value is given in the next path step.
 
         tal:condition="somevalue/enumvalue:BISCUITS"
 
-    Registered for canonical.lp.dbschema.Item.
+    Registered for canonical.launchpad.webapp.enum.Item.
     """
     implements(ITraversable)
 
@@ -179,14 +180,14 @@ class EnumValueAPI:
         if self.item.name == name:
             return True
         else:
-            # Check whether this was an allowed value for this dbschema.
-            schema_items = self.item.schema_items
+            # Check whether this was an allowed value for this enumerated type.
+            enum = self.item.enum
             try:
-                schema_items[name]
-            except KeyError:
+                enum.getTermByToken(name)
+            except LookupError:
                 raise TraversalError(
-                    'The %s dbschema does not have a value %s.' %
-                    (self.item.schema_name, name))
+                    'The enumerated type %s does not have a value %s.' %
+                    (enum.name, name))
             return False
 
 
@@ -269,19 +270,13 @@ class DBSchemaAPI:
     """
     implements(ITraversable)
 
-    _all = {}
-    for name in dbschema.__all__:
-        schema = getattr(dbschema, name)
-        if (schema is not dbschema.DBSchema and
-            issubclass(schema, dbschema.DBSchema)):
-            _all[name] = schema
-
     def __init__(self, number):
         self._number = number
 
     def traverse(self, name, furtherPath):
-        if name in self._all:
-            return self._all[name].items[self._number].title
+        if name in enumerated_type_registry:
+            enum = enumerated_type_registry[name]
+            return enum.items[self._number].title
         else:
             raise TraversalError(name)
 
@@ -1478,7 +1473,7 @@ class FormattersAPI:
         # See https://lists.ubuntu.com
         #     /mailman/private/launchpad-reviews/2007-June/006081.html
         r"([\b]|[\"']?)[-/=0-9A-Z_a-z]" # first character of localname
-        r"(\.?[\"'-/=0-9A-Z_a-z+])*@" # possible . and + in localname
+        r"[.\"'-/=0-9A-Z_a-z+]*@" # possible . and + in localname
         r"[a-zA-Z]" # first character of host or domain
         r"(-?[a-zA-Z0-9])*" # possible - and numbers in host or domain
         r"(\.[a-zA-Z](-?[a-zA-Z0-9])*)+\b") # dot starts one or more domains.

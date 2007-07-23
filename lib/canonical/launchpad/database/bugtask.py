@@ -618,7 +618,8 @@ class BugTask(SQLBase, BugTaskMixin):
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
         if (user.inTeam(self.pillar.bugcontact) or
-            user.inTeam(self.pillar.owner)):
+            user.inTeam(self.pillar.owner) or
+            user == getUtility(ILaunchpadCelebrities).bug_watch_updater):
             return True
         else:
             return new_status not in BUG_CONTACT_BUGTASK_STATUSES
@@ -780,6 +781,11 @@ class BugTask(SQLBase, BugTaskMixin):
                  'componentname': component})
         else:
             raise AssertionError('Unknown BugTask context: %r' % self)
+
+        # We only want to have a milestone field in the header if there's
+        # a milestone set for the bug.
+        if self.milestone:
+            header_value += ' milestone=%s;' % self.milestone.name
 
         header_value += ((
             ' status=%(status)s; importance=%(importance)s; '
