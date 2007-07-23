@@ -1,4 +1,4 @@
-# Copyright 2004 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 
@@ -8,28 +8,72 @@ __all__ = [
     'DatabaseBranchDetailsStorage',
     ]
 
+import datetime
 import os
 
+import transaction
+
+from zope.component import getUtility
 from zope.interface import implements
+from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
-from canonical.launchpad.interfaces import UBUNTU_WIKI_URL
-from canonical.database.sqlbase import sqlvalues
+from canonical.launchpad.interfaces import (
+    UBUNTU_WIKI_URL, BranchCreationForbidden, IBranchSet, IPersonSet,
+    IProductSet)
+from canonical.launchpad.ftests import login, logout, ANONYMOUS
+from canonical.database.sqlbase import (
+    cursor, sqlvalues, clear_current_connection_cache)
 from canonical.database.constants import UTC_NOW
 from canonical.lp import dbschema
 from canonical.config import config
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
-    IUserDetailsStorageV2)
+    IUserDetailsStorageV2, READ_ONLY, WRITABLE)
+
+from twisted.internet.threads import deferToThread
+from twisted.python.util import mergeFunctionMetadata
 
 
 def utf8(x):
     if isinstance(x, unicode):
         x = x.encode('utf-8')
     return x
+
+
+def read_only_transaction(function):
+    """Decorate 'function' by wrapping it in a transaction and Zope session."""
+    def transacted(*args, **kwargs):
+        transaction.begin()
+        clear_current_connection_cache()
+        login(ANONYMOUS)
+        try:
+            return function(*args, **kwargs)
+        finally:
+            logout()
+            transaction.abort()
+    return mergeFunctionMetadata(function, transacted)
+
+
+def writing_transaction(function):
+    """Decorate 'function' by wrapping it in a transaction and Zope session."""
+    def transacted(*args, **kwargs):
+        transaction.begin()
+        clear_current_connection_cache()
+        login(ANONYMOUS)
+        try:
+            ret = function(*args, **kwargs)
+        except:
+            logout()
+            transaction.abort()
+            raise
+        logout()
+        transaction.commit()
+        return ret
+    return mergeFunctionMetadata(function, transacted)
 
 
 class UserDetailsStorageMixin:
@@ -371,79 +415,77 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
     def getBranchesForUser(self, personID):
         """See IHostedBranchStorage."""
-        ri = self.connectionPool.runInteraction
-        return ri(self._getBranchesForUserInteraction, personID)
+        return deferToThread(self._getBranchesForUserInteraction, personID)
 
-    def _getBranchesForUserInteraction(self, transaction, personID):
+    @read_only_transaction
+    def _getBranchesForUserInteraction(self, personID):
         """The interaction for getBranchesForUser."""
-        transaction.execute(utf8('''
-            SELECT Product.id, Product.name, Branch.id, Branch.name
-            FROM Product RIGHT OUTER JOIN Branch ON Branch.product = Product.id
-            WHERE Branch.owner = %s AND Branch.url IS NULL
-            ORDER BY Product.id
-            '''
-            % sqlvalues(personID))
-        )
-        branches = []
-        prevProductID = 'x'  # can never be equal to a real integer ID.
-        rows = transaction.fetchall()
-        for productID, productName, branchID, branchName in rows:
-            if productID != prevProductID:
-                prevProductID = productID
-                currentBranches = []
-                if productID is None:
-                    assert productName is None
-                    # Replace Nones with '', because standards-compliant XML-RPC
-                    # can't handle None :(
-                    productID, productName = '', ''
-                branches.append((productID, productName, currentBranches))
-            currentBranches.append((branchID, branchName))
-        return branches
+        person = getUtility(IPersonSet).get(personID)
+        login(person.preferredemail.email)
+        try:
+            branches = getUtility(
+                IBranchSet).getHostedBranchesForPerson(person)
+            branches_summary = {}
+            for branch in branches:
+                by_product = branches_summary.setdefault(branch.owner.id, {})
+                if branch.product is None:
+                    product_id, product_name = '', ''
+                else:
+                    product_id = branch.product.id
+                    product_name = branch.product.name
+                by_product.setdefault((product_id, product_name), []).append(
+                    (branch.id, branch.name))
+            return [(person_id, by_product.items())
+                    for person_id, by_product in branches_summary.iteritems()]
+        finally:
+            logout()
 
     def fetchProductID(self, productName):
         """See IHostedBranchStorage."""
-        ri = self.connectionPool.runInteraction
-        return ri(self._fetchProductIDInteraction, productName)
+        return deferToThread(self._fetchProductIDInteraction, productName)
 
-    def _fetchProductIDInteraction(self, transaction, productName):
+    @read_only_transaction
+    def _fetchProductIDInteraction(self, productName):
         """The interaction for fetchProductID."""
-        transaction.execute(utf8('''
-            SELECT id FROM Product WHERE name = %s'''
-            % sqlvalues(productName))
-        )
-        row = transaction.fetchone()
-        if row is None:
-            # No product by that name in the DB.
-            productID = ''
+        product = getUtility(IProductSet).getByName(productName)
+        if product is None:
+            return ''
         else:
-            (productID,) = row
-        return productID
+            return product.id
 
-    def createBranch(self, personID, productID, branchName):
+    def createBranch(self, loginID, personName, productName, branchName):
         """See IHostedBranchStorage."""
-        ri = self.connectionPool.runInteraction
-        return ri(self._createBranchInteraction, personID, productID,
-                  branchName)
+        return deferToThread(
+            self._createBranchInteraction, loginID, personName, productName,
+            branchName)
 
-    def _createBranchInteraction(self, transaction, personID, productID,
+    @writing_transaction
+    def _createBranchInteraction(self, loginID, personName, productName,
                                  branchName):
         """The interaction for createBranch."""
-        # Convert pseudo-None to real None (damn XML-RPC!)
-        if productID == '':
-            productID = None
+        requester_id = self._getPerson(cursor(), loginID)[0]
+        requester = getUtility(IPersonSet).get(requester_id)
+        login(requester.preferredemail.email)
+        try:
+            if productName == '+junk':
+                product = None
+            else:
+                product = getUtility(IProductSet).getByName(productName)
 
-        # Get the ID of the new branch
-        transaction.execute(
-            "SELECT NEXTVAL('branch_id_seq'); "
-        )
-        branchID = transaction.fetchone()[0]
+            person_set = getUtility(IPersonSet)
+            owner = person_set.getByName(personName)
 
-        transaction.execute(utf8('''
-            INSERT INTO Branch (id, owner, product, name, author)
-            VALUES (%s, %s, %s, %s, %s)'''
-            % sqlvalues(branchID, personID, productID, branchName, personID))
-        )
-        return branchID
+            branch_set = getUtility(IBranchSet)
+            try:
+                branch = branch_set.new(
+                    dbschema.BranchType.HOSTED, branchName, requester, owner,
+                    product, None, None, author=requester)
+            except BranchCreationForbidden:
+                return ''
+            else:
+                return branch.id
+        finally:
+            logout()
 
     def requestMirror(self, branchID):
         """See IHostedBranchStorage."""
@@ -459,6 +501,35 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         """ % sqlvalues(branchID))
         # xmlrpc doesn't let us return None. True is an acceptable substitute.
         return True
+
+    def getBranchInformation(self, loginID, userName, productName, branchName):
+        """See IHostedBranchStorage."""
+        return deferToThread(
+            self._getBranchInformationInteraction, loginID, userName,
+            productName, branchName)
+
+    @read_only_transaction
+    def _getBranchInformationInteraction(self, loginID, userName, productName,
+                                         branchName):
+        requester_id = self._getPerson(cursor(), loginID)[0]
+        requester = getUtility(IPersonSet).get(requester_id)
+        login(requester.preferredemail.email)
+        try:
+            branch = getUtility(IBranchSet).getByUniqueName(
+                '~%s/%s/%s' % (userName, productName, branchName))
+            if branch is None:
+                return '', ''
+            try:
+                branch_id = branch.id
+            except Unauthorized:
+                return '', ''
+            if (requester.inTeam(branch.owner)
+                and branch.branch_type == dbschema.BranchType.HOSTED):
+                return branch_id, WRITABLE
+            else:
+                return branch_id, READ_ONLY
+        finally:
+            logout()
 
 
 class DatabaseBranchDetailsStorage:
@@ -611,3 +682,30 @@ class DatabaseBranchDetailsStorage:
         assert transaction.rowcount in [0, 1]
         return transaction.rowcount == 1
 
+    def recordSuccess(self, name, hostname, date_started, date_completed):
+        """See `IBranchDetailsStorage`."""
+        ri = self.connectionPool.runInteraction
+        return ri(self._recordSuccessInteraction,
+                  name, hostname, date_started, date_completed)
+
+    def _recordSuccessInteraction(self, transaction, name, hostname,
+            started_tuple, completed_tuple):
+        """The interaction for recordSuccess."""
+        date_started = datetime_from_tuple(started_tuple)
+        date_completed = datetime_from_tuple(completed_tuple)
+        transaction.execute(utf8("""
+            INSERT INTO ScriptActivity
+              (name, hostname, date_started, date_completed)
+              VALUES (%s, %s, %s, %s)""" % sqlvalues(
+            name, hostname, date_started, date_completed)))
+        return transaction.rowcount == 1
+
+
+def datetime_from_tuple(time_tuple):
+    """Create a datetime from a sequence that quacks like time.struct_time.
+
+    The tm_isdst is (index 8) is ignored. The created datetime uses tzinfo=UTC.
+    """
+    [year, month, day, hour, minute, second, unused, unused, unused] = (
+        time_tuple)
+    return datetime.datetime(year, month, day, hour, minute, second)

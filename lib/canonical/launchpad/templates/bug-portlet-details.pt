@@ -28,6 +28,13 @@
       2004-12-17
     </span><br />
 
+    <b>Last Updated:</b><br />
+    <span
+      tal:attributes="title context/date_last_updated/fmt:datetime"
+      tal:content="context/date_last_updated/fmt:approximatedate">
+      2004-12-17
+    </span><br />
+
     <div title="Can be seen only by the bug subscribers"
         tal:condition="context/private">
       <img src="/@@/locked" alt="" />

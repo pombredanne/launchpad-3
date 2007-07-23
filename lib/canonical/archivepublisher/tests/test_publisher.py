@@ -16,10 +16,10 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.config import config
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IPersonSet)
+    IArchiveSet, IDistributionSet, IPersonSet)
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket,
-    DistroSeriesStatus)
+    ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket, 
+    PackagePublishingStatus)
 
 
 class TestPublisher(TestNativePublishingBase):
@@ -170,7 +170,8 @@ class TestPublisher(TestNativePublishingBase):
             self.logger, self.config, self.disk_pool, self.ubuntutest,
             self.ubuntutest.main_archive)
 
-        test_archive = getUtility(IArchiveSet).new()
+        test_archive = getUtility(IArchiveSet).new(
+            purpose=ArchivePurpose.EMBARGOED)
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PENDING, archive=test_archive)
@@ -189,7 +190,8 @@ class TestPublisher(TestNativePublishingBase):
         """Publisher also works as expected for another archives."""
         from canonical.archivepublisher.publishing import Publisher
 
-        test_archive = getUtility(IArchiveSet).new()
+        test_archive = getUtility(IArchiveSet).new(
+            purpose=ArchivePurpose.EMBARGOED)
         test_pool_dir = tempfile.mkdtemp()
         test_temp_dir = tempfile.mkdtemp()
         test_disk_pool = DiskPool(test_pool_dir, test_temp_dir, self.logger)
@@ -200,7 +202,7 @@ class TestPublisher(TestNativePublishingBase):
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc",
-            filecontent='I am supposed to be a PPA',
+            filecontent='I am supposed to be a embargoed archive',
             status=PackagePublishingStatus.PENDING, archive=test_archive)
 
         publisher.A_publish(False)
@@ -213,7 +215,8 @@ class TestPublisher(TestNativePublishingBase):
         # nothing got published
         foo_path = "%s/main/f/foo/foo.dsc" % test_pool_dir
         self.assertEqual(
-            open(foo_path).read().strip(),'I am supposed to be a PPA',)
+            open(foo_path).read().strip(),
+            'I am supposed to be a embargoed archive',)
 
         # remove locally created dir
         shutil.rmtree(test_pool_dir)
@@ -269,11 +272,14 @@ class TestPublisher(TestNativePublishingBase):
         """
         archive_set = getUtility(IArchiveSet)
         person_set = getUtility(IPersonSet)
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
 
         cprov = person_set.getByName('cprov')
-        cprov_archive = archive_set.ensure(cprov)
+        cprov_archive = archive_set.ensure(cprov, ubuntu, 
+            ArchivePurpose.PPA)
         name16 = person_set.getByName('name16')
-        name16_archive = archive_set.ensure(name16)
+        name16_archive = archive_set.ensure(name16, ubuntu, 
+            ArchivePurpose.PPA)
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
@@ -351,6 +357,26 @@ class TestPublisher(TestNativePublishingBase):
              ''],
             index_contents)
 
+        # Check if apt_handler.release_files_needed has the right requests.
+        # 'source' & 'binary-i386' Release files should be regenerated
+        # for all breezy-autotest components.
+        self.assertReleaseFileRequested(
+            archive_publisher, 'breezy-autotest', 'main', 'source')
+        self.assertReleaseFileRequested(
+            archive_publisher, 'breezy-autotest', 'main', 'binary-i386')
+        self.assertReleaseFileRequested(
+            archive_publisher, 'breezy-autotest', 'restricted', 'source')
+        self.assertReleaseFileRequested(
+            archive_publisher, 'breezy-autotest', 'restricted', 'binary-i386')
+        self.assertReleaseFileRequested(
+            archive_publisher, 'breezy-autotest', 'universe', 'source')
+        self.assertReleaseFileRequested(
+            archive_publisher, 'breezy-autotest', 'universe', 'binary-i386')
+        self.assertReleaseFileRequested(
+            archive_publisher, 'breezy-autotest', 'multiverse', 'source')
+        self.assertReleaseFileRequested(
+            archive_publisher, 'breezy-autotest', 'multiverse', 'binary-i386')
+
         # remove PPA root
         shutil.rmtree(config.personalpackagearchive.root)
 
@@ -411,6 +437,19 @@ class TestPublisher(TestNativePublishingBase):
         self.assertEqual(
             pub_source.status, PackagePublishingStatus.PENDINGREMOVAL)
 
+    def assertReleaseFileRequested(self, publisher, suite_name,
+                                   component_name, arch_name):
+        suite = publisher.apt_handler.release_files_needed.get(suite_name)
+        self.assertTrue(
+            suite is not None, 'Suite %s not requested' % suite_name)
+        self.assertTrue(
+            component_name in suite,
+            'Component %s/%s not requested' % (suite_name, component_name))
+        self.assertTrue(
+            arch_name in suite[component_name],
+            'Arch %s/%s/%s not requested' % (
+            suite_name, component_name, arch_name))
+
     def testReleaseFile(self):
         """Test release file writing.
 
@@ -426,6 +465,28 @@ class TestPublisher(TestNativePublishingBase):
 
         publisher.A_publish(False)
         publisher.C_doFTPArchive(False)
+
+        # Check if apt_handler.release_files_needed has the right requests.
+        # 'source' and 'binary-i386' Release files should be regenerated
+        # for all breezy-autotest components.
+        # We always regenerate all Releases file for a given suite.
+        self.assertReleaseFileRequested(
+            publisher, 'breezy-autotest', 'main', 'source')
+        self.assertReleaseFileRequested(
+            publisher, 'breezy-autotest', 'main', 'binary-i386')
+        self.assertReleaseFileRequested(
+            publisher, 'breezy-autotest', 'restricted', 'source')
+        self.assertReleaseFileRequested(
+            publisher, 'breezy-autotest', 'restricted', 'binary-i386')
+        self.assertReleaseFileRequested(
+            publisher, 'breezy-autotest', 'universe', 'source')
+        self.assertReleaseFileRequested(
+            publisher, 'breezy-autotest', 'universe', 'binary-i386')
+        self.assertReleaseFileRequested(
+            publisher, 'breezy-autotest', 'multiverse', 'source')
+        self.assertReleaseFileRequested(
+            publisher, 'breezy-autotest', 'multiverse', 'binary-i386')
+
         publisher.D_writeReleaseFiles(False)
 
         release_file = os.path.join(
@@ -458,6 +519,63 @@ class TestPublisher(TestNativePublishingBase):
             first_sha256_line,
             (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
              '8d106a6338              114 main/source/Release'))
+
+    def testReleaseFileForPPA(self):
+        """Test release file writing for PPA
+
+        The release file should contain the MD5, SHA1 and SHA256 for each
+        index created for a given distroseries.
+        Note that the individuals indexes have exactly the same content
+        as the ones generated by apt-ftparchive (see previous test), however
+        the position in the list is different (earlier) because we do not
+        generate/list debian-installer (d-i) indexes in NoMoreAptFtpArchive
+        approach.
+        """
+        from canonical.archivepublisher.publishing import getPublisher
+        allowed_suites = []
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        archive_publisher = getPublisher(
+            cprov.archive, self.ubuntutest, allowed_suites, self.logger)
+
+        pub_source = self.getPubSource(
+            filecontent='Hello world', archive=cprov.archive)
+
+        archive_publisher.A_publish(False)
+        self.layer.txn.commit()
+        archive_publisher.C_writeIndexes(False)
+        archive_publisher.D_writeReleaseFiles(False)
+
+        release_file = os.path.join(
+            archive_publisher._config.distsroot, 'breezy-autotest', 'Release')
+        release_contents = open(release_file).read().splitlines()
+
+        md5_header = 'MD5Sum:'
+        self.assertTrue(md5_header in release_contents)
+        md5_header_index = release_contents.index(md5_header)
+        first_md5_line = release_contents[md5_header_index + 3]
+        self.assertEqual(
+            first_md5_line,
+            (' a5e5742a193740f17705c998206e18b6              '
+             '114 main/source/Release'))
+
+        sha1_header = 'SHA1:'
+        self.assertTrue(sha1_header in release_contents)
+        sha1_header_index = release_contents.index(sha1_header)
+        first_sha1_line = release_contents[sha1_header_index + 3]
+        self.assertEqual(
+            first_sha1_line,
+            (' 6222b7e616bcc20a32ec227254ad9de8d4bd5557              '
+             '114 main/source/Release'))
+
+        sha256_header = 'SHA256:'
+        self.assertTrue(sha256_header in release_contents)
+        sha256_header_index = release_contents.index(sha256_header)
+        first_sha256_line = release_contents[sha256_header_index + 3]
+        self.assertEqual(
+            first_sha256_line,
+            (' 297125e9b0f5da85552691597c9c4920aafd187e18a4e01d2ba70d'
+             '8d106a6338              114 main/source/Release'))
+
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

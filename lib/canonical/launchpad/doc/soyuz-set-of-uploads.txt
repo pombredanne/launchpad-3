@@ -104,7 +104,7 @@ And then we need a way to process the uploads from the queue
   ...     if os.path.exists(uploader_log):
   ...         open(uploader_log, 'w').write('')
   ...     script = os.path.join(config.root, "scripts", "process-upload.py")
-  ...     args = [sys.executable, script, "--no-mails", "-v", "-C",
+  ...     args = [sys.executable, script, "-v", "-C",
   ...             upload_policy]
   ...     if build_id is not None:
   ...         args.extend(["-b", build_id])
@@ -264,11 +264,11 @@ Inspect the uploader log to find the rejection message.
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  DEBUG       Subject: bar_1.0-3_source.changes Rejected
+  DEBUG       Subject: bar_1.0-3_source.changes rejected
   DEBUG       Recipients: Foo Bar <foo.bar@canonical.com>, Daniel Silverstone <daniel.silverstone@canonical.com>
   DEBUG       Body:
   DEBUG    Rejected:
-  DEBUG    MD5 sum of uploaded file does not match existent file in archive
+  DEBUG    MD5 sum of uploaded file does not match existing file in archive
   ...
   <BLANKLINE>
 
@@ -290,7 +290,7 @@ testing, as unsigned uploads are allowed.
   INFO    creating lockfile
   DEBUG   Initialising connection.
   ...
-  DEBUG       Subject: unstable_1.0-1_source.changes Rejected
+  DEBUG       Subject: unstable_1.0-1_source.changes rejected
   DEBUG       Recipients: Celso Providelo <celso.providelo@canonical.com>
   DEBUG       Body:
   DEBUG   Rejected:

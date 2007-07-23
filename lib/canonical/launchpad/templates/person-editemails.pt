@@ -28,7 +28,7 @@
 
   <tal:block condition="context/preferredemail">
     <p>Your preferred contact address for all Launchpad e-mail is:</p>
-    <ul>
+    <ul id="preferred-email">
       <li class="mail"><b tal:content="context/preferredemail/email" /></li>
     </ul>
   </tal:block>
@@ -41,7 +41,7 @@
   <tal:block tal:condition="context/validatedemails">
   <p>These other addresses are confirmed as being yours:</p>
 
-  <div style="padding: 0.7em 0em">
+  <div style="padding: 0.7em 0em" id="confirmed-emails">
     <div tal:repeat="email context/validatedemails" >
       <label tal:attributes="for email/email">
         <input type="radio" tal:attributes="value email/email; id email/email"
@@ -58,7 +58,7 @@
   <tal:block tal:condition="view/unvalidatedAndGuessedEmails">
   <p>These addresses may also be yours:</p>
 
-  <div style="padding: 0.7em 0em">
+  <div style="padding: 0.7em 0em" id="unconfirmed-emails">
     <div tal:repeat="email view/unvalidatedAndGuessedEmails">
       <label tal:attributes="for string:${email}_unvalidated">
         <input type="radio" name="UNVALIDATED_SELECTED"

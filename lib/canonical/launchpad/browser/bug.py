@@ -135,8 +135,7 @@ class BugContextMenu(ContextMenu):
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
              'nominate', 'addbranch', 'linktocve', 'unlinkcve',
-             'offermentoring', 'retractmentoring', 'filebug',
-             'activitylog']
+             'offermentoring', 'retractmentoring', 'activitylog']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -233,12 +232,6 @@ class BugContextMenu(ContextMenu):
                    not self.context.bug.is_complete and
                    user)
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
-
-    def filebug(self):
-        bugtarget = self.context.target
-        linktarget = '%s/%s' % (canonical_url(bugtarget), '+filebug')
-        text = 'Report a bug in %s' % bugtarget.displayname
-        return Link(linktarget, text, icon='add')
 
     def activitylog(self):
         text = 'View activity log'
@@ -733,7 +726,8 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         if not target.official_malone and taskadded.bugwatch is not None:
             # A remote bug task gets its from a bug watch, so we want
             # its status to be None when created.
-            taskadded.transitionToStatus(BugTaskStatus.UNKNOWN)
+            taskadded.transitionToStatus(
+                BugTaskStatus.UNKNOWN, self.user)
             taskadded.importance = BugTaskImportance.UNKNOWN
 
         notify(SQLObjectCreatedEvent(taskadded))

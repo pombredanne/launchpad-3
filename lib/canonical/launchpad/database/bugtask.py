@@ -24,7 +24,7 @@ from zope.component import getUtility
 from zope.interface import implements, alsoProvides
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
@@ -40,20 +40,24 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet,
     IDistributionSourcePackage,
     IDistroBugTask,
+    IDistroSeries,
     IDistroSeriesBugTask,
     ILaunchpadCelebrities,
     INullBugTask,
+    IProductSeries,
     IProductSeriesBugTask,
     ISourcePackage,
     IUpstreamBugTask,
     NotFoundError,
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
+    BUG_CONTACT_BUGTASK_STATUSES,
     )
 from canonical.launchpad.helpers import shortlist
 # XXX: see bug 49029 -- kiko, 2006-06-14
 
 from canonical.lp.dbschema import (
+    BugNominationStatus,
     BugTaskImportance,
     BugTaskStatus,
     PackagePublishingStatus,
@@ -263,6 +267,10 @@ class NullBugTask(BugTaskMixin):
             alsoProvides(self, IDistroBugTask)
         elif self.distroseries:
             alsoProvides(self, IDistroSeriesBugTask)
+        elif self.productseries:
+            alsoProvides(self, IProductSeriesBugTask)
+        else:
+            raise AssertionError('Unknown NullBugTask: %r' % self)
 
         # Set a bunch of attributes to None, because it doesn't make
         # sense for these attributes to have a value when there is no
@@ -307,7 +315,7 @@ class BugTask(SQLBase, BugTaskMixin):
         "status", "importance", "assignee", "milestone",
         "date_assigned", "date_confirmed", "date_inprogress",
         "date_closed")
-    _NON_CONJOINED_STATUSES = (BugTaskStatus.REJECTED,)
+    _NON_CONJOINED_STATUSES = (BugTaskStatus.WONTFIX,)
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
     product = ForeignKey(
@@ -331,7 +339,7 @@ class BugTask(SQLBase, BugTaskMixin):
     status = EnumCol(
         dbName='status', notNull=True,
         schema=BugTaskStatus,
-        default=BugTaskStatus.UNCONFIRMED)
+        default=BugTaskStatus.NEW)
     statusexplanation = StringCol(dbName='statusexplanation', default=None)
     importance = EnumCol(
         dbName='importance', notNull=True,
@@ -607,13 +615,27 @@ class BugTask(SQLBase, BugTaskMixin):
             raise ValueError('Unknown debbugs severity "%s"' % severity)
         return self.importance
 
-    def transitionToStatus(self, new_status):
+    def canTransitionToStatus(self, new_status, user):
+        """See `IBugTask`."""
+        if (user.inTeam(self.pillar.bugcontact) or
+            user.inTeam(self.pillar.owner) or
+            user == getUtility(ILaunchpadCelebrities).bug_watch_updater):
+            return True
+        else:
+            return new_status not in BUG_CONTACT_BUGTASK_STATUSES
+
+    def transitionToStatus(self, new_status, user):
         """See canonical.launchpad.interfaces.IBugTask."""
         if not new_status:
             # This is mainly to facilitate tests which, unlike the
             # normal status form, don't always submit a status when
             # testing the edit form.
             return
+
+        if not self.canTransitionToStatus(new_status, user):
+            raise AssertionError(
+                "Only Bug Contacts may change status to %s" % (
+                    new_status.title,))
 
         if self.status == new_status:
             # No change in the status, so nothing to do.
@@ -660,7 +682,7 @@ class BugTask(SQLBase, BugTaskMixin):
         # Ensure that we don't have dates recorded for state
         # transitions, if the bugtask has regressed to an earlier
         # workflow state. We want to ensure that, for example, a
-        # bugtask that went Unconfirmed => Confirmed => Unconfirmed
+        # bugtask that went New => Confirmed => New
         # has a dateconfirmed value of None.
         if new_status in UNRESOLVED_BUGTASK_STATUSES:
             self.date_closed = None
@@ -881,6 +903,21 @@ class BugTaskSet:
         "date_last_updated": "Bug.date_last_updated",
         "date_closed": "BugTask.date_closed"}
 
+    _open_resolved_upstream = """
+                EXISTS (
+                    SELECT TRUE FROM BugTask AS RelatedBugTask
+                    WHERE RelatedBugTask.bug = BugTask.bug
+                        AND RelatedBugTask.id != BugTask.id
+                        AND ((
+                            RelatedBugTask.bugwatch IS NOT NULL AND
+                            RelatedBugTask.status %s)
+                            OR (
+                            RelatedBugTask.product IS NOT NULL AND
+                            RelatedBugTask.bugwatch IS NULL AND
+                            RelatedBugTask.status %s))
+                    )
+                """
+
     title = "A set of bug tasks"
 
     def get(self, task_id):
@@ -918,7 +955,7 @@ class BugTaskSet:
         if not summary:
             return BugTask.select('1 = 2')
 
-        search_params.searchtext = nl_phrase_search(
+        search_params.fast_searchtext = nl_phrase_search(
             summary, Bug, ' AND '.join(constraint_clauses), ['BugTask'])
         return self.search(search_params)
 
@@ -999,28 +1036,10 @@ class BugTaskSet:
             extra_clauses.append(where_cond)
 
         if params.searchtext:
-            searchtext_quoted = sqlvalues(params.searchtext)[0]
-            searchtext_like_quoted = quote_like(params.searchtext)
-            comment_clause = """BugTask.id IN (
-                SELECT BugTask.id
-                FROM BugTask, BugMessage,Message, MessageChunk
-                WHERE BugMessage.bug = BugTask.bug
-                    AND BugMessage.message = Message.id
-                    AND Message.id = MessageChunk.message
-                    AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
-            extra_clauses.append("""
-                ((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s) OR (%s))
-                 OR (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))
-                """ % (
-                    searchtext_quoted,searchtext_quoted, comment_clause,
-                    searchtext_like_quoted))
-            if params.orderby is None:
-                # Unordered search results aren't useful, so sort by relevance
-                # instead.
-                params.orderby = [
-                    SQLConstant("-rank(Bug.fti, ftq(%s))" % searchtext_quoted),
-                    SQLConstant(
-                        "-rank(BugTask.fti, ftq(%s))" % searchtext_quoted)]
+            extra_clauses.append(self._buildSearchTextClause(params))
+
+        if params.fast_searchtext:
+            extra_clauses.append(self._buildFastSearchTextClause(params))
 
         if params.subscriber is not None:
             clauseTables.append('BugSubscription')
@@ -1057,76 +1076,9 @@ class BugTaskSet:
             """ % sqlvalues(distroseries, distroseries.main_archive,
                             component_ids, PackagePublishingStatus.PUBLISHED)])
 
-        if params.pending_bugwatch_elsewhere:
-            # Include only bugtasks that have other bugtasks on targets
-            # not using Malone, which are not Rejected, and have no bug
-            # watch.
-            pending_bugwatch_elsewhere_clause = """
-                EXISTS (
-                    SELECT TRUE FROM BugTask AS RelatedBugTask
-                    LEFT OUTER JOIN Distribution AS OtherDistribution
-                        ON RelatedBugTask.distribution = OtherDistribution.id
-                    LEFT OUTER JOIN Product AS OtherProduct
-                        ON RelatedBugTask.product = OtherProduct.id
-                    WHERE RelatedBugTask.bug = BugTask.bug
-                        AND RelatedBugTask.id != BugTask.id
-                        AND RelatedBugTask.bugwatch IS NULL
-                        AND (
-                            OtherDistribution.official_malone IS FALSE
-                            OR OtherProduct.official_malone IS FALSE
-                            )
-                        AND RelatedBugTask.status != %s
-                    )
-                """ % sqlvalues(BugTaskStatus.REJECTED)
-
-            extra_clauses.append(pending_bugwatch_elsewhere_clause)
-
-        if params.has_no_upstream_bugtask:
-            has_no_upstream_bugtask_clause = """
-                BugTask.bug NOT IN (
-                    SELECT DISTINCT bug FROM BugTask
-                    WHERE product IS NOT NULL)
-            """
-            extra_clauses.append(has_no_upstream_bugtask_clause)
-
-        # Our definition of "resolved upstream" means:
-        #
-        # * bugs with bugtasks linked to watches that are rejected,
-        #   fixed committed or fix released
-        #
-        # * bugs with upstream bugtasks that are fix committed or fix released
-        #
-        # This definition of "resolved upstream" should address the use
-        # cases we gathered at UDS Paris (and followup discussions with
-        # seb128, sfllaw, et al.)
-        if params.only_resolved_upstream:
-            statuses_for_watch_tasks = [
-                BugTaskStatus.REJECTED,
-                BugTaskStatus.FIXCOMMITTED,
-                BugTaskStatus.FIXRELEASED]
-            statuses_for_upstream_tasks = [
-                BugTaskStatus.FIXCOMMITTED,
-                BugTaskStatus.FIXRELEASED]
-
-            only_resolved_upstream_clause = """
-                EXISTS (
-                    SELECT TRUE FROM BugTask AS RelatedBugTask
-                    WHERE RelatedBugTask.bug = BugTask.bug
-                        AND RelatedBugTask.id != BugTask.id
-                        AND ((
-                            RelatedBugTask.bugwatch IS NOT NULL AND
-                            RelatedBugTask.status %s)
-                            OR (
-                            RelatedBugTask.product IS NOT NULL AND
-                            RelatedBugTask.bugwatch IS NULL AND
-                            RelatedBugTask.status %s))
-                    )
-                """ % (
-                    search_value_to_where_condition(
-                        any(*statuses_for_watch_tasks)),
-                    search_value_to_where_condition(
-                        any(*statuses_for_upstream_tasks)))
-            extra_clauses.append(only_resolved_upstream_clause)
+        upstream_clause = self._buildUpstreamClause(params)
+        if upstream_clause:
+            extra_clauses.append(upstream_clause)
 
         if params.tag:
             tags_clause = "BugTag.bug = BugTask.bug AND BugTag.tag %s" % (
@@ -1159,6 +1111,25 @@ class BugTaskSet:
                     params.bug_reporter))
             extra_clauses.append(bug_reporter_clause)
 
+        if params.nominated_for:
+            mappings = sqlvalues(
+                target=params.nominated_for,
+                nomination_status=BugNominationStatus.PROPOSED)
+            if IDistroSeries.providedBy(params.nominated_for):
+                mappings['target_column'] = 'distrorelease'
+            elif IProductSeries.providedBy(params.nominated_for):
+                mappings['target_column'] = 'productseries'
+            else:
+                raise AssertionError(
+                    'Unknown nomination target: %r' % params.nominated_for)
+            nominated_for_clause = """
+                BugNomination.bug = BugTask.bug AND
+                BugNomination.%(target_column)s = %(target)s AND
+                BugNomination.status = %(nomination_status)s
+                """ % mappings
+            extra_clauses.append(nominated_for_clause)
+            clauseTables.append('BugNomination')
+
         clause = get_bug_privacy_filter(params.user)
         if clause:
             extra_clauses.append(clause)
@@ -1167,6 +1138,130 @@ class BugTaskSet:
 
         query = " AND ".join(extra_clauses)
         return query, clauseTables, orderby_arg
+
+    def _buildUpstreamClause(self, params):
+        upstream_clauses = []
+        if params.pending_bugwatch_elsewhere:
+            # Include only bugtasks that have other bugtasks on targets
+            # not using Malone, which are not Invalid, and have no bug
+            # watch.
+            pending_bugwatch_elsewhere_clause = """
+                EXISTS (
+                    SELECT TRUE FROM BugTask AS RelatedBugTask
+                    LEFT OUTER JOIN Distribution AS OtherDistribution
+                        ON RelatedBugTask.distribution = OtherDistribution.id
+                    LEFT OUTER JOIN Product AS OtherProduct
+                        ON RelatedBugTask.product = OtherProduct.id
+                    WHERE RelatedBugTask.bug = BugTask.bug
+                        AND RelatedBugTask.id != BugTask.id
+                        AND RelatedBugTask.bugwatch IS NULL
+                        AND (
+                            OtherDistribution.official_malone IS FALSE
+                            OR OtherProduct.official_malone IS FALSE
+                            )
+                        AND RelatedBugTask.status != %s
+                    )
+                """ % sqlvalues(BugTaskStatus.INVALID)
+
+            upstream_clauses.append(pending_bugwatch_elsewhere_clause)
+
+        if params.has_no_upstream_bugtask:
+            has_no_upstream_bugtask_clause = """
+                BugTask.bug NOT IN (
+                    SELECT DISTINCT bug FROM BugTask
+                    WHERE product IS NOT NULL)
+            """
+            upstream_clauses.append(has_no_upstream_bugtask_clause)
+
+        # Our definition of "resolved upstream" means:
+        #
+        # * bugs with bugtasks linked to watches that are invalid,
+        #   fixed committed or fix released
+        #
+        # * bugs with upstream bugtasks that are fix committed or fix released
+        #
+        # This definition of "resolved upstream" should address the use
+        # cases we gathered at UDS Paris (and followup discussions with
+        # seb128, sfllaw, et al.)
+        if params.resolved_upstream:
+            statuses_for_watch_tasks = [
+                BugTaskStatus.INVALID,
+                BugTaskStatus.FIXCOMMITTED,
+                BugTaskStatus.FIXRELEASED]
+            statuses_for_upstream_tasks = [
+                BugTaskStatus.FIXCOMMITTED,
+                BugTaskStatus.FIXRELEASED]
+
+            only_resolved_upstream_clause = self._open_resolved_upstream % (
+                    search_value_to_where_condition(
+                        any(*statuses_for_watch_tasks)),
+                    search_value_to_where_condition(
+                        any(*statuses_for_upstream_tasks)))
+            upstream_clauses.append(only_resolved_upstream_clause)
+        if params.open_upstream:
+            statuses_for_open_tasks = [
+                BugTaskStatus.NEW,
+                BugTaskStatus.INCOMPLETE,
+                BugTaskStatus.CONFIRMED,
+                BugTaskStatus.INPROGRESS,
+                BugTaskStatus.UNKNOWN]
+            only_open_upstream_clause = self._open_resolved_upstream % (
+                    search_value_to_where_condition(
+                        any(*statuses_for_open_tasks)),
+                    search_value_to_where_condition(
+                        any(*statuses_for_open_tasks)))
+            upstream_clauses.append(only_open_upstream_clause)
+
+        if upstream_clauses:
+            upstream_clause = " OR ".join(upstream_clauses)
+            return '(%s)' % upstream_clause
+        return None
+
+    def _buildSearchTextClause(self, params):
+        """Build the clause for searchtext."""
+        assert params.fast_searchtext is None, (
+            'cannot use fast_searchtext at the same time as searchtext')
+
+        searchtext_quoted = quote(params.searchtext)
+        searchtext_like_quoted = quote_like(params.searchtext)
+
+        if params.orderby is None:
+            # Unordered search results aren't useful, so sort by relevance
+            # instead.
+            params.orderby = [
+                SQLConstant("-rank(Bug.fti, ftq(%s))" % searchtext_quoted),
+                SQLConstant(
+                    "-rank(BugTask.fti, ftq(%s))" % searchtext_quoted)]
+        
+        comment_clause = """BugTask.id IN (
+            SELECT BugTask.id
+            FROM BugTask, BugMessage,Message, MessageChunk
+            WHERE BugMessage.bug = BugTask.bug
+                AND BugMessage.message = Message.id
+                AND Message.id = MessageChunk.message
+                AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
+        return """
+            ((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s) OR (%s))
+            OR (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))
+            """ % (
+                searchtext_quoted, searchtext_quoted, comment_clause,
+                searchtext_like_quoted)
+
+    def _buildFastSearchTextClause(self, params):
+        """Build the clause to use for the fast_searchtext criteria."""
+        assert params.searchtext is None, (
+            'cannot use searchtext at the same time as fast_searchtext')
+
+        fast_searchtext_quoted = quote(params.fast_searchtext)
+        
+        if params.orderby is None:
+            # Unordered search results aren't useful, so sort by relevance
+            # instead.
+            params.orderby = [
+                SQLConstant("-rank(Bug.fti, ftq(%s))" %
+                fast_searchtext_quoted)]
+
+        return "Bug.fti @@ ftq(%s)" % fast_searchtext_quoted
 
     def search(self, params, *args):
         """See canonical.launchpad.interfaces.IBugTaskSet."""

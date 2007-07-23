@@ -17,10 +17,16 @@ __all__ = [
     'IHostedBranchStorage',
     'IUserDetailsStorage',
     'IUserDetailsStorageV2',
+    'READ_ONLY',
+    'WRITABLE'
     ]
-    
+
 
 from zope.interface import Interface
+
+
+READ_ONLY = 'r'
+WRITABLE = 'w'
 
 
 class IUserDetailsStorage(Interface):
@@ -43,20 +49,20 @@ class IUserDetailsStorage(Interface):
 
         :param loginID: A login ID (an email address, nickname, or numeric
             person ID from a user dict).
-        
+
         :returns: user dict if loginID exists, otherwise empty dict
         """
 
     def authUser(loginID, sshaDigestedPassword):
         """Authenticate a user
-        
+
         :param loginID: A login ID, same as for getUser.
         :returns: user dict if authenticated, otherwise empty dict
         """
 
     def getSSHKeys(archiveName):
         """Retrieve SSH public keys for a given push mirror archive
-        
+
         :param archive: an archive name.
         :returns: list of 2-tuples of (key type, key text).  This list will be
             empty if the user has no keys or does not exist.
@@ -94,13 +100,13 @@ class IUserDetailsStorageV2(Interface):
 
         :param loginID: A login ID (an email address, nickname, or numeric
             person ID from a user dict).
-        
+
         :returns: user dict if loginID exists, otherwise empty dict
         """
 
     def authUser(loginID, password):
         """Authenticate a user
-        
+
         :param loginID: A login ID, same as for getUser.
         :param password: A password, in clear text.
         :returns: user dict if authenticated, otherwise empty dict
@@ -108,7 +114,7 @@ class IUserDetailsStorageV2(Interface):
 
     def getSSHKeys(archiveName):
         """Retrieve SSH public keys for a given push mirror archive
-        
+
         :param archive: an archive name.
         :returns: list of 2-tuples of (key type, key text).  This list will be
             empty if the user has no keys or does not exist.
@@ -131,21 +137,30 @@ class IHostedBranchStorage(Interface):
             [(product id, product name, [(branch id, branch name), ...]), ...]
         """
 
+    def getBranchInformation(loginID, personName, productName, branchName):
+        """Return the database ID and permissions for a branch.
+
+        :returns: (branch_id, permissions), where 'permissions' is 'w' if the
+            user represented by 'loginID' can write to the branch, and 'r' if
+            they cannot. If the branch doesn't exist, return ('', '').
+        """
+
     def fetchProductID(productName):
         """Return the database ID for a product name.
-        
+
         :returns: a product ID.
         """
 
-    def createBranch(personID, productID, branchName):
+    def createBranch(loginID, personName, productName, branchName):
         """Register a new hosted branch in Launchpad.
 
         This is called by the bazaar.launchpad.net server when a user pushes a
         new branch to it.  See also
         https://launchpad.canonical.com/SupermirrorFilesystemHierarchy.
 
-        :param personID: a person ID.
-        :param productID: a product ID.
+        :param loginID: the person ID of the logged in user.
+        :param personName: the unique name of a Person
+        :param productName: the unique name of a Product
         :param branchName: the name for this branch, to be used in URLs.
         :returns: the ID for the new branch.
         """
@@ -159,7 +174,7 @@ class IHostedBranchStorage(Interface):
 
 class IBranchDetailsStorage(Interface):
     """An interface for updating the status of branches in Launchpad.
-    
+
     Published at `http://$authserver_host/branch`.
     """
 
@@ -202,4 +217,18 @@ class IBranchDetailsStorage(Interface):
         :param branchID: The database ID of the given branch.
         :param reason: A string giving the reason for the failure.
         :returns: True if the branch status was successfully updated.
+        """
+
+    def recordSuccess(name, hostname, date_started, date_completed):
+        """Notify Launchpad that a mirror script has successfully completed.
+
+        Create an entry in the ScriptActivity table with the provided data.
+
+        :param name: Name of the script.
+        :param hostname: Where the script was running.
+
+        :param date_started: When the script started, as an UTC time tuple.
+        :param date_completed: When the script completed (now), as an UTC time
+            tuple.
+        :returns: True if the ScriptActivity record was successfully inserted.
         """

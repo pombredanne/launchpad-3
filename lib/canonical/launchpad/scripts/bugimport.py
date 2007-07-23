@@ -19,7 +19,6 @@ from cStringIO import StringIO
 import datetime
 import logging
 import os
-import sys
 import time
 
 try:
@@ -35,9 +34,8 @@ from zope.app.content_types import guess_content_type
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IBugSet, IBugActivitySet, IBugAttachmentSet, IBugExternalRefSet,
-    ICveSet, IEmailAddressSet, ILaunchpadCelebrities, ILibraryFileAliasSet,
-    IMessageSet, IMilestoneSet, IPersonSet, CreateBugParams,
-    NotFoundError)
+    ICveSet, IEmailAddressSet, ILaunchpadCelebrities,
+    ILibraryFileAliasSet, IMessageSet, IPersonSet, CreateBugParams)
 from canonical.launchpad.scripts.bugexport import BUGS_XMLNS
 from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, BugAttachmentType,
@@ -273,7 +271,7 @@ class BugImporter:
 
         # Remaining setup for first comment
         self.createAttachments(bug, msg, commentnode)
-        bug.findCvesInText(msg.text_contents)
+        bug.findCvesInText(msg.text_contents, bug.owner)
 
         # Process remaining comments
         for commentnode in comments:
@@ -281,7 +279,6 @@ class BugImporter:
                                      defaulttitle=bug.followup_subject())
             bug.linkMessage(msg)
             self.createAttachments(bug, msg, commentnode)
-            bug.findCvesInText(msg.text_contents)
 
         # set up bug
         bug.private = get_value(bugnode, 'private') == 'True'
@@ -303,7 +300,7 @@ class BugImporter:
             if cve is None:
                 raise BugXMLSyntaxError('Unknown CVE: %s' %
                                         get_text(cvenode))
-            bug.linkCVE(cve)
+            bug.linkCVE(cve, self.bug_importer)
 
         tags = []
         for tagnode in get_all(bugnode, 'tags/tag'):
@@ -320,7 +317,8 @@ class BugImporter:
         bugtask.importance = get_enum_value(BugTaskImportance,
                                             get_value(bugnode, 'importance'))
         bugtask.transitionToStatus(
-            get_enum_value(BugTaskStatus, get_value(bugnode, 'status')))
+            get_enum_value(BugTaskStatus, get_value(bugnode, 'status')),
+            self.bug_importer)
         bugtask.transitionToAssignee(
             self.getPerson(get_element(bugnode, 'assignee')))
         bugtask.milestone = self.getMilestone(get_value(bugnode, 'milestone'))

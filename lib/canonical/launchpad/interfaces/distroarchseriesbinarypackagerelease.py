@@ -54,3 +54,25 @@ class IDistroArchSeriesBinaryPackageRelease(IBinaryPackageRelease):
         "of this binary package release in this distro arch release, or "
         "None if there is not one.")
 
+    def copyTo(self, distroseries, pocket):
+        """Copy a DistroArchSeriesBinaryPackageRelease to another location.
+
+        Return the publishing record in the targeted location.
+
+        NotFoundError will be raised if the distroseries is not found or not
+        published.
+        """
+
+    def changeOverride(new_component=None, new_section=None,
+                       new_priority=None):
+        """Change the component, section and/or priority.
+
+        It is changed only if the argument is not None.
+        """
+
+    def supersede():
+        """Supersede a `DistroArchSeriesBinaryPackageRelease`.
+
+        Return the modified `IBinaryPackagePublishingHistory` object.
+        """
+

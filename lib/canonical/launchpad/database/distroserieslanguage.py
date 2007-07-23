@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+"""An implementation of DistroSeriesLanguage objects."""
 
 __metaclass__ = type
 __all__ = ['DistroSeriesLanguage', 'DummyDistroSeriesLanguage',
@@ -20,14 +21,16 @@ import pytz
 
 from canonical.launchpad.interfaces import (IDistroSeriesLanguage,
     IDistroSeriesLanguageSet, IPersonSet)
-from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.translator import Translator
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.launchpad.components.rosettastats import RosettaStats
 
 class DistroSeriesLanguage(SQLBase, RosettaStats):
-
+    """See `IDistroSeriesLanguage`.
+    
+    A SQLObject based implementation of IDistroSeriesLanguage.
+    """
     implements(IDistroSeriesLanguage)
 
     _table = 'DistroReleaseLanguage'
@@ -39,6 +42,7 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
     currentcount = IntCol(notNull=True, default=0)
     updatescount = IntCol(notNull=True, default=0)
     rosettacount = IntCol(notNull=True, default=0)
+    unreviewed_count = IntCol(notNull=True, default=0)
     contributorcount = IntCol(notNull=True, default=0)
     dateupdated = UtcDateTimeCol(dbName='dateupdated', default=DEFAULT)
 
@@ -118,17 +122,24 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
     def rosettaCount(self, language=None):
         return self.rosettacount
 
+    def unreviewedCount(self):
+        """See `IRosettaStats`."""
+        return self.unreviewed_count
+
     def updateStatistics(self, ztm):
         current = 0
         updates = 0
         rosetta = 0
+        unreviewed = 0
         for pofile in self.pofiles:
             current += pofile.currentCount()
             updates += pofile.updatesCount()
             rosetta += pofile.rosettaCount()
+            unreviewed += pofile.unreviewedCount()
         self.currentcount = current
         self.updatescount = updates
         self.rosettacount = rosetta
+        self.unreviewed_count = unreviewed
 
         personset = getUtility(IPersonSet)
         contributors = personset.getPOFileContributorsByDistroSeries(
@@ -140,13 +151,16 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
 
 
 class DummyDistroSeriesLanguage(RosettaStats):
-    """
+    """See `IDistroSeriesLanguage`
+
     Represents a DistroSeriesLanguage where we do not yet actually HAVE one
-    for that language for this distro series.
+    for that language for this distribution series.
     """
     implements(IDistroSeriesLanguage)
 
     def __init__(self, distroseries, language):
+        assert 'en' != language.code, (
+            'English is not a translatable language.')
         self.id = None
         self.language = language
         self.distroseries = distroseries
@@ -212,7 +226,10 @@ class DummyDistroSeriesLanguage(RosettaStats):
 
 
 class DistroSeriesLanguageSet:
-
+    """See `IDistroSeriesLanguageSet`.
+    
+    Implements a means to get a DummyDistroSeriesLanguage.
+    """
     implements(IDistroSeriesLanguageSet)
 
     def getDummy(self, distroseries, language):

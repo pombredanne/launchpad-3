@@ -1,5 +1,4 @@
-Email Notifications for Specifications
-======================================
+= Email Notifications for Specifications =
 
 When a specification is edited, an email notification is sent out to
 all the related people. We send out notifications only on certain
@@ -7,18 +6,20 @@ changed, this will change in the future though.
 
 Changing the status:
 
-    >>> from zope.publisher.browser import TestRequest
-    >>> from zope.component import getView
+    >>> from zope.component import getMultiAdapter
     >>> from canonical.launchpad.interfaces import IProductSet
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
     >>> login('foo.bar@canonical.com')
     >>> firefox = getUtility(IProductSet).getByName('firefox')
     >>> svg_support = firefox.getSpecification('svg-support')
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Drafting',
-    ...     'field.delivery': svg_support.delivery.title,
+    ...     'UPDATE_SUBMIT': 'Change', 'field.definition_status': 'Drafting',
+    ...     'field.implementation_status':
+    ...         svg_support.implementation_status.title,
     ...     }
-    >>> edit_view = getView(svg_support, '+status', TestRequest(form=form))
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
     >>> edit_view.update()
     u'Updated...'
 
@@ -72,7 +73,7 @@ Let's set a different approver and add a subscriber.
     >>> sabdfl = getUtility(IPersonSet).getByEmail('mark@hbd.com')
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> svg_support.approver = sabdfl
-    >>> svg_support.subscribe(sample_person, essential=False)
+    >>> svg_support.subscribe(sample_person, sample_person, False)
     <...>
 
 Now if we edit the status, a notification will be sent to all the
@@ -80,13 +81,19 @@ previous people, and to the approver and the added subscriber:
 
     >>> stub.test_emails = []
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Pending Approval',
-    ...     'field.delivery': svg_support.delivery.title,
+    ...     'UPDATE_SUBMIT': 'Change',
+    ...     'field.definition_status': 'Pending Approval',
+    ...     'field.implementation_status':
+    ...         svg_support.implementation_status.title,
     ...     'field.needs_discussion': '1'}
-    >>> edit_view = getView(svg_support, '+status', TestRequest(form=form))
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
     >>> edit_view.update()
     u'Updated...'
     >>> transaction.commit()
+
+The added subscriber will also receive a notification that they
+are now subscribed.
 
     >>> x = sorted([toaddrs for fromaddr, toaddrs, message in stub.test_emails])
     >>> for addr in x: print addr
@@ -97,6 +104,7 @@ previous people, and to the approver and the added subscriber:
     ['mark@hbd.com']
     ['robertc@robertcollins.net']
     ['stuart.bishop@canonical.com']
+    ['test@canonical.com']
     ['test@canonical.com']
 
 Now let's take a look at what the notification looks like:
@@ -111,17 +119,16 @@ Now let's take a look at what the notification looks like:
     >>> status_notification['From']
     'Foo Bar <foo.bar@canonical.com>'
     >>> status_notification['Subject']
-    '[Spec svg-support] Support Native SVG Objects'
+    '[Blueprint svg-support] Support Native SVG Objects'
     >>> body = status_notification.get_payload(decode=True)
     >>> print body  #doctest: -NORMALIZE_WHITESPACE
-    Specification changed by Foo Bar:
+    Blueprint changed by Foo Bar:
     <BLANKLINE>
         Definition Status: Drafting => Pending Approval
     <BLANKLINE>
     -- 
-    Specification Details:
       Support Native SVG Objects
-      http://.../firefox/+spec/svg-support
+      http://blueprints.launchpad.dev/firefox/+spec/svg-support
     <BLANKLINE>
 
 Whiteboard change:
@@ -133,10 +140,13 @@ Whiteboard change:
     ...     "\n"
     ...     "Another paragraph")
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Pending Approval',
-    ...     'field.delivery': svg_support.delivery.title,
+    ...     'UPDATE_SUBMIT': 'Change',
+    ...     'field.definition_status': 'Pending Approval',
+    ...     'field.implementation_status':
+    ...         svg_support.implementation_status.title,
     ...     'field.whiteboard': new_whiteboard}
-    >>> edit_view = getView(svg_support, '+status', TestRequest(form=form))
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
     >>> edit_view.update()
     u'Updated...'
     >>> transaction.commit()
@@ -150,10 +160,10 @@ Whiteboard change:
     >>> status_notification['From']
     'Foo Bar <foo.bar@canonical.com>'
     >>> status_notification['Subject']
-    '[Spec svg-support] Support Native SVG Objects'
+    '[Blueprint svg-support] Support Native SVG Objects'
     >>> body = status_notification.get_payload(decode=True)
     >>> print body  #doctest: -NORMALIZE_WHITESPACE
-    Specification changed by Foo Bar:
+    Blueprint changed by Foo Bar:
     <BLANKLINE>
     Whiteboard changed to:
     <BLANKLINE>
@@ -163,9 +173,8 @@ Whiteboard change:
     Another paragraph
     <BLANKLINE>
     -- 
-    Specification Details:
       Support Native SVG Objects
-      http://.../firefox/+spec/svg-support
+      http://blueprints.launchpad.dev/firefox/+spec/svg-support
     <BLANKLINE>
 
 
@@ -173,10 +182,13 @@ Definition status and whiteboard change:
 
     >>> stub.test_emails = []
     >>> form = {
-    ...     'UPDATE_SUBMIT': 'Change', 'field.status': 'Approved',
-    ...     'field.delivery': svg_support.delivery.title,
+    ...     'UPDATE_SUBMIT': 'Change',
+    ...     'field.definition_status': 'Approved',
+    ...     'field.implementation_status':
+    ...         svg_support.implementation_status.title,
     ...     'field.whiteboard': 'Excellent work.'}
-    >>> edit_view = getView(svg_support, '+status', TestRequest(form=form))
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> edit_view = getMultiAdapter((svg_support, request), name='+status')
     >>> edit_view.update()
     u'Updated...'
     >>> transaction.commit()
@@ -190,10 +202,10 @@ Definition status and whiteboard change:
     >>> status_notification['From']
     'Foo Bar <foo.bar@canonical.com>'
     >>> status_notification['Subject']
-    '[Spec svg-support] Support Native SVG Objects'
+    '[Blueprint svg-support] Support Native SVG Objects'
     >>> body = status_notification.get_payload(decode=True)
     >>> print body  #doctest: -NORMALIZE_WHITESPACE
-    Specification changed by Foo Bar:
+    Blueprint changed by Foo Bar:
     <BLANKLINE>
         Definition Status: Pending Approval => Approved
     <BLANKLINE>
@@ -202,9 +214,8 @@ Definition status and whiteboard change:
     Excellent work.
     <BLANKLINE>
     -- 
-    Specification Details:
       Support Native SVG Objects
-      http://.../firefox/+spec/svg-support
+      http://blueprints.launchpad.dev/firefox/+spec/svg-support
     <BLANKLINE>
 
 Change priority:
@@ -214,7 +225,8 @@ Change priority:
     ...     'UPDATE_SUBMIT': 'Change', 'field.priority': 'Essential',
     ...     'field.direction_approved': 'on',
     ...     'field.whiteboard': svg_support.whiteboard}
-    >>> edit_view = getView(svg_support, '+priority', TestRequest(form=form))
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> edit_view = getMultiAdapter((svg_support, request), name='+priority')
     >>> edit_view.update()
     u'Updated...'
     >>> transaction.commit()
@@ -228,17 +240,16 @@ Change priority:
     >>> status_notification['From']
     'Foo Bar <foo.bar@canonical.com>'
     >>> status_notification['Subject']
-    '[Spec svg-support] Support Native SVG Objects'
+    '[Blueprint svg-support] Support Native SVG Objects'
     >>> body = status_notification.get_payload(decode=True)
     >>> print body  #doctest: -NORMALIZE_WHITESPACE
-    Specification changed by Foo Bar:
+    Blueprint changed by Foo Bar:
     <BLANKLINE>
         Priority: High => Essential
     <BLANKLINE>
     -- 
-    Specification Details:
       Support Native SVG Objects
-      http://.../firefox/+spec/svg-support
+      http://blueprints.launchpad.dev/firefox/+spec/svg-support
     <BLANKLINE>
 
 Change approver, assignee and drafter:
@@ -249,7 +260,8 @@ Change approver, assignee and drafter:
     >>> form = {
     ...     'UPDATE_SUBMIT': 'Change', 'field.assignee': 'sabdfl',
     ...     'field.approver': '', 'field.drafter': 'foo.bar@canonical.com'}
-    >>> edit_view = getView(svg_support, '+people', TestRequest(form=form))
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> edit_view = getMultiAdapter((svg_support, request), name='+people')
     >>> edit_view.update()
     u'Updated...'
     >>> transaction.commit()
@@ -263,19 +275,18 @@ Change approver, assignee and drafter:
     >>> status_notification['From']
     'Foo Bar <foo.bar@canonical.com>'
     >>> status_notification['Subject']
-    '[Spec svg-support] Support Native SVG Objects'
+    '[Blueprint svg-support] Support Native SVG Objects'
     >>> body = status_notification.get_payload(decode=True)
     >>> print body  #doctest: -NORMALIZE_WHITESPACE
-    Specification changed by Foo Bar:
+    Blueprint changed by Foo Bar:
     <BLANKLINE>
         Approver: Mark Shuttleworth => (none)
         Assignee: (none) => Mark Shuttleworth
         Drafter: Robert Collins => Foo Bar
     <BLANKLINE>
     -- 
-    Specification Details:
       Support Native SVG Objects
-      http://.../firefox/+spec/svg-support
+      http://blueprints.launchpad.dev/firefox/+spec/svg-support
     <BLANKLINE>
 
 If we do a change, which we don't yet support sending a notification
@@ -285,7 +296,9 @@ about, no notification is sent:
     >>> form = {
     ...     'FORM_SUBMIT': 'Continue', 'field.productseries': '1',
     ...     'field.whiteboard': 'Proposing for milestones...'}
-    >>> edit_view = getView(svg_support, '+setproductseries', TestRequest(form=form))
+    >>> request = LaunchpadTestRequest(form=form)
+    >>> edit_view = getMultiAdapter(
+    ...     (svg_support, request), name='+setproductseries')
     >>> edit_view.update()
     'Done.'
     >>> transaction.commit()

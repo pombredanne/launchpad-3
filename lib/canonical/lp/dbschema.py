@@ -19,7 +19,9 @@ __metaclass__ = type
 # If you do not do this, from canonical.lp.dbschema import * will not
 # work properly, and the thing/lp:SchemaClass will not work properly.
 __all__ = (
+'AccountStatus',
 'ArchArchiveType',
+'ArchivePurpose',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
 'BountyDifficulty',
@@ -30,7 +32,8 @@ __all__ = (
 'BranchReviewStatus',
 'BranchSubscriptionDiffSize',
 'BranchSubscriptionNotificationLevel',
-'BranchVisibilityPolicy',
+'BranchType',
+'BranchVisibilityRule',
 'BugBranchStatus',
 'BugNominationStatus',
 'BugTaskStatus',
@@ -42,13 +45,19 @@ __all__ = (
 'BugTaskImportance',
 'BuildStatus',
 'CodereleaseRelationships',
+'CodeImportReviewStatus',
 'CveStatus',
 'DistroSeriesStatus',
 'EmailAddressStatus',
+'EntitlementState',
+'EntitlementType',
+'FAQSort',
 'GPGKeyAlgorithm',
 'ImportTestStatus',
 'ImportStatus',
 'LoginTokenType',
+'MailingListAutoSubscribePolicy',
+'MailingListStatus',
 'ManifestEntryType',
 'ManifestEntryHint',
 'MirrorContent',
@@ -60,8 +69,10 @@ __all__ = (
 'PackagePublishingPocket',
 'PackagingType',
 'PersonCreationRationale',
+'PersonalStanding',
 'PollAlgorithm',
 'PollSecrecy',
+'PostedMessageStatus',
 'ProjectRelationship',
 'ProjectStatus',
 'QuestionAction',
@@ -70,7 +81,6 @@ __all__ = (
 'QuestionSort',
 'QuestionStatus',
 'RevisionControlSystems',
-'RosettaFileFormat',
 'RosettaImportStatus',
 'RosettaTranslationOrigin',
 'ShipItArchitecture',
@@ -82,19 +92,20 @@ __all__ = (
 'SourcePackageFormat',
 'SourcePackageRelationships',
 'SourcePackageUrgency',
-'SpecificationDelivery',
+'SpecificationImplementationStatus',
 'SpecificationFilter',
 'SpecificationGoalStatus',
 'SpecificationLifecycleStatus',
 'SpecificationPriority',
 'SpecificationSort',
-'SpecificationStatus',
+'SpecificationDefinitionStatus',
 'SprintSpecificationStatus',
 'SSHKeyType',
 'TextDirection',
 'TeamMembershipRenewalPolicy',
 'TeamMembershipStatus',
 'TeamSubscriptionPolicy',
+'TranslationFileFormat',
 'TranslationPriority',
 'TranslationPermission',
 'TranslationValidationStatus',
@@ -105,6 +116,37 @@ __all__ = (
 )
 
 from canonical.launchpad.webapp.enum import DBSchema, Item
+
+
+class AccountStatus(DBSchema):
+    """The status of a Launchpad account."""
+
+    NOACCOUNT = Item(10, """
+        No Launchpad account
+
+        There's no Launchpad account for this Person record.
+        """)
+
+    ACTIVE = Item(20, """
+        Active Launchpad account
+
+        There's an active Launchpad account associated with this Person.
+        """)
+
+    DEACTIVATED = Item(30, """
+        Deactivated Launchpad account
+
+        The account associated with this Person has been deactivated by the
+        Person himself.
+        """)
+
+    SUSPENDED = Item(40, """
+        Suspended Launchpad account
+
+        The account associated with this Person has been suspended by a
+        Launchpad admin.
+        """)
+
 
 class ArchArchiveType(DBSchema):
     """Arch Archive Type
@@ -248,6 +290,11 @@ class BugTrackerType(DBSchema):
         support and request tracking.
         """)
 
+    MANTIS = Item(6, """
+        Mantis
+
+        Mantis is a web-based bug tracking system written in PHP.
+        """)
 
 class CveStatus(DBSchema):
     """The Status of this item in the CVE Database
@@ -643,14 +690,14 @@ class TeamMembershipRenewalPolicy(DBSchema):
     """
 
     NONE = Item(10, """
-        None
+        invite them to apply for renewal
 
         Memberships can be renewed only by team administrators or by going
         through the normal workflow for joining the team.
         """)
 
     ONDEMAND = Item(20, """
-        On demand
+        invite them to renew their own membership
 
         Memberships can be renewed by the members themselves a few days before
         it expires. After it expires the member has to go through the normal
@@ -658,7 +705,7 @@ class TeamMembershipRenewalPolicy(DBSchema):
         """)
 
     AUTOMATIC = Item(30, """
-        Automatic
+        renew their membership automatically, also notifying the admins
 
         Memberships are automatically renewed when they expire and a note is
         sent to the member and to team admins.
@@ -967,7 +1014,7 @@ class SourcePackageUrgency(DBSchema):
         """)
 
 
-class SpecificationDelivery(DBSchema):
+class SpecificationImplementationStatus(DBSchema):
     # Note that some of the states associated with this schema correlate to
     # a "not started" definition. See Specification.started_clause for
     # further information, and make sure that it is updated (together with
@@ -1073,6 +1120,13 @@ class SpecificationDelivery(DBSchema):
         This functionality has been delivered for the targeted release, the
         code has been uploaded to the main archives or committed to the
         targeted product series, and no further work is necessary.
+        """)
+
+    INFORMATIONAL = Item(95, """
+        Informational
+
+        This specification is informational, and does not require
+        any implementation.
         """)
 
 
@@ -1301,7 +1355,7 @@ class SpecificationSort(DBSchema):
         """)
 
 
-class SpecificationStatus(DBSchema):
+class SpecificationDefinitionStatus(DBSchema):
     """The current status of a Specification
 
     This enum tells us whether or not a specification is approved, or still
@@ -1434,7 +1488,7 @@ class SprintSpecificationStatus(DBSchema):
         """)
 
 
-# Enumeration covered by bug 66633:
+# XXX flacoste 20070712 Enumeration covered by bug 66633:
 #   Need way to define enumerations outside of dbschema
 class QuestionParticipation(DBSchema):
     """The different ways a person can be involved in a question.
@@ -1578,7 +1632,7 @@ class QuestionAction(DBSchema):
         was changed.
         """)
 
-# Enumeration covered by bug 66633:
+# XXX flacoste 20070712 Enumeration covered by bug 66633:
 #   Need way to define enumerations outside of dbschema
 class QuestionSort(DBSchema):
     """An enumeration of the valid question search sort order.
@@ -1674,6 +1728,34 @@ class QuestionStatus(DBSchema):
         question, spam or anything that should not appear in the
         Answer Tracker.
         """)
+
+
+# XXX flacoste 20070712 Enumeration covered by bug 66633:
+#   Need way to define enumerations outside of dbschema
+class FAQSort(DBSchema):
+    """An enumeration of the valid FAQ search sort order.
+
+    This enumeration is part of the IFAQCollection.searchFAQs() API. The
+    titles are formatted for nice display in browser code.
+    """
+
+    RELEVANCY = Item(5, """
+    by relevancy
+
+    Sort by relevancy of the FAQ toward the search text.
+    """)
+
+    NEWEST_FIRST = Item(15, """
+    newest first
+
+    Sort FAQs from newest to oldest.
+    """)
+
+    OLDEST_FIRST = Item(20, """
+    oldest first
+
+    Sort FAQs from oldset to newest.
+    """)
 
 
 class ImportStatus(DBSchema):
@@ -1829,11 +1911,11 @@ class TranslationPermission(DBSchema):
     """Translation Permission System
 
     Projects, products and distributions can all have content that needs to
-    be translated. In this case, Rosetta allows them to decide how open they
-    want that translation process to be. At one extreme, anybody can add or
-    edit any translation, without review. At the other, only the designated
-    translator for that group in that language can edit its translation
-    files. This schema enumerates the options.
+    be translated. In this case, Launchpad Translations allows them to decide
+    how open they want that translation process to be. At one extreme, anybody
+    can add or edit any translation, without review. At the other, only the
+    designated translator for that group in that language can add or edit its
+    translation files. This schema enumerates the options.
     """
 
     OPEN = Item(1, """
@@ -1852,8 +1934,8 @@ class TranslationPermission(DBSchema):
         designated translator, anybody can edit the translations directly,
         with no further review.""")
 
-    CLOSED = Item(100, """
-        Closed
+    RESTRICTED = Item(100, """
+        Restricted
 
         This group allows only designated translators to edit the
         translations of its files. You can become a designated translator
@@ -1862,6 +1944,16 @@ class TranslationPermission(DBSchema):
         language. People who are not designated translators can still make
         suggestions for new translations, but those suggestions need to be
         reviewed before being accepted by the designated translator.""")
+
+    CLOSED = Item(200, """
+        Closed
+
+        This group allows only designated translators to edit or add
+        translations. You can become a designated translator either by
+        joining an existing language translation team for this
+        project, or by getting permission to start a new team for a new
+        language. People who are not designated translators will not be able
+        to add suggestions.""")
 
 
 class PackageUploadStatus(DBSchema):
@@ -2309,6 +2401,35 @@ class CodereleaseRelationships(DBSchema):
         """)
 
 
+class CodeImportReviewStatus(DBSchema):
+    """CodeImport review status.
+
+    Before a code import is performed, it is reviewed. Only reviewed imports
+    are processed.
+    """
+
+    NEW = Item(1, """Pending Review
+
+    This code import request has recently been filed an has not been reviewed
+    yet.
+    """)
+
+    INVALID = Item(10, """Invalid
+
+    This code import will not be processed.
+    """)
+
+    REVIEWED = Item(20, """Reviewed
+
+    This code import has been approved and will be processed.
+    """)
+
+    SUSPENDED = Item(30, """Suspended
+
+    This code import has been approved, but it has been suspended and is not
+    processed.""")
+
+
 class BugInfestationStatus(DBSchema):
     """Bug Infestation Status
 
@@ -2619,8 +2740,36 @@ class BranchSubscriptionNotificationLevel(DBSchema):
         """)
 
 
-class BranchVisibilityPolicy(DBSchema):
-    """Branch Visibility Policy"""
+class BranchType(DBSchema):
+    """Branch Type
+
+    The type of a branch determins the branch interaction with a number
+    of other subsystems.
+    """
+
+    HOSTED = Item(1, """
+        Hosted
+
+        Hosted branches have their main repository on the supermirror.
+        """)
+
+    MIRRORED = Item(2, """
+        Mirrored
+
+        Mirrored branches are primarily hosted elsewhere and are
+        periodically pulled from the remote site into the supermirror.
+        """)
+
+    IMPORTED = Item(3, """
+        Imported
+
+        Imported branches have been converted from some other revision
+        control system into bzr and are made available through the supermirror.
+        """)
+
+
+class BranchVisibilityRule(DBSchema):
+    """Branch Visibility Rules for defining branch visibility policy."""
 
     PUBLIC = Item(1, """
         Public
@@ -2682,32 +2831,48 @@ class BugTaskStatus(DBSchema):
     The various possible states for a bugfix in a specific place.
     """
 
-    UNCONFIRMED = Item(10, """
-        Unconfirmed
+    NEW = Item(10, """
+        New
 
         This is a new bug and has not yet been confirmed by the maintainer of
         this product or source package.
         """)
 
-    NEEDSINFO = Item(15, """
-        Needs Info
+    INCOMPLETE = Item(15, """
+        Incomplete
 
         More info is required before making further progress on this bug, likely
         from the reporter. E.g. the exact error message the user saw, the URL
         the user was visiting when the bug occurred, etc.
         """)
 
-    REJECTED = Item(17, """
-        Rejected
+    INVALID = Item(17, """
+        Invalid
 
-        This bug has been rejected, e.g. in cases of operator-error.
+        This is not a bug. It could be a support request, spam, or a misunderstanding.
+        """)
+
+    WONTFIX = Item(18, """
+        Won't Fix
+
+        This will not be fixed. For example, this might be a bug but it's not considered worth
+        fixing, or it might not be fixed in this release.
         """)
 
     CONFIRMED = Item(20, """
         Confirmed
 
         This bug has been reviewed, verified, and confirmed as something needing
-        fixing.
+        fixing. Anyone can set this status.
+        """)
+
+    TRIAGED = Item(21, """
+        Triaged
+
+        This bug has been reviewed, verified, and confirmed as
+        something needing fixing. The user must be a bug contact to
+        set this status, so it carries more weight than merely
+        Confirmed.
         """)
 
     INPROGRESS = Item(22, """
@@ -3066,6 +3231,120 @@ class LoginTokenType(DBSchema):
         """)
 
 
+class MailingListAutoSubscribePolicy(DBSchema):
+    """A person's auto-subscription policy.
+
+    When a person joins a team, or is joined to a team, their
+    auto-subscription policy describes how and whether they will be
+    automatically subscribed to any team mailing list that the team may have.
+
+    This does not describe what happens when a team that already has members
+    gets a new team mailing list.  In that case, its members are never
+    automatically subscribed to the mailing list.
+    """
+
+    NEVER = Item(0, """
+        Never subscribe automatically
+
+        The user must explicitly subscribe to a team mailing list for any team
+        that she joins.
+        """)
+
+    ON_REGISTRATION = Item(1, """
+        Subscribe on self-registration
+
+        The user is automatically joined to any team mailng list for a team
+        that she joins explicitly.  She is never joined to any team mailing
+        list for a team that someone else joins her to.
+        """)
+
+    ALWAYS = Item(2, """
+        Always subscribe automatically
+
+        The user is automatically subscribed to any team mailing list when she
+        is added to the team, regardless of who joins her to the team.
+        """)
+
+
+class MailingListStatus(DBSchema):
+    """Team mailing list status.
+
+    Team mailing lists can be in one of several states, which this class
+    tracks.  A team owner first requests that a mailing list be created for
+    their team; this is called registering the list.  This request will then
+    be either approved or declined by a Launchpad administrator.
+
+    If a list request is approved, its creation will be requested of Mailman,
+    but it takes time for Mailman to act on this request.  During this time,
+    the state of the list is 'constructing'.  Mailman will then either succeed
+    or fail to create the list.  If it succeeds, the list is active until such
+    time as the team owner requests that the list be made inactive.
+    """
+
+    REGISTERED = Item(1, """
+        Registered; request creation
+
+        The team owner has requested that the mailing list for their team be
+        created.
+        """)
+
+    APPROVED = Item(2, """
+        Approved
+
+        A Launchpad administrator has approved the request to create the team
+        mailing list.
+        """)
+
+    DECLINED = Item(3, """
+        Declined
+
+        A Launchpad administrator has declined the request to create the team
+        mailing list.
+        """)
+
+    CONSTRUCTING = Item(4, """
+        Constructing
+
+        Mailman is in the process of constructing a mailing list that has been
+        approved for creation.
+        """)
+
+    ACTIVE = Item(5, """
+        Active
+
+        Mailman has successfully created the mailing list, and it is now
+        active.
+        """)
+
+    FAILED = Item(6, """
+        Failed
+
+        Mailman was unsuccessful in creating the mailing list.
+        """)
+
+    INACTIVE = Item(7, """
+        Inactive
+
+        A previously active mailing lit has been made inactive by its team
+        owner.
+        """)
+
+    MODIFIED = Item(8, """
+        Modified
+
+        An active mailing list has been modified and this modification needs
+        to be communicated to Mailman.
+        """)
+
+    DEACTIVATING = Item(9, """
+        Deactivating
+
+        The mailing list has been flagged for deactivation by the team owner.
+        Mailman will be informed of this and will take the necessary actions
+        to deactive the list.
+        """)
+
+
 class BuildStatus(DBSchema):
     """Build status type
 
@@ -3316,6 +3595,43 @@ class MirrorStatus(DBSchema):
         """)
 
 
+class PersonalStanding(DBSchema):
+    """A person's standing.
+
+    Standing is currently (just) used to determine whether a person's posts to
+    a mailing list require first-post moderation or not.  Any person with good
+    or excellent standing may post directly to the mailing list without
+    moderation.  Any person with unknown or poor standing must have their
+    first-posts moderated.
+    """
+
+    UNKNOWN = Item(0, """
+        Unknown standing
+
+        Nothing about this person's standing is known.
+        """)
+
+    POOR = Item(100, """
+        Poor standing
+
+        This person has poor standing.
+        """)
+
+    GOOD = Item(200, """
+        Good standing
+
+        This person has good standing and may post to a mailing list without
+        being subject to first-post moderation rules.
+        """)
+
+    EXCELLENT = Item(300, """
+        Excellent standing
+
+        This person has excellent standing and may post to a mailing list
+        without being subject to first-post moderation rules.
+        """)
+
+
 class PollSecrecy(DBSchema):
     """The secrecy of a given Poll."""
 
@@ -3355,11 +3671,38 @@ class PollAlgorithm(DBSchema):
         """)
 
 
-class RosettaFileFormat(DBSchema):
-    """Rosetta File Format
+class PostedMessageStatus(DBSchema):
+    """The status of a posted message.
 
-    This is an enumeration of the different sorts of file that Rosetta can
-    export.
+    When a message posted to a mailing list is subject to first-post
+    moderation, the message gets one of these statuses.
+    """
+
+    NEW = Item(0, """
+        New status
+
+        The message has been posted and held for first-post moderation, but no
+        disposition of the message has yet been made.
+        """)
+
+    APPROVED = Item(1, """
+        Approved
+
+        A message held for first-post moderation has been approved.
+        """)
+
+    REJECTED = Item(2, """
+        Rejected
+
+        A message held for first-post moderation has been rejected.
+        """)
+
+
+class TranslationFileFormat(DBSchema):
+    """Translation File Format
+
+    This is an enumeration of the different sorts of file that Launchpad
+    Translations knows about.
     """
 
     PO = Item(1, """
@@ -3374,35 +3717,10 @@ class RosettaFileFormat(DBSchema):
         Gettext's standard binary file format.
         """)
 
-    XLIFF = Item(3, """
-        XLIFF
+    XPI = Item(3, """
+        Mozilla XPI format
 
-        OASIS's XML Localisation Interchange File Format.
-        """)
-
-    CSHARP_DLL = Item(4, """
-        .NET DLL
-
-        The dynamic link library format as used by programs that use the .NET
-        framework.
-        """)
-
-    CSHARP_RESOURCES = Item(5, """
-        .NET resource file
-
-        The resource file format used by programs that use the .NET framework.
-        """)
-
-    TCL = Item(6, """
-        TCL format
-
-        The .msg format as used by TCL/msgcat.
-        """)
-
-    QT = Item(7, """
-        QT format
-
-        The .qm format as used by programs using the QT toolkit.
+        The .xpi format as used by programs from Mozilla foundation.
         """)
 
 
@@ -3680,4 +3998,110 @@ class PersonCreationRationale(DBSchema):
 
         A user wanted to reference a person which is not a Launchpad user, so
         he created this "placeholder" profile.
+        """)
+
+    OWNER_CREATED_UBUNTU_SHOP = Item(12, """
+        Created by the owner himself, coming from the Ubuntu Shop.
+
+        Somebody went to the Ubuntu Shop and was directed to Launchpad to
+        create an account.
+        """)
+
+    OWNER_CREATED_UNKNOWN_TRUSTROOT = Item(13, """
+        Created by the owner himself, coming from unknown OpenID consumer.
+
+        Somebody went to an OpenID consumer we don't know about and was
+        directed to Launchpad to create an account.
+        """)
+
+
+class ArchivePurpose(DBSchema):
+    """The purpose, or type, of an archive.
+
+    A distribution can be associated with different archives and this 
+    schema item enumerates the different archive types and their purpose.
+    For example, old distro releases may need to be obsoleted so their
+    archive would be OBSOLETE_ARCHIVE.
+    """
+
+    PRIMARY = Item(1, """
+        Primary Archive.
+
+        This is the primary Ubuntu archive.
+        """)
+
+    PPA = Item(2, """
+        PPA Archive.
+
+        This is a Personal Package Archive.
+        """)
+
+    EMBARGOED = Item(3, """
+        Embargoed Archive.
+
+        This is the archive for embargoed packages.
+        """)
+
+    COMMERCIAL = Item(4, """
+        Commercial Archive.
+
+        This is the archive for commercial packages.
+        """)
+
+    OBSOLETE = Item(5, """
+        Obsolete Archive.
+
+        This is the archive for obsolete packages.
+        """)
+
+
+class EntitlementType(DBSchema):
+    """The set of features supported via entitlements.
+
+    The listed features may be enabled by the granting of an entitlement.
+    """
+
+    PRIVATE_BRANCHES = Item(10, """
+        Private Branches
+
+        The ability to create branches which are only visible to the team.
+        """)
+
+    PRIVATE_BUGS = Item(20, """
+        Private Bugs
+
+        The ability to create private bugs which are only visible to the team.
+        """)
+
+    PRIVATE_TEAMS = Item(30, """
+        Private Teams
+
+        The ability to create private teams which are only visible to parent
+        teams.
+        """)
+
+class EntitlementState(DBSchema):
+    """States for an entitlement.
+
+    The entitlement may start life as a REQUEST that is then granted and
+    made ACTIVE.  At some point the entitlement may be revoked by marking
+    as INACTIVE.
+    """
+
+    REQUESTED = Item(10, """
+        Entitlement has been requested.
+
+        The entitlement is inactive in this state.
+        """)
+
+    ACTIVE = Item(20, """
+        The entitlement is active.
+
+        The entitlement is approved in Launchpad or was imported in the
+        active state.
+        """)
+    INACTIVE = Item(30, """
+        The entitlement is inactive.
+
+        The entitlement has be deactivated.
         """)
