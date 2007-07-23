@@ -4086,6 +4086,22 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
 ', true, NULL, NULL, 0, 0, 2, NULL, 13, NULL, 'po/alsa-utils-es.po', NULL, NULL, '2007-04-07 10:14:36.267119', NULL, 755, 0);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, last_touched_pomsgset, unreviewed_count) VALUES (34, 5, 119, NULL, ' English translation for mozilla
+ Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
+ This file is distributed under the same license as the mozilla package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
+
+', 'Project-Id-Version: mozilla
+Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
+POT-Creation-Date: 2005-05-06 21:10:17.367605+00:00
+PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: English <en@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, NULL, NULL, 0, 0, 3, NULL, 13, NULL, 'debian/po/pkgconf-mozilla-en.po', NULL, NULL, '2007-07-12 03:42:48.848044', NULL, 761, 0);
 
 
 ALTER TABLE pofile ENABLE TRIGGER ALL;
@@ -4126,6 +4142,7 @@ INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (64, 52, 1, 693, '2005-08-29 16:16:58.010285');
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (65, 56, 31, 702, '2007-01-05 13:04:20.092506');
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (66, 66, 30, 701, '2006-12-13 21:19:06.369142');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (68, 13, 34, 712, '2007-07-12 03:42:48.848044');
 
 
 ALTER TABLE pofiletranslator ENABLE TRIGGER ALL;
@@ -5468,6 +5485,15 @@ INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, com
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (753, 0, 33, true, false, false, NULL, 200, false, false, false, '2007-04-07 10:14:36.267119', 13, NULL);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (754, 0, 33, false, false, false, NULL, 198, false, false, false, NULL, NULL, NULL);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (755, 0, 33, true, false, false, NULL, 199, false, false, false, '2007-04-07 11:09:37.437343', 16, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (756, 0, 34, true, false, false, NULL, 156, false, false, false, '2007-07-12 03:42:48.848044', 13, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (757, 0, 34, false, false, false, NULL, 160, false, false, false, NULL, NULL, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (758, 0, 34, true, false, false, NULL, 152, false, false, false, '2007-07-12 03:42:48.848044', 13, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (759, 0, 34, false, false, false, NULL, 153, false, false, false, NULL, NULL, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (760, 0, 34, false, false, false, NULL, 154, false, false, false, NULL, NULL, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (761, 0, 34, true, false, false, NULL, 155, false, false, false, '2007-07-12 03:42:48.848044', 13, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (762, 0, 34, false, false, false, NULL, 157, false, false, false, NULL, NULL, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (763, 0, 34, false, false, false, NULL, 158, false, false, false, NULL, NULL, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (764, 0, 34, false, false, false, NULL, 159, false, false, false, NULL, NULL, NULL);
 
 
 ALTER TABLE pomsgset ENABLE TRIGGER ALL;
@@ -6177,6 +6203,9 @@ INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datec
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (705, 752, 0, 659, 2, '2007-01-24 19:15:32.620698', 13, 1, false, false);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (706, 752, 0, 662, 2, '2007-01-24 19:15:47.546879', 13, 1, false, false);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (707, 753, 0, 663, 2, '2007-04-07 10:14:36.267119', 13, 1, true, false);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (710, 756, 0, 666, 2, '2007-07-12 03:42:48.848044', 13, 1, true, false);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (711, 758, 0, 667, 2, '2007-07-12 03:42:48.848044', 13, 1, true, false);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (712, 761, 0, 668, 2, '2007-07-12 03:42:48.848044', 13, 1, true, false);
 
 
 ALTER TABLE posubmission ENABLE TRIGGER ALL;
@@ -7889,6 +7918,9 @@ INSERT INTO potranslation (id, translation) VALUES (662, 'blah, blah, blah');
 INSERT INTO potranslation (id, translation) VALUES (663, 'danilo@canonical.com');
 INSERT INTO potranslation (id, translation) VALUES (664, 'carlos@canonical.com');
 INSERT INTO potranslation (id, translation) VALUES (665, 'jtv@canonical.com');
+INSERT INTO potranslation (id, translation) VALUES (666, 'Please choose your sound system.');
+INSERT INTO potranslation (id, translation) VALUES (667, '/etc/mozilla/prefs.js is available for preconfiguring preferences.');
+INSERT INTO potranslation (id, translation) VALUES (668, 'auto, esddsp, artsdsp, mass, none');
 
 
 ALTER TABLE potranslation ENABLE TRIGGER ALL;

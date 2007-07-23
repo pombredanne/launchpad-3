@@ -14,7 +14,7 @@ from sqlobject.sqlbuilder import AND, IN
 from canonical.config import config
 
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -520,7 +520,7 @@ class BuildSet:
             Distribution.id = Archive.distribution AND
             Archive.purpose = %s AND
             Archive.id = Build.archive
-            """ % ArchivePurpose.PRIMARY)
+            """ % quote(ArchivePurpose.PRIMARY))
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables,

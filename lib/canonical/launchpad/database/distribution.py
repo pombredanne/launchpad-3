@@ -152,7 +152,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistribution`."""
         return Archive.select("""
             Distribution = %s AND
-            Purpose != %s""" % (self.id, ArchivePurpose.PPA)
+            Purpose != %s""" % sqlvalues(self.id, ArchivePurpose.PPA)
             )
 
     @property
