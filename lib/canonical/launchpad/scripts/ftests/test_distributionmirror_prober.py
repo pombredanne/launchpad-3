@@ -32,7 +32,7 @@ from canonical.launchpad.scripts.distributionmirror_prober import (
     RedirectAwareProberProtocol, probe_archive_mirror, probe_cdimage_mirror,
     should_skip_host, PER_HOST_REQUESTS, MIN_REQUEST_TIMEOUT_RATIO,
     MIN_REQUESTS_TO_CONSIDER_RATIO, _build_request_for_cdimage_file_list,
-    restore_http_proxy)
+    restore_http_proxy, MultiLock, OVERALL_REQUESTS)
 from canonical.launchpad.scripts.ftests.distributionmirror_http_server import (
     DistributionMirrorTestHTTPServer)
 
@@ -364,6 +364,43 @@ class TestProberFactoryRequestTimeoutRatioWithTwisted(TwistedTestCase):
             u'http://%s:%s/timeout' % (host, self.port))
         return self.assertFailure(d, ConnectionSkipped)
 
+class TestMultiLock(TestCase):
+
+    def test_MultiLock(self):
+        host_semaphore = defer.DeferredSemaphore(1)
+        overall_semaphore = defer.DeferredSemaphore(1)
+        deferred = defer.Deferred()
+
+        # Keep host_semaphore busy.
+        host_semaphore.run(lambda: deferred)
+
+        self.multi_acquired = False
+        self.multi_acquired2 = False
+        multi_sem = MultiLock(host_semaphore, overall_semaphore)
+        multi_sem.run(lambda: setattr(self, 'multi_acquired', True))
+        multi_sem.run(lambda: setattr(self, 'multi_acquired2', True))
+        self.assertFalse(self.multi_acquired)
+        self.assertFalse(self.multi_acquired2)
+
+        # Release host_semaphore.
+        deferred.callback(None)
+
+        # multi_sem will now have been able to acquire both semaphores, and so
+        # it will have run its task.
+        self.assertTrue(self.multi_acquired)
+        self.assertTrue(self.multi_acquired2)
+
+        # Keep multi_sem busy.
+        deferred = defer.Deferred()
+        multi_sem.run(lambda: deferred)
+        self.multi_acquired = False
+        multi_sem.run(lambda: setattr(self, 'multi_acquired', True))
+        self.assertFalse(self.multi_acquired)
+
+        # Unblock multi_sem, enabling it to run its task.
+        deferred.callback(None)
+        self.assertTrue(self.multi_acquired)
+
 
 class TestRedirectAwareProberFactoryAndProtocol(TestCase):
 
@@ -607,37 +644,40 @@ class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
         The given probe_function must be either probe_cdimage_mirror or
         probe_archive_mirror.
         """
-        host_semaphores = {}
+        host_locks = {}
         mirror1_host = URI(mirror1.base_url).host
         mirror2_host = URI(mirror2.base_url).host
         mirror3_host = URI(mirror3.base_url).host
 
         probe_function(
-            mirror1, StringIO(), [], logging, host_semaphores=host_semaphores)
+            mirror1, StringIO(), [], logging, host_locks=host_locks)
         # Since we have a single mirror to probe we need to have a single
-        # Deferred with a limit of 1, to ensure we don't issue simultaneous
-        # connections on that mirror.
-        self.assertEquals(len(host_semaphores), 1)
-        self.assertEquals(
-            host_semaphores[mirror1_host].limit, PER_HOST_REQUESTS)
+        # DeferredSemaphore with a limit of 1, to ensure we don't issue
+        # simultaneous connections on that host.
+        self.assertEquals(len(host_locks), 1)
+        multi_lock = host_locks[mirror1_host]
+        self.assertEquals(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
+        # Note that our multi_lock contains another semaphore to control the
+        # overall number of requests.
+        self.assertEquals(multi_lock.overall_lock.limit, OVERALL_REQUESTS)
 
         probe_function(
-            mirror2, StringIO(), [], logging, host_semaphores=host_semaphores)
+            mirror2, StringIO(), [], logging, host_locks=host_locks)
         # Now we have two mirrors to probe, but they have the same hostname,
         # so we'll still have a single semaphore in host_semaphores.
         self.assertEquals(mirror2_host, mirror1_host)
-        self.assertEquals(len(host_semaphores), 1)
-        self.assertEquals(
-            host_semaphores[mirror1_host].limit, PER_HOST_REQUESTS)
+        self.assertEquals(len(host_locks), 1)
+        multi_lock = host_locks[mirror2_host]
+        self.assertEquals(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
 
         probe_function(
-            mirror3, StringIO(), [], logging, host_semaphores=host_semaphores)
+            mirror3, StringIO(), [], logging, host_locks=host_locks)
         # This third mirror is on a separate host, so we'll have a second
         # semaphore added to host_semaphores.
         self.failUnless(mirror3_host != mirror1_host)
-        self.assertEquals(len(host_semaphores), 2)
-        self.assertEquals(
-            host_semaphores[mirror3_host].limit, PER_HOST_REQUESTS)
+        self.assertEquals(len(host_locks), 2)
+        multi_lock = host_locks[mirror3_host]
+        self.assertEquals(multi_lock.host_lock.limit, PER_HOST_REQUESTS)
 
         # When using an http_proxy, even though we'll actually connect to the
         # proxy, we'll use the mirror's host as the key to find the semaphore
@@ -645,8 +685,8 @@ class TestProbeFunctionSemaphores(LaunchpadZopelessTestCase):
         orig_proxy = os.getenv('http_proxy')
         os.environ['http_proxy'] = 'http://squid.internal:3128/'
         probe_function(
-            mirror3, StringIO(), [], logging, host_semaphores=host_semaphores)
-        self.assertEquals(len(host_semaphores), 2)
+            mirror3, StringIO(), [], logging, host_locks=host_locks)
+        self.assertEquals(len(host_locks), 2)
         restore_http_proxy(orig_proxy)
 
 

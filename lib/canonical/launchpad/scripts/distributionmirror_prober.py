@@ -35,15 +35,41 @@ MIN_REQUESTS_TO_CONSIDER_RATIO = 30
 # -- Guilherme Salgado, 2007-01-30
 host_requests = {}
 host_timeouts = {}
-host_semaphores = {}
+host_locks = {}
 
 MAX_REDIRECTS = 3
 
-# Number of simultaneous connections we issue on a given host
+# Number of simultaneous requests we issue on a given host.
 # IMPORTANT: Don't change this unless you really know what you're doing. Using
-# a to big value can cause spurious failures on lots of mirrors and a to small
-# one can cause the prober to run for hours.
+# a too big value can cause spurious failures on lots of mirrors and a too
+# small one can cause the prober to run for hours.
 PER_HOST_REQUESTS = 2
+
+# We limit the overall number of simultaneous requests as well to prevent
+# them from stalling and timing out before they even get a chance to
+# start connecting.
+OVERALL_REQUESTS = 200
+overall_semaphore = DeferredSemaphore(OVERALL_REQUESTS)
+
+
+class MultiLock(defer._ConcurrencyPrimitive):
+    """A lock that acquires multiple underlying locks before it is acquired."""
+
+    def __init__(self, overall_lock, host_lock):
+        defer._ConcurrencyPrimitive.__init__(self)
+        self.overall_lock = overall_lock
+        self.host_lock = host_lock
+
+    @property
+    def _locks(self):
+        return [self.overall_lock, self.host_lock]
+
+    def acquire(self):
+        return defer.gatherResults([lock.acquire() for lock in self._locks])
+
+    def release(self):
+        for lock in self._locks:
+            lock.release()
 
 
 class ProberProtocol(HTTPClient):
@@ -387,14 +413,15 @@ class ArchiveMirrorProberCallbacks(object):
         arch_or_source_mirror.status = MirrorStatus.UNKNOWN
         for status, url in status_url_mapping.items():
             prober = ProberFactory(url)
-            # Use one semaphore per host, to limit the numbers of simultaneous
-            # connections on a given host. Note that we don't have an overall
-            # limit of connections, since the per-host limit should be enough.
-            # If we ever need an overall limit, we can use Andrew's suggestion
-            # on https://launchpad.net/bugs/54791 to implement it.
-            semaphore = host_semaphores.setdefault(
-                prober.request_host, DeferredSemaphore(PER_HOST_REQUESTS))
-            deferred = semaphore.run(prober.probe)
+            # Use A MultiLock with one semaphore limiting the overall
+            # connections and another limiting the per-host connections.
+            if prober.request_host in host_locks:
+                multi_lock = host_locks[prober.request_host]
+            else:
+                multi_lock = MultiLock(
+                    overall_semaphore, DeferredSemaphore(PER_HOST_REQUESTS))
+                host_locks[prober.request_host] = multi_lock
+            deferred = multi_lock.run(prober.probe)
             deferred.addCallback(
                 self.setMirrorStatus, arch_or_source_mirror, status, url)
             deferred.addErrback(self.logError, url)
@@ -555,7 +582,7 @@ def checkComplete(result, key, unchecked_keys):
 
 
 def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
-                         host_semaphores=host_semaphores):
+                         host_locks=host_locks):
     """Probe an archive mirror for its contents and freshness.
 
     First we issue a set of HTTP HEAD requests on some key files to find out
@@ -573,14 +600,15 @@ def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
         unchecked_keys.append(url)
         prober = ProberFactory(url)
 
-        # Use one semaphore per host, to limit the numbers of simultaneous
-        # connections on a given host. Note that we don't have an overall
-        # limit of connections, since the per-host limit should be enough.
-        # If we ever need an overall limit, we can use Andrews's suggestion
-        # on https://launchpad.net/bugs/54791 to implement it.
-        semaphore = host_semaphores.setdefault(
-            prober.request_host, DeferredSemaphore(PER_HOST_REQUESTS))
-        deferred = semaphore.run(prober.probe)
+        # Use A MultiLock with one semaphore limiting the overall
+        # connections and another limiting the per-host connections.
+        if prober.request_host in host_locks:
+            multi_lock = host_locks[prober.request_host]
+        else:
+            multi_lock = MultiLock(
+                overall_semaphore, DeferredSemaphore(PER_HOST_REQUESTS))
+            host_locks[prober.request_host] = multi_lock
+        deferred = multi_lock.run(prober.probe)
         deferred.addCallbacks(
             callbacks.ensureMirrorSeries, callbacks.deleteMirrorSeries)
 
@@ -591,7 +619,7 @@ def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
 
 
 def probe_cdimage_mirror(mirror, logfile, unchecked_keys, logger,
-                         host_semaphores=host_semaphores):
+                         host_locks=host_locks):
     """Probe a cdimage mirror for its contents.
     
     This is done by checking the list of files for each flavour and series
@@ -622,14 +650,15 @@ def probe_cdimage_mirror(mirror, logfile, unchecked_keys, logger,
             # Use a RedirectAwareProberFactory because CD mirrors are allowed
             # to redirect, and we need to cope with that.
             prober = RedirectAwareProberFactory(url)
-            # Use one semaphore per host, to limit the numbers of simultaneous
-            # connections on a given host. Note that we don't have an overall
-            # limit of connections, since the per-host limit should be enough.
-            # If we ever need an overall limit, we can use Andrews's
-            # suggestion on https://launchpad.net/bugs/54791 to implement it.
-            semaphore = host_semaphores.setdefault(
-                prober.request_host, DeferredSemaphore(PER_HOST_REQUESTS))
-            deferred = semaphore.run(prober.probe)
+            # Use A MultiLock with one semaphore limiting the overall
+            # connections and another limiting the per-host connections.
+            if prober.request_host in host_locks:
+                multi_lock = host_locks[prober.request_host]
+            else:
+                multi_lock = MultiLock(
+                    overall_semaphore, DeferredSemaphore(PER_HOST_REQUESTS))
+                host_locks[prober.request_host] = multi_lock
+            deferred = multi_lock.run(prober.probe)
             deferred.addErrback(callbacks.logMissingURL, url)
             deferredList.append(deferred)
 
