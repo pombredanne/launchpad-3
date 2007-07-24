@@ -46,6 +46,7 @@ from canonical.launchpad.interfaces import (
     INullBugTask,
     IProductSeries,
     IProductSeriesBugTask,
+    IProjectMilestone,
     ISourcePackage,
     IUpstreamBugTask,
     NotFoundError,
@@ -998,7 +999,6 @@ class BugTaskSet:
             'distribution': params.distribution,
             'distrorelease': params.distroseries,
             'productseries': params.productseries,
-            'milestone': params.milestone,
             'assignee': params.assignee,
             'sourcepackagename': params.sourcepackagename,
             'owner': params.owner,
@@ -1023,6 +1023,26 @@ class BugTaskSet:
             where_cond = search_value_to_where_condition(arg_value)
             if where_cond is not None:
                 extra_clauses.append("BugTask.%s %s" % (arg_name, where_cond))
+
+        if params.milestone:
+            if IProjectMilestone.providedBy(params.milestone):
+                where_cond = """
+                    IN (SELECT Milestone.id
+                        FROM Milestone, Product
+                        WHERE Milestone.product = Product.id
+                            AND Product.project = %s
+                            AND Milestone.name = %s)
+                """ % sqlvalues(params.milestone.target, params.milestone.name)
+
+                # A bug may have bugtasks in more than one series, and these
+                # bugtasks may have the same milestone value. To avoid
+                # duplicate result rows for one bug, ensure that only that
+                # bugtask is returned, that is directly assigned to the
+                # product.
+                extra_clauses.append("BugTask.product IS NOT null")
+            else:
+                where_cond = search_value_to_where_condition(arg_value)
+            extra_clauses.append("BugTask.milestone %s" % where_cond)
 
         if params.project:
             clauseTables.append("Product")
