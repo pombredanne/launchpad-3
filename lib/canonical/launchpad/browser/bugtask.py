@@ -90,7 +90,7 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
-from canonical.lazr.enum import EnumeratedType, Item
+from canonical.lazr import EnumeratedType, Item
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
 from canonical.widgets.bug import BugTagsWidget

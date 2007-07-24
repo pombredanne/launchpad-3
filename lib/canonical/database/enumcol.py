@@ -10,7 +10,7 @@ import sqlobject.constraints as consts
 
 from canonical.database.constants import DEFAULT
 
-from canonical.lazr.enum import DBEnumeratedType, DBItem
+from canonical.lazr import DBEnumeratedType, DBItem
 
 __all__ = [
 'EnumCol',

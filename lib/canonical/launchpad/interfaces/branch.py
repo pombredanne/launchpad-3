@@ -31,7 +31,7 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
-from canonical.lazr.enum import (
+from canonical.lazr import (
     DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
 

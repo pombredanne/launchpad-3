@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 
-from canonical.lazr.enum import DBEnumeratedType, DBItem, use_template
+from canonical.lazr import DBEnumeratedType, DBItem, use_template
 
 
 class DBTestEnumeration(DBEnumeratedType):
