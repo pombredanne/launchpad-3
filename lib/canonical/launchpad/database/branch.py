@@ -21,6 +21,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
+    BranchLifecycleStatus,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchSet, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.branchrevision import BranchRevision
@@ -29,7 +30,7 @@ from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
 from canonical.lp.dbschema import (
     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
-    BranchRelationships, BranchLifecycleStatus, BranchType,
+    BranchRelationships, BranchType,
     BranchVisibilityRule)
 
 
@@ -58,7 +59,8 @@ class Branch(SQLBase):
 
     home_page = StringCol()
 
-    lifecycle_status = EnumCol(schema=BranchLifecycleStatus, notNull=True,
+    lifecycle_status = EnumCol(
+        enum=BranchLifecycleStatus, notNull=True,
         default=BranchLifecycleStatus.NEW)
 
     last_mirrored = UtcDateTimeCol(default=None)

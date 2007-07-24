@@ -46,6 +46,7 @@ from canonical.launchpad.interfaces import (
     INullBugTask,
     IProductSeries,
     IProductSeriesBugTask,
+    IProjectMilestone,
     ISourcePackage,
     IUpstreamBugTask,
     NotFoundError,
@@ -133,7 +134,12 @@ class BugTaskDelta:
 
     @property
     def targetname(self):
-        return self.bugtask.targetname
+        return self.bugtask.bugtargetname
+
+    @property
+    def bugtargetdisplayname(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        return self.targetnamecache
 
 
 class BugTaskMixin:
@@ -142,14 +148,22 @@ class BugTaskMixin:
     @property
     def title(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        title = 'Bug #%s in %s: "%s"' % (
-            self.bug.id, self.targetname, self.bug.title)
-        return title
+        if INullBugTask.providedBy(self):
+            return 'Bug #%s is not in %s: "%s"' % (
+                self.bug.id, self.bugtargetdisplayname, self.bug.title)
+        else:
+            return 'Bug #%s in %s: "%s"' % (
+                self.bug.id, self.bugtargetdisplayname, self.bug.title)
 
     @property
-    def targetname(self):
+    def bugtargetdisplayname(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        return self.targetnamecache
+        return self.target.bugtargetdisplayname
+
+    @property
+    def bugtargetname(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        return self.target.bugtargetname
 
     @property
     def target(self):
@@ -605,7 +619,8 @@ class BugTask(SQLBase, BugTaskMixin):
         # We also can't simply update kw with the value we want for
         # targetnamecache because we need to access bugtask attributes
         # that may be available only after SQLBase.set() is called.
-        SQLBase.set(self, **{'targetnamecache': self.target.bugtargetname})
+        SQLBase.set(
+            self, **{'targetnamecache': self.target.bugtargetdisplayname})
 
     def setImportanceFromDebbugs(self, severity):
         """See canonical.launchpad.interfaces.IBugTask."""
@@ -714,7 +729,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def updateTargetNameCache(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        targetname = self.target.bugtargetname
+        targetname = self.target.bugtargetdisplayname
         if self.targetnamecache != targetname:
             self.targetnamecache = targetname
 
@@ -781,6 +796,11 @@ class BugTask(SQLBase, BugTaskMixin):
                  'componentname': component})
         else:
             raise AssertionError('Unknown BugTask context: %r' % self)
+
+        # We only want to have a milestone field in the header if there's
+        # a milestone set for the bug.
+        if self.milestone:
+            header_value += ' milestone=%s;' % self.milestone.name
 
         header_value += ((
             ' status=%(status)s; importance=%(importance)s; '
@@ -979,7 +999,6 @@ class BugTaskSet:
             'distribution': params.distribution,
             'distrorelease': params.distroseries,
             'productseries': params.productseries,
-            'milestone': params.milestone,
             'assignee': params.assignee,
             'sourcepackagename': params.sourcepackagename,
             'owner': params.owner,
@@ -1004,6 +1023,26 @@ class BugTaskSet:
             where_cond = search_value_to_where_condition(arg_value)
             if where_cond is not None:
                 extra_clauses.append("BugTask.%s %s" % (arg_name, where_cond))
+
+        if params.milestone:
+            if IProjectMilestone.providedBy(params.milestone):
+                where_cond = """
+                    IN (SELECT Milestone.id
+                        FROM Milestone, Product
+                        WHERE Milestone.product = Product.id
+                            AND Product.project = %s
+                            AND Milestone.name = %s)
+                """ % sqlvalues(params.milestone.target, params.milestone.name)
+
+                # A bug may have bugtasks in more than one series, and these
+                # bugtasks may have the same milestone value. To avoid
+                # duplicate result rows for one bug, ensure that only that
+                # bugtask is returned, that is directly assigned to the
+                # product.
+                extra_clauses.append("BugTask.product IS NOT null")
+            else:
+                where_cond = search_value_to_where_condition(arg_value)
+            extra_clauses.append("BugTask.milestone %s" % where_cond)
 
         if params.project:
             clauseTables.append("Product")

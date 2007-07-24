@@ -142,16 +142,16 @@ listing tab.
     filtering on "Any Status".
 
     >>> print_landscape_code_listing(no_priv_browser)
-    testing-branch             60 New
+    testing-branch             ... New
 
     >>> print_landscape_code_listing(landscape_dev_browser)
-    feature-x  Sample Person   60 New
-    trunk      Sample Person   60 New
+    feature-x  Sample Person   ... New
+    trunk      Sample Person   ... New
 
     >>> print_landscape_code_listing(admin_browser)
-    feature-x  Sample Person   60 New
-    trunk      Sample Person   60 New
-    testing-branch             60 New
+    feature-x  Sample Person   ... New
+    trunk      Sample Person   ... New
+    testing-branch             ... New
 
 
 == Person code listing pages ==
