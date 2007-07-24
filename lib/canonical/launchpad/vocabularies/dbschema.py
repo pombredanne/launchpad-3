@@ -12,7 +12,6 @@ __all__ = [
     'BountyDifficultyVocabulary',
     'BountyStatusVocabulary',
     'BranchReviewStatusVocabulary',
-    'BranchVisibilityRuleVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugBranchStatusVocabulary',
@@ -68,7 +67,6 @@ from canonical.launchpad.webapp.vocabulary import (
 BountyDifficultyVocabulary = vocab_factory(dbschema.BountyDifficulty)
 BountyStatusVocabulary = vocab_factory(dbschema.BountyStatus)
 BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
-BranchVisibilityRuleVocabulary = vocab_factory(dbschema.BranchVisibilityRule)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
 BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)

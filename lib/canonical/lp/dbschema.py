@@ -28,7 +28,6 @@ __all__ = (
 'BountyStatus',
 'BranchRelationships',
 'BranchReviewStatus',
-'BranchVisibilityRule',
 'BugBranchStatus',
 'BugNominationStatus',
 'BugTaskStatus',
@@ -2531,35 +2530,6 @@ class BranchReviewStatus(DBSchema):
 
         The reviewer is satisfied that the branch can be merged without
         further changes.
-        """)
-
-
-class BranchVisibilityRule(DBSchema):
-    """Branch Visibility Rules for defining branch visibility policy."""
-
-    PUBLIC = Item(1, """
-        Public
-
-        Branches are public by default.
-        """)
-
-    PRIVATE = Item(2, """
-        Private
-
-        Branches are private by default.
-        """)
-
-    PRIVATE_ONLY = Item (3, """
-        Private only
-
-        Branches are private by default. Branch owners are not able
-        to change the visibility of the branches to public.
-        """)
-
-    FORBIDDEN = Item(4, """
-        Forbidden
-
-        Users are not able to create branches in the context.
         """)
 
 
