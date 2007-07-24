@@ -25,7 +25,7 @@ class BranchSubscription(SQLBase):
 
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     branch = ForeignKey(dbName='branch', foreignKey='Branch', notNull=True)
-    notification_level = EnumCol(schema=BranchSubscriptionNotificationLevel,
+    notification_level = EnumCol(enum=BranchSubscriptionNotificationLevel,
                                  notNull=True, default=DEFAULT)
-    max_diff_lines = EnumCol(schema=BranchSubscriptionDiffSize,
+    max_diff_lines = EnumCol(enum=BranchSubscriptionDiffSize,
                              notNull=True)

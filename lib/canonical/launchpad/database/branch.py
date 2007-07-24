@@ -41,7 +41,7 @@ class Branch(SQLBase):
     _table = 'Branch'
     _defaultOrder = ['product', '-lifecycle_status', 'author', 'name']
 
-    branch_type = EnumCol(schema=BranchType, notNull=True)
+    branch_type = EnumCol(enum=BranchType, notNull=True)
 
     name = StringCol(notNull=False)
     title = StringCol(notNull=False)
