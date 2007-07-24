@@ -11,10 +11,9 @@ from canonical.database.constants import DEFAULT
 from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import (
-    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize)
-
-from canonical.launchpad.interfaces import IBranchSubscription
+from canonical.launchpad.interfaces import (
+    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
+    IBranchSubscription)
 
 
 class BranchSubscription(SQLBase):
