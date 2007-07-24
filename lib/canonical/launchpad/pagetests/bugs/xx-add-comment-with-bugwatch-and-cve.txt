@@ -20,7 +20,7 @@ added to the bugwatches resp CVEs related to this bug
 
   >>> cve_portlet = find_portlet(user_browser.contents, 
   ...    '<abbr title="Common Vulnerabilities and Exposures index">CVE</abbr>'
-  ...    ' references:')
+  ...    ' references')
   >>> added_cve_link = cve_portlet('a', 
   ...     title='This CVEwas automatically created fro...')[0]
   >>> print added_cve_link['href']

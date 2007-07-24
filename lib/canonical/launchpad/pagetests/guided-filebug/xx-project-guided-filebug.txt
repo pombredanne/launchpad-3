@@ -34,7 +34,7 @@ page.
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/...'
     >>> user_browser.title
-    'Bug #... in evolution (upstream): ...Evolution crashes...'
+    'Bug #... in Evolution: ...Evolution crashes...'
 
 
 == Advanced filebug page ==
@@ -55,7 +55,7 @@ filebug page.
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/...'
     >>> user_browser.title
-    'Bug #... in evolution (upstream): ...Evolution crashes...'
+    'Bug #... in Evolution: ...Evolution crashes...'
 
 
 == Subscribing to a similar bug ==
@@ -74,8 +74,6 @@ bugs we filed recently.
 
     >>> from canonical.launchpad.ftests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
-    #7 A test bug
-    New, last updated 2006-05-19
     #... Evolution crashes
     New, last updated ...
     #... Evolution crashes lots
@@ -128,4 +126,4 @@ the user to the bug page.
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/...'
     >>> user_browser.title
-    'Bug #... in evolution (upstream): ...Faznambutron dumps core...'
+    'Bug #... in Evolution: ...Faznambutron dumps core...'

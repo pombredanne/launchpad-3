@@ -47,7 +47,7 @@
   <p tal:define="unspoken_languages view/unspoken_languages"
     tal:condition="unspoken_languages">
     <span tal:replace="context/displayname">Mozilla Firefox</span> has 
-    unsolved questions in the following languages:
+    unanswered questions in the following languages:
     <span tal:replace="structure unspoken_languages">
      <a href="ubuntu/+unspoken?language=es">1 in Spanish</a>
     </span>. Can you help?

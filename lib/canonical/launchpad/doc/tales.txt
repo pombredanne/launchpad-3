@@ -433,6 +433,15 @@ is replaced with the message '<email address hidden>'.
     >>> # XPath expressions are not email addresses.
     >>> test_tales('foo/fmt:obfuscate-email', foo='element/@attribute')
     'element/@attribute'
+    >>> # An invalid address, some characters, followed by many dots, and
+    >>> # some more characters. This pattern (derived from a real example)
+    >>> # caused the re to hang the servers and the test suite.
+    >>> # The re used one-or-none in a grouping (\.?), which is expensive.
+    >>> bad_address = (
+    ...     "medicalwei@sara:~$ Spinning................................"
+    ...     "...........................................................not")
+    >>> test_tales('foo/fmt:obfuscate-email', foo=bad_address)
+    'medicalwei@sara:~$ ...'
 
 
 == Test the 'fmt:' namespace where the context is a dict. ==
@@ -596,7 +605,7 @@ DBSchema the item comes from.
     >>> test_tales('deb/enumvalue:CHEESEFISH', deb=udeb)
     Traceback (most recent call last):
     ...
-    TraversalError: 'The BinaryPackageFormat dbschema does not have a value CHEESEFISH.'
+    TraversalError: 'The enumerated type BinaryPackageFormat does not have a value CHEESEFISH.'
 
 It is possible for dbschemas to have a 'None' value.  This is a bit awkward,
 because when the value is None, we can't do any checking whether a new value
@@ -614,4 +623,4 @@ wrapped dbschema items too:
     >>> test_tales('deb/enumvalue:CHEESEFISH', deb=wrapped_deb)
     Traceback (most recent call last):
     ...
-    TraversalError: 'The BinaryPackageFormat dbschema does not have a value CHEESEFISH.'
+    TraversalError: 'The enumerated type BinaryPackageFormat does not have a value CHEESEFISH.'

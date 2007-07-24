@@ -200,6 +200,21 @@ class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
         """Returns True if all the products in the Project use Malone for bug
         tracking, False otherwise."""
 
+    milestones = Attribute(_(
+        "The visible milestones associated with this project, "
+        "ordered by date expected."))
+
+    all_milestones = Attribute(_(
+        "All milestones associated with this project, ordered by "
+        "date expected."))
+
+    def getMilestone(name):
+        """Return the milestone named `name` for this project.
+
+        If a milestone with the given name does not exist, return None.
+        """
+
+
 # Interfaces for set
 
 class IProjectSet(Interface):

@@ -3,6 +3,7 @@
 
     <metal:portlets fill-slot="portlets">
       <tal:portlet tal:replace="structure context/@@+portlet-lifecycle" />
+      <tal:portlet tal:replace="structure context/@@+portlet-milestones" />
     </metal:portlets>
 
     <div metal:fill-slot="main">

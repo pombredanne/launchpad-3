@@ -384,15 +384,15 @@ projects.
     distribution: The Gentoo Linux (gentoo)
     distribution: Kubuntu - Free KDE-based Linux (kubuntu)
     distribution: Ubuntu Test (ubuntutest)
-    project group: The Ubuntu Project (ubuntu-project)
-    project: Ubuntu (ubuntu-product)
+    project group: Apache (apache)
+    project: Tomcat (tomcat)
     project: ALSA utilities (alsa-utils)
 
     >>> for pillarname in ubuntu_team.getOwnedOrDrivenPillars():
     ...     print_pillar(pillarname)
     distribution: Ubuntu Linux (ubuntu)
     distribution: Ubuntu Test (ubuntutest)
-    project: Ubuntu (ubuntu-product)
+    project: Tomcat (tomcat)
 
 
 == Translations ==
