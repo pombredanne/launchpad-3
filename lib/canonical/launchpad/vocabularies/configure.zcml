@@ -239,11 +239,6 @@
     />
 
   <vocabulary
-    name="PersonCreationRationale"
-    factory="canonical.launchpad.vocabularies.PersonCreationRationaleVocabulary"
-    />
-
-  <vocabulary
     name="PersonTeamParticipations"
     factory="canonical.launchpad.vocabularies.person_team_participations_vocabulary_factory"
     />

@@ -99,7 +99,7 @@ class IOpenIDRPConfig(Interface):
     creation_rationale = Choice(title=_('Creation Rationale'),
         description=_('The creation rationale to use for user accounts '
                       'created while logging in to this Relying Party'),
-        vocabulary='PersonCreationRationale')
+        vocabulary=PersonCreationRationale)
 
 
 class IOpenIDRPConfigSet(Interface):
