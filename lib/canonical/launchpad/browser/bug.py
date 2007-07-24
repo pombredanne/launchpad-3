@@ -50,7 +50,7 @@ from canonical.launchpad.interfaces import (
     NoBugTrackerFound,
     NotFoundError,
     UnrecognizedBugTrackerURL,
-    valid_distrotask,
+    validate_new_distrotask,
     valid_upstreamtask,
     )
 from canonical.launchpad.browser.editview import SQLObjectEditView
@@ -603,9 +603,8 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                         cgi.escape(filebug_url, quote=True)))
             else:
                 try:
-                    valid_distrotask(
-                        self.context.bug, distribution, sourcepackagename,
-                        on_create=True)
+                    validate_new_distrotask(
+                        self.context.bug, distribution, sourcepackagename)
                 except WidgetsError, errors:
                     for error in errors:
                         self.setFieldError(

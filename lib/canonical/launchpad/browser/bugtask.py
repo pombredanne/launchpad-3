@@ -68,7 +68,7 @@ from canonical.launchpad.interfaces import (
     IFrontPageBugTaskSearch, ILaunchBag, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
     IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
-    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask,
+    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, validate_distrotask,
     valid_upstreamtask, IProductSeriesBugTask, IBugNominationSet,
     IProductSeries, INominationsReviewTableBatchNavigator)
 
@@ -909,7 +909,8 @@ class BugTaskEditView(GeneralFormView):
         #   -- kiko, 2007-03-26
         if distro is not None and sourcename != data['sourcepackagename']:
             try:
-                valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
+                validate_distrotask(
+                    bugtask.bug, distro, data['sourcepackagename'])
             except WidgetsError, errors:
                 self.sourcepackagename_widget._error = ConversionError(str(errors.args[0]))
                 raise errors
