@@ -30,7 +30,6 @@ __all__ = [
     'EntitlementTypeVocabulary',
     'GPGKeyAlgorithmVocabulary',
     'InfestationStatusVocabulary',
-    'MailingListStatusVocabulary',
     'MirrorContentVocabulary',
     'MirrorPulseTypeVocabulary',
     'MirrorSpeedVocabulary',
@@ -97,7 +96,6 @@ EntitlementStateVocabulary = vocab_factory(dbschema.EntitlementState)
 EntitlementTypeVocabulary = vocab_factory(dbschema.EntitlementType)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
-MailingListStatusVocabulary = vocab_factory(dbschema.MailingListStatus)
 MirrorContentVocabulary = vocab_factory(dbschema.MirrorContent)
 MirrorPulseTypeVocabulary = vocab_factory(dbschema.MirrorPulseType)
 MirrorSpeedVocabulary = vocab_factory(dbschema.MirrorSpeed)

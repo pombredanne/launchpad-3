@@ -179,11 +179,6 @@
     />
 
   <vocabulary
-    name="MailingListStatus"
-    factory="canonical.launchpad.vocabularies.MailingListStatusVocabulary"
-    />
-
-  <vocabulary
     name="Milestone"
     factory="canonical.launchpad.vocabularies.MilestoneVocabulary"
     />

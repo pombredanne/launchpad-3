@@ -6,6 +6,7 @@ __metaclass__ = type
 __all__ = [
     'IMailingList',
     'IMailingListSet',
+    'MailingListStatus',
     ]
 
 
@@ -13,6 +14,86 @@ from zope.interface import Interface
 from zope.schema import Choice, Datetime, Int, Object, Set, Text
 
 from canonical.launchpad import _
+from canonical.launchpad.webapp.enum import DBEnumeratedType, DBItem
+
+
+class MailingListStatus(DBEnumeratedType):
+    """Team mailing list status.
+
+    Team mailing lists can be in one of several states, which this class
+    tracks.  A team owner first requests that a mailing list be created for
+    their team; this is called registering the list.  This request will then
+    be either approved or declined by a Launchpad administrator.
+
+    If a list request is approved, its creation will be requested of Mailman,
+    but it takes time for Mailman to act on this request.  During this time,
+    the state of the list is 'constructing'.  Mailman will then either succeed
+    or fail to create the list.  If it succeeds, the list is active until such
+    time as the team owner requests that the list be made inactive.
+    """
+
+    REGISTERED = DBItem(1, """
+        Registered; request creation
+
+        The team owner has requested that the mailing list for their team be
+        created.
+        """)
+
+    APPROVED = DBItem(2, """
+        Approved
+
+        A Launchpad administrator has approved the request to create the team
+        mailing list.
+        """)
+
+    DECLINED = DBItem(3, """
+        Declined
+
+        A Launchpad administrator has declined the request to create the team
+        mailing list.
+        """)
+
+    CONSTRUCTING = DBItem(4, """
+        Constructing
+
+        Mailman is in the process of constructing a mailing list that has been
+        approved for creation.
+        """)
+
+    ACTIVE = DBItem(5, """
+        Active
+
+        Mailman has successfully created the mailing list, and it is now
+        active.
+        """)
+
+    FAILED = DBItem(6, """
+        Failed
+
+        Mailman was unsuccessful in creating the mailing list.
+        """)
+
+    INACTIVE = DBItem(7, """
+        Inactive
+
+        A previously active mailing lit has been made inactive by its team
+        owner.
+        """)
+
+    MODIFIED = DBItem(8, """
+        Modified
+
+        An active mailing list has been modified and this modification needs
+        to be communicated to Mailman.
+        """)
+
+    DEACTIVATING = DBItem(9, """
+        Deactivating
+
+        The mailing list has been flagged for deactivation by the team owner.
+        Mailman will be informed of this and will take the necessary actions
+        to deactive the list.
+        """)
 
 
 class IMailingList(Interface):
