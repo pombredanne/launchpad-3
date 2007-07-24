@@ -344,8 +344,8 @@ def validate_new_distrotask(bug, distribution, sourcepackagename=None):
     """Validate a distribution bugtask to be added.
 
     Make sure that the isn't already a distribution task without a
-    source package, or that such task is added when the bug already has
-    one or more tasks for the distribution.
+    source package, or that such task is added only when the bug doesn't
+    already have any tasks for the distribution.
 
     The same checks as `validate_distrotask` does are also done.
     """
