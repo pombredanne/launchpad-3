@@ -936,8 +936,8 @@ goes nothing.
   >>> qitem.build.sourcepackagerelease = MockSPR()
   >>> bm.dispatchByProcessor(MockProcessor(), queue)
 
-  >>> qbuild.buildstate
-  <Item SUPERSEDED (5) ...>
+  >>> print qbuild.buildstate.name
+  SUPERSEDED
 
 
 Get a BuildQueue to test with:

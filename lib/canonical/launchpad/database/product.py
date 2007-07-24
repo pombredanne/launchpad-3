@@ -274,9 +274,14 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
             (x.sourcepackagename.name, x.distribution.name))
 
     @property
+    def bugtargetdisplayname(self):
+        """See IBugTarget."""
+        return self.displayname
+
+    @property
     def bugtargetname(self):
         """See `IBugTarget`."""
-        return '%s (upstream)' % self.name
+        return self.name
 
     def getLatestBranches(self, quantity=5, visible_by_user=None):
         """See `IProduct`."""

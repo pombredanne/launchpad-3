@@ -43,7 +43,7 @@ can test the context links on the new branch page.
 
   >>> user_browser.getControl('Name').value = 'main'
   >>> user_browser.getControl('Title').value = 'Gnome Panel Applets Mainline'
-  >>> user_browser.getControl(name='field.lifecycle_status').value = ['Development']
+  >>> user_browser.getControl('Status').displayValue = ['Development']
   >>> user_browser.getControl('Summary').value = 'Main branch of development for GNOME Panel Applets.'
   >>> user_browser.getControl('Add Branch').click()
 

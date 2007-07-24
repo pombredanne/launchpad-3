@@ -95,7 +95,7 @@ And the linked bugtasks got updated:
     >>> for bug_watch in bug_watches:
     ...     bugtasks += list(bug_watch.bugtasks)
     >>> for bugtask in sorted(bugtasks, key=operator.attrgetter('id')):
-    ...     print bugtask.bug.id, bugtask.targetname, bugtask.status.title,
+    ...     print bugtask.bug.id, bugtask.bugtargetname, bugtask.status.title,
     ...     print bugtask.importance.title
     1 mozilla-firefox (Debian) New Unknown
     3 mozilla-firefox (Debian Sarge) New Unknown
