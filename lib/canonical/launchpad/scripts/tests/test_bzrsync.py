@@ -872,6 +872,10 @@ class TestBzrSyncNoEmail(BzrSyncTestCase):
         BzrSyncTestCase.setUp(self)
         stub.test_emails = []
 
+    def test_no_subscribers(self):
+        self.assertEqual(self.db_branch.subscribers.count(), 0,
+                         "There should be no subscribers to the branch.")
+
     def test_empty_branch(self):
         self.syncBranch()
         self.assertEqual(len(self.bzrsync.pending_emails), 0,

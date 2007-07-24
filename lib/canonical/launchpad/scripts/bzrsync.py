@@ -66,19 +66,20 @@ class BzrSync:
         """Create an email queue and determine whether to create diffs.
 
         In order to avoid creating diffs when no one is interested in seeing
-        it, we check the all the branch subscriptions first, and decide here
+        it, we check all the branch subscriptions first, and decide here
         whether or not to generate the revision diffs as the branch is scanned.
 
         See XXX comment in `sendRevisionNotificationEmails` for the reason
         behind the queue itself.
         """
         self.pending_emails = []
-        levels = [
-            subscription.notification_level
-            for subscription in self.db_branch.subscriptions]
-        self.generate_emails = (
-            BranchSubscriptionNotificationLevel.DIFFSONLY in levels or
-            BranchSubscriptionNotificationLevel.FULL in levels)
+        self.generate_subscriber_emails = False
+
+        diff_levels = (BranchSubscriptionNotificationLevel.DIFFSONLY,
+                       BranchSubscriptionNotificationLevel.FULL)
+        for subscription in self.db_branch.subscriptions:
+            if subscription.notification_level in diff_levels:
+                self.generate_subscriber_emails = True
 
     def close(self):
         """Explicitly release resources."""
@@ -134,7 +135,7 @@ class BzrSync:
         self.insertBranchRevisions(branchrevisions_to_insert)
         self.trans_manager.commit()
         # Now that these changes have been committed, send the pending emails.
-        if self.generate_emails:
+        if self.generate_subscriber_emails:
             self.sendRevisionNotificationEmails()
         # The Branch table is modified by other systems, including the web UI,
         # so we need to update it in a short transaction to avoid causing
@@ -207,7 +208,7 @@ class BzrSync:
         # When the history is shortened, and email is sent that says this.
         # This will never happen for a newly scanned branch, so not checking
         # that here.
-        if self.generate_emails:
+        if self.generate_subscriber_emails:
             number_removed = len(removed_history)
             if number_removed > 0:
                 if number_removed == 1:
@@ -378,7 +379,7 @@ class BzrSync:
                     self.logger.debug("%d of %d: %s is a ghost",
                                       self.curr, self.last, revision_id)
                     continue
-                if self.generate_emails:
+                if self.generate_subscriber_emails:
                     message = self.getRevisionMessage(revision)
                     revision_diff = self.getDiff(revision)
                     self.pending_emails.append((message, revision_diff))
