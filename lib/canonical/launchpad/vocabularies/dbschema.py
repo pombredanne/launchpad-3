@@ -39,6 +39,7 @@ __all__ = [
     'MirrorStatusVocabulary',
     'PackagePublishingPocketVocabulary',
     'PackagingTypeVocabulary',
+    'PersonCreationRationaleVocabulary',
     'PollAlgorithmVocabulary',
     'PollSecrecyVocabulary',
     'QuestionActionVocabulary',
@@ -111,6 +112,7 @@ MirrorStatusVocabulary = vocab_factory(dbschema.MirrorStatus)
 PackagePublishingPocketVocabulary = vocab_factory(
     dbschema.PackagePublishingPocket)
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
+PersonCreationRationaleVocabulary = vocab_factory(dbschema.PersonCreationRationale)
 PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
 QuestionActionVocabulary = vocab_factory(dbschema.QuestionAction)
