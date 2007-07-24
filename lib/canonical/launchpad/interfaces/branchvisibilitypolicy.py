@@ -15,31 +15,32 @@ from zope.interface import Interface, Attribute
 from zope.schema import Choice
 
 from canonical.launchpad import _
+from canonical.launchpad.webapp.enum import DBEnumeratedType, DBItem
 
 
-class BranchVisibilityRule(DBSchema):
+class BranchVisibilityRule(DBEnumeratedType):
     """Branch Visibility Rules for defining branch visibility policy."""
 
-    PUBLIC = Item(1, """
+    PUBLIC = DBItem(1, """
         Public
 
         Branches are public by default.
         """)
 
-    PRIVATE = Item(2, """
+    PRIVATE = DBItem(2, """
         Private
 
         Branches are private by default.
         """)
 
-    PRIVATE_ONLY = Item (3, """
+    PRIVATE_ONLY = DBItem(3, """
         Private only
 
         Branches are private by default. Branch owners are not able
         to change the visibility of the branches to public.
         """)
 
-    FORBIDDEN = Item(4, """
+    FORBIDDEN = DBItem(4, """
         Forbidden
 
         Users are not able to create branches in the context.
