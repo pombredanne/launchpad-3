@@ -9,26 +9,36 @@
       <h1 tal:content="context/title">Foo Bar PPA</h1>
     </metal:heading>
 
-
     <metal:leftportlets fill-slot="portlets_one">
       <div tal:replace="structure context/owner/@@+portlet-details" />
     </metal:leftportlets>
 
-    <div metal:fill-slot="main" tal:condition="not: view/searchPackages">
+    <div metal:fill-slot="main" tal:condition="not:view/searchPackages"
+         tal:define="is_owner python: view.user == context.owner">
 
-      <p>Owner Description:</p>
+      <div id="whiteboard" tal:condition="is_owner">
+         <p>PPA whiteboard:</p>
+         <div class="informational" tal:condition="context/whiteboard">
+            <tal:archive-whiteboard
+               replace="structure context/whiteboard/fmt:text-to-html" />
+         </div>
+         <p><a href="+edit">Add/Edit PPA whiteboard</a>.</p>
+      </div>
 
-      <div class="informational" id="description"
-           tal:condition="context/description">
-         <i><tal:archive-description
-            replace="structure context/description/fmt:text-to-html" /></i>
-         <p tal:condition="python: view.user == context.owner"
+      <div id="description">
+         <p>PPA description:</p>
+         <tal:archive-description condition="context/description"
+                replace="structure context/description/fmt:text-to-html" />
+         <p class="informational" tal:condition="not:context/description"
+            >No description available.</p>
+         <p tal:condition="is_owner"
             ><a href="+edit">Add/Edit PPA description</a>.</p>
       </div>
 
-      <p>For more information about how to configure your system see
-        <a href="https://help.launchpad.net/PPAQuickStart">PPA Quick
-        Start</a>.</p>
+      <p>For more information about how to configure your system to
+        use packages from this PPA see
+        <a href="https://help.launchpad.net/PPAQuickStart"
+        >quick-start guide</a>.</p>
 
       <h2>Packages</h2>
 
@@ -75,7 +85,7 @@
         <thead>
           <tr>
             <th>Source</th>
-            <th>When</th>
+            <th>Published</th>
             <th>Status</th>
             <th>Target</th>
             <th>Pocket</th>
@@ -104,9 +114,9 @@
     </div>
 
     <p metal:fill-slot="help">
-      Here you can find instructions about how to make this PPA
-      packages available in your current system. You can also search
-      for sources matching a given filter.
+      Here you can find information about the source packages
+      currently published in the PPA in question. This page also
+      provides estimated archive sizes.
     </p>
 
   </body>

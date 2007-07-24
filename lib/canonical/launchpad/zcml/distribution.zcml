@@ -217,6 +217,7 @@
       />
     <browser:page
       name="+ppas"
+      facet="overview"
       template="../templates/distribution-ppa-list.pt"
       />
   </browser:pages>

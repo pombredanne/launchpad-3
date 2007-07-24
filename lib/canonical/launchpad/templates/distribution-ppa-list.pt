@@ -16,13 +16,11 @@
 
   <div metal:fill-slot="main" tal:condition="not: view/searchPPAs">
 
-     <p>Personal Package Archives (<i>PPA</i>) is a Launchpad feature
-        that allows users to design they own packages or work on fixes
-        to existent packages and provide <b>work-in-progress</b>
-        packages for testing before they reach main distribution
-        archive. For more information see
-        <a href="https://help.launchpad.net/PPAQuickStart">PPA Quick
-        Start</a>.</p>
+     <p>Personal Package Archives (PPA) allow you to upload Ubuntu source
+        packages to be built and published as an apt repository by
+        Launchpad. You can find out more about PPAs and how to use them in our
+        <a href="https://help.launchpad.net/PPAQuickStart"
+        >quick-start guide</a>.</p>
 
      <p>You can search for <i>PPA</i> by the owner name or by any word
      in its description.</p>
