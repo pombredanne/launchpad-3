@@ -70,12 +70,7 @@ package should be edited instead).
     >>> from canonical.launchpad.interfaces import (
     ...     CreateBugParams, IDistributionSet)
 
-    >>> login('no-priv@canonical.com')
-    >>> no_priv = getUtility(ILaunchBag).user
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_bug = ubuntu.createBug(
-    ...     CreateBugParams(no_priv, 'Test Bug', 'This is a test'))
-    >>> validate_new_distrotask(ubuntu_bug, ubuntu, evolution)
+    >>> validate_new_distrotask(ubuntu_bug_no_sourcepackage, ubuntu, evolution)
     Traceback (most recent call last):
       ...
     WidgetsError: LaunchpadValidationError: ...
