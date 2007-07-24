@@ -395,6 +395,18 @@ def validate_distrotask(bug, distribution, sourcepackagename=None):
                 'This bug has already been reported on %s (%s).') % (
                 sourcepackagename.name, distribution.name))
             ])
+    elif (sourcepackagename is None and 
+          bug.getBugTask(distribution) is not None):
+        # Don't allow two distribution tasks with no source package.
+        raise WidgetsError([
+            LaunchpadValidationError(_(
+                'This bug has already been reported on %s.') % (
+                    distribution.name))
+            ])
+    else:
+        # The bugtask is valid.
+        pass
+
 
 
 def valid_upstreamtask(bug, product):
