@@ -359,7 +359,7 @@ class ProjectSet:
         """See canonical.launchpad.interfaces.project.IProjectSet.
 
         >>> getUtility(IProjectSet).get(1).name
-        u'ubuntu-project'
+        u'apache'
         >>> getUtility(IProjectSet).get(-1)
         Traceback (most recent call last):
         ...
