@@ -16,7 +16,6 @@
     </metal:heading>
 
 <metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/bug/@@+portlet-details" />
   <div tal:replace="structure context/bug/@@+portlet-subscribers" />
 </metal:leftportlets>
 

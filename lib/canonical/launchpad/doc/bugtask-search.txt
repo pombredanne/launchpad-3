@@ -57,10 +57,10 @@ bugs return all of Firefox' bugs.
     True
 
     >>> found_targets = set(
-    ...     bugtask.target.bugtargetname for bugtask in found_bugtasks)
+    ...     bugtask.target.bugtargetdisplayname for bugtask in found_bugtasks)
     >>> for target_name in sorted(found_targets):
     ...     print target_name
-    firefox (upstream)
+    Mozilla Firefox
 
 
 === Package bug contact ===
@@ -87,10 +87,10 @@ previous bugs (since he is also a bug contact for the Firefox product).
     True
 
     >>> found_targets = set(
-    ...     bugtask.target.bugtargetname for bugtask in found_bugtasks)
+    ...     bugtask.target.bugtargetdisplayname for bugtask in found_bugtasks)
     >>> for target_name in sorted(found_targets):
     ...     print target_name
-    firefox (upstream)
+    Mozilla Firefox
     mozilla-firefox (Ubuntu)
 
 
@@ -192,7 +192,7 @@ certain person.
     >>> found_bugtasks = bugtask_set.search(reported_by_foo_bar)
     >>> for bugtask in found_bugtasks:
     ...     print "#%s in %s reported by %s" % (
-    ...         bugtask.bug.id, bugtask.targetname,
+    ...         bugtask.bug.id, bugtask.bugtargetname,
     ...         bugtask.bug.owner.displayname)
     #9 in thunderbird (Ubuntu) reported by Foo Bar
     #10 in linux-source-2.6.15 (Ubuntu) reported by Foo Bar
@@ -259,7 +259,7 @@ Add an Ubuntu bugtask for a bug that is confirmed upstream.
     ...     BugTaskSearchBugsElsewhereTest)
     >>> def bugTaskInfo(bugtask):
     ...     return '%i %i %s %s' % (
-    ...         bugtask.id, bugtask.bug.id, bugtask.targetname,
+    ...         bugtask.id, bugtask.bug.id, bugtask.bugtargetdisplayname,
     ...         bugtask.bug.title)
     >>> test_helper = BugTaskSearchBugsElsewhereTest(helper_only=True)
     >>> bug_twelve =  getUtility(IBugSet).get(12)

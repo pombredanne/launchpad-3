@@ -133,7 +133,12 @@ class BugTaskDelta:
 
     @property
     def targetname(self):
-        return self.bugtask.targetname
+        return self.bugtask.bugtargetname
+
+    @property
+    def bugtargetdisplayname(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        return self.targetnamecache
 
 
 class BugTaskMixin:
@@ -142,14 +147,22 @@ class BugTaskMixin:
     @property
     def title(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        title = 'Bug #%s in %s: "%s"' % (
-            self.bug.id, self.targetname, self.bug.title)
-        return title
+        if INullBugTask.providedBy(self):
+            return 'Bug #%s is not in %s: "%s"' % (
+                self.bug.id, self.bugtargetdisplayname, self.bug.title)
+        else:
+            return 'Bug #%s in %s: "%s"' % (
+                self.bug.id, self.bugtargetdisplayname, self.bug.title)
 
     @property
-    def targetname(self):
+    def bugtargetdisplayname(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        return self.targetnamecache
+        return self.target.bugtargetdisplayname
+
+    @property
+    def bugtargetname(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        return self.target.bugtargetname
 
     @property
     def target(self):
@@ -605,7 +618,8 @@ class BugTask(SQLBase, BugTaskMixin):
         # We also can't simply update kw with the value we want for
         # targetnamecache because we need to access bugtask attributes
         # that may be available only after SQLBase.set() is called.
-        SQLBase.set(self, **{'targetnamecache': self.target.bugtargetname})
+        SQLBase.set(
+            self, **{'targetnamecache': self.target.bugtargetdisplayname})
 
     def setImportanceFromDebbugs(self, severity):
         """See canonical.launchpad.interfaces.IBugTask."""
@@ -714,7 +728,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def updateTargetNameCache(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        targetname = self.target.bugtargetname
+        targetname = self.target.bugtargetdisplayname
         if self.targetnamecache != targetname:
             self.targetnamecache = targetname
 
@@ -781,6 +795,11 @@ class BugTask(SQLBase, BugTaskMixin):
                  'componentname': component})
         else:
             raise AssertionError('Unknown BugTask context: %r' % self)
+
+        # We only want to have a milestone field in the header if there's
+        # a milestone set for the bug.
+        if self.milestone:
+            header_value += ' milestone=%s;' % self.milestone.name
 
         header_value += ((
             ' status=%(status)s; importance=%(importance)s; '

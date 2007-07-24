@@ -240,11 +240,11 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return results.prejoin(['assignee', 'approver', 'drafter'])
 
     # XXX: A Project shouldn't provide IBugTarget, since it's not really
-    #      a bug target, thus bugtargetname and createBug don't make sense
-    #      here. IBugTarget should be split into two interfaces; one that
+    #      a bug target, thus bugtargetdisplayname and createBug don't make
+    #      sense here. IBugTarget should be split into two interfaces; one that
     #      makes sense for Project to implement, and one containing the rest
     #      of IBugTarget. -- Bjorn Tillenius, 2006-08-17
-    bugtargetname = None
+    bugtargetdisplayname = None
 
     def searchTasks(self, search_params):
         """See `IBugTarget`."""
@@ -301,6 +301,16 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Product.project = %s""" % sqlvalues(self.id),
             clauseTables=['Question', 'Product'], distinct=True))
 
+    @property
+    def bugtargetdisplayname(self):
+        """See IBugTarget."""
+        return self.displayname
+
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return self.name
+
     # IFAQCollection
     def getFAQ(self, id):
         """See `IQuestionCollection`."""
@@ -349,7 +359,7 @@ class ProjectSet:
         """See canonical.launchpad.interfaces.project.IProjectSet.
 
         >>> getUtility(IProjectSet).get(1).name
-        u'ubuntu-project'
+        u'apache'
         >>> getUtility(IProjectSet).get(-1)
         Traceback (most recent call last):
         ...

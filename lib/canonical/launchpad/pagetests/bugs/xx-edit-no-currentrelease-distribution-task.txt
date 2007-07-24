@@ -18,7 +18,6 @@ There is a link in the affects table to edit the Gentoo task.
     >>> for tr in affects_table.tbody.findAll('tr', recursive=False):
     ...     if tr.td.table:
     ...         continue
-    ...     expander, target = tr.findAll('td', limit=2)
-    ...     print extract_text(target)
-    firefox (upstream)
+    ...     print extract_text(tr.td)
+    Mozilla Firefox
     Gentoo
