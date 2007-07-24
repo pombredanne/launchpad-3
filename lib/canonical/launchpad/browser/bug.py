@@ -55,6 +55,7 @@ from canonical.launchpad.interfaces import (
     )
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.validators import LaunchpadValidationError
 
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
@@ -605,10 +606,8 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                 try:
                     validate_new_distrotask(
                         self.context.bug, distribution, sourcepackagename)
-                except WidgetsError, errors:
-                    for error in errors:
-                        self.setFieldError(
-                            'sourcepackagename', error.snippet())
+                except LaunchpadValidationError, error:
+                    self.setFieldError('sourcepackagename', error.snippet())
         else:
             # Validation failed for either the product or distribution,
             # no point in trying to validate further.
