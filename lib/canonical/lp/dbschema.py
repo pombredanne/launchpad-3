@@ -116,8 +116,8 @@ __all__ = (
 #from canonical.launchpad.webapp.enum import DBSchema
 #from canonical.launchpad.webapp.enum import DBSchemaItem as Item
 
-from canonical.launchpad.webapp.enum import DBEnumeratedType as DBSchema
-from canonical.launchpad.webapp.enum import DBItem as Item
+from canonical.lazr.enum import DBEnumeratedType as DBSchema
+from canonical.lazr.enum import DBItem as Item
 
 
 class AccountStatus(DBSchema):

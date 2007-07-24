@@ -11,8 +11,7 @@ __all__ = [
     ]
 
 
-from canonical.launchpad.webapp.enum import (
-    DBEnumeratedType, DBItem, use_template)
+from canonical.lazr.enum import DBEnumeratedType, DBItem, use_template
 
 
 class DBTestEnumeration(DBEnumeratedType):
