@@ -1,29 +1,39 @@
 = Team Mailing Lists =
 
-Teams may have zero or one team mailing list.  Creating a team mailing list
+Teams may have at most one team mailing list.  Creating a team mailing list
 requires several steps, starting with registration of the list by the owner of
-an existing team.  This is done through an IMailingListRegistry utility.
+an existing team.  This is done through an IMailingListSet utility.
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IMailingList, IMailingListRegistry)
-    >>> from canonical.launchpad.database import MailingListRegistry
-    >>> list_registry = MailingListRegistry()
-    >>> verifyObject(IMailingListRegistry, list_registry)
+    ...     IMailingList, IMailingListSet)
+    >>> from canonical.launchpad.database import MailingListSet
+    >>> list_set = getUtility(IMailingListSet)
+    >>> verifyObject(IMailingListSet, list_set)
     True
 
 In the following description of how to use team mailing lists, we will need
-several team.
+several teams.
 
     >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> login(ANONYMOUS)
     >>> personset = getUtility(IPersonSet)
     >>> ddaa = personset.getByName('ddaa')
-    >>> team_one = personset.newTeam(ddaa, 'team-one', 'Team One')
-    >>> team_two = personset.newTeam(ddaa, 'team-two', 'Team Two')
-    >>> team_three = personset.newTeam(ddaa, 'team-three', 'Team Three')
-    >>> team_four = personset.newTeam(ddaa, 'team-four', 'Team Four')
+    >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
+    >>> def new_team(team_name):
+    ...     displayname = ' '.join(word.capitalize()
+    ...                            for word in team_name.split('-'))
+    ...     # XXX BarryWarsaw Set the team's subscription policy to OPEN
+    ...     # because of bug 125505.  See related comment below.
+    ...     policy = TeamSubscriptionPolicy.OPEN
+    ...     return personset.newTeam(ddaa, team_name, displayname,
+    ...                              subscriptionpolicy=policy)
+
+    >>> team_one = new_team('team-one')
+    >>> team_two = new_team('team-two')
+    >>> team_three = new_team('team-three')
+    >>> team_four = new_team('team-four')
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
 
@@ -35,31 +45,32 @@ their team's name.
 
 None of these teams have mailing lists yet.
 
-    >>> sorted_lists(list_registry.registered_lists)
+    >>> sorted_lists(list_set.registered_lists)
     []
-    >>> sorted_lists(list_registry.approved_lists)
+    >>> sorted_lists(list_set.approved_lists)
     []
-    >>> print list_registry.getTeamMailingList(team_one.name)
+    >>> print list_set.get(team_one.name)
     None
-    >>> print list_registry.getTeamMailingList(team_two.name)
+    >>> print list_set.get(team_two.name)
     None
-    >>> print list_registry.getTeamMailingList(team_three.name)
+    >>> print list_set.get(team_three.name)
     None
-    >>> print list_registry.getTeamMailingList(team_four.name)
+    >>> print list_set.get(team_four.name)
     None
 
 
 == Registering a team mailing list ==
 
-The team owner starts the process of creating a team mailing list by
-registering the list.  By registering the mailing list, the team owner makes a
-request to have the list created, but it is not created right away.
+Any team owner or administrator may start the process of creating a team
+mailing list by registering the list.  By registering the mailing list, the
+team administrator makes a request to have the list created, but it is not
+created right away.
 
     >>> from datetime import datetime
     >>> import pytz
     >>> utc = pytz.timezone('UTC')
     >>> registration_date = datetime.now(utc)
-    >>> list_one = list_registry.register(team_one)
+    >>> list_one = list_set.new(team_one)
     >>> verifyObject(IMailingList, list_one)
     True
     >>> flush_database_updates()
@@ -69,10 +80,33 @@ request to have the list created, but it is not created right away.
 You may not register a mailing list for a person.
 
     >>> salgado = personset.getByName('salgado')
-    >>> list_registry.register(salgado)
+    >>> list_set.new(salgado, salgado)
     Traceback (most recent call last):
     ...
     AssertionError: Cannot register a list for a person who is not a team
+
+The mailing list registrant must be a team owner or administrator.  salgado is
+neither and thus may not create a list for team_two.
+
+    >>> list_set.new(team_two, salgado)
+    Traceback (most recent call last):
+    ...
+    AssertionError: registrant is not a team owner or administrator
+
+However, if we make salgado a team administrator, he can then register the
+mailing list.
+
+    >>> from canonical.lp.dbschema import TeamMembershipStatus
+    >>> # XXX BarryWarsaw bug 125505: Use .join() and .setMembershipData()
+    >>> # instead of the more direct team.addMember() because the latter
+    >>> # doesn't invalidate salgado's _inTeam_cache.
+    >>> salgado.join(team_two)
+    >>> sabdfl = personset.getByName('sabdfl')
+    >>> team_two.setMembershipData(salgado, TeamMembershipStatus.ADMIN, sabdfl)
+    >>> flush_database_updates()
+    >>> list_two = list_set.new(team_two, salgado)
+    >>> list_two
+    <MailingList for team "team-two"; status=REGISTERED at ...>
 
 The newly registered mailing list is linked to its team, and the list's
 registrant is the team owner at the time the list was registered.  The list's
@@ -111,7 +145,7 @@ changes.
 
 A mailing list cannot be registered more than once.
 
-    >>> list_registry.register(team_one)
+    >>> list_set.new(team_one)
     Traceback (most recent call last):
     ...
     AssertionError: Mailing list for team "team-one" already exists
@@ -120,20 +154,17 @@ A mailing list cannot be registered more than once.
 == Reviewing a registered mailing list ==
 
 A registered mailing list must then be reviewed by a Launchpad administrator
-before the request to create it can be made.  Use the registry to find the set
-of all currently registered mailing lists.
+before the request to create it can be made.  Use the list set to find all
+currently registered mailing lists.
 
-    >>> list_two = list_registry.register(team_two)
-    >>> list_two
-    <MailingList for team "team-two"; status=REGISTERED at ...>
-    >>> list_three = list_registry.register(team_three)
+    >>> list_three = list_set.new(team_three)
     >>> list_three
     <MailingList for team "team-three"; status=REGISTERED at ...>
-    >>> list_four = list_registry.register(team_four)
+    >>> list_four = list_set.new(team_four)
     >>> list_four
     <MailingList for team "team-four"; status=REGISTERED at ...>
     >>> flush_database_updates()
-    >>> sorted_lists(list_registry.registered_lists)
+    >>> sorted_lists(list_set.registered_lists)
     [<MailingList for team "team-four"; status=REGISTERED at ...>,
      <MailingList for team "team-one"; status=REGISTERED at ...>,
      <MailingList for team "team-three"; status=REGISTERED at ...>,
@@ -187,7 +218,7 @@ declined.
 
 Once approved or declined the lists won't be re-considered for review.
 
-    >>> sorted_lists(list_registry.registered_lists)
+    >>> sorted_lists(list_set.registered_lists)
     [<MailingList for team "team-four"; status=REGISTERED at ...>,
      <MailingList for team "team-three"; status=REGISTERED at ...>]
 
@@ -197,7 +228,7 @@ on.
     >>> list_three.review(carlos, MailingListStatus.APPROVED)
     >>> list_four.review(carlos, MailingListStatus.APPROVED)
     >>> flush_database_updates()
-    >>> list(list_registry.registered_lists)
+    >>> list(list_set.registered_lists)
     []
 
 
@@ -209,32 +240,32 @@ interface used by Mailman (not shown here).  When Mailman retrieves the set of
 mailing lists to construct, the list's statuses are set to the CONSTRUCTING
 state.
 
-    >>> sorted_lists(list_registry.approved_lists)
+    >>> sorted_lists(list_set.approved_lists)
     [<MailingList for team "team-four"; status=APPROVED at ...>,
      <MailingList for team "team-one"; status=APPROVED at ...>,
      <MailingList for team "team-three"; status=APPROVED at ...>]
 
-    >>> list_one.construct()
+    >>> list_one.startConstructing()
     >>> flush_database_updates()
     >>> list_one.status.name
     'CONSTRUCTING'
 
 A mailing list that has been declined may not be constructed.
 
-    >>> list_two.construct()
+    >>> list_two.startConstructing()
     Traceback (most recent call last):
     ...
     AssertionError: Only approved mailing lists may be constructed
 
 Once in the construction phase, a list is no longer in the approval state.
 
-    >>> sorted_lists(list_registry.approved_lists)
+    >>> sorted_lists(list_set.approved_lists)
     [<MailingList for team "team-four"; status=APPROVED at ...>,
      <MailingList for team "team-three"; status=APPROVED at ...>]
 
 Lists should never be constructed more than once.
 
-    >>> list_one.construct()
+    >>> list_one.startConstructing()
     Traceback (most recent call last):
     ...
     AssertionError: Only approved mailing lists may be constructed
@@ -242,8 +273,8 @@ Lists should never be constructed more than once.
 Construct a couple of other lists to illustration some additional outcomes
 later.
 
-    >>> list_three.construct()
-    >>> list_four.construct()
+    >>> list_three.startConstructing()
+    >>> list_four.startConstructing()
     >>> flush_database_updates()
 
 
@@ -253,8 +284,8 @@ After Mailman has worked at constructing lists for a while, it reports (again
 through XMLRPC not shown here) on the status of each list construction.  Most,
 if not all will succeed, thus activating the team's mailing list.
 
-    >>> list_one.reportResult(MailingListStatus.ACTIVE)
-    >>> list_three.reportResult(MailingListStatus.ACTIVE)
+    >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
+    >>> list_three.transitionToStatus(MailingListStatus.ACTIVE)
     >>> flush_database_updates()
     >>> list_one.status.name
     'ACTIVE'
@@ -263,27 +294,27 @@ if not all will succeed, thus activating the team's mailing list.
 
 Some list constructions may fail.
 
-    >>> list_four.reportResult(MailingListStatus.FAILED)
+    >>> list_four.transitionToStatus(MailingListStatus.FAILED)
     >>> flush_database_updates()
     >>> list_four.status.name
     'FAILED'
 
 You can then get the mailing list for a team, given the team name.
 
-    >>> print list_registry.getTeamMailingList(team_one.name)
+    >>> list_set.get(team_one.name)
     <MailingList for team "team-one"; status=ACTIVE at ...>
-    >>> print list_registry.getTeamMailingList(team_two.name)
+    >>> list_set.get(team_two.name)
     <MailingList for team "team-two"; status=DECLINED at ...>
-    >>> print list_registry.getTeamMailingList(team_three.name)
+    >>> list_set.get(team_three.name)
     <MailingList for team "team-three"; status=ACTIVE at ...>
-    >>> print list_registry.getTeamMailingList(team_four.name)
+    >>> list_set.get(team_four.name)
     <MailingList for team "team-four"; status=FAILED at ...>
 
 This method will return None for missing teams or non-team people.
 
-    >>> print list_registry.getTeamMailingList('not an existing team')
+    >>> print list_set.get('not an existing team')
     None
-    >>> print list_registry.getTeamMailingList(carlos.name)
+    >>> print list_set.get(carlos.name)
     None
 
 
@@ -300,9 +331,9 @@ This doesn't immediately deactivate the mailing list though.  Mailman still
 needs to query for the requested deactivations, take the necessary actions,
 and report the deactivation results.
 
-    >>> sorted_lists(list_registry.deactivated_lists)
+    >>> sorted_lists(list_set.deactivated_lists)
     [<MailingList for team "team-three"; status=DEACTIVATING at ...>]
-    >>> list_three.reportResult(MailingListStatus.INACTIVE)
+    >>> list_three.transitionToStatus(MailingListStatus.INACTIVE)
     >>> list_three.status.name
     'INACTIVE'
 
@@ -335,14 +366,14 @@ After changing the welcome message, the list's status should be MODIFIED.
 
     >>> list_one.status.name
     'MODIFIED'
-    >>> sorted_lists(list_registry.modified_lists)
+    >>> sorted_lists(list_set.modified_lists)
     [<MailingList for team "team-one"; status=MODIFIED at ...>]
 
 Eventually, Mailman will get around to acting on this modification, and then
 it will set the status back to ACTIVE (or FAILED if the update failed for some
 reason).
 
-    >>> list_one.reportResult(MailingListStatus.ACTIVE)
+    >>> list_one.transitionToStatus(MailingListStatus.ACTIVE)
     >>> flush_database_updates()
     >>> list_one.status.name
     'ACTIVE'
@@ -351,8 +382,8 @@ A mailing list's welcome message can also be changed while it is in REGISTERED
 status.  This is essentially equivalent to initializing the mailing list with
 a particular welcome message.
 
-    >>> team_five = personset.newTeam(ddaa, 'team-five', 'Team Five')
-    >>> list_five = list_registry.register(team_five)
+    >>> team_five = new_team('team-five')
+    >>> list_five = list_set.new(team_five)
     >>> list_five.welcome_message = u'Welcome to Team Five'
     >>> flush_database_updates()
     >>> list_five.status.name

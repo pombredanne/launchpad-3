@@ -6,13 +6,15 @@
 
     <content class="canonical.launchpad.database.MailingList">
         <allow interface="canonical.launchpad.interfaces.IMailingList"/>
+        <require permission="zope.Public"
+                 set_attributes="welcome_message"/>
     </content>
 
     <securedutility
-        class="canonical.launchpad.database.MailingListRegistry"
-        provides="canonical.launchpad.interfaces.IMailingListRegistry">
+        class="canonical.launchpad.database.MailingListSet"
+        provides="canonical.launchpad.interfaces.IMailingListSet">
         <allow
-         interface="canonical.launchpad.interfaces.IMailingListRegistry"/>
+         interface="canonical.launchpad.interfaces.IMailingListSet"/>
     </securedutility>
 
 </configure>

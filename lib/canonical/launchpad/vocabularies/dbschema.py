@@ -11,12 +11,11 @@ __all__ = [
     'vocab_factory',
     'BountyDifficultyVocabulary',
     'BountyStatusVocabulary',
-    'BranchLifecycleStatusVocabulary',
-    'BranchLifecycleStatusFilterVocabulary',
     'BranchReviewStatusVocabulary',
     'BranchSubscriptionDiffSizeVocabulary',
     'BranchSubscriptionNotificationLevelVocabulary',
-    'BranchVisibilityPolicyVocabulary',
+    'BranchTypeVocabulary',
+    'BranchVisibilityRuleVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugBranchStatusVocabulary',
@@ -31,6 +30,7 @@ __all__ = [
     'EntitlementTypeVocabulary',
     'GPGKeyAlgorithmVocabulary',
     'InfestationStatusVocabulary',
+    'MailingListStatusVocabulary',
     'MirrorContentVocabulary',
     'MirrorPulseTypeVocabulary',
     'MirrorSpeedVocabulary',
@@ -47,9 +47,9 @@ __all__ = [
     'RemoteBugTaskStatusVocabulary',
     'RevisionControlSystemsVocabulary',
     'ShipItFlavourVocabulary',
-    'SpecificationDeliveryVocabulary',
+    'SpecificationImplementationStatusVocabulary',
     'SpecificationPriorityVocabulary',
-    'SpecificationStatusVocabulary',
+    'SpecificationDefinitionStatusVocabulary',
     'SpecificationGoalStatusVocabulary',
     'SprintSpecificationStatusVocabulary',
     'TeamMembershipRenewalPolicyVocabulary',
@@ -70,16 +70,14 @@ from canonical.launchpad.webapp.vocabulary import (
 
 BountyDifficultyVocabulary = vocab_factory(dbschema.BountyDifficulty)
 BountyStatusVocabulary = vocab_factory(dbschema.BountyStatus)
-BranchLifecycleStatusVocabulary = \
-    vocab_factory(dbschema.BranchLifecycleStatus)
-BranchLifecycleStatusFilterVocabulary = \
-    vocab_factory(dbschema.BranchLifecycleStatusFilter)
 BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
 BranchSubscriptionDiffSizeVocabulary = \
     sortkey_ordered_vocab_factory(dbschema.BranchSubscriptionDiffSize)
 BranchSubscriptionNotificationLevelVocabulary = \
     vocab_factory(dbschema.BranchSubscriptionNotificationLevel)
-BranchVisibilityPolicyVocabulary = vocab_factory(dbschema.BranchVisibilityPolicy)
+BranchTypeVocabulary = vocab_factory(
+    dbschema.BranchType,noshow=[dbschema.BranchType.IMPORTED])
+BranchVisibilityRuleVocabulary = vocab_factory(dbschema.BranchVisibilityRule)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
 BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
@@ -99,6 +97,7 @@ EntitlementStateVocabulary = vocab_factory(dbschema.EntitlementState)
 EntitlementTypeVocabulary = vocab_factory(dbschema.EntitlementType)
 GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
+MailingListStatusVocabulary = vocab_factory(dbschema.MailingListStatus)
 MirrorContentVocabulary = vocab_factory(dbschema.MirrorContent)
 MirrorPulseTypeVocabulary = vocab_factory(dbschema.MirrorPulseType)
 MirrorSpeedVocabulary = vocab_factory(dbschema.MirrorSpeed)
@@ -117,9 +116,9 @@ RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 RevisionControlSystemsVocabulary = vocab_factory(
     dbschema.RevisionControlSystems)
 ShipItFlavourVocabulary = vocab_factory(dbschema.ShipItFlavour)
-SpecificationDeliveryVocabulary =  vocab_factory(dbschema.SpecificationDelivery)
+SpecificationImplementationStatusVocabulary =  vocab_factory(dbschema.SpecificationImplementationStatus)
 SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
-SpecificationStatusVocabulary =  vocab_factory(dbschema.SpecificationStatus)
+SpecificationDefinitionStatusVocabulary =  vocab_factory(dbschema.SpecificationDefinitionStatus)
 SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStatus)
 SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
 TeamMembershipRenewalPolicyVocabulary = vocab_factory(

@@ -19,21 +19,33 @@ see if there is any work for Mailman to do.
 Let's start by seeding the database with some sample teams and their mailing
 lists.
 
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from canonical.launchpad.database import MailingListRegistry
-    >>> from canonical.launchpad.ftests import login, ANONYMOUS
-    >>> from canonical.launchpad.interfaces import IPersonSet
     >>> from canonical.lp.dbschema import MailingListStatus
+    >>> from canonical.launchpad.ftests import login, ANONYMOUS
+    >>> from canonical.launchpad.interfaces import IMailingListSet, IPersonSet
     >>> login(ANONYMOUS)
     >>> personset = getUtility(IPersonSet)
     >>> ddaa = personset.getByName('ddaa')
-    >>> team_one = personset.newTeam(ddaa, 'team-one', 'Team One')
-    >>> team_two = personset.newTeam(ddaa, 'team-two', 'Team Two')
-    >>> list_registry = MailingListRegistry()
-    >>> list_one = list_registry.register(team_one)
-    >>> list_one.welcome_message = u'Welcome to Team One'
-    >>> list_two = list_registry.register(team_two)
+    >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
+    >>> def new_team(team_name):
+    ...     displayname = ' '.join(word.capitalize()
+    ...                            for word in team_name.split('-'))
+    ...     # XXX BarryWarsaw Set the team's subscription policy to OPEN
+    ...     # because of bug 125505.  See related comment below.
+    ...     policy = TeamSubscriptionPolicy.OPEN
+    ...     return personset.newTeam(ddaa, team_name, displayname,
+    ...                              subscriptionpolicy=policy)
+
+    >>> team_one = new_team('team-one')
+    >>> team_two = new_team('team-two')
+    >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
+
+    >>> list_set = getUtility(IMailingListSet)
+    >>> list_one = list_set.new(team_one)
+    >>> list_one.welcome_message = u'Welcome to Team One'
+    >>> list_two = list_set.new(team_two)
+    >>> flush_database_updates()
+
 
 Here's a helper function for printing the pending actions data structure.
 
@@ -133,7 +145,7 @@ what happens if a deactivation fails.  First, set things up behind the
 scenes.
 
     >>> team_three = personset.newTeam(ddaa, 'team-three', 'Team Three')
-    >>> list_three = list_registry.register(team_three)
+    >>> list_three = list_set.new(team_three)
     >>> list_three.review(carlos, MailingListStatus.APPROVED)
     >>> flush_database_updates()
         
@@ -176,10 +188,10 @@ failed mailing lists cannot be re-activated without manual intervention, let's
 create a couple more teams and mailing lists.
 
     >>> team_four = personset.newTeam(ddaa, 'team-four', 'Team Four')
-    >>> list_four = list_registry.register(team_four)
+    >>> list_four = list_set.new(team_four)
     >>> list_four.review(carlos, MailingListStatus.APPROVED)
     >>> team_five = personset.newTeam(ddaa, 'team-five', 'Team Five')
-    >>> list_five = list_registry.register(team_five)
+    >>> list_five = list_set.new(team_five)
     >>> list_five.review(carlos, MailingListStatus.APPROVED)
     >>> flush_database_updates()
     >>> pending_actions = mailinglist_api.getPendingActions()

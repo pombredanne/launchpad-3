@@ -135,8 +135,7 @@ class BugContextMenu(ContextMenu):
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
              'nominate', 'addbranch', 'linktocve', 'unlinkcve',
-             'offermentoring', 'retractmentoring', 'filebug',
-             'activitylog']
+             'offermentoring', 'retractmentoring', 'activitylog']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -233,12 +232,6 @@ class BugContextMenu(ContextMenu):
                    not self.context.bug.is_complete and
                    user)
         return Link('+retractmentoring', text, icon='remove', enabled=enabled)
-
-    def filebug(self):
-        bugtarget = self.context.target
-        linktarget = '%s/%s' % (canonical_url(bugtarget), '+filebug')
-        text = 'Report a bug in %s' % bugtarget.displayname
-        return Link(linktarget, text, icon='add')
 
     def activitylog(self):
         text = 'View activity log'
@@ -442,7 +435,7 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
                         ' <a href="%(package_url)s/+edit-packaging">updating'
                         ' the packaging information for'
                         ' %(full_package_name)s</a>.',
-                        full_package_name=bugtask.targetname,
+                        full_package_name=bugtask.bugtargetdisplayname,
                         package_url=canonical_url(sourcepackage))
             else:
                 try:
@@ -806,7 +799,7 @@ class BugEditView(BugEditViewBase):
             self.notifications.append(
                 'The tag "%s" hasn\'t yet been used by %s before.'
                 ' Is this a new tag? %s' % (
-                    new_tag, bugtarget.bugtargetname, confirm_button))
+                    new_tag, bugtarget.bugtargetdisplayname, confirm_button))
             self._confirm_new_tags = True
 
     @action('Change', name='change')
@@ -917,7 +910,7 @@ class BugTextView(LaunchpadView):
 
     def bugtask_text(self, task):
         text = []
-        text.append('task: %s' % task.targetname)
+        text.append('task: %s' % task.bugtargetname)
         text.append('status: %s' % task.status.title)
         text.append('reporter: %s' % self.person_text(task.owner))
 

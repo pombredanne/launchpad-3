@@ -91,11 +91,13 @@ The timegenerator is used to create nicely ordered 'fake' date_created
 times for the branches.  This avoids using transaction.commit to get the
 date_created values from the database.
 
+    >>> from canonical.lp.dbschema import BranchType
     >>> gterm_dev_url = 'http://example.com/~ddaa/gterm.dev'
     >>> title = "David Allouche's Main GNOME Terminal Branch"
     >>> summary = "Main line of development for David Allouche on GNOME Terminal."
     >>> home_page = "http://example.com/~ddaa/"
-    >>> gterm_dev = branchset.new('dev', ddaa, gterm_product, gterm_dev_url,
+    >>> gterm_dev = branchset.new(
+    ...     BranchType.MIRRORED, 'dev', ddaa, ddaa, gterm_product, gterm_dev_url,
     ...     title, summary=summary, home_page=home_page, date_created=now.next())
 
     >>> gterm_dev.name
@@ -118,8 +120,9 @@ no title, and no summary, and even no URL.
 Branches with no URL are primarily hosted on the supermirror.
 
     >>> url = 'http://example.com/~ddaa/junkcode'
-    >>> junkcode = branchset.new('junkcode', ddaa, None, None,
-    ...                          date_created=now.next())
+    >>> junkcode = branchset.new(
+    ...     BranchType.HOSTED, 'junkcode', ddaa, ddaa, None, None,
+    ...     date_created=now.next())
 
     >>> junkcode.name
     u'junkcode'
@@ -341,7 +344,7 @@ The owner's name is usually not displayed in branch listings, but it is used in
 the sort key to guarantee a predictable sort order. This relies on the fact
 that (owner, product, name) is unique for all branches.
 
-    >>> from canonical.lp.dbschema import BranchLifecycleStatus
+    >>> from canonical.launchpad.interfaces import BranchLifecycleStatus
     >>> gterm_slowness = branchset[19]
     >>> gterm_slowness.sort_key
     (u'gnome-terminal', ..., u'Sample Person', u'slowness', u'name12')
@@ -427,7 +430,8 @@ the branches registered, authored and subscribed to by this person.
     0
     >>> url = 'http://example.com/~lifeless/mesh-merge'
     >>> title = "Experimental mesh merging algorithm."
-    >>> meshmerge = branchset.new('mesh-merge', lifeless, None, url,
+    >>> meshmerge = branchset.new(
+    ...     BranchType.MIRRORED, 'mesh-merge', lifeless, lifeless, None, url,
     ...     title, summary=title, date_created=now.next())
     >>> junkcode.author = lifeless
     >>> syncUpdate(junkcode)

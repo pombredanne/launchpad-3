@@ -50,7 +50,7 @@ from canonical.launchpad.browser.questiontarget import (
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
-    Navigation, StandardLaunchpadFacets, structured)
+    Navigation, StandardLaunchpadFacets, stepthrough, structured)
 from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.helpers import shortlist
 
@@ -64,6 +64,10 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
 
     def traverse(self, name):
         return self.context.getProduct(name)
+
+    @stepthrough('+milestone')
+    def traverse_milestone(self, name):
+        return self.context.getMilestone(name)
 
 
 class ProjectDynMenu(DynMenu):
@@ -182,6 +186,30 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         enabled = ICalendarOwner(self.context).calendar is not None
         return Link(target, text, enabled=enabled)
 
+    def bugs(self):
+        site = 'bugs'
+        text = 'Bugs'
+
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
+
+    def answers(self):
+        site = 'answers'
+        text = 'Answers'
+
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
+
+    def specifications(self):
+        site = 'blueprints'
+        text = 'Blueprints'
+
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
+
+    def translations(self):
+        site = 'translations'
+        text = 'Translations'
+
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
+
 
 class ProjectOverviewMenu(ApplicationMenu):
 
@@ -218,7 +246,12 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     def mentorship(self):
         text = 'Mentoring available'
-        return Link('+mentoring', text, icon='info')
+
+        # We disable this link if the project has no products. This is for
+        # consistency with the way the overview buttons behave in the same
+        # circumstances.
+        return Link('+mentoring', text, icon='info', 
+                    enabled=self.context.hasProducts())
 
     def rdf(self):
         text = structured(
@@ -256,7 +289,7 @@ class ProjectSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'specifications'
-    links = ['listall', 'doc', 'roadmap', 'assignments']
+    links = ['listall', 'doc', 'roadmap', 'assignments', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -275,6 +308,10 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
 
+    def new(self):
+        text = 'Register a blueprint'
+        summary = 'Register a new blueprint for %s' % self.context.title
+        return Link('+addspec', text, summary, icon='add')
 
 class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
     """Menu for the answers facet of projects."""

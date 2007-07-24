@@ -13,7 +13,7 @@ from zope.interface import implements
 
 from canonical.lp.dbschema import MailingListStatus
 from canonical.launchpad.interfaces import (
-    IMailingListRegistry, IRequestedMailingListAPI)
+    IMailingListSet, IRequestedMailingListAPI)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 
@@ -25,7 +25,7 @@ class RequestedMailingListAPI(LaunchpadXMLRPCView):
 
     def getPendingActions(self):
         """See `IRequestedMailingListAPI`."""
-        registry = getUtility(IMailingListRegistry)
+        list_set = getUtility(IMailingListSet)
         # According to the interface, the return value is a dictionary where
         # the keys are one of the pending actions 'create', 'deactivate', or
         # 'modify'.  Do the 'create' action first, where the value is a
@@ -33,7 +33,7 @@ class RequestedMailingListAPI(LaunchpadXMLRPCView):
         # the mailing list.
         response = {}
         creates = []
-        for mailing_list in registry.approved_lists:
+        for mailing_list in list_set.approved_lists:
             initializer = {}
             # If the welcome message is not None, that means it is being
             # initialized when the list is created.  Currently, this is the
@@ -43,18 +43,18 @@ class RequestedMailingListAPI(LaunchpadXMLRPCView):
             creates.append((mailing_list.team.name, initializer))
             # In addition, all approved mailing lists that are being
             # constructed by Mailman need to have their status changed.
-            mailing_list.construct()
+            mailing_list.startConstructing()
         if creates:
             response['create'] = creates
         # Next do mailing lists that are to be deactivated.
         deactivated = [mailing_list.team.name
-                       for mailing_list in registry.deactivated_lists]
+                       for mailing_list in list_set.deactivated_lists]
         if deactivated:
             response['deactivated'] = deactivated
         # Finally, do modified lists.  Currently, the only value that can be
         # modified is the welcome message.
         modified = []
-        for mailing_list in registry.modified_lists:
+        for mailing_list in list_set.modified_lists:
             changes = (mailing_list.team.name,
                        dict(welcome_message=mailing_list.welcome_message))
             modified.append(changes)
@@ -64,24 +64,24 @@ class RequestedMailingListAPI(LaunchpadXMLRPCView):
 
     def reportStatus(self, statuses):
         """See `IRequestedMailingListActions`."""
-        registry = getUtility(IMailingListRegistry)
+        list_set = getUtility(IMailingListSet)
         for team_name, status in statuses.items():
-            mailing_list = registry.getTeamMailingList(team_name)
+            mailing_list = list_set.get(team_name)
             if mailing_list is None:
                 return faults.NoSuchTeam(team_name)
             if status == 'failure':
                 if mailing_list.status in (MailingListStatus.CONSTRUCTING,
                                            MailingListStatus.MODIFIED,
                                            MailingListStatus.DEACTIVATING):
-                    mailing_list.reportResult(MailingListStatus.FAILED)
+                    mailing_list.transitionToStatus(MailingListStatus.FAILED)
                 else:
                     return faults.UnexpectedStatusReport(team_name, status)
             elif status == 'success':
                 if mailing_list.status in (MailingListStatus.CONSTRUCTING,
                                            MailingListStatus.MODIFIED):
-                    mailing_list.reportResult(MailingListStatus.ACTIVE)
+                    mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
                 elif mailing_list.status == MailingListStatus.DEACTIVATING:
-                    mailing_list.reportResult(MailingListStatus.INACTIVE)
+                    mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
                 else:
                     return faults.UnexpectedStatusReport(team_name, status)
             else:

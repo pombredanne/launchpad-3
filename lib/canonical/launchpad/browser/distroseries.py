@@ -52,6 +52,12 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
 
     @stepthrough('+lang')
     def traverse_lang(self, langcode):
+        """Retrieve the DistroSeriesLanguage or a dummy if one it is None."""
+        # We do not want users to see the 'en' potemplate because
+        # we store the messages we want to translate as English.
+        if langcode == 'en':
+            raise NotFoundError(langcode)
+
         langset = getUtility(ILanguageSet)
         try:
             lang = langset[langcode]
@@ -66,13 +72,14 @@ class DistroSeriesNavigation(GetitemNavigation, BugTargetTraversalMixin):
             # generate a dummy one so users have a chance to get to it in the
             # navigation and start adding translations for it.
             distroserieslangset = getUtility(IDistroSeriesLanguageSet)
-            distroserieslang = distroserieslangset.getDummy(self.context, lang)
+            distroserieslang = distroserieslangset.getDummy(
+                self.context, lang)
 
         if (self.context.hide_all_translations and
             not check_permission('launchpad.Admin', distroserieslang)):
             raise TranslationUnavailable(
-                'Translation updates are in progress.  Only administrators may view'
-                ' translations for this distribution series.')
+                'Translation updates are in progress.  Only administrators '
+                'may view translations for this distribution series.')
 
         return distroserieslang
 
@@ -184,10 +191,7 @@ class DistroSeriesBugsMenu(ApplicationMenu):
 
     usedfor = IDistroSeries
     facet = 'bugs'
-    links = ['new', 'cve', 'nominations']
-
-    def new(self):
-        return Link('+filebug', 'Report a bug', icon='add')
+    links = ['cve', 'nominations']
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
@@ -280,7 +284,8 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         """
         distroserieslangs = []
         for language in self.translatable_languages:
-            distroserieslang = self.context.getDistroSeriesLanguageOrDummy(language)
+            distroserieslang = self.context.getDistroSeriesLanguageOrDummy(
+                language)
             distroserieslangs.append(distroserieslang)
         return distroserieslangs
 
@@ -310,7 +315,8 @@ class DistroSeriesView(BuildRecordsView, QueueItemsView, TranslationsMixin):
         distroserieslangset = getUtility(IDistroSeriesLanguageSet)
         for lang in self.translatable_languages:
             if lang not in existing_languages:
-                distroserieslang = distroserieslangset.getDummy(self.context, lang)
+                distroserieslang = distroserieslangset.getDummy(
+                    self.context, lang)
                 distroserieslangs.append(distroserieslang)
 
         return sorted(distroserieslangs, key=lambda a: a.language.englishname)

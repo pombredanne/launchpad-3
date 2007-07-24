@@ -7,8 +7,11 @@ __metaclass__ = type
 __all__ = [
     'BadStatus',
     'BranchAlreadyRegistered',
+    'BranchCreationForbidden',
+    'BranchUniqueNameConflict',
     'FileBugGotProductAndDistro',
     'FileBugMissingProductOrDistribution',
+    'InvalidBranchUrl',
     'NoSuchBranch',
     'NoSuchBug',
     'NoSuchDistribution',
@@ -186,3 +189,35 @@ class BadStatus(LaunchpadFault):
 
     def __init__(self, team_name, status):
         LaunchpadFault.__init__(self, team_name=team_name, status=status)
+
+
+class BranchCreationForbidden(LaunchpadFault):
+    """The user was not permitted to create a branch."""
+
+    error_code = 110
+    msg_template = (
+        "You are not allowed to create a branch for project: "
+        "%(parameter_name)s")
+
+    def __init__(self, parameter_name):
+        LaunchpadFault.__init__(self, parameter_name=parameter_name)
+
+
+class InvalidBranchUrl(LaunchpadFault):
+    """The provided branch URL is not valid."""
+
+    error_code = 120
+    msg_template = "Invalid URL: %(branch_url)s\n%(message)s"
+
+    def __init__(self, branch_url, message):
+        LaunchpadFault.__init__(self, branch_url=branch_url, message=message)
+
+
+class BranchUniqueNameConflict(LaunchpadFault):
+    """There is already a branch with this unique name."""
+
+    error_code = 130
+    msg_template = "Unique name already in use: %(unique_name)s"
+
+    def __init__(self, unique_name):
+        LaunchpadFault.__init__(self, unique_name=unique_name)

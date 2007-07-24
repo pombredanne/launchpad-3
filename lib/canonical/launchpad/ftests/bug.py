@@ -20,8 +20,7 @@ def print_indirect_subscribers(bug_page):
 def print_subscribers(bug_page, subscriber_portlet_index):
     """Print the subscribers listed in the subscriber portlet."""
     bug_id = re.search(r"bug #(\d+)", bug_page, re.IGNORECASE).group(1)
-    subscriber_portlet = find_portlet(
-        bug_page, 'Subscribers to bug %s' % bug_id)
+    subscriber_portlet = find_portlet(bug_page, 'Subscribers')
     try:
         portlet = subscriber_portlet.fetch(
             'ul', "person")[subscriber_portlet_index]
@@ -48,6 +47,18 @@ def print_bugs_table(content, table_id):
             continue
         bug_id, bug_title = tr("td", limit=2)
         print bug_id.string, bug_title.a.string
+
+
+def print_bugs_list(content, list_id):
+    """Print the bugs list with the given ID.
+
+    Right now this is quite simplistic, in that it just extracts the
+    text from the element specified by list_id. If the bug listing
+    becomes more elaborate then this function will be the place to
+    cope with it.
+    """
+    bugs_list = find_tag_by_id(content, list_id)
+    print extract_text(bugs_list)
 
 
 def print_bugtasks(text):

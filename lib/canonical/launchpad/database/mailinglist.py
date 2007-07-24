@@ -4,7 +4,7 @@ __metaclass__ = type
 
 __all__ = [
     'MailingList',
-    'MailingListRegistry',
+    'MailingListSet',
     ]
 
 import pytz
@@ -18,16 +18,21 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IMailingList, IMailingListRegistry)
+    ILaunchpadCelebrities, IMailingList, IMailingListSet)
 from canonical.lp.dbschema import MailingListStatus
 
 
 class MailingList(SQLBase):
-    implements(IMailingList)
+    """'The mailing list for a team.
 
-    def __repr__(self):
-        return '<MailingList for team "%s"; status=%s at %#x>' % (
-            self.team.name, self.status.name, id(self))
+    Teams may have at most one mailing list, and a mailing list is associated
+    with exactly one team.  This table manages the state changes that a team
+    mailing list can go through, and it contains information that will be used
+    to instruct Mailman how to create, delete, and modify mailing lists (via
+    XMLRPC).
+    """
+
+    implements(IMailingList)
 
     team = ForeignKey(dbName='team', foreignKey='Person')
 
@@ -46,8 +51,12 @@ class MailingList(SQLBase):
 
     welcome_message_text = StringCol(default=None)
 
+    def __repr__(self):
+        return '<MailingList for team "%s"; status=%s at %#x>' % (
+            self.team.name, self.status.name, id(self))
+
     def review(self, reviewer, status):
-        """See `IMailingList`"""
+        """See `IMailingList`."""
         # Only mailing lists which are in the REGISTERED state may be
         # reviewed.  This is the state for newly requested mailing lists.
         assert self.status == MailingListStatus.REGISTERED, (
@@ -65,36 +74,35 @@ class MailingList(SQLBase):
         self.status = status
         self.date_reviewed = datetime.now(pytz.timezone('UTC'))
 
-    def construct(self):
-        """See `IMailingList`"""
+    def startConstructing(self):
+        """See `IMailingList`."""
         assert self.status == MailingListStatus.APPROVED, (
             'Only approved mailing lists may be constructed')
         self.status = MailingListStatus.CONSTRUCTING
 
-    def reportResult(self, status):
-        """See `IMailingList`"""
+    def transitionToStatus(self, target_state):
+        """See `IMailingList`."""
         # State: From CONSTRUCTING to either ACTIVE or FAILED
         if self.status == MailingListStatus.CONSTRUCTING:
-            assert status in (MailingListStatus.ACTIVE,
-                              MailingListStatus.FAILED), (
-                'Status result must be active or failed')
+            assert target_state in (MailingListStatus.ACTIVE,
+                                    MailingListStatus.FAILED), (
+                'target_state result must be active or failed')
         # State: From MODIFIED to either ACTIVE or FAILED
         elif self.status == MailingListStatus.MODIFIED:
-            assert status in (MailingListStatus.ACTIVE,
-                              MailingListStatus.FAILED), (
-                'Status result must be active or failed')
+            assert target_state in (MailingListStatus.ACTIVE,
+                                    MailingListStatus.FAILED), (
+                'target_state result must be active or failed')
         # State: From DEACTIVATING to INACTIVE or FAILED
         elif self.status == MailingListStatus.DEACTIVATING:
-            assert status in (MailingListStatus.INACTIVE,
-                              MailingListStatus.FAILED), (
-                'Status result must be inactive or failed')
-        # This is not a valid state change.
+            assert target_state in (MailingListStatus.INACTIVE,
+                                    MailingListStatus.FAILED), (
+                'target_state result must be inactive or failed')
         else:
-            assert False, 'The mailing list is not waiting for results'
-        self.status = status
+            raise AssertionError('Not a valid state transition')
+        self.status = target_state
 
     def deactivate(self):
-        """See `IMailingList`"""
+        """See `IMailingList`."""
         assert self.status == MailingListStatus.ACTIVE, (
             'Only active mailing lists may be deactivated')
         self.status = MailingListStatus.DEACTIVATING
@@ -104,67 +112,80 @@ class MailingList(SQLBase):
 
     def _set_welcome_message(self, text):
         if self.status == MailingListStatus.REGISTERED:
-            # Don't change the status to MODIFIED because the mailing list
-            # hasn't been created by Mailman yet.
-            new_status = MailingListStatus.REGISTERED
+            # Do nothing because the status does not change.  When setting the
+            # welcome_message on a newly registered mailing list the XMLRPC
+            # layer will essentially tell Mailman to initialize this attribute
+            # at list construction time.  It is enough to just set the
+            # database attribute to properly notify Mailman what to do.
+            pass
         elif self.status == MailingListStatus.ACTIVE:
-            new_status = MailingListStatus.MODIFIED
+            # Transition the status to MODIFIED so that the XMLRPC layer knows
+            # that it has to inform Mailman that a mailing list attribute has
+            # been changed on an active list.
+            self.status = MailingListStatus.MODIFIED
         else:
-            assert False, (
+            raise AssertionError(
                 'Only registered or active mailing lists may be modified')
         self.welcome_message_text = text
-        self.status = new_status
 
     welcome_message = property(_get_welcome_message, _set_welcome_message)
 
 
-class MailingListRegistry:
-    implements(IMailingListRegistry)
+class MailingListSet:
+    implements(IMailingListSet)
 
-    def register(self, team):
-        """See `IMailingListRegistry`"""
+    def new(self, team, registrant=None):
+        """See `IMailingListSet`."""
         assert team.isTeam(), (
             'Cannot register a list for a person who is not a team')
-        assert self.getTeamMailingList(team.name) is None, (
+        assert self.get(team.name) is None, (
             'Mailing list for team "%s" already exists' % team.name)
-        return MailingList(team=team, registrant=team.teamowner,
+        if registrant is None:
+            registrant = team.teamowner
+        else:
+            # Check to make sure that registrant is a team owner or admin.
+            # This gets tricky because an admin can be a team, and if the
+            # registrant is a member of that team, they are by definition an
+            # administrator of the team we're creating the mailing list for.
+            # So you can't just do "registrant in
+            # team.getDirectAdministrators()".  It's okay to use .inTeam() for
+            # all cases because a person is always a member of himself.
+            for admin in team.getDirectAdministrators():
+                if registrant.inTeam(admin):
+                    break
+            else:
+                raise AssertionError(
+                    'registrant is not a team owner or administrator')
+        return MailingList(team=team, registrant=registrant,
                            date_registered=datetime.now(pytz.timezone('UTC')))
 
-    def getTeamMailingList(self, team_name):
-        """See `IMailingListRegistry`"""
+    def get(self, team_name):
+        """See `IMailingListSet`."""
         assert isinstance(team_name, basestring), (
             'team_name must be a string, not %s' % type(team_name))
-        results = MailingList.select("""
+        return MailingList.selectOne("""
             MailingList.team = Person.id
             AND Person.name = %s
             AND Person.teamowner IS NOT NULL
             """ % sqlvalues(team_name),
             clauseTables=['Person'])
-        results = list(results)
-        if len(results) == 0:
-            return None
-        elif len(results) == 1:
-            return results[0]
-        else:
-            assert len(results) <= 1, (
-                'Too many MailingLists registered for team "%s"' % team_name)
 
     @property
     def registered_lists(self):
-        """See `IMailingListRegistry`"""
+        """See `IMailingListSet`."""
         return MailingList.selectBy(status=MailingListStatus.REGISTERED)
 
     @property
     def approved_lists(self):
-        """See `IMailingListRegistry`"""
+        """See `IMailingListSet`."""
         return MailingList.selectBy(status=MailingListStatus.APPROVED)
 
     @property
     def modified_lists(self):
-        """See `IMailingListRegistry`"""
+        """See `IMailingListSet`."""
         return MailingList.selectBy(status=MailingListStatus.MODIFIED)
 
     @property
     def deactivated_lists(self):
-        """See `IMailingListRegistry`"""
+        """See `IMailingListSet`."""
         return MailingList.selectBy(status=MailingListStatus.DEACTIVATING)

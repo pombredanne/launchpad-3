@@ -578,7 +578,8 @@ class BaseTranslationView(LaunchpadView):
             is_fuzzy = pomsgset.isfuzzy
 
         return view_class(pomsgset, self.request, plural_indices_to_store,
-            translations, is_fuzzy, error, self.second_lang_code)
+            translations, is_fuzzy, error, self.second_lang_code,
+            self.form_is_writeable)
 
     #
     # Internals
@@ -633,6 +634,12 @@ class BaseTranslationView(LaunchpadView):
     def user_is_official_translator(self):
         """Determine whether the current user is an official translator."""
         return self.pofile.canEditTranslations(self.user)
+
+    @cachedproperty
+    def form_is_writeable(self):
+        """Whether the form should accept write operations."""
+        return (self.user is not None and
+                self.pofile.canAddSuggestions(self.user))
 
     def _extractFormPostedTranslations(self, pomsgset):
         """Look for translations for this `POMsgSet` in the form submitted.
@@ -887,19 +894,23 @@ class POMsgSetView(LaunchpadView):
     #   self.pluralform_indices
 
     def __init__(self, pomsgset, request, plural_indices_to_store,
-                 translations, is_fuzzy, error, second_lang_code):
+                 translations, is_fuzzy, error, second_lang_code,
+                 form_is_writeable):
         """Primes the view with information that is gathered by a parent view.
 
-        :arg plural_indices_to_store: A dictionary that indicates whether the
-            translation associated should be stored in our database or
+        :param plural_indices_to_store: A dictionary that indicates whether
+            the translation associated should be stored in our database or
             ignored. It's indexed by plural form.
-        :arg translations: A dictionary indexed by plural form index;
+        :param translations: A dictionary indexed by plural form index;
             BaseTranslationView constructed it based on form-submitted
             translations.
-        :arg is_fuzzy: A flag that notes current fuzzy flag overlaid with the
-            form-submitted.
-        :arg error: The error related to self.context submission or None.
-        :arg second_lang_code: The result of submiting field.alternative_value.
+        :param is_fuzzy: A flag that notes current fuzzy flag overlaid with
+            the form-submitted.
+        :param error: The error related to self.context submission or None.
+        :param second_lang_code: The result of submiting
+            field.alternative_value.
+        :param form_is_writeable: Whether the form should accept write
+            operations
         """
         LaunchpadView.__init__(self, pomsgset, request)
 
@@ -909,6 +920,7 @@ class POMsgSetView(LaunchpadView):
         self.is_fuzzy = is_fuzzy
         self.user_is_official_translator = (
             pomsgset.pofile.canEditTranslations(self.user))
+        self.form_is_writeable = form_is_writeable
 
         # Set up alternative language variables. XXX: This could be made
         # much simpler if we built suggestions externally in the parent
@@ -1004,6 +1016,11 @@ class POMsgSetView(LaunchpadView):
                 'html_id_translation':
                     self.context.makeHTMLId('translation_%d' % index),
                 }
+
+            if published_submission is not None:
+                translation_entry['html_id_published_suggestion'] = (
+                    published_submission.makeHTMLId(
+                        'suggestion', self.context.potmsgset))
 
             if self.message_must_be_hidden:
                 # We must hide the translation because it may have private
@@ -1124,7 +1141,7 @@ class POMsgSetView(LaunchpadView):
                              reverse=True)
         return POMsgSetSuggestions(
             title, self.context, submissions[:self.max_entries],
-            self.user_is_official_translator)
+            self.user_is_official_translator, self.form_is_writeable)
 
     def getOfficialTranslation(self, index, published = False):
          """Return active or published translation for pluralform 'index'."""
@@ -1186,6 +1203,15 @@ class POMsgSetView(LaunchpadView):
             return False
         # For anonymous users, check the msgid.
         return self.context.potmsgset.hide_translations_from_anonymous
+
+    @property
+    def translation_credits(self):
+        """Return automatically created translation if defined, or None."""
+        assert self.context.potmsgset.is_translation_credit
+        return text_to_html(
+            self.context.pofile.prepareTranslationCredits(
+                self.context.potmsgset),
+            self.context.potmsgset.flags())
 
     @cachedproperty
     def sequence(self):
@@ -1316,10 +1342,11 @@ class POMsgSetSuggestions:
         return self.pomsgset.pofile == submission['pomsgset'].pofile
 
     def __init__(self, title, pomsgset, submissions,
-                 user_is_official_translator):
+                 user_is_official_translator, form_is_writeable):
         self.title = title
         self.pomsgset = pomsgset
         self.user_is_official_translator = user_is_official_translator
+        self.form_is_writeable = form_is_writeable
         self.submissions = []
         for submission in submissions:
             self.submissions.append({
@@ -1334,6 +1361,8 @@ class POMsgSetSuggestions:
                 'datecreated': submission.datecreated,
                 'suggestion_html_id':
                     submission.makeHTMLId('suggestion', pomsgset.potmsgset),
-                'translation_html_id': pomsgset.makeHTMLId('translation'),
+                'translation_html_id':
+                    pomsgset.makeHTMLId(
+                        'translation_%s' % (submission.pluralform)),
                 })
 

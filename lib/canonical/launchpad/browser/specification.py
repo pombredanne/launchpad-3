@@ -12,7 +12,8 @@ __all__ = [
     'SpecificationGoalProposeView',
     'SpecificationGoalDecideView',
     'SpecificationLinkBranchView',
-    'SpecificationNewView',
+    'SpecificationAddView',
+    'SprintSpecificationAddView',
     'SpecificationRetargetingView',
     'SpecificationSprintAddView',
     'SpecificationSupersedingView',
@@ -29,6 +30,9 @@ from operator import attrgetter
 
 from zope.component import getUtility
 from zope.app.form.browser.itemswidgets import DropdownWidget
+from zope.formlib import form
+from zope.schema import Choice
+from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
@@ -40,8 +44,10 @@ from canonical.launchpad.interfaces import (
     IProduct,
     IProject,
     ISpecification,
+    INewSpecificationForm,
     ISpecificationBranch,
     ISpecificationSet,
+    ISprint,
     NotFoundError,
     )
 
@@ -53,14 +59,13 @@ from canonical.launchpad.browser.specificationtarget import (
 from canonical.launchpad.webapp import (
     ContextMenu, GeneralFormView, LaunchpadView, LaunchpadFormView,
     Link, Navigation, action, canonical_url, enabled_with_permission,
-    safe_action, stepthrough, stepto)
+    safe_action, stepthrough, stepto, custom_widget)
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import (
     AppFrontPageSearchView, StructuralHeaderPresentation)
 from canonical.launchpad.webapp.authorization import check_permission
 
-from canonical.lp.dbschema import SpecificationStatus
-
+from canonical.lp.dbschema import SpecificationDefinitionStatus
 
 class SpecificationNavigation(Navigation):
 
@@ -251,10 +256,10 @@ class SpecificationView(LaunchpadView, CanBeMentoredView):
         essential = request.form.get('essential', False)
         if self.user and request.method == 'POST':
             if sub is not None:
-                self.context.subscribe(self.user, essential)
+                self.context.subscribe(self.user, self.user, essential)
                 self.notices.append("You have subscribed to this spec.")
             elif upd is not None:
-                self.context.subscribe(self.user, essential)
+                self.context.subscribe(self.user, self.user, essential)
                 self.notices.append('Your subscription has been updated.')
             elif unsub is not None:
                 self.context.unsubscribe(self.user)
@@ -393,33 +398,6 @@ class SpecificationRetargetingView(LaunchpadFormView):
         return self._nextURL
 
 
-class SpecificationSupersedingView(GeneralFormView):
-
-    @property
-    def initial_values(self):
-        return {
-            'superseded_by': self.context.superseded_by,
-            }
-
-    def process(self, superseded_by=None):
-        self.context.superseded_by = superseded_by
-        if superseded_by is not None:
-            # set the state to superseded
-            self.context.status = SpecificationStatus.SUPERSEDED
-        else:
-            # if the current state is SUPERSEDED and we are now removing the
-            # superseded-by then we should move this spec back into the
-            # drafting pipeline by resetting its status to NEW
-            if self.context.status == SpecificationStatus.SUPERSEDED:
-                self.context.status = SpecificationStatus.NEW
-        newstate = self.context.updateLifecycleStatus(self.user)
-        if newstate is not None:
-            self.request.response.addNotification(
-                'Specification is now considered "%s".' % newstate.title)
-        self.request.response.redirect(canonical_url(self.context))
-        return 'Done.'
-
-
 class SupersededByWidget(DropdownWidget):
     """Custom select widget for specification superseding.
 
@@ -431,6 +409,60 @@ class SupersededByWidget(DropdownWidget):
     -- StuartBishop 20060704
     """
     _messageNoValue = _("(Not Superseded)")
+
+
+class SpecificationSupersedingView(LaunchpadFormView):
+    schema = ISpecification
+    field_names = ['superseded_by']
+    label = _('Mark specification superseded')
+    custom_widget('superseded_by', SupersededByWidget)
+
+    @property
+    def initial_values(self):
+        return {
+            'superseded_by': self.context.superseded_by,
+            }
+
+    def setUpFields(self):
+        """Override the setup to define own fields."""
+        if self.context.target is None:
+            raise AssertionError("No target found for this spec.")
+        specs = sorted(self.context.target.specifications(),
+                       key=attrgetter('name'))
+        terms = [SimpleTerm(spec, spec.name, spec.title)
+                 for spec in specs if spec != self.context]
+
+        self.form_fields = form.Fields(
+            Choice(
+                __name__='superseded_by',
+                title=_("Superseded by"),
+                vocabulary=SimpleVocabulary(terms),
+                required=False,
+                description=_(
+                    "The specification which supersedes this one. Note "
+                    "that selecting a specification here and pressing "
+                    "Continue will change the specification status "
+                    "to Superseded.")),
+            render_context=self.render_context,
+            custom_widget=self.custom_widgets['superseded_by'])
+
+    @action(_('Continue'), name='supersede')
+    def supersede_action(self, action, data):
+        self.context.superseded_by = data['superseded_by']
+        if data['superseded_by'] is not None:
+            # set the state to superseded
+            self.context.definition_status = SpecificationDefinitionStatus.SUPERSEDED
+        else:
+            # if the current state is SUPERSEDED and we are now removing the
+            # superseded-by then we should move this spec back into the
+            # drafting pipeline by resetting its status to NEW
+            if self.context.definition_status == SpecificationDefinitionStatus.SUPERSEDED:
+                self.context.definition_status = SpecificationDefinitionStatus.NEW
+        newstate = self.context.updateLifecycleStatus(self.user)
+        if newstate is not None:
+            self.request.response.addNotification(
+                'Specification is now considered "%s".' % newstate.title)
+        self.next_url = canonical_url(self.context)
 
 
 class SpecGraph:
@@ -613,8 +645,6 @@ class SpecificationSprintAddView(SQLObjectAddView):
     def create(self, sprint):
         user = getUtility(ILaunchBag).user
         sprint_link = self.context.linkSprint(sprint, user)
-        if check_permission('launchpad.Driver', sprint):
-            sprint_link.acceptBy(user)
         return sprint_link
 
     def add(self, content):
@@ -805,28 +835,44 @@ class SpecificationTreeDotOutput(SpecificationTreeGraphView):
         return self.getDotFileText()
 
 
-class SpecificationNewView(LaunchpadFormView):
-    """A form used to add a specification from the Blueprints home page,
-    where we need to choose a context for the specification as well as
-    asking for the spec details."""
+class SpecificationAddViewBase(LaunchpadFormView):
+    """A base class for forms used to add a specification."""
 
-    schema = ISpecification
+    schema = INewSpecificationForm
     label = "Register a new Blueprint"
 
+    def _validate_name(self, name, target):
+        if target:
+            # The context does not correspond to a unique specification
+            # namespace. Instead, ensure that the specified name does
+            # not exist within the namespace of the specified target.
+            if target.getSpecification(name):
+                # The specified name already exists. Mark the field with
+                # an error.
+                self.setFieldError(
+                    'name',
+                    self.schema['name'].errormessage % name
+                )
     @property
     def field_names(self):
-        """This form is used sometimes on an IProject, IProduct or
+        """Return the list of fields participating in the form.
+
+        This form is used sometimes on an IProject, IProduct or
         IDistribution to get a new spec for them, and also on
         ISpecificationSet as a system-wide "new spec" form. We need slightly
         different field names in each case, so we make field_names a
         property.
         """
-        field_names = ['name', 'title', 'specurl', 'summary', 'status',
-                       'assignee', 'drafter', 'approver']
+        field_names = ['name', 'title', 'specurl', 'summary',
+                       'definition_status', 'assignee', 'drafter', 'approver']
         if ISpecificationSet.providedBy(self.context):
             field_names.insert(0, 'target')
         elif IProject.providedBy(self.context):
-            field_names.insert(0, 'projecttarget')
+            field_names.insert(0, 'project_target')
+        else:
+            # Fields list can stay intact or modified by
+            # classes inheriting this one.
+            pass
         return field_names
 
     def validate(self, data):
@@ -842,35 +888,23 @@ class SpecificationNewView(LaunchpadFormView):
         if ISpecificationSet.providedBy(self.context):
             target = data.get('target')
         elif IProject.providedBy(self.context):
-            target = data.get('projecttarget')
+            target = data.get('project_target')
         else:
-            # The context corresponds to a unique specification name-
-            # space. We can rely on the name field to validate itself.
+            # We can rely on the name field to validate itself.
             target = None
-        if target:
-            # The context does not correspond to a unique specification
-            # namespace. Instead, ensure that the specified name does
-            # not exist within the namespace of the specified target.
-            name = data.get('name')
-            if target.getSpecification(name):
-                # The specified name already exists. Mark the field with
-                # an error.
-                self.setFieldError(
-                    'name',
-                    self.schema['name'].errormessage % name
-                )
 
-    @action(_('Register Blueprint'), name='register')
-    def register_action(self, action, data):
+    def _add_spec(self, data):
+        """Add a new specification with the form values and return it."""
+        
         owner = self.user
         # clean up name
         name = data['name'].strip().lower()
         # determine product or distribution as target
         product = distribution = None
         target = data.get('target', None)
-        projecttarget = data.get('projecttarget', None)
-        if projecttarget is not None:
-            target = projecttarget
+        project_target = data.get('project_target', None)
+        if project_target is not None:
+            target = project_target
         if target is None:
             target = self.context
         if IProduct.providedBy(target):
@@ -884,19 +918,86 @@ class SpecificationNewView(LaunchpadFormView):
             data['title'],
             data['specurl'],
             data['summary'],
-            data['status'],
+            data['definition_status'],
             owner,
             product=product,
             distribution=distribution,
             assignee=data.get('assignee', None),
             drafter=data.get('drafter', None),
             approver=data.get('approver', None))
-        self._nextURL = canonical_url(spec)
 
+        sprint = data.get('sprint', None)
+        if sprint is not None:
+            spec.linkSprint(sprint, self.user)            
+        return spec
+
+
+class SpecificationAddView(SpecificationAddViewBase):
+    """A view for adding a specification from a project, project group
+    or distribution.
+    """
+    
     @property
-    def next_url(self):
-        return self._nextURL
+    def field_names(self):
+        """Return the list of fields participating in the form.
 
+        For the general version of the form we always add the
+        sprint field.
+        """
+        field_names = super(SpecificationAddView, self).field_names
+        field_names.append('sprint')
+        return field_names
+
+    def validate(self, data):
+        """Validates the contents of the form.
+
+        Guarantees that the name chosen for the new blueprint
+        is unique within its target project.
+        """
+        if ISpecificationSet.providedBy(self.context):
+            target = data.get('target')
+        elif IProject.providedBy(self.context):
+            target = data.get('project_target')
+        else:
+            # We can rely on the name field to validate itself.
+            target = None
+        name = data.get('name')
+        self._validate_name(name, target)
+
+    @action(_('Register Blueprint'), name='register')
+    def register_action(self, action, data):
+        """Register a new blueprint."""
+        spec = self._add_spec(data)
+        self.next_url = canonical_url(spec)
+
+
+class SprintSpecificationAddView(SpecificationAddViewBase):
+    """A view for adding a specification from a sprint."""
+    
+    @property
+    def field_names(self):
+        """Return the list of fields participating in the form.
+
+        This form is used on an `ISprint` to get a new spec
+        for a project and propose it for the sprint.
+        """
+        field_names = super(SprintSpecificationAddView, self).field_names
+        field_names.insert(0, 'target')
+        return field_names
+
+    def validate(self, data):
+        """Validates the contents of the form."""
+        target = data.get('target')
+        name = data.get('name')
+        self._validate_name(name, target)
+
+    @action(_('Register Blueprint'), name='register')
+    def register_action(self, action, data):
+        """Register a new blueprint and propose it for a sprint."""
+        data['sprint'] = self.context
+        spec = self._add_spec(data)
+        self.next_url = canonical_url(self.context)
+        
 
 class SpecificationLinkBranchView(LaunchpadFormView):
     """A form used to link a branch to this specification."""

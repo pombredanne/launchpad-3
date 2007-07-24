@@ -25,8 +25,8 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, IDistribution, IDistributionSet,
-    IDistributionSourcePackage, InvalidQuestionStateError, ILanguage,
+    IBugLinkTarget, IDistribution, IDistributionSet, 
+    IDistributionSourcePackage, IFAQ, InvalidQuestionStateError, ILanguage,
     ILanguageSet, ILaunchpadCelebrities, IMessage, IPerson, IProduct,
     IProductSet, IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
     QUESTION_STATUS_DEFAULT_SEARCH)
@@ -51,9 +51,10 @@ from canonical.launchpad.database.questionsubscription import (
     QuestionSubscription)
 from canonical.launchpad.event import (
     SQLObjectCreatedEvent, SQLObjectModifiedEvent)
+from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
-from canonical.launchpad.webapp.enum import Item
+from canonical.launchpad.webapp.enum import DBItem
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 
@@ -131,6 +132,9 @@ class Question(SQLBase, BugLinkTargetMixin):
         dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)
     whiteboard = StringCol(notNull=False, default=None)
+
+    faq = ForeignKey(
+        dbName='faq', foreignKey='FAQ', notNull=False, default=None)
 
     # useful joins
     subscriptions = SQLMultipleJoin('QuestionSubscription',
@@ -276,7 +280,12 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     @notify_question_modified()
     def giveAnswer(self, user, answer, datecreated=None):
-        """See `IQuestion`."""
+        """See IQuestion."""
+        return self._giveAnswer(user, answer, datecreated)
+
+    def _giveAnswer(self, user, answer, datecreated):
+        """Implementation of _giveAnswer that doesn't trigger notifications.
+        """
         if not self.can_give_answer:
             raise InvalidQuestionStateError(
             "Question status != OPEN, NEEDSINFO or ANSWERED")
@@ -294,20 +303,28 @@ class Question(SQLBase, BugLinkTargetMixin):
         if self.owner == user:
             self.dateanswered = msg.datecreated
             self.answerer = user
-            self.answer = msg
-            self.owner.assignKarma(
-                'questionownersolved', product=self.product,
-                distribution=self.distribution,
-                sourcepackagename=self.sourcepackagename)
+
         return msg
+
+    @notify_question_modified()
+    def linkFAQ(self, user, faq, comment, datecreated=None):
+        """See `IQuestion`."""
+        if faq is not None:
+            assert IFAQ.providedBy(faq), (
+                "faq parameter must provide IFAQ or be None")
+        assert self.faq != faq, (
+            'cannot call linkFAQ() with already linked FAQ')
+        self.faq = faq
+        return self._giveAnswer(user, comment, datecreated)
 
     @property
     def can_confirm_answer(self):
         """See `IQuestion`."""
         if self.status not in [
             QuestionStatus.OPEN, QuestionStatus.ANSWERED,
-            QuestionStatus.NEEDSINFO]:
-
+            QuestionStatus.NEEDSINFO, QuestionStatus.SOLVED]:
+            return False
+        if self.answerer is not None and self.answerer is not self.owner:
             return False
 
         for message in self.messages:
@@ -625,7 +642,7 @@ class QuestionSearch:
                  project=None):
         self.search_text = search_text
 
-        if zope_isinstance(status, Item):
+        if zope_isinstance(status, DBItem):
             self.status = [status]
         else:
             self.status = status
@@ -896,14 +913,14 @@ class QuestionPersonSearch(QuestionSearch):
 
         if not participation:
             self.participation = QuestionParticipation.items
-        elif zope_isinstance(participation, Item):
+        elif zope_isinstance(participation, DBItem):
             self.participation = [participation]
         else:
             self.participation = participation
 
     def getTableJoins(self):
         """See `QuestionSearch`.
-        
+
         Return the joins for persons in addition to the base class joins.
         """
         joins = QuestionSearch.getTableJoins(self)
@@ -1058,9 +1075,18 @@ class QuestionTargetMixin:
 
         constraints.append("""
             AnswerContact.person = PersonLanguage.person AND
-            PersonLanguage.language = %s""" % sqlvalues(language))
+            PersonLanguage.Language = Language.id""")
+        # XXX sinzui 2007-07-12 bug=125545
+        # Using a LIKE constraint is suboptimal. We would not need this
+        # if-else clause if variant languages knew their parent language.
+        if language.code == 'en':
+            constraints.append("""
+                Language.code LIKE %s""" % sqlvalues('%s%%' % language.code))
+        else:
+            constraints.append("""
+                Language.id = %s""" % sqlvalues(language))
         return set(self._selectPersonFromAnswerContacts(
-            constraints, ['PersonLanguage']))
+            constraints, ['PersonLanguage', 'Language']))
 
     def getAnswerContactRecipients(self, language):
         """See `IQuestionTarget`."""
@@ -1099,6 +1125,8 @@ class QuestionTargetMixin:
         """See `IQuestionTarget`."""
         languages = set()
         for contact in self.answer_contacts:
-            languages |= contact.getSupportedLanguages()
+            languages |= set(contact.languages)
         languages.add(getUtility(ILanguageSet)['en'])
+        languages = set(
+            lang for lang in languages if not is_english_variant(lang))
         return languages
