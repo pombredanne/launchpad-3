@@ -24,7 +24,7 @@ that he's interested in that feature.
 By looking at the 'Subscribers' portlet, he sees that David Allouche is not
 currently subscribed to the bug:
 
-    >>> subs = find_portlet(user_browser.contents, 'Subscribers to bug 1')
+    >>> subs = find_portlet(user_browser.contents, 'Subscribers')
     >>> 'David Allouche' not in extract_text(subs.ul)
     True
 
@@ -44,6 +44,6 @@ He is notified that David Allouche has been subscribed.
 
 The subscribers portlet now contains the new subscriber's name.
 
-    >>> subs = find_portlet(user_browser.contents, 'Subscribers to bug 1')
+    >>> subs = find_portlet(user_browser.contents, 'Subscribers')
     >>> extract_text(subs.ul)
     u'...David Allouche...'
