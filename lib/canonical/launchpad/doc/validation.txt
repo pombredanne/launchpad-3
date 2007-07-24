@@ -16,14 +16,14 @@ bugtasks are unique per bug.
     ...     ISourcePackageNameSet).queryByName('mozilla-firefox')
     >>> evolution = getUtility(ISourcePackageNameSet).queryByName('evolution')
 
-We aren't allowed to have two distrotask with the same sourcepackage
+We aren't allowed to have two distrotasks with the same sourcepackage.
 
     >>> validate_distrotask(bug_two, debian, mozilla_firefox)
     Traceback (most recent call last):
       ...
     WidgetsError: LaunchpadValidationError: ...
 
-But it's legal to have two bugtasks with different sourcepackages
+But it's legal to have two bugtasks with different sourcepackages.
 
     >>> validate_distrotask(bug_two, debian, evolution)
 
