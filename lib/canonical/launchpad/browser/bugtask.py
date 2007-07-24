@@ -56,6 +56,7 @@ from canonical.config import config
 from canonical.lp import dbschema, decorates
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     action, canonical_url, GetitemNavigation, LaunchpadFormView,
     LaunchpadView, Navigation, redirection, stepthrough)
@@ -911,9 +912,10 @@ class BugTaskEditView(GeneralFormView):
             try:
                 validate_distrotask(
                     bugtask.bug, distro, data['sourcepackagename'])
-            except WidgetsError, errors:
-                self.sourcepackagename_widget._error = ConversionError(str(errors.args[0]))
-                raise errors
+            except LaunchpadValidationError, error:
+                self.sourcepackagename_widget._error = ConversionError(
+                    str(error))
+                raise WidgetsError(error)
         if (product is not None and
             'product' in data and product != data['product']):
             try:

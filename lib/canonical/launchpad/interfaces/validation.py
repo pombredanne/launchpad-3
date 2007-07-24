@@ -344,8 +344,8 @@ def validate_new_distrotask(bug, distribution, sourcepackagename=None):
     """Validate a distribution bugtask to be added.
 
     Make sure that the isn't already a distribution task without a
-    source package, or that such task is added when the bug already has
-    one or more tasks for the distribution.
+    source package, or that such task is added only when the bug doesn't
+    already have any tasks for the distribution.
 
     The same checks as `validate_distrotask` does are also done.
     """
@@ -357,12 +357,10 @@ def validate_new_distrotask(bug, distribution, sourcepackagename=None):
         # should be reassigned to the sourcepackage, rather than a new
         # task opened.
         if bug.getBugTask(distribution) is not None:
-            raise WidgetsError([
-                LaunchpadValidationError(_(
+            raise LaunchpadValidationError(_(
                     'This bug is already open on %s with no package '
                     'specified. You should fill in a package name for the '
                     'existing bug.') % (distribution.displayname))
-                ])
     else:
         # Prevent having a task on only the distribution if there's at least one
         # task already on the distribution, whether or not that task also has a
@@ -372,26 +370,23 @@ def validate_new_distrotask(bug, distribution, sourcepackagename=None):
             if bugtask.distribution == distribution]
 
         if len(distribution_tasks_for_bug) > 0:
-            raise WidgetsError([
-                LaunchpadValidationError(_(
+            raise LaunchpadValidationError(_(
                     'This bug is already open on %s or packages in %s. '
                     'Please specify an affected package in which the bug '
                     'has not yet been reported.') % (
                     distribution.displayname, distribution.displayname))
-                ])
     validate_distrotask(bug, distribution, sourcepackagename)
 
 
 def validate_distrotask(bug, distribution, sourcepackagename=None):
     """Check if a distribution bugtask already exists for a given bug.
 
-    If validation fails, a WidgetsError will be raised.
+    If validation fails, a LaunchpadValidationError will be raised.
     """
     new_source_package = distribution.getSourcePackage(sourcepackagename)
     if sourcepackagename and bug.getBugTask(new_source_package) is not None:
         # Ensure this distribution/sourcepackage task is unique.
-        raise WidgetsError([
-            LaunchpadValidationError(_(
+        raise LaunchpadValidationError(_(
                 'This bug has already been reported on %s (%s).') % (
                 sourcepackagename.name, distribution.name))
             ])
@@ -406,7 +401,6 @@ def validate_distrotask(bug, distribution, sourcepackagename=None):
     else:
         # The bugtask is valid.
         pass
-
 
 
 def valid_upstreamtask(bug, product):
