@@ -40,7 +40,8 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IMaloneApplication, IPerson)
+    ILaunchBag, IMaloneApplication, INullBugTask, IPerson,
+    IStructuralObjectPresentation)
 from canonical.launchpad.webapp import smartquote
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
@@ -49,8 +50,9 @@ DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 class BugTaskPageTitle:
     def __call__(self, context, view):
-        return smartquote('Bug #%d in %s: "%s"') % (
-            context.bug.id, context.targetname, context.bug.title)
+        return smartquote('%s: "%s"') % (
+            IStructuralObjectPresentation(context).getMainHeading(),
+            context.bug.title)
 
 
 class SubstitutionHelper:
@@ -205,7 +207,7 @@ def buglisting_embedded_advanced_search(context, view):
 
 def bugnomination_edit(context, view):
     return 'Manage nomination for bug #%d in %s' % (
-        context.bug.id, context.target.bugtargetname)
+        context.bug.id, context.target.bugtargetdisplayname)
 
 def bugwatch_editform(context, view):
     return 'Bug #%d - Edit external bug watch (%s in %s)' % (

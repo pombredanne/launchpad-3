@@ -36,6 +36,12 @@ def process_team(teamname, display_option='simple'):
             email = member.preferredemail.email
         else:
             email = '--none--'
+        if template == 'email':
+            for validatedemail in member.validatedemails:
+                params = dict(
+                    email=validatedemail.email,
+                    )
+                output.append(template % params)
         # Ubuntite
         ubuntite = "no"
         if member.signedcocs:

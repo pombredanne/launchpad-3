@@ -39,4 +39,3 @@ class IBugNotificationSet(Interface):
 
     def getNotificationsToSend():
         """Returns the notifications pending to be sent."""
-
