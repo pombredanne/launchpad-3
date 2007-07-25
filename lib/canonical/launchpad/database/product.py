@@ -658,7 +658,7 @@ class ProductSet:
             ProductSeries.user_branch = Branch.id and
             Branch.branch_type in %s
             ''' % quote((BranchType.HOSTED, BranchType.MIRRORED)),
-            orderBy='name')
+            orderBy='name', clauseTables=['ProductSeries', 'Branch'])
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,

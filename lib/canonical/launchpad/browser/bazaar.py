@@ -113,11 +113,12 @@ class ProductInfo:
 
     decorates(IProduct, 'product')
 
-    def __init__(self, product, num_branches, branch_size, elapsed):
+    def __init__(self, product, num_branches, branch_size, elapsed, important):
         self.product = product
         self.num_branches = num_branches
         self.branch_size = branch_size
         self.elapsed_since_commit = elapsed
+        self.important = important
 
     @property
     def branch_class(self):
@@ -177,10 +178,12 @@ class BazaarProductView:
         products = shortlist(product_set.getProductsWithBranches(),
                              1500, hardlimit=2000)
         # Any product that has a defined user branch for the development
-        # product series is shown in another colour.
-        #broducts_using_bzr = product_set.getProjectsWithMainDevelopmentBranches()
+        # product series is shown in another colour.  Given the above
+        # query, all the products will be in the cache anyway.
+        user_branch_products = set(
+            [product.id for product in
+             product_set.getProductsWithUserDevelopmentBranches()])
 
-        
         branchset = getUtility(IBranchSet)
         branch_summaries = branchset.getActiveUserBranchSummaryForProducts(
             products)
@@ -216,8 +219,10 @@ class BazaarProductView:
             else:
                 branch_size = 'medium'
 
+            important = product.id in user_branch_products
+
             items.append(ProductInfo(
-                product, num_branches, branch_size, elapsed))
+                product, num_branches, branch_size, elapsed, important))
 
         return items
 
