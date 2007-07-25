@@ -31,7 +31,8 @@ from canonical.lp.dbschema import LoginTokenType, PersonCreationRationale
 from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, ILoginTokenSet, IOpenIdApplication,
-    IOpenIdAuthorizationSet, IPersonSet, NotFoundError, UnexpectedFormData)
+    IOpenIdAuthorizationSet, IOpenIDRPConfigSet, IPersonSet,
+    NotFoundError, UnexpectedFormData)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
@@ -244,9 +245,13 @@ class OpenIdMixin:
             field_names.update(
                 self.openid_parameters['openid.sreg.optional'].split(','))
         # Now subset them based on what keys are allowed from the
-        # KNOWN_TRUST_ROOTS list:
-        rp_info = KNOWN_TRUST_ROOTS.get(self.openid_request.trust_root, {})
-        field_names.intersection_update(rp_info.get('sreg', []))
+        # RP config:
+        rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+            self.openid_request.trust_root)
+        if rpconfig is None:
+            field_names.clear()
+        else:
+            field_names.intersection_update(rpconfig.allowed_sreg)
         # Sort the list according to SREG_FIELDS
         return [name for (name, description) in SREG_FIELDS
                 if name in field_names]
@@ -486,7 +491,7 @@ class LoginServiceBaseView(OpenIdMixin, LaunchpadFormView):
         #self.trashRequestInSession('nonce' + self.nonce)
 
     @property
-    def rp_info(self):
+    def rpconfig(self):
         """Return a dictionary of information about the relying party.
 
         The dictionary contains 'title' and 'logo' entries.
@@ -496,11 +501,8 @@ class LoginServiceBaseView(OpenIdMixin, LaunchpadFormView):
         """
         assert self.openid_request is not None, (
             'Could not find the OpenID request')
-        rp_info = KNOWN_TRUST_ROOTS.get(self.openid_request.trust_root)
-        if rp_info is None:
-            return dict(title=self.openid_request.trust_root,
-                        logo=None, reason=None)
-        return rp_info
+        return getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+            self.openid_request.trust_root)
 
     def isSaneTrustRoot(self):
         """Return True if the RP's trust root looks sane."""
