@@ -409,9 +409,10 @@ class PackageUpload(SQLBase):
         }
         debug(self.logger, "Sending rejection email.")
         rejection_template = get_email_template('upload-rejection.txt')
+        sender = format_address(config.uploader.default_sender_name,
+                                config.uploader.default_sender_address)
         self._sendMail(
-            format_address(config.uploader.default_sender_name,
-                config.uploader.default_sender_address),
+            sender,
             recipients,
             "%s rejected" % self.changesfile.filename,
             rejection_template % interpolations)
@@ -452,12 +453,13 @@ class PackageUpload(SQLBase):
             # PPA uploads receive an acceptance message.
             interpolations["STATUS"] = "[PPA %s] Accepted" % (
                 self.archive.owner.name)
+            subject = "[PPA %s] Accepted %s %s (%s)" % (
+                self.archive.owner.name, self.displayname, 
+                self.displayversion, self.displayarchs)
             self._sendMail(
                 uploader_address,
                 recipients,
-                "[PPA %s] Accepted %s %s (%s)" % (
-                    self.archive.owner.name, self.displayname, 
-                    self.displayversion, self.displayarchs),
+                subject,
                 accepted_template % interpolations)
             return
 
@@ -465,11 +467,12 @@ class PackageUpload(SQLBase):
         # they are usually processed with the sync policy.
         if self.pocket == PackagePublishingPocket.BACKPORTS:
             debug(self.logger, "Skipping announcement, it is a BACKPORT.")
+            subject = "Accepted %s %s (%s)" % (
+                self.displayname, self.displayversion, self.displayarchs)
             self._sendMail(
                 uploader_address,
                 recipients,
-                "Accepted %s %s (%s)" % (self.displayname, self.displayversion,
-                    self.displayarchs),
+                subject,
                 accepted_template % interpolations)
             return
 
@@ -479,11 +482,12 @@ class PackageUpload(SQLBase):
             and self.containsBuild):
             debug(self.logger,
                 "Skipping announcement, it is a binary upload to SECURITY.")
+            subject = "Accepted %s %s (%s)" % (
+                self.displayname, self.displayversion, self.displayarchs)
             self._sendMail(
                 uploader_address,
                 recipients,
-                "Accepted %s %s (%s)" % (self.displayname, self.displayversion,
-                    self.displayarchs),
+                subject,
                 accepted_template % interpolations)
             return
 
@@ -494,21 +498,23 @@ class PackageUpload(SQLBase):
             interpolations["SUMMARY"] += (
                 "\nThis upload awaits approval by a distro manager\n")
             interpolations["STATUS"] = "Waiting for approval:"
+            subject = "Waiting for approval: %s %s (%s)" % (
+                self.displayname, self.displayversion, self.displayarchs)
             self._sendMail(
                 uploader_address,
                 recipients,
-                "Waiting for approval: %s %s (%s)" % (self.displayname, 
-                    self.displayversion, self.displayarchs),
+                subject,
                 accepted_template % interpolations)
             return
 
         # Fallback, all the rest coming from insecure, secure and sync
         # policies should send an acceptance and an announcement message.
+        subject = "Accepted %s %s (%s)" % (
+            self.displayname, self.displayversion, self.displayarchs)
         self._sendMail(
             uploader_address,
             recipients,
-            "Accepted %s %s (%s)" % (self.displayname, self.displayversion,
-                self.displayarchs),
+            subject,
             accepted_template % interpolations)
         if announce_list:
             sender = ""
@@ -521,8 +527,7 @@ class PackageUpload(SQLBase):
             self._sendMail(
                 sender,
                 [str(announce_list)],
-                "Accepted %s %s (%s)" % (self.displayname, self.displayversion,
-                    self.displayarchs),
+                subject,
                 announce_template % interpolations,
                 bcc="%s_derivatives@packages.qa.debian.org" % self.displayname)
         return
@@ -639,9 +644,18 @@ class PackageUpload(SQLBase):
         return uploader
 
     def _sendMail(self, from_addr, to_addrs, subject, mail_text, bcc=None):
-        extra_headers = {
-            'X-Katie' : 'Launchpad actually'
-        }
+        """Send an email to to_addrs with the given text and subject.
+
+        :from_addr: The email address to be used as the sender.  Must be a
+                    valid ASCII str instance or a unicode one.
+        :to_addrs: A list of email addresses to be used as recipients.  Each
+                   email must be a valid ASCII str instance or a unicode one.
+        :subject: The email's subject.
+        :mail_text: The text body of the email.  Unicode is preserved in the
+                    email.
+        :bcc: Optional email Blind Carbon Copy address(es).
+        """
+        extra_headers = { 'X-Katie' : 'Launchpad actually' }
 
         # `simple_sendmail`, despite handling unicode message bodies, can't 
         # cope with non-ascii sender/recipient addresses, so ascii_smash 
@@ -666,6 +680,8 @@ class PackageUpload(SQLBase):
         if isinstance(from_addr, unicode):
             # ascii_smash only works on unicode strings.
             from_addr = ascii_smash(from_addr)
+        else:
+            from_addr.encode('ascii')
 
         simple_sendmail(
             from_addr, 
