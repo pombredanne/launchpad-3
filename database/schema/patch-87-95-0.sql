@@ -7,7 +7,7 @@ CREATE TABLE OpenIdRPConfig (
   description text NOT NULL,
   logo integer,
   allowed_sreg text,
-  creation_rationale integer DEFAULT 13,
+  creation_rationale integer NOT NULL DEFAULT 13,
   CONSTRAINT openidrpconfig__logo__fk
     FOREIGN KEY (logo) REFERENCES LibraryFileAlias(id)
 );
