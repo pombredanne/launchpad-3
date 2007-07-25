@@ -84,13 +84,13 @@
         <tr>
           <td>
             <label
-              tal:attributes="for view/sourcepackagename_widget/name"
-              tal:content="view/sourcepackagename_widget/label"
+              tal:attributes="for view/widgets/sourcepackagename/name"
+              tal:content="view/widgets/sourcepackagename/label"
             >Source package name</label>
           </td>
         </tr>
         <tr>
-          <td tal:define="widget nocall:view/sourcepackagename_widget">
+          <td tal:define="widget nocall:view/widgets/sourcepackagename">
             <metal:content
               use-macro="context/@@launchpad_widget_macros/display_raw_widget" />
           </td>
@@ -98,7 +98,7 @@
       </tal:distrotask>
       <tal:upstreamtask condition="python:context.product"
                         define="omit_required default;
-                                widget nocall:view/product_widget|nothing">
+                                widget nocall:view/widgets/product|nothing">
         <tr>
           <td colspan="2">
             <label style="font-weight: bold"
@@ -119,33 +119,33 @@
       <tr>
         <td>
           <label style="font-weight: bold"
-            tal:attributes="for view/status_widget/name"
-            tal:content="view/status_widget/label"
+            tal:attributes="for view/widgets/status/name"
+            tal:content="view/widgets/status/label"
           >Status</label>
         </td>
         <td>
           <label style="font-weight: bold"
-            tal:attributes="for view/importance_widget/name"
-            tal:content="view/importance_widget/label"
+            tal:attributes="for view/widgets/importance/name"
+            tal:content="view/widgets/importance/label"
           >Importance</label>
         </td>
-        <td tal:condition="view/milestone_widget">
+        <td tal:condition="view/widgets/milestone">
           <label style="font-weight: bold"
-            tal:attributes="for view/milestone_widget/name"
-            tal:content="view/milestone_widget/label"
+            tal:attributes="for view/widgets/milestone/name"
+            tal:content="view/widgets/milestone/label"
           >Target</label>
         </td>
       </tr>
       <tr>
-        <td tal:content="structure view/status_widget" />
+        <td tal:content="structure view/widgets/status" />
         <td title="Editable only by the maintainer or bug contact of the project">
           <img tal:condition="not:view/userCanEditImportance" src="/@@/locked" />
-          <span tal:content="structure view/importance_widget" />
+          <span tal:content="structure view/widgets/importance" />
         </td>
-        <td tal:condition="view/milestone_widget"
+        <td tal:condition="view/widgets/milestone"
             title="Editable only by the maintainer or bug contact of the project">
           <img tal:condition="not:view/userCanEditMilestone" src="/@@/locked" />
-          <span tal:content="structure view/milestone_widget" />
+          <span tal:content="structure view/widgets/milestone" />
         </td>
       </tr>
     </table>
@@ -153,26 +153,26 @@
       <tr>
         <td>
           <label style="font-weight: bold"
-            tal:attributes="for view/assignee_widget/name"
-            tal:content="view/assignee_widget/label"
+            tal:attributes="for view/widgets/assignee/name"
+            tal:content="view/widgets/assignee/label"
           />
         </td>
       </tr>
       <tr>
-        <td nowrap tal:content="structure view/assignee_widget" colspan="2" />
+        <td nowrap tal:content="structure view/widgets/assignee" colspan="2" />
       </tr>
     </table>
     <table tal:condition="not:context/target_uses_malone">
       <tr>
         <td>
           <label
-            tal:attributes="for view/bugwatch_widget/name"
+            tal:attributes="for view/widgets/bugwatch/name"
             style="white-space: nowrap"
           >Remote Watch</label>
         </td>
       </tr>
       <tr>
-        <td nowrap tal:content="structure view/bugwatch_widget" colspan="2" />
+        <td nowrap tal:content="structure view/widgets/bugwatch" colspan="2" />
       </tr>
       <tr>
         <td class="formHelp" colspan="2">

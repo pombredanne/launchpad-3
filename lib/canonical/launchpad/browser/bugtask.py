@@ -699,7 +699,9 @@ class BugTaskEditView(LaunchpadFormView):
 
     def initialize(self):
         self.prefix = self._getPrefix()
-        self._setUpWidgets()
+        #self._setUpWidgets()
+
+        LaunchpadFormView.initialize(self)
 
     def _getPrefix(self):
         """Return a prefix that can be used for this form.
@@ -898,6 +900,7 @@ class BugTaskEditView(LaunchpadFormView):
 
     def validate(self, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
+        import pdb; pdb.set_trace()
         bugtask = self.context
         if bugtask.distroseries is not None:
             distro = bugtask.distroseries.distribution
@@ -917,20 +920,19 @@ class BugTaskEditView(LaunchpadFormView):
             try:
                 valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
             except WidgetsError, errors:
-                self.sourcepackagename_widget._error = ConversionError(str(errors.args[0]))
-                raise errors
+                self.setFieldError('sourcepackagename', errors.args[0])
+
         if (product is not None and
             'product' in data and product != data['product']):
             try:
                 valid_upstreamtask(bugtask.bug, data['product'])
             except WidgetsError, errors:
-                self.product_widget._error = ConversionError(str(errors.args[0]))
-                raise errors
+                self.setFieldError('product', errors.args[0])
 
         return data
 
-    # -> action
-    def process(self):
+    @action("Save changes", name='process')
+    def process_action(self, action, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
 
