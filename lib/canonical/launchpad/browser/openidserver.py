@@ -4,7 +4,7 @@
 
 __metaclass__ = type
 __all__ = [
-    'OpenIdMixin', 'KNOWN_TRUST_ROOTS',
+    'OpenIdMixin',
     ]
 
 import cgi
@@ -27,7 +27,7 @@ from openid import oidutil
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.lp.dbschema import LoginTokenType, PersonCreationRationale
+from canonical.lp.dbschema import LoginTokenType
 from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, ILoginTokenSet, IOpenIdApplication,
@@ -56,73 +56,6 @@ def null_log(message, level=0):
     pass
 oidutil.log = null_log
 
-
-rationale = PersonCreationRationale
-# Information about known trust roots
-# XXX: 2007-06-14 jamesh
-# Include more information about the trust roots, such as an icon.  We
-# should really maintain this data elsewhere, but this should be fine
-# for phase 1 of the implementation.
-KNOWN_TRUST_ROOTS = {
-    'http://localhost.localdomain:8001/':
-        dict(title="OpenID Consumer Example",
-             logo=None,
-             sreg=['fullname'],
-             reason="This is a localhost server.  Make your own judgement."),
-    'http://pdl-dev.co.uk':
-        dict(title="PDL Demo OSCommerce shop",
-             logo="/+icing/canonical-logo.png",
-             sreg=['email', 'fullname', 'nickname',
-                   'x_address1', 'x_address2', 'x_organization',
-                   'x_city', 'x_province', 'country', 'postcode',
-                   'x_phone'],
-             reason=None),
-    'http://www.mmania.biz':
-        dict(title="The Ubuntu Store from Canonical",
-             logo="/+icing/canonical-logo.png",
-             sreg=['email', 'fullname', 'nickname',
-                   'x_address1', 'x_address2', 'x_organization',
-                   'x_city', 'x_province', 'country', 'postcode',
-                   'x_phone'],
-             reason=("For the Ubuntu Store, you need a Launchpad account "
-                     "so we can remember your order details and keep in "
-                     "touch with you about your orders."),
-             creation_rationale=rationale.OWNER_CREATED_UBUNTU_SHOP),
-    'https://shop.canonical.com':
-        dict(title="The Ubuntu Store from Canonical",
-             logo="/+icing/canonical-logo.png",
-             sreg=['email', 'fullname', 'nickname',
-                   'x_address1', 'x_address2', 'x_organization',
-                   'x_city', 'x_province', 'country', 'postcode',
-                   'x_phone'],
-             reason=("For the Ubuntu Store, you need a Launchpad account "
-                     "so we can remember your order details and keep in "
-                     "touch with you about your orders."),
-             creation_rationale=rationale.OWNER_CREATED_UBUNTU_SHOP),
-    'http://shop.canonical.com':
-        dict(title="The Ubuntu Store from Canonical",
-             logo="/+icing/canonical-logo.png",
-             sreg=['email', 'fullname', 'nickname',
-                   'x_address1', 'x_address2', 'x_organization',
-                   'x_city', 'x_province', 'country', 'postcode',
-                   'x_phone'],
-             reason=("For the Ubuntu Store, you need a Launchpad account "
-                     "so we can remember your order details and keep in "
-                     "touch with you about your orders."),
-             creation_rationale=rationale.OWNER_CREATED_UBUNTU_SHOP),
-    #'https://shipit.ubuntu.com/':
-    #    dict(title="Ubuntu Shipit",
-    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
-    #'https://shipit.kubuntu.org/':
-    #    dict(title="Kubuntu Shipit",
-    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
-    #'https://shipit.edubuntu.org/':
-    #    dict(title="Edubuntu Shipit",
-    #         creation_rationale=rationale.OWNER_CREATED_SHIPIT),
-    #'https://wiki.ubuntu.com/':
-    #    dict(title="Ubuntu Wiki",
-    #         creation_rationale=rationale.OWNER_CREATED_UBUNTU_WIKI),
-    }
 
 SREG_FIELDS = [
     ('fullname', 'Full name'),
