@@ -10,7 +10,7 @@ from zope.schema.vocabulary import getVocabularyRegistry
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IPerson, IBug, ISourcePackageRelease, IProductRelease, IBugActivitySet)
-from canonical.launchpad.webapp.enum import BaseItem
+from canonical.lazr import BaseItem
 
 vocabulary_registry = getVocabularyRegistry()
 

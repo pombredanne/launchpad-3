@@ -52,11 +52,11 @@ import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
     canonical_url, nearest_context_with_adapter, nearest_adapter)
-from canonical.launchpad.webapp.enum import enumerated_type_registry
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.lazr import enumerated_type_registry
 
 
 class TraversalError(NotFoundError):
@@ -169,7 +169,7 @@ class EnumValueAPI:
 
         tal:condition="somevalue/enumvalue:BISCUITS"
 
-    Registered for canonical.launchpad.webapp.enum.Item.
+    Registered for canonical.lazr.enum.Item.
     """
     implements(ITraversable)
 

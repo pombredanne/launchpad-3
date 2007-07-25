@@ -31,9 +31,9 @@ from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
-from canonical.launchpad.webapp.enum import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from canonical.lazr import (
+    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
 
 class BranchLifecycleStatus(DBEnumeratedType):
