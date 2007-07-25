@@ -38,6 +38,27 @@ from canonical.testing.layers import LaunchpadScriptLayer
 UTC = pytz.timezone('UTC')
 
 
+class DatabaseTest(unittest.TestCase):
+    """Base class for authserver database tests.
+
+    Runs the tests in using the web database adapter and the stricter Launchpad
+    security model. Provides a `cursor` instance variable for ad-hoc queries.
+    """
+
+    layer = LaunchpadScriptLayer
+
+    def setUp(self):
+        LaunchpadScriptLayer.switchDbConfig('authserver')
+        super(DatabaseTest, self).setUp()
+        self._old_policy = getSecurityPolicy()
+        setSecurityPolicy(LaunchpadSecurityPolicy)
+        self.cursor = cursor()
+
+    def tearDown(self):
+        setSecurityPolicy(self._old_policy)
+        super(DatabaseTest, self).tearDown()
+
+
 class DatabaseStorageTestCase(unittest.TestCase):
 
     layer = LaunchpadScriptLayer
@@ -167,21 +188,9 @@ class DatabaseStorageTestCase(unittest.TestCase):
         self.assertEqual('sabdfl', userDict['name'])
 
 
-class NewDatabaseStorageTestCase(unittest.TestCase):
+class NewDatabaseStorageTestCase(DatabaseTest):
     # Tests that call database methods that use the new-style database
     # connection infrastructure.
-
-    layer = LaunchpadScriptLayer
-
-    def setUp(self):
-        LaunchpadScriptLayer.switchDbConfig('authserver')
-        super(NewDatabaseStorageTestCase, self).setUp()
-        self._old_policy = getSecurityPolicy()
-        setSecurityPolicy(LaunchpadSecurityPolicy)
-
-    def tearDown(self):
-        setSecurityPolicy(self._old_policy)
-        super(NewDatabaseStorageTestCase, self).tearDown()
 
     def _getTime(self, row_id):
         cur = cursor()
