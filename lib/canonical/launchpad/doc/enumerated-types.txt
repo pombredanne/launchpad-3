@@ -7,7 +7,7 @@ Simple enumerated types do not have values, whereas database enumerated
 types are a mapping from an integer value to something meaningful in the
 code.
 
-    >>> from canonical.launchpad.webapp.enum import (
+    >>> from canonical.lazr import (
     ...     EnumeratedType, DBEnumeratedType, Item, DBItem, use_template)
 
 The `enum` values of EnumeratedTypes are instances of Item.
@@ -38,7 +38,7 @@ Item variable.
 
     >>> item = Fruit.getTermByToken('APPLE')
     >>> type(item)
-    <class 'canonical.launchpad.webapp.enum.TokenizedItem'>
+    <class 'canonical.lazr.enum.TokenizedItem'>
     >>> verifyObject(ITitledTokenizedTerm, item)
     True
 
@@ -63,7 +63,7 @@ The length of an EnumeratedType returns the number of items it has.
 All enumerated types that are created are added to the
 enumerated_type_registry.
 
-    >>> from canonical.launchpad.webapp.enum import enumerated_type_registry
+    >>> from canonical.lazr import enumerated_type_registry
 
 The enumerated_type_registry maps the name of the enumerated type to the type
 itself.
@@ -81,7 +81,7 @@ type with the same name as an existing type.
     Traceback (most recent call last):
     ...
     TypeError: An enumerated type already exists with the name BranchType
-    (canonical.lp.dbschema.BranchType).
+    (canonical.launchpad.interfaces.branch.BranchType).
 
 
 == Enumerated Type basics ==

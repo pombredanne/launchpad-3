@@ -182,7 +182,7 @@ a dupe of bug #3, then Steve gets indirectly subscribed to bug #3, and
 is presented with the Unsubscribe link instead.
 
   >>> stevea_browser.open(
-  ...     "http://launchpad.dev/ubuntu-product/+bug/2/+duplicate")
+  ...     "http://launchpad.dev/tomcat/+bug/2/+duplicate")
 
   >>> stevea_browser.getControl("Duplicate Of").value = "3"
   >>> stevea_browser.getControl("Change").click()
@@ -231,7 +231,7 @@ gets unsubscribed from more than one duplicate.
 previous example.)
 
   >>> stevea_browser.open(
-  ...     "http://launchpad.dev/ubuntu-product/+bug/2/+subscribe")
+  ...     "http://launchpad.dev/tomcat/+bug/2/+subscribe")
   >>> stevea_browser.getControl("Continue").click()
 
   >>> stevea_browser.open("http://launchpad.dev/bugs/3")

@@ -262,9 +262,14 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     @property
+    def bugtargetdisplayname(self):
+        """See IBugTarget."""
+        return self.displayname
+
+    @property
     def bugtargetname(self):
         """See `IBugTarget`."""
-        return self.displayname
+        return self.name
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
