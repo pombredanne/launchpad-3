@@ -10,7 +10,7 @@ __all__ = [
     'QuestionStatus',
     ]
 
-from canonical.launchpad.webapp.enum import (
+from canonical.lazr.enum import (
     DBEnumeratedType, DBItem, EnumeratedType, Item)
 
 

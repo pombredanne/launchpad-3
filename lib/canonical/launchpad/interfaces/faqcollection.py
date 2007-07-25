@@ -15,7 +15,7 @@ from zope.interface import Interface
 from zope.schema import TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.enum import EnumeratedType, Item
+from canonical.lazr.enum import EnumeratedType, Item
 
 
 class FAQSort(EnumeratedType):
