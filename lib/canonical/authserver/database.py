@@ -21,7 +21,7 @@ from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.interfaces import (
-    UBUNTU_WIKI_URL, BranchCreationForbidden, IBranchSet, IPersonSet,
+    UBUNTU_WIKI_URL, BranchCreationForbidden, BranchType, IBranchSet, IPersonSet,
     IProductSet)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.database.sqlbase import (
@@ -478,7 +478,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             branch_set = getUtility(IBranchSet)
             try:
                 branch = branch_set.new(
-                    dbschema.BranchType.HOSTED, branchName, requester, owner,
+                    BranchType.HOSTED, branchName, requester, owner,
                     product, None, None, author=requester)
             except BranchCreationForbidden:
                 return ''
@@ -524,7 +524,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             except Unauthorized:
                 return '', ''
             if (requester.inTeam(branch.owner)
-                and branch.branch_type == dbschema.BranchType.HOSTED):
+                and branch.branch_type == BranchType.HOSTED):
                 return branch_id, WRITABLE
             else:
                 return branch_id, READ_ONLY

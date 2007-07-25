@@ -51,8 +51,8 @@ from canonical.launchpad.event import (
 from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
-from canonical.launchpad.webapp.enum import DBItem, Item
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.lazr import DBItem, Item
 
 
 class notify_question_modified:
