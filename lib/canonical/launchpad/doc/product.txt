@@ -306,3 +306,12 @@ We can also find all the products that have branches.
     iso-codes
     landscape
     thunderbird
+
+The getProductsWithBranches method takes an optional parameter that limits
+the number of products returned.
+
+    >>> for product in productset.getProductsWithBranches(3):
+    ...     print product.name
+    evolution
+    firefox
+    gnome-terminal

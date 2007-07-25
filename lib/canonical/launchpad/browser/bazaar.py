@@ -83,19 +83,24 @@ class BazaarApplicationView(LaunchpadView):
     def recently_changed_branches(self):
         """Return the five most recently changed branches."""
         return list(getUtility(IBranchSet).getRecentlyChangedBranches(
-            5, self.user))
+            5, visible_by_user=self.user))
 
     @cachedproperty
     def recently_imported_branches(self):
         """Return the five most recently imported branches."""
         return list(getUtility(IBranchSet).getRecentlyImportedBranches(
-            5, self.user))
+            5, visible_by_user=self.user))
 
     @cachedproperty
     def recently_registered_branches(self):
         """Return the five most recently registered branches."""
         return list(getUtility(IBranchSet).getRecentlyRegisteredBranches(
-            5, self.user))
+            5, visible_by_user=self.user))
+
+    @cachedproperty
+    def short_product_tag_cloud(self):
+        """Show a preview of the product tag cloud."""
+        return BazaarProductView().products(num_products=120)
 
 
 class BazaarApplicationNavigation(Navigation):
@@ -157,7 +162,7 @@ class ProductInfo:
 class BazaarProductView:
     """Browser class for products gettable with Bazaar."""
 
-    def products(self):
+    def products(self, num_products=None):
         # XXX: TimPenhey 2007-02-26
         # sabdfl really wants a page that has all the products with code
         # on it.  I feel that at some stage it will just look too cumbersome,
@@ -167,11 +172,11 @@ class BazaarProductView:
         # As far as query efficiency goes, constructing 1k products is
         # sub-second, and the query to get the branch count and last commit
         # time runs in approximately 50ms on a vacuumed branch table.
-        products = shortlist(getUtility(IProductSet).getProductsWithBranches(),
-                             1500, hardlimit=2000)
-        
-        branchset = getUtility(IBranchSet)
-        branch_summaries = branchset.getActiveUserBranchSummaryForProducts(
+        products = shortlist(getUtility(IProductSet).getProductsWithBranches(
+            num_products), 1500, hardlimit=2000)
+
+        branch_set = getUtility(IBranchSet)
+        branch_summaries = branch_set.getActiveUserBranchSummaryForProducts(
             products)
         # Choose appropriate branch counts so we have an evenish distribution.
         counts = sorted([
@@ -180,7 +185,7 @@ class BazaarProductView:
         small_count = counts[len(counts)/2]
         # Top 20% are big.
         large_count = counts[-(len(counts)/5)]
-        
+
         items = []
         now = datetime.today()
         for product in products:
@@ -204,9 +209,8 @@ class BazaarProductView:
                 branch_size = 'large'
             else:
                 branch_size = 'medium'
-            
+
             items.append(ProductInfo(
                 product, num_branches, branch_size, elapsed))
 
         return items
-    

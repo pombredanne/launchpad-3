@@ -489,25 +489,18 @@ class IBranchSet(Interface):
         and only non import branches are counted.
         """
 
-    def getRecentlyChangedBranches(branch_count, visible_by_user=None):
-        """Return a list of branches that have been recently updated.
+    def getRecentlyChangedBranches(
+        branch_count=None, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
+        """Return a result set of branches that have been recently updated.
 
-        The list will contain at most branch_count items, and excludes
-        branches owned by the vcs-imports user.
+        If branch_count is specified, the result set will contain at most
+        branch_count items, and excludes IMPORTED branches.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
-
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
-        """
-
-    def getRecentlyImportedBranches(branch_count, visible_by_user=None):
-        """Return a list of branches that have been recently imported.
-
-        The list will contain at most branch_count items, and only
-        has branches owned by the vcs-imports user.
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
 
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
@@ -517,10 +510,39 @@ class IBranchSet(Interface):
         only public branches are returned.
         """
 
-    def getRecentlyRegisteredBranches(branch_count, visible_by_user=None):
-        """Return a list of branches that have been recently registered.
+    def getRecentlyImportedBranches(
+        branch_count=None, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
+        """Return a result set of branches that have been recently imported.
 
-        The list will contain at most branch_count items.
+        If branch_count is specified, the result set will contain at most
+        branch_count items, and only has IMPORTED branches.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
+
+        The visible_by_user parameter is used to filter out the branches
+        that the user is not entitled to see.  Private branches are
+        only visible by the owner, and subscribers.
+
+        If None is passed in for the visible_by_user parameter
+        only public branches are returned.
+        """
+
+    def getRecentlyRegisteredBranches(
+        branch_count=None, lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
+        """Return a result set of branches that have been recently registered.
+
+        If branch_count is specified, the result set will contain at most
+        branch_count items.
+
+        If lifecycle_statuses evaluates to False then branches
+        of any lifecycle_status are returned, otherwise only branches
+        with a lifecycle_status of one of the lifecycle_statuses
+        are returned.
 
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are

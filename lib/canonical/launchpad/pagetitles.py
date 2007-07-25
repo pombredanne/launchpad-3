@@ -138,6 +138,9 @@ def branch_index(context, view):
     else:
         return smartquote('"%s" branch in Launchpad') % (context.displayname)
 
+def branch_listing_cross_product(context, view):
+    return view.page_title
+
 branch_subscription = ContextDisplayName(smartquote(
     'Subscription to branch "%s"'))
 

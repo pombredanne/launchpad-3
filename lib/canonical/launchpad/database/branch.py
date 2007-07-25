@@ -259,29 +259,29 @@ class BranchSet:
     implements(IBranchSet)
 
     def __getitem__(self, branch_id):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         branch = self.get(branch_id)
         if branch is None:
             raise NotFoundError(branch_id)
         return branch
 
     def __iter__(self):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         return iter(Branch.select(prejoins=['owner', 'product']))
 
     def count(self):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         return Branch.select('NOT Branch.private').count()
 
     def countBranchesWithAssociatedBugs(self):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         return Branch.select(
             'NOT Branch.private AND Branch.id = BugBranch.branch',
             clauseTables=['BugBranch'],
             distinct=True).count()
 
     def get(self, branch_id, default=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         try:
             return Branch.get(branch_id)
         except SQLObjectNotFound:
@@ -399,7 +399,7 @@ class BranchSet:
     def new(self, branch_type, name, creator, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None, whiteboard=None, date_created=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         if not home_page:
             home_page = None
         if date_created is None:
@@ -426,7 +426,7 @@ class BranchSet:
         return branch
 
     def getByUrl(self, url, default=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         assert not url.endswith('/')
         prefix = config.launchpad.supermirror_root
         if url.startswith(prefix):
@@ -465,7 +465,7 @@ class BranchSet:
             return branch
 
     def getBranchesToScan(self):
-        """See IBranchSet.getBranchesToScan()"""
+        """See `IBranchSet`.getBranchesToScan()"""
         # Return branches where the scanned and mirrored IDs don't match.
         # Branches with a NULL last_mirrored_id have never been
         # successfully mirrored so there is no point scanning them.
@@ -479,7 +479,7 @@ class BranchSet:
             ''')
 
     def getProductDevelopmentBranches(self, products):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         product_ids = [product.id for product in products]
         query = Branch.select('''
             (Branch.id = ProductSeries.import_branch OR
@@ -490,7 +490,7 @@ class BranchSet:
         return query.prejoin(['author'])
 
     def getActiveUserBranchSummaryForProducts(self, products):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         product_ids = [product.id for product in products]
         if not product_ids:
             return []
@@ -516,41 +516,61 @@ class BranchSet:
                                'last_commit' : last_commit}
         return result
 
-    def getRecentlyChangedBranches(self, branch_count, visible_by_user=None):
-        """See IBranchSet."""
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+    def getRecentlyChangedBranches(
+        self, branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
+        """See `IBranchSet`."""
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
-            Branch.last_scanned IS NOT NULL
-            AND Branch.owner <> %d
+            Branch.branch_type <> %s AND
+            Branch.last_scanned IS NOT NULL %s
             '''
-            % vcs_imports.id)
-        return Branch.select(
+            % (quote(BranchType.IMPORTED), lifecycle_clause))
+        results = Branch.select(
             self._generateBranchClause(query, visible_by_user),
-            limit=branch_count,
             orderBy=['-last_scanned', '-id'],
             prejoins=['author', 'product'])
+        if branch_count is not None:
+            results = results.limit(branch_count)
+        return results
 
-    def getRecentlyImportedBranches(self, branch_count, visible_by_user=None):
-        """See IBranchSet."""
-        vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
+    def getRecentlyImportedBranches(
+        self, branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
+        """See `IBranchSet`."""
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
-            Branch.last_scanned IS NOT NULL
-            AND Branch.owner = %d
+            Branch.branch_type = %s AND
+            Branch.last_scanned IS NOT NULL %s
             '''
-            % vcs_imports.id)
-        return Branch.select(
+            % (quote(BranchType.IMPORTED), lifecycle_clause))
+        results = Branch.select(
             self._generateBranchClause(query, visible_by_user),
-            limit=branch_count,
             orderBy=['-last_scanned', '-id'],
             prejoins=['author', 'product'])
+        if branch_count is not None:
+            results = results.limit(branch_count)
+        return results
 
-    def getRecentlyRegisteredBranches(self, branch_count, visible_by_user=None):
-        """See IBranchSet."""
-        return Branch.select(
-            self._generateBranchClause('', visible_by_user),
-            limit=branch_count,
+    def getRecentlyRegisteredBranches(
+        self, branch_count=None,
+        lifecycle_statuses=DEFAULT_BRANCH_STATUS_IN_LISTING,
+        visible_by_user=None):
+        """See `IBranchSet`."""
+        lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
+        # Since the lifecycle_clause may or may not contain anything,
+        # We need something that is valid if the lifecycle clause starts
+        # with 'AND', so we choose true.
+        query = 'true %s' % lifecycle_clause
+        results = Branch.select(
+            self._generateBranchClause(query, visible_by_user),
             orderBy=['-date_created', '-id'],
             prejoins=['author', 'product'])
+        if branch_count is not None:
+            results = results.limit(branch_count)
+        return results
 
     def getLastCommitForBranches(self, branches):
         """Return a map of branch id to last commit time."""
@@ -635,7 +655,7 @@ class BranchSet:
 
     def getBranchesForPerson(self, person, lifecycle_statuses=None,
                              visible_by_user=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         query_params = {
             'person': person.id,
             'lifecycle_clause': self._lifecycleClause(lifecycle_statuses)
@@ -665,7 +685,7 @@ class BranchSet:
 
     def getBranchesAuthoredByPerson(self, person, lifecycle_statuses=None,
                                     visible_by_user=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = 'Branch.author = %s %s' % (person.id, lifecycle_clause)
         return Branch.select(
@@ -673,7 +693,7 @@ class BranchSet:
 
     def getBranchesRegisteredByPerson(self, person, lifecycle_statuses=None,
                                       visible_by_user=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
             Branch.owner = %s AND
@@ -686,7 +706,7 @@ class BranchSet:
 
     def getBranchesSubscribedByPerson(self, person, lifecycle_statuses=None,
                                       visible_by_user=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
             Branch.id = BranchSubscription.branch
@@ -699,7 +719,7 @@ class BranchSet:
 
     def getBranchesForProduct(self, product, lifecycle_statuses=None,
                               visible_by_user=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         assert product is not None, "Must have a valid product."
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
 

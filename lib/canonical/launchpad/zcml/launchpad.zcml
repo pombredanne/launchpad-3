@@ -276,6 +276,27 @@
       template="../templates/product-code-index.pt"
       permission="zope.Public"
       />
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+recently-registered-branches"
+      class="canonical.launchpad.browser.RecentlyRegisteredBranchesView"
+      template="../templates/branch-listing-cross-product.pt"
+      permission="zope.Public"
+      />
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+recently-imported-branches"
+      class="canonical.launchpad.browser.RecentlyImportedBranchesView"
+      template="../templates/branch-listing-cross-product.pt"
+      permission="zope.Public"
+      />
+  <browser:page
+      for="canonical.launchpad.webapp.interfaces.ILaunchpadApplication"
+      name="+recently-changed-branches"
+      class="canonical.launchpad.browser.RecentlyChangedBranchesView"
+      template="../templates/branch-listing-cross-product.pt"
+      permission="zope.Public"
+      />
 
 </facet>
 
