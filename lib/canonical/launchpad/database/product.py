@@ -647,7 +647,7 @@ class ProductSet:
             'Product.id in (select distinct(product) from Branch)',
             orderBy='name')
 
-    def getProductsWithUserDevelopmentBranches():
+    def getProductsWithUserDevelopmentBranches(self):
         """See `IProductSet`."""
         """Return products that have a user branch for the development series.
 

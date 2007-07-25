@@ -127,17 +127,20 @@ class ProductInfo:
     @property
     def time_darkness(self):
         if self.elapsed_since_commit is None:
-            return "cloud-shade-light"
+            return "light"
         if self.elapsed_since_commit.days < 7:
-            return "cloud-shade-dark"
+            return "dark"
         if self.elapsed_since_commit.days < 31:
-            return "cloud-shade-medium"
-        return "cloud-shade-light"
+            return "medium"
+        return "light"
 
     @property
     def branch_highlight(self):
         """Return 'highlight' or 'shade'."""
-        return 'shade'
+        if self.important:
+            return 'highlight'
+        else:
+            return 'shade'
 
     @property
     def html_class(self):

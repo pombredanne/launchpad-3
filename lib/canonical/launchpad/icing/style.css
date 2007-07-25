@@ -1598,13 +1598,13 @@ th.descending {
   color: #b8b8ff;
 }
 .cloud-highlight-dark {
-  color: #f00;
+  color: #00c500;
 }
 .cloud-highlight-medium {
-  color: #f40;
+  color: #90e090;
 }
 .cloud-highlight-light {
-  color: #fb8;
+  color: #b8ffb8;
 }
 
 .vcsimportSUCCESS {} /* inherited text color */
