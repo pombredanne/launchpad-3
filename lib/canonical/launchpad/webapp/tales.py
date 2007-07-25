@@ -52,11 +52,11 @@ import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
     canonical_url, nearest_context_with_adapter, nearest_adapter)
-from canonical.launchpad.webapp.enum import enumerated_type_registry
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.lazr import enumerated_type_registry
 
 
 class TraversalError(NotFoundError):
@@ -169,7 +169,7 @@ class EnumValueAPI:
 
         tal:condition="somevalue/enumvalue:BISCUITS"
 
-    Registered for canonical.launchpad.webapp.enum.Item.
+    Registered for canonical.lazr.enum.Item.
     """
     implements(ITraversable)
 
@@ -1399,24 +1399,19 @@ class FormattersAPI:
         in_fold = False
         in_quoted = False
         in_false_paragraph = False
-        dpkg_warning = False
         for line in self.text_to_html().split('\n'):
-            if not in_fold and 'dpkg' in line:
-                # dpkg is important in bug reports. We need to do extra
-                # checking that the '|' is not dpkg output.
-                dpkg_warning = True
-
-            if not in_fold and self._re_block_include.match(line) is not None:
+            if 'Desired=<wbr></wbr>Unknown/' in line and not in_fold:
+                # When we see a evidence of dpkg output, we switch the
+                # quote matching rules. We do not assume lines that start
+                # with a pipe are quoted passages. dpkg output is often
+                # reformatted by users and tools. When we see the dpkg
+                # output header, we change the rules regardless of if the
+                # lines that follow are legitimate.
+                re_quoted = self._re_dpkg_quoted
+            elif not in_fold and self._re_block_include.match(line) is not None:
                 # Start a foldable paragraph for a signature or quote.
                 in_fold = True
                 line = '<p>%s%s' % (start_fold_markup, line[3:])
-            elif dpkg_warning and '| Status' in line and not in_fold:
-                # When we have a dpkg_warning, we must do an extra test
-                # that the first '|' is actually dpkg output. When it is
-                # we switch the quote matching rules. We also clear the
-                # warning to ensure we do not do pointless extra checks.
-                re_quoted = self._re_dpkg_quoted
-                dpkg_warning = False
             elif not in_fold and re_quoted.match(line) is not None:
                 # Start a foldable section for a quoted passage.
                 if self._re_quoted_line.match(line):

@@ -104,6 +104,10 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         title=_("Status notes (optional)"), required=False)
     assignee = Choice(
         title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
+    bugtargetdisplayname = Text(
+        title=_("The short, descriptive name of the target"), readonly=True)
+    bugtargetname = Text(
+        title=_("The target as presented in mail notifications"), readonly=True)
     bugwatch = Choice(title=_("Remote Bug Details"), required=False,
         vocabulary='BugWatch', description=_("Select the bug watch that "
         "represents this task in the relevant bug tracker. If none of the "
@@ -377,6 +381,7 @@ class IBugTaskDelta(Interface):
     Likewise, if sourcepackagename is not None, product must be None.
     """
     targetname = Attribute("Where this change exists.")
+    bugtargetname = Attribute("Near-unique ID of where the change exists.")
     bugtask = Attribute("The modified IBugTask.")
     product = Attribute(
         """The change made to the IProduct of this task.

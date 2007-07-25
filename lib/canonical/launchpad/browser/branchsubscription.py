@@ -12,11 +12,10 @@ __all__ = [
 
 from zope.component import getUtility
 
-from canonical.lp.dbschema import BranchSubscriptionNotificationLevel
-
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.interfaces import (
-    IBranchSubscription, ILaunchpadCelebrities)
+    BranchSubscriptionNotificationLevel, IBranchSubscription,
+    ILaunchpadCelebrities)
 from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadEditFormView,
     action, canonical_url)

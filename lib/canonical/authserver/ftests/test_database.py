@@ -17,7 +17,7 @@ from zope.security.simplepolicies import PermissiveSecurityPolicy
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.launchpad.interfaces import IBranchSet, IPersonSet
+from canonical.launchpad.interfaces import BranchType, IBranchSet, IPersonSet
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 
@@ -298,7 +298,7 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         login(login_email)
         try:
             branch = getUtility(IBranchSet).new(
-                dbschema.BranchType.HOSTED, 'foo-branch', person, person,
+                BranchType.HOSTED, 'foo-branch', person, person,
                 None, None, None)
         finally:
             logout()
