@@ -13,7 +13,7 @@ __all__ = [
 from zope.interface import Interface
 from zope.schema import Choice, Int
 from canonical.launchpad import _
-from canonical.launchpad.webapp.enum import DBEnumeratedType, DBItem
+from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class BranchSubscriptionDiffSize(DBEnumeratedType):
