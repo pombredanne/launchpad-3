@@ -38,19 +38,6 @@ from canonical.testing.layers import LaunchpadScriptLayer
 UTC = pytz.timezone('UTC')
 
 
-class TestDatabaseSetup(LaunchpadTestCase):
-
-    def setUp(self):
-        super(TestDatabaseSetup, self).setUp()
-        self.connection = self.connect()
-        self.cursor = self.connection.cursor()
-
-    def tearDown(self):
-        self.cursor.close()
-        self.connection.close()
-        super(TestDatabaseSetup, self).tearDown()
-
-
 class DatabaseStorageTestCase(unittest.TestCase):
 
     layer = LaunchpadScriptLayer
@@ -512,13 +499,13 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         self.failUnless(self.isBranchInPullQueue(25), "Should be in queue")
 
 
-class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
+class ExtraUserDatabaseStorageTestCase(unittest.TestCase):
     # Tests that do some database writes (but makes sure to roll them back)
 
     layer = LaunchpadScriptLayer
 
     def setUp(self):
-        TestDatabaseSetup.setUp(self)
+        self.cursor = cursor()
         # This is the salt for Mark's password in the sample data.
         self.salt = '\xf4;\x15a\xe4W\x1f'
 
@@ -637,7 +624,7 @@ class ExtraUserDatabaseStorageTestCase(TestDatabaseSetup):
         self.assertEqual({}, userDict)
 
 
-class BranchDetailsDatabaseStorageInterfaceTestCase(TestDatabaseSetup):
+class BranchDetailsDatabaseStorageInterfaceTestCase(unittest.TestCase):
 
     def test_verifyInterface(self):
         self.failUnless(verifyObject(IBranchDetailsStorage,
