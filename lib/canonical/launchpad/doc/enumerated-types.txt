@@ -81,7 +81,7 @@ type with the same name as an existing type.
     Traceback (most recent call last):
     ...
     TypeError: An enumerated type already exists with the name BranchType
-    (canonical.lp.dbschema.BranchType).
+    (canonical.launchpad.interfaces.branch.BranchType).
 
 
 == Enumerated Type basics ==
