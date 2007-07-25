@@ -693,9 +693,19 @@ class BugTaskEditView(LaunchpadFormView):
 
     _missing_value = object()
 
-    schema = IUpstreamBugTask
     field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
                    'product', 'status', 'statusexplanation']
+
+    @property
+    def schema(self):
+        if IUpstreamBugTask.providedBy(self.context):
+            return IUpstreamBugTask
+        elif IProductSeriesBugTask.providedBy(self.context):
+            return IProductSeriesBugTask
+        elif IDistroBugTask.providedBy(self.context):
+            return IDistroBugTask
+        elif IDistroSeriesBugTask.providedBy(self.context):
+            return IDistroSeriesBugTask
 
     def initialize(self):
         self.prefix = self._getPrefix()
@@ -934,6 +944,7 @@ class BugTaskEditView(LaunchpadFormView):
     @action("Save changes", name='process')
     def process_action(self, action, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
+        import pdb; pdb.set_trace()
         bugtask = self.context
 
         if self.request.form.get('subscribe', False):
