@@ -103,6 +103,9 @@ class IOpenIDRPConfig(Interface):
                       'created while logging in to this Relying Party'),
         vocabulary=PersonCreationRationale)
 
+    def destroySelf():
+        """Destroy this RP configuration."""
+
 
 class IOpenIDRPConfigSet(Interface):
     def new(trust_root, displayname, description, logo=None, allowed_sreg=[],
