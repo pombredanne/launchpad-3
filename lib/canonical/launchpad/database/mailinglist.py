@@ -46,7 +46,6 @@ class notify_modified:
     def __get__(self, obj, type=None):
         def wrapper(*args, **kwargs):
             """Create the SQLObjectModifiedEvent decorator."""
-            import pdb; pdb.set_trace()
             old_obj = Snapshot(obj, providing=providedBy(obj))
             rtn = self._func(obj, *args, **kwargs)
             edited_fields = [
