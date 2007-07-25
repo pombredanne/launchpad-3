@@ -14,7 +14,7 @@ from zope.interface import Interface
 from zope.schema import Choice, Datetime, Int, Object, Set, Text
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.enum import DBEnumeratedType, DBItem
+from canonical.lazr.enum import DBEnumeratedType, DBItem
 
 
 class MailingListStatus(DBEnumeratedType):
