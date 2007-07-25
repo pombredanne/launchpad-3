@@ -707,6 +707,11 @@ class BugTaskEditView(LaunchpadFormView):
         elif IDistroSeriesBugTask.providedBy(self.context):
             return IDistroSeriesBugTask
 
+    @property
+    def next_url(self):
+        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
+        return canonical_url(self.context)
+
     def initialize(self):
         self.prefix = self._getPrefix()
         #self._setUpWidgets()
@@ -941,7 +946,7 @@ class BugTaskEditView(LaunchpadFormView):
 
         return data
 
-    @action("Save changes", name='process')
+    @action('Save changes', name='submit')
     def process_action(self, action, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         import pdb; pdb.set_trace()
@@ -1089,11 +1094,6 @@ class BugTaskEditView(LaunchpadFormView):
             self.request.response.addNotification(
                 "The bug contacts for %s have been subscribed to this bug." % (
                     bugtask.bugtargetdisplayname))
-
-    # -> Property
-    def nextURL(self):
-        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
-        return canonical_url(self.context)
 
 
 class BugTaskStatusView(LaunchpadView):

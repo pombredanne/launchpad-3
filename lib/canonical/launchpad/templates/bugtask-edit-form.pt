@@ -225,7 +225,7 @@
   <div class="actions" tal:condition="context/required:launchpad.Edit">
     <input
       type="submit"
-      name="FORM_SUBMIT"
+      name="submit"
       value="Save Changes"
       i18n:attributes="value submit-button"
     />
