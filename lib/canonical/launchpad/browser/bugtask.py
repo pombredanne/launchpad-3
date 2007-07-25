@@ -717,6 +717,7 @@ class BugTaskEditView(LaunchpadFormView):
         #self._setUpWidgets()
 
         LaunchpadFormView.initialize(self)
+        import pdb; pdb.set_trace()
 
     def _getPrefix(self):
         """Return a prefix that can be used for this form.
@@ -946,10 +947,9 @@ class BugTaskEditView(LaunchpadFormView):
 
         return data
 
-    @action('Save changes', name='submit')
-    def process_action(self, action, data):
+    @action('Save changes', name='save')
+    def save_action(self, action, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
-        import pdb; pdb.set_trace()
         bugtask = self.context
 
         if self.request.form.get('subscribe', False):

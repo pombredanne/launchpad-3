@@ -228,6 +228,7 @@
       name="submit"
       value="Save Changes"
       i18n:attributes="value submit-button"
+      tal:attributes="name string:${view/prefix}.actions.save"
     />
   </div>
 </form>
