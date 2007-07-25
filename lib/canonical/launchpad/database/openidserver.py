@@ -108,7 +108,7 @@ class OpenIDRPConfigSet:
         if allowed_sreg:
             allowed_sreg = ','.join(sorted(allowed_sreg))
         else:
-            allowed_sreg = []
+            allowed_sreg = None
         return OpenIDRPConfig(
             trust_root=trust_root, displayname=displayname,
             description=description, logo=logo,

@@ -37,13 +37,12 @@ from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation,
     LaunchpadView, LaunchpadFormView)
 
-from canonical.launchpad.browser.openidserver import (
-    KNOWN_TRUST_ROOTS, OpenIdMixin)
+from canonical.launchpad.browser.openidserver import OpenIdMixin
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, ILoginTokenSet, IPerson, ILoginToken,
     IGPGKeySet, IGPGHandler, GPGVerificationError, GPGKeyNotFoundError,
     ShipItConstants, UBUNTU_WIKI_URL, UnexpectedFormData,
-    IGPGKeyValidationForm)
+    IGPGKeyValidationForm, IOpenIDRPConfigSet)
 
 UTC = pytz.timezone('UTC')
 
@@ -663,9 +662,10 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             if rationale is None:
                 rationale = PersonCreationRationale.OWNER_CREATED_LAUNCHPAD
         else:
-            root = KNOWN_TRUST_ROOTS.get(self.openid_request.trust_root)
-            if root is not None and 'creation_rationale' in root:
-                rationale = root['creation_rationale']
+            rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+                self.openid_request.trust_root)
+            if rpconfig is not None:
+                rationale = rpconfig.creation_rationale
             else:
                 rationale = (
                     PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT)
