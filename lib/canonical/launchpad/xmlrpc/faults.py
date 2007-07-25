@@ -111,7 +111,7 @@ class FileBugMissingProductOrDistribution(LaunchpadFault):
     error_code = 60
     msg_template = (
         "Required arguments missing. You must specify either a product or "
-        "distrubtion in which the bug exists.")
+        "distribution in which the bug exists.")
 
 
 class FileBugGotProductAndDistro(LaunchpadFault):

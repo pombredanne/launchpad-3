@@ -163,7 +163,6 @@ class LaunchpadRequestPublicationFactory:
             self.publicationfactory = publicationfactory
             # Add data from launchpad.conf
             self.vhostconfig = allvhosts.configs[self.conffilename]
-
             self.allhostnames = set(self.vhostconfig.althostnames
                                     + [self.vhostconfig.hostname])
 
@@ -190,8 +189,10 @@ class LaunchpadRequestPublicationFactory:
             ShipItPublication))
         vhrps.append(VHRP('shipitedubuntu', EdubuntuShipItBrowserRequest,
             ShipItPublication))
-        vhrps.append(VHRP('xmlrpc', LaunchpadXMLRPCRequest,
-            XMLRPCLaunchpadPublication))
+        vhrps.append(VHRP('xmlrpc',
+                          PublicXMLRPCRequest, PublicXMLRPCPublication))
+        vhrps.append(VHRP('xmlrpc_private',
+                          PrivateXMLRPCRequest, PrivateXMLRPCPublication))
         # Done with using the short form of VirtualHostRequestPublication, so
         # clean up, as we won't need to use it again later.
         del VHRP
@@ -210,7 +211,8 @@ class LaunchpadRequestPublicationFactory:
         self._thread_local = threading.local()
 
     def _defaultFactories(self):
-        from canonical.launchpad.webapp.publication import LaunchpadBrowserPublication
+        from canonical.launchpad.webapp.publication import (
+            LaunchpadBrowserPublication)
         return LaunchpadBrowserRequest, LaunchpadBrowserPublication
 
     def canHandle(self, environment):
@@ -718,8 +720,8 @@ class EdubuntuShipItBrowserRequest(LaunchpadBrowserRequest):
 
 # ---- xmlrpc
 
-class XMLRPCLaunchpadPublication(LaunchpadBrowserPublication):
-    """The publication used for XML-RPC requests."""
+class PublicXMLRPCPublication(LaunchpadBrowserPublication):
+    """The publication used for public XML-RPC requests."""
     def handleException(self, object, request, exc_info, retry_allowed=True):
         LaunchpadBrowserPublication.handleException(
                 self, object, request, exc_info, retry_allowed
@@ -731,16 +733,16 @@ class XMLRPCLaunchpadPublication(LaunchpadBrowserPublication):
         return LaunchpadBrowserPublication.endRequest(self, request, object)
 
 
-class LaunchpadXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
-                             ErrorReportRequest):
-    """Request type for doing XMLRPC in Launchpad."""
+class PublicXMLRPCRequest(BasicLaunchpadRequest, XMLRPCRequest,
+                          ErrorReportRequest):
+    """Request type for doing public XML-RPC in Launchpad."""
 
     def _createResponse(self):
-        return LaunchpadXMLRPCResponse()
+        return PublicXMLRPCResponse()
 
 
-class LaunchpadXMLRPCResponse(XMLRPCResponse):
-    """Response type for doing XMLRPC in Launchpad."""
+class PublicXMLRPCResponse(XMLRPCResponse):
+    """Response type for doing public XML-RPC in Launchpad."""
 
     def handleException(self, exc_info):
         # If we don't have a proper xmlrpclib.Fault, and we have
@@ -754,6 +756,23 @@ class LaunchpadXMLRPCResponse(XMLRPCResponse):
                             xmlrpclib.Fault(-1, request.oopsid),
                             None)
         XMLRPCResponse.handleException(self, exc_info)
+
+
+class PrivateXMLRPCPublication(PublicXMLRPCPublication):
+    """The publication used for private XML-RPC requests."""
+
+
+class PrivateXMLRPCRequest(PublicXMLRPCRequest):
+    """Request type for doing private XML-RPC in Launchpad."""
+
+    implements(canonical.launchpad.layers.PrivateAPILayer)
+
+    def _createResponse(self):
+        return PrivateXMLRPCResponse()
+
+
+class PrivateXMLRPCResponse(PublicXMLRPCResponse):
+    """Response type for doing private XML-RPC in Launchpad."""
 
 
 # ---- openid

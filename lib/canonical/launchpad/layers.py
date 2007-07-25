@@ -14,8 +14,10 @@ except ImportError:
 
 from zope.interface import directlyProvides, directlyProvidedBy, Interface
 
+
 def setAdditionalLayer(request, layer):
     directlyProvides(request, directlyProvidedBy(request) + layer)
+
 
 def setFirstLayer(request, layer):
     directlyProvides(request, layer, directlyProvidedBy(request))
@@ -45,8 +47,10 @@ BlueprintsLayer = BlueprintLayer
 class AnswersLayer(LaunchpadLayer):
     """The `AnswersLayer` layer."""
 
+
 class OpenIdLayer(LaunchpadLayer):
     """The `OpenId` layer."""
+
 
 class DebugLayer(Interface):
     """The `DebugLayer` layer.
@@ -86,3 +90,11 @@ class ShipItKUbuntuLayer(ShipItLayer):
 
 class ShipItEdUbuntuLayer(ShipItLayer):
     """The `ShipIt` for EdUbuntu layer."""
+
+
+class PrivateAPILayer(Interface):
+    """The private API layer.
+
+    This is used for XML-RPC and REST calls that are only available to
+    internal systems on private ports.
+    """

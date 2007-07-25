@@ -5,13 +5,9 @@ an external system running GNU Mailman.  The communication pattern is
 initiated by Mailman in all cases; in other words, Mailman polls Launchpad to
 see if there is any work for Mailman to do.
 
-    >>> import xmlrpclib
+    >>> # Note that this test is run multiple times, with the harness
+    >>> # providing the `mailinglist_api` object to make the calls against.
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import IRequestedMailingListAPI
-    >>> from canonical.launchpad.xmlrpc import RequestedMailingListAPI
-    >>> mailinglist_api = RequestedMailingListAPI('somecontext', 'someview')
-    >>> verifyObject(IRequestedMailingListAPI, mailinglist_api)
-    True
 
 
 == Set up ==
@@ -54,6 +50,14 @@ Here's a helper function for printing the pending actions data structure.
     ...         for team in sorted(pending_actions[action]):
     ...             if action in ('create', 'modify'):
     ...                 team, modification = team
+    ...                 # Further, we must coerce all values in the
+    ...                 # modification dict to unicode, so as to handle the
+    ...                 # fact that this doctest is called both via an
+    ...                 # internal view and through an XMLRPC proxy.  The
+    ...                 # former returns unicode values natively, the latter
+    ...                 # strs.  The keys are the same in both cases.
+    ...                 modification = dict((k, unicode(v))
+    ...                                     for k, v in modification.items())
     ...                 print team, '-->', action, modification
     ...             else:
     ...                 print team, '-->', action

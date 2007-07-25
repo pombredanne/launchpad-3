@@ -199,6 +199,29 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
     login(ANONYMOUS)
 
 
+def mailingListXMLRPCInternalSetUp(test):
+    setUp(test)
+    # Use the hand-crafted fake API view, not retrieved through the component
+    # architecture.  We use this because it's easier to debug since when
+    # things go horribly wrong in the view, you see the errors on stdout
+    # instead of in an OOPS report living in some log file somewhere.
+    from canonical.launchpad.xmlrpc import RequestedMailingListAPI
+    mailinglist_api = RequestedMailingListAPI('a_context', 'a_view')
+    test.globs['mailinglist_api'] = mailinglist_api
+
+def mailingListXMLRPCExternalSetUp(test):
+    setUp(test)
+    # Use a real XMLRPC server proxy so that the same test is run using the
+    # full security machinery.  This is more representative of the real-world,
+    # but more difficult to debug.
+    from canonical.functional import XMLRPCTestTransport
+    from xmlrpclib import ServerProxy
+    mailinglist_api = ServerProxy(
+        'http://test@canonical.com:test@xmlrpc.launchpad.dev/mailinglists/',
+        transport=XMLRPCTestTransport())
+    test.globs['mailinglist_api'] = mailinglist_api
+
+
 def LayeredDocFileSuite(*args, **kw):
     '''Create a DocFileSuite with a layer.'''
     # Set stdout_logging keyword argument to True to make
@@ -440,6 +463,20 @@ special = {
             setUp=uploadQueueBugLinkedToQuestionSetUp,
             tearDown=tearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
+    'mailinglist-xmlrpc.txt': FunctionalDocFileSuite(
+            '../doc/mailinglist-xmlrpc.txt',
+            setUp=mailingListXMLRPCInternalSetUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadFunctionalLayer
+            ),
+    'mailinglist-xmlrpc.txt-external': FunctionalDocFileSuite(
+            '../doc/mailinglist-xmlrpc.txt',
+            setUp=mailingListXMLRPCExternalSetUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadFunctionalLayer
             ),
     }
 

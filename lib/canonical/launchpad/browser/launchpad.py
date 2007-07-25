@@ -446,7 +446,7 @@ class LaunchpadRootNavigation(Navigation):
         'distros': IDistributionSet,
         'karmaaction': IKarmaActionSet,
         '+languages': ILanguageSet,
-        'mailinglist': IMailingListApplication,
+        'mailinglists': IMailingListApplication,
         '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,
         'potemplatenames': IPOTemplateNameSet,

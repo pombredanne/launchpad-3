@@ -12,14 +12,51 @@ import pytz
 from datetime import datetime
 from sqlobject import ForeignKey, StringCol
 from zope.component import getUtility
-from zope.interface import implements
+from zope.event import notify
+from zope.interface import implements, providedBy
 
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase, sqlvalues
+from canonical.launchpad.event import SQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, IMailingList, IMailingListSet)
+from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.lp.dbschema import MailingListStatus
+
+
+class notify_modified:
+    """Decorator that sends a SQLObjectModifiedEvent after an action.
+
+    This decorator will take a snapshot of the object before the call to the
+    decorated method.  It will fire an SQLObjectModifiedEvent after the method
+    returns.
+
+    The list of edited_fields will be computed by comparing the snapshot with
+    the modified object.  The fields that are checked for modifications are
+    hardcoded, though they shouldn't be.
+
+    We don't record the user because the MailingList methods don't have access
+    to the user, though maybe it should.
+    """
+    def __init__(self, func):
+        """Create the SQLObjectModifiedEvent decorator."""
+        self._func = func
+
+    def __get__(self, obj, type=None):
+        def wrapper(*args, **kwargs):
+            """Create the SQLObjectModifiedEvent decorator."""
+            import pdb; pdb.set_trace()
+            old_obj = Snapshot(obj, providing=providedBy(obj))
+            rtn = self._func(obj, *args, **kwargs)
+            edited_fields = [
+                field for field in ('status', 'welcome_message')
+                if getattr(obj, field) != getattr(old_obj, field)]
+            notify(SQLObjectModifiedEvent(
+                obj, object_before_modification=old_obj,
+                edited_fields=edited_fields))
+            return rtn
+        return wrapper
 
 
 class MailingList(SQLBase):
@@ -74,12 +111,14 @@ class MailingList(SQLBase):
         self.status = status
         self.date_reviewed = datetime.now(pytz.timezone('UTC'))
 
+    @notify_modified
     def startConstructing(self):
         """See `IMailingList`."""
         assert self.status == MailingListStatus.APPROVED, (
             'Only approved mailing lists may be constructed')
         self.status = MailingListStatus.CONSTRUCTING
 
+    @notify_modified
     def transitionToStatus(self, target_state):
         """See `IMailingList`."""
         # State: From CONSTRUCTING to either ACTIVE or FAILED
