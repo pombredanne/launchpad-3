@@ -15,29 +15,29 @@ from zope.interface import Interface
 from zope.schema import TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.enum import DBEnumeratedType, DBItem
+from canonical.launchpad.webapp.enum import EnumeratedType, Item
 
 
-class FAQSort(DBEnumeratedType):
+class FAQSort(EnumeratedType):
     """An enumeration of the valid FAQ search sort order.
 
     This enumeration is part of the IFAQCollection.searchFAQs() API. The
     titles are formatted for nice display in browser code.
     """
 
-    RELEVANCY = DBItem(5, """
+    RELEVANCY = Item("""
     by relevancy
 
     Sort by relevancy of the FAQ toward the search text.
     """)
 
-    NEWEST_FIRST = DBItem(15, """
+    NEWEST_FIRST = Item("""
     newest first
 
     Sort FAQs from newest to oldest.
     """)
 
-    OLDEST_FIRST = DBItem(20, """
+    OLDEST_FIRST = Item("""
     oldest first
 
     Sort FAQs from oldset to newest.

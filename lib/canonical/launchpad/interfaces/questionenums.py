@@ -10,7 +10,8 @@ __all__ = [
     'QuestionStatus',
     ]
 
-from canonical.launchpad.webapp.enum import DBEnumeratedType, DBItem
+from canonical.launchpad.webapp.enum import (
+    DBEnumeratedType, DBItem, EnumeratedType, Item)
 
 
 class QuestionAction(DBEnumeratedType):
@@ -80,37 +81,37 @@ class QuestionAction(DBEnumeratedType):
         """)
 
 
-class QuestionParticipation(DBEnumeratedType):
+class QuestionParticipation(EnumeratedType):
     """The different ways a person can be involved in a question.
 
     This enumeration is part of the IPerson.searchTickets() API.
     """
 
-    OWNER = DBItem(10, """
+    OWNER = Item("""
         Owner
 
         The person created the question.
         """)
 
-    SUBSCRIBER = DBItem(15, """
+    SUBSCRIBER = Item("""
         Subscriber
 
         The person subscribed to the question.
         """)
 
-    ASSIGNEE = DBItem(20, """
+    ASSIGNEE = Item("""
         Assignee
 
         The person is assigned to the question.
         """)
 
-    COMMENTER = DBItem(25, """
+    COMMENTER = Item("""
         Commenter
 
         The person commented on the question.
         """)
 
-    ANSWERER = DBItem(30, """
+    ANSWERER = Item("""
         Answerer
 
         The person answered the question.
@@ -156,20 +157,20 @@ class QuestionPriority(DBEnumeratedType):
         """)
 
 
-class QuestionSort(DBEnumeratedType):
+class QuestionSort(EnumeratedType):
     """An enumeration of the valid question search sort order.
 
     This enumeration is part of the ITicketTarget.searchTickets() API. The
     titles are formatted for nice display in browser code.
     """
 
-    RELEVANCY = DBItem(5, """
+    RELEVANCY = Item("""
     by relevancy
 
     Sort by relevancy of the question toward the search text.
     """)
 
-    STATUS = DBItem(10, """
+    STATUS = Item("""
     by status
 
     Sort questions by status: Open, Needs information, Answered, Solved,
@@ -178,19 +179,19 @@ class QuestionSort(DBEnumeratedType):
     NEWEST_FIRST should be used as a secondary sort key.
     """)
 
-    NEWEST_FIRST = DBItem(15, """
+    NEWEST_FIRST = Item("""
     newest first
 
     Sort questions from newest to oldest.
     """)
 
-    OLDEST_FIRST = DBItem(20, """
+    OLDEST_FIRST = Item("""
     oldest first
 
     Sort questions from oldset to newest.
     """)
 
-    RECENT_OWNER_ACTIVITY = DBItem(30, """
+    RECENT_OWNER_ACTIVITY = Item("""
     recently updated first
 
     Sort questions that recently received new information from the owner first.

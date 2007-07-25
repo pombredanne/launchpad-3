@@ -51,7 +51,7 @@ from canonical.launchpad.event import (
 from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
-from canonical.launchpad.webapp.enum import DBItem
+from canonical.launchpad.webapp.enum import DBItem, Item
 from canonical.launchpad.webapp.snapshot import Snapshot
 
 
@@ -910,7 +910,7 @@ class QuestionPersonSearch(QuestionSearch):
 
         if not participation:
             self.participation = QuestionParticipation.items
-        elif zope_isinstance(participation, DBItem):
+        elif zope_isinstance(participation, Item):
             self.participation = [participation]
         else:
             self.participation = participation
