@@ -369,6 +369,7 @@ class BugTask(SQLBase, BugTaskMixin):
     date_confirmed = UtcDateTimeCol(notNull=False, default=None)
     date_inprogress = UtcDateTimeCol(notNull=False, default=None)
     date_closed = UtcDateTimeCol(notNull=False, default=None)
+    date_incomplete = UtcDateTimeCol(notNull=False, default=None)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
     # The targetnamecache is a value that is only supposed to be set when a
     # bugtask is created/modified or by the update-bugtask-targetnamecaches
@@ -667,6 +668,7 @@ class BugTask(SQLBase, BugTaskMixin):
             self.date_confirmed = None
             self.date_inprogress = None
             self.date_closed = None
+            self.date_incomplete = None
 
             return
 
@@ -689,6 +691,14 @@ class BugTask(SQLBase, BugTaskMixin):
             # Same idea with In Progress as the comment above about
             # Confirmed.
             self.date_inprogress = now
+
+        # Bugs can jump in and out of 'incomplete' status
+        # and for just as long as they're marked incomplete
+        # we keep a date_incomplete recorded for them.
+        if new_status.value == BugTaskStatus.INCOMPLETE.value:
+            self.date_incomplete = now
+        else:
+            self.date_incomplete = None
 
         if ((old_status in UNRESOLVED_BUGTASK_STATUSES) and
             (new_status in RESOLVED_BUGTASK_STATUSES)):
