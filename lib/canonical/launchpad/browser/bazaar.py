@@ -124,7 +124,7 @@ class ProductInfo:
         return "cloud-size-%s" % self.branch_size
 
     @property
-    def time_class(self):
+    def time_darkness(self):
         if self.elapsed_since_commit is None:
             return "cloud-shade-light"
         if self.elapsed_since_commit.days < 7:
@@ -134,8 +134,14 @@ class ProductInfo:
         return "cloud-shade-light"
 
     @property
+    def branch_highlight(self):
+        """Return 'highlight' or 'shade'."""
+        return 'shade'
+
+    @property
     def html_class(self):
-        return "%s %s" % (self.branch_class, self.time_class)
+        return "%s cloud-%s-%s" % (
+            self.branch_class, self.branch_highlight, self.time_darkness)
 
     @property
     def html_title(self):
@@ -167,8 +173,13 @@ class BazaarProductView:
         # As far as query efficiency goes, constructing 1k products is
         # sub-second, and the query to get the branch count and last commit
         # time runs in approximately 50ms on a vacuumed branch table.
-        products = shortlist(getUtility(IProductSet).getProductsWithBranches(),
+        product_set = getUtility(IProductSet)
+        products = shortlist(product_set.getProductsWithBranches(),
                              1500, hardlimit=2000)
+        # Any product that has a defined user branch for the development
+        # product series is shown in another colour.
+        #broducts_using_bzr = product_set.getProjectsWithMainDevelopmentBranches()
+
         
         branchset = getUtility(IBranchSet)
         branch_summaries = branchset.getActiveUserBranchSummaryForProducts(
@@ -180,7 +191,7 @@ class BazaarProductView:
         small_count = counts[len(counts)/2]
         # Top 20% are big.
         large_count = counts[-(len(counts)/5)]
-        
+
         items = []
         now = datetime.today()
         for product in products:
@@ -204,9 +215,9 @@ class BazaarProductView:
                 branch_size = 'large'
             else:
                 branch_size = 'medium'
-            
+
             items.append(ProductInfo(
                 product, num_branches, branch_size, elapsed))
 
         return items
-    
+
