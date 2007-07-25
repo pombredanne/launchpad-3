@@ -273,8 +273,8 @@ no answer message is assigned to the answer.
     ...         "SVG features that will only be available in Firefox 2.0."})
     >>> for notification in workflow_harness.request.response.notifications:
     ...     print notification.message
-    Your question is solved, if a particular message helped you solved the 
-    problem, please use the <em>'This solved my problem'</em> button.
+    Your question is solved. If a particular message helped you solve the 
+    problem, use the <em>'This solved my problem'</em> button.
     >>> print firefox_question.status.name
     SOLVED
     >>> print firefox_question.answerer.displayname

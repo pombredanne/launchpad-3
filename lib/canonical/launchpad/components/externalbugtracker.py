@@ -91,6 +91,8 @@ def get_external_bugtracker(bugtracker, version=None):
         return Bugzilla(bugtracker.baseurl, version)
     elif bugtrackertype == BugTrackerType.DEBBUGS:
         return DebBugs()
+    elif bugtrackertype == BugTrackerType.MANTIS:
+        return Mantis(bugtracker.baseurl)
     else:
         raise UnknownBugTrackerTypeError(bugtrackertype.name,
             bugtracker.name)
@@ -102,7 +104,7 @@ class ExternalBugTracker:
     implements(IExternalBugtracker)
 
     def urlopen(self, request, data=None):
-        return urllib.urlopen(request, data)
+        return urllib2.urlopen(request, data)
 
     def initializeRemoteBugDB(self, bug_ids):
         """Do any initialization before each bug watch is updated.
@@ -491,7 +493,7 @@ class DebBugs(ExternalBugTracker):
             malone_status = BugTaskStatus.UNKNOWN
         if status == 'open':
             confirmed_tags = [
-                'help', 'confirmed', 'upstream', 'fixed-upstream', 'wontfix']
+                'help', 'confirmed', 'upstream', 'fixed-upstream']
             fix_committed_tags = ['pending', 'fixed', 'fixed-in-experimental']
             if 'moreinfo' in tags:
                 malone_status = BugTaskStatus.INCOMPLETE
@@ -503,6 +505,8 @@ class DebBugs(ExternalBugTracker):
                 if fix_committed_tag in tags:
                     malone_status = BugTaskStatus.FIXCOMMITTED
                     break
+            if 'wontfix' in tags:
+                malone_status = BugTaskStatus.WONTFIX
 
         return malone_status
 

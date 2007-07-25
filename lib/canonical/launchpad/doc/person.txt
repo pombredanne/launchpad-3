@@ -542,10 +542,10 @@ projects.
     distribution: The Gentoo Linux (gentoo)
     distribution: Kubuntu - Free KDE-based Linux (kubuntu)
     distribution: Ubuntu Test (ubuntutest)
-    project group: The Ubuntu Project (ubuntu-project)
+    project group: Apache (apache)
     project group: The Test Project (aaa)
     project group: The GIMP Project (gimp)
-    project: Ubuntu (ubuntu-product)
+    project: Tomcat (tomcat)
     project: The Gnome Panel Applets (applets)
     project: Liba52 Test Decoder (a52dec)
     project: Gnome Baker (gnomebaker)
@@ -555,7 +555,7 @@ projects.
     ...     print_pillar(pillarname)
     distribution: Ubuntu Linux (ubuntu)
     distribution: Ubuntu Test (ubuntutest)
-    project: Ubuntu (ubuntu-product)
+    project: Tomcat (tomcat)
 
 
 == Translations ==

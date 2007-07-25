@@ -341,13 +341,13 @@ priority was correctly munged to "extra":
     >>> print ed.build.processor.name
     386
     >>> print ed.build.buildstate
-    1
+    Successfully built
     >>> print ed.build.distroarchseries.processorfamily.name
     x86
     >>> print ed.build.distroarchseries.architecturetag
     i386
     >>> print ed.priority
-    10
+    Extra
     >>> print ed.section.name
     editors
     >>> print ed.summary
@@ -365,7 +365,7 @@ We now check if the Breezy publication record has the correct priority:
     >>> ed_pub = SBPPH.selectOneBy(binarypackagereleaseID=ed.id,
     ...                            distroarchseriesID=breezy_i386.id)
     >>> print ed_pub.priority
-    30
+    Standard
 
 Check binary package libgjc-dev in Breezy. Its version number must differ from
 its source version number.
@@ -388,7 +388,7 @@ Check if the udeb was properly parsed and identified:
     >>> print ac.version
     0.1.5
     >>> print ac.priority
-    30
+    Standard
     >>> print ac.section.name
     debian-installer
     >>> print ac.build.sourcepackagerelease.version
@@ -406,8 +406,8 @@ We check that the binary package publishing override facility works:
     >>> for pub in SecureBinaryPackagePublishingHistory.selectBy(
     ...     binarypackagereleaseID=db1.id, orderBy='distroarchrelease'):
     ...     print pub.distroarchseries.distroseries.name, pub.priority
-    hoary 50
-    breezy 20
+    hoary Required
+    breezy Optional
 
 XXX: test package with invalid source version
 XXX: test package with maintainer with non-ascii name
@@ -544,11 +544,12 @@ Check that the overrides we did were correctly issued. We can't use selectOneBy
 because, of course, there may be multiple rows published for that package --
 that's what overrides actually do.
 
+    >>> from canonical.database.sqlbase import sqlvalues
     >>> from canonical.lp.dbschema import PackagePublishingStatus
     >>> x11_pub = SSPPH.select("""sourcepackagerelease = %s
     ...                           AND distrorelease = %s
     ...                           AND status in (%s, %s)""" %
-    ...                         (x11p.id, breezy.id,
+    ...                         sqlvalues(x11p, breezy,
     ...                          PackagePublishingStatus.PUBLISHED,
     ...                          PackagePublishingStatus.PENDING),
     ...                          orderBy=["-datecreated"])[0]
@@ -557,19 +558,19 @@ that's what overrides actually do.
     >>> ed_pub = SBPPH.select("""binarypackagerelease = %s
     ...                           AND distroarchrelease = %s
     ...                           AND status in (%s, %s)""" %
-    ...                         (ed.id, breezy_i386.id,
+    ...                         sqlvalues(ed, breezy_i386,
     ...                          PackagePublishingStatus.PUBLISHED,
     ...                          PackagePublishingStatus.PENDING),
     ...                          orderBy=["-datecreated"])[0]
     >>> print ed_pub.priority
-    10
+    Extra
     >>> n = SourcePackageName.selectOneBy(name="archive-copier")
     >>> ac = SourcePackageRelease.selectOneBy(sourcepackagenameID=n.id,
     ...         version="0.3.6")
     >>> ac_pub = SSPPH.select("""sourcepackagerelease = %s
     ...                          AND distrorelease = %s
     ...                          AND status in (%s, %s)""" %
-    ...                        (ac.id, breezy.id,
+    ...                        sqlvalues(ac, breezy,
     ...                         PackagePublishingStatus.PUBLISHED,
     ...                         PackagePublishingStatus.PENDING),
     ...                         orderBy=["-datecreated"])[0]
