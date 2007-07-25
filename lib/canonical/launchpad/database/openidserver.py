@@ -75,6 +75,7 @@ class OpenIDRPConfig(SQLBase):
     _table = 'OpenIdRPConfig'
     trust_root = StringCol(dbName='trust_root', notNull=True)
     displayname = StringCol(dbName='displayname', notNull=True)
+    description = StringCol(dbName='description', notNull=True)
     logo = ForeignKey(
         dbName='logo', foreignKey='LibraryFileAlias', default=None)
     _allowed_sreg = StringCol(dbName='allowed_sreg', forceDBName=True)
@@ -100,7 +101,8 @@ class OpenIDRPConfig(SQLBase):
 class OpenIDRPConfigSet:
     implements(IOpenIDRPConfigSet)
 
-    def new(self, trust_root, displayname, logo=None, allowed_sreg=[],
+    def new(self, trust_root, displayname, description, logo=None,
+            allowed_sreg=[],
             creation_rationale=PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT):
         """See `IOpenIdRPConfigSet`"""
         if allowed_sreg:
@@ -108,7 +110,8 @@ class OpenIDRPConfigSet:
         else:
             allowed_sreg = []
         return OpenIDRPConfig(
-            trust_root=trust_root, displayname=displayname, logo=logo,
+            trust_root=trust_root, displayname=displayname,
+            description=description, logo=logo,
             _allowed_sreg=allowed_sreg, creation_rationale=creation_rationale)
 
     def get(self, id):

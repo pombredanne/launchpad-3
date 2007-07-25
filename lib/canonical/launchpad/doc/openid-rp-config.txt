@@ -26,6 +26,7 @@ Configurations are created using the IOpenIDRPConfigSet utility:
     >>> rpconfig = getUtility(IOpenIDRPConfigSet).new(
     ...     trust_root='http://*.example.com/',
     ...     displayname='Example RP',
+    ...     description='Example RP description',
     ...     allowed_sreg=['fullname', 'nickname'])
 
 The resulting object implements the IOpenIDRPConfig interface:
