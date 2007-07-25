@@ -10,6 +10,7 @@ __all__ = [
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
+    'BranchType',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
@@ -94,6 +95,34 @@ class BranchLifecycleStatus(DBEnumeratedType):
         """)
 
 
+class BranchType(DBEnumeratedType):
+    """Branch Type
+
+    The type of a branch determins the branch interaction with a number
+    of other subsystems.
+    """
+
+    HOSTED = DBItem(1, """
+        Hosted
+
+        Hosted branches have their main repository on the supermirror.
+        """)
+
+    MIRRORED = DBItem(2, """
+        Mirrored
+
+        Mirrored branches are primarily hosted elsewhere and are
+        periodically pulled from the remote site into the supermirror.
+        """)
+
+    IMPORTED = DBItem(3, """
+        Imported
+
+        Imported branches have been converted from some other revision
+        control system into bzr and are made available through the supermirror.
+        """)
+
+
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.NEW,
     BranchLifecycleStatus.EXPERIMENTAL,
@@ -173,7 +202,7 @@ class IBranch(IHasOwner):
 
     id = Int(title=_('ID'), readonly=True, required=True)
     branch_type = Choice(
-        title=_("Branch type"), required=True, vocabulary='BranchType',
+        title=_("Branch type"), required=True, vocabulary=BranchType,
         description=_("Hosted branches have Launchpad code hosting as the "
                       "primary location and can be pushed to.  Mirrored "
                       "branches are pulled from the remote location "
