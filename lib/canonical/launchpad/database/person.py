@@ -1334,11 +1334,13 @@ class Person(SQLBase, HasSpecificationsMixin):
     def deactivateAccount(self, comment):
         """Deactivate this person's Launchpad account.
 
-        Deactivating an account means setting its password to NULL, removing
-        the user from all teams he's a member of, changing all his email
-        addresses status to NEW and revoking Code of Conduct signatures of
-        that user, reassigning bugs/specs assigned to him, and finally change
-        the ownership of products/projects/teams owned by him.
+        Deactivating an account means:
+            - Setting its password to NULL;
+            - Removing the user from all teams he's a member of;
+            - Changing all his email addresses' status to NEW;
+            - Revoking Code of Conduct signatures of that user;
+            - Reassigning bugs/specs assigned to him; 
+            - Changing the ownership of products/projects/teams owned by him.
         """
         assert self.is_valid_person, (
             "You can only deactivate an account of a valid person.")
@@ -1349,14 +1351,14 @@ class Person(SQLBase, HasSpecificationsMixin):
         # any teams.
         flush_database_updates()
 
-        # Deactivate CoC signagures, invalidate email addresses, unassign bug
+        # Deactivate CoC signatures, invalidate email addresses, unassign bug
         # tasks and specs and reassign pillars and teams.
         for coc in self.signedcocs:
             coc.active = False
         for email in self.validatedemails:
             email.status = EmailAddressStatus.NEW
-        for bug_task in (
-                self.searchTasks(BugTaskSearchParams(self, assignee=self))):
+        params = BugTaskSearchParams(self, assignee=self)
+        for bug_task in self.searchTasks(params):
             assert bug_task.assignee == self, (
                 "This bugtask (%s) should be assigned to this person."
                 % sqlvalues(bug_task))
@@ -1577,7 +1579,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             self.account_status = AccountStatus.ACTIVE
             self.account_status_comment = None
         # Get the non-proxied EmailAddress object, so we can call
-        # syncUpdate() on it:
+        # syncUpdate() on it.
         email = EmailAddress.get(email.id)
         email.status = EmailAddressStatus.PREFERRED
         email.syncUpdate()

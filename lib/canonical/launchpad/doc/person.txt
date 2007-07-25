@@ -61,7 +61,7 @@ followed by a description of the action that caused the entry to be created.
 By default, newly created Person entries will have AccountStatus.NOACCOUNT as
 their account_status.  This is only changed if/when we turn that entry into an
 actual user account. (Currently, we assume that a Person entry is turned into
-a user account when it first has an email address confirmed)
+a user account when its first email address is confirmed)
 
     >>> p.account_status
     <Item NOACCOUNT...AccountStatus...
@@ -144,6 +144,12 @@ method of IPerson or check if the object provides the ITeam interface.
     True
     >>> verifyObject(ITeam, landscape_devs)
     True
+
+Also note that a team will never have a Launchpad account, so its
+account_status will always be NOACCOUNT.
+
+    >>> landscape_devs.account_status
+    <Item NOACCOUNT...AccountStatus...
 
 === Team members ===
 
@@ -281,15 +287,14 @@ each direct member of that team.
 == Deactivating user accounts ==
 
 Any user can deactivate his own account, in case they don't want it anymore
-or they don't want to be shown as Launchpad users.  Deactivating an account
-means setting its password to NULL, removing the user from all teams he's a
-member of, changing all his email addresses status to NEW, revoking Code
-of Conduct signatures of that user, reassigning bugs/specs assigned to him,
-and finally change the ownership of products/projects/teams owned by him.
+or they don't want to be shown as Launchpad users.
 
-    # Foo Bar has no specifications assigned to him, so we'll assign one just
-    # to prove that deactivating his account will cause this spec to be
-    # reassigned.
+As seen below, Foo Bar has a bunch of stuff assigned/owned to/by him in
+Launchpad which we'll want to be reassigned/unassigned if his account is
+deactivated.  Unfortunatel, Foo Bar has no specifications assigned to him, so
+we'll assign one just to prove that deactivating his account will cause this
+spec to be reassigned.
+
     >>> foobar.specifications().count() > 0
     True
     >>> from canonical.launchpad.database import Person, Specification
@@ -314,9 +319,15 @@ and finally change the ownership of products/projects/teams owned by him.
     True
     >>> len(foobar.assigned_specs) > 0
     True
-    >>> foobar.getOwnedOrDrivenPillars().count() > 0
+    >>> foobar_pillars = []
+    >>> for pillar_name in foobar.getOwnedOrDrivenPillars():
+    ...     pillar = pillar_name.pillar
+    ...     if pillar.owner == foobar or pillar.driver == foobar:
+    ...         foobar_pillars.append(pillar_name)
+    >>> len(foobar_pillars) > 0
     True
-    >>> Person.selectBy(teamowner=foobar).count() > 0
+    >>> foobar_teams = list(Person.selectBy(teamowner=foobar))
+    >>> len(foobar_teams) > 0
     True
     >>> foobar.is_valid_person
     True
@@ -324,8 +335,9 @@ and finally change the ownership of products/projects/teams owned by him.
     >>> comment = ("I'm a silly person who doesn't want to be listed "
     ...            "as a Launchpad user.")
 
-    # The deactivateAccount method is restricted to the user himself --not even
-    # launchpad admins can use it.
+The deactivateAccount method is restricted to the user himself --not even
+launchpad admins can use it.
+
     >>> login('mark@hbd.com')
     >>> foobar.deactivateAccount(comment)
     Traceback (most recent call last):
@@ -338,30 +350,72 @@ and finally change the ownership of products/projects/teams owned by him.
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
 
+Deactivating an account changes many of the person's attributes.  It adds a
+'-deactivatedaccount' suffix to the person's name...
+
     >>> foobar.name
     u'name16-deactivatedaccount'
+
+...an account status of DEACTIVATED...
+
     >>> foobar.account_status
     <Item DEACTIVATED...AccountStatus...
     >>> foobar.account_status_comment
     u"I'm a silly person who doesn't want to be listed as a Launchpad user."
-    >>> foobar.is_valid_person
-    False
+
+...to have no team memberships...
+
     >>> [membership.team.name for membership in foobar.myactivememberships]
     []
+
+...and no validated/preferred email addresses...
+
     >>> [email.email for email in foobar.validatedemails]
     []
     >>> print getattr(foobar.preferredemail, 'email', None)
     None
+
+...no signed codes of conduct...
+
     >>> [coc.active for coc in foobar.signedcocs]
     [False]
+
+...no assigned bug tasks...
+
     >>> foobar.searchTasks(params).count()
     0
+
+...no assigned specs...
+
     >>> len(foobar.assigned_specs)
     0
+
+...no owned teams...
+
     >>> Person.selectBy(teamowner=foobar).count()
     0
+
+...no owned or driven pillars...
     >>> foobar.getOwnedOrDrivenPillars().count()
     0
+
+...and, finally, to not be considered a valid person in Launchpad.
+
+    >>> foobar.is_valid_person
+    False
+
+It's also important to note that the teams/pillars owned/driven by Foo Bar
+are now owned/driven by the registry admins team.
+
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
+    >>> registry = getUtility(ILaunchpadCelebrities).registry
+    >>> registry_pillars = set(registry.getOwnedOrDrivenPillars())
+    >>> registry_pillars.issuperset(foobar_pillars)
+    True
+
+    >>> registry_teams = set(Person.selectBy(teamowner=registry))
+    >>> registry_teams.issuperset(foobar_teams)
+    True
 
     # We need to restore Foo Bar's name because some of our further tests rely
     # on that name existing in the database and it'd be a lot more painful

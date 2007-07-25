@@ -7,9 +7,11 @@
 
   <div metal:fill-slot="main">
     <div metal:use-macro="context/@@launchpad_form/form">
-      <div metal:fill-slot="extra_info">
-        If you continue you won't be able to log into Launchpad with this
-        account and you will not receive any Launchpad emails anymore.
+      <div metal:fill-slot="extra_bottom">
+        By deactivating your account, you give up the ability to log into
+        Launchpad, and you will not receive any further Launchpad emails. If
+        you do not want to deactivate your account, you may take any action
+        *other* than hitting the 'Deactivate My Account' button.
       </div>
     </div>
   </div>
