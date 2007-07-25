@@ -125,8 +125,91 @@ go through the process again, this time ticking the relevant checkbox.
     >>> browser.getControl(name='field.essential').value = 'yes'
     >>> browser.getControl('Continue').click()
 
-When we change a user's subscription, they get notified by email.
+When we change a user's subscription, they get notified by email. Teams
+can be subscribed to a blueprint too
 
     >>> last_email = pop_notifications()[-1]
     >>> '[Participation essential]' in last_email.get_payload()
+    True
+
+== Subscribing teams ==
+
+Users can subscribe any team to any spec.  If the subscribed team has a
+contact email address, a notification is sent to that address, but if the team
+has no contact address we'll send one notification for each active member of
+the team.
+
+The Launchpad Admins team has no contact address, so subscribing it to
+a spec will cause email notifications to be sent to each of its members.
+
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.ftests import login, logout
+    >>> from canonical.launchpad.helpers import contactEmailAddresses
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> login('foo.bar@canonical.com')
+    >>> person_set = getUtility(IPersonSet)
+    >>> admins = person_set.getByName('admins')
+    >>> admins_contact_email_addresses = sorted(
+    ...     contactEmailAddresses(admins))
+    >>> ubuntu_team = person_set.getByName('ubuntu-team')
+    >>> ubuntu_team_contact_email_addresses = sorted(
+    ...     contactEmailAddresses(ubuntu_team))
+    >>> logout()
+
+    >>> browser.open("http://blueprints.launchpad.dev/kubuntu/+spec/krunch-desktop-plan")
+    >>> browser.getLink('Subscribe someone else').click()
+    >>> browser.getControl('Subscriber').value = 'admins'
+    >>> browser.getControl(name='field.essential').value = None
+    >>> browser.getControl('Continue').click()
+
+We created a subscription for the Launchpad Admins, but because the
+team does not have a preffered email address, an email is sent to
+each active member who has a preffered email registered.
+
+    >>> print admins.preferredemail
+    None
+
+    >>> admins_contact_email_addresses == sorted(
+    ...     [message['To'] for message in pop_notifications()])
+    True
+
+    >>> browser.getLink('Subscribe someone else').click()
+    >>> browser.getControl('Subscriber').value = 'admins'
+    >>> browser.getControl(name='field.essential').value = 'yes'
+    >>> browser.getControl('Continue').click()
+
+We modified the Launchpad Admins team's subscription and again,
+an email is sent to each active member.
+
+    >>> admins_contact_email_addresses == sorted(
+    ...     [message['To'] for message in pop_notifications()])
+    True
+
+The Ubuntu Team does have a preferred email address.
+
+    >>> print ubuntu_team.preferredemail
+    <...EmailAddress...>
+
+    >>> browser.getLink('Subscribe someone else').click()
+    >>> browser.getControl('Subscriber').value = 'ubuntu-team'
+    >>> browser.getControl(name='field.essential').value = None
+    >>> browser.getControl('Continue').click()
+
+We subscribe the Ubuntu Team and an email is sent to the team's
+preffered email address.
+
+    >>> ([message['To'] for message in pop_notifications()] ==
+    ...     [str(ubuntu_team.preferredemail.email)])
+    True
+
+    >>> browser.getLink('Subscribe someone else').click()
+    >>> browser.getControl('Subscriber').value = 'ubuntu-team'
+    >>> browser.getControl(name='field.essential').value = 'yes'
+    >>> browser.getControl('Continue').click()
+
+We modified the Ubuntu Team's subscription and again,
+an email is sent to the team's preffered email address. 
+
+    >>> ([message['To'] for message in pop_notifications()] ==
+    ...     [str(ubuntu_team.preferredemail.email)])
     True

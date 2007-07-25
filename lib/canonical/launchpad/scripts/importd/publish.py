@@ -18,11 +18,9 @@ from bzrlib.errors import NotBranchError
 from bzrlib.transport import get_transport
 from zope.component import getUtility
 
-from canonical.lp.dbschema import BranchType
-
 from canonical.database.sqlbase import begin, commit
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IBranchSet, IProductSeriesSet)
+    BranchType, ILaunchpadCelebrities, IBranchSet, IProductSeriesSet)
 from canonical.launchpad.webapp.url import urlappend
 
 

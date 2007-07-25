@@ -7,8 +7,8 @@ Some branches are also considered "private".  These are branches that
 are only visible to the owner of the branch, and the subscribers.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBranchSet, IPersonSet
-    >>> from canonical.lp.dbschema import BranchType
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchType, IBranchSet, IPersonSet)
     >>> person_set = getUtility(IPersonSet)
     >>> no_priv_person = person_set.getByName('no-priv')
 
@@ -126,7 +126,7 @@ The Jeff Waugh is a member of the Ubuntu team, but not a Luanchpad admin.
 Subscribing the Ubuntu team to the branch will allow Jeff to have access
 to the branch.
 
-    >>> from canonical.lp.dbschema import (
+    >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize)
 
     >>> branch.subscribe(ubuntu_team,
