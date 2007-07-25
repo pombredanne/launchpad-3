@@ -4,17 +4,23 @@
     xmlns:i18n="http://namespaces.zope.org/i18n"
     i18n_domain="launchpad">
 
-    <!-- Branch -->
-    <content class="canonical.launchpad.database.Branch">
-      <require
-          permission="launchpad.View"
-          interface="canonical.launchpad.interfaces.IBranch"
-          />
-      <require
-          permission="launchpad.Edit"
-          set_schema="canonical.launchpad.interfaces.IBranch"
-          />
-    </content>
+  <!-- Branch -->
+  <content class="canonical.launchpad.database.Branch">
+    <require
+        permission="launchpad.View"
+        interface="canonical.launchpad.interfaces.IBranch"
+        />
+    <require
+        permission="launchpad.Edit"
+        set_schema="canonical.launchpad.interfaces.IBranch"
+        />
+  </content>
+
+  <adapter
+      for="canonical.launchpad.interfaces.IBranch"
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      factory="canonical.launchpad.browser.BranchSOP"
+      />
 
     <browser:menus
         module="canonical.launchpad.browser"
@@ -49,6 +55,9 @@
         <browser:page
             name="+series-reference"
             template="../templates/branch-series-reference.pt" />
+        <browser:page
+            name="+associations"
+            template="../templates/branch-associations.pt" />
     </browser:pages>
 
   <browser:pages
@@ -88,16 +97,10 @@
   </browser:pages>
 
   <browser:page
-      for="*"
-      name="branch-filtering-macros"
+      for="canonical.launchpad.interfaces.IBranch"
+      name="+macros"
       permission="zope.Public"
-      template="../templates/branch-filtering-macros.pt" />
-
-  <browser:page
-      for="*"
-      name="branch-badges"
-      permission="zope.Public"
-      template="../templates/branch-badge-macros.pt" />
+      template="../templates/branch-macros.pt" />
 
   <browser:page
       for="*"
@@ -159,8 +162,8 @@
   </content>
 
   <!-- BranchVisibilityPolicy -->
-  <content class="canonical.launchpad.database.BranchVisibilityPolicyItem">
-    <allow interface="canonical.launchpad.interfaces.IBranchVisibilityPolicyItem" />
+  <content class="canonical.launchpad.database.BranchVisibilityTeamPolicy">
+    <allow interface="canonical.launchpad.interfaces.IBranchVisibilityTeamPolicy" />
   </content>
 
   <browser:page
@@ -175,7 +178,7 @@
       name="+addbranchvisibilitypolicy"
       for="canonical.launchpad.interfaces.IHasBranchVisibilityPolicy"
       facet="overview"
-      class="canonical.launchpad.browser.AddBranchVisibilityPolicyItemView"
+      class="canonical.launchpad.browser.AddBranchVisibilityTeamPolicyView"
       permission="launchpad.Admin"
       template="../templates/branch-visibility-edit.pt" />
 
@@ -183,7 +186,7 @@
       name="+removebranchvisibilitypolicy"
       for="canonical.launchpad.interfaces.IHasBranchVisibilityPolicy"
       facet="overview"
-      class="canonical.launchpad.browser.RemoveBranchVisibilityPolicyItemView"
+      class="canonical.launchpad.browser.RemoveBranchVisibilityTeamPolicyView"
       permission="launchpad.Admin"
       template="../templates/branch-visibility-edit.pt" />
 

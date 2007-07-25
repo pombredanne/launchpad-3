@@ -25,7 +25,7 @@ __all__ = [
     'UNRESOLVED_BUGTASK_STATUSES',
     'BUG_CONTACT_BUGTASK_STATUSES']
 
-from zope.interface import implements, Interface, Attribute
+from zope.interface import Attribute, Interface
 from zope.schema import (
     Bool, Choice, Datetime, Int, Text, TextLine, List, Field)
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
@@ -50,9 +50,10 @@ from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 # to bug https://launchpad.net/products/malone/+bug/4201
 UNRESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.NEW,
-    dbschema.BugTaskStatus.CONFIRMED,
-    dbschema.BugTaskStatus.INPROGRESS,
     dbschema.BugTaskStatus.INCOMPLETE,
+    dbschema.BugTaskStatus.CONFIRMED,
+    dbschema.BugTaskStatus.TRIAGED,
+    dbschema.BugTaskStatus.INPROGRESS,
     dbschema.BugTaskStatus.FIXCOMMITTED)
 
 RESOLVED_BUGTASK_STATUSES = (
@@ -103,6 +104,10 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         title=_("Status notes (optional)"), required=False)
     assignee = Choice(
         title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
+    bugtargetdisplayname = Text(
+        title=_("The short, descriptive name of the target"), readonly=True)
+    bugtargetname = Text(
+        title=_("The target as presented in mail notifications"), readonly=True)
     bugwatch = Choice(title=_("Remote Bug Details"), required=False,
         vocabulary='BugWatch', description=_("Select the bug watch that "
         "represents this task in the relevant bug tracker. If none of the "
@@ -373,6 +378,7 @@ class IBugTaskDelta(Interface):
     Likewise, if sourcepackagename is not None, product must be None.
     """
     targetname = Attribute("Where this change exists.")
+    bugtargetname = Attribute("Near-unique ID of where the change exists.")
     bugtask = Attribute("The modified IBugTask.")
     product = Attribute(
         """The change made to the IProduct of this task.
@@ -505,17 +511,18 @@ class BugTaskSearchParams:
     distribution = None
     distroseries = None
     productseries = None
-    def __init__(self, user, bug=None, searchtext=None, status=None,
-                 importance=None, milestone=None,
+    def __init__(self, user, bug=None, searchtext=None, fast_searchtext=None,
+                 status=None, importance=None, milestone=None,
                  assignee=None, sourcepackagename=None, owner=None,
                  statusexplanation=None, attachmenttype=None,
                  orderby=None, omit_dupes=False, subscriber=None,
                  component=None, pending_bugwatch_elsewhere=False,
                  resolved_upstream=False, open_upstream=False,
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
-                 bug_contact=None, bug_reporter=None,nominated_for=None ):
+                 bug_contact=None, bug_reporter=None, nominated_for=None):
         self.bug = bug
         self.searchtext = searchtext
+        self.fast_searchtext = fast_searchtext
         self.status = status
         self.importance = importance
         self.milestone = milestone

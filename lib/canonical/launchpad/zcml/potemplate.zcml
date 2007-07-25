@@ -68,14 +68,6 @@
             name="+portlet-langstats"
             template="../templates/potemplate-portlet-langstats.pt"
             />
-        <browser:page
-            name="+portlet-relateds"
-            template="../templates/potemplate-portlet-relateds.pt"
-            />
-        <browser:page
-            name="+portlet-for"
-            template="../templates/potemplate-portlet-for.pt"
-            />
     </browser:pages>
 
     <browser:page

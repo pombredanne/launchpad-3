@@ -60,7 +60,7 @@ class ISearchableByQuestionOwner(IQuestionCollection):
                         needs_attention_from=None):
         """Return the questions from the collection matching search criteria.
 
-        See IQuestionCollection for the description of the standard search
+        See `IQuestionCollection` for the description of the standard search
         parameters.
 
         :owner: The IPerson that created the question.

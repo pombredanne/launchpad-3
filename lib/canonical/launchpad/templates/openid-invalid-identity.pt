@@ -12,7 +12,7 @@
             <strong tal:content="view/openid_request/identity" />
             is your identity URL. However, that is not a valid Launchpad
             OpenID identity URL, such as <strong
-                tal:content="string:${vhosts/mainsite/rooturl}~${view/login}"
+                tal:content="string:${vhosts/mainsite/rooturl}~${view/user/name|string:USER}"
                 />
         </p>
 

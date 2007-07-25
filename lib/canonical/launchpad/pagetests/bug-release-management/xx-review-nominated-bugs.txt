@@ -89,7 +89,7 @@ After approving the nominated bugs, the listing is empty.
     >>> hoary_nomination = bug_one.getNominationFor(hoary)
     >>> nomination_control = admin_browser.getControl(
     ...     name='field.review_action_%s' % hoary_nomination.id)
-    >>> nomination_control.getControl(value='Accept').click()
+    >>> nomination_control.getControl(value='ACCEPT').click()
     >>> admin_browser.getControl('Save changes').click()
     >>> for message in get_feedback_messages(admin_browser):
     ...     print message
@@ -124,7 +124,7 @@ A product series has the same nomination listing as a distro series.
     >>> admin_browser.getLink('Review nominations').click()
     >>> nomination_control = admin_browser.getControl(
     ...     name='field.review_action_%s' % firefox_nomination.id)
-    >>> nomination_control.getControl(value='Decline').click()
+    >>> nomination_control.getControl(value='DECLINE').click()
     >>> admin_browser.getControl('Save changes').click()
     >>> for message in get_feedback_messages(admin_browser):
     ...     print message

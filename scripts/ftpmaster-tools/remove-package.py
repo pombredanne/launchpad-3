@@ -267,7 +267,7 @@ def init():
     Options.distro = getUtility(IDistributionSet)[Options.distro]
 
     if not Options.suite:
-        Options.suite = Options.distro.currentrelease.name
+        Options.suite = Options.distro.currentseries.name
 
     Options.architecture = dak_utils.split_args(Options.architecture)
     Options.component = dak_utils.split_args(Options.component)
@@ -326,41 +326,42 @@ def what_to_remove(packages):
 
     for removal in packages:
         for suite in Options.suite:
-            distrorelease = Options.distro.getRelease(suite)
+            distro_series = Options.distro.getSeries(suite)
 
             if Options.sourceonly:
                 bpp_list = []
             else:
                 if Options.binaryonly:
-                    bpp_list = distrorelease.getBinaryPackagePublishing(removal)
+                    bpp_list = distro_series.getBinaryPackagePublishing(removal)
                 else:
-                    bpp_list = distrorelease.getBinaryPackagePublishing(sourcename=removal)
+                    bpp_list = distro_series.getBinaryPackagePublishing(
+                        sourcename=removal)
 
             for bpp in bpp_list:
-                    package=bpp.binarypackagerelease.binarypackagename.name
-                    version=bpp.binarypackagerelease.version
-                    architecture=bpp.distroarchrelease.architecturetag
-                    if Options.architecture and \
-                           architecture not in Options.architecture:
-                        continue
-                    if Options.component and \
-                           bpp.component.name not in Options.component:
-                        continue
-                    d = dak_utils.Dict(type="binary",publishing=bpp,
-                                       package=package, version=version,
-                                       architecture=architecture)
-                    to_remove.append(d)
+                package=bpp.binarypackagerelease.binarypackagename.name
+                version=bpp.binarypackagerelease.version
+                architecture=bpp.distroarchseries.architecturetag
+                if (Options.architecture and
+                    architecture not in Options.architecture):
+                    continue
+                if (Options.component and
+                    bpp.component.name not in Options.component):
+                    continue
+                d = dak_utils.Dict(
+                    type="binary", publishing=bpp, package=package,
+                    version=version, architecture=architecture)
+                to_remove.append(d)
 
             if not Options.binaryonly:
-                for spp in distrorelease.getPublishedReleases(removal):
-                    package=spp.sourcepackagerelease.sourcepackagename.name
-                    version=spp.sourcepackagerelease.version
-                    if Options.component and \
-                           spp.component.name not in Options.component:
+                for spp in distro_series.getPublishedReleases(removal):
+                    package = spp.sourcepackagerelease.sourcepackagename.name
+                    version = spp.sourcepackagerelease.version
+                    if (Options.component and
+                        spp.component.name not in Options.component):
                         continue
-                    d = dak_utils.Dict(type="source",publishing=spp,
-                                       package=package, version=version,
-                                       architecture="source")
+                    d = dak_utils.Dict(
+                        type="source",publishing=spp, package=package,
+                        version=version, architecture="source")
                     to_remove.append(d)
 
     return to_remove

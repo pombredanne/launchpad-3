@@ -1,5 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+"""Browser views for sourcepackages."""
+
 __metaclass__ = type
 
 __all__ = [
@@ -7,7 +9,6 @@ __all__ = [
     'SourcePackageSOP',
     'SourcePackageFacets',
     'SourcePackageView',
-    'linkify_changelog'
     ]
 
 # Python standard library imports
@@ -58,8 +59,8 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         if (self.context.distroseries.hide_all_translations and
             not check_permission('launchpad.Admin', sourcepackage_pots)):
             raise TranslationUnavailable(
-                'Translation updates are in progress.  Only administrators may view'
-                ' translations for this source package.')
+                'Translation updates are in progress. Only administrators '
+                'may view translations for this source package.')
 
         return sourcepackage_pots
 
@@ -71,20 +72,6 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
             sourcepackage.name)
 
         return redirection(canonical_url(distro_sourcepackage) + "/+filebug")
-
-
-def linkify_changelog(changelog, sourcepkgnametxt):
-    if changelog is None:
-        return changelog
-    changelog = cgi.escape(changelog)
-    # XXX cprov 20060207: use re.match and fmt:url instead of this nasty
-    # url builder. Also we need an specification describing the syntax for
-    # changelog linkification and processing (mostly bug interface),
-    # bug # 30817
-    changelog = re.sub(r'%s \(([^)]+)\)' % re.escape(sourcepkgnametxt),
-                       r'%s (<a href="\1">\1</a>)' % sourcepkgnametxt,
-                       changelog)
-    return changelog
 
 
 class SourcePackageSOP(StructuralObjectPresentation):
@@ -134,17 +121,6 @@ class SourcePackageOverviewMenu(ApplicationMenu):
     def builds(self):
         text = 'Show builds'
         return Link('+builds', text, icon='info')
-
-
-class SourcePackageBugsMenu(ApplicationMenu):
-
-    usedfor = ISourcePackage
-    facet = 'bugs'
-    links = ['reportbug']
-
-    def reportbug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='add')
 
 
 class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):

@@ -5,8 +5,8 @@ Get evolution template for Ubuntu Hoary
 >>> from zope.component import getUtility
 >>> from zope.interface.verify import verifyObject
 >>> from canonical.launchpad.interfaces import (
-... IPOTemplateSet, ISourcePackageNameSet, IDistributionSet,
-... IPOFile, IPersonSet)
+...     IDistributionSet, IPersonSet, IPOFile, IPOTemplateSet,
+...     ISourcePackageNameSet)
 >>> sourcepackagenameset = getUtility(ISourcePackageNameSet)
 >>> sourcepackagename = sourcepackagenameset['evolution']
 >>> distributionset = getUtility(IDistributionSet)
@@ -206,8 +206,9 @@ Set a translation group to test the CLOSED mode. This mode allows translations
 only from the teams set as official translators.
 
     >>> product = getUtility(IProductSet).getByName('evolution')
-    >>> product.translationgroup = getUtility(
-    ...     ITranslationGroupSet)['testing-translation-team']
+    >>> translation_group_set = getUtility(ITranslationGroupSet)
+    >>> product.translationgroup = translation_group_set[
+    ...     'testing-translation-team']
     >>> product.translationpermission = TranslationPermission.CLOSED
 
 Get the IPOFile we are going to use.
@@ -241,6 +242,20 @@ But the unprivileged account should not.
     >>> pofile_es.canEditTranslations(no_priv)
     False
 
+And if he tries to update translations, the system blocks such
+breakage.
+
+    >>> pomsgset = pofile_es.getPOMsgSet(u'evolution addressbook')
+    >>> fuzzy = False
+    >>> published = False
+    >>> lock_timestamp = None
+    >>> pomsgset.updateTranslationSet(
+    ...     no_priv, [u'foo'], fuzzy, published, lock_timestamp)
+    Traceback (most recent call last):
+    ...
+    AssertionError: No Privileges Person cannot add translations nor can...
+
+
 Now, we get an IPOFile that does not have a translation team assigned.
 
     >>> pofile_cy = potemplate.getDummyPOFile('cy')
@@ -256,9 +271,47 @@ And same thing with the unprivileged account.
     >>> pofile_cy.canEditTranslations(no_priv)
     False
 
+RESTRICTED mode is the same as CLOSED when restricting who is able to change
+translations.
+
+    >>> product.translationpermission = TranslationPermission.RESTRICTED
+
+A Launchpad admin must have permission always.
+
+    >>> pofile_es.canEditTranslations(admins)
+    True
+
+A Translations Expert too.
+
+    >>> pofile_es.canEditTranslations(rosetta_experts)
+    True
+
+And Valentina Commissari, as member of the Spanish translation team for
+evolution should also have rights.
+
+    >>> pofile_es.canEditTranslations(valentina)
+    True
+
+But the unprivileged account should not.
+
+    >>> pofile_es.canEditTranslations(no_priv)
+    False
+
+Valentina Commissari still doesn't have permissions to edit translations for
+Welsh (cy).
+
+    >>> pofile_cy.canEditTranslations(valentina)
+    False
+
+And same thing with the unprivileged account.
+
+    >>> pofile_cy.canEditTranslations(no_priv)
+    False
+
 Now, let's test the STRUCTURED mode. In this mode, only the defined
-translation teams can translate like the CLOSE mode, but in addition, if we
-don't have any language team for one language, anyone can add translations.
+translation teams can translate like the RESTRICTED and CLOSED mode, but in
+addition, if we don't have any language team for one language, anyone can
+add translations.
 
     >>> product.translationpermission = TranslationPermission.STRUCTURED
 
@@ -301,6 +354,62 @@ And samething with the unprivileged account.
 
     >>> pofile_es.canEditTranslations(no_priv)
     True
+
+== canAddSuggestions ==
+
+This method determines if someone is allowed to add suggestions.
+
+Set a translation group to test the CLOSED mode. This mode allows translations
+only from the teams set as official translators.
+
+    >>> product.translationgroup = translation_group_set[
+    ...     'testing-translation-team']
+    >>> product.translationpermission = TranslationPermission.CLOSED
+
+A Launchpad admin must have permission always.
+
+    >>> pofile_es.canAddSuggestions(admins)
+    True
+
+A Translations Expert too.
+
+    >>> pofile_es.canAddSuggestions(rosetta_experts)
+    True
+
+And Valentina Commissari, as member of the Spanish translation team for
+evolution should also have rights.
+
+    >>> pofile_es.canAddSuggestions(valentina)
+    True
+
+But the unprivileged account should not.
+
+    >>> pofile_es.canAddSuggestions(no_priv)
+    False
+
+RESTRICTED, STRUCTURED and OPEN modes are different from CLOSED mode when
+handling suggestions because it allows anyone to add suggestions.
+
+    >>> def canAddSuggestionsCheck(translation_mode):
+    ...     product.translationpermission = translation_mode
+    ...     assert pofile_es.canAddSuggestions(admins), (
+    ...         'Administrators are not able to add suggestions!')
+    ...     assert pofile_es.canAddSuggestions(rosetta_experts), (
+    ...         'Translation experts are not able to add suggestions!')
+    ...     assert pofile_es.canAddSuggestions(no_priv), (
+    ...         'A plain user is not able to add suggestions!')
+    ...     return True
+
+    >>> canAddSuggestionsCheck(TranslationPermission.RESTRICTED)
+    True
+    >>> canAddSuggestionsCheck(TranslationPermission.STRUCTURED)
+    True
+    >>> canAddSuggestionsCheck(TranslationPermission.OPEN)
+    True
+
+    Leave the permission back to OPEN.
+    >>> product.translationpermission = TranslationPermission.OPEN
+    >>> transaction.commit()
 
 == uncachedExport ==
 
@@ -390,8 +499,12 @@ Is time to create it.
 
 As we can see, is the msgid we were looking for.
 
-  >>> pomsgset.potmsgset.msgid == msgid
-  True
+  >>> print pomsgset.potmsgset.msgid
+  Found %i invalid file.
+  >>> print pofile_sr.language.id
+  358
+  >>> print pomsgset.language.id
+  358
 
 This entry is in fact one that is not used anymore, that means, its sequence
 is zero.
@@ -767,9 +880,9 @@ Lets get Evolution Spanish translation in distribution Hoary.
   >>> noneditor = person_set.getByName('no-priv')
   >>> editor = person_set.getByName('carlos')
 
-  # Make sure the translation permission mode is closed
+  # Make sure the translation permission mode is restricted
   >>> from canonical.lp.dbschema import TranslationPermission
-  >>> product.translationpermission = TranslationPermission.CLOSED
+  >>> product.translationpermission = TranslationPermission.RESTRICTED
 
 Non-editor can only submit a new suggestion on untranslated message.
 
@@ -839,6 +952,91 @@ new suggestions.
   >>> stats = evolution_es.updateStatistics()
   >>> print evolution_es.unreviewedCount()
   3
+
+And if we've got two new suggestions for the same message, POTMsgSet
+will not be listed twice in the returned result.
+
+  >>> pomsgset.updateTranslationSet(noneditor, {0: 'another'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> evolution_es.getPOTMsgSetWithNewSuggestions().count()
+  3
+  >>> len(set(evolution_es.getPOTMsgSetWithNewSuggestions()))
+  3
+
+
+== Translations credits ==
+
+Translation credits are handled automatically, and cannot be
+translated in any other way except through a published upload.
+
+Lets get Spanish translation for alsa-utils.
+
+  >>> alsautils = getUtility(IProductSet).getByName('alsa-utils')
+  >>> alsa_trunk = alsautils.getSeries('trunk')
+  >>> alsa_template = alsa_trunk.getPOTemplate('alsa-utils')
+  >>> alsa_translation = alsa_template.getPOFileByLang('es')
+
+This translation file contains untranslated translation-credits message.
+
+  >>> translation_credits = (
+  ...     alsa_translation.getPOMsgSet(u"translation-credits"))
+  >>> print translation_credits.active_texts
+  [None]
+
+If we submit a published translation, the translation for this message
+is updated.
+
+  >>> translation_credits.updateTranslationSet(
+  ...     alsa_translation.owner, {0: u'Happy translator'}, fuzzy=False,
+  ...     published=True, lock_timestamp=datetime.datetime.now(UTC))
+  >>> print translation_credits.active_texts
+  [u'Happy translator']
+
+If we submit non-published translation, it's refused.
+
+  >>> translation_credits.updateTranslationSet(
+  ...     alsa_translation.owner, {0: u'Unhappy translator'}, fuzzy=False,
+  ...     published=False, lock_timestamp=datetime.datetime.now(UTC))
+  >>> print translation_credits.active_texts
+  [u'Happy translator']
+
+In automatically generated credits, alsa_translation.owner is now
+credited as well.
+
+  >>> alsa_translation.prepareTranslationCredits(translation_credits.potmsgset)
+  u'Happy translator\n\nLaunchpad Contributions:\n  Carlos Perell\xf3 Mar\xedn <http://launchpad.dev/~carlos>'
+
+Emails of translators is translated already.
+
+  >>> emails_of_translators = (
+  ...     alsa_translation.getPOMsgSet(u"_: EMAIL OF TRANSLATORS\nYour emails"))
+  >>> print emails_of_translators.active_texts
+  [u'danilo@canonical.com']
+
+But now credits Carlos when prepared automatically.
+
+  >>> alsa_translation.prepareTranslationCredits(
+  ...     emails_of_translators.potmsgset)
+  u'danilo@canonical.com,carlos@canonical.com'
+
+Names of translators are untranslated and there is no message set for them yet.
+
+  >>> names_of_translators = (
+  ...     alsa_translation.getPOMsgSet(u"_: NAME OF TRANSLATORS\nYour names"))
+  >>> print names_of_translators
+  None
+  >>> names_of_translators_potmsgset = alsa_template.getPOTMsgSetByMsgIDText(
+  ...    u"_: NAME OF TRANSLATORS\nYour names")
+  >>> names_of_translators = alsa_translation.createMessageSetFromMessageSet(
+  ...    names_of_translators_potmsgset)
+  >>> names_of_translators.active_texts
+  [None]
+
+But now names credit Carlos when prepared automatically.
+
+  >>> alsa_translation.prepareTranslationCredits(
+  ...     names_of_translators.potmsgset)
+  u'Carlos Perell\xf3 Mar\xedn'
 
 = POFile Security tests =
 
