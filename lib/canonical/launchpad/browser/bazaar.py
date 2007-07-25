@@ -179,7 +179,7 @@ class BazaarProductView:
         # time runs in approximately 50ms on a vacuumed branch table.
         product_set = getUtility(IProductSet)
         products = shortlist(product_set.getProductsWithBranches(),
-                             1500, hardlimit=2000)
+                             2000, hardlimit=3000)
         # Any product that has a defined user branch for the development
         # product series is shown in another colour.  Given the above
         # query, all the products will be in the cache anyway.
