@@ -21,26 +21,6 @@
     />
 
   <vocabulary
-    name="BranchSubscriptionDiffSize"
-    factory="canonical.launchpad.vocabularies.BranchSubscriptionDiffSizeVocabulary"
-    />
-
-  <vocabulary
-    name="BranchSubscriptionNotificationLevel"
-    factory="canonical.launchpad.vocabularies.BranchSubscriptionNotificationLevelVocabulary"
-    />
-
-  <vocabulary
-    name="BranchType"
-    factory="canonical.launchpad.vocabularies.BranchTypeVocabulary"
-    />
-
-  <vocabulary
-    name="BranchVisibilityRule"
-    factory="canonical.launchpad.vocabularies.BranchVisibilityRuleVocabulary"
-    />
-
-  <vocabulary
     name="Bug"
     factory="canonical.launchpad.vocabularies.BugVocabulary"
     />
