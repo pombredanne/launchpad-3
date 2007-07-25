@@ -688,16 +688,20 @@ class BugTaskPortletView:
             if task.id is not self.context.id]
 
 
-class BugTaskEditView(GeneralFormView):
+class BugTaskEditView(LaunchpadFormView):
     """The view class used for the task +editstatus page."""
 
     _missing_value = object()
 
-    def __init__(self, context, request):
-        self.prefix = self._getPrefix(context)
-        GeneralFormView.__init__(self, context, request)
+    schema = IUpstreamBugTask
+    field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
+                   'product', 'status', 'statusexplanation']
 
-    def _getPrefix(self, bugtask):
+    def initialize(self):
+        self.prefix = self._getPrefix()
+        self._setUpWidgets()
+
+    def _getPrefix(self):
         """Return a prefix that can be used for this form.
 
         It's constructed by using the names of the bugtask's target, to
@@ -705,6 +709,8 @@ class BugTaskEditView(GeneralFormView):
         needed in order to included multiple edit forms on the bug page,
         while still keeping the field ids unique.
         """
+        bugtask = self.context
+
         parts = []
         if IUpstreamBugTask.providedBy(bugtask):
             parts.append(bugtask.product.name)
@@ -779,14 +785,14 @@ class BugTaskEditView(GeneralFormView):
         setUpDisplayWidgets(
             self, self.schema, names=read_only_field_names, prefix=self.prefix)
 
-        self.fieldNames = editable_field_names
+        self.field_names = editable_field_names
 
     def _getEditableFieldNames(self):
         """Return the names of fields the user has perms to edit."""
         if self.context.target_uses_malone:
-            # Don't edit self.fieldNames directly, because it's shared by all
+            # Don't edit self.field_names directly, because it's shared by all
             # BugTaskEditView instances.
-            editable_field_names = list(self.fieldNames)
+            editable_field_names = list(self.field_names)
             editable_field_names.remove('bugwatch')
 
             # XXX, Brad Bollenbach, 2006-09-29: Permission checking
@@ -826,7 +832,7 @@ class BugTaskEditView(GeneralFormView):
         else:
             editable_field_names = self._getEditableFieldNames()
             read_only_field_names = [
-                field_name for field_name in self.fieldNames
+                field_name for field_name in self.field_names
                 if field_name not in editable_field_names]
 
         return read_only_field_names
@@ -849,7 +855,7 @@ class BugTaskEditView(GeneralFormView):
         product_or_distro = self._getProductOrDistro()
 
         return (
-            ("milestone" in self.fieldNames) and (
+            ("milestone" in self.field_names) and (
                 (product_or_distro.bugcontact and
                  self.user and
                  self.user.inTeam(product_or_distro.bugcontact)) or
@@ -863,7 +869,7 @@ class BugTaskEditView(GeneralFormView):
         product_or_distro = self._getProductOrDistro()
 
         return (
-            ("importance" in self.fieldNames) and (
+            ("importance" in self.field_names) and (
                 (product_or_distro.bugcontact and
                  self.user and
                  self.user.inTeam(product_or_distro.bugcontact)) or
@@ -885,7 +891,7 @@ class BugTaskEditView(GeneralFormView):
     def initial_values(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         field_values = {}
-        for name in self.fieldNames:
+        for name in self.field_names:
             field_values[name] = getattr(self.context, name)
 
         return field_values
@@ -923,6 +929,7 @@ class BugTaskEditView(GeneralFormView):
 
         return data
 
+    # -> action
     def process(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
@@ -935,7 +942,7 @@ class BugTaskEditView(GeneralFormView):
         # Save the field names we extract from the form in a separate
         # list, because we modify this list of names later if the
         # bugtask is reassigned to a different product.
-        field_names = list(self.fieldNames)
+        field_names = list(self.field_names)
         new_values = getWidgetsData(self, self.schema, field_names)
 
         bugtask_before_modification = Snapshot(
@@ -1070,6 +1077,7 @@ class BugTaskEditView(GeneralFormView):
                 "The bug contacts for %s have been subscribed to this bug." % (
                     bugtask.bugtargetdisplayname))
 
+    # -> Property
     def nextURL(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         return canonical_url(self.context)
