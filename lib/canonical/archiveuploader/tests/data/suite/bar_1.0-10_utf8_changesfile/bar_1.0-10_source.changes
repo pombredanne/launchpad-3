@@ -16,7 +16,9 @@ Description:
 Changes: 
  bar (1.0-10) breezy; urgency=low
  .
-   * Changes file that contains UTF-8 in the email addrs
+   * Changes file that contains UTF-8
+ .
+   * Non-ascii text: Čihař
  .
 Files: 
  a4932aa84fdb62819b49f3dda163fc0d 514 devel optional bar_1.0-10.dsc
@@ -25,7 +27,7 @@ Files:
 -----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.6 (GNU/Linux)
 
-iD8DBQFGjLy0jn63CGxkqMURAoFRAKCDclHQnOHw15VMWvDvHEQSKRxq1wCfS8xW
-1ge2JUVncbTBa5wFDW2igGE=
-=Gd2/
+iD8DBQFGjOzNjn63CGxkqMURAlDZAJ9CusNQWwbTJr7JHYV4Ka1JbWwmJACeLbs5
+Hzkb2pxxwYzKs7uyCiFONlo=
+=9dL/
 -----END PGP SIGNATURE-----
