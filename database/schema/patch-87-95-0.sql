@@ -4,6 +4,7 @@ CREATE TABLE OpenIdRPConfig (
   id serial PRIMARY KEY,
   trust_root text NOT NULL,
   displayname text NOT NULL,
+  description text NOT NULL,
   logo integer,
   allowed_sreg text,
   creation_rationale integer DEFAULT 13,
