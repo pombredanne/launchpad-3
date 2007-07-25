@@ -441,6 +441,119 @@ class TestQueueTool(TestQueueBase):
         self.assertQueueLength(
             1, breezy_autotest, PackageUploadStatus.REJECTED, "cnews")
 
+    def testRejectWithMultipleIDs(self):
+        """Check if rejecting multiple items at once works.
+
+        We can specify multiple items to reject, even mixing IDs and names.
+        e.g. queue reject alsa-utils 1 3
+        """
+        # Set up.
+        fillLibrarianFile(1, content='One')
+        fillLibrarianFile(52, content='Fifty-Two')
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+
+        # Run the command.
+        queue_action = self.execute_command('reject 1 pmount 3')
+
+        # Test what it did.  Since all the queue items came out of the
+        # NEW queue originally, the items processed should now be REJECTED.
+        self.assertEqual(3, queue_action.items_size)
+        self.assertQueueLength(1, breezy_autotest, 
+            PackageUploadStatus.REJECTED, 'mozilla-firefox')
+        self.assertQueueLength(1, breezy_autotest, 
+            PackageUploadStatus.REJECTED, 'pmount')
+        self.assertQueueLength(1, breezy_autotest, 
+            PackageUploadStatus.REJECTED, 'netapplet')
+
+    def testOverrideSource(self):
+        """Check if overriding sources works.
+
+        We can specify multiple items to reject, even mixing IDs and names.
+        e.g. queue override source -c restricted alsa-utils 1 3
+        """
+        # Set up.
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+
+        # Basic operation overriding a single source 'alsa-utils' that
+        # is currently main/base in the sample data.
+        queue_action = self.execute_command('override source 4', 
+            component_name='restricted', section_name='web')
+        self.assertEqual(1, queue_action.items_size)
+        queue_item = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name="alsa-utils")[0]
+        [source] = queue_item.sources
+        self.assertEqual('restricted', 
+            source.sourcepackagerelease.component.name)
+        self.assertEqual('web', 
+            source.sourcepackagerelease.section.name)
+
+        # Override multiple sources at once and mix ID with name.
+        queue_action = self.execute_command('override source 4 netapplet',
+            component_name='universe', section_name='editors')
+        # 'netapplet' appears 3 times, alsa-utils once.
+        self.assertEqual(4, queue_action.items_size)
+        # Check results.
+        queue_items = list(breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='alsa-utils'))
+        queue_items.extend(list(breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='netapplet')))
+        for queue_item in queue_items:
+            if queue_item.sources:
+                [source] = queue_item.sources
+                self.assertEqual('universe', 
+                    source.sourcepackagerelease.component.name)
+                self.assertEqual('editors', 
+                    source.sourcepackagerelease.section.name)
+
+    def testOverrideBinary(self):
+        """Check if overriding binaries works.
+
+        We can specify multiple items to reject, even mixing IDs and names.
+        e.g. queue override binary -c restricted alsa-utils 1 3
+        """
+        # Set up.
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+
+        # Override a binary, 'pmount', from its sample data of 
+        # main/base/IMPORTANT to restricted/web/extra.
+        queue_action = self.execute_command('override binary pmount',
+            component_name='restricted', section_name='web',
+            priority_name='extra')
+        self.assertEqual(1, queue_action.items_size)
+        [queue_item] = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name="pmount")
+        [packagebuild] = queue_item.builds
+        for package in packagebuild.build.binarypackages:
+            self.assertEqual('restricted', package.component.name)
+            self.assertEqual('web', package.section.name)
+            self.assertEqual('EXTRA', package.priority.name)
+
+        # Override multiple binaries at once.
+        queue_action = self.execute_command(
+            'override binary pmount mozilla-firefox', 
+            component_name='universe', section_name='editors',
+            priority_name='optional')
+        # Check results.
+        self.assertEqual(2, queue_action.items_size)
+        queue_items = list(breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='pmount'))
+        queue_items.extend(list(breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name='mozilla-firefox')))
+        for queue_item in queue_items:
+            [packagebuild] = queue_item.builds
+            for package in packagebuild.build.binarypackages:
+                self.assertEqual('universe', package.component.name)
+                self.assertEqual('editors', package.section.name)
+                self.assertEqual('OPTIONAL', package.priority.name)
+
+        # Check that overriding by ID is warned to the user.
+        self.assertRaises(
+            CommandRunnerError, self.execute_command, 'override binary 1',
+            component_name='multiverse')
+
 
 class TestQueueToolInJail(TestQueueBase):
     layer = LaunchpadZopelessLayer
