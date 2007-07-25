@@ -17,7 +17,7 @@ from canonical.launchpad.interfaces import (
     IMailHandler, IBugMessageSet, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
     IDistroSeriesBugTask, IWeaklyAuthenticatedPrincipal, IQuestionSet,
-    ISpecificationSet)
+    ISpecificationSet, QuestionStatus)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
@@ -31,8 +31,6 @@ from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
     ISQLObjectModifiedEvent, ISQLObjectCreatedEvent)
-
-from canonical.lp.dbschema import QuestionStatus
 
 
 def get_main_body(signed_msg):

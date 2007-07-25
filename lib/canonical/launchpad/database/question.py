@@ -25,21 +25,18 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, IDistribution, IDistributionSet, 
+    IBugLinkTarget, IDistribution, IDistributionSet,
     IDistributionSourcePackage, IFAQ, InvalidQuestionStateError, ILanguage,
     ILanguageSet, ILaunchpadCelebrities, IMessage, IPerson, IProduct,
     IProductSet, IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
-    QUESTION_STATUS_DEFAULT_SEARCH)
+    QUESTION_STATUS_DEFAULT_SEARCH, QuestionAction, QuestionSort,
+    QuestionStatus, QuestionParticipation, QuestionPriority)
 
 from canonical.database.sqlbase import cursor, quote, SQLBase, sqlvalues
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
-
-from canonical.lp.dbschema import (
-    QuestionAction, QuestionSort, QuestionStatus,
-    QuestionParticipation, QuestionPriority)
 
 from canonical.launchpad.database.answercontact import AnswerContact
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin

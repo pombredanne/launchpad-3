@@ -12,8 +12,8 @@ from zope.schema import Choice, Field
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.message import IMessage
-
-from canonical.lp.dbschema import QuestionAction, QuestionStatus
+from canonical.launchpad.interfaces.questionenums import (
+    QuestionAction, QuestionStatus)
 
 
 class IQuestionMessage(IMessage):

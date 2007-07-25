@@ -18,7 +18,7 @@ from zope.schema import Choice, List, Set, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.questioncollection import (
     ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.lp.dbschema import QuestionSort
+from canonical.launchpad.interfaces.questionenums import QuestionSort
 
 
 class IQuestionTarget(ISearchableByQuestionOwner):
@@ -120,6 +120,7 @@ class IQuestionTarget(ISearchableByQuestionOwner):
             "this target. (answer_contacts may include answer contacts "
             "inherited from other context.)"),
         value_type=Choice(vocabulary="ValidPersonOrTeam"))
+
 
 # These schemas are only used by browser/questiontarget.py and should really
 # live there. See Bug #66950.

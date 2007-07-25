@@ -743,7 +743,7 @@ can tweak the search and filter the results:
 Specific views can provide a default filter by returning the default
 search parameters to use in the getDefaultFilter() method:
 
-    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> from canonical.launchpad.interfaces import QuestionStatus
     >>> MyCustomSearchQuestionsView.default_filter = {
     ...     'status': [QuestionStatus.SOLVED, QuestionStatus.INVALID],
     ...     'language' : search_view.user_support_languages}

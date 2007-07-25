@@ -27,10 +27,8 @@ from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.question import Question
 
-from canonical.lp.dbschema import QuestionStatus
-
 from canonical.launchpad.interfaces import (
-    ILaunchpadStatistic, ILaunchpadStatisticSet, IPersonSet
+    ILaunchpadStatistic, ILaunchpadStatisticSet, IPersonSet, QuestionStatus
     )
 
 

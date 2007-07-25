@@ -109,7 +109,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
     LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    TeamSubscriptionPolicy, SpecificationFilter, QuestionParticipation,
+    TeamSubscriptionPolicy, SpecificationFilter,
     PersonCreationRationale, BugTaskStatus, TeamMembershipRenewalPolicy)
 
 from canonical.widgets import PasswordChangeWidget
@@ -125,7 +125,7 @@ from canonical.launchpad.interfaces import (
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
     BugTaskSearchParams, IPersonBugTaskSearch, IBranchSet, ITeamMembership,
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, QuestionParticipation)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)

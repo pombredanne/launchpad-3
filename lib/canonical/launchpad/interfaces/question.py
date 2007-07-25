@@ -19,9 +19,10 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.faq import IFAQ
+from canonical.launchpad.interfaces.questionenums import (
+    QuestionAction, QuestionPriority, QuestionStatus)
 from canonical.launchpad.interfaces.questionmessage import IQuestionMessage
 from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
-from canonical.lp.dbschema import QuestionStatus, QuestionPriority
 
 
 class InvalidQuestionStateError(Exception):

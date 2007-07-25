@@ -24,9 +24,7 @@ from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    IDistribution, IFAQ, IFAQSet, IPerson, IProduct, IProject)
-
-from canonical.lp.dbschema import FAQSort
+    IDistribution, IFAQ, IFAQSet, FAQSort, IPerson, IProduct, IProject)
 
 
 class FAQ(SQLBase):

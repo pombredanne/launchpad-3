@@ -27,7 +27,7 @@ from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     IBranch, IBugTask, IEmailAddressSet, INotificationRecipientSet, IPerson,
-    ISpecification, ITeamMembershipSet, IUpstreamBugTask, 
+    ISpecification, ITeamMembershipSet, IUpstreamBugTask, QuestionAction,
     UnknownRecipientError)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
@@ -37,7 +37,7 @@ from canonical.launchpad.helpers import (
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    TeamMembershipStatus, QuestionAction)
+    TeamMembershipStatus)
 
 CC = "CC"
 

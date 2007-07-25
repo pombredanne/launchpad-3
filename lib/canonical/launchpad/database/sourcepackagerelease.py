@@ -23,7 +23,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
     SourcePackageUrgency, SourcePackageFormat,
-    SourcePackageFileType, BuildStatus, QuestionStatus,
+    SourcePackageFileType, BuildStatus,
     PackagePublishingStatus)
 
 from canonical.librarian.interfaces import ILibrarianClient
@@ -32,7 +32,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
     ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
-    BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
+    BugTaskSearchParams, QuestionStatus, UNRESOLVED_BUGTASK_STATUSES
     )
 from canonical.launchpad.database.question import Question
 from canonical.launchpad.database.build import Build

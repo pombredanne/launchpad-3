@@ -13,12 +13,12 @@ from urllib import urlencode
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IFAQCollection, ISearchFAQsForm, QUESTION_STATUS_DEFAULT_SEARCH)
+    IFAQCollection, ISearchFAQsForm, QUESTION_STATUS_DEFAULT_SEARCH,
+    QuestionSort)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, LaunchpadFormView, Link,
     safe_action)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import QuestionSort
 
 
 class FAQCollectionMenu(ApplicationMenu):
