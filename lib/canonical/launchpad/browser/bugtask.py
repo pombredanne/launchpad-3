@@ -83,7 +83,6 @@ from canonical.launchpad.browser.bugcomment import build_comments_from_chunks
 from canonical.launchpad.browser.mentoringoffer import CanBeMentoredView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
-from canonical.launchpad.webapp.enum import DBSchema, Item
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.launchpad.webapp.generalform import GeneralFormView
@@ -91,6 +90,7 @@ from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
 
+from canonical.lazr import EnumeratedType, Item
 from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
 from canonical.widgets.bug import BugTagsWidget
@@ -559,8 +559,8 @@ class BugTaskView(LaunchpadView, CanBeMentoredView):
         """Nominate the bug for the series and redirect to the bug page."""
         self.context.bug.addNomination(self.user, series)
         self.request.response.addInfoNotification(
-            'This bug has been nominated to be fixed in %(target)s',
-            target=series.bugtargetname)
+            'This bug has been nominated to be fixed in %(target)s.',
+            target=series.bugtargetdisplayname)
         self.request.response.redirect(canonical_url(self.context))
 
     def reportBugInContext(self):
@@ -1015,13 +1015,14 @@ class BugTaskEditView(GeneralFormView):
 
         if milestone_cleared:
             self.request.response.addWarningNotification(
-                "The bug report for %s was removed from the %s milestone "
-                "because it was reassigned to a new project" % (
-                    bugtask.targetname, milestone_cleared.displayname))
+                "The %s milestone setting has been removed because "
+                "you reassigned the bug to %s." % (
+                    milestone_cleared.displayname,
+                    bugtask.bugtargetdisplayname))
         elif milestone_ignored:
             self.request.response.addWarningNotification(
-                "The milestone setting was ignored because you reassigned the "
-                "bug to a new project")
+                "The milestone setting was ignored because "
+                "you reassigned the bug to %s." % bugtask.bugtargetdisplayname)
 
         comment_on_change = self.request.form.get(
             "%s.comment_on_change" % self.prefix)
@@ -1067,7 +1068,7 @@ class BugTaskEditView(GeneralFormView):
             # subscribed the new bug contacts.
             self.request.response.addNotification(
                 "The bug contacts for %s have been subscribed to this bug." % (
-                    bugtask.targetname))
+                    bugtask.bugtargetdisplayname))
 
     def nextURL(self):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
@@ -1323,22 +1324,22 @@ class BugListingBatchNavigator(TableBatchNavigator):
         return [self._getListingItem(bugtask) for bugtask in self.batch]
 
 
-class NominatedBugReviewAction(DBSchema):
+class NominatedBugReviewAction(EnumeratedType):
     """Enumeration for nomination review actions"""
 
-    ACCEPT = Item(10, """
+    ACCEPT = Item("""
         Accept
 
         Accept the bug nomination.
         """)
 
-    DECLINE = Item(20, """
+    DECLINE = Item("""
         Decline
 
         Decline the bug nomination.
         """)
 
-    NO_CHANGE = Item(30, """
+    NO_CHANGE = Item("""
         No change
 
         Do not change the status of the bug nomination.
@@ -1355,7 +1356,6 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
         BugListingBatchNavigator.__init__(self, tasks, request, columns_to_show, size)
         self.nomination_target = nomination_target
         self.user = user
-        self._review_action_vocab = vocab_factory(NominatedBugReviewAction)
 
     def _getListingItem(self, bugtask):
         """See BugListingBatchNavigator."""
@@ -1368,7 +1368,7 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
 
         review_action_field = Choice(
             __name__='review_action_%d' % (bug_nomination.id,),
-            vocabulary=self._review_action_vocab(None),
+            vocabulary=NominatedBugReviewAction,
             title=u'Review action', required=True)
 
         # This is so setUpWidget expects a view, and so
@@ -2017,8 +2017,7 @@ class BugTargetTextView(LaunchpadView):
 
 def _by_targetname(bugtask):
     """Normalize the bugtask.targetname, for sorting."""
-    targetname = re.sub("(upstream)", "", bugtask.targetname, re.IGNORECASE)
-    return re.sub(r"\W", "", targetname)
+    return re.sub(r"\W", "", bugtask.bugtargetdisplayname)
 
 class BugTasksAndNominationsView(LaunchpadView):
     """Browser class for rendering the bugtasks and nominations table."""
@@ -2079,8 +2078,19 @@ class BugTasksAndNominationsView(LaunchpadView):
 class BugTaskTableRowView(LaunchpadView):
     """Browser class for rendering a bugtask row on the bug page."""
 
+    def canSeeTaskDetails(self):
+        """Whether someone can see a task's status details.
+
+        This returns true if this is not a conjoined task, and if the bug is
+        not a duplicate. It is independent of whether they can *change* the
+        status; you need to expand the details to see any milestone set.
+        """
+        return (self.context.conjoined_master is None and
+                self.context.bug.duplicateof is None)
+
     def getTaskRowCSSClass(self):
-        """Return the appropriate CSS class for the row in the Affects table.
+        """The appropriate CSS class for the row in the Affects table.
+
         Currently this consists solely of highlighting the current context.
         """
         bugtask = self.context
@@ -2126,19 +2136,18 @@ class BugTaskTableRowView(LaunchpadView):
         """Get the conjoined master's name for displaying."""
         return self._getSeriesTargetNameHelper(self.context.conjoined_master)
 
-    def shouldShowPackageIcon(self):
-        """Should we show the package icon?
-        
-        The package icon should be shown only for generic distribution
-        bugtasks that have a sourcepackagename.
-        """
-        return (
-            IDistroBugTask.providedBy(self.context) and
-            self.context.sourcepackagename)
-        
-    def shouldShowProductIcon(self):
-        """Should we show the product icon?"""
-        return IUpstreamBugTask.providedBy(self.context)
+    @property
+    def bugtask_icon(self):
+        """Which icon should be shown for the task, if any?"""
+        if IDistroBugTask.providedBy(self.context):
+            if self.context.sourcepackagename:
+                return "/@@/package-source"
+            else:
+                return "/@@/distribution"
+        elif IUpstreamBugTask.providedBy(self.context):
+            return "/@@/product"
+        else:
+            return None
 
 
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
@@ -2186,7 +2195,12 @@ class BugTaskSOP(StructuralObjectPresentation):
 
     def getMainHeading(self):
         bugtask = self.context
-        return 'Bug #%s in %s' % (bugtask.bug.id, bugtask.targetname)
+        if INullBugTask.providedBy(bugtask):
+            return 'Bug #%s is not in %s' % (
+                bugtask.bug.id, bugtask.bugtargetdisplayname)
+        else:
+            return 'Bug #%s in %s' % (
+                bugtask.bug.id, bugtask.bugtargetdisplayname)
 
     def listChildren(self, num):
         return []

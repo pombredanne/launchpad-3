@@ -6,7 +6,8 @@ __metaclass__ = type
 
 import unittest
 
-from canonical.launchpad.ftests.harness import LaunchpadTestCase
+from canonical.launchpad.ftests.harness import (
+    LaunchpadTestCase, LaunchpadTestSetup)
 
 
 class TestNameBlacklist(LaunchpadTestCase):
@@ -27,12 +28,13 @@ class TestNameBlacklist(LaunchpadTestCase):
             """)
 
     def tearDown(self):
-        self.con.rollback()
+        """Tear down the test and reset the database."""
         self.con.close()
+        LaunchpadTestSetup().force_dirty_database()
+        LaunchpadTestCase.tearDown(self)
 
     def name_blacklist_match(self, name):
-        '''Call the name_blacklist_match stored procedure and return the result
-        '''
+        '''Return the result of the name_blacklist_match stored procedure.'''
         self.cur.execute("SELECT name_blacklist_match(%(name)s)", vars())
         return self.cur.fetchone()[0]
 
