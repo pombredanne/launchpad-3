@@ -53,7 +53,7 @@ class SearchFAQsView(LaunchpadFormView):
     @property
     def heading(self):
         """Return the heading that should be used for the listing."""
-        replacements=dict(
+        replacements = dict(
             displayname=self.context.displayname,
             search_text=self.search_text)
         if self.search_text:
@@ -65,7 +65,7 @@ class SearchFAQsView(LaunchpadFormView):
     @property
     def empty_listing_message(self):
         """Return the message to render when there are no FAQs to display."""
-        replacements=dict(
+        replacements = dict(
             displayname=self.context.displayname,
             search_text=self.search_text)
         if self.search_text:

@@ -32,15 +32,12 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
     ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
-    BugTaskSearchParams, QuestionStatus, UNRESOLVED_BUGTASK_STATUSES
+    BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
     )
-from canonical.launchpad.database.question import Question
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
-from canonical.launchpad.database.binarypackagerelease import (
-     BinaryPackageRelease)
 
 
 class SourcePackageRelease(SQLBase):

@@ -37,7 +37,7 @@ from canonical.launchpad.database.language import Language
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import (
-    contactEmailAddresses, is_english_variant, shortlist)
+    contactEmailAddresses, shortlist)
 
 from canonical.lp.dbschema import (
     BugTaskImportance, BugTaskStatus, EmailAddressStatus, LoginTokenType,
@@ -50,7 +50,7 @@ from canonical.launchpad.interfaces import (
     IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
     IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon,
     IHasLogo, IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet,
-    ILanguageSet, ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
+    ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
     ILoginTokenSet, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
     IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey,
     ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
