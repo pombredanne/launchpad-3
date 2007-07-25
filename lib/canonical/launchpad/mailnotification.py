@@ -26,6 +26,7 @@ from canonical.launchpad.components.branch import BranchDelta
 from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     IBranch, IBugTask, IEmailAddressSet, INotificationRecipientSet, IPerson,
     ISpecification, ITeamMembershipSet, IUpstreamBugTask, 
     UnknownRecipientError)
@@ -36,7 +37,6 @@ from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template, shortlist)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     TeamMembershipStatus, QuestionAction)
 
 CC = "CC"
@@ -1795,7 +1795,7 @@ def send_branch_modified_notifications(branch, event):
             old_item = delta['old']
             new_item = delta['new']
             info_lines.append("%s%s: %s => %s" % (
-                indent, title, str(old_item), str(new_item)))
+                indent, title, old_item, new_item))
 
     # lifecycle_status is different as it is an Enum type.
     if branch_delta.lifecycle_status is not None:
