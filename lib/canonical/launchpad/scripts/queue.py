@@ -881,9 +881,6 @@ class CommandRunnerError(Exception):
     """Command Runner Failure"""
 
 
-# XXX julian 2007-07-06
-# What is the point of this class?  It just causes copying of data.
-# This code should be moved to the script executable.
 class CommandRunner:
     """A wrapper for queue_action classes."""
     def __init__(self, queue, distribution_name, suite_name,
