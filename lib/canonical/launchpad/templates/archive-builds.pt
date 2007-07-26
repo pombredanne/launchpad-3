@@ -5,19 +5,18 @@
   i18n:domain="launchpad"
 >
   <body>
+
     <metal:heading fill-slot="pageheading">
       <h1><span tal:replace="context/title"/> builds</h1>
     </metal:heading>
 
-<metal:leftportlets fill-slot="portlets_one">
-  <div tal:replace="structure context/owner/@@+portlet-details" />
-</metal:leftportlets>
+    <metal:leftportlets fill-slot="portlets_one">
+      <div tal:replace="structure context/owner/@@+portlet-details" />
+    </metal:leftportlets>
 
-<div metal:fill-slot="main">
+    <div metal:fill-slot="main">
+      <div tal:replace="structure context/@@+builds-list"/>
+    </div>
 
-  <div tal:replace="structure context/@@+builds-list"/>
-
-</div>
-
-</body>
+  </body>
 </html>
