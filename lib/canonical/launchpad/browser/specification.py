@@ -1006,9 +1006,9 @@ class ProjectSpecificationAddView(SpecificationAddView):
     def field_names(self):
         field_names = super(ProjectSpecificationAddView, self).field_names
         # Although a target cannot be identified automatically from the
-        # context, the set of available targets is smaller than the global
-        # set and is equal to the set of products belonging to this project. 
-        # Therefore we can offer the user a smaller list from which to choose.
+        # context, the set of available targets is equal to the set of
+        # products belonging to this project, which is smaller than the
+        # global set. Therefore we can offer the user a smaller list.
         field_names.remove('target')
         field_names.insert(0, 'project_target')
         return field_names
