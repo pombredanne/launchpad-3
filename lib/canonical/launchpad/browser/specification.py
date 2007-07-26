@@ -10,8 +10,8 @@ __all__ = [
     'NewSpecificationFromProductView',
     'NewSpecificationFromProductSeriesView',
     'NewSpecificationFromProjectView',
+    'NewSpecificationFromRootView',
     'NewSpecificationFromSprintView',
-    'NewSpecificationView',
     'SpecificationContextMenu',
     'SpecificationNavigation',
     'SpecificationView',
@@ -1021,6 +1021,14 @@ class NewSpecificationFromProjectView(NewSpecificationView):
         return field_names
 
 
+class NewSpecificationFromRootView(NewSpecificationView):
+    """A view for adding a specification from the root of Launchpad."""
+
+    schema = Fields(INewSpecificationTarget,
+                    INewSpecification, 
+                    INewSpecificationSprint)
+    
+    
 class NewSpecificationFromSprintView(NewSpecificationView):
     """A view for adding a specification from a sprint."""
     
