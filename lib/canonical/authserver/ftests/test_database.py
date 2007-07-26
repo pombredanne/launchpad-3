@@ -58,6 +58,59 @@ class DatabaseTest(unittest.TestCase):
         setSecurityPolicy(self._old_policy)
         super(DatabaseTest, self).tearDown()
 
+    def isBranchInPullQueue(self, branch_id):
+        """Whether the branch with this id is present in the pull queue."""
+        storage = DatabaseBranchDetailsStorage(None)
+        results = storage._getBranchPullQueueInteraction()
+        return branch_id in (
+            result_branch_id
+            for result_branch_id, result_pull_url, unique_name in results)
+
+    def getMirrorRequestTime(self, branch_id):
+        """Return the value of mirror_request_time for the branch with the
+        given id.
+
+        :param branch_id: The id of a row in the Branch table. An int.
+        :return: A timestamp or None.
+        """
+        self.cursor.execute(
+            "SELECT mirror_request_time FROM branch WHERE id = %s"
+            % sqlvalues(branch_id))
+        [mirror_request_time] = self.cursor.fetchone()
+        return mirror_request_time
+
+    def setSeriesDateLastSynced(self, series_id, value=None, now_minus=None):
+        """Helper to set the datelastsynced of a ProductSeries.
+
+        :param series_id: Database id of the ProductSeries to update.
+        :param value: SQL expression to set datelastsynced to.
+        :param now_minus: shorthand to set a value before the current time.
+        """
+        # Exactly one of value or now_minus must be set.
+        assert int(value is None) + int(now_minus is None) == 1
+        if now_minus is not None:
+            value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
+                     % now_minus)
+        self.cursor.execute(
+            "UPDATE ProductSeries SET datelastsynced = (%s) WHERE id = %d"
+            % (value, series_id))
+
+    def setBranchLastMirrorAttempt(self, branch_id, value=None, now_minus=None):
+        """Helper to set the last_mirror_attempt of a Branch.
+
+        :param branch_id: Database id of the Branch to update.
+        :param value: SQL expression to set last_mirror_attempt to.
+        :param now_minus: shorthand to set a value before the current time.
+        """
+        # Exactly one of value or now_minus must be set.
+        assert int(value is None) + int(now_minus is None) == 1
+        if now_minus is not None:
+            value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
+                     % now_minus)
+        self.cursor.execute(
+            "UPDATE Branch SET last_mirror_attempt = (%s) WHERE id = %d"
+            % (value, branch_id))
+
 
 class DatabaseStorageTestCase(DatabaseTest):
 
@@ -180,22 +233,6 @@ class DatabaseStorageTestCase(DatabaseTest):
 class NewDatabaseStorageTestCase(DatabaseTest):
     # Tests that call database methods that use the new-style database
     # connection infrastructure.
-
-    def _getTime(self, row_id):
-        cur = cursor()
-        cur.execute("""
-            SELECT mirror_request_time FROM Branch
-            WHERE id = %d""" % row_id)
-        [mirror_request_time] = cur.fetchone()
-        return mirror_request_time
-
-    def isBranchInPullQueue(self, branch_id):
-        """Whether the branch with this id is present in the pull queue."""
-        storage = DatabaseBranchDetailsStorage(None)
-        results = storage._getBranchPullQueueInteraction()
-        return branch_id in (
-            result_branch_id
-            for result_branch_id, result_pull_url, unique_name in results)
 
     def test_createBranch(self):
         storage = DatabaseUserDetailsStorageV2(None)
@@ -363,7 +400,7 @@ class NewDatabaseStorageTestCase(DatabaseTest):
         storage = DatabaseUserDetailsStorageV2(None)
         branchID = storage._createBranchInteraction(
             1, 'sabdfl', '+junk', 'foo')
-        self.assertEqual(self._getTime(branchID), None)
+        self.assertEqual(self.getMirrorRequestTime(branchID), None)
 
     def test_getSSHKeys_empty(self):
         # getSSHKeys returns an empty list for users without SSH keys.
@@ -434,7 +471,7 @@ class NewDatabaseStorageTestCase(DatabaseTest):
         # current time.
         hosted_branch_id = 25
         # make sure the sample data is sane
-        self.assertEqual(self._getTime(hosted_branch_id), None)
+        self.assertEqual(self.getMirrorRequestTime(hosted_branch_id), None)
 
         cur = cursor()
         cur.execute("SELECT CURRENT_TIMESTAMP AT TIME ZONE 'UTC'")
@@ -443,8 +480,9 @@ class NewDatabaseStorageTestCase(DatabaseTest):
         storage = DatabaseUserDetailsStorageV2(None)
         storage._requestMirrorInteraction(hosted_branch_id)
 
-        self.assertTrue(current_db_time < self._getTime(hosted_branch_id),
-                        "Branch mirror_request_time not updated.")
+        self.assertTrue(
+            current_db_time < self.getMirrorRequestTime(hosted_branch_id),
+            "Branch mirror_request_time not updated.")
 
     def test_mirrorComplete_resets_mirror_request(self):
         # After successfully mirroring a branch, mirror_request_time should be
@@ -461,7 +499,7 @@ class NewDatabaseStorageTestCase(DatabaseTest):
         storage._startMirroringInteraction(25)
         storage._mirrorCompleteInteraction(25, 'rev-1')
 
-        self.assertEqual(None, self._getTime(25))
+        self.assertEqual(None, self.getMirrorRequestTime(25))
 
     def test_mirrorFailed_resets_mirror_request(self):
         # After failing to mirror a branch, mirror_request_time for that branch
@@ -478,7 +516,7 @@ class NewDatabaseStorageTestCase(DatabaseTest):
         storage._startMirroringInteraction(25)
         storage._mirrorFailedInteraction(25, 'failed')
 
-        self.assertEqual(None, self._getTime(25))
+        self.assertEqual(None, self.getMirrorRequestTime(25))
 
     def test_requested_hosted_branches(self):
         # Hosted branches that HAVE had a mirror requested should be in
@@ -504,13 +542,6 @@ class ExtraUserDatabaseStorageTestCase(DatabaseTest):
         super(ExtraUserDatabaseStorageTestCase, self).setUp()
         # This is the salt for Mark's password in the sample data.
         self.salt = '\xf4;\x15a\xe4W\x1f'
-
-    def _getTime(self, row_id):
-        self.cursor.execute("""
-            SELECT mirror_request_time FROM Branch
-            WHERE id = %d""" % row_id)
-        [mirror_request_time] = self.cursor.fetchone()
-        return mirror_request_time
 
     def test_authUser(self):
         # Authenticating a user with the right password should work
@@ -581,7 +612,7 @@ class ExtraUserDatabaseStorageTestCase(DatabaseTest):
         userDict = storage._authUserInteraction('mark@hbd.com', ssha)
         self.assertEqual({}, userDict)
 
-    def testTeamDict(self):
+    def test_teamDict(self):
         # The user dict from a V2 storage should include a 'teams' element with
         # a list of team dicts, one for each team the user is in, including
         # the user.
@@ -638,59 +669,6 @@ class NewBranchDetailsDatabaseStorageTestCase(DatabaseTest):
     def setUp(self):
         super(NewBranchDetailsDatabaseStorageTestCase, self).setUp()
         self.storage = DatabaseBranchDetailsStorage(None)
-
-    def getMirrorRequestTime(self, branch_id):
-        """Return the value of mirror_request_time for the branch with the
-        given id.
-
-        :param branch_id: The id of a row in the Branch table. An int.
-        :return: A timestamp or None.
-        """
-        self.cursor.execute(
-            "SELECT mirror_request_time FROM branch WHERE id = %s"
-            % sqlvalues(branch_id))
-        return self.cursor.fetchone()[0]
-
-    def isBranchInPullQueue(self, branch_id):
-        """Whether the branch with this id is present in the pull queue."""
-        results = self.storage._getBranchPullQueueInteraction()
-        return branch_id in (
-            result_branch_id
-            for result_branch_id, result_pull_url, unique_name in results)
-
-    def setSeriesDateLastSynced(self, series_id, value=None, now_minus=None):
-        """Helper to set the datelastsynced of a ProductSeries.
-
-        :param series_id: Database id of the ProductSeries to update.
-        :param value: SQL expression to set datelastsynced to.
-        :param now_minus: shorthand to set a value before the current time.
-        """
-        # Exactly one of value or now_minus must be set.
-        cur = cursor()
-        assert int(value is None) + int(now_minus is None) == 1
-        if now_minus is not None:
-            value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
-                     % now_minus)
-        cur.execute(
-            "UPDATE ProductSeries SET datelastsynced = (%s) WHERE id = %d"
-            % (value, series_id))
-
-    def setBranchLastMirrorAttempt(self, branch_id, value=None, now_minus=None):
-        """Helper to set the last_mirror_attempt of a Branch.
-
-        :param branch_id: Database id of the Branch to update.
-        :param value: SQL expression to set last_mirror_attempt to.
-        :param now_minus: shorthand to set a value before the current time.
-        """
-        # Exactly one of value or now_minus must be set.
-        assert int(value is None) + int(now_minus is None) == 1
-        if now_minus is not None:
-            value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
-                     % now_minus)
-        cur = cursor()
-        cur.execute(
-            "UPDATE Branch SET last_mirror_attempt = (%s) WHERE id = %d"
-            % (value, branch_id))
 
     def test_startMirroring(self):
         # verify that the last mirror time is None before hand.
@@ -914,18 +892,6 @@ class NewBranchDetailsDatabaseStorageTestCase(DatabaseTest):
         # All 10 branches should be in the list in order of descending
         # ID due to the last_mirror_attempt values.
         self.assertEqual(list(reversed(branches)), range(16, 26))
-
-    def getMirrorRequestTime(self, branch_id):
-        """Return the value of mirror_request_time for the branch with the
-        given id.
-
-        :param branch_id: The id of a row in the Branch table. An int.
-        :return: A timestamp or None.
-        """
-        self.cursor.execute(
-            "SELECT mirror_request_time FROM branch WHERE id = %s"
-            % sqlvalues(branch_id))
-        return self.cursor.fetchone()[0]
 
     def test_import_branches_only_listed_when_due(self):
         # Import branches (branches owned by vcs-imports) are only listed when
