@@ -1,7 +1,8 @@
     <p>Canonical Ltd. provides the PPA Service to you, subject to
     these Terms of Service ("TOS"), which may be updated periodically
     without prior notice. You can review the current version of the
-    TOS at: <a href=""></a>. Failure to comply with these TOS may
+    TOS at: <a href="https://help.launchpad.net/PPATermsOfService"
+    >PPA Terms Of Service</a>. Failure to comply with these TOS may
     result in account revocation.</p>
 
     <p>You understand and agree that any content you upload to PPAs
@@ -14,7 +15,7 @@
     all content that does not conform to the Terms of Service.</p>
 
     <p>Canonical reserves the right to enforce quotas on the
-    Service,including (but not limited to) disk space, CPU time, and
+    Service, including (but not limited to) disk space, CPU time, and
     bandwidth usage.</p>
 
     <p>You agree to indemnify and hold Canonical Ltd, and its
@@ -29,3 +30,7 @@
 
     <p>You agree not to sell, resell, or exploit any portion of the
     Service, use of the Service, or access to the Service.</p>
+
+    <p>For more information about PPA features and usage detail check
+    the <a href="https://help.launchpad.net/PPAQuickStart"
+    >PPA quick-start guide</a>.
