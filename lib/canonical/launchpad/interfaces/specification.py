@@ -5,6 +5,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'INewSpecification',
+    'INewSpecificationSprint',
+    'INewSpecificationTarget',
+    'INewSpecificationProjectTarget',
     'ISpecification',
     'INewSpecificationForm',
     'ISpecificationSet',
