@@ -72,7 +72,9 @@ class Archive(SQLBase):
             pubconf.miscroot = None
             return pubconf
 
-        assert False, "Unknown archive purpose when getting publisher config."
+        raise AssertionError(
+            "Unknown archive purpose %s when getting publisher config.",
+            self.purpose)
 
     @property
     def title(self):
