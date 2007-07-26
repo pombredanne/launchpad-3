@@ -18,6 +18,18 @@ from canonical.codehosting.tests.helpers import (
     adapt_suite, deferToThread)
 
 
+def wait_for_disconnect(function):
+    """Run the given callable and wait for it to fully disconnect from the
+    server.
+    """
+    def decorated_function(self, *args, **kwargs):
+        return self.server.runAndWaitForDisconnect(
+            function, self, *args, **kwargs)
+    decorated_function.__doc__ = function.__doc__
+    decorated_function.__name__ = function.__name__
+    return decorated_function
+
+
 class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
     layer = TwistedBzrlibLayer
@@ -129,32 +141,28 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.assertTrue(transport.has('~testuser/+junk/banana'))
 
     @deferToThread
+    @wait_for_disconnect
     def test_directory_inside_branch(self):
         # We allow users to create new branches by pushing them beneath an
         # existing product directory.
-        def make_directory_and_confirm_existence():
-            transport = self.getTransport()
-            transport.mkdir('~testuser/firefox/banana')
-            transport.mkdir('~testuser/firefox/banana/.bzr')
-            self.assertTrue(transport.has('~testuser/firefox/banana'))
-            self.assertTrue(transport.has('~testuser/firefox/banana/.bzr'))
-        return self.server.runAndWaitForDisconnect(
-            make_directory_and_confirm_existence)
+        transport = self.getTransport()
+        transport.mkdir('~testuser/firefox/banana')
+        transport.mkdir('~testuser/firefox/banana/.bzr')
+        self.assertTrue(transport.has('~testuser/firefox/banana'))
+        self.assertTrue(transport.has('~testuser/firefox/banana/.bzr'))
 
     @deferToThread
+    @wait_for_disconnect
     def test_bzr_backup_directory_inside_branch(self):
         # Bazaar sometimes needs to create .bzr.backup directories directly
         # underneath the branch directory. Thus, we allow the creation of
         # .bzr.backup directories.
-        def make_directory_and_confirm_existence():
-            transport = self.getTransport()
-            transport.mkdir('~testuser/firefox/banana')
-            transport.mkdir('~testuser/firefox/banana/.bzr.backup')
-            self.assertTrue(transport.has('~testuser/firefox/banana'))
-            self.assertTrue(
-                transport.has('~testuser/firefox/banana/.bzr.backup'))
-        return self.server.runAndWaitForDisconnect(
-            make_directory_and_confirm_existence)
+        transport = self.getTransport()
+        transport.mkdir('~testuser/firefox/banana')
+        transport.mkdir('~testuser/firefox/banana/.bzr.backup')
+        self.assertTrue(transport.has('~testuser/firefox/banana'))
+        self.assertTrue(
+            transport.has('~testuser/firefox/banana/.bzr.backup'))
 
     @deferToThread
     def test_non_bzr_directory_inside_branch(self):
@@ -167,32 +175,29 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
             transport.mkdir, '~testuser/+junk/banana/republic')
 
     @deferToThread
+    @wait_for_disconnect
     def test_non_bzr_file_inside_branch(self):
         # Users can only create '.bzr' directories inside a branch. Files are
         # not allowed.
-        def try_to_make_invalid_file():
-            transport = self.getTransport()
-            transport.mkdir('~testuser/+junk/banana')
-            self.assertRaises(
-                (errors.PermissionDenied, errors.NoSuchFile),
-                transport.put_bytes, '~testuser/+junk/banana/README', 'Hello!')
-        return self.server.runAndWaitForDisconnect(
-            try_to_make_invalid_file)
+        transport = self.getTransport()
+        transport.mkdir('~testuser/+junk/banana')
+        self.assertRaises(
+            (errors.PermissionDenied, errors.NoSuchFile),
+            transport.put_bytes, '~testuser/+junk/banana/README', 'Hello!')
 
     @deferToThread
+    @wait_for_disconnect
     def test_rename_to_non_bzr_directory_fails(self):
         # Users cannot create an allowed directory (e.g. '.bzr' or
         # '.bzr.backup') and then rename it to something that's not allowed
         # (e.g. 'republic').
-        def make_directory_and_rename():
-            transport = self.getTransport()
-            transport.mkdir('~testuser/firefox/banana')
-            transport.mkdir('~testuser/firefox/banana/.bzr')
-            self.assertRaises(
-                (errors.PermissionDenied, errors.NoSuchFile),
-                transport.rename, '~testuser/firefox/banana/.bzr',
-                '~testuser/firefox/banana/republic')
-        return self.server.runAndWaitForDisconnect(make_directory_and_rename)
+        transport = self.getTransport()
+        transport.mkdir('~testuser/firefox/banana')
+        transport.mkdir('~testuser/firefox/banana/.bzr')
+        self.assertRaises(
+            (errors.PermissionDenied, errors.NoSuchFile),
+            transport.rename, '~testuser/firefox/banana/.bzr',
+            '~testuser/firefox/banana/republic')
 
     @deferToThread
     def test_make_directory_without_prefix(self):
@@ -204,34 +209,32 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
         self.assertTrue(transport.has('~testuser/thunderbird/banana'))
 
     @deferToThread
+    @wait_for_disconnect
     def test_rename_directory_to_existing_directory_fails(self):
         # 'rename dir1 dir2' should fail if 'dir2' exists. Unfortunately, it
         # will only fail if they both contain files/directories.
-        def rename_directory():
-            transport = self.getTransport('~testuser/+junk')
-            transport.mkdir('branch')
-            transport.mkdir('branch/.bzr')
-            transport.mkdir('branch/.bzr/dir1')
-            transport.mkdir('branch/.bzr/dir1/foo')
-            transport.mkdir('branch/.bzr/dir2')
-            transport.mkdir('branch/.bzr/dir2/bar')
-            self.assertRaises(
-                (errors.FileExists, IOError),
-                transport.rename, 'branch/.bzr/dir1', 'branch/.bzr/dir2')
-        return self.server.runAndWaitForDisconnect(rename_directory)
+        transport = self.getTransport('~testuser/+junk')
+        transport.mkdir('branch')
+        transport.mkdir('branch/.bzr')
+        transport.mkdir('branch/.bzr/dir1')
+        transport.mkdir('branch/.bzr/dir1/foo')
+        transport.mkdir('branch/.bzr/dir2')
+        transport.mkdir('branch/.bzr/dir2/bar')
+        self.assertRaises(
+            (errors.FileExists, IOError),
+            transport.rename, 'branch/.bzr/dir1', 'branch/.bzr/dir2')
 
     @deferToThread
+    @wait_for_disconnect
     def test_rename_directory_succeeds(self):
         # 'rename dir1 dir2' succeeds if 'dir2' doesn't exist.
-        def rename_directory():
-            transport = self.getTransport('~testuser/+junk')
-            transport.mkdir('branch')
-            transport.mkdir('branch/.bzr')
-            transport.mkdir('branch/.bzr/dir1')
-            transport.mkdir('branch/.bzr/dir1/foo')
-            transport.rename('branch/.bzr/dir1', 'branch/.bzr/dir2')
-            self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
-        return self.server.runAndWaitForDisconnect(rename_directory)
+        transport = self.getTransport('~testuser/+junk')
+        transport.mkdir('branch')
+        transport.mkdir('branch/.bzr')
+        transport.mkdir('branch/.bzr/dir1')
+        transport.mkdir('branch/.bzr/dir1/foo')
+        transport.rename('branch/.bzr/dir1', 'branch/.bzr/dir2')
+        self.assertEqual(['dir2'], transport.list_dir('branch/.bzr'))
 
 
 class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
