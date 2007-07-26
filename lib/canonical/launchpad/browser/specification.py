@@ -899,9 +899,6 @@ class NewSpecificationViewBase(LaunchpadFormView):
         # determine product or distribution as target
         product = distribution = None
         target = data.get('target', None)
-        project_target = data.get('target', None)
-        if project_target is not None:
-            target = project_target
         if target is None:
             target = self.context
         if IProduct.providedBy(target):
