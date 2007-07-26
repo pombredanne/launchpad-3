@@ -1,0 +1,13 @@
+Rejected:
+%(SUMMARY)s
+
+%(CHANGESFILE)s
+
+===
+
+If you don't understand why your files were rejected, or if the
+override file requires editing, reply to this email.
+
+-- 
+You are receiving this email because you are the uploader, maintainer or
+signer of the above package.

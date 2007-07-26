@@ -118,9 +118,6 @@
           name="+portlet-watch"
           template="../templates/bug-portlet-watch.pt" />
       <browser:page
-          name="+portlet-details"
-          template="../templates/bug-portlet-details.pt" />
-      <browser:page
           name="+portlet-specs"
           template="../templates/bug-portlet-specs.pt" />
       <browser:page

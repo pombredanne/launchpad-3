@@ -205,9 +205,9 @@ It's possible to file a bug on more than product/package at once:
     Affects many packages
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    evolution (upstream)
-    firefox (upstream)
+    ...     print bugtask.bugtargetname
+    evolution
+    firefox
     evolution (Debian)
     mozilla-firefox (Debian)
 
@@ -985,7 +985,7 @@ A notification was added:
 
     >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print bug_notification.message.text_contents
-    ** Also affects: Debian
+    ** Also affects: debian
     ...
 
 
@@ -1046,8 +1046,8 @@ well.
 
     >>> bug = new_firefox_bug()
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
 
     >>> submit_commands(bug, 'affects ubuntu/hoary')
 
@@ -1055,15 +1055,15 @@ This caused one bugtask to be added to the bug. The added bug task is a
 generic Ubuntu task, though.
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
     Ubuntu
 
 Because Sample Person isn't a driver of Ubuntu, he's not allowed to
 target a bug directly, instead a nomination was created.
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
+    ...     print nomination.target.bugtargetdisplayname
     Ubuntu Hoary
 
 The same happens if we try to target another series.
@@ -1071,12 +1071,12 @@ The same happens if we try to target another series.
     >>> submit_commands(bug, 'affects ubuntu/warty')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
     Ubuntu
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
+    ...     print nomination.target.bugtargetdisplayname
     Ubuntu Hoary
     Ubuntu Warty
 
@@ -1085,12 +1085,12 @@ Targeting an existing nomination won't create another nomination.
     >>> submit_commands(bug, 'affects ubuntu/warty')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
     Ubuntu
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
+    ...     print nomination.target.bugtargetdisplayname
     Ubuntu Hoary
     Ubuntu Warty
 
@@ -1108,8 +1108,8 @@ Now a new bugtask for the series will be create directly.
     >>> submit_commands(bug, 'affects ubuntu/grumpy')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
     Ubuntu
     Ubuntu Grumpy
 
@@ -1118,8 +1118,8 @@ He can also approve existing nominations.
     >>> submit_commands(bug, 'affects ubuntu/warty')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
     Ubuntu
     Ubuntu Warty
     Ubuntu Grumpy
@@ -1129,8 +1129,8 @@ specific distroseries.
 
     >>> bug = new_firefox_bug()
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
 
     >>> submit_commands(bug, 'affects ubuntu/hoary/mozilla-firefox')
 
@@ -1138,8 +1138,8 @@ Now we can see that two tasks were created; both the general Ubuntu
 task, and the series specific task.
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
     mozilla-firefox (Ubuntu)
     mozilla-firefox (Ubuntu Hoary)
 
@@ -1153,18 +1153,18 @@ driver of the series, only a nomination will be created.
 
     >>> bug = new_firefox_bug()
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
 
     >>> submit_commands(bug, 'affects ubuntu/hoary/mozilla-firefox')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
     mozilla-firefox (Ubuntu)
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
+    ...     print nomination.target.bugtargetdisplayname
     Ubuntu Hoary
 
 Nominating product series work the same way as for distro serieses.
@@ -1180,14 +1180,14 @@ nomination is automatically approved.
     >>> submit_commands(bug, 'affects /firefox/trunk')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
-    firefox trunk (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
+    Mozilla Firefox trunk
     mozilla-firefox (Ubuntu)
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
-    firefox trunk (upstream)
+    ...     print nomination.target.bugtargetdisplayname
+    Mozilla Firefox trunk
     Ubuntu Hoary
 
 If the user doesn't have permission to approve the nomination, no series
@@ -1199,13 +1199,13 @@ will be created if one doesn't exist.
     >>> submit_commands(bug, 'affects /evolution/trunk')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    evolution (upstream)
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Evolution
+    Mozilla Firefox
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
-    evolution trunk (upstream)
+    ...     print nomination.target.bugtargetdisplayname
+    Evolution trunk
 
     >>> login('test@canonical.com')
 
@@ -1303,11 +1303,11 @@ Invalid importance:
         importance foo
     ...
     The 'importance' command expects any of the following arguments:
-    undecided, wishlist, low, medium, high, critical
+    critical, high, medium, low, wishlist, undecided
     <BLANKLINE>
     For example:
     <BLANKLINE>
-        importance undecided
+        importance critical
     ...
 
 XXX mpt 20060516: "importance undecided" is a silly example, but customizing it
@@ -1400,9 +1400,9 @@ The user is a bug contact of the upstream product
     ...     bug_one, 'status confirmed', 'assignee test@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
-    ...         bugtask.targetname, bugtask.status.title,
+    ...         bugtask.bugtargetdisplayname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
-    firefox (upstream): Confirmed, assigned to Sample Person
+    Mozilla Firefox: Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): New, assigned to no one
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
@@ -1410,7 +1410,7 @@ The user is a bug contact of the upstream product
     >>> print bug_notification.bug.id
     1
     >>> print bug_notification.message.text_contents
-    ** Changed in: firefox (upstream)
+    ** Changed in: firefox
     ...
         Status: New => Confirmed
 
@@ -1434,9 +1434,9 @@ The user is a package bug contact
     ...     bug_one, 'status confirmed', 'assignee no-priv@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
-    ...         bugtask.targetname, bugtask.status.title,
+    ...         bugtask.bugtargetdisplayname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
-    firefox (upstream): Confirmed, assigned to Sample Person
+    Mozilla Firefox: Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): Confirmed, assigned to No Privileges Person
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
@@ -1462,9 +1462,9 @@ The user is a distribution member
     ...     bug_one, 'status new', 'assignee test@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
-    ...         bugtask.targetname, bugtask.status.title,
+    ...         bugtask.bugtargetdisplayname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
-    firefox (upstream): Confirmed, assigned to Sample Person
+    Mozilla Firefox: Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): New, assigned to Sample Person
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
@@ -1488,9 +1488,9 @@ user, telling him that he has to use the 'affects' command.
     ...     bug_one, 'status new', 'assignee foo.bar@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
-    ...         bugtask.targetname, bugtask.status.title,
+    ...         bugtask.bugtargetdisplayname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
-    firefox (upstream): Confirmed, assigned to Sample Person
+    Mozilla Firefox: Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): New, assigned to Sample Person
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
