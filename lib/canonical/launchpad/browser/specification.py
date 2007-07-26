@@ -5,6 +5,11 @@
 __metaclass__ = type
 
 __all__ = [
+    'DistributionSpecificationAddView',
+    'DistroSeriesSpecificationAddView',
+    'ProductSpecificationAddView',
+    'ProductSeriesSpecificationAddView',
+    'ProjectSpecificationAddView',
     'SpecificationContextMenu',
     'SpecificationNavigation',
     'SpecificationView',
@@ -866,26 +871,14 @@ class SpecificationAddViewBase(LaunchpadFormView):
                 )
     @property
     def field_names(self):
-        """Return the list of fields participating in the form, in the order
+        """Returns the list of fields participating in the form, in the order
         they are to be rendered.
 
-        This form is used sometimes on an IProject, IProduct or
-        IDistribution to get a new spec for them, and also on
-        ISpecificationSet as a system-wide "new spec" form. We need slightly
-        different field names in each case, so we make field_names a
-        property.
+        Subclasses can change this list by adding or removing fields.
         """
-        field_names = ['name', 'title', 'specurl', 'summary',
-                       'definition_status', 'assignee', 'drafter', 'approver']
-        if ISpecificationSet.providedBy(self.context):
-            field_names.insert(0, 'target')
-        elif IProject.providedBy(self.context):
-            field_names.insert(0, 'project_target')
-        else:
-            # Fields list can stay intact or modified by
-            # classes inheriting this one.
-            pass
-        return field_names
+        return ['target', 'name', 'title', 'specurl', 'summary',
+                'definition_status', 'assignee', 'drafter', 'approver', 
+                'sprint']
 
     def validate(self, data):
         """Validates the contents of the form.
@@ -949,17 +942,6 @@ class SpecificationAddView(SpecificationAddViewBase):
     or distribution.
     """
     
-    @property
-    def field_names(self):
-        """Return the list of fields participating in the form.
-
-        For the general version of the form we always add the
-        sprint field.
-        """
-        field_names = super(SpecificationAddView, self).field_names
-        field_names.append('sprint')
-        return field_names
-
     def validate(self, data):
         """Validates the contents of the form.
 
@@ -983,37 +965,54 @@ class SpecificationAddView(SpecificationAddViewBase):
         self.next_url = canonical_url(spec)
 
 
-class ContextlessSpecificationAddView(SpecificationAddView):
-    """A view for adding a specification where there is no context."""
-    pass
+class HasTargetSpecificationAddView(SpecificationAddView):
+    """A view for adding a specification where a target can be identified
+    automatically from the context.
+    """
+    
+    @property
+    def field_names(self):
+        field_names = super(HasTargetSpecificationAddView, self).field_names
+        field_names.remove('target')
+        return field_names    
 
-
-class DistributionSpecificationAddView(SpecificationAddView):
+    
+class DistributionSpecificationAddView(HasTargetSpecificationAddView):
     """A view for adding a specification from a distribution."""
     pass
 
 
-class DistroSeriesSpecificationAddView(SpecificationAddView):
+class DistroSeriesSpecificationAddView(HasTargetSpecificationAddView):
     """A view for adding a specification from a distro series."""
     pass
 
 
-class ProductSpecificationAddView(SpecificationAddView):
+class ProductSpecificationAddView(HasTargetSpecificationAddView):
     """A view for adding a specification from a product."""
     pass
 
 
-class ProductSeriesSpecificationAddView(SpecificationAddView):
+class ProductSeriesSpecificationAddView(HasTargetSpecificationAddView):
     """A view for adding a specification from a product series."""
     pass
 
 
 class ProjectSpecificationAddView(SpecificationAddView):
     """A view for adding a specification from a project."""
-    pass
+
+    @property
+    def field_names(self):
+        field_names = super(ProjectSpecificationAddView, self).field_names
+        # Although a target cannot be identified automatically from the
+        # context, the set of available targets is smaller than the global
+        # set and is equal to the set of products belonging to this project. 
+        # Therefore we can offer the user a smaller list from which to choose.
+        field_names.remove('target')
+        field_names.insert(0, 'project_target')
+        return field_names
 
 
-class SprintSpecificationAddView(SpecificationAddViewBase):
+class SprintSpecificationAddView(SpecificationAddView):
     """A view for adding a specification from a sprint."""
     
     @property
@@ -1024,7 +1023,7 @@ class SprintSpecificationAddView(SpecificationAddViewBase):
         for a project and propose it for the sprint.
         """
         field_names = super(SprintSpecificationAddView, self).field_names
-        field_names.insert(0, 'target')
+        field_names.remove('sprint')
         return field_names
 
     def validate(self, data):
