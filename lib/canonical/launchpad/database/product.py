@@ -54,6 +54,7 @@ from canonical.launchpad.database.translationimportqueue import (
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
     DEFAULT_BRANCH_STATUS_IN_LISTING,
+    BranchType,
     ICalendarOwner,
     IFAQTarget,
     IHasIcon,
@@ -652,6 +653,19 @@ class ProductSet:
         if num_products is not None:
             results = results.limit(num_products)
         return results
+
+    def getProductsWithUserDevelopmentBranches(self):
+        """See `IProductSet`."""
+        """Return products that have a user branch for the development series.
+
+        A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
+        """
+        return Product.select('''
+            Product.development_focus = ProductSeries.id and
+            ProductSeries.user_branch = Branch.id and
+            Branch.branch_type in %s
+            ''' % quote((BranchType.HOSTED, BranchType.MIRRORED)),
+            orderBy='name', clauseTables=['ProductSeries', 'Branch'])
 
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,
