@@ -39,7 +39,7 @@ from canonical.launchpad.browser.sourcepackage import (
 from canonical.launchpad.interfaces import (
     IPOTemplate, IPOTemplateSet, ILaunchBag, IPOFile, IPOFileSet,
     IPOExportRequestSet, IPOTemplateSubset, ITranslationImporter,
-    ITranslationImportQueue, IProductSeries, ISourcePackage)
+    ITranslationImportQueue, IProductSeries, ISourcePackage, NotFoundError)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, enabled_with_permission,
     GetitemNavigation, Navigation, LaunchpadView, ApplicationMenu)
@@ -58,6 +58,11 @@ class POTemplateNavigation(Navigation):
             'We only know about GET, HEAD, and POST')
 
         user = getUtility(ILaunchBag).user
+
+        # We do not want users to see the 'en' potemplate because
+        # we store the messages we want to translate as English.
+        if name == 'en':
+            raise NotFoundError(name)
 
         pofile = self.context.getPOFileByLang(name)
 
