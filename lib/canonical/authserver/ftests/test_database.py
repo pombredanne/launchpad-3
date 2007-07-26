@@ -12,7 +12,6 @@ import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
-from zope.security.simplepolicies import PermissiveSecurityPolicy
 
 from canonical.database.sqlbase import cursor, sqlvalues
 
@@ -29,9 +28,6 @@ from canonical.authserver.database import (
     DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
     DatabaseBranchDetailsStorage)
 from canonical.lp import dbschema
-
-from canonical.launchpad.ftests.harness import (
-    LaunchpadTestCase, LaunchpadTestSetup)
 
 from canonical.testing.layers import LaunchpadScriptLayer
 
