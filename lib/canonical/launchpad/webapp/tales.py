@@ -1481,9 +1481,9 @@ class FormattersAPI:
     # This verson of the re is more than 5x faster that the orginal
     # version used in ftest/test_tales.testObfuscateEmail.
     _re_email = re.compile(r"""
-        \b[a-zA-Z0-9._/="'+-]{1,64}@        # The localname.
-        [a-zA-Z][a-zA-Z0-9-]+               # The hostname.
-        (\.[a-zA-Z][a-zA-Z0-9-]{1,251})+\b  # Dot starts one or more domains.
+        \b[a-zA-Z0-9._/="'+-]{1,64}@  # The localname.
+        [a-zA-Z][a-zA-Z0-9-]{1,63}    # The hostname.
+        \.[a-zA-Z0-9.-]{1,251}\b      # Dot starts one or more domains.
         """, re.VERBOSE)
 
     def obfuscate_email(self):
