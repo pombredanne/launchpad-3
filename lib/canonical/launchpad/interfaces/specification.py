@@ -368,6 +368,45 @@ class ISpecification(IHasOwner, ICanBeMentored):
         """Link the given branch to this specification."""
 
 
+class INewSpecification(Interface):
+    """A schema for new specifications."""
+    
+    name              = ISpecification['name']
+    title             = ISpecification['title']
+    specurl           = ISpecification['specurl']
+    summary           = ISpecification['summary']
+    definition_status = ISpecification['definition_status']
+    assignee          = ISpecification['assignee']
+    drafter           = ISpecification['drafter']
+    approver          = ISpecification['approver']
+
+
+class INewSpecificationSprint(Interface):
+    """A supplemental schema for new specifications that allows the user to
+    specify a sprint."""
+    sprint = Choice(title=_("Propose for sprint"),
+                    description=_("the sprint to which agenda this "
+                                  "blueprint is being suggested."),
+                    required=False,
+                    vocabulary='FutureSprint')
+    
+
+class INewSpecificationTarget(Interface):
+    """A supplemental schema for new specifications that requires the user to
+    specify a target.""" 
+    target = ISpecification['target']
+    
+    
+class INewSpecificationProjectTarget(Interface):
+    """A supplemental schema for new specifications that requires the user to
+    specify a project target."""
+    target = Choice(title=_("For"),
+                    description=_("The project for which this "
+                                  "proposal is being made."),
+                    required=True,
+                    vocabulary='ProjectProducts')
+
+
 class INewSpecificationForm(ISpecification):
     """ A schema for registering new blueprints"""
     sprint = Choice(
