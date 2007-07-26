@@ -51,12 +51,14 @@ class DeathRow:
         source_files = SourcePackageFilePublishing.select("""
             publishingstatus = %s AND
             distribution = %s AND
-            sourcepackagefilepublishing.archive = %s AND
+            sourcepackagefilepublishing.archive IN %s AND
             SourcePackagePublishingHistory.id =
                  SourcePackageFilePublishing.sourcepackagepublishing AND
             SourcePackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
-                            self.distribution, self.distribution.main_archive,
+                            self.distribution, 
+                            [archive.id for archive in 
+                                self.distribution.all_distro_archives],
                             UTC_NOW),
             clauseTables=['SourcePackagePublishingHistory'],
             orderBy="id")
@@ -64,12 +66,14 @@ class DeathRow:
         binary_files = BinaryPackageFilePublishing.select("""
             publishingstatus = %s AND
             distribution = %s AND
-            binarypackagefilepublishing.archive = %s AND
+            binarypackagefilepublishing.archive IN %s AND
             BinaryPackagePublishingHistory.id =
                  BinaryPackageFilePublishing.binarypackagepublishing AND
             BinaryPackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
-                            self.distribution, self.distribution.main_archive,
+                            self.distribution, 
+                            [archive.id for archive in
+                                self.distribution.all_distro_archives],
                             UTC_NOW),
             clauseTables=['BinaryPackagePublishingHistory'],
             orderBy="id")
@@ -102,7 +106,9 @@ class DeathRow:
             all_publications = content.select("""
             libraryfilealiasfilename = %s AND distribution = %s AND
             archive = %s""" % sqlvalues(
-                filename, self.distribution, self.distribution.main_archive))
+                filename, self.distribution, 
+                [archive.id for archive in 
+                    self.distribution.all_distro_archives]))
             for p in all_publications:
                 if p.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL:
                     return False
