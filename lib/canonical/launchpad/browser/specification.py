@@ -858,7 +858,6 @@ class SpecificationTreeDotOutput(SpecificationTreeGraphView):
 class NewSpecificationViewBase(LaunchpadFormView):
     """A base class for forms used to add a specification."""
 
-    schema = INewSpecificationForm
     label = "Register a new Blueprint"
 
     def _validate_name(self, name, target):
@@ -887,7 +886,7 @@ class NewSpecificationViewBase(LaunchpadFormView):
         if ISpecificationSet.providedBy(self.context):
             target = data.get('target')
         elif IProject.providedBy(self.context):
-            target = data.get('project_target')
+            target = data.get('target')
         else:
             # We can rely on the name field to validate itself.
             target = None
@@ -901,7 +900,7 @@ class NewSpecificationViewBase(LaunchpadFormView):
         # determine product or distribution as target
         product = distribution = None
         target = data.get('target', None)
-        project_target = data.get('project_target', None)
+        project_target = data.get('target', None)
         if project_target is not None:
             target = project_target
         if target is None:
@@ -945,7 +944,7 @@ class NewSpecificationView(NewSpecificationViewBase):
         if ISpecificationSet.providedBy(self.context):
             target = data.get('target')
         elif IProject.providedBy(self.context):
-            target = data.get('project_target')
+            target = data.get('target')
         else:
             # We can rely on the name field to validate itself.
             target = None
@@ -1000,12 +999,16 @@ class NewSpecificationFromProductSeriesView(NewSpecificationFromTargetView):
 class NewSpecificationFromProjectView(NewSpecificationView):
     """A view for adding a specification from a project."""
 
+    schema = Fields(INewSpecificationProjectTarget,
+                    INewSpecification,
+                    INewSpecificationSprint)
+
     @property
     def field_names(self):
         """Returns the list of fields participating in the form, in the order
         they are to be rendered.
         """
-        return ['project_target', 'name', 'title', 'specurl', 'summary',
+        return ['target', 'name', 'title', 'specurl', 'summary',
                 'definition_status', 'assignee', 'drafter', 'approver', 
                 'sprint']
 
@@ -1019,6 +1022,9 @@ class NewSpecificationFromRootView(NewSpecificationView):
     
 class NewSpecificationFromSprintView(NewSpecificationView):
     """A view for adding a specification from a sprint."""
+
+    schema = Fields(INewSpecificationTarget,
+                    INewSpecification)
     
     @property
     def field_names(self):
