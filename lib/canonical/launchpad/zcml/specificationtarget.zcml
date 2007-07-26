@@ -41,7 +41,7 @@
   <browser:page
     name="+addspec"
     for="canonical.launchpad.interfaces.ISpecificationTarget"
-    class="canonical.launchpad.browser.SpecificationAddView"
+    class="canonical.launchpad.browser.NewSpecificationView"
     permission="launchpad.AnyPerson"
     template="../templates/specification-add.pt"
     />

@@ -42,7 +42,7 @@
     <browser:page
       name="+addspec"
       for="canonical.launchpad.interfaces.IProductSeries"
-	  class="canonical.launchpad.browser.ProductSeriesSpecificationAddView"
+	  class="canonical.launchpad.browser.NewSpecificationFromProductSeriesView"
 	  facet="specifications"
 	  permission="launchpad.AnyPerson"
 	  template="../templates/specification-add.pt"

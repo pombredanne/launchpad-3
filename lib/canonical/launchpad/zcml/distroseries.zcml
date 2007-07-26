@@ -58,7 +58,7 @@
   <browser:page
     name="+addspec"
 	for="canonical.launchpad.interfaces.IDistroSeries"
-	class="canonical.launchpad.browser.DistroSeriesSpecificationAddView"
+	class="canonical.launchpad.browser.NewSpecificationFromDistroSeriesView"
 	facet="specifications"
 	permission="launchpad.AnyPerson"
 	template="../templates/specification-add.pt"

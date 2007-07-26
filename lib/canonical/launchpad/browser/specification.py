@@ -5,11 +5,13 @@
 __metaclass__ = type
 
 __all__ = [
-    'DistributionSpecificationAddView',
-    'DistroSeriesSpecificationAddView',
-    'ProductSpecificationAddView',
-    'ProductSeriesSpecificationAddView',
-    'ProjectSpecificationAddView',
+    'NewSpecificationFromDistributionView',
+    'NewSpecificationFromDistroSeriesView',
+    'NewSpecificationFromProductView',
+    'NewSpecificationFromProductSeriesView',
+    'NewSpecificationFromProjectView',
+    'NewSpecificationFromSprintView',
+    'NewSpecificationView',
     'SpecificationContextMenu',
     'SpecificationNavigation',
     'SpecificationView',
@@ -17,8 +19,6 @@ __all__ = [
     'SpecificationGoalProposeView',
     'SpecificationGoalDecideView',
     'SpecificationLinkBranchView',
-    'SpecificationAddView',
-    'SprintSpecificationAddView',
     'SpecificationRetargetingView',
     'SpecificationSprintAddView',
     'SpecificationSupersedingView',
@@ -855,7 +855,7 @@ class SpecificationTreeDotOutput(SpecificationTreeGraphView):
         return self.getDotFileText()
 
 
-class SpecificationAddViewBase(LaunchpadFormView):
+class NewSpecificationViewBase(LaunchpadFormView):
     """A base class for forms used to add a specification."""
 
     schema = INewSpecificationForm
@@ -941,7 +941,7 @@ class SpecificationAddViewBase(LaunchpadFormView):
         return spec
 
 
-class SpecificationAddView(SpecificationAddViewBase):
+class NewSpecificationView(NewSpecificationViewBase):
     """A view for adding a specification from a project, project group
     or distribution.
     """
@@ -969,7 +969,7 @@ class SpecificationAddView(SpecificationAddViewBase):
         self.next_url = canonical_url(spec)
 
 
-class HasTargetSpecificationAddView(SpecificationAddView):
+class NewSpecificationFromTargetView(NewSpecificationView):
     """A view for adding a specification where a target can be identified
     automatically from the context.
     """
@@ -981,37 +981,37 @@ class HasTargetSpecificationAddView(SpecificationAddView):
     def field_names(self):
         # Since a target can be identified automatically from the context,
         # we don't need to ask the user to specify one.
-        field_names = super(HasTargetSpecificationAddView, self).field_names
+        field_names = super(NewSpecificationFromTargetView, self).field_names
         field_names.remove('target')
-        return field_names    
+        return field_names
 
     
-class DistributionSpecificationAddView(HasTargetSpecificationAddView):
+class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
     """A view for adding a specification from a distribution."""
     pass
 
 
-class DistroSeriesSpecificationAddView(HasTargetSpecificationAddView):
+class NewSpecificationFromDistroSeriesView(NewSpecificationFromTargetView):
     """A view for adding a specification from a distro series."""
     pass
 
 
-class ProductSpecificationAddView(HasTargetSpecificationAddView):
+class NewSpecificationFromProductView(NewSpecificationFromTargetView):
     """A view for adding a specification from a product."""
     pass
 
 
-class ProductSeriesSpecificationAddView(HasTargetSpecificationAddView):
+class NewSpecificationFromProductSeriesView(NewSpecificationFromTargetView):
     """A view for adding a specification from a product series."""
     pass
 
 
-class ProjectSpecificationAddView(SpecificationAddView):
+class NewSpecificationFromProjectView(NewSpecificationView):
     """A view for adding a specification from a project."""
 
     @property
     def field_names(self):
-        field_names = super(ProjectSpecificationAddView, self).field_names
+        field_names = super(NewSpecificationFromProjectView, self).field_names
         # Although a target cannot be identified automatically from the
         # context, the set of available targets is equal to the set of
         # products belonging to this project, which is smaller than the
@@ -1021,14 +1021,14 @@ class ProjectSpecificationAddView(SpecificationAddView):
         return field_names
 
 
-class SprintSpecificationAddView(SpecificationAddView):
+class NewSpecificationFromSprintView(NewSpecificationView):
     """A view for adding a specification from a sprint."""
     
     @property
     def field_names(self):
         # Since the context is a sprint, we don't need to ask the user to
         # specify one.
-        field_names = super(SprintSpecificationAddView, self).field_names
+        field_names = super(NewSpecificationFromSprintView, self).field_names
         field_names.remove('sprint')
         return field_names
 

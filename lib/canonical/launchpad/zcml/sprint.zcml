@@ -140,7 +140,7 @@
   <browser:page
     name="+addspec"
     for="canonical.launchpad.interfaces.ISprint"
-    class="canonical.launchpad.browser.SprintSpecificationAddView"
+    class="canonical.launchpad.browser.NewSpecificationFromSprintView"
     permission="launchpad.AnyPerson"
     template="../templates/specification-add.pt"
     />

@@ -164,7 +164,7 @@
     <browser:page
       name="+addspec"
       for="canonical.launchpad.interfaces.IProject"
-      class="canonical.launchpad.browser.ProjectSpecificationAddView"
+      class="canonical.launchpad.browser.NewSpecificationFromProjectView"
       facet="specifications"
       permission="launchpad.AnyPerson"
       template="../templates/specification-add.pt"
