@@ -17,11 +17,9 @@ from bzrlib.errors import DivergedBranches
 from bzrlib.urlutils import local_path_to_url
 from zope.component import getUtility
 
-from canonical.lp.dbschema import BranchType
-
 from canonical.database.sqlbase import commit
 from canonical.launchpad.interfaces import (
-    IBranchSet, ILaunchpadCelebrities, IPersonSet)
+    BranchType, IBranchSet, ILaunchpadCelebrities, IPersonSet)
 from canonical.launchpad.scripts.importd.publish import (
     ensure_series_branch, ImportdPublisher, mirror_url_from_series)
 from canonical.launchpad.scripts.importd.tests.helpers import ImportdTestCase

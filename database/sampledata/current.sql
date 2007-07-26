@@ -3442,7 +3442,7 @@ INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (5, 'kubuntu', NULL, NULL, 5, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (6, 'guadalinex', NULL, NULL, 7, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (7, 'ubuntutest', NULL, NULL, 8, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (8, 'ubuntu-product', 1, NULL, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (8, 'tomcat', 1, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (9, 'unassigned', 2, NULL, NULL, false);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (10, 'arch-mirrors', 3, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (11, 'firefox', 4, NULL, NULL, true);
@@ -3458,7 +3458,7 @@ INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (21, 'bazaar', 14, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (22, 'alsa-utils', 15, NULL, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (23, 'iso-codes-project', NULL, 6, NULL, true);
-INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (24, 'ubuntu-project', NULL, 1, NULL, true);
+INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (24, 'apache', NULL, 1, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (25, 'do-not-use-info-imports', NULL, 2, NULL, false);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (26, 'launchpad-mirrors', NULL, 3, NULL, true);
 INSERT INTO pillarname (id, name, product, project, distribution, active) VALUES (27, 'mozilla', NULL, 4, NULL, true);
@@ -4082,6 +4082,22 @@ Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8bit
 Plural-Forms: nplurals=2; plural=n != 1
 ', true, NULL, NULL, 0, 0, 2, NULL, 13, NULL, 'po/alsa-utils-es.po', NULL, NULL, '2007-04-07 10:14:36.267119', NULL, 755, 0);
+INSERT INTO pofile (id, potemplate, "language", description, topcomment, "header", fuzzyheader, lasttranslator, license, currentcount, updatescount, rosettacount, lastparsed, "owner", variant, path, exportfile, exporttime, datecreated, from_sourcepackagename, last_touched_pomsgset, unreviewed_count) VALUES (34, 5, 119, NULL, ' English translation for mozilla
+ Copyright (c) 2007 Rosetta Contributors and Canonical Ltd 2007
+ This file is distributed under the same license as the mozilla package.
+ FIRST AUTHOR <EMAIL@ADDRESS>, 2007.
+
+', 'Project-Id-Version: mozilla
+Report-Msgid-Bugs-To: FULL NAME <EMAIL@ADDRESS>
+POT-Creation-Date: 2005-05-06 21:10:17.367605+00:00
+PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+Last-Translator: FULL NAME <EMAIL@ADDRESS>
+Language-Team: English <en@li.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+Plural-Forms: nplurals=2; plural=n != 1
+', true, NULL, NULL, 0, 0, 3, NULL, 13, NULL, 'debian/po/pkgconf-mozilla-en.po', NULL, NULL, '2007-07-12 03:42:48.848044', NULL, 761, 0);
 
 
 ALTER TABLE pofile ENABLE TRIGGER ALL;
@@ -4122,7 +4138,7 @@ INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (64, 52, 1, 693, '2005-08-29 16:16:58.010285');
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (65, 56, 31, 702, '2007-01-05 13:04:20.092506');
 INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (66, 66, 30, 701, '2006-12-13 21:19:06.369142');
-INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (67, 13, 33, 708, '2007-04-07 11:09:37.437343');
+INSERT INTO pofiletranslator (id, person, pofile, latest_posubmission, date_last_touched) VALUES (68, 13, 34, 712, '2007-07-12 03:42:48.848044');
 
 
 ALTER TABLE pofiletranslator ENABLE TRIGGER ALL;
@@ -4480,6 +4496,8 @@ INSERT INTO pomsgid (id, msgid) VALUES (155, '%d messages exported to maildir "%
 INSERT INTO pomsgid (id, msgid) VALUES (156, 'translation-credits');
 INSERT INTO pomsgid (id, msgid) VALUES (157, '_: EMAIL OF TRANSLATORS
 Your emails');
+INSERT INTO pomsgid (id, msgid) VALUES (158, '_: NAME OF TRANSLATORS
+Your names');
 
 
 ALTER TABLE pomsgid ENABLE TRIGGER ALL;
@@ -4696,9 +4714,10 @@ INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (207, 196, 24, '2007-01-05 10:29:04.835918', '2007-01-05 10:29:04.835918', true, 0);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (208, 196, 25, '2007-01-05 10:29:04.835918', '2007-01-05 10:29:04.835918', true, 1);
 INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (209, 197, 26, '2007-01-05 10:29:04.835918', '2007-01-05 10:29:04.835918', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (210, 198, 147, '2006-08-14 18:41:39.782681', '2006-08-14 18:41:39.782681', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (211, 199, 156, '2007-04-07 08:47:01.528605', '2007-04-07 08:47:01.528605', true, 0);
-INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (212, 200, 157, '2007-04-07 08:47:01.528605', '2007-04-07 08:47:01.528605', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (210, 198, 147, '2006-08-14 18:41:39.782681', '2007-07-08 21:47:20.776962', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (211, 199, 156, '2007-04-07 08:47:01.528605', '2007-07-08 21:47:20.776962', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (212, 200, 157, '2007-04-07 08:47:01.528605', '2007-07-08 21:47:20.776962', true, 0);
+INSERT INTO pomsgidsighting (id, potmsgset, pomsgid, datefirstseen, datelastseen, inlastrevision, pluralform) VALUES (213, 201, 158, '2007-07-08 21:47:20.776962', '2007-07-08 21:47:20.776962', true, 0);
 
 
 ALTER TABLE pomsgidsighting ENABLE TRIGGER ALL;
@@ -5462,6 +5481,15 @@ INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, com
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (753, 0, 33, true, false, false, NULL, 200, false, false, false, '2007-04-07 10:14:36.267119', 13, NULL);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (754, 0, 33, false, false, false, NULL, 198, false, false, false, NULL, NULL, NULL);
 INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (755, 0, 33, true, false, false, NULL, 199, false, false, false, '2007-04-07 11:09:37.437343', 16, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (756, 0, 34, true, false, false, NULL, 156, false, false, false, '2007-07-12 03:42:48.848044', 13, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (757, 0, 34, false, false, false, NULL, 160, false, false, false, NULL, NULL, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (758, 0, 34, true, false, false, NULL, 152, false, false, false, '2007-07-12 03:42:48.848044', 13, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (759, 0, 34, false, false, false, NULL, 153, false, false, false, NULL, NULL, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (760, 0, 34, false, false, false, NULL, 154, false, false, false, NULL, NULL, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (761, 0, 34, true, false, false, NULL, 155, false, false, false, '2007-07-12 03:42:48.848044', 13, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (762, 0, 34, false, false, false, NULL, 157, false, false, false, NULL, NULL, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (763, 0, 34, false, false, false, NULL, 158, false, false, false, NULL, NULL, NULL);
+INSERT INTO pomsgset (id, "sequence", pofile, iscomplete, obsolete, isfuzzy, commenttext, potmsgset, publishedfuzzy, publishedcomplete, isupdated, date_reviewed, reviewer, "language") VALUES (764, 0, 34, false, false, false, NULL, 159, false, false, false, NULL, NULL, NULL);
 
 
 ALTER TABLE pomsgset ENABLE TRIGGER ALL;
@@ -6171,8 +6199,9 @@ INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datec
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (705, 752, 0, 659, 2, '2007-01-24 19:15:32.620698', 13, 1, false, false);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (706, 752, 0, 662, 2, '2007-01-24 19:15:47.546879', 13, 1, false, false);
 INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (707, 753, 0, 663, 2, '2007-04-07 10:14:36.267119', 13, 1, true, false);
-INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (708, 755, 0, 664, 2, '2007-04-07 10:14:36.267119', 13, 1, true, false);
-INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (709, 755, 0, 665, 2, '2007-04-07 11:08:56.339275', 13, 1, false, false);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (710, 756, 0, 666, 2, '2007-07-12 03:42:48.848044', 13, 1, true, false);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (711, 758, 0, 667, 2, '2007-07-12 03:42:48.848044', 13, 1, true, false);
+INSERT INTO posubmission (id, pomsgset, pluralform, potranslation, origin, datecreated, person, validationstatus, active, published) VALUES (712, 761, 0, 668, 2, '2007-07-12 03:42:48.848044', 13, 1, true, false);
 
 
 ALTER TABLE posubmission ENABLE TRIGGER ALL;
@@ -6527,6 +6556,7 @@ INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, file
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (198, 147, 1, 10, '', 'test_browserwidget.py:34', '', '', NULL);
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (199, 156, 2, 10, '', '', '', '', NULL);
 INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (200, 157, 3, 10, '', '', '', '', NULL);
+INSERT INTO potmsgset (id, primemsgid, "sequence", potemplate, commenttext, filereferences, sourcecomment, flagscomment, alternative_msgid) VALUES (201, 158, 4, 10, '', '', '', '', NULL);
 
 
 ALTER TABLE potmsgset ENABLE TRIGGER ALL;
@@ -7884,6 +7914,9 @@ INSERT INTO potranslation (id, translation) VALUES (662, 'blah, blah, blah');
 INSERT INTO potranslation (id, translation) VALUES (663, 'danilo@canonical.com');
 INSERT INTO potranslation (id, translation) VALUES (664, 'carlos@canonical.com');
 INSERT INTO potranslation (id, translation) VALUES (665, 'jtv@canonical.com');
+INSERT INTO potranslation (id, translation) VALUES (666, 'Please choose your sound system.');
+INSERT INTO potranslation (id, translation) VALUES (667, '/etc/mozilla/prefs.js is available for preconfiguring preferences.');
+INSERT INTO potranslation (id, translation) VALUES (668, 'auto, esddsp, artsdsp, mass, none');
 
 
 ALTER TABLE potranslation ENABLE TRIGGER ALL;
@@ -7912,8 +7945,8 @@ ALTER TABLE processorfamily ENABLE TRIGGER ALL;
 
 ALTER TABLE product DISABLE TRIGGER ALL;
 
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs) VALUES (1, 1, 17, 'ubuntu-product', 'Ubuntu', 'Ubuntu', 'An easy-to-install version of Linux that has a complete set of desktop applications ready to use immediately after installation.', 'Ubuntu is a desktop Linux that you can give your girlfriend to install. Works out of the box with recent Gnome desktop applications configured to make you productive immediately. Ubuntu is updated every six months, comes with security updates for peace of mind, and is available everywhere absolutely free of charge.', '2004-09-24 20:58:00.655518', 'http://www.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 16, NULL, NULL, NULL, NULL, false, false, false);
-INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs) VALUES (2, 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real projects ASAP.', '2004-09-24 20:58:00.674409', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 17, NULL, NULL, NULL, NULL, false, false, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs) VALUES (1, 1, 17, 'tomcat', 'Tomcat', 'Tomcat', 'The servlet container that is used in the official Reference Implementation for the Java Servlet and JavaServer Pages technologies.', 'Apache Tomcat is developed in an open and participatory environment and released under the Apache Software License. This project has nothing to do with Ubuntu, but this description uses the word "Ubuntu" for the purpose of testing search results.', '2004-09-24 20:58:00.655518', 'http://tomcat.apache.org/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 16, NULL, NULL, NULL, NULL, false, false, false);
+INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs) VALUES (2, 2, 2, 'unassigned', 'unassigned syncs', 'unassigned syncs', 'syncs still not assigned to a real product', 'unassigned syncs, will not be processed, to be moved to real projects ASAP.', '2004-09-24 20:58:00.674409', 'http://archive.apache.org/dist/tomcat', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, true, false, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 17, NULL, NULL, NULL, NULL, false, false, false);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs) VALUES (3, 3, 2, 'arch-mirrors', 'Arch mirrors', 'Arch archive mirrors', 'Arch Archive Mirroring project.', 'Arch archive full-archive mirror tasks', '2004-09-24 20:58:00.691047', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, NULL, 1, NULL, false, false, NULL, NULL, NULL, NULL, 15, NULL, NULL, NULL, NULL, false, false, false);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs) VALUES (4, 4, 12, 'firefox', 'Mozilla Firefox', 'Mozilla Firefox', 'The Mozilla Firefox web browser', 'The Mozilla Firefox web browser', '2004-09-24 20:58:02.185708', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, true, NULL, false, 1, 100, NULL, false, true, NULL, NULL, NULL, NULL, 1, NULL, NULL, NULL, NULL, true, false, false);
 INSERT INTO product (id, project, "owner", name, displayname, title, summary, description, datecreated, homepageurl, screenshotsurl, wikiurl, listurl, programminglang, downloadurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, autoupdate, translationgroup, translationpermission, calendar, official_rosetta, official_malone, bugcontact, security_contact, driver, bugtracker, development_focus, homepage_content, icon, mugshot, logo, official_answers, private_bugs, private_specs) VALUES (5, 5, 12, 'evolution', 'Evolution', 'The Evolution Groupware Application', 'Evolution is an email client, addressbook and calendar application that is very well integrated with the Gnome desktop. Evolution is the standard mail client in the Ubuntu distribution, and supports all current mail system standards.', 'Recently, Evolution has seen significant work to make it interoperable with the proprietary Microsoft Exchange Server protocols and formats, allowing organisations to replace Outlook on Windows with Evolution and Linux.
@@ -8210,9 +8243,7 @@ ALTER TABLE productsvnmodule ENABLE TRIGGER ALL;
 
 ALTER TABLE project DISABLE TRIGGER ALL;
 
-INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar, driver, bugtracker, homepage_content, icon, mugshot, logo) VALUES (1, 1, 'ubuntu-project', 'the Ubuntu Project', 'The Ubuntu Project', 'A community Linux distribution building a slick desktop for the global market. Ubuntu is absolutely free and will stay that way, contains no proprietary application software, always ships with the latest Gnome desktop software and Python integration.', 'The Ubuntu Project aims to create a freely redistributable OS that is easy to customize and derive from. Ubuntu is released every six months with contributions from a large community, especially the Gnome Project. While the full range of KDE and other desktop environments are available, Ubuntu''s Gnome desktop receives most of the polish and support work done for each release.
-
-Ubuntu also includes work to unify the translation of common open source desktop applications and the tracking of bugs across multiple distributions.', '2004-09-24 20:58:00.633513', 'http://www.ubuntulinux.org/', NULL, NULL, NULL, NULL, false, true, NULL, NULL, 1, 3, NULL, NULL, NULL, NULL, NULL, NULL);
+INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar, driver, bugtracker, homepage_content, icon, mugshot, logo) VALUES (1, 1, 'apache', 'Apache', 'Apache', 'The Apache projects are characterized by a collaborative, consensus based development process, an open and pragmatic software license, and a desire to create high quality software that leads the way in its field.', 'We consider ourselves not simply a group of projects sharing a server, but rather a community of developers and users.', '2004-09-24 20:58:00.633513', 'http://apache.org/', NULL, NULL, NULL, NULL, false, true, NULL, NULL, 1, 3, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar, driver, bugtracker, homepage_content, icon, mugshot, logo) VALUES (2, 2, 'do-not-use-info-imports', 'DO NOT USE', 'DO NOT USE', 'DO NOT USE', 'TEMPORARY project till mirror jobs are assigned to correct project', '2004-09-24 20:58:00.637677', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, true, false, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar, driver, bugtracker, homepage_content, icon, mugshot, logo) VALUES (3, 2, 'launchpad-mirrors', 'Launchpad SCM Mirrors', 'The Launchpad Mirroring Project', 'launchpad mirrors various revision control archives, that mirroring is managed here', 'A project to mirror revision control archives into Arch.', '2004-09-24 20:58:00.65398', 'http://arch.ubuntu.com/', NULL, NULL, NULL, NULL, false, true, NULL, NULL, 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL);
 INSERT INTO project (id, "owner", name, displayname, title, summary, description, datecreated, homepageurl, wikiurl, lastdoap, sourceforgeproject, freshmeatproject, reviewed, active, fti, translationgroup, translationpermission, calendar, driver, bugtracker, homepage_content, icon, mugshot, logo) VALUES (4, 12, 'mozilla', 'the Mozilla Project', 'The Mozilla Project', 'The Mozilla Project is the largest open source web browser collaborative project. Founded when Netscape released the source code to its pioneering browser in 1999, the Mozilla Project continues to set the standard for web browser technology.', 'The Mozilla Project produces several internet applications that are very widely used, and is also a center for collaboration on internet standards work by open source groups.

@@ -21,11 +21,10 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, IBranchSet, IPersonSet, IProductSet)
+    BranchCreationForbidden, BranchType, IBranchSet, IPersonSet, IProductSet)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.database.sqlbase import (
     cursor, clear_current_connection_cache)
-from canonical.lp import dbschema
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
@@ -404,7 +403,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             branch_set = getUtility(IBranchSet)
             try:
                 branch = branch_set.new(
-                    dbschema.BranchType.HOSTED, branchName, requester, owner,
+                    BranchType.HOSTED, branchName, requester, owner,
                     product, None, None, author=requester)
             except BranchCreationForbidden:
                 return ''
@@ -445,7 +444,8 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
                 branch_id = branch.id
             except Unauthorized:
                 return '', ''
-            if requester.inTeam(branch.owner):
+            if (requester.inTeam(branch.owner)
+                and branch.branch_type == BranchType.HOSTED):
                 return branch_id, WRITABLE
             else:
                 return branch_id, READ_ONLY
