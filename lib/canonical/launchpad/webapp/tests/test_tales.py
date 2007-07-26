@@ -18,13 +18,15 @@ def test_requestapi():
 
     >>> class FakeApplicationRequest:
     ...    principal = FakePrincipal()
+    ...    def getURL(self):
+    ...        return 'http://launchpad.dev/'
     ...
 
     Let's make a fake request, where request.principal is a FakePrincipal
     object.  We can use a class or an instance here.  It really doesn't
     matter.
 
-    >>> request = FakeApplicationRequest
+    >>> request = FakeApplicationRequest()
     >>> adapter = RequestAPI(request)
 
     >>> verifyObject(IRequestAPI, adapter)
@@ -33,6 +35,47 @@ def test_requestapi():
     >>> adapter.person
     'This is a person'
 
+    """
+
+def test_cookie_scope():
+    """
+    The 'request/lp:cookie_scope' TALES expression returns a string
+    that represents the scope parameters necessary for a cookie to be
+    available for the entire Launchpad site.  It takes into account
+    the request URL and the cookie_domains setting in launchpad.conf.
+
+        >>> from canonical.launchpad.webapp.tales import RequestAPI
+        >>> def cookie_scope(url):
+        ...     class FakeRequest:
+        ...         def getURL(self):
+        ...             return url
+        ...     return RequestAPI(FakeRequest()).cookie_scope
+
+    The cookie scope will use the secure attribute if the request was
+    secure:
+
+        >>> print cookie_scope('http://launchpad.net/')
+        ; Path=/; Domain=.launchpad.net
+        >>> print cookie_scope('https://launchpad.net/')
+        ; Path=/; Secure; Domain=.launchpad.net
+
+    Different domains from the same Launchpad instance are in the same
+    scope (this depends on the cookie_domains setting):
+
+        >>> print cookie_scope('https://launchpad.net/')
+        ; Path=/; Secure; Domain=.launchpad.net
+        >>> print cookie_scope('https://bugs.launchpad.net/')
+        ; Path=/; Secure; Domain=.launchpad.net
+
+        >>> print cookie_scope('https://demo.launchpad.net/')
+        ; Path=/; Secure; Domain=.demo.launchpad.net
+        >>> print cookie_scope('https://bugs.demo.launchpad.net/')
+        ; Path=/; Secure; Domain=.demo.launchpad.net
+
+        >>> print cookie_scope('http://launchpad.dev/')
+        ; Path=/; Domain=.launchpad.dev
+        >>> print cookie_scope('http://bugs.launchpad.dev/')
+        ; Path=/; Domain=.launchpad.dev
     """
 
 def test_dbschemaapi():
