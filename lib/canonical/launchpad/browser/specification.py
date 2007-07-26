@@ -982,6 +982,36 @@ class SpecificationAddView(SpecificationAddViewBase):
         self.next_url = canonical_url(spec)
 
 
+class ContextlessSpecificationAddView(SpecificationAddView):
+    """A view for adding a specification where there is no context."""
+    pass
+
+
+class DistributionSpecificationAddView(SpecificationAddView):
+    """A view for adding a specification from a distribution."""
+    pass
+
+
+class DistroSeriesSpecificationAddView(SpecificationAddView):
+    """A view for adding a specification from a distro series."""
+    pass
+
+
+class ProductSpecificationAddView(SpecificationAddView):
+    """A view for adding a specification from a product."""
+    pass
+
+
+class ProductSeriesSpecificationAddView(SpecificationAddView):
+    """A view for adding a specification from a product series."""
+    pass
+
+
+class ProjectSpecificationAddView(SpecificationAddView):
+    """A view for adding a specification from a project."""
+    pass
+
+
 class SprintSpecificationAddView(SpecificationAddViewBase):
     """A view for adding a specification from a sprint."""
     
