@@ -873,16 +873,6 @@ class NewSpecificationViewBase(LaunchpadFormView):
                     'name',
                     self.schema['name'].errormessage % name
                 )
-    @property
-    def field_names(self):
-        """Returns the list of fields participating in the form, in the order
-        they are to be rendered.
-
-        Subclasses can change this list by adding or removing fields.
-        """
-        return ['target', 'name', 'title', 'specurl', 'summary',
-                'definition_status', 'assignee', 'drafter', 'approver', 
-                'sprint']
 
     def validate(self, data):
         """Validates the contents of the form.
@@ -979,11 +969,12 @@ class NewSpecificationFromTargetView(NewSpecificationView):
     
     @property
     def field_names(self):
-        # Since a target can be identified automatically from the context,
-        # we don't need to ask the user to specify one.
-        field_names = super(NewSpecificationFromTargetView, self).field_names
-        field_names.remove('target')
-        return field_names
+        """Returns the list of fields participating in the form, in the order
+        they are to be rendered.
+        """
+        return ['name', 'title', 'specurl', 'summary',
+                'definition_status', 'assignee', 'drafter', 'approver', 
+                'sprint']
 
     
 class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
@@ -1011,15 +1002,12 @@ class NewSpecificationFromProjectView(NewSpecificationView):
 
     @property
     def field_names(self):
-        field_names = super(NewSpecificationFromProjectView, self).field_names
-        # Although a target cannot be identified automatically from the
-        # context, the set of available targets is equal to the set of
-        # products belonging to this project, which is smaller than the
-        # global set. Therefore we can offer the user a smaller list.
-        field_names.remove('target')
-        field_names.insert(0, 'project_target')
-        return field_names
-
+        """Returns the list of fields participating in the form, in the order
+        they are to be rendered.
+        """
+        return ['project_target', 'name', 'title', 'specurl', 'summary',
+                'definition_status', 'assignee', 'drafter', 'approver', 
+                'sprint']
 
 class NewSpecificationFromRootView(NewSpecificationView):
     """A view for adding a specification from the root of Launchpad."""
@@ -1034,11 +1022,11 @@ class NewSpecificationFromSprintView(NewSpecificationView):
     
     @property
     def field_names(self):
-        # Since the context is a sprint, we don't need to ask the user to
-        # specify one.
-        field_names = super(NewSpecificationFromSprintView, self).field_names
-        field_names.remove('sprint')
-        return field_names
+        """Returns the list of fields participating in the form, in the order
+        they are to be rendered.
+        """
+        return ['target', 'name', 'title', 'specurl', 'summary',
+                'definition_status', 'assignee', 'drafter', 'approver']
 
     def validate(self, data):
         """Validates the contents of the form."""
