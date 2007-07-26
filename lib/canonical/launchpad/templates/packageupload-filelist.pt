@@ -10,7 +10,9 @@
   <tal:build repeat="queuebuild context/builds">
     <tal:binary repeat="binary queuebuild/build/binarypackages">
         <p tal:repeat="file binary/files">
-           <a tal:attributes="href file/libraryfile/http_url"
+           <span tal:condition="binary/is_new"
+             >NEW</span> <a
+              tal:attributes="href file/libraryfile/http_url"
               tal:content="file/libraryfile/filename"
             /> (<span tal:replace="
                    file/libraryfile/content/filesize/fmt:bytes" />)</p>

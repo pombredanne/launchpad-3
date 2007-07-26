@@ -29,6 +29,29 @@ Useful properties:
    >>> hoary.name
    u'hoary'
 
+Retrieve the respective DistributionSourcePackageRelease, which allow
+us to easily link to a source reference published in the web-ui.
+
+   >>> from canonical.launchpad.interfaces import (
+   ...     IDistributionSourcePackageRelease)
+   >>> verifyObject(
+   ...    IDistributionSourcePackageRelease,
+   ...    firefox_bin_release.distributionsourcepackagerelease)
+   True
+
+The 'is_new' property allow us to easily check if the
+BinaryPackageRelease is question is part of a known series of package
+or is, in fact, 'new' to the DistroArchSeries it was built for.
+
+   >>> firefox_bin_release.is_new
+   False
+
+   >>> pmount_bin_release = BinaryPackageRelease.get(20)
+   >>> pmount_bin_release.name, pmount_bin_release.version
+   (u'pmount', u'0.1-1')
+
+   >>> pmount_bin_release.is_new
+   True
 
 Check IBinaryPackageRelease.override() behaviour:
 

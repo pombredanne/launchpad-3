@@ -85,6 +85,15 @@ class BinaryPackageRelease(SQLBase):
         """See IBinaryPackageRelease."""
         return self.build.sourcepackagerelease.sourcepackagename.name
 
+    @property
+    def is_new(self):
+        """See IBinaryPackageRelease."""
+        dasbp = self.build.distroarchseries.getBinaryPackage(self.name)
+        if dasbp.currentrelease is None:
+            return True
+
+        return False
+
     def lastversions(self):
         """Return the SUPERSEDED BinaryPackageReleases in a DistroSeries.
 

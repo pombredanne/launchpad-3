@@ -50,9 +50,12 @@ class IBinaryPackageRelease(Interface):
         "The name of the source package from where this binary was built.")
 
     # properties
-    distributionsourcepackagerelease = Attribute("The sourcepackage "
-        "release in this distribution from which this binary was "
-        "built.")
+    distributionsourcepackagerelease = Attribute(
+        "The sourcepackage release in this distribution from which this "
+        "binary was built.")
+    is_new = Attribute(
+        "Return True if there binary version was never published for the "
+        "architeture is was built for. Return False otherwise.")
 
     def lastversions():
         """Return the SUPERSEDED BinaryPackages in a DistroSeries

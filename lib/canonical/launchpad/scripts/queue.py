@@ -13,7 +13,6 @@ __all__ = [
     ]
 
 import os
-import sys
 import tempfile
 import errno
 from email import message_from_string
@@ -32,8 +31,7 @@ from canonical.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
 from canonical.archiveuploader.template_messages import (
     announce_template, rejection_template)
-from canonical.archiveuploader.utils import (
-    safe_fix_maintainer, ParseMaintError)
+from canonical.archiveuploader.utils import safe_fix_maintainer
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.encoding import ascii_smash, guess as guess_encoding
@@ -271,20 +269,15 @@ class QueueAction:
             for bpr in queue_build.build.binarypackages:
                 if only and only != bpr.name:
                     continue
-                dar = queue_build.build.distroarchseries
-                binarypackagename = bpr.binarypackagename.name
-                # inspect the publication history of each binary
-                darbp = dar.getBinaryPackage(binarypackagename)
-                if darbp.currentrelease is not None:
-                    status_flag = "*"
-                else:
+                if bpr.is_new:
                     status_flag = "N"
-
-                self.display("\t | %s %s/%s/%s Component: %s Section: %s "
-                             "Priority: %s"
-                             % (status_flag, binarypackagename, bpr.version,
-                                dar.architecturetag, bpr.component.name,
-                                bpr.section.name, bpr.priority.name))
+                else:
+                    status_flag = "*"
+                self.display(
+                    "\t | %s %s/%s/%s Component: %s Section: %s Priority: %s"
+                    % (status_flag, bpr.name, bpr.version,
+                       bpr.build.distroarchseries.architecturetag,
+                       bpr.component.name, bpr.section.name, bpr.priority.name))
 
         for queue_custom in queue_item.customfiles:
             self.display("\t | * %s Format: %s"
