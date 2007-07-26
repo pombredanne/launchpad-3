@@ -36,6 +36,7 @@ from operator import attrgetter
 from zope.component import getUtility
 from zope.app.form.browser.itemswidgets import DropdownWidget
 from zope.formlib import form
+from zope.formlib.form import Fields
 from zope.schema import Choice
 from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
@@ -972,6 +973,9 @@ class HasTargetSpecificationAddView(SpecificationAddView):
     """A view for adding a specification where a target can be identified
     automatically from the context.
     """
+    
+    schema = Fields(INewSpecification, 
+                    INewSpecificationSprint)
     
     @property
     def field_names(self):
