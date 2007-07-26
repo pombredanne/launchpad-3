@@ -992,6 +992,46 @@ class BugTaskSet:
             summary, Bug, ' AND '.join(constraint_clauses), ['BugTask'])
         return self.search(search_params)
 
+    def _buildStatusClause(self, status):
+        if zope_isinstance(status, any):
+            return '(' + ' OR '.join(
+                self._buildStatusClause(dbitem)
+                for dbitem
+                in status.query_values) + ')'
+        elif zope_isinstance(status, not_equals):
+            return '(NOT %s)' % self._buildStatusClause(status.value)
+        elif zope_isinstance(status, DBItem):
+            if ((status ==
+                 BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE) or
+                (status ==
+                 BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)):
+                status_clause = (
+                    '(BugTask.status = %s ' %
+                    sqlvalues(BugTaskStatus.INCOMPLETE))
+                status_clause += 'AND BugTask.date_incomplete '
+                if (status ==
+                    BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE):
+                    status_clause += '<='
+                elif (status ==
+                      BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE):
+                    status_clause += '>'
+                else:
+                    assert with_response != without_response
+                status_clause += """ (
+                    SELECT Message.datecreated
+                    FROM BugMessage, Message
+                    WHERE Message.id = BugMessage.message
+                    AND BugMessage.bug = Bug.id
+                    ORDER BY Message.datecreated DESC
+                    LIMIT 1))
+                    """
+                return status_clause
+            else:
+                return '(BugTask.status = %s)' % sqlvalues(status)
+        else:
+            raise ValueError(
+                'Unrecognized status value: %s' % repr(status))
+
     def buildQuery(self, params):
         """Build and return an SQL query with the given parameters.
 
@@ -1016,63 +1056,6 @@ class BugTaskSet:
             'owner': params.owner,
         }
 
-        if isinstance(params.status, any):
-            # XXX : we only provide support for the pseudo statuses
-            # BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE and
-            # BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE
-            # if they are part of an 'any' clause, since we know that
-            # they can only come from the advanced search form, which
-            # always provides a list. If and when we decide to support
-            # searching for these pseudo-statuses using equals or
-            # no_equals the implementation will have to be more
-            # a bit more complicated.
-            # -- Tom Berger 2007-07-26
-            status_values = params.status.query_values            
-            with_response = (
-                BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE in status_values)
-            without_response = (
-                BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE in status_values)
-
-            if (with_response or without_response):
-                # Remove the pseudo statuses from the list
-                # since it will be passed to the query builder
-                status_values = [
-                    dbitem for dbitem in status_values
-                    if dbitem not in (
-                    BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
-                    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)]
-
-            if (with_response != without_response):
-                status_clause = (
-                    '(BugTask.status = %s ' %
-                    sqlvalues(BugTaskStatus.INCOMPLETE))
-                status_clause += 'AND BugTask.date_incomplete '
-                if with_response:
-                    status_clause += '<='
-                elif without_response:
-                    status_clause += '>'
-                else:
-                    assert with_response != without_response
-                status_clause += """ (
-                    SELECT Message.datecreated
-                    FROM BugMessage, Message
-                    WHERE Message.id = BugMessage.message
-                    AND BugMessage.bug = Bug.id
-                    ORDER BY Message.datecreated DESC
-                    LIMIT 1))
-                    """
-                if len(status_values) > 0:
-                    params.status.query_values = status_values
-                    status_clause = (
-                        '(BugTask.status %s OR %s)' %
-                        (search_value_to_where_condition(params.status),
-                         status_clause))
-                extra_clauses.append(status_clause)
-            else:
-                standard_args['status'] = params.status
-        else:
-            standard_args['status'] = params.status
-
         # Loop through the standard, "normal" arguments and build the
         # appropriate SQL WHERE clause. Note that arg_value will be one
         # of:
@@ -1093,6 +1076,9 @@ class BugTaskSet:
             where_cond = search_value_to_where_condition(arg_value)
             if where_cond is not None:
                 extra_clauses.append("BugTask.%s %s" % (arg_name, where_cond))
+
+        if params.status is not None:
+            extra_clauses.append(self._buildStatusClause(params.status))
 
         if params.milestone:
             if IProjectMilestone.providedBy(params.milestone):
