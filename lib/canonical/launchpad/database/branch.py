@@ -295,10 +295,10 @@ class Branch(SQLBase):
             `url` is the URL to pull from and `unique_name` is the
             `unique_name` property without the initial '~'.
         """
-        if self.url is not None:
+        if self.branch_type == BranchType.MIRRORED:
             # This is a pull branch, hosted externally.
             pull_url = self.url
-        elif self.owner.name == 'vcs-imports':
+        elif self.branch_type == BranchType.IMPORTED:
             # This is an import branch, imported into bzr from
             # another RCS system such as CVS.
             prefix = config.launchpad.bzr_imports_root_url
@@ -791,12 +791,12 @@ class BranchSet:
     def getHostedPullQueue(self):
         """See `IBranchSet`."""
 
-        # XXX: Hosted branches (see Andrew's comment dated 2006-06-15) are
-        # mirrored if their mirror_request_time is not NULL or if they haven't
-        # been mirrored in the last 6 hours. The latter behaviour is a
-        # fail-safe and should probably be removed once we trust the
-        # mirror_request_time behavior. See test_mirror_stale_hosted_branches.
-        # -- jml, 2007-01-31
+        # XXX: JonathanLange 2007-07-27, Hosted branches (see Andrew's comment
+        # dated 2006-06-15) are mirrored if their mirror_request_time is not
+        # NULL or if they haven't been mirrored in the last 6 hours. The latter
+        # behaviour is a fail-safe and should probably be removed once we trust
+        # the mirror_request_time behavior. See
+        # test_mirror_stale_hosted_branches.
 
         # The mirroring interval is 6 hours. we think this is a safe balance
         # between frequency of mirroring and not hammering servers with
