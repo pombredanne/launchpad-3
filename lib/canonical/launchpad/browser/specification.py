@@ -965,16 +965,6 @@ class NewSpecificationFromTargetView(NewSpecificationView):
     schema = Fields(INewSpecification, 
                     INewSpecificationSprint)
     
-    @property
-    def field_names(self):
-        """Returns the list of fields participating in the form, in the order
-        they are to be rendered.
-        """
-        return ['name', 'title', 'specurl', 'summary',
-                'definition_status', 'assignee', 'drafter', 'approver', 
-                'sprint']
-
-    
 class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
     """A view for adding a specification from a distribution."""
     pass
@@ -1002,14 +992,6 @@ class NewSpecificationFromProjectView(NewSpecificationView):
                     INewSpecification,
                     INewSpecificationSprint)
 
-    @property
-    def field_names(self):
-        """Returns the list of fields participating in the form, in the order
-        they are to be rendered.
-        """
-        return ['target', 'name', 'title', 'specurl', 'summary',
-                'definition_status', 'assignee', 'drafter', 'approver', 
-                'sprint']
 
 class NewSpecificationFromRootView(NewSpecificationView):
     """A view for adding a specification from the root of Launchpad."""
@@ -1025,14 +1007,6 @@ class NewSpecificationFromSprintView(NewSpecificationView):
     schema = Fields(INewSpecificationTarget,
                     INewSpecification)
     
-    @property
-    def field_names(self):
-        """Returns the list of fields participating in the form, in the order
-        they are to be rendered.
-        """
-        return ['target', 'name', 'title', 'specurl', 'summary',
-                'definition_status', 'assignee', 'drafter', 'approver']
-
     def validate(self, data):
         """Validates the contents of the form."""
         target = data.get('target')
