@@ -4,11 +4,24 @@
   method="post"
   enctype="multipart/form-data">
   <p
-    tal:condition="view/getErrorMessage"
+    tal:condition="view/errors"
     class="error message"
     i18n:translate=""
-    tal:content = "view/getErrorMessage"
-  />
+  >
+    <tal:block condition="python:len(view.errors) > 1">
+      There are <tal:count content="view/errors/count:len" /> errors in the
+      data you entered. Please fix them and try again.
+    </tal:block>
+    <tal:block condition="python:len(view.errors) == 1">
+      There is 1 error in the data you entered. Please fix it and try again.
+    </tal:block>
+
+    <tal:block
+      condition="view/form_wide_errors"
+      repeat="error view/form_wide_errors">
+      <tal content="error" /><br />
+    </tal:block>
+  </p>
 
   <p tal:condition="not: context/required:launchpad.Edit" class="error message">
     You are not the bug assignee nor the maintainer of
@@ -41,7 +54,7 @@
         <span
           tal:attributes="title context/date_confirmed/fmt:datetime"
           tal:content="context/date_confirmed/fmt:approximatedate">
-          2006-12-13
+          2 data006-12-13
         </span>
       </td>
     </tr>

@@ -712,12 +712,20 @@ class BugTaskEditView(LaunchpadFormView):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         return canonical_url(self.context)
 
+    @property
+    def initial_values(self):
+        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
+        field_values = {}
+        for name in self.field_names:
+            field_values[name] = getattr(self.context, name)
+
+        return field_values
+
     def initialize(self):
         self.prefix = self._getPrefix()
         #self._setUpWidgets()
 
         LaunchpadFormView.initialize(self)
-        import pdb; pdb.set_trace()
 
     def _getPrefix(self):
         """Return a prefix that can be used for this form.
@@ -855,16 +863,6 @@ class BugTaskEditView(LaunchpadFormView):
 
         return read_only_field_names
 
-    def getErrorMessage(self):
-        if not self.errors:
-            return ""
-        text = ("There %s with the information you entered. "
-                "Please fix %s and try again.")
-        count = len(self.errors)
-        if count == 1:
-            return text % ("is a problem", "it")
-        return text % ("are %d problems" % count, "them")
-
     def userCanEditMilestone(self):
         """Can the user edit the Milestone field?
 
@@ -905,18 +903,8 @@ class BugTaskEditView(LaunchpadFormView):
         else:
             return bugtask.distroseries.distribution
 
-    @property
-    def initial_values(self):
-        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
-        field_values = {}
-        for name in self.field_names:
-            field_values[name] = getattr(self.context, name)
-
-        return field_values
-
     def validate(self, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
-        import pdb; pdb.set_trace()
         bugtask = self.context
         if bugtask.distroseries is not None:
             distro = bugtask.distroseries.distribution
