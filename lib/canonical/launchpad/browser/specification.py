@@ -52,7 +52,6 @@ from canonical.launchpad.interfaces import (
     INewSpecificationForm,
     ISpecificationBranch,
     ISpecificationSet,
-    ISprint,
     NotFoundError,
     )
 
