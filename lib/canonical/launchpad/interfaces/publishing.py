@@ -107,6 +107,12 @@ class IArchiveFilePublisher(Interface):
         or add file from librarian if it's not present. Update the database
         to represent the current archive state.
         """
+    def publishing_record():
+        """Return the respective Source or Binary publishing record.
+
+        ISourcePackageFilePublishing returns ISourcePackagePublishingHistory.
+        IBinaryPackageFilePublishing returns IBinaryPackagePublishingHistory.
+        """
 
 class IArchiveSafePublisher(Interface):
     """Safe Publication methods"""

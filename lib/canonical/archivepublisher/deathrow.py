@@ -3,17 +3,17 @@
 Processes removals of packages that are scheduled for deletion.
 """
 
+import datetime
+import pytz
 import os
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
-from canonical.lp.dbschema import PackagePublishingStatus
-
-from canonical.launchpad.interfaces import NotInPool
-
 from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing)
+from canonical.launchpad.interfaces import NotInPool
+from canonical.lp.dbschema import PackagePublishingStatus
 
 
 class DeathRow:
@@ -84,83 +84,65 @@ class DeathRow:
         in use.
         """
 
-        def updateDetails(p, details):
+        def updateDetails(p):
             fn = p.libraryfilealiasfilename
             sn = p.sourcepackagename
             cn = p.componentname
             filename = self.diskpool.pathFor(cn, sn, fn)
             details.setdefault(filename, [cn, sn, fn])
-            return filename
+            condemned_files.add(filename)
+            condemned_records.add(p.publishing_record)
+
+        def canRemove(content, filename):
+            # XXX cprov 20070723: 'prejoin'ing {S,B}PPH would help, but we can
+            # not do it dynamically due to the hack performed by
+            # IArchiveFilePublishing.publishing_record. Although, something in
+            # direction of default_prejoins = 'SPPH' or 'BPPH' would work very
+            # well for Source/BinaryPackageFilePublishing class.
+            all_publications = content.select("""
+            libraryfilealiasfilename = %s AND distribution = %s AND
+            archive = %s""" % sqlvalues(
+                filename, self.distribution, self.distribution.main_archive))
+            for p in all_publications:
+                if p.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL:
+                    return False
+                if p.publishing_record.scheduleddeletiondate > right_now:
+                    return False
+            return True
 
         bytes = 0
-        live_files = set()
         condemned_files = set()
         condemned_records = set()
         details = {}
+        right_now = datetime.datetime.now(pytz.timezone('UTC'))
 
-        live_source_files = SourcePackageFilePublishing.select(
-            """
-            distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
-            publishingstatus != %s AND
-            SourcePackagePublishingHistory.id =
-            SourcePackageFilePublishing.sourcepackagepublishing AND
-            (publishingstatus != %s OR
-             SourcePackagePublishingHistory.scheduleddeletiondate > %s)
-            """ % sqlvalues(self.distribution,
-                            self.distribution.main_archive,
-                            PackagePublishingStatus.REMOVED,
-                            PackagePublishingStatus.PENDINGREMOVAL,
-                            UTC_NOW),
-            clauseTables = ["SourcePackagePublishingHistory"],
-            orderBy="id")
-        live_binary_files = BinaryPackageFilePublishing.select(
-            """
-            distribution = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
-            publishingstatus != %s AND
-            BinaryPackagePublishingHistory.id =
-            BinaryPackageFilePublishing.binarypackagepublishing AND
-            (publishingstatus != %s OR
-             BinaryPackagePublishingHistory.scheduleddeletiondate > %s)
-             """ % sqlvalues(self.distribution,
-                             self.distribution.main_archive,
-                             PackagePublishingStatus.REMOVED,
-                             PackagePublishingStatus.PENDINGREMOVAL,
-                             UTC_NOW),
-            clauseTables = ["BinaryPackagePublishingHistory"],
-            orderBy="id")
+        content_files = (
+            (SourcePackageFilePublishing, condemned_source_files),
+            (BinaryPackageFilePublishing, condemned_binary_files),)
 
-        for p in live_source_files:
-            filename = updateDetails(p, details)
-            live_files.add(filename)
-        for p in live_binary_files:
-            filename = updateDetails(p, details)
-            live_files.add(filename)
-        for p in condemned_source_files:
-            filename = updateDetails(p, details)
-            condemned_files.add(filename)
-            condemned_records.add(p.sourcepackagepublishing)
-        for p in condemned_binary_files:
-            filename = updateDetails(p, details)
-            condemned_files.add(filename)
-            condemned_records.add(p.binarypackagepublishing)
+        for content, pub_files in content_files:
+            for pub in pub_files:
+                filename = pub.libraryfilealiasfilename
+                if canRemove(content, filename):
+                    updateDetails(pub)
 
-        remove_files = condemned_files - live_files
-        self.logger.info("Removing %s files marked for reaping" %
-                         len(remove_files))
-        for f in remove_files:
+        self.logger.info(
+            "Removing %s files marked for reaping" % len(condemned_files))
+
+        for f in condemned_files:
             try:
                 cn, sn, fn = details[f]
                 bytes += self._removeFile(cn, sn, fn)
             except NotInPool:
                 # It's safe for us to let this slide because it means that
                 # the file is already gone.
-                self.logger.debug("File to remove %s %s/%s is not in pool, "
-                                  "skipping" % (cn, sn, fn))
+                self.logger.debug(
+                    "File to remove %s %s/%s is not in pool, skipping" %
+                    (cn, sn, fn))
             except:
-                self.logger.exception("Removing file %s %s/%s generated "
-                                      "exception, continuing" % (cn, sn, fn))
+                self.logger.exception(
+                    "Removing file %s %s/%s generated exception, continuing" %
+                    (cn, sn, fn))
 
         self.logger.info("Total bytes freed: %s" % bytes)
 
