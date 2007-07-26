@@ -44,7 +44,7 @@ from zope.app.form.utility import (
     applyWidgetsChanges)
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
-from zope.formlib.form import Widgets
+from zope.formlib import form
 from zope.interface import implements, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IList
@@ -57,7 +57,7 @@ from canonical.lp import dbschema, decorates
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation, LaunchpadFormView,
+    action, canonical_url, custom_widget, GetitemNavigation, LaunchpadFormView,
     LaunchpadView, Navigation, redirection, stepthrough)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
@@ -1385,16 +1385,17 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
         return bugtask_listing_item
 
 
-class BugTaskSearchListingView(LaunchpadView):
+class BugTaskSearchListingView(LaunchpadFormView):
     """Base class for bug listings.
 
     Subclasses should define getExtraSearchParams() to filter the
     search.
     """
 
-    owner_error = ""
-    assignee_error = ""
-    bug_contact_error = ""
+    custom_widget('searchtext', NewLineToSpacesWidget)
+    custom_widget('status_upstream', LabeledMultiCheckBoxWidget)
+    custom_widget('tag', BugTagsWidget)
+    custom_widget('component', LabeledMultiCheckBoxWidget)
 
     @property
     def schema(self):
@@ -1416,26 +1417,14 @@ class BugTaskSearchListingView(LaunchpadView):
                 self.request.response.redirect(str(redirect_uri), status=301)
                 return
 
-        if self.shouldShowComponentWidget():
-            # CustomWidgetFactory doesn't work with
-            # MultiCheckBoxWidget, so we work around this by manually
-            # instantiating the widget.
-            #
-            # XXX, Brad Bollenbach, 2006-03-22: Integrate BjornT's
-            # MultiCheckBoxWidget workaround once that lands, which
-            # will also fix the widget to use <label>'s.
-            self.component_widget = MultiCheckBoxWidget(
-                self.schema['component'].bind(self.context),
-                getVocabularyRegistry().get(None, "Component"),
-                self.request)
+        self._migrateOldUpstreamStatus()
+        LaunchpadFormView.initialize(self)
 
-        self.searchtext_widget = CustomWidgetFactory(NewLineToSpacesWidget)
-        self.status_upstream_widget = CustomWidgetFactory(
-             LabeledMultiCheckBoxWidget)
-        self.tag_widget = CustomWidgetFactory(BugTagsWidget)
-        setUpWidgets(self, self.schema, IInputWidget)
-        self.validateVocabulariesAdvancedForm()
-        self.validate_search_params()
+        # We call self._validate() here because LaunchpadFormView only
+        # validates the form if an action is submitted but, because this form
+        # can be called through a query string, we don't want to require an
+        # action.
+        self._validate(None, {})
 
     @property
     def columns_to_show(self):
@@ -1466,24 +1455,15 @@ class BugTaskSearchListingView(LaunchpadView):
         An UnexpectedFormData exception is raised if the user submitted a URL
         that could not have been created from the UI itself.
         """
-        self._migrateOldUpstreamStatus()
         # The only way the user should get these field values incorrect is
         # through a stale bookmark or a hand-hacked URL.
         for field_name in ("status", "importance", "milestone", "component",
                            "status_upstream"):
-            try:
-                getWidgetsData(self, schema=self.schema, names=[field_name])
-            except WidgetsError:
+            if self.getWidgetError(field_name):
                 raise UnexpectedFormData(
                     "Unexpected value for field '%s'. Perhaps your bookmarks "
-                    "are out of date or you changed the URL by hand?" % field_name)
-
-        try:
-            getWidgetsData(self, schema=self.schema, names=['tag'])
-        except WidgetsError:
-            # No need to do anything, the widget will be checked for
-            # errors elsewhere.
-            pass
+                    "are out of date or you changed the URL by hand?" %
+                    field_name)
 
         orderby = get_sortorder_from_request(self.request)
         bugset = getUtility(IBugTaskSet)
@@ -1497,9 +1477,16 @@ class BugTaskSearchListingView(LaunchpadView):
                 raise UnexpectedFormData(
                     "Unknown sort column '%s'" % orderby_col)
 
+    def validate(self, data):
+        """Validates the form."""
+        self.validateVocabulariesAdvancedForm()
+        self.validate_search_params()
+
     def _migrateOldUpstreamStatus(self):
-        """ Before Launchpad version 1.1.6 (build 4412), the upstream parameter
-        in the requets was a single string value, coming from a set of
+        """Converts old upstream status value parameters to new ones.
+
+        Before Launchpad version 1.1.6 (build 4412), the upstream parameter
+        in the request was a single string value, coming from a set of
         radio buttons. From that version on, the user can select multiple
         values in the web UI. In order to keep old bookmarks working,
         convert the old string parameter into a list.
@@ -1516,8 +1503,8 @@ class BugTaskSearchListingView(LaunchpadView):
             del self.request.form['field.status_upstream']
         else:
             # The value of status_upstream is either correct, so nothing to
-            # do, or it has some other error, which is handled in the "for"
-            # loop below
+            # do, or it has some other error, which is handled in
+            # LaunchpadFormView's own validation.
             pass
 
     def _getDefaultSearchParams(self):
@@ -1536,16 +1523,8 @@ class BugTaskSearchListingView(LaunchpadView):
         """Build the BugTaskSearchParams object for the given arguments and
         values specified by the user on this form's widgets.
         """
-        widget_names = [
-                "searchtext", "status", "assignee", "importance",
-                "omit_dupes", "has_patch", "bug_reporter",
-                "milestone", "component", "has_no_package",
-                "status_upstream", "tag", "has_cve", "bug_contact"
-                ]
-        # widget_names are the possible widget names, only include the
-        # ones that are actually in the schema.
-        widget_names = [name for name in widget_names if name in self.schema]
-        data = getWidgetsData(self, self.schema, names=widget_names)
+        data = {}
+        self._validate(None, data)
 
         if extra_params:
             data.update(extra_params)
@@ -1797,35 +1776,19 @@ class BugTaskSearchListingView(LaunchpadView):
 
     @property
     def form_has_errors(self):
-        has_errors = (
-            self.assignee_error or
-            self.owner_error or
-            self.bug_contact_error or
-            self.tag_widget.error())
-        return has_errors
+        return len(self.errors) > 0
 
     def validateVocabulariesAdvancedForm(self):
-        """Validate person vocabularies in advanced form.
-
-        If a vocabulary lookup fail set a custom error message.
-        """
+        """Provides a meaningful message for vocabulary validation errors."""
         error_message = _(
             "There's no person with the name or email address '%s'")
-        try:
-            getWidgetsData(self, self.schema, names=["assignee"])
-        except WidgetsError:
-            self.assignee_error = error_message % (
-                cgi.escape(self.request.get('field.assignee')))
-        try:
-            getWidgetsData(self, self.schema, names=["bug_reporter"])
-        except WidgetsError:
-            self.owner_error = error_message % (
-                cgi.escape(self.request.get('field.bug_reporter')))
-        try:
-            getWidgetsData(self, self.schema, names=["bug_contact"])
-        except WidgetsError:
-            self.bug_contact_error = error_message % (
-                cgi.escape(self.request.get('field.bug_contact')))
+
+        for name in ('assignee', 'bug_reporter', 'bug_contact', 
+                     'bug_commenter'):
+            if self.getWidgetError(name):
+                self.setFieldError(
+                    name, error_message %
+                        cgi.escape(self.request.get('field.%s' % name)))
 
     def _upstreamContext(self):
         """Is this page being viewed in an upstream context?
@@ -1946,7 +1909,7 @@ class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
             (True, bug_listing_item.review_action_widget)
             for bug_listing_item in self.context.getBugListingItems()
             if bug_listing_item.review_action_widget is not None]
-        self.widgets = Widgets(widgets_list, len(self.prefix)+1)
+        self.widgets = form.Widgets(widgets_list, len(self.prefix)+1)
 
     @action('Save changes', name='submit',
             condition=canApproveNominations)
@@ -2155,7 +2118,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
 
     columns_to_show = ["id", "summary", "targetname", "importance", "status"]
     schema = IFrontPageBugTaskSearch
-    scope_widget = CustomWidgetFactory(ProjectScopeWidget)
+    custom_widget('scope', ProjectScopeWidget)
 
     def initialize(self):
         BugTaskSearchListingView.initialize(self)
@@ -2172,7 +2135,7 @@ class BugsBugTaskSearchListingView(BugTaskSearchListingView):
         which will handle the error.
         """
         try:
-            search_target = self.scope_widget.getInputValue()
+            search_target = self.widgets['scope'].getInputValue()
         except InputErrors:
             query_string = self.request['QUERY_STRING']
             bugs_url = "%s?%s" % (canonical_url(self.context), query_string)
