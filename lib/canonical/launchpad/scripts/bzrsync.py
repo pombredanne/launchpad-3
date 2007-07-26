@@ -23,11 +23,10 @@ from bzrlib.revision import NULL_REVISION
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IBranchRevisionSet, IRevisionSet)
+    BranchSubscriptionNotificationLevel, ILaunchpadCelebrities,
+    IBranchRevisionSet, IRevisionSet)
 from canonical.launchpad.mailnotification import (
     send_branch_revision_notifications)
-
-from canonical.lp.dbschema import BranchSubscriptionNotificationLevel
 
 UTC = pytz.timezone('UTC')
 
