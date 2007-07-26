@@ -13,15 +13,42 @@
 
 <div metal:fill-slot="main">
 
-  <div metal:use-macro="context/@@launchpad_addform/addform">
+  <div metal:use-macro="context/@@launchpad_form/form">
 
     <div metal:fill-slot="extra_info">
        <tal:block replace="structure context/@@+ppa-tos" />
     </div>
 
+    <div class="form" metal:fill-slot="widgets">
+
+      <div tal:define="widget nocall:view/widgets/accepted|nothing"
+           tal:condition="widget" style="padding: 1em">
+        <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+      </div>
+
+      <div tal:define="widget nocall:view/widgets/description|nothing"
+           tal:condition="widget">
+         <metal:widget metal:use-macro="context/@@launchpad_form/widget_row" />
+      </div>
+
+   </div>
+
+  <div class="actions" metal:fill-slot="buttons">
+    <input tal:replace="structure view/actions/field.actions.activate/render" />
+  </div>
+
   </div>
 
 </div>
+
+    <p metal:fill-slot="help">
+       Once you activate you PPA you will be able to upload source
+       packages to it and Launchpad will build and publish their
+       binaries for you. Check the procedure details in the
+       quick-start <a href="https://help.launchpad.net/PPAQuickStart"
+       >guide</a>.
+    </p>
+
 </body>
 </html>
 

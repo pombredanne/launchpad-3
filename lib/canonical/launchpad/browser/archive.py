@@ -16,17 +16,16 @@ __all__ = [
     ]
 
 from zope.app.form.browser import TextAreaWidget
-from zope.app.form.browser.add import AddView
 from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.interfaces import (
-    IArchive, IArchiveSet, IBuildSet, IHasBuildRecords)
+    IArchive, IPPAActivateForm, IArchiveSet, IBuildSet, IHasBuildRecords)
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Navigation, Link, LaunchpadView,
-    LaunchpadEditFormView, ApplicationMenu, enabled_with_permission,
-    action, custom_widget, canonical_url, stepthrough)
+    action, canonical_url, custom_widget, enabled_with_permission,
+    stepthrough, ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView,
+    LaunchpadView, Link, Navigation, StandardLaunchpadFacets)
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.lp.dbschema import ArchivePurpose
 
@@ -98,27 +97,35 @@ class ArchiveView(LaunchpadView):
         self.search_results = self.batchnav.currentBatch()
 
 
-class ArchiveActivateView(AddView):
+class ArchiveActivateView(LaunchpadFormView):
+    """PPA activation view class.
+
+    Ensure user has accepted the PPA Terms of Use by clicking in the
+    'accepted' checkbox.
+    It redirects to PPA page when PPA is already activated.
+    """
+    schema = IPPAActivateForm
 
     def __init__(self, context, request):
-        self.request = request
-        self.context = context
-        self._nextURL = '.'
-        AddView.__init__(self, context, request)
-
-        # Redirects to the PPA page if it already exists.
+        """Redirects to the PPA page if it already exists."""
+        LaunchpadFormView.__init__(self, context, request)
         if self.context.archive is not None:
             self.request.response.redirect(canonical_url(self.context.archive))
 
-    def createAndAdd(self, data):
+    def validate(self, data):
+        """Ensure user has checked the 'accepted' checkbox."""
+        if len(self.errors) == 0:
+            if not data.get('accepted', None):
+                self.addError(
+                    "PPA ToS has to be accepted to complete the activation.")
+
+    @action(_("Activate"), name="activate")
+    def action_save(self, action, data):
+        """Activate PPA and moves to its page."""
         ppa = getUtility(IArchiveSet).new(
             owner=self.context, purpose=ArchivePurpose.PPA,
             description=data['description'])
-        self._nextURL = canonical_url(ppa)
-        return ppa
-
-    def nextURL(self):
-        return self._nextURL
+        self.next_url = canonical_url(ppa)
 
 
 class ArchiveBuildsView(BuildRecordsView):

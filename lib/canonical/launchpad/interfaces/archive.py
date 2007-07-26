@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'IArchive',
+    'IPPAActivateForm',
     'IArchiveSet',
     ]
 
@@ -75,6 +76,21 @@ class IArchive(Interface, IHasOwner):
 
     def getPublishedBinaries():
         """Return all IBinaryPackagePublishingHistory target to this archive."""
+
+class IPPAActivateForm(Interface):
+    """Schema used to activate PPAs."""
+
+    description = Text(
+        title=_("PPA contents description"), required=False,
+        description=_(
+        "A short description of contents and goals of this PPA. This text "
+        "will be presented in the PPA page and will also allow other users "
+        "to find your PPA int their searches. URLs are allowed and will "
+        "be rendered as links."))
+
+    accepted = Bool(
+        title=_("I accept the PPA Terms of Service."),
+        required=True, default=False)
 
 
 class IArchiveSet(Interface):
