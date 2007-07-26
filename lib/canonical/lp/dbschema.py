@@ -27,13 +27,7 @@ __all__ = (
 'BountyDifficulty',
 'BountyStatus',
 'BranchRelationships',
-'BranchLifecycleStatus',
-'BranchLifecycleStatusFilter',
 'BranchReviewStatus',
-'BranchSubscriptionDiffSize',
-'BranchSubscriptionNotificationLevel',
-'BranchType',
-'BranchVisibilityRule',
 'BugBranchStatus',
 'BugNominationStatus',
 'BugTaskStatus',
@@ -57,7 +51,6 @@ __all__ = (
 'ImportStatus',
 'LoginTokenType',
 'MailingListAutoSubscribePolicy',
-'MailingListStatus',
 'ManifestEntryType',
 'ManifestEntryHint',
 'MirrorContent',
@@ -115,7 +108,11 @@ __all__ = (
 'UpstreamReleaseVersionStyle',
 )
 
-from canonical.launchpad.webapp.enum import DBSchema, Item
+#from canonical.launchpad.webapp.enum import DBSchema
+#from canonical.launchpad.webapp.enum import DBSchemaItem as Item
+
+from canonical.lazr import DBEnumeratedType as DBSchema
+from canonical.lazr import DBItem as Item
 
 
 class AccountStatus(DBSchema):
@@ -504,10 +501,10 @@ class GPGKeyAlgorithm(DBSchema):
 
         RSA""")
 
-    g = Item(16, """
-        g
+    LITTLE_G = Item(16, """
+         g
 
-        ElGamal""")
+         ElGamal""")
 
     D = Item(17, """
         D
@@ -2485,133 +2482,6 @@ class BugInfestationStatus(DBSchema):
         """)
 
 
-class BranchLifecycleStatus(DBSchema):
-    """Branch Lifecycle Status
-
-    This indicates the status of the branch, as part of an overall
-    "lifecycle". The idea is to indicate to other people how mature this
-    branch is, or whether or not the code in the branch has been deprecated.
-    Essentially, this tells us what the author of the branch thinks of the
-    code in the branch.
-    """
-
-    NEW = Item(1, """
-        New
-
-        This branch has just been created, and we know nothing else about
-        it.
-        """, sortkey=60)
-
-    EXPERIMENTAL = Item(10, """
-        Experimental
-
-        This branch contains code that is considered experimental. It is
-        still under active development and should not be merged into
-        production infrastructure.
-        """, sortkey=30)
-
-    DEVELOPMENT = Item(30, """
-        Development
-
-        This branch contains substantial work that is shaping up nicely, but
-        is not yet ready for merging or production use. The work is
-        incomplete, or untested.
-        """, sortkey=20)
-
-    MATURE = Item(50, """
-        Mature
-
-        The developer considers this code mature. That means that it
-        completely addresses the issues it is supposed to, that it is tested,
-        and that it has been found to be stable enough for the developer to
-        recommend it to others for inclusion in their work.
-        """, sortkey=10)
-
-    MERGED = Item(70, """
-        Merged
-
-        This code has successfully been merged into its target branch(es),
-        and no further development is anticipated on the branch.
-        """, sortkey=40)
-
-    ABANDONED = Item(80, """
-        Abandoned
-
-        This branch contains work which the author has abandoned, likely
-        because it did not prove fruitful.
-        """, sortkey=50)
-
-
-# XXX thumper 2006-12-15 Has copies of BranchLifecycleStatus
-# until I find a better way of extending an existing list.
-# The dbschema refactoring should make this all become simple.
-class BranchLifecycleStatusFilter(DBSchema):
-    """Branch Lifecycle Status Filter
-
-    Used to populate the branch lifecycle status filter widget.
-    UI only.
-    """
-
-    CURRENT = Item(-1, """
-        New, Experimental, Development or Mature
-
-        Show the currently active branches.
-        """)
-
-    ALL = Item(0, """
-        Any Status
-
-        Show all the branches.
-        """)
-
-    NEW = Item(1, """
-        New
-
-        This branch has just been created, and we know nothing else about
-        it.
-        """, sortkey=60)
-
-    EXPERIMENTAL = Item(10, """
-        Experimental
-
-        This branch contains code that is considered experimental. It is
-        still under active development and should not be merged into
-        production infrastructure.
-        """, sortkey=30)
-
-    DEVELOPMENT = Item(30, """
-        Development
-
-        This branch contains substantial work that is shaping up nicely, but
-        is not yet ready for merging or production use. The work is
-        incomplete, or untested.
-        """, sortkey=20)
-
-    MATURE = Item(50, """
-        Mature
-
-        The developer considers this code mature. That means that it
-        completely addresses the issues it is supposed to, that it is tested,
-        and that it has been found to be stable enough for the developer to
-        recommend it to others for inclusion in their work.
-        """, sortkey=10)
-
-    MERGED = Item(70, """
-        Merged
-
-        This code has successfully been merged into its target branch(es),
-        and no further development is anticipated on the branch.
-        """, sortkey=40)
-
-    ABANDONED = Item(80, """
-        Abandoned
-
-        This branch contains work which the author has abandoned, likely
-        because it did not prove fruitful.
-        """, sortkey=50)
-
-
-
 class BranchReviewStatus(DBSchema):
     """Branch Review Cycle
 
@@ -2659,141 +2529,6 @@ class BranchReviewStatus(DBSchema):
 
         The reviewer is satisfied that the branch can be merged without
         further changes.
-        """)
-
-
-class BranchSubscriptionDiffSize(DBSchema):
-    """Branch Subscription Diff Size
-
-    When getting branch revision notifications, the person can set a size
-    limit of the diff to send out. If the generated diff is greater than
-    the specified number of lines, then it is omitted from the email.
-    This enumerated type defines the number of lines as a choice
-    so we can sensibly limit the user to a number of size choices.
-    """
-
-    NODIFF = Item(0, """
-        Don't send diffs
-
-        Don't send generated diffs with the revision notifications.
-        """, sortkey=0)
-
-    HALFKLINES = Item(500, """
-        500 lines
-
-        Limit the generated diff to 500 lines.
-        """, sortkey=500)
-
-    ONEKLINES  = Item(1000, """
-        1000 lines
-
-        Limit the generated diff to 1000 lines.
-        """, sortkey=1000)
-
-    FIVEKLINES = Item(5000, """
-        5000 lines
-
-        Limit the generated diff to 5000 lines.
-        """, sortkey=5000)
-
-    WHOLEDIFF  = Item(-1, """
-        Send entire diff
-
-        Don't limit the size of the diff.
-        """, sortkey=1000000)
-
-
-class BranchSubscriptionNotificationLevel(DBSchema):
-    """Branch Subscription Notification Level
-
-    The notification level is used to control the amount and content
-    of the email notifications send with respect to modifications
-    to branches whether it be to branch attributes in the UI, or
-    to the contents of the branch found by the branch scanner.
-    """
-
-    NOEMAIL = Item(0, """
-        No email
-
-        Do not send any email about changes to this branch.
-        """)
-
-    ATTRIBUTEONLY = Item(1, """
-        Branch attribute notifications only
-
-        Only send notifications for branch attribute changes such
-        as name, description and whiteboard.
-        """)
-
-    DIFFSONLY = Item(2, """
-        Branch revision notifications only
-
-        Only send notifications about new revisions added to this
-        branch.
-        """)
-
-    FULL = Item(3, """
-        Branch attribute and revision notifications
-
-        Send notifications for both branch attribute updates
-        and new revisions added to the branch.
-        """)
-
-
-class BranchType(DBSchema):
-    """Branch Type
-
-    The type of a branch determins the branch interaction with a number
-    of other subsystems.
-    """
-
-    HOSTED = Item(1, """
-        Hosted
-
-        Hosted branches have their main repository on the supermirror.
-        """)
-
-    MIRRORED = Item(2, """
-        Mirrored
-
-        Mirrored branches are primarily hosted elsewhere and are
-        periodically pulled from the remote site into the supermirror.
-        """)
-
-    IMPORTED = Item(3, """
-        Imported
-
-        Imported branches have been converted from some other revision
-        control system into bzr and are made available through the supermirror.
-        """)
-
-
-class BranchVisibilityRule(DBSchema):
-    """Branch Visibility Rules for defining branch visibility policy."""
-
-    PUBLIC = Item(1, """
-        Public
-
-        Branches are public by default.
-        """)
-
-    PRIVATE = Item(2, """
-        Private
-
-        Branches are private by default.
-        """)
-
-    PRIVATE_ONLY = Item (3, """
-        Private only
-
-        Branches are private by default. Branch owners are not able
-        to change the visibility of the branches to public.
-        """)
-
-    FORBIDDEN = Item(4, """
-        Forbidden
-
-        Users are not able to create branches in the context.
         """)
 
 
@@ -3263,85 +2998,6 @@ class MailingListAutoSubscribePolicy(DBSchema):
 
         The user is automatically subscribed to any team mailing list when she
         is added to the team, regardless of who joins her to the team.
-        """)
-
-
-class MailingListStatus(DBSchema):
-    """Team mailing list status.
-
-    Team mailing lists can be in one of several states, which this class
-    tracks.  A team owner first requests that a mailing list be created for
-    their team; this is called registering the list.  This request will then
-    be either approved or declined by a Launchpad administrator.
-
-    If a list request is approved, its creation will be requested of Mailman,
-    but it takes time for Mailman to act on this request.  During this time,
-    the state of the list is 'constructing'.  Mailman will then either succeed
-    or fail to create the list.  If it succeeds, the list is active until such
-    time as the team owner requests that the list be made inactive.
-    """
-
-    REGISTERED = Item(1, """
-        Registered; request creation
-
-        The team owner has requested that the mailing list for their team be
-        created.
-        """)
-
-    APPROVED = Item(2, """
-        Approved
-
-        A Launchpad administrator has approved the request to create the team
-        mailing list.
-        """)
-
-    DECLINED = Item(3, """
-        Declined
-
-        A Launchpad administrator has declined the request to create the team
-        mailing list.
-        """)
-
-    CONSTRUCTING = Item(4, """
-        Constructing
-
-        Mailman is in the process of constructing a mailing list that has been
-        approved for creation.
-        """)
-
-    ACTIVE = Item(5, """
-        Active
-
-        Mailman has successfully created the mailing list, and it is now
-        active.
-        """)
-
-    FAILED = Item(6, """
-        Failed
-
-        Mailman was unsuccessful in creating the mailing list.
-        """)
-
-    INACTIVE = Item(7, """
-        Inactive
-
-        A previously active mailing lit has been made inactive by its team
-        owner.
-        """)
-
-    MODIFIED = Item(8, """
-        Modified
-
-        An active mailing list has been modified and this modification needs
-        to be communicated to Mailman.
-        """)
-
-    DEACTIVATING = Item(9, """
-        Deactivating
-
-        The mailing list has been flagged for deactivation by the team owner.
-        Mailman will be informed of this and will take the necessary actions
-        to deactive the list.
         """)
 
 

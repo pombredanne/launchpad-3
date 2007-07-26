@@ -93,6 +93,11 @@
             facet="translations"
             template="../templates/project-translations.pt"
             />
+       <browser:page
+            name="+milestones"
+            facet="overview"
+            template="../templates/object-milestones.pt"
+            />
 
        <!-- Projects portlets -->
        <browser:page
@@ -109,6 +114,11 @@
             name="+portlet-lifecycle"
             facet="overview"
             template="../templates/project-portlet-lifecycle.pt"
+            />
+       <browser:page
+            name="+portlet-milestones"
+            facet="overview"
+            template="../templates/object-portlet-milestones.pt"
             />
     </browser:pages>
 

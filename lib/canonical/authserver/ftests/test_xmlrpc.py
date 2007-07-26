@@ -12,7 +12,8 @@ import pytz
 from twisted.application import strports
 from canonical.authserver.interfaces import WRITABLE
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
-from canonical.launchpad.ftests.harness import LaunchpadTestCase
+from canonical.launchpad.ftests.harness import (
+    LaunchpadTestCase, LaunchpadTestSetup)
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.config import config
 
@@ -34,7 +35,9 @@ class XMLRPCv1TestCase(LaunchpadTestCase):
         self.server = xmlrpclib.Server('http://localhost:%s/' % _getPort())
 
     def tearDown(self):
+        """Tear down the test and reset the database."""
         AuthserverTacTestSetup().tearDown()
+        LaunchpadTestSetup().force_dirty_database()
         LaunchpadTestCase.tearDown(self)
 
     def test_getUser(self):
@@ -118,7 +121,9 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
         self.server = xmlrpclib.Server('http://localhost:%s/v2/' % _getPort())
 
     def tearDown(self):
+        """Tear down the test and reset the database."""
         AuthserverTacTestSetup().tearDown()
+        LaunchpadTestSetup().force_dirty_database()
         LaunchpadTestCase.tearDown(self)
 
     def test_getUser(self):
@@ -186,7 +191,9 @@ class BranchAPITestCase(LaunchpadTestCase):
                                        % _getPort())
 
     def tearDown(self):
+        """Tear down the test and reset the database."""
         self.tac.tearDown()
+        LaunchpadTestSetup().force_dirty_database()
         LaunchpadTestCase.tearDown(self)
 
     def testGetBranchPullQueue(self):
