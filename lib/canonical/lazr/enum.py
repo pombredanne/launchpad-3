@@ -353,8 +353,13 @@ class BaseMetaEnum(type):
 
         # If sort_order wasn't defined, define it based on the ordering.
         if 'sort_order' not in classdict:
-            classdict['sort_order'] = tuple(
-                [item.name for item in sorted_items])
+            sort_order = [item.name for item in sorted_items]
+            classdict['sort_order'] = tuple(sort_order)
+            # Make sure all items in the enumeration have a defined value for
+            # the sortkey rather than the more arbitrary one defined by the
+            # BaseItem constructor.
+            for sort_id, item_name in enumerate(sort_order):
+                classdict[item_name].sortkey = sort_id
 
         global enumerated_type_registry
         if classname in enumerated_type_registry:
