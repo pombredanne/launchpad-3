@@ -895,7 +895,7 @@ class NewSpecificationViewBase(LaunchpadFormView):
         
         owner = self.user
         # clean up name
-        name = data['name'].strip().lower()
+        name = data['name']
         # determine product or distribution as target
         product = distribution = None
         target = data.get('target', None)
