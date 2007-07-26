@@ -866,7 +866,8 @@ class SpecificationAddViewBase(LaunchpadFormView):
                 )
     @property
     def field_names(self):
-        """Return the list of fields participating in the form.
+        """Return the list of fields participating in the form, in the order
+        they are to be rendered.
 
         This form is used sometimes on an IProject, IProduct or
         IDistribution to get a new spec for them, and also on
