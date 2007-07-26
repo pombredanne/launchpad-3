@@ -193,7 +193,7 @@ class Publisher(object):
                                    (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        distroseries.main_archive.id == self.archive.id):
+                        self.archive.purpose != ArchivePurpose.PPA):
                         # We're not doing a full run and the
                         # distroseries is now 'stable': if we try to
                         # write a release file for it, we're doing
@@ -221,7 +221,7 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        distroseries.main_archive.id == self.archive.id):
+                        self.archive.id != ArchivePurpose.PPA):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
                             "Oops, indexing stable distroseries.")
@@ -251,7 +251,7 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        distroseries.main_archive == self.archive):
+                        self.archive != ArchivePurpose.PPA):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
                             "Oops, indexing stable distroseries.")
