@@ -144,6 +144,43 @@ single e-mail later.
     <BLANKLINE>
      -- Sample Person <test@canonical.com> Tue, 7 Feb 2006 12:10:08 +0300
 
+Uploads to pocket PROPOSED should not close bugs, see bug #125279 for
+further information:
+
+    >>> cdrkit_ubuntu = ubuntu.getSourcePackage('cdrkit')
+    >>> cdrkit_release = cdrkit_ubuntu.currentrelease.sourcepackagerelease
+    >>> cdrkit_bug = cdrkit_ubuntu.createBug(bug_params)
+    >>> cdrkit_bug_id = cdrkit_bug.id
+
+    >>> changes = changes_template % cdrkit_bug_id
+    >>> changes_file = getUtility(ILibrarianClient).addFile(
+    ...     'cdrkit.changes', len(changes), StringIO(changes), 'text/plain')
+
+    >>> queue_item = PackageUpload(
+    ...     status=PackageUploadStatus.DONE,
+    ...     distroseries=ubuntu_hoary,
+    ...     archive=ubuntu_hoary.main_archive,
+    ...     pocket=PackagePublishingPocket.PROPOSED,
+    ...     changesfile=changes_file, signing_key=None)
+    >>> queue_item_id = queue_item.id
+    >>> source_queue = queue_item.addSource(cdrkit_release)
+
+    >>> cdrkit_bug = getUtility(IBugSet).get(cdrkit_bug_id)
+    >>> [cdrkit_task] = cdrkit_bug.bugtasks
+    >>> cdrkit_task.status.name
+    'NEW'
+
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    >>> close_bugs([queue_item_id])
+    >>> commit()
+    >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
+    >>> cdrkit_bug = getUtility(IBugSet).get(cdrkit_bug_id)
+    >>> [cdrkit_task] = cdrkit_bug.bugtasks
+    >>> cdrkit_task.status.name
+    'NEW'
+
 It's possible to specify more than one bug in the Launchpad-bugs-fixed
 header, each will be marked as Fix Released. If a nonexistent bug is
 specified, it's ignored.
