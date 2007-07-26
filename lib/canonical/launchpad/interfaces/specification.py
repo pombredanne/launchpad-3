@@ -10,7 +10,6 @@ __all__ = [
     'INewSpecificationTarget',
     'INewSpecificationProjectTarget',
     'ISpecification',
-    'INewSpecificationForm',
     'ISpecificationSet',
     'ISpecificationDelta',
     ]
@@ -409,22 +408,6 @@ class INewSpecificationProjectTarget(Interface):
                                   "proposal is being made."),
                     required=True,
                     vocabulary='ProjectProducts')
-
-
-class INewSpecificationForm(ISpecification):
-    """ A schema for registering new blueprints"""
-    sprint = Choice(
-        title=_("Propose for sprint"),
-        description=_("the sprint to which agenda this blueprint is "
-                      "being suggested."),
-        required=False,
-        vocabulary='FutureSprint')
-    
-    project_target = Choice(
-        title=_("For"),
-        description=_("The project for which this proposal is being made."),
-        required=True,
-        vocabulary='ProjectProducts')
 
 
 # Interfaces for containers
