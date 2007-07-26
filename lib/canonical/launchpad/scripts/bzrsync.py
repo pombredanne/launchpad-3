@@ -73,13 +73,14 @@ class BzrSync:
         behind the queue itself.
         """
         self.pending_emails = []
-        self.generate_subscriber_emails = False
+        self.subscribers_want_notification = False
 
         diff_levels = (BranchSubscriptionNotificationLevel.DIFFSONLY,
                        BranchSubscriptionNotificationLevel.FULL)
         for subscription in self.db_branch.subscriptions:
             if subscription.notification_level in diff_levels:
-                self.generate_subscriber_emails = True
+                self.subscribers_want_notification = True
+                break
 
     def close(self):
         """Explicitly release resources."""
@@ -135,7 +136,7 @@ class BzrSync:
         self.insertBranchRevisions(branchrevisions_to_insert)
         self.trans_manager.commit()
         # Now that these changes have been committed, send the pending emails.
-        if self.generate_subscriber_emails:
+        if self.subscribers_want_notification:
             self.sendRevisionNotificationEmails()
         # The Branch table is modified by other systems, including the web UI,
         # so we need to update it in a short transaction to avoid causing
@@ -208,7 +209,7 @@ class BzrSync:
         # When the history is shortened, and email is sent that says this.
         # This will never happen for a newly scanned branch, so not checking
         # that here.
-        if self.generate_subscriber_emails:
+        if self.subscribers_want_notification:
             number_removed = len(removed_history)
             if number_removed > 0:
                 if number_removed == 1:
@@ -379,7 +380,7 @@ class BzrSync:
                     self.logger.debug("%d of %d: %s is a ghost",
                                       self.curr, self.last, revision_id)
                     continue
-                if self.generate_subscriber_emails:
+                if self.subscribers_want_notification:
                     message = self.getRevisionMessage(revision)
                     revision_diff = self.getDiff(revision)
                     self.pending_emails.append((message, revision_diff))
