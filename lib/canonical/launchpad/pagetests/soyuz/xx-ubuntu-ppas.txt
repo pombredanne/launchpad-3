@@ -5,7 +5,7 @@ The Ubuntu Linux page contains a link to get to the Personal Package Archives.
     >>> browser.open("http://launchpad.dev/ubuntu")
     >>> browser.getLink("Personal Package Archives").click()
     >>> browser.title
-    'Personal Package Archive for Ubuntu Linux'
+    'Ubuntu Linux Personal Package Archives'
 
 == PPA main page ==
 
@@ -66,15 +66,6 @@ In the table rows, the "Owner" is a clickable link to his PPA page.
     >>> browser.getLink("Celso Providelo").click()
     >>> browser.title
     'PPA for Celso Providelo'
-
-The page contains a source.list example for anyone who wants to use the
-packages.
-
-    >>> results = find_tag_by_id(browser.contents,'sources_list')
-    >>> text = extract_text(results)
-    >>> print text
-    deb http://ppa.launchpad.dev/cprov/ubuntu SUITE [COMPONENTS]
-    deb-src http://ppa.launchpad.dev/cprov/ubuntu SUITE [COMPONENTS]
 
 The page also shows some stats about Celso's PPA (number of sources. binaries
 and estimated size).
@@ -147,7 +138,7 @@ allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
     >>> browser.open("http://launchpad.dev/ubuntutest")
     >>> browser.getLink("Personal Package Archives").click()
     >>> browser.title
-    'Personal Package Archive for Ubuntu Test'
+    'Ubuntu Test Personal Package Archives'
 
     >>> soup = find_main_content(browser.contents)
     >>> results = soup.findAll(attrs={'class': 'ppa_batch_row'})
