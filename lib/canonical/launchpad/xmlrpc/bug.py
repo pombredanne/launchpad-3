@@ -11,10 +11,9 @@ from zope.event import notify
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IProductSet, IPersonSet, IDistributionSet, CreateBugParams,
-    NotFoundError)
+    NotFoundError, BugTaskStatus)
 from canonical.launchpad.webapp import canonical_url, LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
-from canonical.lp.dbschema import BugTaskStatus
 
 class FileBugAPI(LaunchpadXMLRPCView):
     """The XML-RPC API for filing bugs in Malone."""

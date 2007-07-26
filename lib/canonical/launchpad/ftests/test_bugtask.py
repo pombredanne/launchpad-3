@@ -12,8 +12,7 @@ from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.interfaces import (
     IBugSet, IDistributionSet, IUpstreamBugTask, IBugTaskSet,
-    ILaunchBag, IBugWatchSet, IProductSet)
-from canonical.lp.dbschema import BugTaskStatus
+    ILaunchBag, IBugWatchSet, IProductSet, BugTaskStatus)
 
 
 class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):

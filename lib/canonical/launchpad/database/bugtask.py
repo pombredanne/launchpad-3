@@ -30,6 +30,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
 from canonical.database.enumcol import EnumCol
 
+from canonical.lazr.enum import DBItem
+
 from canonical.launchpad.searchbuilder import any, NULL, not_equals
 from canonical.launchpad.database.pillar import pillar_sort_key
 from canonical.launchpad.interfaces import (
@@ -53,6 +55,8 @@ from canonical.launchpad.interfaces import (
     RESOLVED_BUGTASK_STATUSES,
     UNRESOLVED_BUGTASK_STATUSES,
     BUG_CONTACT_BUGTASK_STATUSES,
+    BugTaskStatus,
+    BugTaskStatusSearch,
     )
 from canonical.launchpad.helpers import shortlist
 # XXX: see bug 49029 -- kiko, 2006-06-14
@@ -60,7 +64,6 @@ from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import (
     BugNominationStatus,
     BugTaskImportance,
-    BugTaskStatus,
     PackagePublishingStatus,
     )
 
@@ -998,12 +1001,11 @@ class BugTaskSet:
 
         extra_clauses = ['Bug.id = BugTask.bug']
         clauseTables = ['BugTask', 'Bug']
-
+        
         # These arguments can be processed in a loop without any other
         # special handling.
         standard_args = {
             'bug': params.bug,
-            'status': params.status,
             'importance': params.importance,
             'product': params.product,
             'distribution': params.distribution,
@@ -1013,6 +1015,64 @@ class BugTaskSet:
             'sourcepackagename': params.sourcepackagename,
             'owner': params.owner,
         }
+
+        if isinstance(params.status, any):
+            # XXX : we only provide support for the pseudo statuses
+            # BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE and
+            # BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE
+            # if they are part of an 'any' clause, since we know that
+            # they can only come from the advanced search form, which
+            # always provides a list. If and when we decide to support
+            # searching for these pseudo-statuses using equals or
+            # no_equals the implementation will have to be more
+            # a bit more complicated.
+            # -- Tom Berger 2007-07-26
+            status_values = params.status.query_values            
+            with_response = (
+                BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE in status_values)
+            without_response = (
+                BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE in status_values)
+
+            if (with_response or without_response):
+                # Remove the pseudo statuses from the list
+                # since it will be passed to the query builder
+                status_values = [
+                    dbitem for dbitem in status_values
+                    if dbitem not in (
+                    BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE,
+                    BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)]
+
+            if (with_response != without_response):
+                status_clause = (
+                    '(BugTask.status = %s ' %
+                    sqlvalues(BugTaskStatus.INCOMPLETE))
+                status_clause += 'AND BugTask.date_incomplete '
+                if with_response:
+                    status_clause += '<='
+                elif without_response:
+                    status_clause += '>'
+                else:
+                    assert with_response != without_response
+                status_clause += """ (
+                    SELECT Message.datecreated
+                    FROM BugMessage, Message
+                    WHERE Message.id = BugMessage.message
+                    AND BugMessage.bug = Bug.id
+                    ORDER BY Message.datecreated DESC
+                    LIMIT 1))
+                    """
+                if len(status_values) > 0:
+                    params.status.query_values = status_values
+                    status_clause = (
+                        '(BugTask.status %s OR %s)' %
+                        (search_value_to_where_condition(params.status),
+                         status_clause))
+                extra_clauses.append(status_clause)
+            else:
+                standard_args['status'] = params.status
+        else:
+            standard_args['status'] = params.status
+
         # Loop through the standard, "normal" arguments and build the
         # appropriate SQL WHERE clause. Note that arg_value will be one
         # of:

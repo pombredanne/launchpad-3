@@ -40,7 +40,7 @@ from canonical.launchpad.helpers import (
     contactEmailAddresses, is_english_variant, shortlist)
 
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, EmailAddressStatus, LoginTokenType,
+    BugTaskImportance, EmailAddressStatus, LoginTokenType,
     PersonCreationRationale, ShippingRequestStatus, SpecificationFilter,
     SpecificationDefinitionStatus, SpecificationImplementationStatus,
     SpecificationSort, SSHKeyType, TeamMembershipRenewalPolicy,
@@ -55,7 +55,7 @@ from canonical.launchpad.interfaces import (
     IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey,
     ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
     JoinNotAllowed, QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, BugTaskStatus)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar

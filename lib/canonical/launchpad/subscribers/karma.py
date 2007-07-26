@@ -3,9 +3,10 @@
 """ karma.py -- handles all karma assignments done in the launchpad
 application."""
 
-from canonical.launchpad.interfaces import IDistribution, IProduct
+from canonical.launchpad.interfaces import (
+    BugTaskStatus, IDistribution, IProduct)
 from canonical.launchpad.mailnotification import get_bug_delta
-from canonical.lp.dbschema import BugTaskStatus, QuestionAction
+from canonical.lp.dbschema import QuestionAction
 
 
 def bug_created(bug, event):

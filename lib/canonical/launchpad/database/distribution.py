@@ -59,7 +59,7 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, MirrorContent,
+    ArchivePurpose, DistroSeriesStatus, MirrorContent,
     TranslationPermission, SpecificationSort, SpecificationFilter,
     SpecificationDefinitionStatus, SpecificationImplementationStatus,
     PackagePublishingStatus)
@@ -68,7 +68,7 @@ from canonical.launchpad.interfaces import (
     IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IFAQTarget, 
     IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, 
     ISourcePackageName, IQuestionTarget, NotFoundError, 
-    QUESTION_STATUS_DEFAULT_SEARCH)
+    QUESTION_STATUS_DEFAULT_SEARCH, BugTaskStatus)
 
 from canonical.archivepublisher.debversion import Version
 

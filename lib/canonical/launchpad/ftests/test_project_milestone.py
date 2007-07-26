@@ -11,10 +11,11 @@ from unittest import TestCase
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.interfaces import (BugTaskSearchParams,
-    CreateBugParams, IBugSet, IBugTaskSet, IPersonSet, IProductSet,
-    IProjectSet, IProjectMilestoneSet, ISpecificationSet)
-from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance,
+from canonical.launchpad.interfaces import (
+    BugTaskStatus, BugTaskSearchParams, CreateBugParams, IBugSet,
+    IBugTaskSet, IPersonSet, IProductSet, IProjectSet,
+    IProjectMilestoneSet, ISpecificationSet)
+from canonical.lp.dbschema import (BugTaskImportance,
     SpecificationPriority, SpecificationDefinitionStatus)
 from canonical.launchpad.ftests import login
 from canonical.testing import LaunchpadFunctionalLayer

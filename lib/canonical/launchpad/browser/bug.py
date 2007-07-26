@@ -35,6 +35,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams,
+    BugTaskStatus,
     IAddBugTaskForm,
     IBug,
     IBugSet,
@@ -63,7 +64,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.interfaces import ICanonicalUrlData
 
-from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
+from canonical.lp.dbschema import BugTaskImportance
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.textwidgets import StrippedTextWidget

@@ -21,7 +21,7 @@ __all__ = [
 
 import xmlrpclib
 
-from canonical.lp.dbschema import BugTaskStatus
+from canonical.launchpad.interfaces import BugTaskStatus
 
 class LaunchpadFault(xmlrpclib.Fault):
     """Base class for a Launchpad XMLRPC fault.

@@ -17,7 +17,7 @@ __all__ = [
     'BugBranchStatusVocabulary',
     'BugNominationStatusVocabulary',
     'BugTaskImportanceVocabulary',
-    'BugTaskStatusVocabulary',
+#    'BugTaskStatusVocabulary',
     'BugTrackerTypeVocabulary',
     'CodeImportReviewStatusVocabulary',
     'CveStatusVocabulary',
@@ -40,7 +40,7 @@ __all__ = [
     'QuestionSortVocabulary',
     'QuestionStatusVocabulary',
     'RemoteBugTaskImportanceVocabulary',
-    'RemoteBugTaskStatusVocabulary',
+#    'RemoteBugTaskStatusVocabulary',
     'RevisionControlSystemsVocabulary',
     'ShipItFlavourVocabulary',
     'SpecificationImplementationStatusVocabulary',
@@ -70,8 +70,8 @@ BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
 BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
-BugTaskStatusVocabulary = vocab_factory(
-    dbschema.BugTaskStatus, noshow=[dbschema.BugTaskStatus.UNKNOWN])
+#BugTaskStatusVocabulary = vocab_factory(
+#    dbschema.BugTaskStatus, noshow=[dbschema.BugTaskStatus.UNKNOWN])
 BugTaskImportanceVocabulary = vocab_factory(
     dbschema.BugTaskImportance, noshow=[dbschema.BugTaskImportance.UNKNOWN])
 BugRefVocabulary = vocab_factory(dbschema.BugExternalReferenceType)
@@ -100,7 +100,7 @@ QuestionActionVocabulary = vocab_factory(dbschema.QuestionAction)
 QuestionSortVocabulary =  vocab_factory(dbschema.QuestionSort)
 QuestionStatusVocabulary =  vocab_factory(dbschema.QuestionStatus)
 QuestionPriorityVocabulary = vocab_factory(dbschema.QuestionPriority)
-RemoteBugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
+#RemoteBugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 RevisionControlSystemsVocabulary = vocab_factory(
     dbschema.RevisionControlSystems)
