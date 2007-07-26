@@ -16,9 +16,9 @@ more than one target (https://launchpad.net/bugs/1357).
     >>> from canonical.launchpad.ftests.bug import print_bugtasks
     >>> print_bugtasks(anon_browser.contents)
     5 Firefox install instructions should be complete
-        firefox (upstream) Critical New
+        Mozilla Firefox Critical New
     4 Reflow problems with complex page layouts
-        firefox (upstream) Medium New
+        Mozilla Firefox Medium New
     5 Firefox install instructions should be complete
         mozilla-firefox (Ubuntu Warty) Medium New
     1 Firefox does not support SVG
@@ -28,9 +28,9 @@ more than one target (https://launchpad.net/bugs/1357).
     9 Thunderbird crashes
         thunderbird (Ubuntu) Medium Confirmed
     1 Firefox does not support SVG
-        firefox (upstream) Low New
+        Mozilla Firefox Low New
     2 Blackhole Trash folder
-        ubuntu (upstream) Low New
+        Tomcat Low New
     1 Firefox does not support SVG
         mozilla-firefox (Debian) Low Confirmed
     2 Blackhole Trash folder
@@ -58,9 +58,11 @@ person.
 
     >>> print_bugtasks(anon_browser.contents)
     5 Firefox install instructions should be complete
-        firefox (upstream) Critical New
+        Mozilla Firefox Critical New
     2 Blackhole Trash folder
-        mozilla-firefox (Debian) Low Confirmed
+        mozilla-firefox (Debian)
+        Low
+        Confirmed
 
 === Reported bugs ===
 
@@ -72,17 +74,17 @@ person.
 
     >>> print_bugtasks(anon_browser.contents)
     5 Firefox install instructions should be complete
-        firefox (upstream) Critical New
+        Mozilla Firefox Critical New
     4 Reflow problems with complex page layouts
-        firefox (upstream) Medium New
+        Mozilla Firefox Medium New
     5 Firefox install instructions should be complete
         mozilla-firefox (Ubuntu Warty) Medium New
     2 Blackhole Trash folder
         mozilla-firefox (Debian Woody) Medium New
     1 Firefox does not support SVG
-        firefox (upstream) Low New
+        Mozilla Firefox Low New
     2 Blackhole Trash folder
-        ubuntu (upstream) Low New
+        Tomcat Low New
     1 Firefox does not support SVG
         mozilla-firefox (Debian) Low Confirmed
     2 Blackhole Trash folder
@@ -98,13 +100,12 @@ person.
 
     >>> print_bugtasks(anon_browser.contents)
     4 Reflow problems with complex page layouts
-        firefox (upstream) Medium New
+        Mozilla Firefox Medium New
     1 Firefox does not support SVG
         mozilla-firefox (Ubuntu) Medium New
     9 Thunderbird crashes
         thunderbird (Ubuntu) Medium Confirmed
     1 Firefox does not support SVG
-        firefox (upstream) Low New
+        Mozilla Firefox Low New
     1 Firefox does not support SVG
         mozilla-firefox (Debian) Low Confirmed
-

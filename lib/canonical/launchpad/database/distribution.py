@@ -147,6 +147,14 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return Archive.selectOneBy(distribution=self,
                                    purpose=ArchivePurpose.PRIMARY)
 
+    @cachedproperty
+    def all_distro_archives(self):
+        """See `IDistribution`."""
+        return Archive.select("""
+            Distribution = %s AND
+            Purpose != %s""" % sqlvalues(self.id, ArchivePurpose.PPA)
+            )
+
     @property
     def all_milestones(self):
         """See `IDistribution`."""
@@ -254,9 +262,14 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     @property
+    def bugtargetdisplayname(self):
+        """See IBugTarget."""
+        return self.displayname
+
+    @property
     def bugtargetname(self):
         """See `IBugTarget`."""
-        return self.displayname
+        return self.name
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""

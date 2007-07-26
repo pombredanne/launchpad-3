@@ -113,7 +113,7 @@ If we create a lot of imports, the listing view will be batched.
     >>> from canonical.launchpad.ftests import login, logout
     >>> from canonical.launchpad.interfaces import (
     ...     IBranchSet, ICodeImportSet, ILaunchpadCelebrities,
-    ...     IPersonSet, IProductSet)
+    ...     IPersonSet, IProductSet, BranchType)
     >>> from canonical.lp.dbschema import RevisionControlSystems
 
     >>> login('david.allouche@canonical.com')
@@ -123,7 +123,6 @@ If we create a lot of imports, the listing view will be batched.
     >>> svn_url = 'svn://svn.example.com/trunk-%s'
     >>> nopriv = getUtility(IPersonSet).getByName('no-priv')
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-    >>> from canonical.lp.dbschema import BranchType
     >>> def import_branch_for_new_product(name):
     ...     product = getUtility(IProductSet).createProduct(
     ...         nopriv, name, name, name, name, name)

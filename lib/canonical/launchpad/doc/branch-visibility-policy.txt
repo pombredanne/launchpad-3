@@ -14,7 +14,7 @@ non-specifying of a team means *everyone*.
 
 The Policy is defined by the enumerated type BranchVisibilityRule.
 
-    >>> from canonical.lp.dbschema import BranchVisibilityRule
+    >>> from canonical.launchpad.interfaces import BranchVisibilityRule
 
 There are currently four visibility policies:
  * Public - branches are public by default for the specified team.
@@ -27,11 +27,11 @@ There are currently four visibility policies:
      discriminator against certain teams.
 
     >>> for item in BranchVisibilityRule.items:
-    ...     print repr(item)
-    <Item PUBLIC (1) from ...>
-    <Item PRIVATE (2) from ...>
-    <Item PRIVATE_ONLY (3) from ...>
-    <Item FORBIDDEN (4) from ...>
+    ...     print item.title
+    Public
+    Private
+    Private only
+    Forbidden
 
 
 == IHasBranchVisibilityPolicy ==
@@ -90,14 +90,14 @@ implicit policy you need to explicitly define a policy for everyone, and
 this is done by specifying None for the team.
 
     >>> print_team_policies(evolution)
-    >>> evolution.getBaseBranchVisibilityRule()
-    <Item PUBLIC ...BranchVisibilityRule...
+    >>> print evolution.getBaseBranchVisibilityRule().title
+    Public
     >>> evolution.setBranchVisibilityTeamPolicy(
     ...     None, BranchVisibilityRule.PUBLIC)
     >>> print_team_policies(evolution)
     *everyone*: Public
-    >>> evolution.getBaseBranchVisibilityRule()
-    <Item PUBLIC ...BranchVisibilityRule...
+    >>> print evolution.getBaseBranchVisibilityRule().title
+    Public
 
 
 == Setting the policy for teams ==
@@ -126,8 +126,8 @@ Setting the policy for *everyone* is done by passing None for the team.
     >>> print_team_policies(evolution)
     *everyone*: Forbidden
     Launchpad Developers: Private
-    >>> evolution.getBaseBranchVisibilityRule()
-    <Item FORBIDDEN ...BranchVisibilityRule...
+    >>> print evolution.getBaseBranchVisibilityRule().title
+    Forbidden
 
 
 == Removing teams from the policy object ==
@@ -227,10 +227,10 @@ You can get the defined policy for any given team using the method
 getBranchVisibilityRuleForTeam.  If there is not a policy explicity
 defined, then None is returned.
 
-    >>> mozilla.getBranchVisibilityRuleForTeam(ubuntu_gnome_team)
-    <Item PRIVATE ...BranchVisibilityRule...
-    >>> mozilla.getBranchVisibilityRuleForTeam(None)
-    <Item PRIVATE ...BranchVisibilityRule...
+    >>> print mozilla.getBranchVisibilityRuleForTeam(ubuntu_gnome_team).title
+    Private
+    >>> print mozilla.getBranchVisibilityRuleForTeam(None).title
+    Private
     >>> print mozilla.getBranchVisibilityRuleForTeam(launchpad_team)
     None
 
@@ -295,7 +295,7 @@ created as a private branch, but since there are two teams that specify
 privacy, the branch is created so only Foo Bar can see it.  It is up to
 Foo Bar to subscribe the appropriate team at a later date.
 
-    >>> from canonical.lp.dbschema import BranchType
+    >>> from canonical.launchpad.interfaces import BranchType
     >>> branch = branch_set.new(
     ...     branch_type=BranchType.HOSTED,
     ...     name="testing-1", creator=foo_bar, owner=foo_bar,

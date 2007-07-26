@@ -28,7 +28,6 @@ from zope.component import getUtility
 from canonical.config import config
 
 from canonical.lp import decorates
-from canonical.lp.dbschema import BranchType, BranchVisibilityRule
 
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
@@ -36,7 +35,8 @@ from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, IBranch, IBranchSet, IBranchSubscription, IBugSet,
+    BranchCreationForbidden, BranchType, BranchVisibilityRule, IBranch,
+    IBranchSet, IBranchSubscription, IBugSet,
     ICodeImportSet, ILaunchpadCelebrities, IPersonSet)
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,

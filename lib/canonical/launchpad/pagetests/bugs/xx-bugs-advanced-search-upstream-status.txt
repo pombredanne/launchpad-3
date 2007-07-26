@@ -52,8 +52,9 @@ are not included in the report.
     ...         syncUpdate(bugtask)
 
     >>> for bugtask in bug_two.bugtasks:
-    ...     print "%s, %s" % (bugtask.target.bugtargetname, bugtask.status.title)
-    ubuntu-product (upstream), Invalid
+    ...     print "%s, %s" % (
+    ...         bugtask.target.bugtargetdisplayname, bugtask.status.title)
+    Tomcat, Invalid
     Ubuntu, New
     Ubuntu Hoary, New
     mozilla-firefox (Debian), Invalid
