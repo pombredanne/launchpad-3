@@ -59,18 +59,7 @@ class DatabaseTest(unittest.TestCase):
         super(DatabaseTest, self).tearDown()
 
 
-class DatabaseStorageTestCase(unittest.TestCase):
-
-    layer = LaunchpadScriptLayer
-
-    def setUp(self):
-        LaunchpadScriptLayer.switchDbConfig('authserver')
-        super(DatabaseStorageTestCase, self).setUp()
-        self.cursor = cursor()
-
-    def tearDown(self):
-        self.cursor.close()
-        super(DatabaseStorageTestCase, self).tearDown()
+class DatabaseStorageTestCase(DatabaseTest):
 
     def test_verifyInterface(self):
         self.failUnless(verifyObject(IUserDetailsStorage,
@@ -508,13 +497,11 @@ class NewDatabaseStorageTestCase(DatabaseTest):
         self.failUnless(self.isBranchInPullQueue(25), "Should be in queue")
 
 
-class ExtraUserDatabaseStorageTestCase(unittest.TestCase):
+class ExtraUserDatabaseStorageTestCase(DatabaseTest):
     # Tests that do some database writes (but makes sure to roll them back)
 
-    layer = LaunchpadScriptLayer
-
     def setUp(self):
-        self.cursor = cursor()
+        super(ExtraUserDatabaseStorageTestCase, self).setUp()
         # This is the salt for Mark's password in the sample data.
         self.salt = '\xf4;\x15a\xe4W\x1f'
 
@@ -569,9 +556,15 @@ class ExtraUserDatabaseStorageTestCase(unittest.TestCase):
     def test_authUserByNicknameNoEmailAddr(self):
         # Just like test_authUserByNickname, but for a user with no email
         # address.  The result should be the same.
+
+        # The authserver isn't allowed to delete email addresses.
+        LaunchpadScriptLayer.switchDbConfig('launchpad')
+        self.cursor = cursor()
         self.cursor.execute(
             "DELETE FROM EmailAddress WHERE person = 1;"
         )
+        LaunchpadScriptLayer.switchDbConfig('authserver')
+
         storage = DatabaseUserDetailsStorage(None)
         ssha = SSHADigestEncryptor().encrypt('test', self.salt)
         userDict = storage._authUserInteraction('sabdfl', ssha)
@@ -640,21 +633,11 @@ class BranchDetailsDatabaseStorageInterfaceTestCase(unittest.TestCase):
                                      DatabaseBranchDetailsStorage(None)))
 
 
-class NewBranchDetailsDatabaseStorageTestCase(unittest.TestCase):
-
-    layer = LaunchpadScriptLayer
+class NewBranchDetailsDatabaseStorageTestCase(DatabaseTest):
 
     def setUp(self):
         super(NewBranchDetailsDatabaseStorageTestCase, self).setUp()
-        LaunchpadScriptLayer.switchDbConfig('authserver')
         self.storage = DatabaseBranchDetailsStorage(None)
-        self.cursor = cursor()
-        self._old_policy = getSecurityPolicy()
-        setSecurityPolicy(LaunchpadSecurityPolicy)
-
-    def tearDown(self):
-        setSecurityPolicy(self._old_policy)
-        super(NewBranchDetailsDatabaseStorageTestCase, self).tearDown()
 
     def getMirrorRequestTime(self, branch_id):
         """Return the value of mirror_request_time for the branch with the
