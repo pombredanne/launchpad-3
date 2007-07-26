@@ -18,13 +18,12 @@ import pytz
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.lp.dbschema import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    BranchType)
 from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.mail import stub
-from canonical.launchpad.interfaces import IBranchSet, IPersonSet, IRevisionSet
+from canonical.launchpad.interfaces import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    BranchType, IBranchSet, IPersonSet, IRevisionSet)
 from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
 from canonical.launchpad.scripts.importd.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)

@@ -436,6 +436,12 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         if potmsgset.plural_text is not None:
             original_texts.append(potmsgset.plural_text)
 
+        # If the update is on the translation credits message, yet
+        # update is not published, silently return
+        # XXX 20070626 Danilo: do we want to raise an exception here?
+        if potmsgset.is_translation_credit and not published:
+            return
+
         # By default all translations are correct.
         validation_status = TranslationValidationStatus.OK
 

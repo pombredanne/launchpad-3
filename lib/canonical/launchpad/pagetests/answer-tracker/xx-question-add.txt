@@ -69,6 +69,9 @@ questions are displayed.
     Installation of Java Runtime Environment for Mozilla  (Answered)
         posted on 2006-07-20 by  Sample Person
         in Source Package "mozilla-firefox" in Ubuntu Linux 
+    mailto: problem in webpage (Solved)
+        posted on 2006-07-20 by Sample Person, answered by Foo Bar
+        in Source Package "mozilla-firefox" in Ubuntu Linux
 
 The beginning of the description appears in a small pop-up when the
 mouse is left over the question's title.

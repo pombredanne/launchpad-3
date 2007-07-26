@@ -676,7 +676,7 @@ class ShippingRequestSet:
                 base_query += """ 
                     AND RequestedCDs.distrorelease = %s
                     AND RequestedCDs.request = ShippingRequest.id
-                    """ % ShipItConstants.current_distroseries
+                    """ % sqlvalues(ShipItConstants.current_distroseries)
                 clauseTables.append('RequestedCDs')
             total_shipped_requests = ShippingRequest.select(
                 base_query, clauseTables=clauseTables, distinct=True).count()

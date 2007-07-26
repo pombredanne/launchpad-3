@@ -17,7 +17,7 @@ from zope.security.simplepolicies import PermissiveSecurityPolicy
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.launchpad.interfaces import IBranchSet, IPersonSet
+from canonical.launchpad.interfaces import BranchType, IBranchSet, IPersonSet
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 
@@ -29,7 +29,8 @@ from canonical.authserver.database import (
     DatabaseBranchDetailsStorage)
 from canonical.lp import dbschema
 
-from canonical.launchpad.ftests.harness import LaunchpadTestCase
+from canonical.launchpad.ftests.harness import (
+    LaunchpadTestCase, LaunchpadTestSetup)
 
 from canonical.testing.layers import LaunchpadScriptLayer
 
@@ -297,7 +298,7 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         login(login_email)
         try:
             branch = getUtility(IBranchSet).new(
-                dbschema.BranchType.HOSTED, 'foo-branch', person, person,
+                BranchType.HOSTED, 'foo-branch', person, person,
                 None, None, None)
         finally:
             logout()
@@ -350,6 +351,24 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
             12, 'sabdfl', 'firefox', 'release-0.8')
         self.assertEqual(13, branch_id)
         self.assertEqual(READ_ONLY, permissions)
+
+    def test_getBranchInformation_mirrored(self):
+        # Mirrored branches cannot be written to by the smartserver or SFTP
+        # server.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'name12', 'firefox', 'main')
+        self.assertEqual(1, branch_id)
+        self.assertEqual(READ_ONLY, permissions)
+
+    def test_getBranchInformation_imported(self):
+        # Imported branches cannot be written to by the smartserver or SFTP
+        # server.
+        store = DatabaseUserDetailsStorageV2(None)
+        branch_id, permissions = store._getBranchInformationInteraction(
+            12, 'vcs-imports', 'gnome-terminal', 'import')
+        self.assertEqual(75, branch_id)
+        self.assertEqual(READ_ONLY, permissions)        
 
     def test_getBranchInformation_private(self):
         # When we get the branch information for a private branch that is
@@ -630,6 +649,11 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
     def setUp(self):
         TestDatabaseSetup.setUp(self)
         self.storage = DatabaseBranchDetailsStorage(None)
+
+    def tearDown(self):
+        """Tear down the test and reset the database."""
+        LaunchpadTestSetup().force_dirty_database()
+        TestDatabaseSetup.tearDown(self)
 
     def test_getBranchPullQueue(self):
         # Set up the database so the vcs-import branch will appear in the queue.

@@ -98,7 +98,8 @@
           </td>
           <td tal:attributes="id string:${entry/potemplate/name}-person">
             <tal:block condition="entry/last_touched_pomsgset">
-              <a tal:attributes="href entry/last_touched_pomsgset/latest_change_person/fmt:url"
+              <a tal:condition="entry/last_touched_pomsgset/latest_change_person"
+                 tal:attributes="href entry/last_touched_pomsgset/latest_change_person/fmt:url"
                  tal:content="entry/last_touched_pomsgset/latest_change_person/browsername/fmt:shorten/25"></a>
             </tal:block>
             <tal:block condition="not: entry/last_touched_pomsgset">

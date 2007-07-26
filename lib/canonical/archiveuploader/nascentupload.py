@@ -954,13 +954,17 @@ class NascentUpload:
                 return
 
             # Reset the archive in the policy to the commercial archive.
-            self.policy.archive = getUtility(IArchiveSet).getByDistroPurpose(
+            archive = getUtility(IArchiveSet).getByDistroPurpose(
                 self.policy.distroseries.distribution, 
                 ArchivePurpose.COMMERCIAL
                 )
 
             # Check for data problems:
-            if not self.policy.archive:
+            if not archive:
+                # Don't override the archive to None here or the rest of the
+                # processing will throw exceptions.
                 self.reject("Commercial archive for distro '%s' not found" % 
                     self.policy.distroseries.distribution.name)
+            else:
+                self.policy.archive = archive
 
