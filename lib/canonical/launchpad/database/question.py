@@ -54,8 +54,8 @@ from canonical.launchpad.event import (
 from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
-from canonical.launchpad.webapp.enum import Item
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.lazr import DBItem
 
 
 class notify_question_modified:
@@ -642,7 +642,7 @@ class QuestionSearch:
                  project=None):
         self.search_text = search_text
 
-        if zope_isinstance(status, Item):
+        if zope_isinstance(status, DBItem):
             self.status = [status]
         else:
             self.status = status
@@ -913,14 +913,14 @@ class QuestionPersonSearch(QuestionSearch):
 
         if not participation:
             self.participation = QuestionParticipation.items
-        elif zope_isinstance(participation, Item):
+        elif zope_isinstance(participation, DBItem):
             self.participation = [participation]
         else:
             self.participation = participation
 
     def getTableJoins(self):
         """See `QuestionSearch`.
-        
+
         Return the joins for persons in addition to the base class joins.
         """
         joins = QuestionSearch.getTableJoins(self)
