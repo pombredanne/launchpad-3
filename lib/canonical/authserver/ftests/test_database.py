@@ -112,7 +112,11 @@ class DatabaseTest(unittest.TestCase):
             % (value, branch_id))
 
 
-class DatabaseStorageTestCase(DatabaseTest):
+class UserDetailsStorageTest(DatabaseTest):
+
+    def setUp(self):
+        super(UserDetailsStorageTest, self).setUp()
+        self.salt = '\xf4;\x15a\xe4W\x1f'
 
     def test_verifyInterface(self):
         self.failUnless(verifyObject(IUserDetailsStorage,
@@ -223,16 +227,110 @@ class DatabaseStorageTestCase(DatabaseTest):
         userDict = storage._authUserInteraction('justdave@bugzilla.org', ssha)
         self.assertEqual({}, userDict)
 
-    def test_nameInV2UserDict(self):
-        # V2 user dicts should have a 'name' field.
-        storage = DatabaseUserDetailsStorageV2(None)
-        userDict = storage._getUserInteraction('mark@hbd.com')
-        self.assertEqual('sabdfl', userDict['name'])
+    def test_authUser(self):
+        # Authenticating a user with the right password should work
+        storage = DatabaseUserDetailsStorage(None)
+        ssha = SSHADigestEncryptor().encrypt('test', self.salt)
+        userDict = storage._authUserInteraction('mark@hbd.com', ssha)
+        self.assertNotEqual({}, userDict)
+
+        # In fact, it should return the same dict as getUser
+        goodDict = storage._getUserInteraction('mark@hbd.com')
+        self.assertEqual(goodDict, userDict)
+
+        # Unicode email addresses are handled too.
+        self.cursor.execute(
+            "INSERT INTO EmailAddress (person, email, status) "
+            "VALUES ("
+            "  1, "
+            "  '%s', "
+            "  2)"  # 2 == Validated
+            % (u'm\xe3rk@hbd.com'.encode('utf-8'),)
+        )
+        userDict = storage._authUserInteraction(u'm\xe3rk@hbd.com', ssha)
+        goodDict = storage._getUserInteraction(u'm\xe3rk@hbd.com')
+        self.assertEqual(goodDict, userDict)
+
+    def test_authUserByNickname(self):
+        # Authing a user by their nickname should work, just like an email
+        # address in test_authUser.
+        storage = DatabaseUserDetailsStorage(None)
+        ssha = SSHADigestEncryptor().encrypt('test', self.salt)
+        userDict = storage._authUserInteraction('sabdfl', ssha)
+        self.assertNotEqual({}, userDict)
+
+        # In fact, it should return the same dict as getUser
+        goodDict = storage._getUserInteraction('sabdfl')
+        self.assertEqual(goodDict, userDict)
+
+        # And it should be the same as returned by looking them up by email
+        # address.
+        goodDict = storage._getUserInteraction('mark@hbd.com')
+        self.assertEqual(goodDict, userDict)
+
+    def test_authUserByNicknameNoEmailAddr(self):
+        # Just like test_authUserByNickname, but for a user with no email
+        # address.  The result should be the same.
+
+        # The authserver isn't allowed to delete email addresses.
+        LaunchpadScriptLayer.switchDbConfig('launchpad')
+        self.cursor = cursor()
+        self.cursor.execute(
+            "DELETE FROM EmailAddress WHERE person = 1;"
+        )
+        LaunchpadScriptLayer.switchDbConfig('authserver')
+
+        storage = DatabaseUserDetailsStorage(None)
+        ssha = SSHADigestEncryptor().encrypt('test', self.salt)
+        userDict = storage._authUserInteraction('sabdfl', ssha)
+        self.assertNotEqual({}, userDict)
+
+        # In fact, it should return the same dict as getUser
+        goodDict = storage._getUserInteraction('sabdfl')
+        self.assertEqual(goodDict, userDict)
+
+    def test_authUserBadPassword(self):
+        # Authing a real user with the wrong password should return {}
+        storage = DatabaseUserDetailsStorage(None)
+        ssha = SSHADigestEncryptor().encrypt('wrong', self.salt)
+        userDict = storage._authUserInteraction('mark@hbd.com', ssha)
+        self.assertEqual({}, userDict)
+
+    def test_getSSHKeys_empty(self):
+        # getSSHKeys returns an empty list for users without SSH keys.
+        storage = DatabaseUserDetailsStorage(None)
+        keys = storage._getSSHKeysInteraction('no-priv')
+        self.assertEqual([], keys)
+
+    def test_getSSHKeys_no_such_user(self):
+        storage = DatabaseUserDetailsStorage(None)
+        keys = storage._getSSHKeysInteraction('no-such-user')
+        self.assertEqual([], keys)
+        
+    def test_getSSHKeys(self):
+        # getSSHKeys returns a list of keytype, keytext tuples for users with
+        # SSH keys.
+
+        cur = cursor()
+        cur.execute("""
+            SELECT keytext FROM SSHKey
+            JOIN Person ON (SSHKey.person = Person.id)
+            WHERE Person.name = 'sabdfl'
+            """)
+        [expected_keytext] = cur.fetchone()
+
+        storage = DatabaseUserDetailsStorage(None)
+        [(keytype, keytext)] = storage._getSSHKeysInteraction('sabdfl')
+        self.assertEqual('DSA', keytype)
+        self.assertEqual(expected_keytext, keytext)
 
 
-class NewDatabaseStorageTestCase(DatabaseTest):
-    # Tests that call database methods that use the new-style database
-    # connection infrastructure.
+class HostedBranchStorageTest(DatabaseTest):
+    """Tests for the implementation of `IHostedBranchStorage`."""
+
+    def test_verifyInterface(self):
+        self.failUnless(verifyObject(IBranchDetailsStorage,
+                                     DatabaseBranchDetailsStorage(None)))
 
     def test_createBranch(self):
         storage = DatabaseUserDetailsStorageV2(None)
@@ -402,70 +500,6 @@ class NewDatabaseStorageTestCase(DatabaseTest):
             1, 'sabdfl', '+junk', 'foo')
         self.assertEqual(self.getMirrorRequestTime(branchID), None)
 
-    def test_getSSHKeys_empty(self):
-        # getSSHKeys returns an empty list for users without SSH keys.
-        storage = DatabaseUserDetailsStorage(None)
-        keys = storage._getSSHKeysInteraction('no-priv')
-        self.assertEqual([], keys)
-
-    def test_getSSHKeys_no_such_user(self):
-        storage = DatabaseUserDetailsStorage(None)
-        keys = storage._getSSHKeysInteraction('no-such-user')
-        self.assertEqual([], keys)
-        
-    def test_getSSHKeys(self):
-        # getSSHKeys returns a list of keytype, keytext tuples for users with
-        # SSH keys.
-
-        cur = cursor()
-        cur.execute("""
-            SELECT keytext FROM SSHKey
-            JOIN Person ON (SSHKey.person = Person.id)
-            WHERE Person.name = 'sabdfl'
-            """)
-        [expected_keytext] = cur.fetchone()
-
-        storage = DatabaseUserDetailsStorage(None)
-        [(keytype, keytext)] = storage._getSSHKeysInteraction('sabdfl')
-        self.assertEqual('DSA', keytype)
-        self.assertEqual(expected_keytext, keytext)
-
-    def test_getUserNoWikiname(self):
-        # Ensure that the authserver copes gracefully with users with:
-        #    a) no wikinames at all
-        #    b) no wikiname for http://www.ubuntulinux.com/wiki/
-        # (even though in the long run we want to make sure these situations can
-        # never happen, until then the authserver should be robust).
-
-        # First, make sure that the sample user has no wikiname.
-        transaction.begin()
-        person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-        wiki_names = getUtility(IWikiNameSet).getAllWikisByPerson(person)
-        for wiki_name in wiki_names:
-            wiki_name.destroySelf()
-        transaction.commit()
-
-        # Get the user dict for Sample Person (test@canonical.com).
-        storage = DatabaseUserDetailsStorageV2(None)
-        userDict = storage._getUserInteraction('test@canonical.com')
-
-        # The user dict has results, even though the wikiname is empty
-        self.assertNotEqual({}, userDict)
-        self.assertEqual('', userDict['wikiname'])
-        self.assertEqual(12, userDict['id'])
-
-        # Now lets add a wikiname, but for a different wiki.
-        transaction.begin()
-        login(ANONYMOUS)
-        person = getUtility(IPersonSet).getByEmail('test@canonical.com')
-        getUtility(IWikiNameSet).new(person, 'http://foowiki/', 'SamplePerson')
-        logout()
-        transaction.commit()
-
-        # The authserver should return exactly the same results.
-        userDict2 = storage._getUserInteraction('test@canonical.com')
-        self.assertEqual(userDict, userDict2)
-
     def test_requestMirror(self):
         # requestMirror should set the mirror_request_time field to be the
         # current time.
@@ -535,82 +569,8 @@ class NewDatabaseStorageTestCase(DatabaseTest):
         self.failUnless(self.isBranchInPullQueue(25), "Should be in queue")
 
 
-class ExtraUserDatabaseStorageTestCase(DatabaseTest):
-    # Tests that do some database writes (but makes sure to roll them back)
-
-    def setUp(self):
-        super(ExtraUserDatabaseStorageTestCase, self).setUp()
-        # This is the salt for Mark's password in the sample data.
-        self.salt = '\xf4;\x15a\xe4W\x1f'
-
-    def test_authUser(self):
-        # Authenticating a user with the right password should work
-        storage = DatabaseUserDetailsStorage(None)
-        ssha = SSHADigestEncryptor().encrypt('test', self.salt)
-        userDict = storage._authUserInteraction('mark@hbd.com', ssha)
-        self.assertNotEqual({}, userDict)
-
-        # In fact, it should return the same dict as getUser
-        goodDict = storage._getUserInteraction('mark@hbd.com')
-        self.assertEqual(goodDict, userDict)
-
-        # Unicode email addresses are handled too.
-        self.cursor.execute(
-            "INSERT INTO EmailAddress (person, email, status) "
-            "VALUES ("
-            "  1, "
-            "  '%s', "
-            "  2)"  # 2 == Validated
-            % (u'm\xe3rk@hbd.com'.encode('utf-8'),)
-        )
-        userDict = storage._authUserInteraction(u'm\xe3rk@hbd.com', ssha)
-        goodDict = storage._getUserInteraction(u'm\xe3rk@hbd.com')
-        self.assertEqual(goodDict, userDict)
-
-    def test_authUserByNickname(self):
-        # Authing a user by their nickname should work, just like an email
-        # address in test_authUser.
-        storage = DatabaseUserDetailsStorage(None)
-        ssha = SSHADigestEncryptor().encrypt('test', self.salt)
-        userDict = storage._authUserInteraction('sabdfl', ssha)
-        self.assertNotEqual({}, userDict)
-
-        # In fact, it should return the same dict as getUser
-        goodDict = storage._getUserInteraction('sabdfl')
-        self.assertEqual(goodDict, userDict)
-
-        # And it should be the same as returned by looking them up by email
-        # address.
-        goodDict = storage._getUserInteraction('mark@hbd.com')
-        self.assertEqual(goodDict, userDict)
-
-    def test_authUserByNicknameNoEmailAddr(self):
-        # Just like test_authUserByNickname, but for a user with no email
-        # address.  The result should be the same.
-
-        # The authserver isn't allowed to delete email addresses.
-        LaunchpadScriptLayer.switchDbConfig('launchpad')
-        self.cursor = cursor()
-        self.cursor.execute(
-            "DELETE FROM EmailAddress WHERE person = 1;"
-        )
-        LaunchpadScriptLayer.switchDbConfig('authserver')
-
-        storage = DatabaseUserDetailsStorage(None)
-        ssha = SSHADigestEncryptor().encrypt('test', self.salt)
-        userDict = storage._authUserInteraction('sabdfl', ssha)
-        self.assertNotEqual({}, userDict)
-
-        # In fact, it should return the same dict as getUser
-        goodDict = storage._getUserInteraction('sabdfl')
-        self.assertEqual(goodDict, userDict)
-
-    def test_authUserBadPassword(self):
-        # Authing a real user with the wrong password should return {}
-        storage = DatabaseUserDetailsStorage(None)
-        ssha = SSHADigestEncryptor().encrypt('wrong', self.salt)
-        userDict = storage._authUserInteraction('mark@hbd.com', ssha)
-        self.assertEqual({}, userDict)
+class UserDetailsStorageV2Test(DatabaseTest):
+    """Test the implementation of `IUserDetailsStorageV2`."""
 
     def test_teamDict(self):
         # The user dict from a V2 storage should include a 'teams' element with
@@ -656,18 +616,54 @@ class ExtraUserDatabaseStorageTestCase(DatabaseTest):
             'justdave@bugzilla.org', 'supersecret!')
         self.assertEqual({}, userDict)
 
+    def test_nameInV2UserDict(self):
+        # V2 user dicts should have a 'name' field.
+        storage = DatabaseUserDetailsStorageV2(None)
+        userDict = storage._getUserInteraction('mark@hbd.com')
+        self.assertEqual('sabdfl', userDict['name'])
 
-class BranchDetailsDatabaseStorageInterfaceTestCase(unittest.TestCase):
+    def test_getUserNoWikiname(self):
+        # Ensure that the authserver copes gracefully with users with:
+        #    a) no wikinames at all
+        #    b) no wikiname for http://www.ubuntulinux.com/wiki/
+        # (even though in the long run we want to make sure these situations can
+        # never happen, until then the authserver should be robust).
 
-    def test_verifyInterface(self):
-        self.failUnless(verifyObject(IBranchDetailsStorage,
-                                     DatabaseBranchDetailsStorage(None)))
+        # First, make sure that the sample user has no wikiname.
+        transaction.begin()
+        person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        wiki_names = getUtility(IWikiNameSet).getAllWikisByPerson(person)
+        for wiki_name in wiki_names:
+            wiki_name.destroySelf()
+        transaction.commit()
+
+        # Get the user dict for Sample Person (test@canonical.com).
+        storage = DatabaseUserDetailsStorageV2(None)
+        userDict = storage._getUserInteraction('test@canonical.com')
+
+        # The user dict has results, even though the wikiname is empty
+        self.assertNotEqual({}, userDict)
+        self.assertEqual('', userDict['wikiname'])
+        self.assertEqual(12, userDict['id'])
+
+        # Now lets add a wikiname, but for a different wiki.
+        transaction.begin()
+        login(ANONYMOUS)
+        person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+        getUtility(IWikiNameSet).new(person, 'http://foowiki/', 'SamplePerson')
+        logout()
+        transaction.commit()
+
+        # The authserver should return exactly the same results.
+        userDict2 = storage._getUserInteraction('test@canonical.com')
+        self.assertEqual(userDict, userDict2)
 
 
-class NewBranchDetailsDatabaseStorageTestCase(DatabaseTest):
+class BranchDetailsStorageTest(DatabaseTest):
+    """Tests for the implementation of `IBranchDetailsStorage`."""
 
     def setUp(self):
-        super(NewBranchDetailsDatabaseStorageTestCase, self).setUp()
+        super(BranchDetailsStorageTest, self).setUp()
         self.storage = DatabaseBranchDetailsStorage(None)
 
     def test_startMirroring(self):
