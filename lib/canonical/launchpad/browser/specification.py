@@ -972,6 +972,8 @@ class HasTargetSpecificationAddView(SpecificationAddView):
     
     @property
     def field_names(self):
+        # Since a target can be identified automatically from the context,
+        # we don't need to ask the user to specify one.
         field_names = super(HasTargetSpecificationAddView, self).field_names
         field_names.remove('target')
         return field_names    
@@ -1017,11 +1019,8 @@ class SprintSpecificationAddView(SpecificationAddView):
     
     @property
     def field_names(self):
-        """Return the list of fields participating in the form.
-
-        This form is used on an `ISprint` to get a new spec
-        for a project and propose it for the sprint.
-        """
+        # Since the context is a sprint, we don't need to ask the user to
+        # specify one.
         field_names = super(SprintSpecificationAddView, self).field_names
         field_names.remove('sprint')
         return field_names
