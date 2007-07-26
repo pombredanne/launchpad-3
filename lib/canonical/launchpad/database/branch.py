@@ -285,7 +285,16 @@ class Branch(SQLBase):
         self.syncUpdate()
 
     def pullInfo(self):
-        # XXX: JonathanLange 2007-07-19, REMOVE THIS BEFORE MERGING.
+        """Return the information that the branch puller needs to pull this
+        branch.
+
+        This is outside of the IBranch interface so that the authserver can
+        access the information without logging in as a particular user.
+
+        :return: (id, url, unique_name), where `id` is the branch database ID,
+            `url` is the URL to pull from and `unique_name` is the
+            `unique_name` property without the initial '~'.
+        """
         if self.url is not None:
             # This is a pull branch, hosted externally.
             pull_url = self.url
