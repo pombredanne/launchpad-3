@@ -54,7 +54,6 @@ from canonical.launchpad.interfaces import (
     IProduct,
     IProject,
     ISpecification,
-    INewSpecificationForm,
     ISpecificationBranch,
     ISpecificationSet,
     NotFoundError,
