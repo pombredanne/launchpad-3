@@ -1,0 +1,100 @@
+= Bugtask Expiration =
+
+Old unassigned INCOMPETE bugtasks clutter Malone's search results,
+making the bug staff's job difficult. A script is run daily to
+locate unassigned INCOMPETE bugtasks that have not been updated in
+2 months, and sets their status to EXPIRED. Only bugtaks for projects
+that use Malone will be EXPIRED; this rule does not apply to Bugs
+imported from upstream bug trakers. The four preconditions are:
+
+1. The BugTask belongs to a project that uses Malone to track bugs.
+2. The last message on the Bug is older than 60 days.
+3. The BugTask has the status INCOMPLETE.
+4. The BugTask is not assigned to anyone.
+
+The expiration period is set using the
+config.alone.days_before_expiration configuration variable. It
+defaults to 60 days. The period is measured from the last the
+creation date of bug's last message. We expire questions that
+have had no message activity for 60 days.
+
+    >>> from canonical.config import config
+    >>> config.malone.days_before_expiration
+    60
+
+Bugtasks with the status of INCOMPLETE, and are not assigned to a
+Person are subject to expiration. The Bugtask must belong to a project
+that uses Malone to trak its bugs. BugTasks cannot transtion to
+EXPIRED unless they meet all the rules stated above.
+
+    # Need to know how many questions in sampledata are in the right state
+    # INCOMPLETE, unassigned, malone, right age, throw error if the 
+    # state is wrong
+
+    # old_incomplete_unassigned_bug
+    
+    # young_incomplete_bug
+    
+    # not_malone_bug
+    
+    # not_incomplete_bug
+    
+    # assigned_bug
+    
+    # recently_updated bug
+
+    # Commit the current transaction because the script will run in
+    # another transaction and thus it won't see the changes done on this
+    # test unless we commit.
+    # XXX flacoste 20061003 bug 3989: Unecessary flush_database_updates
+    # required.
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+    >>> import transaction
+    >>> transaction.commit()
+
+The EXPIRED status is used exclusively by the BugJanitor. No other
+user can set the status to EXPIRED.
+
+    # show another user trying to change the state
+    
+The script 'expire-bugs.py' writes its report to stdout.
+
+    >>> import subprocess
+    >>> process = subprocess.Popen(
+    ...     'cronscripts/expire-bugs.py', shell=True,
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.PIPE)
+    >>> (out, err) = process.communicate()
+    >>> print err
+    INFO    creating lockfile
+    INFO    Expiring INCOMPLETE bugs without activity for the
+            last 60 days.
+    INFO    Found 6 bugs to expire.
+    INFO    Expired 6 bugs.
+    INFO    Finished expiration run.
+    <BLANKLINE>
+    >>> print out
+    <BLANKLINE>
+    >>> process.returncode
+    0
+
+    # Now we flush the caches, so that the above defined objects gets
+    # their content from the modified DB.
+    >>> from canonical.database.sqlbase import flush_database_caches
+    >>> flush_database_caches()
+
+The young, assigned, not INCOMPLETE, or externally hosted bugs were
+unchanged
+
+
+The old, unassigned Malone-based INCOMPLETE bugs are expired
+
+
+The message explaining the reason for the expiration was posted by the
+Bug Janitor celebrity:
+
+
+If an EXPIRED message recieves a message, its status reverts to
+INCOMPLETE.
+
