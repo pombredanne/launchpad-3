@@ -151,6 +151,11 @@ separate the tags, so we accept that as well.
     >>> tags_widget._toFieldValue(u'foo,bar')
     [u'bar', u'foo']
 
+Duplicate tags are converted to a single instance.
+
+    >>> tags_widget._toFieldValue(u'FOO, , , , bar bar, bar, bar foo')
+    [u'bar', u'foo']
+
 
 == Searching ==
 

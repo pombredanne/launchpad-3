@@ -71,7 +71,19 @@ class BugTagsWidget(TextWidget):
         if input == self._missing:
             return []
         else:
-            return sorted(tag.lower() for tag in re.split(r'[,\s]+', input))
+            tags = sorted(tag.lower()
+                          for tag in re.split(r'[,\s]+', input)
+                          if len(tag) != 0)
+            if len(tags) <= 1:
+                return tags
+            # remove duplicate tags
+            i = 1
+            while i < len(tags):
+                if tags[i] == tags[i-1]:
+                    del tags[i]
+                else:
+                    i += 1
+            return tags
 
     def getInputValue(self):
         try:
