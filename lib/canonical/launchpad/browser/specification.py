@@ -938,14 +938,8 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
         Guarantees that the name chosen for the new blueprint
         is unique within its target project.
         """
-        if ISpecificationSet.providedBy(self.context):
-            target = data.get('target')
-        elif IProject.providedBy(self.context):
-            target = data.get('target')
-        else:
-            # We can rely on the name field to validate itself.
-            target = None
         name = data.get('name')
+        target = data.get('target')
         self._validate_name(name, target)
 
     def _validate_name(self, name, target):
