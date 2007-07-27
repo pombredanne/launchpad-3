@@ -894,7 +894,6 @@ class NewSpecificationViewBase(LaunchpadFormView):
         """Add a new specification with the form values and return it."""
         
         owner = self.user
-        # clean up name
         name = data['name']
         # determine product or distribution as target
         product = distribution = None
