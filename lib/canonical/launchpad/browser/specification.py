@@ -929,25 +929,15 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
     specify a target."""
 
     def validate(self, data):
-        """Validates the contents of the form.
-
-        Guarantees that the name chosen for the new blueprint
-        is unique within its target project.
-        """
+        """Ensures that the name chosen for the new specification is unique
+        within the context of the chosen project."""
         name = data.get('name')
         target = data.get('target')
-        if target:
-            # The context does not correspond to a unique specification
-            # namespace. Instead, ensure that the specified name does
-            # not exist within the namespace of the specified target.
-            if target.getSpecification(name):
-                # The specified name already exists. Mark the field with
-                # an error.
-                self.setFieldError(
-                    'name',
-                    self.schema['name'].errormessage % name
-                )
-
+        if target.getSpecification(name):
+            # The specified name already exists. Mark the field with an error.
+            self.setFieldError('name', 
+                               self.schema['name'].errormessage % name)
+            
 
 class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
     """A view for adding a specification from a project."""
