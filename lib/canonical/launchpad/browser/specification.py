@@ -854,8 +854,10 @@ class SpecificationTreeDotOutput(SpecificationTreeGraphView):
         return self.getDotFileText()
 
 
-class NewSpecificationViewBase(LaunchpadFormView):
-    """A base class for forms used to add a specification."""
+class NewSpecificationView(LaunchpadFormView):
+    """A view for adding a specification from a project, project group
+    or distribution.
+    """
 
     label = "Register a new Blueprint"
 
@@ -905,12 +907,6 @@ class NewSpecificationViewBase(LaunchpadFormView):
         if sprint is not None:
             spec.linkSprint(sprint, self.user)            
         return spec
-
-
-class NewSpecificationView(NewSpecificationViewBase):
-    """A view for adding a specification from a project, project group
-    or distribution.
-    """
     
     def validate(self, data):
         """Validates the contents of the form.
