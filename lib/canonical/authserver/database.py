@@ -92,14 +92,10 @@ class UserDetailsStorageMixin:
     @read_only_transaction
     def _getSSHKeysInteraction(self, loginID):
         """The interaction for getSSHKeys."""
-        person_data = self._getPerson(cursor(), loginID)
-        if person_data is None:
+        person = self._getPerson(cursor(), loginID)
+        if person is None:
             return []
-        person_id = person_data[0]
-        person = getUtility(IPersonSet).get(person_id)
-        return [
-            (key.keytype.title, key.keytext)
-            for key in person.sshkeys]
+        return [(key.keytype.title, key.keytext) for key in person.sshkeys]
 
     def _getPerson(self, cursor, loginID):
         try:
@@ -127,6 +123,10 @@ class UserDetailsStorageMixin:
         if person is None:
             person = person_set.getByName(loginID)
 
+        return person
+
+    def _getPersonInfo(self, cursor, loginID):
+        person = self._getPerson(cursor, loginID)
         if person is None:
             return None
 
@@ -162,7 +162,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     def _getUserInteraction(self, loginID):
         """The interaction for getUser."""
         cur = cursor()
-        row = self._getPerson(cur, loginID)
+        row = self._getPersonInfo(cur, loginID)
         try:
             personID, displayname, name, passwordDigest, wikiname, salt = row
         except TypeError:
@@ -191,7 +191,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     @read_only_transaction
     def _authUserInteraction(self, loginID, sshaDigestedPassword):
         """The interaction for authUser."""
-        row = self._getPerson(cursor(), loginID)
+        row = self._getPersonInfo(cursor(), loginID)
         try:
             personID, displayname, name, passwordDigest, wikiname, salt = row
         except TypeError:
@@ -251,8 +251,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
         Returns a list of team dicts (see IUserDetailsStorageV2).
         """
-        person_id = self._getPerson(cursor(), personID)[0]
-        person = getUtility(IPersonSet).get(person_id)
+        person = self._getPerson(cursor(), personID)
 
         teams = [
             dict(id=person.id, name=person.name,
@@ -268,7 +267,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     @read_only_transaction
     def _getUserInteraction(self, loginID):
         """The interaction for getUser."""
-        row = self._getPerson(cursor(), loginID)
+        row = self._getPersonInfo(cursor(), loginID)
         try:
             personID, displayname, name, passwordDigest, wikiname = row
         except TypeError:
@@ -290,7 +289,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             'teams': self._getTeams(personID),
         }
 
-    def _getPerson(self, cursor, loginID):
+    def _getPersonInfo(self, cursor, loginID):
         """Look up a person by loginID.
 
         The loginID will be first tried as an email address, then as a numeric
@@ -299,7 +298,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         :returns: a tuple of (person ID, display name, password, wikiname) or
             None if not found.
         """
-        row = UserDetailsStorageMixin._getPerson(self, cursor, loginID)
+        row = UserDetailsStorageMixin._getPersonInfo(self, cursor, loginID)
         if row is None:
             return None
         else:
@@ -312,7 +311,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     @read_only_transaction
     def _authUserInteraction(self, loginID, password):
         """The interaction for authUser."""
-        row = self._getPerson(cursor(), loginID)
+        row = self._getPersonInfo(cursor(), loginID)
         try:
             personID, displayname, name, passwordDigest, wikiname = row
         except TypeError:
@@ -388,8 +387,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     def _createBranchInteraction(self, loginID, personName, productName,
                                  branchName):
         """The interaction for createBranch."""
-        requester_id = self._getPerson(cursor(), loginID)[0]
-        requester = getUtility(IPersonSet).get(requester_id)
+        requester = self._getPerson(cursor(), loginID)
         login(requester.preferredemail.email)
         try:
             if productName == '+junk':
@@ -432,8 +430,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     @read_only_transaction
     def _getBranchInformationInteraction(self, loginID, userName, productName,
                                          branchName):
-        requester_id = self._getPerson(cursor(), loginID)[0]
-        requester = getUtility(IPersonSet).get(requester_id)
+        requester = self._getPerson(cursor(), loginID)
         login(requester.preferredemail.email)
         try:
             branch = getUtility(IBranchSet).getByUniqueName(
