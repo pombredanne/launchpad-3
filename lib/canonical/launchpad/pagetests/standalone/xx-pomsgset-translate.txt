@@ -413,7 +413,7 @@ But also, the new one should appear in the form.
 
   >>> find_tag_by_id(
   ...     slow_submission.contents,
-  ...     'msgset_143_es_suggestion_712_0').renderContents()
+  ...     'msgset_143_es_suggestion_710_0').renderContents()
   'foo!!'
 
 == Unreviewed translations ==

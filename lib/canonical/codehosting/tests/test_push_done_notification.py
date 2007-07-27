@@ -26,8 +26,9 @@ class Launchpad:
     def __init__(self):
         self.requests = []
 
-    def createBranch(self, userID, productID, branchName):
-        self.requests.append(('createBranch', userID, productID, branchName))
+    def createBranch(self, loginID, userName, productName, branchName):
+        self.requests.append(
+            ('createBranch', loginID, userName, productName, branchName))
         return defer.succeed(6)
 
     def fetchProductID(self, productName):
@@ -81,7 +82,8 @@ class TestPushDoneNotification(AvatarTestCase):
             branchID = branchDir.branchID
             # check for no events yet
             self.assertEqual(
-                [('createBranch', self.avatar.lpid, '3', 'some-branch')],
+                [('createBranch', self.avatar.lpname, self.avatar.lpname,
+                  'some-product', 'some-branch')],
                 self.launchpad.requests)
             self.launchpad.requests = []
             # dirty it

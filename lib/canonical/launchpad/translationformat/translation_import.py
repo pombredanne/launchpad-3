@@ -114,6 +114,7 @@ class TranslationImporter:
         # the English strings to show instead of arbitrary IDs.
         english_pofile = None
         self.pofile = translation_import_queue_entry.pofile
+        lock_timestamp = None
         if translation_import_queue_entry.pofile is None:
             self.potemplate = translation_import_queue_entry.potemplate
         else:
@@ -138,18 +139,18 @@ class TranslationImporter:
             self.potemplate.date_last_updated = datetime.datetime.now(UTC)
         else:
             # We are importing a translation.
-            # Check whether we are importing a new version.
-            if (importer.header is not None and
-                self.pofile.isPORevisionDateOlder(importer.header)):
-                # The new imported file is older than latest one imported, we
-                # don't import it, just ignore it as it could be a mistake and
-                # it would make us lose translations.
-                raise OldTranslationImported(
-                    'Previous imported file is newer than this one.')
-
-            # Get the timestamp when this file was exported from Launchpad. If
-            # it was not exported from Launchpad, it will be None.
-            lock_timestamp = importer.header.getLaunchpadExportDate()
+            if importer.header is not None:
+                # Check whether we are importing a new version.
+                if self.pofile.isPORevisionDateOlder(importer.header):
+                    # The new imported file is older than latest one imported,
+                    # we don't import it, just ignore it as it could be a
+                    # mistake and it would make us lose translations.
+                    raise OldTranslationImported(
+                        'Previous imported file is newer than this one.')
+                # Get the timestamp when this file was exported from
+                # Launchpad. If it was not exported from Launchpad, it will be
+                # None.
+                lock_timestamp = importer.header.getLaunchpadExportDate()
 
             if (not translation_import_queue_entry.is_published and
                 lock_timestamp is None):

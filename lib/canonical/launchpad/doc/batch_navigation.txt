@@ -178,7 +178,7 @@ the number of rows, and the first 10 rows:
   >>> len(CursorWrapper.last_executed_sql)
   2
   >>> print CursorWrapper.last_executed_sql[0]
-  /*...*/ SELECT COUNT(*) FROM EmailAddress WHERE 1 = 1
+  SELECT COUNT(*) FROM EmailAddress WHERE 1 = 1
   >>> CursorWrapper.last_executed_sql[1].endswith('LIMIT 10')
   True
 
