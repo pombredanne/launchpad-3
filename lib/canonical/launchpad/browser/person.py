@@ -125,7 +125,7 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    BugTaskSearchParams, IPersonBugTaskSearch, IBranchSet, ITeamMembership,
+    BugTaskSearchParams, IBranchSet, ITeamMembership,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
 
 from canonical.launchpad.browser.bugtask import (
@@ -1317,17 +1317,6 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
                 'url': self.getBugContactPackageSearchURL(other_package)})
 
         return package_links
-
-    def getExtraSearchParams(self):
-        """Overridden from BugTaskSearchListingView, to filter the search."""
-        search_params = {}
-
-        if self.widgets['status'].hasInput():
-            search_params['status'] = any(*self.widgets['status'].getInputValue())
-        if self.widgets['unassigned'].hasInput():
-            search_params['assignee'] = NULL
-
-        return search_params
 
     def getBugContactPackageSearchURL(self, distributionsourcepackage=None,
                                       advanced=False, extra_params=None):
