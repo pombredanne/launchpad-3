@@ -246,39 +246,51 @@ resilient enough to handle this sanely.  The getPendingActions() interface of
 course takes no input so you can't mess it up.  Not so with the reportStatus()
 method.
 
-Note that if we were going through the XMLRPC server instead of talking to the
-view directly, the Fault instances returned here would be turned into
-tracebacks by the XMLRPC machinery.
-
 One possibility is that a bad team name is passed in the statuses dictionary.
 
+    >>> # Note that if we were going through the XMLRPC server instead of
+    >>> # talking to the view directly, the Fault instances returned here
+    >>> # would be turned into tracebacks by the XMLRPC machinery.
+
     >>> mailinglist_api.reportStatus({'bogus team': 'success'})
-    <Fault 110: 'No such team: bogus team'>
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 110: 'No such team: bogus team'>
 
 Similarly we could pass in the name of a person that is not a team.
 
     >>> mailinglist_api.reportStatus({'carlos': 'success'})
-    <Fault 110: 'No such team: carlos'>
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 110: 'No such team: carlos'>
 
 We could also pass in a success or failure status to a list that is not
 expecting it.  In this case, list_four is active so it is not expecting a
 status report, either success...
 
     >>> mailinglist_api.reportStatus({'team-four': 'success'})
-    <Fault 120: 'Unexpected status report "success" for team: team-four'>
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 120: 'Unexpected status report "success" for team: team-four'>
 
 ...or failure.
 
     >>> mailinglist_api.reportStatus({'team-four': 'failure'})
-    <Fault 120: 'Unexpected status report "failure" for team: team-four'>
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 120: 'Unexpected status report "failure" for team: team-four'>
 
 This is also true of lists in the failed state.
 
     >>> mailinglist_api.reportStatus({'team-five': 'success'})
-    <Fault 120: 'Unexpected status report "success" for team: team-five'>
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 120: 'Unexpected status report "success" for team: team-five'>
 
     >>> mailinglist_api.reportStatus({'team-five': 'failure'})
-    <Fault 120: 'Unexpected status report "failure" for team: team-five'>
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 120: 'Unexpected status report "failure" for team: team-five'>
 
 Finally, for a list that is expecting a status report, we could pass in a
 bogus status string.  To illustrate, let's begin the process of deactivating
@@ -293,9 +305,13 @@ an active list.
 Status strings are case-sensitive.
 
     >>> mailinglist_api.reportStatus({'team-four': 'SUCCESS'})
-    <Fault 130: 'Bad status string "SUCCESS" for team: team-four'>
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 130: 'Bad status string "SUCCESS" for team: team-four'>
 
 And of course, entirely bogus status strings aren't accepted either.
 
     >>> mailinglist_api.reportStatus({'team-four': 'entirely-bogus'})
-    <Fault 130: 'Bad status string "entirely-bogus" for team: team-four'>
+    Traceback (most recent call last):
+    ...
+    Fault: <Fault 130: 'Bad status string "entirely-bogus" for team: team-four'>

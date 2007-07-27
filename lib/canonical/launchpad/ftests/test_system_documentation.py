@@ -201,13 +201,40 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
 
 def mailingListXMLRPCInternalSetUp(test):
     setUp(test)
-    # Use the hand-crafted fake API view, not retrieved through the component
-    # architecture.  We use this because it's easier to debug since when
-    # things go horribly wrong in the view, you see the errors on stdout
+    # Use the hand-crafted API view instance, not retrieved through the
+    # component architecture.  We use this because it's easier to debug since
+    # when things go horribly wrong in the view, you see the errors on stdout
     # instead of in an OOPS report living in some log file somewhere.
+    #
+    # There's one gotcha here.  When running the same doctest with the
+    # ServerProxy, faults are turned into exceptions, but with the direct view
+    # the faults are just returned.  This causes an impedence mismatch with
+    # exception display in the doctest that cannot be papered over by using
+    # ellipses.  So to make this work in a consistent way, a subclass of the
+    # view class is used which prints faults to match the output of
+    # ServerProxy (exceptions aren't really necessary).
+    import xmlrpclib
+    def adapter(func):
+        def caller(self, *args, **kws):
+            result = func(self, *args, **kws)
+            if isinstance(result, xmlrpclib.Fault):
+                print 'Traceback (most recent call last):'
+                print 'ignore'
+                print 'Fault:', result
+            else:
+                return result
+        return caller
     from canonical.launchpad.xmlrpc import RequestedMailingListAPI
-    mailinglist_api = RequestedMailingListAPI('a_context', 'a_view')
+    class ImpedenceMatchingView(RequestedMailingListAPI):
+        @adapter
+        def getPendingActions(self):
+            return super(ImpedenceMatchingView, self).getPendingActions()
+        @adapter
+        def reportStatus(self, statuses):
+            return super(ImpedenceMatchingView, self).reportStatus(statuses)
+    mailinglist_api = ImpedenceMatchingView('a_context', 'a_view')
     test.globs['mailinglist_api'] = mailinglist_api
+
 
 def mailingListXMLRPCExternalSetUp(test):
     setUp(test)
@@ -220,6 +247,13 @@ def mailingListXMLRPCExternalSetUp(test):
         'http://test@canonical.com:test@xmlrpc.launchpad.dev/mailinglists/',
         transport=XMLRPCTestTransport())
     test.globs['mailinglist_api'] = mailinglist_api
+
+
+def mailingListXMLRPCExternalTearDown(test):
+    from zope.security.management import setSecurityPolicy
+    from zope.security.simplepolicies import PermissiveSecurityPolicy
+    setSecurityPolicy(PermissiveSecurityPolicy)
+    tearDown(test)
 
 
 def LayeredDocFileSuite(*args, **kw):
@@ -474,9 +508,9 @@ special = {
     'mailinglist-xmlrpc.txt-external': FunctionalDocFileSuite(
             '../doc/mailinglist-xmlrpc.txt',
             setUp=mailingListXMLRPCExternalSetUp,
-            tearDown=tearDown,
+            tearDown=mailingListXMLRPCExternalTearDown,
             optionflags=default_optionflags,
-            layer=LaunchpadFunctionalLayer
+            layer=LaunchpadZopelessLayer
             ),
     }
 
