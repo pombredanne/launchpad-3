@@ -978,12 +978,6 @@ class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
     schema = Fields(INewSpecificationTarget,
                     INewSpecification)
     
-    def validate(self, data):
-        """Validates the contents of the form."""
-        target = data.get('target')
-        name = data.get('name')
-        self._validate_name(name, target)
-
     @action(_('Register Blueprint'), name='register')
     def register_action(self, action, data):
         """Register a new blueprint and propose it for a sprint."""
