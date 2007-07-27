@@ -26,6 +26,7 @@ from canonical.launchpad.components.branch import BranchDelta
 from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     IBranch, IBugTask, IEmailAddressSet, INotificationRecipientSet, IPerson,
     ISpecification, ITeamMembershipSet, IUpstreamBugTask, 
     UnknownRecipientError)
@@ -36,7 +37,6 @@ from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template, shortlist)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     TeamMembershipStatus, QuestionAction)
 
 CC = "CC"
@@ -1706,7 +1706,7 @@ def email_branch_modified_notifications(branch, to_addresses,
     """
     branch_title = branch.title
     if branch_title is None:
-        branch_title = '(no title)'
+        branch_title = ''
     subject = '[Branch %s] %s' % (branch.unique_name, branch_title)
     headers = {'X-Launchpad-Branch': branch.unique_name}
 
@@ -1793,9 +1793,13 @@ def send_branch_modified_notifications(branch, event):
         if delta is not None:
             title = IBranch[field_name].title
             old_item = delta['old']
+            if old_item is None:
+                old_item = '(not set)'
             new_item = delta['new']
+            if new_item is None:
+                new_item = '(not set)'
             info_lines.append("%s%s: %s => %s" % (
-                indent, title, str(old_item), str(new_item)))
+                indent, title, old_item, new_item))
 
     # lifecycle_status is different as it is an Enum type.
     if branch_delta.lifecycle_status is not None:

@@ -65,7 +65,8 @@
     </tbody>
   </table>
 
-  <p tal:condition="context/summary" tal:content="context/summary">
+  <p tal:condition="context/summary"
+     tal:content="structure context/summary/fmt:text-to-html">
     $Branch.summary goes here. This should be quite short, just a single
     paragraph of text really, giving the branch highlights.
   </p>

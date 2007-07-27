@@ -28,10 +28,6 @@ __all__ = (
 'BountyStatus',
 'BranchRelationships',
 'BranchReviewStatus',
-'BranchSubscriptionDiffSize',
-'BranchSubscriptionNotificationLevel',
-'BranchType',
-'BranchVisibilityRule',
 'BugBranchStatus',
 'BugNominationStatus',
 'BugTaskStatus',
@@ -55,7 +51,6 @@ __all__ = (
 'ImportStatus',
 'LoginTokenType',
 'MailingListAutoSubscribePolicy',
-'MailingListStatus',
 'ManifestEntryType',
 'ManifestEntryHint',
 'MirrorContent',
@@ -116,8 +111,8 @@ __all__ = (
 #from canonical.launchpad.webapp.enum import DBSchema
 #from canonical.launchpad.webapp.enum import DBSchemaItem as Item
 
-from canonical.launchpad.webapp.enum import DBEnumeratedType as DBSchema
-from canonical.launchpad.webapp.enum import DBItem as Item
+from canonical.lazr import DBEnumeratedType as DBSchema
+from canonical.lazr import DBItem as Item
 
 
 class AccountStatus(DBSchema):
@@ -2537,141 +2532,6 @@ class BranchReviewStatus(DBSchema):
         """)
 
 
-class BranchSubscriptionDiffSize(DBSchema):
-    """Branch Subscription Diff Size
-
-    When getting branch revision notifications, the person can set a size
-    limit of the diff to send out. If the generated diff is greater than
-    the specified number of lines, then it is omitted from the email.
-    This enumerated type defines the number of lines as a choice
-    so we can sensibly limit the user to a number of size choices.
-    """
-
-    NODIFF = Item(0, """
-        Don't send diffs
-
-        Don't send generated diffs with the revision notifications.
-        """)
-
-    HALFKLINES = Item(500, """
-        500 lines
-
-        Limit the generated diff to 500 lines.
-        """)
-
-    ONEKLINES  = Item(1000, """
-        1000 lines
-
-        Limit the generated diff to 1000 lines.
-        """)
-
-    FIVEKLINES = Item(5000, """
-        5000 lines
-
-        Limit the generated diff to 5000 lines.
-        """)
-
-    WHOLEDIFF  = Item(-1, """
-        Send entire diff
-
-        Don't limit the size of the diff.
-        """)
-
-
-class BranchSubscriptionNotificationLevel(DBSchema):
-    """Branch Subscription Notification Level
-
-    The notification level is used to control the amount and content
-    of the email notifications send with respect to modifications
-    to branches whether it be to branch attributes in the UI, or
-    to the contents of the branch found by the branch scanner.
-    """
-
-    NOEMAIL = Item(0, """
-        No email
-
-        Do not send any email about changes to this branch.
-        """)
-
-    ATTRIBUTEONLY = Item(1, """
-        Branch attribute notifications only
-
-        Only send notifications for branch attribute changes such
-        as name, description and whiteboard.
-        """)
-
-    DIFFSONLY = Item(2, """
-        Branch revision notifications only
-
-        Only send notifications about new revisions added to this
-        branch.
-        """)
-
-    FULL = Item(3, """
-        Branch attribute and revision notifications
-
-        Send notifications for both branch attribute updates
-        and new revisions added to the branch.
-        """)
-
-
-class BranchType(DBSchema):
-    """Branch Type
-
-    The type of a branch determins the branch interaction with a number
-    of other subsystems.
-    """
-
-    HOSTED = Item(1, """
-        Hosted
-
-        Hosted branches have their main repository on the supermirror.
-        """)
-
-    MIRRORED = Item(2, """
-        Mirrored
-
-        Mirrored branches are primarily hosted elsewhere and are
-        periodically pulled from the remote site into the supermirror.
-        """)
-
-    IMPORTED = Item(3, """
-        Imported
-
-        Imported branches have been converted from some other revision
-        control system into bzr and are made available through the supermirror.
-        """)
-
-
-class BranchVisibilityRule(DBSchema):
-    """Branch Visibility Rules for defining branch visibility policy."""
-
-    PUBLIC = Item(1, """
-        Public
-
-        Branches are public by default.
-        """)
-
-    PRIVATE = Item(2, """
-        Private
-
-        Branches are private by default.
-        """)
-
-    PRIVATE_ONLY = Item (3, """
-        Private only
-
-        Branches are private by default. Branch owners are not able
-        to change the visibility of the branches to public.
-        """)
-
-    FORBIDDEN = Item(4, """
-        Forbidden
-
-        Users are not able to create branches in the context.
-        """)
-
-
 class BugNominationStatus(DBSchema):
     """Bug Nomination Status
 
@@ -3138,85 +2998,6 @@ class MailingListAutoSubscribePolicy(DBSchema):
 
         The user is automatically subscribed to any team mailing list when she
         is added to the team, regardless of who joins her to the team.
-        """)
-
-
-class MailingListStatus(DBSchema):
-    """Team mailing list status.
-
-    Team mailing lists can be in one of several states, which this class
-    tracks.  A team owner first requests that a mailing list be created for
-    their team; this is called registering the list.  This request will then
-    be either approved or declined by a Launchpad administrator.
-
-    If a list request is approved, its creation will be requested of Mailman,
-    but it takes time for Mailman to act on this request.  During this time,
-    the state of the list is 'constructing'.  Mailman will then either succeed
-    or fail to create the list.  If it succeeds, the list is active until such
-    time as the team owner requests that the list be made inactive.
-    """
-
-    REGISTERED = Item(1, """
-        Registered; request creation
-
-        The team owner has requested that the mailing list for their team be
-        created.
-        """)
-
-    APPROVED = Item(2, """
-        Approved
-
-        A Launchpad administrator has approved the request to create the team
-        mailing list.
-        """)
-
-    DECLINED = Item(3, """
-        Declined
-
-        A Launchpad administrator has declined the request to create the team
-        mailing list.
-        """)
-
-    CONSTRUCTING = Item(4, """
-        Constructing
-
-        Mailman is in the process of constructing a mailing list that has been
-        approved for creation.
-        """)
-
-    ACTIVE = Item(5, """
-        Active
-
-        Mailman has successfully created the mailing list, and it is now
-        active.
-        """)
-
-    FAILED = Item(6, """
-        Failed
-
-        Mailman was unsuccessful in creating the mailing list.
-        """)
-
-    INACTIVE = Item(7, """
-        Inactive
-
-        A previously active mailing lit has been made inactive by its team
-        owner.
-        """)
-
-    MODIFIED = Item(8, """
-        Modified
-
-        An active mailing list has been modified and this modification needs
-        to be communicated to Mailman.
-        """)
-
-    DEACTIVATING = Item(9, """
-        Deactivating
-
-        The mailing list has been flagged for deactivation by the team owner.
-        Mailman will be informed of this and will take the necessary actions
-        to deactive the list.
         """)
 
 

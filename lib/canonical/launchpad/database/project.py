@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Launchpad Project-related Database Table Objects."""
 
 __metaclass__ = type
@@ -38,6 +38,7 @@ from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
+from canonical.launchpad.database.milestone import ProjectMilestoneSet
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import (
@@ -272,7 +273,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         raise NotImplementedError('Cannot file bugs against a project')
 
     def _getBugTaskContextClause(self):
-        """See BugTargetBase."""
+        """See `BugTargetBase`."""
         return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
 
     # IQuestionCollection
@@ -285,7 +286,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             unsupported_target = self
         else:
             unsupported_target = None
-            
+
         return QuestionTargetSearch(
             project=self,
             search_text=search_text, status=status,
@@ -339,6 +340,25 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """
         return self.products.count() != 0
 
+    @property
+    def milestones(self):
+        """See `IProject`."""
+        return ProjectMilestoneSet().getMilestonesForProject(
+            self, only_visible=True)
+
+    @property
+    def all_milestones(self):
+        """See `IProject`."""
+        return ProjectMilestoneSet().getMilestonesForProject(
+            self, only_visible=False)
+
+    def getMilestone(self, name):
+        """See `IProject`."""
+        result = ProjectMilestoneSet().getMilestonesForProject(
+            self, only_visible=False, milestone_name=name)
+        if result:
+            return result[0]
+        return None
 
 class ProjectSet:
     implements(IProjectSet)
@@ -356,7 +376,7 @@ class ProjectSet:
         return project
 
     def get(self, projectid):
-        """See canonical.launchpad.interfaces.project.IProjectSet.
+        """See `canonical.launchpad.interfaces.project.IProjectSet`.
 
         >>> getUtility(IProjectSet).get(1).name
         u'apache'
@@ -372,7 +392,7 @@ class ProjectSet:
         return project
 
     def getByName(self, name, default=None, ignore_inactive=False):
-        """See canonical.launchpad.interfaces.project.IProjectSet."""
+        """See `canonical.launchpad.interfaces.project.IProjectSet`."""
         if ignore_inactive:
             project = Project.selectOneBy(name=name, active=True)
         else:
@@ -383,7 +403,7 @@ class ProjectSet:
 
     def new(self, name, displayname, title, homepageurl, summary,
             description, owner, mugshot=None, logo=None, icon=None):
-        """See canonical.launchpad.interfaces.project.IProjectSet"""
+        """See `canonical.launchpad.interfaces.project.IProjectSet`."""
         return Project(
             name=name,
             displayname=displayname,
