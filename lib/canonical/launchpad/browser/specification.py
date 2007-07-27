@@ -978,7 +978,7 @@ class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
     def register_action(self, action, data):
         """Register a new blueprint and propose it for a sprint."""
         data['sprint'] = self.context
-        spec = self._add_spec(data)
+        self._add_spec(data)
         self.next_url = canonical_url(self.context)
         
 
