@@ -918,6 +918,7 @@ class NewSpecificationFromTargetView(NewSpecificationView):
     schema = Fields(INewSpecification, 
                     INewSpecificationSprint)
 
+
 class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
     """A view for adding a specification from a distribution."""
     pass
