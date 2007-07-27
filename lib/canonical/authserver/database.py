@@ -118,6 +118,13 @@ class UserDetailsStorageMixin:
         return [(key.keytype.title, key.keytext) for key in person.sshkeys]
 
     def _getPerson(self, cursor, loginID):
+        """Look up a person by loginID.
+
+        The loginID will be first tried as an email address, then as a numeric
+        ID, then finally as a nickname.
+
+        :returns: a `Person` or None if not found.
+        """
         try:
             if not isinstance(loginID, unicode):
                 # Refuse to guess encoding, so we decode as 'ascii'
@@ -145,19 +152,27 @@ class UserDetailsStorageMixin:
 
         return person
 
-    def _getPersonInfo(self, cursor, loginID):
-        person = self._getPerson(cursor, loginID)
+    def _getPersonDict(self, person):
+        """Return a dict representing 'person' to be returned over XML-RPC.
+
+        See `IUserDetailsStorage`.
+        """
         if person is None:
-            return None
+            return {}
 
         if person.password:
             salt = saltFromDigest(person.password)
         else:
             salt = ''
 
-        wikiname = getattr(person.ubuntuwiki, 'wikiname', None)
-        return [person.id, person.displayname, person.name, person.password,
-                wikiname] + [salt]
+        wikiname = getattr(person.ubuntuwiki, 'wikiname', '')
+        return {
+            'id': person.id,
+            'displayname': person.displayname,
+            'emailaddresses': self._getEmailAddresses(cursor(), person.id),
+            'wikiname': wikiname,
+            'salt': salt,
+        }
 
 
 class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
@@ -182,26 +197,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     def _getUserInteraction(self, loginID):
         """The interaction for getUser."""
         cur = cursor()
-        row = self._getPersonInfo(cur, loginID)
-        try:
-            personID, displayname, name, passwordDigest, wikiname, salt = row
-        except TypeError:
-            # No-one found
-            return {}
-
-        emailaddresses = self._getEmailAddresses(cur, personID)
-
-        if wikiname is None:
-            # None/nil isn't standard XML-RPC
-            wikiname = ''
-
-        return {
-            'id': personID,
-            'displayname': displayname,
-            'emailaddresses': emailaddresses,
-            'wikiname': wikiname,
-            'salt': salt,
-        }
+        return self._getPersonDict(self._getPerson(cur, loginID))
 
     def authUser(self, loginID, sshaDigestedPassword):
         return deferToThread(
@@ -211,34 +207,20 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     @read_only_transaction
     def _authUserInteraction(self, loginID, sshaDigestedPassword):
         """The interaction for authUser."""
-        row = self._getPersonInfo(cursor(), loginID)
-        try:
-            personID, displayname, name, passwordDigest, wikiname, salt = row
-        except TypeError:
-            # No-one found
+        person = self._getPerson(cursor(), loginID)
+
+        if person is None:
             return {}
 
-        if passwordDigest is None:
+        if person.password is None:
             # The user has no password, which means they can't login.
             return {}
 
-        if passwordDigest.rstrip() != sshaDigestedPassword.rstrip():
+        if person.password.rstrip() != sshaDigestedPassword.rstrip():
             # Wrong password
             return {}
 
-        emailaddresses = self._getEmailAddresses(cursor(), personID)
-
-        if wikiname is None:
-            # None/nil isn't standard XML-RPC
-            wikiname = ''
-
-        return {
-            'id': personID,
-            'displayname': displayname,
-            'emailaddresses': emailaddresses,
-            'wikiname': wikiname,
-            'salt': salt,
-        }
+        return self._getPersonDict(person)
 
 
 def saltFromDigest(digest):
@@ -287,43 +269,15 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     @read_only_transaction
     def _getUserInteraction(self, loginID):
         """The interaction for getUser."""
-        row = self._getPersonInfo(cursor(), loginID)
-        try:
-            personID, displayname, name, passwordDigest, wikiname = row
-        except TypeError:
-            # No-one found
-            return {}
+        person = self._getPerson(cursor(), loginID)
+        return self._getPersonDict(person)
 
-        emailaddresses = self._getEmailAddresses(cursor(), personID)
-
-        if wikiname is None:
-            # None/nil isn't standard XML-RPC
-            wikiname = ''
-
-        return {
-            'id': personID,
-            'displayname': displayname,
-            'name': name,
-            'emailaddresses': emailaddresses,
-            'wikiname': wikiname,
-            'teams': self._getTeams(personID),
-        }
-
-    def _getPersonInfo(self, cursor, loginID):
-        """Look up a person by loginID.
-
-        The loginID will be first tried as an email address, then as a numeric
-        ID, then finally as a nickname.
-
-        :returns: a tuple of (person ID, display name, password, wikiname) or
-            None if not found.
-        """
-        row = UserDetailsStorageMixin._getPersonInfo(self, cursor, loginID)
-        if row is None:
-            return None
-        else:
-            # Remove the salt from the result; the v2 API doesn't include it.
-            return row[:-1]
+    def _getPersonDict(self, person):
+        person_dict = UserDetailsStorageMixin._getPersonDict(self, person)
+        del person_dict['salt']
+        person_dict['name'] = person.name
+        person_dict['teams'] = self._getTeams(person.id)
+        return person_dict
 
     def authUser(self, loginID, password):
         return deferToThread(self._authUserInteraction, loginID, password)
@@ -331,31 +285,15 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     @read_only_transaction
     def _authUserInteraction(self, loginID, password):
         """The interaction for authUser."""
-        row = self._getPersonInfo(cursor(), loginID)
-        try:
-            personID, displayname, name, passwordDigest, wikiname = row
-        except TypeError:
-            # No-one found
+        person = self._getPerson(cursor(), loginID)
+        if person is None:
             return {}
 
-        if not self.encryptor.validate(password, passwordDigest):
+        if not self.encryptor.validate(password, person.password):
             # Wrong password
             return {}
 
-        emailaddresses = self._getEmailAddresses(cursor(), personID)
-
-        if wikiname is None:
-            # None/nil isn't standard XML-RPC
-            wikiname = ''
-
-        return {
-            'id': personID,
-            'name': name,
-            'displayname': displayname,
-            'emailaddresses': emailaddresses,
-            'wikiname': wikiname,
-            'teams': self._getTeams(personID),
-        }
+        return self._getPersonDict(person)
 
     def getBranchesForUser(self, personID):
         """See IHostedBranchStorage."""
