@@ -1784,7 +1784,8 @@ class BugTaskSearchListingView(LaunchpadFormView):
         error_message = _(
             "There's no person with the name or email address '%s'.")
 
-        for name in ('assignee', 'bug_reporter', 'bug_contact'):
+        for name in ('assignee', 'bug_reporter', 'bug_contact',
+                     'bug_commenter'):
             if self.getWidgetError(name):
                 self.setFieldError(
                     name, error_message %
