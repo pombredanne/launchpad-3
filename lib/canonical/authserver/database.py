@@ -74,7 +74,7 @@ def writing_transaction(function):
     return mergeFunctionMetadata(function, transacted)
 
 
-def run_as_user(function):
+def run_as_requester(function):
     """Decorate 'function' by logging in as the user identified by its first
     parameter, the `Person` object is then passed in to the function instead of
     the login ID.
@@ -362,7 +362,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return deferToThread(self._getBranchesForUserInteraction, personID)
 
     @read_only_transaction
-    @run_as_user
+    @run_as_requester
     def _getBranchesForUserInteraction(self, person):
         """The interaction for getBranchesForUser."""
         branches = getUtility(
@@ -400,7 +400,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             branchName)
 
     @writing_transaction
-    @run_as_user
+    @run_as_requester
     def _createBranchInteraction(self, requester, personName, productName,
                                  branchName):
         """The interaction for createBranch."""
@@ -440,7 +440,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             productName, branchName)
 
     @read_only_transaction
-    @run_as_user
+    @run_as_requester
     def _getBranchInformationInteraction(self, requester, userName,
                                          productName, branchName):
         branch = getUtility(IBranchSet).getByUniqueName(
