@@ -36,7 +36,7 @@ import urllib
 from operator import attrgetter
 
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
+from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
     IInputWidget, IDisplayWidget, InputErrors, WidgetsError, ConversionError)
 from zope.app.form.utility import (
@@ -1386,12 +1386,11 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
 
 
 class BugTaskSearchListingView(LaunchpadFormView):
-    """Base class for bug listings.
+    """Base class for bug listings."""
 
-    Subclasses should define getExtraSearchParams() to filter the
-    search.
-    """
-
+    # These widgets are customised so as to keep the presentation of this view
+    # and its descendants consistent after refactoring to use
+    # LaunchpadFormView as a parent.
     custom_widget('searchtext', NewLineToSpacesWidget)
     custom_widget('status_upstream', LabeledMultiCheckBoxWidget)
     custom_widget('tag', BugTagsWidget)
@@ -1423,7 +1422,8 @@ class BugTaskSearchListingView(LaunchpadFormView):
         # We call self._validate() here because LaunchpadFormView only
         # validates the form if an action is submitted but, because this form
         # can be called through a query string, we don't want to require an
-        # action.
+        # action. We pass an empty dict to _validate() because all the data
+        # needing validation is already available internally to self.
         self._validate(None, {})
 
     @property
@@ -1492,9 +1492,8 @@ class BugTaskSearchListingView(LaunchpadFormView):
         convert the old string parameter into a list.
         """
         old_upstream_status_values_to_new_values = {
-            'pending_bugwatch': 'pending_bugwatch',
-            'hide_upstream': 'hide_upstream',
             'only_resolved_upstream': 'resolved_upstream'}
+
         status_upstream = self.request.get('field.status_upstream')
         if status_upstream in old_upstream_status_values_to_new_values.keys():
             self.request.form['field.status_upstream'] = [
@@ -1523,6 +1522,8 @@ class BugTaskSearchListingView(LaunchpadFormView):
         """Build the BugTaskSearchParams object for the given arguments and
         values specified by the user on this form's widgets.
         """
+        # Calling _validate populates the data dictionary as a side-effect
+        # of validation.
         data = {}
         self._validate(None, data)
 
@@ -1781,9 +1782,9 @@ class BugTaskSearchListingView(LaunchpadFormView):
     def validateVocabulariesAdvancedForm(self):
         """Provides a meaningful message for vocabulary validation errors."""
         error_message = _(
-            "There's no person with the name or email address '%s'")
+            "There's no person with the name or email address '%s'.")
 
-        for name in ('assignee', 'bug_reporter', 'bug_contact', 
+        for name in ('assignee', 'bug_reporter', 'bug_contact',
                      'bug_commenter'):
             if self.getWidgetError(name):
                 self.setFieldError(
