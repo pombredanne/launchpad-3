@@ -928,8 +928,8 @@ class NewSpecificationView(LaunchpadFormView):
         return spec
 
 class NewSpecificationFromTargetView(NewSpecificationView):
-    """A view for adding a specification where a target can be identified
-    automatically from the context.
+    """A view for adding a specification from a context that corresponds to a
+    unique specification target.
     """
     
     schema = Fields(INewSpecification, 
@@ -955,7 +955,15 @@ class NewSpecificationFromProductSeriesView(NewSpecificationFromTargetView):
     pass
 
 
-class NewSpecificationFromProjectView(NewSpecificationView):
+class NewSpecificationFromNonTargetView(NewSpecificationView):
+    """A view for adding a specification from a context that does not
+    correspond to a unique specification target. The user is asked to
+    specify a target.
+    """
+    pass
+
+
+class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
     """A view for adding a specification from a project."""
 
     schema = Fields(INewSpecificationProjectTarget,
@@ -963,7 +971,7 @@ class NewSpecificationFromProjectView(NewSpecificationView):
                     INewSpecificationSprint)
 
 
-class NewSpecificationFromRootView(NewSpecificationView):
+class NewSpecificationFromRootView(NewSpecificationFromNonTargetView):
     """A view for adding a specification from the root of Launchpad."""
 
     schema = Fields(INewSpecificationTarget,
@@ -971,7 +979,7 @@ class NewSpecificationFromRootView(NewSpecificationView):
                     INewSpecificationSprint)
     
     
-class NewSpecificationFromSprintView(NewSpecificationView):
+class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
     """A view for adding a specification from a sprint."""
 
     schema = Fields(INewSpecificationTarget,
