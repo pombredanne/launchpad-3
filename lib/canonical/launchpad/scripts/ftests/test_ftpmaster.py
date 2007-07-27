@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from unittest import TestCase, TestLoader
+from unittest import TestLoader
 import shutil
 import subprocess
 import os
@@ -256,7 +256,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "ERROR: 'mozilla-firefox' source isn't published in hoary")
 
     def test_processBinaryChange_success(self):
-        """Check processBinaryChange() method call.
+        """Check if processBinaryChange() picks the correct binary.
 
         It simply wraps changeOverride method on
         IDistroArchSeriesBinaryPackage, which is already tested in place.

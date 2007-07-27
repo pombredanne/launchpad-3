@@ -26,7 +26,6 @@ import apt_pkg
 import commands
 import md5
 import os
-import re
 import stat
 import sys
 import tempfile
