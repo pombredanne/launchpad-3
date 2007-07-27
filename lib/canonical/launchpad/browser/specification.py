@@ -936,9 +936,6 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
         """
         name = data.get('name')
         target = data.get('target')
-        self._validate_name(name, target)
-
-    def _validate_name(self, name, target):
         if target:
             # The context does not correspond to a unique specification
             # namespace. Instead, ensure that the specified name does
