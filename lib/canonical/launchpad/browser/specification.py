@@ -336,13 +336,19 @@ class SpecificationGoalProposeView(GeneralFormView):
         if distroseries is not None:
             goal = distroseries
         self.context.whiteboard = whiteboard
-        self.context.proposeGoal(goal, self.user)
-        # Now we want to auto-approve the goal if the person making
-        # the proposal has permission to do this anyway
-        if goal is not None and check_permission('launchpad.Driver', goal):
-            self.context.acceptBy(self.user)
+        proposeGoalWithAutomaticApproval(self.context, goal, self.user)
         self._nextURL = canonical_url(self.context)
         return 'Done.'
+
+
+def proposeGoalWithAutomaticApproval(specification, series, user):
+    """Proposes the given specification as a goal for the given series. If
+    the given user has permission, the proposal is approved automatically.
+    """
+    specification.proposeGoal(series, user)
+    # If the proposer has permission, approve the goal automatically.
+    if series is not None and check_permission('launchpad.Driver', series):
+        specification.acceptBy(user)   
 
 
 class SpecificationGoalDecideView(LaunchpadView):
