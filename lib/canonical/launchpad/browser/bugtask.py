@@ -692,7 +692,7 @@ class BugTaskEditView(LaunchpadFormView):
     """The view class used for the task +editstatus page."""
 
     _missing_value = object()
-
+    widgets = []
     field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
                    'product', 'status', 'statusexplanation']
 
@@ -751,7 +751,7 @@ class BugTaskEditView(LaunchpadFormView):
             raise AssertionError("Unknown IBugTask: %r" % bugtask)
         return '_'.join(parts)
 
-    def _setUpWidgets(self):
+    def setUpWidgets(self):
         """Set up a combination of display and edit widgets.
 
         Set up the widgets depending on if it's a remote bug task, where
@@ -806,6 +806,23 @@ class BugTaskEditView(LaunchpadFormView):
         setUpDisplayWidgets(
             self, self.schema, names=read_only_field_names, prefix=self.prefix)
 
+        # We need to update self.widgets here
+        # self.widgets = form.Widgets(widget_list)
+        self.widgets = form.setUpDataWidgets(
+            self.form_fields.select(*read_only_field_names),
+            self.prefix,
+            self.context,
+            self.request,
+            self.initial_values,
+            for_display=True)
+        self.widgets += form.setUpDataWidgets(
+            self.form_fields.select(*editable_field_names),
+            self.prefix,
+            self.context,
+            self.request,
+            self.initial_values)
+
+        import pdb; pdb.set_trace()
         self.field_names = editable_field_names
 
     def _getEditableFieldNames(self):
@@ -933,6 +950,7 @@ class BugTaskEditView(LaunchpadFormView):
     @action('Save changes', name='save')
     def save_action(self, action, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
+        import pdb; pdb.set_trace()
         bugtask = self.context
 
         if self.request.form.get('subscribe', False):
