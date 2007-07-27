@@ -231,3 +231,19 @@ Even if it has resources to translate.
 
   >>> len(netapplet.translatable_series)
   1
+
+
+== Milestones ==
+
+A project can have virtual milestones. If any of its products has milestones,
+these milestones are also associated with the project.
+
+Project.milestones is a list of all visible milestones associated with
+a project.
+
+Project.all_milestones is a list of all milestones associated with a project.
+
+Project.getMilestone(name) returns the project milestone with the name `name'
+or None, if no milestone with this name exists.
+
+For details see doc/milestone.txt and ftests/test_project_milestone.py.

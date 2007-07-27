@@ -9,6 +9,8 @@ import shutil
 import tempfile
 import unittest
 
+from email import message_from_string
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -196,10 +198,12 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Check the mailer stub has a rejection email for Daniel
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg).get_payload(decode=True)
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         self.assertEqual(to_addrs, [daniel])
         self.assertTrue("Unhandled exception processing upload: Exception "
-                        "raised by BrokenUploadPolicy for testing." in raw_msg)
+                        "raised by BrokenUploadPolicy for testing." 
+                        in msg)
 
     def testUploadToFrozenDistro(self):
         """Uploads to a frozen distroseries should work, but be unapproved.
@@ -280,6 +284,39 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(
             queue_item.status, PackageUploadStatus.UNAPPROVED,
             "Expected queue item to be in UNAPPROVED status.")
+
+    def testCommercialArchiveMissingForCommercialUploadFails(self):
+        """A missing commercial archive should produce a rejection email.
+
+        If the commercial archive is missing (i.e. there is a data problem)
+        when a commercial package is uploaded to it, a sensible rejection
+        error email should be generated.
+        """
+        # Extra setup for breezy
+        self.setupBreezy()
+
+        # Set up the uploadprocessor with appropriate options and logger.
+        self.options.context = 'anything' # upload policy allows anything
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Fudge the commercial archive in the sample data temporarily so that
+        # it's now an embargoed archive instead.
+        archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distribution=self.ubuntu, purpose=ArchivePurpose.COMMERCIAL)
+        removeSecurityProxy(archive).purpose = ArchivePurpose.EMBARGOED
+
+        self.layer.txn.commit()
+
+        # Upload a package.
+        upload_dir = self.queueUpload("foocomm_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check that it was rejected appropriately.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "Commercial archive for distro '%s' not found" % self.ubuntu.name
+                in raw_msg)
 
     def testMixedCommercialUploadFails(self):
         """Uploads with commercial and non-commercial files are rejected.
@@ -371,8 +408,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(foocomm_bpr.component.name, 'commercial')
 
         # Publish the upload so we can check the publishing record.
-        self._publishPackage("foocomm", "1.0-1", source=False,
-            archive=commercial_archive)
+        self._publishPackage("foocomm", "1.0-1", source=False)
 
         # Check the publishing record's archive and component.
         foocomm_bpph = BinaryPackagePublishingHistory.selectOneBy(
@@ -420,25 +456,32 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
 
-    def assertEmail(self, contents=[], recipients=[]):
+    def assertEmail(self, contents=None, recipients=None):
         """Check email last email content and recipients."""
         if not recipients:
             recipients = self.default_recipients
+        if not contents:
+            contents = []
 
         self.assertEqual(
             len(stub.test_emails), 1,
             'Unexpected number of emails sent: %s' % len(stub.test_emails))
 
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        body = msg.get_payload(decode=True)
 
         clean_recipients = [r.strip() for r in to_addrs]
         for recipient in list(recipients):
             self.assertTrue(recipient in clean_recipients)
 
+        subject = "Subject: %s" % msg['Subject']
+        body = subject + body
+
         for content in list(contents):
             self.assertTrue(
-                content in raw_msg,
-                "Expect: '%s'\nGot:\n%s" % (content, raw_msg))
+                content in body,
+                "Expect: '%s'\nGot:\n%s" % (content, body))
 
     def testUploadToPPA(self):
         """Upload to a PPA gets there.
