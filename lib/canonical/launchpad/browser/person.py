@@ -23,6 +23,7 @@ __all__ = [
     'PersonChangePasswordView',
     'PersonClaimView',
     'PersonCodeOfConductEditView',
+    'PersonCommentedBugTaskSearchListingView',
     'PersonDynMenu',
     'PersonEditEmailsView',
     'PersonEditHomePageView',
@@ -596,8 +597,8 @@ class PersonBugsMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'bugs'
-    links = ['assignedbugs', 'reportedbugs', 'subscribedbugs', 'relatedbugs',
-             'softwarebugs', 'mentoring']
+    links = ['assignedbugs', 'commentedbugs', 'reportedbugs', 'subscribedbugs',
+             'relatedbugs', 'softwarebugs', 'mentoring']
 
     def relatedbugs(self):
         text = 'List related bugs'
@@ -623,6 +624,10 @@ class PersonBugsMenu(ApplicationMenu):
         text = 'Mentoring offered'
         enabled = self.context.mentoring_offers
         return Link('+mentoring', text, enabled=enabled, icon='info')
+
+    def commentedbugs(self):
+        text = 'List commented bugs'
+        return Link('+commentedbugs', text, icon='bugs')
 
 
 class PersonSpecsMenu(ApplicationMenu):
@@ -1425,8 +1430,10 @@ class PersonRelatedBugsView(BugTaskSearchListingView):
         subscriber_params.subscriber = context
         assignee_params = copy.copy(params)
         owner_params = copy.copy(params)
-        # Only override the assignee and owner if they were not specified
-        # by the user.
+        commenter_params = copy.copy(params)
+
+        # Only override the assignee, commenter and owner if they were not
+        # specified by the user.
         if assignee_params.assignee is None:
             assignee_params.assignee = context
         if owner_params.owner is None:
@@ -1434,8 +1441,11 @@ class PersonRelatedBugsView(BugTaskSearchListingView):
             # bug (but different tasks) being displayed.
             owner_params.owner = context
             owner_params.bug_reporter = context
+        if commenter_params.bug_commenter is None:
+            commenter_params.bug_commenter = context
+
         tasks = self.context.searchTasks(
-            assignee_params, subscriber_params, owner_params)
+            assignee_params, subscriber_params, owner_params, commenter_params)
         return BugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
@@ -1488,6 +1498,34 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     def getSimpleSearchURL(self):
         """Return a URL that can be usedas an href to the simple search."""
         return canonical_url(self.context) + "/+assignedbugs"
+
+
+class PersonCommentedBugTaskSearchListingView(BugTaskSearchListingView):
+    """All bugs commented on by a Person."""
+
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+
+    def search(self):
+        """Return the open bugs commented on by a person."""
+        return BugTaskSearchListingView.search(
+            self, extra_params={'bug_commenter': self.context})
+
+    def getSearchPageHeading(self):
+        """The header for the search page."""
+        return "Bugs commented on by %s" % self.context.displayname
+
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs commented on by %s: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs commented on by %s" % self.context.displayname
+
+    def getSimpleSearchURL(self):
+        """Return a URL that can be used as an href to the simple search."""
+        return canonical_url(self.context) + "/+commentedbugs"
 
 
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
