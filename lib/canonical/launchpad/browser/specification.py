@@ -859,6 +859,22 @@ class NewSpecificationView(LaunchpadFormView):
     """
 
     label = "Register a new Blueprint"
+    
+    def validate(self, data):
+        """Validates the contents of the form.
+
+        Guarantees that the name chosen for the new blueprint
+        is unique within its target project.
+        """
+        if ISpecificationSet.providedBy(self.context):
+            target = data.get('target')
+        elif IProject.providedBy(self.context):
+            target = data.get('target')
+        else:
+            # We can rely on the name field to validate itself.
+            target = None
+        name = data.get('name')
+        self._validate_name(name, target)
 
     def _validate_name(self, name, target):
         if target:
@@ -873,9 +889,14 @@ class NewSpecificationView(LaunchpadFormView):
                     self.schema['name'].errormessage % name
                 )
 
+    @action(_('Register Blueprint'), name='register')
+    def register_action(self, action, data):
+        """Register a new blueprint."""
+        spec = self._add_spec(data)
+        self.next_url = canonical_url(spec)
+
     def _add_spec(self, data):
         """Add a new specification with the form values and return it."""
-        
         owner = self.user
         name = data['name']
         # determine product or distribution as target
@@ -901,34 +922,10 @@ class NewSpecificationView(LaunchpadFormView):
             assignee=data.get('assignee', None),
             drafter=data.get('drafter', None),
             approver=data.get('approver', None))
-
         sprint = data.get('sprint', None)
         if sprint is not None:
             spec.linkSprint(sprint, self.user)            
         return spec
-    
-    def validate(self, data):
-        """Validates the contents of the form.
-
-        Guarantees that the name chosen for the new blueprint
-        is unique within its target project.
-        """
-        if ISpecificationSet.providedBy(self.context):
-            target = data.get('target')
-        elif IProject.providedBy(self.context):
-            target = data.get('target')
-        else:
-            # We can rely on the name field to validate itself.
-            target = None
-        name = data.get('name')
-        self._validate_name(name, target)
-
-    @action(_('Register Blueprint'), name='register')
-    def register_action(self, action, data):
-        """Register a new blueprint."""
-        spec = self._add_spec(data)
-        self.next_url = canonical_url(spec)
-
 
 class NewSpecificationFromTargetView(NewSpecificationView):
     """A view for adding a specification where a target can be identified
