@@ -260,6 +260,8 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
     def _getPersonDict(self, person):
         person_dict = UserDetailsStorageMixin._getPersonDict(self, person)
+        if person_dict == {}:
+            return {}
         del person_dict['salt']
         person_dict['name'] = person.name
         person_dict['teams'] = self._getTeams(person)
