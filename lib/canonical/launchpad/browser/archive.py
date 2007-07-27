@@ -106,16 +106,16 @@ class ArchiveActivateView(LaunchpadFormView):
     """
     schema = IPPAActivateForm
 
-    def __init__(self, context, request):
-        """Redirects to the PPA page if it already exists."""
-        LaunchpadFormView.__init__(self, context, request)
+    def initialize(self):
+        """Redirects user to the PPA page if it is already activated."""
+        LaunchpadFormView.initialize(self)
         if self.context.archive is not None:
             self.request.response.redirect(canonical_url(self.context.archive))
 
     def validate(self, data):
         """Ensure user has checked the 'accepted' checkbox."""
         if len(self.errors) == 0:
-            if not data.get('accepted', None):
+            if not data.get('accepted'):
                 self.addError(
                     "PPA ToS has to be accepted to complete the activation.")
 

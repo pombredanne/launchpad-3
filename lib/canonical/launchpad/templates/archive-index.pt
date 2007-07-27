@@ -13,26 +13,23 @@
       <div tal:replace="structure context/owner/@@+portlet-details" />
     </metal:leftportlets>
 
-    <div metal:fill-slot="main" tal:condition="not:view/searchPackages"
-         tal:define="is_owner python: view.user == context.owner">
+    <div metal:fill-slot="main" tal:condition="not:view/searchPackages">
 
-      <div id="whiteboard" tal:condition="is_owner">
-         <p>PPA whiteboard:</p>
-         <div class="informational" tal:condition="context/whiteboard">
-            <tal:archive-whiteboard
-               replace="structure context/whiteboard/fmt:text-to-html" />
-         </div>
-         <p><a href="+edit">Add/Edit PPA whiteboard</a>.</p>
+      <div id="whiteboard" class="informational"
+           tal:condition="context/required:launchpad.Edit">
+        <tal:whiteboard condition="context/whiteboard">
+          <p>PPA whiteboard:</p>
+          <tal:archive-whiteboard
+             replace="structure context/whiteboard/fmt:text-to-html" />
+        </tal:whiteboard>
       </div>
 
       <div id="description">
          <p>PPA description:</p>
          <tal:archive-description condition="context/description"
-                replace="structure context/description/fmt:text-to-html" />
+            replace="structure context/description/fmt:text-to-html" />
          <p class="informational" tal:condition="not:context/description"
             >No description available.</p>
-         <p tal:condition="is_owner"
-            ><a href="+edit">Add/Edit PPA description</a>.</p>
       </div>
 
       <p>For more information about how to configure your system to
