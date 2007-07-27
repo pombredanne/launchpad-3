@@ -904,7 +904,10 @@ class NewSpecificationView(LaunchpadFormView):
             approver=data.get('approver', None))
         sprint = data.get('sprint', None)
         if sprint is not None:
-            spec.linkSprint(sprint, self.user)            
+            spec.linkSprint(sprint, self.user) 
+        series = data.get('series', None)
+        if series is not None:
+            proposeGoalWithAutomaticApproval(spec, series, self.user)
         return spec
 
 
@@ -922,7 +925,12 @@ class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
 
 class NewSpecificationFromDistroSeriesView(NewSpecificationFromTargetView):
     """A view for adding a specification from a distro series."""
-    pass
+    
+    @action(_('Register Blueprint'), name='register')
+    def register_action(self, action, data):
+        data['series'] = self.context
+        spec = self._add_spec(data)
+        self.next_url = canonical_url(spec)
 
 
 class NewSpecificationFromProductView(NewSpecificationFromTargetView):
@@ -932,7 +940,12 @@ class NewSpecificationFromProductView(NewSpecificationFromTargetView):
 
 class NewSpecificationFromProductSeriesView(NewSpecificationFromTargetView):
     """A view for adding a specification from a product series."""
-    pass
+    
+    @action(_('Register Blueprint'), name='register')
+    def register_action(self, action, data):
+        data['series'] = self.context
+        spec = self._add_spec(data)
+        self.next_url = canonical_url(spec)
 
 
 class NewSpecificationFromNonTargetView(NewSpecificationView):
