@@ -5,8 +5,8 @@ SET client_min_messages=ERROR;
 DROP SEQUENCE branchlabel_id_seq;
 
 -- Not used any more (if ever).
-DROP TABLE ArchConfig;
 DROP TABLE ArchConfigEntry;
+DROP TABLE ArchConfig;
 DROP TABLE BranchMessage;
 DROP TABLE BranchRelationship;
 DROP TABLE ProductBranchRelationship;
