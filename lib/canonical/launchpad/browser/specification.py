@@ -855,8 +855,7 @@ class SpecificationTreeDotOutput(SpecificationTreeGraphView):
 
 
 class NewSpecificationView(LaunchpadFormView):
-    """A view for adding a specification from a project, project group
-    or distribution.
+    """A abstract view for adding a new specification.
     """
 
     label = "Register a new Blueprint"
