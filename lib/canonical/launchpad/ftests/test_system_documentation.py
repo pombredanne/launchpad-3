@@ -201,23 +201,26 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
 
 def mailingListXMLRPCInternalSetUp(test):
     setUp(test)
-    # Use the hand-crafted API view instance, not retrieved through the
-    # component architecture.  We use this because it's easier to debug since
-    # when things go horribly wrong in the view, you see the errors on stdout
-    # instead of in an OOPS report living in some log file somewhere.
+    # Use the direct API view instance, not retrieved through the component
+    # architecture.  Don't use ServerProxy.  We do this because it's easier to
+    # debug because when things go horribly wrong, you see the errors on
+    # stdout instead of in an OOPS report living in some log file somewhere.
     #
-    # There's one gotcha here.  When running the same doctest with the
-    # ServerProxy, faults are turned into exceptions, but with the direct view
-    # the faults are just returned.  This causes an impedence mismatch with
-    # exception display in the doctest that cannot be papered over by using
-    # ellipses.  So to make this work in a consistent way, a subclass of the
-    # view class is used which prints faults to match the output of
-    # ServerProxy (exceptions aren't really necessary).
+    # There's one gotcha here: when running the same doctest with the
+    # ServerProxy, faults are turned into exceptions by the XMLRPC machinery,
+    # but with the direct view the faults are just returned.  This causes an
+    # impedence mismatch with exception display in the doctest that cannot be
+    # papered over by using ellipses.  So to make this work in a consistent
+    # way, a subclass of the view class is used which prints faults to match
+    # the output of ServerProxy (proper exceptions aren't really necessary).
     import xmlrpclib
     def adapter(func):
         def caller(self, *args, **kws):
             result = func(self, *args, **kws)
             if isinstance(result, xmlrpclib.Fault):
+                # Fake this to look like exception output.  The second line is
+                # necessary to match ellipses in the doctest, but its contents
+                # are completely ignored; /something/ just has to be there.
                 print 'Traceback (most recent call last):'
                 print 'ignore'
                 print 'Fault:', result
@@ -234,11 +237,15 @@ def mailingListXMLRPCInternalSetUp(test):
             return super(ImpedenceMatchingView, self).reportStatus(statuses)
     mailinglist_api = ImpedenceMatchingView('a_context', 'a_view')
     test.globs['mailinglist_api'] = mailinglist_api
+    # Expose different commit() functions to handle the 'external' case below
+    # where there is more than one connection.  The 'internal' case here has
+    # just one coneection so the flush is all we need.
+    test.globs['commit'] = flush_database_updates
 
 
 def mailingListXMLRPCExternalSetUp(test):
     setUp(test)
-    # Use a real XMLRPC server proxy so that the same test is run using the
+    # Use a real XMLRPC server proxy so that the same test is run through the
     # full security machinery.  This is more representative of the real-world,
     # but more difficult to debug.
     from canonical.functional import XMLRPCTestTransport
@@ -247,6 +254,11 @@ def mailingListXMLRPCExternalSetUp(test):
         'http://test@canonical.com:test@xmlrpc.launchpad.dev/mailinglists/',
         transport=XMLRPCTestTransport())
     test.globs['mailinglist_api'] = mailinglist_api
+    # See above; right now this is the same for both the internal and external
+    # tests, but if we're able to resolve the big XXX above the
+    # mailinglist-xmlrpc.txt-external declaration below, I suspect that these
+    # two globals will end up being different functions.
+    test.globs['commit'] = flush_database_updates
 
 
 def mailingListXMLRPCExternalTearDown(test):
@@ -505,6 +517,39 @@ special = {
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer
             ),
+    # XXX BarryWarsaw 27-Jul-2007.  There are two things that suck about this.
+    # First, that we are forced to use LaunchpadZopelessLayer when we /should/
+    # be able to use LaunchpadFunctionalLayer like all other XMLRPC tests.
+    # The second is that we're forced to use a special teardown method that
+    # resets the security policy to PermissiveSecurityPolicy.  The latter is a
+    # direct result of the former though because something in the twisty maze
+    # of setups changes the security policy and the LaunchpadZopelessLayer
+    # will complain bitterly if the test doesn't leave the policy in
+    # PermissiveSecurityPolicy.  When you figure out the former, you can
+    # remove the latter.
+    #
+    # So why do we use LaunchpadZopelessLayer here?  Well, because that's what
+    # works!  Seriously, I have no idea what the right thing do to otherwise
+    # is, and if you figure it out, I will owe you a beer.  Without using the
+    # LaunchpadZopelessLayer, the tests won't work because after the XMLRPC
+    # call, the checks of the internal object states will not see the
+    # updates.  No amount of flush_database_updates(),
+    # flush_database_caches(), transaction.commit(), or sqlbase.commit() seems
+    # to make any difference.  I've tried every combination and location of
+    # those calls that I can come up with, but nothing else works.  Why does
+    # LaunchpadZopelessLayer work when nothing else does?  Answer that and
+    # you've probably resolved this XXX.  stub posits in IRC that there are
+    # two connections here, one going through XMLRPC and the other using the
+    # direct database objects.  If that's the case, then both connections
+    # would have to get committed, but I can't figure out how to do that.
+    #
+    # stub also mentions this, which might be a clue <wink>: And to make
+    # things worse, the appserver (and thus the *Functional* test stuff) runs
+    # in SERIALIZABLE transaction isolation level.  This means that the
+    # connection sees a snapshot of the database from the time a query was
+    # first issued on the transaction.  So *both* connections need to be
+    # committed (or the one making the changes commit, and the one trying to
+    # see the changes rollback).
     'mailinglist-xmlrpc.txt-external': FunctionalDocFileSuite(
             '../doc/mailinglist-xmlrpc.txt',
             setUp=mailingListXMLRPCExternalSetUp,
