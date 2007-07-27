@@ -97,9 +97,8 @@ class UserDetailsStorageMixin:
     """Functions that are shared between DatabaseUserDetailsStorage and
     DatabaseUserDetailsStorageV2"""
 
-    def _getEmailAddresses(self, personID):
+    def _getEmailAddresses(self, person):
         """Get the email addresses for a person"""
-        person = getUtility(IPersonSet).get(personID)
         emails = [person.preferredemail] + list(person.validatedemails)
         return (
             [person.preferredemail.email] +
@@ -168,7 +167,7 @@ class UserDetailsStorageMixin:
         return {
             'id': person.id,
             'displayname': person.displayname,
-            'emailaddresses': self._getEmailAddresses(person.id),
+            'emailaddresses': self._getEmailAddresses(person),
             'wikiname': wikiname,
             'salt': salt,
         }
@@ -246,13 +245,11 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         self.connectionPool = connectionPool
         self.encryptor = SSHADigestEncryptor()
 
-    def _getTeams(self, personID):
+    def _getTeams(self, person):
         """Get list of teams a person is in.
 
         Returns a list of team dicts (see IUserDetailsStorageV2).
         """
-        person = self._getPerson(personID)
-
         teams = [
             dict(id=person.id, name=person.name,
                  displayname=person.displayname)]
@@ -265,7 +262,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         person_dict = UserDetailsStorageMixin._getPersonDict(self, person)
         del person_dict['salt']
         person_dict['name'] = person.name
-        person_dict['teams'] = self._getTeams(person.id)
+        person_dict['teams'] = self._getTeams(person)
         return person_dict
 
     def authUser(self, loginID, password):
