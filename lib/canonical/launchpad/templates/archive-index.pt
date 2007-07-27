@@ -15,14 +15,14 @@
 
     <div metal:fill-slot="main" tal:condition="not:view/searchPackages">
 
-      <div id="whiteboard" class="informational"
-           tal:condition="context/required:launchpad.Edit">
-        <tal:whiteboard condition="context/whiteboard">
-          <p>PPA whiteboard:</p>
-          <tal:archive-whiteboard
-             replace="structure context/whiteboard/fmt:text-to-html" />
-        </tal:whiteboard>
-      </div>
+      <tal:whiteboard condition="context/required:launchpad.Edit">
+         <div id="whiteboard" class="informational"
+              tal:condition="context/whiteboard">
+           <p>PPA whiteboard:</p>
+           <tal:archive-whiteboard
+              replace="structure context/whiteboard/fmt:text-to-html" />
+         </div>
+      </tal:whiteboard>
 
       <div id="description">
          <p>PPA description:</p>

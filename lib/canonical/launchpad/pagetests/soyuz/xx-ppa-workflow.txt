@@ -120,9 +120,8 @@ Where we can check for the submitted description:
 And a empty 'whiteboard' section, that, when filled, including
 administrator messages about operations done in this PPA:
 
-    >>> print extract_text(
-    ...     find_tag_by_id(sample_browser.contents, 'whiteboard'))
-    <BLANKLINE>
+    >>> find_tag_by_id(sample_browser.contents, 'whiteboard') is None
+    True
 
 Note that 'whiteboard' sections is presented as 'informational' box,
 only for those users with 'launchpad.Edit' permission on the PPA in
@@ -208,9 +207,8 @@ teams:
     PPA description:
     Go for it, you lazy !
 
-    >>> print extract_text(
-    ...     find_tag_by_id(admin_browser.contents, 'whiteboard'))
-    <BLANKLINE>
+    >>> find_tag_by_id(admin_browser.contents, 'whiteboard') is None
+    True
 
 LP-admins can also 'edit' PPAs of other people:
 
