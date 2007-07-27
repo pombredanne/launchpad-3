@@ -860,35 +860,6 @@ class NewSpecificationView(LaunchpadFormView):
 
     label = "Register a new Blueprint"
     
-    def validate(self, data):
-        """Validates the contents of the form.
-
-        Guarantees that the name chosen for the new blueprint
-        is unique within its target project.
-        """
-        if ISpecificationSet.providedBy(self.context):
-            target = data.get('target')
-        elif IProject.providedBy(self.context):
-            target = data.get('target')
-        else:
-            # We can rely on the name field to validate itself.
-            target = None
-        name = data.get('name')
-        self._validate_name(name, target)
-
-    def _validate_name(self, name, target):
-        if target:
-            # The context does not correspond to a unique specification
-            # namespace. Instead, ensure that the specified name does
-            # not exist within the namespace of the specified target.
-            if target.getSpecification(name):
-                # The specified name already exists. Mark the field with
-                # an error.
-                self.setFieldError(
-                    'name',
-                    self.schema['name'].errormessage % name
-                )
-
     @action(_('Register Blueprint'), name='register')
     def register_action(self, action, data):
         """Register a new blueprint."""
@@ -960,7 +931,35 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
     correspond to a unique specification target. The user is asked to
     specify a target.
     """
-    pass
+
+    def validate(self, data):
+        """Validates the contents of the form.
+
+        Guarantees that the name chosen for the new blueprint
+        is unique within its target project.
+        """
+        if ISpecificationSet.providedBy(self.context):
+            target = data.get('target')
+        elif IProject.providedBy(self.context):
+            target = data.get('target')
+        else:
+            # We can rely on the name field to validate itself.
+            target = None
+        name = data.get('name')
+        self._validate_name(name, target)
+
+    def _validate_name(self, name, target):
+        if target:
+            # The context does not correspond to a unique specification
+            # namespace. Instead, ensure that the specified name does
+            # not exist within the namespace of the specified target.
+            if target.getSpecification(name):
+                # The specified name already exists. Mark the field with
+                # an error.
+                self.setFieldError(
+                    'name',
+                    self.schema['name'].errormessage % name
+                )
 
 
 class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
