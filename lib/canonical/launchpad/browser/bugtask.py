@@ -44,7 +44,7 @@ from zope.app.form.utility import (
     applyWidgetsChanges)
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
-from zope.formlib.form import Widgets
+from zope.formlib import form
 from zope.interface import implements, providedBy
 from zope.schema import Choice
 from zope.schema.interfaces import IList
@@ -721,13 +721,8 @@ class BugTaskEditView(LaunchpadFormView):
 
         return field_values
 
-    def initialize(self):
-        self.prefix = self._getPrefix()
-        #self._setUpWidgets()
-
-        LaunchpadFormView.initialize(self)
-
-    def _getPrefix(self):
+    @property
+    def prefix(self):
         """Return a prefix that can be used for this form.
 
         It's constructed by using the names of the bugtask's target, to
@@ -1955,7 +1950,7 @@ class NominationsReviewTableBatchNavigatorView(LaunchpadFormView):
             (True, bug_listing_item.review_action_widget)
             for bug_listing_item in self.context.getBugListingItems()
             if bug_listing_item.review_action_widget is not None]
-        self.widgets = Widgets(widgets_list, len(self.prefix)+1)
+        self.widgets = form.Widgets(widgets_list, len(self.prefix)+1)
 
     @action('Save changes', name='submit',
             condition=canApproveNominations)
