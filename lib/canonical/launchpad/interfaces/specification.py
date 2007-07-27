@@ -372,12 +372,16 @@ class ISpecification(IHasOwner, ICanBeMentored):
 
 
 class INewSpecification(Interface):
-    """A schema for new specifications."""    
+    """A schema for new specifications."""
+    
+    # Required fields:
     name              = ISpecification['name']
     title             = ISpecification['title']
-    specurl           = ISpecification['specurl']
     summary           = ISpecification['summary']
     definition_status = ISpecification['definition_status']
+    
+    # Optional fields:
+    specurl           = ISpecification['specurl']
     assignee          = ISpecification['assignee']
     drafter           = ISpecification['drafter']
     approver          = ISpecification['approver']
