@@ -868,8 +868,6 @@ class NewSpecificationView(LaunchpadFormView):
 
     def _add_spec(self, data):
         """Add a new specification with the form values and return it."""
-        owner = self.user
-        name = data['name']
         # determine product or distribution as target
         product = distribution = None
         target = data.get('target', None)
@@ -882,12 +880,12 @@ class NewSpecificationView(LaunchpadFormView):
         else:
             raise AssertionError, 'Unknown kind of blueprint target'
         spec = getUtility(ISpecificationSet).new(
-            name,
-            data['title'],
-            data['specurl'],
-            data['summary'],
-            data['definition_status'],
-            owner,
+            name=data['name'],
+            title=data['title'],
+            specurl=data['specurl'],
+            summary=data['summary'],
+            definition_status=data['definition_status'],
+            owner=self.user,
             product=product,
             distribution=distribution,
             assignee=data.get('assignee', None),
@@ -897,6 +895,7 @@ class NewSpecificationView(LaunchpadFormView):
         if sprint is not None:
             spec.linkSprint(sprint, self.user)            
         return spec
+
 
 class NewSpecificationFromTargetView(NewSpecificationView):
     """A view for adding a specification from a context that corresponds to a
