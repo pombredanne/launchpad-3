@@ -491,7 +491,7 @@
               onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
               onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
               " />
-          <input type="button" value='Add more lines' title="Let's you add more than one line"
+          <input type="button" value="Add more lines" title="Lets you add more than one line"
             tal:condition="not:translation_dictionary/is_multi_line"
             tal:attributes="
               name string:${translation_dictionary/html_id_translation}_new_to_textarea;
@@ -504,6 +504,7 @@
               <textarea
                 style="width: 100%;"
                 rows=6
+                tal:content="translation_dictionary/translation"
                 tal:attributes="
                   id string:${translation_dictionary/html_id_translation}_new;
                   name string:${translation_dictionary/html_id_translation}_new;
@@ -511,8 +512,7 @@
                   dir context/pofile/language/abbreviated_text_dir;
                   onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
                   onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
-                ">
-              <tal:content replace="translation_dictionary/translation" /></textarea>
+                "></textarea>
             </tal:with-content>
             <tal:without-content
               condition="not: translation_dictionary/translation">
