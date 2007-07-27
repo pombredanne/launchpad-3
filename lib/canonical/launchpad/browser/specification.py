@@ -930,7 +930,7 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
 
     def validate(self, data):
         """Ensures that the name chosen for the new specification is unique
-        within the context of the chosen project."""
+        within the context of the chosen target."""
         name = data.get('name')
         target = data.get('target')
         if target.getSpecification(name):
