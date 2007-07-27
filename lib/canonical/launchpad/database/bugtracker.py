@@ -48,6 +48,12 @@ class BugTracker(SQLBase):
     watches = SQLMultipleJoin('BugWatch', joinColumn='bugtracker',
                               orderBy='-datecreated', prejoins=['bug'])
 
+    def _get_title(self):
+        dbtitle = self._SO_get_title()
+        if dbtitle is None:
+            dbtitle = quote('Bug tracker at %s' % self.baseurl)
+        return dbtitle
+
     @property
     def latestwatches(self):
         """See IBugTracker"""
@@ -176,13 +182,6 @@ class BugTrackerSet:
             scheme, host = urllib.splittype(baseurl)
             host, path = urllib.splithost(host)
             name = 'auto-%s' % host
-        if title is None:
-            title = quote('Bug tracker at %s' % baseurl)
-        if summary is None:
-            summary = ("This bugtracker was automatically created. Please "
-                       "edit the details to get it correct!")
-        if contactdetails is None:
-            contactdetails = 'No contact details provided.'
         bugtracker = BugTracker(name=name,
             bugtrackertype=bugtrackertype,
             title=title, summary=summary, baseurl=baseurl,

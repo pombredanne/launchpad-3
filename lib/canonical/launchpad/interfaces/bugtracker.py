@@ -49,7 +49,8 @@ class IBugTracker(Interface):
     title = TextLine(
         title=_('Title'),
         description=_(
-            'A descriptive label for this tracker to show in listings.'))
+            'A descriptive label for this tracker to show in listings.'),
+        required=False)
     summary = Text(
         title=_('Summary'),
         description=_(
