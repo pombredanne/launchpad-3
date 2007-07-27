@@ -372,8 +372,7 @@ class ISpecification(IHasOwner, ICanBeMentored):
 
 
 class INewSpecification(Interface):
-    """A schema for new specifications."""
-    
+    """A schema for new specifications."""    
     name              = ISpecification['name']
     title             = ISpecification['title']
     specurl           = ISpecification['specurl']
@@ -382,6 +381,18 @@ class INewSpecification(Interface):
     assignee          = ISpecification['assignee']
     drafter           = ISpecification['drafter']
     approver          = ISpecification['approver']
+
+
+class INewSpecificationDistroSeries(Interface):
+    """A supplemental schema for new specifications that allows the user to
+    specify a distribution series."""
+    series = ISpecification['distroseries']
+
+
+class INewSpecificationProductSeries(Interface):
+    """A supplemental schema for new specifications that allows the user to
+    specify a product series."""
+    series = ISpecification['productseries']
 
 
 class INewSpecificationSprint(Interface):
