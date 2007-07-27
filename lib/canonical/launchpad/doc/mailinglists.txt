@@ -172,7 +172,7 @@ currently registered mailing lists.
 
 A mailing list's registration cannot be reviewed by a non-administrator.
 
-    >>> from canonical.lp.dbschema import MailingListStatus
+    >>> from canonical.launchpad.interfaces import MailingListStatus
     >>> no_priv = personset.getByName('no-priv')
     >>> list_one.review(no_priv, MailingListStatus.APPROVED)
     Traceback (most recent call last):
