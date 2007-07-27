@@ -94,6 +94,14 @@ class MilestoneView(LaunchpadView):
         tasks = getUtility(IBugTaskSet).search(params) 
         return list(tasks)
 
+    @property
+    def is_project_milestone(self):
+        """Check, if the current milestone is a project milestone.
+
+        Return true, if the current milestone is a project milestone,
+        else return False."""
+        return IProjectMilestone.providedBy(self.context)
+
 
 class MilestoneAddView:
     def create(self, name, dateexpected=None):

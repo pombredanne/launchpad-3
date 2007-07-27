@@ -99,4 +99,38 @@ A project milestone is visible, if at least one product milestone with the
 same name is visible, the dateexpected attribute is set to the minimum
 of the dateexpected values of the product milestones.
 
+    >>> from canonical.launchpad.ftests.test_project_milestone import (
+    ...     ProjectMilestoneTest)
+    >>> from canonical.launchpad.interfaces import (BugTaskSearchParams,
+    ...     IBugTaskSet, IProjectSet)
+    >>> def product_milestone_info(milestone_name, product_name):
+    ...     product = productset[product_name]
+    ...     milestone = milestoneset.getByNameAndProduct(
+    ...         milestone_name, product)
+    ...     if milestone: 
+    ...         print 'product', product_name, 'visible:', milestone.visible,
+    ...         print 'expected:', milestone.dateexpected
+    >>> login('foo.bar@canonical.com')
+    >>> test_helper = ProjectMilestoneTest(helper_only=True)
+    >>> test_helper.setUpProjectMilestoneTests()
+    >>> gnome = getUtility(IProjectSet)['gnome']
+    >>> for milestone in gnome.all_milestones:
+    ...     print 'gnome', milestone.name, 'visible:', milestone.visible,
+    ...     print 'expected:', milestone.dateexpected
+    ...     product_milestone_info(milestone.name, 'evolution')
+    ...     product_milestone_info(milestone.name, 'applets')
+    ...     product_milestone_info(milestone.name, 'gnomebaker')
+    ...     product_milestone_info(milestone.name, 'netapplet')
+    gnome 1.1            visible: 1     expected: 2010-04-01 00:00:00
+      product evolution  visible: True  expected: 2010-04-01 00:00:00
+      product gnomebaker visible: True  expected: 2010-04-02 00:00:00
+    gnome 1.1.           visible: 1     expected: 2010-04-02 00:00:00
+      product netapplet  visible: True  expected: 2010-04-02 00:00:00
+    gnome 1.2            visible: 1     expected: 2011-04-01 00:00:00
+      product evolution  visible: True  expected: 2011-04-01 00:00:00
+      product gnomebaker visible: False expected: 2011-04-02 00:00:00
+    gnome 1.3            visible: 0     expected: 2012-04-01 00:00:00
+      product evolution  visible: False expected: 2012-04-01 00:00:00
+      product gnomebaker visible: False expected: 2012-04-02 00:00:00
+
 For more details see ftests/test_project_milestone.py.

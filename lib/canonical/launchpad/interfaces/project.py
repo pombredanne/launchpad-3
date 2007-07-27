@@ -14,10 +14,10 @@ from zope.schema import Bool, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, URIField
-from canonical.launchpad.interfaces import (
-    IBugTarget, IHasAppointedDriver, IHasOwner, IHasSpecifications,
-    IHasLogo, IHasMugshot, IHasIcon, IKarmaContext, IHasMentoringOffers,
-    PillarNameField, IHasBranchVisibilityPolicy)
+from canonical.launchpad.interfaces import (IBugTarget, IHasAppointedDriver,
+    IHasBranchVisibilityPolicy, IHasIcon, IHasLogo, IHasMentoringOffers,
+    IHasMilestones, IHasMugshot, IHasOwner, IHasSpecifications,
+    IKarmaContext, PillarNameField)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
@@ -33,10 +33,10 @@ class ProjectNameField(PillarNameField):
         return IProject
 
 
-class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
-               IKarmaContext, IHasSprints, IHasMentoringOffers, IHasIcon,
-               IHasLogo, IHasMugshot, IHasBranchVisibilityPolicy,
-               IHasTranslationGroup):
+class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
+               IHasIcon, IHasLogo, IHasMentoringOffers, IHasMilestones,
+               IHasMugshot, IHasOwner, IHasSpecifications, IHasSprints,
+               IHasTranslationGroup, IKarmaContext):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -194,20 +194,6 @@ class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
     def hasProducts():
         """Returns True if a project has products associated with it, False
         otherwise.
-        """
-
-    milestones = Attribute(_(
-        "The visible milestones associated with this project, "
-        "ordered by date expected."))
-
-    all_milestones = Attribute(_(
-        "All milestones associated with this project, ordered by "
-        "date expected."))
-
-    def getMilestone(name):
-        """Return the milestone named `name` for this project.
-
-        If a milestone with the given name does not exist, return None.
         """
 
 

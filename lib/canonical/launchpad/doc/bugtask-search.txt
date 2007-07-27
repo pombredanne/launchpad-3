@@ -349,3 +349,38 @@ The search filter can also return bugs that are related to CVE reports:
     ...     print bugTaskInfo(bugtask), getCves(bugtask)
     17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG 1999-8979
     26 2 Ubuntu Blackhole Trash folder 1999-2345
+
+
+== Search for bugs assigned to milestones ==
+
+    >>> from canonical.launchpad.ftests.test_project_milestone import (
+    ...     ProjectMilestoneTest)
+    >>> test_helper = ProjectMilestoneTest(helper_only=True)
+    >>> test_helper.setUpProjectMilestoneTests()
+
+BugTaskSet.search() can return bugtasks associated with milestones.
+
+    >>> milestone = evolution.getMilestone('1.1')
+    >>> params = BugTaskSearchParams(
+    ...     milestone=milestone, user=None)
+    >>> milestone_tasks = bugtask_set.search(params)
+    >>> for bugtask in milestone_tasks:
+    ...     print bugTaskInfo(bugtask)
+    35 15 Evolution Milestone test bug for evolution
+
+
+Bugtasks associated with a project milestone can be searched. 
+In this case, all bugtasks associated with products belonging to 
+this project are returned.
+
+    >>> from canonical.launchpad.interfaces import IProjectSet
+    >>> gnome = getUtility(IProjectSet).getByName('gnome')
+    >>> milestone = gnome.getMilestone('1.1')
+    >>> params = BugTaskSearchParams(
+    ...     milestone=milestone, user=None)
+    >>> milestone_tasks = bugtask_set.search(params)
+    >>> for bugtask in milestone_tasks:
+    ...     print bugTaskInfo(bugtask)
+    35 15 Evolution Milestone test bug for evolution
+    36 16 gnomebaker Milestone test bug for gnomebaker
+

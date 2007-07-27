@@ -12,7 +12,7 @@ from zope.interface import implements
 from sqlobject import (
     ForeignKey, StringCol, BoolCol, SQLObjectNotFound, SQLRelatedJoin)
 
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote
+from canonical.database.sqlbase import cursor, SQLBase, sqlvalues, quote
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
@@ -38,13 +38,14 @@ from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
-from canonical.launchpad.database.milestone import ProjectMilestoneSet
+from canonical.launchpad.database.milestone import ProjectMilestone
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import (
     HasSpecificationsMixin, Specification)
 from canonical.launchpad.database.sprint import HasSprintsMixin
 from canonical.launchpad.database.question import QuestionTargetSearch
+from canonical.launchpad.helpers import shortlist
 
 
 class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -340,22 +341,65 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """
         return self.products.count() != 0
 
+    def _getMilestones(self, only_visible, milestone_name):
+        """Return a list of milestones for this project.
+
+        If only_visible is True, only visible milestones are returned,
+        else all milestones.
+
+        If milestone_name is None, all milestones are returned, else
+        only the milestone named milestone_name is returned, or an
+        empty list, if no such milestone exists.
+
+        A project has a milestone named 'A', if at least one of its
+        products has a milestone named 'A'.
+        """
+        having_clause = []
+        if only_visible:
+            having_clause.append("bool_or(Milestone.visible)=True")
+        if milestone_name is not None:
+            having_clause.append(
+                "Milestone.name=%s" % sqlvalues(milestone_name))
+        if having_clause:
+            having_clause = 'HAVING ' + ' AND '.join(having_clause)
+        else:
+            having_clause = ''
+        query = """
+            SELECT Milestone.name, min(Milestone.dateexpected),
+                bool_or(Milestone.visible)
+                FROM Milestone, Product
+                WHERE Product.project = %s
+                    AND Milestone.product = product.id
+                GROUP BY Milestone.name
+                %s
+                ORDER BY min(Milestone.dateexpected), Milestone.name
+            """ % (self.id, having_clause)
+        cur = cursor()
+        cur.execute(query)
+        result = cur.fetchall()
+        return shortlist([ProjectMilestone(self, name, dateexpected, visible)
+                          for name, dateexpected, visible in result])
+
     @property
     def milestones(self):
         """See `IProject`."""
-        return ProjectMilestoneSet().getMilestonesForProject(
-            self, only_visible=True)
+        return self._getMilestones(True, None)
 
     @property
     def all_milestones(self):
         """See `IProject`."""
-        return ProjectMilestoneSet().getMilestonesForProject(
-            self, only_visible=False)
+        return self._getMilestones(False, None)
 
     def getMilestone(self, name):
         """See `IProject`."""
-        result = ProjectMilestoneSet().getMilestonesForProject(
-            self, only_visible=False, milestone_name=name)
+        result = self._getMilestones(False, name)
+        # this assert should not fail: The SQL query in _getMilestones
+        # has a 'GROUP BY Milestone.name' clause, and the HAVING clause
+        # '"Milestone.name=%s" % sqlvalues(milestone_name)' is used, when
+        # a milestone name is passed to _getMilestones.
+        assert (len(result) <= 1,
+                'search for a project milestone by name may not return '
+                'more than one result')
         if result:
             return result[0]
         return None

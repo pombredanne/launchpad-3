@@ -5,10 +5,10 @@
 __metaclass__ = type
 
 __all__ = [
+    'IHasMilestones',
     'IMilestone',
     'IMilestoneSet',
     'IProjectMilestone',
-    'IProjectMilestoneSet'
     ]
 
 from zope.interface import Interface, Attribute
@@ -112,15 +112,20 @@ class IMilestoneSet(Interface):
 
 class IProjectMilestone(IMilestone):
     """A marker interface for milestones related to a project"""
-    is_project_milestone = Attribute(
-        "A marker attribute to be used in page templates")
 
 
-class IProjectMilestoneSet(Interface):
+class IHasMilestones(Interface):
+    """A mixin interface for classes providing milestones."""
 
-    def getMilestonesForProject(
-        project, only_visible=True, milestone_name=None):
-        """Get a list of all milestones related to the project `project`
+    milestones = Attribute(_(
+        "The visible milestones associated with this object, "
+        "ordered by date expected."))
 
-        If `only_visible` is True, only visible milestones are returned.
+    all_milestones = Attribute(_(
+        "All milestones associated with this object, ordered by "
+        "date expected."))
+
+    def getMilestone(name):
+        """Return a milestone with the given name for this object, or
+        None.
         """
