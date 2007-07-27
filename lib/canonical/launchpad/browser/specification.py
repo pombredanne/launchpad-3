@@ -45,6 +45,7 @@ from canonical.launchpad import _
 
 from canonical.launchpad.interfaces import (
     IDistribution,
+    IDistroSeries,
     ILaunchBag,
     INewSpecification,
     INewSpecificationSprint,
@@ -52,6 +53,7 @@ from canonical.launchpad.interfaces import (
     INewSpecificationProjectTarget,
     IPersonSet,
     IProduct,
+    IProductSeries,
     IProject,
     ISpecification,
     ISpecificationBranch,
@@ -874,8 +876,12 @@ class NewSpecificationView(LaunchpadFormView):
             target = self.context
         if IProduct.providedBy(target):
             product = target
+        elif IProductSeries.providedBy(target):
+            product = target.product
         elif IDistribution.providedBy(target):
             distribution = target
+        elif IDistroSeries.providedBy(target):
+            distribution = target.distribution
         else:
             raise AssertionError, 'Unknown kind of blueprint target'
         spec = getUtility(ISpecificationSet).new(
@@ -899,10 +905,10 @@ class NewSpecificationView(LaunchpadFormView):
 class NewSpecificationFromTargetView(NewSpecificationView):
     """An abstract view for adding a specification from a context that
     corresponds to a unique specification target."""
-    
+
     schema = Fields(INewSpecification, 
                     INewSpecificationSprint)
-    
+
 class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
     """A view for adding a specification from a distribution."""
     pass
