@@ -135,7 +135,7 @@ Add manual word breaks to long words in a string:
     '&lt;http:/<wbr></wbr>/launchpad.<wbr></wbr>net/products/<wbr></wbr>launchpad&gt;'
 
 
-== The fmt: namespace to get strings (hiding and obfuscation) ==
+== The fmt: namespace to get strings (hiding) ==
 
 PGP blocks, signatures and full-quoted parts of a message can be
 wrapped in markup to hide them:
@@ -183,6 +183,14 @@ wrapped in markup to hide them:
     ...                    '> 3. Get new handwriting.\n'
     ...                    '> 4. Add Year Zero to the calendar.\n'
     ...                    '\n')
+    >>> python = ('>>> tz = pytz.timezone("Asia/Calcutta")\n'
+    ...           '>>> mydate = datetime.datetime(2007, 2, 18, 15, 35)\n'
+    ...           '>>> print tz.localize(mydate)\n'
+    ...           '2007-02-18 15:35:00+05:30\n'
+    ...           '\n')
+    >>> not_python = ('>> This line really is a quoted passage.\n'
+    ...               '>>> This does not invoke an exception rule.\n'
+    ...               '\n')
     >>> signature = ('-- \n'
     ...              '__C U R T I S  C.  H O V E Y_______\n'
     ...              'sinzui.is@example.org\n'
@@ -358,7 +366,21 @@ output and not fold it.
     ||/ Name Version Description<br />
     +++-===<wbr></wbr>=======<wbr></wbr>====-==<wbr></wbr>=======...
     ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs</p>
-    
+
+We do not fold text that is quoted more than two levels, because
+tools like Python and diff use multiple '>' to start lines.
+Output from the Python interpreter is not quoted text. Note that
+three or more '>' symbols inside an existing quoted passage will be
+folded because they are a continuation of a quote.
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([python, not_python]))
+    <p>&gt;&gt;&gt; tz = pytz.timezone(<wbr></wbr>"Asia/Calcutta"...
+    &gt;&gt;&gt; mydate = datetime.<wbr></wbr>datetime(<wbr></wbr>2007, 2, ...
+    2007-02-18 15:35:00+05:30</p>
+    <p><span class="foldable">&gt;&gt; This line really is a quoted ...
+    &gt;&gt;&gt; This does not invoke an exception rule.
+    </span></p>
 
 The formatter is indifferent to the number and kinds of paragraphs
 it must markup. We can format the three examples at the same time.
@@ -390,6 +412,9 @@ it must markup. We can format the three examples at the same time.
     sinzui.<wbr></wbr>is@example.<wbr></wbr>org<br />
     Guilty of stealing everything I am.
     </span></p>
+
+
+== The fmt: namespace to get strings (obfuscation) ==
 
 Email addresses embedded in text can be obfuscated. In cases where
 personal information may be in the content, and it will be shown to

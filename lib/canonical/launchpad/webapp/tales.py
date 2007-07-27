@@ -1372,17 +1372,18 @@ class FormattersAPI:
                     % cgi.escape(self._stringtoformat)
                     )
 
-    # Match lines that start with the ':', '|', and '>' symbols
-    # commonly used for quoting passages from another email.
-    # the dpkg version is used for exceptional cases where it
+    # Match lines that start with the ':', '|', and '>' symbols commonly
+    # used for quoting passages from another email. We support 2 levels of
+    # quotation. The dpkg version is used for exceptional cases where it
     # is better to not assume '|' is a start of a quoted passage.
-    _re_quoted = re.compile('^([:|]|&gt;|-----BEGIN PGP)')
-    _re_dpkg_quoted = re.compile('^([:]|&gt;|-----BEGIN PGP)')
+    _re_quoted = re.compile('^([|][|]? |&gt; |&gt;&gt; |-----BEGIN PGP)')
+    _re_dpkg_quoted = re.compile('^(&gt; |&gt;&gt; |-----BEGIN PGP)')
 
     # Match blocks that start as signatures, quoted passages, or PGP.
-    _re_block_include = re.compile('^<p>(--<br />|([:|]|&gt)|-----BEGIN PGP)')
+    _re_block_include = re.compile(
+        '^<p>(--<br />|\|\|? |&gt; |&gt;&gt; |-----BEGIN PGP)')
     # Match a line starting with '>' (implying text email or quoting by hand).
-    _re_quoted_line = re.compile('^&gt;')
+    _re_quoted_line = re.compile('^&gt; ')
 
     def email_to_html(self):
         """text_to_html and hide signatures and full-quoted emails.
