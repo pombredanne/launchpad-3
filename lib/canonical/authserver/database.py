@@ -74,6 +74,26 @@ def writing_transaction(function):
     return mergeFunctionMetadata(function, transacted)
 
 
+def run_as_user(function):
+    """Decorate 'function' by logging in as the user identified by its first
+    parameter, the `Person` object is then passed in to the function instead of
+    the login ID.
+
+    Assumes that 'function' is on an object that implements a '_getPerson'
+    method similar to `UserDetailsStorageMixin._getPerson`.
+    """
+    def as_user(self, loginID, *args, **kwargs):
+        requester = self._getPerson(cursor(), loginID)
+        login(requester.preferredemail.email)
+        try:
+            return function(self, requester, *args, **kwargs)
+        finally:
+            logout()
+    as_user.__name__ = function.__name__
+    as_user.__doc__ = function.__doc__
+    return as_user
+
+
 class UserDetailsStorageMixin:
     """Functions that are shared between DatabaseUserDetailsStorage and
     DatabaseUserDetailsStorageV2"""
@@ -342,27 +362,23 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return deferToThread(self._getBranchesForUserInteraction, personID)
 
     @read_only_transaction
-    def _getBranchesForUserInteraction(self, personID):
+    @run_as_user
+    def _getBranchesForUserInteraction(self, person):
         """The interaction for getBranchesForUser."""
-        person = getUtility(IPersonSet).get(personID)
-        login(person.preferredemail.email)
-        try:
-            branches = getUtility(
-                IBranchSet).getHostedBranchesForPerson(person)
-            branches_summary = {}
-            for branch in branches:
-                by_product = branches_summary.setdefault(branch.owner.id, {})
-                if branch.product is None:
-                    product_id, product_name = '', ''
-                else:
-                    product_id = branch.product.id
-                    product_name = branch.product.name
-                by_product.setdefault((product_id, product_name), []).append(
-                    (branch.id, branch.name))
-            return [(person_id, by_product.items())
-                    for person_id, by_product in branches_summary.iteritems()]
-        finally:
-            logout()
+        branches = getUtility(
+            IBranchSet).getHostedBranchesForPerson(person)
+        branches_summary = {}
+        for branch in branches:
+            by_product = branches_summary.setdefault(branch.owner.id, {})
+            if branch.product is None:
+                product_id, product_name = '', ''
+            else:
+                product_id = branch.product.id
+                product_name = branch.product.name
+            by_product.setdefault((product_id, product_name), []).append(
+                (branch.id, branch.name))
+        return [(person_id, by_product.items())
+                for person_id, by_product in branches_summary.iteritems()]
 
     def fetchProductID(self, productName):
         """See IHostedBranchStorage."""
@@ -384,31 +400,27 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             branchName)
 
     @writing_transaction
-    def _createBranchInteraction(self, loginID, personName, productName,
+    @run_as_user
+    def _createBranchInteraction(self, requester, personName, productName,
                                  branchName):
         """The interaction for createBranch."""
-        requester = self._getPerson(cursor(), loginID)
-        login(requester.preferredemail.email)
+        if productName == '+junk':
+            product = None
+        else:
+            product = getUtility(IProductSet).getByName(productName)
+
+        person_set = getUtility(IPersonSet)
+        owner = person_set.getByName(personName)
+
+        branch_set = getUtility(IBranchSet)
         try:
-            if productName == '+junk':
-                product = None
-            else:
-                product = getUtility(IProductSet).getByName(productName)
-
-            person_set = getUtility(IPersonSet)
-            owner = person_set.getByName(personName)
-
-            branch_set = getUtility(IBranchSet)
-            try:
-                branch = branch_set.new(
-                    BranchType.HOSTED, branchName, requester, owner,
-                    product, None, None, author=requester)
-            except BranchCreationForbidden:
-                return ''
-            else:
-                return branch.id
-        finally:
-            logout()
+            branch = branch_set.new(
+                BranchType.HOSTED, branchName, requester, owner,
+                product, None, None, author=requester)
+        except BranchCreationForbidden:
+            return ''
+        else:
+            return branch.id
 
     def requestMirror(self, branchID):
         """See IHostedBranchStorage."""
@@ -428,26 +440,22 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             productName, branchName)
 
     @read_only_transaction
-    def _getBranchInformationInteraction(self, loginID, userName, productName,
-                                         branchName):
-        requester = self._getPerson(cursor(), loginID)
-        login(requester.preferredemail.email)
+    @run_as_user
+    def _getBranchInformationInteraction(self, requester, userName,
+                                         productName, branchName):
+        branch = getUtility(IBranchSet).getByUniqueName(
+            '~%s/%s/%s' % (userName, productName, branchName))
+        if branch is None:
+            return '', ''
         try:
-            branch = getUtility(IBranchSet).getByUniqueName(
-                '~%s/%s/%s' % (userName, productName, branchName))
-            if branch is None:
-                return '', ''
-            try:
-                branch_id = branch.id
-            except Unauthorized:
-                return '', ''
-            if (requester.inTeam(branch.owner)
-                and branch.branch_type == BranchType.HOSTED):
-                return branch_id, WRITABLE
-            else:
-                return branch_id, READ_ONLY
-        finally:
-            logout()
+            branch_id = branch.id
+        except Unauthorized:
+            return '', ''
+        if (requester.inTeam(branch.owner)
+            and branch.branch_type == BranchType.HOSTED):
+            return branch_id, WRITABLE
+        else:
+            return branch_id, READ_ONLY
 
 
 class DatabaseBranchDetailsStorage:
