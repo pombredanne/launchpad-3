@@ -872,24 +872,6 @@ class NewSpecificationViewBase(LaunchpadFormView):
                     self.schema['name'].errormessage % name
                 )
 
-    def validate(self, data):
-        """Validates the contents of the form.
-
-        Generally, we trust individual fields to perform validation in
-        isolation, but there are cases where fields must be validated
-        collectively. In the case where the current context does not
-        define a unique specification namespace, we need to identify
-        such a namespace from the user's specified target and check that
-        the specified name does not already exist in that namespace.
-        """
-        if ISpecificationSet.providedBy(self.context):
-            target = data.get('target')
-        elif IProject.providedBy(self.context):
-            target = data.get('target')
-        else:
-            # We can rely on the name field to validate itself.
-            target = None
-
     def _add_spec(self, data):
         """Add a new specification with the form values and return it."""
         
