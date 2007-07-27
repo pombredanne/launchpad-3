@@ -83,7 +83,7 @@ def run_as_requester(function):
     method similar to `UserDetailsStorageMixin._getPerson`.
     """
     def as_user(self, loginID, *args, **kwargs):
-        requester = self._getPerson(cursor(), loginID)
+        requester = self._getPerson(loginID)
         login(requester.preferredemail.email)
         try:
             return function(self, requester, *args, **kwargs)
@@ -112,12 +112,12 @@ class UserDetailsStorageMixin:
     @read_only_transaction
     def _getSSHKeysInteraction(self, loginID):
         """The interaction for getSSHKeys."""
-        person = self._getPerson(cursor(), loginID)
+        person = self._getPerson(loginID)
         if person is None:
             return []
         return [(key.keytype.title, key.keytext) for key in person.sshkeys]
 
-    def _getPerson(self, cursor, loginID):
+    def _getPerson(self, loginID):
         """Look up a person by loginID.
 
         The loginID will be first tried as an email address, then as a numeric
@@ -196,8 +196,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     @read_only_transaction
     def _getUserInteraction(self, loginID):
         """The interaction for getUser."""
-        cur = cursor()
-        return self._getPersonDict(self._getPerson(cur, loginID))
+        return self._getPersonDict(self._getPerson(loginID))
 
     def authUser(self, loginID, sshaDigestedPassword):
         return deferToThread(
@@ -207,7 +206,7 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     @read_only_transaction
     def _authUserInteraction(self, loginID, sshaDigestedPassword):
         """The interaction for authUser."""
-        person = self._getPerson(cursor(), loginID)
+        person = self._getPerson(loginID)
 
         if person is None:
             return {}
@@ -253,7 +252,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
 
         Returns a list of team dicts (see IUserDetailsStorageV2).
         """
-        person = self._getPerson(cursor(), personID)
+        person = self._getPerson(personID)
 
         teams = [
             dict(id=person.id, name=person.name,
@@ -269,8 +268,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     @read_only_transaction
     def _getUserInteraction(self, loginID):
         """The interaction for getUser."""
-        person = self._getPerson(cursor(), loginID)
-        return self._getPersonDict(person)
+        return self._getPersonDict(self._getPerson(loginID))
 
     def _getPersonDict(self, person):
         person_dict = UserDetailsStorageMixin._getPersonDict(self, person)
@@ -285,7 +283,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     @read_only_transaction
     def _authUserInteraction(self, loginID, password):
         """The interaction for authUser."""
-        person = self._getPerson(cursor(), loginID)
+        person = self._getPerson(loginID)
         if person is None:
             return {}
 
