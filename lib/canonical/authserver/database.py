@@ -173,6 +173,14 @@ class UserDetailsStorageMixin:
             'salt': salt,
         }
 
+    def getUser(self, loginID):
+        return deferToThread(self._getUserInteraction, loginID)
+
+    @read_only_transaction
+    def _getUserInteraction(self, loginID):
+        """The interaction for getUser."""
+        return self._getPersonDict(self._getPerson(loginID))
+
 
 class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
     """Launchpad-database backed implementation of IUserDetailsStorage"""
@@ -188,14 +196,6 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         """
         self.connectionPool = connectionPool
         self.encryptor = SSHADigestEncryptor()
-
-    def getUser(self, loginID):
-        return deferToThread(self._getUserInteraction, loginID)
-
-    @read_only_transaction
-    def _getUserInteraction(self, loginID):
-        """The interaction for getUser."""
-        return self._getPersonDict(self._getPerson(loginID))
 
     def authUser(self, loginID, sshaDigestedPassword):
         return deferToThread(
@@ -260,14 +260,6 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return teams + [
             dict(id=team.id, name=team.name, displayname=team.displayname)
             for team in person.teams_participated_in]
-
-    def getUser(self, loginID):
-        return deferToThread(self._getUserInteraction, loginID)
-
-    @read_only_transaction
-    def _getUserInteraction(self, loginID):
-        """The interaction for getUser."""
-        return self._getPersonDict(self._getPerson(loginID))
 
     def _getPersonDict(self, person):
         person_dict = UserDetailsStorageMixin._getPersonDict(self, person)
