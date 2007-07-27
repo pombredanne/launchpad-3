@@ -23,8 +23,7 @@ from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchType, IBranchSet, IPersonSet, IProductSet)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.database.sqlbase import (
-    cursor, clear_current_connection_cache)
+from canonical.database.sqlbase import clear_current_connection_cache
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,
@@ -98,7 +97,7 @@ class UserDetailsStorageMixin:
     """Functions that are shared between DatabaseUserDetailsStorage and
     DatabaseUserDetailsStorageV2"""
 
-    def _getEmailAddresses(self, cursor, personID):
+    def _getEmailAddresses(self, personID):
         """Get the email addresses for a person"""
         person = getUtility(IPersonSet).get(personID)
         emails = [person.preferredemail] + list(person.validatedemails)
@@ -169,7 +168,7 @@ class UserDetailsStorageMixin:
         return {
             'id': person.id,
             'displayname': person.displayname,
-            'emailaddresses': self._getEmailAddresses(cursor(), person.id),
+            'emailaddresses': self._getEmailAddresses(person.id),
             'wikiname': wikiname,
             'salt': salt,
         }
