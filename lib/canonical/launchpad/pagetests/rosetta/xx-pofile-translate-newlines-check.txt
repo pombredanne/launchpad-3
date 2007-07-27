@@ -59,7 +59,8 @@ change the test, to be 100% sure that the textarea content is the right one.
   >>> print find_tag_by_id(
   ...     browser.contents,
   ...     'msgset_149_es_translation_0_new') #doctest: -NORMALIZE_WHITESPACE
-  <textarea ... name="msgset_149_es_translation_0_new" ...>foo</textarea>
+  <textarea ... name="msgset_149_es_translation_0_new" ...>
+  foo</textarea>
 
 Now, Check that even though the user forgot the trailing new line char, Rosetta
 adds it automatically
