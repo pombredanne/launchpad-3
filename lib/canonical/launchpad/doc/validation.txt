@@ -67,9 +67,6 @@ If the bug already has a distribution with no package, we can't add
 another distribution task with a source package (the task with no
 package should be edited instead).
 
-    >>> from canonical.launchpad.interfaces import (
-    ...     CreateBugParams, IDistributionSet)
-
     >>> validate_new_distrotask(ubuntu_bug_no_sourcepackage, ubuntu, evolution)
     Traceback (most recent call last):
       ...
