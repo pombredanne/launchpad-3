@@ -855,8 +855,7 @@ class SpecificationTreeDotOutput(SpecificationTreeGraphView):
 
 
 class NewSpecificationView(LaunchpadFormView):
-    """A abstract view for adding a new specification.
-    """
+    """A abstract view for adding a new specification."""
 
     label = "Register a new Blueprint"
     
@@ -898,9 +897,8 @@ class NewSpecificationView(LaunchpadFormView):
 
 
 class NewSpecificationFromTargetView(NewSpecificationView):
-    """A view for adding a specification from a context that corresponds to a
-    unique specification target.
-    """
+    """An abstract view for adding a specification from a context that
+    corresponds to a unique specification target."""
     
     schema = Fields(INewSpecification, 
                     INewSpecificationSprint)
@@ -926,10 +924,9 @@ class NewSpecificationFromProductSeriesView(NewSpecificationFromTargetView):
 
 
 class NewSpecificationFromNonTargetView(NewSpecificationView):
-    """A view for adding a specification from a context that does not
-    correspond to a unique specification target. The user is asked to
-    specify a target.
-    """
+    """An abstract view for adding a specification from a context that does
+    not correspond to a unique specification target. The user is asked to 
+    specify a target."""
 
     def validate(self, data):
         """Validates the contents of the form.
