@@ -197,6 +197,25 @@ class UserDetailsStorageTest(DatabaseTest):
             ['stuart@stuartbishop.net', 'stuart.bishop@canonical.com'],
             userDict['emailaddresses'])
 
+    def test_emailAlphabeticallySorted(self):
+        # Although the preferred email address is first in the emailaddresses
+        # list, the rest are alphabetically sorted.
+        transaction.begin()
+        stub = getUtility(IPersonSet).getByName('stub')
+        email_set = getUtility(IEmailAddressSet)
+        # Use a silly email address that is going to appear before all others
+        # in alphabetical sorting.
+        email = email_set.new(
+            '_stub@canonical.com', stub, dbschema.EmailAddressStatus.VALIDATED)
+        transaction.commit()
+
+        storage = DatabaseUserDetailsStorage(None)
+        userDict = storage._getUserInteraction('stub')
+        self.assertEqual(
+            ['stuart.bishop@canonical.com', '_stub@canonical.com',
+             'stuart@stuartbishop.net'],
+            userDict['emailaddresses'])
+
     def test_authUserNoUser(self):
         # Authing a user that doesn't exist should return {}
         storage = DatabaseUserDetailsStorage(None)
