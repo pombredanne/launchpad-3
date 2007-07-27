@@ -1383,7 +1383,7 @@ class FormattersAPI:
     _re_block_include = re.compile(
         '^<p>(--<br />|\|\|? |&gt; |&gt;&gt; |-----BEGIN PGP)')
     # Match a line starting with '>' (implying text email or quoting by hand).
-    _re_quoted_line = re.compile('^&gt; ')
+    _re_quoted_line = re.compile('^&gt;')
 
     def email_to_html(self):
         """text_to_html and hide signatures and full-quoted emails.
@@ -1428,6 +1428,9 @@ class FormattersAPI:
             if in_fold and line.endswith('</p>'):
                 if not in_false_paragraph:
                     # End the foldable section.
+                    if in_quoted and self._re_quoted_line.match(line) is None:
+                        # The last line of the paragraph is not quoted.
+                        output.append("</span><br />\n")
                     in_fold = False
                     in_quoted = False
                     line = end_fold_markup % line[0:-4]
