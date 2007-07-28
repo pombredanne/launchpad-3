@@ -45,7 +45,6 @@ from canonical.launchpad import _
 
 from canonical.launchpad.interfaces import (
     IDistribution,
-    IDistroSeries,
     ILaunchBag,
     INewSpecification,
     INewSpecificationSprint,
@@ -53,8 +52,6 @@ from canonical.launchpad.interfaces import (
     INewSpecificationProjectTarget,
     IPersonSet,
     IProduct,
-    IProductSeries,
-    IProject,
     ISpecification,
     ISpecificationBranch,
     ISpecificationSet,
