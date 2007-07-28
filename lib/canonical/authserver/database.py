@@ -22,12 +22,11 @@ from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.launchpad.interfaces import (
     UBUNTU_WIKI_URL, BranchCreationForbidden, BranchType, IBranchSet, IPersonSet,
-    IProductSet)
+    IProductSet, EmailAddressStatus, SSHKeyType)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.database.sqlbase import (
     cursor, sqlvalues, clear_current_connection_cache)
 from canonical.database.constants import UTC_NOW
-from canonical.lp import dbschema
 from canonical.config import config
 
 from canonical.authserver.interfaces import (
@@ -87,9 +86,9 @@ class UserDetailsStorageMixin:
             WHERE EmailAddress.person = %s
             AND EmailAddress.status IN (%s, %s)
             ORDER BY (EmailAddress.status = %s) DESC, EmailAddress.email'''
-            % sqlvalues(personID, dbschema.EmailAddressStatus.PREFERRED,
-                        dbschema.EmailAddressStatus.VALIDATED,
-                        dbschema.EmailAddressStatus.PREFERRED))
+            % sqlvalues(personID, EmailAddressStatus.PREFERRED,
+                        EmailAddressStatus.VALIDATED,
+                        EmailAddressStatus.PREFERRED))
         )
         return [row[0] for row in transaction.fetchall()]
 
@@ -126,8 +125,8 @@ class UserDetailsStorageMixin:
                 JOIN EmailAddress ON SSHKey.person = EmailAddress.person
                 WHERE EmailAddress.email = %s
                 AND EmailAddress.status in (%s, %s)'''
-                % sqlvalues(email, dbschema.EmailAddressStatus.VALIDATED,
-                            dbschema.EmailAddressStatus.PREFERRED))
+                % sqlvalues(email, EmailAddressStatus.VALIDATED,
+                            EmailAddressStatus.PREFERRED))
             )
             authorisedKeys.extend(transaction.fetchall())
         else:
@@ -141,7 +140,7 @@ class UserDetailsStorageMixin:
             authorisedKeys = transaction.fetchall()
 
         # Replace keytype with correct DBSchema items.
-        authorisedKeys = [(dbschema.SSHKeyType.items[keytype].title, keytext)
+        authorisedKeys = [(SSHKeyType.items[keytype].title, keytext)
                           for keytype, keytext in authorisedKeys]
         return authorisedKeys
 
@@ -176,8 +175,8 @@ class UserDetailsStorageMixin:
                 ("WHERE lower(EmailAddress.email) = %s "
                  "AND EmailAddress.status IN (%s, %s) "
                 % sqlvalues(loginID.lower(),
-                            dbschema.EmailAddressStatus.PREFERRED,
-                            dbschema.EmailAddressStatus.VALIDATED)))
+                            EmailAddressStatus.PREFERRED,
+                            EmailAddressStatus.VALIDATED)))
             )
 
             row = transaction.fetchone()
