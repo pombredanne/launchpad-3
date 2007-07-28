@@ -865,50 +865,41 @@ class SpecificationTreeDotOutput(SpecificationTreeGraphView):
 class NewSpecificationView(LaunchpadFormView):
     """A abstract view for adding a new specification."""
 
-    label = "Register a new Blueprint"
+    label = "Register a new blueprint"
     
     @action(_('Register Blueprint'), name='register')
     def register_action(self, action, data):
         """Register a new blueprint."""
-        spec = self._add_spec(data)
-        self.next_url = canonical_url(spec)
-
-    def _add_spec(self, data):
-        """Add a new specification with the form values and return it."""
-        # determine product or distribution as target
-        product = distribution = None
-        target = data.get('target', None)
-        if target is None:
-            target = self.context
-        if IProduct.providedBy(target):
-            product = target
-        elif IProductSeries.providedBy(target):
-            product = target.product
-        elif IDistribution.providedBy(target):
-            distribution = target
-        elif IDistroSeries.providedBy(target):
-            distribution = target.distribution
-        else:
-            raise AssertionError, 'Unknown kind of blueprint target'
-        spec = getUtility(ISpecificationSet).new(
-            name=data['name'],
-            title=data['title'],
-            specurl=data['specurl'],
-            summary=data['summary'],
-            definition_status=data['definition_status'],
-            owner=self.user,
-            product=product,
-            distribution=distribution,
-            assignee=data.get('assignee', None),
-            drafter=data.get('drafter', None),
-            approver=data.get('approver', None))
+        self.init(data)     
+        create = getUtility(ISpecificationSet).new
+        spec = create(name              = data    ['name'              ],
+                      title             = data    ['title'             ],
+                      specurl           = data    ['specurl'           ],
+                      summary           = data    ['summary'           ],
+                      definition_status = data    ['definition_status' ],
+                      distribution      = data.get('distribution', None),
+                      product           = data.get('product'     , None),
+                      assignee          = data.get('assignee'    , None),
+                      drafter           = data.get('drafter'     , None),
+                      approver          = data.get('approver'    , None),
+                      owner             = self.user)
+        # Link the specification with a sprint, if specified.
         sprint = data.get('sprint', None)
         if sprint is not None:
             spec.linkSprint(sprint, self.user) 
+        # Propose the specification as a series goal, if specified.
         series = data.get('series', None)
         if series is not None:
             proposeGoalWithAutomaticApproval(spec, series, self.user)
-        return spec
+        self.next_url = canonical_url(self.next(spec))
+
+    def init(self, data):
+        """Initialises the data."""
+        pass
+    
+    def next(self, spec):
+        """Returns the next context."""
+        return spec        
 
 
 class NewSpecificationFromTargetView(NewSpecificationView):
@@ -921,49 +912,57 @@ class NewSpecificationFromTargetView(NewSpecificationView):
 
 class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
     """A view for adding a specification from a distribution."""
-    pass
+
+    def init(self, data):
+        data['distribution'] = self.context
+
+
+class NewSpecificationFromProductView(NewSpecificationFromTargetView):
+    """A view for adding a specification from a product."""
+
+    def init(self, data):
+        data['product'] = self.context
 
 
 class NewSpecificationFromDistroSeriesView(NewSpecificationFromTargetView):
     """A view for adding a specification from a distro series."""
     
-    @action(_('Register Blueprint'), name='register')
-    def register_action(self, action, data):
-        data['series'] = self.context
-        spec = self._add_spec(data)
-        self.next_url = canonical_url(spec)
-
-
-class NewSpecificationFromProductView(NewSpecificationFromTargetView):
-    """A view for adding a specification from a product."""
-    pass
+    def init(self, data):
+        data['series'      ] = self.context
+        data['distribution'] = self.context.distribution
 
 
 class NewSpecificationFromProductSeriesView(NewSpecificationFromTargetView):
     """A view for adding a specification from a product series."""
     
-    @action(_('Register Blueprint'), name='register')
-    def register_action(self, action, data):
-        data['series'] = self.context
-        spec = self._add_spec(data)
-        self.next_url = canonical_url(spec)
+    def init(self, data):
+        data['series' ] = self.context
+        data['product'] = self.context.product
 
 
 class NewSpecificationFromNonTargetView(NewSpecificationView):
     """An abstract view for adding a specification from a context that does
-    not correspond to a unique specification target. The user is asked to 
-    specify a target."""
+    not correspond to a unique specification target. Sub-classes must define
+    a schema which requires the user to specify a target.
+    """
+
+    def init(self, data):
+        # Determine the type of target.
+        target = data['target']
+        if IDistribution.providedBy(target):
+            data['distribution'] = target
+        elif IProduct.providedBy(target):
+            data['product'] = target
 
     def validate(self, data):
         """Ensures that the name chosen for the new specification is unique
         within the context of the chosen target."""
-        name = data.get('name')
-        target = data.get('target')
+        name = data['name']
+        target = data['target']
         if target.getSpecification(name):
-            # The specified name already exists. Mark the field with an error.
-            self.setFieldError('name', 
-                               self.schema['name'].errormessage % name)
-            
+            errormessage = self.schema['name'].errormessage
+            self.setFieldError('name', errormessage % name)
+
 
 class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
     """A view for adding a specification from a project."""
@@ -972,6 +971,9 @@ class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
                     INewSpecification,
                     INewSpecificationSprint)
 
+    def init(self, data):
+        data['product'] = data['target']
+    
 
 class NewSpecificationFromRootView(NewSpecificationFromNonTargetView):
     """A view for adding a specification from the root of Launchpad."""
@@ -979,21 +981,21 @@ class NewSpecificationFromRootView(NewSpecificationFromNonTargetView):
     schema = Fields(INewSpecificationTarget,
                     INewSpecification, 
                     INewSpecificationSprint)
-    
-    
+
+
 class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
     """A view for adding a specification from a sprint."""
 
     schema = Fields(INewSpecificationTarget,
                     INewSpecification)
-    
-    @action(_('Register Blueprint'), name='register')
-    def register_action(self, action, data):
-        """Register a new blueprint and propose it for a sprint."""
+
+    def init(self, data):
+        NewSpecificationFromNonTargetView.init(self, data)
         data['sprint'] = self.context
-        self._add_spec(data)
-        self.next_url = canonical_url(self.context)
-        
+
+    def next(self, spec):
+        return self.context
+
 
 class SpecificationLinkBranchView(LaunchpadFormView):
     """A form used to link a branch to this specification."""
