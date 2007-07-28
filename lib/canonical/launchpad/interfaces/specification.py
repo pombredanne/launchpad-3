@@ -387,18 +387,6 @@ class INewSpecification(Interface):
     approver          = ISpecification['approver']
 
 
-class INewSpecificationDistroSeries(Interface):
-    """A supplemental schema for new specifications that allows the user to
-    specify a distribution series."""
-    series = ISpecification['distroseries']
-
-
-class INewSpecificationProductSeries(Interface):
-    """A supplemental schema for new specifications that allows the user to
-    specify a product series."""
-    series = ISpecification['productseries']
-
-
 class INewSpecificationSprint(Interface):
     """A supplemental schema for new specifications that allows the user to
     specify a sprint."""
