@@ -162,6 +162,10 @@ class Branch(SQLBase):
 
     def canBeDeleted(self):
         """See `IBranch`."""
+        # XXX: TimPenhey 2007-07-30
+        # ManifestEntries are deliberately being ignored here.
+        # They are part of HCT which is in active rot, and should
+        # be removed.
         if (self.revision_history.count() > 0 or
             self.subscriptions.count() > 0 or
             self.bug_branches.count() > 0 or
