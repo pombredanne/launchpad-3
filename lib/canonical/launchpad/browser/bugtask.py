@@ -751,6 +751,41 @@ class BugTaskEditView(LaunchpadFormView):
             raise AssertionError("Unknown IBugTask: %r" % bugtask)
         return '_'.join(parts)
 
+    def setUpFields(self):
+        """Set up the fields for the bug task edit form."""
+        # The status field is a special case because we alter the vocabulary
+        # it uses based on the permissions of the user viewing form.
+        LaunchpadFormView.setUpFields(self)
+        # XXX: Should happen here!
+        # self.field_names = self._getEditableFieldNames()
+        form_fields = self.form_fields.select(*self.field_names)
+
+        if 'status' in self._getEditableFieldNames():
+            form_fields = self.form_fields.omit('status')
+
+            if self.user is None:
+                status_noshow = list(BugTaskStatus.items)
+            else:
+                status_noshow = [BugTaskStatus.UNKNOWN]
+                status_noshow.extend(
+                    status for status in BugTaskStatus.items
+                    if not self.context.canTransitionToStatus(
+                        status, self.user))
+
+            if self.context.status in status_noshow:
+                # The user has to be able to see the current value.
+                status_noshow.remove(self.context.status)
+
+            status_vocab_factory = vocab_factory(
+                BugTaskStatus, noshow=status_noshow)
+            status_field = Choice(
+                __name__='status',
+                title=self.schema['status'].title,
+                vocabulary=status_vocab_factory(self.context))
+
+            self.form_fields = form.Fields(status_field)
+            self.form_fields += form_fields
+
     def setUpWidgets(self):
         """Set up a combination of display and edit widgets.
 
@@ -761,29 +796,6 @@ class BugTaskEditView(LaunchpadFormView):
         """
         editable_field_names = self._getEditableFieldNames()
         read_only_field_names = self._getReadOnlyFieldNames()
-
-        if 'status' in editable_field_names:
-            # Display different options depending on the logged-in
-            # user by creating a vocab at request time.
-            if self.user is None:
-                status_noshow = list(BugTaskStatus.items)
-            else:
-                status_noshow = [BugTaskStatus.UNKNOWN]
-                status_noshow.extend(
-                    status for status in BugTaskStatus.items
-                    if not self.context.canTransitionToStatus(
-                        status, self.user))
-            if self.context.status in status_noshow:
-                # The user has to be able to see the current value.
-                status_noshow.remove(self.context.status)
-            status_vocab_factory = vocab_factory(
-                BugTaskStatus, noshow=status_noshow)
-            status_field = Choice(
-                __name__='status',
-                title=self.schema['status'].title,
-                vocabulary=status_vocab_factory(self.context))
-            setUpWidget(self, 'status', status_field, IInputWidget,
-                        value=self.context.status)
 
         if self.context.target_uses_malone:
             self.bugwatch_widget = None
@@ -821,9 +833,6 @@ class BugTaskEditView(LaunchpadFormView):
             self.context,
             self.request,
             self.initial_values)
-
-        import pdb; pdb.set_trace()
-        self.field_names = editable_field_names
 
     def _getEditableFieldNames(self):
         """Return the names of fields the user has perms to edit."""
