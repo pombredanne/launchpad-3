@@ -1,7 +1,10 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
-__all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
+__all__ = [
+    'Branch',
+    'BranchSet',
+    ]
 
 import re
 
@@ -29,7 +32,6 @@ from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
-from canonical.lp.dbschema import BranchRelationships
 
 
 class Branch(SQLBase):
@@ -78,11 +80,6 @@ class Branch(SQLBase):
             BranchRevision.sequence IS NOT NULL
             ''' % sqlvalues(self),
             prejoins=['revision'], orderBy='-sequence')
-
-    subjectRelations = SQLMultipleJoin(
-        'BranchRelationship', joinColumn='subject')
-    objectRelations = SQLMultipleJoin(
-        'BranchRelationship', joinColumn='object')
 
     subscriptions = SQLMultipleJoin(
         'BranchSubscription', joinColumn='branch', orderBy='id')
@@ -162,12 +159,6 @@ class Branch(SQLBase):
             (self.id, quote(timestamp)),
             orderBy='-sequence',
             clauseTables=['Revision'])
-
-    def createRelationship(self, branch, relationship):
-        BranchRelationship(subject=self, object=branch, label=relationship)
-
-    def getRelations(self):
-        return tuple(self.subjectRelations) + tuple(self.objectRelations)
 
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines):
@@ -729,59 +720,3 @@ class BranchSet:
             self._generateBranchClause(query, visible_by_user),
             limit=quantity,
             orderBy=['-date_created', '-id'])
-
-
-class BranchRelationship(SQLBase):
-    """A relationship between branches.
-
-    e.g. "subject is a debianization-branch-of object"
-    """
-
-    _table = 'BranchRelationship'
-    subject = ForeignKey(foreignKey='Branch', dbName='subject', notNull=True),
-    label = IntCol(dbName='label', notNull=True),
-    object = ForeignKey(foreignKey='Branch', dbName='object', notNull=True),
-
-    def _get_src(self):
-        return self.subject
-    def _set_src(self, value):
-        self.subject = value
-
-    def _get_dst(self):
-        return self.object
-    def _set_dst(self, value):
-        self.object = value
-
-    def _get_labelText(self):
-        return BranchRelationships.items[self.label]
-
-    def nameSelector(self, sourcepackage=None, selected=None):
-        # XXX: Let's get HTML out of the database code.
-        #      -- SteveAlexander, 2005-04-22
-        html = '<select name="binarypackagename">\n'
-        if not sourcepackage:
-            # Return nothing for an empty query.
-            binpkgs = []
-        else:
-            binpkgs = self._table.select("""
-                binarypackagename.id = binarypackage.binarypackagename AND
-                binarypackage.build = build.id AND
-                build.sourcepackagerelease = sourcepackagerelease.id AND
-                sourcepackagerelease.sourcepackage = %s"""
-                % sqlvalues(sourcepackage),
-                clauseTables = ['binarypackagename', 'binarypackage',
-                                'build', 'sourcepackagerelease']
-                )
-        for pkg in binpkgs:
-            html = html + '<option value="' + pkg.name + '"'
-            if pkg.name==selected: html = html + ' selected'
-            html = html + '>' + pkg.name + '</option>\n'
-        html = html + '</select>\n'
-        return html
-
-
-class BranchLabel(SQLBase):
-    _table = 'BranchLabel'
-
-    label = ForeignKey(foreignKey='Label', dbName='label', notNull=True)
-    branch = ForeignKey(foreignKey='Branch', dbName='branch', notNull=True)
