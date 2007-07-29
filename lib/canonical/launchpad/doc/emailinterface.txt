@@ -1,5 +1,4 @@
-Launchpad Bugs e-mail interface
-===============================
+= Launchpad Bugs e-mail interface =
 
 Launchpad's bugtracker has an e-mail interface, with which you may report new
 bugs, add comments, and change the details of existing bug reports. Commands
