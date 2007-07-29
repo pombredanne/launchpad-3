@@ -350,6 +350,7 @@ The search filter can also return bugs that are related to CVE reports:
     17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG 1999-8979
     26 2 Ubuntu Blackhole Trash folder 1999-2345
 
+
 == Searching by bug commenter ==
 
 The 'bug_commenter' parameter allows you to search bugtasks on which a certain
