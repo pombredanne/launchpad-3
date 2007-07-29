@@ -551,18 +551,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -572,20 +560,6 @@ INSERT INTO answercontact (id, product, distribution, sourcepackagename, person,
 
 
 ALTER TABLE answercontact ENABLE TRIGGER ALL;
-
-
-ALTER TABLE archconfig DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE archconfig ENABLE TRIGGER ALL;
-
-
-ALTER TABLE archconfigentry DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE archconfigentry ENABLE TRIGGER ALL;
 
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
@@ -745,20 +719,6 @@ INSERT INTO branch (id, title, summary, "owner", product, author, name, home_pag
 
 
 ALTER TABLE branch ENABLE TRIGGER ALL;
-
-
-ALTER TABLE branchmessage DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE branchmessage ENABLE TRIGGER ALL;
-
-
-ALTER TABLE branchrelationship DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE branchrelationship ENABLE TRIGGER ALL;
 
 
 ALTER TABLE branchrevision DISABLE TRIGGER ALL;
@@ -8036,13 +7996,6 @@ INSERT INTO productbounty (id, bounty, product, date_created) VALUES (2, 4, 5, '
 
 
 ALTER TABLE productbounty ENABLE TRIGGER ALL;
-
-
-ALTER TABLE productbranchrelationship DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE productbranchrelationship ENABLE TRIGGER ALL;
 
 
 ALTER TABLE productcvsmodule DISABLE TRIGGER ALL;
