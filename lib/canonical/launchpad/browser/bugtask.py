@@ -57,8 +57,8 @@ from canonical.lp import dbschema, decorates
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
-    action, canonical_url, GetitemNavigation, LaunchpadFormView,
-    LaunchpadView, Navigation, redirection, stepthrough)
+    action, custom_widget, canonical_url, GetitemNavigation,
+    LaunchpadFormView, LaunchpadView, Navigation, redirection, stepthrough)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
     IBug, IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
@@ -95,7 +95,7 @@ from canonical.lp.dbschema import BugTaskImportance, BugTaskStatus
 
 from canonical.widgets.bug import BugTagsWidget
 from canonical.widgets.bugtask import (
-    AssigneeDisplayWidget, BugTaskBugWatchWidget,
+    AssigneeDisplayWidget, BugTaskAssigneeWidget, BugTaskBugWatchWidget,
     BugTaskSourcePackageNameWidget, DBItemDisplayWidget,
     NewLineToSpacesWidget, NominationReviewActionWidget)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
@@ -693,6 +693,8 @@ class BugTaskEditView(LaunchpadFormView):
 
     _missing_value = object()
     widgets = []
+    custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
+    custom_widget('assignee', BugTaskAssigneeWidget)
     field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
                    'product', 'status', 'statusexplanation']
 
@@ -753,16 +755,11 @@ class BugTaskEditView(LaunchpadFormView):
 
     def setUpFields(self):
         """Set up the fields for the bug task edit form."""
+        LaunchpadFormView.setUpFields(self)
+
         # The status field is a special case because we alter the vocabulary
         # it uses based on the permissions of the user viewing form.
-        LaunchpadFormView.setUpFields(self)
-        # XXX: Should happen here!
-        # self.field_names = self._getEditableFieldNames()
-        form_fields = self.form_fields.select(*self.field_names)
-
         if 'status' in self._getEditableFieldNames():
-            form_fields = self.form_fields.omit('status')
-
             if self.user is None:
                 status_noshow = list(BugTaskStatus.items)
             else:
@@ -783,56 +780,17 @@ class BugTaskEditView(LaunchpadFormView):
                 title=self.schema['status'].title,
                 vocabulary=status_vocab_factory(self.context))
 
-            self.form_fields = form.Fields(status_field)
-            self.form_fields += form_fields
+            self.form_fields = self.form_fields.omit('status')
+            self.form_fields += form.Fields(status_field)
 
-    def setUpWidgets(self):
-        """Set up a combination of display and edit widgets.
-
-        Set up the widgets depending on if it's a remote bug task, where
-        only the bug watch should be editable, or if it's a normal
-        bug task, where everything should be editable except for the bug
-        watch.
-        """
-        editable_field_names = self._getEditableFieldNames()
-        read_only_field_names = self._getReadOnlyFieldNames()
+        for field in self._getReadOnlyFieldNames():
+            self.form_fields[field].for_display = True
 
         if self.context.target_uses_malone:
-            self.bugwatch_widget = None
-        else:
-            self.bugwatch_widget = CustomWidgetFactory(BugTaskBugWatchWidget)
-            if self.context.bugwatch is not None:
-                self.assignee_widget = CustomWidgetFactory(
-                    AssigneeDisplayWidget)
-
-        if 'sourcepackagename' in editable_field_names:
-            self.sourcepackagename_widget = CustomWidgetFactory(
-                BugTaskSourcePackageNameWidget)
-        for db_item_field in ['status', 'importance']:
-            if db_item_field in read_only_field_names:
-                display_widget = CustomWidgetFactory(DBItemDisplayWidget)
-                setattr(self, '%s_widget' % db_item_field, display_widget)
-        setUpWidgets(
-            self, self.schema, IInputWidget, names=editable_field_names,
-            initial=self.initial_values, prefix=self.prefix)
-        setUpDisplayWidgets(
-            self, self.schema, names=read_only_field_names, prefix=self.prefix)
-
-        # We need to update self.widgets here
-        # self.widgets = form.Widgets(widget_list)
-        self.widgets = form.setUpDataWidgets(
-            self.form_fields.select(*read_only_field_names),
-            self.prefix,
-            self.context,
-            self.request,
-            self.initial_values,
-            for_display=True)
-        self.widgets += form.setUpDataWidgets(
-            self.form_fields.select(*editable_field_names),
-            self.prefix,
-            self.context,
-            self.request,
-            self.initial_values)
+            self.form_fields = self.form_fields.omit('bugwatch')
+        elif self.context.bugwatch is not None:
+            self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
+                AssigneeDisplayWidget)
 
     def _getEditableFieldNames(self):
         """Return the names of fields the user has perms to edit."""
