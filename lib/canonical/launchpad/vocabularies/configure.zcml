@@ -16,33 +16,8 @@
     />
 
   <vocabulary
-    name="BranchLifecycleStatus"
-    factory="canonical.launchpad.vocabularies.BranchLifecycleStatusVocabulary"
-    />
-
-  <vocabulary
-    name="BranchLifecycleStatusFilter"
-    factory="canonical.launchpad.vocabularies.BranchLifecycleStatusFilterVocabulary"
-    />
-
-  <vocabulary
     name="BranchReviewStatus"
     factory="canonical.launchpad.vocabularies.BranchReviewStatusVocabulary"
-    />
-
-  <vocabulary
-    name="BranchSubscriptionDiffSize"
-    factory="canonical.launchpad.vocabularies.BranchSubscriptionDiffSizeVocabulary"
-    />
-
-  <vocabulary
-    name="BranchSubscriptionNotificationLevel"
-    factory="canonical.launchpad.vocabularies.BranchSubscriptionNotificationLevelVocabulary"
-    />
-
-  <vocabulary
-    name="BranchVisibilityPolicy"
-    factory="canonical.launchpad.vocabularies.BranchVisibilityPolicyVocabulary"
     />
 
   <vocabulary
@@ -106,6 +81,11 @@
       />
 
   <vocabulary
+      name="CodeImportReviewStatus"
+      factory="canonical.launchpad.vocabularies.CodeImportReviewStatusVocabulary"
+      />
+
+  <vocabulary
       name="CountryName"
       factory="canonical.launchpad.vocabularies.CountryNameVocabulary"
       />
@@ -134,8 +114,11 @@
     name="DistroSeriesStatus"
     factory="canonical.launchpad.vocabularies.DistroSeriesStatusVocabulary"
     />
-
   <vocabulary
+    name="FAQ"
+    factory="canonical.launchpad.vocabularies.FAQVocabulary"
+    />
+   <vocabulary
     name="FilteredDistroArchSeries"
     factory="canonical.launchpad.vocabularies.FilteredDistroArchSeriesVocabulary"
     />
@@ -153,11 +136,6 @@
   <vocabulary
     name="FutureSprint"
     factory="canonical.launchpad.vocabularies.FutureSprintVocabulary"
-    />
-
-  <vocabulary
-    name="GPGKeyAlgorithm"
-    factory="canonical.launchpad.vocabularies.GPGKeyAlgorithmVocabulary"
     />
 
   <vocabulary
@@ -316,8 +294,8 @@
     />
 
   <vocabulary
-    name="SpecificationDelivery"
-    factory="canonical.launchpad.vocabularies.SpecificationDeliveryVocabulary"
+    name="SpecificationImplementationStatus"
+    factory="canonical.launchpad.vocabularies.SpecificationImplementationStatusVocabulary"
     />
 
   <vocabulary
@@ -331,8 +309,8 @@
     />
 
   <vocabulary
-    name="SpecificationStatus"
-    factory="canonical.launchpad.vocabularies.SpecificationStatusVocabulary"
+    name="SpecificationDefinitionStatus"
+    factory="canonical.launchpad.vocabularies.SpecificationDefinitionStatusVocabulary"
     />
 
   <vocabulary
@@ -348,16 +326,6 @@
   <vocabulary
     name="SprintSpecificationStatus"
     factory="canonical.launchpad.vocabularies.SprintSpecificationStatusVocabulary"
-    />
-
-  <vocabulary
-    name="TeamMembershipRenewalPolicy"
-    factory="canonical.launchpad.vocabularies.TeamMembershipRenewalPolicyVocabulary"
-    />
-
-  <vocabulary
-    name="TeamSubscriptionPolicy"
-    factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
     />
 
   <vocabulary
@@ -433,6 +401,11 @@
   <vocabulary
     name="ValidOwner"
     factory="canonical.launchpad.vocabularies.ValidPersonOrTeamVocabulary"
+    />
+
+  <vocabulary
+    name="ValidTeam"
+    factory="canonical.launchpad.vocabularies.ValidTeamVocabulary"
     />
 
   <vocabulary

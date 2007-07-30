@@ -62,7 +62,7 @@ and the rejection message is added to the question board.
     <p>Rejecting because it's a duplicate of <a...>bug #1</a>.</p>
 
 Selecting the 'Reject' action again, will simply display a message
-stating that the quesiton is already rejected:
+stating that the question is already rejected:
 
     >>> admin_browser.getLink('Reject question').click()
     >>> print admin_browser.url

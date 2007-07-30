@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 """Launchpad Project-related Database Table Objects."""
 
 __metaclass__ = type
@@ -18,13 +18,14 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
-    IProject, IProjectSet, ICalendarOwner, ISearchableByQuestionOwner,
-    NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH, IHasLogo, IHasMugshot,
-    IHasIcon)
+    ICalendarOwner, IFAQCollection, IHasIcon, IHasLogo, IHasMugshot, IProduct,
+    IProject, IProjectSet, ISearchableByQuestionOwner, NotFoundError,
+    QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.lp.dbschema import (
     TranslationPermission, ImportStatus, SpecificationSort,
-    SpecificationFilter, SprintSpecificationStatus)
+    SpecificationFilter, SprintSpecificationStatus,
+    SpecificationImplementationStatus)
 
 from canonical.launchpad.database.branchvisibilitypolicy import (
     BranchVisibilityPolicyMixin)
@@ -33,9 +34,11 @@ from canonical.launchpad.database.bug import (
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
 from canonical.launchpad.database.cal import Calendar
+from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.karma import KarmaContextMixin
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
+from canonical.launchpad.database.milestone import ProjectMilestoneSet
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.projectbounty import ProjectBounty
 from canonical.launchpad.database.specification import (
@@ -49,8 +52,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
               BranchVisibilityPolicyMixin):
     """A Project"""
 
-    implements(IProject, ICalendarOwner, ISearchableByQuestionOwner,
-               IHasLogo, IHasMugshot, IHasIcon)
+    implements(ICalendarOwner, IProject, IFAQCollection, IHasIcon, IHasLogo,
+               IHasMugshot, ISearchableByQuestionOwner)
 
     _table = "Project"
 
@@ -191,7 +194,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = (
-                ['-priority', 'Specification.status', 'Specification.name'])
+                ['-priority', 'Specification.definition_status', 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -209,7 +212,8 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+              quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -237,11 +241,11 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return results.prejoin(['assignee', 'approver', 'drafter'])
 
     # XXX: A Project shouldn't provide IBugTarget, since it's not really
-    #      a bug target, thus bugtargetname and createBug don't make sense
-    #      here. IBugTarget should be split into two interfaces; one that
+    #      a bug target, thus bugtargetdisplayname and createBug don't make
+    #      sense here. IBugTarget should be split into two interfaces; one that
     #      makes sense for Project to implement, and one containing the rest
     #      of IBugTarget. -- Bjorn Tillenius, 2006-08-17
-    bugtargetname = None
+    bugtargetdisplayname = None
 
     def searchTasks(self, search_params):
         """See `IBugTarget`."""
@@ -269,7 +273,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         raise NotImplementedError('Cannot file bugs against a project')
 
     def _getBugTaskContextClause(self):
-        """See BugTargetBase."""
+        """See `BugTargetBase`."""
         return 'BugTask.product IN (%s)' % ','.join(sqlvalues(*self.products))
 
     # IQuestionCollection
@@ -282,7 +286,7 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             unsupported_target = self
         else:
             unsupported_target = None
-            
+
         return QuestionTargetSearch(
             project=self,
             search_text=search_text, status=status,
@@ -298,6 +302,63 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Product.project = %s""" % sqlvalues(self.id),
             clauseTables=['Question', 'Product'], distinct=True))
 
+    @property
+    def bugtargetdisplayname(self):
+        """See IBugTarget."""
+        return self.displayname
+
+    @property
+    def bugtargetname(self):
+        """See IBugTarget."""
+        return self.name
+
+    # IFAQCollection
+    def getFAQ(self, id):
+        """See `IQuestionCollection`."""
+        faq = FAQ.getForTarget(id, None)
+        if (faq is not None
+            and IProduct.providedBy(faq.target)
+            and faq.target in self.products):
+            # Filter out faq not related to this project.
+            return faq
+        else:
+            return None
+
+    def searchFAQs(self, search_text=None, owner=None, sort=None):
+        """See `IQuestionCollection`."""
+        return FAQSearch(
+            search_text=search_text, owner=owner, sort=sort,
+            project=self).getResults()
+
+    def hasProducts(self):
+        """Returns True if a project has products associated with it, False
+        otherwise.
+
+        If the project has < 1 product, selected links will be disabled.
+        This is to avoid situations where users try to file bugs against
+        empty project groups (Malone bug #106523).
+        """
+        return self.products.count() != 0
+
+    @property
+    def milestones(self):
+        """See `IProject`."""
+        return ProjectMilestoneSet().getMilestonesForProject(
+            self, only_visible=True)
+
+    @property
+    def all_milestones(self):
+        """See `IProject`."""
+        return ProjectMilestoneSet().getMilestonesForProject(
+            self, only_visible=False)
+
+    def getMilestone(self, name):
+        """See `IProject`."""
+        result = ProjectMilestoneSet().getMilestonesForProject(
+            self, only_visible=False, milestone_name=name)
+        if result:
+            return result[0]
+        return None
 
 class ProjectSet:
     implements(IProjectSet)
@@ -315,10 +376,10 @@ class ProjectSet:
         return project
 
     def get(self, projectid):
-        """See canonical.launchpad.interfaces.project.IProjectSet.
+        """See `canonical.launchpad.interfaces.project.IProjectSet`.
 
         >>> getUtility(IProjectSet).get(1).name
-        u'ubuntu-project'
+        u'apache'
         >>> getUtility(IProjectSet).get(-1)
         Traceback (most recent call last):
         ...
@@ -331,7 +392,7 @@ class ProjectSet:
         return project
 
     def getByName(self, name, default=None, ignore_inactive=False):
-        """See canonical.launchpad.interfaces.project.IProjectSet."""
+        """See `canonical.launchpad.interfaces.project.IProjectSet`."""
         if ignore_inactive:
             project = Project.selectOneBy(name=name, active=True)
         else:
@@ -342,7 +403,7 @@ class ProjectSet:
 
     def new(self, name, displayname, title, homepageurl, summary,
             description, owner, mugshot=None, logo=None, icon=None):
-        """See canonical.launchpad.interfaces.project.IProjectSet"""
+        """See `canonical.launchpad.interfaces.project.IProjectSet`."""
         return Project(
             name=name,
             displayname=displayname,

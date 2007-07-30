@@ -44,11 +44,13 @@ getBugCveCount.
     >>> cveset.getBugCveCount()
     2
 
-If we add another link, the count will of course increase by one.
+If we add another link, the count will of course increase by one.  The
+supplied user is the person linking the CVEs.
 
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
     >>> bug_one = getUtility(IBugSet).get(1)
-    >>> bug_one.linkCVE(cve)
+    >>> bug_one.linkCVE(cve, user=no_priv)
     <BugCve at ...>
 
     >>> cveset.getBugCveCount()
@@ -76,7 +78,7 @@ Let's add the new CVE:
 
     >>> b.cves.count()
     1
-    >>> b.linkCVE(cve)
+    >>> b.linkCVE(cve, no_priv)
     <BugCve at ...>
     >>> b.cves.count()
     2
@@ -88,11 +90,11 @@ Ah, but that was a bad idea. Let's unlink it.
     1
 
 Alternatively, we can link CVEs to bugs by looking for CVEs in a
-string of text:
+string of text. The supplied user is the person linking the CVEs.
 
     >>> b.findCvesInText('''
     ...     This bug is related to CVE-2004-0276
-    ... ''')
+    ... ''', user=no_priv)
     >>> cve in b.cves
     True
     >>> b.unlinkCVE(cve)

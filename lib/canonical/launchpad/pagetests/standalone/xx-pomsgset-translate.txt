@@ -282,16 +282,16 @@ Check that suggestions come in from other contexts:
 
   >>> "Suggested in" in browser.contents
   True
-  >>> "suggestion added by a non-editor for a multiline" in browser.contents
-  True
+  >>> find_tag_by_id(browser.contents, 'msgset_143_es_suggestion_693_0')
+  <...suggestion added by a non-editor for a multiline entry...>
 
 Check that no other suggestions are presented (since no others are
 relevant for this message):
 
-  >>> "Suggested by" not in browser.contents
-  True
-  >>> "Used in" not in browser.contents
-  True
+  >>> "Suggested by" in browser.contents
+  False
+  >>> "Used in" in browser.contents
+  False
 
 Check for the translator note:
 
@@ -411,5 +411,23 @@ Also, we should still have previous translation:
 
 But also, the new one should appear in the form.
 
-  >>> 'foo!!' in slow_submission.contents
-  True
+  >>> find_tag_by_id(
+  ...     slow_submission.contents,
+  ...     'msgset_143_es_suggestion_715_0').renderContents()
+  'foo!!'
+
+== Unreviewed translations ==
+
+If there is a message which has a translation, but no reviewer (eg. uploaded
+from a package), it only shows the translator, and not reviewer.
+
+  >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/+source/'
+  ...              'mozilla/+pots/pkgconf-mozilla/de/1/+translate')
+  >>> print extract_text(
+  ...     find_tag_by_id(browser.contents, "translated_by").parent)
+  Translated by Helge Kreutzmann on 2005-05-06
+  >>> print find_tag_by_id(browser.contents, "reviewed_by")
+  None
+  >>> print find_tag_by_id(browser.contents, "translated_and_reviewed_by")
+  None
+
