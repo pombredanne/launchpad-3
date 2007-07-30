@@ -64,7 +64,7 @@ class Archive(SQLBase):
 
             pubconf.distroroot = config.archivepublisher.root
             pubconf.archiveroot = os.path.join(pubconf.distroroot,
-                distribution.name, 'commercial')
+                distribution.name + '-commercial')
             pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
             pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
             pubconf.overrideroot = None

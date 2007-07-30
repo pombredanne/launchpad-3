@@ -260,12 +260,11 @@ class FTPArchiveHandler:
         return SourcePackagePublishingHistory.select(
             """
             SourcePackagePublishingHistory.distrorelease = %s AND
-            SourcePackagePublishingHistory.archive IN %s AND
+            SourcePackagePublishingHistory.archive = %s AND
             SourcePackagePublishingHistory.pocket = %s AND
             SourcePackagePublishingHistory.status = %s
             """ % sqlvalues(distroseries,
-                            [archive.id for archive in
-                                distroseries.all_distro_archives],
+                            distroseries.main_archive,
                             pocket,
                             PackagePublishingStatus.PUBLISHED),
             prejoins=["sourcepackagerelease.sourcepackagename"],
@@ -278,12 +277,11 @@ class FTPArchiveHandler:
             BinaryPackagePublishingHistory.distroarchrelease =
             DistroArchRelease.id AND
             DistroArchRelease.distrorelease = %s AND
-            BinaryPackagePublishingHistory.archive IN %s AND
+            BinaryPackagePublishingHistory.archive = %s AND
             BinaryPackagePublishingHistory.pocket = %s AND
             BinaryPackagePublishingHistory.status = %s
             """ % sqlvalues(distroseries,
-                            [archive.id for archive in
-                                distroseries.all_distro_archives],
+                            distroseries.main_archive,
                             pocket,
                             PackagePublishingStatus.PUBLISHED),
             prejoins=["binarypackagerelease.binarypackagename"],
@@ -496,13 +494,12 @@ class FTPArchiveHandler:
                 spps = SourcePackageFilePublishing.select(
                     """
                     distribution = %s AND
-                    archive IN %s AND
+                    archive = %s AND
                     publishingstatus = %s AND
                     pocket = %s AND
                     distroreleasename = %s
                     """ % sqlvalues(self.distro,
-                                    [archive.id for archive in
-                                        self.distro.all_distro_archives],
+                                    self.distro.main_archive,
                                     PackagePublishingStatus.PUBLISHED,
                                     pocket,
                                     distroseries.name),
@@ -511,13 +508,12 @@ class FTPArchiveHandler:
                 pps = BinaryPackageFilePublishing.select(
                     """
                     distribution = %s AND
-                    archive IN %s AND
+                    archive = %s AND
                     publishingstatus = %s AND
                     pocket = %s AND
                     distroreleasename = %s
                     """ % sqlvalues(self.distro,
-                                    [archive.id for archive in
-                                        self.distro.all_distro_archives],
+                                    self.distro.main_archive,
                                     PackagePublishingStatus.PUBLISHED,
                                     pocket,
                                     distroseries.name),
