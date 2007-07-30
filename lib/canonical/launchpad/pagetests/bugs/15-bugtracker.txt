@@ -65,6 +65,26 @@ new tracker.
   >>> 'This is a test TRAC tracker.' in user_browser.contents
   True
 
+The `Title`, `Summarry` and `Contact Details` fields are optional -
+creating a bugtracker without them is acceptable.
+
+  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/+newbugtracker')
+  >>> user_browser.getControl('Name').value = 'test-bugzilla'
+  >>> user_browser.getControl('Bug Tracker Type').value = ['Bugzilla']
+  >>> user_browser.getControl('Base URL').value = 'http://bugzilla.testing.org/'
+  >>> user_browser.getControl('Add').click()
+  >>> user_browser.url
+  'http://launchpad.dev/bugs/bugtrackers/test-bugzilla'
+
+When the title isn't submitted, it is rendered dynamically, referencing
+the bugtracker URL.
+
+  >>> print extract_text(
+  ...     find_tags_by_class(user_browser.contents, 'pageheading')[0])
+  'Bug tracker at http://bugzilla.testing.org/'
+  overview 
+
+
   >>> from zope.component import getUtility
   >>> from canonical.lp.dbschema import BugTrackerType
   >>> from canonical.launchpad.interfaces import IBugTrackerSet
