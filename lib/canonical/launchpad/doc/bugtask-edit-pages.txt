@@ -10,7 +10,7 @@ Edit the Status
 Let's start simple and edit the status of a bug task logged in as Sample
 Person:
 
-    >>> from zope.component import getView
+    >>> from zope.component import getView, getMultiAdapter
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> login('test@canonical.com')
@@ -20,7 +20,7 @@ Person:
     'Confirmed'
 
     >>> edit_form = {
-    ...    'FORM_SUBMIT': '',
+    ...    'ubuntu_thunderbird.actions.save': 'Save Changes',
     ...    'ubuntu_thunderbird.status': 'In Progress',
     ...    'ubuntu_thunderbird.importance':
     ...        ubuntu_thunderbird_task.importance.title,
@@ -29,9 +29,8 @@ Person:
     ...    'ubuntu_thunderbird.sourcepackagename':
     ...        ubuntu_thunderbird_task.sourcepackagename.name}
     >>> request = LaunchpadTestRequest(form=edit_form)
-    >>> edit_view = getView(
-    ...     ubuntu_thunderbird_task, '+editstatus-page', request)
-    >>> edit_view.process_form()
+    >>> edit_view = getMultiAdapter((ubuntu_thunderbird_task, request),
+    ...     name='+editstatus-page')
     >>> ubuntu_thunderbird_task.status.title
     'In Progress'
 
@@ -213,6 +212,9 @@ set to their default values:
     True
     >>> thunderbird_task.importance == IBugTask['importance'].default
     True
+    >>> thunderbird_task.importance
+
+    >>> IBugTask['importance'].default
 
 Milestone Editing Permissions
 -----------------------------
@@ -234,7 +236,7 @@ The distribution owner gets an edit widget for the distribution task.
     >>> bugtask_edit_view = getView(ubuntu_task, "+editstatus-page", request)
     >>> bugtask_edit_view.initialize()
 
-    >>> IInputWidget.providedBy(bugtask_edit_view.milestone_widget)
+    >>> IInputWidget.providedBy(bugtask_edit_view.widgets['milestone'])
     True
     
 But an unprivileged user does not.
@@ -246,7 +248,7 @@ But an unprivileged user does not.
     >>> bugtask_edit_view = getView(ubuntu_task, "+editstatus-page", request)
     >>> bugtask_edit_view.initialize()
 
-    >>> isinstance(bugtask_edit_view.milestone_widget, ItemDisplayWidget)
+    >>> isinstance(bugtask_edit_view.widgets['milestone'], ItemDisplayWidget)
     True
 
 A bug contact can also change the milestone. Let's set no-priv as Ubuntu's bug
@@ -263,5 +265,5 @@ Unlike before, no-priv can now edit the milestone.
     >>> bugtask_edit_view = getView(ubuntu_task, "+editstatus-page", request)
     >>> bugtask_edit_view.initialize()
 
-    >>> IInputWidget.providedBy(bugtask_edit_view.milestone_widget)
+    >>> IInputWidget.providedBy(bugtask_edit_view.widgets['milestone'])
     True

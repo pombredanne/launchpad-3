@@ -697,7 +697,8 @@ class BugTaskEditView(LaunchpadFormView):
     custom_widget('bugwatch', BugTaskBugWatchWidget)
     custom_widget('assignee', BugTaskAssigneeWidget)
     field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
-                   'product', 'status', 'statusexplanation']
+                   'product', 'status', 'statusexplanation',
+                   'sourcepackagename']
 
     @property
     def schema(self):
@@ -935,7 +936,6 @@ class BugTaskEditView(LaunchpadFormView):
     @action('Save changes', name='save')
     def save_action(self, action, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
-        import pdb; pdb.set_trace()
         bugtask = self.context
 
         if self.request.form.get('subscribe', False):
@@ -947,7 +947,7 @@ class BugTaskEditView(LaunchpadFormView):
         # list, because we modify this list of names later if the
         # bugtask is reassigned to a different product.
         field_names = list(self.field_names)
-        new_values = getWidgetsData(self, self.schema, field_names)
+        new_values = data.copy()
 
         bugtask_before_modification = Snapshot(
             bugtask, providing=providedBy(bugtask))
@@ -986,9 +986,9 @@ class BugTaskEditView(LaunchpadFormView):
         if "status" in field_names_to_apply:
             field_names_to_apply.remove("status")
 
-        changed = applyWidgetsChanges(
-            self, self.schema, target=bugtask,
-            names=field_names_to_apply)
+        #changed = applyWidgetsChanges(
+        #    self, self.schema, target=bugtask,
+        #    names=field_names_to_apply)
 
         new_status = new_values.pop("status", self._missing_value)
         new_assignee = new_values.pop("assignee", self._missing_value)
@@ -1061,8 +1061,7 @@ class BugTaskEditView(LaunchpadFormView):
 
         if bugtask.sourcepackagename is not None:
             real_package_name = bugtask.sourcepackagename.name
-            entered_package_name = self.request.form.get(
-                self.sourcepackagename_widget.name)
+            entered_package_name = data.get('sourcepackagename')
             if real_package_name != entered_package_name:
                 # The user entered a binary package name which got
                 # mapped to a source package.
