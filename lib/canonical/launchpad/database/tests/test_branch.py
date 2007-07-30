@@ -4,8 +4,10 @@
 
 __metaclass__ = type
 
+import transaction
 from unittest import TestCase, TestLoader
 
+from canonical.config import config
 from canonical.launchpad.ftests import login, logout, syncUpdate
 from canonical.launchpad.interfaces import (
     BranchSubscriptionNotificationLevel, BranchType, CannotDeleteBranch,
@@ -18,7 +20,7 @@ from canonical.launchpad.database.revision import RevisionSet
 from canonical.lp.dbschema import (
     RevisionControlSystems, SpecificationDefinitionStatus)
 
-from canonical.testing import LaunchpadFunctionalLayer
+from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
 
 from zope.component import getUtility
 
@@ -26,7 +28,7 @@ from zope.component import getUtility
 class TestBranchDeletion(TestCase):
     """Test the different cases that makes a branch deletable or not."""
 
-    layer = LaunchpadFunctionalLayer
+    layer = LaunchpadZopelessLayer
 
     def setUp(self):
         login('test@canonical.com')
@@ -117,11 +119,17 @@ class TestBranchDeletion(TestCase):
 
     def test_revisionsDisableDeletion(self):
         """A branch that has some revisions cannot be deleted."""
+        # We want the changes done in the setup to stay around, and by
+        # default the switchDBUser aborts the transaction.
+        transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
         revision = RevisionSet().new(
             revision_id='some-unique-id', log_body='commit message',
             revision_date=None, revision_author='ddaa@localhost',
             owner=self.user, parent_ids=[], properties=None)
         self.branch.createBranchRevision(0, revision)
+        transaction.commit()
+        LaunchpadZopelessLayer.switchDbUser(config.launchpad.dbuser)
         self.assertEqual(self.branch.canBeDeleted(), False,
                          "A branch that has a revision is not deletable.")
         self.assertRaises(CannotDeleteBranch, BranchSet().delete, self.branch)
