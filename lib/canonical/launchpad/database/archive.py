@@ -97,7 +97,16 @@ class ArchiveSet:
         return Archive.get(archive_id)
 
     def getByDistroPurpose(self, distribution, purpose):
+        """See canonical.launchpad.interfaces.IArchiveSet."""
         return Archive.selectOneBy(distribution=distribution, purpose=purpose)
+
+    def getByDistroComponent(self, distribution, component_name):
+        """See canonical.launchpad.interfaces.IArchiveSet."""
+        if component_name == 'commercial':
+            return self.getByDistroPurpose(distribution, 
+                ArchivePurpose.COMMERCIAL)
+        else:
+            return None
 
     def new(self, distribution=None, purpose=None, owner=None):
         """See canonical.launchpad.interfaces.IArchiveSet."""

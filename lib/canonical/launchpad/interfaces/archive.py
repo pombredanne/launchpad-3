@@ -66,6 +66,16 @@ class IArchiveSet(Interface):
     def getByDistroPurpose(distribution, purpose):
         """Return the IArchive with the given distribution and purpose."""
 
+    def getByDistroComponent(distribution, component_name):
+        """Return the IArchive most appropriate for distribution and component,
+
+        Where different components may imply a different archive (e.g.
+        commercial), this method will return the archive for that component.
+
+        If the component_name supplied does not override anything, None is 
+        returned.
+        """
+
     def getAllPPAs():
         """Return all existent personal archives."""
 
