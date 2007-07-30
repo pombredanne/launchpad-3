@@ -17,7 +17,8 @@ from zope.security.proxy import removeSecurityProxy
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
-from canonical.launchpad.interfaces import IBranchSet, IPersonSet, IProductSet
+from canonical.launchpad.interfaces import (
+    BranchType, IBranchSet, IPersonSet, IProductSet)
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 
@@ -29,7 +30,8 @@ from canonical.authserver.database import (
     DatabaseBranchDetailsStorage)
 from canonical.lp import dbschema
 
-from canonical.launchpad.ftests.harness import LaunchpadTestCase
+from canonical.launchpad.ftests.harness import (
+    LaunchpadTestCase, LaunchpadTestSetup)
 
 from canonical.testing.layers import LaunchpadScriptLayer
 
@@ -258,8 +260,7 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         no_priv = getUtility(IPersonSet).getByName('no-priv')
         firefox = getUtility(IProductSet).getByName('firefox')
         new_branch = getUtility(IBranchSet).new(
-            dbschema.BranchType.HOSTED, 'branch2', no_priv, no_priv, firefox,
-            None)
+            BranchType.HOSTED, 'branch2', no_priv, no_priv, firefox, None)
         new_branch = removeSecurityProxy(new_branch)
         transaction.commit()
 
@@ -286,8 +287,8 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         login(login_email)
         try:
             branch = getUtility(IBranchSet).new(
-                dbschema.BranchType.HOSTED, 'foo-branch', person, person,
-                None, None, None)
+                BranchType.HOSTED, 'foo-branch', person, person, None, None,
+                None)
         finally:
             logout()
             transaction.commit()
@@ -645,6 +646,11 @@ class BranchDetailsDatabaseStorageTestCase(TestDatabaseSetup):
     def setUp(self):
         TestDatabaseSetup.setUp(self)
         self.storage = DatabaseBranchDetailsStorage(None)
+
+    def tearDown(self):
+        """Tear down the test and reset the database."""
+        LaunchpadTestSetup().force_dirty_database()
+        TestDatabaseSetup.tearDown(self)
 
     def test_getBranchPullQueue(self):
         # Set up the database so the vcs-import branch will appear in the queue.

@@ -22,6 +22,7 @@ from canonical.codehosting.tests.servers import (
 from canonical.codehosting.transport import branch_id_to_path
 from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+from canonical.launchpad.interfaces import BranchType
 from canonical.lp import dbschema
 
 
@@ -336,7 +337,7 @@ class SmartserverTests(SSHTestCase):
         # Mark as mirrored.
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.getDatabaseBranch(person_name, product_name, branch_name)
-        branch.branch_type = dbschema.BranchType.MIRRORED
+        branch.branch_type = BranchType.MIRRORED
         LaunchpadZopelessTestSetup().txn.commit()
         return ro_branch_url
 

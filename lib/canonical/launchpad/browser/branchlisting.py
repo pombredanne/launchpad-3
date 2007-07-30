@@ -15,13 +15,12 @@ from zope.interface import implements
 
 from canonical.config import config
 from canonical.lp import decorates
-from canonical.lp.dbschema import (BranchLifecycleStatus,
-                                   BranchLifecycleStatusFilter)
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch, IBranchLifecycleFilter,
-    IBranchSet, IBugBranchSet, IBranchBatchNavigator)
+    BranchLifecycleStatus, BranchLifecycleStatusFilter,
+    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    IBranchSet, IBugBranchSet, IBranchBatchNavigator, IBranchLifecycleFilter)
 from canonical.launchpad.webapp import LaunchpadFormView, custom_widget
 from canonical.launchpad.webapp.batching import TableBatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
@@ -42,7 +41,7 @@ class BranchListingItem:
         self.elapsed_time = elapsed
         self.bugbranches = bugbranches
         self.role = role
-        
+
 
 class BranchListingBatchNavigator(TableBatchNavigator):
     """Batch up the branch listings."""
@@ -84,7 +83,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
 
     def branches(self):
         "Return a list of BranchListingItems"
-        return [self._createItem(branch) for branch in self.currentBatch()] 
+        return [self._createItem(branch) for branch in self.currentBatch()]
 
     @cachedproperty
     def multiple_pages(self):
@@ -96,7 +95,7 @@ class BranchListingBatchNavigator(TableBatchNavigator):
             return "listing"
         else:
             return "listing sortable"
-        
+
 
 class BranchListingView(LaunchpadFormView):
     """A base class for views of branch listings."""
@@ -110,7 +109,7 @@ class BranchListingView(LaunchpadFormView):
     def page_title(self):
         return '%s branches for %s' % (
             self.title_prefix, self.context.displayname)
-    
+
     @property
     def initial_values(self):
         return {
@@ -131,7 +130,7 @@ class BranchListingView(LaunchpadFormView):
         elif lifecycle_filter == BranchLifecycleStatusFilter.CURRENT:
             return DEFAULT_BRANCH_STATUS_IN_LISTING
         else:
-            return (BranchLifecycleStatus.items[lifecycle_filter.value], )
+            return (BranchLifecycleStatus.items[lifecycle_filter.name], )
 
     def branches(self):
         """All branches related to this target, sorted for display."""

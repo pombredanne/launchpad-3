@@ -50,7 +50,7 @@ from canonical.launchpad.browser.questiontarget import (
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
-    Navigation, StandardLaunchpadFacets, structured)
+    Navigation, StandardLaunchpadFacets, stepthrough, structured)
 from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.helpers import shortlist
 
@@ -64,6 +64,10 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
 
     def traverse(self, name):
         return self.context.getProduct(name)
+
+    @stepthrough('+milestone')
+    def traverse_milestone(self, name):
+        return self.context.getMilestone(name)
 
 
 class ProjectDynMenu(DynMenu):

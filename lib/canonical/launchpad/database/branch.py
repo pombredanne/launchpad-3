@@ -21,16 +21,15 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
+    BranchLifecycleStatus, BranchType, BranchVisibilityRule,
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchSet, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
 from canonical.launchpad.mailnotification import NotificationRecipientSet
-from canonical.lp.dbschema import (
-    BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
-    BranchRelationships, BranchLifecycleStatus, BranchType,
-    BranchVisibilityRule)
+from canonical.lp.dbschema import BranchRelationships
 
 
 class Branch(SQLBase):
@@ -40,7 +39,7 @@ class Branch(SQLBase):
     _table = 'Branch'
     _defaultOrder = ['product', '-lifecycle_status', 'author', 'name']
 
-    branch_type = EnumCol(schema=BranchType, notNull=True)
+    branch_type = EnumCol(enum=BranchType, notNull=True)
 
     name = StringCol(notNull=False)
     title = StringCol(notNull=False)
@@ -58,7 +57,8 @@ class Branch(SQLBase):
 
     home_page = StringCol()
 
-    lifecycle_status = EnumCol(schema=BranchLifecycleStatus, notNull=True,
+    lifecycle_status = EnumCol(
+        enum=BranchLifecycleStatus, notNull=True,
         default=BranchLifecycleStatus.NEW)
 
     last_mirrored = UtcDateTimeCol(default=None)
