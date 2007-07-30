@@ -18,7 +18,7 @@
    sodipodi:docbase="/home/mpt/hacking/lpsrc/2007-07-privates/lib/canonical/launchpad/images"
    sodipodi:docname="do-not-disturb-large.svg"
    inkscape:output_extension="org.inkscape.output.svg.inkscape"
-   inkscape:export-filename="/home/mpt/hacking/lpsrc/2007-07-privates/lib/canonical/launchpad/images/private-large.png"
+   inkscape:export-filename="/home/mpt/hacking/lpsrc/2007-07-privates/lib/canonical/launchpad/images/do-not-disturb-large.png"
    inkscape:export-xdpi="90"
    inkscape:export-ydpi="90"
    sodipodi:modified="true">
@@ -67,6 +67,46 @@
        y2="0.94409937"
        gradientUnits="userSpaceOnUse"
        gradientTransform="matrix(1.3317828,0,0,1.3480637,-0.469767,-0.1740318)" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient6109"
+       id="linearGradient6113"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1.3317828,0,0,-1.3480637,-0.469767,32.174032)"
+       x1="12"
+       y1="22.981367"
+       x2="12"
+       y2="0.94409937" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient6109"
+       id="linearGradient6120"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1.3317828,0,0,1.3480637,-0.469767,-0.174032)"
+       x1="12"
+       y1="22.981367"
+       x2="12"
+       y2="0.94409937" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient6109"
+       id="linearGradient6123"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1.3317828,0,0,-1.3480637,-0.469767,32.174032)"
+       x1="12"
+       y1="22.981367"
+       x2="12"
+       y2="0.94409937" />
+    <linearGradient
+       inkscape:collect="always"
+       xlink:href="#linearGradient6109"
+       id="linearGradient6126"
+       gradientUnits="userSpaceOnUse"
+       gradientTransform="matrix(1.3317828,0,0,1.3480637,-0.469767,-0.174032)"
+       x1="12"
+       y1="22.981367"
+       x2="12"
+       y2="0.94409937" />
   </defs>
   <sodipodi:namedview
      id="base"
@@ -78,7 +118,7 @@
      objecttolerance="10"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="17.625"
+     inkscape:zoom="17.53125"
      inkscape:cx="16"
      inkscape:cy="16"
      inkscape:document-units="px"
@@ -94,7 +134,7 @@
      gridopacity="0.08235294"
      showborder="true"
      inkscape:showpageshadow="false"
-     inkscape:window-width="828"
+     inkscape:window-width="766"
      inkscape:window-height="689"
      inkscape:window-x="0"
      inkscape:window-y="25" />
@@ -114,10 +154,9 @@
      inkscape:groupmode="layer"
      id="layer1">
     <path
-       style="fill:url(#linearGradient6115);fill-opacity:1;stroke:#888888;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
-       d="M 5.5232558,0.50000002 L 5.5,8.5 L 9.5,8.5 C 9.4583818,5.1298408 12.070093,3.5 15.5,3.5 C 19.175721,3.4999999 21.50465,5.2397918 21.50465,8.588382 C 21.50465,11.936972 19,14.5 15.5,14.5 C 15.5,14.5 12,14.5 10,15.5 C 8,16.5 5.5338013,17.850795 5.5232558,21.894986 L 5.5232558,31.505464 L 25.499999,31.505464 L 25.499999,0.50000002 L 5.5232558,0.50000002 z "
-       id="rect3151"
-       sodipodi:nodetypes="cccssczccccc" />
+       style="fill:url(#linearGradient6126);fill-opacity:1;stroke:#888888;stroke-width:1;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;stroke-linejoin:miter"
+       d="M 7.5 0.5 C 6.534 0.5 5.7178438 1.1826562 5.53125 2.09375 L 5.53125 2.1875 L 5.5 8.5 L 9.5 8.5 C 9.4583818 5.1298408 12.070093 3.5 15.5 3.5 C 19.175721 3.4999999 21.5 5.2451598 21.5 8.59375 C 21.5 11.94234 19 14.5 15.5 14.5 C 15.5 14.5 12 14.5 10 15.5 C 8 16.5 5.5417955 17.862059 5.53125 21.90625 L 5.53125 29.90625 C 5.7178438 30.817344 6.534 31.5 7.5 31.5 L 23.5 31.5 C 24.604 31.5 25.5 30.604 25.5 29.5 L 25.5 2.5 C 25.5 1.396 24.604 0.5 23.5 0.5 L 7.5 0.5 z "
+       id="rect3151" />
     <path
        sodipodi:type="arc"
        style="fill:#dd0000;fill-opacity:1;stroke:#aa0000;stroke-width:0.54545474;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1"
