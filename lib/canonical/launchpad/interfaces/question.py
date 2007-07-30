@@ -48,10 +48,10 @@ class IQuestion(IHasOwner):
         u"you\N{right single quotation mark}re trying to achieve, what steps "
         "you take, what happens, and what you think should happen instead."))
     status = Choice(
-        title=_('Status'), vocabulary='QuestionStatus',
+        title=_('Status'), vocabulary=QuestionStatus,
         default=QuestionStatus.OPEN, readonly=True)
     priority = Choice(
-        title=_('Priority'), vocabulary='QuestionPriority',
+        title=_('Priority'), vocabulary=QuestionPriority,
         default=QuestionPriority.NORMAL)
     # XXX flacoste 2006/10/28 It should be more precise to define a new
     # vocabulary that excludes the English variants.
@@ -449,7 +449,7 @@ class IQuestionChangeStatusForm(Interface):
 
     status = Choice(
         title=_('Status'), description=_('Select the new question status.'),
-        vocabulary='QuestionStatus', required=True)
+        vocabulary=QuestionStatus, required=True)
 
     message = Text(
         title=_('Message'),

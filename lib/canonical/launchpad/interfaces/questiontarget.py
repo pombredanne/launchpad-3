@@ -18,7 +18,8 @@ from zope.schema import Choice, List, Set, TextLine
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.questioncollection import (
     ISearchableByQuestionOwner, QUESTION_STATUS_DEFAULT_SEARCH)
-from canonical.launchpad.interfaces.questionenums import QuestionSort
+from canonical.launchpad.interfaces.questionenums import (
+    QuestionSort, QuestionStatus)
 
 
 class IQuestionTarget(ISearchableByQuestionOwner):
@@ -130,11 +131,11 @@ class ISearchQuestionsForm(Interface):
     search_text = TextLine(title=_('Search text'), required=False)
 
     sort = Choice(title=_('Sort order'), required=True,
-                  vocabulary='QuestionSort',
+                  vocabulary=QuestionSort,
                   default=QuestionSort.RELEVANCY)
 
     status = Set(title=_('Status'), required=False,
-                 value_type=Choice(vocabulary='QuestionStatus'),
+                 value_type=Choice(vocabulary=QuestionStatus),
                  default=sets.Set(QUESTION_STATUS_DEFAULT_SEARCH))
 
 

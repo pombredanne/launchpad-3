@@ -31,12 +31,12 @@ class IQuestionMessage(IMessage):
     action = Choice(
         title=_("Action operated on the question by this message."),
         required=True, readonly=True, default=QuestionAction.COMMENT,
-        vocabulary="QuestionAction")
+        vocabulary=QuestionAction)
 
     new_status = Choice(
         title=_("Question status after message"),
         description=_("The status of the question after the transition "
         "related the action operated by this message."), required=True,
         readonly=True, default=QuestionStatus.OPEN,
-        vocabulary='QuestionStatus')
+        vocabulary=QuestionStatus)
 
