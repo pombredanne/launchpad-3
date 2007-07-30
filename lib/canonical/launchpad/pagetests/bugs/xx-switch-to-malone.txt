@@ -12,7 +12,7 @@ possible for its bugs to have an Unknown importance.
     >>> user_browser.open(
     ...     'http://launchpad.dev/debian/+source/evolution/+bug/7/+editstatus')
     >>> main = find_main_content(user_browser.contents)
-    >>> lock_icon = main.find('img', {'src': '/@@/locked'})
+    >>> private_icon = main.find('img', {'src': '/@@/private'})
     >>> print extract_text(lock_icon.parent)
     Unknown
 
@@ -28,6 +28,6 @@ will still have an Unknown value.
     >>> user_browser.open(
     ...     'http://launchpad.dev/debian/+source/evolution/+bug/7/+editstatus')
     >>> main = find_main_content(user_browser.contents)
-    >>> lock_icon = main.find('img', {'src': '/@@/locked'})
+    >>> private_icon = main.find('img', {'src': '/@@/private'})
     >>> print extract_text(lock_icon.parent)
     Unknown

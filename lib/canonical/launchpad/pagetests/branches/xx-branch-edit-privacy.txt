@@ -48,7 +48,7 @@ on the right hand side of the main view.
     >>> div = find_tag_by_id(browser.contents, 'branch-badges')
     >>> print div
     <div style="float: right" id="branch-badges">
-      <img src="/@@/locked-large" title="Private" />
+      <img alt="" src="/@@/private-large" title="Private" />
     </div>
 
 Sample Person can also change the branch from private back to public.
@@ -86,7 +86,7 @@ The branch is now private, so the padlock is shown.
     >>> div = find_tag_by_id(browser.contents, 'branch-badges')
     >>> print div
     <div style="float: right" id="branch-badges">
-      <img src="/@@/locked-large" title="Private" />
+      <img alt="" src="/@@/private-large" title="Private" />
     </div>
 
 However when the user now looks to edit the branch details, there

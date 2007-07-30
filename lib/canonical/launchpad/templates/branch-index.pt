@@ -15,7 +15,7 @@
 <div metal:fill-slot="main">
 
   <div style="float: right" id="branch-badges">
-    <img src="/@@/locked-large" title="Private"
+    <img src="/@@/private-large" title="Private"
          tal:condition="context/private" />
   </div>
 

@@ -111,6 +111,8 @@
     <resource name="person-inactive-badge" file="../images/person-inactive-badge.png" />
     <resource name="person-inactive-logo" file="../images/person-inactive-logo.png" />
     <resource name="person-inactive-mugshot" file="../images/person-inactive-mugshot.png" />
+    <resource name="private" file="../images/do-not-disturb.png" />
+    <resource name="private-large" file="../images/do-not-disturb-large.png" />
     <resource name="product" file="../images/product.png" />
     <resource name="product-badge" file="../images/product-badge.png" />
     <resource name="product-logo" file="../images/product-logo.png" />
@@ -127,6 +129,8 @@
     <!-- XXX mpt 20060822: Remove this once we use "(Optional)" instead -->
     <resource name="retry" file="../images/retry.png" />
     <resource name="search" file="../images/search.png" />
+    <resource name="security" file="../images/locked.png" />
+    <resource name="security-large" file="../images/locked-large.png" />
     <resource name="sorry-closed" file="../images/sorry-closed.png" />
     <resource name="stop" file="../images/stop.png" />
     <resource name="meeting" file="../images/meeting.png" />

@@ -139,12 +139,12 @@
       <tr>
         <td tal:content="structure view/status_widget" />
         <td title="Editable only by the maintainer or bug contact of the project">
-          <img tal:condition="not:view/userCanEditImportance" src="/@@/locked" />
+          <img tal:condition="not:view/userCanEditImportance" src="/@@/security" />
           <span tal:content="structure view/importance_widget" />
         </td>
         <td tal:condition="view/milestone_widget"
             title="Editable only by the maintainer or bug contact of the project">
-          <img tal:condition="not:view/userCanEditMilestone" src="/@@/locked" />
+          <img tal:condition="not:view/userCanEditMilestone" src="/@@/security" />
           <span tal:content="structure view/milestone_widget" />
         </td>
       </tr>

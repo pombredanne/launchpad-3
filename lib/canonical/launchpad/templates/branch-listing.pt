@@ -52,7 +52,7 @@ field.onchange = submit_filter;
              tal:content="branch/name/fmt:shorten/30">
                Name
           </a>
-          <img src="/@@/locked" alt="private branch" tal:condition="branch/private"/>
+          <img src="/@@/private" alt="private branch" tal:condition="branch/private"/>
           <tal:bugbranch repeat="bugbranch branch/bugbranches">
             <tal:visible
                 define="bug bugbranch/bug"

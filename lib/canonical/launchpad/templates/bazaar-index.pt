@@ -59,7 +59,11 @@
                                 <a tal:attributes="href branch/fmt:url"
                                    tal:content="branch/displayname/fmt:shorten/40">
                                 Title Goes Here!</a>
-                                <img src="/@@/locked" alt="private branch" tal:condition="branch/private"/>
+                                <img
+                                  src="/@@/private"
+                                  alt="(private branch)"
+                                  tal:condition="branch/private"
+                                />
                               </li>
                             </ul>
                           </div>
@@ -70,7 +74,11 @@
                                 <a tal:attributes="href branch/fmt:url"
                                    tal:content="branch/displayname/fmt:shorten/40">
                                 Title Goes Here!</a>
-                                <img src="/@@/locked" alt="private branch" tal:condition="branch/private"/>
+                                <img
+                                  src="/@@/private"
+                                  alt="(private branch)"
+                                  tal:condition="branch/private"
+                                />
                               </li>
                             </ul>
                           </div>
@@ -81,7 +89,11 @@
                                 <a tal:attributes="href branch/fmt:url"
                                    tal:content="branch/displayname/fmt:shorten/40">
                                 Title Goes Here!</a>
-                                <img src="/@@/locked" alt="private branch" tal:condition="branch/private"/>
+                                <img
+                                  src="/@@/private"
+                                  alt="private branch"
+                                  tal:condition="branch/private"
+                                />
                               </li>
                             </ul>
                           </div>

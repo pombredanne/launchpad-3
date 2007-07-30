@@ -498,7 +498,7 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
         badges = ''
         if self._context.bug.private:
             badges += self.icon_template % (
-                "private", "Private","/@@/locked")
+                "private", "Private","/@@/private")
 
         if self._context.bug.mentoring_offers.count() > 0:
             badges += self.icon_template % (
