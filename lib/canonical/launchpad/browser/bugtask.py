@@ -920,8 +920,6 @@ class BugTaskEditView(LaunchpadFormView):
             except WidgetsError, errors:
                 self.setFieldError('product', errors.args[0])
 
-        return data
-
     @action('Save changes', name='save')
     def save_action(self, action, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
