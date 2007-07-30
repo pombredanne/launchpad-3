@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from unittest import TestCase, TestLoader
+from unittest import TestLoader
 import shutil
 import subprocess
 import os
@@ -256,7 +256,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "ERROR: 'mozilla-firefox' source isn't published in hoary")
 
     def test_processBinaryChange_success(self):
-        """Check processBinaryChange() method call.
+        """Check if processBinaryChange() picks the correct binary.
 
         It simply wraps changeOverride method on
         IDistroArchSeriesBinaryPackage, which is already tested in place.
@@ -292,7 +292,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
-            "ERROR: 'evolution' binary not found in warty/hppa")
+            "ERROR: 'evolution' binary not found.")
 
     def test_processChildrenChange_success(self):
         """processChildrenChanges, modify the source and its binary children.
@@ -315,8 +315,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
-            "ERROR: 'mozilla-firefox' binary isn't published in warty/hppa\n"
-            "INFO: 'mozilla-firefox/main/base/IMPORTANT' "
+            "INFO: 'mozilla-firefox/main/base/EXTRA' "
                 "binary overridden in warty/i386")
 
     def test_processChildrenChange_error(self):

@@ -39,6 +39,7 @@
     <include file="build.zcml" />
     <include file="builder.zcml" />
     <include file="calendar.zcml" />
+    <include file="codeimport.zcml" />
     <include file="codeofconduct.zcml" />
     <include file="country.zcml" />
     <include file="crowd.zcml" />
@@ -62,6 +63,8 @@
     <include file="driver.zcml" />
     <include file="emailaddress.zcml" />
     <include file="entitlement.zcml" />
+    <include file="faq.zcml" />
+    <include file="faqcollection.zcml" />
     <include file="files.zcml" />
     <include file="gpgkey.zcml" />
     <include file="ircid.zcml" />
@@ -72,8 +75,9 @@
     <include file="launchpadstatistic.zcml" />
     <include file="librarian.zcml" />
     <include file="logintoken.zcml" />
-    <include file="mentoringoffer.zcml" />
+    <include file="mailinglist.zcml" />
     <include file="marketing.zcml" />
+    <include file="mentoringoffer.zcml" />
     <include file="message.zcml" />
     <include file="milestone.zcml" />
     <include file="openid.zcml" />

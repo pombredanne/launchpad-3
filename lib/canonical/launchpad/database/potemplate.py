@@ -1,4 +1,5 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+"""SQLObject implementation of POTemplate classes."""
 
 __metaclass__ = type
 __all__ = [
@@ -327,6 +328,7 @@ class POTemplate(SQLBase, RosettaStats):
     def languages(self):
         """See IPOTemplate."""
         return Language.select("POFile.language = Language.id AND "
+                               "Language.code != 'en' AND "
                                "POFile.potemplate = %d AND "
                                "POFile.variant IS NULL" % self.id,
                                clauseTables=['POFile', 'Language'],
@@ -557,55 +559,51 @@ class POTemplate(SQLBase, RosettaStats):
                 orderBy='dateimported')
 
     def importFromQueue(self, logger=None):
-        """See IPOTemplate."""
+        """See `IPOTemplate`."""
         entry_to_import = self.getNextToImport()
 
         if entry_to_import is None:
             # There is no new import waiting for being imported.
             return
 
-        template_mail = None
         translation_importer = getUtility(ITranslationImporter)
+
+        subject = 'Translation template import - %s' % self.displayname
+        template_mail = 'poimport-template-confirmation.txt'
         try:
             translation_importer.importFile(entry_to_import, logger)
         except (TranslationFormatSyntaxError,
                 TranslationFormatInvalidInputError):
-            # The import failed, we mark it as failed so we could review it
-            # later in case it's a bug in our code.
             if logger:
                 logger.warning(
                     'We got an error importing %s', self.title, exc_info=1)
-            template_mail = 'poimport-syntax-error.txt'
-
-            replacements = {
-                'importer': entry_to_import.importer.displayname,
-                'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
-                'elapsedtime': entry_to_import.getElapsedTimeText(),
-                'file_link': entry_to_import.content.http_url,
-                'import_title':
-                    'translation templates for %s' % self.displayname
-                }
-
-            # We got an error that prevented us to import the template, we
-            # need to notify the user and set the status to FAILED.
             subject = 'Import problem - %s' % self.displayname
-
-            # Send the email.
-            template = helpers.get_email_template(template_mail)
-            message = template % replacements
-
-            fromaddress = config.rosetta.rosettaadmin.email
-            toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
-
-            simple_sendmail(fromaddress,
-                toaddress,
-                subject,
-                MailWrapper().format(message))
-
+            template_mail = 'poimport-syntax-error.txt'
             entry_to_import.status = RosettaImportStatus.FAILED
 
+        replacements = {
+            'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
+            'elapsedtime': entry_to_import.getElapsedTimeText(),
+            'file_link': entry_to_import.content.http_url,
+            'import_title': 'translation templates for %s' % self.displayname,
+            'importer': entry_to_import.importer.displayname,
+            'template': self.displayname
+            }
 
-            # We don't have anything to do here...
+        # Send email: confirmation or error.
+        template = helpers.get_email_template(template_mail)
+        message = template % replacements
+
+        fromaddress = config.rosetta.rosettaadmin.email
+        toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
+
+        simple_sendmail(fromaddress,
+            toaddress,
+            subject,
+            MailWrapper().format(message))
+
+        if entry_to_import.status == RosettaImportStatus.FAILED:
+            # Give up on this file.
             return
 
         # The import has been done, we mark it that way.

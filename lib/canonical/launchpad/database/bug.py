@@ -448,7 +448,7 @@ class Bug(SQLBase):
             result = BugMessage(bug=self, message=message)
             getUtility(IBugWatchSet).fromText(
                 message.text_contents, self, message.owner)
-            self.findCvesInText(message.text_contents)
+            self.findCvesInText(message.text_contents, message.owner)
             return result
 
     def addWatch(self, bugtracker, remotebug, owner):
@@ -516,7 +516,7 @@ class Bug(SQLBase):
 
         return bug_branch
 
-    def linkCVE(self, cve, user=None):
+    def linkCVE(self, cve, user):
         """See IBug."""
         if cve not in self.cves:
             bugcve = BugCve(bug=self, cve=cve)
@@ -531,11 +531,11 @@ class Bug(SQLBase):
                 BugCve.delete(cve_link.id)
                 break
 
-    def findCvesInText(self, text):
+    def findCvesInText(self, text, user):
         """See IBug."""
         cves = getUtility(ICveSet).inText(text)
         for cve in cves:
-            self.linkCVE(cve)
+            self.linkCVE(cve, user)
 
     # Several other classes need to generate lists of bugs, and
     # one thing they often have to filter for is completeness. We maintain
@@ -680,8 +680,8 @@ class Bug(SQLBase):
     def getNominations(self, target=None):
         """See IBug."""
         # Define the function used as a sort key.
-        def by_bugtargetname(nomination):
-            return nomination.target.bugtargetname.lower()
+        def by_bugtargetdisplayname(nomination):
+            return nomination.target.bugtargetdisplayname.lower()
 
         nominations = BugNomination.selectBy(bugID=self.id)
         if IProduct.providedBy(target):
@@ -699,7 +699,7 @@ class Bug(SQLBase):
                     filtered_nominations.append(nomination)
             nominations = filtered_nominations
 
-        return sorted(nominations, key=by_bugtargetname)
+        return sorted(nominations, key=by_bugtargetdisplayname)
 
     def getBugWatch(self, bugtracker, remote_bug):
         """See IBug."""

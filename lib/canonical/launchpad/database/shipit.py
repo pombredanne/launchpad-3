@@ -114,8 +114,10 @@ class ShippingRequest(SQLBase):
             # necessarily have a preferredemail, so we have to special case it
             # here.
             return config.shipit.admins_email_address
-        else:
+        elif self.recipient.preferredemail is not None:
             return self.recipient.preferredemail.email
+        else:
+            return u'inactive account -- no email address'
 
     @property
     def countrycode(self):
@@ -674,7 +676,7 @@ class ShippingRequestSet:
                 base_query += """ 
                     AND RequestedCDs.distrorelease = %s
                     AND RequestedCDs.request = ShippingRequest.id
-                    """ % ShipItConstants.current_distroseries
+                    """ % sqlvalues(ShipItConstants.current_distroseries)
                 clauseTables.append('RequestedCDs')
             total_shipped_requests = ShippingRequest.select(
                 base_query, clauseTables=clauseTables, distinct=True).count()

@@ -21,7 +21,7 @@ And we test the URL field validator filling a dupe URL.
   >>> browser.getControl('Change').click()
 
   >>> message = ('http://wiki.ubuntu.com/NetworkMagic is already registered '
-  ...            'by another specification')
+  ...            'by another blueprint')
   >>> message in browser.contents
   True
 
@@ -33,7 +33,7 @@ product.
   >>> browser.getControl('Specification URL').value = url
   >>> browser.getControl('Change').click()
 
-  >>> message = 'e4x is already in use by another specification'
+  >>> message = 'e4x is already in use by another blueprint'
   >>> message in browser.contents
   True
 

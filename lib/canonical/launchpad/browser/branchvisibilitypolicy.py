@@ -5,8 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
-    'AddBranchVisibilityPolicyItemView',
-    'RemoveBranchVisibilityPolicyItemView',
+    'AddBranchVisibilityTeamPolicyView',
+    'RemoveBranchVisibilityTeamPolicyView',
     'BranchVisibilityPolicyView',
     ]
 
@@ -18,42 +18,49 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IBranchVisibilityPolicyItem
+from canonical.launchpad.interfaces import (
+    BranchVisibilityRule, IBranchVisibilityTeamPolicy)
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from canonical.lp.dbschema import BranchVisibilityPolicy
 
 
-class BaseBranchVisibilityPolicyItemView(LaunchpadFormView):
+class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):
     """Used as a base class for the add and remove view."""
 
-    schema = IBranchVisibilityPolicyItem
+    schema = IBranchVisibilityTeamPolicy
 
     @property
     def adapters(self):
-        return {IBranchVisibilityPolicyItem: self.context}
+        return {IBranchVisibilityTeamPolicy: self.context}
 
     @property
     def next_url(self):
         return canonical_url(self.context) + '/+branchvisibility'
 
 
-class AddBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):
+class AddBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
     """Simple form view to add branch visibility policy items."""
 
     pagetitle = "Set branch visibility policy for team"
 
-    initial_values = {'policy': BranchVisibilityPolicy.PRIVATE}
+    initial_values = {'rule': BranchVisibilityRule.PRIVATE}
 
-    @action(_('Set policy for team'), name='set_policy')
-    def set_policy_action(self, action, data):
-        "Set the branch policy for the team."
-        self.context.setTeamBranchVisibilityPolicy(
-            data['team'], data['policy'])
+    @action(_('Set team policy'), name='set_team_policy')
+    def set_team_policy_action(self, action, data):
+        "Set the branch visibility rule for the team."
+        team = data['team']
+        rule = data['rule']
+        if team is not None and rule == BranchVisibilityRule.FORBIDDEN:
+            self.setFieldError(
+                'rule',
+                "Forbidden can only be chosen as a rule for everyone.")
+            self.next_url = None
+        else:
+            self.context.setBranchVisibilityTeamPolicy(team, rule)
 
 
-class RemoveBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):
+class RemoveBranchVisibilityTeamPolicyView(BaseBranchVisibilityTeamPolicyView):
     """The view to remove zero or more branch visibility policy items."""
 
     pagetitle = "Remove branch visibility policy for teams"
@@ -65,7 +72,7 @@ class RemoveBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):
         else:
             teamname = item.team.displayname
 
-        return "%s: %s" % (teamname, item.policy.title)
+        return "%s: %s" % (teamname, item.rule.title)
 
     def _policyToken(self, item):
         """The text used as the value of the widget."""
@@ -82,7 +89,7 @@ class RemoveBranchVisibilityPolicyItemView(BaseBranchVisibilityPolicyItemView):
         """
         terms = [SimpleTerm(item, self._policyToken(item),
                             self._policyDescription(item))
-                 for item in self.context.branch_visibility_policy_items]
+                 for item in self.context.getBranchVisibilityTeamPolicies()]
 
         return form.Fields(
             List(
@@ -109,7 +116,11 @@ class BranchVisibilityPolicyView(LaunchpadView):
 
     @cachedproperty
     def items(self):
-        return self.context.branch_visibility_policy_items
+        return self.context.getBranchVisibilityTeamPolicies()
+
+    @property
+    def base_visibility_rule(self):
+        return self.context.getBaseBranchVisibilityRule()
 
     @property
     def can_remove_items(self):

@@ -26,18 +26,17 @@ from canonical.launchpad.components.branch import BranchDelta
 from canonical.config import config
 from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     IBranch, IBugTask, IEmailAddressSet, INotificationRecipientSet, IPerson,
     ISpecification, ITeamMembershipSet, IUpstreamBugTask, 
-    UnknownRecipientError)
+    TeamMembershipStatus, UnknownRecipientError)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template, shortlist)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    TeamMembershipStatus, QuestionAction)
+from canonical.lp.dbschema import QuestionAction
 
 CC = "CC"
 
@@ -291,6 +290,9 @@ class BugNotificationRecipients(NotificationRecipientSet):
     def addDistroBugContact(self, person, distro):
         """Registers a distribution bug contact for this bug."""
         reason = "Bug Contact (%s)" % distro.displayname
+        # All displaynames in these reasons should be changed to bugtargetname
+        # (as part of bug 113262) once bugtargetname is finalized for packages
+        # (bug 113258). Changing it before then would be excessively disruptive.
         if person.isTeam():
             text = ("are a member of %s, which is the bug contact for %s" %
                 (person.displayname, distro.displayname))
@@ -533,7 +535,7 @@ def generate_bug_add_email(bug, new_recipients=False):
     bug_info = []
     # Add information about the affected upstreams and packages.
     for bugtask in bug.bugtasks:
-        bug_info.append(u"** Affects: %s" % bugtask.targetname)
+        bug_info.append(u"** Affects: %s" % bugtask.target.bugtargetname)
         bug_info.append(u"     Importance: %s" % bugtask.importance.title)
 
         if bugtask.assignee:
@@ -770,11 +772,11 @@ def get_bug_edit_notification_texts(bug_delta):
         for added_bugtask in added_bugtasks:
             if added_bugtask.bugwatch:
                 change_info = u"** Also affects: %s via\n" % (
-                    added_bugtask.targetname)
+                    added_bugtask.target.bugtargetname)
                 change_info += u"   %s\n" % added_bugtask.bugwatch.url
             else:
                 change_info = u"** Also affects: %s\n" % (
-                    added_bugtask.targetname)
+                    added_bugtask.target.bugtargetname)
             change_info += u"%13s: %s\n" % (u"Importance",
                 added_bugtask.importance.title)
             if added_bugtask.assignee:
@@ -1373,6 +1375,18 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
                 indent + '%s\n' % canonical_url(unlinked_bug) +
                 indent + '"%s"' % unlinked_bug.title)
 
+        if question.faq != old_question.faq:
+            if question.faq is None:
+                info_fields.append(
+                    indent + 'Related FAQ was removed:\n' +
+                    indent + old_question.faq.title + '\n' +
+                    indent + canonical_url(old_question.faq))
+            else:
+                info_fields.append(
+                    indent + 'Related FAQ set to:\n' +
+                    indent + question.faq.title + '\n' +
+                    indent + canonical_url(question.faq))
+
         if question.title != old_question.title:
             info_fields.append('Summary changed to:\n%s' % question.title)
         if question.description != old_question.description:
@@ -1615,6 +1629,10 @@ class QuestionLinkedBugStatusChangeNotification(QuestionNotification):
                 'statusexplanation': statusexplanation}
 
 
+def specification_notification_subject(spec):
+    """Format the email subject line for a specification."""
+    return '[Blueprint %s] %s' % (spec.name, spec.title)
+
 def notify_specification_modified(spec, event):
     """Notify the related people that a specification has been modifed."""
     spec_delta = spec.getDelta(event.object_before_modification, event.user)
@@ -1625,10 +1643,10 @@ def notify_specification_modified(spec, event):
         #     -- Bjorn Tillenius, 2006-03-08
         return
 
-    subject = '[Spec %s] %s' % (spec.name, spec.title)
+    subject = specification_notification_subject(spec)
     indent = ' '*4
     info_lines = []
-    for dbitem_name in ('status', 'priority'):
+    for dbitem_name in ('definition_status', 'priority'):
         title = ISpecification[dbitem_name].title
         assert ISpecification[dbitem_name].required, (
             "The mail notification assumes %s can't be None" % dbitem_name)
@@ -1687,7 +1705,7 @@ def email_branch_modified_notifications(branch, to_addresses,
     """
     branch_title = branch.title
     if branch_title is None:
-        branch_title = '(no title)'
+        branch_title = ''
     subject = '[Branch %s] %s' % (branch.unique_name, branch_title)
     headers = {'X-Launchpad-Branch': branch.unique_name}
 
@@ -1774,9 +1792,13 @@ def send_branch_modified_notifications(branch, event):
         if delta is not None:
             title = IBranch[field_name].title
             old_item = delta['old']
+            if old_item is None:
+                old_item = '(not set)'
             new_item = delta['new']
+            if new_item is None:
+                new_item = '(not set)'
             info_lines.append("%s%s: %s => %s" % (
-                indent, title, str(old_item), str(new_item)))
+                indent, title, old_item, new_item))
 
     # lifecycle_status is different as it is an Enum type.
     if branch_delta.lifecycle_status is not None:
@@ -1805,3 +1827,49 @@ def send_branch_modified_notifications(branch, event):
     contents = '\n'.join(info_lines)
     email_branch_modified_notifications(
         branch, to_addresses, from_address, contents, recipients)
+
+def notify_specification_subscription_created(specsub, event):
+    """Notify a user that they have been subscribed to a blueprint."""
+    user = event.user
+    spec = specsub.specification
+    person = specsub.person
+    subject = specification_notification_subject(spec)
+    mailwrapper = MailWrapper(width=72)
+    body = mailwrapper.format(
+        'You are now subscribed to the blueprint '
+        '%(blueprint_name)s - %(blueprint_title)s.\n\n'
+        '--\n  %(blueprint_url)s' %
+        {'blueprint_name' : spec.name,
+         'blueprint_title' : spec.title,
+         'blueprint_url' : canonical_url(spec)})
+    for address in contactEmailAddresses(person):
+        simple_sendmail_from_person(user, address, subject, body)
+
+def notify_specification_subscription_modified(specsub, event):
+    """Notify a subscriber to a blueprint that their
+    subscription has changed.
+    """
+    user = event.user
+    spec = specsub.specification
+    person = specsub.person
+    # Only send a notification if the
+    # subscription changed by someone else.
+    if person == user:
+        return
+    subject = specification_notification_subject(spec)
+    if specsub.essential:
+        specsub_type = 'Participation essential'
+    else:
+        specsub_type = 'Participation non-essential'
+    mailwrapper = MailWrapper(width=72)
+    body = mailwrapper.format(        
+        'Your subscription to the blueprint '
+        '%(blueprint_name)s - %(blueprint_title)s '
+        'has changed to [%(specsub_type)s].\n\n'
+        '--\n  %(blueprint_url)s' %
+        {'blueprint_name' : spec.name,
+         'blueprint_title' : spec.title,
+         'specsub_type' : specsub_type,
+         'blueprint_url' : canonical_url(spec)})
+    for address in contactEmailAddresses(person):
+        simple_sendmail_from_person(user, address, subject, body)

@@ -10,42 +10,37 @@ __all__ = [
 
 import StringIO
 import logging
-
-# Zope interfaces
 from zope.interface import implements
 from zope.component import getUtility
 from urllib2 import URLError
-
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLObjectNotFound, SQLMultipleJoin
     )
 
 from canonical.config import config
-
 from canonical.database.sqlbase import (
     cursor, SQLBase, flush_database_updates, quote, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
-
 from canonical.lp.dbschema import (
     RosettaImportStatus, TranslationPermission, TranslationValidationStatus)
-
 from canonical.launchpad import helpers
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet, IPOFile,
-    IPOFileSet, IPOTemplateExporter, ITranslationImporter, IPOFileTranslator,
+    IPOFileSet, IPOFileTranslator, IPOTemplateExporter, ITranslationImporter,
     NotExportedFromLaunchpad, NotFoundError, OldTranslationImported,
     TranslationFormatSyntaxError, TranslationFormatInvalidInputError,
-    UnknownTranslationRevisionDate, ZeroLengthPOExportError
-    )
-from canonical.launchpad.database.posubmission import POSubmission
+    UnknownTranslationRevisionDate, ZeroLengthPOExportError)
 from canonical.launchpad.database.pomsgid import POMsgID
-from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
+from canonical.launchpad.database.potmsgset import POTMsgSet
+from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
+
+from canonical.launchpad.webapp import canonical_url
 
 from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.translationformat import POHeader
@@ -89,9 +84,10 @@ def _check_translation_perms(permission, translators, person):
         else:
             # since there are no translators, anyone can edit
             return True
-    elif permission == TranslationPermission.CLOSED:
-        # if the translation policy is "closed", then check if the person is
-        # in the set of translators
+    elif permission in (TranslationPermission.RESTRICTED,
+                        TranslationPermission.CLOSED):
+        # if the translation policy is "restricted" or "closed", then check if
+        # the person is in the set of translators
         if is_designated_translator:
             return True
     else:
@@ -139,18 +135,30 @@ def _can_edit_translations(pofile, person):
         if person.inTeam(product.owner):
             return True
 
+    # Finally, check whether the user is member of the translation team or
+    # owner for the given PO file.
     translators = [t.translator for t in pofile.translators]
     return _check_translation_perms(
         pofile.translationpermission,
         translators,
-        person)
+        person) or person.inTeam(pofile.owner)
+
+def _can_add_suggestions(pofile, person):
+    """Whether a person is able to add suggestions.
+
+    Any user that can edit translations can add suggestions, the others will
+    be able to add suggestions only if the permission is not CLOSED.
+    """
+    return (_can_edit_translations(pofile, person) or
+            pofile.translationpermission <> TranslationPermission.CLOSED)
 
 
 class POFileMixIn(RosettaStats):
-    """Base class for POFile and DummyPOFile.
+    """Base class for `POFile` and `DummyPOFile`.
 
-    Provides machinery for retrieving POMsgSets and populating their
-    submissions caches.  That machinery is needed even for DummyPOFiles."""
+    Provides machinery for retrieving `POMsgSet`s and populating their
+    submissions caches.  That machinery is needed even for `DummyPOFile`s.
+    """
 
     def getMsgSetsForPOTMsgSets(self, for_potmsgsets):
         """See `IPOFile`."""
@@ -158,16 +166,17 @@ class POFileMixIn(RosettaStats):
         if for_potmsgsets is None:
             return {}
         for_potmsgsets = list(for_potmsgsets)
-        if not for_potmsgsets:
+        if len(for_potmsgsets) == 0:
             return {}
 
         # Retrieve existing POMsgSets matching for_potmsgsets (one each).
-        # XXX: JeroenVermeulen 2007-06-15, why won't sqlvalues() work here?
-        ids = ','.join([quote(potmsgset.id) for potmsgset in for_potmsgsets])
+        ids_as_sql = ','.join(
+            quote(potmsgset) for potmsgset in for_potmsgsets)
         existing_msgsets = []
         if self.id is not None:
             existing_msgsets = POMsgSet.select(
-                "potmsgset in (%s) AND pofile = %s" % (ids, quote(self)))
+                "potmsgset in (%s) AND pofile = %s"
+                % (ids_as_sql, quote(self)))
 
         result = dict((pomsgset.potmsgset, pomsgset)
                       for pomsgset in existing_msgsets)
@@ -196,10 +205,11 @@ class POFileMixIn(RosettaStats):
         POSubmissions that are relevant to it.  Each of the lists is in
         newest-to-oldest order.
 
-        :stored_pomsgsets: List of pomsgsets that are already present in the
-        database, and whose in-memory caches are to be populated.
-        :dummy_pomsgsets: List of pomsgsets that have not yet been stored in
-        the database, and whose in-memory caches are to be populated.
+        :param stored_pomsgsets: List of pomsgsets that are already present in
+            the database, and whose in-memory caches are to be populated.
+        :param dummy_pomsgsets: List of pomsgsets that have not yet been
+            stored in the database, and whose in-memory caches are to be
+            populated.
         """
 
         all_pomsgsets = stored_pomsgsets + dummy_pomsgsets
@@ -243,9 +253,9 @@ class POFileMixIn(RosettaStats):
 
         parameters['ids'] = 'false'
         if stored_pomsgsets:
-            ids_list = sqlvalues(
-                [pomsgset.id for pomsgset in stored_pomsgsets])
-            parameters['ids'] = 'POMsgSet.id IN %s' % ids_list
+            ids_list = ','.join(
+                [quote(pomsgset) for pomsgset in stored_pomsgsets])
+            parameters['ids'] = 'POMsgSet.id IN (%s)' % ids_list
 
 
         # Phase 1.
@@ -257,8 +267,9 @@ class POFileMixIn(RosettaStats):
         # Note that a suggestion coming from a fuzzy pomsgset isn't relevant
         # as a suggestion, but if it happens to be attached to a msgset from
         # stored_pomsgsets, it will still be relevant to that msgset.
+
         query = """
-            SELECT POSubmission.id, POTMsgSet.primemsgid
+            SELECT DISTINCT POSubmission.id, POTMsgSet.primemsgid
             FROM POSubmission
             JOIN POMsgSet ON POSubmission.pomsgset = POMsgSet.id
             JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
@@ -269,6 +280,9 @@ class POFileMixIn(RosettaStats):
                 POTMsgSet.primemsgid IN %(wanted_primemsgids)s
             """ % parameters
         cur = cursor()
+
+        # XXX: JeroenVermeulen 2007-06-17, pre-join the potranslations we'll
+        # be needing to prevent piecemeal retrieval.  (See bug 30602)
         cur.execute(query)
         available = dict(cur.fetchall())
         if not available:
@@ -406,15 +420,61 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         return getUtility(IPersonSet).getPOFileContributors(self)
 
+    def prepareTranslationCredits(self, potmsgset):
+        """See `IPOFile`."""
+        msgid = potmsgset.singular_text
+        assert potmsgset.is_translation_credit, (
+            "Calling prepareTranslationCredits on a message with "
+            "msgid '%s'." % msgid)
+        text = potmsgset.translationsForLanguage(self.language.code)[0]
+        if (msgid == u'_: EMAIL OF TRANSLATORS\nYour emails'):
+            emails = []
+            if text is not None:
+                emails.append(text)
+
+            for contributor in self.contributors:
+                preferred_email = contributor.preferredemail
+                if (contributor.hide_email_addresses or
+                    preferred_email is None):
+                    emails.append('')
+                else:
+                    emails.append(preferred_email.email)
+            return u','.join(emails)
+        elif (msgid == u'_: NAME OF TRANSLATORS\nYour names'):
+            names = []
+            if text is not None:
+                names.append(text)
+            names.extend([
+                contributor.displayname
+                for contributor in self.contributors])
+            return u','.join(names)
+        elif (msgid in [u'translation-credits',
+                        u'translator-credits',
+                        u'translator_credits']):
+            if len(list(self.contributors)):
+                if text is None:
+                    text = u''
+                else:
+                    text += u'\n\n'
+
+                text += 'Launchpad Contributions:'
+                for contributor in self.contributors:
+                    text += ("\n  %s <%s>" %
+                             (contributor.displayname,
+                              canonical_url(contributor)))
+            return text
+        else:
+            raise AssertionError(
+                "Calling prepareTranslationCredits on a message with "
+                "msgid '%s'." % (msgid))
+
     def canEditTranslations(self, person):
         """See `IPOFile`."""
-        if _can_edit_translations(self, person):
-            return True
-        elif person is not None:
-            # Finally, check for the owner of the PO file
-            return person.inTeam(self.owner)
-        else:
-            return False
+        return _can_edit_translations(self, person)
+
+    def canAddSuggestions(self, person):
+        """See IPOFile."""
+        return _can_add_suggestions(self, person)
 
     def currentMessageSets(self):
         return POMsgSet.select(
@@ -474,8 +534,18 @@ class POFile(SQLBase, POFileMixIn):
             # There is no IPOTMsgSet for this id.
             return None
 
-        return POMsgSet.selectOneBy(
-            potmsgset=potmsgset, pofile=self)
+        result = POMsgSet.selectOneBy(potmsgset=potmsgset, pofile=self)
+
+        # Check that language has been initialized correctly.
+        # XXX: JeroenVermeulen 2007-07-03, until language column in database
+        # is initialized, accept null values here.
+        has_language = (result is not None and result.language is not None)
+        if has_language and result.language != self.language:
+            raise AssertionError(
+                "POFile in language %d contains POMsgSet in language %d"
+                % (self.language, result.language))
+
+        return result
 
     def __getitem__(self, msgid_text):
         """See `IPOFile`."""
@@ -572,7 +642,8 @@ class POFile(SQLBase, POFileMixIn):
               POSubmission.active IS NOT TRUE))
             ''' % sqlvalues(self.potemplate, self),
             clauseTables=['POMsgSet', 'POSubmission'],
-            orderBy='POTmsgSet.sequence')
+            orderBy='POTmsgSet.sequence',
+            distinct=True)
 
         return results
 
@@ -755,12 +826,15 @@ class POFile(SQLBase, POFileMixIn):
             obsolete=False,
             isfuzzy=False,
             publishedfuzzy=False,
-            potmsgset=potmsgset)
+            potmsgset=potmsgset,
+            language=self.language)
         return pomsgset
 
     def createMessageSetFromText(self, text):
         """See `IPOFile`."""
-        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(text, only_current=False)
+        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
+            text, only_current=False)
+
         if potmsgset is None:
             potmsgset = self.potemplate.createMessageSetFromText(text)
 
@@ -895,15 +969,15 @@ class POFile(SQLBase, POFileMixIn):
             'sequence > 0 AND pofile=%s' % (sqlvalues(self.id))).count()
 
         replacements = {
-            'importer': entry_to_import.importer.displayname,
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
             'elapsedtime': entry_to_import.getElapsedTimeText(),
-            'language': self.language.displayname,
-            'template': self.potemplate.displayname,
             'file_link': entry_to_import.content.http_url,
-            'numberofmessages': msgsets_imported,
             'import_title': '%s translations for %s' % (
-                self.language.displayname, self.potemplate.displayname)
+                self.language.displayname, self.potemplate.displayname),
+            'importer': entry_to_import.importer.displayname,
+            'language': self.language.displayname,
+            'numberofmessages': msgsets_imported,
+            'template': self.potemplate.displayname,
             }
 
         if import_rejected:
@@ -1105,13 +1179,12 @@ class DummyPOFile(POFileMixIn):
         self.lasttranslator = None
         self.license = None
         self.lastparsed = None
+        self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
 
         # The default POFile owner is the Rosetta Experts team unless the
         # given owner has rights to write into that file.
         if self.canEditTranslations(owner):
             self.owner = owner
-        else:
-            self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
 
         self.path = u'unknown'
         self.exportfile = None
@@ -1161,6 +1234,10 @@ class DummyPOFile(POFileMixIn):
     def canEditTranslations(self, person):
         """See `IPOFile`."""
         return _can_edit_translations(self, person)
+
+    def canAddSuggestions(self, person):
+        """See `IPOFile`."""
+        return _can_add_suggestions(self, person)
 
     def getPOMsgSetFromPOTMsgSet(self, potmsgset, only_current=False):
         """See `IPOFile`."""
@@ -1341,6 +1418,9 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
+    def prepareTranslationCredits(self, potmsgset):
+        """See `IPOFile`."""
+        return None
 
 class POFileSet:
     implements(IPOFileSet)

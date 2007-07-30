@@ -35,10 +35,10 @@ CREATE INDEX entitlement__approved_by__idx ON Entitlement(approved_by)
 -- WHERE
 --   CURRENT_TIMESTAMP AT TIME ZONE 'UTC' BETWEEN date_starts AND date_expires
 --   AND entitlement_type=42
---   AND person=69∆
+--   AND person=69
 --   AND state=0
 CREATE INDEX entitlement_lookup_idx
-    ON Entitlement(date_starts, date_expires, entitlement_type, person, state);
+    ON Entitlement(entitlement_type, date_starts, date_expires, person, state);
 
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 18, 0);

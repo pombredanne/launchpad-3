@@ -24,7 +24,7 @@ from canonical.database.sqlbase import (
 from canonical.lp.dbschema import (
     ImportStatus, PackagingType, RevisionControlSystems,
     SpecificationSort, SpecificationGoalStatus, SpecificationFilter,
-    SpecificationStatus)
+    SpecificationDefinitionStatus, SpecificationImplementationStatus)
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.interfaces import (
@@ -135,9 +135,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         return self.product
 
     @property
+    def bugtargetdisplayname(self):
+        """See IBugTarget."""
+        return "%s %s" % (self.product.displayname, self.name)
+
+    @property
     def bugtargetname(self):
         """See IBugTarget."""
-        return "%s %s (upstream)" % (self.product.name, self.name)
+        return "%s/%s" % (self.product.name, self.name)
 
     @property
     def drivers(self):
@@ -259,7 +264,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
+            order = ['-priority', 'definition_status', 'name']
         elif sort == SpecificationSort.DATE:
             # we are showing specs for a GOAL, so under some circumstances
             # we care about the order in which the specs were nominated for
@@ -294,7 +299,8 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s' %
+              quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -320,9 +326,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationStatus.OBSOLETE,
-                          SpecificationStatus.SUPERSEDED)
+            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                          SpecificationDefinitionStatus.SUPERSEDED)
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
