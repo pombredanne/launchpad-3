@@ -943,7 +943,8 @@ class NascentUpload:
         # Get a set of the components used in this upload:
         components = set(file.component_name for file in self.changes.files)
 
-        if 'commercial' in components:
+        commercial_component_name = 'commercial'
+        if commercial_component_name in components:
             # Reject commercial uploads to PPAs.
             if self.is_ppa:
                 self.reject("PPA does not support commercial uploads.")
@@ -954,9 +955,9 @@ class NascentUpload:
                 return
 
             # Reset the archive in the policy to the commercial archive.
-            archive = getUtility(IArchiveSet).getByDistroPurpose(
+            archive = getUtility(IArchiveSet).getByDistroComponent(
                 self.policy.distroseries.distribution, 
-                ArchivePurpose.COMMERCIAL
+                commercial_component_name
                 )
 
             # Check for data problems:
