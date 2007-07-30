@@ -139,6 +139,14 @@ class BugTaskStatusSearch(DBEnumeratedType):
     """
     use_template(BugTaskStatusDisplay, exclude='INCOMPLETE')
 
+    # XXX: Tom Berger, 2007-07-30: The sort order could be derived
+    # from the DBItems' values, but it is not possible to do this
+    # with the current DBEnumeratedType implementation.
+    sort_order = (
+        'NEW', 'INCOMPLETE_WITH_RESPONSE', 'INCOMPLETE_WITHOUT_RESPONSE',
+        'INVALID', 'WONTFIX', 'CONFIRMED', 'TRIAGED', 'INPROGRESS',
+        'FIXCOMMITTED', 'FIXRELEASED')
+
     INCOMPLETE_WITH_RESPONSE = DBItem(
         BugTaskStatusDisplay.INCOMPLETE.value - 1, """
         Incomplete (with response)
