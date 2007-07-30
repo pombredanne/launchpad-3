@@ -42,14 +42,11 @@ __all__ = (
 'CodeImportReviewStatus',
 'CveStatus',
 'DistroSeriesStatus',
-'EmailAddressStatus',
 'EntitlementState',
 'EntitlementType',
 'FAQSort',
-'GPGKeyAlgorithm',
 'ImportTestStatus',
 'ImportStatus',
-'LoginTokenType',
 'MailingListAutoSubscribePolicy',
 'ManifestEntryType',
 'ManifestEntryHint',
@@ -61,7 +58,6 @@ __all__ = (
 'PackagePublishingStatus',
 'PackagePublishingPocket',
 'PackagingType',
-'PersonCreationRationale',
 'PersonalStanding',
 'PollAlgorithm',
 'PollSecrecy',
@@ -93,11 +89,7 @@ __all__ = (
 'SpecificationSort',
 'SpecificationDefinitionStatus',
 'SprintSpecificationStatus',
-'SSHKeyType',
 'TextDirection',
-'TeamMembershipRenewalPolicy',
-'TeamMembershipStatus',
-'TeamSubscriptionPolicy',
 'TranslationFileFormat',
 'TranslationPriority',
 'TranslationPermission',
@@ -478,45 +470,6 @@ class PackagingType(DBSchema):
         """)
 
 
-##XXX: (gpg+dbschema) cprov 20041004
-## the data structure should be rearranged to support 4 field
-## needed: keynumber(1,16,17,20), keyalias(R,g,D,G), title and description
-class GPGKeyAlgorithm(DBSchema):
-    """
-    GPG Compilant Key Algorithms Types:
-
-    1 : "R", # RSA
-    16: "g", # ElGamal
-    17: "D", # DSA
-    20: "G", # ElGamal, compromised
-
-    FIXME
-    Rewrite it according the experimental API retuning also a name attribute
-    tested on 'algorithmname' attribute
-
-    """
-
-    R = Item(1, """
-        R
-
-        RSA""")
-
-    LITTLE_G = Item(16, """
-         g
-
-         ElGamal""")
-
-    D = Item(17, """
-        D
-
-        DSA""")
-
-    G = Item(20, """
-        G
-
-        ElGamal, compromised""")
-
-
 class BugBranchStatus(DBSchema):
     """The status of a bugfix branch."""
 
@@ -631,169 +584,6 @@ class BranchRelationships(DBSchema):
         this case, one group will "fork" the codebase and start work on a
         new version of the product which will likely not be merged. That
         new version is a "fork" of the original code.
-        """)
-
-
-class EmailAddressStatus(DBSchema):
-    """Email Address Status
-
-    Launchpad keeps track of email addresses associated with a person. They
-    can be used to login to the system, or to associate an Arch changeset
-    with a person, or to associate a bug system email message with a person,
-    for example.
-    """
-
-    NEW = Item(1, """
-        New Email Address
-
-        This email address has had no validation associated with it. It
-        has just been created in the system, either by a person claiming
-        it as their own, or because we have stored an email message or
-        arch changeset including that email address and have created
-        a phantom person and email address to record it. WE SHOULD
-        NEVER EMAIL A "NEW" EMAIL.
-        """)
-
-    VALIDATED = Item(2, """
-        Validated Email Address
-
-        We have proven that the person associated with this email address
-        can read email sent to this email address, by sending a token
-        to that address and getting the appropriate response from that
-        person.
-        """)
-
-    OLD = Item(3, """
-        Old Email Address
-
-        The email address was validated for this person, but is now no
-        longer accessible or in use by them. We should not use this email
-        address to login that person, nor should we associate new incoming
-        content from that email address with that person.
-        """)
-
-    PREFERRED = Item(4, """
-        Preferred Email Address
-
-        The email address was validated and is the person's choice for
-        receiving notifications from Launchpad.
-        """)
-
-
-class TeamMembershipRenewalPolicy(DBSchema):
-    """TeamMembership Renewal Policy.
-
-    How Team Memberships can be renewed on a given team.
-    """
-
-    NONE = Item(10, """
-        invite them to apply for renewal
-
-        Memberships can be renewed only by team administrators or by going
-        through the normal workflow for joining the team.
-        """)
-
-    ONDEMAND = Item(20, """
-        invite them to renew their own membership
-
-        Memberships can be renewed by the members themselves a few days before
-        it expires. After it expires the member has to go through the normal
-        workflow for joining the team.
-        """)
-
-    AUTOMATIC = Item(30, """
-        renew their membership automatically, also notifying the admins
-
-        Memberships are automatically renewed when they expire and a note is
-        sent to the member and to team admins.
-        """)
-
-
-class TeamMembershipStatus(DBSchema):
-    """TeamMembership Status
-
-    According to the policies specified by each team, the membership status of
-    a given member can be one of multiple different statuses. More information
-    can be found in the TeamMembership spec.
-    """
-
-    PROPOSED = Item(1, """
-        Proposed
-
-        You are a proposed member of this team. To become an active member your
-        subscription has to be approved by one of the team's administrators.
-        """)
-
-    APPROVED = Item(2, """
-        Approved
-
-        You are an active member of this team.
-        """)
-
-    ADMIN = Item(3, """
-        Administrator
-
-        You are an administrator of this team.
-        """)
-
-    DEACTIVATED = Item(4, """
-        Deactivated
-
-        Your subscription to this team has been deactivated.
-        """)
-
-    EXPIRED = Item(5, """
-        Expired
-
-        Your subscription to this team is expired.
-        """)
-
-    DECLINED = Item(6, """
-        Declined
-
-        Your proposed subscription to this team has been declined.
-        """)
-
-    INVITED = Item(7, """
-        Invited
-
-        You have been invited as a member of this team. In order to become an
-        actual member, you have to accept the invitation.
-        """)
-
-    INVITATION_DECLINED = Item(8, """
-        Invitation declined
-
-        You have been invited as a member of this team but the invitation has
-        been declined.
-        """)
-
-
-class TeamSubscriptionPolicy(DBSchema):
-    """Team Subscription Policies
-
-    The policies that apply to a team and specify how new subscriptions must
-    be handled. More information can be found in the TeamMembershipPolicies
-    spec.
-    """
-
-    MODERATED = Item(1, """
-        Moderated Team
-
-        All subscriptions for this team are subjected to approval by one of
-        the team's administrators.
-        """)
-
-    OPEN = Item(2, """
-        Open Team
-
-        Any user can join and no approval is required.
-        """)
-
-    RESTRICTED = Item(3, """
-        Restricted Team
-
-        New members can only be added by one of the team's administrators.
         """)
 
 
@@ -2872,100 +2662,6 @@ class RosettaImportStatus(DBSchema):
         """)
 
 
-class SSHKeyType(DBSchema):
-    """SSH key type
-
-    SSH (version 2) can use RSA or DSA keys for authentication.  See OpenSSH's
-    ssh-keygen(1) man page for details.
-    """
-
-    RSA = Item(1, """
-        RSA
-
-        RSA
-        """)
-
-    DSA = Item(2, """
-        DSA
-
-        DSA
-        """)
-
-class LoginTokenType(DBSchema):
-    """Login token type
-
-    Tokens are emailed to users in workflows that require email address
-    validation, such as forgotten password recovery or account merging.
-    We need to identify the type of request so we know what workflow
-    is being processed.
-    """
-
-    PASSWORDRECOVERY = Item(1, """
-        Password Recovery
-
-        User has forgotten or never known their password and need to
-        reset it.
-        """)
-
-    ACCOUNTMERGE = Item(2, """
-        Account Merge
-
-        User has requested that another account be merged into their
-        current one.
-        """)
-
-    NEWACCOUNT = Item(3, """
-        New Account
-
-        A new account is being setup. They need to verify their email address
-        before we allow them to set a password and log in.
-        """)
-
-    VALIDATEEMAIL = Item(4, """
-        Validate Email
-
-        A user has added more email addresses to their account and they
-        need to be validated.
-        """)
-
-    VALIDATETEAMEMAIL = Item(5, """
-        Validate Team Email
-
-        One of the team administrators is trying to add a contact email
-        address for the team, but this address need to be validated first.
-        """)
-
-    VALIDATEGPG = Item(6, """
-        Validate GPG key
-
-        A user has submited a new GPG key to his account and it need to
-        be validated.
-        """)
-
-    VALIDATESIGNONLYGPG = Item(7, """
-        Validate a sign-only GPG key
-
-        A user has submitted a new sign-only GPG key to his account and it
-        needs to be validated.
-        """)
-
-    PROFILECLAIM = Item(8, """
-        Claim an unvalidated Launchpad profile
-
-        A user has found an unvalidated profile in Launchpad and is trying
-        to claim it.
-        """)
-
-    NEWPROFILE = Item(9, """
-        A user created a new Launchpad profile for another person.
-
-        Any Launchpad user can create new "placeholder" profiles to represent
-        people who don't use Launchpad. The person that a given profile
-        represents has to first use the token to finish the registration
-        process in order to be able to login with that profile.
-        """)
-
-
 class MailingListAutoSubscribePolicy(DBSchema):
     """A person's auto-subscription policy.
 
@@ -3561,113 +3257,6 @@ class TextDirection(DBSchema):
         Right to Left
 
         Text is normally written from left to right in this language.
-        """)
-
-
-class PersonCreationRationale(DBSchema):
-    """The rationale for the creation of a given person.
-
-    Launchpad automatically creates user accounts under certain
-    circumstances. The owners of these accounts may discover Launchpad
-    at a later date and wonder why Launchpad knows about them, so we
-    need to make it clear why a certain account was automatically created.
-    """
-
-    UNKNOWN = Item(1, """
-        Unknown
-
-        The reason for the creation of this person is unknown.
-        """)
-
-    BUGIMPORT = Item(2, """
-        Existing user in another bugtracker from which we imported bugs.
-
-        A bugzilla import or sf.net import, for instance. The bugtracker from
-        which we were importing should be described in
-        Person.creation_comment.
-        """)
-
-    SOURCEPACKAGEIMPORT = Item(3, """
-        This person was mentioned in a source package we imported.
-
-        When gina imports source packages, it has to create Person entries for
-        the email addresses that are listed as maintainer and/or uploader of
-        the package, in case they don't exist in Launchpad.
-        """)
-
-    POFILEIMPORT = Item(4, """
-        This person was mentioned in a POFile imported into Rosetta.
-
-        When importing POFiles into Rosetta, we need to give credit for the
-        translations on that POFile to its last translator, which may not
-        exist in Launchpad, so we'd need to create it.
-        """)
-
-    KEYRINGTRUSTANALYZER = Item(5, """
-        Created by the keyring trust analyzer.
-
-        The keyring trust analyzer is responsible for scanning GPG keys
-        belonging to the strongly connected set and assign all email addresses
-        registered on those keys to the people representing their owners in
-        Launchpad. If any of these people doesn't exist, it creates them.
-        """)
-
-    FROMEMAILMESSAGE = Item(6, """
-        Created when parsing an email message.
-
-        Sometimes we parse email messages and want to associate them with the
-        sender, which may not have a Launchpad account. In that case we need
-        to create a Person entry to associate with the email.
-        """)
-
-    SOURCEPACKAGEUPLOAD = Item(7, """
-        This person was mentioned in a source package uploaded.
-
-        Some uploaded packages may be uploaded with a maintainer that is not
-        registered in Launchpad, and in these cases, soyuz may decide to
-        create the new Person instead of complaining.
-        """)
-
-    OWNER_CREATED_LAUNCHPAD = Item(8, """
-        Created by the owner himself, coming from Launchpad.
-
-        Somebody was navigating through Launchpad and at some point decided to
-        create an account.
-        """)
-
-    OWNER_CREATED_SHIPIT = Item(9, """
-        Created by the owner himself, coming from Shipit.
-
-        Somebody went to one of the shipit sites to request Ubuntu CDs and was
-        directed to Launchpad to create an account.
-        """)
-
-    OWNER_CREATED_UBUNTU_WIKI = Item(10, """
-        Created by the owner himself, coming from the Ubuntu wiki.
-
-        Somebody went to the Ubuntu wiki and was directed to Launchpad to
-        create an account.
-        """)
-
-    USER_CREATED = Item(11, """
-        Created by a user to represent a person which does not uses Launchpad.
-
-        A user wanted to reference a person which is not a Launchpad user, so
-        he created this "placeholder" profile.
-        """)
-
-    OWNER_CREATED_UBUNTU_SHOP = Item(12, """
-        Created by the owner himself, coming from the Ubuntu Shop.
-
-        Somebody went to the Ubuntu Shop and was directed to Launchpad to
-        create an account.
-        """)
-
-    OWNER_CREATED_UNKNOWN_TRUSTROOT = Item(13, """
-        Created by the owner himself, coming from unknown OpenID consumer.
-
-        Somebody went to an OpenID consumer we don't know about and was
-        directed to Launchpad to create an account.
         """)
 
 

@@ -1150,6 +1150,23 @@ class BugTaskSet:
                     params.bug_reporter))
             extra_clauses.append(bug_reporter_clause)
 
+        if params.bug_commenter:
+            bug_commenter_clause = """
+            BugTask.id IN (
+                SELECT BugTask.id FROM BugTask, BugMessage, Message
+                WHERE Message.owner = %(bug_commenter)s
+                    AND Message.id = BugMessage.message
+                    AND BugTask.bug = BugMessage.bug
+                    AND Message.id NOT IN (
+                        SELECT BugMessage.message FROM BugMessage
+                        WHERE BugMessage.bug = BugTask.bug
+                        ORDER BY BugMessage.id
+                        LIMIT 1
+                    )
+            )
+            """ % sqlvalues(bug_commenter=params.bug_commenter)
+            extra_clauses.append(bug_commenter_clause)
+
         if params.nominated_for:
             mappings = sqlvalues(
                 target=params.nominated_for,

@@ -43,14 +43,14 @@ people they represent and why they had to be created. Because the comment
 will be displayed verbatim in a web page, it must start with the word "when"
 followed by a description of the action that caused the entry to be created.
 
-    >>> from canonical.lp.dbschema import PersonCreationRationale
+    >>> from canonical.launchpad.interfaces import (
+    ...     EmailAddressStatus, PersonCreationRationale)
     >>> p, email = personset.createPersonAndEmail(
     ...     'randomuser@randomhost.com', PersonCreationRationale.POFILEIMPORT,
     ...     comment='when importing the Portuguese translation of firefox',
     ...     hide_email_addresses=True)
     >>> p.teamowner is None
     True
-    >>> from canonical.lp.dbschema import EmailAddressStatus
     >>> email.status == EmailAddressStatus.NEW
     True
     >>> p.is_valid_person # Not valid because no preferred email address

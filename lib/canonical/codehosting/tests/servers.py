@@ -32,8 +32,8 @@ from canonical.database.sqlbase import commit
 from canonical.launchpad.daemons.tachandler import TacTestSetup
 from canonical.launchpad.daemons.sftp import SSHService
 from canonical.launchpad.daemons.authserver import AuthserverService
-from canonical.launchpad.interfaces import IPersonSet, ISSHKeySet
-from canonical.lp.dbschema import SSHKeyType, TeamSubscriptionPolicy
+from canonical.launchpad.interfaces import (
+    IPersonSet, ISSHKeySet, SSHKeyType, TeamSubscriptionPolicy)
 
 from canonical.codehosting.smartserver import launch_smart_server
 from canonical.codehosting.sshserver import (
