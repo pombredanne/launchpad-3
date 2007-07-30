@@ -227,12 +227,17 @@ class IPOFile(IRosettaStats):
     def invalidateCache():
         """Invalidate the cached export."""
 
-    def canEditTranslations(person):
-        """Say if a person is able to edit existing translations.
+    def prepareTranslationCredits(potmsgset):
+        """Add Launchpad contributors to translation credit strings.
 
-        Return True or False indicating whether the person is allowed
-        to edit these translations.
-        """
+        It adds to the translation for `potmsgset` if it exists, trying
+        not to repeat same people who are already credited."""
+
+    def canEditTranslations(person):
+        """Whether the given person is able to add/edit translations."""
+
+    def canAddSuggestions(person):
+        """Whether the given person is able to add new suggestions."""
 
     def expireAllMessages():
         """Mark our of our message sets as not current (sequence=0)"""

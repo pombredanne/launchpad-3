@@ -282,10 +282,16 @@ class VPOExport:
          self.filereferences,
          self.flagscomment) = args
 
+        self.potemplate = POTemplate.get(potemplate)
         self.language = Language.get(language)
         if pofile is None:
             self.pofile = None
         else:
             self.pofile = POFile.get(pofile)
-        self.potemplate = POTemplate.get(potemplate)
+            potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(self.msgid)
+            if potmsgset and potmsgset.is_translation_credit:
+                self.translation = self.pofile.prepareTranslationCredits(
+                    potmsgset)
+                self.activesubmission = True
+                self.translationpluralform = 0
 

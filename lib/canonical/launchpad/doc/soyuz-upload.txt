@@ -231,8 +231,9 @@ So, load the GPG key:
 Create the katie user and register it in a team that is allowed to
 do uploads:
 
-  >>> from canonical.launchpad.interfaces import IPersonSet, IEmailAddressSet
-  >>> from canonical.lp.dbschema import PersonCreationRationale
+  >>> from canonical.launchpad.interfaces import (
+  ...     IPersonSet, IEmailAddressSet, PersonCreationRationale, IGPGKeySet,
+  ...     GPGKeyAlgorithm)
   >>> name, address = "Katie", "katie@rockhopper.ubuntu.com"
   >>> user = getUtility(IPersonSet).ensurePerson(
   ...     address, name, PersonCreationRationale.OWNER_CREATED_LAUNCHPAD)
@@ -248,8 +249,6 @@ do uploads:
 
 Assign the loaded GPG key to the katie user.
 
-  >>> from canonical.launchpad.interfaces import IGPGKeySet
-  >>> from canonical.lp.dbschema import GPGKeyAlgorithm
   >>> key_set = getUtility(IGPGKeySet)
   >>> user_key = key_set.new(ownerID=user.id, keyid=key.keyid,
   ...                        fingerprint=key.fingerprint,
@@ -722,7 +721,7 @@ Testing archive-cruft-check-ng behaviour:
 Defining path to the script:
 
   >>> script = os.path.join(config.root, "scripts", "ftpmaster-tools",
-  ...                       "archive-cruft-check-ng.py")
+  ...                       "archive-cruft-check.py")
   >>> process = subprocess.Popen([sys.executable, script, "-vvn",
   ...                             "-d", "ubuntutest",
   ...                             "-s", "breezy-autotest",

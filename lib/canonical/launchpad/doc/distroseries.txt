@@ -188,17 +188,14 @@ other things) the uploader for validating incoming uploads.
 
    >>> from canonical.launchpad.interfaces import (
    ...    IComponentSet, ISectionSet)
-   >>> univ = getUtility(IComponentSet).ensure('universe')
    >>> python = getUtility(ISectionSet).ensure('python')
 
-   >>> hoary.addComponent(univ)
    >>> hoary.addSection(python)
 
    >>> for c in hoary.components:
    ...     print c.name
    main
    restricted
-   universe
 
    >>> for s in hoary.sections:
    ...     print s.name
@@ -209,6 +206,27 @@ other things) the uploader for validating incoming uploads.
    devel
    python
    translations
+
+Breezy-autotest has got a commercial component, which is not reported:
+
+    >>> breezyautotest = distroseriesset.queryByName(ubuntu, "breezy-autotest")
+    >>> for c in breezyautotest.components:
+    ...     print c.name
+    main
+    restricted
+    universe
+    multiverse
+
+The upload_components property, however, reports all the available
+components since commercial is allowed for upload:
+
+    >>> for c in breezyautotest.upload_components:
+    ...     print c.name
+    main
+    restricted
+    universe
+    multiverse
+    commercial
 
 
 DistroSeriess can be initialised from their parents
@@ -784,6 +802,8 @@ allows the callsite to specify one and then the result will be
 restricted to it.
 
    >>> debian_archive = getUtility(IDistributionSet)['debian'].main_archive
+   >>> print debian_archive.purpose.title
+   Primary Archive.
 
    >>> hoary.getSourcePackagePublishing(
    ...     PackagePublishingStatus.PUBLISHED,

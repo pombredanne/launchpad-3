@@ -90,11 +90,14 @@ class UserDetailsResourceV2(xmlrpc.XMLRPC):
             print 'fetchProductID(%r)' % (productName,)
         return self.storage.fetchProductID(productName)
 
-    def xmlrpc_createBranch(self, personID, productID, branchName):
+    def xmlrpc_createBranch(self, loginID, personName, productName,
+                            branchName):
         """See IHostedBranchStorage."""
         if self.debug:
-            print 'createBranch(%r, %r, %r)' % (personID, productID, branchName)
-        return self.storage.createBranch(personID, productID, branchName)
+            print 'createBranch(%r, %r, %r, %r)' % (loginID, personName,
+                                                    productName, branchName)
+        return self.storage.createBranch(
+            loginID, personName, productName, branchName)
 
     def xmlrpc_requestMirror(self, branchID):
         """See IHostedBranchStorage."""
@@ -154,4 +157,10 @@ class BranchDetailsResource(xmlrpc.XMLRPC):
             print 'mirrorFailed(%r, %r)' % (branchID, reason)
         return self.storage.mirrorFailed(branchID, reason)
 
-        
+    def xmlrpc_recordSuccess(self, name, hostname,
+                             date_started, date_completed):
+        if self.debug:
+            print 'recordSuccess(%r, %r, %r, %r)' % (
+                name, hostname, date_started, date_completed)
+        return self.storage.recordSuccess(
+            name, hostname, date_started, date_completed)

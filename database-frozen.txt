@@ -8,5 +8,6 @@ means.
 
 Status
 ------
-Database is frozen. Database changes are expected to be blocked until
-approx July 9th.
+Database is closed for landing of database changes until week 3 of
+1.1.8.
+

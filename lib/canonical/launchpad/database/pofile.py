@@ -44,6 +44,7 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.translationformat import TranslationMessage
+from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.lp.dbschema import (
@@ -86,9 +87,10 @@ def _check_translation_perms(permission, translators, person):
         else:
             # since there are no translators, anyone can edit
             return True
-    elif permission == TranslationPermission.CLOSED:
-        # if the translation policy is "closed", then check if the person is
-        # in the set of translators
+    elif permission in (TranslationPermission.RESTRICTED,
+                        TranslationPermission.CLOSED):
+        # if the translation policy is "restricted" or "closed", then check if
+        # the person is in the set of translators
         if is_designated_translator:
             return True
     else:
@@ -136,11 +138,22 @@ def _can_edit_translations(pofile, person):
         if person.inTeam(product.owner):
             return True
 
+    # Finally, check whether the user is member of the translation team or
+    # owner for the given PO file.
     translators = [t.translator for t in pofile.translators]
     return _check_translation_perms(
         pofile.translationpermission,
         translators,
-        person)
+        person) or person.inTeam(pofile.owner)
+
+def _can_add_suggestions(pofile, person):
+    """Whether a person is able to add suggestions.
+
+    Any user that can edit translations can add suggestions, the others will
+    be able to add suggestions only if the permission is not CLOSED.
+    """
+    return (_can_edit_translations(pofile, person) or
+            pofile.translationpermission <> TranslationPermission.CLOSED)
 
 
 class POFileMixIn(RosettaStats):
@@ -417,15 +430,61 @@ class POFile(SQLBase, POFileMixIn):
         """See `IPOFile`."""
         return getUtility(IPersonSet).getPOFileContributors(self)
 
+    def prepareTranslationCredits(self, potmsgset):
+        """See `IPOFile`."""
+        msgid = potmsgset.singular_text
+        assert potmsgset.is_translation_credit, (
+            "Calling prepareTranslationCredits on a message with "
+            "msgid '%s'." % msgid)
+        text = potmsgset.translationsForLanguage(self.language.code)[0]
+        if (msgid == u'_: EMAIL OF TRANSLATORS\nYour emails'):
+            emails = []
+            if text is not None:
+                emails.append(text)
+
+            for contributor in self.contributors:
+                preferred_email = contributor.preferredemail
+                if (contributor.hide_email_addresses or
+                    preferred_email is None):
+                    emails.append('')
+                else:
+                    emails.append(preferred_email.email)
+            return u','.join(emails)
+        elif (msgid == u'_: NAME OF TRANSLATORS\nYour names'):
+            names = []
+            if text is not None:
+                names.append(text)
+            names.extend([
+                contributor.displayname
+                for contributor in self.contributors])
+            return u','.join(names)
+        elif (msgid in [u'translation-credits',
+                        u'translator-credits',
+                        u'translator_credits']):
+            if len(list(self.contributors)):
+                if text is None:
+                    text = u''
+                else:
+                    text += u'\n\n'
+
+                text += 'Launchpad Contributions:'
+                for contributor in self.contributors:
+                    text += ("\n  %s <%s>" %
+                             (contributor.displayname,
+                              canonical_url(contributor)))
+            return text
+        else:
+            raise AssertionError(
+                "Calling prepareTranslationCredits on a message with "
+                "msgid '%s'." % (msgid))
+
     def canEditTranslations(self, person):
         """See `IPOFile`."""
-        if _can_edit_translations(self, person):
-            return True
-        elif person is not None:
-            # Finally, check for the owner of the PO file
-            return person.inTeam(self.owner)
-        else:
-            return False
+        return _can_edit_translations(self, person)
+
+    def canAddSuggestions(self, person):
+        """See IPOFile."""
+        return _can_add_suggestions(self, person)
 
     def currentMessageSets(self):
         return POMsgSet.select(
@@ -485,8 +544,18 @@ class POFile(SQLBase, POFileMixIn):
             # There is no IPOTMsgSet for this id.
             return None
 
-        return POMsgSet.selectOneBy(
-            potmsgset=potmsgset, pofile=self)
+        result = POMsgSet.selectOneBy(potmsgset=potmsgset, pofile=self)
+
+        # Check that language has been initialized correctly.
+        # XXX: JeroenVermeulen 2007-07-03, until language column in database
+        # is initialized, accept null values here.
+        has_language = (result is not None and result.language is not None)
+        if has_language and result.language != self.language:
+            raise AssertionError(
+                "POFile in language %d contains POMsgSet in language %d"
+                % (self.language, result.language))
+
+        return result
 
     def __getitem__(self, msgid_text):
         """See `IPOFile`."""
@@ -767,12 +836,15 @@ class POFile(SQLBase, POFileMixIn):
             obsolete=False,
             isfuzzy=False,
             publishedfuzzy=False,
-            potmsgset=potmsgset)
+            potmsgset=potmsgset,
+            language=self.language)
         return pomsgset
 
     def createMessageSetFromText(self, text):
         """See `IPOFile`."""
-        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(text, only_current=False)
+        potmsgset = self.potemplate.getPOTMsgSetByMsgIDText(
+            text, only_current=False)
+
         if potmsgset is None:
             potmsgset = self.potemplate.createMessageSetFromText(text)
 
@@ -1114,13 +1186,12 @@ class DummyPOFile(POFileMixIn):
         self.lasttranslator = None
         self.license = None
         self.lastparsed = None
+        self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
 
         # The default POFile owner is the Rosetta Experts team unless the
         # given owner has rights to write into that file.
         if self.canEditTranslations(owner):
             self.owner = owner
-        else:
-            self.owner = getUtility(ILaunchpadCelebrities).rosetta_expert
 
         self.path = u'unknown'
         self.exportfile = None
@@ -1170,6 +1241,10 @@ class DummyPOFile(POFileMixIn):
     def canEditTranslations(self, person):
         """See `IPOFile`."""
         return _can_edit_translations(self, person)
+
+    def canAddSuggestions(self, person):
+        """See `IPOFile`."""
+        return _can_add_suggestions(self, person)
 
     def getPOMsgSetFromPOTMsgSet(self, potmsgset, only_current=False):
         """See `IPOFile`."""
@@ -1350,6 +1425,9 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
+    def prepareTranslationCredits(self, potmsgset):
+        """See `IPOFile`."""
+        return None
 
 class POFileSet:
     implements(IPOFileSet)

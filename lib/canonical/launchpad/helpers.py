@@ -328,8 +328,13 @@ def shortlist(sequence, longest_expected=15, hardlimit=None):
     return L
 
 
-def request_languages(request):
-    '''Turn a request into a list of languages to show.'''
+def preferred_or_request_languages(request):
+    '''Turn a request into a list of languages to show.
+
+    Return Person.languages when the user has preferred languages.
+    Otherwise, return the languages from the request either from the
+    headers or from the IP address.
+    '''
     user = getUtility(ILaunchBag).user
     if user is not None and user.languages:
         return user.languages
@@ -358,6 +363,9 @@ def is_english_variant(language):
     >>> is_english_variant(Language('enm'))
     False
     """
+    # XXX sinzui 2007-07-12 bug=125545
+    # We would not need to use this function so often if variant languages
+    # knew their parent language.
     return language.code[0:3] in ['en_']
 
 

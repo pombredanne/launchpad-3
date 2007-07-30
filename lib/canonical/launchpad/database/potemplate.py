@@ -1,4 +1,5 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+"""SQLObject implementation of POTemplate classes."""
 
 __metaclass__ = type
 __all__ = [
@@ -332,6 +333,7 @@ class POTemplate(SQLBase, RosettaStats):
     def languages(self):
         """See IPOTemplate."""
         return Language.select("POFile.language = Language.id AND "
+                               "Language.code != 'en' AND "
                                "POFile.potemplate = %d AND "
                                "POFile.variant IS NULL" % self.id,
                                clauseTables=['POFile', 'Language'],
@@ -580,7 +582,6 @@ class POTemplate(SQLBase, RosettaStats):
 
         subject = 'Translation template import - %s' % self.displayname
         template_mail = 'poimport-template-confirmation.txt'
-        import_rejected = False
         try:
             translation_importer.importFile(entry_to_import, logger)
         except (TranslationFormatSyntaxError,
@@ -588,9 +589,9 @@ class POTemplate(SQLBase, RosettaStats):
             if logger:
                 logger.warning(
                     'We got an error importing %s', self.title, exc_info=1)
-            template_mail = 'poimport-syntax-error.txt'
             subject = 'Import problem - %s' % self.displayname
-            import_rejected = True
+            template_mail = 'poimport-syntax-error.txt'
+            entry_to_import.status = RosettaImportStatus.FAILED
 
         replacements = {
             'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
@@ -613,9 +614,8 @@ class POTemplate(SQLBase, RosettaStats):
             subject,
             MailWrapper().format(message))
 
-        if import_rejected:
+        if entry_to_import.status == RosettaImportStatus.FAILED:
             # Give up on this file.
-            entry_to_import.status = RosettaImportStatus.FAILED
             return
 
         # The import has been done, we mark it that way.

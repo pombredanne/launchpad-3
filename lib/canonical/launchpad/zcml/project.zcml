@@ -8,6 +8,7 @@
     <content class="canonical.launchpad.database.Project">
         <allow interface="canonical.launchpad.interfaces.IProject" />
         <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
+        <allow interface="canonical.launchpad.interfaces.IFAQCollection" />
         <allow interface="canonical.launchpad.interfaces.IQuestionCollection" />
         <require
             permission="launchpad.Edit"
@@ -92,6 +93,11 @@
             facet="translations"
             template="../templates/project-translations.pt"
             />
+       <browser:page
+            name="+milestones"
+            facet="overview"
+            template="../templates/object-milestones.pt"
+            />
 
        <!-- Projects portlets -->
        <browser:page
@@ -108,6 +114,11 @@
             name="+portlet-lifecycle"
             facet="overview"
             template="../templates/project-portlet-lifecycle.pt"
+            />
+       <browser:page
+            name="+portlet-milestones"
+            facet="overview"
+            template="../templates/object-portlet-milestones.pt"
             />
     </browser:pages>
 
@@ -153,11 +164,18 @@
     <browser:page
       name="+addspec"
       for="canonical.launchpad.interfaces.IProject"
-      class="canonical.launchpad.browser.SpecificationNewView"
+      class="canonical.launchpad.browser.SpecificationAddView"
       facet="specifications"
       permission="launchpad.AnyPerson"
       template="../templates/specification-add.pt"
       />
+
+    <browser:page
+        name="+register-a-blueprint-button"
+        for="canonical.launchpad.interfaces.IProject"
+        class="canonical.launchpad.browser.RegisterABlueprintButtonView"
+        permission="zope.Public"
+        />
 
     <browser:page
         name="+edit"

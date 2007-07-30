@@ -21,16 +21,13 @@ He discovers that there are no questions on the Kubuntu Answers page:
     >>> print find_main_content(browser.contents).first('p').renderContents()
     There are no questions for Kubuntu with the requested statuses.
 
-The same is true for Projects that do not have Products.
+For projects that don't have products, the Answers facet is disabled.
 
     >>> browser.open('http://launchpad.dev/aaa')
-    >>> browser.getLink('Answers').click()
-    >>> print browser.title
-    Questions for the Test Project
-
-    >>> print find_main_content(browser.contents).first('p').renderContents()
-    There are no questions for the Test Project with the requested statuses.
-
+    >>> browser.getLink('Answers')
+    Traceback (most recent call last):
+     ...
+    LinkNotFoundError
 
 == Browsing Questions ==
 
@@ -80,7 +77,7 @@ out.
       ..
     LinkNotFoundError...
 
-He decides to go the first page. He remembered one quesiton title that
+He decides to go the first page. He remembered one question title that
 might have been remotely related to his problem.
 
     >>> browser.getLink('First').click()
@@ -239,7 +236,7 @@ error is displayed when the user forgets to select a status.
 
 That question isn't exactly what Average Joe was looking for. Now, he'd
 like to see all the questions that were related to the firefox package.
-The quesiton listing page for distribution displays the source package
+The question listing page for distribution displays the source package
 related to each question . The source package name is a link to the
 source package's question listing.
 

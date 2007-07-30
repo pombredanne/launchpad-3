@@ -31,7 +31,8 @@
                            isMentor canMentor isSubscribed" />
         <require
             permission="launchpad.View"
-            attributes="product productseries sourcepackagename distribution
+            attributes="bugtargetname bugtargetdisplayname
+                        product productseries sourcepackagename distribution
                         distroseries milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
                         title related_tasks other_affected_pillars
@@ -203,7 +204,7 @@
         name="+nominate"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugNominationView"
-        permission="launchpad.View"
+        permission="launchpad.Edit"
         template="../templates/bug-nominate-for-series.pt" />
 
     <browser:generalform

@@ -41,11 +41,13 @@ function to create these branches makes the tests below easier to
 read.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IBranchSet, ILaunchpadCelebrities, IPersonSet, IProductSet)
+    ...     BranchType, IBranchSet, ILaunchpadCelebrities, IPersonSet,
+    ...     IProductSet)
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
     >>> def new_import_branch(name):
     ...     product = getUtility(IProductSet).getByName('firefox')
     ...     return getUtility(IBranchSet).new(
+    ...         BranchType.IMPORTED,
     ...         name, vcs_imports, vcs_imports, product,
     ...         None, 'Import branch')
 
