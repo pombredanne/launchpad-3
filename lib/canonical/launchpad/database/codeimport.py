@@ -9,7 +9,7 @@ __all__ = [
     'CodeImportSet',
     ]
 
-from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
+from sqlobject import ForeignKey, IntervalCol, StringCol, SQLObjectNotFound
 
 from zope.component import getUtility
 from zope.interface import implements
@@ -36,6 +36,8 @@ class CodeImport(SQLBase):
                         notNull=True)
     registrant = ForeignKey(dbName='registrant', foreignKey='Person',
                             notNull=True)
+    assignee = ForeignKey(dbName='assignee', foreignKey='Person',
+                          notNull=False)
 
     @property
     def product(self):
@@ -57,6 +59,7 @@ class CodeImport(SQLBase):
     svn_branch_url = StringCol(default=None)
 
     date_last_successful = UtcDateTimeCol(default=None)
+    update_interval = IntervalCol(default=None)
 
 
 class CodeImportSet:
