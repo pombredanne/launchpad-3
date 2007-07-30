@@ -1361,7 +1361,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         for bug_task in self.searchTasks(params):
             assert bug_task.assignee == self, (
                 "This bugtask (%s) should be assigned to this person."
-                % sqlvalues(bug_task))
+                % bug_task.id)
             bug_task.transitionToAssignee(None)
         for spec in self.assigned_specs:
             spec.assignee = None
