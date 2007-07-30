@@ -831,6 +831,12 @@ A branch can be deleted if it has not yet been pushed to (or mirrored), and
 is not associated with any bugs or blueprints, has no subscribers, and hasn't
 been associated with any product series.
 
+Deleting the branch is done through the BranchSet.  If the branch is not
+deletable then an exception is raised.
+
+More details can be found in the file
+canonical/launchpad/database/tests/test_branch.txt.
+
     >>> branch = branchset.new(
     ...     BranchType.MIRRORED, 'to-delete', ddaa, ddaa, gterm_product,
     ...     'http://example.com/branches/to-delete', 'A branch to delete',
@@ -847,11 +853,16 @@ Adding a subscriber makes it not deletable.
     ...     ddaa, BranchSubscriptionNotificationLevel.NOEMAIL, None)
     >>> branch.canBeDeleted()
     False
+    >>> branchset.delete(branch)
+    Traceback (most recent call last):
+    ...
+    CannotDeleteBranch: Cannot delete branch: ~ddaa/gnome-terminal/to-delete
 
 The process can be rectified though by removing the offending links.
 
     >>> branch.unsubscribe(ddaa)
     >>> branch.canBeDeleted()
     True
-
-
+    >>> branchset.delete(branch)
+    >>> print branchset.getByUniqueName('~ddaa/gnome-terminal/to-delete')
+    None

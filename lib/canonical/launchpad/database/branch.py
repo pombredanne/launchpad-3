@@ -26,7 +26,7 @@ from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
     BranchLifecycleStatus, BranchType, BranchVisibilityRule,
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
-    DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
+    CannotDeleteBranch, DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
     IBranchSet, ILaunchpadCelebrities, NotFoundError)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
@@ -166,7 +166,12 @@ class Branch(SQLBase):
         # ManifestEntries are deliberately being ignored here.
         # They are part of HCT which is in active rot, and should
         # be removed.
-        if (self.revision_history.count() > 0 or
+
+        # CodeImportSet imported here to avoid circular imports.
+        from canonical.launchpad.database.codeimport import CodeImportSet
+        code_import = CodeImportSet().getByBranch(self)
+        if (code_import is not None or
+            self.revision_history.count() > 0 or
             self.subscriptions.count() > 0 or
             self.bug_branches.count() > 0 or
             self.spec_links.count() > 0 or
