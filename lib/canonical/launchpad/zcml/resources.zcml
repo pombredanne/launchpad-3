@@ -56,6 +56,9 @@
     <resource name="bug-wishlist" file="../images/bug-wishlist.png" />
     <resource name="bug-undecided" file="../images/bug-undecided.png" />
     <resource name="bug-remote" file="../images/bug-remote.png" />
+    <resource name="bug-status-collapse"
+              file="../images/bug-status-collapse.png" />
+    <resource name="bug-status-expand" file="../images/bug-status-expand.png" />
     <resource name="bug-unknown" file="../images/bug.png" />
     <resource name="bullet" file="../images/bullet.png" />
     <resource name="copy" file="../images/copy.png" />
@@ -74,6 +77,7 @@
     <resource name="error" file="../images/error.png" />
     <resource name="error-badge" file="../images/error-badge.png" />
     <resource name="error-large" file="../images/error-large.png" />
+    <resource name="faq" file="../images/faq.png" />
     <resource name="favourite-yes" file="../images/fav-yes.png" />
     <resource name="favourite-no" file="../images/fav-no.png" />
     <resource name="green-bar" file="../images/green-bar.png" />

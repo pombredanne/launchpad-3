@@ -18,12 +18,12 @@ import pytz
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.lp.dbschema import (
-    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
 from canonical.launchpad.database import (
     BranchRevision, Revision, RevisionAuthor, RevisionParent)
 from canonical.launchpad.mail import stub
-from canonical.launchpad.interfaces import IBranchSet, IPersonSet, IRevisionSet
+from canonical.launchpad.interfaces import (
+    BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
+    BranchType, IBranchSet, IPersonSet, IRevisionSet)
 from canonical.launchpad.scripts.bzrsync import BzrSync, RevisionModifiedError
 from canonical.launchpad.scripts.importd.tests.helpers import (
     instrument_method, InstrumentedMethodObserver)
@@ -76,6 +76,7 @@ class BzrSyncTestCase(TestCaseWithTransport):
         LaunchpadZopelessLayer.txn.begin()
         arbitraryownerid = 1
         self.db_branch = getUtility(IBranchSet).new(
+            branch_type=BranchType.MIRRORED,
             name="test",
             creator=arbitraryownerid,
             owner=arbitraryownerid,
@@ -210,6 +211,26 @@ class BzrSyncTestCase(TestCaseWithTransport):
             (branch_revision.sequence, branch_revision.revision.revision_id)
             for branch_revision
             in BranchRevision.selectBy(branch=self.db_branch))
+
+    def writeToFile(self, filename="file", contents=None):
+        """Set the contents of the specified file.
+
+        This also adds the file to the bzr working tree if
+        it isn't already there.
+        """
+        file = open(os.path.join(self.bzr_tree.basedir, filename), "w")
+        if contents is None:
+            file.write(str(time.time()+random.random()))
+        else:
+            file.write(contents)
+        file.close()
+        self.bzr_tree.lock_write()
+        try:
+            inventory = self.bzr_tree.read_working_inventory()
+            if not inventory.has_filename(filename):
+                self.bzr_tree.add(filename)
+        finally:
+            self.bzr_tree.unlock()
 
 
 class TestBzrSync(BzrSyncTestCase):
@@ -635,26 +656,6 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             BranchSubscriptionDiffSize.FIVEKLINES)
         LaunchpadZopelessLayer.txn.commit()
 
-    def writeToFile(self, filename="file", contents=None):
-        """Set the contents of the specified file.
-
-        This also adds the file to the bzr working tree if
-        it isn't already there.
-        """
-        file = open(os.path.join(self.bzr_tree.basedir, filename), "w")
-        if contents is None:
-            file.write(str(time.time()+random.random()))
-        else:
-            file.write(contents)
-        file.close()
-        self.bzr_tree.lock_write()
-        try:
-            inventory = self.bzr_tree.read_working_inventory()
-            if not inventory.has_filename(filename):
-                self.bzr_tree.add(filename)
-        finally:
-            self.bzr_tree.unlock()
-
     def assertTextIn(self, expected, text):
         """Assert that expected is in text.
 
@@ -859,6 +860,53 @@ class TestBzrSyncEmail(BzrSyncTestCase):
             # \ufffd is the substitution character.
             u"+\ufffd trompe \xe9norm\xe9ment." '\n' '\n')
         self.assertTextEqual(diff, expected)
+
+
+class TestBzrSyncNoEmail(BzrSyncTestCase):
+    """Tests BzrSync support for not generating branch email notifications when
+    no one is interested.
+    """
+
+    def setUp(self):
+        BzrSyncTestCase.setUp(self)
+        stub.test_emails = []
+
+    def test_no_subscribers(self):
+        self.assertEqual(self.db_branch.subscribers.count(), 0,
+                         "There should be no subscribers to the branch.")
+
+    def test_empty_branch(self):
+        self.syncBranch()
+        self.assertEqual(len(self.bzrsync.pending_emails), 0,
+                         "There should be no pending emails.")
+
+    def test_import_revision(self):
+        self.commitRevision()
+        self.syncBranch()
+        self.assertEqual(len(self.bzrsync.pending_emails), 0,
+                         "There should be no pending emails.")
+
+    def test_import_uncommit(self):
+        self.commitRevision()
+        self.syncBranch()
+        stub.test_emails = []
+        self.uncommitRevision()
+        self.syncBranch()
+        self.assertEqual(len(self.bzrsync.pending_emails), 0,
+                         "There should be no pending emails.")
+
+    def test_import_recommit(self):
+        # No emails should have been generated.
+        self.commitRevision('first')
+        self.syncBranch()
+        stub.test_emails = []
+        self.uncommitRevision()
+        self.writeToFile(filename="hello.txt",
+                         contents="Hello World\n")
+        self.commitRevision('second')
+        self.syncBranch()
+        self.assertEqual(len(self.bzrsync.pending_emails), 0,
+                         "There should be no pending emails.")
 
 
 class TestRevisionProperty(BzrSyncTestCase):

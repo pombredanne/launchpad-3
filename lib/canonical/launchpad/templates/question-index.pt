@@ -47,7 +47,6 @@
       <div tal:condition="context/reopenings"
            tal:replace="structure context/@@+portlet-reopenings" />
       <div tal:replace="structure context/@@+portlet-subscribers" />
-      <div tal:replace="structure context/target/@@+portlet-details" />
     </metal:leftportlets>
 
     <metal:rightportlets fill-slot="portlets_two">
@@ -73,6 +72,13 @@
         class="report" 
         tal:content="structure context/description/fmt:text-to-html" 
         />
+
+      <div id="related-faq" tal:condition="context/faq">
+        <b>Related FAQ:</b>
+        <a href="#"
+           tal:attributes="href context/faq/fmt:url"
+           tal:content="context/faq/title">FAQ Title</a>
+      </div>
 
       <tal:message repeat="message context/messages">
         <div tal:replace="structure message/@@+display" />
@@ -109,7 +115,8 @@
                 <input tal:replace="structure view/giveinfo_action/render" />
                 <input tal:replace="structure view/reopen_action/render" />
               </div>
-              <p tal:condition="view/selfanswer_action/render">
+              <p id="answer-button-hint" 
+                tal:condition="view/confirm_action/available">
                 To confirm an answer, use the 
                 <strong>'This Solved My Problem'</strong> button located at
                 the bottom of the answer.
@@ -125,8 +132,12 @@
         </tal:not-logged-in>
       </div>
 
-      <div id="ask-your-own-question" xml:lang="en" lang="en" dir="ltr"
-        tal:condition="not: view/is_question_owner">
+      <div
+        class="related"
+        id="ask-your-own-question"
+        xml:lang="en" lang="en" dir="ltr"
+        tal:condition="not: view/is_question_owner"
+      >
         <h2>Got a question of your own?</h2>
 
         <p>For best results,

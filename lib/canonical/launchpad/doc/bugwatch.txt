@@ -149,6 +149,8 @@ easier you can use IBugWatchSet.fromText().
     ...         http://some.roundup/issue42
     ...     A Trac URL:
     ...         http://some.trac/ticket/42
+    ...     A Mantis URL:
+    ...         http://some.mantis/mantis/view.php?id=50
     ...     A SourceForge URL:
     ...         http://some.sf/tracker/index.php?func=detail&aid=1568562&group_id=84122&atid=42
     ...     An unrecognised URL:
@@ -166,6 +168,7 @@ easier you can use IBugWatchSet.fromText().
     ROUNDUP: 42
     TRAC: 42
     SOURCEFORGE: 1568562
+    MANTIS: 50
 
 Syncing the Status with Linked Bugtasks
 ---------------------------------------
@@ -180,7 +183,7 @@ Updater and get a bug watch and a bugtask to test with.
     >>> print len(bug_one.bugtasks)
     3
     >>> debian_task = bug_one.bugtasks[2]
-    >>> print debian_task.targetname
+    >>> print debian_task.bugtargetdisplayname
     mozilla-firefox (Debian)
 
     >>> print debian_task.status.title
@@ -262,4 +265,9 @@ Finally, let's make sure that bug notifications were added:
            Status: Confirmed => New
 
     >>> event_listener.unregister()
+
+The Bug Watch Updater can transition a bug to any status:
+
+    >>> for status in BugTaskStatus.items:
+    ...     debian_bugwatch.updateStatus(u'nothing', status)
 

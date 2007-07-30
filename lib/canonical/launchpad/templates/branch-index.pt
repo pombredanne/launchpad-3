@@ -14,6 +14,11 @@
 
 <div metal:fill-slot="main">
 
+  <div style="float: right" id="branch-badges">
+    <img src="/@@/locked-large" title="Private"
+         tal:condition="context/private" />
+  </div>
+
   <h1>
     <img src="/@@/branch-large" alt="" />
     <tal:branch replace="context/displayname" />
@@ -60,7 +65,8 @@
     </tbody>
   </table>
 
-  <p tal:condition="context/summary" tal:content="context/summary">
+  <p tal:condition="context/summary"
+     tal:content="structure context/summary/fmt:text-to-html">
     $Branch.summary goes here. This should be quite short, just a single
     paragraph of text really, giving the branch highlights.
   </p>

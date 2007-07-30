@@ -41,7 +41,7 @@
 
   <form tal:attributes="action request/URL" method="POST">
 
-    <table tal:condition="speclinks">
+    <table tal:condition="speclinks" id="speclisting">
       <tbody>
         <tr tal:repeat="speclink speclinks">
         <tal:spec define="spec speclink/specification">

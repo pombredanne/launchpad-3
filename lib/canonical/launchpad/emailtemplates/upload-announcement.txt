@@ -1,0 +1,5 @@
+Accepted:
+%(SUMMARY)s
+
+%(CHANGESFILE)s
+

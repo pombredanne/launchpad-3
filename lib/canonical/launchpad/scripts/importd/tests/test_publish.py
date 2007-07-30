@@ -19,7 +19,7 @@ from zope.component import getUtility
 
 from canonical.database.sqlbase import commit
 from canonical.launchpad.interfaces import (
-    IBranchSet, ILaunchpadCelebrities, IPersonSet)
+    BranchType, IBranchSet, ILaunchpadCelebrities, IPersonSet)
 from canonical.launchpad.scripts.importd.publish import (
     ensure_series_branch, ImportdPublisher, mirror_url_from_series)
 from canonical.launchpad.scripts.importd.tests.helpers import ImportdTestCase
@@ -79,6 +79,7 @@ class TestImportdPublisher(ImportdTestCase):
         self.setUpOneCommit()
         series = self.series_helper.series
         branch = getUtility(IBranchSet).new(
+            BranchType.HOSTED,
             series.name, series.product.owner, series.product.owner,
             series.product, url=None)
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports

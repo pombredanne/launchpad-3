@@ -8,12 +8,15 @@ __all__ = [
     'BranchCreationException',
     'BranchCreationForbidden',
     'BranchCreatorNotMemberOfOwnerTeam',
+    'BranchLifecycleStatus',
+    'BranchLifecycleStatusFilter',
+    'BranchType',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
     'IBranchDelta',
-    'IBranchLifecycleFilter',
     'IBranchBatchNavigator',
+    'IBranchLifecycleFilter',
     ]
 
 from zope.interface import Interface, Attribute
@@ -22,8 +25,6 @@ from zope.component import getUtility
 from zope.schema import Bool, Int, Choice, Text, TextLine, Datetime
 
 from canonical.config import config
-from canonical.lp.dbschema import (
-    BranchLifecycleStatus, BranchLifecycleStatusFilter)
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
@@ -31,6 +32,95 @@ from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from canonical.lazr import (
+    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+
+
+class BranchLifecycleStatus(DBEnumeratedType):
+    """Branch Lifecycle Status
+
+    This indicates the status of the branch, as part of an overall
+    "lifecycle". The idea is to indicate to other people how mature this
+    branch is, or whether or not the code in the branch has been deprecated.
+    Essentially, this tells us what the author of the branch thinks of the
+    code in the branch.
+    """
+    sort_order = (
+        'MATURE', 'DEVELOPMENT', 'EXPERIMENTAL', 'MERGED', 'ABANDONED', 'NEW')
+
+    NEW = DBItem(1, """
+        New
+
+        This branch has just been created, and we know nothing else about
+        it.
+        """)
+
+    EXPERIMENTAL = DBItem(10, """
+        Experimental
+
+        This branch contains code that is considered experimental. It is
+        still under active development and should not be merged into
+        production infrastructure.
+        """)
+
+    DEVELOPMENT = DBItem(30, """
+        Development
+
+        This branch contains substantial work that is shaping up nicely, but
+        is not yet ready for merging or production use. The work is
+        incomplete, or untested.
+        """)
+
+    MATURE = DBItem(50, """
+        Mature
+
+        The developer considers this code mature. That means that it
+        completely addresses the issues it is supposed to, that it is tested,
+        and that it has been found to be stable enough for the developer to
+        recommend it to others for inclusion in their work.
+        """)
+
+    MERGED = DBItem(70, """
+        Merged
+
+        This code has successfully been merged into its target branch(es),
+        and no further development is anticipated on the branch.
+        """)
+
+    ABANDONED = DBItem(80, """
+        Abandoned
+
+        This branch contains work which the author has abandoned, likely
+        because it did not prove fruitful.
+        """)
+
+
+class BranchType(DBEnumeratedType):
+    """Branch Type
+
+    The type of a branch determins the branch interaction with a number
+    of other subsystems.
+    """
+
+    HOSTED = DBItem(1, """
+        Hosted
+
+        Hosted branches have their main repository on the supermirror.
+        """)
+
+    MIRRORED = DBItem(2, """
+        Mirrored
+
+        Mirrored branches are primarily hosted elsewhere and are
+        periodically pulled from the remote site into the supermirror.
+        """)
+
+    IMPORTED = DBItem(3, """
+        Imported
+
+        Imported branches have been converted from some other revision
+        control system into bzr and are made available through the supermirror.
+        """)
 
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
@@ -111,6 +201,12 @@ class IBranch(IHasOwner):
     """A Bazaar branch."""
 
     id = Int(title=_('ID'), readonly=True, required=True)
+    branch_type = Choice(
+        title=_("Branch type"), required=True, vocabulary=BranchType,
+        description=_("Hosted branches have Launchpad code hosting as the "
+                      "primary location and can be pushed to.  Mirrored "
+                      "branches are pulled from the remote location "
+                      "specified and cannot be pushed to."))
     name = TextLine(
         title=_('Name'), required=True, description=_("Keep very "
         "short, unique, and descriptive, because it will be used in URLs. "
@@ -182,7 +278,7 @@ class IBranch(IHasOwner):
 
     # Stats and status attributes
     lifecycle_status = Choice(
-        title=_('Status'), vocabulary='BranchLifecycleStatus',
+        title=_('Status'), vocabulary=BranchLifecycleStatus,
         default=BranchLifecycleStatus.NEW,
         description=_(
         "The author's assessment of the branch's maturity. "
@@ -352,9 +448,9 @@ class IBranchSet(Interface):
         Return the default value if there is no such branch.
         """
 
-    def new(name, creator, owner, product, url, title,
+    def new(branch_type, name, creator, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
-            summary=None, home_page=None, date_created=None):
+            summary=None, home_page=None, whiteboard=None, date_created=None):
         """Create a new branch.
 
         Raises BranchCreationForbidden if the creator is not allowed
@@ -552,6 +648,9 @@ class IBranchSet(Interface):
         only public branches are returned.
         """
 
+    def getHostedBranchesForPerson(person):
+        """Return the hosted branches that the given person can write to."""
+
     def getLatestBranchesForProduct(product, quantity, visible_by_user=None):
         """Return the most recently created branches for the product.
 
@@ -585,12 +684,40 @@ class IBranchDelta(Interface):
     last_scanned_id = Attribute("The revision id of the tip revision.")
 
 
+# XXX: thumper 2007-07-23
+# Both BranchLifecycleStatusFilter and IBranchLifecycleFilter
+# are used only in browser/branchlisting.py, see bug 66950.
+class BranchLifecycleStatusFilter(EnumeratedType):
+    """Branch Lifecycle Status Filter
+
+    Used to populate the branch lifecycle status filter widget.
+    UI only.
+    """
+    use_template(BranchLifecycleStatus)
+
+    sort_order = (
+        'CURRENT', 'ALL', 'NEW', 'EXPERIMENTAL', 'DEVELOPMENT', 'MATURE',
+        'MERGED', 'ABANDONED')
+
+    CURRENT = Item("""
+        New, Experimental, Development or Mature
+
+        Show the currently active branches.
+        """)
+
+    ALL = Item("""
+        Any Status
+
+        Show all the branches.
+        """)
+
+
 class IBranchLifecycleFilter(Interface):
     """A helper interface to render lifecycle filter choice."""
 
     # Stats and status attributes
     lifecycle = Choice(
-        title=_('Lifecycle Filter'), vocabulary='BranchLifecycleStatusFilter',
+        title=_('Lifecycle Filter'), vocabulary=BranchLifecycleStatusFilter,
         default=BranchLifecycleStatusFilter.CURRENT,
         description=_(
         "The author's assessment of the branch's maturity. "

@@ -1,64 +1,74 @@
+= An example of EnumCol with EnumeratedTypes =
 
-Using EnumCol
-=============
+EnumCol is a type of column that is used in SQLBase classes where the
+database representation is an integer and the code uses an enumerated
+type.
 
-*Note:* This document is about canonical.lp.dbschema.EnumCol, not SQLObject's
-builtin EnumCol.
+Firstly we need an example table.
 
-Test imports and setup.
-
-    >>> from canonical.database.sqlbase import SQLBase
-    >>> from canonical.database.constants import DEFAULT
-    >>> from canonical.launchpad.ftests.harness import LaunchpadTestSetup
-
-Let's make a example table to demonstrate EnumCol with.  Enumerations are stored
-in the database as integers, and we'll give the column a default value.
-
-    >>> connection = LaunchpadTestSetup().connect()
-    >>> cursor = connection.cursor()
-    >>> cursor.execute('''
-    ...     CREATE TABLE Test (
+    >>> from canonical.database.sqlbase import cursor
+    >>> cur = cursor()
+    >>> cur.execute('''
+    ...     CREATE TABLE FooTest (
     ...         id serial NOT NULL,
-    ...         foo integer DEFAULT 1 NOT NULL 
+    ...         foo integer DEFAULT 1 NOT NULL
     ...     );
     ... ''')
-    >>> cursor.execute('GRANT ALL ON TABLE Test TO launchpad;')
-    >>> cursor.execute('GRANT ALL ON test_id_seq TO launchpad;')
-    >>> connection.commit()
+    >>> cur.execute('GRANT ALL ON TABLE FooTest TO launchpad;')
+    >>> cur.execute('GRANT ALL ON footest_id_seq TO launchpad;')
+    >>> import transaction
+    >>> transaction.commit()
 
-Let's define a schema for that column.
+The enumerated type that is used with the EnumCol must be a
+DBEnumeratedType, with items that are instances of DBItem.
 
-    >>> from canonical.launchpad.webapp.enum import DBSchema, Item
-    >>> class FooSchema(DBSchema):
-    ...     """Schema for the foo column."""
-    ...     ONE = Item(1, """
+Attempting to use a normal enumerated type for an enumcol will
+result in an error.
+
+    >>> from canonical.lazr import EnumeratedType, Item
+    >>> class PlainFooType(EnumeratedType):
+    ...     """Enumerated type for the foo column."""
+    ...     ONE = Item("One")
+    ...     TWO = Item("Two")
+
+    >>> from canonical.database.constants import DEFAULT
+    >>> from canonical.database.enumcol import EnumCol
+    >>> from canonical.database.sqlbase import SQLBase
+    >>> class BadFooTest(SQLBase):
+    ...     foo = EnumCol(enum=PlainFooType, default=DEFAULT)
+    Traceback (most recent call last):
+    ...
+    TypeError: enum must be a DBEnumeratedType:
+    <class 'canonical.lazr.enum.MetaEnum'>
+
+    >>> from canonical.lazr import DBEnumeratedType, DBItem
+    >>> class FooType(DBEnumeratedType):
+    ...     """Enumerated type for the foo column."""
+    ...     ONE = DBItem(1, """
     ...         One
-    ... 
+    ...
     ...         Number one.
     ...         """)
     ...
-    ...     TWO = Item(2, """
-    ...         TWO
-    ... 
+    ...     TWO = DBItem(2, """
+    ...         Two
+    ...
     ...         Number two.
     ...         """)
- 
-Now let's define an SQLObject for that table, using FooSchema as the schema for
-the foo column.  We declare the default value for the foo column to be whatever
-the database's default is.
 
-    >>> from canonical.database.enumcol import EnumCol
-    >>> class Test(SQLBase):
-    ...     foo = EnumCol(schema=FooSchema, default=DEFAULT)
+The database implementation class then refers to the enumerated type.
+
+    >>> class FooTest(SQLBase):
+    ...     foo = EnumCol(enum=FooType, default=DEFAULT)
 
 Create a row in the table.
- 
-    >>> t = Test()
 
-The value of the foo column has been set to the default defined in the database,
-because we didn't specify one.
+    >>> t = FooTest()
 
-    >>> t.foo == FooSchema.ONE
+The value of the foo column has been set to the default defined in the
+database, because we didn't specify one in the constructor.
+
+    >>> t.foo == FooType.ONE
     True
 
 You cannot use integers or strings as EnumCol values:
@@ -66,27 +76,44 @@ You cannot use integers or strings as EnumCol values:
     >>> t.foo = 2
     Traceback (most recent call last):
     ...
-    TypeError: Need to set a dbschema Enum column to a dbschema Item, not an int
+    TypeError: Need to set an EnumeratedType Enum column to an Item, not an int
 
     >>> t.foo = "TWO"
     Traceback (most recent call last):
     ...
-    TypeError: Not a DBSchema Item: 'TWO'
+    TypeError: Not a DBItem: <type 'str'>
 
-You can of course use items from FooSchema.
+You can of course use items from FooType.
 
-    >>> t.foo = FooSchema.TWO
+    >>> t.foo = FooType.TWO
+    >>> t.foo
+    <DBItem FooType.TWO, (2) Two>
 
 But not items from another schema.
 
-    >>> class AnotherSchema(DBSchema):
-    ...     ONE = Item(1, """
+    >>> class AnotherType(DBEnumeratedType):
+    ...     ONE = DBItem(1, """
     ...         One
-    ... 
+    ...
     ...         Number one.
     ...         """)
-    >>> t.foo = AnotherSchema.ONE
+    >>> t.foo = AnotherType.ONE
     Traceback (most recent call last):
     ...
-    TypeError: DBSchema Item from wrong class, <class 'AnotherSchema'> != <class 'FooSchema'>
+    TypeError: DBItem from wrong type, 'FooType' != 'AnotherType'
 
+The type assigned in must be the exact type, not a derived types.
+
+    >>> class DerivedType(FooType):
+    ...     """A derived DB enumerated type."""
+
+    >>> item = DerivedType.ONE
+    >>> t.foo = item
+    Traceback (most recent call last):
+    ...
+    TypeError: DBItem from wrong type, 'FooType' != 'DerivedType'
+
+A simple way to assign in the correct item is to use the name of the derived
+item to access the correct item from the base type.
+
+    >>> t.foo = FooType.items[item.name]

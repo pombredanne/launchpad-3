@@ -20,7 +20,6 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.launchpad.interfaces import IBranchSet
-from canonical.launchpad.ftests import login, ANONYMOUS
 from canonical.launchpad.scripts.supermirror.ftests import createbranch
 from canonical.testing import LaunchpadZopelessLayer
 
@@ -81,7 +80,7 @@ class BranchScannerTest(TestCase):
         output, error = process.communicate()
         status = process.returncode
         self.assertEqual(status, 0,
-                         'baz2bzr existed with status=%d\n'
+                         'baz2bzr exited with status=%d\n'
                          '>>>stdout<<<\n%s\n>>>stderr<<<\n%s'
                          % (status, output, error))
         # check that all branches were set to the test data

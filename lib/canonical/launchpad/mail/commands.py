@@ -4,6 +4,7 @@ __metaclass__ = type
 __all__ = ['emailcommands', 'get_error_message']
 
 import os.path
+import re
 
 from zope.component import getUtility
 from zope.event import notify
@@ -708,6 +709,56 @@ class ReplacedByImportanceCommand(EmailCommand):
                 get_error_message('bug-importance.txt', argument=self.name))
 
 
+class TagEmailCommand(EmailCommand):
+    """Assigns a tag to or removes a tag from bug."""
+
+    implements(IBugEditEmailCommand)
+
+    def execute(self, bug, current_event):
+        """See `IEmailCommand`."""
+        string_args = list(self.string_args)
+        # Bug.tags returns a Zope List, which does not support Python list
+        # operations so we need to convert it.
+        tags = list(bug.tags)
+
+        # XXX: DaveMurphy 2007-07-11, in the following loop we process each
+        # tag in turn. Each tag that is either invalid or unassigned will
+        # result in a mail to the submitter. This may result in several mails
+        # for a single command. This will need to be addressed if that becomes
+        # a problem.
+        
+        for arg in string_args:
+            # Are we adding or removing a tag?
+            if arg.startswith('-'):
+                remove = True
+                tag = arg[1:]
+            else:
+                remove = False
+                tag = arg
+            # Tag must contain only alphanumeric characters
+            if re.search('[^a-zA-Z0-9]', tag):
+                raise EmailProcessingError(
+                    get_error_message('invalid-tag.txt', tag=tag))
+            if remove:
+                try:
+                    tags.remove(tag)
+                except ValueError:
+                    raise EmailProcessingError(
+                        get_error_message('unassigned-tag.txt', tag=tag))
+            else:
+                tags.append(arg)
+
+        # Duplicates are dealt with when the tags are stored in the DB (which
+        # incidentally uses a set to achieve this). Since the code already 
+        # exists we don't duplicate it here.
+
+        # Bug.tags expects to be given a Python list, so there is no need to
+        # convert it back.
+        bug.tags = tags
+
+        return bug, current_event
+
+
 class NoSuchCommand(KeyError):
     """A command with the given name couldn't be found."""
 
@@ -730,6 +781,7 @@ class EmailCommands:
         'importance': ImportanceEmailCommand,
         'severity': ReplacedByImportanceCommand,
         'priority': ReplacedByImportanceCommand,
+        'tag': TagEmailCommand,
     }
 
     def names(self):

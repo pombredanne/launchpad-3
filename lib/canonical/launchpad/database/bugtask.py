@@ -24,7 +24,7 @@ from zope.component import getUtility
 from zope.interface import implements, alsoProvides
 from zope.security.proxy import isinstance as zope_isinstance
 
-from canonical.database.sqlbase import SQLBase, sqlvalues, quote_like
+from canonical.database.sqlbase import SQLBase, sqlvalues, quote, quote_like
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.nl_search import nl_phrase_search
@@ -46,6 +46,7 @@ from canonical.launchpad.interfaces import (
     INullBugTask,
     IProductSeries,
     IProductSeriesBugTask,
+    IProjectMilestone,
     ISourcePackage,
     IUpstreamBugTask,
     NotFoundError,
@@ -133,7 +134,12 @@ class BugTaskDelta:
 
     @property
     def targetname(self):
-        return self.bugtask.targetname
+        return self.bugtask.bugtargetname
+
+    @property
+    def bugtargetdisplayname(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        return self.targetnamecache
 
 
 class BugTaskMixin:
@@ -142,14 +148,22 @@ class BugTaskMixin:
     @property
     def title(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        title = 'Bug #%s in %s: "%s"' % (
-            self.bug.id, self.targetname, self.bug.title)
-        return title
+        if INullBugTask.providedBy(self):
+            return 'Bug #%s is not in %s: "%s"' % (
+                self.bug.id, self.bugtargetdisplayname, self.bug.title)
+        else:
+            return 'Bug #%s in %s: "%s"' % (
+                self.bug.id, self.bugtargetdisplayname, self.bug.title)
 
     @property
-    def targetname(self):
+    def bugtargetdisplayname(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        return self.targetnamecache
+        return self.target.bugtargetdisplayname
+
+    @property
+    def bugtargetname(self):
+        """See canonical.launchpad.interfaces.IBugTask."""
+        return self.target.bugtargetname
 
     @property
     def target(self):
@@ -267,6 +281,10 @@ class NullBugTask(BugTaskMixin):
             alsoProvides(self, IDistroBugTask)
         elif self.distroseries:
             alsoProvides(self, IDistroSeriesBugTask)
+        elif self.productseries:
+            alsoProvides(self, IProductSeriesBugTask)
+        else:
+            raise AssertionError('Unknown NullBugTask: %r' % self)
 
         # Set a bunch of attributes to None, because it doesn't make
         # sense for these attributes to have a value when there is no
@@ -601,7 +619,8 @@ class BugTask(SQLBase, BugTaskMixin):
         # We also can't simply update kw with the value we want for
         # targetnamecache because we need to access bugtask attributes
         # that may be available only after SQLBase.set() is called.
-        SQLBase.set(self, **{'targetnamecache': self.target.bugtargetname})
+        SQLBase.set(
+            self, **{'targetnamecache': self.target.bugtargetdisplayname})
 
     def setImportanceFromDebbugs(self, severity):
         """See canonical.launchpad.interfaces.IBugTask."""
@@ -614,7 +633,8 @@ class BugTask(SQLBase, BugTaskMixin):
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
         if (user.inTeam(self.pillar.bugcontact) or
-            user.inTeam(self.pillar.owner)):
+            user.inTeam(self.pillar.owner) or
+            user == getUtility(ILaunchpadCelebrities).bug_watch_updater):
             return True
         else:
             return new_status not in BUG_CONTACT_BUGTASK_STATUSES
@@ -709,7 +729,7 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def updateTargetNameCache(self):
         """See canonical.launchpad.interfaces.IBugTask."""
-        targetname = self.target.bugtargetname
+        targetname = self.target.bugtargetdisplayname
         if self.targetnamecache != targetname:
             self.targetnamecache = targetname
 
@@ -776,6 +796,11 @@ class BugTask(SQLBase, BugTaskMixin):
                  'componentname': component})
         else:
             raise AssertionError('Unknown BugTask context: %r' % self)
+
+        # We only want to have a milestone field in the header if there's
+        # a milestone set for the bug.
+        if self.milestone:
+            header_value += ' milestone=%s;' % self.milestone.name
 
         header_value += ((
             ' status=%(status)s; importance=%(importance)s; '
@@ -950,7 +975,7 @@ class BugTaskSet:
         if not summary:
             return BugTask.select('1 = 2')
 
-        search_params.searchtext = nl_phrase_search(
+        search_params.fast_searchtext = nl_phrase_search(
             summary, Bug, ' AND '.join(constraint_clauses), ['BugTask'])
         return self.search(search_params)
 
@@ -974,7 +999,6 @@ class BugTaskSet:
             'distribution': params.distribution,
             'distrorelease': params.distroseries,
             'productseries': params.productseries,
-            'milestone': params.milestone,
             'assignee': params.assignee,
             'sourcepackagename': params.sourcepackagename,
             'owner': params.owner,
@@ -999,6 +1023,26 @@ class BugTaskSet:
             where_cond = search_value_to_where_condition(arg_value)
             if where_cond is not None:
                 extra_clauses.append("BugTask.%s %s" % (arg_name, where_cond))
+
+        if params.milestone:
+            if IProjectMilestone.providedBy(params.milestone):
+                where_cond = """
+                    IN (SELECT Milestone.id
+                        FROM Milestone, Product
+                        WHERE Milestone.product = Product.id
+                            AND Product.project = %s
+                            AND Milestone.name = %s)
+                """ % sqlvalues(params.milestone.target, params.milestone.name)
+
+                # A bug may have bugtasks in more than one series, and these
+                # bugtasks may have the same milestone value. To avoid
+                # duplicate result rows for one bug, ensure that only that
+                # bugtask is returned, that is directly assigned to the
+                # product.
+                extra_clauses.append("BugTask.product IS NOT null")
+            else:
+                where_cond = search_value_to_where_condition(arg_value)
+            extra_clauses.append("BugTask.milestone %s" % where_cond)
 
         if params.project:
             clauseTables.append("Product")
@@ -1031,28 +1075,10 @@ class BugTaskSet:
             extra_clauses.append(where_cond)
 
         if params.searchtext:
-            searchtext_quoted = sqlvalues(params.searchtext)[0]
-            searchtext_like_quoted = quote_like(params.searchtext)
-            comment_clause = """BugTask.id IN (
-                SELECT BugTask.id
-                FROM BugTask, BugMessage,Message, MessageChunk
-                WHERE BugMessage.bug = BugTask.bug
-                    AND BugMessage.message = Message.id
-                    AND Message.id = MessageChunk.message
-                    AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
-            extra_clauses.append("""
-                ((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s) OR (%s))
-                 OR (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))
-                """ % (
-                    searchtext_quoted,searchtext_quoted, comment_clause,
-                    searchtext_like_quoted))
-            if params.orderby is None:
-                # Unordered search results aren't useful, so sort by relevance
-                # instead.
-                params.orderby = [
-                    SQLConstant("-rank(Bug.fti, ftq(%s))" % searchtext_quoted),
-                    SQLConstant(
-                        "-rank(BugTask.fti, ftq(%s))" % searchtext_quoted)]
+            extra_clauses.append(self._buildSearchTextClause(params))
+
+        if params.fast_searchtext:
+            extra_clauses.append(self._buildFastSearchTextClause(params))
 
         if params.subscriber is not None:
             clauseTables.append('BugSubscription')
@@ -1123,6 +1149,23 @@ class BugTaskSet:
                 "BugTask.bug = Bug.id AND Bug.owner = %s" % sqlvalues(
                     params.bug_reporter))
             extra_clauses.append(bug_reporter_clause)
+
+        if params.bug_commenter:
+            bug_commenter_clause = """
+            BugTask.id IN (
+                SELECT BugTask.id FROM BugTask, BugMessage, Message
+                WHERE Message.owner = %(bug_commenter)s
+                    AND Message.id = BugMessage.message
+                    AND BugTask.bug = BugMessage.bug
+                    AND Message.id NOT IN (
+                        SELECT BugMessage.message FROM BugMessage
+                        WHERE BugMessage.bug = BugTask.bug
+                        ORDER BY BugMessage.id
+                        LIMIT 1
+                    )
+            )
+            """ % sqlvalues(bug_commenter=params.bug_commenter)
+            extra_clauses.append(bug_commenter_clause)
 
         if params.nominated_for:
             mappings = sqlvalues(
@@ -1229,6 +1272,52 @@ class BugTaskSet:
             upstream_clause = " OR ".join(upstream_clauses)
             return '(%s)' % upstream_clause
         return None
+
+    def _buildSearchTextClause(self, params):
+        """Build the clause for searchtext."""
+        assert params.fast_searchtext is None, (
+            'cannot use fast_searchtext at the same time as searchtext')
+
+        searchtext_quoted = quote(params.searchtext)
+        searchtext_like_quoted = quote_like(params.searchtext)
+
+        if params.orderby is None:
+            # Unordered search results aren't useful, so sort by relevance
+            # instead.
+            params.orderby = [
+                SQLConstant("-rank(Bug.fti, ftq(%s))" % searchtext_quoted),
+                SQLConstant(
+                    "-rank(BugTask.fti, ftq(%s))" % searchtext_quoted)]
+        
+        comment_clause = """BugTask.id IN (
+            SELECT BugTask.id
+            FROM BugTask, BugMessage,Message, MessageChunk
+            WHERE BugMessage.bug = BugTask.bug
+                AND BugMessage.message = Message.id
+                AND Message.id = MessageChunk.message
+                AND MessageChunk.fti @@ ftq(%s))""" % searchtext_quoted
+        return """
+            ((Bug.fti @@ ftq(%s) OR BugTask.fti @@ ftq(%s) OR (%s))
+            OR (BugTask.targetnamecache ILIKE '%%' || %s || '%%'))
+            """ % (
+                searchtext_quoted, searchtext_quoted, comment_clause,
+                searchtext_like_quoted)
+
+    def _buildFastSearchTextClause(self, params):
+        """Build the clause to use for the fast_searchtext criteria."""
+        assert params.searchtext is None, (
+            'cannot use searchtext at the same time as fast_searchtext')
+
+        fast_searchtext_quoted = quote(params.fast_searchtext)
+        
+        if params.orderby is None:
+            # Unordered search results aren't useful, so sort by relevance
+            # instead.
+            params.orderby = [
+                SQLConstant("-rank(Bug.fti, ftq(%s))" %
+                fast_searchtext_quoted)]
+
+        return "Bug.fti @@ ftq(%s)" % fast_searchtext_quoted
 
     def search(self, params, *args):
         """See canonical.launchpad.interfaces.IBugTaskSet."""

@@ -54,7 +54,8 @@ duplicates are presented.
 
     >>> from canonical.launchpad.ftests.bug import print_bugs_list
     >>> print_bugs_list(user_browser.contents, "similar-bugs")
-    #9: Thunderbird crashes
+    #9 Thunderbird crashes
+    Open, last updated 2006-07-14
 
 Entering a description and submitting the bug takes the user to the bug
 page.
@@ -65,6 +66,7 @@ page.
     'http://bugs.launchpad.dev/ubuntu/+bug/...'
     >>> user_browser.title
     'Bug #... in Ubuntu: ...Evolution crashes...'
+
 
 == Bug on distribution, later switching to product ==
 
@@ -106,7 +108,8 @@ and not on the distribution:
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/...'
     >>> user_browser.title
-    'Bug #... in firefox (upstream)...'
+    'Bug #... in Mozilla Firefox...'
+
 
 == Advanced filebug page ==
 

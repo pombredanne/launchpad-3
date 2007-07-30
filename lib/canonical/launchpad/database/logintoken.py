@@ -17,13 +17,12 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import LoginTokenType
-
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.interfaces import (
-    ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet)
+    ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet,
+    LoginTokenType)
 from canonical.launchpad.validators.email import valid_email
 
 
@@ -37,8 +36,7 @@ class LoginToken(SQLBase):
                                default=None)
     email = StringCol(dbName='email', notNull=True)
     token = StringCol(dbName='token', unique=True)
-    tokentype = EnumCol(dbName='tokentype', notNull=True,
-                        schema=LoginTokenType)
+    tokentype = EnumCol(dbName='tokentype', notNull=True, enum=LoginTokenType)
     created = UtcDateTimeCol(dbName='created', notNull=True)
     fingerprint = StringCol(dbName='fingerprint', notNull=False,
                             default=None)
@@ -129,22 +127,37 @@ The Launchpad Team"""
                         'Launchpad: Confirm your OpenPGP Key',
                         text)
 
+    def sendPasswordResetNeutralEmail(self):
+        """See ILoginToken."""
+        template = get_email_template('forgottenpassword-neutral.txt')
+        fromaddress = format_address(
+            "Login Service", config.noreply_from_address)
+        message = template % dict(token_url=canonical_url(self))
+        subject = "Login Service: Forgotten Password"
+        simple_sendmail(fromaddress, str(self.email), subject, message)
+
+    def sendNewUserNeutralEmail(self):
+        """See ILoginToken."""
+        template = get_email_template('newuser-email-neutral.txt')
+        message = template % dict(token_url=canonical_url(self))
+
+        fromaddress = format_address("Launchpad", config.noreply_from_address)
+        subject = "Login Service: Finish your registration"
+        simple_sendmail(fromaddress, str(self.email), subject, message)
+
     def sendPasswordResetEmail(self):
         """See ILoginToken."""
         template = get_email_template('forgottenpassword.txt')
-        fromaddress = format_address("Launchpad", config.noreply_from_address)
-        replacements = {'toaddress': self.email, 
-                        'token_url': canonical_url(self)}
-        message = template % replacements
-
-        subject = "Launchpad: Forgotten Password"
+        fromaddress = format_address(
+            "Login Service", config.noreply_from_address)
+        message = template % dict(token_url=canonical_url(self))
+        subject = "Login Service: Forgotten Password"
         simple_sendmail(fromaddress, str(self.email), subject, message)
 
     def sendNewUserEmail(self):
         """See ILoginToken."""
         template = get_email_template('newuser-email.txt')
-        replacements = {'token_url': canonical_url(self)}
-        message = template % replacements
+        message = template % dict(token_url=canonical_url(self))
 
         fromaddress = format_address("Launchpad", config.noreply_from_address)
         subject = "Finish your Launchpad registration"

@@ -25,8 +25,8 @@ from sqlobject import (
 from sqlobject.sqlbuilder import SQLConstant
 
 from canonical.launchpad.interfaces import (
-    IBugLinkTarget, IDistribution, IDistributionSet,
-    IDistributionSourcePackage, InvalidQuestionStateError, ILanguage,
+    IBugLinkTarget, IDistribution, IDistributionSet, 
+    IDistributionSourcePackage, IFAQ, InvalidQuestionStateError, ILanguage,
     ILanguageSet, ILaunchpadCelebrities, IMessage, IPerson, IProduct,
     IProductSet, IQuestion, IQuestionSet, IQuestionTarget, ISourcePackage,
     QUESTION_STATUS_DEFAULT_SEARCH)
@@ -54,8 +54,8 @@ from canonical.launchpad.event import (
 from canonical.launchpad.helpers import is_english_variant
 from canonical.launchpad.mailnotification import (
     NotificationRecipientSet)
-from canonical.launchpad.webapp.enum import Item
 from canonical.launchpad.webapp.snapshot import Snapshot
+from canonical.lazr import DBItem
 
 
 class notify_question_modified:
@@ -132,6 +132,9 @@ class Question(SQLBase, BugLinkTargetMixin):
         dbName='sourcepackagename', foreignKey='SourcePackageName',
         notNull=False, default=None)
     whiteboard = StringCol(notNull=False, default=None)
+
+    faq = ForeignKey(
+        dbName='faq', foreignKey='FAQ', notNull=False, default=None)
 
     # useful joins
     subscriptions = SQLMultipleJoin('QuestionSubscription',
@@ -277,7 +280,12 @@ class Question(SQLBase, BugLinkTargetMixin):
 
     @notify_question_modified()
     def giveAnswer(self, user, answer, datecreated=None):
-        """See `IQuestion`."""
+        """See IQuestion."""
+        return self._giveAnswer(user, answer, datecreated)
+
+    def _giveAnswer(self, user, answer, datecreated):
+        """Implementation of _giveAnswer that doesn't trigger notifications.
+        """
         if not self.can_give_answer:
             raise InvalidQuestionStateError(
             "Question status != OPEN, NEEDSINFO or ANSWERED")
@@ -297,6 +305,17 @@ class Question(SQLBase, BugLinkTargetMixin):
             self.answerer = user
 
         return msg
+
+    @notify_question_modified()
+    def linkFAQ(self, user, faq, comment, datecreated=None):
+        """See `IQuestion`."""
+        if faq is not None:
+            assert IFAQ.providedBy(faq), (
+                "faq parameter must provide IFAQ or be None")
+        assert self.faq != faq, (
+            'cannot call linkFAQ() with already linked FAQ')
+        self.faq = faq
+        return self._giveAnswer(user, comment, datecreated)
 
     @property
     def can_confirm_answer(self):
@@ -623,7 +642,7 @@ class QuestionSearch:
                  project=None):
         self.search_text = search_text
 
-        if zope_isinstance(status, Item):
+        if zope_isinstance(status, DBItem):
             self.status = [status]
         else:
             self.status = status
@@ -894,14 +913,14 @@ class QuestionPersonSearch(QuestionSearch):
 
         if not participation:
             self.participation = QuestionParticipation.items
-        elif zope_isinstance(participation, Item):
+        elif zope_isinstance(participation, DBItem):
             self.participation = [participation]
         else:
             self.participation = participation
 
     def getTableJoins(self):
         """See `QuestionSearch`.
-        
+
         Return the joins for persons in addition to the base class joins.
         """
         joins = QuestionSearch.getTableJoins(self)
