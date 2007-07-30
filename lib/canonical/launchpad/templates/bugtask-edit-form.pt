@@ -92,7 +92,7 @@
   <div class="field">
     <table>
       <tal:distrotask
-        condition="python:context.distribution or context.distroseries"
+        condition="python:view.widgets.get('sourcepackagename') is not None"
       >
         <tr>
           <td>

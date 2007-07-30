@@ -286,6 +286,22 @@
     </browser:page>
 
     <browser:page
+        name="+editstatus-page"
+        for="canonical.launchpad.interfaces.IProductSeriesBugTask"
+        class="canonical.launchpad.browser.bugtask.BugTaskEditView"
+        permission="launchpad.Edit"
+        template="../templates/bugtask-edit.pt">
+    </browser:page>
+
+    <browser:page
+        name="+edit-form"
+        for="canonical.launchpad.interfaces.IProductSeriesBugTask"
+        class="canonical.launchpad.browser.bugtask.BugTaskEditView"
+        permission="launchpad.Edit"
+        template="../templates/bugtask-edit-form.pt">
+    </browser:page>
+
+    <browser:page
         name="+viewstatus-page"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugTaskStatusView"
@@ -304,9 +320,41 @@
         for="canonical.launchpad.interfaces.IDistroBugTask"
         name="+index" />
 
+    <browser:page
+        name="+editstatus-page"
+        for="canonical.launchpad.interfaces.IDistroBugTask"
+        class="canonical.launchpad.browser.bugtask.BugTaskEditView"
+        permission="launchpad.Edit"
+        template="../templates/bugtask-edit.pt">
+    </browser:page>
+
+    <browser:page
+        name="+edit-form"
+        for="canonical.launchpad.interfaces.IDistroBugTask"
+        class="canonical.launchpad.browser.bugtask.BugTaskEditView"
+        permission="launchpad.Edit"
+        template="../templates/bugtask-edit-form.pt">
+    </browser:page>
+
     <browser:defaultView
         for="canonical.launchpad.interfaces.IDistroSeriesBugTask"
         name="+index" />
+
+    <browser:page
+        name="+editstatus-page"
+        for="canonical.launchpad.interfaces.IDistroSeriesBugTask"
+        class="canonical.launchpad.browser.bugtask.BugTaskEditView"
+        permission="launchpad.Edit"
+        template="../templates/bugtask-edit.pt">
+    </browser:page>
+
+    <browser:page
+        name="+edit-form"
+        for="canonical.launchpad.interfaces.IDistroSeriesBugTask"
+        class="canonical.launchpad.browser.bugtask.BugTaskEditView"
+        permission="launchpad.Edit"
+        template="../templates/bugtask-edit-form.pt">
+    </browser:page>
 
     <browser:page
       for="canonical.launchpad.interfaces.IBugTask"

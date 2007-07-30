@@ -694,6 +694,7 @@ class BugTaskEditView(LaunchpadFormView):
     _missing_value = object()
     widgets = []
     custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
+    custom_widget('bugwatch', BugTaskBugWatchWidget)
     custom_widget('assignee', BugTaskAssigneeWidget)
     field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
                    'product', 'status', 'statusexplanation']
@@ -755,6 +756,12 @@ class BugTaskEditView(LaunchpadFormView):
 
     def setUpFields(self):
         """Set up the fields for the bug task edit form."""
+        import pdb; pdb.set_trace()
+        # We need to add any fields that aren't already in our fieldset.
+        for field in self._getEditableFieldNames():
+            if field not in self.field_names:
+                self.fieldnames.append(field)
+
         LaunchpadFormView.setUpFields(self)
 
         # The status field is a special case because we alter the vocabulary
@@ -787,7 +794,7 @@ class BugTaskEditView(LaunchpadFormView):
             self.form_fields[field].for_display = True
 
         # In cases where the status or importance fields are read only we give
-        # them a custom widget so that the colours
+        # them a custom widget so they are rendered correctly.
         for field in ['status', 'importance']:
             if field in self._getReadOnlyFieldNames():
                 self.form_fields[field].custom_widget = CustomWidgetFactory(
@@ -795,7 +802,8 @@ class BugTaskEditView(LaunchpadFormView):
 
         if self.context.target_uses_malone:
             self.form_fields = self.form_fields.omit('bugwatch')
-        elif self.context.bugwatch is not None:
+        elif (self.context.bugwatch is not None and
+            self.form_fields.get('assignee', False)):
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
                 AssigneeDisplayWidget)
 
@@ -805,14 +813,18 @@ class BugTaskEditView(LaunchpadFormView):
             # Don't edit self.field_names directly, because it's shared by all
             # BugTaskEditView instances.
             editable_field_names = list(self.field_names)
-            editable_field_names.remove('bugwatch')
+
+            if 'bugwatch' in editable_field_names:
+                editable_field_names.remove('bugwatch')
 
             # XXX, Brad Bollenbach, 2006-09-29: Permission checking
             # doesn't belong here! See https://launchpad.net/bugs/63000
-            if not self.userCanEditMilestone():
+            if (not self.userCanEditMilestone() and
+                'milestone' in editable_field_names):
                 editable_field_names.remove("milestone")
 
-            if not self.userCanEditImportance():
+            if (not self.userCanEditImportance() and
+                'importance' in editable_field_names):
                 editable_field_names.remove("importance")
         else:
             editable_field_names = ['bugwatch']
