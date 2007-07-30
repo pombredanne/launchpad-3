@@ -176,12 +176,15 @@ COMMENT ON COLUMN CodeImport.svn_branch_url IS 'The URL of the Subversion branch
 COMMENT ON COLUMN CodeImport.cvs_root IS 'The $CVSROOT details, probably of the form :pserver:user@host:/path.';
 COMMENT ON COLUMN CodeImport.cvs_module IS 'The module in cvs_root to import, often the name of the project.';
 COMMENT ON COLUMN CodeImport.date_last_successful IS 'When this code import last succeeded. NULL if this import has never succeeded.';
+COMMENT ON COLUMN CodeImport.assignee IS 'The person in charge of delivering this code import and interacting with the requestor.';
+COMMENT ON COLUMN Codeimport.update_interval IS 'How often should this import be updated. If NULL, defaults to a system-wide value set by the Launchpad administrators.';
 
 -- CodeImportMachine
 
 COMMENT ON TABLE CodeImportMachine IS 'The record of a machine capable of performing jobs for the code import system.';
 COMMENT ON COLUMN CodeImportMachine.hostname IS 'The (unique) hostname of the machine.';
-COMMENT ON COLUMN CodeImportMachine.online IS 'Whether the machine is capable of performing jobs at this time.';
+COMMENT ON COLUMN CodeImportMachine.heartbeat IS 'When the code-import-controller daemon was last known to be running on this machine. If it is not updated for a long time the machine state will change to offline.';
+COMMENT ON COLUMN CodeImportMachine.state IS 'Whether the controller daemon on this machine is offline, online, or quiescing (running but not accepting new jobs).';
 
 -- CVE
 
