@@ -258,6 +258,7 @@ class Builder(SQLBase):
                 'restricted': 'main restricted',
                 'universe': 'main restricted universe',
                 'multiverse': 'main restricted universe multiverse',
+                'commercial' : 'main restricted commercial',
                 }
             ogre_components = ogre_map[build_queue_item.component_name]
             # XXX cprov 20070523: it should be suite name, but it
