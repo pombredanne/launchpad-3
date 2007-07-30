@@ -58,7 +58,8 @@ from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.webapp import (
     action, custom_widget, canonical_url, GetitemNavigation,
-    LaunchpadFormView, LaunchpadView, Navigation, redirection, stepthrough)
+    LaunchpadEditFormView, LaunchpadFormView, LaunchpadView, Navigation,
+    redirection, stepthrough)
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
     IBug, IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
@@ -932,7 +933,7 @@ class BugTaskEditView(LaunchpadFormView):
             except WidgetsError, errors:
                 self.setFieldError('product', errors.args[0])
 
-    @action('Save changes', name='save')
+    @action('Save Changes', name='save')
     def save_action(self, action, data):
         """See canonical.launchpad.webapp.generalform.GeneralFormView."""
         bugtask = self.context
