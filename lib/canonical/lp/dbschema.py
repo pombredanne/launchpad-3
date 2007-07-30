@@ -20,7 +20,6 @@ __metaclass__ = type
 # work properly, and the thing/lp:SchemaClass will not work properly.
 __all__ = (
 'AccountStatus',
-'ArchArchiveType',
 'ArchivePurpose',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
@@ -133,43 +132,6 @@ class AccountStatus(DBSchema):
 
         The account associated with this Person has been suspended by a
         Launchpad admin.
-        """)
-
-
-class ArchArchiveType(DBSchema):
-    """Arch Archive Type
-
-    An arch archive can be read only, or it might be an archive
-    into which we can push new changes, or it might be a mirror
-    into which we can only push changes from the upstream. This schema
-    documents those states.
-    """
-
-    READWRITE = Item(0, """
-        ReadWrite Archive
-
-        This archive can be written to with new changesets, it
-        is an archive which we "own" and therefor are free to
-        write changesets into. Note that an archive which has
-        been created for upstream CVS mirroring, for example, would
-        be "readwrite" because we need to be able to create new
-        changesets in it as we mirror the changes in the CVS
-        repository.
-        """)
-
-    READONLY = Item(1, """
-        Read Only Archive
-
-        An archive in the "readonly" state can only be published
-        and read from, it cannot be written to.
-        """)
-
-    MIRRORTARGET = Item(2, """
-        Mirror Target
-
-        We can write into this archive, but we can only write
-        changesets which have actually come from the upstream
-        arch archive of which this is a mirror.
         """)
 
 
