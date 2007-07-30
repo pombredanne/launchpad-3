@@ -1,0 +1,44 @@
+<configure
+    xmlns="http://namespaces.zope.org/zope"
+    xmlns:browser="http://namespaces.zope.org/browser"
+    xmlns:i18n="http://namespaces.zope.org/i18n"
+    i18n_domain="launchpad">
+
+  <!-- Branch Merge Proposal -->
+  <content class="canonical.launchpad.database.BranchMergeProposal">
+    <allow interface="canonical.launchpad.interfaces.IBranchMergeProposal" />
+    <require
+        permission="launchpad.Edit"
+        set_schema="canonical.launchpad.interfaces.IBranchMergeProposal" />
+  </content>
+
+  <!--
+  <browser:defaultView
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      name="+index" />
+
+  <browser:page
+    name="+index"
+    for="canonical.launchpad.interfaces.IBranchMergeProposal"
+    facet="branches"
+    permission="launchpad.View"
+    template="../templates/branchlandingtarget-index.pt" />
+  -->
+  <browser:url
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      path_expression="string:+merge/${id}"
+      attribute_to_parent="source_branch"
+      rootsite="code" />
+
+  <!-- Branch Merge Proposal Set -->
+  <content class="canonical.launchpad.database.BranchMergeProposalSet">
+    <allow interface="canonical.launchpad.interfaces.IBranchMergeProposalSet" />
+  </content>
+
+  <securedutility
+      class="canonical.launchpad.database.BranchMergeProposalSet"
+      provides="canonical.launchpad.interfaces.IBranchMergeProposalSet">
+    <allow interface="canonical.launchpad.interfaces.IBranchMergeProposalSet" />
+  </securedutility>
+
+</configure>

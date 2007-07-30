@@ -1,11 +1,10 @@
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Database class for branch landing targets."""
+"""Database class for branch merge prosals."""
 
 __metaclass__ = type
 __all__ = [
-    'BranchLandingTarget',
-    'BranchLandingTargetSet',
+    'BranchMergeProposal',
     ]
 
 from zope.interface import implements
@@ -17,15 +16,15 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.sqlbase import SQLBase
 
 from canonical.launchpad.interfaces import (
-    IBranchLandingTarget, IBranchLandingTargetSet, InvalidBranchLandingTarget)
+    IBranchMergeProposal, IBranchMergeProposalSet, InvalidBranchMergeProposal)
 
 
-class BranchLandingTarget(SQLBase):
+class BranchMergeProposal(SQLBase):
     """A relationship between a person and a branch."""
 
-    implements(IBranchLandingTarget)
+    implements(IBranchMergeProposal)
 
-    _table = 'BranchLandingTarget'
+    _table = 'BranchMergeProposal'
 
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person', notNull=True)
@@ -35,6 +34,11 @@ class BranchLandingTarget(SQLBase):
 
     target_branch = ForeignKey(
         dbName='target_branch', foreignKey='Branch', notNull=True)
+
+    dependent_branch = ForeignKey(
+        dbName='dependent_branch', foreignKey='Branch', notNull=False)
+
+    whiteboard = StringCol(default=None)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
 

@@ -1,24 +1,25 @@
-= Branch landing targets =
+= Branch merge proposals =
 
-Branch landing targets are a way to show intent of one
-branch to land code on another branch.
+Branch merge proposals are a way to show intent of one branch to land
+code on another branch.
 
-Branch landing targets should only ever be created by the
-IBranchLandingTarget.new method, as this method does the following consistency
-checks:
+Branch merge proposals should only ever be created by the
+IBranchMergeProposal.new method, as this method does the following
+consistency checks:
+
   * Both branches must have valid products.
   * Both branches must have the same product.
   * There must not already exist a branch landing target for the source branch and
   target branch pair.
 
 
-== Registering landing targets ==
+== Registering merge proposals ==
 
-All landing targets have to be registered by a Person.
+All merge proposals have to be registered by a Person.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IBranchSet, IBranchLandingTargetSet, IPersonSet)
+    ...     IBranchSet, IBranchMergeProposalSet, IPersonSet)
     >>> person_set = getUtility(IPersonSet)
     >>> sample_person = person_set.getByEmail('test@canonical.com')
 
@@ -30,7 +31,7 @@ Two branches are needed in order to define a landing target.
     >>> target_branch = branch_set.getByUniqueName(
     ...     '~name12/gnome-terminal/main')
 
-    >>> branch_landing_target_set = getUtility(IBranchLandingTargetSet)
+    >>> branch_landing_target_set = getUtility(IBranchMergeProposalSet)
     >>> landing_target = branch_landing_target_set.new(
     ...     sample_person, source_branch, target_branch)
 
@@ -38,10 +39,10 @@ Two branches are needed in order to define a landing target.
 == Interfaces ==
 
     >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.interfaces import IBranchLandingTarget
-    >>> verifyObject(IBranchLandingTarget, landing_target)
+    >>> from canonical.launchpad.interfaces import IBranchMergeProposal
+    >>> verifyObject(IBranchMergeProposal, landing_target)
     True
-    >>> verifyObject(IBranchLandingTargetSet, branch_landing_target_set)
+    >>> verifyObject(IBranchMergeProposalSet, branch_landing_target_set)
     True
 
 
@@ -60,31 +61,31 @@ in the path expression.
 
 == Creation constraints ==
 
-The BranchLandingTargetSet.new method raises exceptions for invalid parameters.
+The BranchMergeProposalSet.new method raises exceptions for invalid parameters.
 
     >>> junk_branch = branch_set.getByUniqueName('~name12/+junk/junk.dev')
     >>> branch_landing_target_set.new(
     ...     sample_person, junk_branch, target_branch)
     Traceback (most recent call last):
     ...
-    InvalidBranchLandingTarget: Junk branches cannot be used as source branches.
+    InvalidBranchMergeProposal: Junk branches cannot be used as source branches.
 
     >>> branch_landing_target_set.new(
     ...     sample_person, source_branch, junk_branch)
     Traceback (most recent call last):
     ...
-    InvalidBranchLandingTarget: Junk branches cannot be used as target branches.
+    InvalidBranchMergeProposal: Junk branches cannot be used as target branches.
 
     >>> branch_landing_target_set.new(
     ...     sample_person, source_branch, source_branch)
     Traceback (most recent call last):
     ...
-    InvalidBranchLandingTarget: Source and target branches must be different.
+    InvalidBranchMergeProposal: Source and target branches must be different.
 
     >>> firefox_branch = branch_set.getByUniqueName('~name12/firefox/main')
     >>> branch_landing_target_set.new(
     ...     sample_person, firefox_branch, target_branch)
     Traceback (most recent call last):
     ...
-    InvalidBranchLandingTarget: The source branch and target branch must be
+    InvalidBranchMergeProposal: The source branch and target branch must be
     branches of the same project.

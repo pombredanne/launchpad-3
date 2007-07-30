@@ -71,7 +71,7 @@ from canonical.launchpad.database.manifest import *
 from canonical.launchpad.database.manifestentry import *
 from canonical.launchpad.database.manifestancestry import *
 from canonical.launchpad.database.branch import *
-from canonical.launchpad.database.branchlandingtarget import *
+from canonical.launchpad.database.branchmergeproposal import *
 from canonical.launchpad.database.branchrevision import *
 from canonical.launchpad.database.branchsubscription import *
 from canonical.launchpad.database.branchvisibilitypolicy import *
