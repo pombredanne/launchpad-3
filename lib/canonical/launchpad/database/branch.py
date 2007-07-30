@@ -716,7 +716,7 @@ class BranchSet:
             SELECT TeamParticipation.team
             FROM TeamParticipation
             WHERE TeamParticipation.person = %s)
-            """ % sqlvalues(person.id))
+            """ % sqlvalues(person))
         return branches
 
     def getLatestBranchesForProduct(self, product, quantity,
