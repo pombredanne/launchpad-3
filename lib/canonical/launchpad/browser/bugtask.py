@@ -786,6 +786,13 @@ class BugTaskEditView(LaunchpadFormView):
         for field in self._getReadOnlyFieldNames():
             self.form_fields[field].for_display = True
 
+        # In cases where the status or importance fields are read only we give
+        # them a custom widget so that the colours
+        for field in ['status', 'importance']:
+            if field in self._getReadOnlyFieldNames():
+                self.form_fields[field].custom_widget = CustomWidgetFactory(
+                    DBItemDisplayWidget)
+
         if self.context.target_uses_malone:
             self.form_fields = self.form_fields.omit('bugwatch')
         elif self.context.bugwatch is not None:
@@ -891,6 +898,7 @@ class BugTaskEditView(LaunchpadFormView):
             distro = bugtask.distribution
         sourcename = bugtask.sourcepackagename
         product = bugtask.product
+
         # XXX: this set of try/except blocks is to ensure that the
         # widget gets the correct error message assigned to it. It's
         # rather unfortunate that this is done this way but we need to
