@@ -757,7 +757,6 @@ class BugTaskEditView(LaunchpadFormView):
 
     def setUpFields(self):
         """Set up the fields for the bug task edit form."""
-        import pdb; pdb.set_trace()
         # We need to add any fields that aren't already in our fieldset.
         for field in self._getEditableFieldNames():
             if field not in self.field_names:
@@ -1060,7 +1059,7 @@ class BugTaskEditView(LaunchpadFormView):
                     edited_fields=field_names))
 
         if bugtask.sourcepackagename is not None:
-            real_package_name = bugtask.sourcepackagename.name
+            real_package_name = bugtask.sourcepackagename
             entered_package_name = data.get('sourcepackagename')
             if real_package_name != entered_package_name:
                 # The user entered a binary package name which got
@@ -1069,8 +1068,8 @@ class BugTaskEditView(LaunchpadFormView):
                     "'%(entered_package)s' is a binary package. This bug has"
                     " been assigned to its source package '%(real_package)s'"
                     " instead.",
-                    entered_package=entered_package_name,
-                    real_package=real_package_name)
+                    entered_package=entered_package_name.name,
+                    real_package=real_package_name.name)
 
         if (bugtask_before_modification.sourcepackagename !=
             bugtask.sourcepackagename):
