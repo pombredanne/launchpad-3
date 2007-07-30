@@ -11,9 +11,8 @@ __all__ = [
 from zope.component import getUtility
 from zope.interface import implements
 
-from canonical.lp.dbschema import MailingListStatus
 from canonical.launchpad.interfaces import (
-    IMailingListSet, IRequestedMailingListAPI)
+    IMailingListSet, IRequestedMailingListAPI, MailingListStatus)
 from canonical.launchpad.webapp import LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 

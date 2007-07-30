@@ -14,12 +14,12 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.launchpad.database import BugNotification
 from canonical.launchpad.interfaces import (
-    IBugSet, IEmailAddressSet, IPersonSet, IProductSet)
+    IBugSet, IEmailAddressSet, IPersonSet, IProductSet,
+    PersonCreationRationale)
 from canonical.launchpad.scripts import bugimport
 from canonical.launchpad.scripts.bugimport import ET
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType,
-    PersonCreationRationale)
+    BugTaskImportance, BugTaskStatus, BugAttachmentType)
 
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests import login, logout

@@ -139,11 +139,6 @@
     />
 
   <vocabulary
-    name="GPGKeyAlgorithm"
-    factory="canonical.launchpad.vocabularies.GPGKeyAlgorithmVocabulary"
-    />
-
-  <vocabulary
     name="InfestationStatus"
     factory="canonical.launchpad.vocabularies.InfestationStatusVocabulary"
     />
@@ -156,11 +151,6 @@
   <vocabulary
     name="Language"
     factory="canonical.launchpad.vocabularies.LanguageVocabulary"
-    />
-
-  <vocabulary
-    name="MailingListStatus"
-    factory="canonical.launchpad.vocabularies.MailingListStatusVocabulary"
     />
 
   <vocabulary
@@ -336,16 +326,6 @@
   <vocabulary
     name="SprintSpecificationStatus"
     factory="canonical.launchpad.vocabularies.SprintSpecificationStatusVocabulary"
-    />
-
-  <vocabulary
-    name="TeamMembershipRenewalPolicy"
-    factory="canonical.launchpad.vocabularies.TeamMembershipRenewalPolicyVocabulary"
-    />
-
-  <vocabulary
-    name="TeamSubscriptionPolicy"
-    factory="canonical.launchpad.vocabularies.TeamSubscriptionPolicyVocabulary"
     />
 
   <vocabulary

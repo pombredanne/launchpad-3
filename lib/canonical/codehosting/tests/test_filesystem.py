@@ -234,7 +234,7 @@ class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
             transport.mkdir, '~testuser/no-such-product/new-branch')
         self.assertIn(
             "Directories directly under a user directory must be named after "
-            "a product name registered in Launchpad",
+            "a project name registered in Launchpad",
             str(e))
 
     @deferToThread
