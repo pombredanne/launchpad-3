@@ -865,37 +865,57 @@ class NewSpecificationView(LaunchpadFormView):
     label = "Register a new blueprint"
     
     @action(_('Register Blueprint'), name='register')
-    def register_action(self, action, data):
-        """Register a new blueprint."""
-        self.init(data)     
+    def register(self, action, data):
+        """Registers the new blueprint."""
         create = getUtility(ISpecificationSet).new
-        spec = create(name              = data    ['name'              ],
-                      title             = data    ['title'             ],
-                      specurl           = data    ['specurl'           ],
-                      summary           = data    ['summary'           ],
-                      definition_status = data    ['definition_status' ],
-                      distribution      = data.get('distribution', None),
-                      product           = data.get('product'     , None),
-                      assignee          = data.get('assignee'    , None),
-                      drafter           = data.get('drafter'     , None),
-                      approver          = data.get('approver'    , None),
+        spec = create(name              = data    ['name'             ],
+                      title             = data    ['title'            ],
+                      specurl           = data    ['specurl'          ],
+                      summary           = data    ['summary'          ],
+                      definition_status = data    ['definition_status'],
+                      assignee          = data.get('assignee',    None),
+                      drafter           = data.get('drafter' ,    None),
+                      approver          = data.get('approver',    None),
+                      distribution      = self.distribution(data),
+                      product           = self.product     (data),
                       owner             = self.user)
-        # Link the specification with a sprint, if specified.
-        sprint = data.get('sprint', None)
-        if sprint is not None:
-            spec.linkSprint(sprint, self.user) 
         # Propose the specification as a series goal, if specified.
-        series = data.get('series', None)
+        series = self.series(data)
         if series is not None:
             proposeGoalWithAutomaticApproval(spec, series, self.user)
+        # Link the specification with a sprint, if specified.
+        sprint = self.sprint(data)
+        if sprint is not None:
+            spec.linkSprint(sprint, self.user)
+        # Redirect the user to the next context.
         self.next_url = canonical_url(self.next(spec))
 
-    def init(self, data):
-        """Initialises the data."""
-        pass
+    def distribution(self, data):
+        """Returns a distribution from the given context and form data."""
+        return None
     
+    def product(self, data):
+        """Returns a product from the given context and form data."""
+        return None
+    
+    def series(self, data):
+        """Returns a series from the given context and form data."""
+        return None
+    
+    def sprint(self, data):
+        """Returns a sprint from the given context and form data."""
+        return None
+
     def next(self, spec):
-        """Returns the next context."""
+        """Called after the successful creation a specification.
+        
+        Returns a context object for the next location in Launchpad to take
+        the user.
+        
+        The default implementation returns the new specification itself. 
+        Subclasses can override this behaviour by returing an alternative
+        context object.
+        """
         return spec        
 
 
@@ -906,35 +926,43 @@ class NewSpecificationFromTargetView(NewSpecificationView):
     schema = Fields(INewSpecification, 
                     INewSpecificationSprint)
 
+    def sprint(self, data):
+        return data['sprint']
+    
 
 class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
     """A view for adding a specification from a distribution."""
 
-    def init(self, data):
-        data['distribution'] = self.context
-
+    def distribution(self, data):
+        return self.context
+    
 
 class NewSpecificationFromProductView(NewSpecificationFromTargetView):
     """A view for adding a specification from a product."""
 
-    def init(self, data):
-        data['product'] = self.context
+    def product(self, data):
+        return self.context
 
 
-class NewSpecificationFromDistroSeriesView(NewSpecificationFromTargetView):
+class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
+    """An abstract view for adding a specification from a series."""
+    
+    def series(self, data):
+        return self.context
+
+
+class NewSpecificationFromDistroSeriesView(NewSpecificationFromSeriesView):
     """A view for adding a specification from a distro series."""
     
-    def init(self, data):
-        data['series'      ] = self.context
-        data['distribution'] = self.context.distribution
+    def distribution(self, data):
+        return self.context.distribution
 
 
-class NewSpecificationFromProductSeriesView(NewSpecificationFromTargetView):
+class NewSpecificationFromProductSeriesView(NewSpecificationFromSeriesView):
     """A view for adding a specification from a product series."""
-    
-    def init(self, data):
-        data['series' ] = self.context
-        data['product'] = self.context.product
+
+    def product(self, data):
+        return self.context.product
 
 
 class NewSpecificationFromNonTargetView(NewSpecificationView):
@@ -942,14 +970,16 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
     not correspond to a unique specification target. Sub-classes must define
     a schema which requires the user to specify a target.
     """
-
-    def init(self, data):
-        # Determine the type of target.
+    
+    def distribution(self, data):
         target = data['target']
         if IDistribution.providedBy(target):
-            data['distribution'] = target
-        elif IProduct.providedBy(target):
-            data['product'] = target
+            return target
+
+    def product(self, data):
+        target = data['target']
+        if IProduct.providedBy(target):
+            return target
 
     def validate(self, data):
         """Ensures that the name chosen for the new specification is unique
@@ -967,9 +997,6 @@ class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
     schema = Fields(INewSpecificationProjectTarget,
                     INewSpecification,
                     INewSpecificationSprint)
-
-    def init(self, data):
-        data['product'] = data['target']
     
 
 class NewSpecificationFromRootView(NewSpecificationFromNonTargetView):
@@ -986,9 +1013,8 @@ class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
     schema = Fields(INewSpecificationTarget,
                     INewSpecification)
 
-    def init(self, data):
-        NewSpecificationFromNonTargetView.init(self, data)
-        data['sprint'] = self.context
+    def sprint(self, data):
+        return self.context
 
     def next(self, spec):
         return self.context
