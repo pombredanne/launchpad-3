@@ -29,15 +29,14 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     IBranch, IBugTask, IEmailAddressSet, INotificationRecipientSet, IPerson,
     ISpecification, ITeamMembershipSet, IUpstreamBugTask, 
-    UnknownRecipientError)
+    TeamMembershipStatus, UnknownRecipientError)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template, shortlist)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import (
-    TeamMembershipStatus, QuestionAction)
+from canonical.lp.dbschema import QuestionAction
 
 CC = "CC"
 

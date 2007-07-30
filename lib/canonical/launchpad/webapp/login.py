@@ -21,9 +21,8 @@ from canonical.launchpad.webapp.interfaces import LoggedOutEvent
 from canonical.launchpad.webapp.error import SystemErrorView
 from canonical.launchpad.webapp.url import urlappend
 from canonical.launchpad.interfaces import (
-    ILoginTokenSet, IPersonSet, UBUNTU_WIKI_URL, ShipItConstants)
+    ILoginTokenSet, IPersonSet, LoginTokenType, UBUNTU_WIKI_URL, ShipItConstants)
 from canonical.launchpad.interfaces.validation import valid_password
-from canonical.lp.dbschema import LoginTokenType
 from canonical.config import config
 
 

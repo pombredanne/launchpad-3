@@ -193,7 +193,7 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'specifications'
-    links = ['roadmap', 'table', 'setgoals', 'listdeclined']
+    links = ['listall', 'roadmap', 'table', 'setgoals', 'listdeclined']
 
     def listall(self):
         text = 'List all blueprints'
