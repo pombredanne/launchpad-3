@@ -28,9 +28,10 @@ Person:
     ...        'ubuntu_thunderbird.assignee.assign_to_nobody',
     ...    'ubuntu_thunderbird.sourcepackagename':
     ...        ubuntu_thunderbird_task.sourcepackagename.name}
-    >>> request = LaunchpadTestRequest(form=edit_form)
-    >>> edit_view = getMultiAdapter((ubuntu_thunderbird_task, request),
-    ...     name='+editstatus-page')
+    >>> request = LaunchpadTestRequest(method='POST', form=edit_form)
+    >>> edit_view = getView(
+    ...     ubuntu_thunderbird_task, '+editstatus-page', request)
+    >>> edit_view.initialize()
     >>> ubuntu_thunderbird_task.status.title
     'In Progress'
 
@@ -48,10 +49,10 @@ assigned to linux-source-2.6.15 instead.
 
     >>> ubuntu_thunderbird = ubuntu_thunderbird_task.sourcepackagename
     >>> edit_form['ubuntu_thunderbird.sourcepackagename'] = u'linux-2.6.12'
-    >>> request = LaunchpadTestRequest(form=edit_form)
-    >>> edit_view = getView(
-    ...     ubuntu_thunderbird_task, '+editstatus-page', request)
-    >>> edit_view.process_form()
+    >>> request = LaunchpadTestRequest(method='POST', form=edit_form)
+    >>> edit_view = getMultiAdapter((ubuntu_thunderbird_task, request),
+    ...     name='+editstatus-page')
+    >>> edit_view.initialize()
     >>> ubuntu_thunderbird_task.sourcepackagename.name
     u'linux-source-2.6.15'
 
@@ -71,10 +72,10 @@ If we try to change the source package to package name that doesn't
 exist in Launchpad. we'll get an error message.
 
     >>> edit_form['ubuntu_thunderbird.sourcepackagename'] = u'no-such-package'
-    >>> request = LaunchpadTestRequest(form=edit_form)
+    >>> request = LaunchpadTestRequest(form=edit_form, method='POST')
     >>> edit_view = getView(
     ...     ubuntu_thunderbird_task, '+editstatus-page', request)
-    >>> edit_view.process_form()
+    >>> edit_view.initalize()
     u'Please fix the problems below and try again.'
     >>> for error in edit_view.errors:
     ...     print error
@@ -111,9 +112,9 @@ fail.
     ...        'ubuntu.assignee.assign_to_nobody',
     ...    'ubuntu.sourcepackagename': ubuntu_evolution.name,
     ...     }
-    >>> request = LaunchpadTestRequest(form=edit_form)
+    >>> request = LaunchpadTestRequest(form=edit_form, method='POST')
     >>> edit_view = getView(ubuntu_task, '+editstatus-page', request)
-    >>> edit_view.process_form()
+    >>> edit_view.initialize()
     u'Please fix the problems below and try again.'
     >>> for error in edit_view.errors:
     ...     print error
@@ -143,9 +144,9 @@ directly, let's add a grumpy task first.
     ...        'ubuntu_grumpy.assignee.assign_to_nobody',
     ...    'ubuntu_grumpy.sourcepackagename': ubuntu_evolution.name,
     ...     }
-    >>> request = LaunchpadTestRequest(form=edit_form)
+    >>> request = LaunchpadTestRequest(form=edit_form, method='POST')
     >>> edit_view = getView(ubuntu_grumpy_task, '+editstatus-page', request)
-    >>> edit_view.process_form()
+    >>> edit_view.initialize()
     u'Please fix the problems below and try again.'
     >>> for error in edit_view.errors:
     ...     print error
@@ -181,14 +182,15 @@ XXX: We really should update the status from the bug watch, but that's
     >>> thunderbird_task.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
     >>> request = LaunchpadTestRequest(
+    ...     method='POST',
     ...     form={
-    ...         'FORM_SUBMIT': '',
+    ...         'thunderbird.actions.save': 'Save Changes',
     ...         'thunderbird.status': 'Confirmed',
     ...         'thunderbird.importance': 'Critical',
     ...         'thunderbird.bugwatch': '6'})
     >>> edit_view = getView(
     ...     thunderbird_task, '+editstatus-page', request)
-    >>> edit_view.process_form()
+    >>> edit_view.initialize()
     >>> thunderbird_task.bugwatch == bugzilla_watch
     True
     >>> thunderbird_task.status.title
@@ -198,12 +200,13 @@ If we unlink the bug watch, the bugtask's status and importance will be
 set to their default values:
 
     >>> request = LaunchpadTestRequest(
+    ...     method='POST',
     ...     form={
-    ...         'FORM_SUBMIT': '',
+    ...         'thunderbird.actions.save': 'Save Changes',
     ...         'thunderbird.bugwatch-empty-marker': '1'})
     >>> edit_view = getView(
     ...     thunderbird_task, '+editstatus-page', request)
-    >>> edit_view.process_form()
+    >>> edit_view.initialize()
     >>> thunderbird_task.bugwatch is None
     True
 
