@@ -9,6 +9,7 @@ __all__ = [
     'DistroArchSeriesBinaryPackageRelease',
     ]
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
@@ -23,6 +24,7 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
+from canonical.launchpad.interfaces import IArchiveSet
 
 class DistroArchSeriesBinaryPackageRelease:
 
@@ -293,6 +295,12 @@ class DistroArchSeriesBinaryPackageRelease:
             new_priority == current.priority):
             return
 
+        # See if the archive has changed by virtue of the component changing:
+        new_archive = getUtility(IArchiveSet).getByDistroComponent(
+            self.distribution, new_component.name)
+        if new_archive == None:
+            new_archive = current.archive
+
         # Append the modified package publishing entry
         SecureBinaryPackagePublishingHistory(
             binarypackagerelease=self.binarypackagerelease,
@@ -304,7 +312,7 @@ class DistroArchSeriesBinaryPackageRelease:
             component=new_component,
             section=new_section,
             priority=new_priority,
-            archive=current.archive
+            archive=new_archive
             )
 
     def supersede(self):

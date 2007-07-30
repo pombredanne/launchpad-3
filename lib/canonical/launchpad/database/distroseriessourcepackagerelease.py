@@ -8,6 +8,7 @@ __all__ = [
     'DistroSeriesSourcePackageRelease',
     ]
 
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
@@ -20,7 +21,7 @@ from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.interfaces import (
-    IDistroSeriesSourcePackageRelease, ISourcePackageRelease)
+    IArchiveSet, IDistroSeriesSourcePackageRelease, ISourcePackageRelease)
 from canonical.lp import decorates
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackageUploadStatus)
@@ -219,6 +220,12 @@ class DistroSeriesSourcePackageRelease:
             new_section == current.section):
             return
 
+        # See if the archive has changed by virtue of the component changing:
+        new_archive = getUtility(IArchiveSet).getByDistroComponent(
+            self.distribution, new_component.name)
+        if new_archive == None:
+            new_archive = current.archive
+
         SecureSourcePackagePublishingHistory(
             distroseries=current.distroseries,
             sourcepackagerelease=current.sourcepackagerelease,
@@ -228,7 +235,7 @@ class DistroSeriesSourcePackageRelease:
             pocket=current.pocket,
             component=new_component,
             section=new_section,
-            archive=current.archive
+            archive=new_archive
         )
 
     def supersede(self):

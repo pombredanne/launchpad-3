@@ -10,17 +10,21 @@ import os
 import sys
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
+from canonical.launchpad.database.component import ComponentSelection
+from canonical.launchpad.database.distroarchseriesbinarypackage import (
+    DistroArchSeriesBinaryPackage)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IComponentSet, ISectionSet)
+    IBinaryPackageNameSet, IDistributionSet, IComponentSet, ISectionSet)
 from canonical.launchpad.scripts.ftpmaster import (
     ArchiveOverrider, ArchiveOverriderError, ArchiveCruftChecker,
     ArchiveCruftCheckerError)
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingPriority)
+    ArchivePurpose, PackagePublishingPocket, PackagePublishingPriority)
 
 # XXX cprov 20060515: {create, remove}TestArchive functions should be
 # moved to the publisher test domain as soon as we have it.
@@ -74,6 +78,15 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         self.hoary = self.ubuntu['hoary']
         self.component_main = getUtility(IComponentSet)['main']
         self.section_base = getUtility(ISectionSet)['base']
+
+        # Allow commercial in warty and hoary.
+        commercial_component = getUtility(IComponentSet)['commercial']
+        self.ubuntu_warty = self.ubuntu['warty']
+        self.ubuntu_hoary = self.ubuntu['hoary']
+        ComponentSelection(distroseries=self.ubuntu_warty, 
+                           component=commercial_component)
+        ComponentSelection(distroseries=self.ubuntu_hoary, 
+                           component=commercial_component)
 
     def test_initialize_success(self):
         """Test ArchiveOverrider initialization process.
@@ -238,6 +251,28 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Priority to: 'EXTRA'\n"
             "INFO: 'mozilla-firefox/main/base' source overridden")
 
+    def test_processSourceChange_with_changed_archive(self):
+        """Check processSourceChange method call with an archive change.
+
+        Changing the component to 'commercial' will result in the archive
+        changing on the publishing record.  Make sure that it changes 
+        correctly.
+        """
+        # Apply the override.
+        changer = ArchiveOverrider(
+            self.log, distro_name='ubuntu', suite='warty',
+            component_name='commercial', section_name='base', 
+            priority_name='extra')
+        changer.initialize()
+        changer.processSourceChange('mozilla-firefox')
+
+        # Check results.
+        mozilla_source = self.ubuntu_warty.getSourcePackage('mozilla-firefox')
+        distroseriessourcepackagerelease = mozilla_source.currentrelease
+        last_pub_hist = distroseriessourcepackagerelease.publishing_history[0]
+        self.assertEqual(ArchivePurpose.COMMERCIAL,
+            last_pub_hist.archive.purpose)
+
     def test_processSourceChange_error(self):
         """processSourceChange warns the user about an unpublished source.
 
@@ -276,6 +311,39 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: 'pmount/main/base/EXTRA' binary overridden in hoary/hppa\n"
             "INFO: 'pmount/universe/editors/IMPORTANT' binary "
                 "overridden in hoary/i386")
+
+    def test_processBinaryChange_with_changed_archive(self):
+        """Check processBinaryChange method call with an archive change.
+
+        Changing the component to 'commercial' will result in the archive
+        changing.  Make sure that it changes correctly.
+        """
+        # Apply the override.
+        changer = ArchiveOverrider(
+            self.log, distro_name='ubuntu', suite='hoary',
+            component_name='commercial', section_name='base', 
+            priority_name='extra')
+        changer.initialize()
+        changer.processBinaryChange('pmount')
+
+        # pmount is published in hoary under the architectures hppa and i386.
+        # Check that both publishing records exist with COMMERCIAL set.
+        pmount_bin_name = getUtility(IBinaryPackageNameSet)['pmount']
+        hoary_i386 = self.hoary['i386']
+        hoary_hppa = self.hoary['hppa']
+        pmount_i386 = DistroArchSeriesBinaryPackage(hoary_i386, 
+            pmount_bin_name)
+        pmount_hppa = DistroArchSeriesBinaryPackage(hoary_hppa, 
+            pmount_bin_name)
+        pmount_i386_current = pmount_i386.currentrelease
+        pmount_hppa_current = pmount_hppa.currentrelease
+        last_pub_pmount_i386 = pmount_i386_current.publishing_history[0]
+        last_pub_pmount_hppa = pmount_hppa_current.publishing_history[0]
+
+        self.assertEqual(ArchivePurpose.COMMERCIAL,
+            last_pub_pmount_i386.archive.purpose)
+        self.assertEqual(ArchivePurpose.COMMERCIAL,
+            last_pub_pmount_hppa.archive.purpose)
 
     def test_processBinaryChange_error(self):
         """processBinaryChange warns the user about an unpublished binary.
