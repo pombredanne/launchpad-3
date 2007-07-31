@@ -103,7 +103,7 @@ class XMLRPCv1TestCase(LaunchpadTestCase):
 
         # Check that the SSH key in the sample data can be retrieved
         # successfully.
-        keys = self.server.getSSHKeys('sabdfl')
+        keys = self.server.getSSHKeys('test@canonical.com')
 
         # There should only be one key for this user.
         self.assertEqual(1, len(keys))
