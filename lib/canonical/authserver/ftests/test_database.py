@@ -17,7 +17,8 @@ from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.interfaces import (
-    BranchType, IBranchSet, IEmailAddressSet, IPersonSet, IWikiNameSet)
+    BranchType, EmailAddressStatus, IBranchSet, IEmailAddressSet, IPersonSet,
+    IWikiNameSet)
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 
@@ -27,7 +28,6 @@ from canonical.authserver.interfaces import (
 from canonical.authserver.database import (
     DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
     DatabaseBranchDetailsStorage)
-from canonical.lp import dbschema
 
 from canonical.testing.layers import LaunchpadScriptLayer
 
@@ -171,7 +171,7 @@ class UserDetailsStorageTest(DatabaseTest):
         self.cursor.execute('''
             INSERT INTO EmailAddress (email, person, status)
             VALUES ('sb@example.com', %d, %d)
-            ''' % (userDict['id'], dbschema.EmailAddressStatus.NEW.value))
+            ''' % (userDict['id'], EmailAddressStatus.NEW.value))
         userDict2 = storage._getUserInteraction('stuart.bishop@canonical.com')
         self.assertEqual(userDict, userDict2)
 
@@ -183,11 +183,11 @@ class UserDetailsStorageTest(DatabaseTest):
         email_set = getUtility(IEmailAddressSet)
 
         email = email_set.getByEmail('stuart.bishop@canonical.com')
-        email.status = dbschema.EmailAddressStatus.VALIDATED
+        email.status = EmailAddressStatus.VALIDATED
         email.syncUpdate()
 
         email = email_set.getByEmail('stuart@stuartbishop.net')
-        email.status = dbschema.EmailAddressStatus.PREFERRED
+        email.status = EmailAddressStatus.PREFERRED
         email.syncUpdate()
         transaction.commit()
 
@@ -206,7 +206,7 @@ class UserDetailsStorageTest(DatabaseTest):
         # Use a silly email address that is going to appear before all others
         # in alphabetical sorting.
         email = email_set.new(
-            '_stub@canonical.com', stub, dbschema.EmailAddressStatus.VALIDATED)
+            '_stub@canonical.com', stub, EmailAddressStatus.VALIDATED)
         transaction.commit()
 
         storage = DatabaseUserDetailsStorage(None)

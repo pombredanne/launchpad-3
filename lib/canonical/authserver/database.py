@@ -25,10 +25,12 @@ from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchType, IBranchSet, IPersonSet, IProductSet)
+    BranchCreationForbidden, BranchType, IBranchSet, IPersonSet, IProductSet,
+    EmailAddressStatus, SSHKeyType)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.database.sqlbase import clear_current_connection_cache
+from canonical.config import config
 
 from canonical.authserver.interfaces import (
     IBranchDetailsStorage, IHostedBranchStorage, IUserDetailsStorage,

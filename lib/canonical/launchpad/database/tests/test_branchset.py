@@ -11,10 +11,8 @@ from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
     BranchType, BranchLifecycleStatus, BranchCreationForbidden,
     BranchCreatorNotMemberOfOwnerTeam, BranchVisibilityRule,
-    IBranchSet, IPersonSet, IProductSet)
-
-from canonical.lp.dbschema import (
-    PersonCreationRationale, TeamSubscriptionPolicy)
+    IBranchSet, IPersonSet, IProductSet, PersonCreationRationale,
+    TeamSubscriptionPolicy)
 
 from canonical.testing import LaunchpadFunctionalLayer
 

@@ -71,7 +71,7 @@ from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary, 
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
 from canonical.launchpad.helpers import shortlist
-from canonical.lp.dbschema import EmailAddressStatus, DistroSeriesStatus
+from canonical.lp.dbschema import DistroSeriesStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
     Distribution, DistroSeries, Person, SourcePackageRelease, Branch,
@@ -85,7 +85,7 @@ from canonical.launchpad.interfaces import (
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IFAQ, IFAQTarget,
     IEmailAddressSet, ILaunchBag, IMilestoneSet, IPerson, IPersonSet,
     IPillarName, IProduct, IProject, ISourcePackage, ISpecification, ITeam,
-    IUpstreamBugTask)
+    IUpstreamBugTask, EmailAddressStatus)
 
 
 class BasePersonVocabulary:
