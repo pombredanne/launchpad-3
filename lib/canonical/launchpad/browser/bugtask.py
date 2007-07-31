@@ -796,7 +796,7 @@ class BugTaskEditView(LaunchpadFormView):
             self.form_fields[field].for_display = True
 
         # In cases where the status or importance fields are read only we give
-        # them a custom widget so they are rendered correctly.
+        # them a custom widget so that they are rendered correctly.
         for field in ['status', 'importance']:
             if field in self._getReadOnlyFieldNames():
                 self.form_fields[field].custom_widget = CustomWidgetFactory(
