@@ -2,6 +2,10 @@
 
 """Question enumerations."""
 
+# Enums are kept separated from the classes that use them to avoid
+# circular imports. Notably, QuestonAction and QuestionStatus are
+# used by most of the schemas for question classes.
+
 __all__ = [
     'QuestionAction',
     'QuestionParticipation',
