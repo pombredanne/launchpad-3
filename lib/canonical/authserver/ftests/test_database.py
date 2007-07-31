@@ -18,7 +18,7 @@ from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.interfaces import (
-    BranchType, IBranchSet, IPersonSet, IProductSet)
+    BranchType, EmailAddressStatus, IBranchSet, IPersonSet, IProductSet)
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 
@@ -28,7 +28,6 @@ from canonical.authserver.interfaces import (
 from canonical.authserver.database import (
     DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
     DatabaseBranchDetailsStorage)
-from canonical.lp import dbschema
 
 from canonical.launchpad.ftests.harness import (
     LaunchpadTestCase, LaunchpadTestSetup)
@@ -123,7 +122,7 @@ class DatabaseStorageTestCase(unittest.TestCase):
         self.cursor.execute('''
             INSERT INTO EmailAddress (email, person, status)
             VALUES ('sb@example.com', %d, %d)
-            ''' % (userDict['id'], dbschema.EmailAddressStatus.NEW.value))
+            ''' % (userDict['id'], EmailAddressStatus.NEW.value))
         userDict2 = storage._getUserInteraction(self.cursor,
                                                 'stuart.bishop@canonical.com')
         self.assertEqual(userDict, userDict2)
@@ -136,11 +135,11 @@ class DatabaseStorageTestCase(unittest.TestCase):
         self.cursor.execute('''
             UPDATE EmailAddress SET status = %d
             WHERE email = 'stuart.bishop@canonical.com'
-            ''' % (dbschema.EmailAddressStatus.VALIDATED.value,))
+            ''' % (EmailAddressStatus.VALIDATED.value,))
         self.cursor.execute('''
             UPDATE EmailAddress SET status = %d
             WHERE email = 'stuart@stuartbishop.net'
-            ''' % (dbschema.EmailAddressStatus.PREFERRED.value,))
+            ''' % (EmailAddressStatus.PREFERRED.value,))
         userDict = storage._getUserInteraction(self.cursor,
                                                'stuart.bishop@canonical.com')
         self.assertEqual(['stuart@stuartbishop.net',
