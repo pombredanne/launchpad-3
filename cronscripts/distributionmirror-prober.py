@@ -14,11 +14,10 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.lp import AUTOCOMMIT_ISOLATION
-from canonical.lp.dbschema import MirrorContent
 from canonical.launchpad.scripts.base import (
     LaunchpadCronScript, LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import (
-    IDistributionMirrorSet, ILibraryFileAliasSet)
+    IDistributionMirrorSet, ILibraryFileAliasSet, MirrorContent)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.scripts.distributionmirror_prober import (
     get_expected_cdimage_paths, probe_archive_mirror, probe_cdimage_mirror)

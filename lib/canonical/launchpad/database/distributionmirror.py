@@ -20,21 +20,20 @@ from canonical.config import config
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.enumcol import EnumCol
 
 from canonical.archivepublisher.diskpool import poolify
 
 from canonical.lp.dbschema import (
-    MirrorSpeed, MirrorContent, MirrorStatus, PackagePublishingPocket,
-    PackagePublishingStatus, SourcePackageFileType,
-    BinaryPackageFileType)
+    BinaryPackageFileType, PackagePublishingPocket, PackagePublishingStatus,
+    SourcePackageFileType)
 
 from canonical.launchpad.interfaces import (
-    IDistributionMirror, IMirrorDistroSeriesSource, IMirrorDistroArchSeries,
-    IMirrorProbeRecord, IDistributionMirrorSet, PROBE_INTERVAL, pocketsuffix,
-    IDistroSeries, IDistroArchSeries, IMirrorCDImageDistroSeries,
-    ILaunchpadCelebrities)
+    IDistributionMirrorSet, IDistributionMirror, IDistroArchSeries,
+    IDistroSeries, ILaunchpadCelebrities, IMirrorCDImageDistroSeries,
+    IMirrorDistroArchSeries, IMirrorDistroSeriesSource, IMirrorProbeRecord,
+    MirrorContent, MirrorSpeed, MirrorStatus, pocketsuffix, PROBE_INTERVAL)
 from canonical.launchpad.database.country import Country
 from canonical.launchpad.database.files import (
     BinaryPackageFile, SourcePackageReleaseFile)
@@ -72,11 +71,11 @@ class DistributionMirror(SQLBase):
     enabled = BoolCol(
         notNull=True, default=False)
     speed = EnumCol(
-        notNull=True, schema=MirrorSpeed)
+        notNull=True, enum=MirrorSpeed)
     country = ForeignKey(
         dbName='country', foreignKey='Country', notNull=True)
     content = EnumCol(
-        notNull=True, schema=MirrorContent)
+        notNull=True, enum=MirrorContent)
     official_candidate = BoolCol(
         notNull=True, default=False)
     official_approved = BoolCol(
@@ -599,7 +598,7 @@ class MirrorDistroArchSeries(SQLBase, _MirrorSeriesMixIn):
     component = ForeignKey(
         dbName='component', foreignKey='Component', notNull=True)
     status = EnumCol(
-        notNull=True, default=MirrorStatus.UNKNOWN, schema=MirrorStatus)
+        notNull=True, default=MirrorStatus.UNKNOWN, enum=MirrorStatus)
     pocket = EnumCol(
         notNull=True, schema=PackagePublishingPocket)
 
@@ -668,7 +667,7 @@ class MirrorDistroSeriesSource(SQLBase, _MirrorSeriesMixIn):
     component = ForeignKey(
         dbName='component', foreignKey='Component', notNull=True)
     status = EnumCol(
-        notNull=True, default=MirrorStatus.UNKNOWN, schema=MirrorStatus)
+        notNull=True, default=MirrorStatus.UNKNOWN, enum=MirrorStatus)
     pocket = EnumCol(
         notNull=True, schema=PackagePublishingPocket)
 

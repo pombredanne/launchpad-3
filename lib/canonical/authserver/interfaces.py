@@ -140,6 +140,13 @@ class IHostedBranchStorage(Interface):
     def getBranchInformation(loginID, personName, productName, branchName):
         """Return the database ID and permissions for a branch.
 
+        :param loginID: The login ID for the person asking for the branch
+            information. This is used for branch privacy checks.
+        :param personName: The owner of the branch.
+        :param productName: The product that the branch belongs to. '+junk' is
+            allowed.
+        :param branchName: The name of the branch.
+
         :returns: (branch_id, permissions), where 'permissions' is 'w' if the
             user represented by 'loginID' can write to the branch, and 'r' if
             they cannot. If the branch doesn't exist, return ('', '').
@@ -158,9 +165,10 @@ class IHostedBranchStorage(Interface):
         new branch to it.  See also
         https://launchpad.canonical.com/SupermirrorFilesystemHierarchy.
 
-        :param loginID: the person ID of the logged in user.
-        :param personName: the unique name of a Person
-        :param productName: the unique name of a Product
+        :param loginID: the person ID of the user creating the branch.
+        :param personName: the unique name of the owner of the branch.
+        :param productName: the unique name of the product that the branch
+            belongs to.
         :param branchName: the name for this branch, to be used in URLs.
         :returns: the ID for the new branch.
         """
