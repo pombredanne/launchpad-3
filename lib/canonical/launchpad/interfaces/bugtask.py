@@ -676,7 +676,6 @@ class IBugTaskSet(Interface):
 
 class IAddBugTaskForm(Interface):
     """Form for adding an upstream bugtask."""
-    product = IUpstreamBugTask['product']
     distribution = IDistroBugTask['distribution']
     sourcepackagename = IDistroBugTask['sourcepackagename']
     bug_url = StrippedTextLine(

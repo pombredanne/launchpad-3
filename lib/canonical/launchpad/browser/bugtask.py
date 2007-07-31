@@ -690,7 +690,7 @@ class BugTaskPortletView:
             if task.id is not self.context.id]
 
 
-class BugTaskEditView(LaunchpadFormView):
+class BugTaskEditView(LaunchpadEditFormView):
     """The view class used for the task +editstatus page."""
 
     _missing_value = object()
@@ -699,8 +699,8 @@ class BugTaskEditView(LaunchpadFormView):
     custom_widget('bugwatch', BugTaskBugWatchWidget)
     custom_widget('assignee', BugTaskAssigneeWidget)
     field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
-                   'product', 'status', 'statusexplanation',
-                   'sourcepackagename']
+                   'product', 'sourcepackagename', 'status',
+                   'statusexplanation']
 
     @property
     def schema(self):
@@ -762,7 +762,7 @@ class BugTaskEditView(LaunchpadFormView):
         # We need to add any fields that aren't already in our fieldset.
         for field in self._getEditableFieldNames():
             if field not in self.field_names:
-                self.fieldnames.append(field)
+                self.field_names.append(field)
 
         LaunchpadFormView.setUpFields(self)
 
@@ -992,6 +992,8 @@ class BugTaskEditView(LaunchpadFormView):
         #changed = applyWidgetsChanges(
         #    self, self.schema, target=bugtask,
         #    names=field_names_to_apply)
+
+        changed = self.updateContextFromData(data, context=bugtask)
 
         new_status = new_values.pop("status", self._missing_value)
         new_assignee = new_values.pop("assignee", self._missing_value)
