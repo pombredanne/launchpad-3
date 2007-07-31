@@ -85,7 +85,9 @@ class DatabaseTest(unittest.TestCase):
         :param now_minus: shorthand to set a value before the current time.
         """
         # Exactly one of value or now_minus must be set.
-        assert int(value is None) + int(now_minus is None) == 1
+        self.failUnless(
+            (value is None) ^ (now_minus is None),
+            "Exactly one of value or now_minus must be set")
         if now_minus is not None:
             value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
                      % now_minus)
@@ -101,7 +103,9 @@ class DatabaseTest(unittest.TestCase):
         :param now_minus: shorthand to set a value before the current time.
         """
         # Exactly one of value or now_minus must be set.
-        assert int(value is None) + int(now_minus is None) == 1
+        self.failUnless(
+            (value is None) ^ (now_minus is None),
+            "Exactly one of value or now_minus must be set")
         if now_minus is not None:
             value = ("CURRENT_TIMESTAMP AT TIME ZONE 'UTC' - interval '%s'"
                      % now_minus)
@@ -169,10 +173,15 @@ class UserDetailsStorageTest(DatabaseTest):
         # address, it won't change the result.
         storage = DatabaseUserDetailsStorage(None)
         userDict = storage._getUserInteraction('stuart.bishop@canonical.com')
-        self.cursor.execute('''
-            INSERT INTO EmailAddress (email, person, status)
-            VALUES ('sb@example.com', %d, %d)
-            ''' % (userDict['id'], EmailAddressStatus.NEW.value))
+
+        transaction.begin()
+        login(ANONYMOUS)
+        stub = getUtility(IPersonSet).getByName('stub')
+        email_set = getUtility(IEmailAddressSet)
+        email = email_set.new('sb@example.com', stub, EmailAddressStatus.NEW)
+        logout()
+        transaction.commit()
+
         userDict2 = storage._getUserInteraction('stuart.bishop@canonical.com')
         self.assertEqual(userDict, userDict2)
 
@@ -328,13 +337,12 @@ class UserDetailsStorageTest(DatabaseTest):
         # getSSHKeys returns a list of keytype, keytext tuples for users with
         # SSH keys.
 
-        cur = cursor()
-        cur.execute("""
+        self.cursor.execute("""
             SELECT keytext FROM SSHKey
             JOIN Person ON (SSHKey.person = Person.id)
             WHERE Person.name = 'sabdfl'
             """)
-        [expected_keytext] = cur.fetchone()
+        [expected_keytext] = self.cursor.fetchone()
 
         storage = DatabaseUserDetailsStorage(None)
         [(keytype, keytext)] = storage._getSSHKeysInteraction('sabdfl')
