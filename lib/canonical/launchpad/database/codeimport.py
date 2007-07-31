@@ -52,8 +52,11 @@ class CodeImport(SQLBase):
 
     rcs_type = EnumCol(schema=RevisionControlSystems,
         notNull=False, default=None)
+
     cvs_root = StringCol(default=None)
+
     cvs_module = StringCol(default=None)
+
     svn_branch_url = StringCol(default=None)
 
     date_last_successful = UtcDateTimeCol(default=None)
