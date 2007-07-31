@@ -9,8 +9,7 @@ from canonical.launchpad.ftests.harness import (
         )
 from canonical.testing import LaunchpadFunctionalLayer
 from canonical.launchpad.interfaces import (
-    IGPGHandler, IPersonSet, IEmailAddressSet)
-from canonical.lp.dbschema import EmailAddressStatus
+    IGPGHandler, IPersonSet, IEmailAddressSet, EmailAddressStatus)
 from canonical.launchpad.scripts.keyringtrustanalyser import *
 from zope.component import getUtility
 import gpgme
