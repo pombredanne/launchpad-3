@@ -913,22 +913,13 @@ class BugTaskEditView(LaunchpadEditFormView):
         sourcename = bugtask.sourcepackagename
         product = bugtask.product
 
-        # XXX: this set of try/except blocks is to ensure that the
-        # widget gets the correct error message assigned to it. It's
-        # rather unfortunate that this is done this way but we need to
-        # convert over to a LaunchpadFormView to fix this the right way.
-        # It would also fix, incidentally, the fact that this hook is
-        # only called after all widget errors are solved (which causes
-        # the errors here to be hidden until widget errors are solved).
-        #   -- kiko, 2007-03-26
         if distro is not None and sourcename != data['sourcepackagename']:
             try:
                 validate_distrotask(
                     bugtask.bug, distro, data['sourcepackagename'])
             except LaunchpadValidationError, error:
-                self.sourcepackagename_widget._error = ConversionError(
-                    str(error))
-                raise WidgetsError(error)
+                self.setFieldError('sourcepackagename', str(error))
+
         if (product is not None and
             'product' in data and product != data['product']):
             try:
@@ -951,6 +942,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         # bugtask is reassigned to a different product.
         field_names = list(self.field_names)
         new_values = data.copy()
+        data_to_apply = data.copy()
 
         bugtask_before_modification = Snapshot(
             bugtask, providing=providedBy(bugtask))
@@ -979,21 +971,16 @@ class BugTaskEditView(LaunchpadEditFormView):
             # whose changes we want to apply, because we don't want
             # the form machinery to try and set this value back to
             # what it was!
-            field_names.remove("milestone")
+            data_to_apply.remove("milestone")
 
         # We special case setting assignee and status, because there's
         # a workflow associated with changes to these fields.
-        field_names_to_apply = list(field_names)
-        if "assignee" in field_names_to_apply:
-            field_names_to_apply.remove("assignee")
-        if "status" in field_names_to_apply:
-            field_names_to_apply.remove("status")
+        if "assignee" in data_to_apply:
+            del data_to_apply["assignee"]
+        if "status" in data_to_apply:
+            del data_to_apply["status"]
 
-        #changed = applyWidgetsChanges(
-        #    self, self.schema, target=bugtask,
-        #    names=field_names_to_apply)
-
-        changed = self.updateContextFromData(data, context=bugtask)
+        changed = self.updateContextFromData(data_to_apply, context=bugtask)
 
         new_status = new_values.pop("status", self._missing_value)
         new_assignee = new_values.pop("assignee", self._missing_value)
