@@ -38,7 +38,8 @@ class IUserDetailsStorage(Interface):
     dictionary containing:
         :id:             person id (integer, doesn't change ever)
         :displayname:    full name, for display
-        :emailaddresses: list of email addresses
+        :emailaddresses: list of email addresses, preferred email first, the
+                         rest alphabetically sorted.
         :wikiname:       the wikiname of this user on
                          http://www.ubuntulinux.com/wiki/
         :salt:           salt of a SSHA digest, base64-encoded.
@@ -78,7 +79,8 @@ class IUserDetailsStorageV2(Interface):
     dictionary containing:
         :id:             person id (integer, doesn't change ever)
         :displayname:    full name, for display
-        :emailaddresses: list of email addresses
+        :emailaddresses: list of email addresses, preferred email first, the
+                         rest alphabetically sorted.
         :wikiname:       the wikiname of this user on
                          http://www.ubuntulinux.com/wiki/
         :teams:          a list of team dicts for each team the user is a member
