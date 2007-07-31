@@ -15,10 +15,10 @@ from canonical.launchpad.database import (
     ShippingRequest, ShippingRequestSet, StandardShipItRequest)
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer, setFirstLayer)
-from canonical.launchpad.interfaces import ShippingRequestPriority
+from canonical.launchpad.interfaces import (
+    ShippingRequestPriority, ShipItDistroSeries, ShipItFlavour,
+    ShippingRequestStatus)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
-from canonical.lp.dbschema import (
-    ShipItDistroSeries, ShipItFlavour, ShippingRequestStatus)
 
 
 class TestShippingRequestSet(LaunchpadFunctionalTestCase):

@@ -12,8 +12,8 @@ from canonical.lp import READ_COMMITTED_ISOLATION
 from canonical.launchpad.scripts.base import (LaunchpadCronScript,
     LaunchpadScriptFailure)
 from canonical.launchpad.interfaces import (
-    IShippingRequestSet, ShipItConstants, ShippingRequestPriority)
-from canonical.lp.dbschema import ShipItDistroSeries
+    IShippingRequestSet, ShipItConstants, ShippingRequestPriority,
+    ShipItDistroSeries)
 
 
 class ShipitExports(LaunchpadCronScript):
