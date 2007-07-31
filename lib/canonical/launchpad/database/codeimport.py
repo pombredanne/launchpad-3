@@ -37,7 +37,7 @@ class CodeImport(SQLBase):
     registrant = ForeignKey(dbName='registrant', foreignKey='Person',
                             notNull=True)
     assignee = ForeignKey(dbName='assignee', foreignKey='Person',
-                          notNull=False)
+                          notNull=False, default=None)
 
     @property
     def product(self):

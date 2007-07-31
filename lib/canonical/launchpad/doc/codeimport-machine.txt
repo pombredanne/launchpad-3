@@ -12,8 +12,8 @@ shell script.
     >>> from canonical.database.sqlbase import connect
     >>> connection = connect('testadmin')
     >>> cur = connection.cursor()
-    >>> cur.execute('''INSERT INTO CodeImportMachine (hostname, online)
-    ...                VALUES ('frobisher.example.com', false);''')
+    >>> cur.execute('''INSERT INTO CodeImportMachine (hostname, state)
+    ...                VALUES ('frobisher.example.com', 10);''')
     >>> connection.commit()
 
 The webapp only has rights to examine, not modify, the CodeImportMachine
@@ -62,24 +62,25 @@ database.
     None
 
 Machine objects themselves provide ICodeImportMachine, which includes
-hostname and online status information.
+hostname and online state information.
 
     >>> verifyObject(ICodeImportMachine, removeSecurityProxy(machine))
     True
     >>> machine.hostname
     u'frobisher.example.com'
-    >>> machine.online
-    False
+    >>> machine.state
+    <DBItem CodeImportMachineState.OFFLINE, (10) Offline>
 
 The web app cannot edit this information.
 
-    >>> machine.online = True
+    >>> from canonical.launchpad.interfaces import CodeImportMachineState
+    >>> machine.state = CodeImportMachineState.ONLINE
     Traceback (most recent call last):
       ...
     ForbiddenAttribute: ...
 
 Jobs running on the machine itself will connect as the 'importd' user,
-which has rights to update the table so it can update the online status.
+which has rights to update the table so it can update the machine state.
 
 XXX: MichaelHudson 2007-07-03, it would be nice to be able to use
 SQLObject here.  But the test framework doesn't appear to support this
@@ -87,7 +88,7 @@ SQLObject here.  But the test framework doesn't appear to support this
 
     >>> connection = connect('importd')
     >>> cur = connection.cursor()
-    >>> cur.execute('''UPDATE CodeImportMachine SET online = true
+    >>> cur.execute('''UPDATE CodeImportMachine SET state = 20
     ...                WHERE hostname = 'frobisher.example.com';''')
     >>> connection.commit()
 
@@ -102,5 +103,6 @@ connection and reconnecting seems to see the change made above.
 
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> machine = machine_set.getByHostname('frobisher.example.com')
-    >>> machine.online
-    True
+    >>> machine.state
+    <DBItem CodeImportMachineState.Online, (20) Online>
+
