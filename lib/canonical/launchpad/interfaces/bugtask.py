@@ -676,9 +676,14 @@ class IBugTaskSet(Interface):
 
 class IAddBugTaskForm(Interface):
     """Form for adding an upstream bugtask."""
-    product = IUpstreamBugTask['product']
-    distribution = IDistroBugTask['distribution']
-    sourcepackagename = IDistroBugTask['sourcepackagename']
+    product = Choice(title=_('Project'), required=True, vocabulary='Product')
+    distribution = Choice(
+        title=_("Distribution"), required=True, vocabulary='Distribution')
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=False,
+        description=_("The source package in which the bug occurs. "
+        "Leave blank if you are not sure."),
+        vocabulary='SourcePackageName')
     bug_url = StrippedTextLine(
         title=_('URL'), required=False,
         description=_("The URL of this bug in the remote bug tracker."))
