@@ -15,25 +15,18 @@ Owner, Description, Sources and Binaries, the latter two being a count.
 The sample data contains three PPAs.  Only Celso has any packages, with two
 sources and one binary.
 
-    >>> soup = find_main_content(browser.contents)
-    >>> results = soup.findAll(attrs={'class': 'ppa_batch_row'})
-    >>> len(results)
-    3
-
-    >>> texts = [extract_text(html) for html in results]
-    >>> texts.sort()
-    >>> for text in texts:
-    ...    print text
+    >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_batch_row'):
+    ...    print extract_text(ppa_row)
     Celso Providelo
     packages to help my friends.
     2
     1
-    Mark Shuttleworth
-    packages to help the humanity (you know, ubuntu)
-    0
-    0
     No Privileges Person
     I am not allowed to say, I have no privs.
+    0
+    0
+    Mark Shuttleworth
+    packages to help the humanity (you know, ubuntu)
     0
     0
 
@@ -41,22 +34,18 @@ sources and one binary.
 
 No data matches the non-existent search string "bustmybuffers".
 
-    >>> field = browser.getControl(name="name_filter")
+    >>> field = browser.getControl("PPAs containing:")
     >>> field.value = 'bustmybuffers'
     >>> browser.getControl("Search").click()
-    >>> soup = find_main_content(browser.contents)
-    >>> results = soup.findAll(attrs={'class': 'ppa_batch_row'})
-    >>> len(results)
+    >>> len(find_tags_by_class(browser.contents, 'ppa_batch_row'))
     0
 
 In the three sample data PPAs, only one matches the search string "Celso".
 
-    >>> field = browser.getControl(name="name_filter")
+    >>> field = browser.getControl("PPAs containing:")
     >>> field.value = 'Celso'
     >>> browser.getControl("Search").click()
-    >>> soup = find_main_content(browser.contents)
-    >>> results = soup.findAll(attrs={'class': 'ppa_batch_row'})
-    >>> len(results)
+    >>> len(find_tags_by_class(browser.contents, 'ppa_batch_row'))
     1
 
 == Owner's PPA pages ==
@@ -82,22 +71,8 @@ and estimated size).
 
 The sample data has two packages belonging to Celso.
 
-    >>> soup = find_main_content(browser.contents)
-    >>> results = soup.findAll(attrs={'class': 'ppa_package_row'})
-    >>> len(results)
-    2
-
-    >>> texts = [extract_text(html) for html in results]
-    >>> texts.sort()
-    >>> for text in texts:
-    ...    print text
-    cdrkit - 1.0
-    2007-07-09
-    Published
-    breezy-autotest
-    Release
-    main
-    editors
+    >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
+    ...    print extract_text(ppa_row)
     iceweasel - 1.0
     2007-07-09
     Published
@@ -105,42 +80,44 @@ The sample data has two packages belonging to Celso.
     Release
     main
     editors
+    cdrkit - 1.0
+    2007-07-09
+    Published
+    breezy-autotest
+    Release
+    main
+    editors
+
 
 == Searching an archive ==
 
 We can search a PPA for a particular package.  A non-existent package shows
 no results.
 
-    >>> field = browser.getControl(name="name_filter")
+    >>> field = browser.getControl("Packages with name containing:")
     >>> field.value = 'nonexistentpackage'
     >>> browser.getControl("Search").click()
-    >>> soup = find_main_content(browser.contents)
-    >>> results = soup.findAll(attrs={'class': 'ppa_package_row'})
-    >>> len(results)
+    >>> len(find_tags_by_class(browser.contents, 'ppa_package_row'))
     0
 
 Searching for the package "iceweasel" show's that Celso is providing this.
 
-    >>> field = browser.getControl(name="name_filter")
+    >>> field = browser.getControl("Packages with name containing:")
     >>> field.value = 'iceweasel'
     >>> browser.getControl("Search").click()
-    >>> soup = find_main_content(browser.contents)
-    >>> results = soup.findAll(attrs={'class': 'ppa_package_row'})
-    >>> len(results)
+    >>> len(find_tags_by_class(browser.contents, 'ppa_package_row'))
     1
+
 
 == Other Distribution PPAs ==
 
 PPAs are targeted to a specific distribution and currently we only
 allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
 
-
     >>> browser.open("http://launchpad.dev/ubuntutest")
     >>> browser.getLink("Personal Package Archives").click()
     >>> browser.title
     'Ubuntu Test Personal Package Archives'
 
-    >>> soup = find_main_content(browser.contents)
-    >>> results = soup.findAll(attrs={'class': 'ppa_batch_row'})
-    >>> len(results)
+    >>> len(find_tags_by_class(browser.contents, 'ppa_batch_row'))
     0

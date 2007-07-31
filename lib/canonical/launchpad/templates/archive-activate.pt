@@ -4,8 +4,8 @@
   lang="en"
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
->
-  <body>
+  >
+<body>
 
 <metal:leftportlets fill-slot="portlets_one">
   <div tal:replace="structure context/@@+portlet-details" />
@@ -51,4 +51,3 @@
 
 </body>
 </html>
-

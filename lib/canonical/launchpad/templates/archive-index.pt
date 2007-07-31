@@ -1,9 +1,10 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
-  <body>
+<html 
+  xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+  >
+<body>
 
     <metal:heading fill-slot="pageheading">
       <h1 tal:content="context/title">Foo Bar PPA</h1>
@@ -13,7 +14,7 @@
       <div tal:replace="structure context/owner/@@+portlet-details" />
     </metal:leftportlets>
 
-    <div metal:fill-slot="main" tal:condition="not:view/searchPackages">
+    <div metal:fill-slot="main">
 
       <tal:whiteboard condition="context/required:launchpad.Edit">
          <div id="whiteboard" class="informational"
@@ -65,7 +66,7 @@
 
       <div>
         <form name="package_search" action="" method="GET">
-           <label for="name"> Package with names containing:</label>
+           <label for="name"> Packages with name containing:</label>
            <input id="name" title="Package Name" size="20"
                   type="text" name="name_filter"
                   tal:attributes="value view/name_filter"/>
@@ -101,7 +102,9 @@
            replace="structure view/batchnav/@@+navigation-links-lower" />
 
         <div id="empty-result" tal:condition="not: batch">
-           No packages for '<span tal:replace="view/name_filter" />'.
+           <tal:has_filter condition="view/name_filter">
+              No matching package for '<span tal:replace="view/name_filter" />'.
+           </tal:has_filter>
         </div>
 
       </div>

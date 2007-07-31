@@ -1,9 +1,11 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad"
->
-  <body>
+<html
+  xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+  >
+<body>
+
   <metal:heading fill-slot="pageheading">
     <h1 tal:condition="not: view/label">Edit archive details</h1>
   </metal:heading>
@@ -21,5 +23,5 @@
 
   </div>
 
-  </body>
+</body>
 </html>

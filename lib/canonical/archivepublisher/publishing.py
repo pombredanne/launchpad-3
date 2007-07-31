@@ -23,7 +23,7 @@ from canonical.archivepublisher.ftparchive import FTPArchiveHandler
 from canonical.launchpad.interfaces import pocketsuffix
 from canonical.librarian.client import LibrarianClient
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus, ArchivePurpose)
+    ArchivePurpose, PackagePublishingPocket, PackagePublishingStatus)
 
 suffixpocket = dict((v, k) for (k, v) in pocketsuffix.items())
 
@@ -46,6 +46,7 @@ Label: %s
 Architecture: %s
 """
 
+
 def reorder_components(components):
     """Return a list of the components provided.
 
@@ -60,6 +61,7 @@ def reorder_components(components):
             components.remove(comp)
     ret.extend(components)
     return ret
+
 
 def _getDiskPool(pubconf, log):
     """Return a DiskPool instance for a given PubConf.
@@ -78,11 +80,12 @@ def _getDiskPool(pubconf, log):
 
     return dp
 
-def getPublisher(archive, allowed_suites, log, distsroot=None):
-    """Return an initialised Publisher instance according given context.
 
-    Optionally the user override the resulting indexes location via 'distroot'
-    option.
+def getPublisher(archive, allowed_suites, log, distsroot=None):
+    """Return an initialised Publisher instance for the given context.
+
+    The callsites can override the location where the archive indexes will
+    be stored via 'distroot' argument.
     """
     if archive.purpose == ArchivePurpose.PRIMARY:
         log.debug("Finding configuration for %s main_archive."
@@ -419,7 +422,6 @@ class Publisher(object):
             index_suffixes = ('', '.gz', '.bz2')
         else:
             index_suffixes = ('.gz',)
-
 
         self.log.debug("Writing Release file for %s/%s/%s" % (
             full_name, component, architecture))

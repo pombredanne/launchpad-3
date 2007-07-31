@@ -880,12 +880,8 @@ class AdminByBuilddAdmin(AuthorizationBase):
         lp_admin = getUtility(ILaunchpadCelebrities).admin
         if user.inTeam(lp_admin):
             return True
-
         buildd_admin = getUtility(ILaunchpadCelebrities).buildd_admin
-        if user.inTeam(buildd_admin):
-            return True
-
-        return False
+        return user.inTeam(buildd_admin)
 
 
 class AdminBuilderSet(AdminByBuilddAdmin):

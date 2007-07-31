@@ -58,7 +58,7 @@ in the archive (+1kbytes for each publication)
 == Published Source and Binary Lookup ==
 
 IArchive implements a published source & binary lookup methods,
-returns I{Source, Binary}PackagePublishingHistory objects
+returning I{Source, Binary}PackagePublishingHistory objects.
 
   >>> cprov_archive.getPublishedSources().count()
   2
@@ -98,10 +98,11 @@ Let's inspect binaires:
 
 == Build Lookup ==
 
-It also implements a build look method, which supports, 'name',
+It also implements a build lookup method, which supports, 'name',
 'status' and 'pocket'.
 
-Let's check 'name' build lookup:
+This method can return build records for sources matching the given
+'name' as in SQL LIKE:
 
   >>> cd_lookup = cprov_archive.getBuildRecords(name='cd')
   >>> cd_lookup.count()
@@ -118,27 +119,7 @@ Let's check 'name' build lookup:
   >>> cprov_archive.getBuildRecords(name='foo').count()
   0
 
-It also implements a build look method, which supports, 'name',
-'status' and 'pocket'.
-
-Let's check 'name' build lookup:
-
-  >>> cd_lookup = cprov_archive.getBuildRecords(name='cd')
-  >>> cd_lookup.count()
-  1
-  >>> cd_lookup[0].sourcepackagerelease.name
-  u'cdrkit'
-
-  >>> ice_lookup = cprov_archive.getBuildRecords(name='ice')
-  >>> ice_lookup.count()
-  1
-  >>> ice_lookup[0].sourcepackagerelease.name
-  u'iceweasel'
-
-  >>> cprov_archive.getBuildRecords(name='foo').count()
-  0
-
-Let's check 'status' build lookup:
+Or return build records in a specific status:
 
   >>> from canonical.lp.dbschema import BuildStatus
   >>> cprov_archive.getBuildRecords(status=BuildStatus.FULLYBUILT).count()
@@ -150,7 +131,7 @@ Let's check 'status' build lookup:
   >>> cprov_archive.getBuildRecords(status=BuildStatus.NEEDSBUILD).count()
   0
 
-Let's check 'pocket' build lookup:
+And finally build records target to a given pocket:
 
   >>> from canonical.lp.dbschema import PackagePublishingPocket
   >>> cprov_archive.getBuildRecords(
@@ -161,6 +142,14 @@ Let's check 'pocket' build lookup:
   ...     pocket=PackagePublishingPocket.UPDATES).count()
   0
 
+All the attributes can be combined in order to refine the result:
+
+  >>> cprov_archive.getBuildRecords(
+  ...     name='ice',
+  ...     status=BuildStatus.FULLYBUILT,
+  ...     pocket=PackagePublishingPocket.RELEASE).count()
+  1
+
 
 == Publisher configuration provider ==
 
@@ -169,10 +158,10 @@ lib/archivepublisher/config.py), which provides the right paths for its
 publication according to the given distribution:
 
 
-XXX cprov 20061127: We should *never* be able to change a PPA
-distribution, however 'ubuntu' is not prepared for publication, thus
-we have to override the PPA to 'ubuntutest' in order to perform the
-tests.
+  >>> # cprov 20061127: We should *never* be able to change a PPA
+  >>> # distribution, however 'ubuntu' is not prepared for publication, thus
+  >>> # we have to override the PPA to 'ubuntutest' in order to perform the
+  >>> # tests.
 
   >>> from zope.security.proxy import removeSecurityProxy
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
@@ -242,18 +231,18 @@ A new Archive can be created by passing a name and an owner
   >>> sandbox_archive.owner == name16
   True
 
-An archive is also associated with a distribution.  This can be queried on
+An archive is also associated with a distribution.  This can be found on
 the distribution property.  The default distribution is "ubuntu":
 
   >> sandbox_archive.distribution.name
   u'ubuntu'
 
-An Archive can be retrieved via IPerson.archive SingleJoin:
+An Archive can be retrieved via IPerson.archive property:
 
   >>> name16.archive == sandbox_archive
   True
 
-IArchiveSet.getAllPPAs provides all present *personal* archives:
+`IArchiveSet.getAllPPAs` provides all present *personal* archives:
 
   >>> [archive.owner.name for archive in archive_set.getAllPPAs()]
   [u'cprov', u'sabdfl', u'no-priv', u'name16']

@@ -233,11 +233,9 @@ class BuilddMaster:
             "Found %d source(s) published." % sources_published.count())
 
         for pubrec in sources_published:
-            # XXX cprov 20070711: Fix me please.
-            # 1. ISSPPH should implement 'is_personal' or 'is_distro' property
-            #    Attempt to cope with new CommercialRepo changes.
-            # 2. 'ppa_archtags' should be modeled as
-            #    DistroArchSeries.ppa_supported
+            # XXX cprov 20070711: Fix me please, 'ppa_archtags'
+            # should be modeled as DistroArchSeries.ppa_supported.
+            # See #129491.
             if pubrec.archive.purpose == dbschema.ArchivePurpose.PPA:
                 ppa_archtags = ('i386', 'amd64')
                 local_archs = [

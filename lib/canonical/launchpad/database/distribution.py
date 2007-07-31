@@ -904,16 +904,13 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             raise NotFoundError('Package %s not published in %s'
                                 % (pkgname, self.displayname))
 
-
-# XXX cprov 20070712:  untested methods ...
-
     def getAllPPAs(self):
         """See `IDistribution`"""
         return Archive.selectBy(
-            purpose=ArchivePurpose.PPA, distribution=self)
+            purpose=ArchivePurpose.PPA, distribution=self, orderBy=['id'])
 
     def searchPPAs(self, text=None):
-        """See `IDistribution`"""
+        """See `IDistribution`."""
         clauses = ["""
         Archive.purpose = %s AND
         Archive.distribution = %s AND
@@ -930,10 +927,11 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             """ % (quote(text), quote_like(text)))
 
         query = ' AND '.join(clauses)
-        return Archive.select(query, orderBy=orderBy, clauseTables=clauseTables)
+        return Archive.select(
+            query, orderBy=orderBy, clauseTables=clauseTables)
 
     def getPendingAcceptancePPAs(self):
-        """See `IDistribution`"""
+        """See `IDistribution`."""
         query = """
         Archive.purpose = %s AND
         Archive.distribution = %s AND
@@ -947,7 +945,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             orderBy=['archive.id'], distinct=True)
 
     def getPendingPublicationPPAs(self):
-        """See `IDistribution`"""
+        """See `IDistribution`."""
         src_query = """
         Archive.purpose = %s AND
         Archive.distribution = %s AND

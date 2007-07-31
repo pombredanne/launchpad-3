@@ -320,14 +320,14 @@ class TestUploadProcessor(TestUploadProcessorBase):
         Test that a package that has commercial and non-commercial files in it
         is rejected.  Commercial uploads should be entirely commercial.
         """
-        # Extra setup for breezy
+        # Extra setup for breezy.
         self.setupBreezy()
         self.layer.txn.commit()
 
-        # Set up the uploadprocessor with appropriate options and logger.
-
-        # Upload policy allows anything
+        # Upload policy allows anything.
         self.options.context = 'anything'
+
+        # Set up the uploadprocessor with appropriate options and logger.
         uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
 
@@ -335,7 +335,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         upload_dir = self.queueUpload("foocomm_1.0-1-illegal-component-mix")
         self.processUpload(uploadprocessor, upload_dir)
 
-        # Check that it was rejected:
+        # Check that it was rejected.
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
         foo_bar = "Foo Bar <foo.bar@canonical.com>"
         self.assertEqual([e.strip() for e in to_addrs], [foo_bar])
@@ -513,6 +513,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         Upload gets processed as if it was targeted to the ubuntu PRIMARY
         archive, however it is rejected, since it could not find the
         specified PPA.
+
         A rejection notification is sent to the uploader.
         """
         upload_dir = self.queueUpload("bar_1.0-1", "~spiv/ubuntu")
@@ -627,7 +628,8 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         """Upload to a someone else's PPA gets rejected with proper message."""
         kinnison = getUtility(IPersonSet).getByName("kinnison")
         getUtility(IArchiveSet).new(
-            owner=kinnison, distribution=self.ubuntu, purpose=ArchivePurpose.PPA)
+            owner=kinnison, distribution=self.ubuntu,
+            purpose=ArchivePurpose.PPA)
         self.layer.commit()
 
         upload_dir = self.queueUpload("bar_1.0-1", "~kinnison/ubuntu")

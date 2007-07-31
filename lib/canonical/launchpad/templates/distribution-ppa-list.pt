@@ -14,7 +14,7 @@
           <span tal:replace="context/title" /></h1>
     </metal:heading>
 
-  <div metal:fill-slot="main" tal:condition="not: view/searchPPAs">
+  <div metal:fill-slot="main">
 
      <p>Personal Package Archives (PPA) allow you to upload Ubuntu source
         packages to be built and published as an apt repository by
@@ -26,7 +26,7 @@
      in its description.</p>
 
       <form name="ppa_search" action="" method="GET">
-         <label for="name"> PPAs containing:</label>
+         <label for="name">PPAs containing:</label>
          <input id="name" title="Filter" size="20"
                 type="text" name="name_filter"
                 tal:attributes="value view/name_filter"/>
@@ -61,7 +61,10 @@
            replace="structure view/batchnav/@@+navigation-links-lower" />
 
       <div id="empty-result" tal:condition="not: batch">
-         No PPA containing '<span tal:replace="view/name_filter|nothing" />'.
+           <tal:has_filter condition="view/name_filter">
+              No matching Personal Package Archive
+              for '<span tal:replace="view/name_filter" />'.
+           </tal:has_filter>
       </div>
 
       </tal:batch>

@@ -11,6 +11,7 @@ __all__ = [
     'DistributionFacets',
     'DistributionSpecificationsMenu',
     'DistributionView',
+    'DistributionPPAView',
     'DistributionAllPackagesView',
     'DistributionBrandingView',
     'DistributionEditView',
@@ -439,12 +440,11 @@ class DistributionView(BuildRecordsView):
         return sorted(serieses, key=operator.attrgetter('version'),
                       reverse=True)
 
-    def searchPPAs(self):
-        """Setup a batched IArchive list.
 
-        Return None, so use tal:condition="not: view/searchPPAs" to
-        invoke it in template.
-        """
+class DistributionPPAView(LaunchpadView):
+
+    def initialize(self):
+        """Setup a batched IArchive list."""
         self.name_filter = self.request.get('name_filter', None)
         ppas = self.context.searchPPAs(text=self.name_filter)
         self.batchnav = BatchNavigator(ppas, self.request)

@@ -11,13 +11,13 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import Text, Choice, Int, Bool
+from zope.schema import  Bool, Choice, Int, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
 
 
-class IArchive(Interface, IHasOwner):
+class IArchive(IHasOwner):
     """An Archive interface"""
 
     id = Attribute("The archive ID.")
@@ -72,10 +72,16 @@ class IArchive(Interface, IHasOwner):
         """
 
     def getPublishedSources():
-        """Return all ISourcePackagePublishingHistory target to this archive."""
+        """All `ISourcePackagePublishingHistory` target to this archive.
+
+        :return: SelectResults containing `ISourcePackagePublishingHistory`.
+        """
 
     def getPublishedBinaries():
-        """Return all IBinaryPackagePublishingHistory target to this archive."""
+        """All IBinaryPackagePublishingHistory target to this archive.
+
+        :return: SelectResults containing `IBinaryPackagePublishingHistory`.
+        """
 
 class IPPAActivateForm(Interface):
     """Schema used to activate PPAs."""

@@ -26,7 +26,7 @@ from canonical.lp.dbschema import (
 class TestPublisher(TestNativePublishingBase):
 
     def setUp(self):
-        """ """
+        """Override cprov PPA distribution to 'ubuntutest'."""
         TestNativePublishingBase.setUp(self)
 
         # Override cprov's PPA distribution, because we can't publish
@@ -248,7 +248,8 @@ class TestPublisher(TestNativePublishingBase):
         distsroot = None
 
         distro_publisher = getPublisher(
-            self.ubuntutest.main_archive, allowed_suites, self.logger, distsroot)
+            self.ubuntutest.main_archive, allowed_suites, self.logger,
+            distsroot)
 
         # check the publisher context, pointing to the 'main_archive'
         self.assertEqual(

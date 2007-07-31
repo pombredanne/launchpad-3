@@ -32,6 +32,7 @@ from canonical.lp.dbschema import ArchivePurpose
 
 class ArchiveNavigation(Navigation):
     """Navigation methods for IArchive."""
+
     usedfor = IArchive
 
     def breadcrumb(self):
@@ -51,13 +52,14 @@ class ArchiveNavigation(Navigation):
 
 class ArchiveFacets(StandardLaunchpadFacets):
     """The links that will appear in the facet menu for an IArchive."""
-    enable_only = ['overview']
 
     usedfor = IArchive
+    enable_only = ['overview']
 
 
 class ArchiveOverviewMenu(ApplicationMenu):
     """Overview Menu for IArchive."""
+
     usedfor = IArchive
     facet = 'overview'
     links = ['admin', 'edit', 'builds']
@@ -80,16 +82,13 @@ class ArchiveOverviewMenu(ApplicationMenu):
 class ArchiveView(LaunchpadView):
     """Default Archive view class
 
-    Implements useful actions and colect useful set for the pagetemplate.
+    Implements useful actions and collects useful sets for the pagetemplate.
     """
+
     __used_for__ = IArchive
 
-    def searchPackages(self):
-        """Setup a batched ISPPH list.
-
-        Return None, so use tal:condition="not: view/searchPackage" to
-        invoke it in template.
-        """
+    def initialize(self):
+        """Setup a batched ISourcePackagePublishingHistory list."""
         self.name_filter = self.request.get('name_filter', None)
         publishing = self.context.getPublishedSources(
             name=self.name_filter)
@@ -104,6 +103,7 @@ class ArchiveActivateView(LaunchpadFormView):
     'accepted' checkbox.
     It redirects to PPA page when PPA is already activated.
     """
+
     schema = IPPAActivateForm
 
     def initialize(self):
@@ -130,6 +130,7 @@ class ArchiveActivateView(LaunchpadFormView):
 
 class ArchiveBuildsView(BuildRecordsView):
     """Build Records View for IArchive."""
+
     __used_for__ = IHasBuildRecords
 
 

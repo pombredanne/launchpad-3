@@ -733,23 +733,19 @@ class CommonMenuLinks:
 
     @enabled_with_permission('launchpad.Edit')
     def activate_ppa(self):
-        enabled = True
-        if self.context.archive is not None:
-            enabled = False
         target = "+activate-ppa"
         text = 'Activate PPA'
         summary = ('Acknowledge terms of service for Launchpad Personal '
                    'Package Archive.')
-        return Link(target, text, summary, icon='edit', enabled=enabled)
+        enable_link = (self.context.archive is None)
+        return Link(target, text, summary, icon='edit', enabled=enable_link)
 
     def show_ppa(self):
-        enabled = True
-        if self.context.archive is None:
-            enabled = False
         target = '+archive'
         text = 'Show PPA'
         summary = 'Browse Personal Package Archive packages.'
-        return Link(target, text, summary, icon='info', enabled=enabled)
+        enable_link = (self.context.archive is not None)
+        return Link(target, text, summary, icon='info', enabled=enable_link)
 
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):

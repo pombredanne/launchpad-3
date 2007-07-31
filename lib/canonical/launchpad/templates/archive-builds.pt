@@ -3,8 +3,8 @@
   xml:lang="en" lang="en"
   metal:use-macro="context/@@main_template/master"
   i18n:domain="launchpad"
->
-  <body>
+  >
+<body>
 
     <metal:heading fill-slot="pageheading">
       <h1><span tal:replace="context/title"/> builds</h1>
@@ -18,5 +18,5 @@
       <div tal:replace="structure context/@@+builds-list"/>
     </div>
 
-  </body>
+</body>
 </html>
