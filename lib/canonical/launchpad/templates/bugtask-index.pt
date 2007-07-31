@@ -39,9 +39,10 @@
              tal:condition="context/bug/bug_branches/count" />
         <img
           tal:condition="context/bug/private"
-          id="privateemblem"
+          alt="(Private)"
+          id="privatebadge"
           src="/@@/private-large"
-          title="(Private)"
+          title="This bug report is private"
         />
       </div>
       <h1 style="clear: left;" tal:content="context/bug/title">Bug summary</h1>

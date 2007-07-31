@@ -6,10 +6,11 @@ When a bug report is public, it appears like any other Launchpad page.
     >>> browser.open("http://launchpad.dev/bugs/4")
     >>> print find_tag_by_id(browser.contents, 'privatestyle')
     None
-    >>> print find_tag_by_id(browser.contents, 'privateemblem')
+    >>> print find_tag_by_id(browser.contents, 'privatebadge')
     None
 
-But when marked private, it gains a distinctive private style and emblem.
+But when marked private, it gains the standard Launchpad presentation for
+private things.
 
     >>> browser.open("http://bugs.launchpad.dev/firefox/+bug/4/+secrecy")
     >>> browser.getControl("Keep bug confidential").selected = True
@@ -18,5 +19,5 @@ But when marked private, it gains a distinctive private style and emblem.
     http://bugs.launchpad.dev/firefox/+bug/4
     >>> print find_tag_by_id(browser.contents, 'privatestyle')
     <style.../style>
-    >>> print find_tag_by_id(browser.contents, 'privateemblem')
+    >>> print find_tag_by_id(browser.contents, 'privatebadge')
     <img...>
