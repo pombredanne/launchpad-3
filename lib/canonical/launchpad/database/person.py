@@ -39,22 +39,22 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.lp.dbschema import (
-    AccountStatus, BugTaskImportance, BugTaskStatus, ShippingRequestStatus,
+    BugTaskImportance, BugTaskStatus, ShippingRequestStatus,
     SpecificationFilter, SpecificationDefinitionStatus,
     SpecificationImplementationStatus, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, EmailAddressStatus, IBugTaskSet, ICalendarOwner,
-    IDistribution, IDistributionSet, IEmailAddress, IEmailAddressSet,
-    IGPGKeySet, IHasIcon, IHasLogo, IHasMugshot, IIrcID, IIrcIDSet, IJabberID,
-    IJabberIDSet, ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
-    ILoginTokenSet, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
-    IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey,
-    ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
-    JoinNotAllowed, LoginTokenType, PersonCreationRationale,
-    QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants, SSHKeyType,
-    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
+    AccountStatus, BugTaskSearchParams, EmailAddressStatus, IBugTaskSet,
+    ICalendarOwner, IDistribution, IDistributionSet, IEmailAddress,
+    IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo, IHasMugshot, IIrcID,
+    IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
+    ILaunchpadStatisticSet, ILoginTokenSet, IPasswordEncryptor, IPerson,
+    IPersonSet, IPillarNameSet, IProduct, ISignedCodeOfConductSet,
+    ISourcePackageNameSet, ISSHKey, ISSHKeySet, ITeam, ITranslationGroupSet,
+    IWikiName, IWikiNameSet, JoinNotAllowed, LoginTokenType,
+    PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants,
+    SSHKeyType, TeamMembershipRenewalPolicy, TeamMembershipStatus,
+    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar
@@ -126,7 +126,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             default=DEFAULT)
 
     account_status = EnumCol(
-        schema=AccountStatus, default=AccountStatus.NOACCOUNT)
+        enum=AccountStatus, default=AccountStatus.NOACCOUNT)
     account_status_comment = StringCol(default=None)
 
     city = StringCol(default=None)
