@@ -9,7 +9,7 @@
 
 <metal:heading fill-slot="pageheading">
   <h1 tal:condition="not: view/similar_bugs">Report a new bug</h1>
-  <h1 tal:condition="view/similar_bugs">Has your bug already been reported?</h1>
+  <h1 tal:condition="view/similar_bugs">Is the bug you're reporting one of these?</h1>
 </metal:heading>
 
 <div metal:fill-slot="main">
@@ -40,119 +40,106 @@
         </div>
       </div>
 
-      <table class="form" tal:condition="view/similar_bugs">
-        <tbody>
+      <div tal:condition="view/similar_bugs">
 
-          <tal:similar-bugs condition="view/contextUsesMalone">
-            <tr>
-              <td>
-                <input type="radio" id="bug-already-reported-yes"
-                       name="field.bug_already_reported" value="on"
-                       tal:attributes="checked python: not path('view/submit_bug_action/submitted')
-                                                       and 'checked' or None" />
-              </td>
-              <td style="width: 100%">
-                <label for="bug-already-reported-yes">
-                  Yes, it's one of these:
-                </label>
-              </td>
-            </tr>
-            <tr>
-              <td></td>
-              <td>
-                <div id="similar_bugs_form">
-                  <ul id="similar-bugs" style="list-style: none; margin-left: 0">
-                    <li tal:repeat="bug view/similar_bugs"
-                        tal:attributes="title bug/description/fmt:shorten/500"
-                        title="bug description goes here">
-                      <table tal:define="bugtask python:view.getRelevantBugTask(bug)">
-                        <tbody>
-                          <tr>
-                            <td>
-                              <input type="radio" name="field.bug_already_reported_as"
-                                     tal:attributes="id string:bug-already-reported-as-${bug/id};
-                                                     value string:${bug/id};
-                                                     checked repeat/bug/start|nothing" />
-                            </td>
-                            <td>
-                              <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
-                                     tal:condition="bugtask"
-                                     tal:content="structure bugtask/image:icon" />
-                              <img alt="" src="/@@/bug" tal:condition="not:bugtask" />
-                            </td>
-                            <td>
-                              <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
-                                     style="font-weight: normal">
-                                <div>
-                                  #<tal:bug-id replace="bug/id">4</tal:bug-id>
-                                  <a tal:attributes="href bug/fmt:url"
-                                     tal:content="bug/title">Bug title here</a>
-                                </div>
-                                <div class="lesser" tal:condition="bugtask">
-                                  <tal:status replace="bugtask/status/title" />,
-                                  last updated
-                                  <tal:last-updated content="bug/date_last_updated/fmt:approximatedate">
-                                    2007-07-03
-                                  </tal:last-updated>
-                                </div>
-                                <div class="lesser" tal:condition="not:bugtask">
-                                  <tal:closed condition="bug/is_complete">Closed,</tal:closed>
-                                  <tal:open condition="not:bug/is_complete">Open,</tal:open>
-                                  last updated <tal:when replace="bug/date_last_updated/fmt:approximatedate" />
-                                </div>
-                              </label>
-                            </td>
-                          </tr>
-                        </tbody>
-                      </table>
-                    </li>
-                  </ul>
+        <style type="text/css" media="screen, print">
+          .hidden { display: none; }
+        </style>
 
-                  <div class="actions">
-                    <input tal:replace="structure view/actions/field.actions.this_is_my_bug/render" />
-                  </div>
-                </div>
-              </td>
-            </tr>
-          </tal:similar-bugs>
+        <tal:similar-bugs condition="view/contextUsesMalone">
+          <ul id="similar_bugs_form" style="list-style: none; margin-left: 0">
 
-          <tal:submit-new-bug>
-             <tal:comment replace="nothing">
-               We hide this next row if the context doesn't use malone because
-               in that situation we're showing the form after an error message
-               and in that context the radio button makes no sense.
-             </tal:comment>
-             <tr tal:condition="view/contextUsesMalone">
-              <td>
-                <input type="radio" id="bug-already-reported-no"
-                       name="field.bug_already_reported" value="off"
-                       tal:attributes="checked python: path('view/submit_bug_action/submitted')
-                                                       and 'checked' or None" />
-              </td>
-              <td>
-                <label for="bug-already-reported-no">
-                  No, I'd like to report a new bug:
-                </label>
-              </td>
-            </tr>
-            <tr>
-              <td></td>
-              <td>
-                <div id="bug_reporting_form">
-                  <table class="form">
-                    <metal:basic_filebug_widgets
-                        metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
-                  </table>
-                  <div class="actions">
-                    <input tal:replace="structure view/actions/field.actions.submit_bug/render" />
-                  </div>
-                </div>
-              </td>
-            </tr>
-          </tal:submit-new-bug>
+            <li tal:repeat="bug view/similar_bugs"
+                tal:attributes="title bug/description/fmt:shorten/500"
+                title="bug description goes here">
+              <table tal:define="bugtask python:view.getRelevantBugTask(bug)">
+                <tbody>
+                  <tr>
+                    <td>
+                      <input type="radio" name="field.bug_already_reported_as"
+                             tal:attributes="id string:bug-already-reported-as-${bug/id};
+                                             value string:${bug/id};
+                                             checked repeat/bug/start|nothing" />
+                    </td>
+                    <td>
+                      <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
+                             tal:condition="bugtask"
+                             tal:content="structure bugtask/image:icon" />
+                      <img alt="" src="/@@/bug" tal:condition="not:bugtask" />
+                    </td>
+                    <td>
+                      <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
+                             style="font-weight: normal">
+                        <div>
+                          #<tal:bug-id replace="bug/id">4</tal:bug-id>
+                          <a tal:attributes="href bug/fmt:url"
+                             tal:content="bug/title">Bug title here</a>
+                        </div>
+                        <div class="lesser" tal:condition="bugtask">
+                          <tal:status replace="bugtask/status/title" />,
+                          last updated
+                          <tal:last-updated content="bug/date_last_updated/fmt:approximatedate">
+                            2007-07-03
+                          </tal:last-updated>
+                        </div>
+                        <div class="lesser" tal:condition="not:bugtask">
+                          <tal:closed condition="bug/is_complete">Closed,</tal:closed>
+                          <tal:open condition="not:bug/is_complete">Open,</tal:open>
+                          last updated <tal:when replace="bug/date_last_updated/fmt:approximatedate" />
+                        </div>
+                      </label>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </li>
 
-        </tbody>
-      </table>
+            <li>
+              <div class="actions">
+                <input tal:replace="structure view/actions/field.actions.this_is_my_bug/render" />
+              </div>
+            </li>
+
+            <li style="margin-top: 1em">
+              <tal:comment replace="nothing">
+                We hide this next paragraph if the context doesn't use
+                malone because in that situation we're showing the form
+                after an error message and in that context the message
+                makes no sense.
+              </tal:comment>
+              <table tal:condition="view/contextUsesMalone">
+                <tbody>
+                  <tr>
+                    <td>
+                      <input id="bug-already-reported-no" type="radio"
+                             name="field.bug_already_reported_as" value="none" />
+                    </td>
+                    <td>
+                      <label for="bug-already-reported-no">
+                        No, I'd like to report a new bug
+                      </label>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </li>
+
+          </ul>
+        </tal:similar-bugs>
+
+        <tal:submit-new-bug>
+          <div id="bug_reporting_form">
+            <table class="form">
+              <metal:basic_filebug_widgets
+                  metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
+            </table>
+            <div class="actions">
+              <input tal:replace="structure view/actions/field.actions.submit_bug/render" />
+            </div>
+          </div>
+        </tal:submit-new-bug>
+
+      </div>
 
       <script type="text/javascript" tal:condition="view/similar_bugs">
         var similar_bugs_form_elements = concat(
@@ -162,59 +149,55 @@
           getElementsByTagAndClassName('textarea', null, 'bug_reporting_form'));
 
         /*
+         * Arrange the bug form for either the state where the user is selecting
+         * an existing bug report, or for where they're filing a new bug.
+         */
+        function arrangeBugForm(bug_already_reported) {
+          var no_radiobtn = $('bug-already-reported-no');
+
+          if (bug_already_reported != undefined) {
+            no_radiobtn.checked = !bug_already_reported
+          }
+
+          if (no_radiobtn.checked) {
+            showElement('bug_reporting_form');
+          } else {
+            hideElement('bug_reporting_form');
+          }
+
+          $('field.actions.this_is_my_bug').disabled = no_radiobtn.checked
+        }
+
+        // For use as an event handler.
+        var arrangeBugFormHandler = partial(arrangeBugForm, undefined);
+
+        /*
          * On-load, make sure that the 'No' stuff is displayed correctly.
          * We must always work from the data in the form, not just from
          * events. Some browsers (e.g. Firefox) refill the form when a page
          * is refreshed and you don't get onchange/onkeypress events.
          */
-        connect(window, 'onload', $('bug-already-reported-no'),
-          function(e) {
-            var func = this.checked ? showElement : hideElement;
-            func('bug_reporting_form');
-          });
+        connect(window, 'onload', arrangeBugFormHandler);
 
         /*
-         * Show the bug form when the 'No' radio is selected.
-         */
-        connect('bug-already-reported-no', 'onchange',
-          function(e) {
-            if (this.checked) {
-              showElement('bug_reporting_form');
-            }
-          });
-        // Safari doesn't trigger onchange for radio buttons it seems.
-        connect('bug-already-reported-no', 'onclick', function(e) {
-            signal(this, 'onchange');
-          });
-
-        /*
-         * If a similar bug is selected, also select the 'Yes' radio button.
+         * Arrange the form if any of the radio buttons is clicked.
          */
         forEach(similar_bugs_form_elements, function(element) {
-            var target = $('bug-already-reported-yes');
-            var handler = function(e) {
-                target.checked = true;
-              };
-            if (element.type == 'submit') {
-              connect(element, 'onmousedown', handler);
-            }
-            else {
-              connect(element, 'onchange', handler);
-              connect(element, 'onclick', handler); // For Safari
-            }
+            connect(element, 'onclick', arrangeBugFormHandler);
           });
 
         /*
-         * If one of the form elements in the 'No' section is changed (or,
-         * for immediate feedback, there is a key-press), then select the
-         * 'Yes' radio button and signal the 'No' onchange handler.
+         * If one of the form elements in the new bug form is changed (or,
+         * for immediate feedback, there is a key-press) then rearrange
+         * the form to show the form.
          */
         forEach(submit_bug_form_elements, function(element) {
             var target = $('bug-already-reported-no');
             var handler = function(e) {
-                target.checked = true;
-                signal(target, 'onchange');
-              };
+              target.checked = true;
+              arrangeBugFormAuto();
+            };
+
             if (element.type == 'submit') {
               connect(element, 'onmousedown', handler);
             }
