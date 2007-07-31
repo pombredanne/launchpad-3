@@ -388,7 +388,7 @@ class INewSpecification(Interface):
 
 
 class INewSpecificationSprint(Interface):
-    """A supplemental schema for new specifications that allows the user to
+    """A supplemental schema for new specifications allowing the user to
     specify a sprint."""
     sprint = Choice(title=_("Propose for sprint"),
                     description=_("the sprint to which agenda this "
@@ -398,13 +398,13 @@ class INewSpecificationSprint(Interface):
     
 
 class INewSpecificationTarget(Interface):
-    """A supplemental schema for new specifications that requires the user to
+    """A supplemental schema for new specifications requiring the user to
     specify a target.""" 
     target = ISpecification['target']
     
     
 class INewSpecificationProjectTarget(Interface):
-    """A supplemental schema for new specifications that requires the user to
+    """A supplemental schema for new specifications requiring the user to
     specify a project target."""
     target = Choice(title=_("For"),
                     description=_("The project for which this "
