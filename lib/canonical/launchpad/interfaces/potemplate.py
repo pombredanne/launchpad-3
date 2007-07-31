@@ -45,6 +45,11 @@ class IPOTemplate(IRosettaStats):
             "developers."),
         required=False)
 
+    header = Text(
+        title=_('Header'),
+        description=_("The standard template header in its native format."),
+        required=True)
+
     iscurrent = Bool(
         title=_("Accept translations?"),
         description=_(

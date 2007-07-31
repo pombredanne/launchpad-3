@@ -1,6 +1,6 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-from zope.schema import TextLine, Field, Choice
+from zope.schema import Choice, Field, Text, TextLine
 from zope.interface import Interface, Attribute
 from canonical.launchpad.interfaces.rosettastats import IRosettaStats
 
@@ -35,6 +35,11 @@ class IPOFile(IRosettaStats):
     description = Attribute("PO file description.")
 
     topcomment = Attribute("The main comment for this .po file.")
+
+    header = Text(
+        title=u'Header',
+        description=u'The standard translation header in its native format.',
+        required=False)
 
     fuzzyheader = Attribute("Whether the header is fuzzy or not.")
 

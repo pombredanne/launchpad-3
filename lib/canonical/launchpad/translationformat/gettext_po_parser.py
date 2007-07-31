@@ -272,9 +272,6 @@ class PoHeader:
                 # Ignore it, new exports use x-launchpad-export-date.
                 continue
             elif key == 'x-launchpad-export-date':
-                if self.is_template:
-                    # Templates doesn't have this.
-                    continue
                 UTC = pytz.timezone('UTC')
                 now = datetime.datetime.now(UTC)
                 raw_content_list.append(

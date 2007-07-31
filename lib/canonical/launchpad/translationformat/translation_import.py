@@ -299,7 +299,7 @@ class TranslationImporter:
                     potmsgset.filereferences = message.file_references
                     pomsgset.flagscomment = flags_comment
 
-                pomsgset.obsolete = message.obsolete
+                pomsgset.obsolete = message.is_obsolete
 
                 # Use the importer rights to make sure the imported
                 # translations are actually accepted instead of being just
