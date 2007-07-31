@@ -636,9 +636,6 @@ ul#applicationchooser {
   padding: 0;
   list-style: none;
   font-size: 11px;
-  background-image: url(mainarea_topright.gif);
-  background-repeat: no-repeat;
-  background-position: top right;
 }
 div#noapplicationchooser {
   clear: both;
@@ -880,35 +877,11 @@ a conditional comment in main-template.pt to work around the above rule. */
 body.freeform #mainarea {top: 0;}
 * html #mainarea {top: 0;}
 body.freeform #mainarea {top: 20px;} /*- no logo on freeform pages -*/
-#mainarea div.v {
-  width: 100%;
-  background-image: url(mainarea_bottomleft.gif);
-  background-repeat: no-repeat;
-  background-position: bottom left;
-}
-#mainarea div.w {
-  width: 100%;
-  background-image: url(mainarea_bottomright.gif);
-  background-repeat: no-repeat;
-  background-position: bottom right;
-}
 #mainarea div.x {
   width: 100%;
   background-image: url(mainarea_top.gif);
   background-repeat: repeat-x;
   background-position: top left;
-}
-#mainarea div.y {
-  width: 100%;
-  background-image: url(mainarea_topleft.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
-}
-#mainarea div.z {
-  width: 100%;
-  background-image: url(mainarea_topright.gif);
-  background-repeat: no-repeat;
-  background-position: 100% top;
 }
 #singlecolumn div.z {
   padding: 0 0 20px; /* XXX Makes the top right corner disappear */
@@ -986,13 +959,6 @@ dl.faq dd {margin: 1em 0 2em 4em;}
 body.tab-overview #mainarea div.x {
   background-image: url(mainarea_top.gif);
 }
-body.tab-overview #mainarea div.y {
-  background-image: url(mainarea_topleft.gif);
-}
-body.tab-overview #mainarea div.z,
-body.tab-overview #mainarea ul#applicationchooser {
-  background-image: url(mainarea_topright.gif);
-}
 body.tab-overview #mainarea ul#applicationchooser li {
   background-image: url(appchoose_a.gif);
 }
@@ -1039,13 +1005,6 @@ body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
 body.tab-branches #applications {background: url(app-code-wm.gif) no-repeat;}
 body.tab-branches #mainarea div.x {
   background-image: url(mainarea_tab1_top.gif);
-}
-body.tab-branches #mainarea div.y {
-  background-image: url(mainarea_tab1_topleft.gif);
-}
-body.tab-branches #mainarea div.z,
-body.tab-branches #mainarea ul#applicationchooser {
-  background-image: url(mainarea_tab1_topright.gif);
 }
 body.tab-branches #mainarea ul#applicationchooser li {
   background-image: url(appchoose_tab1_a.gif);
@@ -1096,13 +1055,6 @@ body.tab-branches #actions h2, body.tab-branches #actions h2:hover {
 body.tab-bugs #applications {background: url(app-bugs-wm.gif) no-repeat;}
 body.tab-bugs #mainarea div.x {
   background-image: url(mainarea_tab2_top.gif);
-}
-body.tab-bugs #mainarea div.y {
-  background-image: url(mainarea_tab2_topleft.gif);
-}
-body.tab-bugs #mainarea div.z,
-body.tab-bugs #mainarea ul#applicationchooser {
-  background-image: url(mainarea_tab2_topright.gif);
 }
 body.tab-bugs #mainarea ul#applicationchooser li {
   background-image: url(appchoose_tab2_a.gif);
@@ -1168,13 +1120,6 @@ body.tab-specifications #applications {
 }
 body.tab-specifications #mainarea div.x {
   background-image: url(mainarea_tab4_top.gif);
-}
-body.tab-specifications #mainarea div.y {
-  background-image: url(mainarea_tab4_topleft.gif);
-}
-body.tab-specifications #mainarea div.z,
-body.tab-specifications #mainarea ul#applicationchooser {
-  background-image: url(mainarea_tab4_topright.gif);
 }
 body.tab-specifications #mainarea ul#applicationchooser li {
   background-image: url(appchoose_tab4_a.gif);
@@ -1247,13 +1192,6 @@ body.tab-translations #applications {
 body.tab-translations #mainarea div.x {
   background-image: url(mainarea_tab5_top.gif);
 }
-body.tab-translations #mainarea div.y {
-  background-image: url(mainarea_tab5_topleft.gif);
-}
-body.tab-translations #mainarea div.z,
-body.tab-translations #mainarea ul#applicationchooser {
-  background-image: url(mainarea_tab5_topright.gif);
-}
 body.tab-translations #mainarea ul#applicationchooser li {
   background-image: url(appchoose_tab5_a.gif);
 }
@@ -1305,13 +1243,6 @@ body.tab-translations #actions h2, body.tab-translations #actions h2:hover {
 body.tab-answers #applications {background: url(app-answers-wm.gif) no-repeat;}
 body.tab-answers #mainarea div.x {
   background-image: url(mainarea_tab6_top.gif);
-}
-body.tab-answers #mainarea div.y {
-  background-image: url(mainarea_tab6_topleft.gif);
-}
-body.tab-answers #mainarea div.z,
-body.tab-answers #mainarea ul#applicationchooser {
-  background-image: url(mainarea_tab6_topright.gif);
 }
 body.tab-answers #mainarea ul#applicationchooser li {
   background-image: url(appchoose_tab6_a.gif);
@@ -1367,7 +1298,7 @@ ul#applicationchooser a, ul#applicationchooser a:hover {
 body {
   min-width: 480px;
 }
-#container {padding: 0 20px 0 240px; margin-top: 40px;}
+#container {padding: 0 20px 0 240px; margin-top: 30px;}
 body.applicationhome #container {padding-left: 20px;}
 #singlecolumn #container {
   padding-left: 20px;
@@ -1531,7 +1462,6 @@ table.listing {margin: 0; width: 100%; font-size: 8.5pt;}
 table.listing, table.listing tbody {border-bottom: 1px solid #d2d2d2;}
 table.listing thead, table.listing thead th, table.listing tfoot tr {
   border: 1px solid #d2d2d2;
-  background-color: #fff;
 }
 table.listing tfoot td {border: 1px solid #d2d2d2;}
 table.listing thead td {border: none;}

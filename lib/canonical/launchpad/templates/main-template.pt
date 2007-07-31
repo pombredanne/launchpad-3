@@ -149,11 +149,8 @@
       </form>
       <div tal:condition="view/macro:pagehas/applicationborder" id="mainarea">
 
-            <div class="v">
-              <div class="w">
                 <div class="x">
-                  <div class="y">
-                    <div class="z">
+
                       <div
                         tal:condition="not:view/macro:pagehas/applicationtabs"
                         id="noapplicationchooser"
@@ -245,11 +242,8 @@
                         </div>
                         <div class="clear"></div>
                       </div><!--id="container"-->
-                    </div><!--id="z"-->
-                  </div><!--id="y"-->
+
                 </div><!--id="x"-->
-              </div><!--id="w"-->
-            </div><!--id="v"-->
 
       </div><!--id="mainarea"-->
       <tal:noborder condition="not:view/macro:pagehas/applicationborder">
