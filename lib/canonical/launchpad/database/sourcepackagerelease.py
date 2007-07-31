@@ -31,7 +31,8 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
-    ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
+    IArchiveSet, ISourcePackageRelease, ILaunchpadCelebrities, 
+    ITranslationImportQueue,
     BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
     )
 from canonical.launchpad.database.question import Question
@@ -313,6 +314,11 @@ class SourcePackageRelease(SQLBase):
         """See ISourcePackageRelease."""
         if component is not None:
             self.component = component
+            # See if the new component requires a new archive:
+            new_archive = getUtility(IArchiveSet).getByDistroComponent(
+                self.uploaddistroseries.distribution, component.name)
+            if new_archive is not None:
+                self.upload_archive = new_archive
         if section is not None:
             self.section = section
         if urgency is not None:

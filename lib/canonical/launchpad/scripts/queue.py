@@ -24,7 +24,7 @@ from sha import sha
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    NotFoundError, IDistributionSet, IPackageUploadSet,
+    IArchiveSet, NotFoundError, IDistributionSet, IPackageUploadSet,
     IComponentSet, ISectionSet, QueueInconsistentStateError,
     IPersonSet)
 
@@ -854,6 +854,13 @@ class QueueActionOverride(QueueAction):
                                         priority=priority)
                         # break loop, just in case
                         break
+                # See if the new component requires a new archive on the build:
+                if component:
+                    new_archive = getUtility(IArchiveSet).getByDistroComponent(
+                        build.build.distroarchseries.distroseries.distribution,
+                        self.component_name)
+                    if new_archive is not None:
+                        build.build.overrideArchive(new_archive)
                 self.displayInfo(queue_item, only=binary.name)
 
         not_overridden = set(self.package_names) - set(overridden)

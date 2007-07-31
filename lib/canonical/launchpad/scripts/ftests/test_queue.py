@@ -21,7 +21,7 @@ from canonical.launchpad.scripts.queue import (
 from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket,
+    ArchivePurpose, PackagePublishingStatus, PackagePublishingPocket,
     PackageUploadStatus, DistroSeriesStatus)
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.librarian.utils import filechunks
@@ -507,6 +507,36 @@ class TestQueueTool(TestQueueBase):
                 self.assertEqual('editors', 
                     source.sourcepackagerelease.section.name)
 
+    def testOverrideSourceWithArchiveChange(self):
+        """Check if the archive changes as necessary on a source override.
+
+        When overriding the component, the archive may change, so we check
+        that here.
+        """
+        # Set up.
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+
+        # Test that it changes to commercial when required.
+        queue_action = self.execute_command('override source alsa-utils',
+            component_name='commercial')
+        self.assertEqual(1, queue_action.items_size)
+        queue_item = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name="alsa-utils")[0]
+        [source] = queue_item.sources
+        self.assertEqual(source.sourcepackagerelease.upload_archive.purpose,
+            ArchivePurpose.COMMERCIAL)
+
+        # Test that it changes back to primary when required.
+        queue_action = self.execute_command('override source alsa-utils',
+            component_name='main')
+        self.assertEqual(1, queue_action.items_size)
+        queue_item = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name="alsa-utils")[0]
+        [source] = queue_item.sources
+        self.assertEqual(source.sourcepackagerelease.upload_archive.purpose,
+            ArchivePurpose.PRIMARY)
+
     def testOverrideBinary(self):
         """Check if overriding binaries works.
 
@@ -553,6 +583,35 @@ class TestQueueTool(TestQueueBase):
         self.assertRaises(
             CommandRunnerError, self.execute_command, 'override binary 1',
             component_name='multiverse')
+
+    def testOverrideBinaryWithArchiveChange(self):
+        """Check if the archive changes as necessary on a binary override.
+
+        When overriding the component, the archive may change, so we check
+        that here.
+        """
+        # Set up.
+        breezy_autotest = getUtility(
+            IDistributionSet)['ubuntu']['breezy-autotest']
+        # Test that it changes to commercial when required.
+        queue_action = self.execute_command('override binary pmount',
+            component_name='commercial')
+        self.assertEqual(1, queue_action.items_size)
+        [queue_item] = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name="pmount")
+        [packagebuild] = queue_item.builds
+        self.assertEqual(packagebuild.build.archive.purpose, 
+            ArchivePurpose.COMMERCIAL)
+
+        # Test that it changes back to primary when required.
+        queue_action = self.execute_command('override binary pmount',
+            component_name='main')
+        self.assertEqual(1, queue_action.items_size)
+        [queue_item] = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name="pmount")
+        [packagebuild] = queue_item.builds
+        self.assertEqual(packagebuild.build.archive.purpose, 
+            ArchivePurpose.PRIMARY)
 
 
 class TestQueueToolInJail(TestQueueBase):

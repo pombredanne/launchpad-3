@@ -102,9 +102,18 @@ class ArchiveSet:
 
     def getByDistroComponent(self, distribution, component_name):
         """See canonical.launchpad.interfaces.IArchiveSet."""
+        # Commercial component gets the commercial archive (duh).
         if component_name == 'commercial':
             return self.getByDistroPurpose(distribution, 
                 ArchivePurpose.COMMERCIAL)
+        # Other known components get the primary archive.
+        elif component_name in (
+            # XXX This should not be a hardcoded list but I expect this to
+            # change in the future when more archive types are in use.
+            'main', 'restricted', 'universe', 'multiverse'):
+            return self.getByDistroPurpose(distribution,
+                ArchivePurpose.PRIMARY)
+        # Otherwise we defer to the caller.
         else:
             return None
 

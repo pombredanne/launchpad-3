@@ -111,6 +111,9 @@ class IBuild(Interface):
         doc/build-notification.txt for further information.
         """
 
+    def overrideArchive(archive):
+        """Override the build's archive with the provided one."""
+
 
 class IBuildSet(Interface):
     """Interface for BuildSet"""
