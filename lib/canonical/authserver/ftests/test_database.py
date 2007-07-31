@@ -12,12 +12,13 @@ import transaction
 from zope.component import getUtility
 from zope.interface.verify import verifyObject
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.interfaces import (
-    BranchType, EmailAddressStatus, IBranchSet, IPersonSet)
+    BranchType, EmailAddressStatus, IBranchSet, IPersonSet, IProductSet)
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 
@@ -254,34 +255,25 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         # getBranchesForUser returns all of the hosted branches that a user may
         # write to. The branches are grouped by product, and are specified by
         # name and id. The name and id of the products are also included.
+        transaction.begin()
+        no_priv = getUtility(IPersonSet).getByName('no-priv')
+        firefox = getUtility(IProductSet).getByName('firefox')
+        new_branch = getUtility(IBranchSet).new(
+            BranchType.HOSTED, 'branch2', no_priv, no_priv, firefox, None)
+        # We only create new_branch so that we can test getBranchesForUser.
+        # Zope's security is not relevant and only gets in the way, because
+        # there's no logged in user.
+        new_branch = removeSecurityProxy(new_branch)
+        transaction.commit()
+
         storage = DatabaseUserDetailsStorageV2(None)
-        fetched_branches = storage._getBranchesForUserInteraction(12)
+        fetched_branches = storage._getBranchesForUserInteraction(no_priv.id)
 
-        # Flatten the structured return value of getBranchesForUser so that we
-        # can easily compare it to the data from our SQLObject methods.
-        flattened = []
-        for user_id, branches_by_product in fetched_branches:
-            for (product_id, product_name), branches in branches_by_product:
-                for branch_id, branch_name in branches:
-                    flattened.append(
-                        (user_id, product_id, product_name, branch_id,
-                         branch_name))
-
-        # Get the hosted branches for user 12 from SQLObject classes.
-        login(ANONYMOUS)
-        try:
-            person = getUtility(IPersonSet).get(12)
-            login(person.preferredemail.email)
-            expected_branches = getUtility(
-                IBranchSet).getHostedBranchesForPerson(person)
-            expected_branches = [
-                (branch.owner.id, branch.product.id, branch.product.name,
-                 branch.id, branch.name)
-                for branch in expected_branches]
-        finally:
-            logout()
-
-        self.assertEqual(set(expected_branches), set(flattened))
+        self.assertEqual(
+            [(no_priv.id,
+              [((firefox.id, firefox.name),
+                [(new_branch.id, new_branch.name)])])],
+            fetched_branches)
 
     def test_getBranchesForUserNullProduct(self):
         # getBranchesForUser returns branches for hosted branches with no
@@ -297,8 +289,8 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         login(login_email)
         try:
             branch = getUtility(IBranchSet).new(
-                BranchType.HOSTED, 'foo-branch', person, person,
-                None, None, None)
+                BranchType.HOSTED, 'foo-branch', person, person, None, None,
+                None)
         finally:
             logout()
             transaction.commit()
@@ -373,7 +365,15 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         # When we get the branch information for a private branch that is
         # hidden to us, it is an if the branch doesn't exist at all.
         store = DatabaseUserDetailsStorageV2(None)
+
         # salgado is a member of landscape-developers.
+        person_set = getUtility(IPersonSet)
+        salgado = person_set.getByName('salgado')
+        landscape_dev = person_set.getByName('landscape-developers')
+        self.assertTrue(
+            salgado.inTeam(landscape_dev),
+            "salgado should be in landscape-developers team, but isn't.")
+
         store._createBranchInteraction(
             'salgado', 'landscape-developers', 'landscape',
             'some-branch')
