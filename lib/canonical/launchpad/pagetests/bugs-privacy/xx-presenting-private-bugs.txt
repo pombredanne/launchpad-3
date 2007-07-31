@@ -1,0 +1,22 @@
+= Presenting private bug reports =
+
+When a bug report is public, it appears like any other Launchpad page.
+
+    >>> browser.addHeader("Authorization", "Basic foo.bar@canonical.com:test")
+    >>> browser.open("http://launchpad.dev/bugs/4")
+    >>> print find_tag_by_id(browser.contents, 'privatestyle')
+    None
+    >>> print find_tag_by_id(browser.contents, 'privateemblem')
+    None
+
+But when marked private, it gains a distinctive private style and emblem.
+
+    >>> browser.open("http://bugs.launchpad.dev/firefox/+bug/4/+secrecy")
+    >>> browser.getControl("Keep bug confidential").selected = True
+    >>> browser.getControl("Change").click()
+    >>> print browser.url
+    http://bugs.launchpad.dev/firefox/+bug/4
+    >>> print find_tag_by_id(browser.contents, 'privatestyle')
+    <style.../style>
+    >>> print find_tag_by_id(browser.contents, 'privateemblem')
+    <img...>

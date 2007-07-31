@@ -1707,3 +1707,11 @@ class GotoStructuralObject:
             return None
         return headercontext
 
+    @property
+    def immediate_object_is_private(self):
+        try:
+            headercontext, adapter = nearest_context_with_adapter(
+                self.use_context, IStructuralHeaderPresentation)
+        except NoCanonicalUrl:
+            return False
+        return adapter.is_private()

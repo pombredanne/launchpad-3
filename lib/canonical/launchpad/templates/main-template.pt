@@ -24,8 +24,13 @@
       media="screen, print"
       tal:condition="devmode"
       tal:content="string:@import url(${icingroot}/style.css);"/>
+    <style
+      type="text/css"
+      tal:condition="CONTEXTS/lp:immediate_object_is_private"
+      id="privatestyle"
+    >html, body {background-color: #e6e6e6 !important;}</style>
     <style tal:condition="is_demo" type="text/css"
-    >html, body {background: #ddd url(/@@/demo) !important;}</style>
+    >html, body {background-image: url(/@@/demo) !important;}</style>
     <style tal:condition="site_message" type="text/css"
     >#help {top: 47px !important;}</style>
     <!--[if IE 7]>

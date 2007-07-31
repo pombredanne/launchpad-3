@@ -33,12 +33,16 @@
           alt="(Security-related)"
           src="/@@/security-large"
         />
-        <img src="/@@/private-large" title="(Private)"
-             tal:condition="context/bug/private" />
         <img src="/@@/mentoring-large" title="(Mentoring available)"
              tal:condition="context/bug/mentoring_offers/count" />
         <img src="/@@/branch-large" title="(Branch available)"
              tal:condition="context/bug/bug_branches/count" />
+        <img
+          tal:condition="context/bug/private"
+          id="privateemblem"
+          src="/@@/private-large"
+          title="(Private)"
+        />
       </div>
       <h1 style="clear: left;" tal:content="context/bug/title">Bug summary</h1>
 
