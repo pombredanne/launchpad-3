@@ -248,6 +248,19 @@ class TestPublisher(TestNativePublishingBase):
             [('breezy-autotest', PackagePublishingPocket.RELEASE)],
             distro_publisher.allowed_suites)
 
+        # Check that the commercial archive is built in a different directory
+        # to the primary archive.
+        commercial_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntutest, ArchivePurpose.COMMERCIAL)
+        distro_publisher = getPublisher(
+            commercial_archive, self.ubuntutest,
+            allowed_suites, self.logger, distsroot)
+        self.assertEqual(commercial_archive, distro_publisher.archive)
+        self.assertEqual('/var/tmp/archive/ubuntutest-commercial/dists',
+            distro_publisher._config.distsroot)
+        self.assertEqual('/var/tmp/archive/ubuntutest-commercial/pool',
+            distro_publisher._config.poolroot)
+
         # lets setup an Archive Publisher
         cprov = getUtility(IPersonSet).getByName('cprov')
 

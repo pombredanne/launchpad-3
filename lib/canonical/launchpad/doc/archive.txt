@@ -107,6 +107,19 @@ and an ArchivePurpose:
   u'Commercial archive'
 
 
+The publisher config for COMMERCIAL contains only 'commercial' in its
+components.  This prevents non-commercial being published in the commercial
+archive.
+
+  >>> comm_pubconf = removeSecurityProxy(
+  ...     commercial_archive.getPubConfig(ubuntutest))
+  >>> for distroseries in comm_pubconf._distroserieses.keys():
+  ...     components = set(
+  ...         comm_pubconf._distroserieses[distroseries]['components'])
+  ...     print components
+  set(['commercial'])
+  set(['commercial'])
+
 IArchiveSet.getByDistroComponent retrieves an IArchive given a distribution
 and a component name.  This is used when you want to override the archive
 based on the component.  If the component is unknown, None is returned.
