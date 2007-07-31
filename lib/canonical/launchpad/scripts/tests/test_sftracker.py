@@ -10,11 +10,10 @@ import unittest
 import pytz
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IEmailAddressSet, ILaunchpadCelebrities, IPersonSet,
-    IProductSet)
+    IEmailAddressSet, ILaunchpadCelebrities, IPersonSet, IProductSet,
+    BugTaskStatus, PersonCreationRationale)
 from canonical.launchpad.scripts import sftracker
-from canonical.lp.dbschema import (
-    BugTaskImportance, BugAttachmentType, PersonCreationRationale)
+from canonical.lp.dbschema import BugTaskImportance, BugAttachmentType
 
 from canonical.testing import LaunchpadZopelessLayer
 

@@ -41,14 +41,13 @@ except ImportError:
 from zope.component import getUtility
 from zope.app.content_types import guess_content_type
 
-from canonical.lp.dbschema import (
-    BugTaskImportance, BugAttachmentType, PersonCreationRationale)
+from canonical.lp.dbschema import BugTaskImportance, BugAttachmentType
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IBugSet, IBugActivitySet, IBugAttachmentSet,
-    IBugExternalRefSet, IEmailAddressSet, ILaunchpadCelebrities,
-    ILibraryFileAliasSet, IMessageSet, IPersonSet, CreateBugParams,
-    NotFoundError)
+    IBugSet, IBugActivitySet, IBugAttachmentSet, IBugExternalRefSet,
+    IEmailAddressSet, ILaunchpadCelebrities, ILibraryFileAliasSet,
+    IMessageSet, IPersonSet, BugTaskStatus, CreateBugParams, NotFoundError,
+    PersonCreationRationale)
 
 logger = logging.getLogger('canonical.launchpad.scripts.sftracker')
 
