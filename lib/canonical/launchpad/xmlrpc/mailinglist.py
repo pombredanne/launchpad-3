@@ -49,7 +49,7 @@ class RequestedMailingListAPI(LaunchpadXMLRPCView):
         deactivated = [mailing_list.team.name
                        for mailing_list in list_set.deactivated_lists]
         if deactivated:
-            response['deactivated'] = deactivated
+            response['deactivate'] = deactivated
         # Finally, do modified lists.  Currently, the only value that can be
         # modified is the welcome message.
         modified = []

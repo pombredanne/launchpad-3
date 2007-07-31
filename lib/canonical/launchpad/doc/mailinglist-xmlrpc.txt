@@ -141,7 +141,7 @@ This will show up in the actions pending for Mailman.
 
     >>> pending_actions = mailinglist_api.getPendingActions()
     >>> print_actions(pending_actions)
-    team-one --> deactivated
+    team-one --> deactivate
 
 Let's create another team mailing list and request its deactivation, to show
 what happens if a deactivation fails.  First, set things up behind the
@@ -156,7 +156,7 @@ scenes.
     >>> commit()
     >>> print_actions(pending_actions)
     team-three --> create {}
-    team-one --> deactivated
+    team-one --> deactivate
     >>> mailinglist_api.reportStatus({'team-three': 'success'})
     True
     >>> list_three.deactivate()
@@ -166,8 +166,8 @@ We now have two active mailing lists for which deactivation has been
 requested.
 
     >>> print_actions(mailinglist_api.getPendingActions())
-    team-one --> deactivated
-    team-three --> deactivated
+    team-one --> deactivate
+    team-three --> deactivate
 
 Perhaps team one's list was successfully deactivated but team three's list
 deactivation failed for some reason.
@@ -299,7 +299,7 @@ an active list.
     >>> commit()
     >>> pending_actions = mailinglist_api.getPendingActions()
     >>> print_actions(pending_actions)
-    team-four --> deactivated
+    team-four --> deactivate
 
 Status strings are case-sensitive.
 

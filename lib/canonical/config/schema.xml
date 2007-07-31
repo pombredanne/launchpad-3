@@ -985,8 +985,11 @@ k            </description>
         <section name="*" type="mailman-build"
                  attribute="build" required="yes" />
 
-        <key name="launch" datatype="boolean"  default="false" />
-        <key name="smtp"   datatype="inet-address"   default="localhost:25" />
+        <key name="launch" datatype="boolean"       default="false" />
+        <key name="smtp"   datatype="inet-address"  default="localhost:25" />
+        <key name="xmlrpc_url" datatype="string"
+             default="http://xmlrpc.launchpad.dev/mailinglists" />
+        <key name="xmlrpc_runner_sleep" datatype="integer" default="10" />
     </sectiontype>
 
     <sectiontype name="canonical" extends="database_options">

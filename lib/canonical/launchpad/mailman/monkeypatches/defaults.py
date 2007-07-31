@@ -28,7 +28,7 @@ QRUNNERS = [
     ('RetryRunner',    1), # retry temporarily failed deliveries
     # Non-standard runners we've added.  XXX BarryWarsaw: not yet implemented.
 ##     ('POPRunner',      1), # POP new messages to us
-##     ('XMLRPCRunner',   1), # Poll for XMLRPC requests
+    ('XMLRPCRunner',   1), # Poll for XMLRPC requests
     ]
 
 # Other list defaults.

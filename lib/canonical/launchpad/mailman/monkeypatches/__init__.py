@@ -63,3 +63,15 @@ SMTPPORT = %(smtp_port)d
            )
     finally:
         config_file.close()
+    # Mailman's qrunner system requires runner modules to live in the
+    # Mailman.Queue package.  Set things up so that there's a hook module in
+    # there for the XMLRPCRunner.
+    runner_path = os.path.join(mailman_path,
+                               'Mailman', 'Queue', 'XMLRPCRunner.py')
+    runner_file = open(runner_path, 'w')
+    try:
+        print >> runner_file, (
+            'from canonical.launchpad.mailman.monkeypatches.xmlrpcrunner '
+            'import *')
+    finally:
+        runner_file.close()
