@@ -17,8 +17,7 @@ from twisted.python.failure import Failure
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     IDistroArchSeries, IDistroSeries, ILaunchpadCelebrities,
-    UnableToFetchCDImageFileList)
-from canonical.lp.dbschema import MirrorStatus
+    UnableToFetchCDImageFileList, MirrorStatus)
 
 
 # The requests/timeouts ratio has to be at least 3 for us to keep issuing

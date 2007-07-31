@@ -1378,23 +1378,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # a time, then performing an intermediate commit.  This avoids holding
         # too many locks for too long and disrupting regular database service.
 
-        if not self.hide_all_translations:
-            raise AssertionError("""
-_copyActiveTranslationsToNewRelease: hide_all_translations not set!
+        assert self.hide_all_translations, (
+            "hide_all_translations not set!"
+            " That would allow users to see and modify incomplete"
+            " translation state.")
 
-Attempted to populate translations for new distroseries while its
-translations are visible.  That would allow users to see and modify incomplete
-translation state.
-""")
-
-        if not self.defer_translation_imports:
-            raise AssertionError("""
-_copyActiveTranslationsToNewRelease: defer_translation_imports not set!
-
-Attempted to populate translations for new distroseries while translation
-import queue is enabled. That would corrupt our translation data mixing
-new imports with the information being copied.
-""")
+        assert self.defer_translation_imports, (
+            "defer_translation_imports not set!"
+            " That would corrupt translation data mixing new imports"
+            " with the information being copied.")
 
         # Clean up any remains from a previous run.  If we got here, that
         # means those remains are not salvagable.
