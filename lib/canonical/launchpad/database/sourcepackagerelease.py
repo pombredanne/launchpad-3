@@ -23,8 +23,7 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
     ArchivePurpose, SourcePackageUrgency, SourcePackageFormat,
-    SourcePackageFileType, BuildStatus, QuestionStatus,
-    PackagePublishingStatus)
+    SourcePackageFileType, BuildStatus, PackagePublishingStatus)
 
 from canonical.librarian.interfaces import ILibrarianClient
 
@@ -34,13 +33,10 @@ from canonical.launchpad.interfaces import (
     ISourcePackageRelease, ILaunchpadCelebrities, ITranslationImportQueue,
     BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
     )
-from canonical.launchpad.database.question import Question
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
-from canonical.launchpad.database.binarypackagerelease import (
-     BinaryPackageRelease)
 
 
 class SourcePackageRelease(SQLBase):

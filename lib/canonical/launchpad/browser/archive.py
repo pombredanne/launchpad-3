@@ -21,7 +21,8 @@ from zope.component import getUtility
 from canonical.launchpad import _
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.interfaces import (
-    IArchive, IPPAActivateForm, IArchiveSet, IBuildSet, IHasBuildRecords)
+    IArchive, IPPAActivateForm, IArchiveSet, IBuildSet, IHasBuildRecords,
+    NotFoundError)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, enabled_with_permission,
     stepthrough, ApplicationMenu, LaunchpadEditFormView, LaunchpadFormView,

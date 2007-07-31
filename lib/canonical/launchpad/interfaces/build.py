@@ -12,9 +12,6 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 
-from canonical.launchpad import _
-
-
 class IBuild(Interface):
     """A Build interface"""
     id = Attribute("The build ID.")
@@ -30,8 +27,8 @@ class IBuild(Interface):
     pocket = Attribute("Target pocket of this build")
     dependencies = Attribute("Debian-like dependency line for DEPWAIT builds")
     archive = Attribute("The archive")
-    
-    # useful properties
+
+    # Properties
     title = Attribute("Build Title")
     changesfile = Attribute("The Build Changesfile object, returns None if "
                             "it is a gina-inserted record.")
