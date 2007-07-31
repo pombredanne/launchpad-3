@@ -23,7 +23,7 @@ from canonical.lp import (
     initZopeless, READ_COMMITTED_ISOLATION)
 
 from contrib.glock import GlobalLock
-from canonical.lp.dbschema import ArchivePurpose, PackageUploadStatus
+from canonical.lp.dbschema import PackageUploadStatus
 
 def main():
     # Parse command-line arguments

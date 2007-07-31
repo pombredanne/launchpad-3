@@ -72,8 +72,7 @@ class IArchiveSet(Interface):
         Where different components may imply a different archive (e.g.
         commercial), this method will return the archive for that component.
 
-        If the component_name supplied does not override anything, None is 
-        returned.
+        If the component_name supplied is unknown, None is returned.
         """
 
     def getAllPPAs():
