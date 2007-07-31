@@ -27,11 +27,11 @@ from openid import oidutil
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.lp.dbschema import LoginTokenType, PersonCreationRationale
 from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, ILoginTokenSet, IOpenIdApplication,
-    IOpenIdAuthorizationSet, IPersonSet, NotFoundError, UnexpectedFormData)
+    IOpenIdAuthorizationSet, IPersonSet, LoginTokenType, NotFoundError,
+    PersonCreationRationale, UnexpectedFormData)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
