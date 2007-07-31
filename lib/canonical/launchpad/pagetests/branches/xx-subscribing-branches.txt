@@ -41,9 +41,10 @@ Initially there should be no subscribers.
 At this stage the defaults that are set for subscriptions
 are fairly arbitrary, so we'll explicitly choose the values.
 
-    >>> browser.getControl('Notification Level').value = [
+    >>> browser.getControl('Notification Level').displayValue = [
     ...     'Branch attribute notifications only']
-    >>> browser.getControl('Generated Diff Size Limit').value = ['1000 lines']
+    >>> browser.getControl('Generated Diff Size Limit').displayValue = [
+    ...     '1000 lines']
 
 Now, post the subscription form. We should see a message that we have just
 subscribed.
@@ -67,9 +68,10 @@ Lets go to that page.
 Let's change our subscription to getting emails for modifications, and diffs,
 and limit our diffs to 5000 lines.
 
-    >>> browser.getControl('Notification Level').value = [
+    >>> browser.getControl('Notification Level').displayValue = [
     ...     'Branch attribute and revision notifications']
-    >>> browser.getControl('Generated Diff Size Limit').value = ['5000 lines']
+    >>> browser.getControl('Generated Diff Size Limit').displayValue = [
+    ...     '5000 lines']
     >>> browser.getControl('Change').click()
 
 Now we should be taken back to the main branch page, with a nice
@@ -123,9 +125,10 @@ The process of subscribing others is the same as subscribing the
 currently logged in user with the addition of the user needing to
 specify the person to subscribe.  The person field is required.
 
-    >>> browser.getControl('Notification Level').value = [
+    >>> browser.getControl('Notification Level').displayValue = [
     ...     'Branch attribute and revision notifications']
-    >>> browser.getControl('Generated Diff Size Limit').value = ['5000 lines']
+    >>> browser.getControl('Generated Diff Size Limit').displayValue = [
+    ...     '5000 lines']
     >>> browser.getControl('Subscribe').click()
 
     >>> for error in find_tags_by_class(browser.contents, 'error'):
@@ -147,9 +150,10 @@ specify the person to subscribe.  The person field is required.
 Subscribing a team is as simple as putting in the team name.
 
     >>> browser.getLink('Subscribe someone else').click()
-    >>> browser.getControl('Notification Level').value = [
+    >>> browser.getControl('Notification Level').displayValue = [
     ...     'Branch attribute and revision notifications']
-    >>> browser.getControl('Generated Diff Size Limit').value = ['1000 lines']
+    >>> browser.getControl('Generated Diff Size Limit').displayValue = [
+    ...     '1000 lines']
     >>> browser.getControl('Person').value = 'landscape-developers'
     >>> browser.getControl('Subscribe').click()
 
@@ -169,9 +173,10 @@ Sample Person is a member of Landscape Developers.
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/main')
     >>> browser.getLink('Subscribe someone else').click()
-    >>> browser.getControl('Notification Level').value = [
+    >>> browser.getControl('Notification Level').displayValue = [
     ...     'Branch attribute and revision notifications']
-    >>> browser.getControl('Generated Diff Size Limit').value = ['1000 lines']
+    >>> browser.getControl('Generated Diff Size Limit').displayValue = [
+    ...     '1000 lines']
     >>> browser.getControl('Person').value = 'landscape-developers'
     >>> browser.getControl('Subscribe').click()
     >>> print_informational_message(browser.contents)

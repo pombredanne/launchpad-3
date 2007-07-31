@@ -10,6 +10,7 @@ __all__ = [
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
+    'BranchType',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
@@ -30,9 +31,9 @@ from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
-from canonical.launchpad.webapp.enum import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from canonical.lazr import (
+    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
 
 class BranchLifecycleStatus(DBEnumeratedType):
@@ -91,6 +92,34 @@ class BranchLifecycleStatus(DBEnumeratedType):
 
         This branch contains work which the author has abandoned, likely
         because it did not prove fruitful.
+        """)
+
+
+class BranchType(DBEnumeratedType):
+    """Branch Type
+
+    The type of a branch determins the branch interaction with a number
+    of other subsystems.
+    """
+
+    HOSTED = DBItem(1, """
+        Hosted
+
+        Hosted branches have their main repository on the supermirror.
+        """)
+
+    MIRRORED = DBItem(2, """
+        Mirrored
+
+        Mirrored branches are primarily hosted elsewhere and are
+        periodically pulled from the remote site into the supermirror.
+        """)
+
+    IMPORTED = DBItem(3, """
+        Imported
+
+        Imported branches have been converted from some other revision
+        control system into bzr and are made available through the supermirror.
         """)
 
 
@@ -173,7 +202,7 @@ class IBranch(IHasOwner):
 
     id = Int(title=_('ID'), readonly=True, required=True)
     branch_type = Choice(
-        title=_("Branch type"), required=True, vocabulary='BranchType',
+        title=_("Branch type"), required=True, vocabulary=BranchType,
         description=_("Hosted branches have Launchpad code hosting as the "
                       "primary location and can be pushed to.  Mirrored "
                       "branches are pulled from the remote location "

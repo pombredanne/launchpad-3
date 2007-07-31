@@ -343,6 +343,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     def bugtargetname(self):
         """See IBugTarget."""
         return self.fullseriesname
+        # XXX 20070710 mpt: For bugs 113258 and 113262, the distribution's and
+        # series' names should be used instead of fullseriesname.
+
+    @property
+    def bugtargetdisplayname(self):
+        """See IBugTarget."""
+        return self.fullseriesname
 
     def searchTasks(self, search_params):
         """See canonical.launchpad.interfaces.IBugTarget."""

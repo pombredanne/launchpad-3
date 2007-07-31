@@ -29,7 +29,7 @@ Bazaar model does not forbid users from replacing the history of a branch.
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IBranch, IBranchSet, IBranchSubscription)
+    ...     BranchType, IBranch, IBranchSet, IBranchSubscription)
     >>> from canonical.launchpad.database import (
     ...     Branch, BranchSet, BranchSubscription,)
     >>> verifyObject(IBranch, Branch.get(1))
@@ -91,7 +91,6 @@ The timegenerator is used to create nicely ordered 'fake' date_created
 times for the branches.  This avoids using transaction.commit to get the
 date_created values from the database.
 
-    >>> from canonical.lp.dbschema import BranchType
     >>> gterm_dev_url = 'http://example.com/~ddaa/gterm.dev'
     >>> title = "David Allouche's Main GNOME Terminal Branch"
     >>> summary = "Main line of development for David Allouche on GNOME Terminal."
@@ -388,9 +387,9 @@ Both of these attributes are contolled through the UI through the use
 of the enumerated types: BranchSubscriptionDiffSize, and
 BranchSubscriptionNotificationLevel.
 
-    >>> from canonical.launchpad.interfaces import IPerson, IBranchSubscription
-    >>> from canonical.lp.dbschema import (
+    >>> from canonical.launchpad.interfaces import (
     ...     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel)
+    ...     IPerson, IBranchSubscription)
     >>> sabdfl = personset.getByName('sabdfl')
     >>> sabdfl.subscribed_branches.count()
     0
