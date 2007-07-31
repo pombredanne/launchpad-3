@@ -261,6 +261,9 @@ class NewDatabaseStorageTestCase(unittest.TestCase):
         firefox = getUtility(IProductSet).getByName('firefox')
         new_branch = getUtility(IBranchSet).new(
             BranchType.HOSTED, 'branch2', no_priv, no_priv, firefox, None)
+        # We only create new_branch so that we can test getBranchesForUser.
+        # Zope's security is not relevant and only gets in the way, because
+        # there's no logged in user.
         new_branch = removeSecurityProxy(new_branch)
         transaction.commit()
 
