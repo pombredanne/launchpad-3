@@ -19,14 +19,11 @@ from zope.interface import implements
 from zope.security.interfaces import Unauthorized
 from zope.security.proxy import removeSecurityProxy
 
-from canonical.config import config
-
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.launchpad.webapp import urlappend
 from canonical.launchpad.database import ScriptActivity
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchType, IBranchSet, IPersonSet, IProductSet,
-    EmailAddressStatus, SSHKeyType)
+    BranchCreationForbidden, BranchType, IBranchSet, IPersonSet, IProductSet)
 from canonical.launchpad.ftests import login, logout, ANONYMOUS
 from canonical.launchpad.scripts.supermirror_rewritemap import split_branch_id
 from canonical.database.sqlbase import clear_current_connection_cache
@@ -116,7 +113,10 @@ class UserDetailsStorageMixin:
 
     @read_only_transaction
     def _getSSHKeysInteraction(self, loginID):
-        """The interaction for getSSHKeys."""
+        """The synchronous implementation of `getSSHKeys`.
+
+        See `IUserDetailsStorage`.
+        """
         person = self._getPerson(loginID)
         if person is None:
             return []
@@ -204,13 +204,17 @@ class DatabaseUserDetailsStorage(UserDetailsStorageMixin):
         self.encryptor = SSHADigestEncryptor()
 
     def authUser(self, loginID, sshaDigestedPassword):
+        """See `IUserDetailsStorage`."""
         return deferToThread(
             self._authUserInteraction, loginID,
             sshaDigestedPassword.encode('base64'))
 
     @read_only_transaction
     def _authUserInteraction(self, loginID, sshaDigestedPassword):
-        """The interaction for authUser."""
+        """Synchronous implementation of `authUser`.
+
+        See `IUserDetailsStorage`.
+        """
         person = self._getPerson(loginID)
 
         if person is None:
@@ -275,11 +279,15 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return person_dict
 
     def authUser(self, loginID, password):
+        """See `IUserDetailsStorageV2`."""
         return deferToThread(self._authUserInteraction, loginID, password)
 
     @read_only_transaction
     def _authUserInteraction(self, loginID, password):
-        """The interaction for authUser."""
+        """Synchronous implementation of `authUser`.
+
+        See `IUserDetailsStorageV2`.
+        """
         person = self._getPerson(loginID)
         if person is None:
             return {}
@@ -291,13 +299,16 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         return self._getPersonDict(person)
 
     def getBranchesForUser(self, personID):
-        """See IHostedBranchStorage."""
+        """See `IHostedBranchStorage`."""
         return deferToThread(self._getBranchesForUserInteraction, personID)
 
     @read_only_transaction
     @run_as_requester
     def _getBranchesForUserInteraction(self, person):
-        """The interaction for getBranchesForUser."""
+        """Synchronous implementation of `getBranchesForUser`.
+
+        See `IHostedBranchStorage`.
+        """
         branches = getUtility(
             IBranchSet).getHostedBranchesForPerson(person)
         branches_summary = {}
@@ -314,12 +325,15 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
                 for person_id, by_product in branches_summary.iteritems()]
 
     def fetchProductID(self, productName):
-        """See IHostedBranchStorage."""
+        """See `IHostedBranchStorage`."""
         return deferToThread(self._fetchProductIDInteraction, productName)
 
     @read_only_transaction
     def _fetchProductIDInteraction(self, productName):
-        """The interaction for fetchProductID."""
+        """The synchronous implementation of `fetchProductID`.
+
+        See `IHostedBranchStorage`.
+        """
         product = getUtility(IProductSet).getByName(productName)
         if product is None:
             return ''
@@ -327,7 +341,7 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             return product.id
 
     def createBranch(self, loginID, personName, productName, branchName):
-        """See IHostedBranchStorage."""
+        """See `IHostedBranchStorage`."""
         return deferToThread(
             self._createBranchInteraction, loginID, personName, productName,
             branchName)
@@ -336,7 +350,10 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     @run_as_requester
     def _createBranchInteraction(self, requester, personName, productName,
                                  branchName):
-        """The interaction for createBranch."""
+        """The synchronous implementation of `createBranch`.
+
+        See `IHostedBranchStorage`.
+        """
         if productName == '+junk':
             product = None
         else:
@@ -356,18 +373,21 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
             return branch.id
 
     def requestMirror(self, branchID):
-        """See IHostedBranchStorage."""
+        """See `IHostedBranchStorage`."""
         return deferToThread(self._requestMirrorInteraction, branchID)
 
     @writing_transaction
     def _requestMirrorInteraction(self, branchID):
-        """The interaction for requestMirror."""
+        """The synchronous implementation of `requestMirror`.
+
+        See `IHostedBranchStorage`.
+        """
         branch = getUtility(IBranchSet).get(branchID)
         branch.requestMirror()
         return True
 
     def getBranchInformation(self, loginID, userName, productName, branchName):
-        """See IHostedBranchStorage."""
+        """See `IHostedBranchStorage`."""
         return deferToThread(
             self._getBranchInformationInteraction, loginID, userName,
             productName, branchName)
@@ -376,6 +396,10 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
     @run_as_requester
     def _getBranchInformationInteraction(self, requester, userName,
                                          productName, branchName):
+        """The synchronous implementation of `getBranchInformation`.
+
+        See `IHostedBranchStorage`.
+        """
         branch = getUtility(IBranchSet).getByUniqueName(
             '~%s/%s/%s' % (userName, productName, branchName))
         if branch is None:
@@ -430,23 +454,30 @@ class DatabaseBranchDetailsStorage:
         return (branch.id, pull_url, branch.unique_name[1:])
 
     def getBranchPullQueue(self):
+        """See `IBranchDetailsStorage`."""
         return deferToThread(self._getBranchPullQueueInteraction)
 
     @read_only_transaction
     def _getBranchPullQueueInteraction(self):
-        """The interaction for getBranchPullQueue."""
+        """The synchronous implementation for `getBranchPullQueue`.
+
+        See `IBranchDetailsStorage`.
+        """
         branches = getUtility(IBranchSet).getPullQueue()
         return [
             self._getBranchPullInfo(removeSecurityProxy(branch))
             for branch in branches]
 
     def startMirroring(self, branchID):
-        """See IBranchDetailsStorage"""
+        """See `IBranchDetailsStorage`."""
         return deferToThread(self._startMirroringInteraction, branchID)
 
     @writing_transaction
     def _startMirroringInteraction(self, branchID):
-        """The interaction for startMirroring."""
+        """The synchronous implementation of `startMirroring`.
+
+        See `IBranchDetailsStorage`.
+        """
         branch = getUtility(IBranchSet).get(branchID)
         if branch is None:
             return False
@@ -454,13 +485,16 @@ class DatabaseBranchDetailsStorage:
         return True
 
     def mirrorComplete(self, branchID, lastRevisionID):
-        """See IBranchDetailsStorage"""
+        """See `IBranchDetailsStorage`."""
         return deferToThread(
             self._mirrorCompleteInteraction, branchID, lastRevisionID)
 
     @writing_transaction
     def _mirrorCompleteInteraction(self, branchID, lastRevisionID):
-        """The interaction for mirrorComplete."""
+        """The synchronous implementation of `mirrorComplete`.
+
+        See `IBranchDetailsStorage`.
+        """
         branch = getUtility(IBranchSet).get(branchID)
         if branch is None:
             return False
@@ -468,12 +502,15 @@ class DatabaseBranchDetailsStorage:
         return True
 
     def mirrorFailed(self, branchID, reason):
-        """See IBranchDetailsStorage"""
+        """See `IBranchDetailsStorage`."""
         return deferToThread(self._mirrorFailedInteraction, branchID, reason)
 
     @writing_transaction
     def _mirrorFailedInteraction(self, branchID, reason):
-        """The interaction for mirrorFailed."""
+        """The synchronous implementation of `mirrorFailed`.
+
+        See `IBranchDetailsStorage`.
+        """
         branch = getUtility(IBranchSet).get(branchID)
         if branch is None:
             return False
@@ -489,7 +526,10 @@ class DatabaseBranchDetailsStorage:
     @writing_transaction
     def _recordSuccessInteraction(self, name, hostname, started_tuple,
                                   completed_tuple):
-        """The interaction for recordSuccess."""
+        """The synchronous implementation of `recordSuccess`.
+
+        See `IBranchDetailsStorage`.
+        """
         date_started = datetime_from_tuple(started_tuple)
         date_completed = datetime_from_tuple(completed_tuple)
         ScriptActivity(

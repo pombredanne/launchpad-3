@@ -288,29 +288,29 @@ class BranchSet:
     implements(IBranchSet)
 
     def __getitem__(self, branch_id):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         branch = self.get(branch_id)
         if branch is None:
             raise NotFoundError(branch_id)
         return branch
 
     def __iter__(self):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         return iter(Branch.select(prejoins=['owner', 'product']))
 
     def count(self):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         return Branch.select('NOT Branch.private').count()
 
     def countBranchesWithAssociatedBugs(self):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         return Branch.select(
             'NOT Branch.private AND Branch.id = BugBranch.branch',
             clauseTables=['BugBranch'],
             distinct=True).count()
 
     def get(self, branch_id, default=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         try:
             return Branch.get(branch_id)
         except SQLObjectNotFound:
@@ -428,7 +428,7 @@ class BranchSet:
     def new(self, branch_type, name, creator, owner, product, url, title=None,
             lifecycle_status=BranchLifecycleStatus.NEW, author=None,
             summary=None, home_page=None, whiteboard=None, date_created=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         if not home_page:
             home_page = None
         if date_created is None:
@@ -455,7 +455,7 @@ class BranchSet:
         return branch
 
     def getByUrl(self, url, default=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         assert not url.endswith('/')
         prefix = config.launchpad.supermirror_root
         if url.startswith(prefix):
@@ -508,7 +508,7 @@ class BranchSet:
             ''')
 
     def getProductDevelopmentBranches(self, products):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         product_ids = [product.id for product in products]
         query = Branch.select('''
             (Branch.id = ProductSeries.import_branch OR
@@ -519,7 +519,7 @@ class BranchSet:
         return query.prejoin(['author'])
 
     def getActiveUserBranchSummaryForProducts(self, products):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         product_ids = [product.id for product in products]
         if not product_ids:
             return []
@@ -546,7 +546,7 @@ class BranchSet:
         return result
 
     def getRecentlyChangedBranches(self, branch_count, visible_by_user=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         query = ('''
             Branch.last_scanned IS NOT NULL
@@ -560,7 +560,7 @@ class BranchSet:
             prejoins=['author', 'product'])
 
     def getRecentlyImportedBranches(self, branch_count, visible_by_user=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
         query = ('''
             Branch.last_scanned IS NOT NULL
@@ -574,7 +574,7 @@ class BranchSet:
             prejoins=['author', 'product'])
 
     def getRecentlyRegisteredBranches(self, branch_count, visible_by_user=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         return Branch.select(
             self._generateBranchClause('', visible_by_user),
             limit=branch_count,
@@ -664,7 +664,7 @@ class BranchSet:
 
     def getBranchesForPerson(self, person, lifecycle_statuses=None,
                              visible_by_user=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         query_params = {
             'person': person.id,
             'lifecycle_clause': self._lifecycleClause(lifecycle_statuses)
@@ -694,7 +694,7 @@ class BranchSet:
 
     def getBranchesAuthoredByPerson(self, person, lifecycle_statuses=None,
                                     visible_by_user=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = 'Branch.author = %s %s' % (person.id, lifecycle_clause)
         return Branch.select(
@@ -702,7 +702,7 @@ class BranchSet:
 
     def getBranchesRegisteredByPerson(self, person, lifecycle_statuses=None,
                                       visible_by_user=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
             Branch.owner = %s AND
@@ -715,7 +715,7 @@ class BranchSet:
 
     def getBranchesSubscribedByPerson(self, person, lifecycle_statuses=None,
                                       visible_by_user=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         query = ('''
             Branch.id = BranchSubscription.branch
@@ -728,7 +728,7 @@ class BranchSet:
 
     def getBranchesForProduct(self, product, lifecycle_statuses=None,
                               visible_by_user=None):
-        """See IBranchSet."""
+        """See `IBranchSet`."""
         assert product is not None, "Must have a valid product."
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
 
@@ -739,12 +739,13 @@ class BranchSet:
 
     def getHostedBranchesForPerson(self, person):
         """See `IBranchSet`."""
-        branches = Branch.select(
-            "Branch.URL IS NULL "
-            "AND Branch.owner IN ("
-            "SELECT TeamParticipation.team "
-            "FROM TeamParticipation "
-            "WHERE TeamParticipation.person = %d)" % person.id)
+        branches = Branch.select("""
+            Branch.url IS NULL
+            AND Branch.owner IN (
+            SELECT TeamParticipation.team
+            FROM TeamParticipation
+            WHERE TeamParticipation.person = %s)
+            """ % sqlvalues(person))
         return branches
 
     def getLatestBranchesForProduct(self, product, quantity,
