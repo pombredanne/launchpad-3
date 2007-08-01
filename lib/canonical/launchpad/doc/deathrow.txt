@@ -104,17 +104,20 @@ Knock off some binaries as well:
   >>> pub.status = PackagePublishingStatus.PENDINGREMOVAL
   >>> pub.scheduleddeletiondate = old_date
 
-As above, both 19 and 21 refer to the same pmount binaries, and since 21
-is not to be removed, we won't try and remove its files:
+As above, both 19 and 21 binary publication refer to the same pmount
+binaries, and since 21 is not to be removed, 19 is supposed to be left
+alone too:
+
+  >>> pub = SBPPH.get(21)
+  >>> print [f.libraryfile.filename
+  ...        for f in pub.binarypackagerelease.files]
+  [u'pmount_1.9-1_all.deb']
 
   >>> pub = SBPPH.get(19)
   >>> print [f.libraryfile.filename
   ...        for f in pub.binarypackagerelease.files]
   [u'pmount_1.9-1_all.deb']
-  >>> pub = SBPPH.get(21)
-  >>> print [f.libraryfile.filename
-  ...        for f in pub.binarypackagerelease.files]
-  [u'pmount_1.9-1_all.deb']
+
 
 Flush our these updates and kick the DeathRow processor again.
 
@@ -138,26 +141,28 @@ Look at the results of our actions. Two packages removed (one source
 and one binary) and the date removed properly set up:
 
   >>> source_pub = SSPPH.get(15)
-  >>> source_pub.status == PackagePublishingStatus.REMOVED
-  True
+  >>> source_pub.status.name
+  'REMOVED'
   >>> source_pub.dateremoved
   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
   >>> binary_pub = SBPPH.get(17)
-  >>> binary_pub.status == PackagePublishingStatus.REMOVED
-  True
+  >>> binary_pub.status.name
+  'REMOVED'
   >>> binary_pub.dateremoved
   CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 
-Source publication 20 and binary publication 19 of course are left alone:
+Source publication 20 (has a future 'scheduled deletion date') and
+binary publication 19 (file hold by another active publication), of
+course are left alone:
 
   >>> pub = SSPPH.get(20)
-  >>> pub.status == PackagePublishingStatus.REMOVED
-  False
+  >>> pub.status.name != PackagePublishingStatus.REMOVED
+  True
 
   >>> pub = SBPPH.get(19)
-  >>> pub.status == PackagePublishingStatus.REMOVED
-  False
+  >>> pub.status != PackagePublishingStatus.REMOVED
+  True
 
 
 Package Removal (simulated real run)
