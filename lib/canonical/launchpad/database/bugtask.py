@@ -680,8 +680,8 @@ class BugTask(SQLBase, BugTaskMixin):
 
         # Record the date of the particular kinds of transitions into
         # certain states.
-        if ((old_status.value < BugTaskStatus.CONFIRMED.value) and
-            (new_status.value >= BugTaskStatus.CONFIRMED.value)):
+        if ((old_status < BugTaskStatus.CONFIRMED) and
+            (new_status >= BugTaskStatus.CONFIRMED)):
             # Even if the bug task skips the Confirmed status
             # (e.g. goes directly to Fix Committed), we'll record a
             # confirmed date at the same time anyway, otherwise we get
@@ -689,8 +689,8 @@ class BugTask(SQLBase, BugTaskMixin):
             # reports.
             self.date_confirmed = now
 
-        if ((old_status.value < BugTaskStatus.INPROGRESS.value) and
-            (new_status.value >= BugTaskStatus.INPROGRESS.value)):
+        if ((old_status < BugTaskStatus.INPROGRESS) and
+            (new_status >= BugTaskStatus.INPROGRESS)):
             # Same idea with In Progress as the comment above about
             # Confirmed.
             self.date_inprogress = now
@@ -698,7 +698,7 @@ class BugTask(SQLBase, BugTaskMixin):
         # Bugs can jump in and out of 'incomplete' status
         # and for just as long as they're marked incomplete
         # we keep a date_incomplete recorded for them.
-        if new_status.value == BugTaskStatus.INCOMPLETE.value:
+        if new_status == BugTaskStatus.INCOMPLETE:
             self.date_incomplete = now
         else:
             self.date_incomplete = None
@@ -993,6 +993,9 @@ class BugTaskSet:
         return self.search(search_params)
 
     def _buildStatusClause(self, status):
+        """Return the SQL query fragment for search by status.
+
+        Called from `buildQuery` or recursively."""
         if zope_isinstance(status, any):
             return '(' + ' OR '.join(
                 self._buildStatusClause(dbitem)
@@ -1001,19 +1004,18 @@ class BugTaskSet:
         elif zope_isinstance(status, not_equals):
             return '(NOT %s)' % self._buildStatusClause(status.value)
         elif zope_isinstance(status, DBItem):
-            if ((status ==
-                 BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE) or
-                (status ==
-                 BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)):
+            with_response = (
+                status == BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
+            without_response = (
+                status == BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
+            if with_response or without_response:
                 status_clause = (
                     '(BugTask.status = %s ' %
                     sqlvalues(BugTaskStatus.INCOMPLETE))
                 status_clause += 'AND BugTask.date_incomplete '
-                if (status ==
-                    BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE):
+                if with_response:
                     status_clause += '<='
-                elif (status ==
-                      BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE):
+                elif without_response:
                     status_clause += '>'
                 else:
                     assert with_response != without_response
@@ -1029,7 +1031,7 @@ class BugTaskSet:
             else:
                 return '(BugTask.status = %s)' % sqlvalues(status)
         else:
-            raise ValueError(
+            raise AssertionError(
                 'Unrecognized status value: %s' % repr(status))
 
     def buildQuery(self, params):

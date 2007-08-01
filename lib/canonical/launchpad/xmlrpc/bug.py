@@ -11,7 +11,7 @@ from zope.event import notify
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
     IProductSet, IPersonSet, IDistributionSet, CreateBugParams,
-    NotFoundError, BugTaskStatus)
+    NotFoundError)
 from canonical.launchpad.webapp import canonical_url, LaunchpadXMLRPCView
 from canonical.launchpad.xmlrpc import faults
 

@@ -8,6 +8,7 @@ __all__ = [
     'BugTaskSearchParams',
     'BugTaskStatus',
     'BugTaskStatusSearch',
+    'BugTaskStatusSearchDisplay',
     'ConjoinedBugTaskEditError',
     'IBugTask',
     'INullBugTask',
@@ -43,7 +44,7 @@ from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 from canonical.lazr import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
+    DBEnumeratedType, DBItem, use_template)
 
 
 class BugTaskStatus(DBEnumeratedType):
@@ -124,44 +125,40 @@ class BugTaskStatus(DBEnumeratedType):
         """)
 
 
-class BugTaskStatusDisplay(DBEnumeratedType):
-    """Bug Task Status
-
-    The various possible states for a bugfix in searches.
-    """
-    use_template(BugTaskStatus, exclude='UNKNOWN')
-
-
 class BugTaskStatusSearch(DBEnumeratedType):
     """Bug Task Status
 
     The various possible states for a bugfix in searches.
     """
-    use_template(BugTaskStatusDisplay, exclude='INCOMPLETE')
+    use_template(BugTaskStatus, exclude=('UNKNOWN'))
 
-    # XXX: Tom Berger, 2007-07-30: The sort order could be derived
-    # from the DBItems' values, but it is not possible to do this
-    # with the current DBEnumeratedType implementation.
     sort_order = (
         'NEW', 'INCOMPLETE_WITH_RESPONSE', 'INCOMPLETE_WITHOUT_RESPONSE',
-        'INVALID', 'WONTFIX', 'CONFIRMED', 'TRIAGED', 'INPROGRESS',
-        'FIXCOMMITTED', 'FIXRELEASED')
+        'INCOMPLETE', 'INVALID', 'WONTFIX', 'CONFIRMED', 'TRIAGED',
+        'INPROGRESS', 'FIXCOMMITTED', 'FIXRELEASED')
 
-    INCOMPLETE_WITH_RESPONSE = DBItem(
-        BugTaskStatusDisplay.INCOMPLETE.value - 1, """
+    INCOMPLETE_WITH_RESPONSE = DBItem(35, """
         Incomplete (with response)
 
         This bug has new information since it was last marked
         as requiring a response.
         """)
 
-    INCOMPLETE_WITHOUT_RESPONSE = DBItem(
-        BugTaskStatusDisplay.INCOMPLETE.value + 1, """
+    INCOMPLETE_WITHOUT_RESPONSE = DBItem(40, """
         Incomplete (without response)
 
         This bug requires more information, but no additional
         details were supplied yet..
         """)
+
+class BugTaskStatusSearchDisplay(DBEnumeratedType):
+    """Bug Task Status
+
+    The various possible states for a bugfix in advanced
+    bug search forms.
+    """
+    use_template(BugTaskStatusSearch, exclude=('INCOMPLETE'))
+
 
 # XXX: Brad Bollenbach, 2005-12-02: In theory, INCOMPLETE belongs in
 # UNRESOLVED_BUGTASK_STATUSES, but the semantics of our current reports would

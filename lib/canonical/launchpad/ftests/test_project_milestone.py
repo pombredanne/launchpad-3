@@ -7,12 +7,11 @@ __metaclass__ = type
 import unittest
 
 from datetime import datetime
-from unittest import TestCase
 from zope.component import getUtility
 
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, BugTaskSearchParams, CreateBugParams, IBugSet,
+    BugTaskSearchParams, BugTaskStatus, CreateBugParams, IBugSet,
     IBugTaskSet, IPersonSet, IProductSet, IProjectSet,
     IProjectMilestoneSet, ISpecificationSet)
 from canonical.lp.dbschema import (BugTaskImportance,
@@ -54,7 +53,6 @@ class ProjectMilestoneTest(unittest.TestCase):
         evolution = productset['evolution']
         applets = productset['applets']
         gnomebaker = productset['gnomebaker']
-        from canonical.launchpad.interfaces import IProjectSet
 
         milestones = []
         day = 1

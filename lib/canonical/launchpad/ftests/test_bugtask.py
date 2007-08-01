@@ -11,8 +11,8 @@ from zope.component import getUtility
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.interfaces import (
-    IBugSet, IDistributionSet, IUpstreamBugTask, IBugTaskSet,
-    ILaunchBag, IBugWatchSet, IProductSet, BugTaskStatus)
+    BugTaskStatus, IBugSet, IDistributionSet, IUpstreamBugTask, IBugTaskSet,
+    ILaunchBag, IBugWatchSet, IProductSet)
 
 
 class BugTaskSearchBugsElsewhereTest(LaunchpadFunctionalTestCase):

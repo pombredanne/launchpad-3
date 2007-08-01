@@ -44,17 +44,17 @@ from canonical.lp.dbschema import (
     SpecificationImplementationStatus, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IBugTaskSet, ICalendarOwner, IDistribution,
-    IDistributionSet, IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon,
-    IHasLogo, IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet,
-    ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
+    BugTaskStatus, EmailAddressStatus, IBugTaskSet, ICalendarOwner,
+    IDistribution, IDistributionSet, IEmailAddress, IEmailAddressSet,
+    IGPGKeySet, IHasIcon, IHasLogo, IHasMugshot, IIrcID, IIrcIDSet, IJabberID,
+    IJabberIDSet, ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
     ILoginTokenSet, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
     IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey,
     ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
     JoinNotAllowed, LoginTokenType, PersonCreationRationale,
     QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants, SSHKeyType,
     TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
-    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES, BugTaskStatus)
+    UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar

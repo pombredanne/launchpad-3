@@ -72,7 +72,7 @@ from canonical.launchpad.interfaces import (
     UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, validate_distrotask,
     valid_upstreamtask, IProductSeriesBugTask, IBugNominationSet,
     IProductSeries, INominationsReviewTableBatchNavigator,
-    BugTaskStatus, BugTaskStatusSearch)
+    BugTaskStatus, BugTaskStatusSearchDisplay)
 
 from canonical.launchpad.searchbuilder import any, NULL
 
@@ -1617,7 +1617,9 @@ class BugTaskSearchListingView(LaunchpadFormView):
 
     def getWidgetValues(
         self, vocabulary_name=None, vocabulary=None, default_values=()):
-        """Return data used to render a field's widget."""
+        """Return data used to render a field's widget.
+
+        Either `vocabulary_name` or `vocabulary` must be supplied."""
         widget_values = []
 
         if vocabulary is None:
@@ -1635,7 +1637,7 @@ class BugTaskSearchListingView(LaunchpadFormView):
     def getStatusWidgetValues(self):
         """Return data used to render the status checkboxes."""
         return self.getWidgetValues(
-            vocabulary=BugTaskStatusSearch,
+            vocabulary=BugTaskStatusSearchDisplay,            
             default_values=UNRESOLVED_BUGTASK_STATUSES)
 
     def getImportanceWidgetValues(self):
