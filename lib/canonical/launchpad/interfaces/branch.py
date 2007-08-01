@@ -357,6 +357,30 @@ class IBranch(IHasOwner):
     def latest_revisions(quantity=10):
         """A specific number of the latest revisions in that branch."""
 
+    landing_targets = Attribute(
+        "The BranchMergeProposals where this branch is the source branch.")
+    landing_candidates = Attribute(
+        "The BranchMergeProposals where this branch is the target branch.")
+    def addLandingTarget(registrant, target_branch, dependent_branch,
+                         whiteboard):
+        """Create a new BranchMergeProposal with this branch as the source.
+
+        :param registrant: The person who is adding the landing target.
+        :param target_branch: Must be another branch, and different to self.
+        :param dependent_branch: Optional but if it is not None, it must be
+            another branch.
+        :param whiteboard: Optional.  Just text, notes or instructions
+            pertinant to the landing such as testing notes.
+
+        Both the target_branch and the dependent_branch, if it is there,
+        must be branches of the same project as the source branch.
+
+        Branches without associated projects, junk branches, cannot
+        specify landing targets.
+        """
+    def removeLandingTarget(target_branch):
+        """Remove the BranchMergeProposal specified for the target branch."""
+
     def revisions_since(timestamp):
         """Revisions in the history that are more recent than timestamp."""
 

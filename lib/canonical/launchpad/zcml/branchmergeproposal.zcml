@@ -29,15 +29,4 @@
       attribute_to_parent="source_branch"
       rootsite="code" />
 
-  <!-- Branch Merge Proposal Set -->
-  <content class="canonical.launchpad.database.BranchMergeProposalSet">
-    <allow interface="canonical.launchpad.interfaces.IBranchMergeProposalSet" />
-  </content>
-
-  <securedutility
-      class="canonical.launchpad.database.BranchMergeProposalSet"
-      provides="canonical.launchpad.interfaces.IBranchMergeProposalSet">
-    <allow interface="canonical.launchpad.interfaces.IBranchMergeProposalSet" />
-  </securedutility>
-
 </configure>
