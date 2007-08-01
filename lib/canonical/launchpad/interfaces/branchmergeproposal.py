@@ -14,6 +14,8 @@ from zope.schema import Choice, Datetime
 
 from canonical.launchpad import _
 
+from canonical.launchpad.fields import Whiteboard
+
 
 class InvalidBranchMergeProposal(Exception):
     """Raised during the creation of a new branch merge proposal.
