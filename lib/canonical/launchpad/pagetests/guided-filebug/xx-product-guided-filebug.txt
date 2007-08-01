@@ -110,7 +110,7 @@ This one matches, so we subscribe.
 
     >>> user_browser.getControl(
     ...     '#1 Firefox does not support SVG').selected = True
-    >>> user_browser.getControl('Subscribe To This Bug').click()
+    >>> user_browser.getControl('Subscribe to This Bug').click()
 
     >>> print user_browser.url
     http://bugs.launchpad.dev/firefox/+bug/1
@@ -150,4 +150,4 @@ the user to the bug page.
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/...'
     >>> user_browser.title
-    "Bug #... in firefox (upstream): ...Frankenzombulon reanimated..."
+    "Bug #... in Mozilla Firefox: ...Frankenzombulon reanimated..."

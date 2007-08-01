@@ -11,13 +11,13 @@ from zope.component import getUtility
 from zope.interface import Interface, implements
 
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, IBranch, IBranchSet, IBugSet, ILaunchBag,
-    IPersonSet, IProductSet, NotFoundError)
+    BranchCreationForbidden, BranchType, IBranch, IBranchSet, IBugSet,
+    ILaunchBag, IPersonSet, IProductSet, NotFoundError)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
 from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.xmlrpc import faults
-from canonical.lp.dbschema import BugBranchStatus, BranchType
+from canonical.lp.dbschema import BugBranchStatus
 
 
 class IBranchSetAPI(Interface):

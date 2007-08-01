@@ -11,13 +11,7 @@ __all__ = [
     'vocab_factory',
     'BountyDifficultyVocabulary',
     'BountyStatusVocabulary',
-    'BranchLifecycleStatusVocabulary',
-    'BranchLifecycleStatusFilterVocabulary',
     'BranchReviewStatusVocabulary',
-    'BranchSubscriptionDiffSizeVocabulary',
-    'BranchSubscriptionNotificationLevelVocabulary',
-    'BranchTypeVocabulary',
-    'BranchVisibilityRuleVocabulary',
     'BugAttachmentTypeVocabulary',
     'BugRefVocabulary',
     'BugBranchStatusVocabulary',
@@ -30,13 +24,7 @@ __all__ = [
     'DistroSeriesStatusVocabulary',
     'EntitlementStateVocabulary',
     'EntitlementTypeVocabulary',
-    'GPGKeyAlgorithmVocabulary',
     'InfestationStatusVocabulary',
-    'MailingListStatusVocabulary',
-    'MirrorContentVocabulary',
-    'MirrorPulseTypeVocabulary',
-    'MirrorSpeedVocabulary',
-    'MirrorStatusVocabulary',
     'PackagePublishingPocketVocabulary',
     'PackagingTypeVocabulary',
     'PollAlgorithmVocabulary',
@@ -54,8 +42,6 @@ __all__ = [
     'SpecificationDefinitionStatusVocabulary',
     'SpecificationGoalStatusVocabulary',
     'SprintSpecificationStatusVocabulary',
-    'TeamMembershipRenewalPolicyVocabulary',
-    'TeamSubscriptionPolicyVocabulary',
     'TextDirectionVocabulary',
     'TranslationFileFormatVocabulary',
     'TranslationPermissionVocabulary',
@@ -72,18 +58,7 @@ from canonical.launchpad.webapp.vocabulary import (
 
 BountyDifficultyVocabulary = vocab_factory(dbschema.BountyDifficulty)
 BountyStatusVocabulary = vocab_factory(dbschema.BountyStatus)
-BranchLifecycleStatusVocabulary = \
-    vocab_factory(dbschema.BranchLifecycleStatus)
-BranchLifecycleStatusFilterVocabulary = \
-    vocab_factory(dbschema.BranchLifecycleStatusFilter)
 BranchReviewStatusVocabulary = vocab_factory(dbschema.BranchReviewStatus)
-BranchSubscriptionDiffSizeVocabulary = \
-    sortkey_ordered_vocab_factory(dbschema.BranchSubscriptionDiffSize)
-BranchSubscriptionNotificationLevelVocabulary = \
-    vocab_factory(dbschema.BranchSubscriptionNotificationLevel)
-BranchTypeVocabulary = vocab_factory(
-    dbschema.BranchType,noshow=[dbschema.BranchType.IMPORTED])
-BranchVisibilityRuleVocabulary = vocab_factory(dbschema.BranchVisibilityRule)
 BugAttachmentTypeVocabulary = vocab_factory(dbschema.BugAttachmentType)
 BugBranchStatusVocabulary = vocab_factory(dbschema.BugBranchStatus)
 BugNominationStatusVocabulary = vocab_factory(dbschema.BugNominationStatus)
@@ -101,13 +76,7 @@ CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
 DistroSeriesStatusVocabulary = vocab_factory(dbschema.DistroSeriesStatus)
 EntitlementStateVocabulary = vocab_factory(dbschema.EntitlementState)
 EntitlementTypeVocabulary = vocab_factory(dbschema.EntitlementType)
-GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
-MailingListStatusVocabulary = vocab_factory(dbschema.MailingListStatus)
-MirrorContentVocabulary = vocab_factory(dbschema.MirrorContent)
-MirrorPulseTypeVocabulary = vocab_factory(dbschema.MirrorPulseType)
-MirrorSpeedVocabulary = vocab_factory(dbschema.MirrorSpeed)
-MirrorStatusVocabulary = vocab_factory(dbschema.MirrorStatus)
 PackagePublishingPocketVocabulary = vocab_factory(
     dbschema.PackagePublishingPocket)
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
@@ -127,10 +96,6 @@ SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
 SpecificationDefinitionStatusVocabulary =  vocab_factory(dbschema.SpecificationDefinitionStatus)
 SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStatus)
 SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
-TeamMembershipRenewalPolicyVocabulary = vocab_factory(
-    dbschema.TeamMembershipRenewalPolicy)
-TeamSubscriptionPolicyVocabulary = vocab_factory(
-    dbschema.TeamSubscriptionPolicy)
 TextDirectionVocabulary =  vocab_factory(dbschema.TextDirection)
 TranslationFileFormatVocabulary = vocab_factory(dbschema.TranslationFileFormat)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)

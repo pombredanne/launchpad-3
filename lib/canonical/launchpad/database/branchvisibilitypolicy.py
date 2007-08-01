@@ -18,11 +18,9 @@ from canonical.cachedproperty import cachedproperty
 from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import SQLBase
 
-from canonical.lp.dbschema import BranchVisibilityRule
-
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.interfaces import (
-    IBranchVisibilityTeamPolicy, IProduct, IProject)
+    BranchVisibilityRule, IBranchVisibilityTeamPolicy, IProduct, IProject)
 
 
 class BranchVisibilityTeamPolicy(SQLBase):
@@ -35,7 +33,7 @@ class BranchVisibilityTeamPolicy(SQLBase):
     product = ForeignKey(dbName='product', foreignKey='Product')
     team = ForeignKey(dbName='team', foreignKey='Person', default=None)
     rule = EnumCol(
-        dbName="policy", schema=BranchVisibilityRule, notNull=True,
+        dbName="policy", enum=BranchVisibilityRule, notNull=True,
         default=BranchVisibilityRule.PUBLIC)
 
 

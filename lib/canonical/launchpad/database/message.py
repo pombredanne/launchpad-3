@@ -21,9 +21,8 @@ from canonical.encoding import guess as ensure_unicode
 from canonical.launchpad.helpers import get_filename_from_message_id
 from canonical.launchpad.interfaces import (
     IMessage, IMessageSet, IMessageChunk, IPersonSet, ILibraryFileAliasSet,
-    UnknownSender, InvalidEmailMessage, NotFoundError)
+    UnknownSender, InvalidEmailMessage, NotFoundError, PersonCreationRationale)
 
-from canonical.lp.dbschema import PersonCreationRationale
 from canonical.database.sqlbase import SQLBase
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol

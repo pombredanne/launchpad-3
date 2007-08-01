@@ -59,20 +59,20 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, MirrorContent,
-    TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationDefinitionStatus, SpecificationImplementationStatus,
-    PackagePublishingStatus)
+    ArchivePurpose, BugTaskStatus, DistroSeriesStatus,
+    PackagePublishingStatus, SpecificationDefinitionStatus,
+    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    TranslationPermission)
 
 from canonical.launchpad.interfaces import (
     IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IFAQTarget, 
     IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, 
-    ISourcePackageName, IQuestionTarget, NotFoundError, 
+    IQuestionTarget, ISourcePackageName, MirrorContent, NotFoundError,
     QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.archivepublisher.debversion import Version
 
-from canonical.launchpad.validators.name import valid_name, sanitize_name
+from canonical.launchpad.validators.name import sanitize_name, valid_name
 
 
 class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -152,7 +152,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """See `IDistribution`."""
         return Archive.select("""
             Distribution = %s AND
-            Purpose != %s""" % (self.id, ArchivePurpose.PPA)
+            Purpose != %s""" % sqlvalues(self.id, ArchivePurpose.PPA)
             )
 
     @property
@@ -262,9 +262,14 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     @property
+    def bugtargetdisplayname(self):
+        """See IBugTarget."""
+        return self.displayname
+
+    @property
     def bugtargetname(self):
         """See `IBugTarget`."""
-        return self.displayname
+        return self.name
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
