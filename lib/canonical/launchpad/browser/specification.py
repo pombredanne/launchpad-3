@@ -867,20 +867,20 @@ class NewSpecificationView(LaunchpadFormView):
     @action(_('Register Blueprint'), name='register')
     def register(self, action, data):
         """Registers a new specification."""
-        create = getUtility(ISpecificationSet).new
-        spec = create(# Values taken directly from given form data:
-                      name              = data['name'             ],
-                      title             = data['title'            ],
-                      specurl           = data['specurl'          ],
-                      summary           = data['summary'          ],
-                      assignee          = data['assignee'         ],
-                      drafter           = data['drafter'          ],
-                      approver          = data['approver'         ],
-                      definition_status = data['definition_status'],
-                      # Values supplied by class instance members:
-                      distribution = self.distribution(data),
-                      product      = self.product(data), 
-                      owner        = self.user)
+        spec = getUtility(ISpecificationSet).new(
+            # Values taken directly from given form data:
+            name = data['name'],
+            title = data['title'],
+            specurl = data['specurl'],
+            summary = data['summary'],
+            assignee = data['assignee'],
+            drafter = data['drafter'],
+            approver = data['approver'],
+            definition_status = data['definition_status'],
+            # Values supplied by class instance members:
+            distribution = self.distribution(data),
+            product = self.product(data), 
+            owner = self.user)
         # Propose the specification as a series goal, if specified.
         series = self.series(data)
         if series is not None:
@@ -911,11 +911,11 @@ class NewSpecificationView(LaunchpadFormView):
     def next(self, spec):
         """Returns a context object corresponding to the location in
         Launchpad to take the user on creation of a new specification.
-        
+
         The default implementation returns the new specification itself. 
         Subclasses can override this behaviour by returning an alternative
         context object."""
-        return spec        
+        return spec
 
 
 class NewSpecificationFromTargetView(NewSpecificationView):
