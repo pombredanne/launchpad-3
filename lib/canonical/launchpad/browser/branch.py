@@ -525,5 +525,8 @@ class BranchSubscriptionsView(LaunchpadView):
 class RegisterBranchMergeProposalView(LaunchpadFormView):
     """The view to register new branch merge proposals."""
     schema = IBranchMergeProposal
+    for_input=True
+
+    field_names = ['target_branch', 'dependent_branch', 'whiteboard']
 
     
