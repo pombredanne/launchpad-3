@@ -25,10 +25,6 @@ from canonical.database.sqlbase import flush_database_updates
 
 from canonical.widgets import PasswordChangeWidget
 
-from canonical.lp.dbschema import (
-    EmailAddressStatus, GPGKeyAlgorithm, LoginTokenType,
-    PersonCreationRationale)
-
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
@@ -43,7 +39,8 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, ILoginTokenSet, IPerson, ILoginToken,
     IGPGKeySet, IGPGHandler, GPGVerificationError, GPGKeyNotFoundError,
     ShipItConstants, UBUNTU_WIKI_URL, UnexpectedFormData,
-    IGPGKeyValidationForm)
+    IGPGKeyValidationForm, EmailAddressStatus, GPGKeyAlgorithm,
+    LoginTokenType, PersonCreationRationale)
 
 UTC = pytz.timezone('UTC')
 
