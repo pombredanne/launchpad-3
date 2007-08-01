@@ -134,6 +134,14 @@
       template="../templates/branch-subscription.pt" />
 
   <browser:page
+      name="+register-merge"
+      for="canonical.launchpad.interfaces.IBranch"
+      class="canonical.launchpad.browser.RegisterBranchMergeProposalView"
+      facet="branches"
+      permission="launchpad.AnyPerson"
+      template="../templates/branch-register-merge-proposal.pt" />
+
+  <browser:page
     name="+addsubscriber"
     for="canonical.launchpad.interfaces.IBranch"
     class="canonical.launchpad.browser.BranchSubscriptionAddOtherView"

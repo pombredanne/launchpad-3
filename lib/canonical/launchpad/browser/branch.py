@@ -16,6 +16,7 @@ __all__ = [
     'BranchInProductView',
     'BranchView',
     'BranchSubscriptionsView',
+    'RegisterBranchMergeProposalView',
     ]
 
 import cgi
@@ -36,6 +37,7 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchType, BranchVisibilityRule, IBranch,
+    IBranchMergeProposal,
     IBranchSet, IBranchSubscription, IBugSet,
     ILaunchpadCelebrities, IPersonSet)
 from canonical.launchpad.webapp import (
@@ -89,7 +91,7 @@ class BranchContextMenu(ContextMenu):
     usedfor = IBranch
     facet = 'branches'
     links = ['edit', 'browse', 'reassign', 'subscription', 'addsubscriber',
-             'associations']
+             'associations', 'registermerge']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -128,6 +130,11 @@ class BranchContextMenu(ContextMenu):
     def associations(self):
         text = 'View branch associations'
         return Link('+associations', text)
+
+    @enabled_with_permission('launchpad.AnyPerson')
+    def registermerge(self):
+        text = 'Register merge proposal'
+        return Link('+register-merge', text, icon='edit')
 
 
 class BranchView(LaunchpadView):
@@ -513,3 +520,10 @@ class BranchSubscriptionsView(LaunchpadView):
         return [DecoratedSubscription(
                     subscription, self.isEditable(subscription))
                 for subscription in sorted_subscriptions]
+
+
+class RegisterBranchMergeProposalView(LaunchpadFormView):
+    """The view to register new branch merge proposals."""
+    schema = IBranchMergeProposal
+
+    
