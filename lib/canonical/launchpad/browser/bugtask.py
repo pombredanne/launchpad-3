@@ -694,24 +694,13 @@ class BugTaskEditView(LaunchpadEditFormView):
     """The view class used for the task +editstatus page."""
 
     _missing_value = object()
-    widgets = []
+    schema = IBugTask
     custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
     custom_widget('bugwatch', BugTaskBugWatchWidget)
     custom_widget('assignee', BugTaskAssigneeWidget)
     field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
                    'product', 'sourcepackagename', 'status',
                    'statusexplanation']
-
-    @property
-    def schema(self):
-        if IUpstreamBugTask.providedBy(self.context):
-            return IUpstreamBugTask
-        elif IProductSeriesBugTask.providedBy(self.context):
-            return IProductSeriesBugTask
-        elif IDistroBugTask.providedBy(self.context):
-            return IDistroBugTask
-        elif IDistroSeriesBugTask.providedBy(self.context):
-            return IDistroSeriesBugTask
 
     @property
     def next_url(self):
@@ -913,19 +902,21 @@ class BugTaskEditView(LaunchpadEditFormView):
         sourcename = bugtask.sourcepackagename
         product = bugtask.product
 
-        if distro is not None and sourcename != data['sourcepackagename']:
-            try:
-                validate_distrotask(
-                    bugtask.bug, distro, data['sourcepackagename'])
-            except LaunchpadValidationError, error:
-                self.setFieldError('sourcepackagename', str(error))
+        if data.get('sourcepackagename', False):
+            if distro is not None and sourcename != data['sourcepackagename']:
+                try:
+                    validate_distrotask(
+                        bugtask.bug, distro, data['sourcepackagename'])
+                except LaunchpadValidationError, error:
+                    self.setFieldError('sourcepackagename', str(error))
 
-        if (product is not None and
-            'product' in data and product != data['product']):
-            try:
-                valid_upstreamtask(bugtask.bug, data['product'])
-            except WidgetsError, errors:
-                self.setFieldError('product', errors.args[0])
+        if data.get('product', False):
+            if (product is not None and
+                'product' in data and product != data['product']):
+                try:
+                    valid_upstreamtask(bugtask.bug, data['product'])
+                except WidgetsError, errors:
+                    self.setFieldError('product', errors.args[0])
 
     @action('Save Changes', name='save')
     def save_action(self, action, data):
@@ -963,7 +954,7 @@ class BugTaskEditView(LaunchpadEditFormView):
             if bugtask.milestone:
                 milestone_cleared = bugtask.milestone
             else:
-                if self.milestone_widget.getInputValue() is not None:
+                if self.widget['milestone'].getInputValue() is not None:
                     milestone_ignored = True
 
             bugtask.milestone = None
