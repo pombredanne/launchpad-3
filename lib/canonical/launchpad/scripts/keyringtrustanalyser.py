@@ -7,9 +7,8 @@ import gpgme
 from canonical.database.sqlbase import flush_database_updates
 
 from canonical.launchpad.interfaces import (
-    IGPGHandler, IPersonSet, IEmailAddressSet)
+    IGPGHandler, IPersonSet, IEmailAddressSet, PersonCreationRationale)
 from canonical.launchpad.validators.email import valid_email
-from canonical.lp.dbschema import PersonCreationRationale
 
 __metaclass__ = type
 

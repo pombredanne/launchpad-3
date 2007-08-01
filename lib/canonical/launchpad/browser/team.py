@@ -16,7 +16,6 @@ from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.form.browser import TextAreaWidget
 from zope.component import getUtility
 
-from canonical.lp.dbschema import LoginTokenType, TeamMembershipStatus
 from canonical.database.sqlbase import flush_database_updates
 from canonical.widgets import (
     HiddenUserWidget, LaunchpadRadioWidget, SinglePopupWidget)
@@ -29,7 +28,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.interfaces import (
     IEmailAddressSet, ILaunchBag, ILoginTokenSet, IPersonSet,
-    ITeamCreation, ITeamMember, ITeam)
+    ITeamCreation, ITeamMember, ITeam, LoginTokenType, TeamMembershipStatus)
 
 
 class HasRenewalPolicyMixin:
