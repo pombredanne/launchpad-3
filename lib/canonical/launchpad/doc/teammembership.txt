@@ -12,8 +12,9 @@ First of all, create some teams:
 
     >>> import pytz
     >>> from datetime import datetime, timedelta
-    >>> from canonical.lp.dbschema import (
-    ...     TeamSubscriptionPolicy, TeamMembershipStatus)
+    >>> from canonical.launchpad.interfaces import (
+    ...     TeamSubscriptionPolicy, TeamMembershipStatus,
+    ...     TeamMembershipRenewalPolicy)
 
 XXX: This doctest needs a lot of cleanups!
 -- Guilherme Salgado, 2006-12-15
@@ -590,7 +591,6 @@ active and set to expire tomorrow).
     NONE
     >>> karl_on_mirroradmins.canBeRenewedByMember()
     False
-    >>> from canonical.lp.dbschema import TeamMembershipRenewalPolicy
     >>> ondemand = TeamMembershipRenewalPolicy.ONDEMAND
     >>> karl_on_mirroradmins.team.renewal_policy = ondemand
 

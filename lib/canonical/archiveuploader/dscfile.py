@@ -33,9 +33,8 @@ from canonical.archiveuploader.utils import (
 from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces import (
     NotFoundError, IGPGHandler, GPGVerificationError, IGPGKeySet,
-    IPersonSet, ISourcePackageNameSet)
+    IPersonSet, ISourcePackageNameSet, PersonCreationRationale)
 from canonical.librarian.utils import copy_and_close
-from canonical.lp.dbschema import PersonCreationRationale
 
 
 class SignableTagFile:

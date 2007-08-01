@@ -24,13 +24,7 @@ __all__ = [
     'DistroSeriesStatusVocabulary',
     'EntitlementStateVocabulary',
     'EntitlementTypeVocabulary',
-    'GPGKeyAlgorithmVocabulary',
     'InfestationStatusVocabulary',
-    'MailingListStatusVocabulary',
-    'MirrorContentVocabulary',
-    'MirrorPulseTypeVocabulary',
-    'MirrorSpeedVocabulary',
-    'MirrorStatusVocabulary',
     'PackagePublishingPocketVocabulary',
     'PackagingTypeVocabulary',
     'PollAlgorithmVocabulary',
@@ -44,8 +38,6 @@ __all__ = [
     'SpecificationDefinitionStatusVocabulary',
     'SpecificationGoalStatusVocabulary',
     'SprintSpecificationStatusVocabulary',
-    'TeamMembershipRenewalPolicyVocabulary',
-    'TeamSubscriptionPolicyVocabulary',
     'TextDirectionVocabulary',
     'TranslationFileFormatVocabulary',
     'TranslationPermissionVocabulary',
@@ -82,13 +74,7 @@ CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
 DistroSeriesStatusVocabulary = vocab_factory(dbschema.DistroSeriesStatus)
 EntitlementStateVocabulary = vocab_factory(dbschema.EntitlementState)
 EntitlementTypeVocabulary = vocab_factory(dbschema.EntitlementType)
-GPGKeyAlgorithmVocabulary = vocab_factory(dbschema.GPGKeyAlgorithm)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
-MailingListStatusVocabulary = vocab_factory(dbschema.MailingListStatus)
-MirrorContentVocabulary = vocab_factory(dbschema.MirrorContent)
-MirrorPulseTypeVocabulary = vocab_factory(dbschema.MirrorPulseType)
-MirrorSpeedVocabulary = vocab_factory(dbschema.MirrorSpeed)
-MirrorStatusVocabulary = vocab_factory(dbschema.MirrorStatus)
 PackagePublishingPocketVocabulary = vocab_factory(
     dbschema.PackagePublishingPocket)
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
@@ -104,10 +90,6 @@ SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
 SpecificationDefinitionStatusVocabulary =  vocab_factory(dbschema.SpecificationDefinitionStatus)
 SpecificationGoalStatusVocabulary = vocab_factory(dbschema.SpecificationGoalStatus)
 SprintSpecificationStatusVocabulary =  vocab_factory(dbschema.SprintSpecificationStatus)
-TeamMembershipRenewalPolicyVocabulary = vocab_factory(
-    dbschema.TeamMembershipRenewalPolicy)
-TeamSubscriptionPolicyVocabulary = vocab_factory(
-    dbschema.TeamSubscriptionPolicy)
 TextDirectionVocabulary =  vocab_factory(dbschema.TextDirection)
 TranslationFileFormatVocabulary = vocab_factory(dbschema.TranslationFileFormat)
 TranslationPermissionVocabulary = vocab_factory(dbschema.TranslationPermission)
