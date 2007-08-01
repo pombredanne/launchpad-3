@@ -60,7 +60,7 @@ class ICodeImportMachine(Interface):
         vocabulary=CodeImportMachineState,
         default=CodeImportMachineState.OFFLINE,
         description=_("The state of the controller daemon on this machine."))
-    heartbeat = Datetime(title=_("Heartbeat"), required=True,
+    heartbeat = Datetime(title=_("Heartbeat"),
         description=_("When the controller deamon last recorded it was"
                       " running."))
 
