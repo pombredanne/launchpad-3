@@ -1,19 +1,31 @@
 = Branch merge proposals =
 
 Branch merge proposals are a way to show intent of one branch to land
-code on another branch.
+code on another branch.  The database object is called a merge proposal
+as it has a source branch and a target branch, but when looking at
+branch merge proposals through the UI we are looking from a particular
+context, and as such they are referred to as landing targets or landing
+candidates.
 
-Branch merge proposals should only ever be created by the
-IBranchMergeProposal.new method, as this method does the following
-consistency checks:
+  Landing Targets - these are the branches (or the merge proposals) for
+  which the branch that is being looked at is the source branch.  It is
+  called that due to the idea that the target branch is where the code
+  intentds to 'land' or 'merge'.
 
-  * Both branches must have valid products.
-  * Both branches must have the same product.
-  * There must not already exist a branch landing target for the source branch and
-  target branch pair.
+  Landing Candidates - these are the branches (or the merge proposals)
+  that want to land on the branch being looked at.
+
+Branch merge proposals are created by calling the `addLandingTarget`
+method on a branch.  Junk branches cannot have landing targets.
+
+  * The target branch and dependent branch (if it has one) must both
+    have the same product as the source branch.
+
+  * There must not already exist a branch merge proposal for the source
+    branch and target branch pair.
 
 
-== Registering merge proposals ==
+== Registering a landing target ==
 
 All merge proposals have to be registered by a Person.
 
@@ -23,7 +35,8 @@ All merge proposals have to be registered by a Person.
     >>> person_set = getUtility(IPersonSet)
     >>> sample_person = person_set.getByEmail('test@canonical.com')
 
-Two branches are needed in order to define a landing target.
+In order to register a merge proposal there has to be a source branch
+and a target branch.
 
     >>> branch_set = getUtility(IBranchSet)
     >>> source_branch = branch_set.getByUniqueName(
@@ -31,12 +44,24 @@ Two branches are needed in order to define a landing target.
     >>> target_branch = branch_set.getByUniqueName(
     ...     '~name12/gnome-terminal/main')
 
-    >>> branch_merge_proposal_set = getUtility(IBranchMergeProposalSet)
-    >>> merge_proposal = branch_merge_proposal_set.new(
-    ...     sample_person, source_branch, target_branch)
+    >>> merge_proposal = source_branch.addLandingTarget(
+    ...     sample_person, target_branch, None)
+
+This merge proposal is now listing against both the source and target
+branches.
+
+    >>> for proposal in source_branch.landing_targets:
+    ...     print proposal.target_branch.unique_name
+    ~name12/gnome-terminal/main
+
+    >>> for proposal in target_branch.landing_candidates:
+    ...     print proposal.source_branch.unique_name
+    ~name12/gnome-terminal/klingon
 
 
 == Interfaces ==
+
+The BranchMergeProposal must implement the IBranchMergeProposal interface.
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import IBranchMergeProposal

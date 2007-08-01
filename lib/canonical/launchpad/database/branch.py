@@ -6,6 +6,7 @@ __all__ = ['Branch', 'BranchSet', 'BranchRelationship', 'BranchLabel']
 import re
 
 from zope.interface import implements
+from zope.security.proxy import isinstance as zope_isinstance
 from zope.component import getUtility
 
 from sqlobject import (
@@ -25,7 +26,9 @@ from canonical.launchpad.interfaces import (
     BranchLifecycleStatus, BranchType, BranchVisibilityRule,
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     DEFAULT_BRANCH_STATUS_IN_LISTING, IBranch,
-    IBranchSet, ILaunchpadCelebrities, NotFoundError)
+    IBranchSet, ILaunchpadCelebrities, InvalidBranchMergeProposal, NotFoundError)
+from canonical.launchpad.database.branchmergeproposal import (
+    BranchMergeProposal)
 from canonical.launchpad.database.branchrevision import BranchRevision
 from canonical.launchpad.database.branchsubscription import BranchSubscription
 from canonical.launchpad.database.revision import Revision
@@ -100,6 +103,58 @@ class Branch(SQLBase):
         orderBy='id')
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
+
+    landing_targets = SQLMultipleJoin(
+        'BranchMergeProposal', joinColumn='source_branch',
+        orderBy='id')
+    landing_candidates = SQLMultipleJoin(
+        'BranchMergeProposal', joinColumn='target_branch',
+        orderBy='id')
+
+    def addLandingTarget(self, registrant, target_branch, dependent_branch,
+                         whiteboard):
+        """See `IBranch`."""
+        if self.product is None:
+            raise InvalidBranchMergeProposal(
+                'Junk branches cannot be used as source branches.')
+        if not zope_isinstance(Branch, target_branch):
+            raise InvalidBranchMergeProposal(
+                'Target branch must be a branch')
+        if self == target_branch:
+            raise InvalidBranchMergeProposal(
+                'Source and target branches must be different.')
+        if self.product != target_branch.product:
+            raise InvalidBranchMergeProposal(
+                'The source branch and target branch must be branches of the '
+                'same project.')
+        if dependent_branch is not None:
+            if not zope_isinstance(Branch, dependent_branch):
+                raise InvalidBranchMergeProposal(
+                    'Dependent branch must be a branch')
+            if self.product != dependent_branch.product:
+                raise InvalidBranchMergeProposal(
+                    'The source branch and dependent branch must be branches '
+                    'of the same project.')
+
+        target = BranchMergeProposal.selectOneBy(
+            source_branch=self, target_branch=target_branch)
+        if target is not None:
+            raise InvalidBranchMergeProposal(
+                'There is already a branch merge proposal registered for '
+                'branch %s to land on %s'
+                % (self.unique_name, target_branch.unique_name))
+
+        return BranchMergeProposal(
+            registrant=registrant, source_branch=self,
+            target_branch=target_branch, dependent_branch=dependent_branch,
+            whiteboard=whiteboard)
+
+    def removeLandingTarget(self, target_branch):
+        """See `IBranch`."""
+        proposal = BranchMergeProposal.selectOneBy(
+            source_branch=self, target_branch=target_branch)
+        if proposal is not None:
+            BranchMergeProposal.delete(proposal.id)
 
     mirror_request_time = UtcDateTimeCol(default=None)
 

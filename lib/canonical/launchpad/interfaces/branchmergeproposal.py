@@ -6,7 +6,6 @@ __metaclass__ = type
 __all__ = [
     'InvalidBranchMergeProposal',
     'IBranchMergeProposal',
-    'IBranchMergeProposalSet',
     ]
 
 from zope.interface import Interface
@@ -44,7 +43,7 @@ class IBranchMergeProposal(Interface):
     target_branch = Choice(
         title=_('Target Branch'),
         vocabulary='Branch', required=True, readonly=True,
-        description=_("The Bazaar branch that the code will land on."))
+        description=_("The branch that the source branch will be merged into."))
 
     dependent_branch = Choice(
         title=_('Dependent Branch'),
@@ -57,11 +56,3 @@ class IBranchMergeProposal(Interface):
 
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
-
-
-class IBranchMergeProposalSet(Interface):
-    """A central place to maintain all the rules for merge proposals."""
-
-    def new(registrant, source_branch, target_branch,
-            dependent_branch=None, whiteboard=None):
-        """Create a new BranchMergeProposal."""
