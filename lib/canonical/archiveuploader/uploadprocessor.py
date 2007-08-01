@@ -311,6 +311,11 @@ class UploadProcessor:
                                   "Aborting partial accept.")
                     self.ztm.abort()
 
+            if upload.is_rejected:
+                self.log.warn("Upload was rejected:")
+                for msg in upload.rejections:
+                    self.log.warn("\t%s" % msg)
+
             if self.options.dryrun:
                 self.log.info("Dry run, aborting transaction.")
                 self.ztm.abort()
