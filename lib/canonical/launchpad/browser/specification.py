@@ -74,6 +74,171 @@ from canonical.launchpad.webapp.authorization import check_permission
 
 from canonical.lp.dbschema import SpecificationDefinitionStatus
 
+
+class NewSpecificationView(LaunchpadFormView):
+    """An abstract view for creating a new specification."""
+
+    label = "Register a new blueprint"
+    
+    @action(_('Register Blueprint'), name='register')
+    def register(self, action, data):
+        """Registers a new specification."""
+        
+        spec = getUtility(ISpecificationSet).new(
+            # Values taken directly from given form data:
+            name = data['name'],
+            title = data['title'],
+            specurl = data['specurl'],
+            summary = data['summary'],
+            assignee = data['assignee'],
+            drafter = data['drafter'],
+            approver = data['approver'],
+            definition_status = data['definition_status'],
+            # Values supplied by class instance members:
+            distribution = self.distribution(data),
+            product = self.product(data), 
+            owner = self.user)
+        # Propose the specification as a series goal, if specified.
+        series = self.series(data)
+        if series is not None:
+            proposeGoalWithAutomaticApproval(spec, series, self.user)
+        # Link the specification with a sprint, if specified.
+        sprint = self.sprint(data)
+        if sprint is not None:
+            spec.linkSprint(sprint, self.user)
+        # Set the default value for the next URL.
+        self._next_url = canonical_url(spec)
+
+    def distribution(self, data):
+        """Returns a distribution from the given context and form data."""
+        return None
+    
+    def product(self, data):
+        """Returns a product from the given context and form data."""
+        return None
+    
+    def series(self, data):
+        """Returns a series from the given context and form data."""
+        return None
+    
+    def sprint(self, data):
+        """Returns a sprint from the given context and form data."""
+        return None
+
+    @property
+    def next_url(self):
+        """The next URL to redirect to after creating a new specification.
+
+        The default implementation returns a URL for the new specification
+        itself. Subclasses can override this behaviour by returning an
+        alternative URL.
+        """
+        return self._next_url
+
+
+class NewSpecificationFromTargetView(NewSpecificationView):
+    """An abstract view for creating a specification from a context that
+    corresponds to a unique specification target.
+    """
+    schema = Fields(INewSpecification, 
+                    INewSpecificationSprint)
+
+    def sprint(self, data):
+        return data['sprint']
+
+
+class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
+    """A view for creating a specification from a distribution."""
+
+    def distribution(self, data):
+        return self.context
+
+
+class NewSpecificationFromProductView(NewSpecificationFromTargetView):
+    """A view for creating a specification from a product."""
+
+    def product(self, data):
+        return self.context
+
+
+class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
+    """An abstract view for creating a specification from a series."""
+    
+    def series(self, data):
+        return self.context
+
+
+class NewSpecificationFromDistroSeriesView(NewSpecificationFromSeriesView):
+    """A view for creating a specification from a distro series."""
+    
+    def distribution(self, data):
+        return self.context.distribution
+
+
+class NewSpecificationFromProductSeriesView(NewSpecificationFromSeriesView):
+    """A view for creating a specification from a product series."""
+
+    def product(self, data):
+        return self.context.product
+
+
+class NewSpecificationFromNonTargetView(NewSpecificationView):
+    """An abstract view for creating a specification from a context that does
+    not correspond to a unique specification target.
+    
+    Sub-classes must define a schema requiring the user to specify a target.
+    """
+    def distribution(self, data):
+        target = data['target']
+        if IDistribution.providedBy(target):
+            return target
+
+    def product(self, data):
+        target = data['target']
+        if IProduct.providedBy(target):
+            return target
+
+    def validate(self, data):
+        """Ensures that the name chosen for the new specification is unique
+        within the context of the chosen target.
+        """
+        name = data['name']
+        target = data['target']
+        if target.getSpecification(name):
+            errormessage = self.schema['name'].errormessage
+            self.setFieldError('name', errormessage % name)
+
+
+class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
+    """A view for creating a specification from a project."""
+
+    schema = Fields(INewSpecificationProjectTarget,
+                    INewSpecification,
+                    INewSpecificationSprint)
+    
+
+class NewSpecificationFromRootView(NewSpecificationFromNonTargetView):
+    """A view for creating a specification from the root of Launchpad."""
+
+    schema = Fields(INewSpecificationTarget,
+                    INewSpecification, 
+                    INewSpecificationSprint)
+
+
+class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
+    """A view for creating a specification from a sprint."""
+
+    schema = Fields(INewSpecificationTarget,
+                    INewSpecification)
+
+    def sprint(self, data):
+        return self.context
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
+
+
 class SpecificationNavigation(Navigation):
 
     usedfor = ISpecification
@@ -857,170 +1022,6 @@ class SpecificationTreeDotOutput(SpecificationTreeGraphView):
         """
         self.request.response.setHeader('Content-type', 'text/plain')
         return self.getDotFileText()
-
-
-class NewSpecificationView(LaunchpadFormView):
-    """An abstract view for creating a new specification."""
-
-    label = "Register a new blueprint"
-    
-    @action(_('Register Blueprint'), name='register')
-    def register(self, action, data):
-        """Registers a new specification."""
-        
-        spec = getUtility(ISpecificationSet).new(
-            # Values taken directly from given form data:
-            name = data['name'],
-            title = data['title'],
-            specurl = data['specurl'],
-            summary = data['summary'],
-            assignee = data['assignee'],
-            drafter = data['drafter'],
-            approver = data['approver'],
-            definition_status = data['definition_status'],
-            # Values supplied by class instance members:
-            distribution = self.distribution(data),
-            product = self.product(data), 
-            owner = self.user)
-        # Propose the specification as a series goal, if specified.
-        series = self.series(data)
-        if series is not None:
-            proposeGoalWithAutomaticApproval(spec, series, self.user)
-        # Link the specification with a sprint, if specified.
-        sprint = self.sprint(data)
-        if sprint is not None:
-            spec.linkSprint(sprint, self.user)
-        # Set the default value for the next URL.
-        self._next_url = canonical_url(spec)
-
-    def distribution(self, data):
-        """Returns a distribution from the given context and form data."""
-        return None
-    
-    def product(self, data):
-        """Returns a product from the given context and form data."""
-        return None
-    
-    def series(self, data):
-        """Returns a series from the given context and form data."""
-        return None
-    
-    def sprint(self, data):
-        """Returns a sprint from the given context and form data."""
-        return None
-
-    @property
-    def next_url(self):
-        """The next URL to redirect to after creating a new specification.
-
-        The default implementation returns a URL for the new specification
-        itself. Subclasses can override this behaviour by returning an
-        alternative URL.
-        """
-        return self._next_url
-
-
-class NewSpecificationFromTargetView(NewSpecificationView):
-    """An abstract view for creating a specification from a context that
-    corresponds to a unique specification target.
-    """
-    schema = Fields(INewSpecification, 
-                    INewSpecificationSprint)
-
-    def sprint(self, data):
-        return data['sprint']
-
-
-class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
-    """A view for creating a specification from a distribution."""
-
-    def distribution(self, data):
-        return self.context
-
-
-class NewSpecificationFromProductView(NewSpecificationFromTargetView):
-    """A view for creating a specification from a product."""
-
-    def product(self, data):
-        return self.context
-
-
-class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
-    """An abstract view for creating a specification from a series."""
-    
-    def series(self, data):
-        return self.context
-
-
-class NewSpecificationFromDistroSeriesView(NewSpecificationFromSeriesView):
-    """A view for creating a specification from a distro series."""
-    
-    def distribution(self, data):
-        return self.context.distribution
-
-
-class NewSpecificationFromProductSeriesView(NewSpecificationFromSeriesView):
-    """A view for creating a specification from a product series."""
-
-    def product(self, data):
-        return self.context.product
-
-
-class NewSpecificationFromNonTargetView(NewSpecificationView):
-    """An abstract view for creating a specification from a context that does
-    not correspond to a unique specification target.
-    
-    Sub-classes must define a schema requiring the user to specify a target.
-    """
-    def distribution(self, data):
-        target = data['target']
-        if IDistribution.providedBy(target):
-            return target
-
-    def product(self, data):
-        target = data['target']
-        if IProduct.providedBy(target):
-            return target
-
-    def validate(self, data):
-        """Ensures that the name chosen for the new specification is unique
-        within the context of the chosen target.
-        """
-        name = data['name']
-        target = data['target']
-        if target.getSpecification(name):
-            errormessage = self.schema['name'].errormessage
-            self.setFieldError('name', errormessage % name)
-
-
-class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
-    """A view for creating a specification from a project."""
-
-    schema = Fields(INewSpecificationProjectTarget,
-                    INewSpecification,
-                    INewSpecificationSprint)
-    
-
-class NewSpecificationFromRootView(NewSpecificationFromNonTargetView):
-    """A view for creating a specification from the root of Launchpad."""
-
-    schema = Fields(INewSpecificationTarget,
-                    INewSpecification, 
-                    INewSpecificationSprint)
-
-
-class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
-    """A view for creating a specification from a sprint."""
-
-    schema = Fields(INewSpecificationTarget,
-                    INewSpecification)
-
-    def sprint(self, data):
-        return self.context
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
 
 
 class SpecificationLinkBranchView(LaunchpadFormView):
