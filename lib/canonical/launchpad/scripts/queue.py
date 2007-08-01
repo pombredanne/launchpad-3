@@ -167,13 +167,13 @@ class QueueAction:
         # need another way of knowing whether the user typed them.
         self.explicit_ids_specified = False
 
-        num_filters = len(self.terms) - self.terms_start_index
-        if num_filters == 0:
+        terms = self.terms[self.terms_start_index:]
+        if len(terms) == 0:
             # If no argument is passed, present all available results in
             # the selected queue.
-            self.terms.append('')
+            terms.append('')
 
-        for term in self.terms[self.terms_start_index:]:
+        for term in terms:
             # refuse old-style '*' argument since we do not support
             # wildcards yet.
             if term == '*':
