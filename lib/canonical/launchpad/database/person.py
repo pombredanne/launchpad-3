@@ -36,25 +36,24 @@ from canonical.launchpad.database.karma import KarmaCategory
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.event.karma import KarmaAssignedEvent
 from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
-from canonical.launchpad.helpers import (
-    contactEmailAddresses, is_english_variant, shortlist)
+from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, EmailAddressStatus, LoginTokenType,
-    PersonCreationRationale, ShippingRequestStatus, SpecificationFilter,
-    SpecificationDefinitionStatus, SpecificationImplementationStatus,
-    SpecificationSort, SSHKeyType, TeamMembershipRenewalPolicy,
-    TeamMembershipStatus, TeamSubscriptionPolicy)
+    BugTaskImportance, BugTaskStatus, ShippingRequestStatus,
+    SpecificationFilter, SpecificationDefinitionStatus,
+    SpecificationImplementationStatus, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
-    IBugTaskSet, ICalendarOwner, IDistribution, IDistributionSet,
-    IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon,
+    EmailAddressStatus, IBugTaskSet, ICalendarOwner, IDistribution,
+    IDistributionSet, IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon,
     IHasLogo, IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet,
-    ILanguageSet, ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
+    ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
     ILoginTokenSet, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
     IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey,
     ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
-    JoinNotAllowed, QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants,
+    JoinNotAllowed, LoginTokenType, PersonCreationRationale,
+    QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants, SSHKeyType,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus, TeamSubscriptionPolicy,
     UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.archive import Archive
@@ -141,11 +140,11 @@ class Person(SQLBase, HasSpecificationsMixin):
     sshkeys = SQLMultipleJoin('SSHKey', joinColumn='person')
 
     renewal_policy = EnumCol(
-        schema=TeamMembershipRenewalPolicy,
+        enum=TeamMembershipRenewalPolicy,
         default=TeamMembershipRenewalPolicy.NONE)
     subscriptionpolicy = EnumCol(
         dbName='subscriptionpolicy',
-        schema=TeamSubscriptionPolicy,
+        enum=TeamSubscriptionPolicy,
         default=TeamSubscriptionPolicy.MODERATED)
     defaultrenewalperiod = IntCol(dbName='defaultrenewalperiod', default=None)
     defaultmembershipperiod = IntCol(dbName='defaultmembershipperiod',
@@ -154,7 +153,7 @@ class Person(SQLBase, HasSpecificationsMixin):
     merged = ForeignKey(dbName='merged', foreignKey='Person', default=None)
 
     datecreated = UtcDateTimeCol(notNull=True, default=UTC_NOW)
-    creation_rationale = EnumCol(schema=PersonCreationRationale, default=None)
+    creation_rationale = EnumCol(enum=PersonCreationRationale, default=None)
     creation_comment = StringCol(default=None)
     registrant = ForeignKey(
         dbName='registrant', foreignKey='Person', default=None)
@@ -1348,7 +1347,7 @@ class Person(SQLBase, HasSpecificationsMixin):
 
     def _getMembershipsByStatuses(self, statuses):
         assert self.isTeam(), 'This method is only available for teams.'
-        statuses = ",".join(str(status) for status in statuses)
+        statuses = ",".join(quote(status) for status in statuses)
         # We don't want to escape 'statuses' so we can't easily use
         # sqlvalues() on the query below.
         query = """
@@ -2498,7 +2497,7 @@ class SSHKey(SQLBase):
     _table = 'SSHKey'
 
     person = ForeignKey(foreignKey='Person', dbName='person', notNull=True)
-    keytype = EnumCol(dbName='keytype', notNull=True, schema=SSHKeyType)
+    keytype = EnumCol(dbName='keytype', notNull=True, enum=SSHKeyType)
     keytext = StringCol(dbName='keytext', notNull=True)
     comment = StringCol(dbName='comment', notNull=True)
 

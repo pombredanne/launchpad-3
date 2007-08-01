@@ -22,6 +22,7 @@ from canonical.codehosting.tests.servers import (
 from canonical.codehosting.transport import branch_id_to_path
 from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
+from canonical.launchpad.interfaces import BranchType
 from canonical.lp import dbschema
 
 
@@ -299,8 +300,15 @@ class AcceptanceTests(SSHTestCase):
         # Trying to get information about a private branch should fail as if
         # the branch doesn't exist.
 
-        # Make a private branch. 'salgado' is a member of
-        # landscape-developers.
+        # 'salgado' is a member of landscape-developers.
+        salgado = database.Person.selectOneBy(name='salgado')
+        landscape_dev = database.Person.selectOneBy(
+            name='landscape-developers')
+        self.assertTrue(
+            salgado.inTeam(landscape_dev),
+            "salgado should be a member of landscape-developers, but isn't.")
+
+        # Make a private branch.
         branch_url = self.pushNewBranch(
             'landscape-developers', 'landscape', 'some-branch',
             creator='salgado')
@@ -329,7 +337,7 @@ class SmartserverTests(SSHTestCase):
         # Mark as mirrored.
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.getDatabaseBranch(person_name, product_name, branch_name)
-        branch.branch_type = dbschema.BranchType.MIRRORED
+        branch.branch_type = BranchType.MIRRORED
         LaunchpadZopelessTestSetup().txn.commit()
         return ro_branch_url
 
