@@ -43,8 +43,10 @@ from canonical.launchpad.interfaces import (
 from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
-    LaunchpadEditFormView, action)
+    LaunchpadEditFormView, action, custom_widget)
 from canonical.launchpad.webapp.uri import URI
+
+from canonical.widgets import SinglePopupWidget
 
 
 def quote(text):
@@ -529,4 +531,5 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
 
     field_names = ['target_branch', 'dependent_branch', 'whiteboard']
 
+    custom_widget('target_branch', SinglePopupWidget, displayWidth=30)
     

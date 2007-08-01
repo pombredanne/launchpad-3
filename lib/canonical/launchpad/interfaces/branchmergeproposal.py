@@ -38,20 +38,17 @@ class IBranchMergeProposal(Interface):
 
     source_branch = Choice(
         title=_('Source Branch'),
-        vocabulary='Branch',
-        readonly=True,
+        vocabulary='Branch', required=True, readonly=True,
         description=_("The Bazaar branch that has code to land."))
 
     target_branch = Choice(
         title=_('Target Branch'),
-        vocabulary='Branch',
-        readonly=True,
+        vocabulary='Branch', required=True, readonly=True,
         description=_("The Bazaar branch that the code will land on."))
 
     dependent_branch = Choice(
         title=_('Dependent Branch'),
-        vocabulary='Branch',
-        readonly=True,
+        vocabulary='Branch', required=False, readonly=True,
         description=_("The Bazaar branch that the source branch branched from."))
 
     whiteboard = Whiteboard(
