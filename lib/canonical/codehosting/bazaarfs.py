@@ -16,6 +16,8 @@ from twisted.vfs.ivfs import VFSError, NotFoundError, PermissionError
 
 # The directories allowed directly beneath a branch directory.
 ALLOWED_DIRECTORIES = ('.bzr', '.bzr.backup')
+FORBIDDEN_DIRECTORY_ERROR = (
+    "Cannot create '%s'. Only Bazaar branches are allowed.")
 
 
 class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
@@ -302,9 +304,7 @@ class _RenameProtectionDecorator:
 
     def rename(self, newName):
         if newName not in ALLOWED_DIRECTORIES:
-            raise PermissionError(
-                "Cannot create '%s'. Only Bazaar branches are allowed."
-                % (newName,))
+            raise PermissionError(FORBIDDEN_DIRECTORY_ERROR % (newName,))
         return self.original.rename(newName)
 
 

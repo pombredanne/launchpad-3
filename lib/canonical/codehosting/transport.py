@@ -18,7 +18,8 @@ from bzrlib.transport import (
 
 from canonical.authserver.interfaces import READ_ONLY
 
-from canonical.codehosting.bazaarfs import ALLOWED_DIRECTORIES
+from canonical.codehosting.bazaarfs import (
+    ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR)
 
 
 def branch_id_to_path(branch_id):
@@ -207,8 +208,7 @@ class LaunchpadServer(Server):
         segments = get_path_segments(virtual_path)
         if (len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES):
             raise NoSuchFile(path=segments[-1],
-                             extra=("Only .bzr and .bzr.backup directories "
-                                    "are allowed beneath branch directories."))
+                             extra=FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
         
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
