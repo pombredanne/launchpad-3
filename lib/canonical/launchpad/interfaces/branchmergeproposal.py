@@ -10,7 +10,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime
+from zope.schema import Choice, Datetime, Int
 
 from canonical.launchpad import _
 
@@ -26,6 +26,10 @@ class InvalidBranchMergeProposal(Exception):
 
 class IBranchMergeProposal(Interface):
     """Branch merge proposals show intent of landing one branch on another."""
+
+    id = Int(
+        title=_('DB ID'), required=True, readonly=True,
+        description=_("The tracking number for this question."))
 
     registrant = Choice(
         title=_('Person'), required=True,

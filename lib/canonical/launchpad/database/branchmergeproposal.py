@@ -5,6 +5,7 @@
 __metaclass__ = type
 __all__ = [
     'BranchMergeProposal',
+    'BranchMergeProposalSet',
     ]
 
 from zope.interface import implements
@@ -48,7 +49,8 @@ class BranchMergeProposalSet:
 
     implements(IBranchMergeProposalSet)
 
-    def new(self, registrant, source_branch, target_branch):
+    def new(self, registrant, source_branch, target_branch,
+            dependent_branch=None, whiteboard=None):
         """See IBranchLandingTargetSet."""
         if source_branch == target_branch:
             raise InvalidBranchMergeProposal(
@@ -78,4 +80,5 @@ class BranchMergeProposalSet:
 
         return BranchMergeProposal(
             registrant=registrant, source_branch=source_branch,
-            target_branch=target_branch)
+            target_branch=target_branch, dependent_branch=dependent_branch,
+            whiteboard=whiteboard)
