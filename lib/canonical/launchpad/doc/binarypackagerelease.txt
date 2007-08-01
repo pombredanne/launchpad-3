@@ -39,9 +39,9 @@ us to easily link to a source reference published in the web-ui.
    ...    firefox_bin_release.distributionsourcepackagerelease)
    True
 
-The 'is_new' property allow us to easily check if the
-BinaryPackageRelease is question is part of a known series of package
-or is, in fact, 'new' to the DistroArchSeries it was built for.
+The 'is_new' property tells us whether or not this
+BinaryPackageRelease has ever been published for the DistroArchSeries
+it was built for. If not, then 'is_new' will be True, otherwise False.
 
    >>> firefox_bin_release.is_new
    False

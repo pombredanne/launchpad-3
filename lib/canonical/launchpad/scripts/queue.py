@@ -277,7 +277,8 @@ class QueueAction:
                     "\t | %s %s/%s/%s Component: %s Section: %s Priority: %s"
                     % (status_flag, bpr.name, bpr.version,
                        bpr.build.distroarchseries.architecturetag,
-                       bpr.component.name, bpr.section.name, bpr.priority.name))
+                       bpr.component.name, bpr.section.name,
+                       bpr.priority.name))
 
         for queue_custom in queue_item.customfiles:
             self.display("\t | * %s Format: %s"

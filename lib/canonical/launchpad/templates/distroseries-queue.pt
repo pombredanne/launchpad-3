@@ -24,9 +24,9 @@
     function toggleQueueFilelistVisibility(row_id) {
       row = document.getElementById(row_id)
       view_icon = document.getElementById(row_id + "-view")
-      if (row.style.display=="none") {
+      if (row.style.display == "none") {
         row.style.display = "table-row";
-        view_icon.setAttribute("src","/@@/treeExpanded")
+        view_icon.setAttribute("src", "/@@/treeExpanded")
       } else {
         row.style.display = "none";
         view_icon.setAttribute("src", "/@@/treeCollapsed")
