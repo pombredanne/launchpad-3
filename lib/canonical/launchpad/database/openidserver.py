@@ -102,7 +102,7 @@ class OpenIDRPConfigSet:
     implements(IOpenIDRPConfigSet)
 
     def new(self, trust_root, displayname, description, logo=None,
-            allowed_sreg=[],
+            allowed_sreg=None,
             creation_rationale=PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT):
         """See `IOpenIdRPConfigSet`"""
         if allowed_sreg:

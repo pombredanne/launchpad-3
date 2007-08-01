@@ -85,30 +85,34 @@ sreg_fields_vocabulary = SimpleVocabulary([
 class IOpenIDRPConfig(Interface):
     """Configuration for a particular OpenID Relying Party."""
     id = Int(title=u'ID', required=True)
-    trust_root = TextLine(title=_('Trust Root'), required=True,
+    trust_root = TextLine(
+        title=_('Trust Root'), required=True,
         description=_('The openid.trust_root value sent by the Relying Party'))
-    displayname = TextLine(title=_('Display Name'), required=True,
+    displayname = TextLine(
+        title=_('Display Name'), required=True,
         description=_('A human readable name for the Relying Party'))
-    description = TextLine(title=_('Description'), required=True,
+    description = TextLine(
+        title=_('Description'), required=True,
         description=_('A description of the Relying Party, explaining why '
                       'the user should authenticate.'))
-    logo = Object(title=_('Logo'), schema=ILibraryFileAlias, required=False,
+    logo = Object(
+        title=_('Logo'), schema=ILibraryFileAlias, required=False,
         description=_('A banner that identifies the Relying Party'))
-    allowed_sreg = List(title=_('Allowed Sreg Fields'),
+    allowed_sreg = List(
+        title=_('Allowed Sreg Fields'),
         description=_('The simple registration fields that may be '
                       'transferred to this Relying Party'),
         value_type=Choice(vocabulary=sreg_fields_vocabulary))
-    creation_rationale = Choice(title=_('Creation Rationale'),
+    creation_rationale = Choice(
+        title=_('Creation Rationale'),
         description=_('The creation rationale to use for user accounts '
                       'created while logging in to this Relying Party'),
         vocabulary=PersonCreationRationale)
 
-    def destroySelf():
-        """Destroy this RP configuration."""
-
 
 class IOpenIDRPConfigSet(Interface):
-    def new(trust_root, displayname, description, logo=None, allowed_sreg=[],
+    """The set of OpenID Relying Party configurations."""
+    def new(trust_root, displayname, description, logo=None, allowed_sreg=None,
             creation_rationale=PersonCreationRationale.OWNER_CREATED_UNKNOWN_TRUSTROOT):
         """Create a new IOpenIdRPConfig"""
 

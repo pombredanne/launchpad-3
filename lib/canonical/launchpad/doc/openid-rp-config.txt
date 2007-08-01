@@ -12,7 +12,7 @@ This includes:
  * Specify what fields may be disclosed to the RP via OpenID Simple
    Registration protocol.
 
- * What name creation rationale should be used for accounts created
+ * What person creation rationale should be used for accounts created
    while signining in to the RP.
 
 
@@ -31,17 +31,15 @@ Configurations are created using the IOpenIDRPConfigSet utility:
 
 The resulting object implements the IOpenIDRPConfig interface:
 
-    >>> from zope.interface.verify import verifyObject
-    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import IOpenIDRPConfig
 
-    >>> verifyObject(IOpenIDRPConfig, removeSecurityProxy(rpconfig))
+    >>> verifyObject(IOpenIDRPConfig, rpconfig)
     True
 
 The utility itself implements IOpenIDRPConfigSet:
 
-    >>> verifyObject(IOpenIDRPConfigSet,
-    ...              removeSecurityProxy(getUtility(IOpenIDRPConfigSet)))
+    >>> verifyObject(IOpenIDRPConfigSet, getUtility(IOpenIDRPConfigSet))
     True
 
 
@@ -106,3 +104,26 @@ containing all OpenIDRP's.
     >>> configs = getUtility(IOpenIDRPConfigSet).getAll()
     >>> rpconfig in configs
     True
+
+
+== Destroying OpenIDRPConfig objects ==
+
+RP configs can be removed using the destroySelf() method, which is
+only available to administrators:
+
+    >>> login(ANONYMOUS)
+    >>> rpconfig = getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+    ...     'http://*.example.com/')
+    >>> rpconfig.destroySelf()
+    Traceback (most recent call last):
+      ...
+    Unauthorized: (<OpenIDRPConfig at ...>, 'destroySelf', 'launchpad.Admin')
+
+The same method succeeds when run as an administrator.  Afterwards,
+attempts to get the RP config fail:
+
+    >>> login('foo.bar@canonical.com')
+    >>> rpconfig.destroySelf()
+    >>> print getUtility(IOpenIDRPConfigSet).getByTrustRoot(
+    ...     'http://*.example.com/')
+    None

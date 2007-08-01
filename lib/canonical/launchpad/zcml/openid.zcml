@@ -104,6 +104,7 @@
       <allow interface="canonical.launchpad.interfaces.IOpenIDRPConfig" />
       <require
           permission="launchpad.Admin"
+          attributes="destroySelf"
           set_schema="canonical.launchpad.interfaces.IOpenIDRPConfig" />
     </content>
 
