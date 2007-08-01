@@ -169,14 +169,15 @@ COMMENT ON TABLE BugCve IS 'A table that records the link between a given malone
 
 COMMENT ON TABLE CodeImport IS 'The persistent record of an import from a foreign version control system to Bazaar, from the initial request to the regularly updated import branch.';
 COMMENT ON COLUMN CodeImport.branch IS 'The Bazaar branch produced by the import system.  Always non-NULL: a placeholder branch is created when the import is created.  The import is associated to a Product and Series though the branch.';
-COMMENT ON COLUMN CodeImport.registrant IS 'The person who requested this import.';
+COMMENT ON COLUMN CodeImport.registrant IS 'The person who originally requested this import.';
+COMMENT ON COLUMN CodeImport.owner IS 'The person who is currently responsible for keeping the import details up to date, initially set to the registrant. This person can edit some of the details of the code import branch.';
 COMMENT ON COLUMN CodeImport.review_status IS 'Whether this code import request has been reviewed, and whether it was accepted.';
 COMMENT ON COLUMN CodeImport.rcs_type IS 'The revision control system used by the import source. The value is defined in dbschema.RevisionControlSystems.';
 COMMENT ON COLUMN CodeImport.svn_branch_url IS 'The URL of the Subversion branch for this import.';
 COMMENT ON COLUMN CodeImport.cvs_root IS 'The $CVSROOT details, probably of the form :pserver:user@host:/path.';
 COMMENT ON COLUMN CodeImport.cvs_module IS 'The module in cvs_root to import, often the name of the project.';
 COMMENT ON COLUMN CodeImport.date_last_successful IS 'When this code import last succeeded. NULL if this import has never succeeded.';
-COMMENT ON COLUMN CodeImport.assignee IS 'The person in charge of delivering this code import and interacting with the requestor.';
+COMMENT ON COLUMN CodeImport.assignee IS 'The person in charge of delivering this code import and interacting with the owner.';
 COMMENT ON COLUMN Codeimport.update_interval IS 'How often should this import be updated. If NULL, defaults to a system-wide value set by the Launchpad administrators.';
 
 -- CodeImportMachine

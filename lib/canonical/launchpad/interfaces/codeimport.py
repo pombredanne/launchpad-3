@@ -37,7 +37,12 @@ class ICodeImport(Interface):
     registrant = Choice(
         title=_('Registrant'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam',
-        description=_("The person who requested this import."))
+        description=_("The person who initially requested this import."))
+
+    owner = Choice(
+        title=_('Owner'), required=True, readonly=False,
+        vocabulary='ValidPersonOrTeam',
+        description=_("The community contact for this import."))
 
     assignee = Choice(
         title=_('Assignee'), required=False, readonly=False,

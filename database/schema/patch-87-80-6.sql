@@ -1,8 +1,13 @@
 SET client_min_messages=ERROR;
 
 
+ALTER TABLE CodeImport ADD COLUMN owner integer REFERENCES Person(id);
+UPDATE CodeImport SET owner=registrant;
+ALTER TABLE CodeImport ALTER owner SET NOT NULL;
+
 ALTER TABLE CodeImport ADD COLUMN assignee integer REFERENCES Person(id);
 ALTER TABLE CodeImport ADD COLUMN update_interval interval;
+
 
 ALTER TABLE CodeImportMachine ADD COLUMN
     heartbeat TIMESTAMP WITHOUT TIME ZONE;
