@@ -902,21 +902,19 @@ class BugTaskEditView(LaunchpadEditFormView):
         sourcename = bugtask.sourcepackagename
         product = bugtask.product
 
-        if data.get('sourcepackagename', False):
-            if distro is not None and sourcename != data['sourcepackagename']:
-                try:
-                    validate_distrotask(
-                        bugtask.bug, distro, data['sourcepackagename'])
-                except LaunchpadValidationError, error:
-                    self.setFieldError('sourcepackagename', str(error))
+        if distro is not None and sourcename != data.get('sourcepackagename'):
+            try:
+                validate_distrotask(
+                    bugtask.bug, distro, data.get('sourcepackagename'))
+            except LaunchpadValidationError, error:
+                self.setFieldError('sourcepackagename', str(error))
 
-        if data.get('product', False):
-            if (product is not None and
-                'product' in data and product != data['product']):
-                try:
-                    valid_upstreamtask(bugtask.bug, data['product'])
-                except WidgetsError, errors:
-                    self.setFieldError('product', errors.args[0])
+        if (product is not None and
+            'product' in data and product != data.get('product')):
+            try:
+                valid_upstreamtask(bugtask.bug, data.get('product'))
+            except WidgetsError, errors:
+                self.setFieldError('product', errors.args[0])
 
     @action('Save Changes', name='save')
     def save_action(self, action, data):
