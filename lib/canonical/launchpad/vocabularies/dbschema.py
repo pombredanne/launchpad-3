@@ -25,10 +25,6 @@ __all__ = [
     'EntitlementStateVocabulary',
     'EntitlementTypeVocabulary',
     'InfestationStatusVocabulary',
-    'MirrorContentVocabulary',
-    'MirrorPulseTypeVocabulary',
-    'MirrorSpeedVocabulary',
-    'MirrorStatusVocabulary',
     'PackagePublishingPocketVocabulary',
     'PackagingTypeVocabulary',
     'PollAlgorithmVocabulary',
@@ -81,10 +77,6 @@ DistroSeriesStatusVocabulary = vocab_factory(dbschema.DistroSeriesStatus)
 EntitlementStateVocabulary = vocab_factory(dbschema.EntitlementState)
 EntitlementTypeVocabulary = vocab_factory(dbschema.EntitlementType)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
-MirrorContentVocabulary = vocab_factory(dbschema.MirrorContent)
-MirrorPulseTypeVocabulary = vocab_factory(dbschema.MirrorPulseType)
-MirrorSpeedVocabulary = vocab_factory(dbschema.MirrorSpeed)
-MirrorStatusVocabulary = vocab_factory(dbschema.MirrorStatus)
 PackagePublishingPocketVocabulary = vocab_factory(
     dbschema.PackagePublishingPocket)
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
