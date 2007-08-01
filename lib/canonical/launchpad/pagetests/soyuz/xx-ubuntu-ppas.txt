@@ -69,7 +69,15 @@ and estimated size).
     Estimated archive size:
     9.5 MiB
 
-The sample data has two packages belonging to Celso.
+The sample data has two packages belonging to Celso. Two table rows
+will be presented to user containing:
+
+ * SourcePackageRelease title (<source_name> - <source-version>),
+ * Date Published,
+ * target DistroSeries,
+ * target Pocket,
+ * original Component and
+ * original Section
 
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
