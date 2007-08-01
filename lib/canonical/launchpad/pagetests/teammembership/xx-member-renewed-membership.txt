@@ -14,9 +14,8 @@ some changes.
     >>> from canonical.launchpad.ftests import ANONYMOUS, login, logout
     >>> login(ANONYMOUS)
     >>> from zope.component import getUtility
-    >>> from canonical.lp.dbschema import TeamMembershipRenewalPolicy
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, ITeamMembershipSet)
+    ...     IPersonSet, ITeamMembershipSet, TeamMembershipRenewalPolicy)
     >>> personset = getUtility(IPersonSet)
     >>> membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
     ...     personset.getByName('karl'),
