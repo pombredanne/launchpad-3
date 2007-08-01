@@ -23,13 +23,16 @@ import cgi
 from datetime import datetime, timedelta
 import pytz
 
+from zope.app.form.browser.widget import BrowserWidget, renderElement
+from zope.app.form.browser import UnicodeDisplayWidget
+from zope.app.form.interfaces import IDisplayWidget
 from zope.event import notify
 from zope.component import getUtility
+from zope.interface import implements
 
 from canonical.config import config
 
 from canonical.lp import decorates
-
 from canonical.launchpad.browser.branchref import BranchRef
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.person import ObjectReassignmentView
@@ -37,7 +40,7 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchType, BranchVisibilityRule, IBranch,
-    IBranchMergeProposal,
+    IBranchMergeProposal, IBranchMergeProposalSet, InvalidBranchMergeProposal,
     IBranchSet, IBranchSubscription, IBugSet,
     ILaunchpadCelebrities, IPersonSet)
 from canonical.launchpad.webapp import (
@@ -524,12 +527,89 @@ class BranchSubscriptionsView(LaunchpadView):
                 for subscription in sorted_subscriptions]
 
 
+class AttributeDisplayWidget(BrowserWidget):
+    
+    implements(IDisplayWidget)
+
+    def __init__(self, context, vocabulary, request, field_name):
+        import pdb; pdb.set_trace()
+        super(AttributeDisplayWidget, self).__init__(context, request)
+        self.field_name = field_name
+        
+    def __call__(self):
+        import pdb; pdb.set_trace()
+        if hasattr(self.context, self.field_name):
+            return getattr(self.context, self.field_name)
+        else:
+            return ''
+
+
 class RegisterBranchMergeProposalView(LaunchpadFormView):
     """The view to register new branch merge proposals."""
     schema = IBranchMergeProposal
     for_input=True
 
+    #field_names = ['source_branch', 'target_branch', 'dependent_branch',
+    #               'whiteboard']
     field_names = ['target_branch', 'dependent_branch', 'whiteboard']
 
-    custom_widget('target_branch', SinglePopupWidget, displayWidth=30)
-    
+    # custom_widget('source_branch', AttributeDisplayWidget, 'unique_name')
+    custom_widget('target_branch', SinglePopupWidget, displayWidth=35)
+    custom_widget('dependent_branch', SinglePopupWidget, displayWidth=35)
+
+    @action('Register', name='register')
+    def register_action(self, action, data):
+        """Register the new branch merge proposal."""
+
+        registrant = self.user
+        source_branch = self.context
+        target_branch = data['target_branch']
+        dependent_branch = data['dependent_branch']
+        create_merge_proposal = True
+        
+        # Make sure that the target branch is different from the context.
+        if source_branch == target_branch:
+            self.setFieldError(
+                'target_branch',
+                "The target branch cannot be the same as the source branch.")
+            create_merge_proposal = False
+        else:
+            # Make sure that the target_branch is in the same project.
+            if target_branch.product != source_branch.product:
+                self.setFieldError(
+                    'target_branch',
+                    "The target branch must belong to the same project "
+                    "as the source branch.")
+                create_merge_proposal = False
+
+        if dependent_branch is None:
+            # Skip the following tests.
+            pass
+        elif dependent_branch == source_branch:
+            self.setFieldError(
+                'dependent_branch',
+                "The dependent branch cannot be the same as the source branch.")
+            create_merge_proposal = False
+        elif dependent_branch == target_branch:
+            # This is the same as if the dependent_branch was not set.
+            dependent_branch = None
+        else:
+            # Make sure that the dependent_branch is in the project.
+            if dependent_branch.product != source_branch.product:
+                self.setFieldError(
+                    'dependent_branch',
+                    "The dependent branch must belong to the same project "
+                    "as the source branch.")
+            create_merge_proposal = False
+
+        if create_merge_proposal:
+            whiteboard = data['whiteboard']
+            try:
+                merge_proposal = getUtility(IBranchMergeProposalSet).new(
+                    registrant=registrant,
+                    source_branch=source_branch, target_branch=target_branch,
+                    dependent_branch=dependent_branch, whiteboard=whiteboard)
+            except InvalidBranchMergeProposal, error:
+                self.addError(str(error))
+            else:
+                self.next_url = canonical_url(source_branch)

@@ -12,7 +12,6 @@
         set_schema="canonical.launchpad.interfaces.IBranchMergeProposal" />
   </content>
 
-  <!--
   <browser:defaultView
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       name="+index" />
@@ -22,8 +21,8 @@
     for="canonical.launchpad.interfaces.IBranchMergeProposal"
     facet="branches"
     permission="launchpad.View"
-    template="../templates/branchlandingtarget-index.pt" />
-  -->
+    template="../templates/branchmergeproposal-index.pt" />
+
   <browser:url
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       path_expression="string:+merge/${id}"
