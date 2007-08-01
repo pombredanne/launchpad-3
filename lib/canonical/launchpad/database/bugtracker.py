@@ -49,6 +49,13 @@ class BugTracker(SQLBase):
                               orderBy='-datecreated', prejoins=['bug'])
 
     def _get_title(self):
+        """Bugtracker title.
+
+        SQLObject property get handler for the bugtracker's
+        `title` attribute. Returns the title recorded in the
+        database, or if no title is recorded a title constructed
+        from the bugtracker's baseurl.
+        """
         dbtitle = self._SO_get_title()
         if dbtitle is None:
             dbtitle = quote('Bug tracker at %s' % self.baseurl)

@@ -58,8 +58,9 @@ class IBugTracker(Interface):
         required=False)
     baseurl = TextLine(
         title=_('Base URL'),
-        description=_('The top-level URL for the bug tracker. This '
-        'must be accurate so that Launchpad can link to external bug reports.'))
+        description=_(
+            'The top-level URL for the bug tracker. This must be accurate '
+            'so that Launchpad can link to external bug reports.'))
     owner = Int(title=_('Owner'))
     contactdetails = Text(
         title=_('Contact details'),
