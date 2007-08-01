@@ -89,7 +89,7 @@ class ArchiveView(LaunchpadView):
     __used_for__ = IArchive
 
     def initialize(self):
-        """Setup a batched ISourcePackagePublishingHistory list."""
+        """Setup a batched `ISourcePackagePublishingHistory` list."""
         self.name_filter = self.request.get('name_filter', None)
         publishing = self.context.getPublishedSources(
             name=self.name_filter)
@@ -102,6 +102,7 @@ class ArchiveActivateView(LaunchpadFormView):
 
     Ensure user has accepted the PPA Terms of Use by clicking in the
     'accepted' checkbox.
+
     It redirects to PPA page when PPA is already activated.
     """
 

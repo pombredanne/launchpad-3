@@ -444,7 +444,7 @@ class DistributionView(BuildRecordsView):
 class DistributionPPAView(LaunchpadView):
 
     def initialize(self):
-        """Setup a batched IArchive list."""
+        """Setup a batched `IArchive` list."""
         self.name_filter = self.request.get('name_filter', None)
         ppas = self.context.searchPPAs(text=self.name_filter)
         self.batchnav = BatchNavigator(ppas, self.request)

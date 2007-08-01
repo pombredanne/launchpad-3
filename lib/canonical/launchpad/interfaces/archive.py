@@ -11,7 +11,7 @@ __all__ = [
     ]
 
 from zope.interface import Interface, Attribute
-from zope.schema import  Bool, Choice, Int, Text
+from zope.schema import Bool, Choice, Int, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
@@ -78,7 +78,7 @@ class IArchive(IHasOwner):
         """
 
     def getPublishedBinaries():
-        """All IBinaryPackagePublishingHistory target to this archive.
+        """All `IBinaryPackagePublishingHistory` target to this archive.
 
         :return: SelectResults containing `IBinaryPackagePublishingHistory`.
         """

@@ -1,4 +1,4 @@
-= PPA pages and work-flow =
+= Personal Package Archive pages and work-flow =
 
 
 == Activated PPAs ==
@@ -11,8 +11,8 @@ Setup a browser for 'cprov' :
     >>> cprov_browser.addHeader(
     ...     "Authorization", "Basic celso.providelo@canonical.com:cprov")
 
-Since cprov's PPA is already activated in sampledata, not 'Activate
-PPA' action is presented in cprov's page:
+Since cprov's PPA is already activated in sampledata, 'Activate
+PPA' action is not presented in cprov's page:
 
     >>> cprov_browser.open("http://launchpad.dev/~cprov")
     >>> cprov_browser.getLink("Activate PPA")
@@ -20,7 +20,8 @@ PPA' action is presented in cprov's page:
     ...
     LinkNotFoundError
 
-Instead, a 'Show PPA' link is presented. It drives to user to it's PPA page:
+Instead, a 'Show PPA' link is presented which drives to user to their
+PPA page:
 
     >>> cprov_browser.getLink("Show PPA").click()
     >>> cprov_browser.title
@@ -40,7 +41,7 @@ to the PPA page automatically:
 == Activating PPAs for Users ==
 
 PPAs have to be activated before they can be accessed, in this section
-we will cover the activation procedure for an user PPA by it's own
+we will cover the activation procedure for an user PPA by its own
 user:
 
     >>> sample_browser = Browser()
@@ -48,8 +49,8 @@ user:
     >>> sample_browser.addHeader(
     ...     "Authorization", "Basic test@canonical.com:test")
 
-Checking if the Person action-menu is sane, not presenting links a PPA
-that doesn't exist yet:
+Checking if the Person action-menu is sane, by not presenting links to
+a PPA that doesn't exist yet:
 
     >>> sample_browser.open("http://launchpad.dev/~name12")
     >>> sample_browser.getLink("Show PPA")
@@ -57,7 +58,7 @@ that doesn't exist yet:
     ...
     LinkNotFoundError
 
-Accessing a inexistent PPA page with a hand-made URL results in
+Accessing a nonexistent PPA page with a hand-made URL results in
 NotFound error:
 
     >>> sample_browser.open("http://launchpad.dev/~name12/+archive")
@@ -117,15 +118,15 @@ Where we can check for the submitted description:
     PPA description:
     Hoohay for PPA.
 
-And a empty 'whiteboard' section, that, when filled, including
-administrator messages about operations done in this PPA:
+... and an empty 'whiteboard' section that when filled, includes
+administrator messages about operations done in this PPA.
 
     >>> find_tag_by_id(sample_browser.contents, 'whiteboard') is None
     True
 
-Note that 'whiteboard' sections is presented as 'informational' box,
+Note that 'whiteboard' section is presented, as 'informational' box,
 only for those users with 'launchpad.Edit' permission on the PPA in
-question.
+question, see below.
 
 The PPA owner is able to edit PPA 'description' and 'whiteboard':
 
@@ -155,6 +156,22 @@ The PPA owner is able to edit PPA 'description' and 'whiteboard':
 Similarly to the user PPAs activation, team PPAs can be activated by
 anyone with 'launchpad.Edit' permission in the team in question:
 
+    >>> cprov_browser.open("http://launchpad.dev/~landscape-developers")
+    >>> cprov_browser.getLink("Activate PPA")
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Even if we try the URL directly:
+
+    >>> cprov_browser.open(
+    ...    "http://launchpad.dev/~landscape-developers/+activate-ppa")
+    Traceback (most recent call last):
+    ...
+    Unauthorized: (..., 'launchpad.Edit')
+
+Let's proceed with the required permissions:
+
     >>> sample_browser.open("http://launchpad.dev/~landscape-developers")
     >>> sample_browser.getLink("Activate PPA").click()
     >>> sample_browser.title
@@ -174,7 +191,7 @@ anyone with 'launchpad.Edit' permission in the team in question:
     Hoohay for Team PPA.
 
 Any team administrator can 'edit' description & whiteboard contents,
-exactly the same than for a user-PPA, see above:
+exactly the same as for a user-PPA, see above:
 
     >>> sample_browser.getLink("Change details").click()
     >>> sample_browser.url
@@ -215,14 +232,15 @@ LP-admins can also 'edit' PPAs of other people:
     >>> admin_browser.getLink("Change details") is not None
     True
 
-But more important, only LP-admin can 'administer' PPAs.
+But more importantly, only LP-admin can 'administer' PPAs.
 
     >>> admin_browser.getLink("Administer archive").click()
 
 The administration procedure allow us to:
 
- * Enable/Disable: disabled PPA won't accept uploads (not implemented yet)
- * Set a maximum disk size: uploads will be rejected if the resulted
+ * Enable/Disable: disabled PPA that won't accept uploads (not
+   implemented yet)
+ * Set a maximum disk size: uploads will be rejected if the resulting
    PPA size is exceeding the authorized size. (not implemented yet)
  * Edit the whiteboard: to communicate & record administration decisions.
 
@@ -240,7 +258,7 @@ The administration procedure allow us to:
     PPA whiteboard:
     Here lives a lazy community.
 
-The whiteboard section can be viewed by PPA owner:
+The whiteboard section can be viewed by the PPA owner:
 
     >>> carlos_browser = Browser()
     >>> carlos_browser.handleErrors = False
