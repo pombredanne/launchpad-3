@@ -860,7 +860,7 @@ class SpecificationTreeDotOutput(SpecificationTreeGraphView):
 
 
 class NewSpecificationView(LaunchpadFormView):
-    """A abstract view for creating a new specification."""
+    """An abstract view for creating a new specification."""
 
     label = "Register a new blueprint"
     
