@@ -37,12 +37,12 @@ class IArchive(Interface):
     title = Attribute("The name of the archive purpose.")
 
 
-    def getPubConfig(distribution):
+    def getPubConfig():
         """Return an overridden Publisher Configuration instance.
 
         The original publisher configuration based on the distribution is
         modified according local context, it basically fixes the archive
-        paths to cope with personal archives publication workflow.
+        paths to cope with non-primary and PPA archives publication workflow.
         """
 
 

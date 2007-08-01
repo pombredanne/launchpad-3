@@ -42,7 +42,7 @@ Nothing to do
 The no-operation use case:
 
   >>> dp = DiskPool(pool_path, temp_path, MockLogger())
-  >>> dr = DeathRow(distro, dp, MockLogger())
+  >>> dr = DeathRow(distro.main_archive, dp, MockLogger())
   >>> dr.reap(dry_run=True)
   INFO: Removing 0 files marked for reaping
   INFO: Total bytes freed: 0
@@ -120,7 +120,7 @@ Flush our these updates and kick the DeathRow processor again.
 
   >>> flush_database_updates()
   >>> dp = DiskPool(pool_path, temp_path, MockLogger())
-  >>> dr = DeathRow(distro, dp, MockLogger())
+  >>> dr = DeathRow(distro.main_archive, dp, MockLogger())
   >>> dr.reap(dry_run=True)
   INFO: Removing 2 files marked for reaping
   DEBUG: (Not really!) removing main linux-source-2.6.15/linux-2.6.12_2.6.12.20_i386.deb

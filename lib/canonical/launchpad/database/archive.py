@@ -36,9 +36,9 @@ class Archive(SQLBase):
     purpose = EnumCol(dbName='purpose', unique=False, notNull=True,
         schema=ArchivePurpose)
 
-    def getPubConfig(self, distribution):
+    def getPubConfig(self):
         """See IArchive."""
-        pubconf = PubConfig(distribution)
+        pubconf = PubConfig(self.distribution)
 
         if self.purpose == ArchivePurpose.PRIMARY:
             return pubconf
@@ -46,7 +46,7 @@ class Archive(SQLBase):
         if self.purpose == ArchivePurpose.PPA:
             pubconf.distroroot = config.personalpackagearchive.root
             pubconf.archiveroot = os.path.join(
-                pubconf.distroroot, self.owner.name, distribution.name)
+                pubconf.distroroot, self.owner.name, self.distribution.name)
             pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
             pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
             pubconf.overrideroot = None
@@ -64,7 +64,7 @@ class Archive(SQLBase):
 
             pubconf.distroroot = config.archivepublisher.root
             pubconf.archiveroot = os.path.join(pubconf.distroroot,
-                distribution.name + '-commercial')
+                self.distribution.name + '-commercial')
             pubconf.poolroot = os.path.join(pubconf.archiveroot, 'pool')
             pubconf.distsroot = os.path.join(pubconf.archiveroot, 'dists')
             pubconf.overrideroot = None

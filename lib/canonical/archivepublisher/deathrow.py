@@ -4,8 +4,12 @@ Processes removals of packages that are scheduled for deletion.
 """
 
 import datetime
+import logging
 import pytz
 import os
+
+from canonical.archivepublisher.config import LucilleConfigError
+from canonical.archivepublisher.diskpool import DiskPool
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
@@ -16,10 +20,42 @@ from canonical.launchpad.interfaces import NotInPool
 from canonical.lp.dbschema import PackagePublishingStatus
 
 
+def getDeathRow(archive, log, pool_root_override):
+    """Return a Deathrow object for the archive supplied.
+
+    :archive: Use the publisher config for this archive to derive the
+              DeathRow object.
+    :log: Use this logger for script debug logging.
+    :pool_root_override: Use this pool root for the archive instead of
+                         its publisher configured value.
+    """
+    log.debug("Grab Lucille config.")
+    try:
+        pubconf = archive.getPubConfig()
+    except LucilleConfigError, info:
+        log.error(info)
+        raise
+
+    if pool_root_override is not None:
+        pool_root = pool_root_override
+    else:
+        pool_root = pubconf.poolroot
+
+    log.debug("Preparing on-disk pool representation.")
+    dp = DiskPool(pool_root, pubconf.temproot,
+        logging.getLogger("DiskPool"))
+    # Set the diskpool's log level to INFO to suppress debug output
+    dp.logger.setLevel(20)
+
+    log.debug("Preparing death row.")
+    return DeathRow(archive, dp, log)
+
+
 class DeathRow:
     """A Distribution Archive Removal Processor."""
-    def __init__(self, distribution, diskpool, logger):
-        self.distribution = distribution
+    def __init__(self, archive, diskpool, logger):
+        self.archive = archive
+        self.distribution = archive.distribution
         self.diskpool = diskpool
         self._removeFile = diskpool.removeFile
         self.logger = logger
@@ -51,14 +87,13 @@ class DeathRow:
         source_files = SourcePackageFilePublishing.select("""
             publishingstatus = %s AND
             distribution = %s AND
-            sourcepackagefilepublishing.archive IN %s AND
+            sourcepackagefilepublishing.archive = %s AND
             SourcePackagePublishingHistory.id =
                  SourcePackageFilePublishing.sourcepackagepublishing AND
             SourcePackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
                             self.distribution, 
-                            [archive.id for archive in 
-                                self.distribution.all_distro_archives],
+                            self.archive,
                             UTC_NOW),
             clauseTables=['SourcePackagePublishingHistory'],
             orderBy="id")
@@ -66,14 +101,13 @@ class DeathRow:
         binary_files = BinaryPackageFilePublishing.select("""
             publishingstatus = %s AND
             distribution = %s AND
-            binarypackagefilepublishing.archive IN %s AND
+            binarypackagefilepublishing.archive = %s AND
             BinaryPackagePublishingHistory.id =
                  BinaryPackageFilePublishing.binarypackagepublishing AND
             BinaryPackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
                             self.distribution, 
-                            [archive.id for archive in
-                                self.distribution.all_distro_archives],
+                            self.archive,
                             UTC_NOW),
             clauseTables=['BinaryPackagePublishingHistory'],
             orderBy="id")
@@ -106,9 +140,7 @@ class DeathRow:
             all_publications = content.select("""
             libraryfilealiasfilename = %s AND distribution = %s AND
             archive = %s""" % sqlvalues(
-                filename, self.distribution, 
-                [archive.id for archive in 
-                    self.distribution.all_distro_archives]))
+                filename, self.distribution, self.archive))
             for p in all_publications:
                 if p.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL:
                     return False

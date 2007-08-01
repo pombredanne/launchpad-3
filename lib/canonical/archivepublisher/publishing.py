@@ -79,7 +79,7 @@ def _getDiskPool(pubconf, log):
 
     return dp
 
-def getPublisher(archive, distribution, allowed_suites, log, distsroot=None):
+def getPublisher(archive, allowed_suites, log, distsroot=None):
     """Return an initialised Publisher instance according given context.
 
     Optionally the user override the resulting indexes location via 'distroot'
@@ -87,12 +87,12 @@ def getPublisher(archive, distribution, allowed_suites, log, distsroot=None):
     """
     if archive.purpose != ArchivePurpose.PPA:
         log.debug("Finding configuration for %s %s."
-                  % (distribution.name, archive.title))
+                  % (archive.distribution.name, archive.title))
     else:
         log.debug("Finding configuration for '%s' PPA."
                   % archive.owner.name)
     try:
-        pubconf = archive.getPubConfig(distribution)
+        pubconf = archive.getPubConfig()
     except LucilleConfigError, info:
         log.error(info)
         raise
@@ -109,7 +109,7 @@ def getPublisher(archive, distribution, allowed_suites, log, distsroot=None):
 
     log.debug("Preparing publisher.")
 
-    return Publisher(log, pubconf, disk_pool, distribution, archive,
+    return Publisher(log, pubconf, disk_pool, archive.distribution, archive,
                      allowed_suites)
 
 

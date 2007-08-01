@@ -41,8 +41,10 @@ lib/archivepublisher/config.py), which provides the right paths for its
 publication according to the given distribution:
 
   >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+  >>> sandbox_archive = archive_set.new(distribution=ubuntutest,
+  ...     purpose=ArchivePurpose.PPA, owner=name16)
 
-  >>> proxied_pubconfig = sandbox_archive.getPubConfig(ubuntutest)
+  >>> proxied_pubconfig = sandbox_archive.getPubConfig()
 
 XXX cprov 20061127: Publisher Config is missing interface.
 
@@ -112,7 +114,7 @@ components.  This prevents non-commercial being published in the commercial
 archive.
 
   >>> comm_pubconf = removeSecurityProxy(
-  ...     commercial_archive.getPubConfig(ubuntutest))
+  ...     commercial_archive.getPubConfig())
   >>> for distroseries in comm_pubconf._distroserieses.keys():
   ...     components = set(
   ...         comm_pubconf._distroserieses[distroseries]['components'])

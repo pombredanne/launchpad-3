@@ -137,7 +137,7 @@ def main():
             log.info("Processing %s" % archive.archive_url)
 
         publisher = getPublisher(
-            archive, distribution, allowed_suites, log, options.distsroot)
+            archive, allowed_suites, log, options.distsroot)
 
         try_and_commit("publishing", publisher.A_publish,
                        options.careful or options.careful_publishing)

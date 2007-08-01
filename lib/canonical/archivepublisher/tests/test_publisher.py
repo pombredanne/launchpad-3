@@ -11,6 +11,7 @@ import tempfile
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher.diskpool import DiskPool
 from canonical.config import config
@@ -235,8 +236,8 @@ class TestPublisher(TestNativePublishingBase):
         distsroot = None
 
         distro_publisher = getPublisher(
-            self.ubuntutest.main_archive, self.ubuntutest,
-            allowed_suites, self.logger, distsroot)
+            self.ubuntutest.main_archive, allowed_suites, self.logger, 
+            distsroot)
 
         # check the publisher context, pointing to the 'main_archive'
         self.assertEqual(
@@ -253,8 +254,7 @@ class TestPublisher(TestNativePublishingBase):
         commercial_archive = getUtility(IArchiveSet).getByDistroPurpose(
             self.ubuntutest, ArchivePurpose.COMMERCIAL)
         distro_publisher = getPublisher(
-            commercial_archive, self.ubuntutest,
-            allowed_suites, self.logger, distsroot)
+            commercial_archive, allowed_suites, self.logger, distsroot)
         self.assertEqual(commercial_archive, distro_publisher.archive)
         self.assertEqual('/var/tmp/archive/ubuntutest-commercial/dists',
             distro_publisher._config.distsroot)
@@ -263,9 +263,10 @@ class TestPublisher(TestNativePublishingBase):
 
         # lets setup an Archive Publisher
         cprov = getUtility(IPersonSet).getByName('cprov')
+        removeSecurityProxy(cprov.archive).distribution = self.ubuntutest
 
         archive_publisher = getPublisher(
-            cprov.archive, self.ubuntutest, allowed_suites, self.logger)
+            cprov.archive, allowed_suites, self.logger)
 
         # check the publisher context, pointing to the given PPA archive
         self.assertEqual(
@@ -316,9 +317,10 @@ class TestPublisher(TestNativePublishingBase):
         allowed_suites = []
 
         cprov = getUtility(IPersonSet).getByName('cprov')
+        removeSecurityProxy(cprov.archive).distribution = self.ubuntutest
 
         archive_publisher = getPublisher(
-            cprov.archive, self.ubuntutest, allowed_suites, self.logger)
+            cprov.archive, allowed_suites, self.logger)
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
@@ -547,8 +549,9 @@ class TestPublisher(TestNativePublishingBase):
         from canonical.archivepublisher.publishing import getPublisher
         allowed_suites = []
         cprov = getUtility(IPersonSet).getByName('cprov')
+        removeSecurityProxy(cprov.archive).distribution = self.ubuntutest
         archive_publisher = getPublisher(
-            cprov.archive, self.ubuntutest, allowed_suites, self.logger)
+            cprov.archive, allowed_suites, self.logger)
 
         pub_source = self.getPubSource(
             filecontent='Hello world', archive=cprov.archive)
