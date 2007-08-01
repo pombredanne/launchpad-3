@@ -296,14 +296,14 @@ class _RenameProtectionDecorator:
 
     def __init__(self, original):
         self.original = original
-    
+
     def __getattr__(self, name):
         return getattr(self.original, name)
 
     def rename(self, newName):
         if newName not in ALLOWED_DIRECTORIES:
             raise PermissionError(
-                "Can only create .bzr directories in branch directories: %s"
+                "Cannot create '%s'. Only Bazaar branches are allowed."
                 % (newName,))
         return self.original.rename(newName)
 
@@ -312,7 +312,7 @@ class SFTPServerBranch(WriteLoggingDirectory):
     """For /~username/product/branch, and below.
 
     Only allows '.bzr' and '.bzr.backup' directories to be made directly.
-    Underneath that, anything goes.
+    Underneath those directories, anything goes.
     """
 
     def __init__(self, avatar, branchID, branchName, parent):

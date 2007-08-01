@@ -62,7 +62,7 @@ def makedirs(base_transport, path, mode=None):
 
 
 def get_path_segments(path):
-    return path.lstrip('/').split('/')
+    return path.strip('/').split('/')
 
 
 class UntranslatablePath(BzrError):
@@ -205,8 +205,7 @@ class LaunchpadServer(Server):
         :return: The equivalent real path on the backing transport.
         """
         segments = get_path_segments(virtual_path)
-        if (len(segments) == 4 and len(segments[-1]) > 0
-            and segments[-1] not in ALLOWED_DIRECTORIES):
+        if (len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES):
             raise NoSuchFile(path=segments[-1],
                              extra=("Only .bzr and .bzr.backup directories "
                                     "are allowed beneath branch directories."))
