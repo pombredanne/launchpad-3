@@ -112,10 +112,20 @@ class UserDirsTestCase(AvatarTestCase):
         root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
 
+        d = defer.maybeDeferred(userDir.createDirectory, 'no-such-product')
+
         # We expect PermissionError from a userDir.createDirectory:
-        return self.assertFailure(
-            defer.maybeDeferred(userDir.createDirectory, 'no-such-product'),
-            PermissionError)
+        d = self.assertFailure(d, PermissionError)
+
+        # And we check that the message is the one we expected:
+        def check_message(exception):
+            self.assertEqual(
+                str(exception),
+                'Directories directly under a user directory must be named '
+                'after a project name registered in Launchpad '
+                '<https://launchpad.net/>.')
+
+        return d.addCallback(check_message)
 
     def testInitialBranches(self):
         # Check that already existing branches owned by a user appear as

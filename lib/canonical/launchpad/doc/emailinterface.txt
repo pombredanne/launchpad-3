@@ -1,18 +1,15 @@
-Malone's Email Interface
-========================
+= Launchpad Bugs e-mail interface =
 
-Malone has an email interface, with which you may submit new bugs, add
-comments, and edit bugs. The email interface has a number of different
-commands. Commands can be interleaved within a comment, so in order to
-distinguish them from the comment, the commands have to be indented with
-at least one space or tab character. The available commands are
-described later on.
+Launchpad's bugtracker has an e-mail interface, with which you may report new
+bugs, add comments, and change the details of existing bug reports. Commands
+can be interleaved within a comment, so to distinguish them from the comment,
+they must be indented with at least one space or tab character.
 
 Submit a new bug
 ----------------
 
 To report a bug, you send an OpenPGP-signed e-mail message to
-new@malone-domain. You must have registered your key in
+new@bugs.launchpad-domain. You must have registered your key in
 Launchpad as well. The subject of the email will be used as the summary
 of the bug, and the body will be used as the description. In the body of
 the email you have tell on what you file a bug, either a product or a
@@ -30,7 +27,7 @@ specific source package in a distribution:
 
     affects $distribution_name/$sourcepackage_name
 
-You can also file bugs on specific distribution serieses:
+You can also file bugs on specific distribution series:
 
     affects $distribution_name/$series_name
     affects $distribution_name/$series_name/$sourcepackage_name
@@ -1542,10 +1539,7 @@ A submit without specifying on what we want to file the bug on:
     To: test@canonical.com
     <BLANKLINE>
     ...
-    You didn't specify on what you want to file a bug on. A new bug has to
-    affect either a product or a distribution. Please use the 'affects'
-    command in order to specify on what you want to file a bug on. For
-    example, in order to file a bug on Launchpad itself, use:
+    You didn't specify the project, distribution, or package that the bug is
     ...
 
 
@@ -1585,10 +1579,7 @@ An empty unsigned mail to new@malone:
     To: test@canonical.com
     <BLANKLINE>
     ...
-    You didn't specify on what you want to file a bug on. A new bug has to
-    affect either a product or a distribution. Please use the 'affects'
-    command in order to specify on what you want to file a bug on. For
-    example, in order to file a bug on Launchpad itself, use:
+    You didn't specify the project, distribution, or package that the bug is
     ...
 
 Let's take a closer look at send_process_error_notification(), which is
