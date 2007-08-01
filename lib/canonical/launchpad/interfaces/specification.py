@@ -166,7 +166,8 @@ class INewSpecificationProjectTarget(Interface):
                     vocabulary='ProjectProducts')
 
 
-class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner, ICanBeMentored):
+class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner, 
+    ICanBeMentored):
     """A Specification."""
 
     # XXX: TomBerger 2007-06-20, 'id' is required for

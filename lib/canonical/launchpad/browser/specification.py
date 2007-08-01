@@ -867,6 +867,7 @@ class NewSpecificationView(LaunchpadFormView):
     @action(_('Register Blueprint'), name='register')
     def register(self, action, data):
         """Registers a new specification."""
+        
         spec = getUtility(ISpecificationSet).new(
             # Values taken directly from given form data:
             name = data['name'],
@@ -910,32 +911,32 @@ class NewSpecificationView(LaunchpadFormView):
 
     @property
     def next_url(self):
-        """Returns a URL corresponding to the location to take the user on 
-        creation of a new specification.
+        """The next URL to redirect to after creating a new specification.
 
         The default implementation returns a URL for the new specification
         itself. Subclasses can override this behaviour by returning an
-        alternative URL."""
+        alternative URL.
+        """
         return self._next_url
 
 
 class NewSpecificationFromTargetView(NewSpecificationView):
     """An abstract view for creating a specification from a context that
-    corresponds to a unique specification target."""
-
+    corresponds to a unique specification target.
+    """
     schema = Fields(INewSpecification, 
                     INewSpecificationSprint)
 
     def sprint(self, data):
         return data['sprint']
-    
+
 
 class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
     """A view for creating a specification from a distribution."""
 
     def distribution(self, data):
         return self.context
-    
+
 
 class NewSpecificationFromProductView(NewSpecificationFromTargetView):
     """A view for creating a specification from a product."""
@@ -967,9 +968,10 @@ class NewSpecificationFromProductSeriesView(NewSpecificationFromSeriesView):
 
 class NewSpecificationFromNonTargetView(NewSpecificationView):
     """An abstract view for creating a specification from a context that does
-    not correspond to a unique specification target. Sub-classes must define
-    a schema which requires the user to specify a target."""
+    not correspond to a unique specification target.
     
+    Sub-classes must define a schema requiring the user to specify a target.
+    """
     def distribution(self, data):
         target = data['target']
         if IDistribution.providedBy(target):
@@ -982,7 +984,8 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
 
     def validate(self, data):
         """Ensures that the name chosen for the new specification is unique
-        within the context of the chosen target."""
+        within the context of the chosen target.
+        """
         name = data['name']
         target = data['target']
         if target.getSpecification(name):
