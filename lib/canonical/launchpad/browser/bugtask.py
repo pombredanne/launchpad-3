@@ -954,7 +954,7 @@ class BugTaskEditView(LaunchpadEditFormView):
             if bugtask.milestone:
                 milestone_cleared = bugtask.milestone
             else:
-                if self.widget['milestone'].getInputValue() is not None:
+                if self.widgets['milestone'].getInputValue() is not None:
                     milestone_ignored = True
 
             bugtask.milestone = None
