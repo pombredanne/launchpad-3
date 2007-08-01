@@ -115,6 +115,7 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
     @property
     def publishing_record(self):
+        """See `ArchiveFilePublisherBase`."""
         return self.sourcepackagepublishing
 
 
@@ -167,6 +168,7 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
     @property
     def publishing_record(self):
+        """See `ArchiveFilePublisherBase`."""
         return self.binarypackagepublishing
 
 

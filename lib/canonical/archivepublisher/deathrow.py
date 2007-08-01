@@ -75,6 +75,42 @@ class DeathRow:
             orderBy="id")
         return (source_files, binary_files)
 
+    def canRemove(self, publication_class, filename):
+        """Whether or not a filename can be remove of the archive pool.
+
+        Check the archive reference-counter implemented in:
+        `SourcePackageFilePublishing` or `BinaryPackageFilePublishing`.
+
+        Only allow removal of unnecessary files.
+        """
+        # XXX cprov 20070723: 'prejoin'ing {S,B}PPH would help, but we can
+        # not do it dynamically due to the hack performed by
+        # IArchiveFilePublishing.publishing_record. Although, something in
+        # direction of default_prejoins = 'SPPH' or 'BPPH' would work very
+        # well for Source/BinaryPackageFilePublishing class.
+
+        all_publications = publication.select("""
+           libraryfilealiasfilename = %s AND
+           distribution = %s AND
+           archive = %s
+        """ % sqlvalues(filename, self.distribution,
+                        self.distribution.main_archive))
+
+        right_now = datetime.datetime.now(pytz.timezone('UTC'))
+
+        for file_pub in all_publications:
+            # Deny removal if any reference is still active.
+            if (file_pub.publishingstatus !=
+                PackagePublishingStatus.PENDINGREMOVAL):
+                return False
+            # Deny removal if any reference is still in 'quarantine'.
+            # See PubConfig.pendingremovalduration value.
+            if (file_pub.publishing_record.scheduleddeletiondate >
+                right_now):
+                return False
+
+        return True
+
     def _tryRemovingFromDisk(self, condemned_source_files,
                              condemned_binary_files):
         """Take the list of publishing records provided and unpublish them.
@@ -83,66 +119,50 @@ class DeathRow:
         this will result in the files being removed if they're not otherwise
         in use.
         """
-
-        def updateDetails(p):
-            fn = p.libraryfilealiasfilename
-            sn = p.sourcepackagename
-            cn = p.componentname
-            filename = self.diskpool.pathFor(cn, sn, fn)
-            details.setdefault(filename, [cn, sn, fn])
-            condemned_files.add(filename)
-            condemned_records.add(p.publishing_record)
-
-        def canRemove(content, filename):
-            # XXX cprov 20070723: 'prejoin'ing {S,B}PPH would help, but we can
-            # not do it dynamically due to the hack performed by
-            # IArchiveFilePublishing.publishing_record. Although, something in
-            # direction of default_prejoins = 'SPPH' or 'BPPH' would work very
-            # well for Source/BinaryPackageFilePublishing class.
-            all_publications = content.select("""
-            libraryfilealiasfilename = %s AND distribution = %s AND
-            archive = %s""" % sqlvalues(
-                filename, self.distribution, self.distribution.main_archive))
-            for p in all_publications:
-                if p.publishingstatus != PackagePublishingStatus.PENDINGREMOVAL:
-                    return False
-                if p.publishing_record.scheduleddeletiondate > right_now:
-                    return False
-            return True
-
         bytes = 0
         condemned_files = set()
         condemned_records = set()
         details = {}
-        right_now = datetime.datetime.now(pytz.timezone('UTC'))
 
         content_files = (
             (SourcePackageFilePublishing, condemned_source_files),
             (BinaryPackageFilePublishing, condemned_binary_files),)
 
-        for content, pub_files in content_files:
-            for pub in pub_files:
-                filename = pub.libraryfilealiasfilename
-                if canRemove(content, filename):
-                    updateDetails(pub)
+        for publication_class, pub_files in content_files:
+            for pub_file in pub_files:
+                # Check if the removal is allowed, if not continue.
+                if not self.canRemove(
+                    publication_class, pub_file.libraryfilealiasfilename):
+                    continue
+                # Update local containers, in preparation to file removal.
+                pub_file_details = (
+                    pub_file.libraryfilealiasfilename,
+                    pub_file.sourcepackagename,
+                    pub_file.componentname,
+                    )
+                file_path = self.diskpool.pathFor(*pub_file_details)
+                details.setdefault(file_path, pub_file_details)
+                condemned_files.add(file_path)
+                condemned_records.add(pub_file.publishing_record)
 
         self.logger.info(
             "Removing %s files marked for reaping" % len(condemned_files))
 
-        for f in condemned_files:
+        for condemened_file in sorted(condemned_files, reverse=True):
+            file_name, source_name, component_name = details[condemened_file]
             try:
-                cn, sn, fn = details[f]
-                bytes += self._removeFile(cn, sn, fn)
+                bytes += self._removeFile(
+                    component_name, source_name, file_name)
             except NotInPool:
                 # It's safe for us to let this slide because it means that
                 # the file is already gone.
                 self.logger.debug(
                     "File to remove %s %s/%s is not in pool, skipping" %
-                    (cn, sn, fn))
+                    (component_name, source_name, file_name))
             except:
                 self.logger.exception(
                     "Removing file %s %s/%s generated exception, continuing" %
-                    (cn, sn, fn))
+                    (component_name, source_name, file_name))
 
         self.logger.info("Total bytes freed: %s" % bytes)
 
