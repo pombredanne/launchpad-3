@@ -889,8 +889,8 @@ class NewSpecificationView(LaunchpadFormView):
         sprint = self.sprint(data)
         if sprint is not None:
             spec.linkSprint(sprint, self.user)
-        # Redirect the user to the next location.
-        self.next_url = canonical_url(self.next(spec))
+        # Set the default value for the next URL.
+        self._next_url = canonical_url(spec)
 
     def distribution(self, data):
         """Returns a distribution from the given context and form data."""
@@ -908,14 +908,15 @@ class NewSpecificationView(LaunchpadFormView):
         """Returns a sprint from the given context and form data."""
         return None
 
-    def next(self, spec):
-        """Returns a context object corresponding to the location in
-        Launchpad to take the user on creation of a new specification.
+    @property
+    def next_url(self):
+        """Returns a URL corresponding to the location to take the user on 
+        creation of a new specification.
 
-        The default implementation returns the new specification itself. 
-        Subclasses can override this behaviour by returning an alternative
-        context object."""
-        return spec
+        The default implementation returns a URL for the new specification
+        itself. Subclasses can override this behaviour by returning an
+        alternative URL."""
+        return self._next_url
 
 
 class NewSpecificationFromTargetView(NewSpecificationView):
@@ -1014,8 +1015,9 @@ class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
     def sprint(self, data):
         return self.context
 
-    def next(self, spec):
-        return self.context
+    @property
+    def next_url(self):
+        return canonical_url(self.context)
 
 
 class SpecificationLinkBranchView(LaunchpadFormView):
