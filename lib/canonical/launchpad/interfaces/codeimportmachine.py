@@ -14,7 +14,7 @@ from zope.interface import Interface
 from zope.schema import Choice, Datetime, Int, TextLine
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.enum import DBEnumeratedType, DBItem
+from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class CodeImportMachineState(DBEnumeratedType):

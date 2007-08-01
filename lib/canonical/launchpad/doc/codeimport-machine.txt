@@ -106,5 +106,5 @@ the status is indeed updated.
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> machine = machine_set.getByHostname('frobisher.example.com')
     >>> machine.state
-    <DBItem CodeImportMachineState.Online, (20) Online>
+    <DBItem CodeImportMachineState.ONLINE, (20) Online>
 
