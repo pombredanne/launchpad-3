@@ -31,8 +31,8 @@ Two branches are needed in order to define a landing target.
     >>> target_branch = branch_set.getByUniqueName(
     ...     '~name12/gnome-terminal/main')
 
-    >>> branch_landing_target_set = getUtility(IBranchMergeProposalSet)
-    >>> landing_target = branch_landing_target_set.new(
+    >>> branch_merge_proposal_set = getUtility(IBranchMergeProposalSet)
+    >>> merge_proposal = branch_merge_proposal_set.new(
     ...     sample_person, source_branch, target_branch)
 
 
@@ -40,23 +40,25 @@ Two branches are needed in order to define a landing target.
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import IBranchMergeProposal
-    >>> verifyObject(IBranchMergeProposal, landing_target)
+    >>> verifyObject(IBranchMergeProposal, merge_proposal)
     True
-    >>> verifyObject(IBranchMergeProposalSet, branch_landing_target_set)
+    >>> verifyObject(IBranchMergeProposalSet, branch_merge_proposal_set)
     True
 
 
 == Canonical URL ==
 
-The URL of a branch landing target is quite long, due to the canonical
-URL defined for branches.  Since the products of the two branches must
-be the same, the product part of the target branch does not need to be
-in the path expression.
+The URL of a branch merge proposal is based on the source branch.
+In order to keep the URL managable, the database ID of the merge
+proposal is used.
 
     >>> login('test@canonical.com')
     >>> from canonical.launchpad.webapp import canonical_url
-    >>> print canonical_url(landing_target)
-    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+target/name12/main
+    >>> url = canonical_url(merge_proposal)
+    >>> url[url.rfind('/')+1:] == str(merge_proposal.id)
+    True
+    >>> print url
+    http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/...
 
 
 == Creation constraints ==
@@ -64,26 +66,26 @@ in the path expression.
 The BranchMergeProposalSet.new method raises exceptions for invalid parameters.
 
     >>> junk_branch = branch_set.getByUniqueName('~name12/+junk/junk.dev')
-    >>> branch_landing_target_set.new(
+    >>> branch_merge_proposal_set.new(
     ...     sample_person, junk_branch, target_branch)
     Traceback (most recent call last):
     ...
     InvalidBranchMergeProposal: Junk branches cannot be used as source branches.
 
-    >>> branch_landing_target_set.new(
+    >>> branch_merge_proposal_set.new(
     ...     sample_person, source_branch, junk_branch)
     Traceback (most recent call last):
     ...
     InvalidBranchMergeProposal: Junk branches cannot be used as target branches.
 
-    >>> branch_landing_target_set.new(
+    >>> branch_merge_proposal_set.new(
     ...     sample_person, source_branch, source_branch)
     Traceback (most recent call last):
     ...
     InvalidBranchMergeProposal: Source and target branches must be different.
 
     >>> firefox_branch = branch_set.getByUniqueName('~name12/firefox/main')
-    >>> branch_landing_target_set.new(
+    >>> branch_merge_proposal_set.new(
     ...     sample_person, firefox_branch, target_branch)
     Traceback (most recent call last):
     ...
