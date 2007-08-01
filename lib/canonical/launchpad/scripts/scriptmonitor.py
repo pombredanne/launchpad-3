@@ -1,6 +1,6 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
-"""List all team members: name, preferred email address."""
+"""Monitor whether scripts have run between specified time periods."""
 
 __metaclass__ = type
 __all__ = ['check_script']
@@ -19,6 +19,7 @@ def check_script(con, log, hostname, scriptname, completed_from, completed_to):
         FROM ScriptActivity
         WHERE hostname=%s AND name=%s
             AND date_completed BETWEEN %s AND %s
+        LIMIT 1
         """ % sqlvalues(hostname, scriptname, completed_from, completed_to))
     try:
         script_id = cur.fetchone()[0]
@@ -31,12 +32,12 @@ def check_script(con, log, hostname, scriptname, completed_from, completed_to):
                 WHERE hostname=%s AND name=%s
             """ % sqlvalues(hostname, scriptname))
             date_last_seen = cur.fetchone()[0]
-            if not date_last_seen:
+            if date_last_seen is None:
                 raise
             output = ("The script '%s' didn't run on '%s' between "
                 "%s and %s (last seen %s)"
-                    % (scriptname, hostname, completed_from,
-                        completed_to, date_last_seen))
+                % (scriptname, hostname, completed_from,
+                    completed_to, date_last_seen))
             log.fatal(output)
         except:
             output = ("The script '%s' didn't run on '%s' between %s and %s"

@@ -24,6 +24,7 @@ def main():
     # XXX: Tom Haddon 2007-07-12 
     # There's a lot of untested stuff here: parsing options and sending
     # emails - this should be moved into a testable location.
+    # Also duplicated code in scripts/script-monitor-nagios.py
     parser = OptionParser(
             '%prog [options] (minutes) (host:scriptname) [host:scriptname]'
             )

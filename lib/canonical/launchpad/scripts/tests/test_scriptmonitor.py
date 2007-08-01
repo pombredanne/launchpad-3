@@ -2,6 +2,8 @@
 
 """Test scriptmonitor.py."""
 
+__metaclass__ = type
+
 import unittest
 
 from canonical import lp

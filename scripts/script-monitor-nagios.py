@@ -1,7 +1,7 @@
 #!/usr/bin/python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Monitor scripts."""
+"""Nagios plugin for script monitoring."""
 
 __metaclass__ = type
 __all__ = ['check_script']
@@ -28,6 +28,7 @@ def main():
     # XXX: Tom Haddon 2007-07-12 
     # There's a lot of untested stuff here: parsing options - 
     # this should be moved into a testable location.
+    # Also duplicated code in scripts/script-monitor.py
     parser = OptionParser(
             '%prog [options] (minutes) (host:scriptname) [host:scriptname]'
             )
