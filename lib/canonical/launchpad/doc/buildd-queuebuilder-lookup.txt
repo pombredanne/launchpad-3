@@ -145,7 +145,8 @@ For a distroseries in DEVELOPMENT state, which means UNSTABLE, we
 expect to retrieve the following publications:
 
  * All PPA publications
- * All main_archive publication, including RELEASE and post-release pockets
+ * All main_archive publications, including RELEASE and post-release pockets
+ * All other distro archives
 
     >>> hoary = ubuntu['hoary']
     >>> hoary.status.name
@@ -157,13 +158,15 @@ IDistroSeries.canUploadToPocket). This nuance will be more explored
 when fixing #67790 when we will start publishing and building
 post-release pocket in FROZEN state.
 
-Summing up, all the 6 test publications will be returned from the lookup:
+Summing up, all the 8 test publications will be returned from the lookup:
 
     >>> probe_candidates(hoary)
     PUBLISHED RELEASE True
     PENDING RELEASE True
     PUBLISHED UPDATES True
     PENDING UPDATES True
+    PUBLISHED RELEASE False
+    PENDING RELEASE False
     PUBLISHED RELEASE False
     PENDING RELEASE False
 

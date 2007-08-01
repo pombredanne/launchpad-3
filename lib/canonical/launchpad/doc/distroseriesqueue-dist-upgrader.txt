@@ -298,7 +298,7 @@ files in the respective PPA location.
   >>> beta_testers.addMember(name16, admin)
 
   >>> foobar_archive = getUtility(IArchiveSet).new(purpose=ArchivePurpose.PPA,
-  ...     owner=name16)
+  ...     distribution=ubuntutest, owner=name16)
 
   >>> insecure_policy.archive = foobar_archive
 

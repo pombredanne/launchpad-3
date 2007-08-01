@@ -35,20 +35,21 @@ An Archive can be retrieved via IPerson.archive SingleJoin:
   >>> name16.archive == sandbox_archive
   True
 
+Alter the distribution for name16's archive before continuing (ubuntutest
+has a working LucilleConfig):
+
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+  >>> removeSecurityProxy(sandbox_archive).distribution = ubuntutest
 
 IArchive has a method to provide a modified Publisher Configuration (see
 lib/archivepublisher/config.py), which provides the right paths for its
 publication according to the given distribution:
 
-  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-  >>> sandbox_archive = archive_set.new(distribution=ubuntutest,
-  ...     purpose=ArchivePurpose.PPA, owner=name16)
-
   >>> proxied_pubconfig = sandbox_archive.getPubConfig()
 
 XXX cprov 20061127: Publisher Config is missing interface.
 
-  >>> from zope.security.proxy import removeSecurityProxy
   >>> pubconfig = removeSecurityProxy(proxied_pubconfig)
 
 The base Archive publication location is set in the current Launchpad
