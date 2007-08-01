@@ -27,6 +27,7 @@ class CodeImportMachine(SQLBase):
     implements(ICodeImportMachine)
 
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
+
     hostname = StringCol(default=None)
     state = EnumCol(schema=CodeImportMachineState, notNull=False,
         default=CodeImportMachineState.OFFLINE)

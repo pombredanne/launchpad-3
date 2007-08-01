@@ -1,4 +1,4 @@
-# Copyright 2007 Canonical Ltd.  All rights reserved.
+ # Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Code import machine interfaces."""
 
@@ -49,8 +49,10 @@ class ICodeImportMachine(Interface):
     """A machine that can perform imports."""
 
     id = Int(readonly=True, required=True)
+
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
+
     hostname = TextLine(
         title=_('Host name'), required=True,
         description=_('The hostname of the machine.'))

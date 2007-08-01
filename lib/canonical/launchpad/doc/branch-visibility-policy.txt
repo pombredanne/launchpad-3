@@ -14,7 +14,7 @@ non-specifying of a team means *everyone*.
 
 The Policy is defined by the enumerated type BranchVisibilityRule.
 
-    >>> from canonical.lp.dbschema import BranchVisibilityRule
+    >>> from canonical.launchpad.interfaces import BranchVisibilityRule
 
 There are currently four visibility policies:
  * Public - branches are public by default for the specified team.
@@ -295,7 +295,7 @@ created as a private branch, but since there are two teams that specify
 privacy, the branch is created so only Foo Bar can see it.  It is up to
 Foo Bar to subscribe the appropriate team at a later date.
 
-    >>> from canonical.lp.dbschema import BranchType
+    >>> from canonical.launchpad.interfaces import BranchType
     >>> branch = branch_set.new(
     ...     branch_type=BranchType.HOSTED,
     ...     name="testing-1", creator=foo_bar, owner=foo_bar,

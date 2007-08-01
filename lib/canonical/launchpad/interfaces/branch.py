@@ -10,6 +10,7 @@ __all__ = [
     'BranchCreatorNotMemberOfOwnerTeam',
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
+    'BranchType',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
@@ -30,9 +31,9 @@ from canonical.launchpad.fields import Title, Summary, URIField, Whiteboard
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner
-from canonical.launchpad.webapp.enum import (
-    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
+from canonical.lazr import (
+    DBEnumeratedType, DBItem, EnumeratedType, Item, use_template)
 
 
 class BranchLifecycleStatus(DBEnumeratedType):
@@ -91,6 +92,34 @@ class BranchLifecycleStatus(DBEnumeratedType):
 
         This branch contains work which the author has abandoned, likely
         because it did not prove fruitful.
+        """)
+
+
+class BranchType(DBEnumeratedType):
+    """Branch Type
+
+    The type of a branch determins the branch interaction with a number
+    of other subsystems.
+    """
+
+    HOSTED = DBItem(1, """
+        Hosted
+
+        Hosted branches have their main repository on the supermirror.
+        """)
+
+    MIRRORED = DBItem(2, """
+        Mirrored
+
+        Mirrored branches are primarily hosted elsewhere and are
+        periodically pulled from the remote site into the supermirror.
+        """)
+
+    IMPORTED = DBItem(3, """
+        Imported
+
+        Imported branches have been converted from some other revision
+        control system into bzr and are made available through the supermirror.
         """)
 
 
@@ -173,7 +202,7 @@ class IBranch(IHasOwner):
 
     id = Int(title=_('ID'), readonly=True, required=True)
     branch_type = Choice(
-        title=_("Branch type"), required=True, vocabulary='BranchType',
+        title=_("Branch type"), required=True, vocabulary=BranchType,
         description=_("Hosted branches have Launchpad code hosting as the "
                       "primary location and can be pushed to.  Mirrored "
                       "branches are pulled from the remote location "
@@ -278,6 +307,10 @@ class IBranch(IHasOwner):
         description=_("Disable periodic pulling of this branch by Launchpad. "
                       "That will prevent connection attempts to the branch "
                       "URL. Use this if the branch is no longer available."))
+    mirror_request_time = Datetime(
+        title=_("If this value is more recent than the last mirror attempt, "
+                "then the branch will be mirrored on the next mirror run."),
+        required=False)
 
     # Scanning attributes
     last_scanned = Datetime(
@@ -386,6 +419,28 @@ class IBranch(IHasOwner):
                bzrlib.Branch.revision_history().
             3. Dictionnary mapping bzr bzr revision-ids to the database ids of
                the corresponding BranchRevision rows for this branch.
+        """
+
+    def requestMirror():
+        """Request that this branch be mirrored on the next run of the branch
+        puller.
+        """
+
+    def startMirroring():
+        """Signal that this branch is being mirrored."""
+
+    def mirrorComplete(last_revision_id):
+        """Signal that a mirror attempt has completed successfully.
+
+        :param last_revision_id: The revision ID of the tip of the mirrored
+            branch.
+        """
+
+    def mirrorFailed(reason):
+        """Signal that a mirror attempt failed.
+
+        :param reason: An error message that will be displayed on the branch
+            detail page.
         """
 
 
@@ -636,6 +691,18 @@ class IBranchSet(Interface):
         If None is passed in for the visible_by_user parameter
         only public branches are returned.
         """
+
+    def getHostedPullQueue():
+        """Return the queue of hosted branches to mirror using the puller."""
+
+    def getMirroredPullQueue():
+        """Return the queue of mirrored branches to mirror using the puller."""
+
+    def getImportedPullQueue():
+        """Return the queue of imported branches to mirror using the puller."""
+
+    def getPullQueue():
+        """Return the entire queue of branches to mirror using the puller."""
 
 
 class IBranchDelta(Interface):

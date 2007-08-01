@@ -80,6 +80,7 @@ class ICodeImport(Interface):
         constraint=validate_cvs_root,
         description=_("The CVSROOT. "
             "Example: :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome"))
+
     cvs_module = TextLine(title=_("Module"), required=False,
         constraint=validate_cvs_module,
         description=_("The path to import within the repository."
