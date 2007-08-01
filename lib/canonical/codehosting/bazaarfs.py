@@ -291,21 +291,20 @@ class WriteLoggingFile(osfs.OSFile):
         osfs.OSFile.writeChunk(self, offset, data)
 
 
-class _RenameProtectionDecorator:
-    """A decorator for OSFile and OSDirectory to prevent users from creating
-    forbidden files or directories.
-    """
+class NameRestrictedWriteLoggingDirectory(WriteLoggingDirectory):
+    """`WriteLoggingDirectory` that is restricted to a small list of names."""
 
-    def __init__(self, original):
-        self.original = original
+    def __init__(self, flagAsDirty, path, name=None, parent=None):
+        self._checkName(name)
+        WriteLoggingDirectory.__init__(self, flagAsDirty, path, name, parent)
 
-    def __getattr__(self, name):
-        return getattr(self.original, name)
+    def _checkName(self, name):
+        if name not in ALLOWED_DIRECTORIES:
+            raise PermissionError(FORBIDDEN_DIRECTORY_ERROR % (name,))
 
-    def rename(self, newName):
-        if newName not in ALLOWED_DIRECTORIES:
-            raise PermissionError(FORBIDDEN_DIRECTORY_ERROR % (newName,))
-        return self.original.rename(newName)
+    def rename(self, new_name):
+        self._checkName(new_name)
+        return WriteLoggingDirectory.rename(self, new_name)
 
 
 class SFTPServerBranch(WriteLoggingDirectory):
@@ -330,10 +329,17 @@ class SFTPServerBranch(WriteLoggingDirectory):
         if not os.path.exists(self.realPath):
             os.makedirs(self.realPath)
 
-    def child(self, childName):
-        return _RenameProtectionDecorator(
-            WriteLoggingDirectory.child(self, childName))
+    def childDirFactory(self):
+        def childWithListener(path, name, parent):
+            return NameRestrictedWriteLoggingDirectory(
+                self._flagAsDirty, path, name, parent)
+        return childWithListener
 
+    def createFile(self, name, exclusive=True):
+        raise PermissionError(
+            "Can only create Bazaar control directories directly beneath a "
+            "branch directory.")
+    
     def remove(self):
         raise PermissionError(
             "removing branch directory %r is not allowed." % self.name)
@@ -350,11 +356,3 @@ class SFTPServerBranch(WriteLoggingDirectory):
             root = self.parent.parent.parent
             self._listener = root.listenerFactory(self.branchID)
         self._listener()
-
-    def createDirectory(self, name):
-        if name not in ALLOWED_DIRECTORIES:
-            raise PermissionError(
-                "Can only create .bzr directories in branch directories: %s"
-                % (name,))
-        return _RenameProtectionDecorator(
-            WriteLoggingDirectory.createDirectory(self, name))
