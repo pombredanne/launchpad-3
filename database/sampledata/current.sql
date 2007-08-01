@@ -3227,16 +3227,19 @@ We like to show python too (V).
 We do not want to see signatures and END PGP.
 We want to see two ellipses (V).
 
+-- 
 __PERSON SURNAME_______
 person.surname@example.org
 Guilty of stealing everything I am.
 
+-----BEGIN PGP SIGNATURE-----
 Version: GnuPG v1.4.1 (GNU/Linux)
 Comment: Using GnuPG with Thunderbird
 
 iD8DBQFED60Y0F+nu1YWqI0RAqrNAJ9hTww5vqDbxp4xJS8ek58W
 T2PIWy0CUJsX8RXSt/M51WE=
 =J2S5
+-----END PGP SIGNATURE-----
 ', NULL, NULL);
 
 

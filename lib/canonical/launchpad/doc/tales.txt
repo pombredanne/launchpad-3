@@ -161,6 +161,10 @@ wrapped in markup to hide them:
     ...                      'This is a reply to the line above.\n'
     ...                      'This is a continuation line.'
     ...                      '\n')
+    >>> weird_quoted_text = ('Ms. Y wrote:\n'
+    ...                      '>> This is a double quoted line\n'
+    ...                      '>> > This is a triple quoted line.\n'
+    ...                      '\n')
     >>> dpkg = ('dpkg -l libdvdread3\n'
     ...         'Desired=Unknown/Install/Remove/Purge/Hold\n'
     ...         '| Status=Not/Installed/Config-files/Unpacked/Failed-co\n'
@@ -188,7 +192,7 @@ wrapped in markup to hide them:
     ...           '>>> print tz.localize(mydate)\n'
     ...           '2007-02-18 15:35:00+05:30\n'
     ...           '\n')
-    >>> not_python = ('>> This line really is a quoted passage.\n'
+    >>> not_python = ('> This line really is a quoted passage.\n'
     ...               '>>> This does not invoke an exception rule.\n'
     ...               '\n')
     >>> signature = ('-- \n'
@@ -270,8 +274,8 @@ foldable span.
 Quoted passages are treated somewhat different from signatures because
 they often have a citation line before the quoted text. In this
 example of the main paragraph and the quoted paragraph, only the
-lines that start with the quote identifier ('>' in this case) are
-wrapped with the foldable span.
+lines that start with the quote identifier ('> ' in this case) are
+wrapped with the foldable-quoted span.
 
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo='\n'.join([text, quoted_text, quoted_text_all]))
@@ -280,12 +284,12 @@ wrapped with the foldable span.
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
     <p>Somebody said sometime ago:<br />
-    <span class="foldable">
+    <span class="foldable-quoted">
     &gt; 1. Remove the letters  c, j, q, x, w<br />
     &gt;    from the English Language.<br />
     &gt; 2. Remove the penny from US currency.
     </span></p>
-    <p><span class="foldable">&gt; continuing from a previous thought.<br />
+    <p><span class="foldable-quoted">&gt; continuing from a previous thoug...
     &gt; 3. Get new handwriting.<br />
     &gt; 4. Add Year Zero to the calendar.
     </span></p>
@@ -294,12 +298,12 @@ The reverse order works too:
 
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo='\n'.join([quoted_text_all, quoted_text, text]))
-    <p><span class="foldable">&gt; continuing from a previous thought.<br />
+    <p><span class="foldable-quoted">&gt; continuing from a previous thoug...
     &gt; 3. Get new handwriting.<br />
     &gt; 4. Add Year Zero to the calendar.
     </span></p>
     <p>Somebody said sometime ago:<br />
-    <span class="foldable">
+    <span class="foldable-quoted">
     &gt; 1. Remove the letters  c, j, q, x, w<br />
     &gt;    from the English Language.<br />
     &gt; 2. Remove the penny from US currency.
@@ -314,7 +318,7 @@ Paragraphs that mix quoted and reply text fold only the quoted lines.
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo='\n'.join([mixed_quoted_text, text]))
     <p>Mister X wrote:<br />
-    <span class="foldable">
+    <span class="foldable-quoted">
     &gt; This is a quoted line<br />
     </span>
     This is a reply to the line above.<br />
@@ -323,6 +327,17 @@ Paragraphs that mix quoted and reply text fold only the quoted lines.
     The words of the leading text should be displayed<br />
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
+
+Quoting style vary between email clients, and how the user starts the
+quote. Starting runs like '>> ' are as valid as '> ', so they are
+wrapped in a foldable-quoted span.
+
+    >>> print test_tales('foo/fmt:email-to-html', foo=weird_quoted_text)
+    <p>Ms. Y wrote:<br />
+    <span class="foldable-quoted">
+    &gt;&gt; This is a double quoted line<br />
+    &gt;&gt; &gt; This is a triple quoted line.
+    </span></p>
 
 Dpkg generates lines that start with a '|' that will be confused with
 quoted text. Dpkg is common in messages, and when it is, we do not
@@ -337,7 +352,7 @@ output and not fold it.
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
     <p>Someone said sometime ago:<br />
-    <span class="foldable">
+    <span class="foldable-quoted">
     | Quote passages are folded.
     </span></p>
 
@@ -367,18 +382,17 @@ output and not fold it.
     +++-===<wbr></wbr>=======<wbr></wbr>====-==<wbr></wbr>=======...
     ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs</p>
 
-We do not fold text that is quoted more than two levels, because
-tools like Python and diff use multiple '>' to start lines.
-Output from the Python interpreter is not quoted text. Note that
-three or more '>' symbols inside an existing quoted passage will be
-folded because they are a continuation of a quote.
+The output from the Python interpreter is not quoted text. Passages
+of text that start with '>>> ' are exempted from the 'foldable-quoted'
+rules. Note that when '>>> ' occurs inside an existing quoted passage
+it will be folded because they are a continuation of a quote.
 
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo='\n'.join([python, not_python]))
     <p>&gt;&gt;&gt; tz = pytz.timezone(<wbr></wbr>"Asia/Calcutta"...
     &gt;&gt;&gt; mydate = datetime.<wbr></wbr>datetime(<wbr></wbr>2007, 2, ...
     2007-02-18 15:35:00+05:30</p>
-    <p><span class="foldable">&gt;&gt; This line really is a quoted ...
+    <p><span class="foldable-quoted">&gt; This line really is a quoted ...
     &gt;&gt;&gt; This does not invoke an exception rule.
     </span></p>
 
@@ -392,7 +406,7 @@ it must markup. We can format the three examples at the same time.
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
     <p>Somebody said sometime ago:<br />
-    <span class="foldable"...>
+    <span class="foldable-quoted"...>
     &gt; 1. Remove the letters  c, j, q, x, w<br />
     &gt;    from the English Language.<br />
     &gt; 2. Remove the penny from US currency.
@@ -402,7 +416,7 @@ it must markup. We can format the three examples at the same time.
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
     <p>Somebody said sometime ago:<br />
-    <span class="foldable"...>
+    <span class="foldable-quoted"...>
     &gt; 1. Remove the letters  c, j, q, x, w<br />
     &gt;    from the English Language.<br />
     &gt; 2. Remove the penny from US currency.

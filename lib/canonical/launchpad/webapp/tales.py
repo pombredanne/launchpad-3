@@ -1372,18 +1372,17 @@ class FormattersAPI:
                     % cgi.escape(self._stringtoformat)
                     )
 
-    # Match lines that start with the ':', '|', and '>' symbols commonly
-    # used for quoting passages from another email. We support 2 levels of
-    # quotation. The dpkg version is used for exceptional cases where it
+    # Match lines that start with one or more quote symbols followed
+    # by a space. Quote symbols are commonly '|', or '>'; they are
+    # used for quoting passages from another email. Both '>> ' and
+    # '> > ' are valid quoting sequences.
+    # The dpkg version is used for exceptional cases where it
     # is better to not assume '|' is a start of a quoted passage.
-    _re_quoted = re.compile('^([|][|]? |&gt; |&gt;&gt; |-----BEGIN PGP)')
-    _re_dpkg_quoted = re.compile('^(&gt; |&gt;&gt; |-----BEGIN PGP)')
+    _re_quoted = re.compile('^(([|] ?)+ |(&gt; ?)+ )')
+    _re_dpkg_quoted = re.compile('^(&gt; ?)+ ')
 
-    # Match blocks that start as signatures, quoted passages, or PGP.
-    _re_block_include = re.compile(
-        '^<p>(--<br />|\|\|? |&gt; |&gt;&gt; |-----BEGIN PGP)')
-    # Match a line starting with '>' (implying text email or quoting by hand).
-    _re_quoted_line = re.compile('^&gt;')
+    # Match blocks that start as signatures or PGP inclusions.
+    _re_include = re.compile('^<p>(--<br />|-----BEGIN PGP)')
 
     def email_to_html(self):
         """text_to_html and hide signatures and full-quoted emails.
@@ -1394,12 +1393,21 @@ class FormattersAPI:
         content's display behavior.
         """
         start_fold_markup = '<span class="foldable">'
+        start_fold_quoted_markup = '<span class="foldable-quoted">'
         end_fold_markup = '%s\n</span></p>'
         re_quoted = self._re_quoted
+        re_include = self._re_include
         output = []
         in_fold = False
         in_quoted = False
         in_false_paragraph = False
+
+        def is_quoted(line, re):
+            """Test that a line is a quote and not Python."""
+            python_block = '&gt;&gt;&gt; '
+            return (not line.startswith(python_block)
+                and re_quoted.match(line) is not None)
+
         for line in self.text_to_html().split('\n'):
             if 'Desired=<wbr></wbr>Unknown/' in line and not in_fold:
                 # When we see a evidence of dpkg output, we switch the
@@ -1409,16 +1417,19 @@ class FormattersAPI:
                 # output header, we change the rules regardless of if the
                 # lines that follow are legitimate.
                 re_quoted = self._re_dpkg_quoted
-            elif not in_fold and self._re_block_include.match(line) is not None:
-                # Start a foldable paragraph for a signature or quote.
+            elif not in_fold and re_include.match(line) is not None:
+                # Start a foldable paragraph for a signature or PGP inclusion.
                 in_fold = True
                 line = '<p>%s%s' % (start_fold_markup, line[3:])
-            elif not in_fold and re_quoted.match(line) is not None:
-                # Start a foldable section for a quoted passage.
-                if self._re_quoted_line.match(line):
-                    in_quoted = True
+            elif not in_fold and is_quoted(line[3:], re_quoted):
+                # Start a foldable quoted paragraph.
                 in_fold = True
-                output.append(start_fold_markup)
+                line = '<p>%s%s' % (start_fold_quoted_markup, line[3:])
+            elif not in_fold and is_quoted(line, re_quoted):
+                # Start foldable quoted lines in a paragraph.
+                in_quoted = True
+                in_fold = True
+                output.append(start_fold_quoted_markup)
             else:
                 # The start of this line is not extraordinary.
                 pass
@@ -1428,16 +1439,21 @@ class FormattersAPI:
             if in_fold and line.endswith('</p>'):
                 if not in_false_paragraph:
                     # End the foldable section.
-                    if in_quoted and self._re_quoted_line.match(line) is None:
+                    if in_quoted and self._re_quoted.match(line) is None:
                         # The last line of the paragraph is not quoted.
-                        output.append("</span><br />\n")
+                        if output[-2].startswith('<span'):
+                            # This line is the only quoted line.
+                            output.append("</span>\n")
+                        else:
+                            # Quoted lines preceeded this line.
+                            output.append("</span><br />\n")
                     in_fold = False
                     in_quoted = False
                     line = end_fold_markup % line[0:-4]
                 else:
                     # Restore the line break to join with the next paragraph.
                     line = '%s<br />\n<br />' %  line[0:-4]
-            elif in_quoted and self._re_quoted_line.match(line) is None:
+            elif in_quoted and re_quoted.match(line) is None:
                 # End fold early because paragraph contains mixed quoted 
                 # and reply text.
                 in_fold = False
