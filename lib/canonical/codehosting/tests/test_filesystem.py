@@ -175,8 +175,8 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
 
     @deferToThread
     def test_non_bzr_directory_inside_branch(self):
-        # Users can only create '.bzr' directories inside a branch. Other
-        # directories are strictly forbidden.
+        # Users can only create Bazaar control directories (e.g. '.bzr') inside
+        # a branch. Other directories are strictly forbidden.
         transport = self.getTransport()
         transport.mkdir('~testuser/+junk/banana')
         self.assertPermissionDenied(
@@ -185,8 +185,8 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
     @deferToThread
     @wait_for_disconnect
     def test_non_bzr_file_inside_branch(self):
-        # Users can only create '.bzr' directories inside a branch. Files are
-        # not allowed.
+        # Users can only create Bazaar control directories (e.g. '.bzr') inside
+        # a branch. Files are not allowed.
         transport = self.getTransport()
         transport.mkdir('~testuser/+junk/banana')
         self.assertPermissionDenied(

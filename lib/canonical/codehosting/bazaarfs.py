@@ -14,7 +14,8 @@ from twisted.vfs.backends import adhoc, osfs
 from twisted.vfs.ivfs import VFSError, NotFoundError, PermissionError
 
 
-# The directories allowed directly beneath a branch directory.
+# The directories allowed directly beneath a branch directory. These are the
+# directories that Bazaar creates as part of regular operation.
 ALLOWED_DIRECTORIES = ('.bzr', '.bzr.backup')
 FORBIDDEN_DIRECTORY_ERROR = (
     "Cannot create '%s'. Only Bazaar branches are allowed.")
@@ -292,7 +293,11 @@ class WriteLoggingFile(osfs.OSFile):
 
 
 class NameRestrictedWriteLoggingDirectory(WriteLoggingDirectory):
-    """`WriteLoggingDirectory` that is restricted to a small list of names."""
+    """`WriteLoggingDirectory` that is restricted to a small list of names.
+
+    In particular, a NameRestrictedWriteLoggingDirectory can only have one of
+    the names in `ALLOWED_DIRECTORIES`.
+    """
 
     def __init__(self, flagAsDirty, path, name=None, parent=None):
         self._checkName(name)
@@ -310,8 +315,8 @@ class NameRestrictedWriteLoggingDirectory(WriteLoggingDirectory):
 class SFTPServerBranch(WriteLoggingDirectory):
     """For /~username/product/branch, and below.
 
-    Only allows '.bzr' and '.bzr.backup' directories to be made directly.
-    Underneath those directories, anything goes.
+    Direct children are restricted by name. See
+    `NameRestrictedWriteLoggingDirectory`.
     """
 
     def __init__(self, avatar, branchID, branchName, parent):
