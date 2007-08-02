@@ -13,7 +13,6 @@ __all__ = [
     ]
 
 import os
-import sys
 import tempfile
 import errno
 from email import message_from_string
@@ -32,8 +31,7 @@ from canonical.archiveuploader.tagfiles import (
     parse_tagfile, TagFileParseError)
 from canonical.archiveuploader.template_messages import (
     announce_template, rejection_template)
-from canonical.archiveuploader.utils import (
-    safe_fix_maintainer, ParseMaintError)
+from canonical.archiveuploader.utils import safe_fix_maintainer
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.encoding import ascii_smash, guess as guess_encoding
@@ -95,9 +93,16 @@ class QueueAction:
     """
 
     def __init__(self, distribution_name, suite_name, queue, terms,
+                 component_name, section_name, priority_name,
                  announcelist, display, no_mail=True, exact_match=False):
         """Initialises passed variables. """
         self.terms = terms
+        # Some actions have addtional commands at the start of the terms 
+        # so allow them to state that here by specifiying the start index.
+        self.terms_start_index = 0
+        self.component_name = component_name
+        self.section_name = section_name
+        self.priority_name = priority_name
         self.exact_match = exact_match
         self.queue = queue
         self.no_mail = no_mail
@@ -151,52 +156,63 @@ class QueueAction:
         """Builds a list of affected records based on the filter argument."""
         self.setDefaultContext()
 
-        try:
-            term = self.terms[0]
-        except IndexError:
-            # if no argument is passed, present all available results in
+        self.package_names = []
+        self.items = []
+        self.items_size = 0
+
+        # Will be set to true if the command line specified package IDs.
+        # This is required because package_names is expanded into IDs so we
+        # need another way of knowing whether the user typed them.
+        self.explicit_ids_specified = False
+
+        terms = self.terms[self.terms_start_index:]
+        if len(terms) == 0:
+            # If no argument is passed, present all available results in
             # the selected queue.
-            term = ''
+            terms.append('')
 
-        # refuse old-style '*' argument since we do not support
-        # wildcards yet.
-        if term == '*':
-            self.displayUsage(FILTERMSG)
+        for term in terms:
+            # refuse old-style '*' argument since we do not support
+            # wildcards yet.
+            if term == '*':
+                self.displayUsage(FILTERMSG)
 
-        if term.isdigit():
-            # retrieve PackageUpload item by id
-            try:
-                item = getUtility(IPackageUploadSet).get(int(term))
-            except NotFoundError, info:
-                raise QueueActionError('Queue Item not found: %s' % info)
+            if term.isdigit():
+                # retrieve PackageUpload item by id
+                try:
+                    item = getUtility(IPackageUploadSet).get(int(term))
+                except NotFoundError, info:
+                    raise QueueActionError('Queue Item not found: %s' % info)
 
-            if item.status != self.queue:
-                raise QueueActionError(
-                    'Item %s is in queue %s' % (item.id, item.status.name))
+                if item.status != self.queue:
+                    raise QueueActionError(
+                        'Item %s is in queue %s' % (item.id, item.status.name))
 
-            if (item.distroseries != self.distroseries or
-                item.pocket != self.pocket):
-                raise QueueActionError(
-                    'Item %s is in %s/%s-%s not in %s/%s-%s'
-                    % (item.id, item.distroseries.distribution.name,
-                       item.distroseries.name, item.pocket.name,
-                       self.distroseries.distribution.name,
-                       self.distroseries.name, self.pocket.name))
+                if (item.distroseries != self.distroseries or
+                    item.pocket != self.pocket):
+                    raise QueueActionError(
+                        'Item %s is in %s/%s-%s not in %s/%s-%s'
+                        % (item.id, item.distroseries.distribution.name,
+                           item.distroseries.name, item.pocket.name,
+                           self.distroseries.distribution.name,
+                           self.distroseries.name, self.pocket.name))
 
-            self.items = [item]
-            self.items_size = 1
-            self.term = None
-        else:
-            # retrieve PackageUpload item by name/version key
-            version = None
-            if '/' in term:
-                term, version = term.strip().split('/')
+                self.items.append(item)
+                self.explicit_ids_specified = True
+            else:
+                # retrieve PackageUpload item by name/version key
+                version = None
+                if '/' in term:
+                    term, version = term.strip().split('/')
 
-            self.items = self.distroseries.getQueueItems(
-                status=self.queue, name=term, version=version,
-                exact_match=self.exact_match, pocket=self.pocket)
-            self.items_size = self.items.count()
-            self.term = term
+                # Expand SQLObject results.
+                for item in self.distroseries.getQueueItems(
+                    status=self.queue, name=term, version=version,
+                    exact_match=self.exact_match, pocket=self.pocket):
+                    self.items.append(item)
+                self.package_names.append(term)
+
+        self.items_size = len(self.items)
 
     def run(self):
         """Place holder for command action."""
@@ -271,20 +287,16 @@ class QueueAction:
             for bpr in queue_build.build.binarypackages:
                 if only and only != bpr.name:
                     continue
-                dar = queue_build.build.distroarchseries
-                binarypackagename = bpr.binarypackagename.name
-                # inspect the publication history of each binary
-                darbp = dar.getBinaryPackage(binarypackagename)
-                if darbp.currentrelease is not None:
-                    status_flag = "*"
-                else:
+                if bpr.is_new:
                     status_flag = "N"
-
-                self.display("\t | %s %s/%s/%s Component: %s Section: %s "
-                             "Priority: %s"
-                             % (status_flag, binarypackagename, bpr.version,
-                                dar.architecturetag, bpr.component.name,
-                                bpr.section.name, bpr.priority.name))
+                else:
+                    status_flag = "*"
+                self.display(
+                    "\t | %s %s/%s/%s Component: %s Section: %s Priority: %s"
+                    % (status_flag, bpr.name, bpr.version,
+                       bpr.build.distroarchseries.architecturetag,
+                       bpr.component.name, bpr.section.name,
+                       bpr.priority.name))
 
         for queue_custom in queue_item.customfiles:
             self.display("\t | * %s Format: %s"
@@ -718,35 +730,52 @@ class QueueActionAccept(QueueAction):
 class QueueActionOverride(QueueAction):
     """Override information in a queue item content.
 
-    queue override <filter> [override_stanza*]
+    queue override [-c|--component] [-x|--section] [-p|--priority] <override_stanza> <filter>
 
     Where override_stanza is one of:
-    source [<component>]/[<section>]
-    binary [<component>]/[<section>]/[<priority>]
+    source
+    binary
 
-    In each case, when you want to leave an override alone leave it blank.
+    In each case, when you want to set an override supply the relevant option.
 
     So, to set a binary to have section 'editors' but leave the
     component and priority alone, do:
 
-    queue override <filter> binary /editors/
+    queue override -x editors binary <filter>
 
     Binaries can only be overridden by passing a name filter, so it will
     only override the binary package which matches the filter.
 
     Or, to set a source's section to editors, do:
 
-    queue override <filter> source /editors
+    queue override -x editors source <filter>
     """
     supported_override_stanzas = ['source', 'binary']
+
+    def __init__(self, distribution_name, suite_name, queue, terms,
+                 component_name, section_name, priority_name,
+                 announcelist, display, no_mail=True, exact_match=False):
+        """Constructor for QueueActionOverride."""
+        
+        # This exists so that self.terms_start_index can be set as this action
+        # class has a command at the start of the terms.
+        # Our first term is "binary" or "source" to specify the type of
+        # over-ride.
+        QueueAction.__init__(self, distribution_name, suite_name, queue, terms,
+                             component_name, section_name, priority_name,
+                             announcelist, display, no_mail=True, 
+                             exact_match=False)
+        self.terms_start_index = 1
 
     def run(self):
         """Perform Override action."""
         self.displayTitle('Overriding')
         self.displayRule()
 
+        # "terms" is the list of arguments starting at the override stanza
+        # ("source" or "binary").
         try:
-            override_stanza = self.terms[1]
+            override_stanza = self.terms[0]
         except IndexError, info:
             self.displayUsage('Missing override_stanza.')
             return
@@ -764,22 +793,13 @@ class QueueActionOverride(QueueAction):
         It doesn't check Component/Section Selection, this is a task
         for queue state-machine.
         """
-        try:
-            overrides = self.terms[2]
-            component_name, section_name = overrides.split('/')
-        except IndexError, info:
-            self.displayUsage('Missing override_stanza argument')
-        except ValueError, info:
-            self.displayUsage('Misapplied override_stanza argument: %s'
-                            % overrides)
-
         component = None
         section = None
         try:
-            if component_name:
-                component = getUtility(IComponentSet)[component_name]
-            if section_name:
-                section = getUtility(ISectionSet)[section_name]
+            if self.component_name:
+                component = getUtility(IComponentSet)[self.component_name]
+            if self.section_name:
+                section = getUtility(ISectionSet)[self.section_name]
         except NotFoundError, info:
             raise QueueActionError('Not Found: %s' % info)
 
@@ -792,31 +812,23 @@ class QueueActionOverride(QueueAction):
 
     def _override_binary(self):
         """Overrides binarypackagereleases selected"""
-        if not self.term:
+        if self.explicit_ids_specified:
             self.displayUsage('Cannot Override BinaryPackage retrieved by ID')
 
-        try:
-            overrides = self.terms[2]
-            component_name, section_name, priority_name = overrides.split('/')
-        except IndexError, info:
-            self.displayUsage('Missing "name override_argument" argument')
-        except ValueError, info:
-            self.displayUsage('Misapplied override_stanza argument: %s'
-                            % overrides)
         component = None
         section = None
         priority = None
         try:
-            if component_name:
-                component = getUtility(IComponentSet)[component_name]
-            if section_name:
-                section = getUtility(ISectionSet)[section_name]
-            if priority_name:
-                priority = name_priority_map[priority_name]
+            if self.component_name:
+                component = getUtility(IComponentSet)[self.component_name]
+            if self.section_name:
+                section = getUtility(ISectionSet)[self.section_name]
+            if self.priority_name:
+                priority = name_priority_map[self.priority_name]
         except (NotFoundError, KeyError), info:
             raise QueueActionError('Not Found: %s' % info)
 
-        overridden = None
+        overridden = []
         for queue_item in self.items:
             for build in queue_item.builds:
                 # Different than PackageUploadSources
@@ -825,8 +837,8 @@ class QueueActionOverride(QueueAction):
                 # So we need to carefully select the requested package to be
                 # overridden
                 for binary in build.build.binarypackages:
-                    if binary.name == self.term:
-                        overridden = binary.name
+                    if binary.name in self.package_names:
+                        overridden.append(binary.name)
                         self.display("Overriding %s_%s (%s/%s/%s)"
                                      % (binary.name, binary.version,
                                         binary.component.name,
@@ -836,11 +848,11 @@ class QueueActionOverride(QueueAction):
                                         priority=priority)
                         # break loop, just in case
                         break
+                self.displayInfo(queue_item, only=binary.name)
 
-        if not overridden:
-            self.displayUsage('No matches for "%s".' % self.term)
-
-        self.displayInfo(queue_item, only=overridden)
+        not_overridden = set(self.package_names) - set(overridden)
+        if len(not_overridden) > 0:
+            self.displayUsage('No matches for %s' % ",".join(not_overridden))
 
 
 queue_actions = {
@@ -866,12 +878,16 @@ class CommandRunnerError(Exception):
 class CommandRunner:
     """A wrapper for queue_action classes."""
     def __init__(self, queue, distribution_name, suite_name,
-                 announcelist, no_mail, display=default_display):
+                 announcelist, no_mail, component_name, section_name, 
+                 priority_name, display=default_display):
         self.queue = queue
         self.distribution_name = distribution_name
         self.suite_name = suite_name
         self.announcelist = announcelist
         self.no_mail = no_mail
+        self.component_name = component_name
+        self.section_name = section_name
+        self.priority_name = priority_name
         self.display = display
 
     def execute(self, terms, exact_match=False):
@@ -902,6 +918,9 @@ class CommandRunner:
                 no_mail=self.no_mail,
                 display=self.display,
                 terms=arguments,
+                component_name=self.component_name,
+                section_name=self.section_name,
+                priority_name=self.priority_name,
                 exact_match=exact_match)
             queue_action.initialize()
             queue_action.run()

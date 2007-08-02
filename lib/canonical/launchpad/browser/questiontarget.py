@@ -38,12 +38,12 @@ from canonical.launchpad.browser.faqcollection import FAQCollectionMenu
 from canonical.launchpad.interfaces import (
     IDistribution, IFAQCollection, ILanguageSet, IProject,
     IQuestionCollection, IQuestionSet, IQuestionTarget,
-    ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError)
+    ISearchableByQuestionOwner, ISearchQuestionsForm, NotFoundError,
+    QuestionStatus)
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, Link,
     safe_action, stepto, stepthrough, urlappend)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import QuestionStatus
 from canonical.widgets import LabeledMultiCheckBoxWidget
 
 
