@@ -40,6 +40,7 @@ def monkey_patch(mailman_path, config):
     launchpad_top = os.path.dirname(os.path.dirname(canonical.__file__))
     # Write the mm_cfg.py file, filling in the dynamic values now.
     host, port = config.mailman.smtp
+    owner_address, owner_password = config.mailman.build.site_list_owner
     config_path = os.path.join(mailman_path, 'Mailman', 'mm_cfg.py')
     config_file = open(config_path, 'w')
     try:
@@ -61,11 +62,15 @@ SMTPPORT = %(smtp_port)d
 # The endpoint for Launchpad XMLRPC calls.
 XMLRPC_URL = '%(xmlrpc_url)s'
 XMLRPC_SLEEPTIME = %(xmlrpc_sleeptime)s
+
+DEFAULT_EMAIL_HOST = 'launchpad.dev'
+SITE_LIST_OWNER = '%(site_list_owner)s'
 """ % dict(launchpad_top=launchpad_top,
            smtp_host=host,
            smtp_port=port,
            xmlrpc_url=config.mailman.xmlrpc_url,
            xmlrpc_sleeptime=config.mailman.xmlrpc_runner_sleep,
+           site_list_owner=owner_address,
            )
     finally:
         config_file.close()
