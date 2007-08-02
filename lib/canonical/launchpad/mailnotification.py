@@ -28,7 +28,7 @@ from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     IBranch, IBugTask, IEmailAddressSet, INotificationRecipientSet, IPerson,
-    ISpecification, ITeamMembershipSet, IUpstreamBugTask, 
+    ISpecification, ITeamMembershipSet, IUpstreamBugTask, QuestionAction,
     TeamMembershipStatus, UnknownRecipientError)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
@@ -36,7 +36,7 @@ from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template, shortlist)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import QuestionAction
+
 
 CC = "CC"
 
@@ -292,7 +292,8 @@ class BugNotificationRecipients(NotificationRecipientSet):
         reason = "Bug Contact (%s)" % distro.displayname
         # All displaynames in these reasons should be changed to bugtargetname
         # (as part of bug 113262) once bugtargetname is finalized for packages
-        # (bug 113258). Changing it before then would be excessively disruptive.
+        # (bug 113258). Changing it before then would be excessively
+        # disruptive.
         if person.isTeam():
             text = ("are a member of %s, which is the bug contact for %s" %
                 (person.displayname, distro.displayname))

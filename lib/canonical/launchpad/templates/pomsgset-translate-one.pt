@@ -491,9 +491,12 @@
             <tal:with-content
               condition="translation_dictionary/translation">
               <tal:comment tal:replace="nothing">
-                The lack of indentation for tal:content is deliberate or we would
-                add extra whitespaces to the textarea, which causes us to
-                potentially corrupt translations.
+                We don't use textarea's tal:content tag because tal is not
+                generating the right html tags for translations (new lines
+                matter). Also, the lack of indentation for tal:content is
+                deliberate or we would add extra whitespaces to the textarea,
+                which causes us to potentially corrupt translations. You can
+                read more about this on:
                 https://bugzilla.mozilla.org/show_bug.cgi?id=299009
               </tal:comment>
               <textarea
