@@ -111,13 +111,13 @@ class Branch(SQLBase):
         'BranchMergeProposal', joinColumn='target_branch',
         orderBy='id')
 
-    def addLandingTarget(self, registrant, target_branch, dependent_branch,
-                         whiteboard):
+    def addLandingTarget(self, registrant, target_branch,
+                         dependent_branch=None, whiteboard=None):
         """See `IBranch`."""
         if self.product is None:
             raise InvalidBranchMergeProposal(
                 'Junk branches cannot be used as source branches.')
-        if not zope_isinstance(Branch, target_branch):
+        if not zope_isinstance(target_branch, Branch):
             raise InvalidBranchMergeProposal(
                 'Target branch must be a branch')
         if self == target_branch:
@@ -128,7 +128,7 @@ class Branch(SQLBase):
                 'The source branch and target branch must be branches of the '
                 'same project.')
         if dependent_branch is not None:
-            if not zope_isinstance(Branch, dependent_branch):
+            if not zope_isinstance(dependent_branch, Branch):
                 raise InvalidBranchMergeProposal(
                     'Dependent branch must be a branch')
             if self.product != dependent_branch.product:
