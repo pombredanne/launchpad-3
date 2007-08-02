@@ -35,7 +35,6 @@ MIN_REQUESTS_TO_CONSIDER_RATIO = 30
 # -- Guilherme Salgado, 2007-01-30
 host_requests = {}
 host_timeouts = {}
-host_locks = {}
 
 MAX_REDIRECTS = 3
 
@@ -49,7 +48,26 @@ PER_HOST_REQUESTS = 2
 # them from stalling and timing out before they even get a chance to
 # start connecting.
 OVERALL_REQUESTS = 100
-overall_semaphore = DeferredSemaphore(OVERALL_REQUESTS)
+
+
+class RequestManager:
+
+    overall_semaphore = DeferredSemaphore(OVERALL_REQUESTS)
+
+    # Yes, I want a mutable class attribute because I want changes done in an
+    # instance to be visible in other instances as well.
+    host_locks = {}
+
+    def run(self, host, probe_func):
+        # Use a MultiLock with one semaphore limiting the overall
+        # connections and another limiting the per-host connections.
+        if host in self.host_locks:
+            multi_lock = self.host_locks[host]
+        else:
+            multi_lock = MultiLock(
+                self.overall_semaphore, DeferredSemaphore(PER_HOST_REQUESTS))
+            self.host_locks[host] = multi_lock
+        return multi_lock.run(probe_func)
 
 
 class MultiLock(defer._ConcurrencyPrimitive):
@@ -59,10 +77,9 @@ class MultiLock(defer._ConcurrencyPrimitive):
         defer._ConcurrencyPrimitive.__init__(self)
         self.overall_lock = overall_lock
         self.host_lock = host_lock
-
-    @property
-    def _locks(self):
-        return [self.overall_lock, self.host_lock]
+        # host_lock will always be the scarcer resource, so it should be the
+        # first to be acquired.
+        self._locks = [host_lock, overall_lock]
 
     def acquire(self):
         return defer.gatherResults([lock.acquire() for lock in self._locks])
@@ -407,21 +424,14 @@ class ArchiveMirrorProberCallbacks(object):
             self.deleteMethod(self.series, self.pocket, self.component)
             return
 
+        request_manager = RequestManager()
         deferredList = []
         # We start setting the status to unknown, and then we move on trying to
         # find one of the recently published packages mirrored there.
         arch_or_source_mirror.status = MirrorStatus.UNKNOWN
         for status, url in status_url_mapping.items():
             prober = ProberFactory(url)
-            # Use A MultiLock with one semaphore limiting the overall
-            # connections and another limiting the per-host connections.
-            if prober.request_host in host_locks:
-                multi_lock = host_locks[prober.request_host]
-            else:
-                multi_lock = MultiLock(
-                    overall_semaphore, DeferredSemaphore(PER_HOST_REQUESTS))
-                host_locks[prober.request_host] = multi_lock
-            deferred = multi_lock.run(prober.probe)
+            deferred = request_manager.run(prober.request_host, prober.probe)
             deferred.addCallback(
                 self.setMirrorStatus, arch_or_source_mirror, status, url)
             deferred.addErrback(self.logError, url)
@@ -581,8 +591,7 @@ def checkComplete(result, key, unchecked_keys):
     return result
 
 
-def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
-                         host_locks=host_locks):
+def probe_archive_mirror(mirror, logfile, unchecked_keys, logger):
     """Probe an archive mirror for its contents and freshness.
 
     First we issue a set of HTTP HEAD requests on some key files to find out
@@ -593,6 +602,7 @@ def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
     packages_paths = mirror.getExpectedPackagesPaths()
     sources_paths = mirror.getExpectedSourcesPaths()
     all_paths = itertools.chain(packages_paths, sources_paths)
+    request_manager = RequestManager()
     for series, pocket, component, path in all_paths:
         url = "%s/%s" % (mirror.base_url, path)
         callbacks = ArchiveMirrorProberCallbacks(
@@ -600,15 +610,7 @@ def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
         unchecked_keys.append(url)
         prober = ProberFactory(url)
 
-        # Use A MultiLock with one semaphore limiting the overall
-        # connections and another limiting the per-host connections.
-        if prober.request_host in host_locks:
-            multi_lock = host_locks[prober.request_host]
-        else:
-            multi_lock = MultiLock(
-                overall_semaphore, DeferredSemaphore(PER_HOST_REQUESTS))
-            host_locks[prober.request_host] = multi_lock
-        deferred = multi_lock.run(prober.probe)
+        deferred = request_manager.run(prober.request_host, prober.probe)
         deferred.addCallbacks(
             callbacks.ensureMirrorSeries, callbacks.deleteMirrorSeries)
 
@@ -618,8 +620,7 @@ def probe_archive_mirror(mirror, logfile, unchecked_keys, logger,
         deferred.addBoth(checkComplete, url, unchecked_keys)
 
 
-def probe_cdimage_mirror(mirror, logfile, unchecked_keys, logger,
-                         host_locks=host_locks):
+def probe_cdimage_mirror(mirror, logfile, unchecked_keys, logger):
     """Probe a cdimage mirror for its contents.
     
     This is done by checking the list of files for each flavour and series
@@ -645,20 +646,13 @@ def probe_cdimage_mirror(mirror, logfile, unchecked_keys, logger,
         mirror_key = (series, flavour)
         unchecked_keys.append(mirror_key)
         deferredList = []
+        request_manager = RequestManager()
         for path in paths:
             url = '%s/%s' % (mirror.base_url, path)
             # Use a RedirectAwareProberFactory because CD mirrors are allowed
             # to redirect, and we need to cope with that.
             prober = RedirectAwareProberFactory(url)
-            # Use A MultiLock with one semaphore limiting the overall
-            # connections and another limiting the per-host connections.
-            if prober.request_host in host_locks:
-                multi_lock = host_locks[prober.request_host]
-            else:
-                multi_lock = MultiLock(
-                    overall_semaphore, DeferredSemaphore(PER_HOST_REQUESTS))
-                host_locks[prober.request_host] = multi_lock
-            deferred = multi_lock.run(prober.probe)
+            deferred = request_manager.run(prober.request_host, prober.probe)
             deferred.addErrback(callbacks.logMissingURL, url)
             deferredList.append(deferred)
 
