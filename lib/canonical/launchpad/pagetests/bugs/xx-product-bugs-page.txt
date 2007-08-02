@@ -54,3 +54,19 @@ supporting Javascript, the statistics are displayed as normal text:
     0 Triaged bugs
     0 In Progress bugs
     0 Fix Committed bugs
+
+== Tags and Filters ==
+
+There's also portlets which shows the bug tags being used.
+
+    >>> from BeautifulSoup import BeautifulSoup
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> soup = BeautifulSoup(anon_browser.contents)
+    >>> tags_portlet = soup.find('div', {'id': "bug-tags"})
+    >>> for td_tag in tags_portlet('td'):
+    ...     print td_tag.renderContents()
+    <a ...>doc</a>
+    1
+    <a ...>layout-test</a>
+    1
+
