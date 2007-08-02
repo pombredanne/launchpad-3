@@ -114,10 +114,12 @@
     name="DistroSeriesStatus"
     factory="canonical.launchpad.vocabularies.DistroSeriesStatusVocabulary"
     />
+
   <vocabulary
     name="FAQ"
     factory="canonical.launchpad.vocabularies.FAQVocabulary"
     />
+
    <vocabulary
     name="FilteredDistroArchSeries"
     factory="canonical.launchpad.vocabularies.FilteredDistroArchSeriesVocabulary"
@@ -311,26 +313,6 @@
   <vocabulary
     name="TextDirection"
     factory="canonical.launchpad.vocabularies.TextDirectionVocabulary"
-    />
-
-  <vocabulary
-    name="QuestionAction"
-    factory="canonical.launchpad.vocabularies.QuestionActionVocabulary"
-    />
-
-  <vocabulary
-    name="QuestionPriority"
-    factory="canonical.launchpad.vocabularies.QuestionPriorityVocabulary"
-    />
-
-  <vocabulary
-    name="QuestionSort"
-    factory="canonical.launchpad.vocabularies.QuestionSortVocabulary"
-    />
-
-  <vocabulary
-    name="QuestionStatus"
-    factory="canonical.launchpad.vocabularies.QuestionStatusVocabulary"
     />
 
   <vocabulary

@@ -182,7 +182,7 @@ Catalan questions, so no Catalan checkbox is displayed.
     >>> browser.open('http://launchpad.dev/distros/ubuntu/+questions')
     >>> language_control = browser.getControl(name='field.language')
     >>> for label in sorted(language_control.displayOptions):
-    ...     # print the label without the leading non-breaking space.
+    ...     # Print the label without the leading non-breaking space.
     ...     label[1:]
     'English (en)'
     'Spanish (es)'
@@ -226,7 +226,7 @@ English, and can use it to locate English questions.
     >>> daf_browser.open('http://launchpad.dev/distros/ubuntu/+questions')
     >>> language_control = daf_browser.getControl(name='field.language')
     >>> for label in language_control.displayOptions:
-    ...     # print the label without the leading non-breaking space.
+    ...     # Print the label without the leading non-breaking space.
     ...     label[1:]
     'English (en)'
 
@@ -296,7 +296,9 @@ the preceding page.
     >>> print language_field.type
     hidden
 
-    >>> user_browser.getControl(name='field.status').value
+    >>> labels = user_browser.getControl(name='field.status').displayValue
+    >>> # Print the label without the leading non-breaking space.
+    >>> [label[1:] for label in labels]
     ['Open']
 
     >>> content = find_main_content(user_browser.contents)

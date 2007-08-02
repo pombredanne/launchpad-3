@@ -7,17 +7,17 @@ from urlparse import urlunparse
 
 import transaction
 from zope.component import getUtility
-from zope.interface import implements, providedBy
+from zope.interface import implements
 from zope.event import notify
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
     ILaunchBag, IMessageSet, IBugEmailCommand, IBugTaskEmailCommand,
-    IBugEditEmailCommand, IBugTaskEditEmailCommand, IBug, IBugTask,
-    IMailHandler, IBugMessageSet, CreatedBugWithNoBugTasksError,
+    IBugEditEmailCommand, IBugTaskEditEmailCommand,
+    IMailHandler, CreatedBugWithNoBugTasksError,
     EmailProcessingError, IUpstreamBugTask, IDistroBugTask,
     IDistroSeriesBugTask, IWeaklyAuthenticatedPrincipal, IQuestionSet,
-    ISpecificationSet)
+    ISpecificationSet, QuestionStatus)
 from canonical.launchpad.mail.commands import emailcommands, get_error_message
 from canonical.launchpad.mail.sendmail import sendmail
 from canonical.launchpad.mail.specexploder import get_spec_url_from_moin_mail
@@ -25,14 +25,11 @@ from canonical.launchpad.mailnotification import (
     send_process_error_notification)
 from canonical.launchpad.webapp import canonical_url, urlparse
 from canonical.launchpad.webapp.interaction import get_current_principal
-from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.launchpad.event import (
-    SQLObjectModifiedEvent, SQLObjectCreatedEvent)
+    SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
-    ISQLObjectModifiedEvent, ISQLObjectCreatedEvent)
-
-from canonical.lp.dbschema import QuestionStatus
+    ISQLObjectCreatedEvent)
 
 
 def get_main_body(signed_msg):
