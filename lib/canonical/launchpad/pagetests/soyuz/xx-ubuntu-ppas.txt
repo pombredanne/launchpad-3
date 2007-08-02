@@ -24,8 +24,8 @@ source record) PPAs are presented.
     ...    print extract_text(ppa_row)
     Celso Providelo
     packages to help my friends.
+    3
     2
-    1
 
 We have a checkbox to allow inactive PPA results.
 
@@ -36,8 +36,8 @@ We have a checkbox to allow inactive PPA results.
     ...    print extract_text(ppa_row)
     Celso Providelo
     packages to help my friends.
+    3
     2
-    1
     No Privileges Person
     I am not allowed to say, I have no privs.
     0
@@ -82,9 +82,9 @@ and estimated size).
     >>> results = find_tag_by_id(browser.contents,'package_counters')
     >>> text = extract_text(results)
     >>> print text
-    2 Sources
+    3 Sources
     (9.5 MiB)
-    1 Binaries
+    2 Binaries
     (3 bytes)
     Estimated archive size:
     9.5 MiB
@@ -101,6 +101,13 @@ will be presented to user containing:
 
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
+    pmount - 0.1-1
+    2007-07-09
+    Published
+    hoary
+    Release
+    main
+    editors
     iceweasel - 1.0
     2007-07-09
     Published

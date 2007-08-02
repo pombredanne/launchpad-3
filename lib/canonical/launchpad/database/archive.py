@@ -133,24 +133,56 @@ class Archive(SQLBase):
 
     def getPublishedBinaries(self, name=None):
         """See `IArchive`."""
-        clauses = [
-            'BinaryPackagePublishingHistory.archive = %s' % sqlvalues(self)]
-        clauseTables = []
+        base_clauses = ["""
+        BinaryPackagePublishingHistory.archive = %s AND
+        BinaryPackagePublishingHistory.distroarchrelease =
+            DistroArchRelease.id AND
+        DistroArchRelease.distrorelease = DistroRelease.id AND
+        BinaryPackagePublishingHistory.binarypackagerelease =
+            BinaryPackageRelease.id
+        """ % sqlvalues(self)]
+        clauseTables = [
+            'DistroArchRelease', 'DistroRelease', 'BinaryPackageRelease']
 
         if name is not None:
-            clauses.append("""
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
+            base_clauses.append("""
             BinaryPackageRelease.binarypackagename =
                 BinaryPackageName.id AND
             BinaryPackageName.name LIKE '%%' || %s || '%%'
             """ % quote_like(name))
-            clauseTables.extend(
-                ['BinaryPackageRelease', 'BinaryPackageName'])
+            clauseTables.extend(['BinaryPackageName'])
 
-        query = ' AND '.join(clauses)
-        return BinaryPackagePublishingHistory.select(
-            query, orderBy='-id', clauseTables=clauseTables)
+        # Retrieve only the binaries published for the 'nominated architechture
+        # independent' (usually i386) in the distroseries in question.
+        # It includes all architecture_independent binaries only once and the
+        # architecture_specific built for 'nominatedarchindep'.
+        nominated_arch_independent_clause = ["""
+        DistroRelease.nominatedarchindep =
+            BinaryPackagePublishingHistory.distroarchrelease
+        """]
+        nominated_arch_independent_query = ' AND '.join(
+            base_clauses + nominated_arch_independent_clause)
+        nominated_arch_independents = BinaryPackagePublishingHistory.select(
+            nominated_arch_independent_query, orderBy='-id',
+            clauseTables=clauseTables)
+
+        # Retrive all architecture_specific binary publications except
+        # 'nominatedarchindep' (already included in the previous query).
+        no_nominated_arch_independent_clause = ["""
+        DistroRelease.nominatedarchindep !=
+            BinaryPackagePublishingHistory.distroarchrelease AND
+        BinaryPackageRelease.architecturespecific = true
+        """]
+        no_nominated_arch_independent_query = ' AND '.join(
+            base_clauses + no_nominated_arch_independent_clause)
+        no_nominated_arch_independents = BinaryPackagePublishingHistory.select(
+            no_nominated_arch_independent_query, orderBy='-id',
+            clauseTables=clauseTables)
+
+        unique_binary_publications = nominated_arch_independents.union(
+            no_nominated_arch_independents)
+
+        return unique_binary_publications
 
     @property
     def number_of_binaries(self):
