@@ -50,11 +50,12 @@ from canonical.launchpad.interfaces import (
     NoBugTrackerFound,
     NotFoundError,
     UnrecognizedBugTrackerURL,
-    valid_distrotask,
+    validate_new_distrotask,
     valid_upstreamtask,
     )
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.validators import LaunchpadValidationError
 
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
@@ -603,13 +604,10 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                         cgi.escape(filebug_url, quote=True)))
             else:
                 try:
-                    valid_distrotask(
-                        self.context.bug, distribution, sourcepackagename,
-                        on_create=True)
-                except WidgetsError, errors:
-                    for error in errors:
-                        self.setFieldError(
-                            'sourcepackagename', error.snippet())
+                    validate_new_distrotask(
+                        self.context.bug, distribution, sourcepackagename)
+                except LaunchpadValidationError, error:
+                    self.setFieldError('sourcepackagename', error.snippet())
         else:
             # Validation failed for either the product or distribution,
             # no point in trying to validate further.

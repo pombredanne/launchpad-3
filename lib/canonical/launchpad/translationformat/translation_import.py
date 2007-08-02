@@ -15,15 +15,16 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-        IPersonSet, ITranslationImporter, NotExportedFromLaunchpad,
-        OldTranslationImported, TranslationConflict, TranslationConstants)
+    IPersonSet, ITranslationImporter, NotExportedFromLaunchpad,
+    OldTranslationImported, PersonCreationRationale, TranslationConflict,
+    TranslationConstants)
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPoImporter)
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     MozillaXpiImporter)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
-    PersonCreationRationale, RosettaImportStatus, TranslationFileFormat)
+    RosettaImportStatus, TranslationFileFormat)
 
 importers = {
     TranslationFileFormat.PO: GettextPoImporter(),

@@ -9,6 +9,8 @@ import shutil
 import tempfile
 import unittest
 
+from email import message_from_string
+
 from zope.component import getUtility
 from zope.security.proxy import removeSecurityProxy
 
@@ -196,10 +198,12 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Check the mailer stub has a rejection email for Daniel
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg).get_payload(decode=True)
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         self.assertEqual(to_addrs, [daniel])
         self.assertTrue("Unhandled exception processing upload: Exception "
-                        "raised by BrokenUploadPolicy for testing." in raw_msg)
+                        "raised by BrokenUploadPolicy for testing." 
+                        in msg)
 
     def testUploadToFrozenDistro(self):
         """Uploads to a frozen distroseries should work, but be unapproved.
@@ -458,25 +462,32 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
 
-    def assertEmail(self, contents=[], recipients=[]):
+    def assertEmail(self, contents=None, recipients=None):
         """Check email last email content and recipients."""
         if not recipients:
             recipients = self.default_recipients
+        if not contents:
+            contents = []
 
         self.assertEqual(
             len(stub.test_emails), 1,
             'Unexpected number of emails sent: %s' % len(stub.test_emails))
 
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        body = msg.get_payload(decode=True)
 
         clean_recipients = [r.strip() for r in to_addrs]
         for recipient in list(recipients):
             self.assertTrue(recipient in clean_recipients)
 
+        subject = "Subject: %s" % msg['Subject']
+        body = subject + body
+
         for content in list(contents):
             self.assertTrue(
-                content in raw_msg,
-                "Expect: '%s'\nGot:\n%s" % (content, raw_msg))
+                content in body,
+                "Expect: '%s'\nGot:\n%s" % (content, body))
 
     def testUploadToPPA(self):
         """Upload to a PPA gets there.

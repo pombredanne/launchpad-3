@@ -29,15 +29,14 @@ from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     IBranch, IBugTask, IEmailAddressSet, INotificationRecipientSet, IPerson,
     ISpecification, ITeamMembershipSet, IUpstreamBugTask, 
-    UnknownRecipientError)
+    TeamMembershipStatus, UnknownRecipientError)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template, shortlist)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import (
-    TeamMembershipStatus, QuestionAction)
+from canonical.lp.dbschema import QuestionAction
 
 CC = "CC"
 
@@ -1706,7 +1705,7 @@ def email_branch_modified_notifications(branch, to_addresses,
     """
     branch_title = branch.title
     if branch_title is None:
-        branch_title = '(no title)'
+        branch_title = ''
     subject = '[Branch %s] %s' % (branch.unique_name, branch_title)
     headers = {'X-Launchpad-Branch': branch.unique_name}
 
@@ -1793,7 +1792,11 @@ def send_branch_modified_notifications(branch, event):
         if delta is not None:
             title = IBranch[field_name].title
             old_item = delta['old']
+            if old_item is None:
+                old_item = '(not set)'
             new_item = delta['new']
+            if new_item is None:
+                new_item = '(not set)'
             info_lines.append("%s%s: %s => %s" % (
                 indent, title, old_item, new_item))
 
