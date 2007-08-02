@@ -24,12 +24,21 @@ COMMASPACE = ', '
 
 class XMLRPCRunner(Runner):
     def __init__(self, slice=None, numslices=1):
-        self._proxy = xmlrpclib.ServerProxy(config.mailman.xmlrpc_url)
-        self.SLEEPTIME = config.mailman.xmlrpc_runner_sleep
+        self._proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
+        self.SLEEPTIME = mm_cfg.XMLRPC_SLEEPTIME
+        # Instead of calling the superclass's __init__() method, just
+        # initialize the two attributes that are actually used.  The reason
+        # for this is that the XMLRPCRunner doesn't have a queue so it
+        # shouldn't be trying to create a Switchboard instance.  Still, it
+        # needs a dummy _kids and _stop attributes for the rest of the runner
+        # to work.  We're using runners in a more general sense than Mailman 2
+        # is designed for.
+        self._kids = {}
+        self._stop = False
 
     def _oneloop(self):
         # See if Launchpad has anything for us to do.
-        actions = self._proxy.getPendingAction()
+        actions = self._proxy.getPendingActions()
         if not actions:
             # Always return 0 so self._snooze() will sleep for a while.
             return 0

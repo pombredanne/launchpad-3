@@ -57,9 +57,15 @@ from canonical.launchpad.mailman.monkeypatches.defaults import *
 # Our dynamic overrides of all the static defaults.
 SMTPHOST = '%(smtp_host)s'
 SMTPPORT = %(smtp_port)d
+
+# The endpoint for Launchpad XMLRPC calls.
+XMLRPC_URL = '%(xmlrpc_url)s'
+XMLRPC_SLEEPTIME = %(xmlrpc_sleeptime)s
 """ % dict(launchpad_top=launchpad_top,
            smtp_host=host,
            smtp_port=port,
+           xmlrpc_url=config.mailman.xmlrpc_url,
+           xmlrpc_sleeptime=config.mailman.xmlrpc_runner_sleep,
            )
     finally:
         config_file.close()
