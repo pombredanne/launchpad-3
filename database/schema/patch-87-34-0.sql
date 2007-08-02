@@ -1,16 +1,17 @@
 SET client_min_messages=ERROR;
 
+ALTER TABLE CodeImport
+ADD COLUMN owner integer REFERENCES Person(id),
+ADD COLUMN assignee integer REFERENCES Person(id),
+ADD COLUMN update_interval interval;
 
-ALTER TABLE CodeImport ADD COLUMN owner integer REFERENCES Person(id);
 UPDATE CodeImport SET owner=registrant;
 ALTER TABLE CodeImport ALTER owner SET NOT NULL;
 
-ALTER TABLE CodeImport ADD COLUMN assignee integer REFERENCES Person(id);
-ALTER TABLE CodeImport ADD COLUMN update_interval interval;
+-- Keep people merge happy
+CREATE INDEX codeimport__owner__idx ON CodeImport(owner);
+CREATE INDEX codeimport__assignee__idx ON CodeImport(assignee);
 
-
-ALTER TABLE CodeImportMachine ADD COLUMN
-    heartbeat TIMESTAMP WITHOUT TIME ZONE;
 
 /* Turn the CodeImportMachine.online bool into a CodeImportMachine.state enum,
 with three states OFFLINE (10), ONLINE (20) and QUIESCING (30).
@@ -24,9 +25,10 @@ UPDATE CodeImportMachine SET state=(
     CASE WHEN online=FALSE THEN 10 -- OFFLINE
          WHEN online=TRUE THEN 20  -- ONLINE
     END);
-ALTER TABLE CodeImportMachine ALTER state SET NOT NULL;
-ALTER TABLE CodeImportMachine ALTER state SET DEFAULT 10; -- OFFLINE
-ALTER TABLE CodeImportMachine DROP COLUMN online;
+ALTER TABLE CodeImportMachine
+ADD COLUMN heartbeat TIMESTAMP WITHOUT TIME ZONE,
+ALTER COLUMN state SET NOT NULL,
+ALTER COLUMN state SET DEFAULT 10, -- OFFLINE
+DROP COLUMN online;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 80, 6);
-
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 34, 0);
