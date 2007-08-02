@@ -242,11 +242,6 @@ An Archive can be retrieved via IPerson.archive property:
   >>> name16.archive == sandbox_archive
   True
 
-`IArchiveSet.getAllPPAs` provides all present *personal* archives:
-
-  >>> [archive.owner.name for archive in archive_set.getAllPPAs()]
-  [u'cprov', u'sabdfl', u'no-priv', u'name16']
-
 IArchiveSet.getByDistroPurpose retrieves an IArchive given a distribution
 and an ArchivePurpose:
 

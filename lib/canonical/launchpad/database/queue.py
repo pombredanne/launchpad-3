@@ -918,9 +918,8 @@ class PackageUploadCustom(SQLBase):
     @property
     def archive_config(self):
         """See IPackageUploadCustom."""
-        distribution = self.packageupload.distroseries.distribution
         archive = self.packageupload.archive
-        return archive.getPubConfig(distribution)
+        return archive.getPubConfig()
 
     def _publishCustom(self, action_method):
         """Publish custom formats.
