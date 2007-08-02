@@ -925,7 +925,6 @@ class BugTaskEditView(LaunchpadEditFormView):
         if context is None:
             context = self.context
 
-        # XXX: Should this come from data rather than from request.form?
         if self.request.form.get('subscribe', False):
             context.bug.subscribe(self.user)
             self.request.response.addNotification(
@@ -934,7 +933,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         # Save the field names we extract from the form in a separate
         # list, because we modify this list of names later if the
         # context is reassigned to a different product.
-        field_names = list(self.field_names)
+        field_names = list(data)
         new_values = data.copy()
         data_to_apply = data.copy()
 
@@ -945,6 +944,8 @@ class BugTaskEditView(LaunchpadEditFormView):
         # product, we'll clear out the milestone value, to avoid
         # violating DB constraints that ensure an upstream task can't
         # be assigned to a milestone on a different product.
+        milestone_cleared = False
+        milestone_ignored = False
         if (IUpstreamBugTask.providedBy(context) and
             (context.product != new_values.get("product")) and
             'milestone' in field_names):
@@ -953,16 +954,9 @@ class BugTaskEditView(LaunchpadEditFormView):
             # to set a milestone value while also changing the product. This
             # allows us to provide slightly clearer feedback messages.
             if context.milestone:
-                self.request.response.addWarningNotification(
-                    "The %s milestone setting has been removed because "
-                    "you reassigned the bug to %s." % (
-                        context.milestone.displayname,
-                        context.bugtargetdisplayname))
-            elif self.widgets['milestone'].getInputValue() is not None:
-                self.request.response.addWarningNotification(
-                    "The milestone setting was ignored because "
-                    "you reassigned the bug to %s." % 
-                    context.bugtargetdisplayname)
+                milestone_cleared = context.milestone
+            elif new_values.get('milestone') is not None:
+                milestone_ignored = True
 
             context.milestone = None
             # Remove the "milestone" field from the list of fields
@@ -978,8 +972,34 @@ class BugTaskEditView(LaunchpadEditFormView):
         if "status" in data_to_apply:
             del data_to_apply["status"]
 
+        # We grab the comment_on_change field before we update context so as
+        # to avoid problems accessing the field if the user has changed the
+        # product of the BugTask.
+        comment_on_change = self.request.form.get(
+            "%s.comment_on_change" % self.prefix)
+
         changed = form.applyChanges(
             context, self.form_fields, data_to_apply, self.adapters)
+
+        # Now that we've updated the bugtask we can add messages about
+        # milestone changes, if there were any.
+        if milestone_cleared:
+            self.request.response.addWarningNotification(
+                "The %s milestone setting has been removed because "
+                "you reassigned the bug to %s." % (
+                    milestone_cleared.displayname,
+                    context.bugtargetdisplayname))
+        elif milestone_ignored:
+            self.request.response.addWarningNotification(
+                "The milestone setting was ignored because "
+                "you reassigned the bug to %s." % 
+                context.bugtargetdisplayname)
+
+        if comment_on_change:
+            context.bug.newMessage(
+                owner=getUtility(ILaunchBag).user,
+                subject=context.bug.followup_subject(),
+                content=comment_on_change)
 
         # Set the "changed" flag properly, just in case status and/or assignee
         # happen to be the only values that changed. We explicitly verify that
@@ -997,7 +1017,7 @@ class BugTaskEditView(LaunchpadEditFormView):
             changed = True
             context.transitionToAssignee(new_assignee)
 
-        if context_before_modification.bugwatch != bugtask.bugwatch:
+        if context_before_modification.bugwatch != context.bugwatch:
             if context.bugwatch is None:
                 # Reset the status and importance to the default values,
                 # since Unknown isn't selectable in the UI.
@@ -1015,24 +1035,12 @@ class BugTaskEditView(LaunchpadEditFormView):
                 context.importance = BugTaskImportance.UNKNOWN
                 context.transitionToAssignee(None)
 
-        comment_on_change = self.request.form.get(
-            "%s.comment_on_change" % self.prefix)
-
-        # The statusexplanation field is being display as a "Comment on most
-        # recent change" field now, so set it to the current change comment if
-        # there is one, otherwise clear it out.
-        if comment_on_change:
-            # Add the change comment as a comment on the bug.
-            context.bug.newMessage(
-                owner=getUtility(ILaunchBag).user,
-                subject=context.bug.followup_subject(),
-                content=comment_on_change)
-
-            context.statusexplanation = comment_on_change
-        else:
-            context.statusexplanation = ""
-
         if changed:
+            if comment_on_change:
+                context.statusexplanation = comment_on_change
+            else:
+                context.statusexplanation = ""
+
             notify(
                 SQLObjectModifiedEvent(
                     object=context,

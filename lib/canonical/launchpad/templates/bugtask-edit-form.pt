@@ -105,7 +105,7 @@
         </tr>
         <tr tal:attributes="class python:error and 'error' or None">
           <td>
-            <span tal:content="structure view/widgets/sourcepackagename" />
+            <tal:widget content="structure view/widgets/sourcepackagename" />
             <div tal:condition="error"
                 class="message"
                 tal:content="error">An error in sourcepackagename widget.
@@ -128,7 +128,7 @@
         </tr>
         <tr tal:attributes="class python:error and 'error' or None">
           <td colspan="2" style="white-space: nowrap">
-            <span tal:content="structure view/widgets/product" />
+            <tal:widget content="structure view/widgets/product" />
             <div tal:condition="error"
                 class="message"
                 tal:content="error">An error in product widget.
@@ -162,12 +162,12 @@
         <td tal:content="structure view/widgets/status" />
         <td title="Editable only by the maintainer or bug contact of the project">
           <img tal:condition="not:view/userCanEditImportance" src="/@@/locked" />
-          <span tal:content="structure view/widgets/importance" />
+          <tal:widget content="structure view/widgets/importance" />
         </td>
         <td tal:condition="view/widgets/milestone"
             title="Editable only by the maintainer or bug contact of the project">
           <img tal:condition="not:view/userCanEditMilestone" src="/@@/locked" />
-          <span tal:content="structure view/widgets/milestone" />
+          <tal:widget content="structure view/widgets/milestone" />
         </td>
       </tr>
     </table>
