@@ -909,8 +909,7 @@ class BugTaskEditView(LaunchpadEditFormView):
             except LaunchpadValidationError, error:
                 self.setFieldError('sourcepackagename', str(error))
 
-        if (product is not None and
-            'product' in data and product != data.get('product')):
+        if product is not None and product != data.get('product'):
             try:
                 valid_upstreamtask(bugtask.bug, data.get('product'))
             except WidgetsError, errors:
