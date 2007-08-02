@@ -19,9 +19,10 @@ from zope.schema import (
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad.interfaces.faq import IFAQ
+from canonical.launchpad.interfaces.questionenums import (
+    QuestionPriority, QuestionStatus)
 from canonical.launchpad.interfaces.questionmessage import IQuestionMessage
 from canonical.launchpad.interfaces.questiontarget import IQuestionTarget
-from canonical.lp.dbschema import QuestionStatus, QuestionPriority
 
 
 class InvalidQuestionStateError(Exception):
@@ -47,10 +48,10 @@ class IQuestion(IHasOwner):
         u"you\N{right single quotation mark}re trying to achieve, what steps "
         "you take, what happens, and what you think should happen instead."))
     status = Choice(
-        title=_('Status'), vocabulary='QuestionStatus',
+        title=_('Status'), vocabulary=QuestionStatus,
         default=QuestionStatus.OPEN, readonly=True)
     priority = Choice(
-        title=_('Priority'), vocabulary='QuestionPriority',
+        title=_('Priority'), vocabulary=QuestionPriority,
         default=QuestionPriority.NORMAL)
     # XXX flacoste 2006/10/28 It should be more precise to define a new
     # vocabulary that excludes the English variants.
@@ -266,7 +267,7 @@ class IQuestion(IHasOwner):
         """
 
     can_confirm_answer = Attribute(
-        'Whether the question is in a state where the question owner to '
+        'Whether the question is in a state for the question owner to '
         'confirm that an answer solved his problem.')
 
     def confirmAnswer(comment, answer=None, datecreated=None):
@@ -448,7 +449,7 @@ class IQuestionChangeStatusForm(Interface):
 
     status = Choice(
         title=_('Status'), description=_('Select the new question status.'),
-        vocabulary='QuestionStatus', required=True)
+        vocabulary=QuestionStatus, required=True)
 
     message = Text(
         title=_('Message'),

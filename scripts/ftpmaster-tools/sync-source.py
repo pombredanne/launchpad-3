@@ -727,10 +727,10 @@ def options_setup():
                       help="be even more verbose")
 
     # Options controlling where to sync packages to:
-    parser.add_option("-c", "--in-component", dest="incomponent",
+    parser.add_option("-c", "--to-component", dest="tocomponent",
                       help="limit syncs to packages in COMPONENT")
     parser.add_option("-d", "--to-distro", dest="todistro",
-                      help="sync to DISTRO")
+                      default='ubuntu', help="sync to DISTRO")
     parser.add_option("-s", "--to-suite", dest="tosuite",
                       help="sync to SUITE (aka distroseries)")
 
@@ -738,23 +738,12 @@ def options_setup():
     parser.add_option("-C", "--from-component", dest="fromcomponent",
                       help="sync from COMPONENT")
     parser.add_option("-D", "--from-distro", dest="fromdistro",
-                      help="sync from DISTRO")
+                      default='debian', help="sync from DISTRO")
     parser.add_option("-S", "--from-suite", dest="fromsuite",
                       help="sync from SUITE (aka distroseries)")
 
 
     (Options, arguments) = parser.parse_args()
-
-    # Defaults
-    if not Options.todistro:
-        Options.todistro = "ubuntu"
-
-    # XXX FIXME: use distro.currentseries
-    if not Options.tosuite:
-        Options.tosuite = "dapper"
-
-    if not Options.fromdistro:
-        Options.fromdistro = "debian"
 
     distro = Options.fromdistro.lower()
     if not Options.fromcomponent:
@@ -776,21 +765,25 @@ def objectize_options():
     Convert 'target_distro', 'target_suite' and 'target_component' to objects
     rather than strings.
     """
-    Options.target_distro = getUtility(IDistributionSet)[Options.target_distro]
+    Options.todistro = getUtility(IDistributionSet)[Options.todistro]
 
-    if not Options.target_suite:
-        Options.target_suite = Options.target_distro.currentseries.name
-    Options.target_suite = Options.target_distro.getSeries(Options.target_suite)
+    if not Options.tosuite:
+        Options.tosuite = Options.todistro.currentseries.name
+    Options.tosuite = Options.todistro.getSeries(Options.tosuite)
 
     valid_components = (
-        dict([(c.name,c) for c in Options.target_suite.components]))
-    if (Options.target_component and
-        Options.target_component not in valid_components):
-        dak_utils.fubar(
-            "%s is not a valid component for %s/%s."
-            % (Options.target_component, Options.target_distro.name,
-               Options.target_suite.name))
-    Options.target_component = valid_components[Options.target_component]
+        dict([(component.name, component)
+              for component in Options.tosuite.components]))
+
+    if Options.tocomponent is not None:
+
+        if Options.tocomponent not in valid_components:
+            dak_utils.fubar(
+                "%s is not a valid component for %s/%s."
+                % (Options.tocomponent, Options.todistro.name,
+                   Options.tosuite.name))
+
+        Options.tocomponent = valid_components[Options.tocomponent]
 
     # Fix up Options.requestor
     if not Options.requestor:
@@ -853,7 +846,7 @@ def main():
     origin["component"] = Options.fromcomponent
 
     Sources = read_Sources("Sources", origin)
-    Suite = read_current_source(Options.tosuite, Options.incomponent, arguments)
+    Suite = read_current_source(Options.tosuite, Options.tocomponent, arguments)
     current_binaries = read_current_binaries(Options.tosuite)
     do_diff(Sources, Suite, origin, arguments, current_binaries)
 

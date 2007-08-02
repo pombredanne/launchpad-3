@@ -73,13 +73,12 @@ class POMsgSetMixIn:
 
         parameters['match_self'] = match_self_sql
 
-        joins = ['POMsgSet', 'POFile', 'POTMsgSet']
+        joins = ['POMsgSet', 'POTMsgSet']
         query = """
                 POSubmission.pomsgset = POMsgSet.id AND
-                POMsgSet.pofile = POFile.id AND
+                POMsgSet.language = %(language)s AND
                 POMsgSet.potmsgset = POTMsgSet.id AND
                 (%(match_self)s OR NOT POMsgSet.isfuzzy) AND
-                POFile.language = %(language)s AND
                 POTMsgSet.primemsgid = %(primemsgid)s
             """ % parameters
 
@@ -230,8 +229,6 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         foreignKey='Person', dbName='reviewer', notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(dbName='date_reviewed', notNull=False,
         default=None)
-    # XXX: JeroenVermeulen 2007-07-03, Make this notNull once the language
-    # column has been initialized
     language = ForeignKey(foreignKey='Language', dbName='language')
 
     submissions = SQLMultipleJoin('POSubmission', joinColumn='pomsgset')

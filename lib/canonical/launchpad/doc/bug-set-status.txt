@@ -50,7 +50,7 @@ BugActivity records are created.
     >>> print latest_notification.message.owner.displayname
     No Privileges Person
     >>> print latest_notification.message.text_contents
-    ** Changed in: firefox (upstream)
+    ** Changed in: firefox
            Status: New => Confirmed
 
     >>> from canonical.launchpad.database import BugActivity

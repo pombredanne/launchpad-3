@@ -77,7 +77,7 @@ out.
       ..
     LinkNotFoundError...
 
-He decides to go the first page. He remembered one quesiton title that
+He decides to go the first page. He remembered one question title that
 might have been remotely related to his problem.
 
     >>> browser.getLink('First').click()
@@ -203,7 +203,9 @@ Joe observes under the search widget that there are checkboxes to select
 the question status to search. He notices that only some statuses are
 selected. He adds 'Invalid' to the selection, and run his search again.
 
-    >>> browser.getControl(name='field.status').value
+    >>> statuses = browser.getControl(name='field.status').displayValue
+    >>> # Print the label without the leading non-breaking space.
+    >>> [status[1:] for status in statuses]
     ['Open', 'Needs information', 'Answered', 'Solved']
     >>> browser.getControl('Invalid').selected = True
     >>> browser.getControl('Search').click()
@@ -225,7 +227,7 @@ The user must choose at least one status when searching questions. An
 error is displayed when the user forgets to select a status.
 
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
-    >>> browser.getControl(name='field.status').value = []
+    >>> browser.getControl(name='field.status').displayValue = []
     >>> browser.getControl('Search').click()
     >>> messages = find_tags_by_class(browser.contents, 'message')
     >>> print messages[0].renderContents()
@@ -236,7 +238,7 @@ error is displayed when the user forgets to select a status.
 
 That question isn't exactly what Average Joe was looking for. Now, he'd
 like to see all the questions that were related to the firefox package.
-The quesiton listing page for distribution displays the source package
+The question listing page for distribution displays the source package
 related to each question . The source package name is a link to the
 source package's question listing.
 
@@ -322,7 +324,9 @@ questions.)
     >>> browser.getLink('Answered').click()
     >>> print browser.title
     Answered questions for Ubuntu
-    >>> browser.getControl(name='field.status').value
+    >>> statuses = browser.getControl(name='field.status').displayValue
+    >>> # Print the label without the leading non-breaking space.
+    >>> [status[1:] for status in statuses]
     ['Answered', 'Solved']
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'question'):
@@ -513,7 +517,8 @@ questions to a particular status:
     # goBack() doesn't work.
     >>> browser.open('http://launchpad.dev/~name16/+questions')
     >>> browser.getControl(name='field.search_text').value = 'Firefox'
-    >>> browser.getControl(name='field.status').value = ['Solved', 'Invalid']
+    >>> browser.getControl(name='field.status').displayValue = [
+    ...     'Solved', 'Invalid']
     >>> browser.getControl('Search').click()
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'question'):
@@ -698,7 +703,9 @@ there is an 'In' column displaying where the questions were filed.
 
 Only the default set of statuses is searched:
 
-    >>> browser.getControl(name='field.status').value
+    >>> statuses = browser.getControl(name='field.status').displayValue
+    >>> # Print the label without the leading non-breaking space.
+    >>> [status[1:] for status in statuses]
     ['Open', 'Needs information', 'Answered', 'Solved']
 
 When no results are found, a message informs the user of this fact:

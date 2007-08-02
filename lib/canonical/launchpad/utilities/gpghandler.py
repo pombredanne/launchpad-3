@@ -21,14 +21,14 @@ import gpgme
 import gpgme.editutil
 
 from canonical.config import config
-from canonical.lp.dbschema import GPGKeyAlgorithm
 
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
 from canonical.launchpad.interfaces import (
     IGPGHandler, IPymeSignature, IPymeKey, IPymeUserId, GPGVerificationError,
-    MoreThanOneGPGKeyFound, GPGKeyNotFoundError, SecretGPGKeyImportDetected)
+    MoreThanOneGPGKeyFound, GPGKeyNotFoundError, SecretGPGKeyImportDetected,
+    GPGKeyAlgorithm)
 
 
 class GPGHandler:
