@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['POTMsgSet']
@@ -7,9 +7,9 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
-from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 
 from canonical.cachedproperty import cachedproperty
+from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 from canonical.launchpad.interfaces import (
     BrokenTextError, ILanguageSet, IPOTMsgSet, ITranslationImporter,
     TranslationConstants)
