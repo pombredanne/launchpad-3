@@ -1059,17 +1059,18 @@ class BugTaskEditView(LaunchpadEditFormView):
                     edited_fields=field_names))
 
         if context.sourcepackagename is not None:
-            real_package_name = context.sourcepackagename
-            entered_package_name = data.get('sourcepackagename')
+            real_package_name = context.sourcepackagename.name
+            entered_package_name = self.request.form.get(
+                self.widgets['sourcepackagename'].name)
             if real_package_name != entered_package_name:
                 # The user entered a binary package name which got
                 # mapped to a source package.
                 self.request.response.addNotification(
                     "'%(entered_package)s' is a binary package. This bug has"
                     " been assigned to its source package '%(real_package)s'"
-                    " instead.",
-                    entered_package=entered_package_name.name,
-                    real_package=real_package_name.name)
+                    " instead." %
+                    {'entered_package': entered_package_name,
+                     'real_package': real_package_name})
 
         if (context_before_modification.sourcepackagename !=
             context.sourcepackagename):
