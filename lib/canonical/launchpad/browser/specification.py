@@ -47,6 +47,7 @@ from canonical.launchpad.interfaces import (
     IDistribution,
     ILaunchBag,
     INewSpecification,
+    INewSpecificationSeriesGoal,
     INewSpecificationSprint,
     INewSpecificationTarget,
     INewSpecificationProjectTarget,
@@ -163,9 +164,14 @@ class NewSpecificationFromProductView(NewSpecificationFromTargetView):
 
 class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
     """An abstract view for creating a specification from a series."""
+
+    schema = Fields(INewSpecification,
+                    INewSpecificationSprint,
+                    INewSpecificationSeriesGoal)
     
     def series(self, data):
-        return self.context
+        if data['goal'] == True:
+            return self.context
 
 
 class NewSpecificationFromDistroSeriesView(NewSpecificationFromSeriesView):
@@ -202,11 +208,12 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
         """Ensures that the name chosen for the new specification is unique
         within the context of the chosen target.
         """
-        name = data['name']
-        target = data['target']
-        if target.getSpecification(name):
-            errormessage = self.schema['name'].errormessage
-            self.setFieldError('name', errormessage % name)
+        name = data.get('name', None)
+        target = data.get('target', None)
+        if name and target:
+            if target.getSpecification(name):
+                errormessage = self.schema['name'].errormessage
+                self.setFieldError('name', errormessage % name)
 
 
 class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
