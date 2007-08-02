@@ -693,7 +693,6 @@ class BugTaskPortletView:
 class BugTaskEditView(LaunchpadEditFormView):
     """The view class used for the task +editstatus page."""
 
-    _missing_value = object()
     schema = IBugTask
     custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
     custom_widget('bugwatch', BugTaskBugWatchWidget)
@@ -1005,14 +1004,14 @@ class BugTaskEditView(LaunchpadEditFormView):
         # happen to be the only values that changed. We explicitly verify that
         # we got a new status and/or assignee, because our test suite doesn't
         # always pass all form values.
-        new_status = new_values.pop("status", self._missing_value)
-        new_assignee = new_values.pop("assignee", self._missing_value)
-        if ((new_status is not self._missing_value) and
+        new_status = new_values.pop("status", False)
+        new_assignee = new_values.pop("assignee", False)
+        if ((new_status is not False) and
             (context.status != new_status)):
             changed = True
             context.transitionToStatus(new_status, self.user)
 
-        if ((new_assignee is not self._missing_value) and
+        if ((new_assignee is not False) and
             (context.assignee != new_assignee)):
             changed = True
             context.transitionToAssignee(new_assignee)
@@ -1036,6 +1035,9 @@ class BugTaskEditView(LaunchpadEditFormView):
                 context.transitionToAssignee(None)
 
         if changed:
+            # We only set the statusexplanation field to the value of the
+            # change comment if the BugTask has actually been changed in some
+            # way. Otherwise, we just leave it as a comment on the bug.
             if comment_on_change:
                 context.statusexplanation = comment_on_change
             else:
