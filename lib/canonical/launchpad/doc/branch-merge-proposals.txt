@@ -31,7 +31,7 @@ All merge proposals have to be registered by a Person.
 
     >>> from zope.component import getUtility
     >>> from canonical.launchpad.interfaces import (
-    ...     IBranchSet, IBranchMergeProposalSet, IPersonSet)
+    ...     IBranchSet, IPersonSet)
     >>> person_set = getUtility(IPersonSet)
     >>> sample_person = person_set.getByEmail('test@canonical.com')
 
@@ -58,6 +58,9 @@ branches.
     ...     print proposal.source_branch.unique_name
     ~name12/gnome-terminal/klingon
 
+All the code paths through `addLandingTarget` are exercised by the UnitTest
+canonical.launchpad.database.tests.test_branch.BranchAddLandingTarget.
+
 
 == Interfaces ==
 
@@ -66,8 +69,6 @@ The BranchMergeProposal must implement the IBranchMergeProposal interface.
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import IBranchMergeProposal
     >>> verifyObject(IBranchMergeProposal, merge_proposal)
-    True
-    >>> verifyObject(IBranchMergeProposalSet, branch_merge_proposal_set)
     True
 
 
@@ -84,35 +85,3 @@ proposal is used.
     True
     >>> print url
     http://code.launchpad.dev/~name12/gnome-terminal/klingon/+merge/...
-
-
-== Creation constraints ==
-
-The BranchMergeProposalSet.new method raises exceptions for invalid parameters.
-
-    >>> junk_branch = branch_set.getByUniqueName('~name12/+junk/junk.dev')
-    >>> branch_merge_proposal_set.new(
-    ...     sample_person, junk_branch, target_branch)
-    Traceback (most recent call last):
-    ...
-    InvalidBranchMergeProposal: Junk branches cannot be used as source branches.
-
-    >>> branch_merge_proposal_set.new(
-    ...     sample_person, source_branch, junk_branch)
-    Traceback (most recent call last):
-    ...
-    InvalidBranchMergeProposal: Junk branches cannot be used as target branches.
-
-    >>> branch_merge_proposal_set.new(
-    ...     sample_person, source_branch, source_branch)
-    Traceback (most recent call last):
-    ...
-    InvalidBranchMergeProposal: Source and target branches must be different.
-
-    >>> firefox_branch = branch_set.getByUniqueName('~name12/firefox/main')
-    >>> branch_merge_proposal_set.new(
-    ...     sample_person, firefox_branch, target_branch)
-    Traceback (most recent call last):
-    ...
-    InvalidBranchMergeProposal: The source branch and target branch must be
-    branches of the same project.

@@ -361,8 +361,8 @@ class IBranch(IHasOwner):
         "The BranchMergeProposals where this branch is the source branch.")
     landing_candidates = Attribute(
         "The BranchMergeProposals where this branch is the target branch.")
-    def addLandingTarget(registrant, target_branch, dependent_branch,
-                         whiteboard):
+    def addLandingTarget(registrant, target_branch, dependent_branch=None,
+                         whiteboard=None):
         """Create a new BranchMergeProposal with this branch as the source.
 
         :param registrant: The person who is adding the landing target.
