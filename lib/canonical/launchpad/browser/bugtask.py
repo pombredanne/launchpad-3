@@ -915,46 +915,56 @@ class BugTaskEditView(LaunchpadEditFormView):
             except WidgetsError, errors:
                 self.setFieldError('product', errors.args[0])
 
-    @action('Save Changes', name='save')
-    def save_action(self, action, data):
-        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
-        bugtask = self.context
+    def updateContextFromData(self, data, context=None):
+        """Updates the context object using the submitted form data.
 
+        This method overrides that of LaunchpadEditFormView because of the
+        fairly involved thread of logic behind updating some BugTask
+        attributes, in particular the status, assignee and bugwatch fields.
+        """
+        if context is None:
+            context = self.context
+
+        # XXX: Should this come from data rather than from request.form?
         if self.request.form.get('subscribe', False):
-            bugtask.bug.subscribe(self.user)
+            context.bug.subscribe(self.user)
             self.request.response.addNotification(
                 "You have been subscribed to this bug.")
 
         # Save the field names we extract from the form in a separate
         # list, because we modify this list of names later if the
-        # bugtask is reassigned to a different product.
+        # context is reassigned to a different product.
         field_names = list(self.field_names)
         new_values = data.copy()
         data_to_apply = data.copy()
 
-        bugtask_before_modification = Snapshot(
-            bugtask, providing=providedBy(bugtask))
+        context_before_modification = Snapshot(
+            context, providing=providedBy(context))
 
         # If the user is reassigning an upstream task to a different
         # product, we'll clear out the milestone value, to avoid
         # violating DB constraints that ensure an upstream task can't
         # be assigned to a milestone on a different product.
-        milestone_cleared = None
-        milestone_ignored = False
-        if (IUpstreamBugTask.providedBy(bugtask) and
-            (bugtask.product != new_values.get("product")) and
+        if (IUpstreamBugTask.providedBy(context) and
+            (context.product != new_values.get("product")) and
             'milestone' in field_names):
-            # We *clear* the milestone value if one was already set. We *ignore*
+            # We clear the milestone value if one was already set. We ignore
             # the milestone value if it was currently None, and the user tried
             # to set a milestone value while also changing the product. This
             # allows us to provide slightly clearer feedback messages.
-            if bugtask.milestone:
-                milestone_cleared = bugtask.milestone
-            else:
-                if self.widgets['milestone'].getInputValue() is not None:
-                    milestone_ignored = True
+            if context.milestone:
+                self.request.response.addWarningNotification(
+                    "The %s milestone setting has been removed because "
+                    "you reassigned the bug to %s." % (
+                        context.milestone.displayname,
+                        context.bugtargetdisplayname))
+            elif self.widgets['milestone'].getInputValue() is not None:
+                self.request.response.addWarningNotification(
+                    "The milestone setting was ignored because "
+                    "you reassigned the bug to %s." % 
+                    context.bugtargetdisplayname)
 
-            bugtask.milestone = None
+            context.milestone = None
             # Remove the "milestone" field from the list of fields
             # whose changes we want to apply, because we don't want
             # the form machinery to try and set this value back to
@@ -968,52 +978,42 @@ class BugTaskEditView(LaunchpadEditFormView):
         if "status" in data_to_apply:
             del data_to_apply["status"]
 
-        changed = self.updateContextFromData(data_to_apply, context=bugtask)
+        changed = form.applyChanges(
+            context, self.form_fields, data_to_apply, self.adapters)
 
-        new_status = new_values.pop("status", self._missing_value)
-        new_assignee = new_values.pop("assignee", self._missing_value)
         # Set the "changed" flag properly, just in case status and/or assignee
         # happen to be the only values that changed. We explicitly verify that
         # we got a new status and/or assignee, because our test suite doesn't
         # always pass all form values.
+        new_status = new_values.pop("status", self._missing_value)
+        new_assignee = new_values.pop("assignee", self._missing_value)
         if ((new_status is not self._missing_value) and
-            (bugtask.status != new_status)):
+            (context.status != new_status)):
             changed = True
-            bugtask.transitionToStatus(new_status, self.user)
+            context.transitionToStatus(new_status, self.user)
 
         if ((new_assignee is not self._missing_value) and
-            (bugtask.assignee != new_assignee)):
+            (context.assignee != new_assignee)):
             changed = True
-            bugtask.transitionToAssignee(new_assignee)
+            context.transitionToAssignee(new_assignee)
 
-        if bugtask_before_modification.bugwatch != bugtask.bugwatch:
-            if bugtask.bugwatch is None:
+        if context_before_modification.bugwatch != bugtask.bugwatch:
+            if context.bugwatch is None:
                 # Reset the status and importance to the default values,
                 # since Unknown isn't selectable in the UI.
-                bugtask.transitionToStatus(
+                context.transitionToStatus(
                     IBugTask['status'].default, self.user)
-                bugtask.importance = IBugTask['importance'].default
+                context.importance = IBugTask['importance'].default
             else:
                 #XXX: Reset the bug task's status information. The right
                 #     thing would be to convert the bug watch's status to a
                 #     Launchpad status, but it's not trivial to do at the
                 #     moment. I will fix this later.
                 #     -- Bjorn Tillenius, 2006-03-01
-                bugtask.transitionToStatus(
+                context.transitionToStatus(
                     BugTaskStatus.UNKNOWN, self.user)
-                bugtask.importance = BugTaskImportance.UNKNOWN
-                bugtask.transitionToAssignee(None)
-
-        if milestone_cleared:
-            self.request.response.addWarningNotification(
-                "The %s milestone setting has been removed because "
-                "you reassigned the bug to %s." % (
-                    milestone_cleared.displayname,
-                    bugtask.bugtargetdisplayname))
-        elif milestone_ignored:
-            self.request.response.addWarningNotification(
-                "The milestone setting was ignored because "
-                "you reassigned the bug to %s." % bugtask.bugtargetdisplayname)
+                context.importance = BugTaskImportance.UNKNOWN
+                context.transitionToAssignee(None)
 
         comment_on_change = self.request.form.get(
             "%s.comment_on_change" % self.prefix)
@@ -1023,24 +1023,24 @@ class BugTaskEditView(LaunchpadEditFormView):
         # there is one, otherwise clear it out.
         if comment_on_change:
             # Add the change comment as a comment on the bug.
-            bugtask.bug.newMessage(
+            context.bug.newMessage(
                 owner=getUtility(ILaunchBag).user,
-                subject=bugtask.bug.followup_subject(),
+                subject=context.bug.followup_subject(),
                 content=comment_on_change)
 
-            bugtask.statusexplanation = comment_on_change
+            context.statusexplanation = comment_on_change
         else:
-            bugtask.statusexplanation = ""
+            context.statusexplanation = ""
 
         if changed:
             notify(
                 SQLObjectModifiedEvent(
-                    object=bugtask,
-                    object_before_modification=bugtask_before_modification,
+                    object=context,
+                    object_before_modification=context_before_modification,
                     edited_fields=field_names))
 
-        if bugtask.sourcepackagename is not None:
-            real_package_name = bugtask.sourcepackagename
+        if context.sourcepackagename is not None:
+            real_package_name = context.sourcepackagename
             entered_package_name = data.get('sourcepackagename')
             if real_package_name != entered_package_name:
                 # The user entered a binary package name which got
@@ -1052,13 +1052,17 @@ class BugTaskEditView(LaunchpadEditFormView):
                     entered_package=entered_package_name.name,
                     real_package=real_package_name.name)
 
-        if (bugtask_before_modification.sourcepackagename !=
-            bugtask.sourcepackagename):
+        if (context_before_modification.sourcepackagename !=
+            context.sourcepackagename):
             # The source package was changed, so tell the user that we've
             # subscribed the new bug contacts.
             self.request.response.addNotification(
                 "The bug contacts for %s have been subscribed to this bug." % (
-                    bugtask.bugtargetdisplayname))
+                    context.bugtargetdisplayname))
+
+    @action('Save Changes', name='save')
+    def save_action(self, action, data):
+        self.updateContextFromData(data)
 
 
 class BugTaskStatusView(LaunchpadView):
