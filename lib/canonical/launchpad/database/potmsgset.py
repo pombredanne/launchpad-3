@@ -9,6 +9,7 @@ from zope.component import getUtility
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
 
+from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
     BrokenTextError, ILanguageSet, IPOTMsgSet, ITranslationImporter,
     TranslationConstants)
@@ -17,7 +18,6 @@ from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.posubmission import POSubmission
-
 
 class POTMsgSet(SQLBase):
     implements(IPOTMsgSet)
@@ -39,7 +39,7 @@ class POTMsgSet(SQLBase):
         """See IPOTMsgSet."""
         return self.primemsgid_.msgid
 
-    @property
+    @cachedproperty
     def msgid_plural(self):
         """See IPOTMsgSet."""
         plural = POMsgID.selectOne('''
