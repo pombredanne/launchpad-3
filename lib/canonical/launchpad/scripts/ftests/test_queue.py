@@ -670,9 +670,11 @@ class TestQueueToolInJail(TestQueueBase):
         e.g. queue fetch alsa-utils 1 3
         """
         queue_action = self.execute_command('fetch 3 mozilla-firefox')
+        files = self._listfiles()
+        files.sort()
         self.assertEqual(
             ['mozilla-firefox_0.9_i386.changes', 'netapplet-1.0.0.tar.gz'],
-            self._listfiles())
+            files)
 
 
 def test_suite():
