@@ -24,9 +24,7 @@ from canonical.database.sqlbase import quote, SQLBase, sqlvalues
 
 from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.interfaces import (
-    IDistribution, IFAQ, IFAQSet, IPerson, IProduct, IProject)
-
-from canonical.lp.dbschema import FAQSort
+    IDistribution, IFAQ, IFAQSet, FAQSort, IPerson, IProduct, IProject)
 
 
 class FAQ(SQLBase):
@@ -82,7 +80,7 @@ class FAQ(SQLBase):
             raise AssertionError(
                 'owner parameter should be an IPerson, not %s' % type(owner))
         if product is not None and distribution is not None:
-             raise AssertionError(
+            raise AssertionError(
                 "only one of product or distribution should be provided")
         if product is None and distribution is None:
             raise AssertionError("product or distribution must be provided")
@@ -195,8 +193,8 @@ class FAQSearch:
                 'project should be an IProject, not %s' % type(project))
             assert product is None and distribution is None, (
                 'can only use one of product, distribution, or project')
-            self.project= project
-            
+            self.project = project
+
     def getResults(self):
         """Return the FAQs matching this search."""
         return FAQ.select(

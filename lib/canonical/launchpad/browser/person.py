@@ -107,8 +107,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.lp.dbschema import (
-    SpecificationFilter, QuestionParticipation, BugTaskStatus)
+from canonical.lp.dbschema import BugTaskStatus, SpecificationFilter
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
@@ -123,9 +122,10 @@ from canonical.launchpad.interfaces import (
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
     BugTaskSearchParams, IBranchSet, ITeamMembership,
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, LoginTokenType, SSHKeyType,
-    EmailAddressStatus, TeamMembershipStatus, TeamSubscriptionPolicy,
-    PersonCreationRationale, TeamMembershipRenewalPolicy)
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
+    LoginTokenType, PersonCreationRationale, QuestionParticipation,
+    SSHKeyType, TeamMembershipStatus, TeamMembershipRenewalPolicy,
+    TeamSubscriptionPolicy)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -596,8 +596,8 @@ class PersonBugsMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'bugs'
-    links = ['assignedbugs', 'commentedbugs', 'reportedbugs', 'subscribedbugs',
-             'relatedbugs', 'softwarebugs', 'mentoring']
+    links = ['assignedbugs', 'commentedbugs', 'reportedbugs',
+             'subscribedbugs', 'relatedbugs', 'softwarebugs', 'mentoring']
 
     def relatedbugs(self):
         text = 'List related bugs'
@@ -1444,7 +1444,8 @@ class PersonRelatedBugsView(BugTaskSearchListingView):
             commenter_params.bug_commenter = context
 
         tasks = self.context.searchTasks(
-            assignee_params, subscriber_params, owner_params, commenter_params)
+            assignee_params, subscriber_params, owner_params,
+            commenter_params)
         return BugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)

@@ -114,10 +114,12 @@
     name="DistroSeriesStatus"
     factory="canonical.launchpad.vocabularies.DistroSeriesStatusVocabulary"
     />
+
   <vocabulary
     name="FAQ"
     factory="canonical.launchpad.vocabularies.FAQVocabulary"
     />
+
    <vocabulary
     name="FilteredDistroArchSeries"
     factory="canonical.launchpad.vocabularies.FilteredDistroArchSeriesVocabulary"
@@ -156,26 +158,6 @@
   <vocabulary
     name="Milestone"
     factory="canonical.launchpad.vocabularies.MilestoneVocabulary"
-    />
-
-  <vocabulary
-    name="MirrorContent"
-    factory="canonical.launchpad.vocabularies.MirrorContentVocabulary"
-    />
-
-  <vocabulary
-    name="MirrorPulseType"
-    factory="canonical.launchpad.vocabularies.MirrorPulseTypeVocabulary"
-    />
-
-  <vocabulary
-    name="MirrorSpeed"
-    factory="canonical.launchpad.vocabularies.MirrorSpeedVocabulary"
-    />
-
-  <vocabulary
-    name="MirrorStatus"
-    factory="canonical.launchpad.vocabularies.MirrorStatusVocabulary"
     />
 
   <vocabulary
@@ -331,26 +313,6 @@
   <vocabulary
     name="TextDirection"
     factory="canonical.launchpad.vocabularies.TextDirectionVocabulary"
-    />
-
-  <vocabulary
-    name="QuestionAction"
-    factory="canonical.launchpad.vocabularies.QuestionActionVocabulary"
-    />
-
-  <vocabulary
-    name="QuestionPriority"
-    factory="canonical.launchpad.vocabularies.QuestionPriorityVocabulary"
-    />
-
-  <vocabulary
-    name="QuestionSort"
-    factory="canonical.launchpad.vocabularies.QuestionSortVocabulary"
-    />
-
-  <vocabulary
-    name="QuestionStatus"
-    factory="canonical.launchpad.vocabularies.QuestionStatusVocabulary"
     />
 
   <vocabulary
