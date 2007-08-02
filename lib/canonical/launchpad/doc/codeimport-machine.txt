@@ -5,7 +5,7 @@ the machines that can perform imports and whether they are online (that
 is, currently capable of performing imports).
 
     >>> from canonical.launchpad.interfaces import (
-    ...      ICodeImportMachine, ICodeImportMachineSet)
+    ...     ICodeImportMachine, ICodeImportMachineSet, CodeImportMachineState)
 
 Adding new machines is considered an admin task, so requires that we switch to
 a database administrator.
@@ -13,7 +13,7 @@ a database administrator.
 Adding a machine is very simple SQL, for which there will probably be a
 shell script.
 
-    >>> from canonical.database.sqlbase import connect
+    >>> from canonical.database.sqlbase import connect, quote
     >>> connection = connect('testadmin')
     >>> cur = connection.cursor()
     >>> cur.execute("""
@@ -72,7 +72,7 @@ hostname and online state information.
     True
     >>> machine.hostname
     u'frobisher.example.com'
-    >>> machine.state.name
+    >>> print machine.state.name
     OFFLINE
 
 The web app cannot edit this information.
@@ -93,8 +93,8 @@ SQLObject here.  But the test framework doesn't appear to support this
     >>> connection = connect('importd')
     >>> cur = connection.cursor()
     >>> cur.execute("""
-    ...     INSERT INTO CodeImportMachine (hostname, state)
-    ...     VALUES ('frobisher.example.com', %s)
+    ...     UPDATE CodeImportMachine SET state=%s
+    ...     WHERE hostname='frobisher.example.com'
     ...     """ % quote(CodeImportMachineState.ONLINE))
     >>> connection.commit()
 
@@ -111,6 +111,6 @@ the status is indeed updated.
 
     >>> machine_set = getUtility(ICodeImportMachineSet)
     >>> machine = machine_set.getByHostname('frobisher.example.com')
-    >>> machine.state.name
-    OFFLINE
+    >>> print machine.state.name
+    ONLINE
 
