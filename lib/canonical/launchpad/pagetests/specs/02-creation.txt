@@ -311,8 +311,7 @@ for the series, the new blueprint is automatically accepted as a series goal:
     >>> control('Summary'    ).value = summary
     >>> control('series goal').control.value = True
     >>> control('Register'   ).click()
-    >>> print(first_tag_by_class(admin_browser.contents,
-    ...                          'summary'))
+    >>> print(first_tag_by_class(admin_browser.contents, 'summary'))
     <...Series goal:...Accepted...for...hoary...
 	
 
