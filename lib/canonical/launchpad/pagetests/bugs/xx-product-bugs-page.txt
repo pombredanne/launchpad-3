@@ -57,16 +57,13 @@ supporting Javascript, the statistics are displayed as normal text:
 
 == Tags and Filters ==
 
-There's also portlets which shows the bug tags being used.
+There's also portlets for easy searching by tags and filters.
 
-    >>> from BeautifulSoup import BeautifulSoup
     >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
-    >>> soup = BeautifulSoup(anon_browser.contents)
-    >>> tags_portlet = soup.find('div', {'id': "bug-tags"})
-    >>> for td_tag in tags_portlet('td'):
-    ...     print td_tag.renderContents()
-    <a ...>doc</a>
-    1
-    <a ...>layout-test</a>
-    1
+    >>> print find_portlet(anon_browser.contents, 'Tags')
+    <div class="portlet"...>
+    <h2>Tags</h2>...
+    >>> print find_portlet(anon_browser.contents, 'Filters')
+    <div class="portlet"...>
+    <h2>Filters</h2>...
 
