@@ -703,12 +703,12 @@ class BugTaskEditView(LaunchpadEditFormView):
 
     @property
     def next_url(self):
-        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
+        """See canonical.launchpad.webapp.launchpadform.LaunchpadFormView."""
         return canonical_url(self.context)
 
     @property
     def initial_values(self):
-        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
+        """See canonical.launchpad.webapp.launchpadform.LaunchpadFormView."""
         field_values = {}
         for name in self.field_names:
             field_values[name] = getattr(self.context, name)
@@ -717,37 +717,45 @@ class BugTaskEditView(LaunchpadEditFormView):
 
     @property
     def prefix(self):
-        """Return a prefix that can be used for this form.
+        """Returns a prefix that can be used for this form.
 
-        It's constructed by using the names of the bugtask's target, to
-        ensure that it's unique within the context of a bug. This is
+        The prefix is constructed by using the names of the bugtask's target
+        so as to ensure that it's unique within the context of a bug. This is
         needed in order to included multiple edit forms on the bug page,
         while still keeping the field ids unique.
         """
-        bugtask = self.context
-
         parts = []
-        if IUpstreamBugTask.providedBy(bugtask):
-            parts.append(bugtask.product.name)
-        elif IProductSeriesBugTask.providedBy(bugtask):
-            parts.append(bugtask.productseries.name)
-            parts.append(bugtask.productseries.product.name)
-        elif IDistroBugTask.providedBy(bugtask):
-            parts.append(bugtask.distribution.name)
-            if bugtask.sourcepackagename is not None:
-                parts.append(bugtask.sourcepackagename.name)
-        elif IDistroSeriesBugTask.providedBy(bugtask):
-            parts.append(bugtask.distroseries.distribution.name)
-            parts.append(bugtask.distroseries.name)
-            if bugtask.sourcepackagename is not None:
-                parts.append(bugtask.sourcepackagename.name)
+        if IUpstreamBugTask.providedBy(self.context):
+            parts.append(self.context.product.name)
+
+        elif IProductSeriesBugTask.providedBy(self.context):
+            parts.append(self.context.productseries.name)
+            parts.append(self.context.productseries.product.name)
+
+        elif IDistroBugTask.providedBy(self.context):
+            parts.append(self.context.distribution.name)
+            if self.context.sourcepackagename is not None:
+                parts.append(self.context.sourcepackagename.name)
+
+        elif IDistroSeriesBugTask.providedBy(self.context):
+            parts.append(self.context.distroseries.distribution.name)
+            parts.append(self.context.distroseries.name)
+
+            if self.context.sourcepackagename is not None:
+                parts.append(self.context.sourcepackagename.name)
+
         else:
-            raise AssertionError("Unknown IBugTask: %r" % bugtask)
+            raise AssertionError("Unknown IBugTask: %r" % self.context)
         return '_'.join(parts)
 
     def setUpFields(self):
-        """Set up the fields for the bug task edit form."""
-        # We need to add any fields that aren't already in our fieldset.
+        """Sets up the fields for the bug task edit form.
+
+        See canonical.launchpad.webapp.launchpadform.LaunchpadFormView.
+        """
+        # The fields that we present to the users change based upon the
+        # current context and the user's permissions, so we update field_names
+        # with any fields that may need to be added.
         for field in self._getEditableFieldNames():
             if field not in self.field_names:
                 self.field_names.append(field)
@@ -792,6 +800,7 @@ class BugTaskEditView(LaunchpadEditFormView):
 
         if self.context.target_uses_malone:
             self.form_fields = self.form_fields.omit('bugwatch')
+
         elif (self.context.bugwatch is not None and
             self.form_fields.get('assignee', False)):
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
