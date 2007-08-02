@@ -28,10 +28,6 @@ __all__ = [
     'PackagingTypeVocabulary',
     'PollAlgorithmVocabulary',
     'PollSecrecyVocabulary',
-    'QuestionActionVocabulary',
-    'QuestionPriorityVocabulary',
-    'QuestionSortVocabulary',
-    'QuestionStatusVocabulary',
     'RemoteBugTaskImportanceVocabulary',
     'RevisionControlSystemsVocabulary',
     'ShipItFlavourVocabulary',
@@ -49,6 +45,8 @@ __all__ = [
 from canonical.lp import dbschema
 
 from canonical.launchpad.webapp.vocabulary import vocab_factory
+from canonical.launchpad.interfaces import (
+    QuestionAction, QuestionPriority, QuestionSort, QuestionStatus)
 
 
 # DB Schema Vocabularies
@@ -77,10 +75,6 @@ PackagePublishingPocketVocabulary = vocab_factory(
 PackagingTypeVocabulary = vocab_factory(dbschema.PackagingType)
 PollAlgorithmVocabulary = vocab_factory(dbschema.PollAlgorithm)
 PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
-QuestionActionVocabulary = vocab_factory(dbschema.QuestionAction)
-QuestionSortVocabulary =  vocab_factory(dbschema.QuestionSort)
-QuestionStatusVocabulary =  vocab_factory(dbschema.QuestionStatus)
-QuestionPriorityVocabulary = vocab_factory(dbschema.QuestionPriority)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 RevisionControlSystemsVocabulary = vocab_factory(
     dbschema.RevisionControlSystems)

@@ -4,9 +4,8 @@
 application."""
 
 from canonical.launchpad.interfaces import (
-    BugTaskStatus, IDistribution, IProduct)
+    BugTaskStatus, IDistribution, IProduct, QuestionAction)
 from canonical.launchpad.mailnotification import get_bug_delta
-from canonical.lp.dbschema import QuestionAction
 
 
 def bug_created(bug, event):

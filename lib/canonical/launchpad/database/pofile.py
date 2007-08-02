@@ -262,8 +262,7 @@ class POFileMixIn(RosettaStats):
         # Find ids of all POSubmissions that might be relevant (either as
         # suggestions for our all_pomsgsets or because they're already
         # attached to our stored_pomsgsets) plus their potmsgsets'
-        # primemsgids.  We don't need to know about their POFiles, nor about
-        # the rest of their POTMsgSets.
+        # primemsgids.
         # Note that a suggestion coming from a fuzzy pomsgset isn't relevant
         # as a suggestion, but if it happens to be attached to a msgset from
         # stored_pomsgsets, it will still be relevant to that msgset.
@@ -273,10 +272,9 @@ class POFileMixIn(RosettaStats):
             FROM POSubmission
             JOIN POMsgSet ON POSubmission.pomsgset = POMsgSet.id
             JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
-            JOIN POFile ON POMsgSet.pofile = POFile.id
             WHERE
                 (%(ids)s OR NOT POMsgSet.isfuzzy) AND
-                POFile.language = %(language)s AND
+                POMsgSet.language = %(language)s AND
                 POTMsgSet.primemsgid IN %(wanted_primemsgids)s
             """ % parameters
         cur = cursor()

@@ -107,7 +107,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.lp.dbschema import SpecificationFilter, QuestionParticipation
+from canonical.lp.dbschema import SpecificationFilter
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
@@ -595,8 +595,8 @@ class PersonBugsMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'bugs'
-    links = ['assignedbugs', 'commentedbugs', 'reportedbugs', 'subscribedbugs',
-             'relatedbugs', 'softwarebugs', 'mentoring']
+    links = ['assignedbugs', 'commentedbugs', 'reportedbugs',
+             'subscribedbugs', 'relatedbugs', 'softwarebugs', 'mentoring']
 
     def relatedbugs(self):
         text = 'List related bugs'
@@ -1443,7 +1443,8 @@ class PersonRelatedBugsView(BugTaskSearchListingView):
             commenter_params.bug_commenter = context
 
         tasks = self.context.searchTasks(
-            assignee_params, subscriber_params, owner_params, commenter_params)
+            assignee_params, subscriber_params, owner_params,
+            commenter_params)
         return BugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
