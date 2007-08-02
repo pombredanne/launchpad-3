@@ -29,7 +29,7 @@ class CodeImportMachine(SQLBase):
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
     hostname = StringCol(default=None)
-    state = EnumCol(schema=CodeImportMachineState, notNull=True,
+    state = EnumCol(enum=CodeImportMachineState, notNull=True,
         default=CodeImportMachineState.OFFLINE)
     heartbeat = UtcDateTimeCol(notNull=False)
 

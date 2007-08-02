@@ -1,4 +1,4 @@
- # Copyright 2007 Canonical Ltd.  All rights reserved.
+# Copyright 2007 Canonical Ltd.  All rights reserved.
 
 """Code import machine interfaces."""
 
@@ -56,11 +56,12 @@ class ICodeImportMachine(Interface):
     hostname = TextLine(
         title=_('Host name'), required=True,
         description=_('The hostname of the machine.'))
-    state = Choice(title=_('State'), required=True,
-        vocabulary=CodeImportMachineState,
+    state = Choice(
+        title=_('State'), required=True, vocabulary=CodeImportMachineState,
         default=CodeImportMachineState.OFFLINE,
         description=_("The state of the controller daemon on this machine."))
-    heartbeat = Datetime(title=_("Heartbeat"),
+    heartbeat = Datetime(
+        title=_("Heartbeat"),
         description=_("When the controller deamon last recorded it was"
                       " running."))
 
