@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'INewSpecification',
+    'INewSpecificationSeriesGoal',
     'INewSpecificationSprint',
     'INewSpecificationTarget',
     'INewSpecificationProjectTarget',
@@ -96,7 +97,7 @@ class SpecURLField(TextLine):
 
 
 class INewSpecification(Interface):
-    """A schema for new specifications."""
+    """A schema for a new specification."""
     
     name = SpecNameField(
         title=_('Name'), required=True, readonly=False,
@@ -136,34 +137,44 @@ class INewSpecification(Interface):
         vocabulary='ValidPersonOrTeam')
 
 
-class INewSpecificationSprint(Interface):
-    """A mixin schema for new specifications allowing the user to specify a
-    sprint."""
-    sprint = Choice(title=_("Propose for sprint"),
-                    description=_("the sprint to which agenda this "
-                                  "blueprint is being suggested."),
-                    required=False,
-                    vocabulary='FutureSprint')
-    
-
-class INewSpecificationTarget(Interface):
-    """A mixin schema for new specifications requiring the user to specify a 
-    target.""" 
-    target = Choice(
-        title=_("For"),
-        description=_("The project for which this proposal is being made."),
-        required=True,
-        vocabulary='DistributionOrProduct')
-    
-    
 class INewSpecificationProjectTarget(Interface):
-    """A mixin schema for new specifications requiring the user to specify a
-    project target."""
+    """A mixin schema for a new specification that requires the user to
+    specify a product from a given project.
+    """
     target = Choice(title=_("For"),
                     description=_("The project for which this "
                                   "proposal is being made."),
-                    required=True,
-                    vocabulary='ProjectProducts')
+                    required=True, vocabulary='ProjectProducts')
+    
+
+class INewSpecificationSeriesGoal(Interface):
+    """A mixin schema for a new specification that allows the user to propose
+    the specification as a series goal.
+    """
+    goal = Bool(title=_('Propose for series goal'),
+                description=_("Check this to indicate that you wish to "
+                              "propose this blueprint as a series goal."),                
+                required=True, default=False)
+
+
+class INewSpecificationSprint(Interface):
+    """A mixin schema for a new specification that allows the user to propose
+    the specification for discussion at a sprint.
+    """
+    sprint = Choice(title=_("Propose for sprint"),
+                    description=_("the sprint to which agenda this "
+                                  "blueprint is being suggested."),
+                    required=False, vocabulary='FutureSprint')
+
+
+class INewSpecificationTarget(Interface):
+    """A mixin schema for a new specification that requires the user to
+    specify a target that is either a distribution or a product.
+    """
+    target = Choice(title=_("For"),
+                    description=_("The project for which this proposal is "
+                                  "being made."),
+                    required=True, vocabulary='DistributionOrProduct')
 
 
 class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner, 
