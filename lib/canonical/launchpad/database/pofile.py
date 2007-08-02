@@ -162,11 +162,10 @@ class POFileMixIn(RosettaStats):
 
     def getMsgSetsForPOTMsgSets(self, for_potmsgsets):
         """See `IPOFile`."""
-
         if for_potmsgsets is None:
             return {}
         for_potmsgsets = list(for_potmsgsets)
-        if len(for_potmsgsets) == 0:
+        if not for_potmsgsets:
             return {}
 
         # Retrieve existing POMsgSets matching for_potmsgsets (one each).
@@ -278,8 +277,6 @@ class POFileMixIn(RosettaStats):
             """ % parameters
         cur = cursor()
 
-        # XXX: JeroenVermeulen 2007-06-17, pre-join the potranslations we'll
-        # be needing to prevent piecemeal retrieval.  (See bug 30602)
         cur.execute(query)
         available = dict(cur.fetchall())
         if not available:
@@ -334,6 +331,13 @@ class POFileMixIn(RosettaStats):
                 # Any other POSubmission we see here has to be non-fuzzy, and
                 # so it's relevant to any POMsgSets that refer to the same
                 # primemsgid, including the POMsgSet it itself is attached to.
+
+                # XXX: JeroenVermeulen 2007-08-02, this assertion may still
+                # trigger the unnecessary queries.  Remove it after testing
+                # with production data!  (bug ?????)
+                # XXX: JeroenVermeulen 2007-08-02, when landing this, register
+                # a bug reminding me to remove the assertion, and add it to
+                # the XXX above.
                 assert (not submission.pomsgset.isfuzzy,
                         "Fuzzy POMsgSet submission fetched as a suggestion.")
                 for recipient in takers_for_primemsgid[primemsgid]:
