@@ -219,7 +219,7 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistribution"
-    class="canonical.launchpad.browser.DistributionPPAView"
+    class="canonical.launchpad.browser.DistributionPPASearchView"
     name="+ppas"
     permission="zope.Public"
     facet="overview"

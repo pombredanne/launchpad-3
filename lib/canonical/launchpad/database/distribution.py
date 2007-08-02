@@ -910,7 +910,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return Archive.selectBy(
             purpose=ArchivePurpose.PPA, distribution=self, orderBy=['id'])
 
-    def searchPPAs(self, text=None):
+    def searchPPAs(self, text=None, show_inactive=False):
         """See `IDistribution`."""
         clauses = ["""
         Archive.purpose = %s AND
@@ -920,6 +920,14 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         clauseTables = ['Person']
         orderBy = ['Person.name']
+
+        if not show_inactive:
+            active_statuses = (PackagePublishingStatus.PUBLISHED,
+                               PackagePublishingStatus.PENDING)
+            clauses.append("""
+            (SELECT count(pub.id) FROM SourcePackagePublishingHistory pub
+               WHERE pub.archive = Archive.id AND pub.status IN %s) > 0
+            """ % sqlvalues(active_statuses))
 
         if text:
             clauses.append("""

@@ -15,6 +15,23 @@ Owner, Description, Sources and Binaries, the latter two being a count.
 The sample data contains three PPAs.  Only Celso has any packages, with two
 sources and one binary.
 
+== Searching PPAs ==
+
+By default only active (those with, at least one, PENDING or PUBLISHED
+source record) PPAs are presented.
+
+    >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_batch_row'):
+    ...    print extract_text(ppa_row)
+    Celso Providelo
+    packages to help my friends.
+    2
+    1
+
+We have a checkbox to allow inactive PPA results.
+
+    >>> browser.getControl(name="show_inactive").value = True
+    >>> browser.getControl("Search").click()
+
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_batch_row'):
     ...    print extract_text(ppa_row)
     Celso Providelo
@@ -30,7 +47,10 @@ sources and one binary.
     0
     0
 
-== Searching PPAs ==
+This checkbox value is propagated to susequent searches:
+
+    >>> browser.getControl(name="show_inactive").value
+    True
 
 No data matches the non-existent search string "bustmybuffers".
 

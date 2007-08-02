@@ -49,6 +49,11 @@
             facet="overview"
             name="+index"
             />
+        <browser:page
+            template="../templates/archive-ppa-row.pt"
+            facet="overview"
+            name="+ppa-row"
+            />
     </browser:pages>
 
     <browser:pages

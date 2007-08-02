@@ -309,8 +309,15 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getAllPPAs():
         """Return all PPAs for this distribution."""
 
-    def searchPPAs(text=None):
-        """Return all PPAs matching the given text in this distribution."""
+    def searchPPAs(text=None, show_inactive=False):
+        """Return all PPAs matching the given text in this distribution.
+
+        'text', when passed, will restrict results to Archives with matching
+        description (SQL LIKE) or matching Archive.owner (fti/ftq).
+
+        'show_inactive', when False, will restrict results to Archive with
+        at least one source publication in PENDING or PUBLISHED status.
+        """
 
     def getPendingAcceptancePPAs():
         """Return only pending acceptance PPAs in this distribution."""
