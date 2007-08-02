@@ -7,12 +7,13 @@
 
   <div metal:fill-slot="main">
     <div metal:use-macro="context/@@launchpad_form/form">
-      <div metal:fill-slot="extra_bottom">
+      <p metal:fill-slot="extra_bottom">
         By deactivating your account, you give up the ability to log into
-        Launchpad, and you will not receive any further Launchpad emails. If
-        you do not want to deactivate your account, you may take any action
-        <strong>other</strong> than hitting the 'Deactivate My Account' button.
-      </div>
+        Launchpad, and you will not receive any further emails from us.
+        <strong>You may want to simply 
+        <a tal:attributes="href string:${context/fmt:url}/+edit">change
+        your account details</a> rather than deactivate it.</strong>
+      </p>
     </div>
   </div>
 

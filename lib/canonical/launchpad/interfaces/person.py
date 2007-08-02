@@ -369,9 +369,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "here.")
             )
     password = PasswordField(
-            title=_('Password'), required=True, readonly=False,
-            description=_("Enter the same password in each field.")
-            )
+            title=_('Password'), required=True, readonly=False)
     karma = Int(
             title=_('Karma'), readonly=False,
             description=_('The cached total karma for this person.')

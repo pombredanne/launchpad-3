@@ -149,7 +149,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.launchpad.webapp.interfaces import LoggedOutEvent
+from canonical.launchpad.webapp.interfaces import (
+    IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu,
     ApplicationMenu, enabled_with_permission, Navigation, stepto,
@@ -746,7 +747,7 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editsshkeys', 'editpgpkeys',
              'memberships', 'mentoringoffers',
              'codesofconduct', 'karma', 'common_packages', 'related_projects',
-             'administer', 'deactivate_account']
+             'administer']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -795,12 +796,6 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+changepassword'
         text = 'Change your password'
         return Link(target, text, icon='edit')
-
-    @enabled_with_permission('launchpad.Special')
-    def deactivate_account(self):
-        target = '+deactivate-account'
-        text = 'Deactivate your account'
-        return Link(target, text, icon='delete')
 
     def karma(self):
         target = '+karma'
@@ -1069,9 +1064,18 @@ class PersonAddView(LaunchpadFormView):
 class PersonDeactivateAccountView(LaunchpadFormView):
 
     schema = IPerson
-    field_names = ['account_status_comment']
+    field_names = ['account_status_comment', 'password']
     label = "Deactivate your Launchpad account"
     custom_widget('account_status_comment', TextAreaWidget, height=5, width=60)
+
+    def validate(self, data):
+        loginsource = getUtility(IPlacelessLoginSource)
+        principal = loginsource.getPrincipalByLogin(
+            self.user.preferredemail.email)
+        assert principal is not None, "User must be logged in at this point."
+        if not principal.validate(data.get('password')):
+            self.setFieldError('password', 'Incorrect password.')
+            return
 
     @action(_("Deactivate My Account"), name="deactivate")
     def deactivate_action(self, action, data):
