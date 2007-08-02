@@ -31,6 +31,8 @@ have had no message activity for 60 days.
 
 There are no Expired BugTasks in sampledata.
 
+    # XXX sinzui 2007-08-02:
+    # switch c.lp.dbschema -> c.lazr
     >>> from canonical.launchpad.database import BugTask
     >>> from canonical.lp.dbschema import BugTaskStatus
     >>> BugTask.select(status=BugTaskStatus.EXPIRED).count()
@@ -103,6 +105,8 @@ recent                     9   23       True        False   Incomplete  True
 
 The data now looks like the table described above.
 
+    # XXX sinzui 2007-08-02:
+    # Switch from bugtask.bug.date_last_updated -> bugtask.date_incomplete.
     >>> def summarize_bugtask(bugtasks):
     ...     print 'ROLE  BUG  BUGTASK  UNASSIGNED  IS_OLD  STATUS  MALONE'
     ...     for role in sorted(bugtasks.keys()):

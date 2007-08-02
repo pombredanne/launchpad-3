@@ -34,12 +34,11 @@ from zope.app.content_types import guess_content_type
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IBugSet, IBugActivitySet, IBugAttachmentSet, IBugExternalRefSet,
-    ICveSet, IEmailAddressSet, ILaunchpadCelebrities,
+    ICveSet, IEmailAddressSet, ILaunchpadCelebrities, PersonCreationRationale,
     ILibraryFileAliasSet, IMessageSet, IPersonSet, CreateBugParams)
 from canonical.launchpad.scripts.bugexport import BUGS_XMLNS
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType,
-    PersonCreationRationale)
+    BugTaskImportance, BugTaskStatus, BugAttachmentType)
 
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugimport')

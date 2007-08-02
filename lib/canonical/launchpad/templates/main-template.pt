@@ -26,8 +26,8 @@
       tal:content="string:@import url(${icingroot}/style.css);"/>
     <style tal:condition="is_demo" type="text/css"
     >html, body {background: #ddd url(/@@/demo) !important;}</style>
-    <style tal:condition="not: site_message" type="text/css"
-    >#help_panel {top: 28px !important;}</style>
+    <style tal:condition="site_message" type="text/css"
+    >#help {top: 47px !important;}</style>
     <!--[if IE 7]>
       <style type="text/css">#portlets {left: 20px;}</style>
     <![endif]-->

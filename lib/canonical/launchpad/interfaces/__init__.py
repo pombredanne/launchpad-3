@@ -44,6 +44,7 @@ from canonical.launchpad.interfaces.build import *
 from canonical.launchpad.interfaces.builder import *
 from canonical.launchpad.interfaces.buildqueue import *
 from canonical.launchpad.interfaces.codeimport import *
+from canonical.launchpad.interfaces.codeimportmachine import *
 from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
@@ -146,6 +147,7 @@ from canonical.launchpad.interfaces.translationformat import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *
 from canonical.launchpad.interfaces.questioncollection import *
+from canonical.launchpad.interfaces.questionenums import *
 from canonical.launchpad.interfaces.questionmessage import *
 from canonical.launchpad.interfaces.questionreopening import *
 from canonical.launchpad.interfaces.questionsubscription import *
