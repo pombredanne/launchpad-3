@@ -124,9 +124,9 @@ administrator messages about operations done in this PPA.
     >>> find_tag_by_id(sample_browser.contents, 'whiteboard') is None
     True
 
-Note that 'whiteboard' section is presented, as 'informational' box,
-only for those users with 'launchpad.Edit' permission on the PPA in
-question, see below.
+Note that the 'whiteboard' section is presented as an informational
+box. Only users with 'launchpad.Edit' permission on the PPA in
+question will be able to see it, see below. 
 
 The PPA owner is able to edit PPA 'description' and 'whiteboard':
 
