@@ -540,7 +540,7 @@ class BinaryPackagePublishingHistory(SQLBase, ArchivePublisherBase):
 
         fields = IndexStanzaFields()
         fields.append('Package', bpr.name)
-        fields.append('Priority', self.priority.title)
+        fields.append('Priority', self.priority.title.lower())
         fields.append('Section', self.section.name)
         fields.append('Installed-Size', bpr.installedsize)
         fields.append('Maintainer', spr.dsc_maintainer_rfc822)

@@ -52,7 +52,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
         pub_binary = self.getPubBinary()
         self.assertEqual(
             [u'Package: foo-bin',
-             u'Priority: Standard',
+             u'Priority: standard',
              u'Section: base',
              u'Installed-Size: 100',
              u'Maintainer: Foo Bar <foo@bar.com>',
@@ -95,7 +95,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
 
         self.assertEqual(
             [u'Package: foo-bin',
-             u'Priority: Standard',
+             u'Priority: standard',
              u'Section: base',
              u'Installed-Size: 100',
              u'Maintainer: Foo Bar <foo@bar.com>',
@@ -129,7 +129,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
 
         self.assertEqual(
             [u'Package: foo-bin',
-             u'Priority: Standard',
+             u'Priority: standard',
              u'Section: base',
              u'Installed-Size: 100',
              u'Maintainer: Foo Bar <foo@bar.com>',
@@ -212,7 +212,7 @@ class TestNativeArchiveIndexes(TestNativePublishingBase):
             ['one: um', 'three: tres', 'two: dois',
              ], fields.makeOutput().splitlines())
 
-        # special treatment for field named 'Files'
+        # Special treatment for field named 'Files'
         # do not add a space between <name>:<value>
         # <value> will always start with a new line.
         fields = IndexStanzaFields()
