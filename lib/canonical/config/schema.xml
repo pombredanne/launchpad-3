@@ -971,7 +971,13 @@ k            </description>
     <sectiontype name="archivepublisher">
         <key name="root" datatype="string" required="yes">
             <description>
-                Base directory for all archives.
+                Base directory for distribution archives.
+            </description>
+        </key>
+        <key name="base_url" datatype="string" required="no"
+            default="http://launchpad.dev">
+            <description>
+                External base URL for distribution archives.
             </description>
         </key>
     </sectiontype>

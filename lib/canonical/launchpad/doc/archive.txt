@@ -110,6 +110,20 @@ and an ArchivePurpose:
   u'Commercial archive'
 
 
+IArchive.archive_url will return a URL for the archive that the builder can
+use to retrieve files from it.
+
+  >>> commercial_archive.archive_url
+  u'http://launchpad.dev/ubuntutest-commercial'
+
+  >>> sandbox_archive.archive_url
+  u'http://ppa.launchpad.dev/name16/ubuntu'
+
+  >>> getUtility(IArchiveSet).getByDistroPurpose(ubuntutest,
+  ...     ArchivePurpose.PRIMARY).archive_url
+  u'http://launchpad.dev/ubuntutest'
+
+
 The publisher config for COMMERCIAL contains only 'commercial' in its
 components.  This prevents non-commercial being published in the commercial
 archive.

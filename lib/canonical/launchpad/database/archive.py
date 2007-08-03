@@ -83,9 +83,24 @@ class Archive(SQLBase):
 
     @property
     def archive_url(self):
-        """See IArchive."""
-        return urlappend(
-            config.personalpackagearchive.base_url, self.owner.name)
+        """See `IArchive`."""
+        archive_postfixes = {
+            ArchivePurpose.PRIMARY : '',
+            ArchivePurpose.COMMERCIAL : '-commercial',
+        }
+
+        if self.purpose == ArchivePurpose.PPA:
+            return urlappend(
+                config.personalpackagearchive.base_url, 
+                self.owner.name + '/' + self.distribution.name)
+
+        try:
+            postfix = archive_postfixes[self.purpose]
+        except KeyError:
+            raise AssertionError("archive_url unknown for purpose: %s" %
+                self.purpose)
+        return urlappend(config.archivepublisher.base_url,
+            self.distribution.name + postfix)
 
 
 class ArchiveSet:

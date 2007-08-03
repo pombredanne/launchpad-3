@@ -127,7 +127,7 @@ class DeathRow:
         # direction of default_prejoins = 'SPPH' or 'BPPH' would work very
         # well for Source/BinaryPackageFilePublishing class.
 
-        all_publications = publication.select("""
+        all_publications = publication_class.select("""
            libraryfilealiasfilename = %s AND
            distribution = %s AND
            archive = %s
