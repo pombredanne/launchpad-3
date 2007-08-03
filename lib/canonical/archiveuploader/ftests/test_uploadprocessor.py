@@ -396,6 +396,23 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(foocomm_spph.component.name,
             'commercial')
 
+        # Fudge the sourcepackagerelease for foocomm so that it's not
+        # in the commercial archive.  We can then test that uploading
+        # a binary package must match the source's archive.
+        removeSecurityProxy(
+            foocomm_spr).upload_archive = self.ubuntu.main_archive
+        self.layer.txn.commit()
+        upload_dir = self.queueUpload("foocomm_1.0-1_binary")
+        self.processUpload(uploadprocessor, upload_dir)
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "Archive for binary differs to the source's archive." in raw_msg)
+
+        # Reset the archive on the sourcepackagerelease.
+        foocomm_spr.upload_archive = commercial_archive
+        self.layer.txn.commit()
+        shutil.rmtree(upload_dir)
+
         # Now upload a binary package of 'foocomm'.
         upload_dir = self.queueUpload("foocomm_1.0-1_binary")
         self.processUpload(uploadprocessor, upload_dir)
