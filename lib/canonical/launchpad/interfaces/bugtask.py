@@ -633,6 +633,13 @@ class IBugTaskSet(Interface):
         Exactly one of product, distribution or distroseries must be provided.
         """
 
+    def findExpirableBugTasks(min_days_old):
+        """Find INCOMPLETE bug tasks that are min_days_old or older.
+        
+        An Expirable bug task is unassigned, in the INCOMPLETE status,
+        and belongs to a Product or Distribtion that uses Malone.
+        """
+
     def maintainedBugTasks(person, minimportance=None,
                            showclosed=None, orderby=None, user=None):
         """Return all bug tasks assigned to a package/product maintained by

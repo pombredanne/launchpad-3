@@ -29,36 +29,19 @@ have had no message activity for 60 days.
 
 == Bugtask setup ==
 
-There are no Expired BugTasks in sampledata.
+There are no EXPIRED BugTasks in sampledata.
 
     # XXX sinzui 2007-08-02:
     # switch c.lp.dbschema -> c.lazr
     >>> from canonical.launchpad.database import BugTask
     >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> BugTask.select(status=BugTaskStatus.EXPIRED).count()
+    >>> BugTask.selectBy(status=BugTaskStatus.EXPIRED).count()
     0
 
-To test the expiration script, sampledata must be set to the correct
-state per the following table:
-
-========================  ===  =======  ==========  ======  ==========  ======
-AFFECTS/ROLE              BUG  BUGTASK  UNASSIGNED  IS_OLD  STATUS      Malone
-========================  ===  =======  ==========  ======  ==========  ======
-Mozilla Firefox
-assigned                   1    2       False       True    Incomplete  True
-
-linux-source-2.6.15
-confirmed                 11   30       True        True    Confirmed   True
-
-Hoary
-expirable                  2   28       True        True    Incomplete  True
-
-mozilla-Firefox (debian)
-external                   2    5       True        True    Incomplete  False
-
-thunderbird (Ubuntu)
-recent                     9   23       True        False   Incomplete  True
-========================  ===  =======  ==========  ======  ==========  ======
+To see the four constraints tested, five bugtasks are need to represent
+expirable (all conditions met), is assigned, status is not INCOMPLETE,
+the bug has been in INCOMPETE status for less than 60 days, or the
+bug's project uses an external bug tracker.
 
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
@@ -77,7 +60,7 @@ recent                     9   23       True        False   Incomplete  True
     >>> assigned_bugtask = bugtaskset.get(2)
     >>> assigned_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)
-    >>> #assigned_bugtask.bug.date_last_updated = old_age_days_ago
+    >>> #assigned_bugtask.incomplete_date = old_age_days_ago
 
     # A BugTask that is not expirable because its status is CONFIRMED.
     >>> confirmed_bugtask = bugtaskset.get(30)
@@ -88,14 +71,14 @@ recent                     9   23       True        False   Incomplete  True
     >>> expirable_bugtask = bugtaskset.get(28)
     >>> expirable_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)
-    >>> #expirable_bugtask.bug.date_last_updated = old_age_days_ago
+    >>> #expirable_bugtask.incomplete_date = old_age_days_ago
 
     # A BugTask that is not expirable because it does not use Malone.
     >>> external_bugtask = bugtaskset.get(5)
     >>> external_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)
     >>> external_bugtask.transitionToAssignee(None)
-    >>> #external_bugtask.bug.date_last_updated = old_age_days_ago
+    >>> #external_bugtask.incomplete_date = old_age_days_ago
 
     # A BugTask that is not expirable because it has recently changed.
     >>> recent_bugtask = bugtaskset.get(23)
@@ -103,7 +86,7 @@ recent                     9   23       True        False   Incomplete  True
     ...     BugTaskStatus.INCOMPLETE, sample_person)
     >>> recent_bugtask.bug.date_last_updated = fourteen_days_ago 
 
-The data now looks like the table described above.
+Only the expirable bug now meets all four conditions to be Expired.
 
     # XXX sinzui 2007-08-02:
     # Switch from bugtask.bug.date_last_updated -> bugtask.date_incomplete.
@@ -128,34 +111,32 @@ The data now looks like the table described above.
     external    2    5       True        True    Incomplete  False
     recent      9   23       True        False   Incomplete  True
 
-    # XXX sinzui 2007-07-30 bug=3989:
-    # flush_database_updates is required.
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> flush_database_updates()
-
     # Commit the current transaction because the script will run in
     # another transaction, and thus it won't see the changes done on
     # this test unless we commit.
-    >>> import transaction
-    >>> transaction.commit()
+    >>> from canonical.database.sqlbase import commit
+    >>> commit()
 
 
 == The Expired status's use is restricted ==
 
-The EXPIRED status is used exclusively by the Bug Janitor celebrity.
-No other user can set the status to EXPIRED.
+The EXPIRED status is used exclusively by the Bug Watch Updater
+celebrity. No other user can set the status to EXPIRED.
 
+    >>> expirable_bugtask.canTransitionToStatus(
+    ...     BugTaskStatus.EXPIRED, sample_person)
+    False
     >>> expirable_bugtask.transitionToStatus(
     ...     BugTaskStatus.EXPIRED, sample_person)
     Traceback (most recent call last):
      ...
-    AssertionError: Only BugJanitor may change the status to EXPIRED.
+    AssertionError: Only Bug Watch Updater may change the status to Expired.
 
 
 == Running the script ==
 
 The script 'expire-bugs.py' writes its report to stdout. It makes its
-database changes as the BugJanitor user.
+database changes as the Bug Watch Updater user.
 
     >>> import subprocess
     >>> process = subprocess.Popen(
@@ -165,8 +146,7 @@ database changes as the BugJanitor user.
     >>> (out, err) = process.communicate()
     >>> print err
     INFO    creating lockfile
-    INFO    Expiring unassigned INCOMPLETE bugs without activity for the
-            last 60 days for projects that use Malone.
+    INFO    Expiring unassigned, INCOMPLETE BugTasks without activity for the last 60 days for projects that use Malone.
     INFO    Found 1 bugs to expire.
     INFO    Expired 1 bugs.
     INFO    Finished expiration run.

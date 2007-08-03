@@ -632,9 +632,16 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
-        if (user.inTeam(self.pillar.bugcontact) or
-            user.inTeam(self.pillar.owner) or
-            user == getUtility(ILaunchpadCelebrities).bug_watch_updater):
+        bug_watch_updater = getUtility(
+            ILaunchpadCelebrities).bug_watch_updater
+        if new_status == BugTaskStatus.EXPIRED:
+            if user == bug_watch_updater:
+                return True
+            else:
+                return False
+        elif (user.inTeam(self.pillar.bugcontact) or
+              user.inTeam(self.pillar.owner) or
+              user == bug_watch_updater):
             return True
         else:
             return new_status not in BUG_CONTACT_BUGTASK_STATUSES
@@ -648,9 +655,14 @@ class BugTask(SQLBase, BugTaskMixin):
             return
 
         if not self.canTransitionToStatus(new_status, user):
-            raise AssertionError(
-                "Only Bug Contacts may change status to %s" % (
+            if new_status == BugTaskStatus.EXPIRED:
+                raise AssertionError(
+                "Only Bug Watch Updater may change the status to %s." % (
                     new_status.title,))
+            else:
+                raise AssertionError(
+                    "Only Bug Contacts may change status to %s" % (
+                        new_status.title,))
 
         if self.status == new_status:
             # No change in the status, so nothing to do.
@@ -1420,6 +1432,9 @@ class BugTaskSet:
             bugtask._syncFromConjoinedSlave()
 
         return bugtask
+
+    def findExpirableBugTasks(self, min_days_old):
+        """See `IBugTaskSet`."""
 
     def maintainedBugTasks(self, person, minimportance=None,
                            showclosed=False, orderBy=None, user=None):

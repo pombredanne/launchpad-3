@@ -400,6 +400,12 @@ special = {
             tearDown=uploadQueueTearDown,
             optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
+    'bugtask-expiration.txt': LayeredDocFileSuite(
+            '../doc/bugtask-expiration.txt',
+            setUp=uploadQueueSetUp,
+            tearDown=uploadQueueTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
     'bugmessage.txt': LayeredDocFileSuite(
             '../doc/bugmessage.txt',
             setUp=noPrivSetUp, tearDown=tearDown,
