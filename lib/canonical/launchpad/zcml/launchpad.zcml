@@ -374,7 +374,9 @@ these URLs in Apache.
           attributes="__call__"
     />
 </class>
+
 <class class="canonical.launchpad.mailnotification.NotificationRecipientSet">
   <allow interface="canonical.launchpad.interfaces.INotificationRecipientSet" />
 </class>
+
 </configure>
