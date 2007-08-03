@@ -212,9 +212,7 @@ set to their default values:
     True
     >>> thunderbird_task.importance == IBugTask['importance'].default
     True
-    >>> thunderbird_task.importance
 
-    >>> IBugTask['importance'].default
 
 Milestone Editing Permissions
 -----------------------------
