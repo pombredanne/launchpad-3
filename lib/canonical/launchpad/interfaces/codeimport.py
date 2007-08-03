@@ -9,7 +9,7 @@ __all__ = [
     'ICodeImportSet',
     ]
 
-from zope.interface import Interface
+from zope.interface import Attribute, Interface
 from zope.schema import Datetime, Choice, Int, TextLine
 
 from canonical.launchpad import _
@@ -37,7 +37,17 @@ class ICodeImport(Interface):
     registrant = Choice(
         title=_('Registrant'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam',
-        description=_("The Person who requested this import."))
+        description=_("The person who initially requested this import."))
+
+    owner = Choice(
+        title=_('Owner'), required=True, readonly=False,
+        vocabulary='ValidPersonOrTeam',
+        description=_("The community contact for this import."))
+
+    assignee = Choice(
+        title=_('Assignee'), required=False, readonly=False,
+        vocabulary='ValidPersonOrTeam',
+        description=_("The person in charge of handling this import."))
 
     product = Choice(
         title=_("Project"), required=True,
@@ -82,6 +92,9 @@ class ICodeImport(Interface):
             " Usually, it is the name of the project."))
 
     date_last_successful = Datetime(title=_("Last successful"), required=False)
+    update_interval = Attribute(_("The time between automatic updates of this"
+        " import. If unspecified, the import will be updated at a default"
+        " interval selected by Launcphad administrators."))
 
 
 class ICodeImportSet(Interface):
