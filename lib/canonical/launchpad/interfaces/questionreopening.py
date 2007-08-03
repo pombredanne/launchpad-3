@@ -14,6 +14,7 @@ from zope.schema import Choice, Datetime, Object
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.person import IPerson
 from canonical.launchpad.interfaces.question import IQuestion
+from canonical.launchpad.interfaces.questionenums import QuestionStatus
 
 class IQuestionReopening(Interface):
     """A record of the re-opening of a question.
@@ -46,4 +47,4 @@ class IQuestionReopening(Interface):
     priorstate = Choice(
         title=_(
             "The previous state of the question, before it was re-opened."),
-        vocabulary='QuestionStatus', required=True, readonly=True)
+        vocabulary=QuestionStatus, required=True, readonly=True)

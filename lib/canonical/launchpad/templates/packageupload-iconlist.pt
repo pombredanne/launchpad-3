@@ -1,0 +1,21 @@
+<div tal:attributes="id string:queue${context/id}-iconlist">
+  <img tal:condition="context/containsSource"
+       alt="[Source]" src="/@@/package-source" title="Source"/>
+  <img tal:condition="context/containsBuild"
+       alt="[Build]" src="/@@/package-binary" title="Binary"/>
+  <img tal:condition="context/containsTranslation"
+       alt="[Translation]" src="/@@/translation-file"
+       title="Translation"/>
+  <img tal:condition="context/containsInstaller"
+       alt="[Installer]" src="/@@/ubuntu-icon"
+       title="Installer"/>
+  <img tal:condition="context/containsUpgrader"
+       alt="[Upgrader]" src="/@@/ubuntu-icon"
+       title="Upgrader"/>
+  <img tal:condition="context/containsDdtp"
+       alt="[Debian Description Translation Project Indexes]"
+       src="/@@/ubuntu-icon"
+       title="Debian Description Translation Project Indexes"/>
+  <span tal:replace="
+        string: ${context/displayname} (${context/displayarchs})"/>
+</div>

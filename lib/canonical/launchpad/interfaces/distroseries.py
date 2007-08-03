@@ -221,8 +221,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getPublishedReleases(sourcepackage_or_name, pocket=None, version=None,
                              include_pending=False, exclude_pocket=None,
                              archive=None):
-        """Given a SourcePackageName, return a list of the currently
-        published SourcePackageReleases as SourcePackagePublishing records.
+        """Return the SourcePackagePublishingHistory(s)
+
+        Given a ISourcePackageName or name.
 
         If pocket is not specified, we look in all pockets.
 

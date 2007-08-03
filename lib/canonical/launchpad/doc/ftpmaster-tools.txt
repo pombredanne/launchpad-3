@@ -284,6 +284,8 @@ bug #57662)
 
 FETCH CHANGES
 
+  >>> fillLibrarianFile(37, content="Fake DEB")
+
   >>> process = subprocess.Popen([sys.executable, script,
   ...                             "-s", "breezy-autotest", "fetch", "pmount"],
   ...                            stdout=subprocess.PIPE)
@@ -296,6 +298,7 @@ FETCH CHANGES
   Fetching ubuntu/breezy-autotest (NEW) 1/6
   ---------------------------------------------------------------------------
   Constructing netapplet-1.0.0.tar.gz
+  Constructing pmount_1.9-1_all.deb
   ---------------------------------------------------------------------------
                                                                 1/6 total
   <BLANKLINE>
@@ -304,7 +307,12 @@ FETCH CHANGES
   >>> print "'%s'" % changesfile.read()
   'Fake Changesfile'
 
+  >>> debfile = open('pmount_1.9-1_all.deb')
+  >>> print "'%s'" % debfile.read()
+  'Fake DEB'
+
   >>> os.remove('netapplet-1.0.0.tar.gz')
+  >>> os.remove('pmount_1.9-1_all.deb')
 
   >>> cleanupLibrarianFiles()
 

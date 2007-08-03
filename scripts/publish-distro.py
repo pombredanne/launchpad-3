@@ -11,7 +11,7 @@ from canonical.archivepublisher.publishing import getPublisher
 from canonical.database.sqlbase import (
     flush_database_updates, clear_current_connection_cache)
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IDistributionSet, NotFoundError)
+    IDistributionSet, NotFoundError)
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.lp import initZopeless
@@ -122,9 +122,10 @@ def main():
         archives = distribution.all_distro_archives
     else:
         if options.careful or options.careful_publishing:
-            archives = getUtility(IArchiveSet).getAllPPAs()
+            archives = distribution.getAllPPAs()
         else:
-            archives = getUtility(IArchiveSet).getPendingPublicationPPAs()
+            archives = distribution.getPendingPublicationPPAs()
+
         if options.distsroot is not None:
             log.error("We should not define 'distsroot' in PPA mode !")
             return

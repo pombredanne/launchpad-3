@@ -295,6 +295,8 @@ class BuilderGroup:
         directory, store build information and push them through the
         uploader.
         """
+        # XXX cprov 20070711: untested code path, see #129487
+
         self.logger.debug("Processing successful build %s" % buildid)
         # Explode before collect a binary that is denied in this
         # distroseries/pocket

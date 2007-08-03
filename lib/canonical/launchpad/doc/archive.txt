@@ -8,49 +8,166 @@ An Archive models a Debian Archive ...
   ...     IPerson, IPersonSet, IArchiveSet, IArchive,
   ...     IDistributionSet)
 
-Let get the IArchiveSet utility:
+  >>> cprov = getUtility(IPersonSet).getByName('cprov')
+  >>> cprov_archive = cprov.archive
 
-  >>> archive_set = getUtility(IArchiveSet)
-
-A new Archive can be created by passing a name and an owner
-
-  >>> name16 = getUtility(IPersonSet).getByName('name16')
-  >>> sandbox_archive = archive_set.new(purpose=ArchivePurpose.PPA, 
-  ...     owner=name16)
-
-  >>> verifyObject(IArchive, sandbox_archive)
-  True
-
-  >>> sandbox_archive.owner == name16
-  True
-
-An archive is also associated with a distribution.  This can be queried on
-the distribution property.  The default distribution is "ubuntu":
-
-  >> sandbox_archive.distribution.name
+  >>> cprov_archive.owner.name
+  u'cprov'
+  >>> cprov_archive.distribution.name
   u'ubuntu'
-
-An Archive can be retrieved via IPerson.archive SingleJoin:
-
-  >>> name16.archive == sandbox_archive
+  >>> cprov_archive.purpose.name
+  'PPA'
+  >>> cprov_archive.enabled
   True
+  >>> cprov_archive.authorized_size
+  1234567
+  >>> cprov_archive.whiteboard
+  u'It is not my fault.'
 
-Alter the distribution for name16's archive before continuing (ubuntutest
-has a working LucilleConfig):
+Useful properties:
 
-  >>> from zope.security.proxy import removeSecurityProxy
-  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
-  >>> removeSecurityProxy(sandbox_archive).distribution = ubuntutest
+  >>> cprov_archive.title
+  u'PPA for Celso Providelo'
+
+  >>> cprov_archive.archive_url
+  u'http://ppa.launchpad.dev/cprov/ubuntu'
+
+
+== Package Counters ==
+
+IArchive provides properties to calculate the number and the size of
+the packages (source and binaries) present in the archive.
+
+  >>> cprov_archive.number_of_sources
+  2
+  >>> cprov_archive.number_of_binaries
+  1
+  >>> cprov_archive.sources_size
+  9923399
+  >>> cprov_archive.binaries_size
+  3
+
+Additionally we have another property to sum up the sources and the
+binaries size and a pre-defined increment related to the files created
+in the archive (+1kbytes for each publication)
+
+  >>> cprov_archive.estimated_size
+  9926474
+
+
+== Published Source and Binary Lookup ==
+
+IArchive implements a published source & binary lookup methods,
+returning I{Source, Binary}PackagePublishingHistory objects.
+
+  >>> cprov_archive.getPublishedSources().count()
+  2
+
+  >>> cprov_archive.getPublishedBinaries().count()
+  1
+
+This lookup also support 'name' restriction (as in SQL
+"LIKE '%%' || NAME || '%%'").
+
+Let's inspect sources:
+
+  >>> cd_lookup = cprov_archive.getPublishedSources(name='cd')
+  >>> cd_lookup.count()
+  1
+  >>> cd_lookup[0].sourcepackagerelease.name
+  u'cdrkit'
+
+  >>> ice_lookup = cprov_archive.getPublishedSources(name='ice')
+  >>> ice_lookup.count()
+  1
+  >>> ice_lookup[0].sourcepackagerelease.name
+  u'iceweasel'
+
+  >>> cprov_archive.getPublishedSources(name='foo').count()
+  0
+
+Let's inspect binaires:
+
+  >>> moz_lookup = cprov_archive.getPublishedBinaries(name='moz')
+  >>> moz_lookup[0].binarypackagerelease.name
+  u'mozilla-firefox'
+
+  >>> cprov_archive.getPublishedBinaries(name='foo').count()
+  0
+
+
+== Build Lookup ==
+
+It also implements a build lookup method, which supports, 'name',
+'status' and 'pocket'.
+
+This method can return build records for sources matching the given
+'name' as in SQL LIKE:
+
+  >>> cd_lookup = cprov_archive.getBuildRecords(name='cd')
+  >>> cd_lookup.count()
+  1
+  >>> cd_lookup[0].sourcepackagerelease.name
+  u'cdrkit'
+
+  >>> ice_lookup = cprov_archive.getBuildRecords(name='ice')
+  >>> ice_lookup.count()
+  1
+  >>> ice_lookup[0].sourcepackagerelease.name
+  u'iceweasel'
+
+  >>> cprov_archive.getBuildRecords(name='foo').count()
+  0
+
+Or return build records in a specific status:
+
+  >>> from canonical.lp.dbschema import BuildStatus
+  >>> cprov_archive.getBuildRecords(status=BuildStatus.FULLYBUILT).count()
+  1
+
+  >>> cprov_archive.getBuildRecords(status=BuildStatus.FAILEDTOBUILD).count()
+  1
+
+  >>> cprov_archive.getBuildRecords(status=BuildStatus.NEEDSBUILD).count()
+  0
+
+And finally build records target to a given pocket:
+
+  >>> from canonical.lp.dbschema import PackagePublishingPocket
+  >>> cprov_archive.getBuildRecords(
+  ...     pocket=PackagePublishingPocket.RELEASE).count()
+  2
+
+  >>> cprov_archive.getBuildRecords(
+  ...     pocket=PackagePublishingPocket.UPDATES).count()
+  0
+
+All the attributes can be combined in order to refine the result:
+
+  >>> cprov_archive.getBuildRecords(
+  ...     name='ice',
+  ...     status=BuildStatus.FULLYBUILT,
+  ...     pocket=PackagePublishingPocket.RELEASE).count()
+  1
+
+
+== Publisher configuration provider ==
 
 IArchive has a method to provide a modified Publisher Configuration (see
 lib/archivepublisher/config.py), which provides the right paths for its
 publication according to the given distribution:
 
-  >>> proxied_pubconfig = sandbox_archive.getPubConfig()
+  >>> # cprov 20061127: We should *never* be able to change a PPA
+  >>> # distribution, however 'ubuntu' is not prepared for publication, thus
+  >>> # we have to override the PPA to 'ubuntutest' in order to perform the
+  >>> # tests.
 
-XXX cprov 20061127: Publisher Config is missing interface.
+  >>> from zope.security.proxy import removeSecurityProxy
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
 
-  >>> pubconfig = removeSecurityProxy(proxied_pubconfig)
+  >>> naked_cprov_archive = removeSecurityProxy(cprov_archive)
+  >>> naked_cprov_archive.distribution = ubuntutest
+  >>> pubconfig = naked_cprov_archive.getPubConfig()
 
 The base Archive publication location is set in the current Launchpad
 configuration file:
@@ -64,13 +181,13 @@ Then, the archive topology will follow:
 <PPA_BASE_DIR>/<PERSONNAME>/<DISTRIBUTION>
 
   >>> pubconfig.archiveroot
-  u'/var/tmp/ppa.test/name16/ubuntutest'
+  u'/var/tmp/ppa.test/cprov/ubuntutest'
 
   >>> pubconfig.poolroot
-  u'/var/tmp/ppa.test/name16/ubuntutest/pool'
+  u'/var/tmp/ppa.test/cprov/ubuntutest/pool'
 
   >>> pubconfig.distsroot
-  u'/var/tmp/ppa.test/name16/ubuntutest/dists'
+  u'/var/tmp/ppa.test/cprov/ubuntutest/dists'
 
 Path not used in *personal* archives publication workflow are set to
 None, so they won't get created:
@@ -94,11 +211,35 @@ Usual methods from Publisher Configuration are preserved:
   ['main', 'restricted', 'universe', 'multiverse']
 
 
-IArchiveSet.getAllPPAs provides all present *personal* archive:
+== IArchiveSet Utility ==
 
-  >>> [archive.owner.name for archive in archive_set.getAllPPAs()]
-  [u'cprov', u'sabdfl', u'name16']
+This utility provides useful methods to deal with IArchive in other
+parts of the system.
 
+  >>> archive_set = getUtility(IArchiveSet)
+
+A new Archive can be created by passing a name and an owner
+
+  >>> name16 = getUtility(IPersonSet).getByName('name16')
+  >>> sandbox_archive = archive_set.new(
+  ...    purpose=ArchivePurpose.PPA, owner=name16)
+
+  >>> verifyObject(IArchive, sandbox_archive)
+  True
+
+  >>> sandbox_archive.owner == name16
+  True
+
+An archive is also associated with a distribution.  This can be found on
+the distribution property.  The default distribution is "ubuntu":
+
+  >> sandbox_archive.distribution.name
+  u'ubuntu'
+
+An Archive can be retrieved via IPerson.archive property:
+
+  >>> name16.archive == sandbox_archive
+  True
 
 IArchiveSet.getByDistroPurpose retrieves an IArchive given a distribution
 and an ArchivePurpose:
@@ -163,5 +304,4 @@ including the *main_archives*:
   ...     else:
   ...          ppas += 1
   >>> main_archives, ppas
-  (9, 3)
-
+  (9, 4)

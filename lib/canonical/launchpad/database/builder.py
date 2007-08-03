@@ -8,6 +8,7 @@ __all__ = [
     ]
 
 import httplib
+import gzip
 import os
 import socket
 import subprocess
@@ -381,28 +382,21 @@ class Builder(SQLBase):
 
     def transferSlaveFileToLibrarian(self, file_sha1, filename):
         """See IBuilder."""
-        # ensure the tempfile will return a proper name, which does not
-        # confuses the gzip as suffixes like '-Z', '-z', almost everything
-        # insanely related to 'z'. Might also be solved by bug # 3111
         out_file_fd, out_file_name = tempfile.mkstemp(suffix=".tmp")
         out_file = os.fdopen(out_file_fd, "r+")
         try:
             slave_file = self.slave.getFile(file_sha1)
             copy_and_close(slave_file, out_file)
-            # if the requested file is the 'buildlog' compress it using gzi;5Bp
-            # before storing in Librarian
+            # If the requested file is the 'buildlog' compress it using gzip
+            # before storing in Librarian.
             if file_sha1 == 'buildlog':
-                # XXX cprov 20051010:
-                # python.gzip presented weird errors at this point, most
-                # related to incomplete file storage, the compressed file
-                # was prematurely finished in a 0x00. Using system call as a
-                # workaround until bug #3111 is addressed.
-                os.system('gzip -9 %s' % out_file_name)
-                # modify the local and header filename
+                out_file = open(out_file_name)
                 filename += '.gz'
                 out_file_name += '.gz'
+                gz_file = gzip.GzipFile(out_file_name, mode='wb')
+                copy_and_close(out_file, gz_file)
 
-            # reopen the file, seek to its end position, count and seek
+            # Reopen the file, seek to its end position, count and seek
             # to beginning, ready for adding to the Librarian.
             out_file = open(out_file_name)
             out_file.seek(0, 2)

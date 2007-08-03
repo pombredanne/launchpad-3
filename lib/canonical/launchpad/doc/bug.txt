@@ -30,12 +30,12 @@ raised:
     >>> bugset.get(123456)
     Traceback (most recent call last):
       ...
-    NotFoundError: 'Unable to locate bug with ID 123456'
+    NotFoundError: 'Unable to locate bug with ID 123456.'
 
     >>> bugset.getByNameOrID('+bugs')
     Traceback (most recent call last):
       ...
-    NotFoundError: 'Unable to locate bug with nickname +bugs'
+    NotFoundError: 'Unable to locate bug with nickname +bugs.'
 
 
 == Searching for Bugs ==
@@ -280,7 +280,7 @@ passing both a comment /and/ a msg would have raised an AssertionError:
     >>> added_bug = getUtility(IBugSet).createBug(params)
     Traceback (most recent call last):
       ...
-    AssertionError: Expected either a comment or a msg, but got both
+    AssertionError: Expected either a comment or a msg, but got both.
 
 
 So, let's continue:
