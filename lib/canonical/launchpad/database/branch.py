@@ -107,12 +107,16 @@ class Branch(SQLBase):
     landing_targets = SQLMultipleJoin(
         'BranchMergeProposal', joinColumn='source_branch',
         orderBy='id')
-    landing_candidates = SQLMultipleJoin(
-        'BranchMergeProposal', joinColumn='target_branch',
-        orderBy='id')
+
+    @property
+    def landing_candidates(self):
+        """See `IBranch`."""
+        return BranchMergeProposal.selectBy(
+            target_branch=self, date_merged=None)
 
     def addLandingTarget(self, registrant, target_branch,
-                         dependent_branch=None, whiteboard=None):
+                         dependent_branch=None, whiteboard=None,
+                         date_created=None):
         """See `IBranch`."""
         if self.product is None:
             raise InvalidBranchMergeProposal(
@@ -137,17 +141,19 @@ class Branch(SQLBase):
                     'of the same project.')
 
         target = BranchMergeProposal.selectOneBy(
-            source_branch=self, target_branch=target_branch)
+            source_branch=self, target_branch=target_branch, date_merged=None)
         if target is not None:
             raise InvalidBranchMergeProposal(
                 'There is already a branch merge proposal registered for '
                 'branch %s to land on %s'
                 % (self.unique_name, target_branch.unique_name))
 
+        if date_created is None:
+            date_created = UTC_NOW
         return BranchMergeProposal(
             registrant=registrant, source_branch=self,
             target_branch=target_branch, dependent_branch=dependent_branch,
-            whiteboard=whiteboard)
+            whiteboard=whiteboard, date_created=date_created)
 
     def removeLandingTarget(self, target_branch):
         """See `IBranch`."""

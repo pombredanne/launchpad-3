@@ -54,5 +54,36 @@ class IBranchMergeProposal(Interface):
         title=_('Whiteboard'), required=False,
         description=_('Notes about the merge.'))
 
+    merged_revno = Int(
+        title=_("Merged Revision Number"), required=False,
+        description=_("The revision number on the target branch which "
+                      "contains the merge from the source branch."))
+
+    date_merged = Datetime(
+        title=_('Date Merged'), required=False,
+        description=_("The date that the source branch was merged into the "
+                      "target branch"))
+
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
+
+    def markAsMerged(merged_revno=None, date_merged=None):
+        """Mark the branch merge proposal as merged.
+
+        If the `merged_revno` is supplied, then the `BranchRevision` is checked
+        to see that revision is available in the target branch.  If it is
+        then the date from that revision is used as the `date_merged`.  If it
+        is not available, then the `date_merged` is set as if the merged_revno
+        was not supplied.
+
+        If no `merged_revno` is supplied, the `date_merged` is set to the value
+        of date_merged, or if the parameter date_merged is None, then UTC_NOW
+        is used.
+
+        :param merged_revno: The revision number in the target branch that
+                             contains the merge of the source branch.
+        :type merged_revno: ``int``
+
+        :param date_merged: The date/time that the merge took place.
+        :type merged_revno: ``datetime`` or a stringified date time value.
+        """

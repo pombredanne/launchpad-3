@@ -20,7 +20,7 @@ from canonical.config import config
 from canonical.database.sqlbase import (
     flush_database_updates, READ_COMMITTED_ISOLATION)
 from canonical.functional import FunctionalDocFileSuite, StdoutHandler
-from canonical.launchpad.ftests import login, ANONYMOUS, logout
+from canonical.launchpad.ftests import login, ANONYMOUS, logout, time_generator
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet, ILaunchBag,
     IPersonSet)
@@ -42,6 +42,7 @@ def setGlobs(test):
     test.globs['getUtility'] = getUtility
     test.globs['transaction'] = transaction
     test.globs['flush_database_updates'] = flush_database_updates
+    test.globs['time_generator'] = time_generator
 
 
 def setUp(test):

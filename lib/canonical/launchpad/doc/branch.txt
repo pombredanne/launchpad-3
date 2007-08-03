@@ -78,16 +78,9 @@ If it doesn't exist an exception NotFoundError is raised
     >>> personset = getUtility(IPersonSet)
     >>> ddaa = personset.getByName('ddaa')
 
-    >>> from datetime import datetime, timedelta
-    >>> from pytz import UTC
-    >>> def timegenerator(origin):
-    ...     now = origin
-    ...     while True:
-    ...         now += timedelta(seconds=5)
-    ...         yield now
-    >>> now = timegenerator(datetime.now(UTC))
+    >>> now = time_generator()
 
-The timegenerator is used to create nicely ordered 'fake' date_created
+The time_generator is used to create nicely ordered 'fake' date_created
 times for the branches.  This avoids using transaction.commit to get the
 date_created values from the database.
 
