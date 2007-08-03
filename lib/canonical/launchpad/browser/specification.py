@@ -80,11 +80,11 @@ class NewSpecificationView(LaunchpadFormView):
     """An abstract view for creating a new specification."""
 
     label = "Register a new blueprint"
-    
+
     @action(_('Register Blueprint'), name='register')
     def register(self, action, data):
         """Registers a new specification."""
-        
+
         spec = getUtility(ISpecificationSet).new(
             # Values taken directly from given form data:
             name = data['name'],
@@ -97,7 +97,7 @@ class NewSpecificationView(LaunchpadFormView):
             definition_status = data['definition_status'],
             # Values supplied by class instance members:
             distribution = self.distribution(data),
-            product = self.product(data), 
+            product = self.product(data),
             owner = self.user)
         # Propose the specification as a series goal, if specified.
         series = self.series(data)
@@ -113,15 +113,15 @@ class NewSpecificationView(LaunchpadFormView):
     def distribution(self, data):
         """Returns a distribution from the given context and form data."""
         return None
-    
+
     def product(self, data):
         """Returns a product from the given context and form data."""
         return None
-    
+
     def series(self, data):
         """Returns a series from the given context and form data."""
         return None
-    
+
     def sprint(self, data):
         """Returns a sprint from the given context and form data."""
         return None
@@ -141,7 +141,7 @@ class NewSpecificationFromTargetView(NewSpecificationView):
     """An abstract view for creating a specification from a context that
     corresponds to a unique specification target.
     """
-    schema = Fields(INewSpecification, 
+    schema = Fields(INewSpecification,
                     INewSpecificationSprint)
 
     def sprint(self, data):
@@ -168,7 +168,7 @@ class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
     schema = Fields(INewSpecification,
                     INewSpecificationSprint,
                     INewSpecificationSeriesGoal)
-    
+
     def series(self, data):
         if data['goal'] == True:
             return self.context
@@ -176,7 +176,7 @@ class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
 
 class NewSpecificationFromDistroSeriesView(NewSpecificationFromSeriesView):
     """A view for creating a specification from a distro series."""
-    
+
     def distribution(self, data):
         return self.context.distribution
 
@@ -191,7 +191,7 @@ class NewSpecificationFromProductSeriesView(NewSpecificationFromSeriesView):
 class NewSpecificationFromNonTargetView(NewSpecificationView):
     """An abstract view for creating a specification from a context that does
     not correspond to a unique specification target.
-    
+
     Sub-classes must define a schema requiring the user to specify a target.
     """
     def distribution(self, data):
@@ -222,13 +222,13 @@ class NewSpecificationFromProjectView(NewSpecificationFromNonTargetView):
     schema = Fields(INewSpecificationProjectTarget,
                     INewSpecification,
                     INewSpecificationSprint)
-    
+
 
 class NewSpecificationFromRootView(NewSpecificationFromNonTargetView):
     """A view for creating a specification from the root of Launchpad."""
 
     schema = Fields(INewSpecificationTarget,
-                    INewSpecification, 
+                    INewSpecification,
                     INewSpecificationSprint)
 
 
@@ -517,7 +517,7 @@ def proposeGoalWithAutomaticApproval(specification, series, user):
     specification.proposeGoal(series, user)
     # If the proposer has permission, approve the goal automatically.
     if series is not None and check_permission('launchpad.Driver', series):
-        specification.acceptBy(user)   
+        specification.acceptBy(user)
 
 
 class SpecificationGoalDecideView(LaunchpadView):
@@ -554,7 +554,7 @@ class SpecificationRetargetingView(LaunchpadFormView):
         already a blueprint with the same name as this one for the
         given target.
         """
-        
+
         target = data.get('target')
 
         if target is None:

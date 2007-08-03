@@ -17,7 +17,7 @@ users can also register blueprints from any of the following locations:
 
 == The blueprint registration form ==
 
-Launchpad provides a dedicated form page for users to register blueprints. 
+Launchpad provides a dedicated form page for users to register blueprints.
 Generally speaking, users can navigate to this form from each of the supported
 locations in the same way, by following either of two links provided:
 
@@ -41,7 +41,7 @@ Users can press the graphical "Register a blueprint" button:
 
     >>> user_browser.getLink(id='addspec').click()
     >>> user_browser.url
-    'http://blueprints.launchpad.dev/specs/+new'    
+    'http://blueprints.launchpad.dev/specs/+new'
 
 
 === From a distribution ===
@@ -161,12 +161,12 @@ Users can also press the graphical "Register a blueprint" button:
     >>> user_browser.goBack()
     >>> user_browser.getLink(id='addspec').click()
     >>> user_browser.url
-    'http://blueprints.launchpad.dev/sprints/futurista/+addspec'    
+    'http://blueprints.launchpad.dev/sprints/futurista/+addspec'
 
 
 == Registering a blueprint ==
 
-The blueprint registration form allows users to register a blueprint. The 
+The blueprint registration form allows users to register a blueprint. The
 appearance and behaviour of the form depends on where the user has navigated
 from.
 
@@ -313,7 +313,7 @@ for the series, the new blueprint is automatically accepted as a series goal:
     >>> control('Register'   ).click()
     >>> print(first_tag_by_class(admin_browser.contents, 'summary'))
     <...Series goal:...Accepted...for...hoary...
-	
+
 
 === Registering a blueprint from a product ===
 
@@ -373,16 +373,16 @@ The new blueprint is not proposed as a series goal:
 Let's register another blueprint from the Mozilla Firefox 1.0 product series:
 
     >>> user_browser.open(
-    ...     'http://blueprints.launchpad.dev/firefox/1.0/+addspec')    
+    ...     'http://blueprints.launchpad.dev/firefox/1.0/+addspec')
     >>> control('Name'    ).value = 'svg-support-3'
     >>> control('Title'   ).value = 'SVG Support'
     >>> control('URL'     ).value = 'http://wiki.firefox.com/SvgSupport3'
     >>> control('Summary' ).value = summary
-    
+
 This time, we'll nominate the blueprint as a series goal:
 
     >>> control('series goal').control.value = True
- 
+
 Pressing the "Register" button creates a blueprint targeted to the Mozilla
 Firefox product, then redirects the user to the new blueprint's page:
 
@@ -446,7 +446,7 @@ Firefox project, then redirects the user to the new blueprint's page:
 
 === Registering a blueprint from a sprint ===
 
-When a blueprint is registered from a sprint, the new blueprint is 
+When a blueprint is registered from a sprint, the new blueprint is
 automatically proposed as a topic for discussion at the sprint.
 
 Let's register a blueprint from the Future Mega Meeting sprint:
@@ -454,9 +454,9 @@ Let's register a blueprint from the Future Mega Meeting sprint:
     >>> user_browser.open(
     ...     'http://blueprints.launchpad.dev/sprints/futurista/+addspec')
 
-Since sprints by themselves are not directly related to distributions or 
+Since sprints by themselves are not directly related to distributions or
 products, Launchpad requires the user to specify a target for the new
-blueprint. This target must be an existing distribution or product. 
+blueprint. This target must be an existing distribution or product.
 
 We'll choose Bazaar as a target for the new blueprint:
 
@@ -475,7 +475,7 @@ redirected back to the sprint page:
 
     >>> control('Register').click()
     >>> user_browser.url
-	'http://blueprints.launchpad.dev/sprints/futurista'
+    'http://blueprints.launchpad.dev/sprints/futurista'
 
 In addition, the new blueprint is automatically proposed as a topic for
 discussion at the sprint:
@@ -567,9 +567,9 @@ Blueprint names must conform to a set pattern:
     ...      print message.renderContents()
     There is 1 error...Invalid name...
 
-However, some invalid names can be transformed into valid names. When it is 
-clear that a valid name can be produced by removing trailing spaces or by 
-converting upper case characters to their lower case equivalents, this is done 
+However, some invalid names can be transformed into valid names. When it is
+clear that a valid name can be produced by removing trailing spaces or by
+converting upper case characters to their lower case equivalents, this is done
 automatically for the user:
 
     >>> user_browser.open('http://blueprints.launchpad.dev/ubuntu/+addspec')
@@ -605,7 +605,7 @@ blueprint:
 
 
 === Registering blueprints from other locations ===
- 
+
 There are some locations in Launchpad from which it's not possible to register
 a blueprint. To start with, it's not possible to register a blueprint from an
 individual user's blueprint listing page:
@@ -620,10 +620,10 @@ individual user's blueprint listing page:
     Traceback (most recent call last):
         ...
     LinkNotFoundError...
-  
+
 It's also not possible to register a blueprint from a group's blueprint
 listing page:
-  
+
     >>> user_browser.open('http://blueprints.launchpad.dev/~admins')
     >>> print user_browser.getLink('Register')
     Traceback (most recent call last):

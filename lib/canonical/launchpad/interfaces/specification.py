@@ -98,7 +98,7 @@ class SpecURLField(TextLine):
 
 class INewSpecification(Interface):
     """A schema for a new specification."""
-    
+
     name = SpecNameField(
         title=_('Name'), required=True, readonly=False,
         description=_(
@@ -145,7 +145,7 @@ class INewSpecificationProjectTarget(Interface):
                     description=_("The project for which this "
                                   "proposal is being made."),
                     required=True, vocabulary='ProjectProducts')
-    
+
 
 class INewSpecificationSeriesGoal(Interface):
     """A mixin schema for a new specification that allows the user to propose
@@ -153,7 +153,7 @@ class INewSpecificationSeriesGoal(Interface):
     """
     goal = Bool(title=_('Propose for series goal'),
                 description=_("Check this to indicate that you wish to "
-                              "propose this blueprint as a series goal."),                
+                              "propose this blueprint as a series goal."),
                 required=True, default=False)
 
 
@@ -177,7 +177,7 @@ class INewSpecificationTarget(Interface):
                     required=True, vocabulary='DistributionOrProduct')
 
 
-class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner, 
+class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     ICanBeMentored):
     """A Specification."""
 
