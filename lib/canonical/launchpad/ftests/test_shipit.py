@@ -14,9 +14,9 @@ from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
 from canonical.launchpad.database import (
     ShippingRequest, ShippingRequestSet, StandardShipItRequest)
 from canonical.launchpad.layers import (
-    ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer, setFirstLayer)
+    setFirstLayer, ShipItEdUbuntuLayer, ShipItKUbuntuLayer, ShipItUbuntuLayer)
 from canonical.launchpad.interfaces import (
-    ShippingRequestPriority, ShipItDistroSeries, ShipItFlavour,
+    ShipItDistroSeries, ShipItFlavour, ShippingRequestPriority,
     ShippingRequestStatus)
 from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 
