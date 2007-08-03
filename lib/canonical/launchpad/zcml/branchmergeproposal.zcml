@@ -14,14 +14,14 @@
 
   <browser:defaultView
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
-      name="+index" />
+      name="+edit" />
 
   <browser:page
-    name="+index"
+    name="+edit"
     for="canonical.launchpad.interfaces.IBranchMergeProposal"
     facet="branches"
-    permission="launchpad.View"
-    template="../templates/branchmergeproposal-index.pt" />
+    permission="launchpad.Edit"
+    template="../templates/branchmergeproposal-edit.pt" />
 
   <browser:url
       for="canonical.launchpad.interfaces.IBranchMergeProposal"

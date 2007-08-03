@@ -172,6 +172,31 @@
     </div>
   </tal:whiteboard>
 
+  <tal:landing-targets condition="view/landing_targets">
+    <h2>Landing Targets</h2>
+    <div tal:repeat="mergeproposal view/landing_targets">
+      <tal:target replace="structure mergeproposal/target_branch/fmt:link" />
+      <tal:show-registrant condition="mergeproposal/show_registrant">
+        registered by <tal:registrant replace="mergeproposal/registrant/fmt:link"/>
+      </tal:show-registrant>
+      <!-- XXX: make this only show if editible, which means adding
+        +edit as the default action
+        Launchpad.Edit for IBranchMergeProposal as special, editable
+        by user the registrant, and source and target branch owners.
+      -->
+      <a tal:attributes="href mergeproposal/fmt:url">
+        <img alt="" src="/@@/edit"/>
+      </a>
+      <div tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
+        The whiteboard.
+      </div>
+      <div tal:condition="mergeproposal/date_merged">
+        <span class="">Merged</span> on
+        <tal:merged replace="mergeproposal/date_merged">2007-06-04</tal:merged>
+      </div>
+    </div>
+  </tal:landing-targets>
+
   <h2 style="clear: both;">Recent revisions</h2>
 
   <p tal:condition="not:context/revision_count">

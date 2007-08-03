@@ -30,6 +30,7 @@ from zope.event import notify
 from zope.component import getUtility
 from zope.interface import implements
 
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 
 from canonical.lp import decorates
@@ -40,7 +41,7 @@ from canonical.launchpad.event import SQLObjectCreatedEvent
 from canonical.launchpad.helpers import truncate_text
 from canonical.launchpad.interfaces import (
     BranchCreationForbidden, BranchType, BranchVisibilityRule, IBranch,
-    IBranchMergeProposal, IBranchMergeProposalSet, InvalidBranchMergeProposal,
+    IBranchMergeProposal, InvalidBranchMergeProposal,
     IBranchSet, IBranchSubscription, IBugSet,
     ILaunchpadCelebrities, IPersonSet)
 from canonical.launchpad.webapp import (
@@ -88,6 +89,18 @@ class BranchNavigation(Navigation):
 
         if person is not None:
             return self.context.getSubscription(person)
+
+    @stepthrough("+merge")
+    def traverse_merge_proposal(self, id):
+        """Traverse to an `IBranchMergeProposal`."""
+        try:
+            id = int(id)
+        except ValueError:
+            # Not a number.
+            return None
+        for proposal in self.context.landing_targets:
+            if proposal.id == id:
+                return proposal
 
 
 class BranchContextMenu(ContextMenu):
@@ -226,6 +239,33 @@ class BranchView(LaunchpadView):
             return message
         return truncate_text(
             message, self.MAXIMUM_STATUS_MESSAGE_LENGTH) + ' ...'
+
+    @cachedproperty
+    def landing_targets(self):
+        """Return a decorated filtered list of landing targets."""
+        targets = []
+        targets_added = set()
+        for proposal in self.context.landing_targets:
+            # Only show the must recent proposal for any given target.
+            target_id = proposal.target_branch.id
+            if target_id in targets_added:
+                continue
+            targets.append(DecoratedMergeProposal(proposal))
+            targets_added.add(target_id)
+        return targets
+
+
+class DecoratedMergeProposal:
+    """Provide some additional functionality to a normal branch merge proposal.
+    """
+    decorates(IBranchMergeProposal)
+
+    def __init__(self, context):
+        self.context = context
+
+    def show_registrant(self):
+        """Show the registrant if it was not the branch owner."""
+        return self.context.registrant != self.source_branch.owner
 
 
 class BranchInPersonView(BranchView):
@@ -528,14 +568,14 @@ class BranchSubscriptionsView(LaunchpadView):
 
 
 class AttributeDisplayWidget(BrowserWidget):
-    
+
     implements(IDisplayWidget)
 
     def __init__(self, context, vocabulary, request, field_name):
         import pdb; pdb.set_trace()
         super(AttributeDisplayWidget, self).__init__(context, request)
         self.field_name = field_name
-        
+
     def __call__(self):
         import pdb; pdb.set_trace()
         if hasattr(self.context, self.field_name):
@@ -566,7 +606,7 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         target_branch = data['target_branch']
         dependent_branch = data['dependent_branch']
         create_merge_proposal = True
-        
+
         # Make sure that the target branch is different from the context.
         if source_branch == target_branch:
             self.setFieldError(
@@ -605,9 +645,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
         if create_merge_proposal:
             whiteboard = data['whiteboard']
             try:
-                merge_proposal = getUtility(IBranchMergeProposalSet).new(
-                    registrant=registrant,
-                    source_branch=source_branch, target_branch=target_branch,
+                source_branch.addLandingTarget(
+                    registrant=registrant, target_branch=target_branch,
                     dependent_branch=dependent_branch, whiteboard=whiteboard)
             except InvalidBranchMergeProposal, error:
                 self.addError(str(error))
