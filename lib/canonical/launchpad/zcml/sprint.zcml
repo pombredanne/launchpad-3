@@ -150,7 +150,7 @@
     for="canonical.launchpad.interfaces.ISprint"
     class="canonical.launchpad.browser.RegisterABlueprintButtonView"
     permission="zope.Public"
-    />
+  />
 
   <!-- IHasSprints -->
   <browser:pages

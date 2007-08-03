@@ -436,7 +436,7 @@
     permission="launchpad.AnyPerson"
     template="../templates/specification-new.pt"
     class="canonical.launchpad.browser.NewSpecificationFromRootView"
-    />
+  />
 
   <!-- SpecificationDelta -->
   <content class="canonical.launchpad.components.specification.SpecificationDelta">
