@@ -213,6 +213,10 @@ class PersonNavigation(CalendarTraversalMixin,
             return None
         return TeamMembershipSelfRenewalView(membership, self.request)
 
+    @stepto('+archive')
+    def traverse_archive(self):
+        return self.context.archive
+
 
 class PersonDynMenu(DynMenu):
 
@@ -731,6 +735,22 @@ class CommonMenuLinks:
         summary = 'Projects %s is involved with' % self.context.browsername
         return Link(target, text, summary, icon='packages')
 
+    @enabled_with_permission('launchpad.Edit')
+    def activate_ppa(self):
+        target = "+activate-ppa"
+        text = 'Activate PPA'
+        summary = ('Acknowledge terms of service for Launchpad Personal '
+                   'Package Archive.')
+        enable_link = (self.context.archive is None)
+        return Link(target, text, summary, icon='edit', enabled=enable_link)
+
+    def show_ppa(self):
+        target = '+archive'
+        text = 'Show PPA'
+        summary = 'Browse Personal Package Archive packages.'
+        enable_link = (self.context.archive is not None)
+        return Link(target, text, summary, icon='info', enabled=enable_link)
+
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
@@ -741,8 +761,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys',
              'memberships', 'mentoringoffers',
-             'codesofconduct', 'karma', 'common_packages', 'related_projects',
-             'administer']
+             'codesofconduct', 'karma', 'common_packages', 'administer',
+             'related_projects', 'activate_ppa', 'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -850,7 +870,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'add_member', 'memberships', 'received_invitations', 'mugshots',
              'editemail', 'editlanguages', 'polls', 'add_poll',
              'joinleave', 'mentorships', 'reassign', 'common_packages',
-             'related_projects']
+             'related_projects', 'activate_ppa', 'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):

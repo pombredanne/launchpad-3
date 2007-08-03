@@ -113,6 +113,11 @@ class SourcePackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
 
+    @property
+    def publishing_record(self):
+        """See `ArchiveFilePublisherBase`."""
+        return self.sourcepackagepublishing
+
 
 class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
     """A binary package file which is published.
@@ -160,6 +165,11 @@ class BinaryPackageFilePublishing(SQLBase, ArchiveFilePublisherBase):
                      notNull=True, schema=PackagePublishingPocket)
 
     archive = ForeignKey(dbName="archive", foreignKey="Archive", notNull=True)
+
+    @property
+    def publishing_record(self):
+        """See `ArchiveFilePublisherBase`."""
+        return self.binarypackagepublishing
 
 
 class ArchiveSafePublisherBase:

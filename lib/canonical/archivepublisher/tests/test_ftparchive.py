@@ -234,8 +234,8 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         """Generate apt-ftparchive config"""
         from canonical.archivepublisher.ftparchive import FTPArchiveHandler
         from canonical.archivepublisher.publishing import Publisher
-        publisher = Publisher(self._logger, self._config, self._dp,
-                              self._distribution, self._archive)
+        publisher = Publisher(
+            self._logger, self._config, self._dp, self._archive)
         fa = FTPArchiveHandler(self._logger, self._config, self._dp,
                                self._distribution, publisher)
         src = [self._getFakePubSource(
@@ -310,7 +310,7 @@ class TestFTPArchive(LaunchpadZopelessTestCase):
         allowed_suites.add(('hoary-test', PackagePublishingPocket.UPDATES))
 
         publisher = Publisher(
-            self._logger, self._config, self._dp, self._distribution,
+            self._logger, self._config, self._dp,
             allowed_suites=allowed_suites, archive=self._archive)
 
         fa = FTPArchiveHandler(self._logger, self._config, self._dp,

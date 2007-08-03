@@ -596,10 +596,22 @@ and the bug will have been edited.
     [u'doc']
 
 
-The tag 'doc' has already been used for other Firefox bugs, let's try
-adding a tag that hasn't already been used.
+Re-adding the same tag that already exists shouldn't notify anyone.
+    >>> edit_values['field.tags'] = u'doc doc'
+    >>> bug_edit.submit('change', edit_values)
+    >>> bug_edit.hasErrors()
+    False
+    >>> for message in bug_edit.view.notifications:
+    ...     print message
 
-    >>> edit_values['field.tags'] = u'doc new-tag'
+    >>> bug_edit.wasRedirected()
+    True
+
+The tag 'doc' has already been used for other Firefox bugs, let's try
+adding a tag that hasn't already been used. Add 'new-tag' multiple times
+so that we can verify that it will only be added once.
+
+    >>> edit_values['field.tags'] = u'new-tag doc new-tag'
     >>> bug_edit.submit('change', edit_values)
 
 Now the form will have a notification, asking us to confirm that we indeed

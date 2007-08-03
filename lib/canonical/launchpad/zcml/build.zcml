@@ -14,15 +14,13 @@
                             buildstate dependencies"/>
     </content>
 
-    <browser:defaultView 
+    <browser:defaultView
         for="canonical.launchpad.interfaces.IBuild"
         name="+index"/>
 
     <browser:url
         for="canonical.launchpad.interfaces.IBuild"
-        path_expression="string:+build/${id}"
-        attribute_to_parent="distributionsourcepackagerelease"
-        />
+	urldata="canonical.launchpad.browser.build.BuildUrl" />
 
     <browser:menus
         module="canonical.launchpad.browser.build"
@@ -33,10 +31,10 @@
         classes="BuildNavigation"
         />
 
-    <browser:pages 
+    <browser:pages
       for="canonical.launchpad.interfaces.IBuild"
       permission="zope.Public">
-      <browser:page 
+      <browser:page
         name="+index"
         facet="overview"
         template="../templates/build-index.pt"
@@ -51,21 +49,28 @@
         />
     </browser:pages>
 
-    <browser:pages 
+    <browser:pages
       for="canonical.launchpad.interfaces.IBuild"
       class="canonical.launchpad.browser.BuildView"
-      permission="launchpad.Admin">
-      <browser:page 
+      permission="launchpad.Edit">
+      <browser:page
         name="+retry"
         facet="overview"
         template="../templates/build-retry.pt"
         />
-      <browser:page 
+    </browser:pages>
+
+    <browser:pages
+      for="canonical.launchpad.interfaces.IBuild"
+      class="canonical.launchpad.browser.BuildView"
+      permission="launchpad.Admin">
+      <browser:page
         name="+rescore"
         facet="overview"
         template="../templates/build-rescore.pt"
         />
     </browser:pages>
+
 
     <!-- BuildSet -->
     <securedutility

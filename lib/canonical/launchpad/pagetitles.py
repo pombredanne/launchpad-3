@@ -40,8 +40,7 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IMaloneApplication, INullBugTask, IPerson,
-    IStructuralObjectPresentation)
+    ILaunchBag, IMaloneApplication, IPerson, IStructuralObjectPresentation)
 from canonical.launchpad.webapp import smartquote
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
@@ -99,6 +98,16 @@ class ContextBugId(SubstitutionHelper):
 
 
 # Functions and strings used as the titles of pages.
+
+archive_admin = ContextTitle('Administer %s')
+
+archive_activate = 'Activate PPA'
+
+archive_builds = ContextTitle('Builds for %s')
+
+archive_edit = ContextTitle('Edit %s')
+
+archive_index = ContextTitle('%s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
@@ -383,6 +392,8 @@ distribution_index = ContextTitle('%s in Launchpad')
 distribution_builds = ContextTitle('%s builds')
 
 distribution_uploadadmin = ContextTitle('Change Upload Manager for %s')
+
+distribution_ppa_list = ContextTitle('%s Personal Package Archives')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
@@ -802,8 +813,6 @@ potemplatename_edit = ContextTitle(smartquote('Edit "%s" in Launchpad'))
 potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
 
 potemplatenames_index = 'Template names in Launchpad'
-
-ppa_list = ContextTitle('%s Personal Package Archives')
 
 product_add = 'Register a project in Launchpad'
 
