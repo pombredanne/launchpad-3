@@ -16,15 +16,14 @@ according the selected buildstate, by default All
   ...     by state and "mismatch" if the page, erroneously,  provide only
   ...     part of the required arguments to enable filter by name.
   ...     """
-  ...     assert find_tag_by_id(contents, 'build_state') is not None
   ...     assert '<input type="submit" value="Update" />' in contents
   ...
-  ...     field_present = find_tag_by_id(contents, 'build_text')
-  ...     label_present = "with names containing:" in contents
+  ...     field_state = find_tag_by_id(contents, 'build_state') is not None
+  ...     field_name = find_tag_by_id(contents, 'build_text') is not None
   ...
-  ...     if label_present and field_present:
+  ...     if field_state and field_name:
   ...         return "State and Name present"
-  ...     elif not label_present and not field_present:
+  ...     elif field_state and not field_name :
   ...         return "State present, Name not present"
   ...     else:
   ...         return "mismatch"
@@ -60,6 +59,13 @@ For Builder, same as Distribution:
   >>> print check_builds_options(browser.contents)
   State and Name present
 
+For Archive (PPA), same as Distribution:
+
+  >>> browser.open("http://launchpad.dev/~cprov/+archive")
+  >>> browser.getLink("View build records").click()
+  >>> print check_builds_options(browser.contents)
+  State and Name present
+
 For SourcePackage, it's only possible to filter by state.
 
   >>> browser.open(
@@ -67,7 +73,6 @@ For SourcePackage, it's only possible to filter by state.
   >>> browser.getLink("Show builds").click()
   >>> print check_builds_options(browser.contents)
   State present, Name not present
-
 
 Check the contents of the distro builds list page.
 

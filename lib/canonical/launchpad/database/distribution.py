@@ -60,13 +60,14 @@ from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
     ArchivePurpose, BugTaskStatus, DistroSeriesStatus,
-    PackagePublishingStatus, SpecificationDefinitionStatus,
-    SpecificationFilter, SpecificationImplementationStatus, SpecificationSort,
+    PackagePublishingStatus, PackageUploadStatus,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
     TranslationPermission)
 
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IFAQTarget, 
-    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, 
+    IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IFAQTarget,
+    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
     IQuestionTarget, ISourcePackageName, MirrorContent, NotFoundError,
     QUESTION_STATUS_DEFAULT_SEARCH)
 
@@ -903,6 +904,74 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         else:
             raise NotFoundError('Package %s not published in %s'
                                 % (pkgname, self.displayname))
+
+    def getAllPPAs(self):
+        """See `IDistribution`"""
+        return Archive.selectBy(
+            purpose=ArchivePurpose.PPA, distribution=self, orderBy=['id'])
+
+    def searchPPAs(self, text=None):
+        """See `IDistribution`."""
+        clauses = ["""
+        Archive.purpose = %s AND
+        Archive.distribution = %s AND
+        Person.id = Archive.owner
+        """ % sqlvalues(ArchivePurpose.PPA, self)]
+
+        clauseTables = ['Person']
+        orderBy = ['Person.name']
+
+        if text:
+            clauses.append("""
+            ((Person.fti @@ ftq(%s) OR
+            Archive.description LIKE '%%' || %s || '%%'))
+            """ % (quote(text), quote_like(text)))
+
+        query = ' AND '.join(clauses)
+        return Archive.select(
+            query, orderBy=orderBy, clauseTables=clauseTables)
+
+    def getPendingAcceptancePPAs(self):
+        """See `IDistribution`."""
+        query = """
+        Archive.purpose = %s AND
+        Archive.distribution = %s AND
+        PackageUpload.archive = Archive.id AND
+        PackageUpload.status = %s
+        """ % sqlvalues(ArchivePurpose.PPA, self,
+                        PackageUploadStatus.ACCEPTED)
+
+        return Archive.select(
+            query, clauseTables=['PackageUpload'],
+            orderBy=['archive.id'], distinct=True)
+
+    def getPendingPublicationPPAs(self):
+        """See `IDistribution`."""
+        src_query = """
+        Archive.purpose = %s AND
+        Archive.distribution = %s AND
+        SourcePackagePublishingHistory.archive = archive.id AND
+        SourcePackagePublishingHistory.status = %s
+         """ % sqlvalues(ArchivePurpose.PPA, self,
+                         PackagePublishingStatus.PENDING)
+
+        src_archives = Archive.select(
+            src_query, clauseTables=['SourcePackagePublishingHistory'],
+            orderBy=['archive.id'], distinct=True)
+
+        bin_query = """
+        Archive.purpose = %s AND
+        Archive.distribution = %s AND
+        BinaryPackagePublishingHistory.archive = archive.id AND
+        BinaryPackagePublishingHistory.status = %s
+        """ % sqlvalues(ArchivePurpose.PPA, self,
+                        PackagePublishingStatus.PENDING)
+
+        bin_archives = Archive.select(
+            bin_query, clauseTables=['BinaryPackagePublishingHistory'],
+            orderBy=['archive.id'], distinct=True)
+
+        return src_archives.union(bin_archives)
 
 
 class DistributionSet:

@@ -22,9 +22,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    SourcePackageUrgency, SourcePackageFormat,
-    SourcePackageFileType, BuildStatus,
-    PackagePublishingStatus)
+    ArchivePurpose, SourcePackageUrgency, SourcePackageFormat,
+    SourcePackageFileType, BuildStatus, PackagePublishingStatus)
 
 from canonical.librarian.interfaces import ILibrarianClient
 
@@ -165,8 +164,7 @@ class SourcePackageRelease(SQLBase):
             from canonical.launchpad.database.sourcepackage import \
                  SourcePackage
             # Only process main archive to skip PPA publishings.
-            if (publishing.distroseries.main_archive.id !=
-                publishing.archive.id):
+            if publishing.archive.purpose == ArchivePurpose.PPA:
                 continue
             sp = SourcePackage(self.sourcepackagename,
                                publishing.distroseries)
