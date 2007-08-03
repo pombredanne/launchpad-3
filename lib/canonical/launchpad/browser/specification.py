@@ -196,14 +196,10 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
     sub-classes must define a schema requiring the user to specify a target.
     """
     def distribution(self, data):
-        target = data['target']
-        if IDistribution.providedBy(target):
-            return target
+        return IDistribution(data['target'], None)
 
     def product(self, data):
-        target = data['target']
-        if IProduct.providedBy(target):
-            return target
+        return IProduct(data['target'], None)
 
     def validate(self, data):
         """Ensures that the name for the new specification is unique.
