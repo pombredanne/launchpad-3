@@ -345,5 +345,9 @@
     </div>
   </body>
 </html>
+<tal:requestlog
+    define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
+    replace="structure string:<!-- at least ${log} -->" />
 </metal:page>
 <!-- 1-0 inprogress Help panel wrong in IE/Win; portlets wrong in IE/Mac -->
+
