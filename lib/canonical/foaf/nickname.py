@@ -10,14 +10,14 @@ import re
 
 from canonical.database.sqlbase import cursor
 from canonical.launchpad.validators.email import valid_email
-from canonical.launchpad.validators.name import sanitize_name
+from canonical.launchpad.validators.name import sanitize_name, valid_name
 
-MIN_NICK_LENGTH = 2
 
 class NicknameGenerationError(Exception):
     """I get raised when something went wrong generating a nickname."""
 
-def _nick_registered(nick):
+
+def _is_nick_registered(nick):
     """Answer the question: is this nick registered?"""
     # XXX: This should use IPersonSet.  Before we change this, we need to
     #      make sure that all users of nickname.py are running inside the
@@ -27,18 +27,21 @@ def _nick_registered(nick):
     return PersonSet().getByName(nick) is not None
 
 
-def blacklisted(name):
+def is_blacklisted(name):
     cur = cursor()
     cur.execute("SELECT is_blacklisted_name(%(name)s)", vars())
     return cur.fetchone()[0]
 
 
-def generate_nick(email_addr, registered=_nick_registered):
+def generate_nick(email_addr, is_registered=_is_nick_registered):
     """Generate a LaunchPad nick from the email address provided.
 
-    A valid nick can contain lower case letters, dashes, and numbers,
-    must start with a letter or a number, and must be a minimum of
-    four characters.
+    See canonical.launchpad.validators.name for the definition of a
+    valid nick.
+
+    It is technically possible for this function to raise a
+    NicknameGenerationError, but this will only occur if an operator
+    has majorly screwed up the name blacklist.
     """
     email_addr = email_addr.strip().lower()
 
@@ -51,13 +54,11 @@ def generate_nick(email_addr, registered=_nick_registered):
     domain_parts = domain.split(".")
 
     def _valid_nick(nick):
-        if len(nick) < MIN_NICK_LENGTH:
+        if not valid_name(nick):
             return False
-        elif registered(nick):
+        elif is_registered(nick):
             return False
-        elif blacklisted(nick):
-            return False
-        elif nick != sanitize_name(nick):
+        elif is_blacklisted(nick):
             return False
         else:
             return True
@@ -109,9 +110,11 @@ def generate_nick(email_addr, registered=_nick_registered):
                     prefix + '-' + ''.join(mutated_nick) + '-' + suffix):
                 return prefix + '-' + ''.join(mutated_nick) + '-' + suffix
 
-        # This should be impossible to trigger unless some twonk has
-        # registered a match everything regexp in the black list.
-        raise NicknameGenerationError("no nickname could be generated")
+        raise NicknameGenerationError(
+            "No nickname could be generated. "
+            "This should be impossible to trigger unless some twonk has "
+            "registered a match everything regexp in the black list."
+            )
 
     finally:
         random.setstate(random_state)
