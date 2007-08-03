@@ -1,4 +1,4 @@
-# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 __metaclass__ = type
 __all__ = ['POTMsgSet']
@@ -7,9 +7,8 @@ from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import ForeignKey, IntCol, StringCol, SQLObjectNotFound
-
-from canonical.cachedproperty import cachedproperty
 from canonical.database.sqlbase import SQLBase, quote, sqlvalues
+
 from canonical.launchpad.interfaces import (
     BrokenTextError, ILanguageSet, IPOTMsgSet, ITranslationImporter,
     TranslationConstants)
@@ -18,6 +17,7 @@ from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
 from canonical.launchpad.database.pomsgidsighting import POMsgIDSighting
 from canonical.launchpad.database.posubmission import POSubmission
+
 
 class POTMsgSet(SQLBase):
     implements(IPOTMsgSet)
@@ -34,14 +34,21 @@ class POTMsgSet(SQLBase):
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
 
+    have_cached_msgid_plural = False
+
     @property
     def msgid(self):
         """See IPOTMsgSet."""
         return self.primemsgid_.msgid
 
-    @cachedproperty
+    @property
     def msgid_plural(self):
         """See IPOTMsgSet."""
+        if self.have_cached_msgid_plural:
+            return self.cached_msgid_plural
+
+        self.cached_msgid_plural = None
+
         plural = POMsgID.selectOne('''
             POMsgIDSighting.potmsgset = %s AND
             POMsgIDSighting.pomsgid = POMsgID.id AND
@@ -50,9 +57,10 @@ class POTMsgSet(SQLBase):
             ''' % sqlvalues(self),
             clauseTables=['POMsgIDSighting'])
         if plural is not None:
-            return plural.msgid
-        else:
-            return None
+            self.cached_msgid_plural = plural.msgid
+
+        self.have_cached_msgid_plural = True
+        return self.cached_msgid_plural
 
     @property
     def singular_text(self):
@@ -220,6 +228,10 @@ class POTMsgSet(SQLBase):
         if pluralForm == TranslationConstants.SINGULAR_FORM:
             # Update direct link to the singular form.
             self.primemsgid_ = messageID
+        elif pluralForm == TranslationConstants.PLURAL_FORM:
+            # We may have had this cached, and it just changed.  Don't bother
+            # updating cached value, just note we need to re-fetch it.
+            self.have_cached_msgid_plural = False
 
         if existing is None:
             return POMsgIDSighting(
