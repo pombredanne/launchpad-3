@@ -13,7 +13,6 @@ from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
-
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
@@ -22,6 +21,7 @@ from canonical.launchpad.database.publishing import (
 from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.interfaces import (
     IArchiveSet, IDistroSeriesSourcePackageRelease, ISourcePackageRelease)
+from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 from canonical.lp import decorates
 from canonical.lp.dbschema import (
     PackagePublishingStatus, PackageUploadStatus)
@@ -220,11 +220,14 @@ class DistroSeriesSourcePackageRelease:
             new_section == current.section):
             return
 
-        # See if the archive has changed by virtue of the component changing:
+        # See if the archive has changed by virtue of the component 
+        # changing:
         new_archive = getUtility(IArchiveSet).getByDistroComponent(
             self.distribution, new_component.name)
-        if new_archive == None:
-            new_archive = current.archive
+        if new_archive != None and new_archive != current.archive:
+            raise ArchiveOverriderError(
+                "Overriding component to '%s' failed because it would "
+                "require a new archive." % new_component.name)
 
         SecureSourcePackagePublishingHistory(
             distroseries=current.distroseries,
@@ -235,7 +238,7 @@ class DistroSeriesSourcePackageRelease:
             pocket=current.pocket,
             component=new_component,
             section=new_section,
-            archive=new_archive
+            archive=current.archive
         )
 
     def supersede(self):

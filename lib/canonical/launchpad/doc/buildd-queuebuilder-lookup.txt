@@ -146,7 +146,6 @@ expect to retrieve the following publications:
 
  * All PPA publications
  * All main_archive publications, including RELEASE and post-release pockets
- * All other distro archives
 
     >>> hoary = ubuntu['hoary']
     >>> hoary.status.name

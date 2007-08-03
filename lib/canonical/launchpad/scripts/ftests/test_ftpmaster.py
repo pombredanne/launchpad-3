@@ -255,8 +255,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         """Check processSourceChange method call with an archive change.
 
         Changing the component to 'commercial' will result in the archive
-        changing on the publishing record.  Make sure that it changes 
-        correctly.
+        changing on the publishing record.  This is disallowed.
         """
         # Apply the override.
         changer = ArchiveOverrider(
@@ -264,14 +263,8 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             component_name='commercial', section_name='base', 
             priority_name='extra')
         changer.initialize()
-        changer.processSourceChange('mozilla-firefox')
-
-        # Check results.
-        mozilla_source = self.ubuntu_warty.getSourcePackage('mozilla-firefox')
-        distroseriessourcepackagerelease = mozilla_source.currentrelease
-        last_pub_hist = distroseriessourcepackagerelease.publishing_history[0]
-        self.assertEqual(ArchivePurpose.COMMERCIAL,
-            last_pub_hist.archive.purpose)
+        self.assertRaises(ArchiveOverriderError,
+            changer.processSourceChange, 'mozilla-firefox')
 
     def test_processSourceChange_error(self):
         """processSourceChange warns the user about an unpublished source.
@@ -316,7 +309,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         """Check processBinaryChange method call with an archive change.
 
         Changing the component to 'commercial' will result in the archive
-        changing.  Make sure that it changes correctly.
+        changing.  This is disallowed.
         """
         # Apply the override.
         changer = ArchiveOverrider(
@@ -324,26 +317,8 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             component_name='commercial', section_name='base', 
             priority_name='extra')
         changer.initialize()
-        changer.processBinaryChange('pmount')
-
-        # pmount is published in hoary under the architectures hppa and i386.
-        # Check that both publishing records exist with COMMERCIAL set.
-        pmount_bin_name = getUtility(IBinaryPackageNameSet)['pmount']
-        hoary_i386 = self.hoary['i386']
-        hoary_hppa = self.hoary['hppa']
-        pmount_i386 = DistroArchSeriesBinaryPackage(hoary_i386, 
-            pmount_bin_name)
-        pmount_hppa = DistroArchSeriesBinaryPackage(hoary_hppa, 
-            pmount_bin_name)
-        pmount_i386_current = pmount_i386.currentrelease
-        pmount_hppa_current = pmount_hppa.currentrelease
-        last_pub_pmount_i386 = pmount_i386_current.publishing_history[0]
-        last_pub_pmount_hppa = pmount_hppa_current.publishing_history[0]
-
-        self.assertEqual(ArchivePurpose.COMMERCIAL,
-            last_pub_pmount_i386.archive.purpose)
-        self.assertEqual(ArchivePurpose.COMMERCIAL,
-            last_pub_pmount_hppa.archive.purpose)
+        self.assertRaises(ArchiveOverriderError,
+            changer.processBinaryChange, 'pmount')
 
     def test_processBinaryChange_error(self):
         """processBinaryChange warns the user about an unpublished binary.

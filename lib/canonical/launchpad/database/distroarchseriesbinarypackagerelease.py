@@ -24,6 +24,7 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
     DistributionSourcePackageRelease)
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
+from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 from canonical.launchpad.interfaces import IArchiveSet
 
 class DistroArchSeriesBinaryPackageRelease:
@@ -298,8 +299,10 @@ class DistroArchSeriesBinaryPackageRelease:
         # See if the archive has changed by virtue of the component changing:
         new_archive = getUtility(IArchiveSet).getByDistroComponent(
             self.distribution, new_component.name)
-        if new_archive == None:
-            new_archive = current.archive
+        if new_archive != None and new_archive != current.archive:
+            raise ArchiveOverriderError(
+                "Overriding component to '%s' failed because it would "
+                "require a new archive." % new_component.name)
 
         # Append the modified package publishing entry
         SecureBinaryPackagePublishingHistory(
@@ -312,7 +315,7 @@ class DistroArchSeriesBinaryPackageRelease:
             component=new_component,
             section=new_section,
             priority=new_priority,
-            archive=new_archive
+            archive=current.archive
             )
 
     def supersede(self):
