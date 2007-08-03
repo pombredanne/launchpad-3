@@ -697,6 +697,10 @@ class BugTaskEditView(LaunchpadEditFormView):
     custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
     custom_widget('bugwatch', BugTaskBugWatchWidget)
     custom_widget('assignee', BugTaskAssigneeWidget)
+
+    # The field names that we use by default. This list will be mutated
+    # depending on the current context and the permissions of the user viewing
+    # the form.
     field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
                    'product', 'sourcepackagename', 'status',
                    'statusexplanation']
@@ -719,10 +723,10 @@ class BugTaskEditView(LaunchpadEditFormView):
     def prefix(self):
         """Returns a prefix that can be used for this form.
 
-        The prefix is constructed by using the names of the bugtask's target
-        so as to ensure that it's unique within the context of a bug. This is
-        needed in order to included multiple edit forms on the bug page,
-        while still keeping the field ids unique.
+        The prefix is constructed using the name of the bugtask's target so as
+        to ensure that it's unique within the context of a bug. This is needed
+        in order to included multiple edit forms on the bug page, while still
+        keeping the field ids unique.
         """
         parts = []
         if IUpstreamBugTask.providedBy(self.context):
@@ -941,7 +945,7 @@ class BugTaskEditView(LaunchpadEditFormView):
 
         # Save the field names we extract from the form in a separate
         # list, because we modify this list of names later if the
-        # context is reassigned to a different product.
+        # bugtask is reassigned to a different product.
         field_names = list(data)
         new_values = data.copy()
         data_to_apply = data.copy()
@@ -953,7 +957,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         # product, we'll clear out the milestone value, to avoid
         # violating DB constraints that ensure an upstream task can't
         # be assigned to a milestone on a different product.
-        milestone_cleared = False
+        milestone_cleared = None
         milestone_ignored = False
         if (IUpstreamBugTask.providedBy(context) and
             (context.product != new_values.get("product")) and
