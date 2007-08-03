@@ -360,10 +360,18 @@ class IBranch(IHasOwner):
     landing_targets = Attribute(
         "The BranchMergeProposals where this branch is the source branch.")
     landing_candidates = Attribute(
-        "The BranchMergeProposals where this branch is the target branch.")
+        "The BranchMergeProposals where this branch is the target branch. "
+        "Only active merge proposals are returned (those that have not yet "
+        "been merged).")
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
-                         whiteboard=None):
+                         whiteboard=None, date_created=None):
         """Create a new BranchMergeProposal with this branch as the source.
+
+        Both the target_branch and the dependent_branch, if it is there,
+        must be branches of the same project as the source branch.
+
+        Branches without associated projects, junk branches, cannot
+        specify landing targets.
 
         :param registrant: The person who is adding the landing target.
         :param target_branch: Must be another branch, and different to self.
@@ -371,12 +379,8 @@ class IBranch(IHasOwner):
             another branch.
         :param whiteboard: Optional.  Just text, notes or instructions
             pertinant to the landing such as testing notes.
-
-        Both the target_branch and the dependent_branch, if it is there,
-        must be branches of the same project as the source branch.
-
-        Branches without associated projects, junk branches, cannot
-        specify landing targets.
+        :param date_created: Used to specify the date_created value of the
+            merge request.
         """
     def removeLandingTarget(target_branch):
         """Remove the BranchMergeProposal specified for the target branch."""

@@ -34,6 +34,7 @@ All merge proposals have to be registered by a Person.
     ...     IBranchSet, IPersonSet)
     >>> person_set = getUtility(IPersonSet)
     >>> sample_person = person_set.getByEmail('test@canonical.com')
+    >>> now = time_generator()
 
 In order to register a merge proposal there has to be a source branch
 and a target branch.
@@ -45,7 +46,7 @@ and a target branch.
     ...     '~name12/gnome-terminal/main')
 
     >>> merge_proposal = source_branch.addLandingTarget(
-    ...     sample_person, target_branch, None)
+    ...     sample_person, target_branch, date_created=now.next())
 
 This merge proposal is now listing against both the source and target
 branches.
@@ -60,6 +61,60 @@ branches.
 
 All the code paths through `addLandingTarget` are exercised by the UnitTest
 canonical.launchpad.database.tests.test_branch.BranchAddLandingTarget.
+
+In normal project circumstances there will normally be only one landing
+target registered for any given branch.  Sometimes there may be two or more
+specified but that would be in the situation where a single patch or fix
+is going to land on multiple supported branches.  It is often desirable to
+see the landing target information even after the merge has taken place.
+
+In comparison though, a trunk branch will have a significant number of
+merge candidates.  From the target branch point of view, it is normally
+only the unmerged branches that are of interest.  The landing_candidates
+only returns unmerged proposals, with the most recent branch merge proposals
+first.
+
+    >>> branch = branch_set.getByUniqueName(
+    ...     '~launchpad/gnome-terminal/launchpad')
+    >>> proposal = branch.addLandingTarget(
+    ...     sample_person, target_branch, date_created=now.next())
+
+    >>> for proposal in target_branch.landing_candidates:
+    ...     print proposal.source_branch.unique_name
+    ~launchpad/gnome-terminal/launchpad
+    ~name12/gnome-terminal/klingon
+
+
+== Marking as merged ==
+
+A merge proposal may be marked as merged by calling the `markAsMerged` method
+on the `BranchMergeProposal`.
+
+If a revision number is supplied, the method looks for a `BranchRevision` in
+the target branch that matches.  If one is found then the revision date from
+the associated `Revision` is used as the merge date.  This allows branches
+that are not necessarily available to launchpad to manually mark the merge
+proposals as merged.
+
+    >>> merge_proposal = branch.landing_targets[0]
+    >>> merge_proposal.markAsMerged(1234, now.next())
+    >>> merge_proposal.merged_revno
+    1234
+    >>> flush_database_updates()
+
+The merged proposal is no longer listed amongst the target's candidates.
+
+    >>> print merge_proposal.source_branch.unique_name
+    ~launchpad/gnome-terminal/launchpad
+    >>> for proposal in merge_proposal.target_branch.landing_candidates:
+    ...     print proposal.source_branch.unique_name
+    ~name12/gnome-terminal/klingon
+
+But the merge proposal is still listed in the source's targets.
+
+    >>> for proposal in merge_proposal.source_branch.landing_targets:
+    ...     print proposal.target_branch.unique_name
+    ~name12/gnome-terminal/main
 
 
 == Interfaces ==
@@ -80,6 +135,7 @@ proposal is used.
 
     >>> login('test@canonical.com')
     >>> from canonical.launchpad.webapp import canonical_url
+    >>> merge_proposal = source_branch.landing_targets[0]
     >>> url = canonical_url(merge_proposal)
     >>> url[url.rfind('/')+1:] == str(merge_proposal.id)
     True
