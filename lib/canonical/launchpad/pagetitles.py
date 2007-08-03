@@ -101,7 +101,7 @@ class ContextBugId(SubstitutionHelper):
 
 archive_admin = ContextTitle('Administer %s')
 
-archive_activate = 'Activate PPA'
+archive_activate = 'Activate Personal Package Archive'
 
 archive_builds = ContextTitle('Builds for %s')
 
@@ -393,7 +393,7 @@ distribution_builds = ContextTitle('%s builds')
 
 distribution_uploadadmin = ContextTitle('Change Upload Manager for %s')
 
-distribution_ppa_list = ContextTitle('%s Personal Package Archives')
+distribution_ppa_list = ContextTitle('Personal Package Archives for %s')
 
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 

@@ -53,7 +53,7 @@ class Archive(SQLBase):
     def title(self):
         """See `IArchive`."""
         if self.owner is not None:
-            return 'PPA for %s' % self.owner.displayname
+            return '%s Personal Package Archive' % self.owner.displayname
         return '%s main archive' % self.distribution.title
 
     @property
