@@ -10,7 +10,7 @@ Edit the Status
 Let's start simple and edit the status of a bug task logged in as Sample
 Person:
 
-    >>> from zope.component import getView, getMultiAdapter
+    >>> from zope.component import getView
     >>> from canonical.launchpad.interfaces import IBugSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> login('test@canonical.com')
@@ -50,8 +50,8 @@ assigned to linux-source-2.6.15 instead.
     >>> ubuntu_thunderbird = ubuntu_thunderbird_task.sourcepackagename
     >>> edit_form['ubuntu_thunderbird.sourcepackagename'] = u'linux-2.6.12'
     >>> request = LaunchpadTestRequest(method='POST', form=edit_form)
-    >>> edit_view = getMultiAdapter((ubuntu_thunderbird_task, request),
-    ...     name='+editstatus-page')
+    >>> edit_view = getView(
+    ...     ubuntu_thunderbird_task, '+editstatus-page', request)
     >>> edit_view.initialize()
     >>> ubuntu_thunderbird_task.sourcepackagename.name
     u'linux-source-2.6.15'
