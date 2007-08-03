@@ -7,6 +7,12 @@
 
   <div metal:fill-slot="main">
     <div metal:use-macro="context/@@launchpad_form/form">
+      <p metal:fill-slot="extra_top">
+        Since this is an irreversible operation we ask you to enter your
+        Launchpad password here. If you've forgotten it you'll have to
+        <a href="/+forgottenpassword">reset it</a> first.
+      </p>
+
       <p metal:fill-slot="extra_bottom">
         By deactivating your account, you give up the ability to log into
         Launchpad, and you will not receive any further emails from us.
