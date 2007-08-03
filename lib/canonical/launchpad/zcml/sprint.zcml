@@ -14,7 +14,7 @@
 
   <browser:menus
       module="canonical.launchpad.browser.sprint"
-      classes="SprintFacets SprintOverviewMenu 
+      classes="SprintFacets SprintOverviewMenu
                SprintSpecificationsMenu SprintSetContextMenu
                SprintSetFacets"
       />
@@ -143,8 +143,8 @@
     class="canonical.launchpad.browser.NewSpecificationFromSprintView"
     permission="launchpad.AnyPerson"
     template="../templates/specification-add.pt"
-    />
-    
+  />
+
   <browser:page
     name="+register-a-blueprint-button"
     for="canonical.launchpad.interfaces.ISprint"

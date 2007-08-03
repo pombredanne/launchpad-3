@@ -51,12 +51,12 @@
 
   <browser:page
     name="+addspec"
-	for="canonical.launchpad.interfaces.IDistribution"
-	class="canonical.launchpad.browser.NewSpecificationFromDistributionView"
-	facet="specifications"
-	permission="launchpad.AnyPerson"
-	template="../templates/specification-add.pt"
-	/>
+    for="canonical.launchpad.interfaces.IDistribution"
+    class="canonical.launchpad.browser.NewSpecificationFromDistributionView"
+    facet="specifications"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+  />
 
   <browser:page
     for="canonical.launchpad.interfaces.IDistribution"

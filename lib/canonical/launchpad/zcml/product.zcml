@@ -117,12 +117,12 @@
 
   <browser:page
     name="+addspec"
-	for="canonical.launchpad.interfaces.IProduct"
-	class="canonical.launchpad.browser.NewSpecificationFromProductView"
-	facet="specifications"
-	permission="launchpad.AnyPerson"
-	template="../templates/specification-add.pt"
-	/>
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.NewSpecificationFromProductView"
+    facet="specifications"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+  />
 
   <browser:page
     for="canonical.launchpad.interfaces.IProduct"
