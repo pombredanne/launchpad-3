@@ -138,8 +138,9 @@ class INewSpecification(Interface):
 
 
 class INewSpecificationProjectTarget(Interface):
-    """A mixin schema for a new specification that requires the user to
-    specify a product from a given project.
+    """A mixin schema for a new specification.
+
+    Requires the user to specify a product from a given project.
     """
     target = Choice(title=_("For"),
                     description=_("The project for which this "
@@ -148,8 +149,9 @@ class INewSpecificationProjectTarget(Interface):
 
 
 class INewSpecificationSeriesGoal(Interface):
-    """A mixin schema for a new specification that allows the user to propose
-    the specification as a series goal.
+    """A mixin schema for a new specification.
+
+    Allows the user to propose the specification as a series goal.
     """
     goal = Bool(title=_('Propose for series goal'),
                 description=_("Check this to indicate that you wish to "
@@ -158,8 +160,9 @@ class INewSpecificationSeriesGoal(Interface):
 
 
 class INewSpecificationSprint(Interface):
-    """A mixin schema for a new specification that allows the user to propose
-    the specification for discussion at a sprint.
+    """A mixin schema for a new specification.
+
+    Allows the user to propose the specification for discussion at a sprint.
     """
     sprint = Choice(title=_("Propose for sprint"),
                     description=_("the sprint to which agenda this "
@@ -168,8 +171,9 @@ class INewSpecificationSprint(Interface):
 
 
 class INewSpecificationTarget(Interface):
-    """A mixin schema for a new specification that requires the user to
-    specify a target that is either a distribution or a product.
+    """A mixin schema for a new specification.
+
+    Requires the user to specify a distribution or a product as a target.
     """
     target = Choice(title=_("For"),
                     description=_("The project for which this proposal is "

@@ -138,8 +138,9 @@ class NewSpecificationView(LaunchpadFormView):
 
 
 class NewSpecificationFromTargetView(NewSpecificationView):
-    """An abstract view for creating a specification from a context that
-    corresponds to a unique specification target.
+    """An abstract view for creating a specification from a target context.
+
+    The context must correspond to a unique specification target.
     """
     schema = Fields(INewSpecification,
                     INewSpecificationSprint)
@@ -189,10 +190,10 @@ class NewSpecificationFromProductSeriesView(NewSpecificationFromSeriesView):
 
 
 class NewSpecificationFromNonTargetView(NewSpecificationView):
-    """An abstract view for creating a specification from a context that does
-    not correspond to a unique specification target.
+    """An abstract view for creating a specification outside a target context.
 
-    Sub-classes must define a schema requiring the user to specify a target.
+    The context may not correspond to a unique specification target. Hence
+    sub-classes must define a schema requiring the user to specify a target.
     """
     def distribution(self, data):
         target = data['target']
@@ -205,8 +206,9 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
             return target
 
     def validate(self, data):
-        """Ensures that the name chosen for the new specification is unique
-        within the context of the chosen target.
+        """Ensures that the name for the new specification is unique.
+
+        The name must be unique within the context of the chosen target.
         """
         name = data.get('name', None)
         target = data.get('target', None)
