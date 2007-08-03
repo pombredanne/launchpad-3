@@ -222,8 +222,8 @@ class BuilddMaster:
                 "Chroots missing for %s, skipping" % distroseries.name)
             return
 
-        legal_arch_tags = " ".join(a.architecturetag for a in legal_archs)
-        self._logger.info("Supported architectures: %s" % legal_arch_tags)
+        self._logger.info("Supported architectures: %s" %
+                          " ".join(a.architecturetag for a in legal_archs))
 
         pas_verify = BuildDaemonPackagesArchSpecific(
             config.builddmaster.root, distroseries)
@@ -232,13 +232,21 @@ class BuilddMaster:
         self._logger.info(
             "Found %d source(s) published." % sources_published.count())
 
-        # XXX cprov 20050831: Entering this loop with no supported
-        # architecture results in a corruption of the persistent DBNotes
-        # instance for self._archserieses, it ends up empty. Bug 2070.
-        # XXX: I have no idea what celso is talking about above. -- kiko
         for pubrec in sources_published:
+            # XXX cprov 20070711: Fix me please, 'ppa_archtags'
+            # should be modeled as DistroArchSeries.ppa_supported.
+            # See #129491.
+            if pubrec.archive.purpose == dbschema.ArchivePurpose.PPA:
+                ppa_archtags = ('i386', 'amd64')
+                local_archs = [
+                    distro_arch_series for distro_arch_series in legal_archs
+                    if distro_arch_series.architecturetag in ppa_archtags]
+            else:
+                local_archs = legal_archs
+
             build_archs = determineArchitecturesToBuild(
-                            pubrec, legal_archs, distroseries, pas_verify)
+                pubrec, local_archs, distroseries, pas_verify)
+
             self._createMissingBuildsForPublication(pubrec, build_archs)
 
         self.commit()

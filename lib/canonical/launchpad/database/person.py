@@ -39,7 +39,7 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, ShippingRequestStatus,
+    BugTaskImportance, BugTaskStatus,
     SpecificationFilter, SpecificationDefinitionStatus,
     SpecificationImplementationStatus, SpecificationSort)
 
@@ -53,8 +53,9 @@ from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, ISSHKey, ISSHKeySet, ITeam, ITranslationGroupSet,
     IWikiName, IWikiNameSet, JoinNotAllowed, LoginTokenType,
     PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants,
-    SSHKeyType, TeamMembershipRenewalPolicy, TeamMembershipStatus,
-    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
+    ShippingRequestStatus, SSHKeyType, TeamMembershipRenewalPolicy,
+    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
+    UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar
@@ -437,9 +438,10 @@ class Person(SQLBase, HasSpecificationsMixin):
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
+            query += (
+                ' AND Specification.definition_status NOT IN ( %s, ''%s ) ' %
                 sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
-                          SpecificationDefinitionStatus.SUPERSEDED)
+                          SpecificationDefinitionStatus.SUPERSEDED))
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:

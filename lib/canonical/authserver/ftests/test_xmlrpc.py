@@ -99,7 +99,7 @@ class XMLRPCv1TestCase(LaunchpadTestCase):
 
     def test_getSSHKeys(self):
         # Unknown users have no SSH keys, of course.
-        self.assertEqual([], self.server.getSSHKeys('unknown@user'))
+        self.assertEqual([], self.server.getSSHKeys('nosuchuser'))
 
         # Check that the SSH key in the sample data can be retrieved
         # successfully.

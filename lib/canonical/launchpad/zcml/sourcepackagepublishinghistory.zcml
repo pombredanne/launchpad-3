@@ -19,6 +19,10 @@
       name="+listing-detailed"
       template="../templates/sourcepackagepublishinghistory-listing-detailed.pt"
       />
+    <browser:page
+      name="+listing-ppa-detailed"
+      template="../templates/sourcepackagepublishinghistory-listing-ppa-detailed.pt"
+      />
   </browser:pages>
 
   <!-- SourcePackageFilePublishing -->

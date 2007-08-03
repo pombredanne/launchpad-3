@@ -54,7 +54,8 @@ from canonical.launchpad.interfaces import (
     CreateBugParams, IAnswersFrontPageSearchForm, IBug, IFAQ, IFAQTarget,
     ILanguageSet, ILaunchpadStatisticSet, IProject, IQuestion,
     IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionLinkFAQForm,
-    IQuestionSet, IQuestionTarget, NotFoundError, UnexpectedFormData)
+    IQuestionSet, IQuestionTarget, QuestionAction, QuestionStatus,
+    QuestionSort, NotFoundError, UnexpectedFormData)
 
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
@@ -62,7 +63,6 @@ from canonical.launchpad.webapp import (
     custom_widget, redirection, safe_action, smartquote)
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
 from canonical.widgets import LaunchpadRadioWidget
 from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget

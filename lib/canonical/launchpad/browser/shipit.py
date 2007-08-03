@@ -22,9 +22,6 @@ from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 
 from canonical.config import config
 from canonical.cachedproperty import cachedproperty
-from canonical.lp.dbschema import (
-    ShipItFlavour, ShipItArchitecture, ShipItDistroSeries,
-    ShippingRequestStatus)
 from canonical.launchpad.helpers import (
     intOrZero, get_email_template, shortlist)
 from canonical.launchpad.webapp.error import SystemErrorView
@@ -41,7 +38,8 @@ from canonical.launchpad.interfaces import (
     IStandardShipItRequestSet, IShippingRequestSet, ILaunchBag,
     ILaunchpadCelebrities, IShippingRunSet, IShipItApplication,
     IShipItReportSet, UnexpectedFormData, IShippingRequestUser,
-    ShipItConstants)
+    ShipItConstants, ShipItFlavour, ShipItArchitecture, ShipItDistroSeries,
+    ShippingRequestStatus)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer)

@@ -663,7 +663,7 @@ Notification received by the owner:
 
 === Notifications for setStatus() ===
 
-    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> from canonical.launchpad.interfaces import QuestionStatus
     >>> login('foo.bar@canonical.com')
     >>> message = ubuntu_question.setStatus(
     ...     foo_bar, QuestionStatus.SOLVED, "The rejection was a mistake.")

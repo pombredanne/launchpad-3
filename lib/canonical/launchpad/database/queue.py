@@ -141,7 +141,7 @@ class PackageUpload(SQLBase):
         """See IPackageUpload."""
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks for 'ubuntu' main distro.
-        if self.archive.id == self.distroseries.distribution.main_archive.id:
+        if self.archive.purpose != ArchivePurpose.PPA:
             assert self.distroseries.canUploadToPocket(self.pocket), (
                 "Not permitted acceptance in the %s pocket in a "
                 "series in the '%s' state." % (
@@ -283,7 +283,7 @@ class PackageUpload(SQLBase):
             "Can not publish a non-ACCEPTED queue record (%s)" % self.id)
         # Explode if something wrong like warty/RELEASE pass through
         # NascentUpload/UploadPolicies checks
-        if self.archive.id == self.distroseries.distribution.main_archive.id:
+        if self.archive.purpose != ArchivePurpose.PPA:
             assert self.distroseries.canUploadToPocket(self.pocket), (
                 "Not permitted to publish to the %s pocket in a "
                 "series in the '%s' state." % (
@@ -802,7 +802,8 @@ class PackageUploadSource(SQLBase):
         for source_file in self.sourcepackagerelease.files:
             try:
                 published_file = distribution.getFileByName(
-                    source_file.libraryfile.filename, binary=False)
+                    source_file.libraryfile.filename, binary=False,
+                    archive=self.packageupload.archive)
             except NotFoundError:
                 # NEW files are *OK*.
                 continue
@@ -917,9 +918,8 @@ class PackageUploadCustom(SQLBase):
     @property
     def archive_config(self):
         """See IPackageUploadCustom."""
-        distribution = self.packageupload.distroseries.distribution
         archive = self.packageupload.archive
-        return archive.getPubConfig(distribution)
+        return archive.getPubConfig()
 
     def _publishCustom(self, action_method):
         """Publish custom formats.

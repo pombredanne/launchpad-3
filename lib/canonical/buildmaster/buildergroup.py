@@ -295,11 +295,13 @@ class BuilderGroup:
         directory, store build information and push them through the
         uploader.
         """
+        # XXX cprov 20070711: untested code path, see #129487
+
         self.logger.debug("Processing successful build %s" % buildid)
         # Explode before collect a binary that is denied in this
         # distroseries/pocket
         build = queueItem.build
-        if build.archive == build.distroseries.main_archive:
+        if build.archive.purpose != dbschema.ArchivePurpose.PPA:
             assert build.distroseries.canUploadToPocket(build.pocket), (
                 "%s (%s) can not be built for pocket %s: illegal status"
                 % (build.title, build.id,

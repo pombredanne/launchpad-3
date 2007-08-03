@@ -57,8 +57,7 @@ from canonical.archiveuploader.nascentupload import (
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, IArchiveSet, NotFoundError)
-from canonical.lp.dbschema import ArchivePurpose
+    IDistributionSet, IPersonSet, NotFoundError)
 
 from contrib.glock import GlobalLock
 
@@ -312,6 +311,11 @@ class UploadProcessor:
                                   "Aborting partial accept.")
                     self.ztm.abort()
 
+            if upload.is_rejected:
+                self.log.warn("Upload was rejected:")
+                for msg in upload.rejections:
+                    self.log.warn("\t%s" % msg)
+
             if self.options.dryrun:
                 self.log.info("Dry run, aborting transaction.")
                 self.ztm.abort()
@@ -418,11 +422,19 @@ class UploadProcessor:
                 raise UploadPathError(
                     "Could not find distribution '%s'" % distribution_name)
 
-            archive = getUtility(IArchiveSet).ensure(owner=person, 
-                distribution=distribution, purpose=ArchivePurpose.PPA)
+            archive = person.archive
             if archive is None:
                 raise UploadPathError(
                     "Could not find PPA for '%s'" % person_name)
+
+            if not archive.enabled:
+                raise UploadPathError(
+                    "%s is disabled" % archive.title)
+
+            if archive.distribution != distribution:
+                raise UploadPathError(
+                    "%s only supports uploads to '%s'"
+                    % (archive.title, archive.distribution.name))
 
             if len(parts) > 2:
                 suite_name = parts[2]
