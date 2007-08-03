@@ -61,6 +61,7 @@ from canonical.launchpad.interfaces import (
     IBugSet,
     IBugTrackerSet,
     IBuilderSet,
+    ICodeImportSet,
     ICodeOfConductSet,
     ICveSet,
     IDistributionSet,
@@ -439,6 +440,7 @@ class LaunchpadRootNavigation(Navigation):
         'bugs': IMaloneApplication,
         '+builds': IBuilderSet,
         '+code': IBazaarApplication,
+        '+code-imports': ICodeImportSet,
         'codeofconduct': ICodeOfConductSet,
         'distros': IDistributionSet,
         'karmaaction': IKarmaActionSet,
@@ -987,7 +989,7 @@ class ProductsButton(Button):
 
     def makeReplacementDict(self):
         return dict(
-            url='%sproducts/' % allvhosts.configs['mainsite'].rooturl,
+            url='%sprojects/' % allvhosts.configs['mainsite'].rooturl,
             buttonname=self.name,
             text=self.text)
 

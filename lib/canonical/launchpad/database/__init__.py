@@ -1,6 +1,7 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
 
 from canonical.launchpad.database.codeimport import *
+from canonical.launchpad.database.codeimportmachine import *
 from canonical.launchpad.database.milestone import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.pillar import *
@@ -54,14 +55,14 @@ from canonical.launchpad.database.distributionmirror import *
 from canonical.launchpad.database.distributionsourcepackage import *
 from canonical.launchpad.database.distributionsourcepackagecache import *
 from canonical.launchpad.database.distributionsourcepackagerelease import *
-from canonical.launchpad.database.distrorelease import *
-from canonical.launchpad.database.distroreleasebinarypackage import *
-from canonical.launchpad.database.distroreleaselanguage import *
-from canonical.launchpad.database.distroreleasepackagecache import *
-from canonical.launchpad.database.distroreleasesourcepackagerelease import *
-from canonical.launchpad.database.distroarchrelease import *
-from canonical.launchpad.database.distroarchreleasebinarypackage import *
-from canonical.launchpad.database.distroarchreleasebinarypackagerelease import *
+from canonical.launchpad.database.distroseries import *
+from canonical.launchpad.database.distroseriesbinarypackage import *
+from canonical.launchpad.database.distroserieslanguage import *
+from canonical.launchpad.database.distroseriespackagecache import *
+from canonical.launchpad.database.distroseriessourcepackagerelease import *
+from canonical.launchpad.database.distroarchseries import *
+from canonical.launchpad.database.distroarchseriesbinarypackage import *
+from canonical.launchpad.database.distroarchseriesbinarypackagerelease import *
 from canonical.launchpad.database.person import *
 from canonical.launchpad.database.language import *
 from canonical.launchpad.database.translationgroup import *
@@ -74,10 +75,12 @@ from canonical.launchpad.database.manifestancestry import *
 from canonical.launchpad.database.branch import *
 from canonical.launchpad.database.branchrevision import *
 from canonical.launchpad.database.branchsubscription import *
+from canonical.launchpad.database.branchvisibilitypolicy import *
 from canonical.launchpad.database.build import *
 from canonical.launchpad.database.builder import *
 from canonical.launchpad.database.buildqueue import *
 from canonical.launchpad.database.publishing import *
+from canonical.launchpad.database.faq import *
 from canonical.launchpad.database.files import *
 from canonical.launchpad.database.bounty import *
 from canonical.launchpad.database.bountymessage import *
@@ -121,4 +124,5 @@ from canonical.launchpad.database.gpgkey import *
 from canonical.launchpad.database.archive import *
 from canonical.launchpad.database.emailaddress import *
 from canonical.launchpad.database.openidserver import *
-
+from canonical.launchpad.database.entitlement import *
+from canonical.launchpad.database.mailinglist import *

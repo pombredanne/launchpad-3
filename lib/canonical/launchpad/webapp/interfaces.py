@@ -15,7 +15,7 @@ from zope.security.interfaces import Forbidden
 from canonical.launchpad import _
 
 
-class TranslationUnavailableError(Forbidden):
+class TranslationUnavailable(Exception):
     """Translation objects are unavailable."""
 
 
@@ -38,7 +38,6 @@ class ILaunchpadApplication(Interface):
     application objects will provide an interface that extends this
     interface.
     """
-    name = Attribute('Name')
     title = Attribute('Title')
 
 
@@ -309,8 +308,8 @@ class ILaunchBag(Interface):
     project = Attribute('IProject, or None')
     product = Attribute('IProduct, or None')
     distribution = Attribute('IDistribution, or None')
-    distrorelease = Attribute('IDistroRelease, or None')
-    distroarchrelease = Attribute('IDistroArchRelease, or None')
+    distroseries = Attribute('IDistroSeries, or None')
+    distroarchseries = Attribute('IDistroArchSeries, or None')
     sourcepackage = Attribute('ISourcepackage, or None')
     sourcepackagereleasepublishing = Attribute(
         'ISourcepackageReleasePublishing, or None')

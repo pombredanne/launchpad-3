@@ -6,6 +6,7 @@ __metaclass__ = type
 
 __all__ = [
     'ISpecification',
+    'INewSpecificationForm',
     'ISpecificationSet',
     'ISpecificationDelta',
     ]
@@ -14,55 +15,70 @@ __all__ = [
 from zope.interface import Interface, Attribute
 from zope.component import getUtility
 
-from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool, Field
+from zope.schema import Datetime, Int, Choice, Text, TextLine, Bool
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (ContentNameField, Summary,
     Title)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces import IHasOwner, IProject
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
+from canonical.launchpad.interfaces.sprint import ISprint
 from canonical.launchpad.interfaces.specificationtarget import (
     IHasSpecifications)
 
 from canonical.lp.dbschema import (
-    SpecificationStatus, SpecificationPriority, SpecificationDelivery,
-    SpecificationGoalStatus)
+    SpecificationDefinitionStatus, SpecificationPriority,
+    SpecificationImplementationStatus, SpecificationGoalStatus)
 
 
 class SpecNameField(ContentNameField):
 
-    errormessage = _("%s is already in use by another specification.")
+    errormessage = _("%s is already in use by another blueprint.")
 
     @property
     def _content_iface(self):
         return ISpecification
 
     def _getByName(self, name):
-        if ISpecification.providedBy(self.context):
-            # the context is a spec, so we are editing the spec details and
-            # we want to know if we are change the name whether there is
-            # alread a spec with this name for the target.
-            return self.context.target.getSpecification(name)
-        elif ISpecificationSet.providedBy(self.context):
-            # in the case of a form on the spec set, we need to validate at
-            # a higher level, in the form validation routine
+        """Finds a specification by name from the current context.
+
+        Returns a specification if (and only if) the current context
+        defines a unique specification namespace and then if a matching
+        specification can be found within that namespace. Returns None
+        otherwise.
+        """
+        if ISpecificationSet.providedBy(self.context):
+            # The context is the set of all specifications. Since this
+            # set corresponds to multiple specification namespaces, we
+            # return None.
             return None
         elif IProject.providedBy(self.context):
-            # the context is a Project, so we will validate this at a higher
-            # level, in the form validation routine
+            # The context is a project group. Since a project group
+            # corresponds to multiple specification namespaces, we
+            # return None.
+            return None
+        elif ISpecification.providedBy(self.context):
+            # The context is a specification. Since a specification's
+            # target defines a single specification namespace, we ask
+            # the target to perform the lookup.
+            return self.context.target.getSpecification(name)
+        elif ISprint.providedBy(self.context):
+            # The context is a sprint. Since a sprint corresponds
+            # to multiple specification namespaces, we return None.
             return None
         else:
-            # the context is a Product or Distro which can tell us if there
-            # are already specs with this name
+            # The context is a entity such as a product or distribution.
+            # Since this type of context is associated with exactly one
+            # specification namespace, we ask the context to perform the
+            # lookup.
             return self.context.getSpecification(name)
 
 
 class SpecURLField(TextLine):
 
-    errormessage = _("%s is already registered by another specification.")
+    errormessage = _("%s is already registered by another blueprint.")
 
     def _validate(self, specurl):
         TextLine._validate(self, specurl)
@@ -79,12 +95,19 @@ class SpecURLField(TextLine):
 class ISpecification(IHasOwner, ICanBeMentored):
     """A Specification."""
 
+    # XXX: TomBerger 2007-06-20, 'id' is required for
+    #      SQLObject to be able to assign a security-proxied
+    #      specification to an attribute of another SQL object
+    #      referencing it.
+    id = Int(title=_("Database ID"), required=True, readonly=True)
+
     name = SpecNameField(
-        title=_('Name'), required=True, description=_(
+        title=_('Name'), required=True, readonly=False,
+        description=_(
             "May contain lower-case letters, numbers, and dashes. "
             "It will be used in the specification url. "
-            "Examples: mozilla-type-ahead-find, postgres-smart-serial."),
-        constraint=name_validator)
+            "Examples: mozilla-type-ahead-find, postgres-smart-serial.")
+        )
     title = Title(
         title=_('Title'), required=True, description=_(
             "Describe the feature as clearly as possible in up to 70 characters. "
@@ -98,9 +121,9 @@ class ISpecification(IHasOwner, ICanBeMentored):
         title=_('Summary'), required=True, description=_(
             "A single-paragraph description of the feature. "
             "This will also be displayed in most feature listings."))
-    status = Choice(
-        title=_('Definition Status'), vocabulary='SpecificationStatus',
-        default=SpecificationStatus.NEW, description=_(
+    definition_status = Choice(
+        title=_('Definition Status'), vocabulary='SpecificationDefinitionStatus',
+        default=SpecificationDefinitionStatus.NEW, description=_(
             "The current status of the process to define the "
             "feature and get approval for the implementation plan."))
     priority = Choice(
@@ -132,23 +155,17 @@ class ISpecification(IHasOwner, ICanBeMentored):
         description=_("The project for which this proposal is being made."),
         required=True,
         vocabulary='DistributionOrProduct')
-    projecttarget = Choice(
-        title=_("For"),
-        description=_("The project for which this proposal is being made."),
-        required=True,
-        vocabulary='ProjectProducts')
-
 
     # series
     productseries = Choice(title=_('Series Goal'), required=False,
         vocabulary='FilteredProductSeries',
         description=_(
-            "Choose a release series in which you would like to deliver "
+            "Choose a series in which you would like to deliver "
             "this feature. Selecting '(no value)' will clear the goal."))
-    distrorelease = Choice(title=_('Release Goal'), required=False,
-        vocabulary='FilteredDistroRelease',
+    distroseries = Choice(title=_('Series Goal'), required=False,
+        vocabulary='FilteredDistroSeries',
         description=_(
-            "Choose a release in which you would like to deliver "
+            "Choose a series in which you would like to deliver "
             "this feature. Selecting '(no value)' will clear the goal."))
 
     # milestone
@@ -159,14 +176,12 @@ class ISpecification(IHasOwner, ICanBeMentored):
             "delivered."))
 
     # nomination to a series for release management
-    goal = Attribute(
-        "The release series or distro release for which this feature "
-        "is a goal.")
+    goal = Attribute("The series for which this feature is a goal.")
     goalstatus = Choice(
         title=_('Goal Acceptance'), vocabulary='SpecificationGoalStatus',
         default=SpecificationGoalStatus.PROPOSED, description=_(
             "Whether or not the drivers have accepted this feature as "
-            "a goal for the targeted release or series."))
+            "a goal for the targeted series."))
     goal_proposer = Attribute("The person who nominated the spec for "
         "this series.")
     date_goal_proposed = Attribute("The date of the nomination.")
@@ -189,9 +204,9 @@ class ISpecification(IHasOwner, ICanBeMentored):
         "number of developer days it will take to implement this feature. "
         "Please only provide an estimate if you are relatively confident "
         "in the number."))
-    delivery = Choice(title=_("Implementation Status"),
-        required=True, default=SpecificationDelivery.UNKNOWN,
-        vocabulary='SpecificationDelivery', description=_("The state of "
+    implementation_status = Choice(title=_("Implementation Status"),
+        required=True, default=SpecificationImplementationStatus.UNKNOWN,
+        vocabulary='SpecificationImplementationStatus', description=_("The state of "
         "progress being made on the actual implementation or delivery "
         "of this feature."))
     superseded_by = Choice(title=_("Superseded by"),
@@ -200,10 +215,6 @@ class ISpecification(IHasOwner, ICanBeMentored):
         "which supersedes this one. Note that selecting a specification "
         "here and pressing Continue will change the specification "
         "status to Superseded."))
-    informational = Bool(title=_('Is Informational'),
-        required=False, default=False, description=_('Check this box if '
-        'this specification is purely documentation or overview and does '
-        'not actually involve any implementation.'))
 
     # lifecycle
     starter = Attribute('The person who first set the state of the '
@@ -232,6 +243,8 @@ class ISpecification(IHasOwner, ICanBeMentored):
     branch_links = Attribute('The entries that link the branches to the spec')
 
     # emergent properties
+    informational = Attribute('Is True if this spec is purely informational '
+        'and requires no implementation.')
     is_complete = Attribute('Is True if this spec is already completely '
         'implemented. Note that it is True for informational specs, since '
         'they describe general functionality rather than specific '
@@ -265,7 +278,7 @@ class ISpecification(IHasOwner, ICanBeMentored):
 
     # goal management
     def proposeGoal(goal, proposer):
-        """Propose this spec for a series or distrorelease."""
+        """Propose this spec for a series or distroseries."""
 
     def acceptBy(decider):
         """Mark the spec as being accepted for its current series goal."""
@@ -273,10 +286,9 @@ class ISpecification(IHasOwner, ICanBeMentored):
     def declineBy(decider):
         """Mark the spec as being declined as a goal for the proposed series."""
 
-    has_release_goal = Attribute('Is true if this specification has been '
-        'proposed as a goal for a specific distro release or product '
-        'series and the drivers of that release/series have accepted '
-        'the goal.')
+    has_accepted_goal = Attribute('Is true if this specification has been '
+        'proposed as a goal for a specific series, '
+        'and the drivers of that series have accepted the goal.')
 
     # lifecycle management
     def updateLifecycleStatus(user):
@@ -351,9 +363,25 @@ class ISpecification(IHasOwner, ICanBeMentored):
     # branches
     def getBranchLink(branch):
         """Return the SpecificationBranch link for the branch, or None."""
-    
+
     def linkBranch(branch, summary=None):
         """Link the given branch to this specification."""
+
+
+class INewSpecificationForm(ISpecification):
+    """ A schema for registering new blueprints"""
+    sprint = Choice(
+        title=_("Propose for sprint"),
+        description=_("the sprint to which agenda this blueprint is "
+                      "being suggested."),
+        required=False,
+        vocabulary='FutureSprint')
+    
+    project_target = Choice(
+        title=_("For"),
+        description=_("The project for which this proposal is being made."),
+        required=True,
+        vocabulary='ProjectProducts')
 
 
 # Interfaces for containers
@@ -393,7 +421,7 @@ class ISpecificationDelta(Interface):
     whiteboard = Attribute("The spec whiteboard or None.")
     specurl = Attribute("The URL to the spec home page (not in Launchpad).")
     productseries = Attribute("The product series.")
-    distrorelease = Attribute("The release to which this is targeted.")
+    distroseries = Attribute("The series to which this is targeted.")
     milestone = Attribute("The milestone to which the spec is targeted.")
     bugs_linked = Attribute("A list of new bugs linked to this spec.")
     bugs_unlinked = Attribute("A list of bugs unlinked from this spec.")
@@ -401,7 +429,7 @@ class ISpecificationDelta(Interface):
     # items where we provide 'old' and 'new' values if they changed
     name = Attribute("Old and new names, or None.")
     priority = Attribute("Old and new priorities, or None")
-    status = Attribute("Old and new statuses, or None")
+    definition_status = Attribute("Old and new statuses, or None")
     target = Attribute("Old and new target, or None")
     approver = Attribute("Old and new approver, or None")
     assignee = Attribute("Old and new assignee, or None")

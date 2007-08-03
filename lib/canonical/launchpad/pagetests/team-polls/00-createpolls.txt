@@ -1,4 +1,4 @@
-Let's first setup some objects that we'll need. 
+Let's first setup some objects that we'll need.
 
   >>> from zope.testbrowser.testing import Browser
   >>> no_priv_browser = Browser()
@@ -39,14 +39,14 @@ create a new poll.
   >>> team_admin_browser.title
   'New poll for team Ubuntu Team'
 
-  >>> 'Create a new poll for team' in team_admin_browser.contents 
+  >>> 'Create a new poll for team' in team_admin_browser.contents
   True
 
-First we try to create a poll with a invalid name (upper case characters) to 
+First we try to create a poll with a invalid name to
 test the name field validator.
 
   >>> team_admin_browser.getControl(
-  ...     'The unique name of this poll').value = 'Election-2100'
+  ...     'The unique name of this poll').value = 'election_2100'
   >>> team_admin_browser.getControl(
   ...     'The title of this poll').value = 'Presidential Election 2100'
   >>> proposition = 'Who is going to be the next president?'
@@ -63,7 +63,7 @@ test the name field validator.
   ...     name='field.datecloses').value = '2100-07-04 02:00:00+00:00'
   >>> team_admin_browser.getControl('Continue').click()
 
-  >>> "Invalid name 'Election-2100'" in team_admin_browser.contents
+  >>> "Invalid name 'election_2100'" in team_admin_browser.contents
   True
 
 We fix the name, but swap the dates. Again a nice error message.
@@ -89,7 +89,7 @@ Now we get it right.
 
 We're redirected to the newly created poll page.
 
-  >>> team_admin_browser.url 
+  >>> team_admin_browser.url
   'http://launchpad.dev/~ubuntu-team/+poll/election-2100'
 
 Create a new poll that starts in 2025-06-04 and will last until 2035.

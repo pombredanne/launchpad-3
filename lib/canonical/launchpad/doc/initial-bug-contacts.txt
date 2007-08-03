@@ -133,7 +133,7 @@ when a bug contact for the new package is already subscribed to the bug:
     ...     SQLObjectToBeModifiedEvent, SQLObjectModifiedEvent)
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
     >>> from canonical.launchpad.interfaces import (
-    ...     IDistroBugTask, IDistroReleaseBugTask)
+    ...     IDistroBugTask, IDistroSeriesBugTask)
     >>> from canonical.launchpad.mail import stub
 
     >>> ubuntu_pmount.addBugContact(personset.getByName("daf"))
@@ -193,14 +193,14 @@ importance, etc.
     for the manipulation of SVG objects from JavaScript to enable
     interactive and dynamic SVG drawings.
     <BLANKLINE>
-    ** Affects: firefox (upstream)
+    ** Affects: firefox
          Importance: Low
            Assignee: Mark Shuttleworth
-             Status: Unconfirmed
+             Status: New
     <BLANKLINE>
     ** Affects: pmount (Ubuntu)
          Importance: Medium
-             Status: Unconfirmed
+             Status: New
     <BLANKLINE>
     ** Affects: mozilla-firefox (Debian)
          Importance: Low
@@ -232,11 +232,11 @@ The package bug contacts, Daf and Foo Bar, are implicitly unsubscribed:
     >>> subscriber_names(bug_one_in_ubuntu_firefox.bug)
     [u'Mark Shuttleworth', u'Sample Person', u'Steve Alexander', u'Ubuntu Team']
 
-This also works with distrorelease tasks. For example, bug #5 in Ubuntu
+This also works with distroseries tasks. For example, bug #5 in Ubuntu
 warty current has no subscribers:
 
     >>> bug_five_in_warty_firefox = getUtility(IBugTaskSet).get(16)
-    >>> print bug_five_in_warty_firefox.distrorelease.name
+    >>> print bug_five_in_warty_firefox.distroseries.name
     warty
     >>> list(bug_five_in_warty_firefox.bug.subscriptions)
     []
@@ -245,7 +245,7 @@ Reassigning this task to pmount will subscribe pmount's bug contacts:
 Sample Person and daf.
 
     >>> old_state = Snapshot(
-    ...     bug_five_in_warty_firefox, providing=IDistroReleaseBugTask)
+    ...     bug_five_in_warty_firefox, providing=IDistroSeriesBugTask)
 
     >>> bug_five_in_warty_firefox.sourcepackagename = (
     ...     ubuntu_pmount.sourcepackagename)
@@ -348,7 +348,7 @@ Bar gets subscribed to the bug in the process:
     >>> print bug_two_in_ubuntu.bug.id
     2
     >>> print bug_two_in_ubuntu.product.name
-    ubuntu-product
+    tomcat
 
     >>> sorted(
     ...     [subscription.person.displayname for subscription in
@@ -391,5 +391,5 @@ report:
     >>> print msg.get_payload(decode=True)
     You have been subscribed to a public bug:
     ...
-    ** Affects: firefox (upstream)
+    ** Affects: firefox
     ...

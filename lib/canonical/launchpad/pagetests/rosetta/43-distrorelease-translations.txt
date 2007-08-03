@@ -1,5 +1,6 @@
+= Translations for DistroSeries =
 
-First, we need to ensure that we can see the distrorelease translations
+First, we need to ensure that we can see the distroseries translations
 page, and that it has all the data we are expecting, in terms of languages.
 
   >>> browser.open('http://launchpad.dev/ubuntu/hoary/+translations')
@@ -91,9 +92,22 @@ With its latest translator.
   >>> 'Edgar Bursic' in browser.contents
   True
 
+== Last translator ==
 
-DummyPOFile
------------
+When there's no reviewer and date of review on a last touched PO message
+inside a PO file (for example, when it was uploaded from the package), the
+last translator is displayed.
+
+  >>> browser.open('http://translations.launchpad.dev/ubuntu/hoary/+lang/de')
+  >>> print extract_text(
+  ...     find_tag_by_id(browser.contents, "pkgconf-mozilla-time"))
+  2005-05-06 21:12:42 UTC
+  2005-05-06
+  >>> print extract_text(
+  ...     find_tag_by_id(browser.contents, "pkgconf-mozilla-person"))
+  Helge Kreutzmann
+
+== DummyPOFile ==
 
 There are no translations yet for pmount into Portuguese. Carlos has
 decided to start contributing translations to that package.

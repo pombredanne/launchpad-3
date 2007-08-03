@@ -13,7 +13,7 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 
-from canonical.lp.dbschema import QuestionStatus, QuestionPriority
+from canonical.lp.dbschema import QuestionStatus
 
 
 QUESTION_STATUS_DEFAULT_SEARCH = (
@@ -60,7 +60,7 @@ class ISearchableByQuestionOwner(IQuestionCollection):
                         needs_attention_from=None):
         """Return the questions from the collection matching search criteria.
 
-        See IQuestionCollection for the description of the standard search
+        See `IQuestionCollection` for the description of the standard search
         parameters.
 
         :owner: The IPerson that created the question.
@@ -92,3 +92,12 @@ class IQuestionSet(IQuestionCollection):
         the last <days_before_expiration> days.
         """
 
+    def getMostActiveProjects(limit=5):
+        """Return the list of projects that asked the most questions in
+        the last 60 days.
+
+        It should only return projects that officially uses the Answer
+        Tracker.
+        
+        :param limit: The number of projects to return.
+        """

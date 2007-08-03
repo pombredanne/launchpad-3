@@ -4,9 +4,9 @@ __metaclass__ = type
 
 import unittest
 
-from zope.publisher.browser import TestRequest
-from zope.component import getView
+from zope.component import getMultiAdapter
 
+from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.ftests import login
 from canonical.launchpad.systemhomes import ShipItApplication
@@ -16,8 +16,9 @@ from canonical.launchpad.database import (
 from canonical.launchpad.layers import (
     ShipItUbuntuLayer, ShipItKUbuntuLayer, ShipItEdUbuntuLayer, setFirstLayer)
 from canonical.launchpad.interfaces import ShippingRequestPriority
+from canonical.launchpad.webapp.servers import LaunchpadTestRequest
 from canonical.lp.dbschema import (
-    ShipItDistroRelease, ShipItFlavour, ShippingRequestStatus)
+    ShipItDistroSeries, ShipItFlavour, ShippingRequestStatus)
 
 
 class TestShippingRequestSet(LaunchpadFunctionalTestCase):
@@ -59,7 +60,7 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         return request
 
     def _make_new_request_through_web(
-            self, flavour, user_email=None, form=None, distrorelease=None):
+            self, flavour, user_email=None, form=None, distroseries=None):
         if user_email is None:
             user_email = 'guilherme.salgado@canonical.com'
         if form is None:
@@ -75,13 +76,13 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
                 'ordertype': str(standardoption.id),
                 'FORM_SUBMIT': 'Request',
                 }
-        request = TestRequest(form=form)
-        request.notifications = []
+        request = LaunchpadTestRequest(form=form)
         setFirstLayer(request, self.flavours_to_layers_mapping[flavour])
         login(user_email)
-        view = getView(ShipItApplication(), 'myrequest', request)
-        if distrorelease is not None:
-            view.release = distrorelease
+        view = getMultiAdapter(
+            (ShipItApplication(), request), name='myrequest')
+        if distroseries is not None:
+            view.series = distroseries
         view.renderStandardrequestForm()
         errors = getattr(view, 'errors', None)
         self.failUnlessEqual(errors, None)
@@ -151,9 +152,9 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         # when creating the previous account.
         request2 = self._make_new_request_through_web(
             flavour, user_email='foo.bar@canonical.com', form=form,
-            distrorelease=ShipItDistroRelease.GUTSY)
+            distroseries=ShipItDistroSeries.GUTSY)
         self.failUnless(request2.isApproved(), flavour)
-        self.failIfEqual(request.distrorelease, request2.distrorelease)
+        self.failIfEqual(request.distroseries, request2.distroseries)
         self.failUnlessEqual(
             request2.normalized_address, request.normalized_address)
 
@@ -161,7 +162,7 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         # the same address, it gets marked with the DUPLICATEDADDRESS status.
         request3 = self._make_new_request_through_web(
             flavour, user_email='karl@canonical.com', form=form)
-        self.failUnlessEqual(request.distrorelease, request3.distrorelease)
+        self.failUnlessEqual(request.distroseries, request3.distroseries)
         self.failUnless(request3.isDuplicatedAddress(), flavour)
         self.failUnlessEqual(
             request3.normalized_address, request.normalized_address)
@@ -170,7 +171,7 @@ class TestFraudDetection(LaunchpadFunctionalTestCase):
         # the same address.
         request4 = self._make_new_request_through_web(
             flavour, user_email='carlos@canonical.com', form=form)
-        self.failUnlessEqual(request.distrorelease, request3.distrorelease)
+        self.failUnlessEqual(request.distroseries, request3.distroseries)
         self.failUnless(request4.isDuplicatedAddress(), flavour)
 
         # As we said, this happens because all requests are considered to have
@@ -206,12 +207,44 @@ class TestShippingRun(LaunchpadFunctionalTestCase):
 
 class TestShippingRequest(LaunchpadFunctionalTestCase):
 
-    def test_requests_that_can_be_approved_denied_or_changed(self):
-        requestset = ShippingRequestSet()
+    def setUp(self):
+        self.requestset = ShippingRequestSet()
+        LaunchpadFunctionalTestCase.setUp(self)
 
+    def test_recipient_email_for_users(self):
+        # If a user is active, its requests will have his preferred email as
+        # the recipient_email.
+        requests = self.requestset.search(recipient_text='Kreutzmann')
+        self.failIf(requests.count() == 0)
+        request = requests[0]
+        self.failUnlessEqual(
+            request.recipient.preferredemail.email, request.recipient_email)
+
+        # If the user becomes inactive (which can be done by having his
+        # account closed by an admin or by the user himself), though, the
+        # recipient_email will be just a piece of text explaining that.
+        request.recipient.preferredemail.destroySelf()
+        # Need to clean the cache because preferredemail is a cached property.
+        request.recipient._preferredemail_cached = None
+        self.failIf(request.recipient.preferredemail is not None)
+        self.failUnlessEqual(
+            u'inactive account -- no email address', request.recipient_email)
+
+    def test_recipient_email_for_shipit_admins(self):
+        # Requests made using the admin interface will have the shipit admins
+        # team as the recipient and thus its recipient_email property will
+        # return config.shipit.admins_email_address no matter what the email
+        # address for that team is.
+        requests = self.requestset.search(recipient_text='shipit-admins')
+        self.failIfEqual(requests.count(), 0)
+        for request in requests:
+            self.failUnlessEqual(
+                request.recipient_email, config.shipit.admins_email_address)
+
+    def test_requests_that_can_be_approved_denied_or_changed(self):
         # Requests pending approval can be approved and denied but not
         # changed.
-        pending_request = requestset.getOldestPending()
+        pending_request = self.requestset.getOldestPending()
         self.failUnless(pending_request.isAwaitingApproval())
         self.failUnless(pending_request.canBeApproved())
         self.failUnless(pending_request.canBeDenied())
@@ -242,7 +275,8 @@ class TestShippingRequest(LaunchpadFunctionalTestCase):
         # denied.
         shipped_request = cancelled_request
         shipped_request.status = ShippingRequestStatus.APPROVED
-        shippingrun = requestset._create_shipping_run([shipped_request.id])
+        shippingrun = self.requestset._create_shipping_run(
+            [shipped_request.id])
         flush_database_updates()
         self.failUnless(shipped_request.isShipped())
         self.failIf(shipped_request.canBeApproved())

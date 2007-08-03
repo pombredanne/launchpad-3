@@ -9,7 +9,10 @@ import shutil
 import tempfile
 import unittest
 
+from email import message_from_string
+
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.archiveuploader.tests.test_uploadprocessor import (
     MockOptions, MockLogger)
@@ -17,14 +20,22 @@ from canonical.archiveuploader.uploadpolicy import AbstractUploadPolicy
 from canonical.archiveuploader.uploadprocessor import UploadProcessor
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests import (
-    import_public_test_keys, syncUpdate)
+from canonical.launchpad.database.binarypackagename import BinaryPackageName
+from canonical.launchpad.database.binarypackagerelease import (
+    BinaryPackageRelease)
+from canonical.launchpad.database.publishing import (
+    SourcePackagePublishingHistory, BinaryPackagePublishingHistory)
+from canonical.launchpad.database.sourcepackagename import SourcePackageName
+from canonical.launchpad.database.sourcepackagerelease import (
+    SourcePackageRelease)
+from canonical.launchpad.ftests import import_public_test_keys
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IDistroReleaseSet, IPersonSet, IArchiveSet)
+    IDistributionSet, IDistroSeriesSet, IPersonSet, IArchiveSet,
+    ILaunchpadCelebrities)
 from canonical.launchpad.mail import stub
 from canonical.lp.dbschema import (
-    PackageUploadStatus, DistributionReleaseStatus, PackagePublishingStatus,
-    PackagePublishingPocket)
+    PackageUploadStatus, DistroSeriesStatus, PackagePublishingStatus,
+    PackagePublishingPocket, ArchivePurpose)
 from canonical.testing import LaunchpadZopelessLayer
 
 class BrokenUploadPolicy(AbstractUploadPolicy):
@@ -58,7 +69,7 @@ class TestUploadProcessorBase(unittest.TestCase):
         self.options.base_fsroot = self.queue_folder
         self.options.leafname = None
         self.options.distro = "ubuntu"
-        self.options.distrorelease = None
+        self.options.distroseries = None
         self.options.nomails = False
         self.options.context = 'insecure'
 
@@ -72,7 +83,7 @@ class TestUploadProcessorBase(unittest.TestCase):
         self.assertTrue(line in self.log.lines)
 
     def setupBreezy(self):
-        """Create a fresh distrorelease in ubuntu.
+        """Create a fresh distroseries in ubuntu.
 
         Use *initialiseFromParent* procedure to create 'breezy'
         on ubuntu based on the last 'breezy-autotest'.
@@ -81,7 +92,7 @@ class TestUploadProcessorBase(unittest.TestCase):
         """
         self.ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
         bat = self.ubuntu['breezy-autotest']
-        dr_set = getUtility(IDistroReleaseSet)
+        dr_set = getUtility(IDistroSeriesSet)
         self.breezy = dr_set.new(
             self.ubuntu, 'breezy', 'Breezy Badger',
             'The Breezy Badger', 'Black and White', 'Someone',
@@ -130,11 +141,34 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
     * Check if the rejection message is send even when an unexpected
       exception occur when processing the upload.
-    * Check if known uploads targeted to a FROZEN distrorelease
+    * Check if known uploads targeted to a FROZEN distroseries
       end up in UNAPPROVED queue.
 
-    This test case is able to setup a fresh distrorelease in Ubuntu.
+    This test case is able to setup a fresh distroseries in Ubuntu.
     """
+
+    def _checkCommercialUploadEmail(self):
+        """Ensure commercial uploads generate the right email."""
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        foo_bar = "Foo Bar <foo.bar@canonical.com>"
+        self.assertEqual([e.strip() for e in to_addrs], [foo_bar])
+        self.assertTrue(
+            "rejected" not in raw_msg, 
+            "Expected acceptance email not rejection. Actually Got:\n%s"
+                % raw_msg)
+
+    def _publishPackage(self, packagename, version, source=True, archive=None):
+        """Publish a single package that is currently NEW in the queue."""
+        queue_items = self.breezy.getQueueItems(
+            status=PackageUploadStatus.NEW, name=packagename,
+            version=version, exact_match=True, archive=archive)
+        self.assertEqual(queue_items.count(), 1)
+        queue_item = queue_items[0]
+        queue_item.setAccepted()
+        if source:
+            pubrec = queue_item.sources[0].publish(self.log)
+        else:
+            pubrec = queue_item.builds[0].publish(self.log)
 
     def testRejectionEmailForUnhandledException(self):
         """Test there's a rejection email when nascentupload breaks.
@@ -164,22 +198,24 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Check the mailer stub has a rejection email for Daniel
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg).get_payload(decode=True)
         daniel = "Daniel Silverstone <daniel.silverstone@canonical.com>"
         self.assertEqual(to_addrs, [daniel])
         self.assertTrue("Unhandled exception processing upload: Exception "
-                        "raised by BrokenUploadPolicy for testing." in raw_msg)
+                        "raised by BrokenUploadPolicy for testing." 
+                        in msg)
 
     def testUploadToFrozenDistro(self):
-        """Uploads to a frozen distrorelease should work, but be unapproved.
+        """Uploads to a frozen distroseries should work, but be unapproved.
 
-        The rule for a frozen distrorelease is that uploads should still
+        The rule for a frozen distroseries is that uploads should still
         be permitted, but that the usual rule for auto-accepting uploads
         of existing packages should be suspended. New packages will still
         go into NEW, but new versions will be UNAPPROVED, rather than
         ACCEPTED.
 
         To test this, we will upload two versions of the same package,
-        accepting and publishing the first, and freezing the distrorelease
+        accepting and publishing the first, and freezing the distroseries
         before the second. If all is well, the second upload should go
         through ok, but end up in status UNAPPROVED, and with the
         appropriate email contents.
@@ -223,7 +259,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
 
         # Make ubuntu/breezy a frozen distro, so a source upload for an
         # existing package will be allowed, but unapproved.
-        self.breezy.releasestatus = DistributionReleaseStatus.FROZEN
+        self.breezy.status = DistroSeriesStatus.FROZEN
         self.layer.txn.commit()
 
         # Upload a newer version of bar.
@@ -249,6 +285,139 @@ class TestUploadProcessor(TestUploadProcessorBase):
             queue_item.status, PackageUploadStatus.UNAPPROVED,
             "Expected queue item to be in UNAPPROVED status.")
 
+    def testCommercialArchiveMissingForCommercialUploadFails(self):
+        """A missing commercial archive should produce a rejection email.
+
+        If the commercial archive is missing (i.e. there is a data problem)
+        when a commercial package is uploaded to it, a sensible rejection
+        error email should be generated.
+        """
+        # Extra setup for breezy
+        self.setupBreezy()
+
+        # Set up the uploadprocessor with appropriate options and logger.
+        self.options.context = 'anything' # upload policy allows anything
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Fudge the commercial archive in the sample data temporarily so that
+        # it's now an embargoed archive instead.
+        archive = getUtility(IArchiveSet).getByDistroPurpose(
+            distribution=self.ubuntu, purpose=ArchivePurpose.COMMERCIAL)
+        removeSecurityProxy(archive).purpose = ArchivePurpose.EMBARGOED
+
+        self.layer.txn.commit()
+
+        # Upload a package.
+        upload_dir = self.queueUpload("foocomm_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check that it was rejected appropriately.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "Commercial archive for distro '%s' not found" % self.ubuntu.name
+                in raw_msg)
+
+    def testMixedCommercialUploadFails(self):
+        """Uploads with commercial and non-commercial files are rejected.
+        
+        Test that a package that has commercial and non-commercial files in it
+        is rejected.  Commercial uploads should be entirely commercial.
+        """
+        # Extra setup for breezy
+        self.setupBreezy()
+        self.layer.txn.commit()
+
+        # Set up the uploadprocessor with appropriate options and logger
+        self.options.context = 'anything' # upload policy allows anything
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload a package for Breezy.
+        upload_dir = self.queueUpload("foocomm_1.0-1-illegal-component-mix")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check that it was rejected:
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        foo_bar = "Foo Bar <foo.bar@canonical.com>"
+        self.assertEqual([e.strip() for e in to_addrs], [foo_bar])
+        self.assertTrue(
+            "Cannot mix commercial files with non-commercial." in raw_msg, 
+            "Expected email containing 'Cannot mix commercial files with "
+                "non-commercial.', got:\n%s" % raw_msg)
+
+    def testCommercialUpload(self):
+        """Commercial packages should be uploaded to the commercial archive.
+
+        Packages that have files in the 'commercial' component should be
+        uploaded to a separate IArchive that has a purpose of
+        ArchivePurpose.COMMERCIAL.
+        """
+
+        # Extra setup for breezy
+        self.setupBreezy()
+        self.layer.txn.commit()
+
+        # Set up the uploadprocessor with appropriate options and logger
+        self.options.context = 'anything' # upload policy allows anything
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload a package for Breezy.
+        upload_dir = self.queueUpload("foocomm_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check it went ok to the NEW queue and all is going well so far.
+        self._checkCommercialUploadEmail()
+
+        # Find the sourcepackagerelease and check its component.
+        foocomm_name = SourcePackageName.selectOneBy(name="foocomm")
+        foocomm_spr = SourcePackageRelease.selectOneBy(
+           sourcepackagename=foocomm_name)
+        self.assertEqual(foocomm_spr.component.name, 'commercial')
+
+        # Check that the right archive was picked.
+        self.assertEqual(foocomm_spr.upload_archive.description, 
+            'Commercial archive')
+
+        # Accept and publish the upload.
+        commercial_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntu, ArchivePurpose.COMMERCIAL)
+        self.assertTrue(commercial_archive)
+        self._publishPackage("foocomm", "1.0-1", archive=commercial_archive)
+
+        # Check the publishing record's archive and component.
+        foocomm_spph = SourcePackagePublishingHistory.selectOneBy(
+            sourcepackagerelease=foocomm_spr)
+        self.assertEqual(foocomm_spph.archive.description, 
+            'Commercial archive')
+        self.assertEqual(foocomm_spph.component.name, 
+            'commercial')
+
+        # Now upload a binary package of 'foocomm'.
+        upload_dir = self.queueUpload("foocomm_1.0-1_binary")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check it went ok to the NEW queue and all is going well so far.
+        self._checkCommercialUploadEmail()
+
+        # Find the binarypackagerelease and check its component.
+        foocomm_binname = BinaryPackageName.selectOneBy(name="foocomm")
+        foocomm_bpr = BinaryPackageRelease.selectOneBy(
+            binarypackagename=foocomm_binname)
+        self.assertEqual(foocomm_bpr.component.name, 'commercial')
+
+        # Publish the upload so we can check the publishing record.
+        self._publishPackage("foocomm", "1.0-1", source=False)
+
+        # Check the publishing record's archive and component.
+        foocomm_bpph = BinaryPackagePublishingHistory.selectOneBy(
+            binarypackagerelease=foocomm_bpr)
+        self.assertEqual(foocomm_bpph.archive.description, 
+            'Commercial archive')
+        self.assertEqual(foocomm_bpph.component.name, 
+            'commercial')
+
 
 class TestUploadProcessorPPA(TestUploadProcessorBase):
     """Functional tests for uploadprocessor.py in PPA operation."""
@@ -257,9 +426,19 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         """Setup infrastructure for PPA tests.
 
         Additionally to the TestUploadProcessorBase.setUp, set 'breezy'
-        distrorelease and an new uploadprocessor instance.
+        distroseries and an new uploadprocessor instance.
         """
         TestUploadProcessorBase.setUp(self)
+
+        # Let's make 'name16' person member of 'launchpad-beta-tester'
+        # team only in the context of this test.
+        beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
+        admin = getUtility(ILaunchpadCelebrities).admin
+        name16 = getUtility(IPersonSet).getByName("name16")
+        beta_testers.addMember(name16, admin)
+        # Pop the two messages notifying the team modification.
+        unused = stub.test_emails.pop()
+        unused = stub.test_emails.pop()
 
         # Extra setup for breezy
         self.setupBreezy()
@@ -277,23 +456,32 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)
 
-    def assertEmail(self, contents=[], recipients=[]):
+    def assertEmail(self, contents=None, recipients=None):
         """Check email last email content and recipients."""
         if not recipients:
             recipients = self.default_recipients
+        if not contents:
+            contents = []
 
-        self.assertTrue(len(stub.test_emails) == 1)
+        self.assertEqual(
+            len(stub.test_emails), 1,
+            'Unexpected number of emails sent: %s' % len(stub.test_emails))
 
         from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        msg = message_from_string(raw_msg)
+        body = msg.get_payload(decode=True)
 
         clean_recipients = [r.strip() for r in to_addrs]
         for recipient in list(recipients):
             self.assertTrue(recipient in clean_recipients)
 
+        subject = "Subject: %s" % msg['Subject']
+        body = subject + body
+
         for content in list(contents):
             self.assertTrue(
-                content in raw_msg,
-                "Expect: '%s'\nGot:\n%s" % (content, raw_msg))
+                content in body,
+                "Expect: '%s'\nGot:\n%s" % (content, body))
 
     def testUploadToPPA(self):
         """Upload to a PPA gets there.
@@ -311,7 +499,8 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = ["Subject: Accepted bar 1.0-1 (source)"]
+        contents = [
+            "Subject: [PPA name16] Accepted bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
         self.assertNotEqual(name16.archive, None)
@@ -330,14 +519,14 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.assertEqual(pending_ppas.count(), 1)
         self.assertEqual(pending_ppas[0], name16.archive)
 
-    def testPPADistroreleaseOverrides(self):
-        """It's possible to override target distroreleases of PPA uploads.
+    def testPPADistroSeriesOverrides(self):
+        """It's possible to override target distroserieses of PPA uploads.
 
         Similar to usual PPA uploads:
 
          * The PPA is created if necessary.
          * Email notification is sent
-         * The upload is auto-accepted in the overridden target distrorelease.
+         * The upload is auto-accepted in the overridden target distroseries.
          * The modified PPA is found by getPendingAcceptancePPA() lookup.
         """
         name16 = getUtility(IPersonSet).getByName("name16")
@@ -347,7 +536,8 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
             "bar_1.0-1", "~name16/ubuntu/hoary")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = ["Subject: Accepted bar 1.0-1 (source)"]
+        contents = [
+            "Subject: [PPA name16] Accepted bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
         self.assertNotEqual(name16.archive, None)
@@ -375,7 +565,8 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         upload_dir = self.queueUpload("bar_1.0-1", "~ubuntu-team/ubuntu")
         self.processUpload(self.uploadprocessor, upload_dir)
 
-        contents = ["Subject: Accepted bar 1.0-1 (source)"]
+        contents = [
+            "Subject: [PPA ubuntu-team] Accepted bar 1.0-1 (source)"]
         self.assertEmail(contents)
 
         self.assertNotEqual(ubuntu_team.archive, None)
@@ -412,12 +603,22 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: bar_1.0-1_source.changes Rejected",
+            "Subject: bar_1.0-1_source.changes rejected",
             "Signer has no upload rights to this PPA"]
         self.assertEmail(contents)
 
+    def testPPACommercialUploadFails(self):
+        """Upload a commercial package to a PPA and ensure it's rejected."""
+        upload_dir = self.queueUpload("foocomm_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "foocomm_1.0-1_source.changes rejected",
+            "PPA does not support commercial uploads."]
+        self.assertEmail(contents, [self.name16_recipient])
+
     def testUploadSignedByNonUbuntero(self):
-        """ """
+        """Check if a non-ubuntero can upload to his PPA."""
         name16 = getUtility(IPersonSet).getByName("name16")
         self.assertEqual(name16.archive, None)
 
@@ -428,10 +629,29 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: bar_1.0-1_source.changes Rejected",
+            "Subject: bar_1.0-1_source.changes rejected",
             "PPA uploads must be signed by an 'ubuntero'."]
         self.assertEmail(contents)
+        self.assertTrue(name16.archive is None)
 
+    def testUploadSignedByBetaTesterMember(self):
+        """Check if a non-member of launchpad-beta-testers can upload to PPA."""
+        name16 = getUtility(IPersonSet).getByName("name16")
+        self.assertEqual(name16.archive, None)
+
+        beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
+        name16.leave(beta_testers)
+        # Pop the message notifying the membership modification.
+        unused = stub.test_emails.pop()
+
+        upload_dir = self.queueUpload("bar_1.0-1", "~name16/ubuntu")
+        self.processUpload(self.uploadprocessor, upload_dir)
+
+        contents = [
+            "Subject: bar_1.0-1_source.changes rejected",
+            "PPA is only allowed for members of launchpad-beta-testers team."]
+        self.assertEmail(contents)
+        self.assertEqual(name16.archive, None)
 
     def testUploadToUnknownDistribution(self):
         """Upload to unknown distribution gets proper rejection email."""
@@ -439,7 +659,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: bar_1.0-1_source.changes Rejected",
+            "Subject: bar_1.0-1_source.changes rejected",
             "Could not find distribution 'biscuit'"]
         self.assertEmail(contents)
 
@@ -449,7 +669,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: bar_1.0-1_source.changes Rejected",
+            "Subject: bar_1.0-1_source.changes rejected",
             "PPA upload path must start with '~'."]
         self.assertEmail(contents)
 
@@ -459,7 +679,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: bar_1.0-1_source.changes Rejected",
+            "Subject: bar_1.0-1_source.changes rejected",
             "Could not find person 'orange'"]
         self.assertEmail(contents)
 
@@ -469,9 +689,9 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
         self.processUpload(self.uploadprocessor, upload_dir)
 
         contents = [
-            "Subject: bar_1.0-1_source.changes Rejected",
+            "Subject: bar_1.0-1_source.changes rejected",
             "Path mismatch 'ubuntu/one/two/three/four'. "
-            "Use ~<person>/<distro>/[distrorelease]/[files] for PPAs "
+            "Use ~<person>/<distro>/[distroseries]/[files] for PPAs "
             "and <distro>/[files] for normal uploads."]
         self.assertEmail(contents)
 

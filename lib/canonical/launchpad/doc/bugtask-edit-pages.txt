@@ -101,7 +101,7 @@ Now we try changing the generic Ubuntu task to evolution, which will
 fail.
 
     >>> ubuntu_task = bug_two.bugtasks[1]
-    >>> ubuntu_task.targetname
+    >>> ubuntu_task.bugtargetdisplayname
     u'Ubuntu'
     >>> edit_form = {
     ...    'FORM_SUBMIT': '',
@@ -120,19 +120,19 @@ fail.
     ...     print error
     This bug has already been reported on evolution (ubuntu).
 
-This also works if we try to reassign an accepted distribution release
+This also works if we try to reassign an accepted distribution series
 task. Since we aren't allowed to edit the current development task
 directly, let's add a grumpy task first.
 
     >>> login('foo.bar@canonical.com')
-    >>> ubuntu_grumpy = ubuntu.getRelease('grumpy')
+    >>> ubuntu_grumpy = ubuntu.getSeries('grumpy')
     >>> nomination = bug_two.addNomination(
     ...     target=ubuntu_grumpy, owner=getUtility(ILaunchBag).user)
     >>> nomination.isApproved()
     True
 
     >>> ubuntu_grumpy_task = bug_two.bugtasks[5]
-    >>> ubuntu_grumpy_task.targetname
+    >>> ubuntu_grumpy_task.bugtargetdisplayname
     u'Ubuntu Grumpy'
 
     >>> edit_form = {
@@ -179,7 +179,8 @@ XXX: We really should update the status from the bug watch, but that's
      -- Bjorn Tillenius, 2006-03-01
 
     >>> from canonical.lp.dbschema import BugTaskStatus
-    >>> thunderbird_task.transitionToStatus(BugTaskStatus.UNCONFIRMED)
+    >>> thunderbird_task.transitionToStatus(
+    ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
     >>> request = LaunchpadTestRequest(
     ...     form={
     ...         'FORM_SUBMIT': '',

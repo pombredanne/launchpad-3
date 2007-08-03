@@ -19,10 +19,10 @@
          -->
     <require
       permission="launchpad.Edit"
-      set_attributes="name title summary status specurl
+      set_attributes="name title summary definition_status specurl
                       superseded_by milestone
                       product distribution approver assignee drafter
-                      man_days delivery informational" />
+                      man_days implementation_status" />
     <require
       permission="launchpad.Admin"
       set_attributes="priority direction_approved" />
@@ -149,27 +149,20 @@
     template="../templates/specification-retargeting.pt"
     />
 
-  <browser:generalform
+  <browser:page
     name="+supersede"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationSupersedingView"
-    label="Mark specification superseded"
-    fields="superseded_by"
-    keyword_arguments="superseded_by"
     permission="launchpad.Edit"
-    template="../templates/specification-superseding.pt">
-    <browser:widget
-      field="superseded_by"
-      class="canonical.launchpad.browser.specification.SupersededByWidget" />
-  </browser:generalform>
+    template="../templates/specification-superseding.pt"
+    />
 
   <browser:editform
     name="+edit"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Edit title and summary"
-    fields="name title specurl summary informational whiteboard"
+    fields="name title specurl summary whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-edit.pt">
     <browser:widget
@@ -211,14 +204,14 @@
   </browser:editform>
 
   <browser:generalform
-    name="+setrelease"
+    name="+setdistroseries"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationGoalProposeView"
-    label="Target to a distribution release"
-    fields="distrorelease whiteboard"
-    keyword_arguments="distrorelease whiteboard"
+    label="Target to a distribution series"
+    fields="distroseries whiteboard"
+    keyword_arguments="distroseries whiteboard"
     permission="launchpad.Edit"
-    template="../templates/specification-distrorelease.pt">
+    template="../templates/specification-distroseries.pt">
     <browser:widget
       field="whiteboard"
       class="zope.app.form.browser.TextAreaWidget"
@@ -226,7 +219,7 @@
   </browser:generalform>
 
   <browser:generalform
-    name="+setseries"
+    name="+setproductseries"
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationGoalProposeView"
     label="Target to a product series"
@@ -267,7 +260,7 @@
     schema="canonical.launchpad.interfaces.ISpecification"
     class="canonical.launchpad.browser.SpecificationEditView"
     label="Change status"
-    fields="status delivery whiteboard"
+    fields="definition_status implementation_status whiteboard"
     permission="launchpad.Edit"
     template="../templates/specification-status.pt">
     <browser:widget
@@ -323,17 +316,13 @@
     permission="launchpad.AnyPerson"
     template="../templates/specification-unlinkbugs.pt" />
 
-  <browser:generalform
+  <browser:page
     name="+linkdependency"
     for="canonical.launchpad.interfaces.ISpecification"
-    schema="canonical.launchpad.interfaces.ISpecificationDependency"
     class="canonical.launchpad.browser.SpecificationDependencyAddView"
-    label="Add a dependency"
-    fields="dependency"
-    keyword_arguments="dependency"
     permission="launchpad.AnyPerson"
-    template="../templates/specification-dependency.pt">
-  </browser:generalform>
+    template="../templates/specification-dependency.pt"
+    />
 
   <browser:generalform
     name="+removedependency"
@@ -446,7 +435,7 @@
     for="canonical.launchpad.interfaces.ISpecificationSet"
     permission="launchpad.AnyPerson"
     template="../templates/specification-new.pt"
-    class="canonical.launchpad.browser.SpecificationNewView"
+    class="canonical.launchpad.browser.SpecificationAddView"
     />
 
   <!-- SpecificationDelta -->

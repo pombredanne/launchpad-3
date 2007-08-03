@@ -1,5 +1,4 @@
-TALES expressions
-=================
+= TALES expressions =
 
 There are several kinds of TALES expressions we've implemented in
 Launchpad, to help make it easier to create page templates, without
@@ -127,13 +126,333 @@ To "<pre>" format a string, use fmt:nice_pre:
     ['<pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;word-',
      'wrap: break-word;">hello &amp; goodbye</pre>']
 
-Add manual word breaks to long words in a string
+Add manual word breaks to long words in a string:
 
     >>> test_tales('foo/fmt:break-long-words', foo='short words')
     'short words'
     >>> test_tales('foo/fmt:break-long-words',
     ...     foo='<http://launchpad.net/products/launchpad>')
     '&lt;http:/<wbr></wbr>/launchpad.<wbr></wbr>net/products/<wbr></wbr>launchpad&gt;'
+
+
+== The fmt: namespace to get strings (hiding and obfuscation) ==
+
+PGP blocks, signatures and full-quoted parts of a message can be
+wrapped in markup to hide them:
+
+    >>> pgp_open = ('-----BEGIN PGP SIGNED MESSAGE-----\n'
+    ...             'Hash: SHA1\n'
+    ...             '\n')
+    >>> text = ('Top quoting is simply bad netiquette.\n'
+    ...         'The words of the leading text should be displayed\n'
+    ...         'normally--no markup to hide it from view.\n'
+    ...         'Raise your hand if you can read this.\n'
+    ...         '\n')
+    >>> quoted_text = ('Somebody said sometime ago:\n'
+    ...                '> 1. Remove the letters  c, j, q, x, w\n'
+    ...                '>    from the English Language.\n'
+    ...                '> 2. Remove the penny from US currency.\n'
+    ...                '\n')
+    >>> bar_quoted_text = ('Someone said sometime ago:\n'
+    ...                    '| Quote passages are folded.\n'
+    ...                    '\n')
+    >>> mixed_quoted_text = ('Mister X wrote:\n'
+    ...                      '> This is a quoted line\n'
+    ...                      'This is a reply to the line above.\n'
+    ...                      'This is a continuation line.'
+    ...                      '\n')
+    >>> dpkg = ('dpkg -l libdvdread3\n'
+    ...         'Desired=Unknown/Install/Remove/Purge/Hold\n'
+    ...         '| Status=Not/Installed/Config-files/Unpacked/Failed-co\n'
+    ...         '|/ Err?=(none)/Hold/Reinst-required/X=both-problems\n'
+    ...         '||/ Name Version Description\n'
+    ...         '+++-==============-==============-====================\n'
+    ...         'ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs\n'
+    ...         '\n')
+    >>> bad_dpkg = ('When dpkg output is in text, possibly tampered with,\n'
+    ...             "we must take care to identify '|' quoted passages.\n"
+    ...             '$ Desired=Unknown/Install/Remove/Purge/Hold\n'
+    ...             '|\n'
+    ...             ' Status=Not/Installed/Config-files/Unpacked/Failed-co\n'
+    ...             '|/ Err?=(none)/Hold/Reinst-required/X=both-problems\n'
+    ...             '||/ Name Version Description\n'
+    ...             '+++-==============-==============-==================\n'
+    ...             'ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs\n'
+    ...             '\n')
+    >>> quoted_text_all = ('> continuing from a previous thought.\n'
+    ...                    '> 3. Get new handwriting.\n'
+    ...                    '> 4. Add Year Zero to the calendar.\n'
+    ...                    '\n')
+    >>> signature = ('-- \n'
+    ...              '__C U R T I S  C.  H O V E Y_______\n'
+    ...              'sinzui.is@example.org\n'
+    ...              'Guilty of stealing everything I am.\n'
+    ...              '\n')
+    >>> pgp_close = ('-----BEGIN PGP SIGNATURE-----\n'
+    ...              'Version: GnuPG v1.4.1 (GNU/Linux)\n'
+    ...              'Comment: Using GnuPG with Thunderbird\n'
+    ...              '\n'
+    ...              'iD8DBQFED60Y0F+nu1YWqI0RAqrNAJ9hTww5vqDbxp4xJS8ek58W\n'
+    ...              'T2PIWy0CUJsX8RXSt/M51WE=\n'
+    ...              '=J2S5\n'
+    ...              '-----END PGP SIGNATURE-----\n')
+
+The email-to-html formatter marks up text as html using the
+text-to-html formatter, then adds additional markup to identify
+signatures and quoted passages. The formatters  wraps the text inside
+the paragraph in a span of 'foldable' class. Stylesheets and scripts
+in the browser can format or change the behaviour of the text as
+needed.
+
+When given simple paragraphs it behaves just as the text-to-html
+formatter.
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo=text)
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+
+    >>> print test_tales('foo/fmt:text-to-html',
+    ...                  foo=text)
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+
+PGP signed messages have opening and closing blocks that are
+wrapped in a foldable span.
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([pgp_open, text, pgp_close]))
+    <p><span class="foldable">-----BEGIN PGP SIGNED MESSAGE-----<br />
+    Hash: SHA1
+    </span></p>
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p><span class="foldable">-----BEGIN PGP SIGNATURE-----<br />
+    Version: GnuPG v1.4.1 (GNU/Linux)<br />
+    Comment: Using GnuPG with Thunderbird<br />
+    <br />
+    iD8DBQFED60Y0F+<wbr></wbr>nu1YWqI0RAqrNAJ<wbr></wbr>...
+    T2PIWy0CUJsX8RX<wbr></wbr>St/M51WE=<br />
+    =J2S5<br />
+    -----END PGP SIGNATURE-----
+    </span></p>
+
+In this example, we see the main paragraph and the signature marked
+up as HTML. All the text inside the signature is wrapped with the
+foldable span.
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([text, signature]))
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p><span class="foldable"...>--<br />
+    __C U R T I S  C.  H O V E Y_______<br />
+    sinzui.<wbr></wbr>is@example.<wbr></wbr>org<br />
+    Guilty of stealing everything I am.
+    </span></p>
+
+Quoted passages are treated somewhat different from signatures because
+they often have a citation line before the quoted text. In this
+example of the main paragraph and the quoted paragraph, only the
+lines that start with the quote identifier ('>' in this case) are
+wrapped with the foldable span.
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([text, quoted_text, quoted_text_all]))
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p>Somebody said sometime ago:<br />
+    <span class="foldable">
+    &gt; 1. Remove the letters  c, j, q, x, w<br />
+    &gt;    from the English Language.<br />
+    &gt; 2. Remove the penny from US currency.
+    </span></p>
+    <p><span class="foldable">&gt; continuing from a previous thought.<br />
+    &gt; 3. Get new handwriting.<br />
+    &gt; 4. Add Year Zero to the calendar.
+    </span></p>
+
+The reverse order works too:
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([quoted_text_all, quoted_text, text]))
+    <p><span class="foldable">&gt; continuing from a previous thought.<br />
+    &gt; 3. Get new handwriting.<br />
+    &gt; 4. Add Year Zero to the calendar.
+    </span></p>
+    <p>Somebody said sometime ago:<br />
+    <span class="foldable">
+    &gt; 1. Remove the letters  c, j, q, x, w<br />
+    &gt;    from the English Language.<br />
+    &gt; 2. Remove the penny from US currency.
+    </span></p>
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+
+Paragraphs that mix quoted and reply text fold only the quoted lines.
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([mixed_quoted_text, text]))
+    <p>Mister X wrote:<br />
+    <span class="foldable">
+    &gt; This is a quoted line<br />
+    </span>
+    This is a reply to the line above.<br />
+    This is a continuation line.</p>
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+
+Dpkg generates lines that start with a '|' that will be confused with
+quoted text. Dpkg is common in messages, and when it is, we do not
+fold lines that start with a '|'. We sometimes receive bad dpkg output
+where the lines are broken, and we must take care to identify that
+output and not fold it.
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([text, bar_quoted_text]))
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p>Someone said sometime ago:<br />
+    <span class="foldable">
+    | Quote passages are folded.
+    </span></p>
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([text, dpkg]))
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p>dpkg -l libdvdread3<br />
+    Desired=<wbr></wbr>Unknown/<wbr></wbr>Install/<wbr></wbr>...
+    | Status=<wbr></wbr>Not/Installed/<wbr></wbr>Config-<wbr></wbr>...
+    |/ Err?=(none)<wbr></wbr>/Hold/Reinst-<wbr></wbr>required/...
+    ||/ Name Version Description<br />
+    +++-===<wbr></wbr>=======<wbr></wbr>====-==<wbr></wbr>=======...
+    ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs</p>
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([bad_dpkg]))
+    <p>When dpkg output is in text, possibly tampered with,<br />
+    we must take care to identify '|' quoted passages.<br />
+    $ Desired=<wbr></wbr>Unknown/<wbr></wbr>Install/<wbr></wbr>Remove/...
+    |<br />
+    &nbsp;Status=<wbr></wbr>Not/Installed/<wbr></wbr>Config-...
+    |/ Err?=(none)<wbr></wbr>/Hold/Reinst-<wbr></wbr>required/...
+    ||/ Name Version Description<br />
+    +++-===<wbr></wbr>=======<wbr></wbr>====-==<wbr></wbr>=======...
+    ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs</p>
+    
+
+The formatter is indifferent to the number and kinds of paragraphs
+it must markup. We can format the three examples at the same time.
+
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...     foo='\n'.join([text, quoted_text, text, quoted_text, signature]))
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p>Somebody said sometime ago:<br />
+    <span class="foldable"...>
+    &gt; 1. Remove the letters  c, j, q, x, w<br />
+    &gt;    from the English Language.<br />
+    &gt; 2. Remove the penny from US currency.
+    </span></p>
+    <p>Top quoting is simply bad netiquette.<br />
+    The words of the leading text should be displayed<br />
+    normally--no markup to hide it from view.<br />
+    Raise your hand if you can read this.</p>
+    <p>Somebody said sometime ago:<br />
+    <span class="foldable"...>
+    &gt; 1. Remove the letters  c, j, q, x, w<br />
+    &gt;    from the English Language.<br />
+    &gt; 2. Remove the penny from US currency.
+    </span></p>
+    <p><span class="foldable"...>--<br />
+    __C U R T I S  C.  H O V E Y_______<br />
+    sinzui.<wbr></wbr>is@example.<wbr></wbr>org<br />
+    Guilty of stealing everything I am.
+    </span></p>
+
+Email addresses embedded in text can be obfuscated. In cases where
+personal information may be in the content, and it will be shown to
+unauthenticated users, the email address can be hidden. The address
+is replaced with the message '<email address hidden>'.
+
+    >>> test_tales('foo/fmt:obfuscate-email', foo='name.surname@company.com')
+    '<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email', foo='name@organization.org.cc')
+    '<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email', foo='name+sub@domain.org')
+    '<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email',
+    ...     foo='long_name@host.long-network.org.cc')
+    '<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email',
+    ...     foo='"long/name="@organization.org')
+    '<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email',
+    ...     foo='long-name@building.museum')
+    '<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email', foo='foo@staticmethod.com')
+    '<email address hidden>'
+
+    >>> print test_tales('foo/fmt:obfuscate-email/fmt:text-to-html',
+    ...     foo=signature)
+    <p>--<br />
+    __C U R T I S  C.  H O V E Y_______<br />
+    &lt;email address hidden&gt;<br />
+    Guilty of stealing everything I am.</p>
+
+    >>> # Email addresses and credentials in a URL match.
+    >>> test_tales('foo/fmt:obfuscate-email',
+    ...     foo='mailto:long-name@very.long.dom.cc')
+    'mailto:<email address hidden>'
+    >>> test_tales('foo/fmt:obfuscate-email',
+    ...     foo='http://person:password@site.net')
+    'http://person:<email address hidden>'
+
+    >>> # An Invalid email address does not match.
+    >>> test_tales('foo/fmt:obfuscate-email', foo='name @ host.school.edu')
+    'name @ host.school.edu'
+    >>> # SSH is not an email address.
+    >>> test_tales('foo/fmt:obfuscate-email', foo='person@host')
+    'person@host'
+    >>> # Perl/shell arrays are not an email address.
+    >>> test_tales('foo/fmt:obfuscate-email', foo='(head, tail)=@array')
+    '(head, tail)=@array'
+    >>> # Python decorators and Java annotations are not email addresses.
+    >>> test_tales('foo/fmt:obfuscate-email', foo='@staticmethod')
+    '@staticmethod'
+    >>> # XPath expressions are not email addresses.
+    >>> test_tales('foo/fmt:obfuscate-email', foo='element/@attribute')
+    'element/@attribute'
+    >>> # An invalid address, some characters, followed by many dots, and
+    >>> # some more characters. This pattern (derived from a real example)
+    >>> # caused the re to hang the servers and the test suite.
+    >>> # The re used one-or-none in a grouping (\.?), which is expensive.
+    >>> bad_address = (
+    ...     "medicalwei@sara:~$ Spinning................................"
+    ...     "...........................................................not")
+    >>> test_tales('foo/fmt:obfuscate-email', foo=bad_address)
+    'medicalwei@sara:~$ ...'
 
 
 == Test the 'fmt:' namespace where the context is a dict. ==
@@ -239,6 +558,7 @@ do with 'None/fmt:foo'.
     >>> test_tales('foo/image:icon', foo=None)
     ''
 
+
 == The lp: namespace for presenting DBSchema items ==
 
 This is deprecated, and should raise a deprecation warning in the future,
@@ -296,7 +616,7 @@ DBSchema the item comes from.
     >>> test_tales('deb/enumvalue:CHEESEFISH', deb=udeb)
     Traceback (most recent call last):
     ...
-    TraversalError: 'The BinaryPackageFormat dbschema does not have a value CHEESEFISH.'
+    TraversalError: 'The enumerated type BinaryPackageFormat does not have a value CHEESEFISH.'
 
 It is possible for dbschemas to have a 'None' value.  This is a bit awkward,
 because when the value is None, we can't do any checking whether a new value
@@ -314,4 +634,4 @@ wrapped dbschema items too:
     >>> test_tales('deb/enumvalue:CHEESEFISH', deb=wrapped_deb)
     Traceback (most recent call last):
     ...
-    TraversalError: 'The BinaryPackageFormat dbschema does not have a value CHEESEFISH.'
+    TraversalError: 'The enumerated type BinaryPackageFormat does not have a value CHEESEFISH.'

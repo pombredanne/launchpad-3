@@ -1,7 +1,12 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
+"""SQLObject implementation of POTemplate classes."""
 
 __metaclass__ = type
-__all__ = ['POTemplateSubset', 'POTemplateSet', 'POTemplate']
+__all__ = [
+    'POTemplateSubset',
+    'POTemplateSet',
+    'POTemplate',
+    ]
 
 import datetime
 import os.path
@@ -13,26 +18,26 @@ from zope.component import getUtility
 from sqlobject import ForeignKey, IntCol, StringCol, BoolCol
 from sqlobject import SQLMultipleJoin, SQLObjectNotFound
 
+from canonical.lp.dbschema import (
+    RosettaImportStatus, TranslationFileFormat)
 from canonical.config import config
-
-from canonical.lp.dbschema import RosettaImportStatus
 
 from canonical.database.sqlbase import (
     SQLBase, quote, flush_database_updates, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import DEFAULT, UTC_NOW
+from canonical.database.enumcol import EnumCol
 
-import canonical.launchpad
 from canonical.launchpad import helpers
+from canonical.launchpad.components.rosettastats import RosettaStats
 from canonical.launchpad.interfaces import (
-    IPOTemplate, IPOTemplateSet, IPOTemplateSubset,
-    IPOTemplateExporter, ILaunchpadCelebrities, LanguageNotFound,
-    TranslationConstants, NotFoundError)
+    ILaunchpadCelebrities, IPOTemplate, IPOTemplateExporter, IPOTemplateSet,
+    IPOTemplateSubset, ITranslationImporter, LanguageNotFound, NotFoundError,
+    TranslationConstants, TranslationFormatSyntaxError,
+    TranslationFormatInvalidInputError
+    )
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
-from canonical.librarian.interfaces import ILibrarianClient
-
-from canonical.launchpad.webapp.snapshot import Snapshot
 
 from canonical.launchpad.database.language import Language
 from canonical.launchpad.database.potmsgset import POTMsgSet
@@ -41,12 +46,6 @@ from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
-
-from canonical.launchpad.components.rosettastats import RosettaStats
-from canonical.launchpad.components.poimport import import_po
-from canonical.launchpad.components.poparser import (POSyntaxError,
-    POInvalidInputError)
-from canonical.launchpad.webapp import canonical_url
 
 
 standardPOFileTopComment = ''' %(languagename)s translation for %(origin)s
@@ -84,6 +83,11 @@ class POTemplate(SQLBase, RosettaStats):
     license = IntCol(dbName='license', notNull=False, default=None)
     datecreated = UtcDateTimeCol(dbName='datecreated', default=DEFAULT)
     path = StringCol(dbName='path', notNull=False, default=None)
+    source_file = ForeignKey(foreignKey='LibraryFileAlias',
+        dbName='source_file', notNull=False, default=None)
+    source_file_format = EnumCol(dbName='source_file_format',
+        schema=TranslationFileFormat, default=TranslationFileFormat.PO,
+        notNull=True)
     iscurrent = BoolCol(dbName='iscurrent', notNull=True, default=True)
     messagecount = IntCol(dbName='messagecount', notNull=True, default=0)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
@@ -93,7 +97,7 @@ class POTemplate(SQLBase, RosettaStats):
         dbName='from_sourcepackagename', notNull=False, default=None)
     sourcepackageversion = StringCol(dbName='sourcepackageversion',
         notNull=False, default=None)
-    distrorelease = ForeignKey(foreignKey='DistroRelease',
+    distroseries = ForeignKey(foreignKey='DistroSeries',
         dbName='distrorelease', notNull=False, default=None)
     header = StringCol(dbName='header', notNull=False, default=None)
     binarypackagename = ForeignKey(foreignKey='BinaryPackageName',
@@ -132,11 +136,11 @@ class POTemplate(SQLBase, RosettaStats):
                 self.name,
                 self.productseries.product.displayname,
                 self.productseries.displayname)
-        if self.distrorelease:
+        if self.distroseries:
             dn = '%s in %s %s package "%s"' % (
                 self.name,
-                self.distrorelease.distribution.displayname,
-                self.distrorelease.displayname,
+                self.distroseries.distribution.displayname,
+                self.distroseries.displayname,
                 self.sourcepackagename.name)
         return dn
 
@@ -148,19 +152,19 @@ class POTemplate(SQLBase, RosettaStats):
                 self.name,
                 self.productseries.product.displayname,
                 self.productseries.displayname)
-        if self.distrorelease:
+        if self.distroseries:
             title = 'Template "%s" in %s %s package "%s"' % (
                 self.name,
-                self.distrorelease.distribution.displayname,
-                self.distrorelease.displayname,
+                self.distroseries.distribution.displayname,
+                self.distroseries.displayname,
                 self.sourcepackagename.name)
         return title
 
     @property
     def distribution(self):
         """See IPOTemplate."""
-        if self.distrorelease is not None:
-            return self.distrorelease.distribution
+        if self.distroseries is not None:
+            return self.distroseries.distribution
         else:
             return None
 
@@ -176,8 +180,8 @@ class POTemplate(SQLBase, RosettaStats):
     def translationgroups(self):
         """See IPOTemplate."""
         ret = []
-        if self.distrorelease:
-            tg = self.distrorelease.distribution.translationgroup
+        if self.distroseries:
+            tg = self.distroseries.distribution.translationgroup
             if tg is not None:
                 ret.append(tg)
         elif self.productseries:
@@ -195,10 +199,10 @@ class POTemplate(SQLBase, RosettaStats):
     @property
     def translationpermission(self):
         """See IPOTemplate."""
-        if self.distrorelease:
+        if self.distroseries:
             # in the case of a distro template, use the distro translation
             # permission settings
-            return self.distrorelease.distribution.translationpermission
+            return self.distroseries.distribution.translationpermission
         elif self.productseries:
             # for products, use the "most restrictive permission" between
             # project and product.
@@ -224,14 +228,14 @@ class POTemplate(SQLBase, RosettaStats):
                 iscurrent = TRUE
                 ''' % sqlvalues(self.id, self.productseries.id),
                 orderBy=['id'])
-        elif self.distrorelease and self.sourcepackagename:
+        elif self.distroseries and self.sourcepackagename:
             return POTemplate.select('''
                 id <> %s AND
                 distrorelease = %s AND
                 sourcepackagename = %s AND
                 iscurrent = TRUE
                 ''' % sqlvalues(self.id,
-                    self.distrorelease.id, self.sourcepackagename.id),
+                    self.distroseries.id, self.sourcepackagename.id),
                 orderBy=['id'])
         else:
             raise AssertionError('Unknown POTemplate source.')
@@ -250,10 +254,10 @@ class POTemplate(SQLBase, RosettaStats):
     def translationtarget(self):
         if self.productseries is not None:
             return self.productseries
-        elif self.distrorelease is not None:
+        elif self.distroseries is not None:
             from canonical.launchpad.database.sourcepackage import \
                 SourcePackage
-            return SourcePackage(distrorelease=self.distrorelease,
+            return SourcePackage(distroseries=self.distroseries,
                 sourcepackagename=self.sourcepackagename)
         raise AssertionError('Unknown POTemplate translation target')
 
@@ -324,6 +328,7 @@ class POTemplate(SQLBase, RosettaStats):
     def languages(self):
         """See IPOTemplate."""
         return Language.select("POFile.language = Language.id AND "
+                               "Language.code != 'en' AND "
                                "POFile.potemplate = %d AND "
                                "POFile.variant IS NULL" % self.id,
                                clauseTables=['POFile', 'Language'],
@@ -394,8 +399,7 @@ class POTemplate(SQLBase, RosettaStats):
 
     def hasMessageID(self, messageID):
         """See IPOTemplate."""
-        results = POTMsgSet.selectBy(
-            potemplate=self, primemsgid_=messageID)
+        results = POTMsgSet.selectBy(potemplate=self, primemsgid_=messageID)
         return results.count() > 0
 
     def hasPluralMessage(self):
@@ -555,57 +559,51 @@ class POTemplate(SQLBase, RosettaStats):
                 orderBy='dateimported')
 
     def importFromQueue(self, logger=None):
-        """See IPOTemplate."""
-        librarian_client = getUtility(ILibrarianClient)
-
+        """See `IPOTemplate`."""
         entry_to_import = self.getNextToImport()
 
         if entry_to_import is None:
             # There is no new import waiting for being imported.
             return
 
-        file = librarian_client.getFileByAlias(entry_to_import.content.id)
+        translation_importer = getUtility(ITranslationImporter)
 
-        template_mail = None
+        subject = 'Translation template import - %s' % self.displayname
+        template_mail = 'poimport-template-confirmation.txt'
         try:
-            import_po(self, file, entry_to_import.importer)
-        except (POSyntaxError, POInvalidInputError):
-            # The import failed, we mark it as failed so we could review it
-            # later in case it's a bug in our code.
+            translation_importer.importFile(entry_to_import, logger)
+        except (TranslationFormatSyntaxError,
+                TranslationFormatInvalidInputError):
             if logger:
                 logger.warning(
                     'We got an error importing %s', self.title, exc_info=1)
-            template_mail = 'poimport-syntax-error.txt'
-
-            replacements = {
-                'importer': entry_to_import.importer.displayname,
-                'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
-                'elapsedtime': entry_to_import.getElapsedTimeText(),
-                'file_link': entry_to_import.content.http_url,
-                'import_title':
-                    'translation templates for %s' % self.displayname
-                }
-
-            # We got an error that prevented us to import the template, we
-            # need to notify the user and set the status to FAILED.
             subject = 'Import problem - %s' % self.displayname
-
-            # Send the email.
-            template = helpers.get_email_template(template_mail)
-            message = template % replacements
-
-            fromaddress = config.rosetta.rosettaadmin.email
-            toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
-
-            simple_sendmail(fromaddress,
-                toaddress,
-                subject,
-                MailWrapper().format(message))
-
+            template_mail = 'poimport-syntax-error.txt'
             entry_to_import.status = RosettaImportStatus.FAILED
 
+        replacements = {
+            'dateimport': entry_to_import.dateimported.strftime('%F %R%z'),
+            'elapsedtime': entry_to_import.getElapsedTimeText(),
+            'file_link': entry_to_import.content.http_url,
+            'import_title': 'translation templates for %s' % self.displayname,
+            'importer': entry_to_import.importer.displayname,
+            'template': self.displayname
+            }
 
-            # We don't have anything to do here...
+        # Send email: confirmation or error.
+        template = helpers.get_email_template(template_mail)
+        message = template % replacements
+
+        fromaddress = config.rosetta.rosettaadmin.email
+        toaddress = helpers.contactEmailAddresses(entry_to_import.importer)
+
+        simple_sendmail(fromaddress,
+            toaddress,
+            subject,
+            MailWrapper().format(message))
+
+        if entry_to_import.status == RosettaImportStatus.FAILED:
+            # Give up on this file.
             return
 
         # The import has been done, we mark it that way.
@@ -639,42 +637,42 @@ class POTemplateSubset:
     implements(IPOTemplateSubset)
 
     def __init__(self, sourcepackagename=None, from_sourcepackagename=None,
-                 distrorelease=None, productseries=None):
+                 distroseries=None, productseries=None):
         """Create a new POTemplateSubset object.
 
         The set of POTemplate depends on the arguments you pass to this
         constructor. The sourcepackagename, from_sourcepackagename,
-        distrorelease and productseries are just filters for that set.
+        distroseries and productseries are just filters for that set.
         """
         self.sourcepackagename = sourcepackagename
-        self.distrorelease = distrorelease
+        self.distroseries = distroseries
         self.productseries = productseries
         self.clausetables = []
         self.orderby = []
 
-        assert productseries is None or distrorelease is None, (
-            'A product series must not be used with a distro release.')
+        assert productseries is None or distroseries is None, (
+            'A product series must not be used with a distro series.')
 
-        assert productseries is not None or distrorelease is not None, (
-            'Either productseries or distrorelease must be not None.')
+        assert productseries is not None or distroseries is not None, (
+            'Either productseries or distroseries must be not None.')
 
         if productseries is not None:
             self.query = ('POTemplate.productseries = %s' %
                 sqlvalues(productseries.id))
-        elif distrorelease is not None and from_sourcepackagename is not None:
+        elif distroseries is not None and from_sourcepackagename is not None:
             self.query = ('POTemplate.from_sourcepackagename = %s AND'
                           ' POTemplate.distrorelease = %s ' %
                             sqlvalues(from_sourcepackagename.id,
-                                      distrorelease.id))
+                                      distroseries.id))
             self.sourcepackagename = from_sourcepackagename
-        elif distrorelease is not None and sourcepackagename is not None:
+        elif distroseries is not None and sourcepackagename is not None:
             self.query = ('POTemplate.sourcepackagename = %s AND'
                           ' POTemplate.distrorelease = %s ' %
-                            sqlvalues(sourcepackagename.id, distrorelease.id))
+                            sqlvalues(sourcepackagename.id, distroseries.id))
         else:
             self.query = (
                 'POTemplate.distrorelease = DistroRelease.id AND'
-                ' DistroRelease.id = %s' % sqlvalues(distrorelease.id))
+                ' DistroRelease.id = %s' % sqlvalues(distroseries.id))
             self.orderby.append('DistroRelease.name')
             self.clausetables.append('DistroRelease')
 
@@ -706,8 +704,8 @@ class POTemplateSubset:
     def title(self):
         """See IPOTemplateSubset."""
         titlestr = ''
-        if self.distrorelease:
-            titlestr += ' ' + self.distrorelease.displayname
+        if self.distroseries:
+            titlestr += ' ' + self.distroseries.displayname
         if self.sourcepackagename:
             titlestr += ' ' + self.sourcepackagename.name
         if self.productseries:
@@ -719,7 +717,7 @@ class POTemplateSubset:
         """See IPOTemplateSubset."""
         return POTemplate(potemplatename=potemplatename,
                           sourcepackagename=self.sourcepackagename,
-                          distrorelease=self.distrorelease,
+                          distroseries=self.distroseries,
                           productseries=self.productseries,
                           path=path,
                           owner=owner)
@@ -760,8 +758,8 @@ class POTemplateSubset:
         query = []
         if self.productseries is not None:
             query.append('productseries = %s' % sqlvalues(self.productseries))
-        if self.distrorelease is not None:
-            query.append('distrorelease = %s' % sqlvalues(self.distrorelease))
+        if self.distroseries is not None:
+            query.append('distrorelease = %s' % sqlvalues(self.distroseries))
         if self.sourcepackagename is not None:
             query.append('sourcepackagename = %s' % sqlvalues(
                 self.sourcepackagename))
@@ -810,7 +808,7 @@ class POTemplateSet:
         values = ",".join(sqlvalues(*ids))
         return POTemplate.select("POTemplate.id in (%s)" % values,
             prejoins=["potemplatename", "productseries",
-                      "distrorelease", "sourcepackagename"],
+                      "distroseries", "sourcepackagename"],
             orderBy=["POTemplate.id"])
 
     def getAllByName(self, name):
@@ -825,27 +823,27 @@ class POTemplateSet:
         """See IPOTemplateSet."""
         return POTemplate.select(orderBy=['-date_last_updated'])
 
-    def getSubset(self, distrorelease=None, sourcepackagename=None,
+    def getSubset(self, distroseries=None, sourcepackagename=None,
                   productseries=None):
         """See IPOTemplateSet."""
         return POTemplateSubset(
-            distrorelease=distrorelease,
+            distroseries=distroseries,
             sourcepackagename=sourcepackagename,
             productseries=productseries)
 
-    def getSubsetFromImporterSourcePackageName(self, distrorelease,
+    def getSubsetFromImporterSourcePackageName(self, distroseries,
         sourcepackagename):
         """See IPOTemplateSet."""
-        if distrorelease is None or sourcepackagename is None:
+        if distroseries is None or sourcepackagename is None:
             raise AssertionError(
-                'distrorelease and sourcepackage must be not None.')
+                'distroseries and sourcepackage must be not None.')
 
         return POTemplateSubset(
-            distrorelease=distrorelease,
+            distroseries=distroseries,
             sourcepackagename=sourcepackagename)
 
     def getPOTemplateByPathAndOrigin(self, path, productseries=None,
-        distrorelease=None, sourcepackagename=None):
+        distroseries=None, sourcepackagename=None):
         """See IPOTemplateSet."""
         if productseries is not None:
             return POTemplate.selectOne('''
@@ -862,7 +860,7 @@ class POTemplateSet:
                     POTemplate.distrorelease = %s AND
                     POTemplate.from_sourcepackagename = %s AND
                     POTemplate.path = %s''' % sqlvalues(
-                        distrorelease.id,
+                        distroseries.id,
                         sourcepackagename.id,
                         path)
                     )
@@ -876,7 +874,7 @@ class POTemplateSet:
                     POTemplate.distrorelease = %s AND
                     POTemplate.sourcepackagename = %s AND
                     POTemplate.path = %s''' % sqlvalues(
-                        distrorelease.id,
+                        distroseries.id,
                         sourcepackagename.id,
                         path)
                     )

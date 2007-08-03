@@ -16,7 +16,7 @@ from canonical.archivepublisher.diskpool import DiskPool
 from canonical.archivepublisher.tests.util import FakeLogger
 
 from canonical.launchpad.ftests.harness import (
-    LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
+    LaunchpadZopelessTestCase)
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory, SecureSourcePackagePublishingHistory,
     BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
@@ -24,7 +24,7 @@ from canonical.launchpad.database.processor import ProcessorFamily
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IDistributionSet, IPersonSet, ISectionSet,
     IComponentSet, ISourcePackageNameSet, IBinaryPackageNameSet,
-    IGPGKeySet, IArchiveSet)
+    IGPGKeySet)
 
 from canonical.librarian.client import LibrarianClient
 
@@ -55,8 +55,9 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
         self.config = Config(self.ubuntutest)
         self.config.setupArchiveDirs()
         self.pool_dir = self.config.poolroot
+        self.temp_dir = self.config.temproot
         self.logger = FakeLogger()
-        self.disk_pool = DiskPool(self.pool_dir, self.logger)
+        self.disk_pool = DiskPool(self.pool_dir, self.temp_dir, self.logger)
 
     def addMockFile(self, filename, filecontent='nothing'):
         """Add a mock file in Librarian.
@@ -66,14 +67,14 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
         alias_id = self.library.addFile(
             filename, len(filecontent), StringIO(filecontent),
             'application/text')
-        LaunchpadZopelessTestSetup.txn.commit()
+        self.layer.commit()
         return getUtility(ILibraryFileAliasSet)[alias_id]
 
     def getPubSource(self, sourcename='foo', version='666', component='main',
                      filename=None, filecontent='I do not care about sources.',
                      status=PackagePublishingStatus.PENDING,
                      pocket=PackagePublishingPocket.RELEASE,
-                     distrorelease=None, archive=None, builddepends=None,
+                     distroseries=None, archive=None, builddepends=None,
                      builddependsindep=None, architecturehintlist='all',
                      dsc_standards_version='3.6.2', dsc_format='1.0',
                      dsc_binaries='foo-bin',
@@ -84,12 +85,12 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
 
         component = getUtility(IComponentSet)[component]
 
-        if distrorelease is None:
-            distrorelease = self.breezy_autotest
+        if distroseries is None:
+            distroseries = self.breezy_autotest
         if archive is None:
             archive = self.breezy_autotest.main_archive
 
-        spr = distrorelease.createUploadedSourcePackageRelease(
+        spr = distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=spn,
             maintainer=self.person,
             creator=self.person,
@@ -117,7 +118,7 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
         spr.addFile(alias)
 
         sspph = SecureSourcePackagePublishingHistory(
-            distrorelease=distrorelease,
+            distroseries=distroseries,
             sourcepackagerelease=spr,
             component=spr.component,
             section=spr.section,
@@ -183,7 +184,7 @@ class TestNativePublishingBase(LaunchpadZopelessTestCase):
         bpr.addFile(alias)
 
         sbpph = SecureBinaryPackagePublishingHistory(
-            distroarchrelease=self.breezy_autotest_i386,
+            distroarchseries=self.breezy_autotest_i386,
             binarypackagerelease=bpr,
             component=bpr.component,
             section=bpr.section,
@@ -209,7 +210,7 @@ class TestNativePublishing(TestNativePublishingBase):
         """Test publishOne in normal conditions (new file)."""
         pub_source = self.getPubSource(filecontent='Hello world')
         pub_source.publish(self.disk_pool, self.logger)
-        LaunchpadZopelessTestSetup.txn.commit()
+        self.layer.commit()
 
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
         foo_name = "%s/main/f/foo/foo.dsc" % self.pool_dir
@@ -232,7 +233,7 @@ class TestNativePublishing(TestNativePublishingBase):
 
         pub_source = self.getPubSource(filecontent="Something")
         pub_source.publish(self.disk_pool, self.logger)
-        LaunchpadZopelessTestSetup.txn.commit()
+        self.layer.commit()
         self.assertEqual(
             pub_source.status,PackagePublishingStatus.PENDING)
         self.assertEqual(open(foo_dsc_path).read().strip(), 'Hello world')
@@ -241,7 +242,7 @@ class TestNativePublishing(TestNativePublishingBase):
         """Test if publishOne refuses to overwrite its own publication."""
         pub_source = self.getPubSource(filecontent='foo is happy')
         pub_source.publish(self.disk_pool, self.logger)
-        LaunchpadZopelessTestSetup.txn.commit()
+        self.layer.commit()
 
         foo_name = "%s/main/f/foo/foo.dsc" % self.pool_dir
         self.assertEqual(
@@ -253,7 +254,7 @@ class TestNativePublishing(TestNativePublishingBase):
         # content.
         pub_source2 = self.getPubSource(filecontent='foo is depressing')
         pub_source2.publish(self.disk_pool, self.logger)
-        LaunchpadZopelessTestSetup.txn.commit()
+        self.layer.commit()
         self.assertEqual(
             pub_source2.status, PackagePublishingStatus.PENDING)
         self.assertEqual(open(foo_name).read().strip(), 'foo is happy')
@@ -267,7 +268,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source = self.getPubSource(
             sourcename='bar', filecontent='bar is good')
         pub_source.publish(self.disk_pool, self.logger)
-        LaunchpadZopelessTestSetup.txn.commit()
+        self.layer.commit()
         bar_name = "%s/main/b/bar/bar.dsc" % self.pool_dir
         self.assertEqual(open(bar_name).read().strip(), 'bar is good')
         self.assertEqual(
@@ -276,7 +277,7 @@ class TestNativePublishing(TestNativePublishingBase):
         pub_source2 = self.getPubSource(
             sourcename='bar', filecontent='bar is good')
         pub_source2.publish(self.disk_pool, self.logger)
-        LaunchpadZopelessTestSetup.txn.commit()
+        self.layer.commit()
         self.assertEqual(
             pub_source2.status, PackagePublishingStatus.PUBLISHED)
 
@@ -294,7 +295,7 @@ class TestNativePublishing(TestNativePublishingBase):
             sourcename='sim', component='universe', filecontent=content)
         pub_source.publish(self.disk_pool, self.logger)
         pub_source2.publish(self.disk_pool, self.logger)
-        LaunchpadZopelessTestSetup.txn.commit()
+        self.layer.commit()
         self.assertEqual(
             pub_source.status, PackagePublishingStatus.PUBLISHED)
         self.assertEqual(
@@ -311,7 +312,7 @@ class TestNativePublishing(TestNativePublishingBase):
             sourcename='sim', component='restricted',
             filecontent='It is all my fault')
         pub_source3.publish(self.disk_pool, self.logger)
-        LaunchpadZopelessTestSetup.txn.commit()
+        self.layer.commit()
         self.assertEqual(
             pub_source3.status, PackagePublishingStatus.PENDING)
 
@@ -323,14 +324,15 @@ class TestNativePublishing(TestNativePublishingBase):
         """
         cprov = getUtility(IPersonSet).getByName('cprov')
         test_pool_dir = tempfile.mkdtemp()
-        test_disk_pool = DiskPool(test_pool_dir, self.logger)
+        test_temp_dir = tempfile.mkdtemp()
+        test_disk_pool = DiskPool(test_pool_dir, test_temp_dir, self.logger)
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc",
             filecontent='Am I a PPA Record ?',
             archive=cprov.archive)
         pub_source.publish(test_disk_pool, self.logger)
-        LaunchpadZopelessTestSetup.txn.commit()
+        self.layer.commit()
 
         self.assertEqual(pub_source.status, PackagePublishingStatus.PUBLISHED)
         self.assertEqual(pub_source.sourcepackagerelease.upload_archive,
@@ -340,6 +342,7 @@ class TestNativePublishing(TestNativePublishingBase):
 
         # remove locally created dir
         shutil.rmtree(test_pool_dir)
+        shutil.rmtree(test_temp_dir)
 
 def test_suite():
     return TestLoader().loadTestsFromName(__name__)

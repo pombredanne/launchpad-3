@@ -9,15 +9,18 @@ __all__ = [
     'CodeImportSet',
     ]
 
-from sqlobject import (
-    BoolCol, ForeignKey, IntCol, StringCol)
+from sqlobject import ForeignKey, StringCol, SQLObjectNotFound
+
+from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
-from canonical.database.sqlbase import SQLBase
-from canonical.launchpad.interfaces import ICodeImport, ICodeImportSet
+from canonical.database.sqlbase import (cursor, SQLBase, sqlvalues)
+from canonical.launchpad.database.productseries import ProductSeries
+from canonical.launchpad.interfaces import (
+    ICodeImport, ICodeImportSet, ILaunchpadCelebrities, NotFoundError)
 from canonical.lp.dbschema import (
     CodeImportReviewStatus, RevisionControlSystems)
 
@@ -28,40 +31,107 @@ class CodeImport(SQLBase):
     implements(ICodeImport)
     _table = 'CodeImport'
 
-    name = StringCol(notNull=True)
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
-    product = ForeignKey(dbName='product', foreignKey='Product',
-        notNull=True)
-    series = ForeignKey(dbName='series', foreignKey='ProductSeries')
     branch = ForeignKey(dbName='branch', foreignKey='Branch',
-        default=None)
+                        notNull=True)
+    registrant = ForeignKey(dbName='registrant', foreignKey='Person',
+                            notNull=True)
+
+    @property
+    def product(self):
+        """See `ICodeImport`."""
+        return self.branch.product
+
+    @property
+    def series(self):
+        """See `ICodeImport`."""
+        return ProductSeries.selectOneBy(import_branch=self.branch)
 
     review_status = EnumCol(schema=CodeImportReviewStatus, notNull=True,
         default=CodeImportReviewStatus.NEW)
 
     rcs_type = EnumCol(schema=RevisionControlSystems,
         notNull=False, default=None)
+
     cvs_root = StringCol(default=None)
+
     cvs_module = StringCol(default=None)
+
     svn_branch_url = StringCol(default=None)
+
+    date_last_successful = UtcDateTimeCol(default=None)
 
 
 class CodeImportSet:
-    """See ICodeImportSet."""
+    """See `ICodeImportSet`."""
 
     implements(ICodeImportSet)
 
-    def new(self, name, product, series, rcs_type, svn_branch_url=None,
+    def new(self, registrant, branch, rcs_type, svn_branch_url=None,
             cvs_root=None, cvs_module=None):
-        """See ICodeImportSet."""
-        return CodeImport(name=name, product=product, series=series,
+        """See `ICodeImportSet`."""
+        assert branch.owner == getUtility(ILaunchpadCelebrities).vcs_imports
+        if rcs_type == RevisionControlSystems.CVS:
+            assert cvs_root is not None and cvs_module is not None
+            assert svn_branch_url is None
+        elif rcs_type == RevisionControlSystems.SVN:
+            assert cvs_root is None and cvs_module is None
+            assert svn_branch_url is not None
+        else:
+            raise AssertionError(
+                "Don't know how to sanity check source details for unknown "
+                "rcs_type %s"%rcs_type)
+        return CodeImport(registrant=registrant, branch=branch,
             rcs_type=rcs_type, svn_branch_url=svn_branch_url,
             cvs_root=cvs_root, cvs_module=cvs_module)
 
+    # XXX: newWithId is only needed for code-import-sync-script. This method
+    # should be removed after the transition to the new code import system is
+    # complete. -- DavidAllouche 2007-07-05
+
+    def newWithId(self, id, registrant, branch, rcs_type, svn_branch_url=None,
+            cvs_root=None, cvs_module=None):
+        """See `ICodeImportSet`."""
+        assert branch.owner == getUtility(ILaunchpadCelebrities).vcs_imports
+        if rcs_type == RevisionControlSystems.CVS:
+            assert cvs_root is not None and cvs_module is not None
+            assert svn_branch_url is None
+        elif rcs_type == RevisionControlSystems.SVN:
+            assert cvs_root is None and cvs_module is None
+            assert svn_branch_url is not None
+        else:
+            raise AssertionError(
+                "Don't know how to sanity check source details for unknown "
+                "rcs_type %s"%rcs_type)
+        cur = cursor()
+        cur.execute("""
+            SELECT setval('codeimport_id_seq', GREATEST(%s, (
+                SELECT last_value from codeimport_id_seq)));"""
+            % sqlvalues(id))
+        assert len(cur.fetchall()) == 1
+        return CodeImport(id=id, registrant=registrant, branch=branch,
+            rcs_type=rcs_type, svn_branch_url=svn_branch_url,
+            cvs_root=cvs_root, cvs_module=cvs_module)
+
+    def delete(self, id):
+        """See `ICodeImportSet`."""
+        CodeImport.delete(id)
+
     def getAll(self):
-        """See ICodeImportSet."""
+        """See `ICodeImportSet`."""
         return CodeImport.select()
 
-    def getByName(self, name):
-        """See ICodeImportSet."""
-        return CodeImport.selectOneBy(name=name)
+    def get(self, id):
+        """See `ICodeImportSet`."""
+        try:
+            return CodeImport.get(id)
+        except SQLObjectNotFound:
+            raise NotFoundError(id)
+
+    def getByBranch(self, branch):
+        """See `ICodeImportSet`."""
+        return CodeImport.selectOneBy(branch=branch)
+
+    def search(self, review_status):
+        """See `ICodeImportSet`."""
+        return CodeImport.selectBy(review_status=review_status.value)

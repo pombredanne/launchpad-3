@@ -2,7 +2,7 @@
 Imports and setup of stub keyserver:
 
   >>> from zope.component import getUtility
-  >>> from canonical.lp.dbschema import LoginTokenType
+  >>> from canonical.launchpad.interfaces import LoginTokenType
   >>> from canonical.database.sqlbase import flush_database_updates
   >>> from canonical.launchpad.ftests import login, logout, ANONYMOUS
   >>> from canonical.launchpad.interfaces import (
@@ -80,9 +80,10 @@ Try to validate the revoked OpenPGP key:
 
   >>> browser.open(
   ...     'http://launchpad.dev/token/%s/+validategpg' % revoked_key_token)
-  >>> browser.getControl('Confirm').click()
+  >>> browser.getControl('Continue').click()
   >>> for tag in find_tags_by_class(browser.contents, 'error message'):
   ...     print tag.renderContents()
+  There is 1 error.
   The key AACCD97C cannot be validated because it has been publicly revoked.
   You will need to generate a new key (using <kbd>gpg --genkey</kbd>) and 
   repeat the previous process to 
@@ -94,21 +95,24 @@ Try to validate the revoked OpenPGP key:
 
   >>> browser.open(
   ...     'http://launchpad.dev/token/%s/+validategpg' % expired_key_token)
-  >>> browser.getControl('Confirm').click()
+  >>> browser.getControl('Continue').click()
   >>> for tag in find_tags_by_class(browser.contents, 'error message'):
   ...     print tag.renderContents()
+  There is 1 error.
   The key 046C6D63 cannot be validated because it has expired. Change the
   expiry date (in a terminal,  enter <kbd>gpg --edit-key
   <var>your@e-mail.address</var></kbd> then enter <kbd>expire</kbd>),
   and try again.
 
-Each login token is marked consumed after the failed validations:
+The login tokens are only consumed if they're successfully processed.
+Otherwise they're kept around so the user can try again after fixing his
+key.
 
   >>> login(ANONYMOUS)
   >>> tokenset[revoked_key_token].date_consumed is not None
-  True
+  False
   >>> tokenset[expired_key_token].date_consumed is not None
-  True
+  False
   >>> logout()
 
 

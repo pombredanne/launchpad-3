@@ -19,17 +19,15 @@ __metaclass__ = type
 # If you do not do this, from canonical.lp.dbschema import * will not
 # work properly, and the thing/lp:SchemaClass will not work properly.
 __all__ = (
+'AccountStatus',
 'ArchArchiveType',
+'ArchivePurpose',
 'BinaryPackageFileType',
 'BinaryPackageFormat',
 'BountyDifficulty',
 'BountyStatus',
 'BranchRelationships',
-'BranchLifecycleStatus',
-'BranchLifecycleStatusFilter',
 'BranchReviewStatus',
-'BranchSubscriptionDiffSize',
-'BranchSubscriptionNotificationLevel',
 'BugBranchStatus',
 'BugNominationStatus',
 'BugTaskStatus',
@@ -43,12 +41,13 @@ __all__ = (
 'CodereleaseRelationships',
 'CodeImportReviewStatus',
 'CveStatus',
-'DistributionReleaseStatus',
-'EmailAddressStatus',
-'GPGKeyAlgorithm',
+'DistroSeriesStatus',
+'EntitlementState',
+'EntitlementType',
+'FAQSort',
 'ImportTestStatus',
 'ImportStatus',
-'LoginTokenType',
+'MailingListAutoSubscribePolicy',
 'ManifestEntryType',
 'ManifestEntryHint',
 'MirrorContent',
@@ -59,9 +58,10 @@ __all__ = (
 'PackagePublishingStatus',
 'PackagePublishingPocket',
 'PackagingType',
-'PersonCreationRationale',
+'PersonalStanding',
 'PollAlgorithm',
 'PollSecrecy',
+'PostedMessageStatus',
 'ProjectRelationship',
 'ProjectStatus',
 'QuestionAction',
@@ -70,11 +70,10 @@ __all__ = (
 'QuestionSort',
 'QuestionStatus',
 'RevisionControlSystems',
-'RosettaFileFormat',
 'RosettaImportStatus',
 'RosettaTranslationOrigin',
 'ShipItArchitecture',
-'ShipItDistroRelease',
+'ShipItDistroSeries',
 'ShipItFlavour',
 'ShippingRequestStatus',
 'ShippingService',
@@ -82,19 +81,16 @@ __all__ = (
 'SourcePackageFormat',
 'SourcePackageRelationships',
 'SourcePackageUrgency',
-'SpecificationDelivery',
+'SpecificationImplementationStatus',
 'SpecificationFilter',
 'SpecificationGoalStatus',
 'SpecificationLifecycleStatus',
 'SpecificationPriority',
 'SpecificationSort',
-'SpecificationStatus',
+'SpecificationDefinitionStatus',
 'SprintSpecificationStatus',
-'SSHKeyType',
 'TextDirection',
-'TeamMembershipRenewalPolicy',
-'TeamMembershipStatus',
-'TeamSubscriptionPolicy',
+'TranslationFileFormat',
 'TranslationPriority',
 'TranslationPermission',
 'TranslationValidationStatus',
@@ -104,7 +100,42 @@ __all__ = (
 'UpstreamReleaseVersionStyle',
 )
 
-from canonical.launchpad.webapp.enum import DBSchema, Item
+#from canonical.launchpad.webapp.enum import DBSchema
+#from canonical.launchpad.webapp.enum import DBSchemaItem as Item
+
+from canonical.lazr import DBEnumeratedType as DBSchema
+from canonical.lazr import DBItem as Item
+
+
+class AccountStatus(DBSchema):
+    """The status of a Launchpad account."""
+
+    NOACCOUNT = Item(10, """
+        No Launchpad account
+
+        There's no Launchpad account for this Person record.
+        """)
+
+    ACTIVE = Item(20, """
+        Active Launchpad account
+
+        There's an active Launchpad account associated with this Person.
+        """)
+
+    DEACTIVATED = Item(30, """
+        Deactivated Launchpad account
+
+        The account associated with this Person has been deactivated by the
+        Person himself.
+        """)
+
+    SUSPENDED = Item(40, """
+        Suspended Launchpad account
+
+        The account associated with this Person has been suspended by a
+        Launchpad admin.
+        """)
+
 
 class ArchArchiveType(DBSchema):
     """Arch Archive Type
@@ -248,6 +279,11 @@ class BugTrackerType(DBSchema):
         support and request tracking.
         """)
 
+    MANTIS = Item(6, """
+        Mantis
+
+        Mantis is a web-based bug tracking system written in PHP.
+        """)
 
 class CveStatus(DBSchema):
     """The Status of this item in the CVE Database
@@ -434,45 +470,6 @@ class PackagingType(DBSchema):
         """)
 
 
-##XXX: (gpg+dbschema) cprov 20041004
-## the data structure should be rearranged to support 4 field
-## needed: keynumber(1,16,17,20), keyalias(R,g,D,G), title and description
-class GPGKeyAlgorithm(DBSchema):
-    """
-    GPG Compilant Key Algorithms Types:
-
-    1 : "R", # RSA
-    16: "g", # ElGamal
-    17: "D", # DSA
-    20: "G", # ElGamal, compromised
-
-    FIXME
-    Rewrite it according the experimental API retuning also a name attribute
-    tested on 'algorithmname' attribute
-
-    """
-
-    R = Item(1, """
-        R
-
-        RSA""")
-
-    g = Item(16, """
-        g
-
-        ElGamal""")
-
-    D = Item(17, """
-        D
-
-        DSA""")
-
-    G = Item(20, """
-        G
-
-        ElGamal, compromised""")
-
-
 class BugBranchStatus(DBSchema):
     """The status of a bugfix branch."""
 
@@ -590,155 +587,6 @@ class BranchRelationships(DBSchema):
         """)
 
 
-class EmailAddressStatus(DBSchema):
-    """Email Address Status
-
-    Launchpad keeps track of email addresses associated with a person. They
-    can be used to login to the system, or to associate an Arch changeset
-    with a person, or to associate a bug system email message with a person,
-    for example.
-    """
-
-    NEW = Item(1, """
-        New Email Address
-
-        This email address has had no validation associated with it. It
-        has just been created in the system, either by a person claiming
-        it as their own, or because we have stored an email message or
-        arch changeset including that email address and have created
-        a phantom person and email address to record it. WE SHOULD
-        NEVER EMAIL A "NEW" EMAIL.
-        """)
-
-    VALIDATED = Item(2, """
-        Validated Email Address
-
-        We have proven that the person associated with this email address
-        can read email sent to this email address, by sending a token
-        to that address and getting the appropriate response from that
-        person.
-        """)
-
-    OLD = Item(3, """
-        Old Email Address
-
-        The email address was validated for this person, but is now no
-        longer accessible or in use by them. We should not use this email
-        address to login that person, nor should we associate new incoming
-        content from that email address with that person.
-        """)
-
-    PREFERRED = Item(4, """
-        Preferred Email Address
-
-        The email address was validated and is the person's choice for
-        receiving notifications from Launchpad.
-        """)
-
-
-class TeamMembershipRenewalPolicy(DBSchema):
-    """TeamMembership Renewal Policy.
-
-    How Team Memberships can be renewed on a given team.
-    """
-
-    NONE = Item(10, """
-        None
-
-        Memberships can be renewed only by team administrators or by going
-        through the normal workflow for joining the team.
-        """)
-
-    ONDEMAND = Item(20, """
-        On demand
-
-        Memberships can be renewed by the members themselves a few days before
-        it expires. After it expires the member has to go through the normal
-        workflow for joining the team.
-        """)
-
-    AUTOMATIC = Item(30, """
-        Automatic
-
-        Memberships are automatically renewed when they expire and a note is
-        sent to the member and to team admins.
-        """)
-
-
-class TeamMembershipStatus(DBSchema):
-    """TeamMembership Status
-
-    According to the policies specified by each team, the membership status of
-    a given member can be one of multiple different statuses. More information
-    can be found in the TeamMembership spec.
-    """
-
-    PROPOSED = Item(1, """
-        Proposed
-
-        You are a proposed member of this team. To become an active member your
-        subscription has to be approved by one of the team's administrators.
-        """)
-
-    APPROVED = Item(2, """
-        Approved
-
-        You are an active member of this team.
-        """)
-
-    ADMIN = Item(3, """
-        Administrator
-
-        You are an administrator of this team.
-        """)
-
-    DEACTIVATED = Item(4, """
-        Deactivated
-
-        Your subscription to this team has been deactivated.
-        """)
-
-    EXPIRED = Item(5, """
-        Expired
-
-        Your subscription to this team is expired.
-        """)
-
-    DECLINED = Item(6, """
-        Declined
-
-        Your proposed subscription to this team has been declined.
-        """)
-
-
-class TeamSubscriptionPolicy(DBSchema):
-    """Team Subscription Policies
-
-    The policies that apply to a team and specify how new subscriptions must
-    be handled. More information can be found in the TeamMembershipPolicies
-    spec.
-    """
-
-    MODERATED = Item(1, """
-        Moderated Team
-
-        All subscriptions for this team are subjected to approval by one of
-        the team's administrators.
-        """)
-
-    OPEN = Item(2, """
-        Open Team
-
-        Any user can join and no approval is required.
-        """)
-
-    RESTRICTED = Item(3, """
-        Restricted Team
-
-        New members can only be added by one of the team's administrators.
-        """)
-
-
 class ProjectRelationship(DBSchema):
     """Project Relationship
 
@@ -765,21 +613,21 @@ class ProjectRelationship(DBSchema):
         """)
 
 
-class DistributionReleaseStatus(DBSchema):
+class DistroSeriesStatus(DBSchema):
     """Distribution Release Status
 
-    A DistroRelease (warty, hoary, or grumpy for example) changes state
+    A DistroSeries (warty, hoary, or grumpy for example) changes state
     throughout its development. This schema describes the level of
-    development of the distrorelease. The typical sequence for a
-    distrorelease is to progress from experimental to development to
+    development of the distroseries. The typical sequence for a
+    distroseries is to progress from experimental to development to
     frozen to current to supported to obsolete, in a linear fashion.
     """
 
     EXPERIMENTAL = Item(1, """
         Experimental
 
-        This distrorelease contains code that is far from active
-        release planning or management. Typically, distroreleases
+        This distroseries contains code that is far from active
+        release planning or management. Typically, distroseriess
         that are beyond the current "development" release will be
         marked as "experimental". We create those so that people
         have a place to upload code which is expected to be part
@@ -790,7 +638,7 @@ class DistributionReleaseStatus(DBSchema):
     DEVELOPMENT = Item(2, """
         Active Development
 
-        The distrorelease that is under active current development
+        The distroseries that is under active current development
         will be tagged as "development". Typically there is only
         one active development release at a time. When that freezes
         and releases, the next release along switches from "experimental"
@@ -800,7 +648,7 @@ class DistributionReleaseStatus(DBSchema):
     FROZEN = Item(3, """
         Pre-release Freeze
 
-        When a distrorelease is near to release the administrators
+        When a distroseries is near to release the administrators
         will freeze it, which typically means that new package uploads
         require significant review before being accepted into the
         release.
@@ -816,15 +664,15 @@ class DistributionReleaseStatus(DBSchema):
     SUPPORTED = Item(5, """
         Supported
 
-        This distrorelease is still supported, but it is no longer
+        This distroseries is still supported, but it is no longer
         the current stable release. In Ubuntu we normally support
-        a distrorelease for 2 years from release.
+        a distroseries for 2 years from release.
         """)
 
     OBSOLETE = Item(6, """
         Obsolete
 
-        This distrorelease is no longer supported, it is considered
+        This distroseries is no longer supported, it is considered
         obsolete and should not be used on production systems.
         """)
 
@@ -953,7 +801,7 @@ class SourcePackageUrgency(DBSchema):
         """)
 
 
-class SpecificationDelivery(DBSchema):
+class SpecificationImplementationStatus(DBSchema):
     # Note that some of the states associated with this schema correlate to
     # a "not started" definition. See Specification.started_clause for
     # further information, and make sure that it is updated (together with
@@ -1059,6 +907,13 @@ class SpecificationDelivery(DBSchema):
         This functionality has been delivered for the targeted release, the
         code has been uploaded to the main archives or committed to the
         targeted product series, and no further work is necessary.
+        """)
+
+    INFORMATIONAL = Item(95, """
+        Informational
+
+        This specification is informational, and does not require
+        any implementation.
         """)
 
 
@@ -1197,14 +1052,14 @@ class SpecificationFilter(DBSchema):
         Declined
 
         This indicates that the list should include specifications that were
-        declined as goals for the underlying productseries or distrorelease.
+        declined as goals for the underlying productseries or distroseries.
         """)
 
     ACCEPTED = Item(50, """
         Accepted
 
         This indicates that the list should include specifications that were
-        accepted as goals for the underlying productseries or distrorelease.
+        accepted as goals for the underlying productseries or distroseries.
         """)
 
     VALID = Item(55, """
@@ -1287,7 +1142,7 @@ class SpecificationSort(DBSchema):
         """)
 
 
-class SpecificationStatus(DBSchema):
+class SpecificationDefinitionStatus(DBSchema):
     """The current status of a Specification
 
     This enum tells us whether or not a specification is approved, or still
@@ -1420,7 +1275,7 @@ class SprintSpecificationStatus(DBSchema):
         """)
 
 
-# Enumeration covered by bug 66633:
+# XXX flacoste 20070712 Enumeration covered by bug 66633:
 #   Need way to define enumerations outside of dbschema
 class QuestionParticipation(DBSchema):
     """The different ways a person can be involved in a question.
@@ -1564,7 +1419,7 @@ class QuestionAction(DBSchema):
         was changed.
         """)
 
-# Enumeration covered by bug 66633:
+# XXX flacoste 20070712 Enumeration covered by bug 66633:
 #   Need way to define enumerations outside of dbschema
 class QuestionSort(DBSchema):
     """An enumeration of the valid question search sort order.
@@ -1660,6 +1515,34 @@ class QuestionStatus(DBSchema):
         question, spam or anything that should not appear in the
         Answer Tracker.
         """)
+
+
+# XXX flacoste 20070712 Enumeration covered by bug 66633:
+#   Need way to define enumerations outside of dbschema
+class FAQSort(DBSchema):
+    """An enumeration of the valid FAQ search sort order.
+
+    This enumeration is part of the IFAQCollection.searchFAQs() API. The
+    titles are formatted for nice display in browser code.
+    """
+
+    RELEVANCY = Item(5, """
+    by relevancy
+
+    Sort by relevancy of the FAQ toward the search text.
+    """)
+
+    NEWEST_FIRST = Item(15, """
+    newest first
+
+    Sort FAQs from newest to oldest.
+    """)
+
+    OLDEST_FIRST = Item(20, """
+    oldest first
+
+    Sort FAQs from oldset to newest.
+    """)
 
 
 class ImportStatus(DBSchema):
@@ -1815,11 +1698,11 @@ class TranslationPermission(DBSchema):
     """Translation Permission System
 
     Projects, products and distributions can all have content that needs to
-    be translated. In this case, Rosetta allows them to decide how open they
-    want that translation process to be. At one extreme, anybody can add or
-    edit any translation, without review. At the other, only the designated
-    translator for that group in that language can edit its translation
-    files. This schema enumerates the options.
+    be translated. In this case, Launchpad Translations allows them to decide
+    how open they want that translation process to be. At one extreme, anybody
+    can add or edit any translation, without review. At the other, only the
+    designated translator for that group in that language can add or edit its
+    translation files. This schema enumerates the options.
     """
 
     OPEN = Item(1, """
@@ -1838,8 +1721,8 @@ class TranslationPermission(DBSchema):
         designated translator, anybody can edit the translations directly,
         with no further review.""")
 
-    CLOSED = Item(100, """
-        Closed
+    RESTRICTED = Item(100, """
+        Restricted
 
         This group allows only designated translators to edit the
         translations of its files. You can become a designated translator
@@ -1849,14 +1732,24 @@ class TranslationPermission(DBSchema):
         suggestions for new translations, but those suggestions need to be
         reviewed before being accepted by the designated translator.""")
 
+    CLOSED = Item(200, """
+        Closed
+
+        This group allows only designated translators to edit or add
+        translations. You can become a designated translator either by
+        joining an existing language translation team for this
+        project, or by getting permission to start a new team for a new
+        language. People who are not designated translators will not be able
+        to add suggestions.""")
+
 
 class PackageUploadStatus(DBSchema):
     """Distro Release Queue Status
 
     An upload has various stages it must pass through before becoming part
-    of a DistroRelease. These are managed via the Upload table
+    of a DistroSeries. These are managed via the Upload table
     and related tables and eventually (assuming a successful upload into the
-    DistroRelease) the effects are published via the PackagePublishing and
+    DistroSeries) the effects are published via the PackagePublishing and
     SourcePackagePublishing tables.  """
 
     NEW = Item(0, """
@@ -1864,7 +1757,7 @@ class PackageUploadStatus(DBSchema):
 
         This upload is either a brand-new source package or contains a
         binary package with brand new debs or similar. The package must sit
-        here until someone with the right role in the DistroRelease checks
+        here until someone with the right role in the DistroSeries checks
         and either accepts or rejects the upload. If the upload is accepted
         then entries will be made in the overrides tables and further
         uploads will bypass this state """)
@@ -1872,11 +1765,11 @@ class PackageUploadStatus(DBSchema):
     UNAPPROVED = Item(1, """
         Unapproved
 
-        If a DistroRelease is frozen or locked out of ordinary updates then
+        If a DistroSeries is frozen or locked out of ordinary updates then
         this state is used to mean that while the package is correct from a
         technical point of view; it has yet to be approved for inclusion in
-        this DistroRelease. One use of this state may be for security
-        releases where you want the security team of a DistroRelease to
+        this DistroSeries. One use of this state may be for security
+        releases where you want the security team of a DistroSeries to
         approve uploads.  """)
 
     ACCEPTED = Item(2, """
@@ -1889,7 +1782,7 @@ class PackageUploadStatus(DBSchema):
         Done
 
         An upload in this state has had its publishing records created if it
-        needs them and is fully processed into the DistroRelease. This state
+        needs them and is fully processed into the DistroSeries. This state
         exists so that a logging and/or auditing tool can pick up accepted
         uploads and create entries in a journal or similar before removing
         the queue item.  """)
@@ -1899,7 +1792,7 @@ class PackageUploadStatus(DBSchema):
 
         An upload which reaches this state has, for some reason or another
         not passed the requirements (technical or human) for entry into the
-        DistroRelease it was targetting. As for the 'done' state, this state
+        DistroSeries it was targetting. As for the 'done' state, this state
         is present to allow logging tools to record the rejection and then
         clean up any subsequently unnecessary records.  """)
 
@@ -1947,18 +1840,18 @@ class PackageUploadCustomFormat(DBSchema):
 class PackagePublishingStatus(DBSchema):
     """Package Publishing Status
 
-     A package has various levels of being published within a DistroRelease.
+     A package has various levels of being published within a DistroSeries.
      This is important because of how new source uploads dominate binary
      uploads bit-by-bit. Packages (source or binary) enter the publishing
      tables as 'Pending', progress through to 'Published' eventually become
      'Superseded' and then become 'PendingRemoval'. Once removed from the
-     DistroRelease the publishing record is also removed.
+     DistroSeries the publishing record is also removed.
      """
 
     PENDING = Item(1, """
         Pending
 
-        This [source] package has been accepted into the DistroRelease and
+        This [source] package has been accepted into the DistroSeries and
         is now pending the addition of the files to the published disk area.
         In due course, this source package will be published.
         """)
@@ -1967,7 +1860,7 @@ class PackagePublishingStatus(DBSchema):
         Published
 
         This package is currently published as part of the archive for that
-        distrorelease. In general there will only ever be one version of any
+        distroseries. In general there will only ever be one version of any
         source/binary package published at any one time. Once a newer
         version becomes published the older version is marked as superseded.
         """)
@@ -1994,7 +1887,7 @@ class PackagePublishingStatus(DBSchema):
         Once a package is removed from the archive, its publishing record
         is set to this status. This means it won't show up in the SPP view
         and thus will not be considered in most queries about source
-        packages in distroreleases. """)
+        packages in distroseriess. """)
 
 
 class PackagePublishingPriority(DBSchema):
@@ -2049,9 +1942,9 @@ class PackagePublishingPriority(DBSchema):
 class PackagePublishingPocket(DBSchema):
     """Package Publishing Pocket
 
-    A single distrorelease can at its heart be more than one logical
-    distrorelease as the tools would see it. For example there may be a
-    distrorelease called 'hoary' and a SECURITY pocket subset of that would
+    A single distroseries can at its heart be more than one logical
+    distroseries as the tools would see it. For example there may be a
+    distroseries called 'hoary' and a SECURITY pocket subset of that would
     be referred to as 'hoary-security' by the publisher and the distro side
     tools.
     """
@@ -2318,6 +2211,11 @@ class CodeImportReviewStatus(DBSchema):
     This code import has been approved and will be processed.
     """)
 
+    SUSPENDED = Item(30, """Suspended
+
+    This code import has been approved, but it has been suspended and is not
+    processed.""")
+
 
 class BugInfestationStatus(DBSchema):
     """Bug Infestation Status
@@ -2374,133 +2272,6 @@ class BugInfestationStatus(DBSchema):
         """)
 
 
-class BranchLifecycleStatus(DBSchema):
-    """Branch Lifecycle Status
-
-    This indicates the status of the branch, as part of an overall
-    "lifecycle". The idea is to indicate to other people how mature this
-    branch is, or whether or not the code in the branch has been deprecated.
-    Essentially, this tells us what the author of the branch thinks of the
-    code in the branch.
-    """
-
-    NEW = Item(1, """
-        New
-
-        This branch has just been created, and we know nothing else about
-        it.
-        """, sortkey=60)
-
-    EXPERIMENTAL = Item(10, """
-        Experimental
-
-        This branch contains code that is considered experimental. It is
-        still under active development and should not be merged into
-        production infrastructure.
-        """, sortkey=30)
-
-    DEVELOPMENT = Item(30, """
-        Development
-
-        This branch contains substantial work that is shaping up nicely, but
-        is not yet ready for merging or production use. The work is
-        incomplete, or untested.
-        """, sortkey=20)
-
-    MATURE = Item(50, """
-        Mature
-
-        The developer considers this code mature. That means that it
-        completely addresses the issues it is supposed to, that it is tested,
-        and that it has been found to be stable enough for the developer to
-        recommend it to others for inclusion in their work.
-        """, sortkey=10)
-
-    MERGED = Item(70, """
-        Merged
-
-        This code has successfully been merged into its target branch(es),
-        and no further development is anticipated on the branch.
-        """, sortkey=40)
-
-    ABANDONED = Item(80, """
-        Abandoned
-
-        This branch contains work which the author has abandoned, likely
-        because it did not prove fruitful.
-        """, sortkey=50)
-
-
-# XXX thumper 2006-12-15 Has copies of BranchLifecycleStatus
-# until I find a better way of extending an existing list.
-# The dbschema refactoring should make this all become simple.
-class BranchLifecycleStatusFilter(DBSchema):
-    """Branch Lifecycle Status Filter
-
-    Used to populate the branch lifecycle status filter widget.
-    UI only.
-    """
-
-    CURRENT = Item(-1, """
-        New, Experimental, Development or Mature
-
-        Show the currently active branches.
-        """)
-
-    ALL = Item(0, """
-        Any Status
-
-        Show all the branches.
-        """)
-
-    NEW = Item(1, """
-        New
-
-        This branch has just been created, and we know nothing else about
-        it.
-        """, sortkey=60)
-
-    EXPERIMENTAL = Item(10, """
-        Experimental
-
-        This branch contains code that is considered experimental. It is
-        still under active development and should not be merged into
-        production infrastructure.
-        """, sortkey=30)
-
-    DEVELOPMENT = Item(30, """
-        Development
-
-        This branch contains substantial work that is shaping up nicely, but
-        is not yet ready for merging or production use. The work is
-        incomplete, or untested.
-        """, sortkey=20)
-
-    MATURE = Item(50, """
-        Mature
-
-        The developer considers this code mature. That means that it
-        completely addresses the issues it is supposed to, that it is tested,
-        and that it has been found to be stable enough for the developer to
-        recommend it to others for inclusion in their work.
-        """, sortkey=10)
-
-    MERGED = Item(70, """
-        Merged
-
-        This code has successfully been merged into its target branch(es),
-        and no further development is anticipated on the branch.
-        """, sortkey=40)
-
-    ABANDONED = Item(80, """
-        Abandoned
-
-        This branch contains work which the author has abandoned, likely
-        because it did not prove fruitful.
-        """, sortkey=50)
-
-
-
 class BranchReviewStatus(DBSchema):
     """Branch Review Cycle
 
@@ -2551,84 +2322,6 @@ class BranchReviewStatus(DBSchema):
         """)
 
 
-class BranchSubscriptionDiffSize(DBSchema):
-    """Branch Subscription Diff Size
-
-    When getting branch revision notifications, the person can set a size
-    limit of the diff to send out. If the generated diff is greater than
-    the specified number of lines, then it is omitted from the email.
-    This enumerated type defines the number of lines as a choice
-    so we can sensibly limit the user to a number of size choices.
-    """
-
-    NODIFF = Item(0, """
-        Don't send diffs
-
-        Don't send generated diffs with the revision notifications.
-        """, sortkey=0)
-
-    HALFKLINES = Item(500, """
-        500 lines
-
-        Limit the generated diff to 500 lines.
-        """, sortkey=500)
-
-    ONEKLINES  = Item(1000, """
-        1000 lines
-
-        Limit the generated diff to 1000 lines.
-        """, sortkey=1000)
-
-    FIVEKLINES = Item(5000, """
-        5000 lines
-
-        Limit the generated diff to 5000 lines.
-        """, sortkey=5000)
-
-    WHOLEDIFF  = Item(-1, """
-        Send entire diff
-
-        Don't limit the size of the diff.
-        """, sortkey=1000000)
-
-
-class BranchSubscriptionNotificationLevel(DBSchema):
-    """Branch Subscription Notification Level
-
-    The notification level is used to control the amount and content
-    of the email notifications send with respect to modifications
-    to branches whether it be to branch attributes in the UI, or
-    to the contents of the branch found by the branch scanner.
-    """
-
-    NOEMAIL = Item(0, """
-        No email
-
-        Do not send any email about changes to this branch.
-        """)
-
-    ATTRIBUTEONLY = Item(1, """
-        Branch attribute notifications only
-
-        Only send notifications for branch attribute changes such
-        as name, description and whiteboard.
-        """)
-
-    DIFFSONLY = Item(2, """
-        Branch revision notifications only
-
-        Only send notifications about new revisions added to this
-        branch.
-        """)
-
-    FULL = Item(3, """
-        Branch attribute and revision notifications
-
-        Send notifications for both branch attribute updates
-        and new revisions added to the branch.
-        """)
-
-
 class BugNominationStatus(DBSchema):
     """Bug Nomination Status
 
@@ -2663,32 +2356,48 @@ class BugTaskStatus(DBSchema):
     The various possible states for a bugfix in a specific place.
     """
 
-    UNCONFIRMED = Item(10, """
-        Unconfirmed
+    NEW = Item(10, """
+        New
 
         This is a new bug and has not yet been confirmed by the maintainer of
         this product or source package.
         """)
 
-    NEEDSINFO = Item(15, """
-        Needs Info
+    INCOMPLETE = Item(15, """
+        Incomplete
 
         More info is required before making further progress on this bug, likely
         from the reporter. E.g. the exact error message the user saw, the URL
         the user was visiting when the bug occurred, etc.
         """)
 
-    REJECTED = Item(17, """
-        Rejected
+    INVALID = Item(17, """
+        Invalid
 
-        This bug has been rejected, e.g. in cases of operator-error.
+        This is not a bug. It could be a support request, spam, or a misunderstanding.
+        """)
+
+    WONTFIX = Item(18, """
+        Won't Fix
+
+        This will not be fixed. For example, this might be a bug but it's not considered worth
+        fixing, or it might not be fixed in this release.
         """)
 
     CONFIRMED = Item(20, """
         Confirmed
 
         This bug has been reviewed, verified, and confirmed as something needing
-        fixing.
+        fixing. Anyone can set this status.
+        """)
+
+    TRIAGED = Item(21, """
+        Triaged
+
+        This bug has been reviewed, verified, and confirmed as
+        something needing fixing. The user must be a bug contact to
+        set this status, so it carries more weight than merely
+        Confirmed.
         """)
 
     INPROGRESS = Item(22, """
@@ -2953,97 +2662,38 @@ class RosettaImportStatus(DBSchema):
         """)
 
 
-class SSHKeyType(DBSchema):
-    """SSH key type
+class MailingListAutoSubscribePolicy(DBSchema):
+    """A person's auto-subscription policy.
 
-    SSH (version 2) can use RSA or DSA keys for authentication.  See OpenSSH's
-    ssh-keygen(1) man page for details.
+    When a person joins a team, or is joined to a team, their
+    auto-subscription policy describes how and whether they will be
+    automatically subscribed to any team mailing list that the team may have.
+
+    This does not describe what happens when a team that already has members
+    gets a new team mailing list.  In that case, its members are never
+    automatically subscribed to the mailing list.
     """
 
-    RSA = Item(1, """
-        RSA
+    NEVER = Item(0, """
+        Never subscribe automatically
 
-        RSA
+        The user must explicitly subscribe to a team mailing list for any team
+        that she joins.
         """)
 
-    DSA = Item(2, """
-        DSA
+    ON_REGISTRATION = Item(1, """
+        Subscribe on self-registration
 
-        DSA
+        The user is automatically joined to any team mailng list for a team
+        that she joins explicitly.  She is never joined to any team mailing
+        list for a team that someone else joins her to.
         """)
 
-class LoginTokenType(DBSchema):
-    """Login token type
+    ALWAYS = Item(2, """
+        Always subscribe automatically
 
-    Tokens are emailed to users in workflows that require email address
-    validation, such as forgotten password recovery or account merging.
-    We need to identify the type of request so we know what workflow
-    is being processed.
-    """
-
-    PASSWORDRECOVERY = Item(1, """
-        Password Recovery
-
-        User has forgotten or never known their password and need to
-        reset it.
-        """)
-
-    ACCOUNTMERGE = Item(2, """
-        Account Merge
-
-        User has requested that another account be merged into their
-        current one.
-        """)
-
-    NEWACCOUNT = Item(3, """
-        New Account
-
-        A new account is being setup. They need to verify their email address
-        before we allow them to set a password and log in.
-        """)
-
-    VALIDATEEMAIL = Item(4, """
-        Validate Email
-
-        A user has added more email addresses to their account and they
-        need to be validated.
-        """)
-
-    VALIDATETEAMEMAIL = Item(5, """
-        Validate Team Email
-
-        One of the team administrators is trying to add a contact email
-        address for the team, but this address need to be validated first.
-        """)
-
-    VALIDATEGPG = Item(6, """
-        Validate GPG key
-
-        A user has submited a new GPG key to his account and it need to
-        be validated.
-        """)
-
-    VALIDATESIGNONLYGPG = Item(7, """
-        Validate a sign-only GPG key
-
-        A user has submitted a new sign-only GPG key to his account and it
-        needs to be validated.
-        """)
-
-    PROFILECLAIM = Item(8, """
-        Claim an unvalidated Launchpad profile
-
-        A user has found an unvalidated profile in Launchpad and is trying
-        to claim it.
-        """)
-
-    NEWPROFILE = Item(9, """
-        A user created a new Launchpad profile for another person.
-
-        Any Launchpad user can create new "placeholder" profiles to represent
-        people who don't use Launchpad. The person that a given profile
-        represents has to first use the token to finish the registration
-        process in order to be able to login with that profile.
+        The user is automatically subscribed to any team mailing list when she
+        is added to the team, regardless of who joins her to the team.
         """)
 
 
@@ -3127,173 +2777,40 @@ class BuildStatus(DBSchema):
         """)
 
 
-class MirrorContent(DBSchema):
-    """The content that is mirrored."""
+class PersonalStanding(DBSchema):
+    """A person's standing.
 
-    ARCHIVE = Item(1, """
-        Archive
+    Standing is currently (just) used to determine whether a person's posts to
+    a mailing list require first-post moderation or not.  Any person with good
+    or excellent standing may post directly to the mailing list without
+    moderation.  Any person with unknown or poor standing must have their
+    first-posts moderated.
+    """
 
-        This mirror contains source and binary packages for a given
-        distribution. Mainly used for APT-based system.
+    UNKNOWN = Item(0, """
+        Unknown standing
+
+        Nothing about this person's standing is known.
         """)
 
-    RELEASE = Item(2, """
-        Release
+    POOR = Item(100, """
+        Poor standing
 
-        Mirror containing released installation images for a given
-        distribution.
+        This person has poor standing.
         """)
 
+    GOOD = Item(200, """
+        Good standing
 
-class MirrorPulseType(DBSchema):
-    """The method used by a mirror to update its contents."""
-
-    PULL = Item(1, """
-        Pull
-
-        Mirror has a supported network application to "pull" the original
-        content server periodically.
+        This person has good standing and may post to a mailing list without
+        being subject to first-post moderation rules.
         """)
 
-    PUSH = Item(2, """
-        Push
+    EXCELLENT = Item(300, """
+        Excellent standing
 
-        Original content server has enough access to the Mirror and is able to
-        "push" new modification as soon as they happen.
-        """)
-
-
-class MirrorSpeed(DBSchema):
-    """The speed of a given mirror."""
-
-    S128K = Item(10, """
-        128 Kbps
-
-        The upstream link of this mirror can make up to 128Kb per second.
-        """)
-
-    S256K = Item(20, """
-        256 Kbps
-
-        The upstream link of this mirror can make up to 256Kb per second.
-        """)
-
-    S512K = Item(30, """
-        512 Kbps
-
-        The upstream link of this mirror can make up to 512Kb per second.
-        """)
-
-    S1M = Item(40, """
-        1 Mbps
-
-        The upstream link of this mirror can make up to 1Mb per second.
-        """)
-
-    S2M = Item(50, """
-        2 Mbps
-
-        The upstream link of this mirror can make up to 2Mb per second.
-        """)
-
-    S10M = Item(60, """
-        10 Mbps
-
-        The upstream link of this mirror can make up to 10Mb per second.
-        """)
-
-    S45M = Item(65, """
-        45 Mbps
-
-        The upstream link of this mirror can make up to 45 Mb per second.
-        """)
-
-    S100M = Item(70, """
-        100 Mbps
-
-        The upstream link of this mirror can make up to 100Mb per second.
-        """)
-
-    S1G = Item(80, """
-        1 Gbps
-
-        The upstream link of this mirror can make up to 1 gigabit per second.
-        """)
-
-    S2G = Item(90, """
-        2 Gbps
-
-        The upstream link of this mirror can make up to 2 gigabit per second.
-        """)
-
-    S4G = Item(100, """
-        4 Gbps
-
-        The upstream link of this mirror can make up to 4 gigabit per second.
-        """)
-
-    S10G = Item(110, """
-        10 Gbps
-
-        The upstream link of this mirror can make up to 10 gigabits per second.
-        """)
-
-    S20G = Item(120, """
-        20 Gbps
-
-        The upstream link of this mirror can make up to 20 gigabits per second.
-        """)
-
-
-class MirrorStatus(DBSchema):
-    """The status (freshness) of a given mirror."""
-
-    UP = Item(1, """
-        Up to date
-
-        This mirror is up to date with the original content.
-        """)
-
-    ONEHOURBEHIND = Item(2, """
-        One hour behind
-
-        This mirror's content seems to have been last updated one hour ago.
-        """)
-
-    TWOHOURSBEHIND = Item(3, """
-        Two hours behind
-
-        This mirror's content seems to have been last updated two hours ago.
-        """)
-
-    SIXHOURSBEHIND = Item(4, """
-        Six hours behind
-
-        This mirror's content seems to have been last updated six hours ago.
-        """)
-
-    ONEDAYBEHIND = Item(5, """
-        One day behind
-
-        This mirror's content seems to have been last updated one day ago.
-        """)
-
-    TWODAYSBEHIND = Item(6, """
-        Two days behind
-
-        This mirror's content seems to have been last updated two days ago.
-        """)
-
-    ONEWEEKBEHIND = Item(7, """
-        One week behind
-
-        This mirror's content seems to have been last updated one week ago.
-        """)
-
-    UNKNOWN = Item(8, """
-        Unknown freshness
-
-        We couldn't determine when this mirror's content was last updated.
+        This person has excellent standing and may post to a mailing list
+        without being subject to first-post moderation rules.
         """)
 
 
@@ -3336,11 +2853,38 @@ class PollAlgorithm(DBSchema):
         """)
 
 
-class RosettaFileFormat(DBSchema):
-    """Rosetta File Format
+class PostedMessageStatus(DBSchema):
+    """The status of a posted message.
 
-    This is an enumeration of the different sorts of file that Rosetta can
-    export.
+    When a message posted to a mailing list is subject to first-post
+    moderation, the message gets one of these statuses.
+    """
+
+    NEW = Item(0, """
+        New status
+
+        The message has been posted and held for first-post moderation, but no
+        disposition of the message has yet been made.
+        """)
+
+    APPROVED = Item(1, """
+        Approved
+
+        A message held for first-post moderation has been approved.
+        """)
+
+    REJECTED = Item(2, """
+        Rejected
+
+        A message held for first-post moderation has been rejected.
+        """)
+
+
+class TranslationFileFormat(DBSchema):
+    """Translation File Format
+
+    This is an enumeration of the different sorts of file that Launchpad
+    Translations knows about.
     """
 
     PO = Item(1, """
@@ -3355,35 +2899,10 @@ class RosettaFileFormat(DBSchema):
         Gettext's standard binary file format.
         """)
 
-    XLIFF = Item(3, """
-        XLIFF
+    XPI = Item(3, """
+        Mozilla XPI format
 
-        OASIS's XML Localisation Interchange File Format.
-        """)
-
-    CSHARP_DLL = Item(4, """
-        .NET DLL
-
-        The dynamic link library format as used by programs that use the .NET
-        framework.
-        """)
-
-    CSHARP_RESOURCES = Item(5, """
-        .NET resource file
-
-        The resource file format used by programs that use the .NET framework.
-        """)
-
-    TCL = Item(6, """
-        TCL format
-
-        The .msg format as used by TCL/msgcat.
-        """)
-
-    QT = Item(7, """
-        QT format
-
-        The .qm format as used by programs using the QT toolkit.
+        The .xpi format as used by programs from Mozilla foundation.
         """)
 
 
@@ -3521,7 +3040,7 @@ class ShipItArchitecture(DBSchema):
         """)
 
 
-class ShipItDistroRelease(DBSchema):
+class ShipItDistroSeries(DBSchema):
     """The Distro Release, used only to link with ShippingRequest."""
 
     BREEZY = Item(1, """
@@ -3571,94 +3090,93 @@ class TextDirection(DBSchema):
         """)
 
 
-class PersonCreationRationale(DBSchema):
-    """The rationale for the creation of a given person.
+class ArchivePurpose(DBSchema):
+    """The purpose, or type, of an archive.
 
-    Launchpad automatically creates user accounts under certain
-    circumstances. The owners of these accounts may discover Launchpad
-    at a later date and wonder why Launchpad knows about them, so we
-    need to make it clear why a certain account was automatically created.
+    A distribution can be associated with different archives and this 
+    schema item enumerates the different archive types and their purpose.
+    For example, old distro releases may need to be obsoleted so their
+    archive would be OBSOLETE_ARCHIVE.
     """
 
-    UNKNOWN = Item(1, """
-        Unknown
+    PRIMARY = Item(1, """
+        Primary Archive.
 
-        The reason for the creation of this person is unknown.
+        This is the primary Ubuntu archive.
         """)
 
-    BUGIMPORT = Item(2, """
-        Existing user in another bugtracker from which we imported bugs.
+    PPA = Item(2, """
+        PPA Archive.
 
-        A bugzilla import or sf.net import, for instance. The bugtracker from
-        which we were importing should be described in
-        Person.creation_comment.
+        This is a Personal Package Archive.
         """)
 
-    SOURCEPACKAGEIMPORT = Item(3, """
-        This person was mentioned in a source package we imported.
+    EMBARGOED = Item(3, """
+        Embargoed Archive.
 
-        When gina imports source packages, it has to create Person entries for
-        the email addresses that are listed as maintainer and/or uploader of
-        the package, in case they don't exist in Launchpad.
+        This is the archive for embargoed packages.
         """)
 
-    POFILEIMPORT = Item(4, """
-        This person was mentioned in a POFile imported into Rosetta.
+    COMMERCIAL = Item(4, """
+        Commercial Archive.
 
-        When importing POFiles into Rosetta, we need to give credit for the
-        translations on that POFile to its last translator, which may not
-        exist in Launchpad, so we'd need to create it.
+        This is the archive for commercial packages.
         """)
 
-    KEYRINGTRUSTANALYZER = Item(5, """
-        Created by the keyring trust analyzer.
+    OBSOLETE = Item(5, """
+        Obsolete Archive.
 
-        The keyring trust analyzer is responsible for scanning GPG keys
-        belonging to the strongly connected set and assign all email addresses
-        registered on those keys to the people representing their owners in
-        Launchpad. If any of these people doesn't exist, it creates them.
+        This is the archive for obsolete packages.
         """)
 
-    FROMEMAILMESSAGE = Item(6, """
-        Created when parsing an email message.
 
-        Sometimes we parse email messages and want to associate them with the
-        sender, which may not have a Launchpad account. In that case we need
-        to create a Person entry to associate with the email.
+class EntitlementType(DBSchema):
+    """The set of features supported via entitlements.
+
+    The listed features may be enabled by the granting of an entitlement.
+    """
+
+    PRIVATE_BRANCHES = Item(10, """
+        Private Branches
+
+        The ability to create branches which are only visible to the team.
         """)
 
-    SOURCEPACKAGEUPLOAD = Item(7, """
-        This person was mentioned in a source package uploaded.
+    PRIVATE_BUGS = Item(20, """
+        Private Bugs
 
-        Some uploaded packages may be uploaded with a maintainer that is not
-        registered in Launchpad, and in these cases, soyuz may decide to
-        create the new Person instead of complaining.
+        The ability to create private bugs which are only visible to the team.
         """)
 
-    OWNER_CREATED_LAUNCHPAD = Item(8, """
-        Created by the owner himself, coming from Launchpad.
+    PRIVATE_TEAMS = Item(30, """
+        Private Teams
 
-        Somebody was navigating through Launchpad and at some point decided to
-        create an account.
+        The ability to create private teams which are only visible to parent
+        teams.
         """)
 
-    OWNER_CREATED_SHIPIT = Item(9, """
-        Created by the owner himself, coming from Shipit.
+class EntitlementState(DBSchema):
+    """States for an entitlement.
 
-        Somebody went to one of the shipit sites to request Ubuntu CDs and was
-        directed to Launchpad to create an account.
+    The entitlement may start life as a REQUEST that is then granted and
+    made ACTIVE.  At some point the entitlement may be revoked by marking
+    as INACTIVE.
+    """
+
+    REQUESTED = Item(10, """
+        Entitlement has been requested.
+
+        The entitlement is inactive in this state.
         """)
 
-    OWNER_CREATED_UBUNTU_WIKI = Item(10, """
-        Created by the owner himself, coming from the Ubuntu wiki.
+    ACTIVE = Item(20, """
+        The entitlement is active.
 
-        Somebody went to the Ubuntu wiki and was directed to Launchpad to
-        create an account.
+        The entitlement is approved in Launchpad or was imported in the
+        active state.
         """)
+    INACTIVE = Item(30, """
+        The entitlement is inactive.
 
-    USER_CREATED = Item(11, """
-        Created by a user to represent a person which does not uses Launchpad.
-
-        A user wanted to reference a person which is not a Launchpad user, so
-        he created this "placeholder" profile.
+        The entitlement has be deactivated.
         """)

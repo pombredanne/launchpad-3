@@ -134,12 +134,12 @@ why the product wasn't chosen automatically.
     ...     print notification.message
     Please select the appropriate upstream project. This step...
 
-Sometimes the distribution won't have any release, though. In that
+Sometimes the distribution won't have any series, though. In that
 case, we won't prompt the user to add a link, since he can't actually
 add one.
 
     >>> gentoo = getUtility(IDistributionSet).getByName('gentoo')
-    >>> gentoo.currentrelease is None
+    >>> gentoo.currentseries is None
     True
     >>> gentoo_thunderbird = gentoo.getSourcePackage('thunderbird')
     >>> thunderbird_bug = gentoo_thunderbird.createBug(create_params)
@@ -202,9 +202,9 @@ be created:
     u''
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.targetname
-    evolution (upstream)
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Evolution
+    Mozilla Firefox
 
 The button includes the product name.
 
@@ -229,9 +229,9 @@ as smoothly as above.
     u''
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.targetname
-    evolution (upstream)
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Evolution
+    Mozilla Firefox
 
 As you can see no ALSA was added to the bug. In order to add such a
 task, a user has to confirm that he indeed wants to add the task. A
@@ -261,10 +261,10 @@ If the user confirms, a bugtask will be added to the bug.
     True
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.targetname
-    alsa-utils (upstream)
-    evolution (upstream)
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    alsa-utils
+    Evolution
+    Mozilla Firefox
 
 But since no bug watch was specified, the status and importance
 are set to the default values.
@@ -273,7 +273,7 @@ are set to the default values.
     >>> alsa_task.target.official_malone
     False
     >>> alsa_task.status.title
-    'Unconfirmed'
+    'New'
     >>> alsa_task.importance.title
     'Undecided'
 
@@ -314,9 +314,9 @@ without any confirmation needee:
     False
 
     >>> for bugtask in bug_four.bugtasks:
-    ...     print bugtask.targetname
-    alsa-utils (upstream)
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    alsa-utils
+    Mozilla Firefox
 
     >>> for bugwatch in bug_four.watches:
     ...     print "%s: %s" % (bugwatch.bugtracker.title, bugwatch.remotebug)
@@ -327,8 +327,8 @@ attribute got initialised to Unknown. The bugtask will be synced with
 the bug watch's status later.
 
     >>> alsa_task = bug_four.bugtasks[0]
-    >>> alsa_task.targetname
-    u'alsa-utils (upstream)'
+    >>> alsa_task.bugtargetname
+    u'alsa-utils'
     >>> alsa_task.product.official_malone
     False
     >>> alsa_task.bugwatch == bug_four.watches[0]

@@ -1,0 +1,46 @@
+#! /bin/bash
+
+whoami=`whoami`
+repodir="/code/${whoami}/launchpad"
+
+mkdir -p ${repodir}
+
+if [ ! -d ${repodir}/.bzr ]; then
+  bzr init-repo ${repodir}
+fi
+
+if [ ! -d ${repodir}/.bzr/repository ]; then
+  echo "ERROR: Repository not found at expect location ${repodir}"
+  exit 1
+fi
+
+# Create a trunk branch of rocketfuel which can be kept up to date. This
+# keeps your devpad bzr repository filled with all the revisions which
+# have landed in trunk, and means that you only end up pushing your own
+# revisions into your repository when you push your branches, as opposed
+# to pushing new trunk revisions as well.
+
+cd ${repodir}
+if [ ! -d trunk ]; then
+  bzr branch /code/rocketfuel/launchpad/devel trunk
+  if [ $? -ne 0 ]; then
+    echo "ERROR: Unable to create trunk branch"
+    exit 1
+  fi
+fi
+
+# Add a line to your crontab which will update your trunk branch daily at
+# a random time
+
+tempcron=`mktemp`
+crontab -l > ${tempcron}
+grep -q "bzr pull" ${tempcron}
+if [ $? -ne 0 ]; then
+  echo "$(( RANDOM%60 )) $(( RANDOM%24 )) * * * cd /code/${whoami}/launchpad/trunk && bzr pull &> /dev/null" | tee -a ${tempcron} > /dev/null
+  crontab ${tempcron}
+  if [ $? -ne 0 ]; then
+    echo "ERROR: Unable to install cron job for regular trunk update"
+  fi
+  echo "Added regular trunk update to crontab"
+fi
+

@@ -5,19 +5,14 @@
 >
   <body>
     <metal:heading fill-slot="pageheading">
-      <h1>Personal Package Archives of Ubuntu</h1>
+      <h1><span tal:replace="context/title" /> Personal Package Archives</h1>
     </metal:heading>
 
   <div metal:fill-slot="main">
 
-    <ul class="person">
-      <li tal:repeat="ppa view/getAllPPAs">
-        <a tal:content="ppa/owner/browsername"
-           tal:attributes="href ppa/owner/fmt:url">Foo Bar</a>:
-        <span tal:replace="ppa/description" />
-	<a tal:attributes="href ppa/archive_url">See the archive</a>
-      </li>
-    </ul>
+   <p>The Launchpad Personal Package Archive service is currently in
+      beta. Register for your own beta PPA at
+      <a href="mailto:ppa-beta@launchpad.net">ppa-beta@launchpad.net</a>.</p>
 
   </div>
 </body>

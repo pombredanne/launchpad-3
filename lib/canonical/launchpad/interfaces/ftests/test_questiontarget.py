@@ -34,7 +34,7 @@ def distributionSetUp(test):
 def sourcepackageSetUp(test):
     setUp(test)
     ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    test.globs['target'] = ubuntu.currentrelease.getSourcePackage('evolution')
+    test.globs['target'] = ubuntu.currentseries.getSourcePackage('evolution')
 
 
 def distributionsourcepackageSetUp(test):

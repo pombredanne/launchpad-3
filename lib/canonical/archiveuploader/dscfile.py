@@ -33,9 +33,8 @@ from canonical.archiveuploader.utils import (
 from canonical.encoding import guess as guess_encoding
 from canonical.launchpad.interfaces import (
     NotFoundError, IGPGHandler, GPGVerificationError, IGPGKeySet,
-    IPersonSet, ISourcePackageNameSet)
+    IPersonSet, ISourcePackageNameSet, PersonCreationRationale)
 from canonical.librarian.utils import copy_and_close
-from canonical.lp.dbschema import PersonCreationRationale
 
 
 class SignableTagFile:
@@ -106,8 +105,8 @@ class SignableTagFile:
         if person is None and self.policy.create_people:
             package = self._dict['source']
             version = self._dict['version']
-            if self.policy.distrorelease and self.policy.pocket:
-                policy_suite = ('%s/%s' % (self.policy.distrorelease.name,
+            if self.policy.distroseries and self.policy.pocket:
+                policy_suite = ('%s/%s' % (self.policy.distroseries.name,
                                            self.policy.pocket.name))
             else:
                 policy_suite = '(unknown)'
@@ -323,7 +322,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
                 # bug # 38636 and friends.
                 if sub_dsc_file.digest != library_file.content.md5:
                     yield UploadError(
-                        "MD5 sum of uploaded file does not match existent "
+                        "MD5 sum of uploaded file does not match existing "
                         "file in archive")
                     files_missing = True
                     continue
@@ -432,7 +431,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         source_name = getUtility(
             ISourcePackageNameSet).getOrCreateByName(self.source)
 
-        release = self.policy.distrorelease.createUploadedSourcePackageRelease(
+        release = self.policy.distroseries.createUploadedSourcePackageRelease(
             sourcepackagename=source_name,
             version=self.dsc_version,
             maintainer=self.maintainer['person'],

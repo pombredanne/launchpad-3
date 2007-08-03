@@ -4,9 +4,11 @@ POMsgSet View
 On this section, we are going to test the view class for an IPOMsgSet object.
 
     >>> from zope.component import getView
+    >>> from canonical.database.sqlbase import flush_database_updates
     >>> from canonical.launchpad.database import POMsgSet
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.launchpad.webapp import canonical_url
+    >>> from canonical.launchpad.interfaces import TranslationConstants
 
 All the tests will be submitted as comming from Kurem, an editor for the POFile
 that we are going to edit.
@@ -89,9 +91,9 @@ item.
     >>> subview.context.potmsgset.sequence == 1
     True
 
-It does not have a plural msgid.
+It does not have a plural message
 
-    >>> subview.msgid_plural is None
+    >>> subview.plural_text is None
     True
 
 And thus, it only has one translation.
@@ -121,6 +123,17 @@ If we request a plural form that is not valid, we get an AssertionError.
     ...
     AssertionError: There is no plural form #1 for Spanish (es) language
 
+Published translation is defined and same as the active one.
+
+    >>> subview.getPublishedTranslation(0)
+    u'libreta de direcciones de Evolution'
+
+However, if we ask for incorrect plural form, we get an AssertionError.
+
+    >>> subview.getPublishedTranslation(1)
+    Traceback (most recent call last):
+    ...
+    AssertionError: There is no plural form #1 for Spanish (es) language
 
 Web presentation
 ----------------
@@ -128,59 +141,66 @@ Web presentation
 Some characters are presented specially in the Web interface, and there are
 functions to determine whether to advise translators about their presence.
 
-First, msg_id_has_tab() determines whether a message set contains any tabs.
+We will use this helper function to simplify the test:
 
-    >>> subview.msgid_has_tab
+    >>> def changeMsgID(new_msgid):
+    ...     subview.context.potmsgset.makeMessageIDSighting(
+    ...         new_msgid, TranslationConstants.SINGULAR_FORM , update=True)
+    ...     flush_database_updates()
+
+First, text_has_tab() determines whether a message set contains any tabs.
+
+    >>> subview.text_has_tab
     False
 
 When we change the set to include a tab character, the function detects it.
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Foo\tBar'
-    >>> subview.msgid_has_tab
+    >>> changeMsgID(u'Foo\tBar')
+    >>> subview.text_has_tab
     True
 
-Similarly, msgid_has_newline() determines whether a message contains newlines.
+Similarly, text_has_newline() determines whether a message contains newlines.
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Foo Bar'
-    >>> subview.msgid_has_newline
+    >>> changeMsgID(u'Foo Bar')
+    >>> subview.text_has_newline
     False
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Foo\nBar'
-    >>> subview.msgid_has_newline
+    >>> changeMsgID(u'Foo\nBar')
+    >>> subview.text_has_newline
     True
 
-And msgid_has_leading_or_trailing_space() determines ... well, you can guess.
+And text_has_leading_or_trailing_space() determines ... well, you can guess.
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Foo Bar'
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> changeMsgID(u'Foo Bar')
+    >>> subview.text_has_leading_or_trailing_space
     False
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u' Leading space'
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> changeMsgID(u' Leading space')
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'  Leading spaces'
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> changeMsgID(u'  Leading space')
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Trailing space  '
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> changeMsgID(u'Trailing space ')
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Trailing spaces  '
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> changeMsgID(u'Trailing space  ')
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Leading\n Space'
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> changeMsgID(u'Leading\n Space  ')
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Trailing \nSpace'
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> changeMsgID(u'Trailing \nSpace  ')
+    >>> subview.text_has_leading_or_trailing_space
     True
 
-    >>> subview.context.potmsgset.primemsgid_.msgid = u'Trailing \r\nSpace'
-    >>> subview.msgid_has_leading_or_trailing_space
+    >>> changeMsgID(u'Trailing \r\nspace')
+    >>> subview.text_has_leading_or_trailing_space
     True
 
     >>> import transaction
@@ -197,13 +217,15 @@ But first, let's see current values.
 
     >>> pomsgset = POMsgSet.get(1)
     >>> pomsgset.pofile.updateStatistics()
-    (7, 0, 1)
+    (7, 0, 1, 2)
     >>> pomsgset.pofile.currentCount()
     7
     >>> pomsgset.pofile.updatesCount()
     0
     >>> pomsgset.pofile.rosettaCount()
     1
+    >>> pomsgset.pofile.unreviewedCount()
+    2
 
 Now we do the submit.
 
@@ -243,9 +265,7 @@ We do a new submit, but this time including a lock_timestamp field.
     >>> request.method = 'POST'
     >>> pomsgset_page_view = getView(pomsgset, "+translate", request)
     >>> pomsgset_page_view.initialize()
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> transaction.commit()
-    >>> flush_database_updates()
 
 This time we didn't get any problem with the submission, and we can see that
 statistics were updated accordly.
@@ -257,6 +277,8 @@ statistics were updated accordly.
     1
     >>> pomsgset.pofile.rosettaCount()
     1
+    >>> pomsgset.pofile.unreviewedCount()
+    2
 
 Now, let's see how the system prevents a submission that has a timestamp older
 than when last active translation was submitted.

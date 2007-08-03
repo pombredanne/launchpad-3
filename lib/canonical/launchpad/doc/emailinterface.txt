@@ -1,18 +1,15 @@
-Malone's Email Interface
-========================
+= Launchpad Bugs e-mail interface =
 
-Malone has an email interface, with which you may submit new bugs, add
-comments, and edit bugs. The email interface has a number of different
-commands. Commands can be interleaved within a comment, so in order to
-distinguish them from the comment, the commands have to be indented with
-at least one space or tab character. The available commands are
-described later on.
+Launchpad's bugtracker has an e-mail interface, with which you may report new
+bugs, add comments, and change the details of existing bug reports. Commands
+can be interleaved within a comment, so to distinguish them from the comment,
+they must be indented with at least one space or tab character.
 
 Submit a new bug
 ----------------
 
 To report a bug, you send an OpenPGP-signed e-mail message to
-new@malone-domain. You must have registered your key in
+new@bugs.launchpad-domain. You must have registered your key in
 Launchpad as well. The subject of the email will be used as the summary
 of the bug, and the body will be used as the description. In the body of
 the email you have tell on what you file a bug, either a product or a
@@ -30,10 +27,10 @@ specific source package in a distribution:
 
     affects $distribution_name/$sourcepackage_name
 
-You can also file bugs on specific distribution releases:
+You can also file bugs on specific distribution series:
 
-    affects $distribution_name/$release_name
-    affects $distribution_name/$release_name/$sourcepackage_name
+    affects $distribution_name/$series_name
+    affects $distribution_name/$series_name/$sourcepackage_name
 
 But if you want you can use any of the available commands as well.
 
@@ -132,7 +129,8 @@ A notification was added:
 
 We define a helper to pretty-print the notification recipients:
 
-    >>> from canonical.launchpad.interfaces.bugnotification import BugNotificationRecipients
+    >>> from canonical.launchpad.mailnotification import (
+    ...     BugNotificationRecipients)
     >>> def getSubscribers(bug):
     ...     recipients = bug.getBugNotificationRecipients()
     ...     return recipients.getEmails()
@@ -204,9 +202,9 @@ It's possible to file a bug on more than product/package at once:
     Affects many packages
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    evolution (upstream)
-    firefox (upstream)
+    ...     print bugtask.bugtargetname
+    evolution
+    firefox
     evolution (Debian)
     mozilla-firefox (Debian)
 
@@ -753,6 +751,74 @@ one subscriber:
 
     >>> submit_commands(bug_four, 'subscribe test@canonical.com')
 
+tag $tag
+^^^^^^^^
+
+The 'tag' command assigns a tag to a bug. Using this command we will add the
+tags foo and bar to the bug.
+
+    >>> submit_commands(bug_four, 'tag foo bar')
+    >>> for tag in bug_four.tags:
+    ...     print tag
+    bar
+    foo
+    layout-test
+
+We can also use the tag command to remove tags.
+
+    >>> submit_commands(bug_four, 'tag -foo')
+    >>> for tag in bug_four.tags:
+    ...     print tag
+    bar
+    layout-test
+
+Trying to remove a tag that is not assigned will result in an error message
+being sent.
+
+    >>> submit_commands(bug_four, 'tag -foobar')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        tag -foobar
+    ...
+    The tag you tried to remove is not assigned to this bug: foobar
+    ...
+
+If we specify an invalid tag to be added, an error message will be sent:
+
+    >>> submit_commands(bug_four, 'tag bad_tag')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        tag bad_tag
+    ...
+    A tag you specified is invalid: bad_tag
+    <BLANKLINE>
+    Tags can only contain alphanumeric characters.
+    ...
+
+We will receive the same message if we specify an invalid tag to be removed:
+
+    >>> submit_commands(bug_four, 'tag -bad_tag')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: test@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        tag -bad_tag
+    ...
+    A tag you specified is invalid: bad_tag
+    <BLANKLINE>
+    Tags can only contain alphanumeric characters.
+    ...
+
 duplicate $bug_id
 ^^^^^^^^^^^^^^^^^
 
@@ -895,8 +961,8 @@ the following form:
     $productname/$series
     $distroname
     $distroname/$sourcepackagename
-    $distroname/$release
-    $distroname/$release/$sourcepackagename
+    $distroname/$series
+    $distroname/$series/$sourcepackagename
 
 If there is no task with the specified $path target, a new task is
 created:
@@ -916,7 +982,7 @@ A notification was added:
 
     >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print bug_notification.message.text_contents
-    ** Also affects: Debian
+    ** Also affects: debian
     ...
 
 
@@ -972,13 +1038,13 @@ task will be created:
     >>> print evolution_task.sourcepackagename.name
     evolution
 
-It's also possible to add tasks for specific distribution releases as
+It's also possible to add tasks for specific distribution serieses as
 well.
 
     >>> bug = new_firefox_bug()
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
 
     >>> submit_commands(bug, 'affects ubuntu/hoary')
 
@@ -986,28 +1052,28 @@ This caused one bugtask to be added to the bug. The added bug task is a
 generic Ubuntu task, though.
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
     Ubuntu
 
 Because Sample Person isn't a driver of Ubuntu, he's not allowed to
 target a bug directly, instead a nomination was created.
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
+    ...     print nomination.target.bugtargetdisplayname
     Ubuntu Hoary
 
-The same happens if we try to target another release.
+The same happens if we try to target another series.
 
     >>> submit_commands(bug, 'affects ubuntu/warty')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
     Ubuntu
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
+    ...     print nomination.target.bugtargetdisplayname
     Ubuntu Hoary
     Ubuntu Warty
 
@@ -1016,17 +1082,17 @@ Targeting an existing nomination won't create another nomination.
     >>> submit_commands(bug, 'affects ubuntu/warty')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
     Ubuntu
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
+    ...     print nomination.target.bugtargetdisplayname
     Ubuntu Hoary
     Ubuntu Warty
 
 If Sample Person would be the Ubuntu driver, he'll be able to target
-bugs directly to releases.
+bugs directly to serieses.
 
     >>> from canonical.launchpad.interfaces import IDistributionSet
     >>> login('foo.bar@canonical.com')
@@ -1034,13 +1100,13 @@ bugs directly to releases.
     >>> ubuntu.driver = getUtility(IPersonSet).getByEmail('test@canonical.com')
     >>> login('test@canonical.com')
 
-Now a new bugtask for the release will be create directly.
+Now a new bugtask for the series will be create directly.
 
     >>> submit_commands(bug, 'affects ubuntu/grumpy')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
     Ubuntu
     Ubuntu Grumpy
 
@@ -1049,33 +1115,33 @@ He can also approve existing nominations.
     >>> submit_commands(bug, 'affects ubuntu/warty')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
     Ubuntu
     Ubuntu Warty
     Ubuntu Grumpy
 
 It works the same when specifying a source package while targeting a
-specific distrorelease.
+specific distroseries.
 
     >>> bug = new_firefox_bug()
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
 
     >>> submit_commands(bug, 'affects ubuntu/hoary/mozilla-firefox')
 
 Now we can see that two tasks were created; both the general Ubuntu
-task, and the release specific task.
+task, and the series specific task.
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
     mozilla-firefox (Ubuntu)
     mozilla-firefox (Ubuntu Hoary)
 
 As with the example with no source package above; if the user isn't a
-driver of the release, only a nomination will be created.
+driver of the series, only a nomination will be created.
 
     >>> login('foo.bar@canonical.com')
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
@@ -1084,21 +1150,21 @@ driver of the release, only a nomination will be created.
 
     >>> bug = new_firefox_bug()
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
 
     >>> submit_commands(bug, 'affects ubuntu/hoary/mozilla-firefox')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
     mozilla-firefox (Ubuntu)
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
+    ...     print nomination.target.bugtargetdisplayname
     Ubuntu Hoary
 
-Nominating product series work the same way as for distro releases.
+Nominating product series work the same way as for distro serieses.
 Sample person is a driver for the Firefox trunk series, so the
 nomination is automatically approved.
 
@@ -1111,14 +1177,14 @@ nomination is automatically approved.
     >>> submit_commands(bug, 'affects /firefox/trunk')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    firefox (upstream)
-    firefox trunk (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Mozilla Firefox
+    Mozilla Firefox trunk
     mozilla-firefox (Ubuntu)
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
-    firefox trunk (upstream)
+    ...     print nomination.target.bugtargetdisplayname
+    Mozilla Firefox trunk
     Ubuntu Hoary
 
 If the user doesn't have permission to approve the nomination, no series
@@ -1130,13 +1196,13 @@ will be created if one doesn't exist.
     >>> submit_commands(bug, 'affects /evolution/trunk')
 
     >>> for bugtask in bug.bugtasks:
-    ...     print bugtask.targetname
-    evolution (upstream)
-    firefox (upstream)
+    ...     print bugtask.bugtargetdisplayname
+    Evolution
+    Mozilla Firefox
 
     >>> for nomination in bug.getNominations():
-    ...     print nomination.target.bugtargetname
-    evolution trunk (upstream)
+    ...     print nomination.target.bugtargetdisplayname
+    Evolution trunk
 
     >>> login('test@canonical.com')
 
@@ -1162,8 +1228,46 @@ be grouped together:
     >>> print upstream_task.assignee.displayname
     Sample Person
 
-Let's take a look at all the error messages that the sub commands can
-produce.
+Restricted statuses:
+
+    >>> email_user = getUtility(ILaunchBag).user
+
+Bug contacts can set some restricted statuses:
+
+    >>> login('foo.bar@canonical.com')
+    >>> upstream_task.pillar.bugcontact = email_user
+    >>> login(email_user.preferredemail.email)
+
+    >>> submit_commands(bug_four, 'status wontfix')
+    >>> print upstream_task.status.title
+    Won't Fix
+
+Everyone else gets an explanatory error message:
+
+    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> upstream_task.transitionToStatus(BugTaskStatus.NEW, email_user)
+
+    >>> login('foo.bar@canonical.com')
+    >>> upstream_task.pillar.bugcontact = None
+    >>> login('no-priv@canonical.com')
+
+    >>> submit_commands(bug_four, 'affects firefox', 'status wontfix')
+    >>> print_latest_email()
+    Subject: Submit Request Failure
+    To: no-priv@canonical.com
+    <BLANKLINE>
+    ...
+    Failing command:
+        status wontfix
+    ...
+    The status cannot be changed to wontfix because you are not the
+    registrant or a bug contact for Mozilla Firefox.
+    ...
+
+Let's take a look at all the other error messages that the sub
+commands can produce.
+
+    >>> login(email_user.preferredemail.email)
 
 Invalid status:
 
@@ -1177,11 +1281,11 @@ Invalid status:
         status foo
     ...
     The 'status' command expects any of the following arguments:
-    unconfirmed, needsinfo, rejected, confirmed, inprogress, fixcommitted, fixreleased
+    new, incomplete, invalid, wontfix, confirmed, triaged, inprogress, fixcommitted, fixreleased
     <BLANKLINE>
     For example:
     <BLANKLINE>
-        status unconfirmed
+        status new
     ...
 
 Invalid importance:
@@ -1196,11 +1300,11 @@ Invalid importance:
         importance foo
     ...
     The 'importance' command expects any of the following arguments:
-    undecided, wishlist, low, medium, high, critical
+    critical, high, medium, low, wishlist, undecided
     <BLANKLINE>
     For example:
     <BLANKLINE>
-        importance undecided
+        importance critical
     ...
 
 XXX mpt 20060516: "importance undecided" is a silly example, but customizing it
@@ -1293,19 +1397,19 @@ The user is a bug contact of the upstream product
     ...     bug_one, 'status confirmed', 'assignee test@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
-    ...         bugtask.targetname, bugtask.status.title,
+    ...         bugtask.bugtargetdisplayname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
-    firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (Ubuntu): Unconfirmed, assigned to no one
+    Mozilla Firefox: Confirmed, assigned to Sample Person
+    mozilla-firefox (Ubuntu): New, assigned to no one
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
     >>> print bug_notification.bug.id
     1
     >>> print bug_notification.message.text_contents
-    ** Changed in: firefox (upstream)
+    ** Changed in: firefox
     ...
-        Status: Unconfirmed => Confirmed
+        Status: New => Confirmed
 
 The user is a package bug contact
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -1327,9 +1431,9 @@ The user is a package bug contact
     ...     bug_one, 'status confirmed', 'assignee no-priv@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
-    ...         bugtask.targetname, bugtask.status.title,
+    ...         bugtask.bugtargetdisplayname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
-    firefox (upstream): Confirmed, assigned to Sample Person
+    Mozilla Firefox: Confirmed, assigned to Sample Person
     mozilla-firefox (Ubuntu): Confirmed, assigned to No Privileges Person
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
@@ -1352,13 +1456,13 @@ The user is a distribution member
 
     >>> login('foo.bar@canonical.com')
     >>> submit_commands(
-    ...     bug_one, 'status unconfirmed', 'assignee test@canonical.com')
+    ...     bug_one, 'status new', 'assignee test@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
-    ...         bugtask.targetname, bugtask.status.title,
+    ...         bugtask.bugtargetdisplayname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
-    firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (Ubuntu): Unconfirmed, assigned to Sample Person
+    Mozilla Firefox: Confirmed, assigned to Sample Person
+    mozilla-firefox (Ubuntu): New, assigned to Sample Person
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> bug_notification = BugNotification.selectFirst(orderBy='-id')
@@ -1381,10 +1485,10 @@ user, telling him that he has to use the 'affects' command.
     ...     bug_one, 'status new', 'assignee foo.bar@canonical.com')
     >>> for bugtask in bug_one.bugtasks:
     ...     print '%s: %s, assigned to %s' % (
-    ...         bugtask.targetname, bugtask.status.title,
+    ...         bugtask.bugtargetdisplayname, bugtask.status.title,
     ...         getattr(bugtask.assignee, 'displayname', 'no one'))
-    firefox (upstream): Confirmed, assigned to Sample Person
-    mozilla-firefox (Ubuntu): Unconfirmed, assigned to Sample Person
+    Mozilla Firefox: Confirmed, assigned to Sample Person
+    mozilla-firefox (Ubuntu): New, assigned to Sample Person
     mozilla-firefox (Debian): Confirmed, assigned to no one
 
     >>> print_latest_email()
@@ -1435,10 +1539,7 @@ A submit without specifying on what we want to file the bug on:
     To: test@canonical.com
     <BLANKLINE>
     ...
-    You didn't specify on what you want to file a bug on. A new bug has to
-    affect either a product or a distribution. Please use the 'affects'
-    command in order to specify on what you want to file a bug on. For
-    example, in order to file a bug on Launchpad itself, use:
+    You didn't specify the project, distribution, or package that the bug is
     ...
 
 
@@ -1478,10 +1579,7 @@ An empty unsigned mail to new@malone:
     To: test@canonical.com
     <BLANKLINE>
     ...
-    You didn't specify on what you want to file a bug on. A new bug has to
-    affect either a product or a distribution. Please use the 'affects'
-    command in order to specify on what you want to file a bug on. For
-    example, in order to file a bug on Launchpad itself, use:
+    You didn't specify the project, distribution, or package that the bug is
     ...
 
 Let's take a closer look at send_process_error_notification(), which is

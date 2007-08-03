@@ -53,9 +53,9 @@ Let's take a look at what the notification email looks like:
     Malone pages that use more complex layouts with portlets and fancy CSS
     are sometimes not getting properly reflowed after rendering.
     <BLANKLINE>
-    ** Affects: firefox (upstream)
+    ** Affects: firefox
          Importance: Medium
-             Status: Unconfirmed
+             Status: New
 
 (In reality, the importance of a newly-reported bug would not have been
 decided yet, so it would appear as Undecided.)
@@ -74,9 +74,9 @@ as well.
     Malone pages that use more complex layouts with portlets and fancy CSS
     are sometimes not getting properly reflowed after rendering.
     <BLANKLINE>
-    ** Affects: firefox (upstream)
+    ** Affects: firefox
          Importance: Medium
-             Status: Unconfirmed
+             Status: New
     <BLANKLINE>
     ** Tags: bar foo
 
@@ -251,7 +251,7 @@ pretend we had just added task five:
     ...     print "-----------------------------"
     ** Also affects: mozilla-firefox (Ubuntu)
        Importance: Medium
-           Status: Unconfirmed
+           Status: New
     -----------------------------
 
 = Editing a bug task =
@@ -264,11 +264,12 @@ text representations of the changes when a bug task is edited.
     >>> from canonical.lp.dbschema import BugTaskStatus
 
     >>> edited_bugtask = getUtility(IBugTaskSet).get(3)
-    >>> edited_bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
+    >>> edited_bugtask.transitionToStatus(
+    ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
     >>> edited_bugtask.transitionToAssignee(sample_person)
     >>> bugtask_delta = BugTaskDelta(
     ...     bugtask=edited_bugtask,
-    ...     status={'old' : BugTaskStatus.UNCONFIRMED, 'new' : edited_bugtask.status},
+    ...     status={'old' : BugTaskStatus.NEW, 'new' : edited_bugtask.status},
     ...     assignee={'old' : None, 'new' : edited_bugtask.assignee})
     >>> bug_delta = BugDelta(
     ...     bug=edited_bug,
@@ -278,16 +279,16 @@ text representations of the changes when a bug task is edited.
     >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
-    ** Changed in: ubuntu-product (upstream)
+    ** Changed in: tomcat
          Assignee: (unassigned) => Sample Person
-           Status: Unconfirmed => Confirmed
+           Status: New => Confirmed
     -----------------------------
 
 Let's take a look at how it looks like when a distribution task is
 edited:
 
     >>> debian_bugtask = getUtility(IBugTaskSet).get(5)
-    >>> print debian_bugtask.targetname
+    >>> print debian_bugtask.bugtargetname
     mozilla-firefox (Debian)
     >>> debian_bugtask.transitionToAssignee(None)
     >>> bugtask_delta = BugTaskDelta(
@@ -431,10 +432,10 @@ We can also add a bugwatch while adding a new bugtask.
     >>> for text_representation in get_bug_edit_notification_texts(bug_delta):
     ...     print text_representation #doctest: -NORMALIZE_WHITESPACE
     ...     print "-----------------------------"
-    ** Also affects: firefox (upstream) via
+    ** Also affects: firefox via
        https://bugzilla.mozilla.org/show_bug.cgi?id=42
        Importance: High
-           Status: Unconfirmed
+           Status: New
     -----------------------------
 
 

@@ -25,19 +25,16 @@ import re
 import logging
 import datetime
 import pytz
-import urlparse
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, IDistributionSet, IBugSet,
-    IBugTaskSet, IBugTrackerSet, IBugExternalRefSet,
-    IBugAttachmentSet, IMessageSet, ILibraryFileAliasSet, ICveSet,
-    IBugWatchSet, ILaunchpadCelebrities, IMilestoneSet, NotFoundError,
-    CreateBugParams)
+    IPersonSet, IEmailAddressSet, IBugSet, IBugTaskSet,
+    IBugExternalRefSet, IBugAttachmentSet, IMessageSet,
+    ILibraryFileAliasSet, ICveSet, IBugWatchSet, PersonCreationRationale,
+    ILaunchpadCelebrities, NotFoundError, CreateBugParams)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType,
-    PersonCreationRationale)
+    BugTaskImportance, BugTaskStatus, BugAttachmentType)
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugzilla')
 
@@ -240,20 +237,28 @@ class Bug:
         Additional information about the bugzilla status is appended
         to the bug task's status explanation.
         """
+        bug_importer = getUtility(ILaunchpadCelebrities).bug_importer
+        
         if self.bug_status == 'ASSIGNED':
-            bugtask.transitionToStatus(BugTaskStatus.CONFIRMED)
+            bugtask.transitionToStatus(
+                BugTaskStatus.CONFIRMED, bug_importer)
         elif self.bug_status == 'NEEDINFO':
-            bugtask.transitionToStatus(BugTaskStatus.NEEDSINFO)
+            bugtask.transitionToStatus(
+                BugTaskStatus.INCOMPLETE, bug_importer)
         elif self.bug_status == 'PENDINGUPLOAD':
-            bugtask.transitionToStatus(BugTaskStatus.FIXCOMMITTED)
+            bugtask.transitionToStatus(
+                BugTaskStatus.FIXCOMMITTED, bug_importer)
         elif self.bug_status in ['RESOLVED', 'VERIFIED', 'CLOSED']:
             # depends on the resolution:
             if self.resolution == 'FIXED':
-                bugtask.transitionToStatus(BugTaskStatus.FIXRELEASED)
+                bugtask.transitionToStatus(
+                    BugTaskStatus.FIXRELEASED, bug_importer)
             else:
-                bugtask.transitionToStatus(BugTaskStatus.REJECTED)
+                bugtask.transitionToStatus(
+                    BugTaskStatus.INVALID, bug_importer)
         else:
-            bugtask.transitionToStatus(BugTaskStatus.UNCONFIRMED)
+            bugtask.transitionToStatus(
+                BugTaskStatus.NEW, bug_importer)
 
         # add the status to the notes section, to account for any lost
         # information
@@ -386,7 +391,7 @@ class Bugzilla:
         if milestone is not None:
             return milestone
         else:
-            return self.ubuntu.currentrelease.newMilestone(name)
+            return self.ubuntu.currentseries.newMilestone(name)
 
     def getLaunchpadUpstreamProduct(self, bug):
         """Find the upstream product for the given Bugzilla bug.
@@ -397,8 +402,8 @@ class Bugzilla:
         srcpkgname, binpkgname = self._getPackageNames(bug)
         # find a product series
         series = None
-        for release in self.ubuntu.releases:
-            srcpkg = release.getSourcePackage(srcpkgname)
+        for series in self.ubuntu.serieses:
+            srcpkg = series.getSourcePackage(srcpkgname)
             if srcpkg:
                 series = srcpkg.productseries
                 if series:
@@ -459,13 +464,12 @@ class Bugzilla:
         lp_bug.addWatch(self.bugtracker, bug.bug_id, lp_bug.owner)
 
         # add remaining comments, and add CVEs found in all text
-        lp_bug.findCvesInText(text)
+        lp_bug.findCvesInText(text, lp_bug.owner)
         for (who, when, text) in comments:
             text = self._bug_re.sub(self.replaceBugRef, text)
             msg = msgset.fromText(msg.followup_title, text,
                                   self.person(who), when)
             lp_bug.linkMessage(msg)
-            lp_bug.findCvesInText(text)
 
         # subscribe QA contact and CC's
         if bug.qa_contact:

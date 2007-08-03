@@ -67,10 +67,10 @@ for distro in ubuntu kubuntu edubuntu xubuntu; do
     # Keep amalgamated copies of 'all' and 'all.sources', just for convenience
     cat all >> ALL; cat all.sources >> ALL.sources
 
-    # We need to generate Task fields for everything in the ship/server-ship
-    # seeds (which includes standard, desktop, and server tasks) except for
-    # boot and minimal, and also for the live seed.
-    taskseeds="$( (egrep '^(ship|server-ship):' "$DISTRO-STRUCTURE" | cut -d' ' -f2- | xargs -n1; echo live) | sort -u )"
+    # We need to fetch a number of seeds so that we can generate Task fields
+    # for them. This changes over time and differs from derivative to
+    # derivative, so it's best to just fetch them all.
+    taskseeds="$(cut -d: -f1 "$DISTRO-STRUCTURE" | xargs -n1 | sort -u)"
 
     for seed in $taskseeds; do
       wget -q -O "$DISTRO-$seed.seedtext" "$SEEDS/$germinate_suite/$seed"
@@ -98,6 +98,13 @@ for distro in ubuntu kubuntu edubuntu xubuntu; do
       fi
       egrep -v -- "^(-|Package| )" "$seed"_"$distro"_"$suite"_"$arch" | awk '{print $1}' | sed -e "s,$,/$arch  Task  $task," | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
     done
+
+    # Generate apt-ftparchive 'extra' overrides for Build-Essential: fields
+    if [ -e build-essential ] && [ "$distro" = ubuntu ]; then
+      # Keep a copy, just for convenience
+      cp build-essential build-essential_"$distro"_"$suite"_"$arch"
+      egrep -v -- "^(-|Package| )" build-essential_"$distro"_"$suite"_"$arch" | awk '{print $1}' | sed -e "s,$,/$arch  Build-Essential  yes," | sort -u >> "$MISCROOT/more-extra.override.$suite.main.new"
+    fi
   done
 done
 echo " done."

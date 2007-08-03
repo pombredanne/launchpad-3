@@ -19,8 +19,10 @@ from canonical.launchpad.fields import (
 from canonical.launchpad.interfaces import (
     IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
     ISpecificationTarget, IHasSecurityContact, IKarmaContext,
-    PillarNameField, IHasLogo, IHasMugshot, IHasIcon)
+    PillarNameField, IHasLogo, IHasMugshot, IHasIcon, IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.sprint import IHasSprints
+from canonical.launchpad.interfaces.translationgroup import (
+    IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.fields import (
@@ -37,7 +39,7 @@ class ProductNameField(PillarNameField):
 class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                ISpecificationTarget, IHasSecurityContact, IKarmaContext,
                IHasSprints, IHasMentoringOffers, IHasLogo, IHasMugshot,
-               IHasIcon):
+               IHasIcon, IHasBranchVisibilityPolicy, IHasTranslationGroup):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -198,28 +200,6 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             "on this project's home page in Launchpad. It should be no "
             "bigger than 100kb in size. "))
 
-    translationgroup = Choice(
-        title = _("Translation group"),
-        description = _("The translation group for this project. This group "
-            "is made up of a set of translators for all the languages "
-            "approved by the group manager. These translators then have "
-            "permission to edit the groups translation files, based on the "
-            "permission system selected below."),
-        required=False,
-        vocabulary='TranslationGroup')
-
-    translationpermission = Choice(
-        title=_("Translation Permission System"),
-        description=_("The permissions this group requires for "
-            "translators. If 'Open', then anybody can edit translations "
-            "in any language. If 'Reviewed', then anybody can make "
-            "suggestions but only the designated translators can edit "
-            "or confirm translations. And if 'Closed' then only the "
-            "designated translation group will be able to touch the "
-            "translation files at all."),
-        required=True,
-        vocabulary='TranslationPermission')
-
     autoupdate = Bool(title=_('Automatic update'),
         description=_("""Whether or not this project's attributes are
         updated automatically."""))
@@ -229,6 +209,9 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     reviewed = Bool(title=_('Reviewed'), description=_("""Whether or not
         this project has been reviewed."""))
+
+    private_bugs = Bool(title=_('Private bugs'), description=_("""Whether
+        or not bugs reported into this project are private by default"""))
 
     def getExternalBugTracker():
         """Return the external bug tracker used by this bug tracker.
@@ -261,13 +244,12 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         'translation. This will remove the caution presented when '
         'people contribute translations for the project in Launchpad.'))
 
-    sourcepackages = Attribute(_("List of distribution release packages for "
-        "this product"))
+    sourcepackages = Attribute(_("List of packages for this product"))
 
     distrosourcepackages = Attribute(_("List of distribution packages for "
         "this product"))
 
-    serieslist = Attribute(_("""An iterator over the ProductSeries for this
+    serieses = Attribute(_("""An iterator over the ProductSeries for this
         product"""))
 
     development_focus = Choice(
@@ -286,17 +268,17 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     related to this product."""))
 
     milestones = Attribute(_(
-        "The visible release milestones associated with this product, "
+        "The visible milestones associated with this product, "
         "ordered by date expected."))
     all_milestones = Attribute(_(
-        "All release milestones associated with this product, ordered by "
+        "All milestones associated with this product, ordered by "
         "date expected."))
 
     bounties = Attribute(_("The bounties that are related to this product."))
 
     translatable_packages = Attribute(
         "A list of the source packages for this product that can be "
-        "translated sorted by distrorelease.name and sourcepackage.name.")
+        "translated sorted by distroseries.name and sourcepackage.name.")
 
     translatable_series = Attribute(
         "A list of the series of this product for which we have translation "
@@ -318,8 +300,8 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getLatestBranches(quantity=5):
         """Latest <quantity> branches registered for this product."""
 
-    def getPackage(distrorelease):
-        """Return a package in that distrorelease for this product."""
+    def getPackage(distroseries):
+        """Return a package in that distroseries for this product."""
 
     def getMilestone(name):
         """Return a milestone with the given name for this product, or
@@ -343,10 +325,6 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def ensureRelatedBounty(bounty):
         """Ensure that the bounty is linked to this product. Return None.
         """
-
-    def newBranch(name, title, url, home_page, lifecycle_status, summary,
-                  whiteboard):
-        """Create a new Branch for this product."""
 
 
 class IProductSet(Interface):

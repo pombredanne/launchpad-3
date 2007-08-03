@@ -35,7 +35,7 @@
           </a>
           <img src="/@@/info" tal:replace="structure bugtask/image:badges" />
         </td>
-        <td tal:content="bugtask/targetname"
+        <td tal:content="bugtask/bugtargetdisplayname"
             tal:condition="context/show_column/targetname|nothing"
         >mozilla-firefox (Ubuntu)</td>
         <td tal:content="structure bugtask/sourcepackagename/name|string:&mdash;"
@@ -45,8 +45,10 @@
             tal:condition="context/show_column/productname|nothing"
         >firefox</td>
         <td tal:content="bugtask/importance/title"
+            tal:attributes="class string:importance${bugtask/importance/name}"
             tal:condition="context/show_column/importance|nothing">Critical</td>
         <td tal:content="bugtask/status/title"
+            tal:attributes="class string:status${bugtask/status/name}"
             tal:condition="context/show_column/status|nothing">Confirmed</td>
       </tr>
     </tbody>

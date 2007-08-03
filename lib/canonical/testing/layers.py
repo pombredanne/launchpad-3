@@ -19,9 +19,9 @@ __metaclass__ = type
 __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
-    'LaunchpadZopelessLayer', 'PageTestLayer',
+    'LaunchpadZopelessLayer', 'LaunchpadScriptLayer', 'PageTestLayer',
     'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer',
-    'BzrlibZopelessLayer'
+    'BzrlibZopelessLayer', 'BzrlibLayer'
     ]
 
 import shutil
@@ -36,9 +36,7 @@ from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
 
-from bzrlib.tests import TestCaseInTempDir
-
-from twisted.trial.runner import TrialSuite
+from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 
 from canonical.config import config
 from canonical.database.sqlbase import ZopelessTransactionManager
@@ -50,6 +48,8 @@ from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
 from canonical.librarian.ftests.harness import LibrarianTestSetup
 from canonical.testing import reset_logging
+from canonical.testing.profiled import profiled
+
 
 class LayerError(Exception):
     pass
@@ -100,6 +100,7 @@ class BaseLayer:
     isSetUp = False
 
     @classmethod
+    @profiled
     def setUp(cls):
         cls.isSetUp = True
 
@@ -115,20 +116,24 @@ class BaseLayer:
             DatabaseLayer._dropDb()
 
     @classmethod
+    @profiled
     def tearDown(cls):
         cls.isSetUp = False
 
     @classmethod
+    @profiled
     def testSetUp(cls):
         cls.check()
 
     @classmethod
+    @profiled
     def testTearDown(cls):
         reset_logging()
         del canonical.launchpad.mail.stub.test_emails[:]
         cls.check()
 
     @classmethod
+    @profiled
     def check(cls):
         """Check that the environment is working as expected.
 
@@ -168,6 +173,7 @@ class LibrarianLayer(BaseLayer):
     _reset_between_tests = True
 
     @classmethod
+    @profiled
     def setUp(cls):
         if not cls._reset_between_tests:
             raise LayerInvariantError(
@@ -178,6 +184,7 @@ class LibrarianLayer(BaseLayer):
         cls._check_and_reset()
 
     @classmethod
+    @profiled
     def tearDown(cls):
         if not cls._reset_between_tests:
             raise LayerInvariantError(
@@ -188,6 +195,7 @@ class LibrarianLayer(BaseLayer):
         LibrarianTestSetup().tearDown()
 
     @classmethod
+    @profiled
     def _check_and_reset(cls):
         """Raise an exception if the Librarian has been killed.
         Reset the storage unless this has been disabled.
@@ -207,10 +215,12 @@ class LibrarianLayer(BaseLayer):
             LibrarianTestSetup().clear()
 
     @classmethod
+    @profiled
     def testSetUp(cls):
         cls._check_and_reset()
 
     @classmethod
+    @profiled
     def testTearDown(cls):
         if cls._hidden:
             cls.reveal()
@@ -224,6 +234,7 @@ class LibrarianLayer(BaseLayer):
     _hidden = False
 
     @classmethod
+    @profiled
     def hide(cls):
         """Hide the Librarian so nothing can find it. We don't want to
         actually shut it down because starting it up again is expensive.
@@ -235,6 +246,7 @@ class LibrarianLayer(BaseLayer):
         config.librarian.upload_port = 58091
 
     @classmethod
+    @profiled
     def reveal(cls):
         """Reveal a hidden Librarian.
 
@@ -253,10 +265,12 @@ class DatabaseLayer(BaseLayer):
     _reset_between_tests = True
 
     @classmethod
+    @profiled
     def setUp(cls):
         cls.force_dirty_database()
 
     @classmethod
+    @profiled
     def tearDown(cls):
         # Don't leave the DB lying around or it might break tests
         # that depend on it not being there on startup, such as found
@@ -269,6 +283,7 @@ class DatabaseLayer(BaseLayer):
         LaunchpadTestSetup().tearDown()
 
     @classmethod
+    @profiled
     def testSetUp(cls):
         # Imported here to avoid circular import issues. This
         # functionality should be migrated into this module at some
@@ -290,6 +305,7 @@ class DatabaseLayer(BaseLayer):
                 break
 
     @classmethod
+    @profiled
     def testTearDown(cls):
         # Ensure that the database is connectable
         cls.connect().close()
@@ -302,16 +318,19 @@ class DatabaseLayer(BaseLayer):
             LaunchpadTestSetup().tearDown()
 
     @classmethod
+    @profiled
     def force_dirty_database(cls):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         LaunchpadTestSetup().force_dirty_database()
 
     @classmethod
+    @profiled
     def connect(cls):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         return LaunchpadTestSetup().connect()
 
     @classmethod
+    @profiled
     def _dropDb(cls):
         from canonical.launchpad.ftests.harness import LaunchpadTestSetup
         return LaunchpadTestSetup().dropDb()
@@ -327,18 +346,22 @@ class LaunchpadLayer(DatabaseLayer, LibrarianLayer):
     This layer is mainly used by tests that call initZopeless() themselves.
     """
     @classmethod
+    @profiled
     def setUp(cls):
         pass
 
     @classmethod
+    @profiled
     def tearDown(cls):
         pass
 
     @classmethod
+    @profiled
     def testSetUp(cls):
         pass
 
     @classmethod
+    @profiled
     def testTearDown(cls):
         pass
 
@@ -350,6 +373,7 @@ class FunctionalLayer(BaseLayer):
     isSetUp = False
 
     @classmethod
+    @profiled
     def setUp(cls):
         cls.isSetUp = True
         from canonical.functional import FunctionalTestSetup
@@ -360,12 +384,14 @@ class FunctionalLayer(BaseLayer):
             raise LayerInvariantError("Component architecture failed to load")
 
     @classmethod
+    @profiled
     def tearDown(cls):
         cls.isSetUp = False
         # Signal Layer cannot be torn down fully
         raise NotImplementedError
 
     @classmethod
+    @profiled
     def testSetUp(cls):
         transaction.abort()
         transaction.begin()
@@ -378,6 +404,7 @@ class FunctionalLayer(BaseLayer):
                 )
 
     @classmethod
+    @profiled
     def testTearDown(cls):
         # Should be impossible, as the CA cannot be unloaded. Something
         # mighty nasty has happened if this is triggered.
@@ -398,6 +425,7 @@ class ZopelessLayer(BaseLayer):
     isSetUp = False
 
     @classmethod
+    @profiled
     def setUp(cls):
         cls.isSetUp = True
         execute_zcml_for_scripts()
@@ -409,12 +437,14 @@ class ZopelessLayer(BaseLayer):
                 )
 
     @classmethod
+    @profiled
     def tearDown(cls):
         cls.isSetUp = False
         # Signal Layer cannot be torn down fully
         raise NotImplementedError
 
     @classmethod
+    @profiled
     def testSetUp(cls):
         # Should be impossible, as the CA cannot be unloaded. Something
         # mighty nasty has happened if this is triggered.
@@ -435,6 +465,7 @@ class ZopelessLayer(BaseLayer):
         login(ANONYMOUS)
 
     @classmethod
+    @profiled
     def testTearDown(cls):
         # Should be impossible, as the CA cannot be unloaded. Something
         # mighty nasty has happened if this is triggered.
@@ -454,14 +485,17 @@ class ZopelessLayer(BaseLayer):
 class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
     """Provides the Launchpad Zope3 application server environment."""
     @classmethod
+    @profiled
     def setUp(cls):
         pass
 
     @classmethod
+    @profiled
     def tearDown(cls):
         pass
 
     @classmethod
+    @profiled
     def testSetUp(cls):
         # Reset any statistics
         from canonical.launchpad.webapp.opstats import OpStats
@@ -472,6 +506,7 @@ class LaunchpadFunctionalLayer(LaunchpadLayer, FunctionalLayer):
         _reconnect_sqlos()
 
     @classmethod
+    @profiled
     def testTearDown(cls):
         getUtility(IOpenLaunchBag).clear()
 
@@ -493,6 +528,7 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
     database connections initialized.
     """
     @classmethod
+    @profiled
     def setUp(cls):
         # Make a TestMailBox available
         # This is registered via ZCML in the LaunchpadFunctionalLayer
@@ -502,11 +538,13 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
         getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
 
     @classmethod
+    @profiled
     def tearDown(cls):
         # Signal Layer cannot be torn down fully
         raise NotImplementedError
 
     @classmethod
+    @profiled
     def testSetUp(cls):
         from canonical.launchpad.ftests.harness import (
                 LaunchpadZopelessTestSetup
@@ -523,6 +561,7 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
         _reconnect_sqlos()
 
     @classmethod
+    @profiled
     def testTearDown(cls):
         cls.txn.abort()
         cls.txn.uninstall()
@@ -534,18 +573,22 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
         _disconnect_sqlos()
 
     @classmethod
+    @profiled
     def commit(cls):
         cls.txn.commit()
 
     @classmethod
+    @profiled
     def abort(cls):
         cls.txn.abort()
 
     @classmethod
+    @profiled
     def switchDbUser(cls, dbuser):
         cls.alterConnection(dbuser=dbuser)
 
     @classmethod
+    @profiled
     def alterConnection(cls, **kw):
         """Reset the connection, and reopen the connection by calling
         initZopeless with the given keyword arguments.
@@ -559,39 +602,87 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
         LaunchpadZopelessTestSetup.txn = cls.txn
 
 
+class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
+    """Testing layer for scripts using the main Launchpad database adapter"""
+    
+    @classmethod
+    @profiled
+    def setUp(cls):
+        # Make a TestMailBox available
+        # This is registered via ZCML in the LaunchpadFunctionalLayer
+        # XXX flacoste 2006/10/25 This should be configured from ZCML
+        # but execute_zcml_for_scripts() doesn't cannot support a different
+        # testing configuration (bug #68189).
+        getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
+
+    @classmethod
+    @profiled
+    def tearDown(cls):
+        # Signal Layer cannot be torn down fully
+        raise NotImplementedError
+
+    @classmethod
+    @profiled
+    def testSetUp(cls):
+        from canonical.launchpad.ftests.harness import _reconnect_sqlos
+        # Connect SQLOS
+        _reconnect_sqlos()
+
+    @classmethod
+    @profiled
+    def testTearDown(cls):
+        # Disconnect SQLOS so it doesn't get in the way of database resets
+        from canonical.launchpad.ftests.harness import _disconnect_sqlos
+        _disconnect_sqlos()
+
+    @classmethod
+    @profiled
+    def switchDbConfig(cls, database_config_section):
+        from canonical.launchpad.ftests.harness import _reconnect_sqlos
+        # Connect SQLOS
+        _reconnect_sqlos(database_config_section=database_config_section)
+
+
 class PageTestLayer(LaunchpadFunctionalLayer):
     """Environment for page tests.
     """
     @classmethod
+    @profiled
     def resetBetweenTests(cls, flag):
         LibrarianLayer._reset_between_tests = flag
         DatabaseLayer._reset_between_tests = flag
 
     @classmethod
+    @profiled
     def setUp(cls):
         cls.resetBetweenTests(True)
 
     @classmethod
+    @profiled
     def tearDown(cls):
         cls.resetBetweenTests(True)
 
     @classmethod
+    @profiled
     def startStory(cls):
         DatabaseLayer.testSetUp()
         LibrarianLayer.testSetUp()
         cls.resetBetweenTests(False)
 
     @classmethod
+    @profiled
     def endStory(cls):
         cls.resetBetweenTests(True)
         LibrarianLayer.testTearDown()
         DatabaseLayer.testTearDown()
 
     @classmethod
+    @profiled
     def testSetUp(cls):
         pass
 
     @classmethod
+    @profiled
     def testTearDown(cls):
         pass
 
@@ -600,14 +691,17 @@ class TwistedLayer(LaunchpadZopelessLayer):
     """A layer for cleaning up the Twisted thread pool."""
 
     @classmethod
+    @profiled
     def setUp(cls):
         pass
 
     @classmethod
+    @profiled
     def tearDown(cls):
         pass
 
     @classmethod
+    @profiled
     def testSetUp(cls):
         from twisted.internet import interfaces, reactor
         from twisted.python import threadpool
@@ -621,6 +715,7 @@ class TwistedLayer(LaunchpadZopelessLayer):
                 reactor.threadpool.start()
 
     @classmethod
+    @profiled
     def testTearDown(cls):
         # Shutdown and obliterate the Twisted threadpool, to plug up leaking
         # threads.
@@ -633,14 +728,16 @@ class TwistedLayer(LaunchpadZopelessLayer):
                 reactor.threadpool = None
 
 
-class BzrlibZopelessLayer(LaunchpadZopelessLayer):
+class BzrlibLayer(BaseLayer):
     """Clean up the test directory created by TestCaseInTempDir tests."""
 
     @classmethod
+    @profiled
     def setUp(cls):
         pass
 
     @classmethod
+    @profiled
     def tearDown(cls):
         # Remove the test directory created by TestCaseInTempDir.
         # Copied from bzrlib.tests.TextTestRunner.run.
@@ -648,14 +745,21 @@ class BzrlibZopelessLayer(LaunchpadZopelessLayer):
         if test_root is not None:
             test_root = test_root.encode(sys.getfilesystemencoding())
             shutil.rmtree(test_root)
+        TestCaseWithMemoryTransport.TEST_ROOT = None
 
 
     @classmethod
+    @profiled
     def testSetUp(cls):
         pass
 
     @classmethod
+    @profiled
     def testTearDown(cls):
         pass
 
 
+# XXX: JonathanLange 2007-06-13, It seems that this layer behaves erroneously
+# if it is a subclass of (LaunchpadZopelessLayer, BzrlibLayer).
+class BzrlibZopelessLayer(BzrlibLayer, LaunchpadZopelessLayer):
+    """Clean up the test directory created by TestCaseInTempDir tests."""

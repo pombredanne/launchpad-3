@@ -22,9 +22,10 @@ from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces import (
     IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
-    ISpecificationTarget, IHasSecurityContact, PillarNameField,
-    IHasLogo, IHasMugshot, IHasIcon)
+    ISpecificationTarget, IHasSecurityContact, PillarNameField)
 from canonical.launchpad.interfaces.sprint import IHasSprints
+from canonical.launchpad.interfaces.translationgroup import (
+    IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload)
@@ -39,7 +40,8 @@ class DistributionNameField(PillarNameField):
 
 class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                     ISpecificationTarget, IHasSecurityContact,
-                    IKarmaContext, IHasMentoringOffers, IHasSprints):
+                    IKarmaContext, IHasMentoringOffers, IHasSprints,
+                    IHasTranslationGroup):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -95,26 +97,6 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     domainname = TextLine(
         title=_("Domain name"),
         description=_("The distro's domain name."), required=True)
-    translationgroup = Choice(
-        title = _("Translation group"),
-        description = _("The translation group for this distribution. This group "
-            "is made up of a set of translators for all the languages "
-            "approved by the group manager. These translators then have "
-            "permission to edit the groups translation files, based on the "
-            "permission system selected below."),
-        required=False,
-        vocabulary='TranslationGroup')
-    translationpermission = Choice(
-        title=_("Translation Permission System"),
-        description=_("The permissions this group requires for "
-            "translators. If 'Open', then anybody can edit translations "
-            "in any language. If 'Reviewed', then anybody can make "
-            "suggestions but only the designated translators can edit "
-            "or confirm translations. And if 'Closed' then only the "
-            "designated translation group will be able to touch the "
-            "translation files at all."),
-        required=True,
-        vocabulary='TranslationPermission')
     owner = Int(
         title=_("Owner"),
         description=_("The distro's owner."), required=True)
@@ -129,10 +111,10 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         title=_("Driver"),
         description=_(
             "The person or team responsible for decisions about features "
-            "and bugs that will be targeted for any release in this "
+            "and bugs that will be targeted for any series in this "
             "distribution. Note that you can also specify a driver "
-            "on each release who's permissions will be limited to that "
-            "specific release."),
+            "on each series who's permissions will be limited to that "
+            "specific series."),
         required=False, vocabulary='ValidPersonOrTeam')
     drivers = Attribute(
         "Presents the distro driver as a list for consistency with "
@@ -151,20 +133,20 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         description=_("The Lucille Config."), required=False)
     archive_mirrors = Attribute(
         "All enabled and official ARCHIVE mirrors of this Distribution.")
-    release_mirrors = Attribute(
+    cdimage_mirrors = Attribute(
         "All enabled and official RELEASE mirrors of this Distribution.")
     disabled_mirrors = Attribute(
         "All disabled and official mirrors of this Distribution.")
     unofficial_mirrors = Attribute(
         "All unofficial mirrors of this Distribution.")
-    releases = Attribute("DistroReleases inside this Distributions")
+    serieses = Attribute("DistroSeries'es inside this Distribution")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
     milestones = Attribute(_(
-        "The visible release milestones associated with this distribution, "
+        "The visible milestones associated with this distribution, "
         "ordered by date expected."))
     all_milestones = Attribute(_(
-        "All release milestones associated with this distribution, ordered "
+        "All milestones associated with this distribution, ordered "
         "by date expected."))
     source_package_caches = Attribute("The set of all source package "
         "info caches for this distribution.")
@@ -195,11 +177,11 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
             "officially uses Launchpad for translation."))
 
     # properties
-    currentrelease = Attribute(
-        "The current development release of this distribution. Note that "
-        "all maintainerships refer to the current release. When people ask "
+    currentseries = Attribute(
+        "The current development series of this distribution. Note that "
+        "all maintainerships refer to the current series. When people ask "
         "about the state of packages in the distribution, we should "
-        "interpret that query in the context of the currentrelease.")
+        "interpret that query in the context of the currentseries.")
 
     full_functionality = Attribute(
         "Whether or not we enable the full functionality of Launchpad for "
@@ -209,28 +191,29 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     translation_focus = Choice(
         title=_("Translation Focus"),
         description=_(
-            "The DistroRelease that should get the translation effort focus."),
+            "The DistroSeries that should get the translation effort focus."),
         required=False,
-        vocabulary='FilteredDistroReleaseVocabulary')
+        vocabulary='FilteredDistroSeriesVocabulary')
 
     main_archive = Object(
         title=_('Distribution Main Archive.'), readonly=True, schema=IArchive
         )
 
+    def all_distro_archives():
+        """Return all non-PPA archives."""
+
     def __getitem__(name):
-        """Returns a DistroRelease that matches name, or raises and
+        """Returns a DistroSeries that matches name, or raises and
         exception if none exists."""
 
     def __iter__():
-        """Iterate over the distribution releases for this distribution."""
+        """Iterate over the series for this distribution."""
 
-    def getDevelopmentReleases():
-        """Return the DistroReleases which are marked as in development."""
+    def getDevelopmentSerieses():
+        """Return the DistroSerieses which are marked as in development."""
 
-    def getRelease(name_or_version):
-        """Return the distribution release with the name or version
-        given.
-        """
+    def getSeries(name_or_version):
+        """Return the series with the name or version given."""
 
     def getMirrorByName(name):
         """Return the mirror with the given name for this distribution or None
@@ -268,9 +251,9 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         None.
         """
 
-    def getDistroReleaseAndPocket(distroreleasename):
-        """Return a (distrorelease,pocket) tuple which is the given textual
-        distroreleasename in this distribution."""
+    def getDistroSeriesAndPocket(distroseriesname):
+        """Return a (distroseries,pocket) tuple which is the given textual
+        distroseriesname in this distribution."""
 
     def removeOldCacheItems(log):
         """Delete any cache records for removed packages."""
@@ -345,5 +328,5 @@ class IDistributionSet(Interface):
         """Return the IDistribution with the given name or None."""
 
     def new(name, displayname, title, description, summary, domainname,
-            members, owner, main_archive, mugshot=None, logo=None, icon=None):
+            members, owner, mugshot=None, logo=None, icon=None):
         """Creaste a new distribution."""

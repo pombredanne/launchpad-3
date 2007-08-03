@@ -13,7 +13,7 @@ the Debian task in bug 1
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bugwatch_field = IBugTask['bugwatch']
     >>> debian_task = bug_one.bugtasks[2]
-    >>> debian_task.targetname
+    >>> debian_task.bugtargetname
     u'mozilla-firefox (Debian)'
 
     >>> bugwatch_field = bugwatch_field.bind(debian_task)
@@ -21,8 +21,8 @@ the Debian task in bug 1
 Now we can create a widget using a test request:
 
     >>> from canonical.widgets.bugtask import BugTaskBugWatchWidget
-    >>> from zope.publisher.browser import TestRequest
-    >>> request = TestRequest()
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
+    >>> request = LaunchpadTestRequest()
     >>> bugwatch_widget = BugTaskBugWatchWidget(
     ...     bugwatch_field, bugwatch_field.vocabulary, request)
 
@@ -99,7 +99,7 @@ Now let's use the widget to actually create a new bug watch. First let's take a 
 Now let's create a new bug watch, pointing at bug #84 in the Gnome tracker.
 
     >>> NEW = BugTaskBugWatchWidget._new_bugwatch_value
-    >>> request = TestRequest(form={
+    >>> request = LaunchpadTestRequest(form={
     ...     'field.bugwatch': NEW, 'field.bugtracker': '2',
     ...     'field.remotebug': '84'})
     >>> bugwatch_widget = BugTaskBugWatchWidget(
@@ -122,7 +122,7 @@ Now let's create a new bug watch, pointing at bug #84 in the Gnome tracker.
 If we try to create a bug watch that already exists, the existing bug
 watch is being returned, and no new bug watch is created.
 
-    >>> request = TestRequest(form={
+    >>> request = LaunchpadTestRequest(form={
     ...     'field.bugwatch': NEW, 'field.bugtracker': '2',
     ...     'field.remotebug': '84'})
     >>> bugwatch_widget = BugTaskBugWatchWidget(
@@ -144,7 +144,7 @@ watch is being returned, and no new bug watch is created.
 
 If we forget to enter a bug number, a WidgetInputError is being raised.
 
-    >>> request = TestRequest(form={
+    >>> request = LaunchpadTestRequest(form={
     ...     'field.bugwatch': NEW, 'field.bugtracker': '2'})
     >>> bugwatch_widget = BugTaskBugWatchWidget(
     ...     bugwatch_field, bugwatch_field.vocabulary, request)
@@ -158,7 +158,7 @@ In order to make the widget not raise on error on 'NEW', which is not
 part of the vocabulary, we've overridden _toFieldValue(), so that when
 it's passed 'NEW', it will return the newly created bug watch.
 
-    >>> request = TestRequest(form={
+    >>> request = LaunchpadTestRequest(form={
     ...     'field.bugwatch': NEW, 'field.bugtracker': '2',
     ...     'field.remotebug': '168'})
     >>> bugwatch_widget = BugTaskBugWatchWidget(

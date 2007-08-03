@@ -1,5 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+"""SQLBase implementation of IQuestionReopening."""
+
 __metaclass__ = type
 
 __all__ = ['QuestionReopening',
@@ -69,7 +71,8 @@ def create_questionreopening(question, event):
 
     reopening = QuestionReopening(
             question=question, reopener=reopen_msg.owner,
-            datecreated=reopen_msg.datecreated, answerer=old_question.answerer,
+            datecreated=reopen_msg.datecreated,
+            answerer=old_question.answerer,
             dateanswered=old_question.dateanswered,
             priorstate=old_question.status)
 

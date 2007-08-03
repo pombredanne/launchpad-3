@@ -17,50 +17,47 @@ But an admin user should be able to do it:
 Testing if the validator is working for the URL field.
 Add a new project without the http://
 
-  >>> admin_browser.getControl('Name', index=0).value = 'apache'
-  >>> admin_browser.getControl('Display Name').value = 'the Apache Project'
-  >>> admin_browser.getControl('Title').value = 'The Apache Project'
-  >>> admin_browser.getControl('Project Group Summary').value = (
-  ...     'The Apache Project')
-  >>> admin_browser.getControl('Description').value = 'The Apache Project'
-  >>> admin_browser.getControl('Homepage URL').value = 'www.apache.org'
+  >>> admin_browser.getControl('Name', index=0).value = 'kde'
+  >>> admin_browser.getControl('Display Name').value = 'K Desktop Environment'
+  >>> admin_browser.getControl('Title').value = 'K Desktop Environment'
+  >>> admin_browser.getControl('Project Group Summary').value = 'KDE'
+  >>> admin_browser.getControl('Description').value = 'K Desktop Environment'
+  >>> admin_browser.getControl('Homepage URL').value = 'www.kde.org'
   >>> admin_browser.getControl('Add').click()
-
   >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
   ...     print message.renderContents()
   There is 1 error.
-  "www.apache.org" is not a valid URI
+  "www.kde.org" is not a valid URI
 
 Testing if the validator is working for the name field.
 
   >>> admin_browser.open('http://launchpad.dev/projectgroups/+new')
-  >>> admin_browser.getControl('Name', index=0).value = 'APACHE'
-  >>> admin_browser.getControl('Display Name').value = 'the Apache Project'
-  >>> admin_browser.getControl('Title').value = 'The Apache Project'
-  >>> admin_browser.getControl('Project Group Summary').value = (
-  ...     'The Apache Project')
-  >>> admin_browser.getControl('Description').value = 'The Apache Project'
-  >>> admin_browser.getControl('Homepage URL').value = 'http://www.apache.org'
+  >>> admin_browser.getControl('Name', index=0).value = 'kde!'
+  >>> admin_browser.getControl('Display Name').value = 'K Desktop Environment'
+  >>> admin_browser.getControl('Title').value = 'K Desktop Environment'
+  >>> admin_browser.getControl('Project Group Summary').value = 'KDE'
+  >>> admin_browser.getControl('Description').value = 'K Desktop Environment'
+  >>> admin_browser.getControl('Homepage URL').value = 'http://kde.org/'
   >>> admin_browser.getControl('Add').click()
   >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
   ...     print message.renderContents()
   There is 1 error.
-  Invalid name 'APACHE'. Names must...
-
-  >>> admin_browser.getControl('Name', index=0).value = 'ubuntu'
-  >>> admin_browser.getControl('Add').click()
-  >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
-  ...     print message.renderContents()
-  There is 1 error.
-  ubuntu is already in use by another project
-
-Now we add a new project.
+  Invalid name 'kde!'. Names must...
 
   >>> admin_browser.getControl('Name', index=0).value = 'apache'
   >>> admin_browser.getControl('Add').click()
+  >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
+  ...     print message.renderContents()
+  There is 1 error.
+  apache is already in use by another project
+
+Now we add a new project.
+
+  >>> admin_browser.getControl('Name', index=0).value = 'kde'
+  >>> admin_browser.getControl('Add').click()
   >>> admin_browser.url
-  'http://launchpad.dev/apache'
+  'http://launchpad.dev/kde'
 
   >>> anon_browser.open(admin_browser.url)
   >>> print anon_browser.title
-  The Apache Project in Launchpad
+  K Desktop Environment in Launchpad

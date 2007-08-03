@@ -46,7 +46,8 @@ def nl_phrase_search(phrase, table, constraints='',
     according to the full text indexation rules (lowercasing and stemming).
 
     Each term that is present in more than 50% of the candidate rows is also
-    eliminated from the query.
+    eliminated from the query. That term eliminatation is only done when there
+    are 5 candidate rows or more.
 
     The remaining terms are then ORed together. One should use the rank() or
     rank_cd() function to order the results from running that query. This will
@@ -71,7 +72,7 @@ def nl_phrase_search(phrase, table, constraints='',
     total = table.select(
         constraints, clauseTables=extra_constraints_tables).count()
     term_candidates = nl_term_candidates(phrase)
-    if total == 0:
+    if total < 5:
         return '|'.join(term_candidates)
     for term in term_candidates:
         where_clause = []

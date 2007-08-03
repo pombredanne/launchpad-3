@@ -64,7 +64,7 @@ We now subscribe Sample Person to the Extension Manager Upgrades spec
 and check the list of interested people:
 
   >>> essential=False
-  >>> ext_spec.subscribe(sampleperson, essential)
+  >>> ext_spec.subscribe(sampleperson, sampleperson, essential)
   <SpecificationSubscription at ...>
   >>> view = getView(ubz, '+temp-meeting-export', request)
   >>> view.initialize()

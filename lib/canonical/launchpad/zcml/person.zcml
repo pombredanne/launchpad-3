@@ -33,7 +33,12 @@
     <allow interface="canonical.launchpad.interfaces.ICalendarOwner" />
     <require
       permission="launchpad.Edit"
-      set_schema="canonical.launchpad.interfaces.IPerson" 
+      set_schema="canonical.launchpad.interfaces.IPerson"
+      />
+    <require
+      permission="launchpad.Edit"
+      attributes="acceptInvitationToBeMemberOf declineInvitationToBeMemberOf
+                  renewTeamMembership"
       />
   </content>
 
@@ -197,6 +202,22 @@
 
   <browser:page
     for="canonical.launchpad.interfaces.IPerson"
+    name="+projects"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonRelatedProjectsView"
+    template="../templates/person-projects.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
+    name="+portlet-related-projects"
+    permission="zope.Public"
+    class="canonical.launchpad.browser.PersonRelatedProjectsView"
+    template="../templates/person-portlet-related-projects.pt"
+    />
+
+  <browser:page
+    for="canonical.launchpad.interfaces.IPerson"
     name="+table-specworkload"
     permission="zope.Public"
     class="canonical.launchpad.browser.PersonSpecWorkLoadView"
@@ -251,38 +272,38 @@
     attribute="__call__"
     />
 
-  <browser:generalform
+  <browser:page
     name="+bugs"
     for="canonical.launchpad.interfaces.IPerson"
-    schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
     facet="bugs"
     class="canonical.launchpad.browser.PersonRelatedBugsView"
-    fields="status importance assignee milestone
-            omit_dupes has_patch component has_no_package"
     permission="zope.Public"
     template="../templates/buglisting-embedded-advanced-search.pt"
     />
 
-  <browser:generalform
+  <browser:page
     name="+assignedbugs"
     for="canonical.launchpad.interfaces.IPerson"
-    schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
     facet="bugs"
     class="canonical.launchpad.browser.PersonAssignedBugTaskSearchListingView"
-    fields="status importance assignee milestone
-            omit_dupes has_patch component has_no_package"
     permission="zope.Public"
     template="../templates/buglisting-embedded-advanced-search.pt"
     />
 
-  <browser:generalform
+  <browser:page
+    name="+commentedbugs"
+    for="canonical.launchpad.interfaces.IPerson"
+    facet="bugs"
+    class="canonical.launchpad.browser.PersonCommentedBugTaskSearchListingView"
+    permission="zope.Public"
+    template="../templates/buglisting-embedded-advanced-search.pt"
+    />
+
+  <browser:page
     name="+packagebugs-search"
     for="canonical.launchpad.interfaces.IPerson"
-    schema="canonical.launchpad.interfaces.IBugTaskSearch"
     facet="bugs"
     class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
-    fields="status importance assignee milestone
-            omit_dupes has_patch component has_no_package"
     permission="zope.Public"
     template="../templates/person-packagebugs-search.pt" 
     />
@@ -291,37 +312,29 @@
   figure out what the "current package" is. This information is stored
   in the URL rather than the context, to avoid a complex URL scheme.
   -->
-  <browser:generalform
+  <browser:page
     name="+packagebugs"
     for="canonical.launchpad.interfaces.IPerson"
-    schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
-    fields="distribution sourcepackagename"
     facet="bugs"
     class="canonical.launchpad.browser.BugContactPackageBugsSearchListingView"
     permission="zope.Public"
     template="../templates/person-packagebugs-overview.pt" 
     />
 
-  <browser:generalform
+  <browser:page
     name="+reportedbugs"
     for="canonical.launchpad.interfaces.IPerson"
-    schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
     facet="bugs"
     class="canonical.launchpad.browser.ReportedBugTaskSearchListingView"
-    fields="status importance assignee milestone bug_reporter
-            omit_dupes has_patch component has_no_package"
     permission="zope.Public"
     template="../templates/buglisting-embedded-advanced-search.pt"
     />
 
-  <browser:generalform
+  <browser:page
     name="+subscribedbugs"
     for="canonical.launchpad.interfaces.IPerson"
-    schema="canonical.launchpad.interfaces.IPersonBugTaskSearch"
     facet="bugs"
     class="canonical.launchpad.browser.SubscribedBugTaskSearchListingView"
-    fields="status importance assignee milestone bug_reporter
-            omit_dupes has_patch component has_no_package"
     permission="zope.Public"
     template="../templates/buglisting-embedded-advanced-search.pt"
     />
@@ -465,6 +478,14 @@
     name="+editemail"
     template="../templates/team-editemail.pt"
     />
+    
+  <browser:page
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    class="canonical.launchpad.browser.PersonLanguagesView"
+    name="+editlanguages"
+    template="../templates/person-editlanguages.pt"
+    />
 
   <browser:page
     name="+edit"
@@ -532,8 +553,14 @@
     name="+members"
     for="canonical.launchpad.interfaces.ITeam"
     permission="zope.Public"
-    class="canonical.launchpad.browser.TeamMembersView"
     template="../templates/team-members.pt"
+    />
+
+  <browser:page
+    name="+invitations"
+    for="canonical.launchpad.interfaces.ITeam"
+    permission="launchpad.Edit"
+    template="../templates/team-invitations.pt"
     />
 
   <browser:page
@@ -605,23 +632,13 @@
     template="../templates/people-newperson.pt" 
     />
 
-  <browser:addform
+  <browser:page
     name="+newteam"
     for="canonical.launchpad.interfaces.IPersonSet"
-    schema="canonical.launchpad.interfaces.ITeamCreation"
-    fields="name displayname contactemail teamdescription
-            defaultmembershipperiod defaultrenewalperiod subscriptionpolicy"
     class="canonical.launchpad.browser.TeamAddView"
     permission="launchpad.AnyPerson"
     template="../templates/people-newteam.pt"
-    >
-    <browser:widget
-      field="teamdescription"
-      class="zope.app.form.browser.TextAreaWidget"
-      displayWidth="30"
-      height="10" 
-      />
-  </browser:addform>
+    />
 
   <browser:pages
     for="canonical.launchpad.interfaces.IPersonSet"

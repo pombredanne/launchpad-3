@@ -1,5 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd
 
+"""Person-related wiew classes."""
+
 __metaclass__ = type
 
 __all__ = [
@@ -21,6 +23,7 @@ __all__ = [
     'PersonChangePasswordView',
     'PersonClaimView',
     'PersonCodeOfConductEditView',
+    'PersonCommentedBugTaskSearchListingView',
     'PersonDynMenu',
     'PersonEditEmailsView',
     'PersonEditHomePageView',
@@ -39,7 +42,6 @@ __all__ = [
     'BugContactPackageBugsSearchListingView',
     'SubscribedBugTaskSearchListingView',
     'PersonRdfView',
-    'PersonView',
     'PersonTranslationView',
     'PersonFacets',
     'PersonGPGView',
@@ -50,6 +52,7 @@ __all__ = [
     'PersonRdfView',
     'PersonRegisteredBranchesView',
     'PersonRelatedBugsView',
+    'PersonRelatedProjectsView',
     'PersonSearchQuestionsView',
     'PersonSetContextMenu',
     'PersonSetFacets',
@@ -86,8 +89,10 @@ __all__ = [
 
 import cgi
 import copy
-import urllib
+from datetime import datetime, timedelta
 from operator import attrgetter, itemgetter
+import pytz
+import urllib
 
 from zope.app.form.browser import SelectWidget, TextAreaWidget
 from zope.app.form.browser.add import AddView
@@ -95,16 +100,15 @@ from zope.app.form.utility import setUpWidgets
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.interface import implements
 from zope.component import getUtility
+from zope.publisher.interfaces.browser import IBrowserPublisher
 from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.searchbuilder import any, NULL
 from canonical.lp.dbschema import (
-    LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    TeamSubscriptionPolicy, SpecificationFilter, QuestionParticipation,
-    PersonCreationRationale, BugTaskStatus)
+    SpecificationFilter, QuestionParticipation, BugTaskStatus)
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
@@ -118,7 +122,10 @@ from canonical.launchpad.interfaces import (
     NotFoundError, UNRESOLVED_BUGTASK_STATUSES, IPersonChangePassword,
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
-    BugTaskSearchParams, IPersonBugTaskSearch, IBranchSet)
+    BugTaskSearchParams, IBranchSet, ITeamMembership,
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, LoginTokenType, SSHKeyType,
+    EmailAddressStatus, TeamMembershipStatus, TeamSubscriptionPolicy,
+    PersonCreationRationale, TeamMembershipRenewalPolicy)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -135,13 +142,15 @@ from canonical.launchpad.helpers import obfuscateEmail, convertToHtmlCode
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.name import valid_name
 
+from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.launchpad.webapp import (
-    StandardLaunchpadFacets, Link, canonical_url, ContextMenu, ApplicationMenu,
-    enabled_with_permission, Navigation, stepto, stepthrough, smartquote,
-    LaunchpadEditFormView, LaunchpadFormView, action, custom_widget)
+    StandardLaunchpadFacets, Link, canonical_url, ContextMenu,
+    ApplicationMenu, enabled_with_permission, Navigation, stepto,
+    stepthrough, smartquote, LaunchpadEditFormView, LaunchpadFormView,
+    action, custom_widget)
 
 from canonical.launchpad import _
 
@@ -166,7 +175,7 @@ class BranchTraversalMixin:
 
     @stepto('+branch')
     def redirect_branch(self):
-        """Redirect to canonical_url for branch which is ~user/product/name."""
+        """Redirect to canonical_url, which is ~user/product/name."""
         stepstogo = self.request.stepstogo
         product_name = stepstogo.consume()
         branch_name = stepstogo.consume()
@@ -193,6 +202,17 @@ class PersonNavigation(CalendarTraversalMixin,
     def breadcrumb(self):
         return self.context.displayname
 
+    @stepthrough('+expiringmembership')
+    def traverse_expiring_membership(self, name):
+        # Return the found membership regardless of its status as we know
+        # TeamMembershipSelfRenewalView will tell users why the memembership
+        # can't be renewed when necessary.
+        membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.context, getUtility(IPersonSet).getByName(name))
+        if membership is None:
+            return None
+        return TeamMembershipSelfRenewalView(membership, self.request)
+
 
 class PersonDynMenu(DynMenu):
 
@@ -214,9 +234,7 @@ class PersonDynMenu(DynMenu):
         yield self.makeLink('See all projects...', target='/products')
 
 
-class TeamNavigation(CalendarTraversalMixin,
-                     BranchTraversalMixin,
-                     Navigation):
+class TeamNavigation(PersonNavigation):
 
     usedfor = ITeam
 
@@ -227,6 +245,17 @@ class TeamNavigation(CalendarTraversalMixin,
     def traverse_poll(self, name):
         return getUtility(IPollSet).getByTeamAndName(self.context, name)
 
+    @stepthrough('+invitation')
+    def traverse_invitation(self, name):
+        # Return the found membership regardless of its status as we know
+        # TeamInvitationView can handle memberships in statuses other than
+        # INVITED.
+        membership = getUtility(ITeamMembershipSet).getByPersonAndTeam(
+            self.context, getUtility(IPersonSet).getByName(name))
+        if membership is None:
+            return None
+        return TeamInvitationView(membership, self.request)
+
     @stepthrough('+member')
     def traverse_member(self, name):
         person = getUtility(IPersonSet).getByName(name)
@@ -234,6 +263,139 @@ class TeamNavigation(CalendarTraversalMixin,
             return None
         return getUtility(ITeamMembershipSet).getByPersonAndTeam(
             person, self.context)
+
+
+class TeamMembershipSelfRenewalView(LaunchpadFormView):
+
+    implements(IBrowserPublisher)
+
+    schema = ITeamMembership
+    field_names = []
+    label = 'Renew team membership'
+    template = ViewPageTemplateFile(
+        '../templates/teammembership-self-renewal.pt')
+
+    def __init__(self, context, request):
+        # Only the member himself or admins of the member (in case it's a
+        # team) can see the page in which they renew memberships that are
+        # about to expire.
+        if not check_permission('launchpad.Edit', context.person):
+            raise Unauthorized(
+                "Only the member himself can renew his memberships.")
+        LaunchpadFormView.__init__(self, context, request)
+
+    def browserDefault(self, request):
+        return self, ()
+
+    def getReasonForDeniedRenewal(self):
+        """Return text describing why the membership can't be renewed."""
+        context = self.context
+        ondemand = TeamMembershipRenewalPolicy.ONDEMAND
+        admin = TeamMembershipStatus.ADMIN
+        approved = TeamMembershipStatus.APPROVED
+        date_limit = datetime.now(pytz.timezone('UTC')) - timedelta(
+            days=DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
+        if context.status not in (admin, approved):
+            text = "it is not active."
+        elif context.team.renewal_policy != ondemand:
+            text = ('<a href="%s">%s</a> is not a team which accepts its '
+                    'members to renew their own memberships.'
+                    % (canonical_url(context.team),
+                       context.team.unique_displayname))
+        elif context.dateexpires is None or context.dateexpires > date_limit:
+            if context.person.isTeam():
+                link_text = "Somebody else has already renewed it."
+            else:
+                link_text = (
+                    "You or one of the team administrators has already "
+                    "renewed it.")
+            text = ('it is not set to expire in %d days or less. '
+                    '<a href="%s/+members">%s</a>'
+                    % (DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT,
+                       canonical_url(context.team), link_text))
+        else:
+            raise AssertionError('This membership can be renewed!')
+        return text
+
+    @property
+    def time_before_expiration(self):
+        return self.context.dateexpires - datetime.now(pytz.timezone('UTC'))
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context.person)
+
+    @action(_("Renew"), name="renew")
+    def renew_action(self, action, data):
+        member = self.context.person
+        member.renewTeamMembership(self.context.team)
+        self.request.response.addInfoNotification(
+            _("Membership renewed until %(date)s."),
+            date=self.context.dateexpires.strftime('%Y-%m-%d'))
+
+    @action(_("Let it Expire"), name="nothing")
+    def do_nothing_action(self, action, data):
+        # Redirect back and wait for the membership to expire automatically.
+        pass
+
+
+class TeamInvitationView(LaunchpadFormView):
+
+    implements(IBrowserPublisher)
+
+    schema = ITeamMembership
+    label = 'Team membership invitation'
+    field_names = ['reviewercomment']
+    custom_widget('reviewercomment', TextAreaWidget, height=5, width=60)
+    template = ViewPageTemplateFile(
+        '../templates/teammembership-invitation.pt')
+
+    def __init__(self, context, request):
+        # Only admins of the invited team can see the page in which they
+        # approve/decline invitations.
+        if not check_permission('launchpad.Edit', context.person):
+            raise Unauthorized(
+                "Only team administrators can approve/decline invitations "
+                "sent to this team.")
+        LaunchpadFormView.__init__(self, context, request)
+
+    def browserDefault(self, request):
+        return self, ()
+
+    @property
+    def next_url(self):
+        return canonical_url(self.context.person)
+
+    @action(_("Accept"), name="accept")
+    def accept_action(self, action, data):
+        if self.context.status != TeamMembershipStatus.INVITED:
+            self.request.response.addInfoNotification(
+                _("This invitation has already been processed."))
+            return
+        member = self.context.person
+        member.acceptInvitationToBeMemberOf(
+            self.context.team, data['reviewercomment'])
+        self.request.response.addInfoNotification(
+            _("This team is now a member of %(team)s"),
+            team=self.context.team.browsername)
+
+    @action(_("Decline"), name="decline")
+    def decline_action(self, action, data):
+        if self.context.status != TeamMembershipStatus.INVITED:
+            self.request.response.addInfoNotification(
+                _("This invitation has already been processed."))
+            return
+        member = self.context.person
+        member.declineInvitationToBeMemberOf(
+            self.context.team, data['reviewercomment'])
+        self.request.response.addInfoNotification(
+            _("Declined the invitation to join %(team)s"),
+            team=self.context.team.browsername)
+
+    @action(_("Cancel"), name="cancel")
+    def cancel_action(self, action, data):
+        # Simply redirect back.
+        pass
 
 
 class PersonSetNavigation(Navigation):
@@ -279,7 +441,7 @@ class PersonSetFacets(StandardLaunchpadFacets):
 
     usedfor = IPersonSet
 
-    enable_only = ['overview',]
+    enable_only = ['overview']
 
 
 class PersonSetContextMenu(ContextMenu):
@@ -372,9 +534,9 @@ class PersonFacets(StandardLaunchpadFacets):
 
     def bounties(self):
         text = 'Bounties'
+        browsername = self.context.browsername
         summary = (
-            'Bounty offers that %s is involved with' % self.context.browsername
-            )
+            'Bounty offers that %s is involved with' % browsername)
         return Link('+bounties', text, summary)
 
     def branches(self):
@@ -434,8 +596,8 @@ class PersonBugsMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'bugs'
-    links = ['assignedbugs', 'reportedbugs', 'subscribedbugs', 'relatedbugs',
-             'softwarebugs', 'mentoring']
+    links = ['assignedbugs', 'commentedbugs', 'reportedbugs', 'subscribedbugs',
+             'relatedbugs', 'softwarebugs', 'mentoring']
 
     def relatedbugs(self):
         text = 'List related bugs'
@@ -461,6 +623,10 @@ class PersonBugsMenu(ApplicationMenu):
         text = 'Mentoring offered'
         enabled = self.context.mentoring_offers
         return Link('+mentoring', text, enabled=enabled, icon='info')
+
+    def commentedbugs(self):
+        text = 'List commented bugs'
+        return Link('+commentedbugs', text, icon='bugs')
 
 
 class PersonSpecsMenu(ApplicationMenu):
@@ -559,6 +725,12 @@ class CommonMenuLinks:
         summary = 'Packages assigned to %s' % self.context.browsername
         return Link(target, text, summary, icon='packages')
 
+    def related_projects(self):
+        target = '+projects'
+        text = 'List related projects'
+        summary = 'Projects %s is involved with' % self.context.browsername
+        return Link(target, text, summary, icon='packages')
+
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
@@ -569,7 +741,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys',
              'memberships', 'mentoringoffers',
-             'codesofconduct', 'karma', 'common_packages', 'administer',]
+             'codesofconduct', 'karma', 'common_packages', 'related_projects',
+             'administer']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -674,10 +847,10 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
     usedfor = ITeam
     facet = 'overview'
     links = ['edit', 'branding', 'common_edithomepage', 'members',
-             'add_member', 'memberships', 'mugshots', 
-             'editemail', 'polls', 'add_poll',
+             'add_member', 'memberships', 'received_invitations', 'mugshots',
+             'editemail', 'editlanguages', 'polls', 'add_poll',
              'joinleave', 'mentorships', 'reassign', 'common_packages',
-             ]
+             'related_projects']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -703,6 +876,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
         target = '+members'
         text = 'Show all members'
         return Link(target, text, icon='people')
+
+    @enabled_with_permission('launchpad.Edit')
+    def received_invitations(self):
+        target = '+invitations'
+        text = 'Show received invitations'
+        return Link(target, text, icon='info')
 
     @enabled_with_permission('launchpad.Edit')
     def add_member(self):
@@ -748,6 +927,12 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
             self.context.browsername)
         return Link(target, text, summary, icon='mail')
 
+    @enabled_with_permission('launchpad.Edit')
+    def editlanguages(self):
+        target = '+editlanguages'
+        text = 'Set preferred languages'
+        return Link(target, text, icon='edit')
+        
     def joinleave(self):
         team = self.context
         enabled = True
@@ -858,14 +1043,15 @@ class PersonAddView(LaunchpadFormView):
         emailaddress = data['emailaddress']
         displayname = data['displayname']
         creation_comment = data['creation_comment']
-        person, email = getUtility(IPersonSet).createPersonAndEmail(
+        person, ignored = getUtility(IPersonSet).createPersonAndEmail(
             emailaddress, PersonCreationRationale.USER_CREATED,
             displayname=displayname, comment=creation_comment,
             registrant=self.user)
         self.next_url = canonical_url(person)
         logintokenset = getUtility(ILoginTokenSet)
         token = logintokenset.new(
-            requester=self.user, requesteremail=self.user.preferredemail.email,
+            requester=self.user,
+            requesteremail=self.user.preferredemail.email,
             email=emailaddress, tokentype=LoginTokenType.NEWPROFILE)
         token.sendProfileCreatedEmail(person, creation_comment)
 
@@ -887,18 +1073,20 @@ class PersonClaimView(LaunchpadFormView):
         if email is None:
             # Email not registered in launchpad, ask the user to try another
             # one.
-            error = ("We couldn't find this email address. Please try another "
-                     "one that could possibly be associated with this profile. "
-                     "Note that this profile's name (%s) was generated based "
-                     "on the email address it's associated with."
+            error = ("We couldn't find this email address. Please try "
+                     "another one that could possibly be associated with "
+                     "this profile. Note that this profile's name (%s) was "
+                     "generated based on the email address it's "
+                     "associated with."
                      % self.context.name)
         elif email.person != self.context:
             if email.person.is_valid_person:
                 error = ("This email address is associated with yet another "
                          "Launchpad profile, which you seem to have used at "
                          "some point. If that's the case, you can "
-                         '<a href="/people/+requestmerge?field.dupeaccount=%s">'
-                         "combine this profile with the other one</a> (you'll "
+                         '<a href="/people/+requestmerge'
+                         '?field.dupeaccount=%s">combine '
+                         "this profile with the other one</a> (you'll "
                          "have to log in with the other profile first, "
                          "though). If that's not the case, please try with a "
                          "different email address."
@@ -906,11 +1094,11 @@ class PersonClaimView(LaunchpadFormView):
             else:
                 # There seems to be another unvalidated profile for you!
                 error = ("Although this email address is not associated with "
-                         "this profile, it's associated with yet another one. "
-                         'You can <a href="%s/+claim">claim that other '
+                         "this profile, it's associated with yet another "
+                         'one. You can <a href="%s/+claim">claim that other '
                          'profile</a> and then later '
-                         '<a href="/people/+requestmerge">combine</a> both of '
-                         'them into a single one.'
+                         '<a href="/people/+requestmerge">combine</a> both '
+                         'of them into a single one.'
                          % canonical_url(email.person))
         else:
             # Yay! You got the right email this time.
@@ -1067,26 +1255,21 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
     columns_to_show = ["id", "summary", "importance", "status"]
 
-    def initialize(self):
-        # Set schema here to avoid ZCML magic overriding it.
-        self.schema = IPersonBugTaskSearch
-        BugTaskSearchListingView.initialize(self)
-
     @property
     def current_package(self):
         """Get the package whose bugs are currently being searched."""
         if not (
-            self.distribution_widget.hasInput() and
-            self.distribution_widget.getInputValue()):
+            self.widgets['distribution'].hasInput() and
+            self.widgets['distribution'].getInputValue()):
             raise UnexpectedFormData("A distribution is required")
         if not (
-            self.sourcepackagename_widget.hasInput() and
-            self.sourcepackagename_widget.getInputValue()):
+            self.widgets['sourcepackagename'].hasInput() and
+            self.widgets['sourcepackagename'].getInputValue()):
             raise UnexpectedFormData("A sourcepackagename is required")
 
-        distribution = self.distribution_widget.getInputValue()
+        distribution = self.widgets['distribution'].getInputValue()
         return distribution.getSourcePackage(
-            self.sourcepackagename_widget.getInputValue())
+            self.widgets['sourcepackagename'].getInputValue())
 
     def search(self, searchtext=None):
         distrosourcepackage = self.current_package
@@ -1094,7 +1277,7 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
             self, searchtext=searchtext, context=distrosourcepackage)
 
     def getPackageBugCounts(self):
-        """Return a list of dicts used for rendering the package bug counts."""
+        """Return a list of dicts used for rendering package bug counts."""
         L = []
         for package_counts in self.context.getBugContactOpenBugCounts(
             self.user):
@@ -1134,17 +1317,6 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
         return package_links
 
-    def getExtraSearchParams(self):
-        """Overridden from BugTaskSearchListingView, to filter the search."""
-        search_params = {}
-
-        if self.status_widget.hasInput():
-            search_params['status'] = any(*self.status_widget.getInputValue())
-        if self.unassigned_widget.hasInput():
-            search_params['assignee'] = NULL
-
-        return search_params
-
     def getBugContactPackageSearchURL(self, distributionsourcepackage=None,
                                       advanced=False, extra_params=None):
         """Construct a default search URL for a distributionsourcepackage.
@@ -1173,13 +1345,14 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
         query_string = urllib.urlencode(sorted(params.items()), doseq=True)
 
         if advanced:
-            return person_url + '/+packagebugs-search?advanced=1&%s' % query_string
+            return (person_url + '/+packagebugs-search?advanced=1&%s'
+                    % query_string)
         else:
             return person_url + '/+packagebugs-search?%s' % query_string
 
     def getBugContactPackageAdvancedSearchURL(self,
                                               distributionsourcepackage=None):
-        """Construct the advanced search URL for a distributionsourcepackage."""
+        """Build the advanced search URL for a distributionsourcepackage."""
         return self.getBugContactPackageSearchURL(advanced=True)
 
     def getOpenBugsURL(self, distributionsourcepackage):
@@ -1233,7 +1406,8 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 
     # Methods that customize the advanced search form.
     def getAdvancedSearchPageHeading(self):
-        return "Bugs in %s: Advanced Search" % self.current_package.displayname
+        return (
+            "Bugs in %s: Advanced Search" % self.current_package.displayname)
 
     def getAdvancedSearchButtonLabel(self):
         return "Search bugs in %s" % self.current_package.displayname
@@ -1255,8 +1429,10 @@ class PersonRelatedBugsView(BugTaskSearchListingView):
         subscriber_params.subscriber = context
         assignee_params = copy.copy(params)
         owner_params = copy.copy(params)
-        # Only override the assignee and owner if they were not specified
-        # by the user.
+        commenter_params = copy.copy(params)
+
+        # Only override the assignee, commenter and owner if they were not
+        # specified by the user.
         if assignee_params.assignee is None:
             assignee_params.assignee = context
         if owner_params.owner is None:
@@ -1264,8 +1440,11 @@ class PersonRelatedBugsView(BugTaskSearchListingView):
             # bug (but different tasks) being displayed.
             owner_params.owner = context
             owner_params.bug_reporter = context
+        if commenter_params.bug_commenter is None:
+            commenter_params.bug_commenter = context
+
         tasks = self.context.searchTasks(
-            assignee_params, subscriber_params, owner_params)
+            assignee_params, subscriber_params, owner_params, commenter_params)
         return BugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)
@@ -1320,6 +1499,34 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
         return canonical_url(self.context) + "/+assignedbugs"
 
 
+class PersonCommentedBugTaskSearchListingView(BugTaskSearchListingView):
+    """All bugs commented on by a Person."""
+
+    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+
+    def search(self):
+        """Return the open bugs commented on by a person."""
+        return BugTaskSearchListingView.search(
+            self, extra_params={'bug_commenter': self.context})
+
+    def getSearchPageHeading(self):
+        """The header for the search page."""
+        return "Bugs commented on by %s" % self.context.displayname
+
+    def getAdvancedSearchPageHeading(self):
+        """The header for the advanced search page."""
+        return "Bugs commented on by %s: Advanced Search" % (
+            self.context.displayname)
+
+    def getAdvancedSearchButtonLabel(self):
+        """The Search button for the advanced search page."""
+        return "Search bugs commented on by %s" % self.context.displayname
+
+    def getSimpleSearchURL(self):
+        """Return a URL that can be used as an href to the simple search."""
+        return canonical_url(self.context) + "/+commentedbugs"
+
+
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs someone is subscribed to."""
 
@@ -1358,15 +1565,17 @@ class PersonLanguagesView(LaunchpadView):
         return ICountry(self.request, None)
 
     def browserLanguages(self):
-        return IRequestPreferredLanguages(self.request).getPreferredLanguages()
+        return (
+            IRequestPreferredLanguages(self.request).getPreferredLanguages())
 
     def visible_checked_languages(self):
-        return self.user.languages
+        return self.context.languages
 
     def visible_unchecked_languages(self):
         common_languages = getUtility(ILanguageSet).common_languages
-        return sorted(set(common_languages) - set(self.user.languages),
-                      key=lambda x: x.englishname)
+        person_languages = self.context.languages
+        return sorted(set(common_languages) - set(person_languages),
+                      key=attrgetter('englishname'))
 
     def getRedirectionURL(self):
         request = self.request
@@ -1376,6 +1585,11 @@ class PersonLanguagesView(LaunchpadView):
         else:
             return ''
 
+    @property
+    def is_current_user(self):
+        """Return True when the Context is also the User."""
+        return self.user == self.context
+
     def submitLanguages(self):
         '''Process a POST request to the language preference form.
 
@@ -1384,26 +1598,31 @@ class PersonLanguagesView(LaunchpadView):
         '''
 
         all_languages = getUtility(ILanguageSet)
-        old_languages = self.user.languages
+        old_languages = self.context.languages
         new_languages = []
 
         for key in all_languages.keys():
             if self.request.has_key(key) and self.request.get(key) == u'on':
                 new_languages.append(all_languages[key])
 
+        if self.is_current_user:
+            subject = "your"
+        else:
+            subject = "%s's" % self.context.displayname
+
         # Add languages to the user's preferences.
         for language in set(new_languages) - set(old_languages):
-            self.user.addLanguage(language)
+            self.context.addLanguage(language)
             self.request.response.addInfoNotification(
-                "Added %(language)s to your preferred languages." %
-                {'language' : language.englishname})
+                "Added %(language)s to %(subject)s preferred languages." %
+                {'language' : language.englishname, 'subject' : subject})
 
         # Remove languages from the user's preferences.
         for language in set(old_languages) - set(new_languages):
-            self.user.removeLanguage(language)
+            self.context.removeLanguage(language)
             self.request.response.addInfoNotification(
-                "Removed %(language)s from your preferred languages." %
-                {'language' : language.englishname})
+                "Removed %(language)s from %(subject)s preferred languages." %
+                {'language' : language.englishname, 'subject' : subject})
 
         redirection_url = self.request.get('redirection_url')
         if redirection_url:
@@ -1489,7 +1708,7 @@ class PersonView(LaunchpadView):
                 % {'url': url, 'query_string': query_string})
 
     def getBugsInProgress(self):
-        """Return up to 5 bugs assigned to this person that are In Progress."""
+        """Return up to 5 assigned bugs that are In Progress."""
         params = BugTaskSearchParams(
             user=self.user, assignee=self.context, omit_dupes=True,
             status=BugTaskStatus.INPROGRESS, orderby='-date_last_updated')
@@ -1609,6 +1828,35 @@ class PersonView(LaunchpadView):
                 type_name = 'Unknown key type'
             keys.append("%s %s %s" % (type_name, key.keytext, key.comment))
         return "\n".join(keys)
+
+
+class PersonRelatedProjectsView(LaunchpadView):
+
+    # Safety net for the Registry Admins case which is the owner/driver of
+    # lots of projects.
+    max_results_to_display = config.launchpad.default_batch_size
+
+    def _related_projects(self):
+        """Return all projects owned or driven by this person."""
+        return self.context.getOwnedOrDrivenPillars()
+
+    @cachedproperty
+    def relatedProjects(self):
+        """Return projects owned or driven by this person up to the maximum
+        configured."""
+        return list(self._related_projects()[:self.max_results_to_display])
+
+    @cachedproperty
+    def firstFiveRelatedProjects(self):
+        """Return first five projects owned or driven by this person."""
+        return list(self._related_projects()[:5])
+
+    @cachedproperty
+    def related_projects_count(self):
+        return self._related_projects().count()
+
+    def tooManyRelatedProjectsFound(self):
+        return self.related_projects_count > self.max_results_to_display
 
 
 class PersonCodeOfConductEditView(LaunchpadView):
@@ -1877,8 +2125,8 @@ class PersonTranslationView(LaunchpadView):
         #   potemplate.potemplatename
         #   potemplate.productseries
         #   potemplate.productseries.product
-        #   potemplate.distrorelease
-        #   potemplate.distrorelease.distribution
+        #   potemplate.distroseries
+        #   potemplate.distroseries.distribution
         #   potemplate.sourcepackagename
         # However, a list this long may be actually suggesting that
         # displayname be cached in a table field; particularly given the
@@ -1938,8 +2186,8 @@ class PersonGPGView(LaunchpadView):
             IGPGHandler).getURLForKeyInServer(self.fingerprint, public=True)
 
     def form_action(self):
-        permitted_actions = [
-            'claim_gpg', 'deactivate_gpg', 'remove_gpgtoken', 'reactivate_gpg']
+        permitted_actions = ['claim_gpg', 'deactivate_gpg',
+                             'remove_gpgtoken', 'reactivate_gpg']
         if self.request.method != "POST":
             return ''
         action = self.request.form.get('action')
@@ -2053,8 +2301,8 @@ class PersonGPGView(LaunchpadView):
         comments = []
         if len(found) > 0:
             comments.append(
-                'A message has been sent to %s with instructions to reactivate '
-                'these key(s): %s'
+                'A message has been sent to %s with instructions to '
+                'reactivate these key(s): %s'
                 % (self.context.preferredemail.email, ', '.join(found)))
         if len(notfound) > 0:
             if len(notfound) == 1:
@@ -2069,8 +2317,9 @@ class PersonGPGView(LaunchpadView):
                     'Launchpad failed to retrieve these keys from '
                     'the keyserver: %s. Please make sure the keys '
                     'are published in a keyserver (such as '
-                    '<a href="http://pgp.mit.edu">pgp.mit.edu</a>) before '
-                    'trying to reactivate them again.' % (', '.join(notfound)))
+                    '<a href="http://pgp.mit.edu">pgp.mit.edu</a>) '
+                    'before trying to reactivate them '
+                    'again.' % (', '.join(notfound)))
 
         self.info_message = '\n<br>\n'.join(comments)
 
@@ -2339,8 +2588,9 @@ class PersonEditEmailsView:
             owner = email.person
             browsername = cgi.escape(owner.browsername)
             owner_name = urllib.quote(owner.name)
-            merge_url = ('%s/+requestmerge?field.dupeaccount=%s'
-                         % (canonical_url(getUtility(IPersonSet)), owner_name))
+            merge_url = (
+                '%s/+requestmerge?field.dupeaccount=%s'
+                 % (canonical_url(getUtility(IPersonSet)),owner_name))
             self.message = (
                     "The email address '%s' is already registered by "
                     "<a href=\"%s\">%s</a>. If you think that is a "
@@ -2388,7 +2638,8 @@ class PersonEditEmailsView:
                  self.context.name, self.context.id, emailaddress.email)
 
         if emailaddress.status != EmailAddressStatus.VALIDATED:
-            self.message = "%s is already set as your contact address." % email
+            self.message = (
+                "%s is already set as your contact address." % email)
             return
         self.context.setPreferredEmail(emailaddress)
         self.message = "Your contact address has been changed to: %s" % email
@@ -2737,10 +2988,12 @@ class TeamReassignmentView(ObjectReassignmentView):
         # proposed members they'll be made administrators of the team.
         if newOwner not in team.inactivemembers:
             team.addMember(
-                newOwner, reviewer=oldOwner, status=TeamMembershipStatus.ADMIN)
+                newOwner, reviewer=oldOwner,
+                status=TeamMembershipStatus.ADMIN, force_team_add=True)
         if oldOwner not in team.inactivemembers:
             team.addMember(
-                oldOwner, reviewer=oldOwner, status=TeamMembershipStatus.ADMIN)
+                oldOwner, reviewer=oldOwner,
+                status=TeamMembershipStatus.ADMIN, force_team_add=True)
 
 
 class PersonLatestQuestionsView(LaunchpadView):
@@ -2764,13 +3017,13 @@ class PersonSearchQuestionsView(SearchQuestionsView):
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('Questions involving $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('No questions  involving $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
@@ -2782,18 +3035,18 @@ class SearchAnsweredQuestionsView(SearchQuestionsView):
     display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(participation=QuestionParticipation.ANSWERER)
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('Questions answered by $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('No questions answered by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
@@ -2805,41 +3058,41 @@ class SearchAssignedQuestionsView(SearchQuestionsView):
     display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(participation=QuestionParticipation.ASSIGNEE)
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('Questions assigned to $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('No questions assigned to $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
 
 class SearchCommentedQuestionsView(SearchQuestionsView):
-    """View used to search and display questions commented on by an IPerson."""
+    """View used to search and show questions commented on by an IPerson."""
 
     display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(participation=QuestionParticipation.COMMENTER)
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('Questions commented on by $name ',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('No questions commented on by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
@@ -2851,63 +3104,63 @@ class SearchCreatedQuestionsView(SearchQuestionsView):
     display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(participation=QuestionParticipation.OWNER)
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('Questions asked by $name',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('No questions asked by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
 
 
 class SearchNeedAttentionQuestionsView(SearchQuestionsView):
-    """View used to search and display questions needing an IPerson attention."""
+    """View used to search and show questions needing an IPerson attention."""
 
     display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(needs_attention=True)
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _("Questions needing $name's attention",
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _("No questions need $name's attention.",
                  mapping=dict(name=self.context.displayname))
 
 
 class SearchSubscribedQuestionsView(SearchQuestionsView):
-    """View used to search and display questions subscribed to by an IPerson."""
+    """View used to search and show questions subscribed to by an IPerson."""
 
     display_target_column = True
 
     def getDefaultFilter(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return dict(participation=QuestionParticipation.SUBSCRIBER)
 
     @property
     def pageheading(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('Questions $name is subscribed to',
                  mapping=dict(name=self.context.displayname))
 
     @property
     def empty_listing_message(self):
-        """See SearchQuestionsView."""
+        """See `SearchQuestionsView`."""
         return _('No questions subscribed to by $name found with the '
                  'requested statuses.',
                  mapping=dict(name=self.context.displayname))
@@ -2920,9 +3173,9 @@ class PersonAnswerContactForView(LaunchpadView):
 
     @cachedproperty
     def direct_question_targets(self):
-        """List of IQuestionTargets that the context is a direct answer contact.
+        """List of targets that the IPerson is a direct answer contact.
 
-        Sorted alphabetically by title.
+        Return a list of IQuestionTargets sorted alphabetically by title.
         """
         return sorted(
             self.context.getDirectAnswerQuestionTargets(),
@@ -2939,7 +3192,7 @@ class PersonAnswerContactForView(LaunchpadView):
             key=attrgetter('title'))
 
     def showRemoveYourselfLink(self):
-        """The link is only shown when the page is in the user's own profile."""
+        """The link is shown when the page is in the user's own profile."""
         return self.user == self.context
 
 
@@ -2951,17 +3204,19 @@ class PersonAnswersMenu(ApplicationMenu):
              'subscribed', 'answer_contact_for']
 
     def answer_contact_for(self):
-        summary="Projects for which %s is an answer contact for" % (
+        summary = "Projects for which %s is an answer contact for" % (
             self.context.displayname)
         return Link('+answer-contact-for', 'Answer contact for', summary)
 
     def answered(self):
         summary = 'Questions answered by %s' % self.context.displayname
-        return Link('+answeredquestions', 'Answered', summary, icon='question')
+        return Link(
+            '+answeredquestions', 'Answered', summary, icon='question')
 
     def assigned(self):
         summary = 'Questions assigned to %s' % self.context.displayname
-        return Link('+assignedquestions', 'Assigned', summary, icon='question')
+        return Link(
+            '+assignedquestions', 'Assigned', summary, icon='question')
 
     def created(self):
         summary = 'Questions asked by %s' % self.context.displayname
@@ -2970,7 +3225,8 @@ class PersonAnswersMenu(ApplicationMenu):
     def commented(self):
         summary = 'Questions commented on by %s' % (
             self.context.displayname)
-        return Link('+commentedquestions', 'Commented', summary, icon='question')
+        return Link(
+            '+commentedquestions', 'Commented', summary, icon='question')
 
     def need_attention(self):
         summary = 'Questions needing %s attention' % (
@@ -2992,12 +3248,12 @@ class PersonBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesForPerson(
-            self.context, self.selected_lifecycle_status)
+            self.context, self.selected_lifecycle_status, self.user)
 
     @cachedproperty
     def _subscribed_branches(self):
         return set(getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, []))
+            self.context, [], self.user))
 
     def roleForBranch(self, branch):
         person = self.context
@@ -3019,7 +3275,7 @@ class PersonAuthoredBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesAuthoredByPerson(
-            self.context, self.selected_lifecycle_status)
+            self.context, self.selected_lifecycle_status, self.user)
 
 
 class PersonRegisteredBranchesView(BranchListingView):
@@ -3030,7 +3286,7 @@ class PersonRegisteredBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesRegisteredByPerson(
-            self.context, self.selected_lifecycle_status)
+            self.context, self.selected_lifecycle_status, self.user)
 
 
 class PersonSubscribedBranchesView(BranchListingView):
@@ -3041,7 +3297,7 @@ class PersonSubscribedBranchesView(BranchListingView):
 
     def _branches(self):
         return getUtility(IBranchSet).getBranchesSubscribedByPerson(
-            self.context, self.selected_lifecycle_status)
+            self.context, self.selected_lifecycle_status, self.user)
 
 
 class PersonTeamBranchesView(LaunchpadView):
@@ -3050,5 +3306,5 @@ class PersonTeamBranchesView(LaunchpadView):
     @cachedproperty
     def teams_with_branches(self):
         return [team for team in self.context.teams_participated_in
-                if team.branches.count() > 0]
+                if team.branches.count() > 0 and team != self.context]
 

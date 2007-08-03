@@ -4,6 +4,7 @@ __metaclass__ = type
 __all__ = ['emailcommands', 'get_error_message']
 
 import os.path
+import re
 
 from zope.component import getUtility
 from zope.event import notify
@@ -12,18 +13,17 @@ from zope.schema import ValidationError
 
 from canonical.launchpad.vocabularies import ValidPersonOrTeamVocabulary
 from canonical.launchpad.interfaces import (
-        IProduct, IDistribution, IDistroRelease, IPersonSet,
-        IBug, IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
-        IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag, IBugTaskSet,
-        BugTaskSearchParams, IBugTarget, IMessageSet, IDistroBugTask,
-        IDistributionSourcePackage, EmailProcessingError, NotFoundError,
-        CreateBugParams, IPillarNameSet, BugTargetNotFound, IProject,
-        ISourcePackage, IProductSeries)
+        IProduct, IDistribution, IDistroSeries, IBug,
+        IBugEmailCommand, IBugTaskEmailCommand, IBugEditEmailCommand,
+        IBugTaskEditEmailCommand, IBugSet, ICveSet, ILaunchBag,
+        IBugTaskSet, IMessageSet, IDistroBugTask,
+        IDistributionSourcePackage, EmailProcessingError,
+        NotFoundError, CreateBugParams, IPillarNameSet,
+        BugTargetNotFound, IProject, ISourcePackage, IProductSeries)
 from canonical.launchpad.event import (
     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent, SQLObjectCreatedEvent)
 from canonical.launchpad.event.interfaces import (
     ISQLObjectCreatedEvent, ISQLObjectModifiedEvent)
-from canonical.launchpad.searchbuilder import NULL
 
 from canonical.launchpad.webapp.snapshot import Snapshot
 
@@ -439,8 +439,8 @@ class AffectsEmailCommand(EmailCommand):
             $product/$product_series
             $distribution
             $distribution/$source_package
-            $distribution/$distro_release
-            $distribution/$distro_release/$source_package
+            $distribution/$distro_series
+            $distribution/$distro_series/$source_package
         """
         path = cls._normalizePath(path)
         name, rest = cls._splitPath(path)
@@ -475,23 +475,23 @@ class AffectsEmailCommand(EmailCommand):
                 return product_series
         else:
             assert IDistribution.providedBy(pillar)
-            # The next step can be either a distro release or a source
+            # The next step can be either a distro series or a source
             # package.
-            release_name, rest = cls._splitPath(rest)
+            series_name, rest = cls._splitPath(rest)
             try:
-                release = pillar.getRelease(release_name)
+                series = pillar.getSeries(series_name)
             except NotFoundError:
-                package_name = release_name
+                package_name = series_name
             else:
                 if not rest:
-                    return release
+                    return series
                 else:
-                    pillar = release
+                    pillar = series
                     package_name, rest = cls._splitPath(rest)
             package = pillar.getSourcePackage(package_name)
             if package is None:
                 raise BugTargetNotFound(
-                    "%s doesn't have a release or source package named '%s'."
+                    "%s doesn't have a series or source package named '%s'."
                     % (pillar.displayname, package_name))
             elif not rest:
                 return package
@@ -531,51 +531,51 @@ class AffectsEmailCommand(EmailCommand):
 
         return bugtask, event
 
-    def _targetBug(self, user, bug, release, sourcepackagename=None):
-        """Try to target the bug the the given distrorelease.
+    def _targetBug(self, user, bug, series, sourcepackagename=None):
+        """Try to target the bug the the given distroseries.
 
         If the user doesn't have permission to target the bug directly,
         only a nomination will be created.
         """
         product = None
         distribution = None
-        if IDistroRelease.providedBy(release):
-            distribution = release.distribution
+        if IDistroSeries.providedBy(series):
+            distribution = series.distribution
             if sourcepackagename:
                 general_target = distribution.getSourcePackage(
                     sourcepackagename)
             else:
                 general_target = distribution
         else:
-            assert IProductSeries.providedBy(release), (
-                "Unknown release target: %r" % release)
+            assert IProductSeries.providedBy(series), (
+                "Unknown series target: %r" % series)
             assert sourcepackagename is None, (
                 "A product series can't have a source package.")
-            product = release.product
+            product = series.product
             general_target = product
         general_task = bug.getBugTask(general_target)
         if general_task is None:
-            # A release task has to have a corresponding
+            # A series task has to have a corresponding
             # distribution/product task.
             general_task = getUtility(IBugTaskSet).createTask(
                 bug, user, distribution=distribution,
                 product=product, sourcepackagename=sourcepackagename)
-        if not bug.canBeNominatedFor(release):
+        if not bug.canBeNominatedFor(series):
             # A nomination has already been created.
-            nomination = bug.getNominationFor(release)
-            # Automatically approve an existing nomination if a release
+            nomination = bug.getNominationFor(series)
+            # Automatically approve an existing nomination if a series
             # manager targets it.
             if not nomination.isApproved() and nomination.canApprove(user):
                 nomination.approve(user)
         else:
-            nomination = bug.addNomination(target=release, owner=user)
+            nomination = bug.addNomination(target=series, owner=user)
 
         if nomination.isApproved():
             if sourcepackagename:
                 return bug.getBugTask(
-                    release.getSourcePackage(sourcepackagename))
+                    series.getSourcePackage(sourcepackagename))
             else:
-                return bug.getBugTask(release)
+                return bug.getBugTask(series)
         else:
             # We can't return a nomination, so return the
             # distribution/product bugtask instead.
@@ -593,11 +593,11 @@ class AffectsEmailCommand(EmailCommand):
             return self._targetBug(user, bug, bug_target)
         elif IDistribution.providedBy(bug_target):
             return bugtaskset.createTask(bug, user, distribution=bug_target)
-        elif IDistroRelease.providedBy(bug_target):
+        elif IDistroSeries.providedBy(bug_target):
             return self._targetBug(user, bug, bug_target)
         elif ISourcePackage.providedBy(bug_target):
             return self._targetBug(
-                user, bug, bug_target.distrorelease,
+                user, bug, bug_target.distroseries,
                 bug_target.sourcepackagename)
         elif IDistributionSourcePackage.providedBy(bug_target):
             return bugtaskset.createTask(
@@ -684,7 +684,15 @@ class StatusEmailCommand(DBSchemaEditEmailCommand):
 
     def setAttributeValue(self, context, attr_name, attr_value):
         """See EmailCommand."""
-        context.transitionToStatus(attr_value)
+        user = getUtility(ILaunchBag).user
+
+        if not context.canTransitionToStatus(attr_value, user):
+            raise EmailProcessingError(
+                'The status cannot be changed to %s because you are not '
+                'the registrant or a bug contact for %s.' % (
+                    attr_value.name.lower(), context.pillar.displayname))
+
+        context.transitionToStatus(attr_value, user)
 
 
 class ImportanceEmailCommand(DBSchemaEditEmailCommand):
@@ -699,6 +707,56 @@ class ReplacedByImportanceCommand(EmailCommand):
     def execute(self, context, current_event):
         raise EmailProcessingError(
                 get_error_message('bug-importance.txt', argument=self.name))
+
+
+class TagEmailCommand(EmailCommand):
+    """Assigns a tag to or removes a tag from bug."""
+
+    implements(IBugEditEmailCommand)
+
+    def execute(self, bug, current_event):
+        """See `IEmailCommand`."""
+        string_args = list(self.string_args)
+        # Bug.tags returns a Zope List, which does not support Python list
+        # operations so we need to convert it.
+        tags = list(bug.tags)
+
+        # XXX: DaveMurphy 2007-07-11, in the following loop we process each
+        # tag in turn. Each tag that is either invalid or unassigned will
+        # result in a mail to the submitter. This may result in several mails
+        # for a single command. This will need to be addressed if that becomes
+        # a problem.
+        
+        for arg in string_args:
+            # Are we adding or removing a tag?
+            if arg.startswith('-'):
+                remove = True
+                tag = arg[1:]
+            else:
+                remove = False
+                tag = arg
+            # Tag must contain only alphanumeric characters
+            if re.search('[^a-zA-Z0-9]', tag):
+                raise EmailProcessingError(
+                    get_error_message('invalid-tag.txt', tag=tag))
+            if remove:
+                try:
+                    tags.remove(tag)
+                except ValueError:
+                    raise EmailProcessingError(
+                        get_error_message('unassigned-tag.txt', tag=tag))
+            else:
+                tags.append(arg)
+
+        # Duplicates are dealt with when the tags are stored in the DB (which
+        # incidentally uses a set to achieve this). Since the code already 
+        # exists we don't duplicate it here.
+
+        # Bug.tags expects to be given a Python list, so there is no need to
+        # convert it back.
+        bug.tags = tags
+
+        return bug, current_event
 
 
 class NoSuchCommand(KeyError):
@@ -723,6 +781,7 @@ class EmailCommands:
         'importance': ImportanceEmailCommand,
         'severity': ReplacedByImportanceCommand,
         'priority': ReplacedByImportanceCommand,
+        'tag': TagEmailCommand,
     }
 
     def names(self):

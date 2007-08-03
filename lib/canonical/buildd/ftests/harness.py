@@ -28,8 +28,16 @@ class BuilddSlaveTestSetup(TacTestSetup):
 
     >>> BuilddSlaveTestSetup().setUp()
     >>> s = xmlrpclib.Server('http://localhost:8221/rpc/')
+
     >>> s.echo('Hello World')
     ['Hello World']
+
+    >>> s.info()
+    ['1.0', 'i386', ['debian']]
+
+    >>> s.status()
+    ['BuilderStatus.IDLE', '']
+
     >>> BuilddSlaveTestSetup().tearDown()
     """
     def setUpRoot(self):
@@ -49,7 +57,8 @@ class BuilddSlaveTestSetup(TacTestSetup):
     def tearDown(self):
         """Tear down the system normally and additionaly remove the root."""
         TacTestSetup.tearDown(self)
-        shutil.rmtree(self.root)
+        if os.path.isdir(self.root):
+            shutil.rmtree(self.root)
 
     @property
     def root(self):

@@ -150,7 +150,7 @@ class IBug(IMessageTarget, ICanBeMentored):
     initial_message = Attribute(
         "The message that was specified when creating the bug")
     bugtasks = Attribute('BugTasks on this bug, sorted upstream, then '
-        'ubuntu, then other distroreleases.')
+        'ubuntu, then other distroseriess.')
     affected_pillars = Attribute(
         'The "pillars", products or distributions, affected by this bug.')
     productinfestations = Attribute('List of product release infestations.')
@@ -282,7 +282,7 @@ class IBug(IMessageTarget, ICanBeMentored):
         :is_patch: A boolean.
         """
 
-    def linkCVE(cve, user=None):
+    def linkCVE(cve, user):
         """Ensure that this CVE is linked to this bug."""
 
     def unlinkCVE(cve, user=None):
@@ -290,9 +290,11 @@ class IBug(IMessageTarget, ICanBeMentored):
         removed.
         """
 
-    def findCvesInText(text):
+    def findCvesInText(text, user):
         """Find any CVE references in the given text, make sure they exist
         in the database, and are linked to this bug.
+
+        The user is the one linking to the CVE.
         """
 
     def getMessageChunks():
@@ -300,14 +302,14 @@ class IBug(IMessageTarget, ICanBeMentored):
 
     def getNullBugTask(product=None, productseries=None,
                     sourcepackagename=None, distribution=None,
-                    distrorelease=None):
+                    distroseries=None):
         """Create an INullBugTask and return it for the given parameters."""
 
     def addNomination(owner, target):
-        """Nominate a bug for an IDistroRelease or IProductSeries.
+        """Nominate a bug for an IDistroSeries or IProductSeries.
 
         :owner: An IPerson.
-        :target: An IDistroRelease or IProductSeries.
+        :target: An IDistroSeries or IProductSeries.
 
         The nomination will be automatically approved, if the user has
         permission to approve it.
@@ -319,7 +321,7 @@ class IBug(IMessageTarget, ICanBeMentored):
     def canBeNominatedFor(nomination_target):
         """Can this bug nominated for this target?
 
-        :nomination_target: An IDistroRelease or IProductSeries.
+        :nomination_target: An IDistroSeries or IProductSeries.
 
         Returns True or False.
         """
@@ -329,13 +331,13 @@ class IBug(IMessageTarget, ICanBeMentored):
 
         If no nomination is found, a NotFoundError is raised.
 
-        :nomination_target: An IDistroRelease or IProductSeries.
+        :nomination_target: An IDistroSeries or IProductSeries.
         """
 
     def getNominations(target=None):
         """Return a list of all IBugNominations for this bug.
 
-        The list is ordered by IBugNominations.target.bugtargetname.
+        The list is ordered by IBugNominations.target.bugtargetdisplayname.
 
         Optional filtering arguments:
 
@@ -419,6 +421,7 @@ class IBugAddForm(IBug):
             description=_("""The package you found this bug in,
             which was installed via apt-get, rpm, emerge or similar."""),
             vocabulary="BinaryAndSourcePackageName")
+    title = Title(title=_('Summary'), required=True)
     distribution = Choice(
             title=_("Linux Distribution"), required=True,
             description=_(
@@ -430,7 +433,10 @@ class IBugAddForm(IBug):
     comment = Text(
         title=_('Further information, steps to reproduce,'
                 ' version information, etc.'),
-        required=True)
+        required=False)
+    bug_already_reported_as = Choice(
+        title=_("This bug has already been reported as ..."), required=False,
+        vocabulary="Bug")
 
 
 class IProjectBugAddForm(IBugAddForm):

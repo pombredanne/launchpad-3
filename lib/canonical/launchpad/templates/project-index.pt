@@ -3,19 +3,34 @@
 
     <metal:portlets fill-slot="portlets">
       <tal:portlet tal:replace="structure context/@@+portlet-lifecycle" />
+      <tal:portlet tal:replace="structure context/@@+portlet-milestones" />
     </metal:portlets>
 
     <div metal:fill-slot="main">
 
-      <span tal:replace="structure context/image:mugshot" />
+    <tal:block condition="view/required:launchpad.Edit">
+      <p tal:condition="not: context/products" class="warning message"> 
+        There are no projects registered for
+        <span tal:replace="context/displayname">project displayname</span>.
+        <br />
+        You need to <a href="+newproduct">register another project that is
+        part of <tal:project replace="context/displayname" /></a> or associate
+        an existing project with it.
+      </p>
+    </tal:block>
+
+    <span tal:replace="structure context/image:mugshot" />
       <h1 tal:content="context/title">Mozilla</h1>
 
-      <div tal:content="context/summary">
+      <div class="description" tal:content="context/summary">
         This is the project group Summary, which should be a single paragraph
         summarising the project group's purpose.
       </div>
 
-      <div tal:replace="structure context/description/fmt:text-to-html">
+      <div
+        class="description"
+        tal:content="structure context/description/fmt:text-to-html"
+      >
         This is the Project Group Description,
         which is a much more substantial description of the project group. 
 	It should be several paragraphs long, and give you a very clear 
@@ -38,7 +53,7 @@
           </a>
         </li>
       </ul>
-      <ul class="buttons">
+      <ul class="buttons" tal:condition="context/products">
         <li>
           <a href="+filebug">
             <img alt="Report a bug" src="/+icing/but-sml-reportabug.gif" />
@@ -68,7 +83,7 @@
         />
         <div class="portlet" id="products">
           <h2>Projects</h2>
-          <p tal:condition="not: context/products">
+          <p tal:condition="not: context/products"> 
             There are no projects registered for
             <span tal:replace="context/displayname">project displayname</span>.
           </p>

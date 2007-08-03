@@ -15,7 +15,7 @@ from sqlobject import (
 
 from canonical.launchpad.interfaces import (
     IBugLinkTarget,
-    IDistroRelease,
+    IDistroSeries,
     IProductSeries,
     ISpecification,
     ISpecificationSet,
@@ -27,17 +27,17 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    SpecificationDelivery, SpecificationSort,
+    SpecificationImplementationStatus, SpecificationSort,
     SpecificationFilter, SpecificationGoalStatus,
     SpecificationLifecycleStatus,
-    SpecificationPriority, SpecificationStatus,
+    SpecificationPriority, SpecificationDefinitionStatus,
     )
 
 from canonical.launchpad.helpers import (
     contactEmailAddresses, shortlist)
 
 from canonical.launchpad.event.sqlobjectevent import (
-    SQLObjectCreatedEvent, SQLObjectDeletedEvent)
+    SQLObjectCreatedEvent, SQLObjectDeletedEvent, SQLObjectModifiedEvent)
 
 from canonical.launchpad.database.buglinktarget import BugLinkTargetMixin
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
@@ -55,8 +55,6 @@ from canonical.launchpad.database.sprintspecification import (
     SprintSpecification)
 from canonical.launchpad.database.sprint import Sprint
 
-from canonical.launchpad.helpers import (
-    contactEmailAddresses, shortlist)
 from canonical.launchpad.components import ObjectDelta
 from canonical.launchpad.components.specification import SpecificationDelta
 
@@ -66,14 +64,15 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     implements(ISpecification, IBugLinkTarget)
 
-    _defaultOrder = ['-priority', 'status', 'name', 'id']
+    _defaultOrder = ['-priority', 'definition_status', 'name', 'id']
 
     # db field names
     name = StringCol(unique=True, notNull=True)
     title = StringCol(notNull=True)
     summary = StringCol(notNull=True)
-    status = EnumCol(schema=SpecificationStatus, notNull=True,
-        default=SpecificationStatus.NEW)
+    definition_status = EnumCol(
+        schema=SpecificationDefinitionStatus, notNull=True,
+        default=SpecificationDefinitionStatus.NEW)
     priority = EnumCol(schema=SpecificationPriority, notNull=True,
         default=SpecificationPriority.UNDEFINED)
     assignee = ForeignKey(dbName='assignee', notNull=False,
@@ -90,8 +89,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
         foreignKey='ProductSeries', notNull=False, default=None)
     distribution = ForeignKey(dbName='distribution',
         foreignKey='Distribution', notNull=False, default=None)
-    distrorelease = ForeignKey(dbName='distrorelease',
-        foreignKey='DistroRelease', notNull=False, default=None)
+    distroseries = ForeignKey(dbName='distrorelease',
+        foreignKey='DistroSeries', notNull=False, default=None)
     goalstatus = EnumCol(schema=SpecificationGoalStatus, notNull=True,
         default=SpecificationGoalStatus.PROPOSED)
     goal_proposer = ForeignKey(dbName='goal_proposer', notNull=False,
@@ -105,10 +104,10 @@ class Specification(SQLBase, BugLinkTargetMixin):
     specurl = StringCol(notNull=True)
     whiteboard = StringCol(notNull=False, default=None)
     direction_approved = BoolCol(notNull=True, default=False)
-    informational = BoolCol(notNull=True, default=False)
     man_days = IntCol(notNull=False, default=None)
-    delivery = EnumCol(schema=SpecificationDelivery, notNull=True,
-        default=SpecificationDelivery.UNKNOWN)
+    implementation_status = EnumCol(
+        schema=SpecificationImplementationStatus, notNull=True,
+        default=SpecificationImplementationStatus.UNKNOWN)
     superseded_by = ForeignKey(dbName='superseded_by',
         foreignKey='Specification', notNull=False, default=None)
     completer = ForeignKey(dbName='completer', notNull=False,
@@ -180,7 +179,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         # are moving to a different product that will have different
         # policies and drivers
         self.productseries = None
-        self.distrorelease = None
+        self.distroseries = None
         self.goalstatus = SpecificationGoalStatus.PROPOSED
         self.goal_proposer = None
         self.date_goal_proposed = None
@@ -197,27 +196,27 @@ class Specification(SQLBase, BugLinkTargetMixin):
         """See ISpecification."""
         if self.productseries:
             return self.productseries
-        return self.distrorelease
+        return self.distroseries
 
     def proposeGoal(self, goal, proposer):
         """See ISpecification."""
         if goal is None:
             # we are clearing goals
             self.productseries = None
-            self.distrorelease = None
+            self.distroseries = None
         elif IProductSeries.providedBy(goal):
             # set the product series as a goal
             self.productseries = goal
             self.goal_proposer = proposer
             self.date_goal_proposed = UTC_NOW
-            # and make sure there is no leftover distrorelease goal
-            self.distrorelease = None
-        elif IDistroRelease.providedBy(goal):
-            # set the distrorelease goal
-            self.distrorelease = goal
+            # and make sure there is no leftover distroseries goal
+            self.distroseries = None
+        elif IDistroSeries.providedBy(goal):
+            # set the distroseries goal
+            self.distroseries = goal
             self.goal_proposer = proposer
             self.date_goal_proposed = UTC_NOW
-            # and make sure there is no leftover distrorelease goal
+            # and make sure there is no leftover distroseries goal
             self.productseries = None
         else:
             raise AssertionError, 'Inappropriate goal.'
@@ -321,30 +320,37 @@ class Specification(SQLBase, BugLinkTargetMixin):
 
     # NB NB NB if you change this definition PLEASE update the db constraint
     # Specification.specification_completion_recorded_chk !!!
-    completeness_clause =  """
-                Specification.delivery = %d
-                """ % SpecificationDelivery.IMPLEMENTED.value + """
-            OR
-                Specification.status IN ( %d, %d )
-                """ % (SpecificationStatus.OBSOLETE.value,
-                       SpecificationStatus.SUPERSEDED.value) + """
-            OR
-               (Specification.informational IS TRUE AND
-                Specification.status = %d)
-                """ % SpecificationStatus.APPROVED.value
+    completeness_clause =  ("""
+        Specification.implementation_status = %s OR
+        Specification.definition_status IN ( %s, %s ) OR
+        (Specification.implementation_status = %s AND
+         Specification.definition_status = %s)
+        """ % sqlvalues(SpecificationImplementationStatus.IMPLEMENTED.value,
+                        SpecificationDefinitionStatus.OBSOLETE.value,
+                        SpecificationDefinitionStatus.SUPERSEDED.value,
+                        SpecificationImplementationStatus.INFORMATIONAL.value,
+                        SpecificationDefinitionStatus.APPROVED.value))
 
     @property
     def is_complete(self):
-        """See ISpecification. This is a code implementation of the
-        SQL in self.completeness. Just for completeness.
-        """
-        return (self.status in [
-                    SpecificationStatus.OBSOLETE,
-                    SpecificationStatus.SUPERSEDED,
-                    ]
-                or self.delivery == SpecificationDelivery.IMPLEMENTED
-                or (self.informational is True and
-                    self.status == SpecificationStatus.APPROVED))
+        """See `ISpecification`."""
+        # Implemented blueprints are by definition complete.
+        if (self.implementation_status ==
+            SpecificationImplementationStatus.IMPLEMENTED):
+            return True
+        # Obsolete and superseded blueprints are considered complete.
+        if self.definition_status in (
+            SpecificationDefinitionStatus.OBSOLETE,
+            SpecificationDefinitionStatus.SUPERSEDED):
+            return True
+        # Approved information blueprints are also considered complete.
+        if ((self.implementation_status ==
+             SpecificationImplementationStatus.INFORMATIONAL) and
+            (self.definition_status ==
+             SpecificationDefinitionStatus.APPROVED)):
+            return True
+        else:
+            return False
 
     # NB NB If you change this definition, please update the equivalent
     # DB constraint Specification.specification_start_recorded_chk
@@ -354,27 +360,31 @@ class Specification(SQLBase, BugLinkTargetMixin):
     # started should be less than the threshold". We'll see how maintainable
     # this is.
     started_clause =  """
-                Specification.delivery NOT IN ( %d, %d, %d )
-                """ % ( SpecificationDelivery.UNKNOWN.value,
-                        SpecificationDelivery.NOTSTARTED.value,
-                        SpecificationDelivery.DEFERRED.value ) + """
-            OR
-               (Specification.informational IS TRUE AND
-                Specification.status = %d)
-                """ % SpecificationStatus.APPROVED.value
+        Specification.implementation_status NOT IN (%s, %s, %s, %s) OR
+        (Specification.implementation_status = %s AND
+         Specification.definition_status = %s)
+        """ % sqlvalues(SpecificationImplementationStatus.UNKNOWN.value,
+                        SpecificationImplementationStatus.NOTSTARTED.value,
+                        SpecificationImplementationStatus.DEFERRED.value,
+                        SpecificationImplementationStatus.INFORMATIONAL.value,
+                        SpecificationImplementationStatus.INFORMATIONAL.value,
+                        SpecificationDefinitionStatus.APPROVED.value)
 
     @property
     def is_started(self):
         """See ISpecification. This is a code implementation of the
         SQL in self.started_clause
         """
-        return (self.delivery not in [
-                    SpecificationDelivery.UNKNOWN,
-                    SpecificationDelivery.NOTSTARTED,
-                    SpecificationDelivery.DEFERRED,
+        return (self.implementation_status not in [
+                    SpecificationImplementationStatus.UNKNOWN,
+                    SpecificationImplementationStatus.NOTSTARTED,
+                    SpecificationImplementationStatus.DEFERRED,
+                    SpecificationImplementationStatus.INFORMATIONAL,
                     ]
-                or (self.informational is True and
-                    self.status == SpecificationStatus.APPROVED))
+                or ((self.implementation_status ==
+                     SpecificationImplementationStatus.INFORMATIONAL) and
+                    (self.definition_status ==
+                     SpecificationDefinitionStatus.APPROVED)))
 
 
     def updateLifecycleStatus(self, user):
@@ -415,7 +425,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         return False
 
     @property
-    def has_release_goal(self):
+    def has_accepted_goal(self):
         """See ISpecification."""
         if (self.goal is not None and
             self.goalstatus == SpecificationGoalStatus.ACCEPTED):
@@ -427,8 +437,8 @@ class Specification(SQLBase, BugLinkTargetMixin):
         delta = ObjectDelta(old_spec, self)
         delta.recordNewValues(("title", "summary", "whiteboard",
                                "specurl", "productseries",
-                               "distrorelease", "milestone"))
-        delta.recordNewAndOld(("name", "priority", "status", "target",
+                               "distroseries", "milestone"))
+        delta.recordNewAndOld(("name", "priority", "definition_status", "target",
                                "approver", "assignee", "drafter"))
         delta.recordListAddedAndRemoved("bugs",
                                         "bugs_linked",
@@ -443,6 +453,14 @@ class Specification(SQLBase, BugLinkTargetMixin):
         else:
             return None
 
+    @property
+    def informational(self):
+        """For backwards compatibility:
+        implemented as a value in implementation_status.
+        """
+        return (self.implementation_status ==
+                SpecificationImplementationStatus.INFORMATIONAL)
+
     # subscriptions
     def subscription(self, person):
         """See ISpecification."""
@@ -456,18 +474,29 @@ class Specification(SQLBase, BugLinkTargetMixin):
                 return sub
         return None
 
-    def subscribe(self, person, essential=None):
-        """See ISpecification."""
+    def subscribe(self, person, user, essential):
+        """Create or modify a user's subscription to this blueprint."""
         # first see if a relevant subscription exists, and if so, return it
         sub = self.subscription(person)
-        if sub is not None and essential is not None:
-            sub.essential = essential
+        if sub is not None:
+            if sub.essential != essential:
+                # If a subscription already exists, but the value for
+                # 'essential' changes, there's no need to create a new
+                # subscription, but we modify the existing subscription
+                # and notify the user about the change.
+                sub.essential = essential
+                # The second argument should really be a copy of sub with
+                # only the essential attribute changed, but we know
+                # that we can get away with not examining the attribute
+                # at all - it's a boolean!
+                notify(
+                    SQLObjectModifiedEvent(sub, sub, ['essential'], user=user))
             return sub
         # since no previous subscription existed, create and return a new one
-        if essential is None:
-            essential = False
-        return SpecificationSubscription(specification=self,
+        sub = SpecificationSubscription(specification=self,
             person=person, essential=essential)
+        notify(SQLObjectCreatedEvent(sub, user=user))
+        return sub
 
     def unsubscribe(self, person):
         """See ISpecification."""
@@ -524,8 +553,11 @@ class Specification(SQLBase, BugLinkTargetMixin):
             # sprints have unique names
             if sprint_link.sprint.name == sprint.name:
                 return sprint_link
-        return SprintSpecification(specification=self,
+        sprint_link = SprintSpecification(specification=self,
             sprint=sprint, registrant=user)
+        if sprint.isDriver(user):
+            sprint_link.acceptBy(user)
+        return sprint_link
 
     def unlinkSprint(self, sprint):
         """See ISpecification."""
@@ -568,7 +600,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
         deps = set()
         self._find_all_deps(deps)
         return sorted(shortlist(deps),
-                    key=lambda s: (s.status, s.priority, s.title))
+                    key=lambda s: (s.definition_status, s.priority, s.title))
 
     def _find_all_blocked(self, blocked):
         """This adds all blockers of this spec (and their blockers) to
@@ -585,7 +617,7 @@ class Specification(SQLBase, BugLinkTargetMixin):
     def all_blocked(self):
         blocked = set()
         self._find_all_blocked(blocked)
-        return sorted(blocked, key=lambda s: (s.status, s.priority, s.title))
+        return sorted(blocked, key=lambda s: (s.definition_status, s.priority, s.title))
 
     # branches
     def getBranchLink(self, branch):
@@ -679,7 +711,7 @@ class SpecificationSet(HasSpecificationsMixin):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.status', 'Specification.name']
+            order = ['-priority', 'Specification.definition_status', 'Specification.name']
         elif sort == SpecificationSort.DATE:
             if SpecificationFilter.COMPLETE in filter:
                 # if we are showing completed, we care about date completed
@@ -705,7 +737,8 @@ class SpecificationSet(HasSpecificationsMixin):
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s ' %
+                quote(SpecificationImplementationStatus.INFORMATIONAL.value))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -720,9 +753,9 @@ class SpecificationSet(HasSpecificationsMixin):
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
             # XXX: this is untested and was broken. -- kiko 2007-02-07
-            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationStatus.OBSOLETE,
-                          SpecificationStatus.SUPERSEDED)
+            query += (' AND Specification.definition_status NOT IN ( %s, %s ) ' %
+                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                          SpecificationDefinitionStatus.SUPERSEDED))
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -752,14 +785,14 @@ class SpecificationSet(HasSpecificationsMixin):
         return Sprint.select("time_ends > 'NOW'", orderBy='time_starts',
             limit=5)
 
-    def new(self, name, title, specurl, summary, status,
+    def new(self, name, title, specurl, summary, definition_status,
         owner, approver=None, product=None, distribution=None, assignee=None,
         drafter=None, whiteboard=None,
         priority=SpecificationPriority.UNDEFINED):
         """See ISpecificationSet."""
         return Specification(name=name, title=title, specurl=specurl,
-            summary=summary, priority=priority, status=status,
-            owner=owner, approver=approver, product=product,
-            distribution=distribution, assignee=assignee, drafter=drafter,
-            whiteboard=whiteboard)
+            summary=summary, priority=priority,
+            definition_status=definition_status, owner=owner,
+            approver=approver, product=product, distribution=distribution,
+            assignee=assignee, drafter=drafter, whiteboard=whiteboard)
 

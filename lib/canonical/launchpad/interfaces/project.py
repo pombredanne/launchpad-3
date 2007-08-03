@@ -17,8 +17,10 @@ from canonical.launchpad.fields import Summary, Title, URIField
 from canonical.launchpad.interfaces import (
     IBugTarget, IHasAppointedDriver, IHasOwner, IHasSpecifications,
     IHasLogo, IHasMugshot, IHasIcon, IKarmaContext, IHasMentoringOffers,
-    PillarNameField)
+    PillarNameField, IHasBranchVisibilityPolicy)
 from canonical.launchpad.interfaces.sprint import IHasSprints
+from canonical.launchpad.interfaces.translationgroup import (
+    IHasTranslationGroup)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.fields import (
     IconImageUpload, LogoImageUpload, MugshotImageUpload)
@@ -33,7 +35,8 @@ class ProjectNameField(PillarNameField):
 
 class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
                IKarmaContext, IHasSprints, IHasMentoringOffers, IHasIcon,
-               IHasLogo, IHasMugshot):
+               IHasLogo, IHasMugshot, IHasBranchVisibilityPolicy,
+               IHasTranslationGroup):
     """A Project."""
 
     id = Int(title=_('ID'), readonly=True)
@@ -157,28 +160,6 @@ class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
             "on this project group's home page in Launchpad. It should be no "
             "bigger than 100kb in size. "))
 
-    translationgroup = Choice(
-        title = _("Translation group"),
-        description = _("The translation group for this project group. This "
-            "group is made up of a set of translators for all the languages "
-            "approved by the group manager. These translators then have "
-            "permission to edit the groups translation files, based on the "
-            "permission system selected below."),
-        required=False,
-        vocabulary='TranslationGroup')
-
-    translationpermission = Choice(
-        title=_("Translation Permission System"),
-        description=_("The permissions this group requires for "
-            "translators. If 'Open', then anybody can edit translations "
-            "in any language. If 'Reviewed', then anybody can make "
-            "suggestions but only the designated translators can edit "
-            "or confirm translations. And if 'Closed' then only the "
-            "designated translation group will be able to touch the "
-            "translation files at all."),
-        required=True,
-        vocabulary='TranslationPermission')
-
     active = Bool(title=_('Active'), required=False,
         description=_(
 	    "Whether or not this project group is considered active."))
@@ -208,6 +189,25 @@ class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
         """Return an iterator over products that have resources translatables.
 
         It also should have IProduct.official_rosetta flag set.
+        """
+
+    def hasProducts():
+        """Returns True if a project has products associated with it, False
+        otherwise.
+        """
+
+    milestones = Attribute(_(
+        "The visible milestones associated with this project, "
+        "ordered by date expected."))
+
+    all_milestones = Attribute(_(
+        "All milestones associated with this project, ordered by "
+        "date expected."))
+
+    def getMilestone(name):
+        """Return the milestone named `name` for this project.
+
+        If a milestone with the given name does not exist, return None.
         """
 
 

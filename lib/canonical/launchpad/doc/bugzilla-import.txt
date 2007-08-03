@@ -139,7 +139,7 @@ function will be used:
   ...     for subscriber_name in subscriber_names:
   ...         print '    %s' % subscriber_name
   ...     for task in bug.bugtasks:
-  ...         print 'Task:', task.targetname
+  ...         print 'Task:', task.bugtargetdisplayname
   ...         print '    Status:', task.status.name
   ...         if task.product:
   ...             print '    Product:', task.product.name
@@ -188,7 +188,7 @@ Now we import bug #1 and check the results:
       Foo Bar
       Sample Person
   Task: mozilla-firefox (Ubuntu)
-      Status: UNCONFIRMED
+      Status: NEW
       Distro: ubuntu
       Source package: mozilla-firefox
       Assignee: Sample Person
@@ -228,7 +228,7 @@ to notice:
 
  * A Launchpad account is created for new.user@canonical.com as a side
    effect of the import, because they are subscribed to the bug.
- * The "RESOLVED WONTFIX" status is converted to a status of REJECTED.
+ * The "RESOLVED WONTFIX" status is converted to a status of INVALID.
  * The fact that the "unknown" package does not exist in Ubuntu has
    been logged, along with the exception raised by guessPackageNames().
 
@@ -246,7 +246,7 @@ to notice:
       New User
       Sample Person
   Task: Ubuntu
-      Status: REJECTED
+      Status: INVALID
       Distro: ubuntu
       Assignee: Sample Person
       Importance: WISHLIST
@@ -353,20 +353,20 @@ and attach a watch to the upstream bug tracker:
   Created: 2005-04-04 00:00:00+00:00
   Subscribers:
       Sample Person
-  Task: evolution (upstream)
-      Status: UNCONFIRMED
+  Task: Evolution
+      Status: NEW
       Product: evolution
       Importance: UNDECIDED
       Watch: http://bugzilla.gnome.org/show_bug.cgi?id=273041
   Task: evolution (Ubuntu)
-      Status: UNCONFIRMED
+      Status: NEW
       Distro: ubuntu
       Source package: evolution
       Assignee: Sample Person
       Importance: CRITICAL
       Explanation: Bugzilla status=UPSTREAM, product=Ubuntu, component=evolution
   Task: evolution (Debian)
-      Status: UNCONFIRMED
+      Status: NEW
       Distro: debian
       Source package: evolution
       Importance: UNDECIDED
@@ -389,7 +389,7 @@ Bugzilla severities are mapped to the equivalent Launchpad importance values:
 
   >>> bug = bugzilla.Bug(bz.backend, 1)
   >>> class FakeBugTask:
-  ...     def transitionToStatus(self, status):
+  ...     def transitionToStatus(self, status, user):
   ...         self.status = status
   >>> bugtask = FakeBugTask()
   >>> for severity in ['blocker', 'critical', 'major', 'normal',
@@ -416,18 +416,18 @@ Status Mapping
   ...     bugtask.statusexplanation = ''
   ...     bug.mapStatus(bugtask)
   ...     print '%-13s  %s' % (status, bugtask.status.name)
-  UNCONFIRMED    UNCONFIRMED
-  NEW            UNCONFIRMED
+  UNCONFIRMED    NEW
+  NEW            NEW
   ASSIGNED       CONFIRMED
-  REOPENED       UNCONFIRMED
-  NEEDINFO       NEEDSINFO
-  UPSTREAM       UNCONFIRMED
+  REOPENED       NEW
+  NEEDINFO       INCOMPLETE
+  UPSTREAM       NEW
   PENDINGUPLOAD  FIXCOMMITTED
-  RESOLVED       REJECTED
-  VERIFIED       REJECTED
-  CLOSED         REJECTED
+  RESOLVED       INVALID
+  VERIFIED       INVALID
+  CLOSED         INVALID
 
-(note that RESOLVED, VERIFIED and CLOSED have been mapped to REJECTED
+(note that RESOLVED, VERIFIED and CLOSED have been mapped to INVALID
 here because the Bugzilla resolution is set to WONTFIX).
 
 
@@ -443,16 +443,16 @@ If the bug has been resolved, the resolution will affect the status:
   ...     bug.mapStatus(bugtask)
   ...     print '%-10s  %s' % (resolution, bugtask.status.name)
   FIXED       FIXRELEASED
-  INVALID     REJECTED
-  WONTFIX     REJECTED
-  NOTABUG     REJECTED
-  NOTWARTY    REJECTED
-  UNIVERSE    REJECTED
-  LATER       REJECTED
-  REMIND      REJECTED
-  DUPLICATE   REJECTED
-  WORKSFORME  REJECTED
-  MOVED       REJECTED
+  INVALID     INVALID
+  WONTFIX     INVALID
+  NOTABUG     INVALID
+  NOTWARTY    INVALID
+  UNIVERSE    INVALID
+  LATER       INVALID
+  REMIND      INVALID
+  DUPLICATE   INVALID
+  WORKSFORME  INVALID
+  MOVED       INVALID
 
 
 Bug Target Mapping

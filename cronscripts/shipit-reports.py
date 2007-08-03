@@ -12,12 +12,12 @@ from zope.component import getUtility
 import pytz
 
 from canonical.uuid import generate_uuid
-from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IShippingRequestSet, IShipItReportSet)
 
 
-class ShipitReporter(LaunchpadScript):
+class ShipitReporter(LaunchpadCronScript):
     def _createLibraryFileAlias(self, csv_file, basename):
         """Create and return a LibraryFileAlias containing the given csv file.
 

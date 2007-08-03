@@ -17,7 +17,7 @@ To process a changes file, we make checks such as that the other files
 referenced by it are present, formatting is valid, signatures are correct,
 checksums match, and that the .changes file represents an upload which makes
 sense, eg. it is not a binary for which we have no source, or an older
-version than already exists in the same target distrorelease pocket.
+version than already exists in the same target distroseries pocket.
 
 Depending on the outcome of these checks, the changes file will either be
 accepted (and the information from it, and the referenced files, imported
@@ -47,20 +47,18 @@ above, failed being worst).
 
 __metaclass__ = type
 
-from email import message_from_string
 import os
 import shutil
 
 from zope.component import getUtility
 
-from canonical.launchpad.mail import sendmail
-from canonical.encoding import ascii_smash
 from canonical.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError)
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
 from canonical.launchpad.interfaces import (
     IDistributionSet, IPersonSet, IArchiveSet, NotFoundError)
+from canonical.lp.dbschema import ArchivePurpose
 
 from contrib.glock import GlobalLock
 
@@ -248,12 +246,12 @@ class UploadProcessor:
         self.options.distro = distribution.name
         policy = findPolicyByOptions(self.options)
         policy.archive = archive
-        # Distrorelease overriding respect the following precedence:
+        # DistroSeries overriding respect the following precedence:
         #  1. process-upload.py command-line option (-r),
         #  2. upload path,
         #  3. changesfile 'Distribution' field.
         if suite_name is not None:
-            policy.setDistroReleaseAndPocket(suite_name)
+            policy.setDistroSeriesAndPocket(suite_name)
 
         # The path we want for NascentUpload is the path to the folder
         # containing the changes file (and the other files referenced by it).
@@ -295,19 +293,24 @@ class UploadProcessor:
                 self.log.exception("Unhandled exception processing upload")
                 upload.reject("Unhandled exception processing upload: %s" % e)
 
+            # XXX julian 2007-05-25
+            # When bug #29744 is fixed (zopeless mails should only be sent
+            # when transaction is committed) this will cause any emails sent
+            # sent by do_reject to be lost.
+            notify = True
+            if self.options.dryrun or self.options.nomails:
+                notify = False
             if upload.is_rejected:
                 result = UploadStatusEnum.REJECTED
-                mails = upload.do_reject()
+                upload.do_reject(notify)
                 self.ztm.abort()
-                self.sendMails(mails)
             else:
-                successful, mails = upload.do_accept()
+                successful = upload.do_accept(notify=notify)
                 if not successful:
                     result = UploadStatusEnum.REJECTED
                     self.log.info("Rejection during accept. "
                                   "Aborting partial accept.")
                     self.ztm.abort()
-                self.sendMails(mails)
 
             if self.options.dryrun:
                 self.log.info("Dry run, aborting transaction.")
@@ -348,32 +351,6 @@ class UploadProcessor:
                                                             target_path))
             shutil.move(distro_filename, target_path)
 
-    def sendMails(self, mails):
-        """Send the mails provided using the launchpad mail infrastructure."""
-        for mail_text in mails:
-            mail_message = message_from_string(ascii_smash(mail_text))
-
-            if mail_message['To'] is None:
-                self.log.debug("Missing recipient: empty 'To' header")
-                print repr(mail_text)
-                continue
-
-            mail_message['X-Katie'] = "Launchpad actually"
-
-            logger = self.log.debug
-            if self.options.dryrun or self.options.nomails:
-                logger = self.log.info
-                logger("Would be sending a mail:")
-            else:
-                sendmail(mail_message)
-                logger("Sent a mail:")
-
-            logger("   Subject: %s" % mail_message['Subject'])
-            logger("   Recipients: %s" % mail_message['To'])
-            logger("   Body:")
-            for line in mail_message.get_payload().splitlines():
-                logger(line)
-
     def orderFilenames(self, fnames):
         """Order filenames, sorting *_source.changes before others.
 
@@ -393,8 +370,8 @@ class UploadProcessor:
         The valid paths are:
         '' - default distro, ubuntu
         '<distroname>' - given distribution
-        '~<personname>/<distroname>/[distroreleasename]' - given ppa,
-          distribution and optionally a distrorelease.
+        '~<personname>/<distroname>/[distroseriesname]' - given ppa,
+          distribution and optionally a distroseries.
 
         I raises UploadPathError if something was wrong when parsing it.
 
@@ -404,7 +381,7 @@ class UploadProcessor:
         parts = relative_path.split(os.path.sep)
         first_path = parts[0]
 
-        # Empty distrorelease override by default.
+        # Empty distroseries override by default.
         suite_name = None
 
         # Distribution name only, or nothing
@@ -421,7 +398,7 @@ class UploadProcessor:
                     "Could not find distribution '%s'" % distribution_name)
             archive = distribution.main_archive
 
-        # PPA upload (~<person>/<distro>/[distrorelease])
+        # PPA upload (~<person>/<distro>/[distroseries])
         elif len(parts) <= 3:
             if not first_path.startswith('~'):
                 raise UploadPathError(
@@ -441,7 +418,8 @@ class UploadProcessor:
                 raise UploadPathError(
                     "Could not find distribution '%s'" % distribution_name)
 
-            archive = getUtility(IArchiveSet).ensure(owner=person)
+            archive = getUtility(IArchiveSet).ensure(owner=person, 
+                distribution=distribution, purpose=ArchivePurpose.PPA)
             if archive is None:
                 raise UploadPathError(
                     "Could not find PPA for '%s'" % person_name)
@@ -451,13 +429,13 @@ class UploadProcessor:
                 # Check if the given suite name is valid.
                 # We will return the suite_name string simply.
                 try:
-                    suite = distribution.getDistroReleaseAndPocket(suite_name)
+                    suite = distribution.getDistroSeriesAndPocket(suite_name)
                 except NotFoundError:
                     raise UploadPathError(
                         "Could not find suite '%s'" % suite_name)
         else:
             raise UploadPathError(
-                "Path mismatch '%s'. Use ~<person>/<distro>/[distrorelease]/"
+                "Path mismatch '%s'. Use ~<person>/<distro>/[distroseries]/"
                 "[files] for PPAs and <distro>/[files] for normal uploads."
                 % (relative_path))
 
