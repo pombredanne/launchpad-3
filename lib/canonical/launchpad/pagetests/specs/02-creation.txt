@@ -86,21 +86,28 @@ Users can also follow the textual "Register a blueprint" link:
 
 === From a product ===
 
-Starting from the Mozilla Firefox product page:
+Starting from the Bazaar product page:
 
-    >>> user_browser.open('http://blueprints.launchpad.dev/firefox')
+    >>> user_browser.open('http://blueprints.launchpad.dev/bzr')
 
 Users can press the graphical "Register a blueprint" button:
 
     >>> print find_tag_by_id(user_browser.contents, 'addspec')
-    <a href="http://blueprints.launchpad.dev/firefox/+addspec"
+    <a href="http://blueprints.launchpad.dev/bzr/+addspec"
     id="addspec"> <img alt="Register a blueprint"...
 
 Users can also follow the textual "Register a blueprint" link:
 
     >>> print find_tag_by_id(user_browser.contents, 'actions')
-    <...<a href="http://blueprints.launchpad.dev/firefox/+addspec"
+    <...<a href="http://blueprints.launchpad.dev/bzr/+addspec"
     title="Register a new blueprint...">Register a blueprint...
+
+For products without any blueprints, users can follow the special "register
+it here as a blueprint" link:
+
+    >>> user_browser.getLink('register it here as a blueprint').click()
+    >>> print user_browser.url
+    http://blueprints.launchpad.dev/bzr/+addspec
 
 
 === From a product series ===
@@ -291,7 +298,7 @@ Ubuntu distribution, then redirects the user to the new blueprint's page:
 As requested, the new blueprint is proposed as a series goal:
 
     >>> print(first_tag_by_class(user_browser.contents,
-    ...                                       'summary'))
+    ...                          'summary'))
     <...Series goal:...Proposed...for...hoary...
 
 If the registration is performed by a user with permission to accept goals
