@@ -275,7 +275,6 @@ class TestPublisher(TestNativePublishingBase):
 
         # lets setup an Archive Publisher
         cprov = getUtility(IPersonSet).getByName('cprov')
-        removeSecurityProxy(cprov.archive).distribution = self.ubuntutest
         archive_publisher = getPublisher(
             cprov.archive, allowed_suites, self.logger)
 
@@ -328,7 +327,6 @@ class TestPublisher(TestNativePublishingBase):
         allowed_suites = []
 
         cprov = getUtility(IPersonSet).getByName('cprov')
-        removeSecurityProxy(cprov.archive).distribution = self.ubuntutest
 
         archive_publisher = getPublisher(
             cprov.archive, allowed_suites, self.logger)
@@ -560,7 +558,6 @@ class TestPublisher(TestNativePublishingBase):
         from canonical.archivepublisher.publishing import getPublisher
         allowed_suites = []
         cprov = getUtility(IPersonSet).getByName('cprov')
-        removeSecurityProxy(cprov.archive).distribution = self.ubuntutest
         archive_publisher = getPublisher(
             cprov.archive, allowed_suites, self.logger)
 
