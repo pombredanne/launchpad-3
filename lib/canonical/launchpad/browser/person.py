@@ -107,11 +107,7 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.config import config
 from canonical.database.sqlbase import flush_database_updates
-from canonical.launchpad.searchbuilder import any, NULL
-from canonical.lp.dbschema import (
-    LoginTokenType, SSHKeyType, EmailAddressStatus, TeamMembershipStatus,
-    TeamSubscriptionPolicy, SpecificationFilter, QuestionParticipation,
-    PersonCreationRationale, BugTaskStatus, TeamMembershipRenewalPolicy)
+from canonical.lp.dbschema import BugTaskStatus, SpecificationFilter
 
 from canonical.widgets import PasswordChangeWidget
 from canonical.cachedproperty import cachedproperty
@@ -126,7 +122,10 @@ from canonical.launchpad.interfaces import (
     GPGKeyNotFoundError, UnexpectedFormData, ILanguageSet, INewPerson,
     IRequestPreferredLanguages, IPersonClaim, IPOTemplateSet,
     BugTaskSearchParams, IBranchSet, ITeamMembership,
-    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT)
+    DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, EmailAddressStatus,
+    LoginTokenType, PersonCreationRationale, QuestionParticipation,
+    SSHKeyType, TeamMembershipStatus, TeamMembershipRenewalPolicy,
+    TeamSubscriptionPolicy)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
@@ -213,6 +212,10 @@ class PersonNavigation(CalendarTraversalMixin,
         if membership is None:
             return None
         return TeamMembershipSelfRenewalView(membership, self.request)
+
+    @stepto('+archive')
+    def traverse_archive(self):
+        return self.context.archive
 
 
 class PersonDynMenu(DynMenu):
@@ -597,8 +600,8 @@ class PersonBugsMenu(ApplicationMenu):
 
     usedfor = IPerson
     facet = 'bugs'
-    links = ['assignedbugs', 'commentedbugs', 'reportedbugs', 'subscribedbugs',
-             'relatedbugs', 'softwarebugs', 'mentoring']
+    links = ['assignedbugs', 'commentedbugs', 'reportedbugs',
+             'subscribedbugs', 'relatedbugs', 'softwarebugs', 'mentoring']
 
     def relatedbugs(self):
         text = 'List related bugs'
@@ -732,6 +735,22 @@ class CommonMenuLinks:
         summary = 'Projects %s is involved with' % self.context.browsername
         return Link(target, text, summary, icon='packages')
 
+    @enabled_with_permission('launchpad.Edit')
+    def activate_ppa(self):
+        target = "+activate-ppa"
+        text = 'Activate PPA'
+        summary = ('Acknowledge terms of service for Launchpad Personal '
+                   'Package Archive.')
+        enable_link = (self.context.archive is None)
+        return Link(target, text, summary, icon='edit', enabled=enable_link)
+
+    def show_ppa(self):
+        target = '+archive'
+        text = 'Show PPA'
+        summary = 'Browse Personal Package Archive packages.'
+        enable_link = (self.context.archive is not None)
+        return Link(target, text, summary, icon='info', enabled=enable_link)
+
 
 class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
 
@@ -742,8 +761,8 @@ class PersonOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'editircnicknames', 'editjabberids', 'editpassword',
              'editsshkeys', 'editpgpkeys',
              'memberships', 'mentoringoffers',
-             'codesofconduct', 'karma', 'common_packages', 'related_projects',
-             'administer']
+             'codesofconduct', 'karma', 'common_packages', 'administer',
+             'related_projects', 'activate_ppa', 'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -851,7 +870,7 @@ class TeamOverviewMenu(ApplicationMenu, CommonMenuLinks):
              'add_member', 'memberships', 'received_invitations', 'mugshots',
              'editemail', 'editlanguages', 'polls', 'add_poll',
              'joinleave', 'mentorships', 'reassign', 'common_packages',
-             'related_projects']
+             'related_projects', 'activate_ppa', 'show_ppa']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -1445,7 +1464,8 @@ class PersonRelatedBugsView(BugTaskSearchListingView):
             commenter_params.bug_commenter = context
 
         tasks = self.context.searchTasks(
-            assignee_params, subscriber_params, owner_params, commenter_params)
+            assignee_params, subscriber_params, owner_params,
+            commenter_params)
         return BugListingBatchNavigator(
             tasks, self.request, columns_to_show=self.columns_to_show,
             size=config.malone.buglist_batch_size)

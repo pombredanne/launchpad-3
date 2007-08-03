@@ -255,7 +255,7 @@ Add the current user to the team and the user can now access
 attributes.  Since ubuntu-team is restricted, an administrator must be
 listed as a reviewer for the membership to go through.
 
-    >>> from canonical.lp.dbschema import TeamMembershipStatus
+    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
     >>> nopriv = getUtility(ILaunchBag).user
     >>> sabdfl = personset.getByName('sabdfl')
     >>> nopriv.join(ubuntu_team)

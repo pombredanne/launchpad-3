@@ -14,10 +14,10 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import TeamMembershipStatus
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILaunchpadCelebrities, UnexpectedFormData)
+    ILaunchBag, ILaunchpadCelebrities, TeamMembershipStatus,
+    UnexpectedFormData)
 from canonical.launchpad.browser.launchpad import (
     StructuralHeaderPresentation)
 

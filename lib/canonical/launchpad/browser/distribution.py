@@ -11,6 +11,7 @@ __all__ = [
     'DistributionFacets',
     'DistributionSpecificationsMenu',
     'DistributionView',
+    'DistributionPPAView',
     'DistributionAllPackagesView',
     'DistributionBrandingView',
     'DistributionEditView',
@@ -41,8 +42,8 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, IPublishedPackageSet, ILaunchBag,
-    IArchiveSet, NotFoundError, IDistributionMirrorSet)
+    IDistributionMirrorSet, IDistributionSet, IDistribution, ILaunchBag,
+    IPublishedPackageSet, MirrorContent, NotFoundError)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -54,16 +55,15 @@ from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu,
-    enabled_with_permission,
-    GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
-    redirection, Navigation, StandardLaunchpadFacets,
-    stepthrough, stepto, LaunchpadFormView)
+    enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
+    LaunchpadFormView, LaunchpadView, Link, Navigation, redirection,
+    StandardLaunchpadFacets, stepthrough, stepto)
 from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import DistroSeriesStatus, MirrorContent
+from canonical.lp.dbschema import DistroSeriesStatus
 
 
 class DistributionNavigation(
@@ -439,9 +439,15 @@ class DistributionView(BuildRecordsView):
         return sorted(serieses, key=operator.attrgetter('version'),
                       reverse=True)
 
-    def getAllPPAs(self):
-        """Return alls Personal Package Archive available."""
-        return getUtility(IArchiveSet).getAllPPAs()
+
+class DistributionPPAView(LaunchpadView):
+
+    def initialize(self):
+        """Setup a batched `IArchive` list."""
+        self.name_filter = self.request.get('name_filter', None)
+        ppas = self.context.searchPPAs(text=self.name_filter)
+        self.batchnav = BatchNavigator(ppas, self.request)
+        self.search_results = self.batchnav.currentBatch()
 
 
 class DistributionAllPackagesView(LaunchpadView):

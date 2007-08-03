@@ -878,7 +878,7 @@ anything, as we only match against the beginning of an email address.
 
 A person with a single and unvalidated email address can be merged.
 
-    >>> from canonical.lp.dbschema import PersonCreationRationale
+    >>> from canonical.launchpad.interfaces import PersonCreationRationale
     >>> fooperson, email = getUtility(IPersonSet).createPersonAndEmail(
     ...     'foobaz@bar.com', PersonCreationRationale.UNKNOWN,
     ...     name='foobaz', displayname='foo baz')

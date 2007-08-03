@@ -30,7 +30,7 @@ When using the search_text criteria, the default is to sort the results
 by relevancy. One can use the sort parameter to change that. It takes
 one of the constant defined in the QuestionSort enumeration.
 
-    >>> from canonical.lp.dbschema import QuestionSort
+    >>> from canonical.launchpad.interfaces import QuestionSort
     >>> for question in foo_bar.searchQuestions(
     ...         search_text='firefox', sort=QuestionSort.OLDEST_FIRST):
     ...     print question.id, question.title, question.status.title
@@ -57,7 +57,7 @@ The last searches showed that by default, not all statuses are searched
 for by default (they excluded expired and invalid questions). The status
 parameter can be used to control the list of statuses to select:
 
-    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> from canonical.launchpad.interfaces import QuestionStatus
     >>> for question in foo_bar.searchQuestions(status=QuestionStatus.INVALID):
     ...     print question.title, question.status.title
     Firefox is slow and consumes too much RAM   Invalid
@@ -80,7 +80,7 @@ QuestionParticipation enumeration.
 To select only questions on which the person commented, the
 QuestionParticipation.COMMENTER is used:
 
-    >>> from canonical.lp.dbschema import QuestionParticipation
+    >>> from canonical.launchpad.interfaces import QuestionParticipation
     >>> for question in foo_bar.searchQuestions(
     ...         participation=QuestionParticipation.COMMENTER, status=None):
     ...     print question.title

@@ -18,10 +18,8 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import QuestionStatus
-
 from canonical.launchpad.event import SQLObjectCreatedEvent
-from canonical.launchpad.interfaces import IQuestionReopening
+from canonical.launchpad.interfaces import IQuestionReopening, QuestionStatus
 
 
 class QuestionReopening(SQLBase):

@@ -56,6 +56,7 @@ from canonical.config import config
 from canonical.lp import dbschema, decorates
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation, LaunchpadFormView,
     LaunchpadView, Navigation, redirection, stepthrough)
@@ -68,7 +69,7 @@ from canonical.launchpad.interfaces import (
     IFrontPageBugTaskSearch, ILaunchBag, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
     IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
-    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask,
+    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, validate_distrotask,
     valid_upstreamtask, IProductSeriesBugTask, IBugNominationSet,
     IProductSeries, INominationsReviewTableBatchNavigator)
 
@@ -909,10 +910,12 @@ class BugTaskEditView(GeneralFormView):
         #   -- kiko, 2007-03-26
         if distro is not None and sourcename != data['sourcepackagename']:
             try:
-                valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
-            except WidgetsError, errors:
-                self.sourcepackagename_widget._error = ConversionError(str(errors.args[0]))
-                raise errors
+                validate_distrotask(
+                    bugtask.bug, distro, data['sourcepackagename'])
+            except LaunchpadValidationError, error:
+                self.sourcepackagename_widget._error = ConversionError(
+                    str(error))
+                raise WidgetsError(error)
         if (product is not None and
             'product' in data and product != data['product']):
             try:

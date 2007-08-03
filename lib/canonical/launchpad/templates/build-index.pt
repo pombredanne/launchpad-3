@@ -36,7 +36,7 @@
           <tr>
             <th>Archive:</th>
             <td tal:condition="not: context/is_trusted">
-              <a tal:attributes="href context/archive/archive_url">
+              <a tal:attributes="href context/archive/fmt:url">
                <span tal:replace="context/archive/owner/displayname"/> PPA
               </a>
             </td>
