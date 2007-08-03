@@ -103,7 +103,7 @@ fail.
     >>> ubuntu_task.bugtargetdisplayname
     u'Ubuntu'
     >>> edit_form = {
-    ...    'FORM_SUBMIT': '',
+    ...    'ubuntu.actions.save': 'Save Changes',
     ...    'ubuntu.status': 'In Progress',
     ...    'ubuntu.importance':
     ...        ubuntu_thunderbird_task.importance.title,
@@ -134,7 +134,7 @@ directly, let's add a grumpy task first.
     u'Ubuntu Grumpy'
 
     >>> edit_form = {
-    ...    'FORM_SUBMIT': '',
+    ...    'ubuntu_grumpy.actions.save': 'Save Changes',
     ...    'ubuntu_grumpy.status': 'In Progress',
     ...    'ubuntu_grumpy.importance':
     ...        ubuntu_grumpy_task.importance.title,
