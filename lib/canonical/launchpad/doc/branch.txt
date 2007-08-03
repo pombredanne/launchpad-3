@@ -835,7 +835,7 @@ Deleting the branch is done through the BranchSet.  If the branch is not
 deletable then an exception is raised.
 
 More details can be found in the file
-canonical/launchpad/database/tests/test_branch.txt.
+canonical/launchpad/database/tests/test_branch.py.
 
     >>> branch = branchset.new(
     ...     BranchType.MIRRORED, 'to-delete', ddaa, ddaa, gterm_product,

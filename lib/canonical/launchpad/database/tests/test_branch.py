@@ -20,7 +20,7 @@ from canonical.launchpad.database.revision import RevisionSet
 from canonical.lp.dbschema import (
     RevisionControlSystems, SpecificationDefinitionStatus)
 
-from canonical.testing import LaunchpadFunctionalLayer, LaunchpadZopelessLayer
+from canonical.testing import LaunchpadZopelessLayer
 
 from zope.component import getUtility
 
@@ -47,8 +47,13 @@ class TestBranchDeletion(TestCase):
     def test_deletable(self):
         """A newly created branch can be deleted without any problems."""
         self.assertEqual(self.branch.canBeDeleted(), True,
-                         "A newly created branch should be able to be deleted.")
-        BranchSet().delete(self.branch)
+                         "A newly created branch should be able to be "
+                         "deleted.")
+        branch_id = self.branch.id
+        branch_set = BranchSet()
+        branch_set.delete(self.branch)
+        self.assert_(branch_set.get(branch_id) is None,
+                     "The branch has not been deleted.")
 
     def test_subscriptionDisablesDeletion(self):
         """A branch that has a subscription cannot be deleted."""

@@ -220,18 +220,18 @@ class Branch(SQLBase):
         BranchSubscription.delete(subscription.id)
 
     def getBranchRevision(self, sequence):
-        """See `IBranch`.getBranchRevision()"""
+        """See `IBranch`."""
         assert sequence is not None, \
                "Only use this to fetch revisions from mainline history."
         return BranchRevision.selectOneBy(branch=self, sequence=sequence)
 
     def createBranchRevision(self, sequence, revision):
-        """See `IBranch`.createBranchRevision()"""
+        """See `IBranch`."""
         return BranchRevision(
             branch=self, sequence=sequence, revision=revision)
 
     def getTipRevision(self):
-        """See `IBranch`"""
+        """See `IBranch`."""
         tip_revision_id = self.last_scanned_id
         if tip_revision_id is None:
             return None
