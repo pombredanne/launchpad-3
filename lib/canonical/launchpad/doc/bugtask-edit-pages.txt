@@ -75,7 +75,7 @@ exist in Launchpad. we'll get an error message.
     >>> request = LaunchpadTestRequest(form=edit_form, method='POST')
     >>> edit_view = getView(
     ...     ubuntu_thunderbird_task, '+editstatus-page', request)
-    >>> edit_view.initalize()
+    >>> edit_view.initialize()
     u'Please fix the problems below and try again.'
     >>> for error in edit_view.errors:
     ...     print error
