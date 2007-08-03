@@ -102,7 +102,7 @@ class NewSpecificationView(LaunchpadFormView):
         # Propose the specification as a series goal, if specified.
         series = self.series(data)
         if series is not None:
-            proposeGoalWithAutomaticApproval(spec, series, self.user)
+            propose_goal_with_automatic_approval(spec, series, self.user)
         # Link the specification with a sprint, if specified.
         sprint = self.sprint(data)
         if sprint is not None:
@@ -503,12 +503,12 @@ class SpecificationGoalProposeView(GeneralFormView):
         if distroseries is not None:
             goal = distroseries
         self.context.whiteboard = whiteboard
-        proposeGoalWithAutomaticApproval(self.context, goal, self.user)
+        propose_goal_with_automatic_approval(self.context, goal, self.user)
         self._nextURL = canonical_url(self.context)
         return 'Done.'
 
 
-def proposeGoalWithAutomaticApproval(specification, series, user):
+def propose_goal_with_automatic_approval(specification, series, user):
     """Proposes the given specification as a goal for the given series. If
     the given user has permission, the proposal is approved automatically.
     """

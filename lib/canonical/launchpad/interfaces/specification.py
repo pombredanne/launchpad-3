@@ -165,7 +165,7 @@ class INewSpecificationSprint(Interface):
     Allows the user to propose the specification for discussion at a sprint.
     """
     sprint = Choice(title=_("Propose for sprint"),
-                    description=_("the sprint to which agenda this "
+                    description=_("The sprint to which agenda this "
                                   "blueprint is being suggested."),
                     required=False, vocabulary='FutureSprint')
 
