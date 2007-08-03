@@ -121,12 +121,16 @@ class DeathRow:
 
         Only allow removal of unnecessary files.
         """
-        # XXX cprov 20070723: 'prejoin'ing {S,B}PPH would help, but we can
-        # not do it dynamically due to the hack performed by
-        # IArchiveFilePublishing.publishing_record. Although, something in
-        # direction of default_prejoins = 'SPPH' or 'BPPH' would work very
-        # well for Source/BinaryPackageFilePublishing class.
-
+        # 'prejoin'ing {S,B}PPH would help here if we face performance
+        # problems, but we can not do it dynamically due to the hack
+        # performed by IArchiveFilePublishing.publishing_record which
+        # 'magically' decided what is the respective publishing record
+        # needs to be retrieved. Something in direction of:
+        # "default_prejoins = 'SPPH' or 'BPPH'" would work very
+        # well for Source/BinaryPackageFilePublishing classes in this case.
+        # However we are still able to decide what to 'prejoin' here, in the
+        # callsite by testing what is the interface implemented by the
+        # publication_class.
         all_publications = publication_class.select("""
            libraryfilealiasfilename = %s AND
            distribution = %s AND
