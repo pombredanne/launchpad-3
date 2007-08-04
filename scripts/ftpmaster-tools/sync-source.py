@@ -124,10 +124,10 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes, section,
                      origin):
     """Generate a .changes as a string"""
 
-    # xxx cprov 2007-07-03:
+    # XXX cprov 2007-07-03:
     # Changed-By can be extracted from most-recent changelog footer,
     # but do we care?
-    # xxx James Troup 2006-01-30:
+    # XXX James Troup 2006-01-30:
     # 'Closes' but could be gotten from changelog, but we don't use them?
 
     changes = ""

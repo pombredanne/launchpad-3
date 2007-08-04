@@ -17,7 +17,7 @@ def data_sanitizer(data):
         # check that this is latin-1 data
         s = data.decode("latin-1").encode("utf-8")
         s.decode("utf-8")
-        return s   
+        return s
     #zope facility that doesn't work very well
     #return ensure_unicode(data)
 
@@ -412,10 +412,10 @@ class Doap(SQLThing):
 
         ## productseries
 
-        # XXX: cprov 20041012
+        # XXX: cprov 2004-10-12
         # Hardcoded Product Series Name as "head" (series+name).
         name = 'head'
-        # XXX: cprov 20041012
+        # XXX: cprov 2004-10-12
         # Displayname composed by projectname-serie as
         # apache-1.2 or Mozilla-head (series+diaplyname).
         displayname = fit.displayname + ' Head'

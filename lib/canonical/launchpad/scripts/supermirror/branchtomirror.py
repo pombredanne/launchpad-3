@@ -108,7 +108,7 @@ class BranchToMirror:
         # XXX AndrewBennetts 2006-05-26:
         #    sprout builds a working tree we don't need.
 
-        # XXX AndrewBennetts 2006-05-30  Bug=47494:
+        # XXX AndrewBennetts 2006-05-30 Bug=47494:
         #    sprout also fails to preserve the repository format!
         #    Here's what it should look like:
         #        source = self._source_branch

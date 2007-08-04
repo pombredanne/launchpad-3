@@ -373,7 +373,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
         active = {}
         published = {}
-        # XXX: JeroenVermeulen 2007-016-17P Prejoin potranslations!
+        # XXX: JeroenVermeulen 2007-016-17: Prejoin potranslations!
         query = "pomsgset = %s AND (active OR published)" % quote(self)
         for submission in POSubmission.select(query):
             pluralform = submission.pluralform

@@ -604,7 +604,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             sourcepackagename = sourcepackagename_set.get(
                 row['sourcepackagename'])
             source_package = distribution.getSourcePackage(sourcepackagename)
-            # XXX: Bjorn Tillenius, 2006-12-15:
+            # XXX: Bjorn Tillenius 2006-12-15:
             # Add a tuple instead of the distribution package
             # directly, since DistributionSourcePackage doesn't define a
             # __hash__ method.
@@ -961,7 +961,7 @@ class Person(SQLBase, HasSpecificationsMixin):
         return Karma.selectBy(person=self,
             orderBy='-datecreated')[:quantity]
 
-    # XXX: StuartBishop 20060510:
+    # XXX: StuartBishop 2006-05-10:
     # This cache should no longer be needed once CrowdControl lands,
     # as apparently it will also cache this information.
     _inTeam_cache = None
@@ -1302,7 +1302,7 @@ class Person(SQLBase, HasSpecificationsMixin):
             self.invited_members,
             orderBy=self._sortingColumnsForSetOperations)
 
-    # XXX: kiko, 2005-10-07:
+    # XXX: kiko 2005-10-07:
     # myactivememberships and getActiveMemberships are rather
     # confusingly named, and I just fixed bug 2871 as a consequence of
     # this. Is there a way to improve it?
@@ -1889,7 +1889,7 @@ class PersonSet:
             POFileTranslator.pofile = %s""" % quote(pofile),
             clauseTables=["POFileTranslator"],
             distinct=True,
-            # XXX: kiko, 2006-10-19:
+            # XXX: kiko 2006-10-19:
             # We can't use Person.sortingColumns because this is a
             # distinct query. To use it we'd need to add the sorting
             # function to the column results and then ignore it -- just
@@ -2118,7 +2118,7 @@ class PersonSet:
         skip.append(('mailinglistsubscription', 'person'))
 
         # Update only the BountySubscriptions that will not conflict
-        # XXX: StuartBishop 20050331:
+        # XXX: StuartBishop 2005-03-31:
         # Add sampledata and test to confirm this case
         cur.execute('''
             UPDATE BountySubscription
@@ -2288,7 +2288,7 @@ class PersonSet:
         skip.append(('sprintattendance', 'attendee'))
 
         # Update only the POSubscriptions that will not conflict
-        # XXX: StuartBishop 20050331:
+        # XXX: StuartBishop 2005-03-31:
         # Add sampledata and test to confirm this case.
         cur.execute('''
             UPDATE POSubscription
@@ -2355,7 +2355,7 @@ class PersonSet:
             ''' % vars())
         skip.append(('translationimportqueueentry', 'importer'))
 
-        # XXX cprov 20070222 bug=87098:
+        # XXX cprov 2007-02-22 bug=87098:
         # Since we only allow one PPA for each user,
         # we can't reassign the old user archive to the new user.
         # It need to be done manually, probably by reasinning all publications
@@ -2465,7 +2465,7 @@ class PersonSet:
 
     def getTranslatorsByLanguage(self, language):
         """See `IPersonSet`."""
-        # XXX CarlosPerelloMarin 20070331 bug=102257:
+        # XXX CarlosPerelloMarin 2007-03-31 bug=102257:
         # The KarmaCache table doesn't have a field to store karma per
         # language, so we are actually returning the people with the most
         # translation karma that have this language selected in their

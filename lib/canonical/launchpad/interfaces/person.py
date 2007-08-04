@@ -435,7 +435,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "exception to this is when we allow users to create Launchpad "
             "profiles through the /people/+newperson page."),
         required=False, readonly=False)
-    # XXX Guilherme Salgado, 2006-11-10: 
+    # XXX Guilherme Salgado 2006-11-10: 
     # We can't use a Choice field here because we don't have a vocabulary
     # which contains valid people but not teams, and we don't really need one
     # appart from here.
@@ -647,7 +647,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     @invariant
     def personCannotHaveIcon(person):
-        # XXX Guilherme Salgado, 2007-05-28: 
+        # XXX Guilherme Salgado 2007-05-28: 
         # This invariant is busted! The person parameter provided to this
         # method will always be an instance of zope.formlib.form.FormData
         # containing only the values of the fields included in the POSTed

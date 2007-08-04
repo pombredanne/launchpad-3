@@ -22,7 +22,7 @@ from canonical.launchpad.database.specification import Specification
 class Milestone(SQLBase):
     implements(IMilestone)
 
-    # XXX: Guilherme Salgado, 2007-03-27 bug=40978:
+    # XXX: Guilherme Salgado 2007-03-27 bug=40978:
     # Milestones should be associated with productseries/distroseriess
     # so these columns are not needed.
     product = ForeignKey(dbName='product',
