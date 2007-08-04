@@ -467,8 +467,8 @@ def quote(x):
 def quote_like(x):
     r"""Quote a variable ready for inclusion in a SQL statement's LIKE clause
 
-    TODO: Including the single quotes was a stupid decision.
-    -- StuartBishop 2004/11/24
+    XXX: StuartBishop 2004-11-24:
+    Including the single quotes was a stupid decision.
 
     To correctly generate a SELECT using a LIKE comparision, we need
     to make use of the SQL string concatination operator '||' and the
