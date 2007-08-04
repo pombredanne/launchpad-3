@@ -19,7 +19,7 @@ from sqlobject import (
 
 from canonical.config import config
 from canonical.database.sqlbase import (
-    cursor, SQLBase, flush_database_updates, quote, sqlvalues)
+    SQLBase, flush_database_updates, quote, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.constants import UTC_NOW
 from canonical.lp.dbschema import (
@@ -29,12 +29,13 @@ from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet, IPOFile,
-    IPOFileSet, IPOFileTranslator, IPOTemplateExporter, ITranslationImporter,
-    NotExportedFromLaunchpad, NotFoundError, OldTranslationImported,
-    TranslationFormatSyntaxError, TranslationFormatInvalidInputError,
-    UnknownTranslationRevisionDate, ZeroLengthPOExportError)
+    IPOFileSet, IPOFileTranslator, IPOSubmissionSet, IPOTemplateExporter,
+    ITranslationImporter, NotExportedFromLaunchpad, NotFoundError,
+    OldTranslationImported, TranslationFormatSyntaxError,
+    TranslationFormatInvalidInputError, UnknownTranslationRevisionDate,
+    ZeroLengthPOExportError)
 from canonical.launchpad.database.pomsgid import POMsgID
-from canonical.launchpad.database.pomsgset import POMsgSet, DummyPOMsgSet
+from canonical.launchpad.database.pomsgset import (DummyPOMsgSet, POMsgSet)
 from canonical.launchpad.database.potmsgset import POTMsgSet
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.translationimportqueue import (
@@ -188,7 +189,8 @@ class POFileMixIn(RosettaStats):
                 dummy = potmsgset.getDummyPOMsgSet(language_code, variant)
                 dummies[potmsgset] = dummy
 
-        cache = self._getRelatedSubmissions(result.values(), dummies.values())
+        cache = getUtility(IPOSubmissionSet).getSubmissionsFor(
+            result.values(), dummies.values())
 
         result.update(dummies)
 
@@ -196,193 +198,6 @@ class POFileMixIn(RosettaStats):
             pomsgset.initializeSubmissionsCaches(cache[pomsgset])
 
         return result
-
-    def _getRelatedSubmissions(self, stored_pomsgsets, dummy_pomsgsets):
-        """Find all POSubmissions that the listed POMsgSets may want to cache.
-
-        Result is a dict mapping each of these POMsgSets to a list of all
-        POSubmissions that are relevant to it.  Each of the lists is in
-        newest-to-oldest order.
-
-        :param stored_pomsgsets: List of pomsgsets that are already present in
-            the database, and whose in-memory caches are to be populated.
-        :param dummy_pomsgsets: List of pomsgsets that have not yet been
-            stored in the database, and whose in-memory caches are to be
-            populated.
-        """
-        all_pomsgsets = stored_pomsgsets + dummy_pomsgsets
-
-        # We'll be mapping each POMsgSet from all_pomsgsets to a list of
-        # submissions that may be relevant to it in some way, and that it will
-        # wish to cache.
-        result = dict((msgset, []) for msgset in all_pomsgsets)
-        if not all_pomsgsets:
-            return result
-
-        # For each primemsgid we see, remember which of our input msgsets were
-        # looking for suggestions on that primemsgid.
-        takers_for_primemsgid = dict(
-            (msgset.potmsgset.primemsgid_ID, [])
-            for msgset in all_pomsgsets)
-        for pomsgset in all_pomsgsets:
-            primemsgid = pomsgset.potmsgset.primemsgid_ID
-            takers_for_primemsgid[primemsgid].append(pomsgset)
-
-        # We work in three steps:
-        #
-        # 1. Retrieve from the database all ids of POSubmissions that might be
-        # relevant to our msgsets, and the primemsgids of their potmsgsets
-        # which will be essential to step 3.
-        #
-        # 2. Load all relevant submissions from the database.
-        #
-        # 3. Sort out which submissions are relevant to which pomsgsets from
-        # our parameters stored_pomsgsets and dummy_pomsgsets.  This depends
-        # on knowing the primemsgids of the potmsgsets they are attached to,
-        # but we don't want to retrieve all those potmsgsets just to get that
-        # information.
-
-        parameters = sqlvalues(language=self.language,
-            wanted_primemsgids=takers_for_primemsgid.keys())
-
-        # Step 1.
-        # Find ids of all POSubmissions that might be relevant (either as
-        # suggestions for our all_pomsgsets or because they're already
-        # attached to our stored_pomsgsets) plus their potmsgsets'
-        # primemsgids.
-        # Note that a suggestion coming from a fuzzy pomsgset isn't relevant
-        # as a suggestion, but if it happens to be attached to a msgset from
-        # stored_pomsgsets, it will still be relevant to that msgset.
-
-        cur = cursor()
-        available = {}
-
-        # XXX: JeroenVermeulen 2007-08-04, the queries we fire off here are
-        # generalized, batched versions of what the POMsgSets can also do for
-        # themselves (see POMsgSet._getRelatedSubmissions).  If it's not too
-        # expensive, a reunification may be in order.
-        if stored_pomsgsets:
-            # Fetch submissions attached to our POMsgSets
-            parameters['pomsgsets'] = ','.join(
-                [quote(pomsgset) for pomsgset in stored_pomsgsets])
-            parameters['one_of_ours'] = ("POMsgSet.id IN (%s)" %
-                ','.join([quote(pomsgset) for pomsgset in stored_pomsgsets]))
-
-            query = """
-                SELECT DISTINCT POSubmission.id, POTMsgSet.primemsgid
-                FROM POSubmission
-                JOIN POMsgSet ON POSubmission.pomsgset = POMsgSet.id
-                JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
-                WHERE %(one_of_ours)s
-                """ % parameters
-
-            cur.execute(query)
-            available.update(dict(cur.fetchall()))
-        else:
-            parameters['one_of_ours'] = 'false'
-
-        # Fetch suggestions for our POMsgSets.  We don't keep track of
-        # suggestions and suggestions for our own POMsgSets separately at this
-        # point, because one POMsgSet's attached submission may be another
-        # POMsgSet's useful suggestion.  We sort that out later.
-        # Usually there will be many submissions with identical POTranslations
-        # attached, and in those cases, we only show the latest of those
-        # submissions.  We also leave out any submissions that offer the same
-        # translation that is already active.
-        # There may be some overlap between this result set and the one for
-        # POSubmissions that are attached to our POMsgSets.  We tried adding a
-        # "where" condition to filter these out, but on a large test query, we
-        # found that this condition caught no duplications and slowed the
-        # query down by 15-20%.
-        query = """
-            SELECT DISTINCT pos.id, POTMsgSet.primemsgid
-            FROM POSubmission pos
-            JOIN POMsgSet ON pos.pomsgset = POMsgSet.id
-            JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
-            WHERE
-                POMsgSet.language = %(language)s AND
-                POTMsgSet.primemsgid IN %(wanted_primemsgids)s AND
-                NOT POMsgSet.isfuzzy AND
-                NOT EXISTS (
-                    SELECT *
-                    FROM POSubmission better
-                    WHERE
-                        better.pomsgset = pos.pomsgset AND
-                        better.pluralform = pos.pluralform AND
-                        better.potranslation = pos.potranslation AND
-                        (better.active OR
-                            better.datecreated > pos.datecreated)
-                )
-            """ % parameters
-        cur.execute(query)
-        available.update(dict(cur.fetchall()))
-
-        if not available:
-            return result
-
-        # Step 2.
-        # Load all relevant POSubmissions from the database.  We'll keep these
-        # in newest-to-oldest order, because that's the way the POMsgSet's
-        # cache likes them.
-        relevant_submissions = POSubmission.select(
-            "id IN %s" % sqlvalues(available.keys()), orderBy="-datecreated")
-
-        # Step 3.
-        # Figure out which of all_pomsgsets each submission is relevant to,
-        # and return our mapping from all_pomsgset to various subsets of
-        # load_submissions.
-        pomsgset_ids = set(stored_pomsgsets)
-        for submission in relevant_submissions:
-            # There is a bit of special treatment for POSubmissions belonging
-            # to fuzzy POMsgSets, since we don't accept those as suggestions.
-            # That means that if we retrieve a submission for a fuzzy
-            # POMsgSet, it must be because that POMsgSet is one of the
-            # stored_pomsgsets.
-            # We can't just check submission.pomsgset.isfuzzy right away
-            # because that might cause submission.pomsgset to be fetched from
-            # database.  We've seen that add up to over a thousand retrievals
-            # on some requests.
-            # Instead, we start out by comparing the foreign-key value for
-            # submission.pomsgset to the list of stored_pomsgsets.  If, and
-            # only if, it is listed there, we also need to check it for
-            # fuzziness.  And in that case we'll also know that
-            # submission.pomsgset has already been fetched so we're not
-            # triggering a new database query.
-            owner_id = submission.pomsgsetID
-            primemsgid = available[submission.id]
-            assert (owner_id is not None,
-                    "POSubmission in database has no POMsgSet.")
-
-            if owner_id in pomsgset_ids and submission.pomsgset.isfuzzy:
-                # This is a POMsgSet that we've fetched (so we can access it
-                # without causing an additional database fetch) and it turns
-                # out to be fuzzy.  That implies that none of our pomsgsets
-                # are expecting it as a useful suggestion, though we do need
-                # to present it to its owning pomsgset.
-                of_pomsgset = submission.pomsgset
-                assert (of_pomsgset in takers_for_primemsgid[primemsgid],
-                        "Fuzzy POMsgSet submission retrieved for no purpose.")
-                assert (of_pomsgset in result,
-                        "Fetched submission for unexpected, fuzzy POMsgSet.")
-                result[of_pomsgset].append(submission)
-            else:
-                # Any other POSubmission we see here has to be non-fuzzy, and
-                # so it's relevant to any POMsgSets that refer to the same
-                # primemsgid, including the POMsgSet it itself is attached to.
-
-                # XXX: JeroenVermeulen 2007-08-02, this assertion may still
-                # trigger the unnecessary queries.  Remove it after testing
-                # with production data!  (bug ?????)
-                # XXX: JeroenVermeulen 2007-08-02, when landing this, register
-                # a bug reminding me to remove the assertion, and add it to
-                # the XXX above.
-                assert (not submission.pomsgset.isfuzzy,
-                        "Fuzzy POMsgSet submission fetched as a suggestion.")
-                for recipient in takers_for_primemsgid[primemsgid]:
-                    result[recipient].append(submission)
-
-        return result
-
 
 
 class POFile(SQLBase, POFileMixIn):

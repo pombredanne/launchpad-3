@@ -5,6 +5,7 @@ __all__ = ['POMsgSet', 'DummyPOMsgSet']
 
 import gettextpo
 
+from zope.component import getUtility
 from zope.interface import implements
 from zope.security.proxy import removeSecurityProxy
 from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
@@ -12,12 +13,13 @@ from sqlobject import (ForeignKey, IntCol, StringCol, BoolCol,
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
-from canonical.database.sqlbase import (flush_database_updates, quote,
-                                        SQLBase, sqlvalues)
+from canonical.database.sqlbase import (
+    flush_database_updates, quote, SQLBase, sqlvalues)
 from canonical.launchpad import helpers
-from canonical.launchpad.interfaces import IPOMsgSet, TranslationConflict
 from canonical.launchpad.database.posubmission import POSubmission
 from canonical.launchpad.database.potranslation import POTranslation
+from canonical.launchpad.interfaces import (
+    IPOMsgSet, TranslationConflict, IPOSubmissionSet)
 from canonical.lp.dbschema import (RosettaTranslationOrigin,
     TranslationValidationStatus)
 
@@ -59,29 +61,19 @@ class POMsgSetMixIn:
         This retrieves all POSubmissions that form useful suggestions for self
         from the database, as well as any POSubmissions that are already
         attached to self, all in new-to-old order of datecreated."""
-        # An SQL clause matching a POMsgSet to our own identity.  It goes into
-        # an OR expression, so default is false.
-        match_self_sql = 'false'
-        if self.id is not None:
-            match_self_sql = 'POMsgSet.id=%s' % quote(self)
+        dummy_pomsgset = []
+        stored_pomsgset = []
+        if self.id is None:
+            dummy_pomsgset = [self]
+        else:
+            stored_pomsgset = [self]
 
-        parameters = sqlvalues(
-            language=self.pofile.language,
-            primemsgid=self.potmsgset.primemsgid_ID)
+        subs = getUtility(IPOSubmissionSet).getSubmissionsFor(
+            stored_pomsgset, dummy_pomsgset)
 
-        parameters['match_self'] = match_self_sql
-
-        joins = ['POMsgSet', 'POTMsgSet']
-        query = """
-                POSubmission.pomsgset = POMsgSet.id AND
-                POMsgSet.language = %(language)s AND
-                POMsgSet.potmsgset = POTMsgSet.id AND
-                (%(match_self)s OR NOT POMsgSet.isfuzzy) AND
-                POTMsgSet.primemsgid = %(primemsgid)s
-            """ % parameters
-
-        return POSubmission.select(
-            query, clauseTables=joins, orderBy='-datecreated', distinct=True)
+        assert (len(subs.keys()) == 1,
+            "Received suggestions for unexpected POMsgSet.")
+        return subs[self]
 
     def initializeSubmissionsCaches(self, related_submissions=None):
         """See `IPOMsgSet`.""" 
@@ -125,11 +117,15 @@ class POMsgSetMixIn:
 
         # Now that we know what our active posubmissions are, filter out any
         # suggestions that refer to the same potranslations.
-        # XXX: JeroenVermeulen 2007-08-02, can we move this into SQL to speed
-        # up the big expensive queries on POSubmission?  (bug 30602)
         for pluralform in self.suggestions.keys():
             active = self.getActiveSubmission(pluralform)
             if active is not None and active.potranslation is not None:
+                active_translation = active.potranslationID
+                for suggestion in self.suggestions[pluralform]:
+                    assert (suggestion.potranslationID != active_translation,
+                        "Suggestions cache contains unnecessary suggestion")
+                # XXX: JeroenVermeulen 2007-08-05, this filtering no longer
+                # needed with "phase 6" optimizations for bug 30602.
                 self.suggestions[pluralform] = [
                     submission
                     for submission in self.suggestions.get(pluralform)
