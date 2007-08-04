@@ -11,6 +11,7 @@ __all__ = [
     'DistributionFacets',
     'DistributionSpecificationsMenu',
     'DistributionView',
+    'DistributionPPAView',
     'DistributionAllPackagesView',
     'DistributionBrandingView',
     'DistributionEditView',
@@ -41,8 +42,8 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IDistributionMirrorSet, IDistributionSet, IDistribution,
-    ILaunchBag, IPublishedPackageSet, MirrorContent, NotFoundError)
+    IDistributionMirrorSet, IDistributionSet, IDistribution, ILaunchBag,
+    IPublishedPackageSet, MirrorContent, NotFoundError)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
@@ -438,9 +439,15 @@ class DistributionView(BuildRecordsView):
         return sorted(serieses, key=operator.attrgetter('version'),
                       reverse=True)
 
-    def getAllPPAs(self):
-        """Return alls Personal Package Archive available."""
-        return getUtility(IArchiveSet).getAllPPAs()
+
+class DistributionPPAView(LaunchpadView):
+
+    def initialize(self):
+        """Setup a batched `IArchive` list."""
+        self.name_filter = self.request.get('name_filter', None)
+        ppas = self.context.searchPPAs(text=self.name_filter)
+        self.batchnav = BatchNavigator(ppas, self.request)
+        self.search_results = self.batchnav.currentBatch()
 
 
 class DistributionAllPackagesView(LaunchpadView):

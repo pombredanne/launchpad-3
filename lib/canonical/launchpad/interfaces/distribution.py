@@ -306,6 +306,20 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         that name in the distribution.
         """
 
+    def getAllPPAs():
+        """Return all PPAs for this distribution."""
+
+    def searchPPAs(text=None):
+        """Return all PPAs matching the given text in this distribution."""
+
+    def getPendingAcceptancePPAs():
+        """Return only pending acceptance PPAs in this distribution."""
+
+    def getPendingPublicationPPAs(distribution=None):
+        """Return only pending publication PPAs in this distribution."""
+
+
+
 
 class IDistributionSet(Interface):
     """Interface for DistrosSet"""
