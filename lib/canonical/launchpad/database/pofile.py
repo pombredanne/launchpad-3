@@ -289,6 +289,11 @@ class POFileMixIn(RosettaStats):
         # attached, and in those cases, we only show the latest of those
         # submissions.  We also leave out any submissions that offer the same
         # translation that is already active.
+        # There may be some overlap between this result set and the one for
+        # POSubmissions that are attached to our POMsgSets.  We tried adding a
+        # "where" condition to filter these out, but on a large test query, we
+        # found that this condition caught no duplications and slowed the
+        # query down by 15-20%.
         query = """
             SELECT DISTINCT pos.id, POTMsgSet.primemsgid
             FROM POSubmission pos
@@ -297,7 +302,6 @@ class POFileMixIn(RosettaStats):
             WHERE
                 POMsgSet.language = %(language)s AND
                 POTMsgSet.primemsgid IN %(wanted_primemsgids)s AND
-                NOT %(one_of_ours)s AND
                 NOT POMsgSet.isfuzzy AND
                 NOT EXISTS (
                     SELECT *
