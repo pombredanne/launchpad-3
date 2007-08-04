@@ -186,9 +186,9 @@ class Poll(SQLBase):
     def getWinners(self):
         """See IPoll."""
         assert self.isClosed()
-        # XXX: For now, this method works only for SIMPLE-style polls. This is
+        # XXX: GuilhermeSalgado 2005-08-24:
+        # For now, this method works only for SIMPLE-style polls. This is
         # not a problem as CONDORCET-style polls are disabled.
-        # GuilhermeSalgado 24/08/05
         assert self.type == PollAlgorithm.SIMPLE
         query = ("SELECT option FROM Vote WHERE poll = %d GROUP BY option "
                  "HAVING COUNT(*) = (SELECT COUNT(*) FROM Vote WHERE poll = %d "

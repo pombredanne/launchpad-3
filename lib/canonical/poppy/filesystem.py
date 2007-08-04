@@ -134,7 +134,7 @@ class UploadFileSystem:
                 raise OSError("Directory already exists:", path)
             raise OSError("OOPS, can't create:", path)
         else:
-            # XXX check leaf !?!?!
+            # XXX: cprov 2006-10-20: check leaf !?!?!
             os.makedirs(full_path)
 
     def remove(self, path):

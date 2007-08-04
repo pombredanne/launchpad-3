@@ -173,8 +173,9 @@ def extract_text(content):
     return text.strip()
 
 
-# XXX cprov 20070207: This function seems to be more specific to a particular
-# product (soyuz) than the rest. Maybe it belongs to somewhere else.
+# XXX cprov 2007-02-07: This function seems to be more specific to a
+# particular product (soyuz) than the rest. Maybe it belongs to
+# somewhere else.
 def parse_relationship_section(content):
     """Parser package relationship section.
 

@@ -172,10 +172,9 @@ class Person(SQLBase, HasSpecificationsMixin):
         orderBy='id')
     reviewerBounties = SQLMultipleJoin('Bounty', joinColumn='reviewer',
         orderBy='id')
-    # XXX: matsubara 2006-03-06: Is this really needed? There's no attribute
-    # 'claimant' in the Bounty database class or interface, but the column
-    # exists in the database.
-    # https://launchpad.net/products/launchpad/+bug/33935
+    # XXX: matsubara 2006-03-06 bug=33935: 
+    # Is this really needed? There's no attribute 'claimant' in the Bounty 
+    # database class or interface, but the column exists in the database.
     claimedBounties = MultipleJoin('Bounty', joinColumn='claimant',
         orderBy='id')
     subscribedBounties = SQLRelatedJoin('Bounty', joinColumn='person',
@@ -605,10 +604,10 @@ class Person(SQLBase, HasSpecificationsMixin):
             sourcepackagename = sourcepackagename_set.get(
                 row['sourcepackagename'])
             source_package = distribution.getSourcePackage(sourcepackagename)
-            # XXX: Add a tuple instead of the distribution package
+            # XXX: Bjorn Tillenius 2006-12-15:
+            # Add a tuple instead of the distribution package
             # directly, since DistributionSourcePackage doesn't define a
             # __hash__ method.
-            # -- Bjorn Tillenius, 2006-12-15
             packages_with_bugs.add((distribution, sourcepackagename))
             package_counts = dict(
                 package=source_package,
@@ -962,9 +961,9 @@ class Person(SQLBase, HasSpecificationsMixin):
         return Karma.selectBy(person=self,
             orderBy='-datecreated')[:quantity]
 
-    # XXX: This cache should no longer be needed once CrowdControl lands,
+    # XXX: StuartBishop 2006-05-10:
+    # This cache should no longer be needed once CrowdControl lands,
     # as apparently it will also cache this information.
-    # -- StuartBishop 20060510
     _inTeam_cache = None
 
     def inTeam(self, team):
@@ -1303,10 +1302,10 @@ class Person(SQLBase, HasSpecificationsMixin):
             self.invited_members,
             orderBy=self._sortingColumnsForSetOperations)
 
-    # XXX: myactivememberships and getActiveMemberships are rather
+    # XXX: kiko 2005-10-07:
+    # myactivememberships and getActiveMemberships are rather
     # confusingly named, and I just fixed bug 2871 as a consequence of
     # this. Is there a way to improve it?
-    #   -- kiko, 2005-10-07
     @property
     def myactivememberships(self):
         """See `IPerson`."""
@@ -1461,8 +1460,8 @@ class Person(SQLBase, HasSpecificationsMixin):
             raise TypeError, (
                 "Any person's email address must provide the IEmailAddress "
                 "interface. %s doesn't." % email)
-        # XXX stevea 05/07/05 this is here because of an SQLobject
-        # comparison oddity
+        # XXX stevea 2005-07-05:
+        # This is here because of an SQLobject comparison oddity.
         assert email.person.id == self.id, 'Wrong person! %r, %r' % (
             email.person, self)
 
@@ -1890,11 +1889,11 @@ class PersonSet:
             POFileTranslator.pofile = %s""" % quote(pofile),
             clauseTables=["POFileTranslator"],
             distinct=True,
-            # XXX: we can't use Person.sortingColumns because this is a
+            # XXX: kiko 2006-10-19:
+            # We can't use Person.sortingColumns because this is a
             # distinct query. To use it we'd need to add the sorting
             # function to the column results and then ignore it -- just
             # like selectAlso does, ironically.
-            #   -- kiko, 2006-10-19
             orderBy=["Person.displayname", "Person.name"])
         return contributors
 
@@ -2119,8 +2118,8 @@ class PersonSet:
         skip.append(('mailinglistsubscription', 'person'))
 
         # Update only the BountySubscriptions that will not conflict
-        # XXX: Add sampledata and test to confirm this case
-        # -- StuartBishop 20050331
+        # XXX: StuartBishop 2005-03-31:
+        # Add sampledata and test to confirm this case
         cur.execute('''
             UPDATE BountySubscription
             SET person=%(to_id)d
@@ -2289,8 +2288,8 @@ class PersonSet:
         skip.append(('sprintattendance', 'attendee'))
 
         # Update only the POSubscriptions that will not conflict
-        # XXX: Add sampledata and test to confirm this case
-        # -- StuartBishop 20050331
+        # XXX: StuartBishop 2005-03-31:
+        # Add sampledata and test to confirm this case.
         cur.execute('''
             UPDATE POSubscription
             SET person=%(to_id)d
@@ -2356,11 +2355,12 @@ class PersonSet:
             ''' % vars())
         skip.append(('translationimportqueueentry', 'importer'))
 
-        # XXX cprov 20070222: Since we only allow one PPA for each user,
+        # XXX cprov 2007-02-22 bug=87098:
+        # Since we only allow one PPA for each user,
         # we can't reassign the old user archive to the new user.
         # It need to be done manually, probably by reasinning all publications
         # to the old PPA to the new one, performing a careful_publishing on it
-        # and removing the old one from disk. See bug #87098
+        # and removing the old one from disk.
         skip.append(('archive', 'owner'))
 
         # Sanity check. If we have a reference that participates in a
@@ -2465,10 +2465,11 @@ class PersonSet:
 
     def getTranslatorsByLanguage(self, language):
         """See `IPersonSet`."""
-        # XXX CarlosPerelloMarin 20070331: The KarmaCache table doesn't have a
-        # field to store karma per language, so we are actually returning the
-        # people with the most translation karma that have this language
-        # selected in their preferences.  See bug #102257 for more info.
+        # XXX CarlosPerelloMarin 2007-03-31 bug=102257:
+        # The KarmaCache table doesn't have a field to store karma per
+        # language, so we are actually returning the people with the most
+        # translation karma that have this language selected in their
+        # preferences.
         return Person.select('''
             PersonLanguage.person = Person.id AND
             PersonLanguage.language = %s AND

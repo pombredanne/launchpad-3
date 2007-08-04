@@ -746,11 +746,11 @@ class QuestionTargetTraversalMixin:
 
 
 
-# XXX flacoste 2007/07/08 This menu shouldn't "extend" FAQCollectionMenu.
+# XXX flacoste 2007-07-08 bug=125851:
+# This menu shouldn't "extend" FAQCollectionMenu.
 # But this is needed because of limitations in the current menu architecture.
 # Menu should be built by merging all menus applying to the context object
 # (-based on the interfaces it provides).
-# See bug #125851
 class QuestionCollectionAnswersMenu(FAQCollectionMenu):
     """Base menu definition for QuestionCollection searchable by owner."""
 

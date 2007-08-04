@@ -435,9 +435,10 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "exception to this is when we allow users to create Launchpad "
             "profiles through the /people/+newperson page."),
         required=False, readonly=False)
-    # XXX: We can't use a Choice field here because we don't have a vocabulary
+    # XXX Guilherme Salgado 2006-11-10: 
+    # We can't use a Choice field here because we don't have a vocabulary
     # which contains valid people but not teams, and we don't really need one
-    # appart from here. -- Guilherme Salgado, 2006-11-10
+    # appart from here.
     registrant = Attribute('The user who created this profile.')
     # bounty relations
     ownedBounties = Attribute('Bounties issued by this person.')
@@ -646,13 +647,13 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     @invariant
     def personCannotHaveIcon(person):
-        # XXX: This invariant is busted! The person parameter provided to this
+        # XXX Guilherme Salgado 2007-05-28: 
+        # This invariant is busted! The person parameter provided to this
         # method will always be an instance of zope.formlib.form.FormData
         # containing only the values of the fields included in the POSTed
         # form. IOW, person.inTeam() will raise a NoInputData just like
         # person.teamowner would as it's not present in most of the
         # person-related forms.
-        # -- Guilherme Salgado, 2007-05-28
         if person.icon is not None and not person.isTeam():
             raise Invalid('Only teams can have an icon.')
 
@@ -1108,7 +1109,7 @@ class IPersonSet(Interface):
         The comment must be of the following form: "when %(action_details)s"
         (e.g. "when the foo package was imported into Ubuntu Breezy").
 
-        XXX sabdfl 14/06/05 this should be extended to be similar or
+        XXX sabdfl 2005-06-14: this should be extended to be similar or
         identical to the other person creation argument lists, so we can
         call it and create a full person if needed. Email would remain the
         deciding factor, we would not try and guess if someone existed based

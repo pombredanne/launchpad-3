@@ -210,7 +210,7 @@
                            <div class="pageheading"
                                 tal:condition="view/macro:pagehas/pageheading">
                             <metal:block define-slot="pageheading">
-                              <!-- XXX obsolete -->
+                              <!-- XXX Mark Shuttleworth 2007-04-30: Obsolete -->
                             </metal:block>
                           </div>
                           <tal:notifications
