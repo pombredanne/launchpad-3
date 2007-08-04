@@ -31,8 +31,8 @@ class BadUrlLaunchpad(Exception):
 
 def identical_formats(branch_one, branch_two):
     """Check if two branches have the same bzrdir, repo, and branch formats."""
-    # XXX AndrewBennetts 2006-05-18: comparing format objects is ugly.
-    # See bug 45277.
+    # XXX AndrewBennetts 2006-05-18 bug=45277: 
+    # comparing format objects is ugly.
     b1, b2 = branch_one, branch_two
     return (
         b1.bzrdir._format.__class__ == b2.bzrdir._format.__class__ and 
@@ -108,8 +108,8 @@ class BranchToMirror:
         # XXX AndrewBennetts 2006-05-26:
         #    sprout builds a working tree we don't need.
 
-        # XXX AndrewBennetts 2006-05-30:
-        #    sprout also fails to preserve the repository format!  Bug #47494.
+        # XXX AndrewBennetts 2006-05-30  Bug=47494:
+        #    sprout also fails to preserve the repository format!
         #    Here's what it should look like:
         #        source = self._source_branch
         #        revision = source.last_revision()

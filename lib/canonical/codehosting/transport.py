@@ -38,8 +38,8 @@ def split_with_padding(a_string, splitter, num_fields, padding=None):
     return tokens
 
 
-# XXX: JonathanLange 2007-06-13, This should probably be part of bzrlib.
-# See https://launchpad.net/bugs/120135.
+# XXX: JonathanLange 2007-06-13 bugs=120135:
+# This should probably be part of bzrlib.
 def makedirs(base_transport, path, mode=None):
     """Create 'path' on 'base_transport', even if parents of 'path' don't exist
     yet.
@@ -99,7 +99,8 @@ class LaunchpadServer(Server):
 
     def dirty(self, virtual_path):
         """Mark the branch containing virtual_path as dirty."""
-        # XXX: JonathanLange 2007-06-18, Note that we only mark branches as
+        # XXX: JonathanLange 2007-06-18 bugs=120949:
+        # Note that we only mark branches as
         # dirty if they end up calling VFS (i.e. Transport) methods. If a
         # client does a writing smart operation that doesn't use VFS, we won't
         # catch it. (e.g. Branch.set_last_revision). This problem will become
@@ -107,8 +108,6 @@ class LaunchpadServer(Server):
         #
         # Instead we should register our own smart request handlers to override
         # the builtin ones.
-        #
-        # See https://launchpad.net/bugs/120949.
         branch_id, ignored, path = self._translate_path(virtual_path)
         self._dirty_branch_ids.add(branch_id)
 
@@ -153,11 +152,10 @@ class LaunchpadServer(Server):
             if user_id == self.user_id:
                 product = '+junk'
             else:
-                # XXX: JonathanLange 2007-06-04, This should perhaps be
-                # 'PermissionDenied', not 'NoSuchFile'. However bzrlib doesn't
-                # translate PermissionDenied errors. See _translate_error in
-                # bzrlib/transport/remote.py.
-                # See Launchpad bug 118736.
+                # XXX: JonathanLange 2007-06-04 bug=118736
+                # This should perhaps be 'PermissionDenied', not 'NoSuchFile'.
+                # However bzrlib doesn't translate PermissionDenied errors.
+                # See _translate_error in bzrlib/transport/remote.py.
                 raise NoSuchFile(
                     "+junk is only allowed under user directories, not team "
                     "directories.")
@@ -202,9 +200,9 @@ class LaunchpadServer(Server):
 
         :return: The equivalent real path on the backing transport.
         """
-        # XXX: JonathanLange 2007-05-29, We could differentiate between
-        # 'branch not found' and 'not enough information in path to figure out
-        # a branch'.
+        # XXX: JonathanLange 2007-05-29: sWe could differentiate between
+        # 'branch not found' and 'not enough information in path to figure
+        # out a branch'.
         branch_id, permissions, path = self._translate_path(virtual_path)
         if branch_id == '':
             raise UntranslatablePath(path=virtual_path, user=self.user_name)

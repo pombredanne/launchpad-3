@@ -99,7 +99,7 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
         log.error(info)
         raise
 
-    # XXX cprov 20070103: remove security proxy of the Config instance
+    # XXX cprov 2007-01-03: remove security proxy of the Config instance
     # returned by IArchive. This is kinda of a hack because Config doesn't
     # have any interface yet.
     pubconf = removeSecurityProxy(pubconf)
@@ -349,7 +349,7 @@ class Publisher(object):
 
     def _writeDistroRelease(self, distroseries, pocket):
         """Write out the Release files for the provided distroseries."""
-        # XXX: untested method -- kiko, 2006-08-24
+        # XXX: kiko 2006-08-24: Untested method.
 
         # As we generate file lists for apt-ftparchive we record which
         # distroseriess and so on we need to generate Release files for.
@@ -413,11 +413,11 @@ class Publisher(object):
     def _writeDistroArchRelease(self, distroseries, pocket, component,
                                 architecture, all_files):
         """Write out a Release file for a DAR."""
-        # XXX: untested method -- kiko, 2006-08-24
+        # XXX kiko 2006-08-24: Untested method.
 
         full_name = distroseries.name + pocketsuffix[pocket]
 
-        # XXX cprov 20070711: it will be affected by CommercialRepo changes
+        # XXX cprov 2007-07-11: it will be affected by CommercialRepo changes.
         if self.archive == self.distro.main_archive:
             index_suffixes = ('', '.gz', '.bz2')
         else:

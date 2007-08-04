@@ -1128,9 +1128,9 @@ class ShippingRequestSet:
         csv_writer.writerow(header2)
         csv_writer.writerow(header3)
 
-        # XXX: I admit these names couldn't be worse, but they're only used
+        # XXX: Guilherme Salgado 2007-04-25:
+        # I admit these names couldn't be worse, but they're only used
         # a few lines below and I can't think of anything better.
-        # -- Guilherme Salgado, 2007-04-25
         cr = self._convert_results_to_dict_and_fill_gaps(
             current_series_request_distribution, row_numbers)
         cr = self._add_percentage_to_number_of_people(cr)
@@ -1483,9 +1483,9 @@ class ShippingRun(SQLBase):
 
             row.append('"%s"' % request.shipment.logintoken.encode('ASCII'))
             row.append('"%s"' % request.shippingservice.title.encode('ASCII'))
-            # XXX: 'display' is some magic number that's used by the shipping
+            # XXX: Guilherme Salgado 2005-10-04:
+            # 'display' is some magic number that's used by the shipping
             # company. Need to figure out what's it for and use a better name.
-            # -- Guilherme Salgado, 2005-10-04
             if request.getTotalApprovedCDs() >= 100:
                 display = 1
             else:

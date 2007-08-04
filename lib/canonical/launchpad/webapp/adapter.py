@@ -62,7 +62,7 @@ def _wasDisconnected(msg):
     The message will either be a string, or a dictionary mapping
     cursors to string messages.
     """
-    # XXX: 20070514 James Henstridge
+    # XXX: James Henstridge 2007-05-14:
     # This function needs to check exception messages in order to do
     # its job.  Hopefully we can clean this up when switching to
     # psycopg2, since it exposes the Postgres error codes through its

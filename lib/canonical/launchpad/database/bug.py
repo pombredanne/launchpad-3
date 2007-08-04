@@ -169,7 +169,7 @@ class Bug(SQLBase):
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
     mentoring_offers = SQLMultipleJoin(
             'MentoringOffer', joinColumn='bug', orderBy='id')
-    # XXX: kiko 2006-09-23: why is subscriptions ordered by ID?
+    # XXX: kiko 2006-09-23: Why is subscriptions ordered by ID?
     subscriptions = SQLMultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id',
             prejoins=["person"])
@@ -936,7 +936,7 @@ class BugSet:
                 bug.subscribe(context.security_contact)
             else:
                 bug.subscribe(context.owner)
-        # XXX: ElliotMurphy 2007-06-14, If we ever allow filing private
+        # XXX: ElliotMurphy 2007-06-14: If we ever allow filing private
         # non-security bugs, this test might be simplified to checking
         # params.private.
         elif params.product and params.product.private_bugs:

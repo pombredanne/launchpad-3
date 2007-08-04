@@ -84,10 +84,10 @@ def shipit_is_open(flavour):
         flavour, getUtility(ILaunchBag).user))
 
 
-# XXX: The LoginOrRegister class is not really designed to be reused. That
+# XXX: GuilhermeSalgado 2005-09-09:
+# The LoginOrRegister class is not really designed to be reused. That
 # class must either be fixed to allow proper reuse or we should write a new
-# class which doesn't reuses LoginOrRegister here. -- GuilhermeSalgado
-# 2005-09-09
+# class which doesn't reuses LoginOrRegister here.
 class ShipItLoginView(LoginOrRegister):
     """Process the login form and redirect the user to the request page."""
 
@@ -826,9 +826,9 @@ class ShippingRequestApproveOrDenyView(
             # This order was exported after the form was rendered; we can't
             # allow changing it, so we return to render the page again,
             # without the buttons that allow changing it.
-            # XXX: It's probably a good idea to notify the user about what
+            # XXX: Guilherme Salgado 2006-07-27:
+            # It's probably a good idea to notify the user about what
             # happened here.
-            # -- Guilherme Salgado, 2006-07-27
             return
 
         if 'DENY' not in form:
@@ -987,9 +987,9 @@ class ShippingRequestAdminView(GeneralFormView, ShippingRequestAdminMixinView):
         return initial
 
     def validate(self, data):
-        # XXX: Even shipit admins shouldn't be allowed to make requests with 0
+        # XXX: Guilherme Salgado 2006-04-21:
+        # Even shipit admins shouldn't be allowed to make requests with 0
         # CDs. We need to check this here.
-        # Guilherme Salgado, 2006-04-21
         errors = []
         country = data['country']
         if shipit_postcode_required(country) and not data['postcode']:
@@ -1099,12 +1099,12 @@ class ShipItNavigation(Navigation):
 
     @stepto('requests')
     def requests(self):
-        # XXX: permission=launchpad.Admin
+        # XXX: SteveAlexander 2005-10-06: permission=launchpad.Admin
         return getUtility(IShippingRequestSet)
 
     @stepto('standardoptions')
     def standardoptions(self):
-        # XXX: permission=launchpad.Admin
+        # XXX: SteveAlexander 2005-10-06: permission=launchpad.Admin
         return getUtility(IStandardShipItRequestSet)
 
 

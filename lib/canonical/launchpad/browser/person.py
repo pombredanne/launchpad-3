@@ -1419,9 +1419,9 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
             extra_params=inprogress_bugs_params)
 
     def shouldShowSearchWidgets(self):
-        # XXX: It's not possible to search amongst the bugs on maintained
+        # XXX: Guilherme Salgado 2005-11-05:
+        # It's not possible to search amongst the bugs on maintained
         # software, so for now I'll be simply hiding the search widgets.
-        # -- Guilherme Salgado, 2005-11-05
         return False
 
     # Methods that customize the advanced search form.
@@ -1939,12 +1939,13 @@ class PersonEditWikiNamesView(LaunchpadView):
         context.ubuntuwiki.wikiname = ubuntuwikiname
 
         for w in context.otherwikis:
-            # XXX: We're exposing WikiName IDs here because that's the only
+            # XXX: GuilhermeSalgado 25/08/2005:
+            # We're exposing WikiName IDs here because that's the only
             # unique column we have. If we don't do this we'll have to
             # generate the field names using the WikiName.wiki and
             # WikiName.wikiname columns (because these two columns make
             # another unique identifier for WikiNames), but that's tricky and
-            # not worth the extra work. -- GuilhermeSalgado 25/08/2005
+            # not worth the extra work.
             if form.get('remove_%d' % w.id):
                 w.destroySelf()
             else:
@@ -2006,10 +2007,11 @@ class PersonEditIRCNicknamesView(LaunchpadView):
 
         form = self.request.form
         for ircnick in self.context.ircnicknames:
-            # XXX: We're exposing IrcID IDs here because that's the only
+            # XXX: GuilhermeSalgado 25/08/2005:
+            # We're exposing IrcID IDs here because that's the only
             # unique column we have, so we don't have anything else that we
             # can use to make field names that allow us to uniquely identify
-            # them. -- GuilhermeSalgado 25/08/2005
+            # them.
             if form.get('remove_%d' % ircnick.id):
                 ircnick.destroySelf()
             else:
@@ -2140,8 +2142,8 @@ class PersonTranslationView(LaunchpadView):
     def batchnav(self):
         batchnav = BatchNavigator(self.context.translation_history,
                                   self.request)
-        # XXX: See bug 60320. Because of a template reference to
-        # pofile.potemplate.displayname, it would be ideal to also
+        # XXX: kiko 2006-03-17 bug=60320: Because of a template reference
+        # to pofile.potemplate.displayname, it would be ideal to also
         # prejoin inside translation_history:
         #   potemplate.potemplatename
         #   potemplate.productseries
@@ -2157,7 +2159,6 @@ class PersonTranslationView(LaunchpadView):
         # before passing it on to avoid reissuing it. Note also that the
         # fact that we iterate over currentBatch() here means that the
         # translation_history query is issued again. Tough luck.
-        #   -- kiko, 2006-03-17
         ids = set(record.pofile.potemplate.id
                   for record in batchnav.currentBatch())
         if ids:
@@ -2217,7 +2218,7 @@ class PersonGPGView(LaunchpadView):
         getattr(self, action)()
 
     def claim_gpg(self):
-        # XXX cprov 20050401 As "Claim GPG key" takes a lot of time, we
+        # XXX cprov 2005-04-01: As "Claim GPG key" takes a lot of time, we
         # should process it throught the NotificationEngine.
         gpghandler = getUtility(IGPGHandler)
         fingerprint = self.request.form.get('fingerprint')
@@ -2704,8 +2705,8 @@ class RequestPeopleMergeView(AddView):
         token = logintokenset.new(user, login, email.email,
                                   LoginTokenType.ACCOUNTMERGE)
 
-        # XXX: SteveAlexander: an experiment to see if this improves
-        #      problems with merge people tests.  2006-03-07
+        # XXX: SteveAlexander 2006-03-07: An experiment to see if this
+        #      improves problems with merge people tests.  
         import canonical.database.sqlbase
         canonical.database.sqlbase.flush_database_updates()
         token.sendMergeRequestEmail()

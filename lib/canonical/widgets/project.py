@@ -32,7 +32,7 @@ class ProjectScopeWidget(BrowserWidget, InputWidget):
 
         # We copy the title, description and vocabulary from the main
         # field since it determines the valid target types.
-        # XXX flacoste 2007/02/21 Because of bug #86861 we must
+        # XXX flacoste 2007-02-21 bug=86861: We must
         # use field.vocabularyName instead of the vocabulary parameter
         # otherwise SinglePopupWidget will fail.
         target_field = Choice(

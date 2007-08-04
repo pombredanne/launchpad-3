@@ -63,9 +63,9 @@ class EmptyDefaultChoice(Choice):
     implements(IEmptyDefaultChoice)
 
 
-# XXX: This sould probably be moved somewhere else, but as I need to get this
-# in production ASAP I'm leaving it here for now. -- Guilherme Salgado
-# 2005-10-03
+# XXX Guilherme Salgado 2005-10-03: 
+# This sould probably be moved somewhere else, but as I need to get this
+# in production ASAP I'm leaving it here for now.
 class EmptyDefaultDropdownWidget(DropdownWidget):
     """A dropdown widget in which the default option is one that is not part
     of its vocabulary.
