@@ -242,19 +242,8 @@ class POFileMixIn(RosettaStats):
         # but we don't want to retrieve all those potmsgsets just to get that
         # information.
 
-        # XXX: JeroenVermeulen 2007-06-11, In theory we should be able to fold
-        # step 2 into step 1, so we have only a single query.  But how do we
-        # get SQLObject to return not just POSubmissions but also one extra
-        # column from the join?
         parameters = sqlvalues(language=self.language,
             wanted_primemsgids=takers_for_primemsgid.keys())
-
-        parameters['ids'] = 'false'
-        if stored_pomsgsets:
-            ids_list = ','.join(
-                [quote(pomsgset) for pomsgset in stored_pomsgsets])
-            parameters['ids'] = 'POMsgSet.id IN (%s)' % ids_list
-
 
         # Step 1.
         # Find ids of all POSubmissions that might be relevant (either as
@@ -265,20 +254,65 @@ class POFileMixIn(RosettaStats):
         # as a suggestion, but if it happens to be attached to a msgset from
         # stored_pomsgsets, it will still be relevant to that msgset.
 
+        cur = cursor()
+        available = {}
+
+        # XXX: JeroenVermeulen 2007-08-04, the queries we fire off here are
+        # generalized, batched versions of what the POMsgSets can also do for
+        # themselves (see POMsgSet._getRelatedSubmissions).  If it's not too
+        # expensive, a reunification may be in order.
+        if stored_pomsgsets:
+            # Fetch submissions attached to our POMsgSets
+            parameters['pomsgsets'] = ','.join(
+                [quote(pomsgset) for pomsgset in stored_pomsgsets])
+            parameters['one_of_ours'] = ("POMsgSet.id IN (%s)" %
+                ','.join([quote(pomsgset) for pomsgset in stored_pomsgsets]))
+
+            query = """
+                SELECT DISTINCT POSubmission.id, POTMsgSet.primemsgid
+                FROM POSubmission
+                JOIN POMsgSet ON POSubmission.pomsgset = POMsgSet.id
+                JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
+                WHERE %(one_of_ours)s
+                """ % parameters
+
+            cur.execute(query)
+            available.update(dict(cur.fetchall()))
+        else:
+            parameters['one_of_ours'] = 'false'
+
+        # Fetch suggestions for our POMsgSets.  We don't keep track of
+        # suggestions and suggestions for our own POMsgSets separately at this
+        # point, because one POMsgSet's attached submission may be another
+        # POMsgSet's useful suggestion.  We sort that out later.
+        # Usually there will be many submissions with identical POTranslations
+        # attached, and in those cases, we only show the latest of those
+        # submissions.  We also leave out any submissions that offer the same
+        # translation that is already active.
         query = """
-            SELECT DISTINCT POSubmission.id, POTMsgSet.primemsgid
-            FROM POSubmission
-            JOIN POMsgSet ON POSubmission.pomsgset = POMsgSet.id
+            SELECT DISTINCT pos.id, POTMsgSet.primemsgid
+            FROM POSubmission pos
+            JOIN POMsgSet ON pos.pomsgset = POMsgSet.id
             JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
             WHERE
-                (%(ids)s OR NOT POMsgSet.isfuzzy) AND
                 POMsgSet.language = %(language)s AND
-                POTMsgSet.primemsgid IN %(wanted_primemsgids)s
+                POTMsgSet.primemsgid IN %(wanted_primemsgids)s AND
+                NOT %(one_of_ours)s AND
+                NOT POMsgSet.isfuzzy AND
+                NOT EXISTS (
+                    SELECT *
+                    FROM POSubmission better
+                    WHERE
+                        better.pomsgset = pos.pomsgset AND
+                        better.pluralform = pos.pluralform AND
+                        better.potranslation = pos.potranslation AND
+                        (better.active OR
+                            better.datecreated > pos.datecreated)
+                )
             """ % parameters
-        cur = cursor()
-
         cur.execute(query)
-        available = dict(cur.fetchall())
+        available.update(dict(cur.fetchall()))
+
         if not available:
             return result
 
