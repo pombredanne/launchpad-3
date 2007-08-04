@@ -133,7 +133,7 @@ class POMsgSetMixIn:
                 self.suggestions[pluralform] = [
                     submission
                     for submission in self.suggestions.get(pluralform)
-                    if submission.potranslation != active.potranslation]
+                    if submission.potranslationID != active.potranslationID]
 
         assert self._hasSubmissionsCaches(), (
             "Failed to set up POMsgSet's submission caches")
