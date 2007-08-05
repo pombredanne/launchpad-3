@@ -44,17 +44,18 @@ from canonical.lp.dbschema import (
     SpecificationImplementationStatus, SpecificationSort)
 
 from canonical.launchpad.interfaces import (
-    EmailAddressStatus, IBugTaskSet, ICalendarOwner, IDistribution,
-    IDistributionSet, IEmailAddress, IEmailAddressSet, IGPGKeySet, IHasIcon,
-    IHasLogo, IHasMugshot, IIrcID, IIrcIDSet, IJabberID, IJabberIDSet,
-    ILaunchBag, ILaunchpadCelebrities, ILaunchpadStatisticSet,
-    ILoginTokenSet, IPasswordEncryptor, IPerson, IPersonSet, IPillarNameSet,
-    IProduct, ISignedCodeOfConductSet, ISourcePackageNameSet, ISSHKey,
-    ISSHKeySet, ITeam, ITranslationGroupSet, IWikiName, IWikiNameSet,
-    JoinNotAllowed, LoginTokenType, PersonCreationRationale,
-    QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants, ShippingRequestStatus,
-    SSHKeyType, TeamMembershipRenewalPolicy, TeamMembershipStatus,
-    TeamSubscriptionPolicy, UBUNTU_WIKI_URL, UNRESOLVED_BUGTASK_STATUSES)
+    AccountStatus, BugTaskSearchParams, EmailAddressStatus, IBugTaskSet,
+    ICalendarOwner, IDistribution, IDistributionSet, IEmailAddress,
+    IEmailAddressSet, IGPGKeySet, IHasIcon, IHasLogo, IHasMugshot, IIrcID,
+    IIrcIDSet, IJabberID, IJabberIDSet, ILaunchBag, ILaunchpadCelebrities,
+    ILaunchpadStatisticSet, ILoginTokenSet, IPasswordEncryptor, IPerson,
+    IPersonSet, IPillarNameSet, IProduct, ISignedCodeOfConductSet,
+    ISourcePackageNameSet, ISSHKey, ISSHKeySet, ITeam, ITranslationGroupSet,
+    IWikiName, IWikiNameSet, JoinNotAllowed, LoginTokenType,
+    PersonCreationRationale, QUESTION_STATUS_DEFAULT_SEARCH, ShipItConstants,
+    ShippingRequestStatus, SSHKeyType, TeamMembershipRenewalPolicy,
+    TeamMembershipStatus, TeamSubscriptionPolicy, UBUNTU_WIKI_URL,
+    UNRESOLVED_BUGTASK_STATUSES)
 
 from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.cal import Calendar
@@ -124,6 +125,10 @@ class Person(SQLBase, HasSpecificationsMixin):
     openid_identifier = StringCol(
             dbName='openid_identifier', alternateID=True, notNull=True,
             default=DEFAULT)
+
+    account_status = EnumCol(
+        enum=AccountStatus, default=AccountStatus.NOACCOUNT)
+    account_status_comment = StringCol(default=None)
 
     city = StringCol(default=None)
     phone = StringCol(default=None)
@@ -1327,6 +1332,83 @@ class Person(SQLBase, HasSpecificationsMixin):
             clauseTables=['Person'],
             orderBy=Person.sortingColumns)
 
+    def deactivateAccount(self, comment):
+        """Deactivate this person's Launchpad account.
+
+        Deactivating an account means:
+            - Setting its password to NULL;
+            - Removing the user from all teams he's a member of;
+            - Changing all his email addresses' status to NEW;
+            - Revoking Code of Conduct signatures of that user;
+            - Reassigning bugs/specs assigned to him; 
+            - Changing the ownership of products/projects/teams owned by him.
+        """
+        assert self.is_valid_person, (
+            "You can only deactivate an account of a valid person.")
+
+        for membership in self.myactivememberships:
+            self.leave(membership.team)
+        # Make sure all further queries don't see this person as a member of
+        # any teams.
+        flush_database_updates()
+
+        # Deactivate CoC signatures, invalidate email addresses, unassign bug
+        # tasks and specs and reassign pillars and teams.
+        for coc in self.signedcocs:
+            coc.active = False
+        for email in self.validatedemails:
+            email.status = EmailAddressStatus.NEW
+        params = BugTaskSearchParams(self, assignee=self)
+        for bug_task in self.searchTasks(params):
+            assert bug_task.assignee == self, (
+                "This bugtask (%s) should be assigned to this person."
+                % bug_task.id)
+            bug_task.transitionToAssignee(None)
+        for spec in self.assigned_specs:
+            spec.assignee = None
+        registry = getUtility(ILaunchpadCelebrities).registry
+        for team in Person.selectBy(teamowner=self):
+            team.teamowner = registry
+        for pillar_name in self.getOwnedOrDrivenPillars():
+            pillar = pillar_name.pillar
+            if pillar.owner == self:
+                pillar.owner = registry
+            elif pillar.driver == self:
+                pillar.driver = registry
+            else:
+                raise AssertionError(
+                    "This person must be the owner or driver of this project "
+                    "(%s)" % pillar.pillar.name)
+
+        # Nuke all subscriptions of this person.
+        removals = [
+            ('BountySubscription', 'person'),
+            ('BranchSubscription', 'person'),
+            ('BugSubscription', 'person'),
+            ('QuestionSubscription', 'person'),
+            ('POSubscription', 'person'),
+            ('SpecificationSubscription', 'person'),
+            ('PackageBugContact', 'bugcontact'),
+            ('AnswerContact', 'person')]
+        cur = cursor()
+        for table, person_id_column in removals:
+            cur.execute("DELETE FROM %s WHERE %s=%d"
+                        % (table, person_id_column, self.id))
+
+        # Update the account's status, password, preferred email and name.
+        self.account_status = AccountStatus.DEACTIVATED
+        self.account_status_comment = comment
+        self.password = None
+        self.preferredemail.status = EmailAddressStatus.NEW
+        self._preferredemail_cached = None
+        base_new_name = self.name + '-deactivatedaccount'
+        new_name = base_new_name
+        count = 1
+        while Person.selectOneBy(name=new_name) is not None:
+            new_name = base_new_name + str(count)
+            count += 1
+        self.name = new_name
+
     def getActiveMemberships(self):
         """See `IPerson`."""
         return self._getMembershipsByStatuses(
@@ -1492,8 +1574,16 @@ class Person(SQLBase, HasSpecificationsMixin):
             # SQLObject will issue the changes and we can't set the new
             # address to PREFERRED until the old one has been set to VALIDATED
             preferredemail.syncUpdate()
-        # get the non-proxied EmailAddress object, so we can call
-        # syncUpdate() on it:
+        else:
+            # This is the first time we're confirming this person's email
+            # address, so we now assume this person has a Launchpad account.
+            # XXX: This is a hack! In the future we won't have this
+            # association between accounts and confirmed addresses, but this
+            # will do for now. -- Guilherme Salgado, 2007-07-03
+            self.account_status = AccountStatus.ACTIVE
+            self.account_status_comment = None
+        # Get the non-proxied EmailAddress object, so we can call
+        # syncUpdate() on it.
         email = EmailAddress.get(email.id)
         email.status = EmailAddressStatus.PREFERRED
         email.syncUpdate()

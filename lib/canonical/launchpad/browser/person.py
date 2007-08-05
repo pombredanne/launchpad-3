@@ -24,6 +24,7 @@ __all__ = [
     'PersonClaimView',
     'PersonCodeOfConductEditView',
     'PersonCommentedBugTaskSearchListingView',
+    'PersonDeactivateAccountView',
     'PersonDynMenu',
     'PersonEditEmailsView',
     'PersonEditHomePageView',
@@ -99,7 +100,9 @@ from zope.app.form.browser.add import AddView
 from zope.app.form.utility import setUpWidgets
 from zope.app.form.interfaces import (
         IInputWidget, ConversionError, WidgetInputError)
+from zope.app.session.interfaces import ISession
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
+from zope.event import notify
 from zope.interface import implements
 from zope.component import getUtility
 from zope.publisher.interfaces.browser import IBrowserPublisher
@@ -146,6 +149,8 @@ from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.publisher import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.interfaces import (
+    IPlacelessLoginSource, LoggedOutEvent)
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, canonical_url, ContextMenu,
     ApplicationMenu, enabled_with_permission, Navigation, stepto,
@@ -1074,6 +1079,38 @@ class PersonAddView(LaunchpadFormView):
             requesteremail=self.user.preferredemail.email,
             email=emailaddress, tokentype=LoginTokenType.NEWPROFILE)
         token.sendProfileCreatedEmail(person, creation_comment)
+
+
+class PersonDeactivateAccountView(LaunchpadFormView):
+
+    schema = IPerson
+    field_names = ['account_status_comment', 'password']
+    label = "Deactivate your Launchpad account"
+    custom_widget('account_status_comment', TextAreaWidget, height=5, width=60)
+
+    def validate(self, data):
+        loginsource = getUtility(IPlacelessLoginSource)
+        principal = loginsource.getPrincipalByLogin(
+            self.user.preferredemail.email)
+        assert principal is not None, "User must be logged in at this point."
+        if not principal.validate(data.get('password')):
+            self.setFieldError('password', 'Incorrect password.')
+            return
+
+    @action(_("Deactivate My Account"), name="deactivate")
+    def deactivate_action(self, action, data):
+        self.context.deactivateAccount(data['account_status_comment'])
+        session = ISession(self.request)
+        authdata = session['launchpad.authenticateduser']
+        previous_login = authdata.get('personid')
+        assert previous_login is not None, (
+            "User is not logged in; he can't be here.")
+        authdata['personid'] = None
+        authdata['logintime'] = datetime.utcnow()
+        notify(LoggedOutEvent(self.request))
+        self.request.response.addNoticeNotification(
+            _(u'Your account has been deactivated.'))
+        self.next_url = self.request.getApplicationURL()
 
 
 class PersonClaimView(LaunchpadFormView):
