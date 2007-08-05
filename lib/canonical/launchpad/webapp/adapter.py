@@ -62,7 +62,7 @@ def _wasDisconnected(msg):
     The message will either be a string, or a dictionary mapping
     cursors to string messages.
     """
-    # XXX: 20070514 James Henstridge
+    # XXX: James Henstridge 2007-05-14:
     # This function needs to check exception messages in order to do
     # its job.  Hopefully we can clean this up when switching to
     # psycopg2, since it exposes the Postgres error codes through its
@@ -319,6 +319,16 @@ def clear_request_started():
     _local.request_start_time = None
     _local.request_statements = []
 
+def summarize_requests():
+    """Produce human-readable summary of requests issued so far."""
+    secs = get_request_duration()
+    statements = getattr(_local, 'request_statements', [])
+    log = "%s queries issued in %.2f seconds" % (len(statements), secs)
+    return log
+
+def summarize_requests_to_stderr(*args):
+    """Output summarize_requests in a format suitable to stderr."""
+    sys.stderr.write(" v--- " + summarize_requests() + "\n")
 
 def get_request_statements():
     """Get the list of executed statements in the request.
@@ -594,4 +604,5 @@ def break_main_thread_db_access(*ignored):
         pass
     else:
         raise AssertionError("Failed to kill main thread SQLOS connection")
+
 

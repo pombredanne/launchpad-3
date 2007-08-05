@@ -476,7 +476,7 @@ class TranslationImportQueueEntry(SQLBase):
     def getElapsedTimeText(self):
         """See ITranslationImportQueue."""
         UTC = pytz.timezone('UTC')
-        # XXX: Carlos Perello Marin 2005-06-29 This code should be using the
+        # XXX: Carlos Perello Marin 2005-06-29: This code should be using the
         # solution defined by PresentingLengthsOfTime spec when it's
         # implemented.
         elapsedtime = (
@@ -642,12 +642,13 @@ class TranslationImportQueue:
         num_files = 0
         for tarinfo in tarball:
             filename = tarinfo.name
-            # XXX: JeroenVermeulen 2007-06-18, Work multi-format support in
+            # XXX: JeroenVermeulen 2007-06-18 bug=121798:
+            # Work multi-format support in.
             # For now we're only interested in PO and POT files.  We skip
             # "dotfiles," i.e. files whose names start with a dot, and we
             # ignore anything that isn't a file (such as directories,
             # symlinks, and above all, device files which could cause some
-            # serious security headaches).  (see bug 121798)
+            # serious security headaches).
             looks_useful = (
                 tarinfo.isfile() and
                 not filename.startswith('.') and
@@ -724,7 +725,7 @@ class TranslationImportQueue:
 
     def getPillarObjectsWithApprovedImports(self):
         """See ITranslationImportQueue."""
-        # XXX 20070522 DaniloSegan: When imported on the module level,
+        # XXX DaniloSegan 2007-05-22: When imported on the module level,
         # it errs out with: "ImportError: cannot import name Person"
         from canonical.launchpad.database.distroseries import DistroSeries
         from canonical.launchpad.database.product import Product
