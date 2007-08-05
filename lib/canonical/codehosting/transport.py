@@ -63,6 +63,11 @@ def makedirs(base_transport, path, mode=None):
 
 
 def get_path_segments(path):
+    """Break up the given path into segments.
+
+    If 'path' ends with a trailing slash, then the final empty segment is
+    ignored.
+    """
     return path.strip('/').split('/')
 
 
