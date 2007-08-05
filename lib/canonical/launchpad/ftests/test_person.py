@@ -16,7 +16,7 @@ class TestPerson(unittest.TestCase):
     def test_deactivateAccount_copes_with_names_already_in_use(self):
         """When a user deactivates his account, its name is changed.
 
-        We do that so that other user can use that name, which the original
+        We do that so that other users can use that name, which the original
         user doesn't seem to want anymore.
 
         It may happen that we attempt to rename an account to something that
@@ -26,6 +26,7 @@ class TestPerson(unittest.TestCase):
         sample_person = Person.byName('name12')
         login(sample_person.preferredemail.email)
         sample_person.deactivateAccount("blah!")
+        flush_database_updates()
         self.failUnlessEqual(sample_person.name, 'name12-deactivatedaccount')
         # Now that name12 is free Foo Bar can use it.
         foo_bar = Person.byName('name16')
@@ -34,6 +35,7 @@ class TestPerson(unittest.TestCase):
         # other than name12-deactivatedaccount because that is already in use.
         login(foo_bar.preferredemail.email)
         foo_bar.deactivateAccount("blah!")
+        flush_database_updates()
         self.failUnlessEqual(foo_bar.name, 'name12-deactivatedaccount1')
 
     def test_getDirectMemberIParticipateIn(self):
