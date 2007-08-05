@@ -242,7 +242,7 @@ class POFileMixIn(RosettaStats):
         # but we don't want to retrieve all those potmsgsets just to get that
         # information.
 
-        # XXX: JeroenVermeulen 2007-06-11, In theory we should be able to fold
+        # XXX: JeroenVermeulen 2007-06-11: In theory we should be able to fold
         # step 2 into step 1, so we have only a single query.  But how do we
         # get SQLObject to return not just POSubmissions but also one extra
         # column from the join?
