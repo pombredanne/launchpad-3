@@ -403,7 +403,7 @@ class DSCFile(SourceUploadFile, SignableTagFile):
         try:
             shutil.rmtree(tmpdir)
         except OSError, error:
-            # XXX: dsilvers: 20060315: We currently lack a test for this.
+            # XXX: dsilvers 2006-03-15: We currently lack a test for this.
             if errno.errorcode[error.errno] != 'EACCES':
                 yield UploadError("%s: couldn't remove tmp dir %s: code %s" % (
                                   self.filename, tmpdir, error.errno))

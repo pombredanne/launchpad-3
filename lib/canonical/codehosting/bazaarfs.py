@@ -158,10 +158,9 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
         # XXX AndrewBennetts 2006-02-06: Same comment as
         # SFTPServerUserDir.createDirectory (see
         # http://twistedmatrix.com/bugs/issue1223)
-        # XXX AndrewBennetts 2006-03-01: We should ensure that if createBranch
-        # fails for some reason (e.g. invalid name), that we report a useful
-        # error to the client.  See
-        # https://launchpad.net/products/launchpad/+bug/33223
+        # XXX AndrewBennetts 2006-03-01 bug=33223:
+        # We should ensure that if createBranch fails for some reason
+        # (e.g. invalid name),that we report a useful error to the client.
         if self.exists(childName):
             # "mkdir failed" is the magic string that bzrlib will interpret to
             # mean "already exists".
@@ -316,9 +315,9 @@ class SFTPServerBranch(WriteLoggingDirectory):
             # product, the next is the username and the third is the root of
             # the SFTP server.
 
-            # XXX - this is an awkward way of finding the root. Replace with
-            # something that is clearer and requires fewer comments.
-            # -- jml, 2007-02-14
+            # XXX jml 2007-02-14: This is an awkward way of finding the root.
+            # Replace with something that is clearer and requires fewer
+            #  comments.
             root = self.parent.parent.parent
             self._listener = root.listenerFactory(self.branchID)
         self._listener()

@@ -61,8 +61,8 @@ def _check_translation_perms(permission, translators, person):
     """
     # Let's determine if the person is part of a designated translation team
     is_designated_translator = False
-    # XXX sabdfl 25/05/05 this code could be improved when we have
-    # implemented CrowdControl
+    # XXX sabdfl 2005-05-25:
+    # This code could be improved when we have implemented CrowdControl.
     for translator in translators:
         if person.inTeam(translator):
             is_designated_translator = True
@@ -114,13 +114,13 @@ def _can_edit_translations(pofile, person):
     if person is None:
         return False
 
-    # XXX Carlos Perello Marin 20060207: We should not check the
-    # permissions here but use the standard security system. Please, look
-    # at https://launchpad.net/products/rosetta/+bug/4814 bug for more
-    # details.
+    # XXX Carlos Perello Marin 2006-02-07 bug=4814: 
+    # We should not check the permissions here but use the standard
+    # security system.
 
-    # XXX Carlos Perello Marin 20060208: The check person.id ==
-    # rosetta_experts.id must be removed as soon as the bug #30789 is closed.
+    # XXX Carlos Perello Marin 2006-02-08 bug=30789: 
+    # The check person.id == rosetta_experts.id must be removed as soon as
+    # the is closed.
 
     # Rosetta experts and admins can always edit translations.
     admins = getUtility(ILaunchpadCelebrities).admin
@@ -890,11 +890,11 @@ class POFile(SQLBase, POFileMixIn):
             else:
                 # we absolutely don't know it; only complain if
                 # a plural translation is present
-                # XXX Carlos Perello Marin 2005-06-15: We should implement:
-                # https://launchpad.ubuntu.com/malone/bugs/1186 instead of
+                # XXX Carlos Perello Marin 2005-06-15 bugs=1186: 
+                # We should implement this bug instead of
                 # set it to this default value...
                 new_header['Plural-Forms'] = 1
-        # XXX sabdfl 27/05/05 should we also differentiate between
+        # XXX sabdfl 2005-05-27 should we also differentiate between
         # washeaderfuzzy and isheaderfuzzy?
         self.topcomment = new_header.comment
         self.header = new_header.msgstr
@@ -1101,10 +1101,10 @@ class POFile(SQLBase, POFileMixIn):
         file = StringIO.StringIO(contents)
 
 
-        # XXX CarlosPerelloMarin 20060227: Added the debugID argument to help
-        # us to debug bug #1887 on production. This will let us track this
-        # librarian import so we can discover why sometimes, the fetch of it
-        # fails.
+        # XXX CarlosPerelloMarin 2006-02-27: Added the debugID argument to
+        # help us to debug bug #1887 on production. This will let us track
+        # this librarian import so we can discover why sometimes, the fetch
+        # of it fails.
         self.exportfile = alias_set.create(
             filename, size, file, 'application/x-po',
             debugID='pofile-id-%d' % self.id)
@@ -1144,10 +1144,10 @@ class POFile(SQLBase, POFileMixIn):
             try:
                 return self.fetchExportCache()
             except LookupError:
-                # XXX: Carlos Perello Marin 20060224 LookupError is a workaround
-                # for bug #1887. Something produces LookupError exception and
-                # we don't know why. This will allow us to provide an export
-                # in those cases.
+                # XXX: Carlos Perello Marin 2006-02-24: LookupError is a
+                # workaround for bug #1887. Something produces LookupError
+                # exception and we don't know why. This will allow us to
+                # provide an export in those cases.
                 logging.error(
                     "Error fetching a cached file from librarian", exc_info=1)
             except URLError:

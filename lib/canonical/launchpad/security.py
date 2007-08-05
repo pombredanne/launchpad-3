@@ -7,7 +7,7 @@ __metaclass__ = type
 from zope.interface import implements, Interface
 from zope.component import getUtility
 
-# XXX: thumper 2007-05-25
+# XXX: thumper 2007-05-25:
 # This import should really be tidied up. Made into alphabetical
 # order ideally.
 from canonical.launchpad.interfaces import (
@@ -731,9 +731,8 @@ class AdminPOTemplateDetails(OnlyRosettaExpertsAndAdmins):
     usedfor = IPOTemplate
 
 
-# XXX: Carlos Perello Marin 2005-05-24: This should be using
-# SuperSpecialPermissions when implemented.
-# See: https://launchpad.ubuntu.com/malone/bugs/753/
+# XXX: Carlos Perello Marin 2005-05-24 bug=753: 
+# This should be using SuperSpecialPermissions when implemented.
 class AddPOTemplate(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Append'
     usedfor = IProductSeries
@@ -779,16 +778,14 @@ class EditTranslationGroupSet(OnlyRosettaExpertsAndAdmins):
     usedfor = ITranslationGroupSet
 
 
-# XXX: Carlos Perello Marin 2005-05-24: This should be using
-# SuperSpecialPermissions when implemented.
-# See: https://launchpad.ubuntu.com/malone/bugs/753/
+# XXX: Carlos Perello Marin 2005-05-24 bug=753: 
+# This should be using SuperSpecialPermissions when implemented.
 class ListProductPOTemplateNames(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = IProduct
 
-# XXX: Carlos Perello Marin 2005-05-24: This should be using
-# SuperSpecialPermissions when implemented.
-# See: https://launchpad.ubuntu.com/malone/bugs/753/
+# XXX: Carlos Perello Marin 2005-05-24 bug=753: 
+# This should be using SuperSpecialPermissions when implemented.
 class ListSourcePackagePOTemplateNames(OnlyRosettaExpertsAndAdmins):
     permission = 'launchpad.Admin'
     usedfor = ISourcePackage
@@ -892,7 +889,7 @@ class AdminBuilder(AdminByBuilddAdmin):
     usedfor = IBuilder
 
 
-# XXX cprov 20060731: As soon as we have external builders, as presumed
+# XXX cprov 2006-07-31: As soon as we have external builders, as presumed
 # in the original plan, we should grant some rights to the owners and
 # that's what Edit is for.
 class EditBuilder(AdminByBuilddAdmin):
