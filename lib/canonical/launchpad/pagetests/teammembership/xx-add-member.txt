@@ -43,7 +43,7 @@ On the other hand, if the member is among the inactive/proposed members of
 the team, we'll simply change the membership's status and say that it was
 successfully added.
 
-    >>> from canonical.lp.dbschema import TeamMembershipStatus
+    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
     >>> cprov_landscape_membership.setStatus(
     ...     TeamMembershipStatus.DEACTIVATED, landscape_team.teamowner)
     >>> cprov_landscape_membership.syncUpdate()

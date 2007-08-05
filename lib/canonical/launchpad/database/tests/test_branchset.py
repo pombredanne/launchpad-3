@@ -9,12 +9,10 @@ from unittest import TestCase, TestLoader
 from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
-    BranchCreationForbidden, BranchCreatorNotMemberOfOwnerTeam,
-    IBranchSet, IPersonSet, IProductSet)
-
-from canonical.lp.dbschema import (
-    BranchLifecycleStatus, BranchType, BranchVisibilityRule,
-    PersonCreationRationale, TeamSubscriptionPolicy)
+    BranchType, BranchLifecycleStatus, BranchCreationForbidden,
+    BranchCreatorNotMemberOfOwnerTeam, BranchVisibilityRule,
+    IBranchSet, IPersonSet, IProductSet, PersonCreationRationale,
+    TeamSubscriptionPolicy)
 
 from canonical.testing import LaunchpadFunctionalLayer
 
@@ -64,8 +62,9 @@ class TestBranchSet(TestCase):
         original_branches = list(
             self.branch_set.getLatestBranchesForProduct(self.product, 5))
         branch = original_branches[0]
-        # XXX: JonathanLange 2007-07-06, WHITEBOXING. The anonymous user cannot
-        # change branch details, so we remove the security proxy and change it.
+        # XXX: JonathanLange 2007-07-06: WHITEBOXING. The anonymous user
+        # cannot change branch details, so we remove the security proxy and
+        # change it.
         branch = removeSecurityProxy(branch)
         branch.lifecycle_status = BranchLifecycleStatus.ABANDONED
         syncUpdate(branch)
@@ -704,8 +703,8 @@ class JunkBranches(BranchVisibilityPolicyTestCase):
         as public branches.
         """
         self.assertPublic(self.albert, self.albert)
-        # XXX: thumper 2007-06-22
-        # bug 120501 is about whether or not users are able to create junk
+        # XXX: thumper 2007-06-22 bug=120501 
+        # Bug 120501 is about whether or not users are able to create junk
         # branches in the team namespace.
         self.assertPublic(self.albert, self.xray)
         self.assertPublic(self.albert, self.yankee)

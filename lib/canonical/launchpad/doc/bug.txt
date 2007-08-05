@@ -30,12 +30,12 @@ raised:
     >>> bugset.get(123456)
     Traceback (most recent call last):
       ...
-    NotFoundError: 'Unable to locate bug with ID 123456'
+    NotFoundError: 'Unable to locate bug with ID 123456.'
 
     >>> bugset.getByNameOrID('+bugs')
     Traceback (most recent call last):
       ...
-    NotFoundError: 'Unable to locate bug with nickname +bugs'
+    NotFoundError: 'Unable to locate bug with nickname +bugs.'
 
 
 == Searching for Bugs ==
@@ -280,7 +280,7 @@ passing both a comment /and/ a msg would have raised an AssertionError:
     >>> added_bug = getUtility(IBugSet).createBug(params)
     Traceback (most recent call last):
       ...
-    AssertionError: Expected either a comment or a msg, but got both
+    AssertionError: Expected either a comment or a msg, but got both.
 
 
 So, let's continue:
@@ -440,8 +440,8 @@ Modifying a bugtask will update IBug.date_last_updated.
 
     >>> firefox_task = firefox_bug.bugtasks[0]
 
-    >>> print firefox_task.targetname
-    firefox (upstream)
+    >>> print firefox_task.bugtargetdisplayname
+    Mozilla Firefox
 
     >>> print firefox_task.importance.title
     Undecided
@@ -747,8 +747,8 @@ Now, let's iterate over the bug tasks, some complete and others
 incomplete, and show the status of each of the tasts:
 
     >>> for task in b8.bugtasks:
-    ...     print task.targetname, task.is_complete
-    firefox (upstream) False
+    ...     print task.bugtargetdisplayname, task.is_complete
+    Mozilla Firefox False
     mozilla-firefox (Debian) True
 
 == Bug Tasks ==
@@ -761,7 +761,7 @@ You can get the set of bugtasks for at bug with the 'bugtasks' attribute:
 
     >>> bug_two = bugset.get(2)
     >>> for task in bug_two.bugtasks: print task.target.displayname
-    Ubuntu
+    Tomcat
     Ubuntu
     Hoary
     mozilla-firefox in debian
@@ -771,7 +771,7 @@ You can also get a list of the "LP pillars" affected by a particular bug.
 
     >>> for pillar in bug_two.affected_pillars:
     ...     print pillar.displayname
-    Ubuntu
+    Tomcat
     Ubuntu
     Debian
 
@@ -780,10 +780,10 @@ Yes, this is TERRIBLE sample data, but it serves to illustrate the point.
 If you are interested in bugtask targeted to a specific target, you can
 use getBugTask() to get it.
 
-    >>> ubuntu_product = getUtility(IProductSet).getByName('ubuntu-product')
-    >>> ubuntu_product_task = bug_two.getBugTask(ubuntu_product)
-    >>> ubuntu_product_task.target.name
-    u'ubuntu-product'
+    >>> tomcat = getUtility(IProductSet).getByName('tomcat')
+    >>> tomcat_task = bug_two.getBugTask(tomcat)
+    >>> tomcat_task.target.name
+    u'tomcat'
 
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
     >>> ubuntu_task = bug_two.getBugTask(ubuntu)
@@ -811,3 +811,27 @@ If the bug isn't targeted to the target, None is returned.
 
     >>> bug_two.getBugTask(debian) is None
     True
+
+== Bug Comments ==
+
+A bug comment is actually made up of a number of chunks. The
+IBug.getMessageChunks() method allows you to retreive these chunks in a
+single shot.
+
+    >>> from canonical.ftests.pgsql import CursorWrapper
+    >>> CursorWrapper.record_sql = True
+    >>> queries = len(CursorWrapper.last_executed_sql)
+
+    >>> chunks = bug_two.getMessageChunks()
+    >>> for chunk in sorted(chunks, key=lambda x:x.id):
+    ...    chunk.id, chunk.message.id, chunk.message.owner.id, chunk.content[:30]
+    (4, 1, 16, u'Problem exists between chair a')
+    (7, 5, 12, u'This would be a real killer fe')
+    (8, 6, 12, u'Oddly enough the bug system se')
+
+It's done in a way that we only issue two queries to fetch all this
+information, too:
+
+    >>> len(CursorWrapper.last_executed_sql) - queries
+    2
+

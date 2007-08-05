@@ -38,9 +38,9 @@ class TestFilesystem(ServerTestCase, TestCaseWithTransport):
     layer = TwistedBzrlibLayer
 
     def _cleanUp(self, result):
-        # XXX: JonathanLange 2007-06-13, Override Twisted's post-test cleanup.
+        # XXX: JonathanLange 2007-06-13 bug=120156 
+        # Override Twisted's post-test cleanup.
         # The tests fail badly if this is removed, for unknown reasons.
-        # See Launchpad bug 120156.
         from twisted.internet import defer
         return defer.succeed(None)
 
@@ -248,9 +248,9 @@ class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
     layer = TwistedBzrlibLayer
 
     def _cleanUp(self, result):
-        # XXX: JonathanLange 2007-06-13, Override Twisted's post-test cleanup.
-        # The tests fail badly if this is removed, for unknown reasons.
-        # See Launchpad bug 120156.
+        # XXX: JonathanLange 2007-06-13 bug=120156: Override Twisted's
+        # post-test cleanup. The tests fail badly if this is removed, for
+        # unknown reasons.
         from twisted.internet import defer
         return defer.succeed(None)
 
@@ -285,7 +285,7 @@ class TestErrorMessages(ServerTestCase, TestCaseWithTransport):
             transport.mkdir, '~testuser/no-such-product/new-branch')
         self.assertIn(
             "Directories directly under a user directory must be named after "
-            "a product name registered in Launchpad",
+            "a project name registered in Launchpad",
             str(e))
 
     @deferToThread

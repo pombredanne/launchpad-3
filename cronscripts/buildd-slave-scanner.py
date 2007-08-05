@@ -32,7 +32,8 @@ class SlaveScanner(LaunchpadCronScript):
 
         builder_set = getUtility(IBuilderSet)
         buildMaster = builder_set.pollBuilders(self.logger, self.txn)
-        #XXX: Only needed until the soyuz buildmaster class is fully deleted.
+        # XXX: lifeless 2007-05-25:
+        # Only needed until the soyuz buildmaster class is fully deleted.
         builder_set.dispatchBuilds(self.logger, removeSecurityProxy(buildMaster))
 
     @property

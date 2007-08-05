@@ -13,12 +13,12 @@ from urllib import urlencode
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IFAQCollection, ISearchFAQsForm, QUESTION_STATUS_DEFAULT_SEARCH)
+    IFAQCollection, ISearchFAQsForm, QUESTION_STATUS_DEFAULT_SEARCH,
+    QuestionSort)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, LaunchpadFormView, Link,
     safe_action)
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import QuestionSort
 
 
 class FAQCollectionMenu(ApplicationMenu):
@@ -53,7 +53,7 @@ class SearchFAQsView(LaunchpadFormView):
     @property
     def heading(self):
         """Return the heading that should be used for the listing."""
-        replacements=dict(
+        replacements = dict(
             displayname=self.context.displayname,
             search_text=self.search_text)
         if self.search_text:
@@ -65,7 +65,7 @@ class SearchFAQsView(LaunchpadFormView):
     @property
     def empty_listing_message(self):
         """Return the message to render when there are no FAQs to display."""
-        replacements=dict(
+        replacements = dict(
             displayname=self.context.displayname,
             search_text=self.search_text)
         if self.search_text:
