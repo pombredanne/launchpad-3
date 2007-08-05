@@ -820,6 +820,7 @@ single shot.
 
     >>> from canonical.ftests.pgsql import CursorWrapper
     >>> CursorWrapper.record_sql = True
+    >>> queries = len(CursorWrapper.last_executed_sql)
 
     >>> chunks = bug_two.getMessageChunks()
     >>> for chunk in sorted(chunks, key=lambda x:x.id):
@@ -831,6 +832,6 @@ single shot.
 It's done in a way that we only issue two queries to fetch all this
 information, too:
 
-    >>> len(CursorWrapper.last_executed_sql)
+    >>> len(CursorWrapper.last_executed_sql) - queries
     2
 

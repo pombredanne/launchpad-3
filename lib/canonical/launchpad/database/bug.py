@@ -601,7 +601,8 @@ class Bug(SQLBase):
         # with a million comments.
         owner_ids = set()
         for chunk in chunks:
-            owner_ids.add(str(chunk.message.ownerID))
+            if chunk.message.ownerID:
+                owner_ids.add(str(chunk.message.ownerID))
         list(Person.select("ID in (%s)" % ",".join(owner_ids)))
 
         return chunks
