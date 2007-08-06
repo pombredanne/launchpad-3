@@ -142,10 +142,10 @@
         name="specialrequest">
     </browser:page>
 
-    <!-- XXX: This needs to be moved into a normal browser:page declaration,
-    like specialrequest/myrequest, to avoid having all these definitions of the
-    widgets' lengths. 
-    Guilherme Salgado, 2006-05-24
+    <!-- XXX: Guilherme Salgado 2006-05-24:
+         This needs to be moved into a normal browser:page declaration,
+         like specialrequest/myrequest, to avoid having all these
+         definitions of the widgets' lengths. 
     -->
     <browser:generalform
         for="canonical.launchpad.interfaces.IShipItApplication"

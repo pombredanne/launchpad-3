@@ -103,7 +103,7 @@ class DistributionSourcePackage(BugTargetBase,
             distribution=self.distribution,
             sourcepackagerelease=spph[0].sourcepackagerelease)
 
-    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
+    # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
     def currentrelease(self):
         """See IDistributionSourcePackage."""
@@ -204,7 +204,7 @@ class DistributionSourcePackage(BugTargetBase,
             return None
         return cache.binpkgnames
 
-    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
+    # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
     def by_distroseriess(self):
         """See IDistributionSourcePackage."""
@@ -220,7 +220,7 @@ class DistributionSourcePackage(BugTargetBase,
         """See IDistributionSourcePackage."""
         return self._getPublishingHistoryQuery()
 
-    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
+    # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
     def current_publishing_records(self):
         """See IDistributionSourcePackage."""
@@ -249,7 +249,7 @@ class DistributionSourcePackage(BugTargetBase,
             prejoinClauseTables=['SourcePackageRelease'],
             orderBy='-datecreated')
 
-    # XXX: bad method name, no need to be a property -- kiko, 2006-08-16
+    # XXX kiko 2006-08-16: Bad method name, no need to be a property.
     @property
     def releases(self):
         """See IDistributionSourcePackage."""

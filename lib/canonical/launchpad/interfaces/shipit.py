@@ -6,14 +6,17 @@ __all__ = ['IStandardShipItRequest', 'IStandardShipItRequestSet',
            'IShipmentSet', 'ShippingRequestPriority', 'IShipItReport',
            'IShipItReportSet', 'IShippingRequestAdmin', 'IShippingRequestEdit',
            'SOFT_MAX_SHIPPINGRUN_SIZE', 'ShipItConstants',
-           'IShippingRequestUser', 'MAX_CDS_FOR_UNTRUSTED_PEOPLE']
+           'IShippingRequestUser', 'MAX_CDS_FOR_UNTRUSTED_PEOPLE',
+           'ShipItDistroSeries', 'ShipItArchitecture', 'ShipItFlavour',
+           'ShippingService', 'ShippingRequestStatus']
 
 from zope.schema import Bool, Choice, Int, Datetime, TextLine
 from zope.interface import Interface, Attribute, implements
 from zope.schema.interfaces import IChoice
 from zope.app.form.browser.itemswidgets import DropdownWidget
 
-from canonical.lp.dbschema import ShipItDistroSeries
+from canonical.lazr import DBEnumeratedType, DBItem
+
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.interfaces.validation import (
     validate_shipit_recipientdisplayname, validate_shipit_phone,
@@ -31,6 +34,147 @@ from canonical.launchpad import _
 SOFT_MAX_SHIPPINGRUN_SIZE = 10000
 
 MAX_CDS_FOR_UNTRUSTED_PEOPLE = 5
+
+
+class ShippingRequestStatus(DBEnumeratedType):
+    """The status of a given ShippingRequest."""
+
+    PENDING = DBItem(0, """
+        Pending
+
+        The request is pending approval.
+        """)
+
+    APPROVED = DBItem(1, """
+        Approved (unshipped)
+
+        The request is approved but not yet sent to the shipping company.
+        """)
+
+    DENIED = DBItem(2, """
+        Denied
+
+        The request is denied.
+        """)
+
+    CANCELLED = DBItem(3, """
+        Cancelled
+
+        The request is cancelled.
+        """)
+
+    SHIPPED = DBItem(4, """
+        Approved (shipped)
+
+        The request was sent to the shipping company.
+        """)
+
+    PENDINGSPECIAL = DBItem(5, """
+        Pending Special Consideration
+
+        This request needs special consideration.
+        """)
+
+    DUPLICATEDADDRESS = DBItem(6, """
+        Pending Special Consideration (dupe address)
+
+        This request needs special consideration because other users already
+        requested CDs to the same address.
+        """)
+
+
+class ShippingService(DBEnumeratedType):
+    """The Shipping company we use to ship CDs."""
+
+    TNT = DBItem(1, """
+        TNT
+
+        The TNT shipping company.
+        """)
+
+    SPRING = DBItem(2, """
+        Spring
+
+        The Spring shipping company.
+        """)
+
+
+class ShipItFlavour(DBEnumeratedType):
+    """The Distro Flavour, used only to link with ShippingRequest."""
+
+    UBUNTU = DBItem(1, """
+        Ubuntu
+
+        The Ubuntu flavour.
+        """)
+
+    KUBUNTU = DBItem(2, """
+        Kubuntu
+
+        The Kubuntu flavour.
+        """)
+
+    EDUBUNTU = DBItem(3, """
+        Edubuntu
+
+        The Edubuntu flavour.
+        """)
+
+
+class ShipItArchitecture(DBEnumeratedType):
+    """The Distro Architecture, used only to link with ShippingRequest."""
+
+    X86 = DBItem(1, """
+        PC
+
+        Intel/X86 processors.
+        """)
+
+    AMD64 = DBItem(2, """
+        64-bit PC
+
+        AMD64 or EM64T based processors.
+        """)
+
+    PPC = DBItem(3, """
+        Mac
+
+        PowerPC processors.
+        """)
+
+
+class ShipItDistroSeries(DBEnumeratedType):
+    """The Distro Release, used only to link with ShippingRequest."""
+
+    BREEZY = DBItem(1, """
+        5.10 (Breezy Badger)
+
+        The Breezy Badger release.
+        """)
+
+    DAPPER = DBItem(2, """
+        6.06 LTS (Dapper Drake)
+
+        The Dapper Drake lont-term-support release.
+        """)
+
+    EDGY = DBItem(3, """
+        6.10 (Edgy Eft)
+
+        The Edgy Eft release.
+        """)
+
+    FEISTY = DBItem(4, """
+        7.04 (Feisty Fawn)
+
+        The Feisty Fawn release.
+        """)
+
+    GUTSY = DBItem(5, """
+        7.10 (Gutsy Gibbon)
+
+        The Gutsy Gibbon release.
+        """)
 
 
 def _validate_positive_int(value):
@@ -63,9 +207,9 @@ class EmptyDefaultChoice(Choice):
     implements(IEmptyDefaultChoice)
 
 
-# XXX: This sould probably be moved somewhere else, but as I need to get this
-# in production ASAP I'm leaving it here for now. -- Guilherme Salgado
-# 2005-10-03
+# XXX Guilherme Salgado 2005-10-03: 
+# This sould probably be moved somewhere else, but as I need to get this
+# in production ASAP I'm leaving it here for now.
 class EmptyDefaultDropdownWidget(DropdownWidget):
     """A dropdown widget in which the default option is one that is not part
     of its vocabulary.
@@ -82,8 +226,8 @@ class EmptyDefaultDropdownWidget(DropdownWidget):
 class IShipItCountry(Interface):
     """This schema is only to get the Country widget."""
 
-    country = EmptyDefaultChoice(title=_('Country'), required=True, 
-                     vocabulary='CountryName')
+    country = EmptyDefaultChoice(
+        title=_('Country'), required=True, vocabulary='CountryName')
 
 
 class IShippingRequest(Interface):
@@ -97,7 +241,7 @@ class IShippingRequest(Interface):
         title=_('Date of Request'), required=True, readonly=True)
 
     status = Choice(title=_('Request Status'), required=True, readonly=False,
-                    vocabulary='ShippingRequestStatus')
+                    vocabulary=ShippingRequestStatus)
 
     whoapproved = Int(
         title=_('Who Approved'), required=False, readonly=False,
@@ -449,7 +593,7 @@ class IRequestedCDs(Interface):
     request = Int(title=_('The ShippingRequest'), required=True, readonly=True)
     distroseries = Int(title=_('Series'), required=True, readonly=True)
     flavour = Choice(title=_('Distro Flavour'), required=True, readonly=True,
-                     vocabulary='ShipItFlavour')
+                     vocabulary=ShipItFlavour)
     architecture = Int(title=_('Architecture'), required=True, readonly=True)
     quantity = Int(
         title=_('The number of CDs'), required=True, readonly=False,
@@ -468,7 +612,7 @@ class IStandardShipItRequest(Interface):
     id = Int(title=_('The unique ID'), required=True, readonly=True)
 
     flavour = Choice(title=_('Distribution Flavour'), required=True,
-                     readonly=False, vocabulary='ShipItFlavour')
+                     readonly=False, vocabulary=ShipItFlavour)
     quantityx86 = ShipItQuantity(
         title=_('PC CDs'), required=True, readonly=False,
         description=_('Number of PC CDs in this request.'),

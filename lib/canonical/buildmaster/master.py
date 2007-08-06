@@ -119,7 +119,7 @@ class BuilddMaster:
     This class is in the process of being deprecated in favour of the regular
     content classes.
     """
-    # XXX cprov 20070615: Please do not extend this class except as
+    # XXX cprov 2007-06-15: Please do not extend this class except as
     # required to move more logic into the content classes. A new feature
     # should be modeled directly in IBuilder.
 
@@ -222,8 +222,8 @@ class BuilddMaster:
                 "Chroots missing for %s, skipping" % distroseries.name)
             return
 
-        legal_arch_tags = " ".join(a.architecturetag for a in legal_archs)
-        self._logger.info("Supported architectures: %s" % legal_arch_tags)
+        self._logger.info("Supported architectures: %s" %
+                          " ".join(a.architecturetag for a in legal_archs))
 
         pas_verify = BuildDaemonPackagesArchSpecific(
             config.builddmaster.root, distroseries)
@@ -232,13 +232,20 @@ class BuilddMaster:
         self._logger.info(
             "Found %d source(s) published." % sources_published.count())
 
-        # XXX cprov 20050831: Entering this loop with no supported
-        # architecture results in a corruption of the persistent DBNotes
-        # instance for self._archserieses, it ends up empty. Bug 2070.
-        # XXX: I have no idea what celso is talking about above. -- kiko
         for pubrec in sources_published:
+            # XXX cprov 2007-07-11 bug=129491: Fix me please, 'ppa_archtags'
+            # should be modeled as DistroArchSeries.ppa_supported.
+            if pubrec.archive.purpose == dbschema.ArchivePurpose.PPA:
+                ppa_archtags = ('i386', 'amd64')
+                local_archs = [
+                    distro_arch_series for distro_arch_series in legal_archs
+                    if distro_arch_series.architecturetag in ppa_archtags]
+            else:
+                local_archs = legal_archs
+
             build_archs = determineArchitecturesToBuild(
-                            pubrec, legal_archs, distroseries, pas_verify)
+                pubrec, local_archs, distroseries, pas_verify)
+
             self._createMissingBuildsForPublication(pubrec, build_archs)
 
         self.commit()
@@ -404,7 +411,7 @@ class BuilddMaster:
             parsed_deps = apt_pkg.ParseDepends(dependencies_line)
         except (ValueError, TypeError):
             self._logger.warn("COULD NOT PARSE DEP: %s" % dependencies_line)
-            # XXX cprov 20051018:
+            # XXX cprov 2005-10-18:
             # We should remove the job if we could not parse its
             # dependency, but AFAICS, the integrity checks in
             # uploader component will be in charge of this. In
@@ -416,12 +423,12 @@ class BuilddMaster:
         score = 0
 
         for token in parsed_deps:
-            # XXX cprov 20060227: it may not work for and'd and or'd
+            # XXX cprov 2006-02-27: it may not work for and'd and or'd
             # syntaxes.
             try:
                 name, version, relation = token[0]
             except ValueError:
-                # XXX cprov 20051018:
+                # XXX cprov 2005-10-18:
                 # We should remove the job if we could not parse its
                 # dependency, but AFAICS, the integrity checks in
                 # uploader component will be in charge of this. In
@@ -477,7 +484,7 @@ class BuilddMaster:
         status = dbschema.BuildStatus.MANUALDEPWAIT
         bqset = getUtility(IBuildSet)
         candidates = bqset.getBuildsByArchIds(arch_ids, status=status)
-        # XXX cprov 20060227: IBuildSet.getBuildsByArch API is evil,
+        # XXX cprov 2006-02-27: IBuildSet.getBuildsByArch API is evil,
         # we should always return an SelectResult, even for empty results
         if candidates is None:
             self._logger.debug("No MANUALDEPWAIT record found")
@@ -488,7 +495,7 @@ class BuilddMaster:
             % candidates.count())
 
         for build in candidates:
-            # XXX cprov 20060606: This iteration/check should be provided
+            # XXX cprov 2006-06-06: This iteration/check should be provided
             # by IBuild.
 
             if not build.distroseries.canUploadToPocket(build.pocket):
