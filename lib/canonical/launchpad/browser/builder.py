@@ -152,7 +152,7 @@ class BuilderView(CommonBuilderView, BuildRecordsView):
         builder_id = self.request.form.get('BUILDERID')
         if not builder_id:
             return
-        # XXX cprov 20051014
+        # XXX cprov 2005-10-14
         # The 'self.context.slave.abort()' seems to work with the new
         # BuilderSlave class added by dsilvers, but I won't release it
         # until we can test it properly, since we can only 'abort' slaves
@@ -195,7 +195,7 @@ class BuilderSetAddView(AddView):
 
         # grab a BuilderSet utility
         builder_util = getUtility(IBuilderSet)
-        # XXX cprov 20050621
+        # XXX cprov 2005-06-21
         # expand dict !!
         builder = builder_util.new(**kw)
         notify(ObjectCreatedEvent(builder))

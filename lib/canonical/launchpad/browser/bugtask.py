@@ -832,12 +832,12 @@ class BugTaskEditView(LaunchpadEditFormView):
         else:
             editable_field_names = ['bugwatch']
             if not IUpstreamBugTask.providedBy(self.context):
-                #XXX: Should be possible to edit the product as well,
+                #XXX: Bjorn Tillenius 2006-03-01:
+                #     Should be possible to edit the product as well,
                 #     but that's harder due to complications with bug
                 #     watches. The new product might use Launchpad
                 #     officially, thus we need to handle that case.
                 #     Let's deal with that later.
-                #     -- Bjorn Tillenius, 2006-03-01
                 editable_field_names += ['sourcepackagename']
             if self.context.bugwatch is None:
                 editable_field_names += ['status', 'assignee']
@@ -1038,7 +1038,8 @@ class BugTaskEditView(LaunchpadEditFormView):
                     IBugTask['status'].default, self.user)
                 context.importance = IBugTask['importance'].default
             else:
-                #XXX: Reset the bug task's status information. The right
+                #XXX: Bjorn Tillenius 2006-03-01:
+                #     Reset the bug task's status information. The right
                 #     thing would be to convert the bug watch's status to a
                 #     Launchpad status, but it's not trivial to do at the
                 #     moment. I will fix this later.
@@ -1713,10 +1714,10 @@ class BugTaskSearchListingView(LaunchpadFormView):
                 str(self.request.URL), colname)
             return sortlink
 
-        # XXX: is it not possible to get the exact request supplied and
+        # XXX: kiko 2005-08-23:
+        # Is it not possible to get the exact request supplied and
         # just sneak a "-" in front of the orderby argument, if it
         # exists? If so, the code below could be a lot simpler.
-        #       -- kiko, 2005-08-23
 
         # There is search criteria to preserve.
         sortlink = str(self.request.URL) + "?"

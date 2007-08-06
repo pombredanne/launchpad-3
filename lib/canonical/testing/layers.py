@@ -92,9 +92,9 @@ class BaseLayer:
     test isolation checks to ensure that tests to not leave global
     resources in a mess.
 
-    XXX: Unit tests (tests with no layer) will not get this checks.
-    The Z3 test runner should be updated so that a layer can be specified
-    to use for unit tests. -- StuartBishop 20060712
+    XXX: StuartBishop 2006-07-12: Unit tests (tests with no layer) will not
+    get this checks. The Z3 test runner should be updated so that a layer
+    can be specified to use for unit tests.
     """
     # Set to True when we are running tests in this layer.
     isSetUp = False
@@ -532,9 +532,9 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
     def setUp(cls):
         # Make a TestMailBox available
         # This is registered via ZCML in the LaunchpadFunctionalLayer
-        # XXX flacoste 2006/10/25 This should be configured from ZCML
-        # but execute_zcml_for_scripts() doesn't cannot support a different
-        # testing configuration (bug #68189).
+        # XXX flacoste 2006-10-25 bug=68189: This should be configured
+        # from ZCML but execute_zcml_for_scripts() doesn't cannot support
+        # a different testing configuration.
         getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
 
     @classmethod
@@ -604,15 +604,15 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
 
 class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     """Testing layer for scripts using the main Launchpad database adapter"""
-    
+
     @classmethod
     @profiled
     def setUp(cls):
         # Make a TestMailBox available
         # This is registered via ZCML in the LaunchpadFunctionalLayer
-        # XXX flacoste 2006/10/25 This should be configured from ZCML
-        # but execute_zcml_for_scripts() doesn't cannot support a different
-        # testing configuration (bug #68189).
+        # XXX flacoste 2006-10-25 bug=68189: This should be configured from
+        # ZCML but execute_zcml_for_scripts() doesn't cannot support a
+        # different testing configuration.
         getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
 
     @classmethod

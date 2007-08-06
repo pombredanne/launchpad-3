@@ -45,10 +45,9 @@
                         updateTargetNameCache transitionToStatus
                         transitionToAssignee" />
 
-        <!-- XXX, Brad Bollenbach, 2006-09-29: The permission checking for
-        milestone and importance is further restricted in the browser view code
-        (BugTaskEditView). This is bad. See https://launchpad.net/bugs/63000 .
-        -->
+        <!-- XXX Brad Bollenbach 2006-09-29 bug=63000:
+        The permission checking for milestone and importance is further
+        restricted in the browser view code (BugTaskEditView). -->
         <require
             permission="launchpad.Edit"
             set_attributes="product productseries sourcepackagename distribution
