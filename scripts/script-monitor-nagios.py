@@ -3,12 +3,17 @@
 
 """Nagios plugin for script monitoring.
 
-Nagios only understands one line of returned text, and interprets specific
+This script is needed as separate from script-monitor.py because Nagios 
+only understands one line of returned text, and interprets specific
 return codes as plugin statuses. These are:
-0: OK
-1: WARNING
-2: CRITICAL
-3: UNKNOWN
+
+    0: OK
+    1: WARNING
+    2: CRITICAL
+    3: UNKNOWN
+
+As such, it was felt more appropriate to separate out the scripts, 
+even though there is some code duplication.
 """
 
 __metaclass__ = type
