@@ -1,0 +1,58 @@
+= VPOTExportSet =
+
+This class represet the set of rows that represent a set of POTemplate.
+
+  >>> from canonical.launchpad.interfaces import IVPOTExportSet
+  >>> from canonical.launchpad.database import POTemplate
+
+Get the set of rows for the POTemplate.id == 1.
+
+  >>> vpot_exportset = getUtility(IVPOTExportSet)
+  >>> potemplate = POTemplate.get(1)
+  >>> vpot_rows = list(vpot_exportset.get_potemplate_rows(potemplate))
+
+There are rows.
+
+  >>> len(vpot_rows) > 0
+  True
+
+
+= VPOTExport =
+
+This class represent a row that represents a part of a POTemplate.
+
+Get the first row from the set.
+
+  >>> first = vpot_rows[0]
+
+And now, check that the attributes have the right values.
+
+  >>> first.potemplate.title
+  u'Template "evolution-2.2" in Evolution trunk'
+  >>> first.sequence
+  0
+  >>> print first.header
+  Project-Id-Version: PACKAGE VERSION
+  Report-Msgid-Bugs-To:
+  POT-Creation-Date: 2005-08-25 14:56+0200
+  PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE
+  Last-Translator: FULL NAME <EMAIL@ADDRESS>
+  Language-Team: LANGUAGE <LL@li.org>
+  MIME-Version: 1.0
+  Content-Type: text/plain; charset=CHARSET
+  Content-Transfer-Encoding: 8bit
+  Plural-Forms: nplurals=INTEGER; plural=EXPRESSION;
+  <BLANKLINE>
+  >>> first.pluralform
+  0
+  >>> first.msgid
+  u'Found %i invalid file.'
+  >>> first.commenttext
+  u''
+  >>> first.sourcecomment
+  u''
+  >>> first.filereferences
+  u'encfs/encfsctl.cpp:346'
+  >>> first.flagscomment
+  u'c-format'
+
