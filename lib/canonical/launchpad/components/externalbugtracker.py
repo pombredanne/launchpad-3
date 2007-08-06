@@ -796,13 +796,20 @@ class Trac(ExternalBugTracker):
 
         if remote_status in ['invalid', 'worksforme']:
             return BugTaskStatus.INVALID
+
         elif remote_status in ['assigned', 'duplicate']:
             # XXX: 2007-08-06 gmb: We should follow dupes if possible.
             return BugTaskStatus.CONFIRMED
+
         elif remote_status == 'open':
             return BugTaskStatus.NEW
+
         elif remote_status == 'fixed':
             return BugTaskStatus.FIXRELEASED
+
         elif remote_status == 'wontfix':
             return BugTaskStatus.WONTFIX
 
+        else:
+            log.warn("Unknown status '%s'" % remote_status)
+            return BugTaskStatus.UNKNOWN

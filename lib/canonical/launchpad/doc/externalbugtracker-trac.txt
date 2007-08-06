@@ -44,3 +44,9 @@ Trac.convertRemoteStatus() handles the conversion.
     >>> trac.convertRemoteStatus('worksforme').title
     'Invalid'
 
+If the status isn't one that our Trac ExternalBugTracker can understand,
+Unknown will be returned and a warning logged.
+
+    >>> trac.convertRemoteStatus('eggs').title
+    WARNING:...:Unknown status 'eggs'
+    'Unknown'
