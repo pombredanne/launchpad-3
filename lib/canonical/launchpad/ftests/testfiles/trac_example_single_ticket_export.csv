@@ -1,0 +1,3 @@
+id,summary,reporter,owner,description,status,component,version,resolution,keywords,cc,stage,has_patch,needs_docs,needs_tests,needs_better_patch
+1,Test Trac imports properly,foobar,foobar,Trac imports don't work yet; they
+should.,open,External bug trackers,,fixed,,,Unreviewed,0,0,0,0
