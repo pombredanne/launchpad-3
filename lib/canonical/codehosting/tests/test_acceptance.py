@@ -358,7 +358,7 @@ class AcceptanceTests(SSHTestCase):
         self.push(remote_url)
         remote_revision = self.getLastRevision(remote_url)
         self.assertEqual(self.local_branch.last_revision(), remote_revision)
-        
+
 
 class SmartserverTests(SSHTestCase):
     """Acceptance tests for the smartserver component of Launchpad codehosting
