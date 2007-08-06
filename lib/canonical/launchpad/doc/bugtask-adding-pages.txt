@@ -373,7 +373,7 @@ IAddBugTaskForm Interface Definition
 ------------------------------------
 
 IAddBugTaskForm, which is used as the schema for the views tested above, has
-some attributes that identical to those of IUpstreamBugTask and
+some attributes which are identical to those of IUpstreamBugTask and
 IDistroBugTask. However, we must ensure that IAddBugTask defines its own
 attributes rather than borrowing those of IUpstreamBugTask and IDistroBugTask,
 since doing so has produced OOPSes (bug 129406).
