@@ -63,7 +63,7 @@ class TranslationExporter:
 # buffers. This is why the tarball code is sprinkled with ".encode('ascii')".
 # If we get separate StringCol and UnicodeCol column types, we won't need this
 # any longer.
-#  -- Dafydd Harries, 2005/04/07.
+# -- Dafydd Harries, 2005-04-07.
 
 class LaunchpadWriteTarFile:
     """Convenience wrapper around the tarfile module.
