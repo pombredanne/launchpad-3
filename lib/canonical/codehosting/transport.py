@@ -18,6 +18,9 @@ from bzrlib.transport import (
 
 from canonical.authserver.interfaces import READ_ONLY
 
+from canonical.codehosting.bazaarfs import (
+    ALLOWED_DIRECTORIES, FORBIDDEN_DIRECTORY_ERROR)
+
 
 def branch_id_to_path(branch_id):
     """Convert the given branch ID into NN/NN/NN/NN form, where NN is a two
@@ -60,7 +63,12 @@ def makedirs(base_transport, path, mode=None):
 
 
 def get_path_segments(path):
-    return path.lstrip('/').split('/')
+    """Break up the given path into segments.
+
+    If 'path' ends with a trailing slash, then the final empty segment is
+    ignored.
+    """
+    return path.strip('/').split('/')
 
 
 class UntranslatablePath(BzrError):
@@ -200,9 +208,14 @@ class LaunchpadServer(Server):
 
         :return: The equivalent real path on the backing transport.
         """
-        # XXX: JonathanLange 2007-05-29: sWe could differentiate between
-        # 'branch not found' and 'not enough information in path to figure
-        # out a branch'.
+        segments = get_path_segments(virtual_path)
+        if (len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES):
+            raise NoSuchFile(path=segments[-1],
+                             extra=FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
+        
+        # XXX: JonathanLange 2007-05-29, We could differentiate between
+        # 'branch not found' and 'not enough information in path to figure out
+        # a branch'.
         branch_id, permissions, path = self._translate_path(virtual_path)
         if branch_id == '':
             raise UntranslatablePath(path=virtual_path, user=self.user_name)
@@ -347,16 +360,10 @@ class LaunchpadTransport(Transport):
         # If we can't translate the path, then perhaps we are being asked to
         # create a new branch directory. Delegate to the server, as it knows
         # how to deal with absolute virtual paths.
-        abspath = self._abspath(relpath)
-        segments = get_path_segments(abspath)
-        if len(segments) == 4 and segments[-1] != '.bzr':
-            raise NoSuchFile(path=relpath,
-                             extra=("Can only create .bzr directories "
-                                    "directly beneath branch directories."))
         try:
             return self._writing_call('mkdir', relpath, mode)
         except NoSuchFile:
-            return self.server.mkdir(abspath)
+            return self.server.mkdir(self._abspath(relpath))
 
     def put_file(self, relpath, f, mode=None):
         return self._writing_call('put_file', relpath, f, mode)
