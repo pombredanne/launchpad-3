@@ -4,4 +4,4 @@ ALTER TABLE BugTracker ALTER COLUMN title DROP NOT NULL;
 ALTER TABLE BugTracker ALTER COLUMN summary DROP NOT NULL;
 ALTER TABLE BugTracker ALTER COLUMN contactdetails DROP NOT NULL;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (99, 0, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 36, 0);
