@@ -187,9 +187,9 @@ example, if we search for 'some-tag', we find nothing at the moment:
     >>> some_tag_tasks.count()
     0
 
-XXX: The tests below don't pass yet. It's desirable functionality, but
-     it's better to get this branch landed and spend time on it later.
-     -- Bjorn Tillenius, 2006-07-14
+# XXX: Bjorn Tillenius 2006-07-14
+#      The tests below don't pass yet. It's desirable functionality, but
+#      it's better to get this branch landed and spend time on it later.
 
 If we now set bug one's tag to 'some-tag', it will be found.
 

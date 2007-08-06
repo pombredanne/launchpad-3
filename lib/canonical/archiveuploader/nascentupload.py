@@ -100,7 +100,7 @@ class NascentUpload:
             # We can't run reject() because unfortunately we don't have
             # the address of the uploader to notify -- we broke in that
             # exact step.
-            # XXX cprov 20070326: we should really be emailing this
+            # XXX cprov 2007-03-26: we should really be emailing this
             # rejection to the archive admins. For now, this will end
             # up in the script log.
             raise FatalUploadError(str(e))
@@ -168,7 +168,7 @@ class NascentUpload:
             # Apply the overrides from the database. This needs to be done
             # before doing component verifications because the component
             # actually comes from overrides for packages that are not NEW.
-            # XXX cprov 20070611: temporally disabling 'auto-overrides' for
+            # XXX cprov 2007-06-11: temporally disabling 'auto-overrides' for
             # PPAs, because users can't perform post-publications overrides
             # by themselves yet. It's better to assume that they will get
             # the attributes right when packaging the source then to block
@@ -396,9 +396,9 @@ class NascentUpload:
     @property
     def is_ppa(self):
         """Whether or not the current upload is target for a PPA."""
-        # XXX julian 2007-05-29 When self.policy.distroseries is None, this
-        # will causes a rejection for the wrong reasons (a code exception
-        # instead of a bad distro).  Bug reported as #117557.
+        # XXX julian 2007-05-29 bug=117557: When self.policy.distroseries
+        # is None, this will causes a rejection for the wrong reasons
+        # (a code exception instead of a bad distro).
         if not self.policy.distroseries:
             # Greasy hack until above bug is fixed.
             return False
@@ -581,7 +581,7 @@ class NascentUpload:
         else:
             archtag = uploaded_file.architecture
 
-        # XXX cprov 20070213: it raises NotFoundError for unknown
+        # XXX cprov 2007-02-13: it raises NotFoundError for unknown
         # architectures. For now, it is treated in find_and_apply_overrides().
         # But it should be refactored ASAP.
         dar = self.policy.distroseries[archtag]
@@ -688,7 +688,7 @@ class NascentUpload:
                 ancestry = self.getSourceAncestry(uploaded_file)
                 if ancestry is not None:
                     self.checkSourceVersion(uploaded_file, ancestry)
-                    # XXX cprov 20070212: The current override mechanism is
+                    # XXX cprov 2007-02-12: The current override mechanism is
                     # broken, since it modifies original contents of SPR/BPR.
                     # We could do better by having a specific override table
                     # that relates a SPN/BPN to a specific DR/DAR and carries
@@ -714,7 +714,7 @@ class NascentUpload:
                                    uploaded_file.architecture))
                     ancestry = None
                 if ancestry is not None:
-                    # XXX cprov 20070212: see above.
+                    # XXX cprov 2007-02-12: see above.
                     self.overrideBinary(uploaded_file, ancestry)
                     uploaded_file.new = False
                     # For binary versions verification we should only

@@ -438,7 +438,8 @@ class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,
         perms = [self.translationpermission]
         if self.project:
             perms.append(self.project.translationpermission)
-        # XXX reviewer please describe a better way to explicitly order
+        # XXX Carlos Perello Marin 2005-06-02:
+        # Reviewer please describe a better way to explicitly order
         # the enums. The spec describes the order, and the values make
         # it work, and there is space left for new values so we can
         # ensure a consistent sort order in future, but there should be
@@ -682,8 +683,7 @@ class ProductSet:
                bazaar=None,
                show_inactive=False):
         """See canonical.launchpad.interfaces.product.IProductSet."""
-        # XXX: the soyuz argument is unused
-        #   -- kiko, 2006-03-22
+        # XXX: kiko 2006-03-22: The soyuz argument is unused.
         clauseTables = set()
         clauseTables.add('Product')
         queries = []

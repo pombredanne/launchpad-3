@@ -72,9 +72,9 @@ class SimpleJobHelper(object):
 class ZopelessHelper(harness.LaunchpadZopelessTestSetup):
     dbuser = 'importd'
 
-    # XXX installFakeConnect and uninstallFakeConnect are required to use
+    # XXX David Allouche 2005-05-11:
+    # installFakeConnect and uninstallFakeConnect are required to use
     # LaunchpadZopelessTestSetup without the test.py launchpad runner.
-    # -- David Allouche 2005-05-11
 
     def setUp(self):
         pgsql.installFakeConnect()
@@ -87,11 +87,12 @@ class ZopelessHelper(harness.LaunchpadZopelessTestSetup):
 
 class ZopelessUtilitiesHelper(object):
 
-    # XXX: This helper used to call zopePlacelessSetup, and set up a few
+    # XXX: DavidAllouche 2007-04-27: 
+    # This helper used to call zopePlacelessSetup, and set up a few
     # IFooSet utilities. Since we now call execute_zcml_for_scripts from the
     # importd test runner, this is no longer needed, and actually prevented
     # correct operation. Now, this whole class should probably be factored
-    # away. -- DavidAllouche 2007-04-27
+    # away.
 
     def setUp(self):
         self.zopeless_helper = ZopelessHelper()

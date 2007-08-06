@@ -120,7 +120,7 @@ class Builder(SQLBase):
 
     def checkCanBuildForDistroArchSeries(self, distro_arch_series):
         """See IBuilder."""
-        # XXX cprov 20070615:
+        # XXX cprov 2007-06-15:
         # This function currently depends on the operating system specific
         # details of the build slave to return a processor-family-name (the
         # architecturetag) which matches the distro_arch_series. In reality,
@@ -130,7 +130,7 @@ class Builder(SQLBase):
         # distributions - its not the right thing to be comparing.
 
         # query the slave for its active details.
-        # XXX cprov 20070615: why is 'mechanisms' ignored?
+        # XXX cprov 2007-06-15: Why is 'mechanisms' ignored?
         builder_vers, builder_arch, mechanisms = self.slave.info()
         # we can only understand one version of slave today:
         if builder_vers != '1.0':
@@ -164,7 +164,7 @@ class Builder(SQLBase):
         if self.trusted:
             # currently trusted builders cannot reset their host environment.
             raise CannotResetHost
-        # XXX cprov 20070510: Please FIX ME ASAP !
+        # XXX cprov 2007-05-10: Please FIX ME ASAP !
         # The ssh command line should be in the respective configuration
         # file. The builder XEN-host should be stored in DB (Builder.vmhost)
         # and not be calculated on the fly (this is gross).
@@ -177,7 +177,7 @@ class Builder(SQLBase):
         logger.debug('Running: %s', resume_argv)
         resume_process = subprocess.Popen(
             resume_argv, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        # XXX cprov 20070615: If the reset command fails, we should raise
+        # XXX cprov 2007-06-15: If the reset command fails, we should raise
         # an error rather than assuming it reset ok.
         resume_process.communicate()
 
@@ -221,7 +221,7 @@ class Builder(SQLBase):
         # lifecycle. These do not apply to PPA builds (which are untrusted).
         if build_queue_item.is_trusted:
             build = build_queue_item.build
-            # XXX Robert Collins 20070526: not an explicit CannotBuild
+            # XXX Robert Collins 2007-05-26: not an explicit CannotBuild
             # exception yet because the callers have not been audited
             assert build.distroseries.canUploadToPocket(build.pocket), (
                 "%s (%s) can not be built for pocket %s: invalid pocket due "
@@ -248,14 +248,15 @@ class Builder(SQLBase):
         # turn 'arch_indep' ON only if build is archindep or if
         # the specific architecture is the nominatedarchindep for
         # this distroseries (in case it requires any archindep source)
-        # XXX: there is no point in checking if archhintlist ==
+        # XXX kiko 2006-08-31:
+        # There is no point in checking if archhintlist ==
         # 'all' here, because it's redundant with the check for
-        # isNominatedArchIndep. -- kiko, 2006-08-31
+        # isNominatedArchIndep.
         args['arch_indep'] = (
             build_queue_item.archhintlist == 'all' or
             build_queue_item.archseries.isNominatedArchIndep)
 
-        # XXX cprov 20070523: Ogre Model should not be modelled here ...
+        # XXX cprov 2007-05-23: Ogre Model should not be modelled here ...
         if build_queue_item.build.archive.purpose != ArchivePurpose.PRIMARY:
             ogre_map = {
                 'main': 'main',

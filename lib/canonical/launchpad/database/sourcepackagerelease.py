@@ -70,7 +70,7 @@ class SourcePackageRelease(SQLBase):
     upload_archive = ForeignKey(
         foreignKey='Archive', dbName='upload_archive', notNull=True)
 
-    # XXX cprov 20060926: Those fields are set as notNull and required in
+    # XXX cprov 2006-09-26: Those fields are set as notNull and required in
     # ISourcePackageRelease, however they can't be not NULL in DB since old
     # records doesn't satisfy this condition. We will sort it before using
     # landing 'NoMoreAptFtparchive' implementation for main archive. For
@@ -174,16 +174,17 @@ class SourcePackageRelease(SQLBase):
                 if series is None:
                     series = sp_series
                 elif series != sp_series:
-                    # XXX: we could warn about this --keybuk 22jun05
+                    # XXX: keybuk 2005-06-22: We could warn about this.
                     pass
 
         # No series -- no release
         if series is None:
             return None
 
-        # XXX: find any release with the exact same version, or which
+        # XXX: keybuk 2005-06-22:
+        # Find any release with the exact same version, or which
         # we begin with and after a dash.  We could be more intelligent
-        # about this, but for now this will work for most. --keybuk 22jun05
+        # about this, but for now this will work for most.
         for release in series.releases:
             if release.version == self.version:
                 return release
@@ -197,10 +198,10 @@ class SourcePackageRelease(SQLBase):
         upload_distro = self.uploaddistroseries.distribution
         params = BugTaskSearchParams(sourcepackagename=self.sourcepackagename,
             user=user, status=any(*UNRESOLVED_BUGTASK_STATUSES))
-        # XXX: we need to omit duplicates here or else our bugcounts are
+        # XXX: kiko 2006-03-07:
+        # We need to omit duplicates here or else our bugcounts are
         # inconsistent. This is a wart, and we need to stop spreading
         # these things over the code.
-        #   -- kiko, 2006-03-07
         params.omit_dupes = True
         return upload_distro.searchTasks(params).count()
 
@@ -218,7 +219,7 @@ class SourcePackageRelease(SQLBase):
         clauseTables = ['BinaryPackagePublishingHistory',
                         'BinaryPackageRelease',
                         'Build']
-        # XXX cprov 20060823: will distinct=True help us here ?
+        # XXX cprov 2006-08-23: Will distinct=True help us here?
         archSerieses = sets.Set(DistroArchSeries.select(
             """
             BinaryPackagePublishingHistory.distroarchrelease =

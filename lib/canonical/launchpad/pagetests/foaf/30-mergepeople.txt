@@ -99,13 +99,14 @@ dupe account. And now the merge is completed successfully.
     True
 
 
-# XXX: Removed because things are still failing for me, so this is just
+# XXX StuartBishop 2006-06-06: 
+# Removed because things are still failing for me, so this is just
 # another variable to worry about. Or maybe it needs to be called more
-# often or something -- StuartBishop 20060606
+# often or something --
 #
-# XXX: Hack to start a new transaction and clear caches etc. This should
+# XXX kiko 2006-05-15: 
+# Hack to start a new transaction and clear caches etc. This should
 # not be necessary, but it currently is.
-# -- kiko, 2006-05-15
 # 
 #     >>> def new_transaction():
 #     ...     import time
@@ -156,7 +157,7 @@ Get the token we'll have to use to finish the registration process.
     >>> assert not stub.test_emails
     >>> token_url = get_token_url_from_email(raw_msg)
 
-    # XXX: SteveA, 21 Oct 2006, to prevent spurious failures in PQM.
+    # XXX: SteveA 2006-10-21: To prevent spurious failures in PQM.
     #>>> browser.open(token_url)
     #>>> browser.getControl('Confirm').click()
     #>>> 'The accounts have been merged successfully' in browser.contents

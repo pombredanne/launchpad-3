@@ -59,7 +59,7 @@ class DistroArchSeries(SQLBase):
     @property
     def default_processor(self):
         """See IDistroArchSeries"""
-        # XXX cprov 20050831
+        # XXX cprov 2005-08-31:
         # I could possibly be better designed, let's think about it in
         # the future. Pick the first processor we found for this
         # distroarchseries.processorfamily. The data model should

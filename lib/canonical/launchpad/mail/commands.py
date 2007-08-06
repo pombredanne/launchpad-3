@@ -583,8 +583,9 @@ class AffectsEmailCommand(EmailCommand):
 
     def _create_bug_task(self, bug, bug_target):
         """Creates a new bug task with bug_target as the target."""
-        # XXX kiko: we could fix this by making createTask be a method on
-        # IBugTarget, but I'm not going to do this now. Bug 1690
+        # XXX kiko 2005-09-05 Bug 1690:
+        # We could fix this by making createTask be a method on
+        # IBugTarget, but I'm not going to do this now.
         bugtaskset = getUtility(IBugTaskSet)
         user = getUtility(ILaunchBag).user
         if IProduct.providedBy(bug_target):
@@ -721,12 +722,12 @@ class TagEmailCommand(EmailCommand):
         # operations so we need to convert it.
         tags = list(bug.tags)
 
-        # XXX: DaveMurphy 2007-07-11, in the following loop we process each
+        # XXX: DaveMurphy 2007-07-11: in the following loop we process each
         # tag in turn. Each tag that is either invalid or unassigned will
         # result in a mail to the submitter. This may result in several mails
         # for a single command. This will need to be addressed if that becomes
         # a problem.
-        
+
         for arg in string_args:
             # Are we adding or removing a tag?
             if arg.startswith('-'):

@@ -337,8 +337,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def currentseries(self):
         """See `IDistribution`."""
-        # XXX: this should be just a selectFirst with a case in its
-        # order by clause -- kiko, 2006-03-18
+        # XXX kiko 2006-03-18:
+        # This should be just a selectFirst with a case in its
+        # order by clause.
 
         serieses = self.serieses
         # If we have a frozen one, return that.
@@ -747,10 +748,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # Get the sets of binary package names, summaries, descriptions.
 
-        # XXX This bit of code needs fixing up, it is doing stuff that
+        # XXX Julian 2007-04-03:
+        # This bit of code needs fixing up, it is doing stuff that
         # really needs to be done in SQL, such as sorting and uniqueness.
         # This would also improve the performance.
-        # Julian 2007-04-03
         binpkgnames = set()
         binpkgsummaries = set()
         binpkgdescriptions = set()
@@ -821,11 +822,11 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # the current distroseries and then across the whole
         # distribution.
         #
-        # XXX: note that the strategy of falling back to previous
+        # XXX kiko 2006-07-28: 
+        # Note that the strategy of falling back to previous
         # distribution series might be revisited in the future; for
         # instance, when people file bugs, it might actually be bad for
         # us to allow them to be associated with obsolete packages.
-        #   -- kiko, 2006-07-28
 
         sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
         if sourcepackagename:
@@ -859,11 +860,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     orderBy=['-id'])
                 if publishedpackage is None:
                     # Try any release next.
-                    # XXX could we just do this first? I'm just
+                    # XXX Gavin Panella 2007-04-18:
+                    # Could we just do this first? I'm just
                     # following the pattern that was here before
-                    # (e.g. see the search for a binary package
-                    # below).
-                    #   -- Gavin Panella, 2007-04-18
+                    # (e.g. see the search for a binary package below).
                     publishedpackage = PublishedPackage.selectFirstBy(
                         sourcepackagename=sourcepackagename.name,
                         binarypackagename=sourcepackagename.name,

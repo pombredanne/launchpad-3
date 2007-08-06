@@ -136,7 +136,7 @@ class DeathRow:
            distribution = %s AND
            archive = %s
         """ % sqlvalues(filename, self.distribution,
-                        self.archive))
+                        self.distribution.main_archive))
 
         right_now = datetime.datetime.now(pytz.timezone('UTC'))
 

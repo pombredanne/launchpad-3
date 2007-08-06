@@ -29,9 +29,8 @@ from canonical.launchpad.interfaces import (
 MIN_REQUEST_TIMEOUT_RATIO = 3
 MIN_REQUESTS_TO_CONSIDER_RATIO = 30
 
-# XXX: We need to get rid of these global dicts in this module. See
-# https://launchpad.net/launchpad/+bug/82201 for more details.
-# -- Guilherme Salgado, 2007-01-30
+# XXX Guilherme Salgado 2007-01-30 bug=82201:
+# We need to get rid of these global dicts in this module.
 host_requests = {}
 host_timeouts = {}
 
@@ -235,12 +234,12 @@ class ProberFactory(protocol.ClientFactory):
     def setURL(self, url):
         self.url = url
         scheme, host, port, path = _parse(url)
-        # XXX: We don't actually know how to handle FTP responses, but we
+        # XXX Guilherme Salgado 2006-09-19: 
+        # We don't actually know how to handle FTP responses, but we
         # expect to be behind a squid HTTP proxy with the patch at
         # http://www.squid-cache.org/bugs/show_bug.cgi?id=1758 applied. So, if
         # you encounter any problems with FTP URLs you'll probably have to nag
         # the sysadmins to fix squid for you.
-        # -- Guilherme Salgado, 2006-09-19
         if scheme not in ('http', 'ftp'):
             raise UnknownURLScheme(url)
 
@@ -283,9 +282,8 @@ class RedirectAwareProberFactory(ProberFactory):
 
             logger = logging.getLogger('distributionmirror-prober')
             logger.debug('Got redirected from %s to %s' % (self.url, url))
-            # XXX: We can't assume url to be absolute here. See
-            # https://bugs.launchpad.net/launchpad/+bug/109223 for more
-            # details.  -- Guilherme Salgado, 2007-04-23
+            # XXX Guilherme Salgado 2007-04-23 bug=109223: 
+            # We can't assume url to be absolute here.
             self.setURL(url)
         except (InfiniteLoopDetected, UnknownURLScheme), e:
             self.failed(e)

@@ -169,7 +169,7 @@ class Bug(SQLBase):
     cve_links = SQLMultipleJoin('BugCve', joinColumn='bug', orderBy='id')
     mentoring_offers = SQLMultipleJoin(
             'MentoringOffer', joinColumn='bug', orderBy='id')
-    # XXX: kiko 2006-09-23: why is subscriptions ordered by ID?
+    # XXX: kiko 2006-09-23: Why is subscriptions ordered by ID?
     subscriptions = SQLMultipleJoin(
             'BugSubscription', joinColumn='bug', orderBy='id',
             prejoins=["person"])
@@ -605,6 +605,17 @@ class Bug(SQLBase):
             # production is never the same, it can be in the test suite.
             orderBy=["Message.datecreated", "Message.id",
                      "MessageChunk.sequence"])
+        chunks = list(chunks)
+
+        # Since we can't prejoin, cache all people at once so we don't
+        # have to do it while rendering, which is a big deal for bugs
+        # with a million comments.
+        owner_ids = set()
+        for chunk in chunks:
+            if chunk.message.ownerID:
+                owner_ids.add(str(chunk.message.ownerID))
+        list(Person.select("ID in (%s)" % ",".join(owner_ids)))
+
         return chunks
 
     def getNullBugTask(self, product=None, productseries=None,
@@ -936,7 +947,7 @@ class BugSet:
                 bug.subscribe(context.security_contact)
             else:
                 bug.subscribe(context.owner)
-        # XXX: ElliotMurphy 2007-06-14, If we ever allow filing private
+        # XXX: ElliotMurphy 2007-06-14: If we ever allow filing private
         # non-security bugs, this test might be simplified to checking
         # params.private.
         elif params.product and params.product.private_bugs:

@@ -811,3 +811,27 @@ If the bug isn't targeted to the target, None is returned.
 
     >>> bug_two.getBugTask(debian) is None
     True
+
+== Bug Comments ==
+
+A bug comment is actually made up of a number of chunks. The
+IBug.getMessageChunks() method allows you to retreive these chunks in a
+single shot.
+
+    >>> from canonical.ftests.pgsql import CursorWrapper
+    >>> CursorWrapper.record_sql = True
+    >>> queries = len(CursorWrapper.last_executed_sql)
+
+    >>> chunks = bug_two.getMessageChunks()
+    >>> for chunk in sorted(chunks, key=lambda x:x.id):
+    ...    chunk.id, chunk.message.id, chunk.message.owner.id, chunk.content[:30]
+    (4, 1, 16, u'Problem exists between chair a')
+    (7, 5, 12, u'This would be a real killer fe')
+    (8, 6, 12, u'Oddly enough the bug system se')
+
+It's done in a way that we only issue two queries to fetch all this
+information, too:
+
+    >>> len(CursorWrapper.last_executed_sql) - queries
+    2
+

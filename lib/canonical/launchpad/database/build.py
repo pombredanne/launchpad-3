@@ -62,9 +62,9 @@ class Build(SQLBase):
     @property
     def buildqueue_record(self):
         """See `IBuild`"""
-        # XXX cprov 20051025
+        # XXX cprov 2005-10-25 bug=3424:
         # Would be nice if we can use fresh sqlobject feature 'singlejoin'
-        # instead, see bug # 3424
+        # instead.
         return BuildQueue.selectOneBy(build=self)
 
     @property
@@ -237,7 +237,7 @@ class Build(SQLBase):
             'X-Launchpad-Build-State': self.buildstate.name,
             }
 
-        # XXX cprov 20061027: temporary extra debug info about the
+        # XXX cprov 2006-10-27: Temporary extra debug info about the
         # SPR.creator in context, to be used during the service quarantine,
         # notify_owner will be disabled to avoid *spamming* Debian people.
         creator = self.sourcepackagerelease.creator
@@ -277,10 +277,10 @@ class Build(SQLBase):
                 self.id, self.title, archive_tag)
             source_url = 'not available'
 
-        # XXX cprov 20060802: pending security recipients for SECURITY
+        # XXX cprov 2006-08-02: pending security recipients for SECURITY
         # pocket build. We don't build SECURITY yet :(
 
-        # XXX cprov 20060802: find out a way to glue parameters reported
+        # XXX cprov 2006-08-02: find out a way to glue parameters reported
         # with the state in the build worflow, maybe by having an
         # IBuild.statusReport property, which could also be used in the
         # respective page template.
@@ -449,7 +449,7 @@ class BuildSet:
         """See `IBuildSet`."""
         # If not distroarchseries was found return empty list
         if not arch_ids:
-            # XXX cprov 20060908: returning and empty SelectResult to make
+            # XXX cprov 2006-09-08: returning and empty SelectResult to make
             # the callsites happy as bjorn suggested. However it would be
             # much clearer if we have something like SQLBase.empty() for this
             return Build.select("2=1")
@@ -464,7 +464,7 @@ class BuildSet:
             condition_clauses = [('distroarchrelease IN %s'
                                   % sqlvalues(arch_ids))]
 
-        # XXX cprov 20060925: It would be nice if we could encapsulate
+        # XXX cprov 2006-09-25: It would be nice if we could encapsulate
         # the chunk of code below (which deals with the optional paramenters)
         # and share it with ISourcePackage.getBuildRecords()
 
@@ -499,7 +499,7 @@ class BuildSet:
         # Fallback to ordering by -id as a tie-breaker.
         orderBy.append("-id")
 
-        # End of duplication (see XXX cprov 20060925 above).
+        # End of duplication (see XXX cprov 2006-09-25 above).
 
         if name:
             condition_clauses.append("Build.sourcepackagerelease="
