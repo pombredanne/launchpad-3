@@ -1,9 +1,9 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
 #
 
-# XXX: This file can (and probably should) be re-written as a doctest file, for
-#      better readability.
-#        - Andrew Bennetts, 2005-03-24.
+# XXX: Andrew Bennetts 2005-03-24:
+#      This file can (and probably should) be re-written as a doctest file,
+#      for better readability.
 
 import unittest
 #from zope.testing.doctestunit import DocTestSuite

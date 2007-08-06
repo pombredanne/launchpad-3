@@ -253,8 +253,8 @@ class NoCanonicalUrl(TypeError):
 #
 
 
-# XXX: this is currently unused. We need somebody to come in and set up
-# interfaces for the enums. -- kiko, 2007-02-08
+# XXX kiko 2007-02-08: this is currently unused. We need somebody to come
+# in and set up interfaces for the enums.
 class IDBSchema(Interface):
     """A DBSchema enumeration."""
 
@@ -296,12 +296,12 @@ class IDBSchemaItem(Interface):
     def __hash__():
         """Returns a hash value."""
 
-# XXX: this needs reconsideration if we are to make it a truly generic
-# thing. The problem lies in the fact that half of this (user, login,
-# timezone, developer) is actually useful inside webapp/, and ther other
+# XXX kiko 2007-02-08: this needs reconsideration if we are to make it a
+# truly generic thing. The problem lies in the fact that half of this (user,
+# login, timezone, developer) is actually useful inside webapp/, and the other
 # half is very Launchpad-specific. I suggest we split the interface and
 # implementation into two parts, having a different name for the webapp/
-# bits. -- kiko, 2007-02-08
+# bits.
 class ILaunchBag(Interface):
     site = Attribute('The application object, or None')
     person = Attribute('IPerson, or None')
@@ -408,9 +408,9 @@ class ILaunchpadBrowserApplicationRequest(
         title=u'IBrowserFormNG object containing the submitted form data',
         schema=IBrowserFormNG)
 
-     
-# XXX: These need making into a launchpad version rather than the zope versions
-#      for the publisher simplification work.  SteveAlexander 2005-09-14
+
+# XXX SteveAlexander 2005-09-14: These need making into a launchpad version
+#     rather than the zope versions for the publisher simplification work.
 # class IEndRequestEvent(Interface):
 #     """An event which gets sent when the publication is ended"""
 #
@@ -549,8 +549,8 @@ class BrowserNotificationLevel:
     """Matches the standard logging levels, with the addition of notice
     (which we should probably add to our log levels as well)
     """
-    # XXX Matthew Paul Thomas 2006-03-22: NOTICE and INFO should be merged.
-    # https://launchpad.net/bugs/36287
+    # XXX Matthew Paul Thomas 2006-03-22 bugs=36287:
+    # NOTICE and INFO should be merged.
     DEBUG = logging.DEBUG     # A debugging message
     INFO = logging.INFO       # simple confirmation of a change
     NOTICE = logging.INFO + 5 # action had effects you might not have intended
