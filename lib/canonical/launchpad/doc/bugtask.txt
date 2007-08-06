@@ -89,7 +89,7 @@ Next, we need to grab some values to provide for importance and status.
     >>> IDistroSeriesBugTask.providedBy(distro_series_task)
     True
 
-XXX: Brad Bollenbach, 2005-02-24: See the bottom of this file for a chunk of
+XXX: Brad Bollenbach 2005-02-24: See the bottom of this file for a chunk of
 test documentation that is missing from here, due to problems with resetting
 the connection after a ProgrammingError is raised. ARGH.
 
@@ -596,8 +596,8 @@ is therefore Invalid also. In other words, conjoined again.
     >>> current_series_netapplet_task.transitionToStatus(
     ...     BugTaskStatus.NEW, getUtility(ILaunchBag).user)
 
-    # XXX: We must make two transitions, see bug 112746
-    #   -- Gavin Panella, 2007-06-06
+    # XXX Gavin Panella 2007-06-06 bug=112746:
+    # We must make two transitions.
     >>> current_series_netapplet_task.transitionToStatus(
     ...     BugTaskStatus.INVALID, getUtility(ILaunchBag).user)
 
@@ -932,11 +932,11 @@ Of course, it's also computed and set when a bugtask is created.
     >>> thunderbird.name = 'thunderbird-ng'
     >>> thunderbird.displayname = 'Mozilla Thunderbird NG'
 
-    # XXX: This flush_database_updates() shouldn't be needed because we
+    # XXX Guilherme Salgado 2005-11-07 bug=3989: 
+    # This flush_database_updates() shouldn't be needed because we
     # already have the transaction.commit() here, but without it
     # (flush_database_updates), the cronscript won't see the thunderbird name
-    # change. See https://launchpad.net/products/launchpad/+bug/3989 for more
-    # information.
+    # change.
     >>> flush_database_updates()
     >>> transaction.commit()
 
@@ -981,10 +981,10 @@ target uses Malone as its official bugtracker.
 Handling IntegrityError and ProgrammingError
 --------------------------------------------
 
-XXX: Brad Bollenbach, 2005-02-24: This bit testing the IntegrityError should be
-higher up in the file (under the explanation about creating tasks), but I can't
-figure out how to reset the connection properly after an IntegrityError is
-raised. ARGH.
+# XXX: Brad Bollenbach 2005-02-24: This bit testing the IntegrityError
+# should be higher up in the file (under the explanation about creating
+# tasks), but I can't figure out how to reset the connection properly after
+# an IntegrityError is raised. ARGH.
 
 Note that a task filed on a specific distro series does *not* have its
 distribution column set. In fact, a task must have exactly one of its product,

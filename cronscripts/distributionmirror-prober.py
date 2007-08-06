@@ -105,9 +105,9 @@ class DistroMirrorProber(LaunchpadCronScript):
             if not self._sanity_check_mirror(mirror):
                 continue
 
-            # XXX: Some people registered mirrors on distros other than Ubuntu
-            # back in the old times, so now we need to do this small hack here.
-            # Guilherme Salgado, 2006-05-26
+            # XXX: salgado 2006-05-26:
+            # Some people registered mirrors on distros other than Ubuntu back
+            # in the old times, so now we need to do this small hack here.
             if not mirror.distribution.full_functionality:
                 self.logger.info(
                     "Mirror '%s' of distribution '%s' can't be probed --we only "
@@ -154,11 +154,11 @@ class DistroMirrorProber(LaunchpadCronScript):
             self.logger.info(
                 'Re-enabling %s mirror(s): %s'
                 % (len(reenabled_mirrors), ", ".join(reenabled_mirrors)))
-        # XXX: This should be done in LaunchpadScript.lock_and_run() when the
+        # XXX: salgado 2007-04-03:
+        # This should be done in LaunchpadScript.lock_and_run() when the
         # isolation used is AUTOCOMMIT_ISOLATION. Also note that replacing
         # this with a flush_database_updates() doesn't have the same effect,
         # it seems.
-        # -- Guilherme Salgado, 2007-04-03
         self.txn.commit()
 
         self.logger.info('Done.')
