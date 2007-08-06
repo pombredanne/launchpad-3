@@ -1561,3 +1561,11 @@ COMMENT ON COLUMN Entitlement.state IS 'The state (REQUESTED, ACTIVE, INACTIVE) 
 COMMENT ON COLUMN Entitlement.is_dirty IS 'This entitlement has been modified and the state needst to be updated on the external system.';
 
 
+-- OpenIdRealmConfig
+COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';
+COMMENT ON COLUMN OpenIdRPConfig.trust_root IS 'The trust root for this RP';
+COMMENT ON COLUMN OpenIdRPConfig.displayname IS 'The human readable name for this RP';
+COMMENT ON COLUMN OpenIDRPConfig.description IS 'A description of the RP.  Should indicate why the RP wants the user to log in';
+COMMENT ON COLUMN OpenIdRPConfig.logo IS 'A reference to the logo for this RP';
+COMMENT ON COLUMN OpenIdRPConfig.allowed_sreg IS 'A comma separated list of fields that can be sent to the RP via openid.sreg.  The field names should not have the "openid.sreg." prefix';
+COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation rationale to use for users who create an account while logging in to this RP';
