@@ -115,7 +115,7 @@ class IProjectMilestone(IMilestone):
 
 
 class IHasMilestones(Interface):
-    """A mixin interface for classes providing milestones."""
+    """An interface for classes providing milestones."""
 
     milestones = Attribute(_(
         "The visible milestones associated with this object, "
@@ -126,6 +126,4 @@ class IHasMilestones(Interface):
         "date expected."))
 
     def getMilestone(name):
-        """Return a milestone with the given name for this object, or
-        None.
-        """
+        """Return a milestone with the given name for this object, or None."""

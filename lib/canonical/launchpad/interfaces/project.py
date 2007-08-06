@@ -14,10 +14,10 @@ from zope.schema import Bool, Choice, Int, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title, URIField
-from canonical.launchpad.interfaces import (IBugTarget, IHasAppointedDriver,
-    IHasBranchVisibilityPolicy, IHasIcon, IHasLogo, IHasMentoringOffers,
-    IHasMilestones, IHasMugshot, IHasOwner, IHasSpecifications,
-    IKarmaContext, PillarNameField)
+from canonical.launchpad.interfaces import (
+    IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy, IHasIcon,
+    IHasLogo, IHasMentoringOffers, IHasMilestones, IHasMugshot, IHasOwner,
+    IHasSpecifications, IKarmaContext, PillarNameField)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)

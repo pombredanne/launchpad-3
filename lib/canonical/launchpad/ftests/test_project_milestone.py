@@ -9,13 +9,12 @@ import unittest
 from datetime import datetime
 from zope.component import getUtility
 
-from canonical.database.sqlbase import flush_database_updates
 from canonical.launchpad.interfaces import (BugTaskSearchParams,
     CreateBugParams, IBugSet, IBugTaskSet, IPersonSet, IProductSet,
     IProjectSet, ISpecificationSet)
 from canonical.lp.dbschema import (BugTaskStatus, SpecificationPriority,
     SpecificationDefinitionStatus)
-from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests import login, syncUpdate
 from canonical.testing import LaunchpadFunctionalLayer
 
 
@@ -42,148 +41,189 @@ class ProjectMilestoneTest(unittest.TestCase):
 
     def __init__(self, methodName='runTest', helper_only=False):
         """If helper_only is True, set up it only as a helper class."""
-        self.milestones = {}
         if not helper_only:
             unittest.TestCase.__init__(self, methodName)
 
     def setUp(self):
+        # From the persons defined in the test data, only those with
+        # admin rights can change the 'visible' attribute of milestones.
         login('foo.bar@canonical.com')
 
-    def _createProductMilestone(
+    def createProductMilestone(
         self, milestone_name, product_name, date_expected):
-        """ Create a milestone in a product."""
+        """Create a milestone in the trunk series of a product."""
         product_set = getUtility(IProductSet)
         product = product_set[product_name]
         series = product.getSeries('trunk')
-        if self.milestones.has_key(product_name):
-            self.milestones[product_name][milestone_name] = (
-                series.newMilestone(
-                    name=milestone_name, dateexpected=date_expected))
-        else:self.milestones[product_name] = {
-            milestone_name: series.newMilestone(
-                name=milestone_name, dateexpected=date_expected)}
-            
+        return series.newMilestone(
+            name=milestone_name, dateexpected=date_expected)
 
-    def milestoneNameDateExpected(self):
-        """A project milestone has the same name as a product milestone.
-        if this product is part of the project."""
-        self._createProductMilestone('1.1', 'evolution', datetime(2010, 4, 2))
-        self._createProductMilestone('1.1', 'gnomebaker', datetime(2010, 4, 1))
+    def test_milestone_name(self):
+        """The names of project milestones.
+        
+        A project milestone named `A` exists, if at least one product of this
+        project has a milestone named `A`.
+        """
+        # None of the Products of the Gnome project has yet milestones.
+        gnome = getUtility(IProjectSet)['gnome']
+        for product in gnome.products:
+            self.assertEqual(list(product.all_milestones), [])
+
+        # Hence Gnome itself has neither any milestones.
+        self.assertEqual(list(gnome.all_milestones), [])
+
+        # When a milestone for a Gnome product is created, gnome has a
+        # milestone of the same name.
+        self.createProductMilestone('1.1', 'evolution', None)
+        gnome_milestone_names = [
+            milestone.name for milestone in gnome.all_milestones]
+        self.assertEqual(gnome_milestone_names, ['1.1'])
 
         # There is only one project milestone named '1.1', regardless of the
         # number of product milestones with this name.
-        # Since the default test data does not define any milestones for
-        # products of the Gnome project, we have now one milestone.
-        project = getUtility(IProjectSet)['gnome']
-        milestones = project.milestones
-        all_milestones = project.all_milestones
-        self.assertEqual(len(milestones), 1)
-        self.assertEqual(len(all_milestones), 1)
-        self.assertEqual(milestones[0].name, '1.1')
-        self.assertEqual(all_milestones[0].name, '1.1')
+        self.createProductMilestone('1.1', 'gnomebaker', None)
+        gnome_milestone_names = [
+            milestone.name for milestone in gnome.all_milestones]
+        self.assertEqual(gnome_milestone_names, ['1.1'])
 
-        # The dateexpected attribute of a milestone is set to the minimum
-        # of the the dateexpected attributes of the product milestones.
-        self.assertEqual(milestones[0].dateexpected, datetime(2010, 4, 1))
+    def test_milestone_date_expected(self):
+        """The dateexpected attribute.
 
-        # project.getMilestone returns either a project milestone, or
-        # or None, if no milestone of the given name exists.
-        milestone = project.getMilestone('1.1')
-        self.assertEqual(milestone.name, '1.1')
-        self.assertEqual(project.getMilestone('invalid'), None)
+        dateexpected is set to min(productmilestones.dateexpected).
+        """
+        gnome = getUtility(IProjectSet)['gnome']
+        evolution_milestone = self.createProductMilestone(
+            '1.1', 'evolution', None)
+        gnomebaker_milestone = self.createProductMilestone(
+            '1.1', 'gnomebaker', None)
+        gnome_milestone = gnome.getMilestone('1.1')
 
-    def milestoneVisibility(self):
+        self.assertEqual(evolution_milestone.dateexpected, None)
+        self.assertEqual(gnomebaker_milestone.dateexpected, None)
+        self.assertEqual(gnome_milestone.dateexpected, None)
+
+        evolution_milestone.dateexpected = datetime(2007, 4, 2)
+        syncUpdate(evolution_milestone)
+        gnome_milestone = gnome.getMilestone('1.1')
+        self.assertEqual(gnome_milestone.dateexpected, datetime(2007, 4, 2))
+
+        gnomebaker_milestone.dateexpected = datetime(2007, 4, 1)
+        syncUpdate(gnomebaker_milestone)
+        gnome_milestone = gnome.getMilestone('1.1')
+        self.assertEqual(gnome_milestone.dateexpected, datetime(2007, 4, 1))
+
+    def test_milestone_visibility(self):
         """A project milestone is visible, if at least one product milestone
         is visible."""
-        # the default state of a product milestone is 'visible', hence
-        # the project milestone is visible too.
-        project = getUtility(IProjectSet)['gnome']
-        milestone = project.getMilestone('1.1')
-        self.assertEqual(milestone.visible, 1)
+        gnome = getUtility(IProjectSet)['gnome']
+        evolution_milestone = self.createProductMilestone(
+            '1.1', 'evolution', None)
+        gnomebaker_milestone = self.createProductMilestone(
+            '1.1', 'gnomebaker', None)
 
-        self.milestones['gnomebaker']['1.1'].visible = False
-        flush_database_updates()
-        milestone = project.getMilestone('1.1')
-        self.assertEqual(milestone.visible, 1)
+        self.assertEqual(evolution_milestone.visible, True)
+        self.assertEqual(gnomebaker_milestone.visible, True)
+        gnome_milestone = gnome.getMilestone('1.1')
+        self.assertEqual(gnome_milestone.visible, True)
 
-        self.milestones['evolution']['1.1'].visible = False
-        flush_database_updates()
-        milestone = project.getMilestone('1.1')
-        self.assertEqual(milestone.visible, 0)
+        gnomebaker_milestone.visible = False
+        syncUpdate(gnomebaker_milestone)
+        gnome_milestone = gnome.getMilestone('1.1')
+        self.assertEqual(gnome_milestone.visible, True)
 
-        # Since the milestone is no invisible, Project.milestones no
-        # longer returns the milestone.
-        self.assertEqual(len(project.milestones), 0)
+        evolution_milestone.visible = False
+        syncUpdate(evolution_milestone)
+        gnome_milestone = gnome.getMilestone('1.1')
+        self.assertEqual(gnome_milestone.visible, False)
 
-        # Project.all_milestones lists invisible milestones too
-        self.assertEqual(len(project.all_milestones), 1)
+        # Since the milestone 1.1 is now invisible and other milestones
+        # do not exist, Project.milestones no longer returns the milestone...
+        self.assertEqual(
+            [milestone.name for milestone in gnome.milestones], [])
+
+        # ... while project.all_milestones lists invisible milestones too.
+        self.assertEqual(
+            [milestone.name for milestone in gnome.all_milestones], ['1.1'])
         
-    def noForeignMilestones(self):
-        """Milestones from products which do not belong to "our" project
-        are not returned by project.milestones and project.all_milestones.
+    def test_no_foreign_milestones(self):
+        """Milestones in "foreign" products.
+
+        Milestones from products which do not belong to a project are not
+        returned by project.milestones and project.all_milestones.
         """
         # firefox does not belong to the Gnome project.
-        self._createProductMilestone('1.1', 'firefox', datetime(2020, 4, 3))
-        project = getUtility(IProjectSet)['gnome']
-        for milestone in project.all_milestones:
-            self.assertNotEqual(milestone.target.name, 'firefox')
-
-    def _createSpecification(self, product_name, milestone_name):
+        firefox = getUtility(IProductSet)['firefox']
+        self.assertNotEqual(firefox.project.name, 'gnome')
+        
+        self.createProductMilestone('1.1', 'firefox', None)
+        gnome = getUtility(IProjectSet)['gnome']
+        self.assertEqual(list(gnome.all_milestones), [])
+            
+    def createSpecification(self, milestone_name, product_name):
+        """Create a specification, assigned to a milestone, for a product."""
         specset = getUtility(ISpecificationSet)
         personset = getUtility(IPersonSet)
         sample_person = personset.getByEmail('test@canonical.com')
-        product = self.milestones[product_name][milestone_name].product
+        product = getUtility(IProductSet)[product_name]
 
         spec = specset.new(
-            name = '%s-specification' % product_name,
-            title = 'Title %s specification' % product_name,
-            specurl = 'http://www.example.com/spec/%s' %product_name ,
-            summary = 'summary',
-            definition_status = SpecificationDefinitionStatus.APPROVED,
-            priority = SpecificationPriority.HIGH,
-            owner = sample_person,
-            product = product)
-        spec.milestone = self.milestones[product_name][milestone_name]
+            name='%s-specification' % product_name,
+            title='Title %s specification' % product_name,
+            specurl='http://www.example.com/spec/%s' %product_name ,
+            summary='summary',
+            definition_status=SpecificationDefinitionStatus.APPROVED,
+            priority=SpecificationPriority.HIGH,
+            owner=sample_person,
+            product=product)
+        spec.milestone = product.getMilestone(milestone_name)
+        syncUpdate(spec)
+        return spec
 
-        project = getUtility(IProjectSet)['gnome']
-        milestone = project.getMilestone('1.1')
-        flush_database_updates()
+    def test_milestone_specifications(self):
+        """Specifications of a project milestone.
 
-    def milestoneSpecifications(self):
-        """Specifications defined for products and assigned to a milestone
+        Specifications defined for products and assigned to a milestone
         are also assigned to the milestone of the project.
         """
-        self._createSpecification('evolution', '1.1')
-        self._createSpecification('gnomebaker', '1.1')
-        self._createSpecification('firefox', '1.1')
+        self.createProductMilestone('1.1', 'evolution', None)
+        self.createProductMilestone('1.1', 'gnomebaker', None)
+        self.createProductMilestone('1.1', 'firefox', None)
+        self.createSpecification('1.1', 'evolution')
+        self.createSpecification('1.1', 'gnomebaker')
+        self.createSpecification('1.1', 'firefox')
 
-        milestone = getUtility(IProjectSet)['gnome'].getMilestone('1.1')
-        specs = list(milestone.specifications)
+        gnome_milestone = getUtility(IProjectSet)['gnome'].getMilestone('1.1')
         # The spec for firefox (not a gnome product) is not included
         # in the specifications, while the other two specs are included.
-        self.assertEqual(len(specs), 2)
-        self.assertEqual(specs[0].name, 'evolution-specification')
-        self.assertEqual(specs[1].name, 'gnomebaker-specification')
+        self.assertEqual(
+            [spec.name for spec in gnome_milestone.specifications],
+            ['evolution-specification', 'gnomebaker-specification'])
 
     def _createBugtask(self, product_name, milestone_name):
+        """Create a bugtask for a product, assign the task to a milestone."""
         personset = getUtility(IPersonSet)
         sample_person = personset.getByEmail('test@canonical.com')
-        milestone = self.milestones[product_name][milestone_name]
+        product = getUtility(IProductSet)[product_name]
+        milestone = product.getMilestone(milestone_name)
         params = CreateBugParams(
-            title = 'Milestone test bug for %s' % product_name,
-            comment = 'comment',
-            owner = sample_person,
-            status = BugTaskStatus.CONFIRMED)
-        params.setBugTarget(product = milestone.product)
-        bug = getUtility(IBugSet).createBug(params)
-        bugtask = bug.bugtasks[0]
+            title='Milestone test bug for %s' % product_name,
+            comment='comment',
+            owner=sample_person,
+            status=BugTaskStatus.CONFIRMED)
+        bug = product.createBug(params)
+        [bugtask] = bug.bugtasks
         bugtask.milestone = milestone
-        flush_database_updates()
+        syncUpdate(bugtask)
 
-    def milestoneBugtasks(self):
-        """Bugtasks assigned to product milestones are also assigned to
+    def test_milestone_bugtasks(self):
+        """Bugtasks and project milestones.
+
+        Bugtasks assigned to product milestones are also assigned to
         the corresponding project milestone.
         """
+        self.createProductMilestone('1.1', 'evolution', None)
+        self.createProductMilestone('1.1', 'gnomebaker', None)
+        self.createProductMilestone('1.1', 'firefox', None)
         self._createBugtask('evolution', '1.1')
         self._createBugtask('gnomebaker', '1.1')
         self._createBugtask('firefox', '1.1')
@@ -193,43 +233,37 @@ class ProjectMilestoneTest(unittest.TestCase):
         bugtasks = list(getUtility(IBugTaskSet).search(searchparams))
 
         # Only the first two bugs created here belong to the gnome project.
-        self.assertEqual(len(bugtasks), 2)
         self.assertEqual(
-            bugtasks[0].bug.title, 'Milestone test bug for evolution')
-        self.assertEqual(
-            bugtasks[1].bug.title, 'Milestone test bug for gnomebaker')
+            [bugtask.bug.title for bugtask in bugtasks],
+            ['Milestone test bug for evolution',
+             'Milestone test bug for gnomebaker'])
  
-    def test_milestone(self):
-        self.milestoneNameDateExpected()
-        self.milestoneVisibility()
-        self.noForeignMilestones()
-        self.milestoneSpecifications()
-        self.milestoneBugtasks()
-
     def setUpProjectMilestoneTests(self):
-        """Create product milestones for project milestone doctests
-        """
-        self._createProductMilestone('1.1', 'evolution', datetime(2010, 4, 1))
-        self._createProductMilestone('1.1', 'gnomebaker', datetime(2010, 4, 2))
+        """Create product milestones for project milestone doctests."""
+        self.createProductMilestone('1.1', 'evolution', datetime(2010, 4, 1))
+        self.createProductMilestone('1.1', 'gnomebaker', datetime(2010, 4, 2))
+        self.createProductMilestone('1.1.', 'netapplet', datetime(2010, 4, 2))
 
-        self._createProductMilestone('1.1.', 'netapplet', datetime(2010, 4, 2))
+        self.createProductMilestone('1.2', 'evolution', datetime(2011, 4, 1))
+        gnomebaker_milestone = self.createProductMilestone(
+            '1.2', 'gnomebaker', datetime(2011, 4, 2))
+        gnomebaker_milestone.visible = False
+        syncUpdate(gnomebaker_milestone)
 
-        self._createProductMilestone('1.2', 'evolution', datetime(2011, 4, 1))
-        self._createProductMilestone('1.2', 'gnomebaker', datetime(2011, 4, 2))
-        self.milestones['gnomebaker']['1.2'].visible = False
+        evolution_milestone = self.createProductMilestone(
+            '1.3', 'evolution', datetime(2012, 4, 1))
+        evolution_milestone.visible = False
+        gnomebaker_milestone = self.createProductMilestone(
+            '1.3', 'gnomebaker', datetime(2012, 4, 2))
+        gnomebaker_milestone.visible = False
+        syncUpdate(evolution_milestone)
+        syncUpdate(gnomebaker_milestone)
 
-        self._createProductMilestone('1.3', 'evolution', datetime(2012, 4, 1))
-        self._createProductMilestone('1.3', 'gnomebaker', datetime(2012, 4, 2))
-        self.milestones['evolution']['1.3'].visible = False
-        self.milestones['gnomebaker']['1.3'].visible = False
-
-        self._createSpecification('evolution', '1.1')
-        self._createSpecification('gnomebaker', '1.1')
+        self.createSpecification('1.1', 'evolution')
+        self.createSpecification('1.1', 'gnomebaker')
 
         self._createBugtask('evolution', '1.1')
         self._createBugtask('gnomebaker', '1.1')
-
-        flush_database_updates()
 
 def test_suite():
     return unittest.TestLoader().loadTestsFromName(__name__)

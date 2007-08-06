@@ -351,36 +351,44 @@ The search filter can also return bugs that are related to CVE reports:
     26 2 Ubuntu Blackhole Trash folder 1999-2345
 
 
-== Search for bugs assigned to milestones ==
+== Search for BugTasks assigned to milestones ==
 
-    >>> from canonical.launchpad.ftests.test_project_milestone import (
-    ...     ProjectMilestoneTest)
-    >>> test_helper = ProjectMilestoneTest(helper_only=True)
-    >>> test_helper.setUpProjectMilestoneTests()
+BugTaskSet.search() can return bugtasks associated with milestones. 
+No BugTask is associated yet with firefox milestone 1.0.
 
-BugTaskSet.search() can return bugtasks associated with milestones.
+    >>> product_milestone = firefox.getMilestone('1.0')
+    >>> params = BugTaskSearchParams(milestone=product_milestone, user=None)
+    >>> milestone_tasks = bugtask_set.search(params)
+    >>> print milestone_tasks.count()
+    0
 
-    >>> milestone = evolution.getMilestone('1.1')
-    >>> params = BugTaskSearchParams(
-    ...     milestone=milestone, user=None)
+Similary, no BugTasks are associated with the project firexfox belongs to.
+
+    >>> mozilla = firefox.project
+    >>> project_milestone = mozilla.getMilestone('1.0')
+    >>> params = BugTaskSearchParams(milestone=project_milestone, user=None)
+    >>> milestone_tasks = bugtask_set.search(params)
+    >>> print milestone_tasks.count()
+    0
+
+When a BugTask is associated with a milestone, it is returned in a search
+for bugs of this milestone.
+
+    >>> bugtask = firefox.searchTasks(BugTaskSearchParams(user=None))[0]
+    >>> print bugTaskInfo(bugtask)
+    2 1 Mozilla Firefox Firefox does not support SVG
+    >>> bugtask.milestone = product_milestone
+    >>> syncUpdate(bugtask)
+    >>> params = BugTaskSearchParams(milestone=product_milestone, user=None)
     >>> milestone_tasks = bugtask_set.search(params)
     >>> for bugtask in milestone_tasks:
     ...     print bugTaskInfo(bugtask)
-    35 15 Evolution Milestone test bug for evolution
+    2 1 Mozilla Firefox Firefox does not support SVG
 
+This BugTask is also a BugTask of the milestone of the mozilla project.
 
-Bugtasks associated with a project milestone can be searched. 
-In this case, all bugtasks associated with products belonging to 
-this project are returned.
-
-    >>> from canonical.launchpad.interfaces import IProjectSet
-    >>> gnome = getUtility(IProjectSet).getByName('gnome')
-    >>> milestone = gnome.getMilestone('1.1')
-    >>> params = BugTaskSearchParams(
-    ...     milestone=milestone, user=None)
+    >>> params = BugTaskSearchParams(milestone=project_milestone, user=None)
     >>> milestone_tasks = bugtask_set.search(params)
     >>> for bugtask in milestone_tasks:
     ...     print bugTaskInfo(bugtask)
-    35 15 Evolution Milestone test bug for evolution
-    36 16 gnomebaker Milestone test bug for gnomebaker
-
+    2 1 Mozilla Firefox Firefox does not support SVG
