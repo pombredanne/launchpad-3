@@ -762,23 +762,9 @@ class BranchSet:
 
     def getHostedPullQueue(self):
         """See `IBranchSet`."""
-
-        # XXX: JonathanLange 2007-07-27, Hosted branches (see Andrew's comment
-        # dated 2006-06-15) are mirrored if their mirror_request_time is not
-        # NULL or if they haven't been mirrored in the last 6 hours. The latter
-        # behaviour is a fail-safe and should probably be removed once we trust
-        # the mirror_request_time behavior. See
-        # test_mirror_stale_hosted_branches.
-
-        # The mirroring interval is 6 hours. we think this is a safe balance
-        # between frequency of mirroring and not hammering servers with
-        # requests to check whether mirror branches are up to date.
-
         return Branch.select(
             AND(Branch.q.branch_type == BranchType.HOSTED,
-                OR(Branch.q.last_mirror_attempt == None,
-                   UTC_NOW - Branch.q.last_mirror_attempt > '6 hours',
-                   Branch.q.mirror_request_time != None)),
+                Branch.q.mirror_request_time != None),
             prejoins=['owner', 'product'])
 
     def getMirroredPullQueue(self):
@@ -798,6 +784,8 @@ class BranchSet:
         """See `IBranchSet`."""
         # XXX: JonathanLange 2007-07-19, Circular import.
         from canonical.launchpad.database.productseries import ProductSeries
+        # Has been synced but not mirrored, or synced since the last mirror,
+        # or not synced but mirrored over a day ago.
         return Branch.select(
             AND(Branch.q.branch_type == BranchType.IMPORTED,
                 ProductSeries.q.import_branchID == Branch.q.id,
