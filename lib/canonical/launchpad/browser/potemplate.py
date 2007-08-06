@@ -298,7 +298,7 @@ class POTemplateView(LaunchpadView, TranslationsMixin):
                     "Your upload was ignored because you didn't select a "
                     "file. Please select a file and try again.")
             else:
-                # XXX: Carlos Perello Marin 2004/12/30
+                # XXX: Carlos Perello Marin 2004-12-30
                 # Epiphany seems to have an unpredictable bug with upload
                 # forms (or perhaps it's launchpad because I never had
                 # problems with bugzilla). The fact is that some uploads don't

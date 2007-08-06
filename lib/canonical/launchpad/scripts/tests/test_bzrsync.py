@@ -840,8 +840,9 @@ class TestBzrSyncEmail(BzrSyncTestCase):
         # value of sys.getfilesystemencoding().
         self.writeToFile(filename='un elephant',
                          contents='\xc7a trompe \xc3\xa9norm\xc3\xa9ment.\n')
-        # XXX: The binary file is not really needed here, but it triggers a
-        # crasher bug with bzr-0.15 and earlier. -- DavidAllouche 2007-04-26
+        # XXX DavidAllouche 2007-04-26: 
+        # The binary file is not really needed here, but it triggers a
+        # crasher bug with bzr-0.15 and earlier.
         self.writeToFile(filename='binary', contents=chr(0))
         self.commitRevision(rev_id=rev_id, timestamp=1000000000.0, timezone=0)
         sync = self.makeBzrSync()

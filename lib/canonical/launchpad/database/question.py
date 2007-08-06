@@ -167,7 +167,7 @@ class Question(SQLBase, BugLinkTargetMixin):
             self.product = question_target
             self.distribution = None
             self.sourcepackagename = None
-        # XXX sinzui 2007-04-20 #108240
+        # XXX sinzui 2007-04-20 bug=108240
         # We test for ISourcePackage because it is a valid QuestionTarget even
         # though it should not be. SourcePackages are never passed to this
         # mutator.
@@ -1073,7 +1073,7 @@ class QuestionTargetMixin:
         constraints.append("""
             AnswerContact.person = PersonLanguage.person AND
             PersonLanguage.Language = Language.id""")
-        # XXX sinzui 2007-07-12 bug=125545
+        # XXX sinzui 2007-07-12 bug=125545:
         # Using a LIKE constraint is suboptimal. We would not need this
         # if-else clause if variant languages knew their parent language.
         if language.code == 'en':
