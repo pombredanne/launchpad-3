@@ -853,8 +853,12 @@ class QueueActionOverride(QueueAction):
                     new_archive = getUtility(IArchiveSet).getByDistroComponent(
                         build.build.distroarchseries.distroseries.distribution,
                         self.component_name)
-                    if new_archive is not None:
-                        build.build.overrideArchive(new_archive)
+                    if(new_archive is not None and new_archive !=
+                            build.build.archive):
+                        raise QueueActionError(
+                            "Overriding component to '%s' failed because it "
+                            "would require a new archive."
+                            % self.component_name)
                 self.displayInfo(queue_item, only=binary.name)
 
         not_overridden = set(self.package_names) - set(overridden)

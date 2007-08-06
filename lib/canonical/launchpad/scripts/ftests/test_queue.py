@@ -585,33 +585,18 @@ class TestQueueTool(TestQueueBase):
             component_name='multiverse')
 
     def testOverrideBinaryWithArchiveChange(self):
-        """Check if the archive changes as necessary on a binary override.
+        """Check if archive changes are disallowed for binary overrides.
 
         When overriding the component, the archive may change, so we check
-        that here.
+        that here and make sure it's disallowed.
         """
         # Set up.
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
         # Test that it changes to commercial when required.
-        queue_action = self.execute_command('override binary pmount',
+        self.assertRaises(
+            CommandRunnerError, self.execute_command, 'override binary pmount',
             component_name='commercial')
-        self.assertEqual(1, queue_action.items_size)
-        [queue_item] = breezy_autotest.getQueueItems(
-            status=PackageUploadStatus.NEW, name="pmount")
-        [packagebuild] = queue_item.builds
-        self.assertEqual(packagebuild.build.archive.purpose, 
-            ArchivePurpose.COMMERCIAL)
-
-        # Test that it changes back to primary when required.
-        queue_action = self.execute_command('override binary pmount',
-            component_name='main')
-        self.assertEqual(1, queue_action.items_size)
-        [queue_item] = breezy_autotest.getQueueItems(
-            status=PackageUploadStatus.NEW, name="pmount")
-        [packagebuild] = queue_item.builds
-        self.assertEqual(packagebuild.build.archive.purpose, 
-            ArchivePurpose.PRIMARY)
 
 
 class TestQueueToolInJail(TestQueueBase):
