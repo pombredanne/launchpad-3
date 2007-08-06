@@ -209,10 +209,10 @@ def contactEmailAddresses(person):
     """
     emails = set()
     if person.preferredemail is not None:
-        # XXX: This str() call can be removed as soon as Andrew lands his
+        # XXX: Guilherme Salgado 2006-04-20:
+        # This str() call can be removed as soon as Andrew lands his
         # unicode-simple-sendmail branch, because that will make
         # simple_sendmail handle unicode email addresses.
-        # Guilherme Salgado, 2006-04-20
         emails.add(str(person.preferredemail.email))
         return emails
 
@@ -363,7 +363,7 @@ def is_english_variant(language):
     >>> is_english_variant(Language('enm'))
     False
     """
-    # XXX sinzui 2007-07-12 bug=125545
+    # XXX sinzui 2007-07-12 bug=125545:
     # We would not need to use this function so often if variant languages
     # knew their parent language.
     return language.code[0:3] in ['en_']

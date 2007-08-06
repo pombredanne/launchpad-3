@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'AccountStatus',
     'IAdminRequestPeopleMerge',
     'INewPerson',
     'IObjectReassignment',
@@ -46,6 +47,36 @@ from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
+
+
+class AccountStatus(DBEnumeratedType):
+    """The status of a Launchpad account."""
+
+    NOACCOUNT = DBItem(10, """
+        No Launchpad account
+
+        There's no Launchpad account for this Person record.
+        """)
+
+    ACTIVE = DBItem(20, """
+        Active Launchpad account
+
+        There's an active Launchpad account associated with this Person.
+        """)
+
+    DEACTIVATED = DBItem(30, """
+        Deactivated Launchpad account
+
+        The account associated with this Person has been deactivated by the
+        Person himself.
+        """)
+
+    SUSPENDED = DBItem(40, """
+        Suspended Launchpad account
+
+        The account associated with this Person has been suspended by a
+        Launchpad admin.
+        """)
 
 
 class PersonCreationRationale(DBEnumeratedType):
@@ -338,9 +369,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "here.")
             )
     password = PasswordField(
-            title=_('Password'), required=True, readonly=False,
-            description=_("Enter the same password in each field.")
-            )
+            title=_('Password'), required=True, readonly=False)
     karma = Int(
             title=_('Karma'), readonly=False,
             description=_('The cached total karma for this person.')
@@ -435,9 +464,10 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "exception to this is when we allow users to create Launchpad "
             "profiles through the /people/+newperson page."),
         required=False, readonly=False)
-    # XXX: We can't use a Choice field here because we don't have a vocabulary
+    # XXX Guilherme Salgado 2006-11-10: 
+    # We can't use a Choice field here because we don't have a vocabulary
     # which contains valid people but not teams, and we don't really need one
-    # appart from here. -- Guilherme Salgado, 2006-11-10
+    # appart from here.
     registrant = Attribute('The user who created this profile.')
     # bounty relations
     ownedBounties = Attribute('Bounties issued by this person.')
@@ -456,6 +486,14 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             title=_("Key used to generate opaque OpenID identities."),
             readonly=True, required=False,
             )
+
+    account_status = Choice(
+        title=_("The status of this person's account"), required=False,
+        readonly=False, vocabulary=AccountStatus)
+
+    account_status_comment = Text(
+        title=_("Why are you deactivating your account?"), required=False,
+        readonly=False)
 
     # Properties of the Person object.
     karma_category_caches = Attribute(
@@ -646,13 +684,13 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     @invariant
     def personCannotHaveIcon(person):
-        # XXX: This invariant is busted! The person parameter provided to this
+        # XXX Guilherme Salgado 2007-05-28: 
+        # This invariant is busted! The person parameter provided to this
         # method will always be an instance of zope.formlib.form.FormData
         # containing only the values of the fields included in the POSTed
         # form. IOW, person.inTeam() will raise a NoInputData just like
         # person.teamowner would as it's not present in most of the
         # person-related forms.
-        # -- Guilherme Salgado, 2007-05-28
         if person.icon is not None and not person.isTeam():
             raise Invalid('Only teams can have an icon.')
 
@@ -1108,7 +1146,7 @@ class IPersonSet(Interface):
         The comment must be of the following form: "when %(action_details)s"
         (e.g. "when the foo package was imported into Ubuntu Breezy").
 
-        XXX sabdfl 14/06/05 this should be extended to be similar or
+        XXX sabdfl 2005-06-14: this should be extended to be similar or
         identical to the other person creation argument lists, so we can
         call it and create a full person if needed. Email would remain the
         deciding factor, we would not try and guess if someone existed based

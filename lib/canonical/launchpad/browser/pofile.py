@@ -82,10 +82,10 @@ class POFileNavigation(Navigation):
                 self.context.language.code, self.context.variant)
         else:
             # It's a POST.
-            # XXX CarlosPerelloMarin 2006-04-20: We should check the kind of
-            # POST we got, a Log out action will be also a POST and we should
-            # not create a POMsgSet in that case. See bug #40275 for more
-            # information.
+            # XXX CarlosPerelloMarin 2006-04-20 bug=40275: 
+            # We should check the kind of POST we got,
+            # a Log out action will be also a POST and we
+            # should not create a POMsgSet in that case.
             return self.context.createMessageSetFromMessageSet(potmsgset)
 
 class POFileFacets(POTemplateFacets):
@@ -152,13 +152,13 @@ class POFileUploadView(POFileView):
                     "Ignored your upload because you didn't select a file to"
                     " upload.")
             else:
-                # XXX: Carlos Perello Marin 2004/12/30
+                # XXX: Carlos Perello Marin 2004-12-30 bug=116:
                 # Epiphany seems to have an unpredictable bug with upload
                 # forms (or perhaps it's launchpad because I never had
                 # problems with bugzilla). The fact is that some uploads don't
                 # work and we get a unicode object instead of a file-like
                 # object in "upload_file". We show an error if we see that
-                # behaviour. For more info, look at bug #116.
+                # behaviour.
                 self.request.response.addErrorNotification(
                     "The upload failed because there was a problem receiving"
                     " the data.")
@@ -339,7 +339,7 @@ class POFileTranslateView(BaseTranslationView):
         if self.show not in (
             'translated', 'untranslated', 'all', 'need_review',
             'changed_in_launchpad', 'new_suggestions'):
-            # XXX: should this be an UnexpectedFormData?
+            # XXX: kiko 2006-09-27: Should this be an UnexpectedFormData?
             self.show = self.DEFAULT_SHOW
         if self.show == 'all':
             self.shown_count = self.context.messageCount()

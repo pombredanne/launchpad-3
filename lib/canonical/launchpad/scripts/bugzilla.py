@@ -4,9 +4,9 @@
 
 
 # Bugzilla schema:
-#  http://lxr.mozilla.org/mozilla/source/webtools/bugzilla/Bugzilla/DB/Schema.pm
+# http://lxr.mozilla.org/mozilla/source/webtools/bugzilla/Bugzilla/DB/Schema.pm
 
-# XXX: 20051018 jamesh
+# XXX: jamesh 2005-10-18
 # Currently unhandled bug info:
 #  * Operating system and platform
 #  * version (not really used in Ubuntu bugzilla though)
@@ -126,7 +126,7 @@ class BugzillaBackend:
                             '  FROM longdescs '
                             '  WHERE bug_id = %d '
                             '  ORDER BY bug_when' % bug_id)
-        # XXX: 2005-12-07 jamesh
+        # XXX: jamesh 2005-12-07:
         # Due to a bug in Debzilla, Ubuntu bugzilla bug 248 has > 7800
         # duplicate comments,consisting of someone's signature.
         # For the import, just ignore those comments.
@@ -412,10 +412,10 @@ class Bugzilla:
             logger.warning('could not find upstream product for '
                            'source package "%s"', srcpkgname.name)
             return None
-        
+
     _bug_re = re.compile('bug\s*#?\s*(?P<id>\d+)', re.IGNORECASE)
     def replaceBugRef(self, match):
-        # XXX: 20051024 jamesh
+        # XXX: jamesh 2005-10-24:
         # this is where bug number rewriting would be plugged in
         bug_id = int(match.group('id'))
         url = '%s/%d' % (canonical_url(self.bugtracker), bug_id)

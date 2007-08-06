@@ -250,7 +250,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         self.checkSourceLookupForPocket(
             PackagePublishingPocket.RELEASE, expected_result=[])
 
-        # XXX cprov 20070105: it means that "careful" mode is useless for
+        # XXX cprov 2007-01-05: it means that "careful" mode is useless for
         # rebuilding released archives.
         # This is quite right, IMHO, since republication of a released
         # archive will, obviously contain new timestamps, which would freak
@@ -358,7 +358,7 @@ class TestIPublishingAPI(TestNativePublishingBase):
         self.checkBinaryLookupForPocket(
             PackagePublishingPocket.RELEASE, expected_result=[])
 
-        # XXX cprov 20070105: it means that "careful" mode is useless for
+        # XXX cprov 2007-01-05: it means that "careful" mode is useless for
         # rebuilding released archives.
         # This is quite right, IMHO, since republication of a released
         # archive will, obviously contain new timestamps, which would freak

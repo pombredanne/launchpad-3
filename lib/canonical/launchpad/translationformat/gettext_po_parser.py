@@ -364,7 +364,7 @@ class PoParser(object):
         try:
             newchars, length = decode(self._pending_chars, 'strict')
         except UnicodeDecodeError, exc:
-            # XXX: James Henstridge 20060316
+            # XXX: James Henstridge 2006-03-16:
             # If the number of unconvertable chars is longer than a
             # multibyte sequence to be, the UnicodeDecodeError indicates
             # a real error, rather than a partial read.
@@ -797,7 +797,7 @@ class PoParser(object):
             self._dumpCurrentSection()
             self._section = 'msgstr'
             l = l[len('msgstr'):]
-            # XXX kiko: if l is empty, it means we got an msgstr
+            # XXX kiko 2005-08-19: if l is empty, it means we got an msgstr
             # followed by a newline; that may be critical, but who knows?
             if l and l[0] == '[':
                 # plural case

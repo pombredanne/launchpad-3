@@ -55,7 +55,6 @@ class TranslationExporter:
 
         return None
 
-
 # A note about tarballs, StringIO and unicode. SQLObject returns unicode
 # values for columns which are declared as StringCol. We have to be careful
 # not to pass unicode instances to the tarfile module, because when the
@@ -65,6 +64,7 @@ class TranslationExporter:
 # If we get separate StringCol and UnicodeCol column types, we won't need this
 # any longer.
 #  -- Dafydd Harries, 2005/04/07.
+
 class LaunchpadWriteTarFile:
     """Convenience wrapper around the tarfile module.
 
