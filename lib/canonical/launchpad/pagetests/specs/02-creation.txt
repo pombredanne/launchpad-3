@@ -219,6 +219,8 @@ Ubuntu distribution, then redirects the user to the new blueprint's page:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic'
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Blueprint overview...
 
 
 === Registering a blueprint from a distribution ===
@@ -240,6 +242,8 @@ Ubuntu distribution, then redirects the user to the new blueprint's page:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic-1'
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Blueprint overview...
 
 
 === Registering a blueprint from a distribution series ===
@@ -269,6 +273,8 @@ Ubuntu distribution, then redirects the user to the new blueprint's page:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic-2'
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Blueprint overview...
 
 The new blueprint is not proposed as a series goal:
 
@@ -294,6 +300,8 @@ Ubuntu distribution, then redirects the user to the new blueprint's page:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/ubuntu/+spec/networkmagic-3'
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Blueprint overview...
 
 As requested, the new blueprint is proposed as a series goal:
 
@@ -313,6 +321,8 @@ for the series, the new blueprint is automatically accepted as a series goal:
     >>> control('Summary').value = summary
     >>> control('series goal').control.value = True
     >>> control('Register Blueprint').click()
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Blueprint overview...
     >>> print(first_tag_by_class(admin_browser.contents, 'summary'))
     <...Series goal:...Accepted...for...hoary...
 
@@ -337,6 +347,8 @@ Mozilla Firefox product, then redirects the user to the new blueprint's page:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support-1'
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Blueprint overview...
 
 
 === Registering a blueprint from a product series ===
@@ -366,6 +378,8 @@ Mozilla Firefox product, then redirects the user to the new blueprint's page:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support-2'
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Blueprint overview...
 
 The new blueprint is not proposed as a series goal:
 
@@ -391,6 +405,8 @@ Mozilla Firefox product, then redirects the user to the new blueprint's page:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support-3'
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Blueprint overview...
 
 As requested, the new blueprint is proposed as a series goal:
 
@@ -410,6 +426,8 @@ for the series, the new blueprint is automatically accepted as a series goal:
     >>> control('Summary').value = summary
     >>> control('series goal').control.value = True
     >>> control('Register Blueprint').click()
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Blueprint overview...
     >>> print(first_tag_by_class(admin_browser.contents, 'summary'))
     <...Series goal:...Accepted...for...1.0...
 
@@ -443,6 +461,8 @@ Mozilla Firefox project, then redirects the user to the new blueprint's page:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/firefox/+spec/svg-support-5'
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Blueprint overview...
 
 
 === Registering a blueprint from a sprint ===
@@ -477,6 +497,8 @@ the user is then redirected back to the sprint page:
     >>> control('Register Blueprint').click()
     >>> user_browser.url
     'http://blueprints.launchpad.dev/sprints/futurista'
+    >>> print extract_text(find_main_content(user_browser.contents))
+    Blueprints for Future Mega Meeting...
 
 In addition, the new blueprint is automatically proposed as a topic for
 discussion at the sprint:
@@ -499,6 +521,8 @@ a sprint topic:
     >>> control('URL').value = 'http://bazaar-vcs.org/DarcsImports2'
     >>> control('Summary').value = summary
     >>> control('Register Blueprint').click()
+    >>> print extract_text(find_main_content(admin_browser.contents))
+    Blueprints for Future Mega Meeting...
     >>> print(find_tag_by_id(admin_browser.contents, 'speclisting'))
     <...darcs-imports-2...
 
@@ -523,6 +547,8 @@ permission, the blueprint will be automatically added to the sprint agenda:
     >>> sample_browser.getControl('Register Blueprint').click()
     >>> sample_browser.url
     'http://blueprints.launchpad.dev/jokosher/+spec/spec-for-sprint'
+    >>> print extract_text(find_main_content(sample_browser.contents))
+    Blueprint overview...
     >>> sample_browser.open('http://blueprints.launchpad.dev/sprints/paris')
     >>> find_tag_by_id(sample_browser.contents, 'speclisting')
     <...spec-for-sprint...>
