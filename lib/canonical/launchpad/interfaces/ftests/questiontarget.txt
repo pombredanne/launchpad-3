@@ -175,7 +175,7 @@ word appears in the title.)
 
 The searchQuestions() method can also filter questions by status:
 
-    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> from canonical.launchpad.interfaces import QuestionStatus
     >>> for t in target.searchQuestions(status=QuestionStatus.OPEN):
     ...     print t.title
     Another question
@@ -212,7 +212,7 @@ order).
 
 You can sort also from oldest to newest using the OLDEST_FIRST constant:
 
-    >>> from canonical.lp.dbschema import QuestionSort
+    >>> from canonical.launchpad.interfaces import QuestionSort
 
     >>> for t in target.searchQuestions(search_text='new',
     ...                               sort=QuestionSort.OLDEST_FIRST):

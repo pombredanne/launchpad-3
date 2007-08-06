@@ -59,20 +59,21 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    ArchivePurpose, BugTaskStatus, DistroSeriesStatus, MirrorContent,
-    TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationDefinitionStatus, SpecificationImplementationStatus,
-    PackagePublishingStatus)
+    ArchivePurpose, BugTaskStatus, DistroSeriesStatus,
+    PackagePublishingStatus, PackageUploadStatus,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
+    TranslationPermission)
 
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IFAQTarget, 
-    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities, 
-    ISourcePackageName, IQuestionTarget, NotFoundError, 
+    IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IFAQTarget,
+    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    IQuestionTarget, ISourcePackageName, MirrorContent, NotFoundError,
     QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.archivepublisher.debversion import Version
 
-from canonical.launchpad.validators.name import valid_name, sanitize_name
+from canonical.launchpad.validators.name import sanitize_name, valid_name
 
 
 class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
@@ -336,8 +337,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def currentseries(self):
         """See `IDistribution`."""
-        # XXX: this should be just a selectFirst with a case in its
-        # order by clause -- kiko, 2006-03-18
+        # XXX kiko 2006-03-18:
+        # This should be just a selectFirst with a case in its
+        # order by clause.
 
         serieses = self.serieses
         # If we have a frozen one, return that.
@@ -740,10 +742,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # Get the sets of binary package names, summaries, descriptions.
 
-        # XXX This bit of code needs fixing up, it is doing stuff that
+        # XXX Julian 2007-04-03:
+        # This bit of code needs fixing up, it is doing stuff that
         # really needs to be done in SQL, such as sorting and uniqueness.
         # This would also improve the performance.
-        # Julian 2007-04-03
         binpkgnames = set()
         binpkgsummaries = set()
         binpkgdescriptions = set()
@@ -814,11 +816,11 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # the current distroseries and then across the whole
         # distribution.
         #
-        # XXX: note that the strategy of falling back to previous
+        # XXX kiko 2006-07-28: 
+        # Note that the strategy of falling back to previous
         # distribution series might be revisited in the future; for
         # instance, when people file bugs, it might actually be bad for
         # us to allow them to be associated with obsolete packages.
-        #   -- kiko, 2006-07-28
 
         sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
         if sourcepackagename:
@@ -849,11 +851,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     orderBy=['-id'])
                 if publishedpackage is None:
                     # Try any release next.
-                    # XXX could we just do this first? I'm just
+                    # XXX Gavin Panella 2007-04-18:
+                    # Could we just do this first? I'm just
                     # following the pattern that was here before
-                    # (e.g. see the search for a binary package
-                    # below).
-                    #   -- Gavin Panella, 2007-04-18
+                    # (e.g. see the search for a binary package below).
                     publishedpackage = PublishedPackage.selectFirstBy(
                         sourcepackagename=sourcepackagename.name,
                         binarypackagename=sourcepackagename.name,
@@ -903,6 +904,74 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         else:
             raise NotFoundError('Package %s not published in %s'
                                 % (pkgname, self.displayname))
+
+    def getAllPPAs(self):
+        """See `IDistribution`"""
+        return Archive.selectBy(
+            purpose=ArchivePurpose.PPA, distribution=self, orderBy=['id'])
+
+    def searchPPAs(self, text=None):
+        """See `IDistribution`."""
+        clauses = ["""
+        Archive.purpose = %s AND
+        Archive.distribution = %s AND
+        Person.id = Archive.owner
+        """ % sqlvalues(ArchivePurpose.PPA, self)]
+
+        clauseTables = ['Person']
+        orderBy = ['Person.name']
+
+        if text:
+            clauses.append("""
+            ((Person.fti @@ ftq(%s) OR
+            Archive.description LIKE '%%' || %s || '%%'))
+            """ % (quote(text), quote_like(text)))
+
+        query = ' AND '.join(clauses)
+        return Archive.select(
+            query, orderBy=orderBy, clauseTables=clauseTables)
+
+    def getPendingAcceptancePPAs(self):
+        """See `IDistribution`."""
+        query = """
+        Archive.purpose = %s AND
+        Archive.distribution = %s AND
+        PackageUpload.archive = Archive.id AND
+        PackageUpload.status = %s
+        """ % sqlvalues(ArchivePurpose.PPA, self,
+                        PackageUploadStatus.ACCEPTED)
+
+        return Archive.select(
+            query, clauseTables=['PackageUpload'],
+            orderBy=['archive.id'], distinct=True)
+
+    def getPendingPublicationPPAs(self):
+        """See `IDistribution`."""
+        src_query = """
+        Archive.purpose = %s AND
+        Archive.distribution = %s AND
+        SourcePackagePublishingHistory.archive = archive.id AND
+        SourcePackagePublishingHistory.status = %s
+         """ % sqlvalues(ArchivePurpose.PPA, self,
+                         PackagePublishingStatus.PENDING)
+
+        src_archives = Archive.select(
+            src_query, clauseTables=['SourcePackagePublishingHistory'],
+            orderBy=['archive.id'], distinct=True)
+
+        bin_query = """
+        Archive.purpose = %s AND
+        Archive.distribution = %s AND
+        BinaryPackagePublishingHistory.archive = archive.id AND
+        BinaryPackagePublishingHistory.status = %s
+        """ % sqlvalues(ArchivePurpose.PPA, self,
+                        PackagePublishingStatus.PENDING)
+
+        bin_archives = Archive.select(
+            bin_query, clauseTables=['BinaryPackagePublishingHistory'],
+            orderBy=['archive.id'], distinct=True)
+
+        return src_archives.union(bin_archives)
 
 
 class DistributionSet:
