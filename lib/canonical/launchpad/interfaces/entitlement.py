@@ -5,6 +5,8 @@
 __metaclass__ = type
 
 __all__ = [
+'EntitlementState',
+'EntitlementType',
     'EntitlementInvalidError',
     'EntitlementQuota',
     'EntitlementQuotaExceededError',
@@ -17,6 +19,8 @@ from zope.schema import Bool, Choice, Datetime, Int
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Whiteboard
+from canonical.lazr import DBEnumeratedType, DBItem
+
 
 class EntitlementQuotaExceededError(Exception):
     """The quota has been exceeded for the entitlement."""
@@ -24,6 +28,59 @@ class EntitlementQuotaExceededError(Exception):
 
 class EntitlementInvalidError(Exception):
     """The entitlement is not valid."""
+
+
+class EntitlementType(DBEnumeratedType):
+    """The set of features supported via entitlements.
+
+    The listed features may be enabled by the granting of an entitlement.
+    """
+
+    PRIVATE_BRANCHES = DBItem(10, """
+        Private Branches
+
+        The ability to create branches which are only visible to the team.
+        """)
+
+    PRIVATE_BUGS = DBItem(20, """
+        Private Bugs
+
+        The ability to create private bugs which are only visible to the team.
+        """)
+
+    PRIVATE_TEAMS = DBItem(30, """
+        Private Teams
+
+        The ability to create private teams which are only visible to parent
+        teams.
+        """)
+
+
+class EntitlementState(DBEnumeratedType):
+    """States for an entitlement.
+
+    The entitlement may start life as a REQUEST that is then granted and
+    made ACTIVE.  At some point the entitlement may be revoked by marking
+    as INACTIVE.
+    """
+
+    REQUESTED = DBItem(10, """
+        Entitlement has been requested.
+
+        The entitlement is inactive in this state.
+        """)
+
+    ACTIVE = DBItem(20, """
+        The entitlement is active.
+
+        The entitlement is approved in Launchpad or was imported in the
+        active state.
+        """)
+    INACTIVE = DBItem(30, """
+        The entitlement is inactive.
+
+        The entitlement has be deactivated.
+        """)
 
 
 class IEntitlement(Interface):
