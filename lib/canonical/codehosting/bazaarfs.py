@@ -14,6 +14,13 @@ from twisted.vfs.backends import adhoc, osfs
 from twisted.vfs.ivfs import VFSError, NotFoundError, PermissionError
 
 
+# The directories allowed directly beneath a branch directory. These are the
+# directories that Bazaar creates as part of regular operation.
+ALLOWED_DIRECTORIES = ('.bzr', '.bzr.backup')
+FORBIDDEN_DIRECTORY_ERROR = (
+    "Cannot create '%s'. Only Bazaar branches are allowed.")
+
+
 class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
     """For /
 
@@ -158,10 +165,9 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
         # XXX AndrewBennetts 2006-02-06: Same comment as
         # SFTPServerUserDir.createDirectory (see
         # http://twistedmatrix.com/bugs/issue1223)
-        # XXX AndrewBennetts 2006-03-01: We should ensure that if createBranch
-        # fails for some reason (e.g. invalid name), that we report a useful
-        # error to the client.  See
-        # https://launchpad.net/products/launchpad/+bug/33223
+        # XXX AndrewBennetts 2006-03-01 bug=33223:
+        # We should ensure that if createBranch fails for some reason
+        # (e.g. invalid name),that we report a useful error to the client.
         if self.exists(childName):
             # "mkdir failed" is the magic string that bzrlib will interpret to
             # mean "already exists".
@@ -285,12 +291,33 @@ class WriteLoggingFile(osfs.OSFile):
         osfs.OSFile.writeChunk(self, offset, data)
 
 
+class NameRestrictedWriteLoggingDirectory(WriteLoggingDirectory):
+    """`WriteLoggingDirectory` that is restricted to a small list of names.
+
+    In particular, a NameRestrictedWriteLoggingDirectory can only have one of
+    the names in `ALLOWED_DIRECTORIES`.
+    """
+
+    def __init__(self, flagAsDirty, path, name=None, parent=None):
+        self._checkName(name)
+        WriteLoggingDirectory.__init__(self, flagAsDirty, path, name, parent)
+
+    def _checkName(self, name):
+        if name not in ALLOWED_DIRECTORIES:
+            raise PermissionError(FORBIDDEN_DIRECTORY_ERROR % (name,))
+
+    def rename(self, new_name):
+        self._checkName(new_name)
+        return WriteLoggingDirectory.rename(self, new_name)
+
+
 class SFTPServerBranch(WriteLoggingDirectory):
     """For /~username/product/branch, and below.
 
-    Only allows '.bzr' directories to be made directly. Underneath that,
-    anything goes.
+    Direct children are restricted by name. See
+    `NameRestrictedWriteLoggingDirectory`.
     """
+
     def __init__(self, avatar, branchID, branchName, parent):
         self.branchID = branchID
         # XXX AndrewBennetts 2006-02-06: this snippet is duplicated in a few
@@ -306,6 +333,17 @@ class SFTPServerBranch(WriteLoggingDirectory):
         if not os.path.exists(self.realPath):
             os.makedirs(self.realPath)
 
+    def childDirFactory(self):
+        def childWithListener(path, name, parent):
+            return NameRestrictedWriteLoggingDirectory(
+                self._flagAsDirty, path, name, parent)
+        return childWithListener
+
+    def createFile(self, name, exclusive=True):
+        raise PermissionError(
+            "Can only create Bazaar control directories directly beneath a "
+            "branch directory.")
+    
     def remove(self):
         raise PermissionError(
             "removing branch directory %r is not allowed." % self.name)
@@ -316,16 +354,9 @@ class SFTPServerBranch(WriteLoggingDirectory):
             # product, the next is the username and the third is the root of
             # the SFTP server.
 
-            # XXX - this is an awkward way of finding the root. Replace with
-            # something that is clearer and requires fewer comments.
-            # -- jml, 2007-02-14
+            # XXX jml 2007-02-14: This is an awkward way of finding the root.
+            # Replace with something that is clearer and requires fewer
+            #  comments.
             root = self.parent.parent.parent
             self._listener = root.listenerFactory(self.branchID)
         self._listener()
-
-    def createDirectory(self, name):
-        if name != '.bzr':
-            raise PermissionError(
-                "Can only create .bzr directories in branch directories: %s"
-                % (name,))
-        return WriteLoggingDirectory.createDirectory(self, name)

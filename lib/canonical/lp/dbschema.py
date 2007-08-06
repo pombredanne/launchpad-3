@@ -19,7 +19,6 @@ __metaclass__ = type
 # If you do not do this, from canonical.lp.dbschema import * will not
 # work properly, and the thing/lp:SchemaClass will not work properly.
 __all__ = (
-'AccountStatus',
 'ArchArchiveType',
 'ArchivePurpose',
 'BinaryPackageFileType',
@@ -98,36 +97,6 @@ __all__ = (
 
 from canonical.lazr import DBEnumeratedType as DBSchema
 from canonical.lazr import DBItem as Item
-
-
-class AccountStatus(DBSchema):
-    """The status of a Launchpad account."""
-
-    NOACCOUNT = Item(10, """
-        No Launchpad account
-
-        There's no Launchpad account for this Person record.
-        """)
-
-    ACTIVE = Item(20, """
-        Active Launchpad account
-
-        There's an active Launchpad account associated with this Person.
-        """)
-
-    DEACTIVATED = Item(30, """
-        Deactivated Launchpad account
-
-        The account associated with this Person has been deactivated by the
-        Person himself.
-        """)
-
-    SUSPENDED = Item(40, """
-        Suspended Launchpad account
-
-        The account associated with this Person has been suspended by a
-        Launchpad admin.
-        """)
 
 
 class ArchArchiveType(DBSchema):
@@ -2575,147 +2544,6 @@ class TranslationValidationStatus(DBSchema):
         Unknown Error
 
         This translation has an unknown error.
-        """)
-
-
-class ShippingRequestStatus(DBSchema):
-    """The status of a given ShippingRequest."""
-
-    PENDING = Item(0, """
-        Pending
-
-        The request is pending approval.
-        """)
-
-    APPROVED = Item(1, """
-        Approved (unshipped)
-
-        The request is approved but not yet sent to the shipping company.
-        """)
-
-    DENIED = Item(2, """
-        Denied
-
-        The request is denied.
-        """)
-
-    CANCELLED = Item(3, """
-        Cancelled
-
-        The request is cancelled.
-        """)
-
-    SHIPPED = Item(4, """
-        Approved (shipped)
-
-        The request was sent to the shipping company.
-        """)
-
-    PENDINGSPECIAL = Item(5, """
-        Pending Special Consideration
-
-        This request needs special consideration.
-        """)
-
-    DUPLICATEDADDRESS = Item(6, """
-        Pending Special Consideration (dupe address)
-
-        This request needs special consideration because other users already
-        requested CDs to the same address.
-        """)
-
-
-class ShippingService(DBSchema):
-    """The Shipping company we use to ship CDs."""
-
-    TNT = Item(1, """
-        TNT
-
-        The TNT shipping company.
-        """)
-
-    SPRING = Item(2, """
-        Spring
-
-        The Spring shipping company.
-        """)
-
-
-class ShipItFlavour(DBSchema):
-    """The Distro Flavour, used only to link with ShippingRequest."""
-
-    UBUNTU = Item(1, """
-        Ubuntu
-
-        The Ubuntu flavour.
-        """)
-
-    KUBUNTU = Item(2, """
-        Kubuntu
-
-        The Kubuntu flavour.
-        """)
-
-    EDUBUNTU = Item(3, """
-        Edubuntu
-
-        The Edubuntu flavour.
-        """)
-
-
-class ShipItArchitecture(DBSchema):
-    """The Distro Architecture, used only to link with ShippingRequest."""
-
-    X86 = Item(1, """
-        PC
-
-        Intel/X86 processors.
-        """)
-
-    AMD64 = Item(2, """
-        64-bit PC
-
-        AMD64 or EM64T based processors.
-        """)
-
-    PPC = Item(3, """
-        Mac
-
-        PowerPC processors.
-        """)
-
-
-class ShipItDistroSeries(DBSchema):
-    """The Distro Release, used only to link with ShippingRequest."""
-
-    BREEZY = Item(1, """
-        5.10 (Breezy Badger)
-
-        The Breezy Badger release.
-        """)
-
-    DAPPER = Item(2, """
-        6.06 LTS (Dapper Drake)
-
-        The Dapper Drake lont-term-support release.
-        """)
-
-    EDGY = Item(3, """
-        6.10 (Edgy Eft)
-
-        The Edgy Eft release.
-        """)
-
-    FEISTY = Item(4, """
-        7.04 (Feisty Fawn)
-
-        The Feisty Fawn release.
-        """)
-
-    GUTSY = Item(5, """
-        7.10 (Gutsy Gibbon)
-
-        The Gutsy Gibbon release.
         """)
 
 

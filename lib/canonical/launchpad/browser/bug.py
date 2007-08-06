@@ -109,11 +109,9 @@ class BugSetNavigation(Navigation):
 
     usedfor = IBugSet
 
-    # XXX
+    # XXX Daf 2006-02-01 bug=30238:
     # The browser:page declaration should be sufficient, but the traversal
     # takes priority. This is a workaround.
-    # https://launchpad.net/products/launchpad/+bug/30238
-    # -- Daf 2006/02/01
 
     @stepthrough('+text')
     def text(self, name):
@@ -291,15 +289,15 @@ class MaloneView(LaunchpadFormView):
         search_params = BugTaskSearchParams(
             self.user, status=BugTaskStatus.FIXRELEASED,
             orderby='-date_closed')
-        fixed_bugtasks = getUtility(IBugTaskSet).search(search_params) 
-        # XXX: We might end up returning less than :limit: bugs, but in
+        fixed_bugtasks = getUtility(IBugTaskSet).search(search_params)
+        # XXX: Bjorn Tillenius 2006-12-13:
+        #      We might end up returning less than :limit: bugs, but in
         #      most cases we won't, and '4*limit' is here to prevent
         #      this page from timing out in production. Later I'll fix
         #      this properly by selecting bugs instead of bugtasks.
         #      If fixed_bugtasks isn't sliced, it will take a long time
         #      to iterate over it, even over just 10, because
         #      Transaction.iterSelect() listifies the result.
-        #      -- Bjorn Tillenius, 2006-12-13
         for bugtask in fixed_bugtasks[:4*limit]:
             if bugtask.bug not in fixed_bugs:
                 fixed_bugs.append(bugtask.bug)
@@ -638,9 +636,9 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                 self.extracted_bugtracker, self.extracted_bug = (
                     bugwatch_set.extractBugTrackerAndBug(bug_url))
             except NoBugTrackerFound, error:
-                # XXX: The user should be able to press a button here in
+                # XXX: Bjorn Tillenius 2006-09-26:
+                #      The user should be able to press a button here in
                 #      order to register the tracker.
-                #      -- Bjorn Tillenius, 2006-09-26
                 self.setFieldError(
                     'bug_url',
                     "The bug tracker at %s isn't registered in Launchpad."
@@ -668,9 +666,10 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                 '<input style="font-size: smaller" type="submit"'
                 ' value="%s" name="%s" />' % (
                     confirm_action.label, confirm_action.__name__))
-            #XXX: This text should be re-written to be more compact. I'm not
+            #XXX: Bjorn Tillenius 2006-09-13:
+            #     This text should be re-written to be more compact. I'm not
             #     doing it now, though, since it might go away completely
-            #     soon. -- Bjorn Tillenius, 2006-09-13
+            #     soon.
             self.notifications.append(
                 "%s doesn't use Launchpad as its bug tracker. If you don't add"
                 " a bug watch now you have to keep track of the status"

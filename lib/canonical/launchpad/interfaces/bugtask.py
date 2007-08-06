@@ -164,12 +164,13 @@ class BugTaskStatusSearchDisplay(DBEnumeratedType):
     use_template(BugTaskStatusSearch, exclude=('INCOMPLETE'))
 
 
-# XXX: Brad Bollenbach, 2005-12-02: In theory, INCOMPLETE belongs in
-# UNRESOLVED_BUGTASK_STATUSES, but the semantics of our current reports would
-# break if it were added to the list below. See
-# <https://launchpad.net/malone/bugs/5320>
-# XXX: matsubara, 2006-02-02: I added the INCOMPLETE as a short-term solution
-# to bug https://launchpad.net/products/malone/+bug/4201
+# XXX: Brad Bollenbach 2005-12-02 bugs=5320: 
+# In theory, INCOMPLETE belongs in UNRESOLVED_BUGTASK_STATUSES, but the
+# semantics of our current reports would break if it were added to the
+# list below.
+
+# XXX: matsubara 2006-02-02 bug=4201: 
+# I added the INCOMPLETE as a short-term solution.
 UNRESOLVED_BUGTASK_STATUSES = (
     BugTaskStatus.NEW,
     BugTaskStatus.INCOMPLETE,
@@ -217,12 +218,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         vocabulary='DistroSeries')
     milestone = Choice(
         title=_('Milestone'), required=False, vocabulary='Milestone')
-    # XXX: the status and importance's vocabularies do not
+    # XXX kiko 2006-03-23: 
+    # The status and importance's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
     # bugwatch; this would be better described in a separate interface,
     # but adding a marker interface during initialization is expensive,
     # and adding it post-initialization is not trivial.
-    #   -- kiko, 2006-03-23
     status = Choice(
         title=_('Status'), vocabulary=BugTaskStatus,
         default=BugTaskStatus.NEW)
@@ -554,8 +555,8 @@ class IBugTaskDelta(Interface):
     bugwatch = Attribute("The bugwatch which governs this task.")
 
 
-# XXX, Brad Bollenbach, 2006-08-03: This interface should be
-# renamed. See https://launchpad.net/bugs/55089 .
+# XXX Brad Bollenbach 2006-08-03 bugs=55089: 
+# This interface should be renamed.
 class IUpstreamBugTask(IBugTask):
     """A bug needing fixing in a product."""
     product = Choice(title=_('Project'), required=True, vocabulary='Product')
@@ -589,11 +590,9 @@ class IProductSeriesBugTask(IBugTask):
         vocabulary='ProductSeries')
 
 
-# XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
-# when spiv pushes a fix upstream for the bug that makes this hackery
-# necessary:
-#
-#     https://launchpad.ubuntu.com/malone/bugs/121
+# XXX: Brad Bollenbach 2005-02-03 bugs=121: 
+# This interface should be removed when spiv pushes a fix upstream for
+# the bug that makes this hackery necessary.
 class ISelectResultsSlicable(ISelectResults):
     def __getslice__(i, j):
         """Called to implement evaluation of self[i:j]."""
@@ -789,8 +788,8 @@ class IBugTaskSet(Interface):
         If the col_name is unrecognized, a KeyError is raised.
         """
 
-    # XXX: get rid of this kludge when we have proper security for
-    # scripts   -- kiko, 2006-03-23
+    # XXX kiko 2006-03-23: 
+    # get rid of this kludge when we have proper security for scripts.
     def dangerousGetAllTasks():
         """DO NOT USE THIS METHOD UNLESS YOU KNOW WHAT YOU ARE DOING
 

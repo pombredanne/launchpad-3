@@ -30,7 +30,6 @@ __all__ = [
     'PollSecrecyVocabulary',
     'RemoteBugTaskImportanceVocabulary',
     'RevisionControlSystemsVocabulary',
-    'ShipItFlavourVocabulary',
     'SpecificationImplementationStatusVocabulary',
     'SpecificationPriorityVocabulary',
     'SpecificationDefinitionStatusVocabulary',
@@ -78,7 +77,6 @@ PollSecrecyVocabulary = vocab_factory(dbschema.PollSecrecy)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 RevisionControlSystemsVocabulary = vocab_factory(
     dbschema.RevisionControlSystems)
-ShipItFlavourVocabulary = vocab_factory(dbschema.ShipItFlavour)
 SpecificationImplementationStatusVocabulary =  vocab_factory(dbschema.SpecificationImplementationStatus)
 SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
 SpecificationDefinitionStatusVocabulary =  vocab_factory(dbschema.SpecificationDefinitionStatus)

@@ -22,7 +22,7 @@ from canonical.launchpad.scripts.ftpmaster import (
 from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingPriority)
 
-# XXX cprov 20060515: {create, remove}TestArchive functions should be
+# XXX cprov 2006-05-15: {create, remove}TestArchive functions should be
 # moved to the publisher test domain as soon as we have it.
 def createTestArchive():
     """Creates a fresh test archive based on sampledata."""
@@ -169,9 +169,10 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         It split suite name into 'distroseries' and 'pocket' attributes after
         initialize().
         """
-        # XXX cprov 20060424: change-override API doesn't handle pockets
+        # XXX cprov 2006-04-24: change-override API doesn't handle pockets
         # properly yet. It may need a deep redesign on how we model the
-        # packages meta-classes (SourcePackage, DistributionSourcePackage, etc)
+        # packages meta-classes (SourcePackage, DistributionSourcePackage,
+        # etc)
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
             component_name='main', section_name='base', priority_name='extra')
@@ -302,8 +303,9 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         Inspect the log and to ensure we are passing correct arguments and
         picking the correct source.
         """
-        # XXX cprov 20060424: this test needs to be extended to check the
-        # behaviour when there are published binaries (needs richer sampledata)
+        # XXX cprov 2006-04-24: this test needs to be extended to check the
+        # behaviour when there are published binaries (needs richer
+        # sampledata)
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
             component_name='main', section_name='base',
