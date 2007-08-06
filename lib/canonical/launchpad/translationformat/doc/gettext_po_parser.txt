@@ -197,21 +197,19 @@ Parsing a PO template:
   >>> parser = PoParser()
   >>> translation_file = parser.parse(content)
 
-  >>> print translation_file.header.charset
-  CHARSET
   >>> len(translation_file.messages)
   1
   >>> print translation_file.messages[0].msgid
   Foo
 
 PO templates, and other PO files that do not specify their encoding,
-are parsed as ASCII text.  If they contain 8 bit characters, parsing
+are parsed as UTF-8 text.  If they contain non UTF-8 characters, parsing
 errors occur:
 
   >>> chunk2 = """
   ... #:foo/bar.c:42
   ... msgid "Bar"
-  ... msgstr "ab\xc5"
+  ... msgstr "\xb5\x7b\xa6\xa1\xbf\xf9\xbb\x7e"
   ... #:foo/baz.c:42
   ... msgid "Baz"
   ... msgstr "abcdef"
@@ -220,7 +218,7 @@ errors occur:
   >>> parser.parse(content + chunk2)
   Traceback (most recent call last):
     ...
-  TranslationFormatInvalidInputError: could not decode input from ASCII
+  TranslationFormatInvalidInputError: could not decode input from UTF-8
 
 
 == Evil Big5 Multibyte Sequences ==

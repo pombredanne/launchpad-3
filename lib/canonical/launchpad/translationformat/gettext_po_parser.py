@@ -44,12 +44,15 @@ class POSyntaxWarning(Warning):
             return 'Po file: syntax warning on entry at line %d' % self.lno
 
 
-def parse_charset(string_to_parse):
+def parse_charset(string_to_parse, is_escaped=True):
     """Return charset used in the given string_to_parse."""
     # Scan for the charset in the same way that gettext does.
-    match = re.search(r'charset=([^\s]+)', string_to_parse)
+    pattern = r'charset=([^\s]+)'
+    if is_escaped:
+        pattern = r'charset=([^\s]+)\\n'
+    match = re.search(pattern, string_to_parse)
     if match is not None and match.group(1) != 'CHARSET':
-        return match.group(1)
+        return match.group(1).strip()
     else:
         # Default to UTF-8 if the header still has the default value or
         # is unknown.
@@ -102,7 +105,7 @@ class PoHeader:
 
         # First thing to do is to get the charset used to decode correctly the
         # header content.
-        self.charset = parse_charset(self._raw_header)
+        self.charset = parse_charset(self._raw_header, is_escaped=False)
 
         # Decode comment using the declared charset.
         self.comment = self._decode(comment)
