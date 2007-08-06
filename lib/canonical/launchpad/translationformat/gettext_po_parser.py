@@ -414,7 +414,7 @@ class PoParser(object):
         self._parsed_content = u''
 
         # First thing to do is to get the charset used in the content_text.
-        charset = parse_header(content_text)
+        charset = parse_charset(content_text)
 
         # Now, parse the header, inefficiently. It ought to be short, so
         # this isn't disastrous.
