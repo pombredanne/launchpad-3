@@ -39,6 +39,7 @@ from canonical.launchpad.interfaces import (
     IBug,
     IBugSet,
     IBugTaskSet,
+    IBugTrackerSet,
     IBugWatchSet,
     ICveSet,
     IDistributionSourcePackage,
@@ -290,7 +291,7 @@ class MaloneView(LaunchpadFormView):
         search_params = BugTaskSearchParams(
             self.user, status=BugTaskStatus.FIXRELEASED,
             orderby='-date_closed')
-        fixed_bugtasks = getUtility(IBugTaskSet).search(search_params) 
+        fixed_bugtasks = getUtility(IBugTaskSet).search(search_params)
         # XXX: We might end up returning less than :limit: bugs, but in
         #      most cases we won't, and '4*limit' is here to prevent
         #      this page from timing out in production. Later I'll fix
@@ -489,11 +490,27 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
     _confirm_new_task = False
     extracted_bug = None
     extracted_bugtracker = None
-
+    _no_bugtracker_found = None
+    _unrecognized_bugtracker_URL = None
+    
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
         self.notifications = []
         self.field_names = ['bug_url']
+        # Typically part of the validation sequence,
+        # we force the extraction of the bugtracker
+        # data early, so that we can use the result
+        # to set up an additional field.
+        self._extractBugTrackerAndBug()
+        # The call, as a side effect, stores
+        # either the extracted values, or the exceptions
+        # raised, as attributes of the view.
+        if self._no_bugtracker_found is not None:
+            # If no bugtracker was found, we enable
+            # the `register bugtracker` field, which
+            # allows the user to force the automatic
+            # registration of the bugtracker.
+            self.field_names.append('register_bugtracker')
 
     def setUpLabelAndWidgets(self, label, target_field_names):
         """Initialize the form and render it."""
@@ -572,6 +589,27 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                 ' in the form.')
         return target.displayname
 
+    def _extractBugTrackerAndBug(self):
+        """Extract the bugtracker and bug from the form data.
+
+        Tries to grab the `bug_url` field data from the form. If it
+        exists, normalizes and attempts to parse it and extract the
+        bugtracker url and the remote bug number, then store the
+        results as attributes of the view. Alternatively, any exceptions
+        raised are stored in the view as well.
+        """
+        bug_url = self.request.form.get('field.bug_url')
+        if ((bug_url is None) or (len(bug_url) == 0)):
+            return
+        bug_url = bug_url.strip()
+        try:
+            self.extracted_bugtracker, self.extracted_bug = (
+                getUtility(IBugWatchSet).extractBugTrackerAndBug(bug_url))
+        except NoBugTrackerFound, error:
+            self._no_bugtracker_found = error
+        except UnrecognizedBugTrackerURL, error:
+            self._unrecognized_bugtracker_URL = error
+
     def validate(self, data):
         """Validate the form.
 
@@ -627,31 +665,20 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             # using Malone.
             return
 
-        if bug_url is not None:
-            # Try to find out which bug and bug tracker the URL is
-            # referring to.
-            bugwatch_set = getUtility(IBugWatchSet)
-            try:
-                # Assign attributes, so that the action handler can
-                # access the extracted bugtracker and bug.
-                self.extracted_bugtracker, self.extracted_bug = (
-                    bugwatch_set.extractBugTrackerAndBug(bug_url))
-            except NoBugTrackerFound, error:
-                # XXX: The user should be able to press a button here in
-                #      order to register the tracker.
-                #      -- Bjorn Tillenius, 2006-09-26
-                self.setFieldError(
-                    'bug_url',
-                    "The bug tracker at %s isn't registered in Launchpad."
-                    ' You need to'
-                    ' <a href="/bugs/bugtrackers/+newbugtracker">register'
-                    ' it</a> before you can link any bugs to it.' % (
-                        cgi.escape(error.base_url)))
-            except UnrecognizedBugTrackerURL:
-                self.setFieldError(
-                    'bug_url',
-                    "Launchpad doesn't know what kind of bug tracker"
-                    ' this URL is pointing at.')
+        if (self._no_bugtracker_found and
+            not data.get('register_bugtracker', False)):
+            self.setFieldError(
+                'bug_url',
+                ("The bug tracker at %s isn't registered in Launchpad. "
+                 "To register it now, please select 'Register bugtracker?' "
+                 "(below) and submit again." %
+                 cgi.escape(self._no_bugtracker_found.base_url)))
+
+        if self._unrecognized_bugtracker_URL:
+            self.setFieldError(
+                'bug_url',
+                "Launchpad doesn't know what kind of bug tracker"
+                ' this URL is pointing at.')
 
         if len(self.errors) > 0:
             # The checks below should be made only if the form doesn't
@@ -691,8 +718,17 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         product = data.get('product')
         distribution = data.get('distribution')
         sourcepackagename = data.get('sourcepackagename')
-        bugtracker = self.extracted_bugtracker
-        remotebug = self.extracted_bug
+
+        # If no existing bugtracker is found matching the bugtracker url
+        # supplied and the user requested the automatic registration of
+        # the bugtracker, we register it, and then attempt to extract it
+        # again, storing the results in the view for later use.
+        if self._no_bugtracker_found and data.get('register_bugtracker'):
+            bugtracker_baseurl = self._no_bugtracker_found.base_url
+            bugtracker_type = self._no_bugtracker_found.bugtracker_type
+            getUtility(IBugTrackerSet).ensureBugTracker(
+                bugtracker_baseurl, self.user, bugtracker_type)
+            self._extractBugTrackerAndBug()
 
         if product is not None:
             target = product
@@ -709,14 +745,15 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             product=product,
             distribution=distribution, sourcepackagename=sourcepackagename)
 
-        if remotebug:
-            assert bugtracker is not None, (
+        if self.extracted_bug:
+            assert self.extracted_bugtracker is not None, (
                 "validate() should have ensured that bugtracker is not None.")
             # Make sure that we don't add duplicate bug watches.
-            bug_watch = taskadded.bug.getBugWatch(bugtracker, remotebug)
+            bug_watch = taskadded.bug.getBugWatch(
+                self.extracted_bugtracker, self.extracted_bug)
             if bug_watch is None:
                 bug_watch = taskadded.bug.addWatch(
-                    bugtracker, remotebug, self.user)
+                    self.extracted_bugtracker, self.extracted_bug, self.user)
                 notify(SQLObjectCreatedEvent(bug_watch))
             if not target.official_malone:
                 taskadded.bugwatch = bug_watch

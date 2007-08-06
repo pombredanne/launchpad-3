@@ -76,38 +76,29 @@ registered in Launchpad, the user will be prompted to register it first.
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
     There is 1 error.
-    The bug tracker at http://new.trac/ isn't registered in
-    Launchpad. You need to <a href="...">register it</a> before you can
-    link any bugs to it.
+    The bug tracker at http://new.trac/ isn't registered in Launchpad. To register it now, please select 'Register bugtracker?' (below) and submit again.
 
-Let's follow the link to register it.
+Let's selelect the `Register bugtracker?` checkbox and submit again,
+the bugtracker will be automatically registered, and the bug watch
+will be assigned using the newly registered bugtracker.
 
-    >>> user_browser.getLink('register it').click()
-    >>> user_browser.getControl('Name').value = 'new-trac'
-    >>> user_browser.getControl('Bug Tracker Type').displayValue = ['Trac']
-    >>> user_browser.getControl('Title').value = 'New Trac'
-    >>> user_browser.getControl('Summary').value = "-"
-    >>> user_browser.getControl('Base URL').value = "http://new.trac/"
-    >>> user_browser.getControl('Contact details').value = "-"
-    >>> user_browser.getControl('Add').click()
-
-If we go back to add the same bug URL as before, it will succeed this
-time.
-
-    >>> user_browser.open(
-    ...    'http://launchpad.dev/firefox/+bug/4/+choose-affected-product')
-    >>> user_browser.getControl('Project').value = 'alsa-utils'
-    >>> user_browser.getControl('Continue').click()
-    >>> user_browser.getControl('URL').value = (
-    ...     u"http://new.trac/ticket/42")
+    >>> user_browser.getControl(name='field.register_bugtracker').value = True
     >>> user_browser.getControl('Indicate bug in alsa-utils').click()
+
+The bugtracker is now registered, the bug watch is linked, and we're
+redirected to the bug's page.
+
     >>> user_browser.url
     'http://bugs.launchpad.dev/alsa-utils/+bug/4'
+
+The bug tracker and bug watch were added. We can see that the bugtracker
+has a special name, starting with 'auto-', to indicate that it was
+registered automatically.
 
     >>> bug_watches = find_portlet(user_browser.contents, 'Remote bug watches')
     >>> for li in bug_watches('li'):
     ...     print li.findAll('a')[1].renderContents()
     gnome-bugzilla #42
     gnome-bugzilla #84
-    new-trac #42
+    auto-new.trac #42
 
