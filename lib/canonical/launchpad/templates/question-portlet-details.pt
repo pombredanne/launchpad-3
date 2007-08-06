@@ -62,11 +62,11 @@
         tal:content="context/datelastresponse/fmt:approximatedate" /><br />
     </tal:block>
 
-    <tal:block condition="context/dateanswered">
+    <tal:block condition="context/datesolved">
       <b>Solved:</b>
       <span
-        tal:attributes="title context/dateanswered/fmt:datetime"
-        tal:content="context/dateanswered/fmt:approximatedate" /><br />
+        tal:attributes="title context/datesolved/fmt:datetime"
+        tal:content="context/datesolved/fmt:approximatedate" /><br />
     </tal:block>
 
   </div>

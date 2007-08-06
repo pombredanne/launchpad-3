@@ -146,7 +146,7 @@ class QuestionSetView(LaunchpadFormView):
     def latest_questions_solved(self):
         """Return the 10 latest questions solved."""
         # XXX flacoste 2006/11/28 We should probably define a new
-        # QuestionSort value allowing us to sort on dateanswered descending.
+        # QuestionSort value allowing us to sort on datesolved descending.
         return self.context.searchQuestions(
             status=QuestionStatus.SOLVED, sort=QuestionSort.NEWEST_FIRST)[:5]
 
