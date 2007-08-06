@@ -50,33 +50,34 @@ class DeathRow:
     def _collectCondemned(self):
         source_files = SourcePackageFilePublishing.select("""
             publishingstatus = %s AND
-            distribution = %s AND
             sourcepackagefilepublishing.archive = %s AND
             SourcePackagePublishingHistory.id =
                  SourcePackageFilePublishing.sourcepackagepublishing AND
             SourcePackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
-                            self.distribution, self.distribution.main_archive,
-                            UTC_NOW),
+                            self.distribution.main_archive, UTC_NOW),
             clauseTables=['SourcePackagePublishingHistory'],
             orderBy="id")
 
+        self.logger.debug("%d Sources" % source_files.count())
+
         binary_files = BinaryPackageFilePublishing.select("""
             publishingstatus = %s AND
-            distribution = %s AND
             binarypackagefilepublishing.archive = %s AND
             BinaryPackagePublishingHistory.id =
                  BinaryPackageFilePublishing.binarypackagepublishing AND
             BinaryPackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
-                            self.distribution, self.distribution.main_archive,
-                            UTC_NOW),
+                            self.distribution.main_archive, UTC_NOW),
             clauseTables=['BinaryPackagePublishingHistory'],
             orderBy="id")
+
+        self.logger.debug("%d Binaries" % binary_files.count())
+
         return (source_files, binary_files)
 
     def canRemove(self, publication_class, filename):
-        """Whether or not a filename can be remove of the archive pool.
+        """Check if given filename can be removed from the archive pool.
 
         Check the archive reference-counter implemented in:
         `SourcePackageFilePublishing` or `BinaryPackageFilePublishing`.
@@ -94,14 +95,10 @@ class DeathRow:
         # callsite by testing what is the interface implemented by the
         # publication_class.
         all_publications = publication_class.select("""
-           libraryfilealiasfilename = %s AND
-           distribution = %s AND
-           archive = %s
-        """ % sqlvalues(filename, self.distribution,
-                        self.distribution.main_archive))
+           libraryfilealiasfilename = %s AND archive = %s
+        """ % sqlvalues(filename, self.distribution.main_archive))
 
         right_now = datetime.datetime.now(pytz.timezone('UTC'))
-
         for file_pub in all_publications:
             # Deny removal if any reference is still active.
             if (file_pub.publishingstatus !=
@@ -126,6 +123,7 @@ class DeathRow:
         bytes = 0
         condemned_files = set()
         condemned_records = set()
+        considered_filenames = set()
         details = {}
 
         content_files = (
@@ -134,10 +132,17 @@ class DeathRow:
 
         for publication_class, pub_files in content_files:
             for pub_file in pub_files:
-                # Check if the removal is allowed, if not continue.
-                if not self.canRemove(
-                    publication_class, pub_file.libraryfilealiasfilename):
+                filename = pub_file.libraryfilealiasfilename
+                # Check if the LibraryFileAlias in question was already
+                # verified. If it was, continue.
+                if filename in considered_filenames:
                     continue
+                considered_filenames.add(filename)
+
+                # Check if the removal is allowed, if not continue.
+                if not self.canRemove(publication_class, filename):
+                    continue
+
                 # Update local containers, in preparation to file removal.
                 pub_file_details = (
                     pub_file.libraryfilealiasfilename,
@@ -152,8 +157,8 @@ class DeathRow:
         self.logger.info(
             "Removing %s files marked for reaping" % len(condemned_files))
 
-        for condemened_file in sorted(condemned_files, reverse=True):
-            file_name, source_name, component_name = details[condemened_file]
+        for condemned_file in sorted(condemned_files, reverse=True):
+            file_name, source_name, component_name = details[condemned_file]
             try:
                 bytes += self._removeFile(
                     component_name, source_name, file_name)
