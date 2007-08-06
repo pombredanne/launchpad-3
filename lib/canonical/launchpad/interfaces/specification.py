@@ -185,7 +185,7 @@ class ISpecification(INewSpecification, INewSpecificationTarget, IHasOwner,
     ICanBeMentored):
     """A Specification."""
 
-    # XXX: TomBerger 2007-06-20: 'id' is required for
+    # TomBerger 2007-06-20: 'id' is required for
     #      SQLObject to be able to assign a security-proxied
     #      specification to an attribute of another SQL object
     #      referencing it.

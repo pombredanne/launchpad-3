@@ -99,11 +99,11 @@ class NewSpecificationView(LaunchpadFormView):
             definition_status = data.get('definition_status'))
         # Propose the specification as a series goal, if specified.
         series = data.get('series')
-        if series:
+        if series is not None:
             propose_goal_with_automatic_approval(spec, series, self.user)
         # Propose the specification as a sprint topic, if specified.
         sprint = data.get('sprint')
-        if sprint:
+        if sprint is not None:
             spec.linkSprint(sprint, self.user)
         # Set the default value for the next URL.
         self._next_url = canonical_url(spec)
@@ -204,7 +204,7 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
         """
         name = data.get('name')
         target = data.get('target')
-        if name and target:
+        if name is not None and target is not None:
             if target.getSpecification(name):
                 errormessage = self.schema['name'].errormessage
                 self.setFieldError('name', errormessage % name)
