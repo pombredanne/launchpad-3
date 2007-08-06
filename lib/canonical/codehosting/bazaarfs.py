@@ -169,9 +169,7 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
         # We should ensure that if createBranch fails for some reason
         # (e.g. invalid name),that we report a useful error to the client.
         if self.exists(childName):
-            # "mkdir failed" is the magic string that bzrlib will interpret to
-            # mean "already exists".
-            raise VFSError("mkdir failed")
+            return self.child(childName)
         deferred = self.avatar.createBranch(
             self.avatar.avatarId, self.userName, self.productName, childName)
         def cb(branchID):
