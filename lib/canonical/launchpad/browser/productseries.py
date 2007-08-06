@@ -294,7 +294,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
                       ]
         if len(dispatch_to) == 0:
             # None of the know forms have been submitted.
-            # XXX 2005-11-29  CarlosPerelloMarin bug=5244:
+            # XXX CarlosPerelloMarin 2005-11-29 bug=5244:
             # This 'if' should be removed.
             return
         if len(dispatch_to) != 1:
