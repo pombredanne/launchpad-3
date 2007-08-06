@@ -123,7 +123,7 @@ class NewSpecificationView(LaunchpadFormView):
         series: causes the new specification to be proposed as a series goal.
         sprint: causes the new specification to be proposed as a sprint topic.
         """
-        pass
+        raise NotImplementedError
 
     @property
     def next_url(self):
