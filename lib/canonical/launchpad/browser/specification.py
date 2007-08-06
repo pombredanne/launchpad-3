@@ -84,47 +84,33 @@ class NewSpecificationView(LaunchpadFormView):
     @action(_('Register Blueprint'), name='register')
     def register(self, action, data):
         """Registers a new specification."""
-
+        self.parse(data)
         spec = getUtility(ISpecificationSet).new(
-            # Values taken directly from given form data:
-            name = data['name'],
-            title = data['title'],
-            specurl = data['specurl'],
-            summary = data['summary'],
-            assignee = data['assignee'],
-            drafter = data['drafter'],
-            approver = data['approver'],
-            definition_status = data['definition_status'],
-            # Values supplied by class instance members:
-            distribution = self.distribution(data),
-            product = self.product(data),
-            owner = self.user)
+            owner = self.user,
+            name = data.get('name'),
+            title = data.get('title'),
+            specurl = data.get('specurl'),
+            summary = data.get('summary'),
+            product = data.get('product'),
+            drafter = data.get('drafter'),
+            assignee = data.get('assignee'),
+            approver = data.get('approver'),
+            distribution = data.get('distribution'),
+            definition_status = data.get('definition_status'))
         # Propose the specification as a series goal, if specified.
-        series = self.series(data)
-        if series is not None:
+        series = data.get('series')
+        if series:
             propose_goal_with_automatic_approval(spec, series, self.user)
         # Link the specification with a sprint, if specified.
-        sprint = self.sprint(data)
-        if sprint is not None:
+        sprint = data.get('sprint')
+        if sprint:
             spec.linkSprint(sprint, self.user)
         # Set the default value for the next URL.
         self._next_url = canonical_url(spec)
 
-    def distribution(self, data):
-        """Returns a distribution from the given context and form data."""
-        return None
-
-    def product(self, data):
-        """Returns a product from the given context and form data."""
-        return None
-
-    def series(self, data):
-        """Returns a series from the given context and form data."""
-        return None
-
-    def sprint(self, data):
-        """Returns a sprint from the given context and form data."""
-        return None
+    def parse(self, data):
+        """Parses the given form data."""
+        pass
 
     @property
     def next_url(self):
@@ -145,22 +131,19 @@ class NewSpecificationFromTargetView(NewSpecificationView):
     schema = Fields(INewSpecification,
                     INewSpecificationSprint)
 
-    def sprint(self, data):
-        return data['sprint']
-
 
 class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
     """A view for creating a specification from a distribution."""
 
-    def distribution(self, data):
-        return self.context
+    def parse(self, data):
+        data['distribution'] = self.context
 
 
 class NewSpecificationFromProductView(NewSpecificationFromTargetView):
     """A view for creating a specification from a product."""
 
-    def product(self, data):
-        return self.context
+    def parse(self, data):
+        data['product'] = self.context
 
 
 class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
@@ -170,23 +153,25 @@ class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
                     INewSpecificationSprint,
                     INewSpecificationSeriesGoal)
 
-    def series(self, data):
-        if data['goal'] == True:
-            return self.context
+    def parse(self, data):
+        if data['goal']:
+            data['series'] = self.context
 
 
 class NewSpecificationFromDistroSeriesView(NewSpecificationFromSeriesView):
     """A view for creating a specification from a distro series."""
 
-    def distribution(self, data):
-        return self.context.distribution
+    def parse(self, data):
+        super(NewSpecificationFromDistroSeriesView, self).parse(data)
+        data['distribution'] = self.context.distribution
 
 
 class NewSpecificationFromProductSeriesView(NewSpecificationFromSeriesView):
     """A view for creating a specification from a product series."""
 
-    def product(self, data):
-        return self.context.product
+    def parse(self, data):
+        super(NewSpecificationFromProductSeriesView, self).parse(data)
+        data['product'] = self.context.product
 
 
 class NewSpecificationFromNonTargetView(NewSpecificationView):
@@ -195,19 +180,17 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
     The context may not correspond to a unique specification target. Hence
     sub-classes must define a schema requiring the user to specify a target.
     """
-    def distribution(self, data):
-        return IDistribution(data['target'], None)
-
-    def product(self, data):
-        return IProduct(data['target'], None)
+    def parse(self, data):
+        data['distribution'] = IDistribution(data['target'], None)
+        data['product'] = IProduct(data['target'], None)
 
     def validate(self, data):
         """Ensures that the name for the new specification is unique.
 
         The name must be unique within the context of the chosen target.
         """
-        name = data.get('name', None)
-        target = data.get('target', None)
+        name = data.get('name')
+        target = data.get('target')
         if name and target:
             if target.getSpecification(name):
                 errormessage = self.schema['name'].errormessage
@@ -236,8 +219,9 @@ class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
     schema = Fields(INewSpecificationTarget,
                     INewSpecification)
 
-    def sprint(self, data):
-        return self.context
+    def parse(self, data):
+        super(NewSpecificationFromSprintView, self).parse(data)
+        data['sprint'] = self.context
 
     @property
     def next_url(self):
