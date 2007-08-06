@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BranchVisibilityRule',
     'IHasBranchVisibilityPolicy',
     'IBranchVisibilityTeamPolicy',
     ]
@@ -13,9 +14,37 @@ from zope.interface import Interface, Attribute
 
 from zope.schema import Choice
 
-from canonical.lp.dbschema import BranchVisibilityRule
-
 from canonical.launchpad import _
+from canonical.lazr import DBEnumeratedType, DBItem
+
+
+class BranchVisibilityRule(DBEnumeratedType):
+    """Branch Visibility Rules for defining branch visibility policy."""
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Branches are public by default.
+        """)
+
+    PRIVATE = DBItem(2, """
+        Private
+
+        Branches are private by default.
+        """)
+
+    PRIVATE_ONLY = DBItem(3, """
+        Private only
+
+        Branches are private by default. Branch owners are not able
+        to change the visibility of the branches to public.
+        """)
+
+    FORBIDDEN = DBItem(4, """
+        Forbidden
+
+        Users are not able to create branches in the context.
+        """)
 
 
 class IHasBranchVisibilityPolicy(Interface):
@@ -85,7 +114,7 @@ class IBranchVisibilityTeamPolicy(Interface):
                       "If None then the policy applies to everyone."))
 
     rule = Choice(
-        title=_('Rule'), vocabulary='BranchVisibilityRule',
+        title=_('Rule'), vocabulary=BranchVisibilityRule,
         default=BranchVisibilityRule.PUBLIC,
         description=_(
         "The visibility rule defines the default branch visibility for "

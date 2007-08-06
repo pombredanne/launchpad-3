@@ -2,14 +2,14 @@
     xmlns="http://namespaces.zope.org/zope"
     xmlns:browser="http://namespaces.zope.org/browser">
 
-    <!-- XXX: This stanza might not be necessary. StuartBishop 2004/11/12. -->
+    <!-- XXX: StuartBishop 2004-11-12: This stanza might not be necessary. -->
     <content class="canonical.widgets.SinglePopupWidget">
         <allow interface="canonical.widgets.ISinglePopupWidget" />
     </content>
 
     <!-- Define the views needed by the popup widget
-       TODO: These should probably just be attached to the add and edit
-       forms (StuartBishop 2004/11/12)
+       XXX: StuartBishop 2004-11-12:
+       These should probably just be attached to the add and edit forms.
     -->
     <browser:page
         for="*"
@@ -20,10 +20,11 @@
         template="templates/popup-window.pt"
         /> 
 
-    <!-- The Zope3 WidgetInputError does not handle lists of validation
+    <!--
+        XXX: anonymous 2004-08-14: Feed back into Zope3.
+        The Zope3 WidgetInputError does not handle lists of validation
         exceptions, despite what its documentation says. Fix this in launchpad
         for now.
-        TODO: Feed back into Zope3
         -->
     <view
         type="zope.publisher.interfaces.browser.IBrowserRequest"

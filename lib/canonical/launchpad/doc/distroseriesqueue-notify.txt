@@ -69,10 +69,14 @@ There's only one email generated from the preceding upload:
 
 The mail headers contain our To: as set on the notify() call.  The
 subject contains "Accepted", the package name, its version and whether it's
-source or binary.
+source or binary.  The Bcc field also always contains the uploader's email
+address.
 
   >>> notification['To']
   'Daniel Silverstone <daniel.silverstone@canonical.com>'
+  >>> notification['Bcc']
+  'Root <root@localhost>'
+
   >>> notification['Subject']
   'netapplet-1.0.0.tar.gz is NEW'
 
@@ -87,7 +91,8 @@ The mail body contains a list of files that were accepted:
   You may have gotten the distroseries wrong.  If so, you may get warnings
   above if files already exist in other distroseries.
   <BLANKLINE>
-  -- 
+  -- =
+  <BLANKLINE>
   You are receiving this email because you are the uploader, maintainer or
   signer of the above package.
   <BLANKLINE>
@@ -129,10 +134,19 @@ this upload is already accepted.
   >>> len(msgs)
   2
 
-The mail headers are the same as before:
+The mail 'To:' addresses contain the signer and the changer's email.  The
+announcement email contains the argument specified for "announce_list".
 
   >>> [msg['To'] for msg in msgs]
   ['Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>', 'announcelist@canonical.com']
+
+The mail 'Bcc:' address is the uploader.  The announcement has the uploader
+and the Debian derivatives address for the package uploaded.
+
+  >>> [msg['Bcc'] for msg in msgs]
+  ['Root <root@localhost>', 'Root <root@localhost>, netapplet_derivatives@packages.qa.debian.org']
+
+The mail 'From:' addresses are the uploader and the changer.
 
   >>> [msg['From'] for msg in msgs]
   ['Root <root@localhost>', 'Daniel Silverstone <daniel.silverstone@canonical.com>']
@@ -151,7 +165,8 @@ The mail body contains the same list of files again:
   You may have gotten the distroseries wrong.  If so, you may get warnings
   above if files already exist in other distroseries.
   <BLANKLINE>
-  -- 
+  -- =
+  <BLANKLINE>
   You are receiving this email because you are the uploader, maintainer or
   signer of the above package.
   <BLANKLINE>
@@ -187,6 +202,9 @@ The mail headers are the same as before:
 
   >>> notification['To']
   'Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>'
+  >>> notification['Bcc']
+  'Root <root@localhost>'
+
   >>> notification['Subject']
   'netapplet-1.0.0.tar.gz is NEW'
 
@@ -201,7 +219,8 @@ The mail body contains the same list of files again:
   You may have gotten the distroseries wrong.  If so, you may get warnings
   above if files already exist in other distroseries.
   <BLANKLINE>
-  -- 
+  -- =
+  <BLANKLINE>
   You are receiving this email because you are the uploader, maintainer or
   signer of the above package.
   <BLANKLINE>

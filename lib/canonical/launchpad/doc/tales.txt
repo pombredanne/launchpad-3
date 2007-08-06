@@ -161,19 +161,24 @@ wrapped in markup to hide them:
     ...                      'This is a reply to the line above.\n'
     ...                      'This is a continuation line.'
     ...                      '\n')
-    >>> command = ('dpkg -l libdvdread3\n'
-    ...            'Desired=Unknown/Install/Remove/Purge/Hold\n'
-    ...            '| Status=Not/Installed/Config-files/Unpacked/Failed-co\n'
-    ...            '|/ Err?=(none)/Hold/Reinst-required/X=both-problems\n'
-    ...            '||/ Name Version Description\n'
-    ...            '+++-==============-==============-====================\n'
-    ...            'ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs\n'
-    ...            '\n')
-    >>> dpkg_in_text = ('When dpkg is mentioned in text,\n'
-    ...                 "we must take care to identify '|' quoted passages.\n"
-    ...                 '| This is a true quoted passage\n'
-    ...                 '| so it will be folded\n'
-    ...                 '\n')
+    >>> dpkg = ('dpkg -l libdvdread3\n'
+    ...         'Desired=Unknown/Install/Remove/Purge/Hold\n'
+    ...         '| Status=Not/Installed/Config-files/Unpacked/Failed-co\n'
+    ...         '|/ Err?=(none)/Hold/Reinst-required/X=both-problems\n'
+    ...         '||/ Name Version Description\n'
+    ...         '+++-==============-==============-====================\n'
+    ...         'ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs\n'
+    ...         '\n')
+    >>> bad_dpkg = ('When dpkg output is in text, possibly tampered with,\n'
+    ...             "we must take care to identify '|' quoted passages.\n"
+    ...             '$ Desired=Unknown/Install/Remove/Purge/Hold\n'
+    ...             '|\n'
+    ...             ' Status=Not/Installed/Config-files/Unpacked/Failed-co\n'
+    ...             '|/ Err?=(none)/Hold/Reinst-required/X=both-problems\n'
+    ...             '||/ Name Version Description\n'
+    ...             '+++-==============-==============-==================\n'
+    ...             'ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs\n'
+    ...             '\n')
     >>> quoted_text_all = ('> continuing from a previous thought.\n'
     ...                    '> 3. Get new handwriting.\n'
     ...                    '> 4. Add Year Zero to the calendar.\n'
@@ -313,7 +318,9 @@ Paragraphs that mix quoted and reply text fold only the quoted lines.
 
 Dpkg generates lines that start with a '|' that will be confused with
 quoted text. Dpkg is common in messages, and when it is, we do not
-fold lines that start with a '|'.
+fold lines that start with a '|'. We sometimes receive bad dpkg output
+where the lines are broken, and we must take care to identify that
+output and not fold it.
 
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo='\n'.join([text, bar_quoted_text]))
@@ -327,7 +334,7 @@ fold lines that start with a '|'.
     </span></p>
 
     >>> print test_tales('foo/fmt:email-to-html',
-    ...                  foo='\n'.join([text, command]))
+    ...                  foo='\n'.join([text, dpkg]))
     <p>Top quoting is simply bad netiquette.<br />
     The words of the leading text should be displayed<br />
     normally--no markup to hide it from view.<br />
@@ -341,13 +348,17 @@ fold lines that start with a '|'.
     ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs</p>
 
     >>> print test_tales('foo/fmt:email-to-html',
-    ...                  foo='\n'.join([dpkg_in_text]))
-    <p>When dpkg is mentioned in text,<br />
+    ...                  foo='\n'.join([bad_dpkg]))
+    <p>When dpkg output is in text, possibly tampered with,<br />
     we must take care to identify '|' quoted passages.<br />
-    <span class="foldable">
-    | This is a true quoted passage<br />
-    | so it will be folded
-    </span></p>
+    $ Desired=<wbr></wbr>Unknown/<wbr></wbr>Install/<wbr></wbr>Remove/...
+    |<br />
+    &nbsp;Status=<wbr></wbr>Not/Installed/<wbr></wbr>Config-...
+    |/ Err?=(none)<wbr></wbr>/Hold/Reinst-<wbr></wbr>required/...
+    ||/ Name Version Description<br />
+    +++-===<wbr></wbr>=======<wbr></wbr>====-==<wbr></wbr>=======...
+    ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs</p>
+    
 
 The formatter is indifferent to the number and kinds of paragraphs
 it must markup. We can format the three examples at the same time.
@@ -605,7 +616,7 @@ DBSchema the item comes from.
     >>> test_tales('deb/enumvalue:CHEESEFISH', deb=udeb)
     Traceback (most recent call last):
     ...
-    TraversalError: 'The BinaryPackageFormat dbschema does not have a value CHEESEFISH.'
+    TraversalError: 'The enumerated type BinaryPackageFormat does not have a value CHEESEFISH.'
 
 It is possible for dbschemas to have a 'None' value.  This is a bit awkward,
 because when the value is None, we can't do any checking whether a new value
@@ -623,4 +634,4 @@ wrapped dbschema items too:
     >>> test_tales('deb/enumvalue:CHEESEFISH', deb=wrapped_deb)
     Traceback (most recent call last):
     ...
-    TraversalError: 'The BinaryPackageFormat dbschema does not have a value CHEESEFISH.'
+    TraversalError: 'The enumerated type BinaryPackageFormat does not have a value CHEESEFISH.'

@@ -1,7 +1,15 @@
 #!/usr/bin/python2.4
 # Copyright 2007 Canonical Ltd.  All rights reserved.
 
-"""Nagios plugin for script monitoring."""
+"""Nagios plugin for script monitoring.
+
+Nagios only understands one line of returned text, and interprets specific
+return codes as plugin statuses. These are:
+0: OK
+1: WARNING
+2: CRITICAL
+3: UNKNOWN
+"""
 
 __metaclass__ = type
 __all__ = ['check_script']
@@ -19,12 +27,6 @@ from canonical.launchpad.scripts.scriptmonitor import check_script
 
 
 def main():
-    # Nagios plugin return codes are as follows:
-    # 0: OK
-    # 1: WARNING
-    # 2: CRITICAL
-    # 3: UNKNOWN
-
     # XXX: Tom Haddon 2007-07-12 
     # There's a lot of untested stuff here: parsing options - 
     # this should be moved into a testable location.
@@ -85,8 +87,10 @@ def main():
             # Construct our return message
             print "All scripts ran as expected"
             return 0
-    except:
-        print "Unhandled exception"
+    except Exception, e:
+        # Squeeze the exception type and stringification of the exception value
+        # on to one line.
+        print "Unhandled exception: %s %r" % (e.__class__.__name__, str(e))
         return 3
 
 if __name__ == '__main__':

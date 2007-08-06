@@ -13,7 +13,7 @@ the Debian task in bug 1
     >>> bug_one = getUtility(IBugSet).get(1)
     >>> bugwatch_field = IBugTask['bugwatch']
     >>> debian_task = bug_one.bugtasks[2]
-    >>> debian_task.targetname
+    >>> debian_task.bugtargetname
     u'mozilla-firefox (Debian)'
 
     >>> bugwatch_field = bugwatch_field.bind(debian_task)

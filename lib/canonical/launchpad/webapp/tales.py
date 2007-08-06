@@ -56,11 +56,13 @@ from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.lazr import enumerated_type_registry
 
 
 class TraversalError(NotFoundError):
-    """XXX Remove this when we upgrade to a more recent Zope x3"""
-    # Steve Alexander, Tue Dec 14 13:07:38 UTC 2004
+    """Remove this when we upgrade to a more recent Zope x3."""
+    # XXX: Steve Alexander 2004-12-14:
+    # Remove this when we upgrade to a more recent Zope x3.
 
 
 class MenuAPI:
@@ -162,13 +164,13 @@ class CountAPI:
 
 
 class EnumValueAPI:
-    """Namespace to test whether a DBSchema Item has a particular value.
+    """Namespace to test whether an EnumeratedType Item has a particular value.
 
     The value is given in the next path step.
 
         tal:condition="somevalue/enumvalue:BISCUITS"
 
-    Registered for canonical.lp.dbschema.Item.
+    Registered for canonical.lazr.enum.Item.
     """
     implements(ITraversable)
 
@@ -179,14 +181,14 @@ class EnumValueAPI:
         if self.item.name == name:
             return True
         else:
-            # Check whether this was an allowed value for this dbschema.
-            schema_items = self.item.schema_items
+            # Check whether this was an allowed value for this enumerated type.
+            enum = self.item.enum
             try:
-                schema_items[name]
-            except KeyError:
+                enum.getTermByToken(name)
+            except LookupError:
                 raise TraversalError(
-                    'The %s dbschema does not have a value %s.' %
-                    (self.item.schema_name, name))
+                    'The enumerated type %s does not have a value %s.' %
+                    (enum.name, name))
             return False
 
 
@@ -269,19 +271,13 @@ class DBSchemaAPI:
     """
     implements(ITraversable)
 
-    _all = {}
-    for name in dbschema.__all__:
-        schema = getattr(dbschema, name)
-        if (schema is not dbschema.DBSchema and
-            issubclass(schema, dbschema.DBSchema)):
-            _all[name] = schema
-
     def __init__(self, number):
         self._number = number
 
     def traverse(self, name, furtherPath):
-        if name in self._all:
-            return self._all[name].items[self._number].title
+        if name in enumerated_type_registry:
+            enum = enumerated_type_registry[name]
+            return enum.items[self._number].title
         else:
             raise TraversalError(name)
 
@@ -1148,7 +1144,7 @@ class FormattersAPI:
     def _linkify_substitution(match):
         if match.group('bug') is not None:
             bugnum = match.group('bugnum')
-            # XXX, Brad Bollenbach, 2006-04-10: Use a hardcoded url so
+            # XXX Brad Bollenbach 2006-04-10: Use a hardcoded url so
             # we still have a link for bugs that don't exist.
             url = '/bugs/%s' % bugnum
             # The text will have already been cgi escaped.
@@ -1404,24 +1400,19 @@ class FormattersAPI:
         in_fold = False
         in_quoted = False
         in_false_paragraph = False
-        dpkg_warning = False
         for line in self.text_to_html().split('\n'):
-            if not in_fold and 'dpkg' in line:
-                # dpkg is important in bug reports. We need to do extra
-                # checking that the '|' is not dpkg output.
-                dpkg_warning = True
-
-            if not in_fold and self._re_block_include.match(line) is not None:
+            if 'Desired=<wbr></wbr>Unknown/' in line and not in_fold:
+                # When we see a evidence of dpkg output, we switch the
+                # quote matching rules. We do not assume lines that start
+                # with a pipe are quoted passages. dpkg output is often
+                # reformatted by users and tools. When we see the dpkg
+                # output header, we change the rules regardless of if the
+                # lines that follow are legitimate.
+                re_quoted = self._re_dpkg_quoted
+            elif not in_fold and self._re_block_include.match(line) is not None:
                 # Start a foldable paragraph for a signature or quote.
                 in_fold = True
                 line = '<p>%s%s' % (start_fold_markup, line[3:])
-            elif dpkg_warning and '| Status' in line and not in_fold:
-                # When we have a dpkg_warning, we must do an extra test
-                # that the first '|' is actually dpkg output. When it is
-                # we switch the quote matching rules. We also clear the
-                # warning to ensure we do not do pointless extra checks.
-                re_quoted = self._re_dpkg_quoted
-                dpkg_warning = False
             elif not in_fold and re_quoted.match(line) is not None:
                 # Start a foldable section for a quoted passage.
                 if self._re_quoted_line.match(line):

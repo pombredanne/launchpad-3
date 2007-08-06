@@ -25,22 +25,15 @@ def check_script(con, log, hostname, scriptname, completed_from, completed_to):
         script_id = cur.fetchone()[0]
         return None
     except TypeError:
-        try:
-            cur.execute("""
-                SELECT MAX(date_completed)
-                FROM ScriptActivity
-                WHERE hostname=%s AND name=%s
-            """ % sqlvalues(hostname, scriptname))
-            date_last_seen = cur.fetchone()[0]
-            if date_last_seen is None:
-                raise
-            output = ("The script '%s' didn't run on '%s' between "
-                "%s and %s (last seen %s)"
-                % (scriptname, hostname, completed_from,
-                    completed_to, date_last_seen))
-            log.fatal(output)
-        except:
-            output = ("The script '%s' didn't run on '%s' between %s and %s"
-                    % (scriptname, hostname, completed_from, completed_to))
-            log.fatal(output)
+        output = ("The script '%s' didn't run on '%s' between %s and %s"
+                % (scriptname, hostname, completed_from, completed_to))
+        cur.execute("""
+            SELECT MAX(date_completed)
+            FROM ScriptActivity
+            WHERE hostname=%s AND name=%s
+        """ % sqlvalues(hostname, scriptname))
+        date_last_seen = cur.fetchone()[0]
+        if date_last_seen is not None:
+           output += " (last seen %s)" % (date_last_seen,)
+        log.fatal(output)
         return output
