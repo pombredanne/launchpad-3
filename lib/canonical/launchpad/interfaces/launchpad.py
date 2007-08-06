@@ -16,9 +16,9 @@ from persistent import IPersistent
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
 
-# XXX These import shims are actually necessary if we don't go over the
+# XXX kiko 2007-02-08: 
+# These import shims are actually necessary if we don't go over the
 # entire codebase and fix where the import should come from.
-#   -- kiko, 2007-02-08
 from canonical.launchpad.webapp.interfaces import (
     NotFoundError, ILaunchpadRoot, ILaunchBag, IOpenLaunchBag, IBreadcrumb,
     IBasicLaunchpadRequest, IAfterTraverseEvent, AfterTraverseEvent,

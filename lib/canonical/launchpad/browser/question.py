@@ -145,8 +145,8 @@ class QuestionSetView(LaunchpadFormView):
     @property
     def latest_questions_solved(self):
         """Return the 10 latest questions solved."""
-        # XXX flacoste 2006/11/28 We should probably define a new
-        # QuestionSort value allowing us to sort on datesolved descending.
+        # XXX flacoste 2006-11-28: We should probably define a new
+        # QuestionSort value allowing us to sort on dateanswered descending.
         return self.context.searchQuestions(
             status=QuestionStatus.SOLVED, sort=QuestionSort.NEWEST_FIRST)[:5]
 
@@ -437,7 +437,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
             return self.search_template()
         return self.continue_action.success(data)
 
-    # XXX flacoste 2006/07/26 We use the method here instead of
+    # XXX flacoste 2006-07-26: We use the method here instead of
     # using the method name 'handleAddError' because of Zope issue 573
     # which is fixed in 3.3.0b1 and 3.2.1
     @action(_('Add'), failure=handleAddError)
@@ -451,7 +451,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
         question = self.question_target.newQuestion(
             self.user, data['title'], data['description'], data['language'])
 
-        # XXX flacoste 2006/07/25 This should be moved to newQuestion().
+        # XXX flacoste 2006-07-25: This should be moved to newQuestion().
         notify(SQLObjectCreatedEvent(question))
 
         self.request.response.redirect(canonical_url(question))

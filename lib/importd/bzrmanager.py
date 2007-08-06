@@ -43,7 +43,7 @@ class BzrManager:
 
     def createImportTarget(self, working_dir):
         """Create a bzrworking branch to perform an import into."""
-        # TODO: fail if there is a mirror -- David Allouche 2006-07-28
+        # XXX David Allouche 2006-07-28: fail if there is a mirror.
         path = self._targetTreePath(working_dir)
         BzrDir.create_standalone_workingtree(path)
         return path

@@ -43,10 +43,9 @@ class Snapshot:
                     if IField.providedBy(field):
                         # Only Fields are actually copied over to the
                         # snapshot.
-                        # XXX: this is actually rather counterintuitive,
-                        # and I believe the proper solution is to just
-                        # make names mandatory, as per bug 48575.
-                        #   -- kiko, 2006-06-05
+                        # XXX kiko 2006-06-05 bug=48575: this is actually
+                        # rather counterintuitive, and I believe the proper
+                        # solution is to just make names mandatory.
                         names.add(name)
 
         for name in names:
