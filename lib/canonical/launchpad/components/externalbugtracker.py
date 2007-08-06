@@ -769,3 +769,40 @@ class Mantis(ExternalBugTracker):
                  (remote_status, remote_resolution))
         return BugTaskStatus.UNKNOWN
 
+
+class Trac(ExternalBugTracker):
+    """An ExternalBugTracker instance for handling Trac bugtrackers."""
+
+    def __init__(self, baseurl):
+        self.baseurl = baseurl
+
+    def initializeRemoteBugDB(self, bug_ids):
+        """Do any initialization before each bug watch is updated.
+
+        If the URL specified for the bugtracker is not valid a
+        BugTrackerConnectError will be raised.
+        """
+
+    def getRemoteStatus(self, bug_id):
+        """Return the remote status for the given bug id.
+
+        Raise BugNotFound if the bug can't be found.
+        Raise InvalidBugId if the bug id has an unexpected format.
+        """
+        raise NotImplementedError(self.getRemoteStatus)
+
+    def convertRemoteStatus(self, remote_status):
+        """See IExternalBugTracker"""
+
+        if remote_status in ['invalid', 'worksforme']:
+            return BugTaskStatus.INVALID
+        elif remote_status in ['assigned', 'duplicate']:
+            # XXX: 2007-08-06 gmb: We should follow dupes if possible.
+            return BugTaskStatus.CONFIRMED
+        elif remote_status == 'open':
+            return BugTaskStatus.NEW
+        elif remote_status == 'fixed':
+            return BugTaskStatus.FIXRELEASED
+        elif remote_status == 'wontfix':
+            return BugTaskStatus.WONTFIX
+

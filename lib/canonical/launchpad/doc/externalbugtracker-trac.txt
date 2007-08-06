@@ -1,0 +1,46 @@
+= ExternalBugTracker: Trac =
+
+This covers the implementation of the ExternalBugTracker class for Trac
+bugwatches.
+
+
+== Basics ==
+
+The ExternalBugTracker descendant class which implements methods for updating
+bug watches on Trac bug trackers is externalbugtracker.Trac.
+
+    >>> from canonical.launchpad.components.externalbugtracker import Trac
+    >>> Trac('http://trac.foo.com')
+    <canonical.launchpad.components.externalbugtracker.Trac object at...>
+
+We use a test-oriented implementation for the purposes of these tests, so that
+we don't have to rely on a working network connection.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import TestTrac
+    >>> from canonical.launchpad.components.externalbugtracker import (
+    ...     get_external_bugtracker)
+    >>> from canonical.launchpad.interfaces import IBugTrackerSet
+    >>> # XXX: FIX THIS!
+
+
+== Status Conversion ==
+
+The basic Trac ticket statuses map to Launchpad bug statuses.
+Trac.convertRemoteStatus() handles the conversion.
+
+    >>> trac = TestTrac('http://foo.bar')
+    >>> trac.convertRemoteStatus('open').title
+    'New'
+    >>> trac.convertRemoteStatus('assigned').title
+    'Confirmed'
+    >>> trac.convertRemoteStatus('fixed').title
+    'Fix Released'
+    >>> trac.convertRemoteStatus('invalid').title
+    'Invalid'
+    >>> trac.convertRemoteStatus('wontfix').title
+    "Won't Fix"
+    >>> trac.convertRemoteStatus('duplicate').title # XXX: Fix this, too!
+    'Confirmed'
+    >>> trac.convertRemoteStatus('worksforme').title
+    'Invalid'
+
