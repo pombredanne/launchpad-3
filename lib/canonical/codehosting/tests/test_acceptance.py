@@ -4,13 +4,15 @@
 
 __metaclass__ = type
 
+from StringIO import StringIO
 import os
+import thread
 import unittest
 import xmlrpclib
 
 import bzrlib.branch
 from bzrlib.builtins import cmd_push
-from bzrlib.errors import NotBranchError
+from bzrlib.errors import NotBranchError, ReadOnlyError
 from bzrlib.tests.repository_implementations.test_repository import (
     TestCaseWithRepository)
 from bzrlib.urlutils import local_path_from_url
@@ -40,12 +42,19 @@ class SSHTestCase(ServerTestCase, TestCaseWithRepository):
     def setUp(self):
         super(SSHTestCase, self).setUp()
 
+        self._main_thread_id = thread.get_ident()
+
         # Create a local branch with one revision
         tree = self.make_branch_and_tree('.')
         self.local_branch = tree.branch
         self.build_tree(['foo'])
         tree.add('foo')
         tree.commit('Added foo', rev_id='rev1')
+
+    def assertNotInMainThread(self, function_name):
+        self.assertNotEqual(
+            thread.get_ident(), self._main_thread_id,
+            "%s cannot be run in the main thread.")
 
     def runInChdir(self, func, *args, **kwargs):
         old_dir = os.getcwdu()
@@ -65,9 +74,13 @@ class SSHTestCase(ServerTestCase, TestCaseWithRepository):
         the SFTP server, which is running in the Twisted reactor in the main
         thread.
         """
+        self.assertNotInMainThread('push')
+        output = StringIO()
         push_command = cmd_push()
+        push_command.outf = output
         self.runInChdir(
             self.server.runAndWaitForDisconnect, push_command.run, remote_url)
+        return output.getvalue()
 
     def getLastRevision(self, remote_url):
         """Get the last revision at the given URL.
@@ -76,6 +89,7 @@ class SSHTestCase(ServerTestCase, TestCaseWithRepository):
         the SFTP server, which is running in the Twisted reactor in the main
         thread.
         """
+        self.assertNotInMainThread('getLastRevision')
         return self.runInChdir(
             self.server.runAndWaitForDisconnect,
             lambda: bzrlib.branch.Branch.open(remote_url).last_revision())
@@ -422,16 +436,9 @@ class SmartserverTests(SSHTestCase):
         tree = WorkingTree.open(self.local_branch.base)
         tree.commit('Empty commit', rev_id='rev2')
 
-        # Push the local branch to the remote url
+        # Pushing the local branch to the remote url fails.
         remote_url = self.getTransportURL('~testuser/firefox/mirror')
-
-        # This push fails, but the helper method captures the error (which is
-        # reported via stderr and exit codes).
-        self.push(remote_url)
-        remote_revision = self.getLastRevision(remote_url)
-
-        # UNCHANGED!
-        self.assertEqual(revision, remote_revision)
+        self.assertRaises(ReadOnlyError, self.push, remote_url)
 
 
 def make_repository_tests(base_suite):
