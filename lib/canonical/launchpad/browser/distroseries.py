@@ -108,14 +108,14 @@ class DistroSeriesSOP(StructuralObjectPresentation):
         return self.context.fullseriesname
 
     def listChildren(self, num):
-        # XXX mpt 20061004: list architectures, alphabetically
+        # XXX mpt 2006-10-04: list architectures, alphabetically
         return []
 
     def countChildren(self):
         return 0
 
     def listAltChildren(self, num):
-        # XXX mpt 20061004: list series, most recent first
+        # XXX mpt 2006-10-04: list series, most recent first
         return None
 
     def countAltChildren(self):

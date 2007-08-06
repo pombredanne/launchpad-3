@@ -41,7 +41,7 @@ def createUser(givenName, familyName, displayname, email, password=None):
 
     ztm = initZopeless()
 
-    # XXX: We don't check if the person already exists.
+    # XXX daniels 2004-12-14: We don't check if the person already exists.
     person = Person(
         name = generate_nick(email),
         givenname = givenName,
@@ -111,6 +111,6 @@ if __name__ == '__main__':
             print "Sending email to %s..." % options.email
             send_email(person, options.email, password)
     else:
-        # XXX: We should do this message more descriptive.
+        # XXX daniels 2004-12-14: We should do this message more descriptive.
         print "Please, review the command line, we need more options..."
 

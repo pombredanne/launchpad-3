@@ -147,8 +147,10 @@ Create a file to upload.
     >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
     ...    ["Installer file"]
     >>> firefox_owner.getControl("Add file").click()
-    >>> get_feedback_messages(firefox_owner)
-    [u'Required input is missing.']
+    >>> for msg in get_feedback_messages(firefox_owner):
+    ...     print msg
+    There is 1 error.
+    Required input is missing.
 
 Try to add a file that is empty.
 
@@ -164,8 +166,10 @@ Create a file to upload.
     >>> firefox_owner.getControl(name="field.contenttype").displayValue = \
     ...    ["Installer file"]
     >>> firefox_owner.getControl("Add file").click()
-    >>> get_feedback_messages(firefox_owner)
-    [u'Cannot upload empty file.']
+    >>> for msg in get_feedback_messages(firefox_owner):
+    ...     print msg
+    There is 1 error.
+    Cannot upload empty file.
 
 Now let's successfully upload two more files.
 

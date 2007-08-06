@@ -23,7 +23,7 @@ from canonical.launchpad.webapp import (
 
 
 class DistributionSourcePackageReleaseFacets(StandardLaunchpadFacets):
-    # XXX 20061004 mpt: a DistributionSourcePackageRelease is not a structural
+    # XXX mpt 2006-10-04: a DistributionSourcePackageRelease is not a structural
     # object: it should inherit all navigation from its source package.
 
     usedfor = IDistributionSourcePackageRelease

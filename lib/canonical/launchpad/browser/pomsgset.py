@@ -399,8 +399,8 @@ class BaseTranslationView(LaunchpadView):
 
         if not self.has_plural_form_information:
             # This POFile needs administrator setup.
-            # XXX: this should refer people to +addticket, right? 
-            #   -- kiko, 2006-10-18
+            # XXX: kiko 2006-10-18:
+            # This should refer people to +addticket, right?
             self.request.response.addErrorNotification("""
             <p>
             Launchpad can&#8217;t handle the plural items in this file,
@@ -511,8 +511,9 @@ class BaseTranslationView(LaunchpadView):
         translations = self.form_posted_translations.get(pomsgset, None)
         if not translations:
             # A post with no content -- not an error, but nothing to be
-            # done. XXX: I'm not sure but I suspect this could be an
-            # UnexpectedFormData..
+            # done.
+            # XXX: kiko 2006-09-28: I'm not sure but I suspect this could
+            # be an UnexpectedFormData.
             return None
 
         plural_indices_to_store = (
@@ -550,9 +551,9 @@ class BaseTranslationView(LaunchpadView):
 
     def _prepareView(self, view_class, pomsgset, error):
         """Collect data and build a POMsgSetView for display."""
-        # XXX: it would be nice if we could easily check if
-        # this is being called in the right order, after
-        # _storeTranslations(). -- kiko, 2006-09-27
+        # XXX: kiko 2006-09-27:
+        # It would be nice if we could easily check if this is being
+        # called in the right order, after _storeTranslations().
         translations = {}
         # Get translations that the user typed in the form.
         posted = self.form_posted_translations.get(pomsgset, None)
@@ -605,8 +606,8 @@ class BaseTranslationView(LaunchpadView):
                 alternative_language = getUtility(ILanguageSet)[
                     second_lang_code]
             except NotFoundError:
-                # Oops, a bogus code was provided! XXX: should this be
-                # UnexpectedFormData too?
+                # Oops, a bogus code was provided! 
+                # XXX: kiki 2006-09-28: Should this be UnexpectedFormData too?
                 second_lang_code = None
             else:
                 initial_values['alternative_language'] = alternative_language
@@ -814,8 +815,9 @@ class BaseTranslationView(LaunchpadView):
 
     def _redirectToNextPage(self):
         """After a successful submission, redirect to the next batch page."""
-        # XXX: isn't this a hell of a performance issue, hitting this
-        # same table for every submit? -- kiko, 2006-09-27
+        # XXX: kiko 2006-09-27:
+        # Isn't this a hell of a performance issue, hitting this
+        # same table for every submit?
         self.pofile.updateStatistics()
         next_url = self.batchnav.nextBatchURL()
         if next_url is None or next_url == '':
@@ -922,9 +924,10 @@ class POMsgSetView(LaunchpadView):
             pomsgset.pofile.canEditTranslations(self.user))
         self.form_is_writeable = form_is_writeable
 
-        # Set up alternative language variables. XXX: This could be made
-        # much simpler if we built suggestions externally in the parent
-        # view, as suggested in initialize() below. -- kiko
+        # Set up alternative language variables. 
+        # XXX: kiko 2006-09-27:
+        # This could be made much simpler if we built suggestions externally
+        # in the parent view, as suggested in initialize() below.
         self.sec_lang = None
         self.second_lang_potmsgset = None
         if second_lang_code is not None:
@@ -940,12 +943,13 @@ class POMsgSetView(LaunchpadView):
                     pass
 
     def initialize(self):
-        # XXX: the heart of the optimization problem here is that
+        # XXX: kiko 2006-09-27:
+        # The heart of the optimization problem here is that
         # _buildAllSuggestions() is very expensive. We need to move to
         # building suggestions and active texts in one fell swoop in the
         # parent view, and then supplying them all via __init__(). This
         # would cut the number of (expensive) queries per-page by an
-        # order of 30. -- kiko, 2006-09-27
+        # order of 30.
 
         # This code is where we hit the database collecting suggestions for
         # this IPOMsgSet.
@@ -1235,8 +1239,9 @@ class POMsgSetView(LaunchpadView):
             self.context.potmsgset.plural_text,
             self.context.potmsgset.flags())
 
-    # XXX 20060915 mpt: Detecting tabs, newlines, and leading/trailing spaces
-    # is being done one way here, and another way in the functions above.
+    # XXX mpt 2006-09-15: Detecting tabs, newlines, and leading/trailing
+    # spaces is being done one way here, and another way in the functions
+    # above.
     @property
     def text_has_tab(self):
         """Whether the text to translate contain tab chars."""
@@ -1281,7 +1286,8 @@ class POMsgSetView(LaunchpadView):
     @property
     def zoom_url(self):
         """Return the URL where we should from the zoom icon."""
-        # XXX: preserve second_lang_code and other form parameters? -- kiko
+        # XXX: kiko 2006-09-27: Preserve second_lang_code and other form
+        # parameters?
         return canonical_url(self.context) + '/+translate'
 
     @property
@@ -1310,7 +1316,8 @@ class POMsgSetZoomedView(POMsgSetView):
     def zoom_url(self):
         # We are viewing this class directly from an IPOMsgSet, we should
         # point to the parent batch of messages.
-        # XXX: preserve second_lang_code and other form parameters? -- kiko
+        # XXX: kiko 2006-09-27: Preserve second_lang_code and other form
+        # parameters?
         batch_url = '/+translate?start=%d' % (self.sequence - 1)
         return canonical_url(self.context.pofile) + batch_url
 

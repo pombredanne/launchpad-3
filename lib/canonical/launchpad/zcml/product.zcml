@@ -95,7 +95,8 @@
         "
         />
 
-  <!-- XXX ProductBugsMenu undeclared until layout bug is fixed -->
+  <!-- XXX: Steve Alexander 2005-09-21:
+            ProductBugsMenu undeclared until layout bug is fixed -->
 
   <browser:navigation
     module="canonical.launchpad.browser"

@@ -58,7 +58,7 @@ oidutil.log = null_log
 
 rationale = PersonCreationRationale
 # Information about known trust roots
-# XXX: 2007-06-14 jamesh
+# XXX: jamesh 2007-06-14
 # Include more information about the trust roots, such as an icon.  We
 # should really maintain this data elsewhere, but this should be fine
 # for phase 1 of the implementation.
@@ -476,7 +476,7 @@ class LoginServiceBaseView(OpenIdMixin, LaunchpadFormView):
 
     def trashRequest(self):
         """Remove the OpenID request from the session."""
-        # XXX: 2007-06-22 jamesh
+        # XXX: jamesh 2007-06-22
         # Removing the OpenID request from the session leads to an
         # UnexpectedFormData exception if the user hits back and
         # submits the form again.  Not deleting the request allows
@@ -527,8 +527,9 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
         return self.renderOpenIdResponse(self.createFailedResponse())
 
     @action("I'm Someone Else", name='logout')
-    # XXX 20070618 mpt: "I'm" should use a typographical apostrophe
-    # XXX 20070618 mpt: "Someone Else" should be "Not" then the person's name
+    # XXX mpt 2007-06-18: "I'm" should use a typographical apostrophe.
+    # XXX mpt 2007-06-18: "Someone Else" should be "Not" then the
+    # person's name.
     def logout_action(self, action, data):
         # Log the user out and render the login page again.
         session = ISession(self.request)

@@ -62,7 +62,7 @@ def main():
     lock.acquire(blocking=True)
 
     log.debug("Initialising connection.")
-    # XXX cprov 20060417: retrieve dbuser from config file
+    # XXX cprov 2006-04-17: retrieve dbuser from config file
     ztm = initZopeless(dbuser="lucille")
     execute_zcml_for_scripts()
 

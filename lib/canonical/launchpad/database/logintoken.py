@@ -281,8 +281,8 @@ class LoginTokenSet:
         """See ILoginTokenSet."""
         assert valid_email(email)
         if tokentype not in LoginTokenType.items:
-            # XXX: Aha! According to our policy, we shouldn't raise ValueError.
-            # -- Guilherme Salgado, 2005-12-09
+            # XXX: Guilherme Salgado, 2005-12-09:
+            # Aha! According to our policy, we shouldn't raise ValueError.
             raise ValueError(
                 "tokentype is not an item of LoginTokenType: %s" % tokentype)
 

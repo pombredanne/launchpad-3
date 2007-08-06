@@ -327,7 +327,7 @@
     layer="canonical.launchpad.layers.CodeLayer"
     name="+bazaar-index" />
 
-  <!-- XXX need better permissions -->
+  <!-- XXX: jamesh 2006-09-27: Need better permissions. -->
   <browser:pages
     for="canonical.launchpad.interfaces.IProductSeriesSet"
     permission="launchpad.AnyPerson"

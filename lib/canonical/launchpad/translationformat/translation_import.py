@@ -208,11 +208,11 @@ class TranslationImporter:
                     # template, that's broken and not usual, so we raise an
                     # exception to log the issue. It needs to be fixed
                     # manually in the imported translation file.
-                    # XXX CarlosPerelloMarin 20070423: Gettext doesn't allow
-                    # two plural messages with the same msgid but different
-                    # msgid_plural so I think is safe enough to just go ahead
-                    # and import this translation here but setting the fuzzy
-                    # flag. See bug #109393 for more info.
+                    # XXX CarlosPerelloMarin 2007-04-23 bug=109393:
+                    # Gettext doesn't allow two plural messages with the
+                    # same msgid but different msgid_plural so I think is
+                    # safe enough to just go ahead and import this translation
+                    # here but setting the fuzzy flag.
                     pomsgset = potmsgset.getPOMsgSet(
                         self.pofile.language.code, self.pofile.variant)
                     if pomsgset is None:

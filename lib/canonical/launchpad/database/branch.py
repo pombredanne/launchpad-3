@@ -763,7 +763,7 @@ class BranchSet:
     def getHostedPullQueue(self):
         """See `IBranchSet`."""
 
-        # XXX: JonathanLange 2007-07-27, Hosted branches (see Andrew's comment
+        # XXX: JonathanLange 2007-07-27: Hosted branches (see Andrew's comment
         # dated 2006-06-15) are mirrored if their mirror_request_time is not
         # NULL or if they haven't been mirrored in the last 6 hours. The latter
         # behaviour is a fail-safe and should probably be removed once we trust
@@ -796,7 +796,7 @@ class BranchSet:
 
     def getImportedPullQueue(self):
         """See `IBranchSet`."""
-        # XXX: JonathanLange 2007-07-19, Circular import.
+        # XXX: JonathanLange 2007-07-19: Circular import.
         from canonical.launchpad.database.productseries import ProductSeries
         return Branch.select(
             AND(Branch.q.branch_type == BranchType.IMPORTED,
@@ -846,8 +846,8 @@ class BranchRelationship(SQLBase):
         return BranchRelationships.items[self.label]
 
     def nameSelector(self, sourcepackage=None, selected=None):
-        # XXX: Let's get HTML out of the database code.
-        #      -- SteveAlexander, 2005-04-22
+        # XXX SteveAlexander 2005-04-22: 
+        # Let's get HTML out of the database code.
         html = '<select name="binarypackagename">\n'
         if not sourcepackage:
             # Return nothing for an empty query.
