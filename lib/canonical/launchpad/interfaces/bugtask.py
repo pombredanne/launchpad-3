@@ -118,6 +118,10 @@ class BugTaskStatus(DBEnumeratedType):
         affected software.
         """)
 
+    # DBItem values 35 and 40 are used by
+    # BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE and
+    # BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE
+
     UNKNOWN = DBItem(999, """
         Unknown
 
