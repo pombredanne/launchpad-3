@@ -389,3 +389,4 @@ since doing so has produced OOPSes (bug 129406).
     >>> (IAddBugTaskForm['sourcepackagename'] is
     ...     IDistroBugTask['sourcepackagename'])
     False
+
