@@ -676,13 +676,17 @@ class IBugTaskSet(Interface):
 
 class IAddBugTaskForm(Interface):
     """Form for adding an upstream bugtask."""
+    # It is tempting to replace the first three attributes here with their
+    # counterparts from IUpstreamBugTask and IDistroBugTask.
+    # BUT: This will cause OOPSes with adapters, hence IAddBugTask reinvents
+    # the wheel somewhat. There is a test to ensure that this remains so.
     product = Choice(title=_('Project'), required=True, vocabulary='Product')
     distribution = Choice(
         title=_("Distribution"), required=True, vocabulary='Distribution')
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=False,
         description=_("The source package in which the bug occurs. "
-        "Leave blank if you are not sure."),
+                      "Leave blank if you are not sure."),
         vocabulary='SourcePackageName')
     bug_url = StrippedTextLine(
         title=_('URL'), required=False,
