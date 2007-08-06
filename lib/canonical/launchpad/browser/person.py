@@ -1976,7 +1976,7 @@ class PersonEditWikiNamesView(LaunchpadView):
         context.ubuntuwiki.wikiname = ubuntuwikiname
 
         for w in context.otherwikis:
-            # XXX: GuilhermeSalgado 25/08/2005:
+            # XXX: GuilhermeSalgado 2005-08-25:
             # We're exposing WikiName IDs here because that's the only
             # unique column we have. If we don't do this we'll have to
             # generate the field names using the WikiName.wiki and
@@ -2044,7 +2044,7 @@ class PersonEditIRCNicknamesView(LaunchpadView):
 
         form = self.request.form
         for ircnick in self.context.ircnicknames:
-            # XXX: GuilhermeSalgado 25/08/2005:
+            # XXX: GuilhermeSalgado 2005-08-25:
             # We're exposing IrcID IDs here because that's the only
             # unique column we have, so we don't have anything else that we
             # can use to make field names that allow us to uniquely identify
