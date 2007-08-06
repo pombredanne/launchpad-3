@@ -177,8 +177,8 @@ class LibrarianNoResetTestCase(unittest.TestCase):
 
     def testNoReset3(self):
         # The file added by testNoReset1 should be gone
-        # XXX: We should get a DownloadFailed exception here, as per
-        # Bug #51370 -- StuartBishop 20060630
+        # XXX: StuartBishop 2006-06-30 Bug=51370:
+        # We should get a DownloadFailed exception here.
         data = urlopen(LibrarianTestCase.url).read()
         self.failIfEqual(data, self.sample_data)
 

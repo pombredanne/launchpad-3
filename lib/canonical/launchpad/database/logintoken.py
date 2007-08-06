@@ -17,13 +17,12 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import LoginTokenType
-
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.helpers import get_email_template
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.interfaces import (
-    ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet)
+    ILoginToken, ILoginTokenSet, IGPGHandler, NotFoundError, IPersonSet,
+    LoginTokenType)
 from canonical.launchpad.validators.email import valid_email
 
 
@@ -37,8 +36,7 @@ class LoginToken(SQLBase):
                                default=None)
     email = StringCol(dbName='email', notNull=True)
     token = StringCol(dbName='token', unique=True)
-    tokentype = EnumCol(dbName='tokentype', notNull=True,
-                        schema=LoginTokenType)
+    tokentype = EnumCol(dbName='tokentype', notNull=True, enum=LoginTokenType)
     created = UtcDateTimeCol(dbName='created', notNull=True)
     fingerprint = StringCol(dbName='fingerprint', notNull=False,
                             default=None)
@@ -283,8 +281,8 @@ class LoginTokenSet:
         """See ILoginTokenSet."""
         assert valid_email(email)
         if tokentype not in LoginTokenType.items:
-            # XXX: Aha! According to our policy, we shouldn't raise ValueError.
-            # -- Guilherme Salgado, 2005-12-09
+            # XXX: Guilherme Salgado, 2005-12-09:
+            # Aha! According to our policy, we shouldn't raise ValueError.
             raise ValueError(
                 "tokentype is not an item of LoginTokenType: %s" % tokentype)
 

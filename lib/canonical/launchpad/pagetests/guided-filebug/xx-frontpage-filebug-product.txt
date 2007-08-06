@@ -80,7 +80,7 @@ page.
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/...'
     >>> user_browser.title
-    'Bug #... in firefox (upstream): ...SVG causes Firefox to crash...'
+    'Bug #... in Mozilla Firefox: ...SVG causes Firefox to crash...'
 
 == Advanced filebug page ==
 
@@ -102,7 +102,7 @@ filebug page and file a bug directly.
     >>> user_browser.url
     'http://bugs.launchpad.dev/evolution/+bug/...'
     >>> user_browser.title
-    'Bug #... in evolution (upstream): ...Evolution crashes...'
+    'Bug #... in Evolution: ...Evolution crashes...'
 
 Once again, trying to file a bug against a product that doesn't use 
 Launchpad Bugs results in an informational page being displayed.
@@ -121,4 +121,3 @@ Launchpad Bugs results in an informational page being displayed.
     Mozilla Thunderbird does not use...
     ...
     You can refine and resubmit your bug report.
-

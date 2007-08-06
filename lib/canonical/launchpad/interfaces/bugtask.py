@@ -42,12 +42,13 @@ from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 
 
-# XXX: Brad Bollenbach, 2005-12-02: In theory, INCOMPLETE belongs in
-# UNRESOLVED_BUGTASK_STATUSES, but the semantics of our current reports would
-# break if it were added to the list below. See
-# <https://launchpad.net/malone/bugs/5320>
-# XXX: matsubara, 2006-02-02: I added the INCOMPLETE as a short-term solution
-# to bug https://launchpad.net/products/malone/+bug/4201
+# XXX: Brad Bollenbach 2005-12-02 bugs=5320: 
+# In theory, INCOMPLETE belongs in UNRESOLVED_BUGTASK_STATUSES, but the
+# semantics of our current reports would break if it were added to the
+# list below.
+
+# XXX: matsubara 2006-02-02 bug=4201: 
+# I added the INCOMPLETE as a short-term solution.
 UNRESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.NEW,
     dbschema.BugTaskStatus.INCOMPLETE,
@@ -88,12 +89,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         vocabulary='DistroSeries')
     milestone = Choice(
         title=_('Milestone'), required=False, vocabulary='Milestone')
-    # XXX: the status and importance's vocabularies do not
+    # XXX kiko 2006-03-23: 
+    # The status and importance's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
     # bugwatch; this would be better described in a separate interface,
     # but adding a marker interface during initialization is expensive,
     # and adding it post-initialization is not trivial.
-    #   -- kiko, 2006-03-23
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
         default=dbschema.BugTaskStatus.NEW)
@@ -104,6 +105,10 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         title=_("Status notes (optional)"), required=False)
     assignee = Choice(
         title=_('Assigned to'), required=False, vocabulary='ValidAssignee')
+    bugtargetdisplayname = Text(
+        title=_("The short, descriptive name of the target"), readonly=True)
+    bugtargetname = Text(
+        title=_("The target as presented in mail notifications"), readonly=True)
     bugwatch = Choice(title=_("Remote Bug Details"), required=False,
         vocabulary='BugWatch', description=_("Select the bug watch that "
         "represents this task in the relevant bug tracker. If none of the "
@@ -332,6 +337,9 @@ class IBugTaskSearchBase(Interface):
         title=_('Show only bugs associated with a CVE'), required=False)
     bug_contact = Choice(
         title=_('Bug contact'), vocabulary='ValidPersonOrTeam', required=False)
+    bug_commenter = Choice(
+        title=_('Bug commenter'), vocabulary='ValidPersonOrTeam',
+        required=False)
 
 
 class IBugTaskSearch(IBugTaskSearchBase):
@@ -374,6 +382,7 @@ class IBugTaskDelta(Interface):
     Likewise, if sourcepackagename is not None, product must be None.
     """
     targetname = Attribute("Where this change exists.")
+    bugtargetname = Attribute("Near-unique ID of where the change exists.")
     bugtask = Attribute("The modified IBugTask.")
     product = Attribute(
         """The change made to the IProduct of this task.
@@ -418,8 +427,8 @@ class IBugTaskDelta(Interface):
     bugwatch = Attribute("The bugwatch which governs this task.")
 
 
-# XXX, Brad Bollenbach, 2006-08-03: This interface should be
-# renamed. See https://launchpad.net/bugs/55089 .
+# XXX Brad Bollenbach 2006-08-03 bugs=55089: 
+# This interface should be renamed.
 class IUpstreamBugTask(IBugTask):
     """A bug needing fixing in a product."""
     product = Choice(title=_('Project'), required=True, vocabulary='Product')
@@ -453,11 +462,9 @@ class IProductSeriesBugTask(IBugTask):
         vocabulary='ProductSeries')
 
 
-# XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
-# when spiv pushes a fix upstream for the bug that makes this hackery
-# necessary:
-#
-#     https://launchpad.ubuntu.com/malone/bugs/121
+# XXX: Brad Bollenbach 2005-02-03 bugs=121: 
+# This interface should be removed when spiv pushes a fix upstream for
+# the bug that makes this hackery necessary.
 class ISelectResultsSlicable(ISelectResults):
     def __getslice__(i, j):
         """Called to implement evaluation of self[i:j]."""
@@ -514,7 +521,8 @@ class BugTaskSearchParams:
                  component=None, pending_bugwatch_elsewhere=False,
                  resolved_upstream=False, open_upstream=False,
                  has_no_upstream_bugtask=False, tag=None, has_cve=False,
-                 bug_contact=None, bug_reporter=None, nominated_for=None):
+                 bug_contact=None, bug_reporter=None, nominated_for=None,
+                 bug_commenter=None):
         self.bug = bug
         self.searchtext = searchtext
         self.fast_searchtext = fast_searchtext
@@ -540,6 +548,7 @@ class BugTaskSearchParams:
         self.bug_contact = bug_contact
         self.bug_reporter = bug_reporter
         self.nominated_for = nominated_for
+        self.bug_commenter = bug_commenter
 
     def setProduct(self, product):
         """Set the upstream context on which to filter the search."""
@@ -651,8 +660,8 @@ class IBugTaskSet(Interface):
         If the col_name is unrecognized, a KeyError is raised.
         """
 
-    # XXX: get rid of this kludge when we have proper security for
-    # scripts   -- kiko, 2006-03-23
+    # XXX kiko 2006-03-23: 
+    # get rid of this kludge when we have proper security for scripts.
     def dangerousGetAllTasks():
         """DO NOT USE THIS METHOD UNLESS YOU KNOW WHAT YOU ARE DOING
 

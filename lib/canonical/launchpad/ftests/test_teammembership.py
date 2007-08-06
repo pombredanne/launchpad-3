@@ -7,8 +7,8 @@ import unittest
 from zope.component import getUtility
 
 from canonical.launchpad.ftests import login
-from canonical.launchpad.interfaces import IPersonSet, ITeamMembershipSet
-from canonical.lp.dbschema import TeamMembershipStatus
+from canonical.launchpad.interfaces import (
+    IPersonSet, ITeamMembershipSet, TeamMembershipStatus)
 from canonical.testing import LaunchpadFunctionalLayer
 
 

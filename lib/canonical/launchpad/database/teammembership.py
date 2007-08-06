@@ -19,16 +19,14 @@ from canonical.database.enumcol import EnumCol
 
 from canonical.config import config
 
-from canonical.lp.dbschema import (
-    TeamMembershipRenewalPolicy, TeamMembershipStatus)
-
 from canonical.launchpad.mail import simple_sendmail, format_address
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.helpers import (
     get_email_template, contactEmailAddresses)
 from canonical.launchpad.interfaces import (
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, ILaunchpadCelebrities,
-    ITeamMembership, ITeamParticipation, ITeamMembershipSet)
+    ITeamMembership, ITeamParticipation, ITeamMembershipSet,
+    TeamMembershipRenewalPolicy, TeamMembershipStatus)
 from canonical.launchpad.webapp import canonical_url
 from canonical.launchpad.webapp.tales import DurationFormatterAPI
 
@@ -45,7 +43,7 @@ class TeamMembership(SQLBase):
     person = ForeignKey(dbName='person', foreignKey='Person', notNull=True)
     reviewer = ForeignKey(dbName='reviewer', foreignKey='Person', default=None)
     status = EnumCol(
-        dbName='status', notNull=True, schema=TeamMembershipStatus)
+        dbName='status', notNull=True, enum=TeamMembershipStatus)
     datejoined = UtcDateTimeCol(
         dbName='datejoined', default=UTC_NOW, notNull=True)
     dateexpires = UtcDateTimeCol(dbName='dateexpires', default=None)

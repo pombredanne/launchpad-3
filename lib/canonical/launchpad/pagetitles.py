@@ -40,7 +40,7 @@ __metaclass__ = type
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag, IMaloneApplication, IPerson)
+    ILaunchBag, IMaloneApplication, IPerson, IStructuralObjectPresentation)
 from canonical.launchpad.webapp import smartquote
 
 DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
@@ -49,8 +49,9 @@ DEFAULT_LAUNCHPAD_TITLE = 'Launchpad'
 
 class BugTaskPageTitle:
     def __call__(self, context, view):
-        return smartquote('Bug #%d in %s: "%s"') % (
-            context.bug.id, context.targetname, context.bug.title)
+        return smartquote('%s: "%s"') % (
+            IStructuralObjectPresentation(context).getMainHeading(),
+            context.bug.title)
 
 
 class SubstitutionHelper:
@@ -97,6 +98,16 @@ class ContextBugId(SubstitutionHelper):
 
 
 # Functions and strings used as the titles of pages.
+
+archive_admin = ContextTitle('Administer %s')
+
+archive_activate = 'Activate PPA'
+
+archive_builds = ContextTitle('Builds for %s')
+
+archive_edit = ContextTitle('Edit %s')
+
+archive_index = ContextTitle('%s')
 
 bazaar_all_branches = 'All branches in the Launchpad Bazaar'
 
@@ -205,7 +216,7 @@ def buglisting_embedded_advanced_search(context, view):
 
 def bugnomination_edit(context, view):
     return 'Manage nomination for bug #%d in %s' % (
-        context.bug.id, context.target.bugtargetname)
+        context.bug.id, context.target.bugtargetdisplayname)
 
 def bugwatch_editform(context, view):
     return 'Bug #%d - Edit external bug watch (%s in %s)' % (
@@ -382,6 +393,8 @@ distribution_builds = ContextTitle('%s builds')
 
 distribution_uploadadmin = ContextTitle('Change Upload Manager for %s')
 
+distribution_ppa_list = ContextTitle('%s Personal Package Archives')
+
 distributionsourcepackage_bugs = ContextTitle('Bugs in %s')
 
 distributionsourcepackage_index = ContextTitle('%s')
@@ -509,9 +522,9 @@ template_form = 'XXX PLEASE DO NOT USE THIS TEMPLATE XXX'
 
 # launchpad_js is standard javascript
 
-# XXX: The general form is a fallback form; I'm not sure why it is
+# XXX: kiko 2005-09-29:
+# The general form is a fallback form; I'm not sure why it is
 # needed, nor why it needs a pagetitle, but I can't debug this today.
-#   -- kiko, 2005-09-29
 launchpad_generalform = "Launchpad - General Form (Should Not Be Displayed)"
 
 launchpad_legal = 'Launchpad legalese'
@@ -689,6 +702,8 @@ person_changepassword = 'Change your password'
 
 person_claim = 'Claim account'
 
+person_deactivate_account = 'Deactivate your Launchpad account'
+
 person_codesofconduct = ContextDisplayName(smartquote("%s's code of conduct signatures"))
 
 person_edit = ContextDisplayName(smartquote("%s's details"))
@@ -800,8 +815,6 @@ potemplatename_edit = ContextTitle(smartquote('Edit "%s" in Launchpad'))
 potemplatename_index = ContextTitle(smartquote('"%s" in Launchpad'))
 
 potemplatenames_index = 'Template names in Launchpad'
-
-ppa_list = ContextTitle('%s Personal Package Archives')
 
 product_add = 'Register a project in Launchpad'
 

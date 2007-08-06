@@ -85,8 +85,7 @@ be renamed since it will not conflict.
 That is not a particularly sensible way of renaming branches, but it is simple
 to implement, and it be should extremely rare for the case to occur.
 
-    >>> from canonical.launchpad.interfaces import IBranchSet
-    >>> from canonical.lp.dbschema import BranchType
+    >>> from canonical.launchpad.interfaces import BranchType, IBranchSet
     >>> branchset = getUtility(IBranchSet)
     >>> peoplemerge = branchset.new(
     ...     BranchType.HOSTED, 'peoplemerge', sample, sample, None, None)

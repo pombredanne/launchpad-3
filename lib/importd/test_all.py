@@ -144,12 +144,12 @@ def main(argv):
     test_suite().visit(visitor)
     runner=ParameterisableTextTestRunner(verbosity=2).resultFactory(earlyStopFactory)
 
-    # XXX: jobsFromSeries uses canonical_url. This requires the zope component
+    # XXX: DavidAllouche 2007-04-27: 
+    # jobsFromSeries uses canonical_url. This requires the zope component
     # architecture to be set up. Since the CA cannot be tore down, and this
     # test runner does not know about layers (and does not know to run tests
     # that do not require the CA before it is setup), we run
     # execute_zcml_for_scripts in the initialization of the test runner.
-    # -- DavidAllouche 2007-04-27
     execute_zcml_for_scripts()
     assert is_ca_available(), (
         "Component architecture not loaded by execute_zcml_for_scripts")
