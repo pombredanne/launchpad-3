@@ -287,9 +287,9 @@ class Bugzilla(ExternalBugTracker):
                 # VERIFIED WONTFIX maps directly to WONTFIX
                 malone_status = BugTaskStatus.WONTFIX
             else:
-                #XXX: Which are the valid resolutions? We should fail
-                #     if we don't know of the resolution. Bug 31745.
-                #     -- Bjorn Tillenius, 2005-02-03
+                #XXX: Bjorn Tillenius 2005-02-03 Bug=31745:
+                #     Which are the valid resolutions? We should fail
+                #     if we don't know of the resolution.
                 malone_status = BugTaskStatus.INVALID
         elif remote_status in ['REOPENED', 'NEW', 'UPSTREAM', 'DEFERRED']:
             # DEFERRED: bugzilla.redhat.com
@@ -656,7 +656,8 @@ class Mantis(ExternalBugTracker):
         # with the fact that the bug summary can contain embedded "\r\n"
         # characters! I don't see a better way to handle this short of
         # not using the CSV module and forcing all lines to have the
-        # same number as fields as the header. XXX: report Mantis bug.
+        # same number as fields as the header. 
+        # XXX: kiko 2007-07-05: Report Mantis bug.
         csv_data = csv_data.strip().split("\r\n0")
 
         if not csv_data:
@@ -758,10 +759,10 @@ class Mantis(ExternalBugTracker):
             if remote_resolution == "won't fix":
                 return BugTaskStatus.WONTFIX
             if remote_resolution == 'duplicate':
-                # XXX: follow duplicates
+                # XXX: kiko 2007-07-05: Follow duplicates
                 return BugTaskStatus.INVALID
             if remote_resolution in ['open', 'no change required']:
-                # XXX: pretty inconsistently used
+                # XXX: kiko 2007-07-05: Pretty inconsistently used
                 return BugTaskStatus.FIXRELEASED
 
         log.warn("Unknown status/resolution %s/%s" %

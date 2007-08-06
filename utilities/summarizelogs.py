@@ -48,9 +48,9 @@ for logname in lognames:
         first_line = fullerror.split("\n")[0]
 
         date = first_line.split(" ")[0]
-        # XXX: handle timezone properly; it kinda sucks that we have no
-        # way of knowing what timezone the log originates from. For now
-        # I hack around this by assuming timezone is UTC.
+        # XXX kiko 2005-10-17: handle timezone properly; it kinda sucks that
+        # we have no way of knowing what timezone the log originates from.
+        # For now I hack around this by assuming timezone is UTC.
         ts = time.strftime("%s", time.strptime(date, "%Y-%m-%dT%H:%M:%S"))
         then = datetime.datetime.fromtimestamp(float(ts))
         if now - then > datetime.timedelta(days=LAST_DAYS):

@@ -48,7 +48,7 @@ class ImportProcess:
             self.logger.info("No requests pending.")
             return
 
-        # XXX: JeroenVermeulen 2007-06-20, how on Earth do we test that the
+        # XXX: JeroenVermeulen 2007-06-20: How on Earth do we test that the
         # deadline code works?  It's only a small thing, and of course we'll
         # notice that it works when we stop getting errors about this script
         # not finishing.  Meanwhile, SteveA has suggested a more general

@@ -146,9 +146,9 @@ class BranchSubscriptionAddOtherView(_BranchSubscriptionView):
         subscription = self.context.getSubscription(person)
         self.next_url = canonical_url(self.context)
         if subscription is None:
-            # XXX thumper 2007-06-14
+            # XXX thumper 2007-06-14 bug=117980:
             # Restrictive policy is being enforced in the view
-            # rather than the model.  See lpbug #117980.
+            # rather than the model. 
             admins = getUtility(ILaunchpadCelebrities).admin
             if (person.isTeam() and not self.user.inTeam(person)
                 and not self.user.inTeam(admins)):

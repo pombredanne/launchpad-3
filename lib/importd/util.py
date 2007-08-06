@@ -296,15 +296,15 @@ class NotifyingBuild(ConfigurableBuild):
         # build failures even without database access.
         request = errorlog.ScriptRequest([
             ('series.id', self.importDJob.seriesID)],
-            # XXX: It would be nice to show step.words() and the step log here
+            # XXX: DavidAllouche 2007-04-05:
+            # It would be nice to show step.words() and the step log here
             # when recording a build failure. But I do not know how to retrieve
             # this data. I tried looking at the buildbot code, but then the
             # magic smoke started to escape out of my ears.
-            # -- DavidAllouche 2007-04-05
             URL=self.importDJob.series_url)
-        # XXX: We should be using step.words() as the BuildFailure argument to
+        # XXX: DavidAllouche 2007-04-05:
+        # We should be using step.words() as the BuildFailure argument to
         # produce good oops summaries, but we do not have this data.
-        # -- DavidAllouche 2007-04-05
         reportOops(self.importd_autotest,
             (BuildFailure, BuildFailure(), None), request)
 

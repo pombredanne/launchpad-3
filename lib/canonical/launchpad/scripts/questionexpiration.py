@@ -67,11 +67,11 @@ class QuestionJanitor:
                     "This question was expired because it remained in "
                     "the '%s' state without activity for the last %d days."
                         % (question.status.title, self.days_before_expiration))
-                # XXX flacoste 2006/10/24 We commit after each and every
-                # expiration because of bug #29744 (emails are sent
+                # XXX flacoste 2006-10-24 bug=29744: We commit after each and
+                # every expiration because of bug #29744 (emails are sent
                 # immediately in zopeless). This minimuze the risk of
-                # duplicate expiration email being sent in case an error occurs
-                # later on.
+                # duplicate expiration email being sent in case an error
+                # occurs later on.
                 transaction_manager.commit()
                 count += 1
             self.log.info('Expired %d questions.' % count)
