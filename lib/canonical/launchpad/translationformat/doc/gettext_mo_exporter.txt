@@ -7,7 +7,7 @@ Gettext's .po file format.
 Launchpad gets a .po file content and 'compiles' it to get
 the binary form.
 
-    >>> from canonical.launchpad.translationformat.tests.test_gettext_mo_exporter_doctest import (
+    >>> from canonical.launchpad.translationformat.tests.helpers import (
     ...     is_valid_mofile)
     >>> from canonical.launchpad.translationformat.gettext_mo_exporter import (
     ...     MoCompiler)
