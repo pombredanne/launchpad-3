@@ -135,9 +135,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         return self.product
 
     @property
+    def bugtargetdisplayname(self):
+        """See IBugTarget."""
+        return "%s %s" % (self.product.displayname, self.name)
+
+    @property
     def bugtargetname(self):
         """See IBugTarget."""
-        return "%s %s (upstream)" % (self.product.name, self.name)
+        return "%s/%s" % (self.product.name, self.name)
 
     @property
     def drivers(self):
@@ -377,7 +382,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         for pkg in self.sourcepackages:
             if pkg.distroseries == distroseries:
                 return pkg
-        # XXX sabdfl 23/06/05 this needs to search through the ancestry of
+        # XXX sabdfl 2005-06-23: This needs to search through the ancestry of
         # the distroseries to try to find a relevant packaging record
         raise NotFoundError(distroseries)
 

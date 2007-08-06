@@ -23,7 +23,8 @@ from bzrlib.revision import NULL_REVISION
 
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IBranchRevisionSet, IRevisionSet)
+    BranchSubscriptionNotificationLevel, ILaunchpadCelebrities,
+    IBranchRevisionSet, IRevisionSet)
 from canonical.launchpad.mailnotification import (
     send_branch_revision_notifications)
 
@@ -45,11 +46,11 @@ class BzrSync:
         self.trans_manager = trans_manager
         self._admin = getUtility(ILaunchpadCelebrities).admin
         self.email_from = config.noreply_from_address
-        
+
         if logger is None:
             logger = logging.getLogger(self.__class__.__name__)
         self.logger = logger
-        
+
         self.db_branch = branch
         if branch_url is None:
             branch_url = self.db_branch.url
@@ -58,7 +59,27 @@ class BzrSync:
         # We want to generate the email contents as close to the source
         # of the email as possible, but we don't want to send them until
         # the information has been committed.
+        self.initializeEmailQueue()
+
+    def initializeEmailQueue(self):
+        """Create an email queue and determine whether to create diffs.
+
+        In order to avoid creating diffs when no one is interested in seeing
+        it, we check all the branch subscriptions first, and decide here
+        whether or not to generate the revision diffs as the branch is scanned.
+
+        See XXX comment in `sendRevisionNotificationEmails` for the reason
+        behind the queue itself.
+        """
         self.pending_emails = []
+        self.subscribers_want_notification = False
+
+        diff_levels = (BranchSubscriptionNotificationLevel.DIFFSONLY,
+                       BranchSubscriptionNotificationLevel.FULL)
+        for subscription in self.db_branch.subscriptions:
+            if subscription.notification_level in diff_levels:
+                self.subscribers_want_notification = True
+                break
 
     def close(self):
         """Explicitly release resources."""
@@ -114,7 +135,8 @@ class BzrSync:
         self.insertBranchRevisions(branchrevisions_to_insert)
         self.trans_manager.commit()
         # Now that these changes have been committed, send the pending emails.
-        self.sendRevisionNotificationEmails()
+        if self.subscribers_want_notification:
+            self.sendRevisionNotificationEmails()
         # The Branch table is modified by other systems, including the web UI,
         # so we need to update it in a short transaction to avoid causing
         # timeouts in the webapp. This opens a small race window where the
@@ -135,7 +157,6 @@ class BzrSync:
         # branch.  We only want to send one email for the initial scan
         # of a branch, not one for each revision.
         self.initial_scan = not bool(self.db_history)
-
 
     def retrieveBranchDetails(self):
         """Retrieve ancestry from the the bzr branch on disk."""
@@ -187,15 +208,16 @@ class BzrSync:
         # When the history is shortened, and email is sent that says this.
         # This will never happen for a newly scanned branch, so not checking
         # that here.
-        number_removed = len(removed_history)
-        if number_removed > 0:
-            if number_removed == 1:
-                contents = '1 revision was removed from the branch.'
-            else:
-                contents = ('%d revisions were removed from the branch.'
-                            % number_removed)
-            # No diff is associated with the removed email.
-            self.pending_emails.append((contents, ''))
+        if self.subscribers_want_notification:
+            number_removed = len(removed_history)
+            if number_removed > 0:
+                if number_removed == 1:
+                    contents = '1 revision was removed from the branch.'
+                else:
+                    contents = ('%d revisions were removed from the branch.'
+                                % number_removed)
+                # No diff is associated with the removed email.
+                self.pending_emails.append((contents, ''))
 
         # Merged (non-history) revisions in the database and the bzr branch.
         old_merged = db_ancestry.difference(db_history)
@@ -357,8 +379,10 @@ class BzrSync:
                     self.logger.debug("%d of %d: %s is a ghost",
                                       self.curr, self.last, revision_id)
                     continue
-                self.pending_emails.append(
-                    (self.getRevisionMessage(revision), self.getDiff(revision)))
+                if self.subscribers_want_notification:
+                    message = self.getRevisionMessage(revision)
+                    revision_diff = self.getDiff(revision)
+                    self.pending_emails.append((message, revision_diff))
 
     def updateBranchStatus(self):
         """Update the branch-scanner status in the database Branch table."""
@@ -414,7 +438,7 @@ class BzrSync:
         If this is the first scan of a branch, then we send out a simple
         notification email saying that the branch has been scanned.
         """
-        # XXX: thumper 2007-03-28
+        # XXX: thumper 2007-03-28 bug=29744:
         # The whole reason that this method exists is due to
         # emails being sent immediately in a zopeless environment.
         # When bug #29744 is fixed, this method will no longer be

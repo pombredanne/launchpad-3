@@ -365,15 +365,26 @@ class SpecificationRetargetingView(LaunchpadFormView):
     label =_('Move this blueprint to a different project')
 
     def validate(self, data):
-        """Ensure there is not already a blueprint with the same name as
-        this one for the given target.
+        """Ensure that the target is valid and that there is not
+        already a blueprint with the same name as this one for the
+        given target.
         """
+        
         target = data.get('target')
+
+        if target is None:
+            self.setFieldError('target',
+                "There is no project with the name '%s'. "
+                "Please check that name and try again." %
+                cgi.escape(self.request.form.get("field.target")))
+            return
+
         if target.getSpecification(self.context.name) is not None:
             self.setFieldError('target',
                 'There is already a blueprint with this name for %s. '
                 'Please change the name of this blueprint and try again.' %
-                target.displayname)
+                cgi.escape(target.displayname))
+            return
 
     @action(_('Retarget Blueprint'), name='retarget')
     def register_action(self, action, data):

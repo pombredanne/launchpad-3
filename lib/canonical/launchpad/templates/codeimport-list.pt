@@ -79,7 +79,7 @@
 
           <td>
             <tal:comment condition="nothing">
-              <!-- XXX MichaelHudson 2007-06-29 If we ever want to let
+              <!-- XXX MichaelHudson 2007-06-29: If we ever want to let
               the general user see this page and when the empty
               branches that get created along with an import are
               hidden in some fashion, we'll want to add a
