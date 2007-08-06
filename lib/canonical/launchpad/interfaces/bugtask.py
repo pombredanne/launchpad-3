@@ -681,6 +681,12 @@ class IAddBugTaskForm(Interface):
     bug_url = StrippedTextLine(
         title=_('URL'), required=False,
         description=_("The URL of this bug in the remote bug tracker."))
+    register_bugtracker = Bool(
+        title=_('Register bugtacker?'),
+        default=False,
+        required=False,
+        description=_("This bug tracker isn't registered in Launchpad. "
+                      "Would you like to register it now?"))
 
 
 class INominationsReviewTableBatchNavigator(ITableBatchNavigator):
