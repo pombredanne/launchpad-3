@@ -9,6 +9,7 @@ import unittest
 import xmlrpclib
 
 import bzrlib.branch
+from bzrlib.builtins import cmd_push
 from bzrlib.errors import NotBranchError
 from bzrlib.tests.repository_implementations.test_repository import (
     TestCaseWithRepository)
@@ -20,10 +21,10 @@ from canonical.codehosting.tests.helpers import (
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting.transport import branch_id_to_path
+from canonical.database.constants import UTC_NOW
 from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
-from canonical.launchpad.interfaces import BranchType
-from canonical.lp import dbschema
+from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
 
 
 class SSHTestCase(ServerTestCase, TestCaseWithRepository):
@@ -64,12 +65,9 @@ class SSHTestCase(ServerTestCase, TestCaseWithRepository):
         the SFTP server, which is running in the Twisted reactor in the main
         thread.
         """
-
-        # XXX: JonathanLange 2007-07-17, This swallows errors. It should
-        # re-raise errors instead.
+        push_command = cmd_push()
         self.runInChdir(
-            self.server.runAndWaitForDisconnect,
-            self.run_bzr_captured, ['push', remote_url], retcode=None)
+            self.server.runAndWaitForDisconnect, push_command.run, remote_url)
 
     def getLastRevision(self, remote_url):
         """Get the last revision at the given URL.
@@ -321,6 +319,32 @@ class AcceptanceTests(SSHTestCase):
             '~landscape-developers/landscape/some-branch')
         self.assertRaises(NotBranchError, self.getLastRevision, remote_url)
 
+    def makeDatabaseBranch(self, owner_name, product_name, branch_name,
+                           branch_type=BranchType.HOSTED, private=False):
+        """Create a new branch in the database."""
+        owner = database.Person.selectOneBy(name=owner_name)
+        if product_name is '+junk':
+            product = None
+        else:
+            product = database.Product.selectOneBy(name=product_name)
+        return database.Branch(
+            name=branch_name, owner=owner, author=owner, product=product,
+            url=None, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+            summary=None, home_page=None, whiteboard=None, private=private,
+            date_created=UTC_NOW, branch_type=branch_type)
+
+    @deferToThread
+    def test_can_push_to_existing_hosted_branch(self):
+        # If a hosted branch exists in the database, but not on the filesystem,
+        # and is writable by the user, then the user is able to push to it.
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = self.makeDatabaseBranch('testuser', 'firefox', 'some-branch')
+        remote_url = self.getTransportURL(branch.unique_name)
+        LaunchpadZopelessTestSetup().txn.commit()
+        self.push(remote_url)
+        remote_revision = self.getLastRevision(remote_url)
+        self.assertEqual(self.local_branch.last_revision(), remote_revision)
+        
 
 class SmartserverTests(SSHTestCase):
     """Acceptance tests for the smartserver component of Launchpad codehosting
