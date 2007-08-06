@@ -431,6 +431,21 @@ class POTemplate(SQLBase, RosettaStats):
             [template_file])
         return removeAllProxies(exported_file.content_file).read()
 
+    def exportWithTranslations(self):
+        """See `IPOTemplate`."""
+        translation_exporter = getUtility(ITranslationExporter)
+        translation_format_exporter = (
+            translation_exporter.getTranslationFormatExporterByFileFormat(
+                self.source_file_format))
+
+        translation_files = [
+            ITranslationFile(pofile)
+            for pofile in self.pofiles
+            ]
+        translation_files.append(ITranslationFile(self))
+        return translation_format_exporter.exportTranslationFiles(
+            translation_files)
+
     def expireAllMessages(self):
         """See IPOTemplate."""
         for potmsgset in self:

@@ -58,6 +58,34 @@ def parse_charset(string_to_parse, is_escaped=True):
         # is unknown.
         return 'UTF-8'
 
+def get_header_dictionary(raw_header, handled_keys_order):
+    """Return dictionary with all keys in raw_header.
+
+    :arg raw_header: string representing the header in native format.
+    :return: dictionary with all key/values in raw_header.
+    """
+    header_dictionary = {}
+    for line in raw_header.strip().split('\n'):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            field, value = line.split(':', 1)
+        except ValueError:
+            logging.warning(POSyntaxWarning(
+                msg='PO file header entry has a bad entry: %s' % line))
+            continue
+
+        # Store in lower case the entries we know about so we are sure
+        # that we update entries even when it's not using the right
+        # character case.
+        if field.lower() in handled_keys_order:
+            field = field.lower()
+
+        header_dictionary[field] = value.strip()
+
+    return header_dictionary
+
 
 class PoHeader:
     """See `ITranslationHeader`."""
@@ -114,7 +142,8 @@ class PoHeader:
 
         # Parse the header in a dictionary so it's easy for us to export it
         # with updates later.
-        self._header_dictionary = self._getHeaderDictionary()
+        self._header_dictionary = get_header_dictionary(
+            self._raw_header, self._handled_keys_order)
         self._parseHeaderFields()
 
     def _decode(self, text):
@@ -136,28 +165,6 @@ class PoHeader:
         return text
 
 
-    def _getHeaderDictionary(self):
-        header_dictionary = {}
-        for line in self._raw_header.strip().split('\n'):
-            line = line.strip()
-            if not line:
-                continue
-            try:
-                field, value = line.split(':', 1)
-            except ValueError:
-                logging.warning(POSyntaxWarning(
-                    msg='PO file header entry has a bad entry: %s' % line))
-                continue
-
-            # Store in lower case the entries we know about so we are sure
-            # that we update entries even when it's not using the right
-            # character case.
-            if field.lower() in self._handled_keys_order:
-                field = field.lower()
-
-            header_dictionary[field] = value.strip()
-
-        return header_dictionary
 
     def _parseHeaderFields(self):
         """Return plural form values based on the parsed header."""
@@ -304,6 +311,8 @@ class PoHeader:
 
     def updateFromTemplateHeader(self, template_header):
         """See `ITranslationHeader`."""
+        template_header_dictionary = get_header_dictionary(
+            template_header.getRawContent(), self._handled_keys_order)
         # 'Domain' is a non standard header field. However, this is required
         # for good Plone support. It relies in that field to know the
         # translation domain. For more information you can take a look to
@@ -311,9 +320,9 @@ class PoHeader:
         fields_to_copy = ['Domain']
 
         for field in fields_to_copy:
-            if field in template_header._header_dictionary:
+            if field in template_header_dictionary:
                 self._header_dictionary[field] = (
-                    template_header._header_dictionary[field])
+                    template_header_dictionary[field])
 
         # Standard fields update.
         self.template_creation_date = template_header.template_creation_date

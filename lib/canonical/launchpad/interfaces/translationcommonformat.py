@@ -1,6 +1,7 @@
 # Copyright 2006-2007 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
+from zope.schema import Datetime, Int, Text, TextLine
 
 __metaclass__ = type
 
@@ -44,30 +45,31 @@ class ITranslationHeader(Interface):
         "A datetime object representing when was created the template used in"
         " this file.")
 
-    translation_revision_date = Attribute(
-        "A datetime object for when the translation resource was last"
-        " revised or None.")
+    translation_revision_date = Datetime(
+        title=u'When the translation resource was last revised or None.',
+        required=True)
 
     language_team = Attribute(
         "String noting the language team in charge of this translation.")
 
     has_plural_forms = Attribute("Whether this file contains plural forms.")
 
-    number_plural_forms = Attribute("Number of plural forms.")
+    number_plural_forms = Int(title=u'Number of plural forms.')
 
-    plural_form_expression = Attribute(
-        "The plural form expression defined in this file or None.")
+    plural_form_expression = TextLine(
+        title=u'The plural form expression defined in this file or None.')
 
     charset = Attribute(
         "Charset used to encode the content in its native form.")
 
-    launchpad_export_date = Attribute(
-        "A datetime object for when this file was last exported from"
-        " Launchpad or None.")
+    launchpad_export_date = Datetime(
+        title=u'when this file was last exported from Launchpad or None.')
 
-    comment = Attribute(
-        "Header comment, it usually has copyright information and list of"
-        " contributors.")
+    comment = Text(
+        title=u'Header comment',
+        description=(
+            u'It usually has copyright information and list of contributors.')
+        )
 
     def getRawContent():
         """Return header raw content in its native file format."""

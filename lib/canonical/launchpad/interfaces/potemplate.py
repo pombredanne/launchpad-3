@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
 from zope.schema import Bool, Choice, Text, TextLine, Bytes, Datetime, Int
@@ -265,7 +265,13 @@ class IPOTemplate(IRosettaStats):
         """Invalidate the cached export for all pofiles."""
 
     def export():
-        """Return as a string the .pot file."""
+        """Return a serialized version as a string using its native format."""
+
+    def exportWithTranslations():
+        """Return an ExportedTranslationFile using its native format.
+
+        It include all translations available.
+        """
 
     def expireAllMessages():
         """Mark all of our message sets as not current (sequence=0)"""

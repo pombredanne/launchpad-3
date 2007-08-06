@@ -34,6 +34,9 @@
         class="canonical.launchpad.translationformat.gettext_po_parser.PoHeader">
         <allow
             interface="canonical.launchpad.interfaces.ITranslationHeader" />
+        <require
+            permission="zope.Public"
+            set_schema="canonical.launchpad.interfaces.ITranslationHeader" />
     </content>
 
     <content

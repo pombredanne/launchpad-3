@@ -1546,7 +1546,9 @@ class POFileToTranslationFileAdapter:
             # There is at least one translation available.
             date_reviewed = self._pofile.last_touched_pomsgset.date_reviewed
 
-        translation_header.setTranslationRevisionDate(date_reviewed)
+        translation_header.translation_revision_date = date_reviewed
+
+        translation_header.comment = self._pofile.topcomment
 
         if self._pofile.potemplate.hasPluralMessage():
             number_plural_forms = None
@@ -1561,8 +1563,8 @@ class POFileToTranslationFileAdapter:
                 plural_form_expression = (
                     self._pofile.language.pluralexpression)
 
-            translation_header.setPluralFormFields(
-                number_plural_forms, plural_form_expression)
+            translation_header.number_plural_forms = number_plural_forms
+            translation_header.plural_form_expression = plural_form_expression
 
         # We need to tag every export from Launchpad so we know whether a
         # later upload should change every translation in our database or
@@ -1570,7 +1572,7 @@ class POFileToTranslationFileAdapter:
         # modifications.
         UTC = pytz.timezone('UTC')
         datetime_now = datetime.datetime.now(UTC)
-        translation_header.setExportDateField(datetime_now)
+        translation_header.launchpad_export_date = datetime_now
 
         return translation_header
 

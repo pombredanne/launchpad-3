@@ -241,7 +241,11 @@ it's not current.
 
 Templates can be exported to its native format.
 
-    >>> print potemplate.export()
+    >>> for line in potemplate.export().split('\n'):
+    ...     if 'X-Launchpad-Export-Date' in line:
+    ...         # Avoid a time bomb in our tests and ignore this field.
+    ...         continue
+    ...     print line
     msgid ""
     msgstr ""
     "Project-Id-Version: PACKAGE VERSION\n"
@@ -253,7 +257,6 @@ Templates can be exported to its native format.
     "MIME-Version: 1.0\n"
     "Content-Type: text/plain; charset=ASCII\n"
     "Content-Transfer-Encoding: 8bit\n"
-    "X-Launchpad-Export-Date: 2007-07-09 23:07+0000\n"
     "X-Generator: Launchpad (build Unknown)\n"
     <BLANKLINE>
     #: a11y/addressbook/ea-addressbook-view.c:94
@@ -476,3 +479,56 @@ Templates can be exported to its native format.
     msgstr ""
     <BLANKLINE>
 
+== exportWithTranslations() ==
+
+We can also get a template export that includes all translations inside. The
+file format we will get depends on the file format.
+
+In this case, we are going to see how a PO template is exported with
+translations.
+
+    >>> print potemplate.source_file_format.name
+    PO
+    >>> exported_translation_file = potemplate.exportWithTranslations()
+
+PO file format doesn't have a native way to export template + translations,
+instead, we get a tarball with all those files.
+
+    >>> print exported_translation_file.content_type
+    application/x-gtar
+
+Inspecting the tarball content, we have the list of entries exported.
+
+    # XXX CarlosPerelloMarin 2007-08-06: Is there any way to avoid
+    # 'removeSecurityProxy' call? (This is for the reviewer).
+    >>> from canonical.launchpad.helpers import string_to_tarfile
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> content_file = removeSecurityProxy(
+    ...     exported_translation_file.content_file)
+    >>> tarfile_string = content_file.read()
+    >>> tarfile = string_to_tarfile(tarfile_string)
+    >>> tarfile.getnames()
+    ['evolution-2.2/', 'evolution-2.2/evolution-2.2-es.po',
+     'evolution-2.2/evolution-2.2-ja.po', 'evolution-2.2/evolution-2.2-xh.po',
+     'po/', 'po/evolution-2.2.pot']
+
+The *-es.po file is indeed the Spanish translation...
+
+    >>> fh = tarfile.extractfile('evolution-2.2/evolution-2.2-es.po')
+    >>> fh.readline()
+    '# traducci\xc3\xb3n de es.po al Spanish\n'
+
+And GNU tar can cope with it.
+
+    >>> from canonical.launchpad.helpers import simple_popen2
+    >>> print simple_popen2('tar ztf -', tarfile_string)
+    evolution-2.2/
+    evolution-2.2/evolution-2.2-es.po
+    evolution-2.2/evolution-2.2-ja.po
+    evolution-2.2/evolution-2.2-xh.po
+    po/
+    po/evolution-2.2.pot
+    >>> pofile = simple_popen2('tar zxfO - evolution-2.2/evolution-2.2-es.po',
+    ...     tarfile_string)
+    >>> pofile.split('\n')[0]
+    '# traducci\xc3\xb3n de es.po al Spanish'
