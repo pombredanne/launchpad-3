@@ -44,6 +44,18 @@ class POSyntaxWarning(Warning):
             return 'Po file: syntax warning on entry at line %d' % self.lno
 
 
+def parse_charset(string_to_parse):
+    """Return charset used in the given string_to_parse."""
+    # Scan for the charset in the same way that gettext does.
+    match = re.search(r'charset=([^\s]+)', string_to_parse)
+    if match is not None and match.group(1) != 'CHARSET':
+        return match.group(1)
+    else:
+        # Default to UTF-8 if the header still has the default value or
+        # is unknown.
+        return 'UTF-8'
+
+
 class PoHeader:
     """See `ITranslationHeader`."""
     implements(ITranslationHeader)
@@ -90,7 +102,7 @@ class PoHeader:
 
         # First thing to do is to get the charset used to decode correctly the
         # header content.
-        self.charset = self._parseCharset()
+        self.charset = parse_charset(self._raw_header)
 
         # Decode comment using the declared charset.
         self.comment = self._decode(comment)
@@ -107,8 +119,6 @@ class PoHeader:
             # There is noo need to do anything.
             return text
         charset = self.charset
-        if self.charset == 'CHARSET':
-            charset = 'ASCII'
         try:
             text = unicode(text, charset)
         except UnicodeError:
@@ -122,15 +132,6 @@ class PoHeader:
 
         return text
 
-    def _parseCharset(self):
-        """Return charset used in this header."""
-        # Default to UTF-8 charset
-        charset = 'UTF-8'
-        # Scan for the charset in the same way that gettext does.
-        match = re.search(r'charset=([^\s]+)', self._raw_header)
-        if match is not None:
-            charset = match.group(1)
-        return charset
 
     def _getHeaderDictionary(self):
         header_dictionary = {}
@@ -357,8 +358,6 @@ class PoParser(object):
             return
 
         charset = self._translation_file.header.charset
-        if charset == 'CHARSET':
-            charset = 'ASCII'
         decode = codecs.getdecoder(charset)
         # decode as many characters as we can:
         try:
@@ -414,16 +413,10 @@ class PoParser(object):
         self._plural_case = None
         self._parsed_content = u''
 
-        # First thing to do is to get the charset used in the content_text. We
-        # are going to follow the same procedure Gettext does.
-        charset = 'ASCII'
-        match = re.search(r'charset=([^\s]+)\\n', content_text)
-        if match is not None:
-            charset = match.group(1)
-            if charset == 'CHARSET':
-                charset = 'ASCII'
+        # First thing to do is to get the charset used in the content_text.
+        charset = parse_header(content_text)
 
-        # First, parse the header, inefficiently. It ought to be short, so
+        # Now, parse the header, inefficiently. It ought to be short, so
         # this isn't disastrous.
         line = self._getHeaderLine()
         while line is not None:
@@ -665,8 +658,7 @@ class PoParser(object):
                 unescaped_string = escaped_string.decode('string-escape')
 
                 if (self._translation_file is not None and
-                    self._translation_file.header is not None and
-                    self._translation_file.header.charset != 'CHARSET'):
+                    self._translation_file.header is not None):
                     # There is a header, so we know the original encoding for
                     # the given string.
                     charset = self._translation_file.header.charset

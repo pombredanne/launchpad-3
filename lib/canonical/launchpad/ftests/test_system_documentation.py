@@ -255,12 +255,6 @@ special = {
     # POExport stuff is Zopeless and connects as a different database user.
     # poexport-distroseries-(date-)tarball.txt is excluded, since they add
     # data to the database as well.
-    'poexport.txt': LayeredDocFileSuite(
-            '../doc/poexport.txt',
-            setUp=poExportSetUp, tearDown=poExportTearDown,
-            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
-            stdout_logging=False
-            ),
     'poexport-template-tarball.txt': LayeredDocFileSuite(
             '../doc/poexport-template-tarball.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown,

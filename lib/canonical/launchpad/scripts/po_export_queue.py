@@ -1,6 +1,11 @@
-# Copyright 2005 Canonical Ltd. All rights reserved.
+# Copyright 2005-2007 Canonical Ltd. All rights reserved.
 
 __metaclass__ = type
+
+__all__ = [
+    'ExportResult',
+    'process_queue',
+    ]
 
 import os
 import psycopg
@@ -169,6 +174,7 @@ class ExportResult:
         The success are stored at self.success list.
         """
         self.successes.append(name)
+
 
 def process_request(potemplate, person, objects, format, logger):
     """Process a request for an export of Launchpad translation files.

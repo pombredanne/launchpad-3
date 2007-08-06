@@ -19,6 +19,11 @@ from canonical.launchpad.interfaces import IPOExportRequestSet, \
 class POExportRequestSet:
     implements(IPOExportRequestSet)
 
+    @property
+    def number_entries(self):
+        """See IPOExportRequestSet."""
+        return POExportRequest.select().count()
+
     def _addRequestEntry(self, person, potemplate, pofile, format):
         """Add a request entry to the queue.
 

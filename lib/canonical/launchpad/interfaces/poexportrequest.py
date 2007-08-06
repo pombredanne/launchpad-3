@@ -5,9 +5,14 @@ __metaclass__ = type
 __all__ = ('IPOExportRequestSet', 'IPOExportRequest')
 
 from zope.interface import Interface, Attribute
+from zope.schema import Int
 from canonical.lp.dbschema import TranslationFileFormat
 
 class IPOExportRequestSet(Interface):
+    number_entries = Int(
+        title=u'Number of entries waiting in the queue.',
+        required=True, readonly=True)
+
     def addRequest(person, potemplate=None, pofiles=None,
                    format=TranslationFileFormat.PO):
         """Add a request to export a set of files.
