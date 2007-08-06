@@ -84,7 +84,7 @@ class NewSpecificationView(LaunchpadFormView):
     @action(_('Register Blueprint'), name='register')
     def register(self, action, data):
         """Registers a new specification."""
-        self.parse(data)
+        self.transform(data)
         spec = getUtility(ISpecificationSet).new(
             owner = self.user,
             name = data.get('name'),
@@ -101,15 +101,28 @@ class NewSpecificationView(LaunchpadFormView):
         series = data.get('series')
         if series:
             propose_goal_with_automatic_approval(spec, series, self.user)
-        # Link the specification with a sprint, if specified.
+        # Propose the specification as a sprint topic, if specified.
         sprint = data.get('sprint')
         if sprint:
             spec.linkSprint(sprint, self.user)
         # Set the default value for the next URL.
         self._next_url = canonical_url(spec)
 
-    def parse(self, data):
-        """Parses the given form data."""
+    def transform(self, data):
+        """Transforms the given form data.
+
+        Called after the new specification form is submitted, but before the
+        new specification is created.
+
+        Ensures that the given data dictionary contains valid entries for each
+        of the arguments in ISpecificationSet.new(), to be used when creating
+        the new specification.
+
+        Optionally provides values for the following additional keys:
+
+        series: causes the new specification to be proposed as a series goal.
+        sprint: causes the new specification to be proposed as a sprint topic.
+        """
         pass
 
     @property
@@ -135,14 +148,14 @@ class NewSpecificationFromTargetView(NewSpecificationView):
 class NewSpecificationFromDistributionView(NewSpecificationFromTargetView):
     """A view for creating a specification from a distribution."""
 
-    def parse(self, data):
+    def transform(self, data):
         data['distribution'] = self.context
 
 
 class NewSpecificationFromProductView(NewSpecificationFromTargetView):
     """A view for creating a specification from a product."""
 
-    def parse(self, data):
+    def transform(self, data):
         data['product'] = self.context
 
 
@@ -153,7 +166,7 @@ class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
                     INewSpecificationSprint,
                     INewSpecificationSeriesGoal)
 
-    def parse(self, data):
+    def transform(self, data):
         if data['goal']:
             data['series'] = self.context
 
@@ -161,16 +174,16 @@ class NewSpecificationFromSeriesView(NewSpecificationFromTargetView):
 class NewSpecificationFromDistroSeriesView(NewSpecificationFromSeriesView):
     """A view for creating a specification from a distro series."""
 
-    def parse(self, data):
-        super(NewSpecificationFromDistroSeriesView, self).parse(data)
+    def transform(self, data):
+        super(NewSpecificationFromDistroSeriesView, self).transform(data)
         data['distribution'] = self.context.distribution
 
 
 class NewSpecificationFromProductSeriesView(NewSpecificationFromSeriesView):
     """A view for creating a specification from a product series."""
 
-    def parse(self, data):
-        super(NewSpecificationFromProductSeriesView, self).parse(data)
+    def transform(self, data):
+        super(NewSpecificationFromProductSeriesView, self).transform(data)
         data['product'] = self.context.product
 
 
@@ -180,7 +193,7 @@ class NewSpecificationFromNonTargetView(NewSpecificationView):
     The context may not correspond to a unique specification target. Hence
     sub-classes must define a schema requiring the user to specify a target.
     """
-    def parse(self, data):
+    def transform(self, data):
         data['distribution'] = IDistribution(data['target'], None)
         data['product'] = IProduct(data['target'], None)
 
@@ -219,8 +232,8 @@ class NewSpecificationFromSprintView(NewSpecificationFromNonTargetView):
     schema = Fields(INewSpecificationTarget,
                     INewSpecification)
 
-    def parse(self, data):
-        super(NewSpecificationFromSprintView, self).parse(data)
+    def transform(self, data):
+        super(NewSpecificationFromSprintView, self).transform(data)
         data['sprint'] = self.context
 
     @property
