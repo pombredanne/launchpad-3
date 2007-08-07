@@ -204,8 +204,8 @@ class BranchView(LaunchpadView):
 
     def upload_url(self):
         """The URL the logged in user can use to upload to this branch."""
-        return 'sftp://%s@bazaar.launchpad.net/%s' % (
-            self.user.name, self.context.unique_name)
+        url_base = config.codehosting.upload_url_base % (self.user.name,)
+        return '%s/%s' % (url_base, self.context.unique_name)
 
     def is_hosted_branch(self):
         """Whether this is a user-provided hosted branch."""

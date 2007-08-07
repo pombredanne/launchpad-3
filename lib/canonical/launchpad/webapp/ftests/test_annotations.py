@@ -37,7 +37,8 @@ class TestAnnotations(LaunchpadFunctionalTestCase):
 
 def test_suite():
     suite = unittest.TestSuite()
-    # XXX Commented out because although the test passes when it is run
+    # XXX daniels 2004-12-14:
+    #     Commented out because although the test passes when it is run
     #     on its own, there is an odd interaction when it is run with other
     #     tests: the rdb transaction is closed too early.
     ##suite.addTest(unittest.makeSuite(TestAnnotations))
