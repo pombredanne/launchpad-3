@@ -422,7 +422,7 @@ class Publisher(object):
 
         full_name = distroseries.name + pocketsuffix[pocket]
 
-        # XXX cprov 2007-07-11: it will be affected by CommercialRepo changes.
+        # Only the primary archive has uncompressed and bz2 archives.
         if self.archive.purpose == ArchivePurpose.PRIMARY:
             index_suffixes = ('', '.gz', '.bz2')
         else:
@@ -436,6 +436,7 @@ class Publisher(object):
             clean_architecture = architecture[7:]
             file_stub = "Packages"
 
+            # Only the primary archive has debian-installer.
             if self.archive.purpose == ArchivePurpose.PRIMARY:
                 # Set up the debian-installer paths for main_archive.
                 # d-i paths are nested inside the component.
