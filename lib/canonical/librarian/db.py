@@ -37,8 +37,8 @@ class Library:
         return [(a.id, a.filename, a.mimetype) for a in results]
 
     def getByAlias(self, aliasid):
-        """XXX: Still needed? Seems to be getAlias except it might raise
-        an SQLObjectNotFound instead of a LookupError -- StuartBishop 20061222
+        """XXX: StuartBishop 2006-12-22: Still needed? Seems to be getAlias
+        except it might raise an SQLObjectNotFound instead of a LookupError.
         """
         try:
             return self.getAlias(aliasid)
@@ -49,7 +49,7 @@ class Library:
                     )
 
     def hasContent(self, contentID):
-        # XXX: write test.
+        # XXX Stuart Bishop 2005-04-14: write test.
         content = LibraryFileContent.selectOne(
                 LibraryFileContent.q.id==contentID,
                 LibraryFileContent.q.deleted==False

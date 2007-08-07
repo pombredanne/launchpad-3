@@ -294,7 +294,8 @@ class ZopelessTransactionManager(object):
             return
         self.alreadyInited = True
 
-        # XXX: Importing a module-global and assigning it as an instance
+        # XXX: spiv 2004-10-25:
+        #      Importing a module-global and assigning it as an instance
         #      attribute smells funny.  Why not just use transaction.manager
         #      instead of self.manager?
         from transaction import manager
@@ -388,10 +389,10 @@ class ZopelessTransactionManager(object):
 
 def clear_current_connection_cache():
     """Clear SQLObject's object cache for the current connection."""
-    # XXX: There is a different hack for (I think?) similar reasons in
+    # XXX: Andrew Bennetts 2005-02-01:
+    #      There is a different hack for (I think?) similar reasons in
     #      canonical.launchpad.webapp.publication.  This should probably
     #      share code with that one.
-    #        - Andrew Bennetts, 2005-02-01
 
     # Don't break if _connection is a FakeZopelessConnectionDescriptor
     if getattr(SQLBase._connection, 'cache', None) is not None:
@@ -466,8 +467,8 @@ def quote(x):
 def quote_like(x):
     r"""Quote a variable ready for inclusion in a SQL statement's LIKE clause
 
-    TODO: Including the single quotes was a stupid decision.
-    -- StuartBishop 2004/11/24
+    XXX: StuartBishop 2004-11-24:
+    Including the single quotes was a stupid decision.
 
     To correctly generate a SELECT using a LIKE comparision, we need
     to make use of the SQL string concatination operator '||' and the

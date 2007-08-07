@@ -480,7 +480,7 @@
               onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
               onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
               " />
-          <input type="button" value='Add more lines' title="Let's you add more than one line"
+          <input type="button" value="Add more lines" title="Lets you add more than one line"
             tal:condition="not:translation_dictionary/is_multi_line"
             tal:attributes="
               name string:${translation_dictionary/html_id_translation}_new_to_textarea;
@@ -490,6 +490,15 @@
           <tal:multi-line condition="translation_dictionary/is_multi_line">
             <tal:with-content
               condition="translation_dictionary/translation">
+              <tal:comment tal:replace="nothing">
+                We don't use textarea's tal:content tag because tal is not
+                generating the right html tags for translations (new lines
+                matter). Also, the lack of indentation for tal:content is
+                deliberate or we would add extra whitespaces to the textarea,
+                which causes us to potentially corrupt translations. You can
+                read more about this on:
+                https://bugzilla.mozilla.org/show_bug.cgi?id=299009
+              </tal:comment>
               <textarea
                 style="width: 100%;"
                 rows=6
@@ -501,10 +510,16 @@
                   onKeyPress string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
                   onChange string:javascript:selectWidget('${translation_dictionary/html_id_translation}_new_select', event);
                 ">
-              <tal:content replace="translation_dictionary/translation" /></textarea>
+<tal:content replace="translation_dictionary/translation" /></textarea>
             </tal:with-content>
             <tal:without-content
               condition="not: translation_dictionary/translation">
+              <tal:comment tal:replace="nothing">
+                We are using an special case if we don't have any content for this
+                textarea because tal expressions leave empty lines behind so we
+                get new lines added to the textarea for free and that causes
+                erroneous translations.
+              </tal:comment>
               <textarea
                 style="width: 100%;"
                 rows=6

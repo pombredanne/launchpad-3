@@ -59,11 +59,11 @@ Let's create another nomination, this time on a product series.
 The target of a nomination can also be accessed through its target
 attribute.
 
-    >>> print grumpy_nomination.target.bugtargetname
+    >>> print grumpy_nomination.target.bugtargetdisplayname
     Ubuntu Grumpy
 
-    >>> print firefox_ms_nomination.target.bugtargetname
-    firefox trunk (upstream)
+    >>> print firefox_ms_nomination.target.bugtargetdisplayname
+    Mozilla Firefox trunk
 
 Use IBug.canBeNominatedFor to see if a bug can be nominated for a
 particular distroseries or productseries. This will consider whether
@@ -88,15 +88,15 @@ Warty nominations, it cannot be targeted to Warty.
 
     >>> bug_five = bugset.get(5)
 
-    >>> def by_bugtargetname(bugtask):
-    ...     return bugtask.target.bugtargetname
+    >>> def by_bugtargetdisplayname(bugtask):
+    ...     return bugtask.target.bugtargetdisplayname.lower()
 
-    >>> tasks = sorted(bug_five.bugtasks, key=by_bugtargetname)
+    >>> tasks = sorted(bug_five.bugtasks, key=by_bugtargetdisplayname)
 
     >>> for task in tasks:
-    ...     print task.target.bugtargetname
-    firefox (upstream)
-    firefox 1.0 (upstream)
+    ...     print task.target.bugtargetdisplayname
+    Mozilla Firefox
+    Mozilla Firefox 1.0
     mozilla-firefox (Ubuntu Warty)
 
     >>> ubuntu_warty = ubuntu.getSeries("warty")
@@ -119,24 +119,24 @@ provided, a NotFoundError is raised.
     NotFoundError: ...
 
 IBug.getNominations() returns a list of all IBugNominations for a bug,
-ordered by IBugTarget.bugtargetname.
+ordered by IBugTarget.bugtargetdisplayname.
 
     >>> nominations = bug_one.getNominations()
 
-    >>> [nomination.target.bugtargetname for nomination in nominations]
-    [u'firefox 1.0 (upstream)', u'firefox trunk (upstream)',
+    >>> [nomination.target.bugtargetdisplayname for nomination in nominations]
+    [u'Mozilla Firefox 1.0', u'Mozilla Firefox trunk',
      u'Ubuntu Grumpy', u'Ubuntu Hoary']
 
 This method also accepts a target argument, for further filtering.
 
     >>> nominations = bug_one.getNominations(firefox)
 
-    >>> [nomination.target.bugtargetname for nomination in nominations]
-    [u'firefox 1.0 (upstream)', u'firefox trunk (upstream)']
+    >>> [nomination.target.bugtargetdisplayname for nomination in nominations]
+    [u'Mozilla Firefox 1.0', u'Mozilla Firefox trunk']
 
     >>> nominations = bug_one.getNominations(ubuntu)
 
-    >>> [nomination.target.bugtargetname for nomination in nominations]
+    >>> [nomination.target.bugtargetdisplayname for nomination in nominations]
     [u'Ubuntu Grumpy', u'Ubuntu Hoary']
 
 
@@ -251,12 +251,12 @@ bug #1 affects more than one Ubuntu package.
     <BugTask ...>
 
     >>> tasks = sorted(
-    ...     bug_one.bugtasks, key=by_bugtargetname)
+    ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
 
     >>> for task in tasks:
-    ...     print task.target.bugtargetname
-    firefox (upstream)
-    firefox trunk (upstream)
+    ...     print task.target.bugtargetdisplayname
+    Mozilla Firefox
+    Mozilla Firefox trunk
     mozilla-firefox (Debian)
     mozilla-firefox (Ubuntu)
     thunderbird (Ubuntu)
@@ -284,12 +284,12 @@ no_privs can actually approve the nomination.)
     datetime...
 
     >>> tasks = sorted(
-    ...     bug_one.bugtasks, key=by_bugtargetname)
+    ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
 
     >>> for task in tasks:
-    ...     print task.target.bugtargetname
-    firefox (upstream)
-    firefox trunk (upstream)
+    ...     print task.target.bugtargetdisplayname
+    Mozilla Firefox
+    Mozilla Firefox trunk
     mozilla-firefox (Debian)
     mozilla-firefox (Ubuntu Grumpy)
     mozilla-firefox (Ubuntu)
@@ -315,12 +315,12 @@ nomination will be automatically approved.
     datetime...
 
     >>> tasks = sorted(
-    ...     bug_one.bugtasks, key=by_bugtargetname)
+    ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
 
     >>> for task in tasks:
-    ...     print task.target.bugtargetname
-    firefox (upstream)
-    firefox trunk (upstream)
+    ...     print task.target.bugtargetdisplayname
+    Mozilla Firefox
+    Mozilla Firefox trunk
     mozilla-firefox (Debian)
     mozilla-firefox (Ubuntu Grumpy)
     mozilla-firefox (Ubuntu Warty)
@@ -340,7 +340,7 @@ is allowed to do it. For large projects, like distributions, it's not
 suitable to restrict approving nominations to only release managers,
 instead anyone that can upload a package may approve a nomination.
 
-    >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
+    >>> from canonical.launchpad.interfaces import TeamSubscriptionPolicy
     >>> from canonical.launchpad.database import (
     ...     Component, DistroComponentUploader)
     >>> foo_bar = getUtility(IPersonSet).getByEmail('foo.bar@canonical.com')
@@ -513,10 +513,10 @@ automatically.
     <BugTask at ...>
 
     >>> tasks = sorted(
-    ...     bug_one.bugtasks, key=by_bugtargetname)
+    ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
 
     >>> for task in tasks:
-    ...     print task.target.bugtargetname
+    ...     print task.target.bugtargetdisplayname
     evolution (Ubuntu Grumpy)
     evolution (Ubuntu Warty)
     evolution (Ubuntu)
@@ -540,22 +540,22 @@ after the bug has been targeted to a series is rare enough for this to
 be acceptable.
 
     >>> thunderbird_grumpy = tasks[-3]
-    >>> thunderbird_grumpy.targetname
+    >>> thunderbird_grumpy.bugtargetname
     u'thunderbird (Ubuntu Grumpy)'
 
     >>> ubuntu_pmount = ubuntu.getSourcePackage('pmount')
     >>> thunderbird_grumpy.sourcepackagename = ubuntu_pmount.sourcepackagename
 
     >>> tasks = sorted(
-    ...     bug_one.bugtasks, key=by_bugtargetname)
+    ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
 
     >>> for task in tasks:
-    ...     print task.target.bugtargetname
+    ...     print task.target.bugtargetdisplayname
     evolution (Ubuntu Grumpy)
     evolution (Ubuntu Warty)
     evolution (Ubuntu)
-    firefox (upstream)
-    firefox trunk (upstream)
+    Mozilla Firefox
+    Mozilla Firefox trunk
     mozilla-firefox (Debian)
     mozilla-firefox (Ubuntu Grumpy)
     mozilla-firefox (Ubuntu Warty)
@@ -567,22 +567,22 @@ be acceptable.
 The same is done if the distribution task's source package is changed.
 
     >>> pmount_ubuntu = tasks[-1]
-    >>> pmount_ubuntu.targetname
+    >>> pmount_ubuntu.bugtargetname
     u'pmount (Ubuntu)'
 
     >>> ubuntu_thunderbird = ubuntu.getSourcePackage('thunderbird')
     >>> pmount_ubuntu.sourcepackagename = ubuntu_thunderbird.sourcepackagename
 
     >>> tasks = sorted(
-    ...     bug_one.bugtasks, key=by_bugtargetname)
+    ...     bug_one.bugtasks, key=by_bugtargetdisplayname)
 
     >>> for task in tasks:
-    ...     print task.target.bugtargetname
+    ...     print task.target.bugtargetdisplayname
     evolution (Ubuntu Grumpy)
     evolution (Ubuntu Warty)
     evolution (Ubuntu)
-    firefox (upstream)
-    firefox trunk (upstream)
+    Mozilla Firefox
+    Mozilla Firefox trunk
     mozilla-firefox (Debian)
     mozilla-firefox (Ubuntu Grumpy)
     mozilla-firefox (Ubuntu Warty)

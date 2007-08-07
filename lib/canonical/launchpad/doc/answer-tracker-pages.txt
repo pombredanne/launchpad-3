@@ -273,8 +273,8 @@ no answer message is assigned to the answer.
     ...         "SVG features that will only be available in Firefox 2.0."})
     >>> for notification in workflow_harness.request.response.notifications:
     ...     print notification.message
-    Your question is solved, if a particular message helped you solved the 
-    problem, please use the <em>'This solved my problem'</em> button.
+    Your question is solved. If a particular message helped you solve the 
+    problem, use the <em>'This solved my problem'</em> button.
     >>> print firefox_question.status.name
     SOLVED
     >>> print firefox_question.answerer.displayname
@@ -399,7 +399,7 @@ outside of the comment workflow.
 
     >>> request = LaunchpadTestRequest(
     ...     form={'field.actions.change-status': 'Change Status',
-    ...           'field.status': 'Solved',
+    ...           'field.status': 'SOLVED',
     ...           'field.message': 'Previous rejection was an error.'})
     >>> request.method = 'POST'
     >>> view = getView(firefox_question, '+change-status', request)
@@ -730,7 +730,7 @@ These were the default results when no search is entered. The user
 can tweak the search and filter the results:
 
     >>> search_view_harness.submit('search', {
-    ...     'field.status': ['Solved', 'Open'],
+    ...     'field.status': ['SOLVED', 'OPEN'],
     ...     'field.search_text': 'firefox',
     ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})
@@ -743,7 +743,7 @@ can tweak the search and filter the results:
 Specific views can provide a default filter by returning the default
 search parameters to use in the getDefaultFilter() method:
 
-    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> from canonical.launchpad.interfaces import QuestionStatus
     >>> MyCustomSearchQuestionsView.default_filter = {
     ...     'status': [QuestionStatus.SOLVED, QuestionStatus.INVALID],
     ...     'language' : search_view.user_support_languages}
@@ -770,7 +770,7 @@ The user selected search parameters will override these default
 criteria.
 
     >>> search_view_harness.submit('search', {
-    ...     'field.status': ['Solved'],
+    ...     'field.status': ['SOLVED'],
     ...     'field.search_text': 'firefox',
     ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})
@@ -804,7 +804,7 @@ no results are found based on the selected search filter:
 It works also with user submitted values:
 
     >>> search_view_harness.submit('search', {
-    ...     'field.status': ['Expired'],
+    ...     'field.status': ['EXPIRED'],
     ...     'field.search_text': '',
     ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})
@@ -814,7 +814,7 @@ It works also with user submitted values:
     There are no expired questions for Ubuntu.
 
     >>> search_view_harness.submit('search', {
-    ...     'field.status': ['Open', 'Answered'],
+    ...     'field.status': ['OPEN', 'ANSWERED'],
     ...     'field.search_text': 'evolution',
     ...     'field.language': ['en'],
     ...     'field.sort': 'by relevancy'})

@@ -18,11 +18,11 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 from canonical.cachedproperty import cachedproperty
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import IBranchVisibilityTeamPolicy
+from canonical.launchpad.interfaces import (
+    BranchVisibilityRule, IBranchVisibilityTeamPolicy)
 from canonical.launchpad.webapp import (
     action, canonical_url, LaunchpadFormView, LaunchpadView)
 from canonical.widgets.itemswidgets import LabeledMultiCheckBoxWidget
-from canonical.lp.dbschema import BranchVisibilityRule
 
 
 class BaseBranchVisibilityTeamPolicyView(LaunchpadFormView):

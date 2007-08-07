@@ -73,17 +73,16 @@ class POMsgSetMixIn:
 
         parameters['match_self'] = match_self_sql
 
-        joins = ['POMsgSet', 'POFile', 'POTMsgSet']
+        joins = ['POMsgSet', 'POTMsgSet']
         query = """
                 POSubmission.pomsgset = POMsgSet.id AND
-                POMsgSet.pofile = POFile.id AND
+                POMsgSet.language = %(language)s AND
                 POMsgSet.potmsgset = POTMsgSet.id AND
                 (%(match_self)s OR NOT POMsgSet.isfuzzy) AND
-                POFile.language = %(language)s AND
                 POTMsgSet.primemsgid = %(primemsgid)s
             """ % parameters
 
-        # XXX: JeroenVermeulen 2007-016-17, pre-join potranslations!
+        # XXX: JeroenVermeulen 2007-016-17: Pre-join potranslations!
         return POSubmission.select(
             query, clauseTables=joins, orderBy='-datecreated', distinct=True)
 
@@ -230,8 +229,6 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         foreignKey='Person', dbName='reviewer', notNull=False, default=None)
     date_reviewed = UtcDateTimeCol(dbName='date_reviewed', notNull=False,
         default=None)
-    # XXX: JeroenVermeulen 2007-07-03, Make this notNull once the language
-    # column has been initialized
     language = ForeignKey(foreignKey='Language', dbName='language')
 
     submissions = SQLMultipleJoin('POSubmission', joinColumn='pomsgset')
@@ -376,7 +373,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
         active = {}
         published = {}
-        # XXX: JeroenVermeulen 2007-016-17, prejoin potranslations!
+        # XXX: JeroenVermeulen 2007-016-17: Prejoin potranslations!
         query = "pomsgset = %s AND (active OR published)" % quote(self)
         for submission in POSubmission.select(query):
             pluralform = submission.pluralform
@@ -438,7 +435,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
         # If the update is on the translation credits message, yet
         # update is not published, silently return
-        # XXX 20070626 Danilo: do we want to raise an exception here?
+        # XXX 2007-06-26 Danilo: Do we want to raise an exception here?
         if potmsgset.is_translation_credit and not published:
             return
 
@@ -853,7 +850,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         pluralforms = self.pluralforms
 
         # Calculate the number of published plural forms.
-        # XXX: JeroenVermeulen 2007-06-10, why the cap on pluralform?
+        # XXX: JeroenVermeulen 2007-06-10: Why the cap on pluralform?
         published_count = 0
         for (plural, published) in self.published_submissions.items():
             if plural < pluralforms and published.id is not None:
@@ -866,7 +863,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
             self.publishedfuzzy = False
 
         # Calculate the number of active plural forms.
-        # XXX: JeroenVermeulen 2007-06-10, why the cap on pluralform?
+        # XXX: JeroenVermeulen 2007-06-10: Why the cap on pluralform?
         active_count = 0
         for (plural, active) in self.active_submissions.items():
             if plural < pluralforms and active.id is not None:
@@ -881,7 +878,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         flush_database_updates()
 
         # Let's see if we got updates from Rosetta
-        # XXX: JeroenVermeulen 2007-06-13, does this really work?
+        # XXX: JeroenVermeulen 2007-06-13: does this really work?
         updated_pomsgset = POMsgSet.select("""
             POMsgSet.id = %s AND
             POMsgSet.isfuzzy = FALSE AND
