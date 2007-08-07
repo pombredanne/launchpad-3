@@ -283,5 +283,5 @@ class DistributionSourcePackageBugContactsView(LaunchpadFormView):
     @cachedproperty
     def user_teams(self):
         """Return the teams that the current user is an administrator of."""
-        return [team for team in self.user.getAdministratedTeams()]
+        return list(self.user.getAdministratedTeams())
 
