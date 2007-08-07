@@ -607,11 +607,8 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
     schema = IBranchMergeProposal
     for_input=True
 
-    #field_names = ['source_branch', 'target_branch', 'dependent_branch',
-    #               'whiteboard']
     field_names = ['target_branch', 'dependent_branch', 'whiteboard']
 
-    # custom_widget('source_branch', AttributeDisplayWidget, 'unique_name')
     custom_widget('target_branch', SinglePopupWidget, displayWidth=35)
     custom_widget('dependent_branch', SinglePopupWidget, displayWidth=35)
 

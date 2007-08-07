@@ -12,6 +12,12 @@
         set_schema="canonical.launchpad.interfaces.IBranchMergeProposal" />
   </content>
 
+  <adapter
+      for="canonical.launchpad.interfaces.IBranchMergeProposal"
+      provides="canonical.launchpad.interfaces.IStructuralObjectPresentation"
+      factory="canonical.launchpad.browser.BranchMergeProposalSOP"
+      />
+
   <browser:menus
       module="canonical.launchpad.browser"
       classes="BranchMergeProposalContextMenu" />

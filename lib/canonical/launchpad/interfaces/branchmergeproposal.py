@@ -38,7 +38,7 @@ class IBranchMergeProposal(Interface):
     source_branch = Choice(
         title=_('Source Branch'),
         vocabulary='Branch', required=True, readonly=True,
-        description=_("The Bazaar branch that has code to land."))
+        description=_("The branch that has code to land."))
 
     target_branch = Choice(
         title=_('Target Branch'),
@@ -48,7 +48,9 @@ class IBranchMergeProposal(Interface):
     dependent_branch = Choice(
         title=_('Dependent Branch'),
         vocabulary='Branch', required=False, readonly=True,
-        description=_("The Bazaar branch that the source branch branched from."))
+        description=_("The branch that the source branch branched from. "
+                      "If this is the same as the target branch, then leave "
+                      "this field blank."))
 
     whiteboard = Whiteboard(
         title=_('Whiteboard'), required=False,
