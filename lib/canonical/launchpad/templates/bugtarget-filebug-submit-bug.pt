@@ -42,9 +42,17 @@
 
       <div tal:condition="view/similar_bugs">
 
-        <style type="text/css" media="screen, print">
-          .hidden { display: none; }
-        </style>
+        <tal:hide-form-avoiding-flicker-during-load
+            tal:condition="not:view/submit_bug_action/submitted">
+          <style type="text/css">
+            #bug_reporting_form { display: none; }
+          </style>
+          <noscript>
+            <style type="text/css">
+              #bug_reporting_form { display: block; }
+            </style>
+          </noscript>
+        </tal:hide-form-avoiding-flicker-during-load>
 
         <tal:similar-bugs condition="view/contextUsesMalone">
           <ul id="similar_bugs_form" style="list-style: none; margin-left: 0">
@@ -59,7 +67,8 @@
                       <input type="radio" name="field.bug_already_reported_as"
                              tal:attributes="id string:bug-already-reported-as-${bug/id};
                                              value string:${bug/id};
-                                             checked repeat/bug/start|nothing" />
+                                             checked python: not path('view/submit_bug_action/submitted')
+                                                             and path('repeat/bug/start')" />
                     </td>
                     <td>
                       <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
@@ -94,9 +103,10 @@
               </table>
             </li>
 
-            <li>
+            <li style="margin-top: 0.5em; margin-bottom: 1em">
               <div class="actions">
                 <input tal:replace="structure view/actions/field.actions.this_is_my_bug/render" />
+
               </div>
             </li>
 
@@ -112,7 +122,8 @@
                   <tr>
                     <td>
                       <input id="bug-already-reported-no" type="radio"
-                             name="field.bug_already_reported_as" value="none" />
+                             name="field.bug_already_reported_as" value=""
+                             tal:attributes="checked view/submit_bug_action/submitted|nothing" />
                     </td>
                     <td>
                       <label for="bug-already-reported-no">
@@ -156,7 +167,7 @@
           var no_radiobtn = $('bug-already-reported-no');
 
           if (bug_already_reported != undefined) {
-            no_radiobtn.checked = !bug_already_reported
+            no_radiobtn.checked = !bug_already_reported;
           }
 
           if (no_radiobtn.checked) {
