@@ -806,7 +806,7 @@ class BranchSet:
         # - any import branches which have been synced since their last mirror
         return self.getHostedPullQueue().union(
             self.getMirroredPullQueue()).union(
-            self.getImportedPullQueue()).orderBy('last_mirror_attempt')
+            self.getImportedPullQueue()).orderBy('mirror_request_time')
 
 
 class BranchRelationship(SQLBase):
