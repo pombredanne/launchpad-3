@@ -279,6 +279,9 @@ class Builder(SQLBase):
                         ArchivePurpose.COMMERCIAL):
                     # XXX julian 2007-08-07 - this is a greasy hack.
                     # See comment above about not modelling Ogre here.
+                    # Commercial is a very special case because the commercial
+                    # component is only in the commercial archive, so we have
+                    # to be careful with the sources.list archives.
                     ubuntu_components = 'main restricted'
                 ubuntu_source_line = (
                     'deb http://ftpmaster.internal/ubuntu %s %s'
