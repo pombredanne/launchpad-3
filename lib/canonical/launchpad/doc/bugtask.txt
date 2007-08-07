@@ -89,9 +89,9 @@ Next, we need to grab some values to provide for importance and status.
     >>> IDistroSeriesBugTask.providedBy(distro_series_task)
     True
 
-XXX: Brad Bollenbach 2005-02-24: See the bottom of this file for a chunk of
-test documentation that is missing from here, due to problems with resetting
-the connection after a ProgrammingError is raised. ARGH.
+# XXX: Brad Bollenbach 2005-02-24: See the bottom of this file for a chunk of
+# test documentation that is missing from here, due to problems with resetting
+# the connection after a ProgrammingError is raised. ARGH.
 
 
 Bug Task Targets
@@ -951,7 +951,8 @@ Of course, it's also computed and set when a bugtask is created.
     >>> process.returncode
     0
 
-    # XXX: If we don't call flush_database_caches() here, we won't see the
+    # XXX Guilherme Salgado 2005-11-07:
+    # If we don't call flush_database_caches() here, we won't see the
     # changes made by the cronscript in objects we already have cached.
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
