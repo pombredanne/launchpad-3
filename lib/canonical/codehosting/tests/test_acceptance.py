@@ -12,7 +12,7 @@ import xmlrpclib
 
 import bzrlib.branch
 from bzrlib.builtins import cmd_push
-from bzrlib.errors import NotBranchError, ReadOnlyError
+from bzrlib.errors import BzrCommandError, NotBranchError, TransportNotPossible
 from bzrlib.tests.repository_implementations.test_repository import (
     TestCaseWithRepository)
 from bzrlib.urlutils import local_path_from_url
@@ -23,10 +23,12 @@ from canonical.codehosting.tests.helpers import (
 from canonical.codehosting.tests.servers import (
     make_bzr_ssh_server, make_sftp_server)
 from canonical.codehosting.transport import branch_id_to_path
+from canonical.config import config
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad import database
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestSetup
 from canonical.launchpad.interfaces import BranchLifecycleStatus, BranchType
+from canonical.testing.layers import LaunchpadZopelessLayer
 
 
 class SSHTestCase(ServerTestCase, TestCaseWithRepository):
@@ -41,6 +43,7 @@ class SSHTestCase(ServerTestCase, TestCaseWithRepository):
 
     def setUp(self):
         super(SSHTestCase, self).setUp()
+        LaunchpadZopelessLayer.switchDbUser(config.branchscanner.dbuser)
 
         self._main_thread_id = thread.get_ident()
 
@@ -341,11 +344,25 @@ class AcceptanceTests(SSHTestCase):
             product = None
         else:
             product = database.Product.selectOneBy(name=product_name)
+        if branch_type == BranchType.MIRRORED:
+            url = 'http://google.com'
+        else:
+            url = None
         return database.Branch(
             name=branch_name, owner=owner, author=owner, product=product,
-            url=None, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
+            url=url, title=None, lifecycle_status=BranchLifecycleStatus.NEW,
             summary=None, home_page=None, whiteboard=None, private=private,
             date_created=UTC_NOW, branch_type=branch_type)
+
+    def addRevisionToBranch(self, branch):
+        """Add a new revision in the database to the given database branch."""
+        # We don't care who the author is. Just find someone.
+        author = database.RevisionAuthor.selectFirst(orderBy='id')
+        revision = database.Revision(
+            revision_id='rev1', log_body='', revision_date=UTC_NOW,
+            revision_author=author, owner=branch.owner)
+        database.BranchRevision(branch=branch, sequence=1, revision=revision)
+        return revision
 
     @deferToThread
     def test_can_push_to_existing_hosted_branch(self):
@@ -358,6 +375,38 @@ class AcceptanceTests(SSHTestCase):
         self.push(remote_url)
         remote_revision = self.getLastRevision(remote_url)
         self.assertEqual(self.local_branch.last_revision(), remote_revision)
+
+    @deferToThread
+    def test_cant_push_to_existing_mirrored_branch(self):
+        # Users cannot push to mirrored branches.
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = self.makeDatabaseBranch(
+            'testuser', 'firefox', 'some-branch', BranchType.MIRRORED)
+        remote_url = self.getTransportURL(branch.unique_name)
+        LaunchpadZopelessTestSetup().txn.commit()
+        self.assertRaises(
+            (BzrCommandError, TransportNotPossible), self.push, remote_url)
+    
+    @deferToThread
+    def test_cant_push_to_existing_unowned_hosted_branch(self):
+        # Users can only push to hosted branches that they own.
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = self.makeDatabaseBranch('sabdfl', 'firefox', 'some-branch')
+        remote_url = self.getTransportURL(branch.unique_name)
+        LaunchpadZopelessTestSetup().txn.commit()
+        self.assertRaises(
+            (BzrCommandError, TransportNotPossible), self.push, remote_url)
+
+    @deferToThread
+    def test_cant_push_to_existing_hosted_branch_with_revisions(self):
+        # XXX: COMMENT GOES HERE.
+        LaunchpadZopelessTestSetup().txn.begin()
+        branch = self.makeDatabaseBranch('testuser', 'firefox', 'some-branch')
+        self.addRevisionToBranch(branch)
+        remote_url = self.getTransportURL(branch.unique_name)
+        LaunchpadZopelessTestSetup().txn.commit()
+        self.assertRaises(
+            (BzrCommandError, TransportNotPossible), self.push, remote_url)
 
 
 class SmartserverTests(SSHTestCase):
@@ -425,20 +474,6 @@ class SmartserverTests(SSHTestCase):
         remote_revision = self.getLastRevision(
             self.getTransportURL('~sabdfl/firefox/mirror'))
         self.assertEqual(revision, remote_revision)
-
-    @deferToThread
-    def test_cant_write_to_mirrored_branch(self):
-        # You should not ever be able to write directly to a mirrored branch.
-        ro_branch_url = self.makeMirroredBranch('testuser', 'firefox', 'mirror')
-        revision = bzrlib.branch.Branch.open(ro_branch_url).last_revision()
-
-        # Create a new revision on the local branch.
-        tree = WorkingTree.open(self.local_branch.base)
-        tree.commit('Empty commit', rev_id='rev2')
-
-        # Pushing the local branch to the remote url fails.
-        remote_url = self.getTransportURL('~testuser/firefox/mirror')
-        self.assertRaises(ReadOnlyError, self.push, remote_url)
 
 
 def make_repository_tests(base_suite):

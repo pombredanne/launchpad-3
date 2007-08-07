@@ -11,7 +11,7 @@ __metaclass__ = type
 import os
 
 from twisted.vfs.backends import adhoc, osfs
-from twisted.vfs.ivfs import VFSError, NotFoundError, PermissionError
+from twisted.vfs.ivfs import NotFoundError, PermissionError
 
 
 # The directories allowed directly beneath a branch directory. These are the
@@ -178,7 +178,7 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
                 self.avatar, branchID, childName, self)
             self.putChild(childName, branchDirectory)
             return branchDirectory
-        return deferred.addCallback(cb)
+        return deferred.addCallbacks(cb)
 
 
 class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory):
