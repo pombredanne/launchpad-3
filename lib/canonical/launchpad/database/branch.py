@@ -172,11 +172,18 @@ class Branch(SQLBase):
     # subscriptions
     def subscribe(self, person, notification_level, max_diff_lines):
         """See IBranch."""
-        # can't subscribe twice
-        assert not self.hasSubscription(person), "User is already subscribed."
-        return BranchSubscription(branch=self, person=person,
-                                  notification_level=notification_level,
-                                  max_diff_lines=max_diff_lines)
+        # If the person is already subscribed, update the subscription with
+        # the specified notification details.
+        subscription = self.getSubscription(person)
+        if subscription is None:
+            subscription = BranchSubscription(
+                branch=self, person=person,
+                notification_level=notification_level,
+                max_diff_lines=max_diff_lines)
+        else:
+            subscription.notification_level = notification_level
+            subscription.max_diff_lines = max_diff_lines
+        return subscription
 
     def getSubscription(self, person):
         """See IBranch."""
