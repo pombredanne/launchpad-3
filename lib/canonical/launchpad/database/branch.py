@@ -782,7 +782,7 @@ class BranchSet:
 
     def getImportedPullQueue(self):
         """See `IBranchSet`."""
-        # XXX: JonathanLange 2007-07-19, Circular import.
+        # XXX: JonathanLange 2007-07-19: Circular import.
         from canonical.launchpad.database.productseries import ProductSeries
         # Has been synced but not mirrored, or synced since the last mirror,
         # or not synced but mirrored over a day ago.
@@ -834,8 +834,8 @@ class BranchRelationship(SQLBase):
         return BranchRelationships.items[self.label]
 
     def nameSelector(self, sourcepackage=None, selected=None):
-        # XXX: Let's get HTML out of the database code.
-        #      -- SteveAlexander, 2005-04-22
+        # XXX SteveAlexander 2005-04-22: 
+        # Let's get HTML out of the database code.
         html = '<select name="binarypackagename">\n'
         if not sourcepackage:
             # Return nothing for an empty query.
