@@ -1,0 +1,28 @@
+= Searching for a bug subscriber's bugs =
+
+On the advanced search page there's a field for specifying a bug subscriber:
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/ubuntu/+bugs?advanced=1')
+    >>> anon_browser.getControl('Bug subscriber') is not None
+    True
+
+If an non-existent person is entered there, an error message is displayed:
+
+    >>> anon_browser.getControl('Bug subscriber').value = 'non-existent'
+    >>> anon_browser.getControl('Search', index=0).click()
+    >>> for message in find_tags_by_class(anon_browser.contents, 'message'):
+    ...     print message.renderContents()
+    There's no person with the name or email address 'non-existent'.
+
+Entering an existing person shows all bugs for packages or products that the
+person is subscribed to. Since we're in the Ubuntu context, only bugs for
+Ubuntu packages will be returned:
+
+    >>> subscriber = 'foo.bar@canonical.com'
+    >>> anon_browser.getControl('Bug subscriber').value = subscriber
+    >>> anon_browser.getControl('Search', index=0).click()
+
+    >>> from canonical.launchpad.ftests.bug import print_bugtasks
+    >>> print_bugtasks(anon_browser.contents)
+     9  Thunderbird crashes  thunderbird          Medium  Confirmed
+    10  another test bug     linux-source-2.6.15  Medium  New
