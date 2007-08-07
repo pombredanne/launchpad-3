@@ -73,6 +73,9 @@ class Branch(SQLBase):
     last_scanned_id = StringCol(default=None)
     revision_count = IntCol(default=DEFAULT, notNull=True)
 
+    def __repr__(self):
+        return '<Branch %r (%d)>' % (self.unique_name, self.id)
+
     @property
     def revision_history(self):
         return BranchRevision.select('''
@@ -776,8 +779,7 @@ class BranchSet:
 
         return Branch.select(
             AND(Branch.q.branch_type == BranchType.MIRRORED,
-                OR(Branch.q.last_mirror_attempt == None,
-                   UTC_NOW - Branch.q.last_mirror_attempt > '6 hours')),
+                Branch.q.mirror_request_time != None),
             prejoins=['owner', 'product'])
 
     def getImportedPullQueue(self):

@@ -6,6 +6,10 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 
+import transaction
+
+from canonical.database.sqlbase import cursor, sqlvalues
+
 from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
 from canonical.launchpad.database.branch import BranchSet
 from canonical.launchpad.interfaces import (
@@ -33,6 +37,33 @@ class TestBranchSet(TestCase):
     def tearDown(self):
         logout()
         TestCase.tearDown(self)
+
+    def resetMirrorRequestTimes(self):
+        transaction.begin()
+        cur = cursor()
+        cur.execute("UPDATE Branch SET mirror_request_time = NULL")
+        transaction.commit()
+
+    def test_hostedPullQueueEmpty(self):
+        """Hosted branches with no mirror_request_time are not in the pull
+        queue.
+        """
+        self.resetMirrorRequestTimes()
+        self.assertEqual([], list(self.branch_set.getHostedPullQueue()))
+
+    def test_mirroredPullQueueEmpty(self):
+        """Mirrored branches with no mirror_request_time are not in the pull
+        queue.
+        """
+        self.resetMirrorRequestTimes()
+        self.assertEqual([], list(self.branch_set.getMirroredPullQueue()))
+
+    def test_importedPullQueueEmpty(self):
+        """Mirrored branches with no mirror_request_time are not in the pull
+        queue.
+        """
+        self.resetMirrorRequestTimes()
+        self.assertEqual([], list(self.branch_set.getImportedPullQueue()))
 
     def test_limitedByQuantity(self):
         """When getting the latest branches for a product, we can specify the

@@ -852,6 +852,7 @@ class BranchDetailsStorageTest(DatabaseTest):
         self.setSeriesDateLastSynced(3, now_minus='1 second')
         self.setBranchLastMirrorAttempt(14, now_minus='1 day')
         self.setMirrorRequestTime(25, UTC_NOW)
+        self.setMirrorRequestTime(15, UTC_NOW)
         transaction.commit()
 
         results = self.storage._getBranchPullQueueInteraction()
@@ -879,8 +880,7 @@ class BranchDetailsStorageTest(DatabaseTest):
         # returned should have +junk in the product segment. See
         # Branch.unique_name for precedent.
         transaction.begin()
-        self.setSeriesDateLastSynced(3, now_minus='1 second')
-        self.setBranchLastMirrorAttempt(14, now_minus='1 day')
+        self.setMirrorRequestTime(3, UTC_NOW)
         transaction.commit()
 
         results = self.storage._getBranchPullQueueInteraction()
