@@ -31,8 +31,8 @@ There are two CodeImports in the sample data and they both show up in
 the page:
 
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
-    >>> ids = [extract_text(tr.td) for tr in table.tbody('tr')]
-    >>> ids
+    >>> names = [extract_text(tr.td) for tr in table.tbody('tr')]
+    >>> names
     [u'gnome-terminal/import', u'evolution/import']
 
 If we click on the code import's name, we go to the page for that
@@ -103,8 +103,8 @@ imports appear again.
     >>> browser.getControl(name="field.status").displayValue = ["Any"]
     >>> browser.getControl(name="submit").click()
     >>> table = find_tag_by_id(browser.contents, 'code-import-listing')
-    >>> ids = [extract_text(tr.td) for tr in table.tbody('tr')]
-    >>> ids
+    >>> names = [extract_text(tr.td) for tr in table.tbody('tr')]
+    >>> names
     [u'gnome-terminal/import', u'evolution/import']
 
 If we create a lot of imports, the listing view will be batched.
