@@ -22,7 +22,7 @@
 
         <p metal:define-slot="extra_info" tal:replace="nothing">
           This is the description of the form.
-          This text will be in bold, beneath the title of the add form,
+          This text will be in bold, beneath the title of the form,
           and should give any introductory information required.
           Don't use it to state the bleeding obvious!
         </p>

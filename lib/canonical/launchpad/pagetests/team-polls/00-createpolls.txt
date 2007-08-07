@@ -129,8 +129,8 @@ We're redirected to the newly created poll
 
 Now lets try to insert a poll with the name of a existing one.
 
-# XXX matsubara 2006-07-17: There's no link to get back to +polls
-# Bug https://launchpad.net/bugs/53302
+# XXX matsubara 2006-07-17 bug=53302:
+# There's no link to get back to +polls.
 
   >>> team_admin_browser.open(
   ...     'http://launchpad.dev/~ubuntu-team/+newpoll')

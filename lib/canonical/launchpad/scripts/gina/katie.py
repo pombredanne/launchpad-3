@@ -100,14 +100,14 @@ class Katie:
         else:
             return ret
 
-        # XXX: what to do when the ubuntu lookup fails?
+        # XXX kiko 2005-10-21: what to do when the ubuntu lookup fails?
         return self._query_to_dict("""SELECT * FROM source, fingerprint
                                       WHERE  source = %s 
                                       AND    source.sig_fpr = fingerprint.id
-                                      AND    version like '%subuntu%s'""" % 
+                                      AND    version like '%subuntu%s'""" %
                                       ("%s", version, "%"), name)
 
-    def getBinaryPackageRelease(self, name, version, arch):  
+    def getBinaryPackageRelease(self, name, version, arch):
         return self._query_to_dict("""SELECT * FROM binaries, architecture, 
                                                     fingerprint
                                       WHERE  package = %s 

@@ -9,7 +9,7 @@ from twisted.vfs.ivfs import PermissionError, NotFoundError
 from canonical.codehosting.sshserver import LaunchpadAvatar
 from canonical.codehosting.bazaarfs import (
     SFTPServerRoot, SFTPServerBranch, SFTPServerProductDir,
-    SFTPServerProductDirPlaceholder, WriteLoggingDirectory)
+    SFTPServerProductDirPlaceholder, NameRestrictedWriteLoggingDirectory)
 from canonical.codehosting.tests.helpers import AvatarTestCase
 
 
@@ -112,10 +112,20 @@ class UserDirsTestCase(AvatarTestCase):
         root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
 
+        d = defer.maybeDeferred(userDir.createDirectory, 'no-such-product')
+
         # We expect PermissionError from a userDir.createDirectory:
-        return self.assertFailure(
-            defer.maybeDeferred(userDir.createDirectory, 'no-such-product'),
-            PermissionError)
+        d = self.assertFailure(d, PermissionError)
+
+        # And we check that the message is the one we expected:
+        def check_message(exception):
+            self.assertEqual(
+                str(exception),
+                'Directories directly under a user directory must be named '
+                'after a project name registered in Launchpad '
+                '<https://launchpad.net/>.')
+
+        return d.addCallback(check_message)
 
     def testInitialBranches(self):
         # Check that already existing branches owned by a user appear as
@@ -283,9 +293,10 @@ class TestSFTPServerBranch(AvatarTestCase):
     def testCreateBazaarDirectoryWorks(self):
         """Creating a '.bzr' directory underneath a branch directory works."""
         directory = self.server_branch.createDirectory('.bzr')
-        self.failUnless(isinstance(directory, WriteLoggingDirectory),
-                        "%r not instance of WriteLoggingDirectory (%r)"
-                        % (directory, type(directory)))
+        self.failUnless(
+            isinstance(directory, NameRestrictedWriteLoggingDirectory),
+            "%r not instance of _RenameProtectionDecorator (%r)"
+            % (directory, type(directory)))
 
     def testCreateNonBazaarDirectoryFails(self):
         """Creating a non-'.bzr' directory fails.
@@ -294,6 +305,14 @@ class TestSFTPServerBranch(AvatarTestCase):
         branch directories and putting branches in those deep directories.
         """
         d = defer.maybeDeferred(self.server_branch.createDirectory, 'foo')
+        return self.assertFailure(d, PermissionError)
+
+    def testCreateFileFails(self):
+        """Creating a file in a branch fails.
+
+        We only allow Bazaar control directories.
+        """
+        d = defer.maybeDeferred(self.server_branch.createFile, '.bzr')
         return self.assertFailure(d, PermissionError)
 
 
