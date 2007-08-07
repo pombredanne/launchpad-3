@@ -993,15 +993,19 @@ class ProductBugContactEditView(LaunchpadEditFormView):
     def validate(self, data):
         """Validates the new bug contact for the product.
 
-        If the bug contact is a team of which the user is not an
-        administrator then the submission will fail and the user will be
-        notified of the error.
+        The following values are valid as bug contacts:
+            * None, indicating that the bug contact field for the product
+              should be cleard in change_action().
+            * A valid Person (email address or launchpad id).
+            * A valid Team of which the current user is an administrator.
 
-        Note that we do not treat a bug contact value of None (indicating an
-        empty bugcontact field on the form) as an error. If the passed
-        bugcontact is None then the bug contact for the product will be
-        reset (see change_action()).
+        If the the bug contact entered does not meet any of the above criteria
+        then the submission will fail and the user will be notified of the
+        error.
         """
+        # data will not have a bugcontact entry in cases where the bugcontact
+        # the user entered is valid according to the ValidPersonOrTeam
+        # vocabulary (i.e. is not a Person, Team or None).
         if not data.has_key('bugcontact'):
             self.setFieldError(
                 'bugcontact',
