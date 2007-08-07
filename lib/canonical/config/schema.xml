@@ -705,7 +705,7 @@ k            </description>
     </sectiontype>
 
     <sectiontype name="expiredmembershipsflagger" extends="database_options">
-        <key name="dbuser" datatype="string" default="teammembership">
+        <key name="dbuser" datatype="string" default="answertracker">
             <description>
                 The database user which will be used to flag expired team
                 memberships.

@@ -23,7 +23,7 @@ class ExpireMemberships(LaunchpadCronScript):
         """
         membershipset = getUtility(ITeamMembershipSet)
         self.txn.begin()
-        reviewer = getUtility(ILaunchpadCelebrities).team_membership_janitor
+        reviewer = getUtility(ILaunchpadCelebrities).launchpad_janitor
         membershipset.handleMembershipsExpiringToday(reviewer)
         self.txn.commit()
 
@@ -45,7 +45,7 @@ class ExpireMemberships(LaunchpadCronScript):
 
 
 if __name__ == '__main__':
-    script = ExpireMemberships('flag-expired-memberships', 
+    script = ExpireMemberships('flag-expired-memberships',
                                dbuser=config.expiredmembershipsflagger.dbuser)
     script.lock_and_run()
 
