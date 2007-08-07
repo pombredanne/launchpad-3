@@ -283,7 +283,6 @@ class DistributionSourcePackageBugContactsView(LaunchpadFormView):
 
     @cachedproperty
     def user_teams(self):
-        """Return the teams that the current user is a member of."""
-        return [membership.team
-                for membership in self.user.myactivememberships
-                if membership.status == TeamMembershipStatus.ADMIN]
+        """Return the teams that the current user is an administrator of."""
+        return self.user.getAdministratedTeams()
+
