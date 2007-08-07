@@ -31,7 +31,6 @@ from canonical.launchpad.webapp import (
     custom_widget)
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.widgets import LabeledMultiCheckBoxWidget
-from canonical.lp.dbschema import TeamMembershipStatus
 
 class DistributionSourcePackageSOP(StructuralObjectPresentation):
 
@@ -284,5 +283,5 @@ class DistributionSourcePackageBugContactsView(LaunchpadFormView):
     @cachedproperty
     def user_teams(self):
         """Return the teams that the current user is an administrator of."""
-        return self.user.getAdministratedTeams()
+        return [team for team in self.user.getAdministratedTeams()]
 
