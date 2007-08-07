@@ -44,26 +44,19 @@ class TestBranchSet(TestCase):
         cur.execute("UPDATE Branch SET mirror_request_time = NULL")
         transaction.commit()
 
-    def test_hostedPullQueueEmpty(self):
-        """Hosted branches with no mirror_request_time are not in the pull
-        queue.
-        """
+    def test_pullQueueEmpty(self):
+        """Branches with no mirror_request_time are not in the pull queue."""
         self.resetMirrorRequestTimes()
-        self.assertEqual([], list(self.branch_set.getHostedPullQueue()))
+        self.assertEqual([], list(self.branch_set.getPullQueue()))
 
-    def test_mirroredPullQueueEmpty(self):
-        """Mirrored branches with no mirror_request_time are not in the pull
-        queue.
-        """
+    def test_pastMirrorRequestTimeInQueue(self):
         self.resetMirrorRequestTimes()
-        self.assertEqual([], list(self.branch_set.getMirroredPullQueue()))
-
-    def test_importedPullQueueEmpty(self):
-        """Mirrored branches with no mirror_request_time are not in the pull
-        queue.
-        """
-        self.resetMirrorRequestTimes()
-        self.assertEqual([], list(self.branch_set.getImportedPullQueue()))
+        transaction.begin()
+        arbitrary_branch = self.branch_set.get(1)
+        arbitrary_branch.requestMirror()
+        transaction.commit()
+        self.assertEqual(
+            [1], [branch.id for branch in self.branch_set.getPullQueue()])
 
     def test_limitedByQuantity(self):
         """When getting the latest branches for a product, we can specify the
