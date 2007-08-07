@@ -144,6 +144,11 @@ class AbstractUploadPolicy:
         If a build generates binaries which would end up in a different
         archive to the source, then the upload is rejected.
         """
+        if upload.sourceful and upload.binaryful:
+            # Mixed mode uploads do not need this check, there is no existing
+            # source package.
+            return
+
         for binary_package_file in upload.changes.binary_package_files:
             spr = binary_package_file.findSourcePackageRelease()
             if self.archive != spr.upload_archive:

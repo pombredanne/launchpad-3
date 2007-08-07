@@ -222,7 +222,7 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        self.archive.id != ArchivePurpose.PPA):
+                        self.archive.purpose != ArchivePurpose.PPA):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
                             "Oops, indexing stable distroseries.")
@@ -252,7 +252,7 @@ class Publisher(object):
                                        (distroseries.name, pocket.name))
                         continue
                     if (not distroseries.isUnstable() and
-                        self.archive != ArchivePurpose.PPA):
+                        self.archive.purpose != ArchivePurpose.PPA):
                         # See comment in B_dominate
                         assert pocket != PackagePublishingPocket.RELEASE, (
                             "Oops, indexing stable distroseries.")
@@ -423,7 +423,7 @@ class Publisher(object):
         full_name = distroseries.name + pocketsuffix[pocket]
 
         # XXX cprov 2007-07-11: it will be affected by CommercialRepo changes.
-        if self.archive == self.distro.main_archive:
+        if self.archive.purpose == ArchivePurpose.PRIMARY:
             index_suffixes = ('', '.gz', '.bz2')
         else:
             index_suffixes = ('.gz',)
@@ -436,7 +436,7 @@ class Publisher(object):
             clean_architecture = architecture[7:]
             file_stub = "Packages"
 
-            if self.archive == self.distro.main_archive:
+            if self.archive.purpose == ArchivePurpose.PRIMARY:
                 # Set up the debian-installer paths for main_archive.
                 # d-i paths are nested inside the component.
                 di_path = os.path.join(
