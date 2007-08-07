@@ -312,6 +312,8 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
             self.form_fields = self.form_fields.omit('private')
 
     def validate(self, data):
+        # Check that we're not moving a team branch to the +junk
+        # pseudo project.
         if 'product' in data and 'name' in data:
             self.validate_branch_name(self.context.owner,
                                       data['product'],
@@ -450,6 +452,11 @@ class BranchReassignmentView(ObjectReassignmentView):
     def isValidOwner(self, new_owner):
         if self.context.product is None:
             product_name = None
+            if new_owner.isTeam():
+                self.errormessage = (
+                    "You cannot assign a +junk branch to a team. Create a "
+                    "project first.")
+                return False
         else:
             product_name = self.context.product.name
         branch_name = self.context.name
@@ -472,6 +479,8 @@ class BranchReassignmentView(ObjectReassignmentView):
                 % (quote(new_owner.browsername),
                    quote(branch.product.displayname),
                    branch.name))
+            # XXX 2007-08-07 MichaelHudson, branch.product can be None in the
+            # lines above.
             return False
 
 
