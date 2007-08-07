@@ -384,11 +384,9 @@ def _send_bug_details_to_new_bugcontacts(
     if not to_addrs:
         return
 
-    # XXX: kiko 2007-03-20 bug=94321:
-    # We send this notification as if it was from the bug owner. I
-    # hope this isn't too confusing to people receiving this
-    # notification; it may be better to use a celebrity.
-    from_addr = get_bugmail_from_address(bug.owner, bug)
+    from_addr = format_address(
+        'Launchpad Bug Tracker',
+        "%s@%s" % (bug.id, config.launchpad.bugs_domain))
     # Now's a good a time as any for this email; don't use the original
     # reported date for the bug as it will just confuse mailer and
     # recipient.

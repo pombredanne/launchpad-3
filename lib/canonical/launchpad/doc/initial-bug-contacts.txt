@@ -210,6 +210,12 @@ importance, etc.
     Firefox does not support SVG
     http://bugs.launchpad.dev/bugs/1
 
+Since the reporter didn't do anything to trigger this change, the bug
+address is used as the From address.
+
+    >>> print msg['From']
+    Launchpad Bug Tracker <1@bugs.launchpad.net>
+
     >>> stub.test_emails = []
 
 Let's see that nothing unexpected happens when we set the source
