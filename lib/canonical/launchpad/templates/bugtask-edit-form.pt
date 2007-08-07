@@ -54,7 +54,7 @@
         <span
           tal:attributes="title context/date_confirmed/fmt:datetime"
           tal:content="context/date_confirmed/fmt:approximatedate">
-          2 data006-12-13
+          2006-12-13
         </span>
       </td>
     </tr>
