@@ -149,7 +149,7 @@ WARNING:root:The plural form header has an unknown error. Using the default valu
 True
 
 
-== isPORevisionDateOlder ==
+== isTranslationRevisionDateOlder ==
 
 This method helps to compare two PO files header and decide if the given one
 is older than the one we have in the IPOFile object. We are using this
@@ -172,7 +172,7 @@ First, we check with the same date.
     >>> header = POHeader(msgstr=u'PO-Revision-Date: 2005-08-18 13:22+0000')
     >>> header.updateDict()
     WARNING:root:PO file header entry has no content-type field
-    >>> pofile.isPORevisionDateOlder(header)
+    >>> pofile.isTranslationRevisionDateOlder(header)
     False
 
 Now, we check with a date that is in the past.
@@ -180,7 +180,7 @@ Now, we check with a date that is in the past.
     >>> header = POHeader(msgstr=u'PO-Revision-Date: 2005-08-18 13:21+0000')
     >>> header.updateDict()
     WARNING:root:PO file header entry has no content-type field
-    >>> pofile.isPORevisionDateOlder(header)
+    >>> pofile.isTranslationRevisionDateOlder(header)
     True
 
 == canEditTranslations ==

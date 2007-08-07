@@ -267,10 +267,8 @@ class IPOFile(IRosettaStats):
         new_header is a POHeader object.
         """
 
-    def isPORevisionDateOlder(header):
-        """Return if the given header has a less current field
-        'PORevisionDate' than IPOFile.header.
-        """
+    def isTranslationRevisionDateOlder(header):
+        """Whether given header revision date is newer then self one."""
 
     def getNextToImport():
         """Return the next entry on the import queue to be imported."""

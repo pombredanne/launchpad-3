@@ -41,7 +41,7 @@ from canonical.launchpad.interfaces import (
     IPOFileTranslator, IVPOExportSet, NotExportedFromLaunchpad, NotFoundError,
     OldTranslationImported, TranslationConstants,
     TranslationFormatSyntaxError, TranslationFormatInvalidInputError,
-    UnknownTranslationRevisionDate, ZeroLengthPOExportError)
+    ZeroLengthPOExportError)
 from canonical.launchpad.mail import simple_sendmail
 from canonical.launchpad.mailnotification import MailWrapper
 from canonical.launchpad.translationformat import TranslationMessage
@@ -852,55 +852,25 @@ class POFile(SQLBase, POFileMixIn):
 
     def updateHeader(self, new_header):
         """See `IPOFile`."""
-        if not new_header:
+        if new_header is None:
             return
 
-        # check that the plural forms info is valid
-        new_plural_form = new_header.get('Plural-Forms', None)
-        if new_plural_form is None:
-            # The new header does not have plural form information.
-            # Parse the old header.
-            old_header = self.getHeader()
-            old_plural_form = old_header.get('Plural-Forms', None)
-            if old_plural_form is not None:
-                # First attempt: use the plural-forms header that is already
-                # in the database, if it exists.
-                new_header['Plural-Forms'] = old_header['Plural-Forms']
-            elif self.language.pluralforms is not None:
-                # Second attempt: get the default value for plural-forms from
-                # the language table.
-                new_header['Plural-Forms'] = self.language.pluralforms
-            else:
-                # we absolutely don't know it; only complain if
-                # a plural translation is present
-                # XXX Carlos Perello Marin 2005-06-15 bugs=1186: 
-                # We should implement this bug instead of
-                # set it to this default value...
-                new_header['Plural-Forms'] = 1
         # XXX sabdfl 2005-05-27 should we also differentiate between
         # washeaderfuzzy and isheaderfuzzy?
         self.topcomment = new_header.comment
-        self.header = new_header.msgstr
-        self.fuzzyheader = 'fuzzy' in new_header.flags
+        self.header = new_header.getRawContent()
+        self.fuzzyheader = new_header.is_fuzzy
 
-    def isPORevisionDateOlder(self, header):
+    def isTranslationRevisionDateOlder(self, header):
         """See `IPOFile`."""
         old_header = self.getHeader()
 
         # Get the old and new PO-Revision-Date entries as datetime objects.
-        try:
-            old_date = old_header.getTranslationRevisionDate()
-        except UnknownTranslationRevisionDate:
-            # If one of the headers, has a missing or wrong PO-Revision-Date,
-            # then they cannot be compared, so we consider the new header to
-            # be the most recent.
-            return False
-        try:
-            new_date = header.getTranslationRevisionDate()
-        except UnknownTranslationRevisionDate:
-            # If one of the headers, has a missing or wrong PO-Revision-Date,
-            # then they cannot be compared, so we consider the new header to
-            # be the most recent.
+        old_date = old_header.translation_revision_date
+        new_date = header.translation_revision_date
+        if old_date is None or new_date is None:
+            # If one of the headers, has an unknown revision date, they cannot
+            # be compared, so we consider the new one as the most recent.
             return False
 
         # Check whether or not the date is older.
@@ -1408,7 +1378,7 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
-    def isPORevisionDateOlder(self, header):
+    def isTranslationRevisionDateOlder(self, header):
         """See `IPOFile`."""
         raise NotImplementedError
 

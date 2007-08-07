@@ -12,7 +12,6 @@ __all__ = [
     'NotExportedFromLaunchpad',
     'TranslationFormatSyntaxError',
     'TranslationFormatInvalidInputError',
-    'UnknownTranslationRevisionDate',
     ]
 
 
@@ -64,19 +63,6 @@ class TranslationFormatInvalidInputError(TranslationFormatBaseError):
             return '%s: invalid input on an unknown line' % self.filename
         else:
             return '%s: invalid input on entry at line %d' % (
-                self.filename, self.line_number)
-
-
-class UnknownTranslationRevisionDate(TranslationFormatBaseError):
-    """Unknown revision date for translation resource."""
-
-    def __str__(self):
-        if self.message is not None:
-            return self.message
-        if self.line_number is None:
-            return '%s: Found an invalid date representation' % self.filename
-        else:
-            return '%s: Found an invalid date representation at line %d' % (
                 self.filename, self.line_number)
 
 

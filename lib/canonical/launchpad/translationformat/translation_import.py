@@ -109,7 +109,7 @@ class TranslationImporter:
             'There is no importer available for %s files' % (
                 translation_import_queue_entry.format.name))
 
-        importer.parse(translation_import_queue_entry)
+        translation_file = importer.parse(translation_import_queue_entry)
 
         # This var will hold an special IPOFile for 'English' which will have
         # the English strings to show instead of arbitrary IDs.
@@ -133,16 +133,18 @@ class TranslationImporter:
                     english_pofile = self.potemplate.newPOFile('en')
             # Expire old messages
             self.potemplate.expireAllMessages()
-            if importer.header is not None:
+            if translation_file.header is not None:
                 # Update the header
-                self.potemplate.header = importer.header.getRawContent()
+                self.potemplate.header = (
+                    translation_file.header.getRawContent())
             UTC = pytz.timezone('UTC')
             self.potemplate.date_last_updated = datetime.datetime.now(UTC)
         else:
             # We are importing a translation.
-            if importer.header is not None:
+            if translation_file.header is not None:
                 # Check whether we are importing a new version.
-                if self.pofile.isPORevisionDateOlder(importer.header):
+                if self.pofile.isTranslationRevisionDateOlder(
+                    translation_file.header):
                     # The new imported file is older than latest one imported,
                     # we don't import it, just ignore it as it could be a
                     # mistake and it would make us lose translations.
@@ -151,7 +153,7 @@ class TranslationImporter:
                 # Get the timestamp when this file was exported from
                 # Launchpad. If it was not exported from Launchpad, it will be
                 # None.
-                lock_timestamp = importer.header.getLaunchpadExportDate()
+                lock_timestamp = translation_file.header.launchpad_export_date
 
             if (not translation_import_queue_entry.is_published and
                 lock_timestamp is None):
@@ -164,9 +166,9 @@ class TranslationImporter:
             # Expire old messages
             self.pofile.expireAllMessages()
             # Update the header with the new one.
-            self.pofile.updateHeader(importer.header)
+            self.pofile.updateHeader(translation_file.header)
             # Get last translator that touched this translation file.
-            name, email = importer.getLastTranslator()
+            name, email = translation_file.header.getLastTranslator()
             last_translator = self._getPersonByEmail(email, name)
 
             if last_translator is None:
@@ -177,7 +179,7 @@ class TranslationImporter:
         count = 0
 
         errors = []
-        for message in importer.messages:
+        for message in translation_file.messages:
             if not message.msgid:
                 # The message has no msgid, we ignore it and jump to next
                 # message.
