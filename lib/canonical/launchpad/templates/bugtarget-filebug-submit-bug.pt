@@ -77,26 +77,32 @@
                       <img alt="" src="/@@/bug" tal:condition="not:bugtask" />
                     </td>
                     <td>
-                      <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
-                             style="font-weight: normal">
-                        <div>
+                      <div>
+                        <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
+                               style="font-weight: normal">
                           #<tal:bug-id replace="bug/id">4</tal:bug-id>
                           <a tal:attributes="href bug/fmt:url"
                              tal:content="bug/title">Bug title here</a>
-                        </div>
-                        <div class="lesser" tal:condition="bugtask">
+                        </label>
+                      </div>
+                      <div class="lesser" tal:condition="bugtask">
+                        <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
+                               style="font-weight: normal">
                           <tal:status replace="bugtask/status/title" />,
                           last updated
                           <tal:last-updated content="bug/date_last_updated/fmt:approximatedate">
                             2007-07-03
                           </tal:last-updated>
-                        </div>
-                        <div class="lesser" tal:condition="not:bugtask">
+                        </label>
+                      </div>
+                      <div class="lesser" tal:condition="not:bugtask">
+                        <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
+                               style="font-weight: normal">
                           <tal:closed condition="bug/is_complete">Closed,</tal:closed>
                           <tal:open condition="not:bug/is_complete">Open,</tal:open>
                           last updated <tal:when replace="bug/date_last_updated/fmt:approximatedate" />
-                        </div>
-                      </label>
+                        </label>
+                      </div>
                     </td>
                   </tr>
                 </tbody>
@@ -121,12 +127,12 @@
                 <tbody>
                   <tr>
                     <td>
-                      <input id="bug-already-reported-no" type="radio"
+                      <input id="bug-not-already-reported" type="radio"
                              name="field.bug_already_reported_as" value=""
                              tal:attributes="checked view/submit_bug_action/submitted|nothing" />
                     </td>
                     <td>
-                      <label for="bug-already-reported-no">
+                      <label for="bug-not-already-reported">
                         No, I'd like to report a new bug
                       </label>
                     </td>
@@ -158,7 +164,7 @@
          * an existing bug report, or for where they're filing a new bug.
          */
         function arrangeBugForm(bug_already_reported) {
-          var no_radiobtn = $('bug-already-reported-no');
+          var no_radiobtn = $('bug-not-already-reported');
 
           if (bug_already_reported == undefined) {
             bug_already_reported = !no_radiobtn.checked;
