@@ -709,7 +709,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         # The fields that we present to the users change based upon the
         # current context and the user's permissions, so we update field_names
         # with any fields that may need to be added.
-        for field in self._getEditableFieldNames():
+        for field in self.editable_field_names:
             if field not in field_names:
                 field_names.append(field)
 
@@ -753,18 +753,54 @@ class BugTaskEditView(LaunchpadEditFormView):
             raise AssertionError("Unknown IBugTask: %r" % self.context)
         return '_'.join(parts)
 
+    @cachedproperty
+    def editable_field_names(self):
+        """Return the names of fields the user has permission to edit."""
+        if self.context.target_uses_malone:
+            # Don't edit self.field_names directly, because it's shared by all
+            # BugTaskEditView instances.
+            editable_field_names = list(self.default_field_names)
+
+            if 'bugwatch' in editable_field_names:
+                editable_field_names.remove('bugwatch')
+
+            # XXX, Brad Bollenbach, 2006-09-29: Permission checking
+            # doesn't belong here! See https://launchpad.net/bugs/63000
+            if (not self.userCanEditMilestone() and
+                'milestone' in editable_field_names):
+                editable_field_names.remove("milestone")
+
+            if (not self.userCanEditImportance() and
+                'importance' in editable_field_names):
+                editable_field_names.remove("importance")
+        else:
+            editable_field_names = ['bugwatch']
+            if not IUpstreamBugTask.providedBy(self.context):
+                #XXX: Bjorn Tillenius 2006-03-01:
+                #     Should be possible to edit the product as well,
+                #     but that's harder due to complications with bug
+                #     watches. The new product might use Launchpad
+                #     officially, thus we need to handle that case.
+                #     Let's deal with that later.
+                editable_field_names += ['sourcepackagename']
+            if self.context.bugwatch is None:
+                editable_field_names += ['status', 'assignee']
+                if self.userCanEditImportance():
+                    editable_field_names += ["importance"]
+
+        return editable_field_names
+
     def setUpFields(self):
         """Sets up the fields for the bug task edit form.
 
         See `LaunchpadFormView`.
         """
         super(BugTaskEditView, self).setUpFields()
-        editable_field_names = self._getEditableFieldNames()
         read_only_field_names = self._getReadOnlyFieldNames()
 
         # The status field is a special case because we alter the vocabulary
         # it uses based on the permissions of the user viewing form.
-        if 'status' in editable_field_names:
+        if 'status' in self.editable_field_names:
             if self.user is None:
                 status_noshow = list(BugTaskStatus.items)
             else:
@@ -806,42 +842,6 @@ class BugTaskEditView(LaunchpadEditFormView):
             self.form_fields['assignee'].custom_widget = CustomWidgetFactory(
                 AssigneeDisplayWidget)
 
-    def _getEditableFieldNames(self):
-        """Return the names of fields the user has perms to edit."""
-        if self.context.target_uses_malone:
-            # Don't edit self.field_names directly, because it's shared by all
-            # BugTaskEditView instances.
-            editable_field_names = list(self.default_field_names)
-
-            if 'bugwatch' in editable_field_names:
-                editable_field_names.remove('bugwatch')
-
-            # XXX, Brad Bollenbach, 2006-09-29: Permission checking
-            # doesn't belong here! See https://launchpad.net/bugs/63000
-            if (not self.userCanEditMilestone() and
-                'milestone' in editable_field_names):
-                editable_field_names.remove("milestone")
-
-            if (not self.userCanEditImportance() and
-                'importance' in editable_field_names):
-                editable_field_names.remove("importance")
-        else:
-            editable_field_names = ['bugwatch']
-            if not IUpstreamBugTask.providedBy(self.context):
-                #XXX: Bjorn Tillenius 2006-03-01:
-                #     Should be possible to edit the product as well,
-                #     but that's harder due to complications with bug
-                #     watches. The new product might use Launchpad
-                #     officially, thus we need to handle that case.
-                #     Let's deal with that later.
-                editable_field_names += ['sourcepackagename']
-            if self.context.bugwatch is None:
-                editable_field_names += ['status', 'assignee']
-                if self.userCanEditImportance():
-                    editable_field_names += ["importance"]
-
-        return editable_field_names
-
     def _getReadOnlyFieldNames(self):
         """Return the names of fields that will be rendered read only."""
         if self.context.target_uses_malone:
@@ -853,7 +853,7 @@ class BugTaskEditView(LaunchpadEditFormView):
             if not self.userCanEditImportance():
                 read_only_field_names.append("importance")
         else:
-            editable_field_names = self._getEditableFieldNames()
+            editable_field_names = self.editable_field_names
             read_only_field_names = [
                 field_name for field_name in self.field_names
                 if field_name not in editable_field_names]
@@ -901,7 +901,7 @@ class BugTaskEditView(LaunchpadEditFormView):
             return bugtask.distroseries.distribution
 
     def validate(self, data):
-        """See canonical.launchpad.webapp.generalform.GeneralFormView."""
+        """See `LaunchpadFormView`."""
         bugtask = self.context
         if bugtask.distroseries is not None:
             distro = bugtask.distroseries.distribution
