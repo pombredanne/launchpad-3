@@ -263,7 +263,7 @@ class Builder(SQLBase):
                 'restricted': 'main restricted',
                 'universe': 'main restricted universe',
                 'multiverse': 'main restricted universe multiverse',
-                'commercial' : 'main restricted commercial',
+                'commercial' : 'commercial',
                 }
             ogre_components = ogre_map[build_queue_item.component_name]
             dist_name = build_queue_item.archseries.distroseries.name
@@ -274,9 +274,15 @@ class Builder(SQLBase):
                     'deb http://archive.ubuntu.com/ubuntu %s %s'
                     % (dist_name, ogre_components))
             else:
+                ubuntu_components = ogre_components
+                if (build_queue_item.build.archive.purpose ==
+                        ArchivePurpose.COMMERCIAL):
+                    # XXX julian 2007-08-07 - this is a greasy hack.
+                    # See comment above about not modelling Ogre here.
+                    ubuntu_components = 'main restricted'
                 ubuntu_source_line = (
                     'deb http://ftpmaster.internal/ubuntu %s %s'
-                    % (dist_name, ogre_components))
+                    % (dist_name, ubuntu_components))
                 # Add the pocket to the distro to make the full suite name.
                 # PPA always builds in RELEASE so it does not need this code.
                 pocket = build_queue_item.build.pocket
