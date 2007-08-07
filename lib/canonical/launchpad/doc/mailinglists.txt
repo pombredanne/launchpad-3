@@ -15,12 +15,12 @@ an existing team.  This is done through an IMailingListSet utility.
 In the following description of how to use team mailing lists, we will need
 several teams.
 
-    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, TeamMembershipStatus, TeamSubscriptionPolicy)
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
     >>> login(ANONYMOUS)
     >>> personset = getUtility(IPersonSet)
     >>> ddaa = personset.getByName('ddaa')
-    >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
     >>> def new_team(team_name):
     ...     displayname = ' '.join(word.capitalize()
     ...                            for word in team_name.split('-'))
@@ -96,7 +96,6 @@ neither and thus may not create a list for team_two.
 However, if we make salgado a team administrator, he can then register the
 mailing list.
 
-    >>> from canonical.lp.dbschema import TeamMembershipStatus
     >>> # XXX BarryWarsaw bug 125505: Use .join() and .setMembershipData()
     >>> # instead of the more direct team.addMember() because the latter
     >>> # doesn't invalidate salgado's _inTeam_cache.
@@ -172,7 +171,7 @@ currently registered mailing lists.
 
 A mailing list's registration cannot be reviewed by a non-administrator.
 
-    >>> from canonical.lp.dbschema import MailingListStatus
+    >>> from canonical.launchpad.interfaces import MailingListStatus
     >>> no_priv = personset.getByName('no-priv')
     >>> list_one.review(no_priv, MailingListStatus.APPROVED)
     Traceback (most recent call last):

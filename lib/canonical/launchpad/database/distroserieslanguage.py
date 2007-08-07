@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+"""An implementation of DistroSeriesLanguage objects."""
 
 __metaclass__ = type
 __all__ = ['DistroSeriesLanguage', 'DummyDistroSeriesLanguage',
@@ -20,14 +21,16 @@ import pytz
 
 from canonical.launchpad.interfaces import (IDistroSeriesLanguage,
     IDistroSeriesLanguageSet, IPersonSet)
-from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.pofile import POFile, DummyPOFile
 from canonical.launchpad.database.translator import Translator
 from canonical.database.constants import DEFAULT, UTC_NOW
 from canonical.launchpad.components.rosettastats import RosettaStats
 
 class DistroSeriesLanguage(SQLBase, RosettaStats):
-
+    """See `IDistroSeriesLanguage`.
+    
+    A SQLObject based implementation of IDistroSeriesLanguage.
+    """
     implements(IDistroSeriesLanguage)
 
     _table = 'DistroReleaseLanguage'
@@ -148,13 +151,16 @@ class DistroSeriesLanguage(SQLBase, RosettaStats):
 
 
 class DummyDistroSeriesLanguage(RosettaStats):
-    """
+    """See `IDistroSeriesLanguage`
+
     Represents a DistroSeriesLanguage where we do not yet actually HAVE one
-    for that language for this distro series.
+    for that language for this distribution series.
     """
     implements(IDistroSeriesLanguage)
 
     def __init__(self, distroseries, language):
+        assert 'en' != language.code, (
+            'English is not a translatable language.')
         self.id = None
         self.language = language
         self.distroseries = distroseries
@@ -220,7 +226,10 @@ class DummyDistroSeriesLanguage(RosettaStats):
 
 
 class DistroSeriesLanguageSet:
-
+    """See `IDistroSeriesLanguageSet`.
+    
+    Implements a means to get a DummyDistroSeriesLanguage.
+    """
     implements(IDistroSeriesLanguageSet)
 
     def getDummy(self, distroseries, language):

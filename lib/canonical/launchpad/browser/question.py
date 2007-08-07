@@ -54,7 +54,8 @@ from canonical.launchpad.interfaces import (
     CreateBugParams, IAnswersFrontPageSearchForm, IBug, IFAQ, IFAQTarget,
     ILanguageSet, ILaunchpadStatisticSet, IProject, IQuestion,
     IQuestionAddMessageForm, IQuestionChangeStatusForm, IQuestionLinkFAQForm,
-    IQuestionSet, IQuestionTarget, NotFoundError, UnexpectedFormData)
+    IQuestionSet, IQuestionTarget, QuestionAction, QuestionStatus,
+    QuestionSort, NotFoundError, UnexpectedFormData)
 
 from canonical.launchpad.webapp import (
     ContextMenu, Link, canonical_url, enabled_with_permission, Navigation,
@@ -62,7 +63,6 @@ from canonical.launchpad.webapp import (
     custom_widget, redirection, safe_action, smartquote)
 from canonical.launchpad.webapp.interfaces import IAlwaysSubmittedWidget
 from canonical.launchpad.webapp.snapshot import Snapshot
-from canonical.lp.dbschema import QuestionAction, QuestionStatus, QuestionSort
 from canonical.widgets import LaunchpadRadioWidget
 from canonical.widgets.project import ProjectScopeWidget
 from canonical.widgets.launchpadtarget import LaunchpadTargetWidget
@@ -145,7 +145,7 @@ class QuestionSetView(LaunchpadFormView):
     @property
     def latest_questions_solved(self):
         """Return the 10 latest questions solved."""
-        # XXX flacoste 2006/11/28 We should probably define a new
+        # XXX flacoste 2006-11-28: We should probably define a new
         # QuestionSort value allowing us to sort on dateanswered descending.
         return self.context.searchQuestions(
             status=QuestionStatus.SOLVED, sort=QuestionSort.NEWEST_FIRST)[:5]
@@ -437,7 +437,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
             return self.search_template()
         return self.continue_action.success(data)
 
-    # XXX flacoste 2006/07/26 We use the method here instead of
+    # XXX flacoste 2006-07-26: We use the method here instead of
     # using the method name 'handleAddError' because of Zope issue 573
     # which is fixed in 3.3.0b1 and 3.2.1
     @action(_('Add'), failure=handleAddError)
@@ -451,7 +451,7 @@ class QuestionAddView(QuestionSupportLanguageMixin, LaunchpadFormView):
         question = self.question_target.newQuestion(
             self.user, data['title'], data['description'], data['language'])
 
-        # XXX flacoste 2006/07/25 This should be moved to newQuestion().
+        # XXX flacoste 2006-07-25: This should be moved to newQuestion().
         notify(SQLObjectCreatedEvent(question))
 
         self.request.response.redirect(canonical_url(question))
@@ -700,10 +700,15 @@ class QuestionWorkflowView(LaunchpadFormView):
     def selfanswer_action(self, action, data):
         """Action called when the owner provides the solution."""
         self.context.giveAnswer(self.user, data['message'])
-        self._addNotificationAndHandlePossibleSubscription(
-            _("Your question is solved, if a particular message helped you "
-              "solved the problem, please use the <em>'This solved my "
-              "problem'</em> button."), data)
+        # Owners frequently solve their questions, but their messages imply
+        # that another user provided an answer. When a question has answers
+        # that can be confirmed, suggest to the owner that he use the
+        # confirmation button.
+        if self.context.can_confirm_answer:
+            self._addNotificationAndHandlePossibleSubscription(
+                _("Your question is solved. If a particular message helped "
+                  "you solve the problem, use the <em>'This solved "
+                  "my problem'</em> button."), data)
 
     def canRequestInfo(self, action):
         """Return if the requestinfo action should be displayed."""

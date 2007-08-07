@@ -14,8 +14,7 @@ from optparse import OptionParser
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import (
-    IDistributionSet, IArchiveSet)
+from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts import (
     execute_zcml_for_scripts, logger, logger_options)
 from canonical.launchpad.scripts.processaccepted import close_bugs
@@ -64,20 +63,21 @@ def main():
         log.debug("Finding distribution %s." % distro_name)
         distribution = getUtility(IDistributionSet).getByName(distro_name)
 
+        # target_archives is a tuple of (archive, description).
         if options.ppa:
-            target_archives = getUtility(
-                IArchiveSet).getPendingAcceptancePPAs()
+            target_archives = [
+                (archive, archive.archive_url)
+                for archive in distribution.getPendingAcceptancePPAs()]
         else:
-            target_archives = [distribution.main_archive]
+            target_archives = [
+                (archive, archive.purpose.title)
+                for archive in distribution.all_distro_archives]
 
-        for archive in target_archives:
+        for archive, description in target_archives:
             for distrorelease in distribution.serieses:
 
-                if archive == distrorelease.main_archive:
-                    log.debug("Processing queue for %s" % distrorelease.name)
-                else:
-                    log.debug("Processing queue for %s (%s)" % (
-                        distrorelease.name, archive.archive_url))
+                log.debug("Processing queue for %s %s" % (
+                        distrorelease.name, description))
 
                 queue_items = distrorelease.getQueueItems(
                     PackageUploadStatus.ACCEPTED, archive=archive)

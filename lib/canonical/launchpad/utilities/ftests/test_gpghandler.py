@@ -19,7 +19,8 @@ class TestImportKeyRing(unittest.TestCase):
 
     def tearDown(self):
         """Zero out the gpg database"""
-        #FIXME RBC: this should be a zope test cleanup thing per SteveA.
+        # XXX Stuart Bishop 2005-10-27:
+        # This should be a zope test cleanup thing per SteveA.
         self.gpg_handler.resetLocalState()
         logout()
 

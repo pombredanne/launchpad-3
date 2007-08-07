@@ -34,7 +34,7 @@ class PouringLoop:
         # to be a problem though since we allocated all these ids in one
         # single SQL statement.  No time for gaps to form.
         self.cur.execute("SELECT min(id), max(id) FROM %s" % from_table)
-        self.lowest_id, self.highest_id = self.cur.fetchall()[0]
+        self.lowest_id, self.highest_id = self.cur.fetchone()
 
         if self.lowest_id is None:
             # Table is empty.
@@ -157,7 +157,7 @@ class MultiTableCopy:
     that rows that the data refers to by foreign keys must not be deleted
     while the multi-table copy is running, for instance.
     """
-    # XXX: JeroenVermeulen 2007-05-24, More quoting, fewer assumptions!
+    # XXX: JeroenVermeulen 2007-05-24: More quoting, fewer assumptions!
 
     def __init__(self, name, tables, seconds_per_batch=2.0,
             minimum_batch_size=500):

@@ -123,8 +123,8 @@ directed back to the original site:
 And the creation rationale for the new account has been set.
 
     >>> from canonical.launchpad.database import Person
-    >>> Person.selectOneBy(name='new-user').creation_rationale
-    <Item OWNER_CREATED_UBUNTU_SHOP...PersonCreationRationale'>>
+    >>> print Person.selectOneBy(name='new-user').creation_rationale.title
+    Created by the owner himself, coming from the Ubuntu Shop.
 
 
 == Cleanup ==

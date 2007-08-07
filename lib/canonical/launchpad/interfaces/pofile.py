@@ -231,6 +231,12 @@ class IPOFile(IRosettaStats):
     def invalidateCache():
         """Invalidate the cached export."""
 
+    def prepareTranslationCredits(potmsgset):
+        """Add Launchpad contributors to translation credit strings.
+
+        It adds to the translation for `potmsgset` if it exists, trying
+        not to repeat same people who are already credited."""
+
     def canEditTranslations(person):
         """Whether the given person is able to add/edit translations."""
 

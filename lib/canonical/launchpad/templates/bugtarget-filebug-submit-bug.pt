@@ -96,12 +96,9 @@
                                   </tal:last-updated>
                                 </div>
                                 <div class="lesser" tal:condition="not:bugtask">
-                                  <tal:closed condition="bug/is_complete">
-                                    Closed <tal:when replace="bug/date_closed/fmt:approximatedate" />
-                                  </tal:closed>
-                                  <tal:open condition="not:bug/is_complete">
-                                    Open, last updated <tal:when replace="bug/date_last_updated/fmt:approximatedate" />
-                                  </tal:open>
+                                  <tal:closed condition="bug/is_complete">Closed,</tal:closed>
+                                  <tal:open condition="not:bug/is_complete">Open,</tal:open>
+                                  last updated <tal:when replace="bug/date_last_updated/fmt:approximatedate" />
                                 </div>
                               </label>
                             </td>

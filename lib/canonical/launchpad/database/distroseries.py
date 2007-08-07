@@ -28,7 +28,8 @@ from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
 from canonical.lp.dbschema import (
-    DistroSeriesStatus, PackagePublishingPocket, PackagePublishingStatus,
+    ArchivePurpose, DistroSeriesStatus, 
+    PackagePublishingPocket, PackagePublishingStatus,
     PackageUploadStatus, RosettaImportStatus, SpecificationFilter,
     SpecificationGoalStatus, SpecificationSort,
     SpecificationImplementationStatus)
@@ -315,8 +316,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         """See IDistroSeries."""
         return self.architectures.count()
 
-    # XXX: this is expensive and shouldn't be a property
-    #   -- kiko, 2006-06-14
+    # XXX kiko 2006-06-14: This is expensive and shouldn't be a property.
     @property
     def potemplates(self):
         result = POTemplate.selectBy(distroseries=self)
@@ -324,8 +324,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         return sorted(
             result, key=lambda x: (-x.priority, x.potemplatename.name))
 
-    # XXX: this is expensive and shouldn't be a property
-    #   -- kiko, 2006-06-14
+    # XXX kiko 2006-06-14: This is expensive and shouldn't be a property.
     @property
     def currentpotemplates(self):
         result = POTemplate.selectBy(distroseries=self, iscurrent=True)
@@ -340,6 +339,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     @property
     def bugtargetname(self):
+        """See IBugTarget."""
+        return self.fullseriesname
+        # XXX mpt 2007-07-10 bugs 113258, 113262:
+        # The distribution's and series' names should be used instead
+        # of fullseriesname.
+
+    @property
+    def bugtargetdisplayname(self):
         """See IBugTarget."""
         return self.fullseriesname
 
@@ -404,7 +411,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'Specification.definition_status', 'Specification.name']
+            order = ['-priority', 'Specification.definition_status',
+                     'Specification.name']
         elif sort == SpecificationSort.DATE:
             # we are showing specs for a GOAL, so under some circumstances
             # we care about the order in which the specs were nominated for
@@ -497,11 +505,12 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     def updateStatistics(self, ztm):
         """See IDistroSeries."""
         # first find the set of all languages for which we have pofiles in
-        # the distribution
+        # the distribution that are visible and not English
         langidset = set(
             language.id for language in Language.select('''
                 Language.visible = TRUE AND
                 Language.id = POFile.language AND
+                Language.code != 'en' AND
                 POFile.potemplate = POTemplate.id AND
                 POTemplate.distrorelease = %s AND
                 POTemplate.iscurrent = TRUE
@@ -598,10 +607,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                              pocket=None, include_pending=False,
                              exclude_pocket=None, archive=None):
         """See IDistroSeries."""
-        # XXX cprov 20060213: we need a standard and easy API, no need
+        # XXX cprov 2006-02-13 bug 31317:
+        # We need a standard and easy API, no need
         # to support multiple type arguments, only string name should be
         # the best choice in here, the call site will be clearer.
-        # bug # 31317
         if ISourcePackage.providedBy(sourcepackage_or_name):
             spn = sourcepackage_or_name.name
         elif ISourcePackageName.providedBy(sourcepackage_or_name):
@@ -662,22 +671,29 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             PackagePublishingStatus.PUBLISHED,
             )
 
-        # 'main_archive' candidates.
-        main_clauses = ['distrorelease=%s AND archive=%s' %
-                        sqlvalues(self, self.main_archive)]
+        # Distribution archive candidates.
+        main_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
+            sqlvalues(self)]
+        main_clauses.append(
+            'Archive.id=SourcePackagePublishingHistory.archive')
+        main_clauses.append('Archive.purpose=%s' % 
+            sqlvalues(ArchivePurpose.PRIMARY))
         main_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
         if not self.isUnstable():
             main_clauses.append(
                 'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
         main_sources = SourcePackagePublishingHistory.select(
-            " AND ".join(main_clauses), orderBy="id")
+            " AND ".join(main_clauses), clauseTables=['Archive'], orderBy="id")
 
         # PPA candidates.
-        ppa_clauses = ['distrorelease=%s AND archive!=%s' %
-                       sqlvalues(self, self.main_archive)]
+        ppa_clauses = ['SourcePackagePublishingHistory.distrorelease=%s' %
+            sqlvalues(self)]
+        ppa_clauses.append('Archive.id=SourcePackagePublishingHistory.archive')
+        ppa_clauses.append('Archive.purpose=%s' % 
+            sqlvalues(ArchivePurpose.PPA))
         ppa_clauses.append('status IN %s' % sqlvalues(pend_build_statuses))
         ppa_sources = SourcePackagePublishingHistory.select(
-            " AND ".join(ppa_clauses), orderBy="id")
+            " AND ".join(ppa_clauses), clauseTables=['Archive'], orderBy="id")
 
         # Return all candidates.
         return main_sources.union(ppa_sources)
@@ -748,7 +764,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                       % sqlvalues(archtag))
 
         if sourcename:
-            query.append('SourcePackageName.name = %s' % sqlvalues(sourcename))
+            query.append(
+                'SourcePackageName.name = %s' % sqlvalues(sourcename))
 
         if pocket:
             query.append(
@@ -773,7 +790,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def publishedBinaryPackages(self, component=None):
         """See IDistroSeries."""
-        # XXX sabdfl 04/07/05 this can become a utility when that works
+        # XXX sabdfl 2005-07-04: This can become a utility when that works
         # this is used by the debbugs import process, mkdebwatches
         pubpkgset = getUtility(IPublishedPackageSet)
         result = pubpkgset.query(distroseries=self, component=component)
@@ -802,7 +819,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             architecturehintlist=architecturehintlist, component=component,
             creator=creator, urgency=urgency, changelog=changelog, dsc=dsc,
             dscsigningkey=dscsigningkey, section=section, manifest=manifest,
-            dsc_maintainer_rfc822=dsc_maintainer_rfc822, dsc_format=dsc_format,
+            dsc_maintainer_rfc822=dsc_maintainer_rfc822,
+            dsc_format=dsc_format,
             dsc_standards_version=dsc_standards_version,
             dsc_binaries=dsc_binaries, upload_archive=archive)
 
@@ -1022,12 +1040,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         default_clauses = ["""
             packageupload.distrorelease = %s""" % sqlvalues(self)]
 
-        # restrict result to a given archive
+        # Restrict result to given archives.
+        archives = []
         if archive is None:
-            archive = self.main_archive
+            archives = [archive.id for archive in 
+                self.distribution.all_distro_archives]
+        else:
+            archives = [archive.id]
 
         default_clauses.append("""
-        packageupload.archive = %s""" % sqlvalues(archive))
+        packageupload.archive IN %s""" % sqlvalues(archives))
 
         # restrict result to a given pocket
         if pocket is not None:
@@ -1036,9 +1058,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             default_clauses.append("""
             packageupload.pocket IN %s""" % sqlvalues(pocket))
 
-        # XXX cprov 20060606: We may reorganise this code, creating
-        # some new methods provided by IPackageUploadSet, as:
-        # getByStatus and getByName.
+        # XXX cprov 2006-06-06:
+        # We may reorganise this code, creating some new methods provided
+        # by IPackageUploadSet, as: getByStatus and getByName.
         if not status:
             assert not version and not exact_match
             return PackageUpload.select(
@@ -1087,7 +1109,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # attempt to exact or similar names in builds, sources and custom
         if exact_match:
-            source_where_clauses.append("sourcepackagename.name = '%s'" % name)
+            source_where_clauses.append(
+                "sourcepackagename.name = '%s'" % name)
             build_where_clauses.append("binarypackagename.name = '%s'" % name)
             custom_where_clauses.append(
                 "libraryfilealias.filename='%s'" % name)
@@ -1338,10 +1361,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # Copying happens in two phases:
         #
         # 1. Extraction phase--for every table involved (which we'll call a
-        # "source table" here), we create a "holding table."  We fill that with
-        # all rows from the source table that we want to copy from the parent
-        # series.  We make some changes to the copied rows, such as making
-        # them belong to ourselves instead of our parent series.
+        # "source table" here), we create a "holding table."  We fill that
+        # with all rows from the source table that we want to copy from the
+        # parent series.  We make some changes to the copied rows, such as
+        # making them belong to ourselves instead of our parent series.
         #
         # The first phase does not modify any tables that other clients may
         # want to use, avoiding locking problems.
@@ -1354,23 +1377,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # a time, then performing an intermediate commit.  This avoids holding
         # too many locks for too long and disrupting regular database service.
 
-        if not self.hide_all_translations:
-            raise AssertionError("""
-_copyActiveTranslationsToNewRelease: hide_all_translations not set!
+        assert self.hide_all_translations, (
+            "hide_all_translations not set!"
+            " That would allow users to see and modify incomplete"
+            " translation state.")
 
-Attempted to populate translations for new distroseries while its
-translations are visible.  That would allow users to see and modify incomplete
-translation state.
-""")
-
-        if not self.defer_translation_imports:
-            raise AssertionError("""
-_copyActiveTranslationsToNewRelease: defer_translation_imports not set!
-
-Attempted to populate translations for new distroseries while translation
-import queue is enabled. That would corrupt our translation data mixing
-new imports with the information being copied.
-""")
+        assert self.defer_translation_imports, (
+            "defer_translation_imports not set!"
+            " That would corrupt translation data mixing new imports"
+            " with the information being copied.")
 
         # Clean up any remains from a previous run.  If we got here, that
         # means those remains are not salvagable.
@@ -1427,14 +1442,14 @@ new imports with the information being copied.
         # during its potentially huge updates.  We should see if we can batch
         # it into smaller chunks in order to reduce lock pressure.
 
-        # XXX: JeroenVermeulen 2007-05-03, This method should become
+        # XXX: JeroenVermeulen 2007-05-03: This method should become
         # unnecessary once the "translation multicast" spec is implemented:
         # https://launchpad.canonical.com/MulticastTranslations
 
         # The left outer join that obtains pf2 ensures that we only do the
         # copying for POFiles whose POTemplates don't have any POFiles yet.
 
-        # XXX: JeroenVermeulen 2007-04-27, We must be careful when batching
+        # XXX: JeroenVermeulen 2007-04-27: We must be careful when batching
         # this statement.  After one POFile is copied, pt2 will have a POFile
         # attached and its other POFiles will no longer qualify for copying.
 
@@ -1844,7 +1859,8 @@ new imports with the information being copied.
 
         # propagate publication request to each distroarchseries.
         for dar in self.architectures:
-            more_dirt = dar.publish(diskpool, log, archive, pocket, is_careful)
+            more_dirt = dar.publish(
+                diskpool, log, archive, pocket, is_careful)
             dirty_pockets.update(more_dirt)
 
         return dirty_pockets
@@ -1949,8 +1965,8 @@ class DistroSeriesSet:
         else:
             return DistroSeries.select(where_clause)
 
-    def new(self, distribution, name, displayname, title, summary, description,
-            version, parentseries, owner):
+    def new(self, distribution, name, displayname, title, summary,
+            description, version, parentseries, owner):
         """See IDistroSeriesSet."""
         return DistroSeries(
             distribution=distribution,

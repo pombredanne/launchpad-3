@@ -53,6 +53,7 @@ an error message will be displayed.
     >>> user_browser.getControl('Continue').click()
     >>> for message in get_feedback_messages(user_browser):
     ...     print message
+    There is 1 error.
     You must enter a summary of your problem.
 
 The user enters his problem summary and a list of similar FAQs and
@@ -69,6 +70,9 @@ questions are displayed.
     Installation of Java Runtime Environment for Mozilla  (Answered)
         posted on 2006-07-20 by  Sample Person
         in Source Package "mozilla-firefox" in Ubuntu Linux 
+    mailto: problem in webpage (Solved)
+        posted on 2006-07-20 by Sample Person, answered by Foo Bar
+        in Source Package "mozilla-firefox" in Ubuntu Linux
 
 The beginning of the description appears in a small pop-up when the
 mouse is left over the question's title.
@@ -113,6 +117,7 @@ If the user doesn't provide details, he'll get an error message:
     >>> user_browser.getControl('Add').click()
     >>> for message in get_feedback_messages(user_browser):
     ...     print message
+    There is 1 error.
     You must provide details about your problem.
 
 And if he decides to remove the title, he'll be brought back to the
@@ -122,6 +127,7 @@ first step:
     >>> user_browser.getControl('Add').click()
     >>> for message in get_feedback_messages(user_browser):
     ...     print message
+    There are 2 errors.
     You must enter a summary of your problem.
 
 Entering a valid title and description will create the new question and
