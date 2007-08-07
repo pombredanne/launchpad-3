@@ -2145,15 +2145,6 @@ class BugTaskStatus(DBSchema):
         affected software.
         """)
 
-    # XXX sinzui 2007-08-02:
-    # switch c.lp.dbschema -> c.lazr
-    EXPIRED = Item(35, """
-        Expired
-
-        The bug is Expired. It was incomplete and unassigned for a period
-        of time that indicated it would not progress.
-        """)
-
     UNKNOWN = Item(999, """
         Unknown
 

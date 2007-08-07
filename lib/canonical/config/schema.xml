@@ -555,7 +555,7 @@ k            </description>
           </description>
         </key>
         <key name="expiration_dbuser" datatype="string" 
-            default="bugnotification">
+            default="answertracker">
             <description>
                 The database user that will be used to expire bugtask.
             </description>

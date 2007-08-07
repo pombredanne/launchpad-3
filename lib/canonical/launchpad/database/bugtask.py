@@ -36,7 +36,7 @@ from canonical.launchpad.interfaces import (
     BugTaskSearchParams,
     ConjoinedBugTaskEditError,
     IBugTask,
-    IBugTaskDelta, 
+    IBugTaskDelta,
     IBugTaskSet,
     IDistributionSourcePackage,
     IDistroBugTask,
@@ -632,16 +632,9 @@ class BugTask(SQLBase, BugTaskMixin):
 
     def canTransitionToStatus(self, new_status, user):
         """See `IBugTask`."""
-        bug_watch_updater = getUtility(
-            ILaunchpadCelebrities).bug_watch_updater
-        if new_status == BugTaskStatus.EXPIRED:
-            if user == bug_watch_updater:
-                return True
-            else:
-                return False
-        elif (user.inTeam(self.pillar.bugcontact) or
-              user.inTeam(self.pillar.owner) or
-              user == bug_watch_updater):
+        if (user.inTeam(self.pillar.bugcontact) or
+            user.inTeam(self.pillar.owner) or
+            user == getUtility(ILaunchpadCelebrities).bug_watch_updater):
             return True
         else:
             return new_status not in BUG_CONTACT_BUGTASK_STATUSES
@@ -655,14 +648,9 @@ class BugTask(SQLBase, BugTaskMixin):
             return
 
         if not self.canTransitionToStatus(new_status, user):
-            if new_status == BugTaskStatus.EXPIRED:
-                raise AssertionError(
-                "Only Bug Watch Updater may change the status to %s." % (
+            raise AssertionError(
+                "Only Bug Contacts may change status to %s" % (
                     new_status.title,))
-            else:
-                raise AssertionError(
-                    "Only Bug Contacts may change status to %s" % (
-                        new_status.title,))
 
         if self.status == new_status:
             # No change in the status, so nothing to do.
@@ -1435,6 +1423,24 @@ class BugTaskSet:
 
     def findExpirableBugTasks(self, min_days_old):
         """See `IBugTaskSet`."""
+        # XXX sinzui 2007-08-06:
+        # Switch from BugTask.datecreated to BugTask.date_incomplete
+        return BugTask.select("""
+            BugTask.status = %s
+            AND BugTask.assignee IS NULL
+            AND BugTask.datecreated < (
+                current_timestamp -interval '%s days')
+            AND EXISTS (
+                SELECT TRUE
+                FROM BugTask AS OtherBugTask
+                    LEFT OUTER JOIN Distribution
+                        ON OtherBugTask.distribution = Distribution.id
+                    LEFT OUTER JOIN Product AS Product
+                        ON OtherBugTask.product = Product.id
+                WHERE OtherBugTask.id = BugTask.id
+                    AND (Distribution.official_malone IS TRUE
+                        OR Product.official_malone IS TRUE))
+            """ % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old))
 
     def maintainedBugTasks(self, person, minimportance=None,
                            showclosed=False, orderBy=None, user=None):
