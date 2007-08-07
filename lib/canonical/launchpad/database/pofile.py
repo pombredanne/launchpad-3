@@ -270,9 +270,10 @@ class POFileMixIn(RosettaStats):
             FROM POSubmission
             JOIN POMsgSet ON POSubmission.pomsgset = POMsgSet.id
             JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
+            JOIN POFile ON POMsgSet.pofile = POFile.id
             WHERE
                 (%(ids)s OR NOT POMsgSet.isfuzzy) AND
-                POMsgSet.language = %(language)s AND
+                POFile.language = %(language)s AND
                 POTMsgSet.primemsgid IN %(wanted_primemsgids)s
             """ % parameters
         cur = cursor()
