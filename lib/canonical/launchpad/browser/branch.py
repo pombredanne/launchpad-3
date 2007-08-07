@@ -109,7 +109,7 @@ class BranchContextMenu(ContextMenu):
     usedfor = IBranch
     facet = 'branches'
     links = ['edit', 'browse', 'reassign', 'subscription', 'addsubscriber',
-             'associations', 'registermerge']
+             'associations', 'registermerge', 'landingcandidates']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -153,6 +153,11 @@ class BranchContextMenu(ContextMenu):
     def registermerge(self):
         text = 'Register merge proposal'
         return Link('+register-merge', text, icon='edit')
+
+    def landingcandidates(self):
+        text = 'View landing candidates'
+        enabled = self.context.landing_candidates.count() > 0
+        return Link('+landing-candidates', text, icon='edit', enabled=enabled)
 
 
 class BranchView(LaunchpadView):
@@ -253,6 +258,19 @@ class BranchView(LaunchpadView):
             targets.append(DecoratedMergeProposal(proposal))
             targets_added.add(target_id)
         return targets
+
+    @cachedproperty
+    def latest_landing_candidates(self):
+        """Return a decorated filtered list of landing candidates."""
+        # Only show the most recent 5 landing_candidates
+        candidates = self.context.landing_candidates[:5]
+        return [DecoratedMergeProposal(proposal) for proposal in candidates]
+
+    @cachedproperty
+    def landing_candidates(self):
+        """Return a decorated list of landing candidates."""
+        candidates = self.context.landing_candidates
+        return [DecoratedMergeProposal(proposal) for proposal in candidates]
 
 
 class DecoratedMergeProposal:
@@ -603,16 +621,39 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
 
         registrant = self.user
         source_branch = self.context
-        target_branch = data['target_branch']
-        dependent_branch = data['dependent_branch']
-        create_merge_proposal = True
+        target_branch = data.get('target_branch')
+        dependent_branch = data.get('dependent_branch')
+        whiteboard = data['whiteboard']
+
+        # If the dependent_branch is set explicitly the same as the
+        # target_branch, it is the same as if it was not set at all.
+        if dependent_branch == target_branch:
+            dependent_branch = None
+
+        try:
+            source_branch.addLandingTarget(
+                registrant=registrant, target_branch=target_branch,
+                dependent_branch=dependent_branch, whiteboard=whiteboard)
+        except InvalidBranchMergeProposal, error:
+            self.addError(str(error))
+        else:
+            self.next_url = canonical_url(source_branch)
+
+    def validate(self, data):
+        source_branch = self.context
+        target_branch = data.get('target_branch')
+        dependent_branch = data.get('dependent_branch')
 
         # Make sure that the target branch is different from the context.
-        if source_branch == target_branch:
+        if target_branch is None:
+            # Skip the following tests.
+            # The existance of the target_branch is handled by the form
+            # machinery.
+            pass
+        elif source_branch == target_branch:
             self.setFieldError(
                 'target_branch',
                 "The target branch cannot be the same as the source branch.")
-            create_merge_proposal = False
         else:
             # Make sure that the target_branch is in the same project.
             if target_branch.product != source_branch.product:
@@ -620,7 +661,6 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                     'target_branch',
                     "The target branch must belong to the same project "
                     "as the source branch.")
-                create_merge_proposal = False
 
         if dependent_branch is None:
             # Skip the following tests.
@@ -629,10 +669,6 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
             self.setFieldError(
                 'dependent_branch',
                 "The dependent branch cannot be the same as the source branch.")
-            create_merge_proposal = False
-        elif dependent_branch == target_branch:
-            # This is the same as if the dependent_branch was not set.
-            dependent_branch = None
         else:
             # Make sure that the dependent_branch is in the project.
             if dependent_branch.product != source_branch.product:
@@ -640,15 +676,3 @@ class RegisterBranchMergeProposalView(LaunchpadFormView):
                     'dependent_branch',
                     "The dependent branch must belong to the same project "
                     "as the source branch.")
-            create_merge_proposal = False
-
-        if create_merge_proposal:
-            whiteboard = data['whiteboard']
-            try:
-                source_branch.addLandingTarget(
-                    registrant=registrant, target_branch=target_branch,
-                    dependent_branch=dependent_branch, whiteboard=whiteboard)
-            except InvalidBranchMergeProposal, error:
-                self.addError(str(error))
-            else:
-                self.next_url = canonical_url(source_branch)

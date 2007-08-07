@@ -12,6 +12,10 @@
         set_schema="canonical.launchpad.interfaces.IBranchMergeProposal" />
   </content>
 
+  <browser:menus
+      module="canonical.launchpad.browser"
+      classes="BranchMergeProposalContextMenu" />
+
   <browser:defaultView
       for="canonical.launchpad.interfaces.IBranchMergeProposal"
       name="+edit" />
@@ -19,6 +23,15 @@
   <browser:page
     name="+edit"
     for="canonical.launchpad.interfaces.IBranchMergeProposal"
+    class="canonical.launchpad.browser.BranchMergeProposalEditView"
+    facet="branches"
+    permission="launchpad.Edit"
+    template="../templates/branchmergeproposal-edit.pt" />
+
+  <browser:page
+    name="+merged"
+    for="canonical.launchpad.interfaces.IBranchMergeProposal"
+    class="canonical.launchpad.browser.BranchMergeProposalMergedView"
     facet="branches"
     permission="launchpad.Edit"
     template="../templates/branchmergeproposal-edit.pt" />

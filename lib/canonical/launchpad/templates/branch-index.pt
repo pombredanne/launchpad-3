@@ -177,25 +177,58 @@
     <div tal:repeat="mergeproposal view/landing_targets">
       <tal:target replace="structure mergeproposal/target_branch/fmt:link" />
       <tal:show-registrant condition="mergeproposal/show_registrant">
-        registered by <tal:registrant replace="mergeproposal/registrant/fmt:link"/>
+        registered by
+        <tal:registrant replace="structure mergeproposal/registrant/fmt:link"/>
       </tal:show-registrant>
-      <!-- XXX: make this only show if editible, which means adding
-        +edit as the default action
-        Launchpad.Edit for IBranchMergeProposal as special, editable
-        by user the registrant, and source and target branch owners.
-      -->
-      <a tal:attributes="href mergeproposal/fmt:url">
+      <a tal:condition="mergeproposal/required:launchpad.Edit"
+         tal:attributes="href mergeproposal/fmt:url">
         <img alt="" src="/@@/edit"/>
       </a>
-      <div tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
-        The whiteboard.
-      </div>
-      <div tal:condition="mergeproposal/date_merged">
-        <span class="">Merged</span> on
-        <tal:merged replace="mergeproposal/date_merged">2007-06-04</tal:merged>
+
+      <div style="padding-left: 3em">
+        <div tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
+          The whiteboard.
+        </div>
+        <div tal:condition="mergeproposal/dependent_branch">
+          Dependent on
+          <tal:dependent replace="structure mergeproposal/dependent_branch/fmt:link" />
+        </div>
+        <div tal:condition="mergeproposal/date_merged" class="branchstatusMERGED">
+          Merged
+          <tal:merged replace="mergeproposal/date_merged/fmt:approximatedate">
+            2007-06-04
+          </tal:merged>
+          <tal:have-revno condition="mergeproposal/merged_revno">
+            as revision <tal:revno replace="mergeproposal/merged_revno"/>
+          </tal:have-revno>
+        </div>
       </div>
     </div>
   </tal:landing-targets>
+
+  <tal:dependent-branches condition="context/dependent_branches">
+    <h2>Dependent Branches</h2>
+    <div tal:repeat="mergeproposal context/dependent_branches">
+      <tal:source replace="structure mergeproposal/source_branch/fmt:link" />
+      <a tal:condition="mergeproposal/required:launchpad.Edit"
+         tal:attributes="href mergeproposal/fmt:url">
+        <img alt="" src="/@@/edit"/>
+      </a>
+
+      <div style="padding-left: 3em">
+        <div tal:content="structure mergeproposal/whiteboard/fmt:text-to-html">
+          The whiteboard.
+        </div>
+      </div>
+    </div>
+  </tal:dependent-branches>
+
+  <tal:landing-candidates condition="view/latest_landing_candidates">
+    <h2>Landing Candidates</h2>
+    <div tal:repeat="mergeproposal view/latest_landing_candidates">
+      <metal:landing-candidate use-macro="context/@@+macros/landing-candidate"/>
+    </div>
+  </tal:landing-candidates>
 
   <h2 style="clear: both;">Recent revisions</h2>
 

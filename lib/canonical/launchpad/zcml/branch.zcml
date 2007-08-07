@@ -58,6 +58,9 @@
         <browser:page
             name="+associations"
             template="../templates/branch-associations.pt" />
+        <browser:page
+            name="+landing-candidates"
+            template="../templates/branch-landing-candidates.pt" />
     </browser:pages>
 
   <browser:pages

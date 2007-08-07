@@ -105,14 +105,19 @@ class Branch(SQLBase):
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
     landing_targets = SQLMultipleJoin(
-        'BranchMergeProposal', joinColumn='source_branch',
-        orderBy='id')
+        'BranchMergeProposal', joinColumn='source_branch')
 
     @property
     def landing_candidates(self):
         """See `IBranch`."""
         return BranchMergeProposal.selectBy(
             target_branch=self, date_merged=None)
+
+    @property
+    def dependent_branches(self):
+        """See `IBranch`."""
+        return BranchMergeProposal.selectBy(
+            dependent_branch=self, date_merged=None)
 
     def addLandingTarget(self, registrant, target_branch,
                          dependent_branch=None, whiteboard=None,

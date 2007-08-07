@@ -363,6 +363,10 @@ class IBranch(IHasOwner):
         "The BranchMergeProposals where this branch is the target branch. "
         "Only active merge proposals are returned (those that have not yet "
         "been merged).")
+    dependent_branches = Attribute(
+        "The BranchMergeProposals where this branch is the dependent branch. "
+        "Only active merge proposals are returned (those that have not yet "
+        "been merged).")
     def addLandingTarget(registrant, target_branch, dependent_branch=None,
                          whiteboard=None, date_created=None):
         """Create a new BranchMergeProposal with this branch as the source.
