@@ -153,12 +153,6 @@
       </div>
 
       <script type="text/javascript" tal:condition="view/similar_bugs">
-        var similar_bugs_form_elements = concat(
-          getElementsByTagAndClassName('input', null, 'similar_bugs_form'));
-        var submit_bug_form_elements = concat(
-          getElementsByTagAndClassName('input', null, 'bug_reporting_form'),
-          getElementsByTagAndClassName('textarea', null, 'bug_reporting_form'));
-
         /*
          * Arrange the bug form for either the state where the user is selecting
          * an existing bug report, or for where they're filing a new bug.
@@ -166,17 +160,19 @@
         function arrangeBugForm(bug_already_reported) {
           var no_radiobtn = $('bug-already-reported-no');
 
-          if (bug_already_reported != undefined) {
+          if (bug_already_reported == undefined) {
+            bug_already_reported = !no_radiobtn.checked;
+          } else {
             no_radiobtn.checked = !bug_already_reported;
           }
 
-          if (no_radiobtn.checked) {
-            showElement('bug_reporting_form');
-          } else {
+          if (bug_already_reported) {
             hideElement('bug_reporting_form');
+          } else {
+            showElement('bug_reporting_form');
           }
 
-          $('field.actions.this_is_my_bug').disabled = no_radiobtn.checked
+          $('field.actions.this_is_my_bug').disabled = !bug_already_reported;
         }
 
         // For use as an event handler.
@@ -191,31 +187,12 @@
         connect(window, 'onload', arrangeBugFormHandler);
 
         /*
-         * Arrange the form if any of the radio buttons is clicked.
+         * Arrange the form if any of the radio buttons are clicked.
          */
-        forEach(similar_bugs_form_elements, function(element) {
+        forEach(
+          getElementsByTagAndClassName('input', null, 'similar_bugs_form'),
+          function(element) {
             connect(element, 'onclick', arrangeBugFormHandler);
-          });
-
-        /*
-         * If one of the form elements in the new bug form is changed (or,
-         * for immediate feedback, there is a key-press) then rearrange
-         * the form to show the form.
-         */
-        forEach(submit_bug_form_elements, function(element) {
-            var target = $('bug-already-reported-no');
-            var handler = function(e) {
-              target.checked = true;
-              arrangeBugFormAuto();
-            };
-
-            if (element.type == 'submit') {
-              connect(element, 'onmousedown', handler);
-            }
-            else {
-              connect(element, 'onchange', handler);
-              connect(element, 'onkeypress', handler);
-            }
           });
       </script>
 
