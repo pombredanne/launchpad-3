@@ -1093,9 +1093,9 @@ class POFile(SQLBase, POFileMixIn):
             [translation_file], ignore_obsolete, force_utf8)
         return removeAllProxies(exported_file.content_file).read()
 
-    def export(self, included_obsolete=True):
+    def export(self, ignore_obsolete=False):
         """See `IPOFile`."""
-        if self.validExportCache() and included_obsolete:
+        if self.validExportCache() and not ignore_obsolete:
             # Only use the cache if the request includes obsolete messages,
             # without them, we always do a full export.
             try:
@@ -1119,7 +1119,7 @@ class POFile(SQLBase, POFileMixIn):
             # The export is empty, this is completely broken.
             raise ZeroLengthPOExportError, "Exporting %s" % self.title
 
-        if included_obsolete:
+        if not ignore_obsolete:
             # Update the cache if the request includes obsolete messages.
             try:
                 self.updateExportCache(contents)

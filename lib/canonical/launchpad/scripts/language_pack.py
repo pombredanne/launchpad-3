@@ -103,7 +103,7 @@ def export(distribution_name, series_name, component, update, force_utf8,
             # We don't want obsolete entries here, it makes no sense for a
             # language pack.
             contents = pofile.uncachedExport(
-                included_obsolete=False, force_utf8=force_utf8)
+                ignore_obsolete=True, force_utf8=force_utf8)
 
             pofile_output(
                 potemplate=pofile.potemplate,

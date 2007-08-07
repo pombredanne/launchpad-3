@@ -59,8 +59,8 @@ class ITranslationHeader(Interface):
     plural_form_expression = TextLine(
         title=u'The plural form expression defined in this file or None.')
 
-    charset = Attribute(
-        "Charset used to encode the content in its native form.")
+    charset = TextLine(
+        title=u'Charset used to encode the content in its native form.')
 
     launchpad_export_date = Datetime(
         title=u'when this file was last exported from Launchpad or None.')

@@ -214,10 +214,10 @@ class IPOFile(IRosettaStats):
     def export():
         """Export this PO file as a string."""
 
-    def uncachedExport(included_obsolete=True, export_utf8=False):
+    def uncachedExport(ignore_obsolete=False, export_utf8=False):
         """Export this PO file as string without using any cache.
 
-        :param included_obsolete: Whether the exported PO file does not have
+        :param ignore_obsolete: Whether the exported PO file does not have
             obsolete entries.
         :param export_utf8: Whether the exported PO file should be exported as
             UTF-8.

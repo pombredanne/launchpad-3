@@ -515,12 +515,12 @@ and child distro series.
 
    >>> def get_diff(old_file, new_file):
    ...     from canonical.launchpad.helpers import test_diff
-   ...     # Get content as list of lines, removing X-Rosetta-Export-Date
+   ...     # Get content as list of lines, removing X-Launchpad-Export-Date
    ...     # lines to prevent time bombs in tests.
    ...     old_file_lines = [line for line in old_file.split('\n')
-   ...                       if not line.startswith('"X-Rosetta-Export-Date:')]
+   ...                       if not line.startswith('"X-Launchpad-Export-Date:')]
    ...     new_file_lines = [line for line in new_file.split('\n')
-   ...                       if not line.startswith('"X-Rosetta-Export-Date:')]
+   ...                       if not line.startswith('"X-Launchpad-Export-Date:')]
    ...
    ...     for i in range(len(old_file_lines)):
    ...         if old_file_lines[i] != new_file_lines[i]:
@@ -530,7 +530,6 @@ and child distro series.
    ...     return u''
 
    >>> def compare_translations(orig_distroseries, dest_distroseries):
-   ...
    ...
    ...     orig_templates = sorted(
    ...         orig_distroseries.currentpotemplates,
@@ -553,9 +552,9 @@ and child distro series.
    ...             new_pofile = new_template.getPOFileByLang(
    ...                 old_pofile.language.code, old_pofile.variant)
    ...             old_pofile_data = old_pofile.uncachedExport(
-   ...                 included_obsolete=False,force_utf8=True)
+   ...                 ignore_obsolete=True,force_utf8=True)
    ...             new_pofile_data = new_pofile.uncachedExport(
-   ...                 included_obsolete=False, force_utf8=True)
+   ...                 ignore_obsolete=True, force_utf8=True)
    ...             output = get_diff(old_pofile_data, new_pofile_data)
    ...             if output is not None:
    ...                 output_text += output

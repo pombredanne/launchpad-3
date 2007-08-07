@@ -17,12 +17,57 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    ITranslationFormatImporter, TranslationConstants,
+    ITranslationFormatImporter, ITranslationHeader, TranslationConstants,
     TranslationFormatInvalidInputError, TranslationFormatSyntaxError)
 from canonical.launchpad.translationformat.translation_common_format import (
-    TranslationMessage)
+    TranslationFile, TranslationMessage)
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.lp.dbschema import TranslationFileFormat
+
+
+class MozillaHeader:
+    implements(ITranslationHeader)
+
+    def __init__(self, header_content):
+        self._raw_content = header_content
+        self.is_fuzzy = False
+        self.template_creation_date = None
+        self.translation_revision_date = None
+        self.language_team = None
+        self.has_plural_forms = False
+        self.number_plural_forms = 0
+        self.plural_form_expression = None
+        self.charset = 'UTF-8'
+        self.launchpad_export_date = None
+        self.comment = None
+
+    def getRawContent(self):
+        """See `ITranslationHeader.`"""
+        return self._raw_content
+
+    def updateFromTemplateHeader(self, template_header):
+        """See `ITranslationHeader.`"""
+        # Nothing to do for this format.
+        return
+
+    def getLastTranslator(self):
+        """See `ITranslationHeader.`"""
+        for event, elem in cElementTree.iterparse(StringIO(self._raw_content)):
+            if elem.tag == "{http://www.mozilla.org/2004/em-rdf#}contributor":
+                # This file would have more than one contributor, but
+                # we are only getting latest one.
+                name, email = parseaddr(elem.text)
+
+        return None, None
+
+    def setLastTranslator(self, email, name=None):
+        """Set last translator information.
+
+        :param email: A string with the email address for last translator.
+        :param name: The name for the last translator or None.
+        """
+        # Nothing to do for this format.
+        return
 
 
 class MozillaZipFile:
@@ -54,18 +99,10 @@ class MozillaZipFile:
                 self.extend(jarf.messages)
             elif entry == 'install.rdf':
                 data = zip.read(entry)
-                for event, elem in cElementTree.iterparse(StringIO(data)):
-                    if elem.tag == "{http://www.mozilla.org/2004/em-rdf#}contributor":
-                        # This file would have more than one contributor, but
-                        # we are only getting latest one.
-                        self.last_translator = elem.text
+                self.header = MozillaHeader(data)
             else:
                 # Ignore this file, we don't need to do anything with it.
                 continue
-
-    def getLastTranslator(self):
-        """Return a string representing last translator name and email."""
-        return self.last_translator
 
     def _updateMessageFileReferences(self, message):
         """Update message's file_references with full path."""
@@ -378,9 +415,7 @@ class MozillaXpiImporter:
         self.sourcepackagename = None
         self.is_published = False
         self.content = None
-        self.header = None
-        self.messages = []
-        self.last_translator_text = None
+        self._translation_file = None
 
     @property
     def format(self):
@@ -406,6 +441,7 @@ class MozillaXpiImporter:
 
     def parse(self, translation_import_queue_entry):
         """See `ITranslationFormatImporter`."""
+        self._translation_file = TranslationFile()
         self.basepath = translation_import_queue_entry.path
         self.productseries = translation_import_queue_entry.productseries
         self.distroseries = translation_import_queue_entry.distroseries
@@ -419,21 +455,11 @@ class MozillaXpiImporter:
 
         parser = MozillaZipFile(self.basepath, self.content.read())
 
-        self.header = parser.header
-        self.messages = parser.messages
+        self._translation_file.header = parser.header
+        self._translation_file.messages = parser.messages
 
-        self.last_translator_text = parser.getLastTranslator()
+        return self._translation_file
 
     def getHeaderFromString(self, header_string):
         """See `ITranslationFormatImporter`."""
-        # Right now, there is no header support for this file format.
-        return None
-
-    def getLastTranslator(self):
-        """See `ITranslationFormatImporter`."""
-        # At this point we don't have a way to figure this information from
-        # the XPI file format.
-        if self.last_translator_text is None:
-            return None, None
-
-        return parseaddr(self.last_translator_text)
+        return MozillaHeader(header_string)
