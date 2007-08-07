@@ -128,8 +128,9 @@ class POSubmissionSet:
             FROM POSubmission pos
             JOIN POMsgSet ON pos.pomsgset = POMsgSet.id
             JOIN POTMsgSet ON POMsgSet.potmsgset = POTMsgSet.id
+            JOIN POFile ON POMsgSet.pofile = POFile.id
             WHERE
-                POMsgSet.language = %(language)s AND
+                POFile.language = %(language)s AND
                 POTMsgSet.primemsgid IN %(wanted_primemsgids)s AND
                 NOT POMsgSet.isfuzzy AND
                 NOT EXISTS (
@@ -141,7 +142,7 @@ class POSubmissionSet:
                         better.potranslation = pos.potranslation AND
                         better.active
                 )
-            ORDER BY potranslation, primemsgid, datecreated DESC
+            ORDER BY potranslation, primemsgid, pos.datecreated DESC
             ) AS suggestions
             """ % parameters
         cur.execute(query)
