@@ -517,10 +517,14 @@ and child distro series.
    ...     from canonical.launchpad.helpers import test_diff
    ...     # Get content as list of lines, removing X-Launchpad-Export-Date
    ...     # lines to prevent time bombs in tests.
-   ...     old_file_lines = [line for line in old_file.split('\n')
-   ...                       if not line.startswith('"X-Launchpad-Export-Date:')]
-   ...     new_file_lines = [line for line in new_file.split('\n')
-   ...                       if not line.startswith('"X-Launchpad-Export-Date:')]
+   ...     old_file_lines = [
+   ...         line for line in old_file.split(u'\n')
+   ...         if not line.startswith(u'"X-Launchpad-Export-Date:')
+   ...         ]
+   ...     new_file_lines = [
+   ...         line for line in new_file.split(u'\n')
+   ...         if not line.startswith(u'"X-Launchpad-Export-Date:')
+   ...         ]
    ...
    ...     for i in range(len(old_file_lines)):
    ...         if old_file_lines[i] != new_file_lines[i]:

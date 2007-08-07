@@ -1585,13 +1585,13 @@ class POFileToTranslationFileAdapter:
                 msgset = TranslationMessage()
                 if row.potsequence > 0:
                     msgset.sequence = row.potsequence
-                    msgset.obsolete = False
+                    msgset.is_obsolete = False
                 elif row.posequence > 0:
                     msgset.sequence = row.posequence
-                    msgset.obsolete = True
+                    msgset.is_obsolete = True
                 else:
                     msgset.sequence = 0
-                    msgset.obsolete = True
+                    msgset.is_obsolete = True
 
             # Because of the way the database view works, message IDs and
             # translations will appear multiple times. We see how many we've added
