@@ -314,6 +314,11 @@ class BranchEditView(BranchEditFormView, BranchNameValidationMixin):
     def validate(self, data):
         # Check that we're not moving a team branch to the +junk
         # pseudo project.
+        if ('product' in data and data['product'] is None
+            and self.context.owner.isTeam()):
+            self.setFieldError(
+                'product',
+                "Team-owned branches must be associated with a project.")
         if 'product' in data and 'name' in data:
             self.validate_branch_name(self.context.owner,
                                       data['product'],

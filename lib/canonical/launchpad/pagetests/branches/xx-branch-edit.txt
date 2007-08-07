@@ -150,10 +150,22 @@ branch was moved back to its original location.
   >>> browser.url
   'http://code.launchpad.dev/~name12/+junk/junk.dev'
 
+However, we cannot detach a team-owned branch from a product.
+
+  >>> browser.open('http://code.launchpad.dev/~landscape-developers/landscape/trunk')
+  >>> browser.getLink('Change branch details').click()
+  >>> browser.getControl('Project').value = ''
+  >>> browser.getControl('Change Branch').click()
+  >>> browser.url
+  'http://code.launchpad.dev/%7Elandscape-developers/landscape/trunk/+edit'
+  >>> from BeautifulSoup import BeautifulSoup
+  >>> soup = BeautifulSoup(browser.contents)
+  >>> print soup('div', {'class': 'message'})[0].renderContents()
+  Team-owned branches must be associated with a project.
 
 == Name conflicts ==
 
-The product and branche name contributes to the unique name of a branch. So
+The product and branch name contributes to the unique name of a branch. So
 changing those can lead to integrity errors. Let's make sure the form correctly
 validate the input and give a useful error message.
 
@@ -177,7 +189,6 @@ but that is just for the needs of the demonstration.
 
 This should have displayed an error message next to the name field.
 
-  >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
   Name already in use. ...
@@ -198,7 +209,6 @@ branch, and changing the product and the branch name at the same time.
   >>> browser.getControl('Change Branch').click()
   >>> browser.url
   'http://launchpad.dev/%7Ename12/gnome-terminal/main/+edit'
-  >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
   Name already in use. ...
@@ -215,7 +225,6 @@ combinations of changing name and product that can cause an error.
   >>> browser.getControl('Change Branch').click()
   >>> browser.url
   'http://launchpad.dev/%7Ename12/gnome-terminal/main/+edit'
-  >>> from BeautifulSoup import BeautifulSoup
   >>> soup = BeautifulSoup(browser.contents)
   >>> print soup('div', {'class': 'message'})[0].renderContents()
   Name already in use. ...
