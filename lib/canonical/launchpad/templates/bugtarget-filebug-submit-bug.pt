@@ -170,6 +170,8 @@
             hideElement('bug_reporting_form');
           } else {
             showElement('bug_reporting_form');
+            $('field.actions.submit_bug').focus();
+            $('field.comment').focus();
           }
 
           $('field.actions.this_is_my_bug').disabled = !bug_already_reported;
