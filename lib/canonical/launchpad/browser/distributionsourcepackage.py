@@ -110,7 +110,7 @@ class DistributionSourcePackageBugContactsView(LaunchpadFormView):
         Return a FormField instance, if the user is a member of at least
         one team, else return None.
         """
-        teams = self.user_teams
+        teams = list(self.user_teams)
         if not teams:
             return None
         teams.sort(key=attrgetter('displayname'))
@@ -283,5 +283,5 @@ class DistributionSourcePackageBugContactsView(LaunchpadFormView):
     @cachedproperty
     def user_teams(self):
         """Return the teams that the current user is an administrator of."""
-        return list(self.user.getAdministratedTeams())
+        return self.user.getAdministratedTeams()
 
