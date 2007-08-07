@@ -42,18 +42,6 @@
 
       <div tal:condition="view/similar_bugs">
 
-        <tal:hide-form-avoiding-flicker-during-load
-            tal:condition="not:view/submit_bug_action/submitted">
-          <style type="text/css">
-            #bug_reporting_form { display: none; }
-          </style>
-          <noscript>
-            <style type="text/css">
-              #bug_reporting_form { display: block; }
-            </style>
-          </noscript>
-        </tal:hide-form-avoiding-flicker-during-load>
-
         <tal:similar-bugs condition="view/contextUsesMalone">
           <ul id="similar-bugs" style="list-style: none; margin-left: 0">
 
