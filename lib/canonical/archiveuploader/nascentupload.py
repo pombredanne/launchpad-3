@@ -551,9 +551,14 @@ class NascentUpload:
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
 
         for pocket in lookup_pockets:
+            archive = self.policy.archive
+            if not self.is_ppa:
+                # We must check all the archives as the archive on the upload
+                # may have been overridden on previous uploads.
+                archive = None
             candidates = self.policy.distroseries.getPublishedReleases(
                 source_name, include_pending=True, pocket=pocket,
-                archive=self.policy.archive)
+                archive=archive)
             if candidates:
                 return candidates[0]
 
@@ -588,10 +593,15 @@ class NascentUpload:
 
         # See the comment below, in getSourceAncestry
         lookup_pockets = [self.policy.pocket, PackagePublishingPocket.RELEASE]
+        archive = self.policy.archive
+        if not self.is_ppa:
+            # We must check all the archives as the archive on the upload
+            # may have been overridden on previous uploads.
+            archive = None
         for pocket in lookup_pockets:
             candidates = dar.getReleasedPackages(
                 binary_name, include_pending=True, pocket=pocket,
-                archive=self.policy.archive)
+                archive=archive)
 
             if candidates:
                 return candidates[0]
@@ -606,7 +616,7 @@ class NascentUpload:
             for other_dar in other_dars:
                 candidates = other_dar.getReleasedPackages(
                     binary_name, include_pending=True, pocket=pocket,
-                    archive=self.policy.archive)
+                    archive=archive)
 
                 if candidates:
                     return candidates[0]

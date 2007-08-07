@@ -346,6 +346,25 @@ class AnythingGoesUploadPolicy(AbstractUploadPolicy):
 AbstractUploadPolicy._registerPolicy(AnythingGoesUploadPolicy)
 
 
+class AbsolutelyAnythingGoesUploadPolicy(AnythingGoesUploadPolicy):
+    """This policy is invoked when processing uploads from the test process.
+
+    Absolutely everything is allowed, for when you don't want the hassle
+    of dealing with inappropriate checks in tests.
+    """
+
+    def __init__(self):
+        AnythingGoesUploadPolicy.__init__(self)
+        self.name = "absolutely-anything"
+        self.unsigned_changes_ok = True
+
+    def policySpecificChecks(self, upload):
+        """Nothing, let it go."""
+        pass
+
+AbstractUploadPolicy._registerPolicy(AbsolutelyAnythingGoesUploadPolicy)
+
+
 class SecurityUploadPolicy(AbstractUploadPolicy):
     """The security-upload policy allows unsigned changes and binary uploads."""
 

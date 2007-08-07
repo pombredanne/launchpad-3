@@ -437,6 +437,75 @@ class TestUploadProcessor(TestUploadProcessorBase):
         self.assertEqual(foocomm_bpph.component.name,
             'commercial')
 
+    def testUploadAncestry(self):
+        """Check that an upload correctly finds any file ancestors.
+
+        When uploading a package, any previous versions will have
+        ancestor files which affects whether this upload is NEW or not.
+        In particular, when an upload's archive has been overridden,
+        we must make sure that the ancestry check looks in all the
+        distro archives.  This can be done by two commercial package
+        uploads, as commercial packages have their archive overridden.
+        """
+        # Extra setup for breezy
+        self.setupBreezy()
+        self.layer.txn.commit()
+
+        # Set up the uploadprocessor with appropriate options and logger
+        self.options.context = 'absolutely-anything'
+        uploadprocessor = UploadProcessor(
+            self.options, self.layer.txn, self.log)
+
+        # Upload a package for Breezy.
+        upload_dir = self.queueUpload("foocomm_1.0-1")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check it went ok to the NEW queue and all is going well so far.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "NEW" in raw_msg,
+            "Expected email containing 'NEW', got:\n%s"
+            % raw_msg)
+
+        # Accept and publish the upload.
+        commercial_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            self.ubuntu, ArchivePurpose.COMMERCIAL)
+        self._publishPackage("foocomm", "1.0-1", archive=commercial_archive)
+
+        # Now do the same thing with a binary package.
+        upload_dir = self.queueUpload("foocomm_1.0-1_binary")
+        self.processUpload(uploadprocessor, upload_dir)
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "NEW" in raw_msg,
+            "Expected email containing 'NEW', got:\n%s"
+            % raw_msg)
+
+        # Accept and publish the upload.
+        self._publishPackage("foocomm", "1.0-1", source=False,
+                             archive=commercial_archive)
+
+        # Upload the next source version of the package.
+        upload_dir = self.queueUpload("foocomm_1.0-2")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check it is in the accepted queue.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "OK: foocomm_1.0-2.dsc" in raw_msg, 
+            "Expected email containing 'OK: foocomm_1.0-2.dsc', got:\n%s"
+            % raw_msg)
+
+        # Upload the next binary version of the package.
+        upload_dir = self.queueUpload("foocomm_1.0-2_binary")
+        self.processUpload(uploadprocessor, upload_dir)
+
+        # Check it is in the accepted queue.
+        from_addr, to_addrs, raw_msg = stub.test_emails.pop()
+        self.assertTrue(
+            "OK: foocomm_1.0-2_i386.deb" in raw_msg, 
+            "Expected email containing 'OK: foocomm_1.0-2_i386.deb', got:\n%s"
+            % raw_msg)
 
 class TestUploadProcessorPPA(TestUploadProcessorBase):
     """Functional tests for uploadprocessor.py in PPA operation."""
