@@ -48,9 +48,9 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     Mozilla App Suite as Products, among others.
     """
 
-    # XXX Mark Shuttleworth comments: lets get rid of ID's in interfaces
+    # XXX Mark Shuttleworth 2004-10-12: Let's get rid of ID's in interfaces
     # unless we really need them. BradB says he can remove the need for them
-    # in SQLObject soon. 12/10/04
+    # in SQLObject soon.
     id = Int(title=_('The Project ID'))
 
     project = Choice(

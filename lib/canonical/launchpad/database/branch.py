@@ -11,6 +11,7 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
+from sqlobject.sqlbuilder import AND, OR
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -66,6 +67,7 @@ class Branch(SQLBase):
     last_mirror_attempt = UtcDateTimeCol(default=None)
     mirror_failures = IntCol(default=0, notNull=True)
     pull_disabled = BoolCol(default=False, notNull=True)
+    mirror_request_time = UtcDateTimeCol(default=None)
 
     last_scanned = UtcDateTimeCol(default=None)
     last_scanned_id = StringCol(default=None)
@@ -251,6 +253,33 @@ class Branch(SQLBase):
             if sequence is not None:
                 history.append(revision_id)
         return ancestry, history, branch_revision_map
+
+    def requestMirror(self):
+        """See `IBranch`."""
+        self.mirror_request_time = UTC_NOW
+        self.syncUpdate()
+        return self.mirror_request_time
+
+    def startMirroring(self):
+        """See `IBranch`."""
+        self.last_mirror_attempt = UTC_NOW
+        self.syncUpdate()
+
+    def mirrorComplete(self, last_revision_id):
+        """See `IBranch`."""
+        self.last_mirrored = self.last_mirror_attempt
+        self.mirror_failures = 0
+        self.mirror_status_message = None
+        self.mirror_request_time = None
+        self.last_mirrored_id = last_revision_id
+        self.syncUpdate()
+
+    def mirrorFailed(self, reason):
+        """See `IBranch`."""
+        self.mirror_failures += 1
+        self.mirror_status_message = reason
+        self.mirror_request_time = None
+        self.syncUpdate()
 
 
 class BranchSet:
@@ -730,12 +759,13 @@ class BranchSet:
 
     def getHostedBranchesForPerson(self, person):
         """See `IBranchSet`."""
-        branches = Branch.select(
-            "Branch.URL IS NULL "
-            "AND Branch.owner IN ("
-            "SELECT TeamParticipation.team "
-            "FROM TeamParticipation "
-            "WHERE TeamParticipation.person = %d)" % person.id)
+        branches = Branch.select("""
+            Branch.url IS NULL
+            AND Branch.owner IN (
+            SELECT TeamParticipation.team
+            FROM TeamParticipation
+            WHERE TeamParticipation.person = %s)
+            """ % sqlvalues(person))
         return branches
 
     def getLatestBranchesForProduct(self, product, quantity,
@@ -749,6 +779,66 @@ class BranchSet:
             self._generateBranchClause(query, visible_by_user),
             limit=quantity,
             orderBy=['-date_created', '-id'])
+
+    def getHostedPullQueue(self):
+        """See `IBranchSet`."""
+
+        # XXX: JonathanLange 2007-07-27: Hosted branches (see Andrew's comment
+        # dated 2006-06-15) are mirrored if their mirror_request_time is not
+        # NULL or if they haven't been mirrored in the last 6 hours. The latter
+        # behaviour is a fail-safe and should probably be removed once we trust
+        # the mirror_request_time behavior. See
+        # test_mirror_stale_hosted_branches.
+
+        # The mirroring interval is 6 hours. we think this is a safe balance
+        # between frequency of mirroring and not hammering servers with
+        # requests to check whether mirror branches are up to date.
+
+        return Branch.select(
+            AND(Branch.q.branch_type == BranchType.HOSTED,
+                OR(Branch.q.last_mirror_attempt == None,
+                   UTC_NOW - Branch.q.last_mirror_attempt > '6 hours',
+                   Branch.q.mirror_request_time != None)),
+            prejoins=['owner', 'product'])
+
+    def getMirroredPullQueue(self):
+        """See `IBranchSet`."""
+
+        # The mirroring interval is 6 hours. we think this is a safe balance
+        # between frequency of mirroring and not hammering servers with
+        # requests to check whether mirror branches are up to date.
+
+        return Branch.select(
+            AND(Branch.q.branch_type == BranchType.MIRRORED,
+                OR(Branch.q.last_mirror_attempt == None,
+                   UTC_NOW - Branch.q.last_mirror_attempt > '6 hours')),
+            prejoins=['owner', 'product'])
+
+    def getImportedPullQueue(self):
+        """See `IBranchSet`."""
+        # XXX: JonathanLange 2007-07-19: Circular import.
+        from canonical.launchpad.database.productseries import ProductSeries
+        return Branch.select(
+            AND(Branch.q.branch_type == BranchType.IMPORTED,
+                ProductSeries.q.import_branchID == Branch.q.id,
+                OR(AND(ProductSeries.q.datelastsynced != None,
+                       Branch.q.last_mirror_attempt == None),
+                   ProductSeries.q.datelastsynced > Branch.q.last_mirror_attempt,
+                   AND(ProductSeries.q.datelastsynced == None,
+                       UTC_NOW - Branch.q.last_mirror_attempt > '1 day'))),
+            clauseTables=['ProductSeries'],
+            prejoins=['owner', 'product'])
+
+    def getPullQueue(self):
+        """See `IBranchSet`."""
+        # The following types of branches are included in the queue:
+        # - any branches which have not yet been mirrored
+        # - any branches that were last mirrored over 6 hours ago
+        # - any hosted branches which have requested that they be mirrored
+        # - any import branches which have been synced since their last mirror
+        return self.getHostedPullQueue().union(
+            self.getMirroredPullQueue()).union(
+            self.getImportedPullQueue()).orderBy('last_mirror_attempt')
 
 
 class BranchRelationship(SQLBase):
@@ -776,8 +866,8 @@ class BranchRelationship(SQLBase):
         return BranchRelationships.items[self.label]
 
     def nameSelector(self, sourcepackage=None, selected=None):
-        # XXX: Let's get HTML out of the database code.
-        #      -- SteveAlexander, 2005-04-22
+        # XXX SteveAlexander 2005-04-22: 
+        # Let's get HTML out of the database code.
         html = '<select name="binarypackagename">\n'
         if not sourcepackage:
             # Return nothing for an empty query.

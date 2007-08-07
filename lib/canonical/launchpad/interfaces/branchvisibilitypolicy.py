@@ -15,7 +15,7 @@ from zope.interface import Interface, Attribute
 from zope.schema import Choice
 
 from canonical.launchpad import _
-from canonical.launchpad.webapp.enum import DBEnumeratedType, DBItem
+from canonical.lazr import DBEnumeratedType, DBItem
 
 
 class BranchVisibilityRule(DBEnumeratedType):

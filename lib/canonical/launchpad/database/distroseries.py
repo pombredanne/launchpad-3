@@ -316,8 +316,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         """See IDistroSeries."""
         return self.architectures.count()
 
-    # XXX: this is expensive and shouldn't be a property
-    #   -- kiko, 2006-06-14
+    # XXX kiko 2006-06-14: This is expensive and shouldn't be a property.
     @property
     def potemplates(self):
         result = POTemplate.selectBy(distroseries=self)
@@ -325,8 +324,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         return sorted(
             result, key=lambda x: (-x.priority, x.potemplatename.name))
 
-    # XXX: this is expensive and shouldn't be a property
-    #   -- kiko, 2006-06-14
+    # XXX kiko 2006-06-14: This is expensive and shouldn't be a property.
     @property
     def currentpotemplates(self):
         result = POTemplate.selectBy(distroseries=self, iscurrent=True)
@@ -343,8 +341,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
     def bugtargetname(self):
         """See IBugTarget."""
         return self.fullseriesname
-        # XXX 20070710 mpt: For bugs 113258 and 113262, the distribution's and
-        # series' names should be used instead of fullseriesname.
+        # XXX mpt 2007-07-10 bugs 113258, 113262:
+        # The distribution's and series' names should be used instead
+        # of fullseriesname.
 
     @property
     def bugtargetdisplayname(self):
@@ -608,10 +607,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                              pocket=None, include_pending=False,
                              exclude_pocket=None, archive=None):
         """See IDistroSeries."""
-        # XXX cprov 20060213: we need a standard and easy API, no need
+        # XXX cprov 2006-02-13 bug 31317:
+        # We need a standard and easy API, no need
         # to support multiple type arguments, only string name should be
         # the best choice in here, the call site will be clearer.
-        # bug # 31317
         if ISourcePackage.providedBy(sourcepackage_or_name):
             spn = sourcepackage_or_name.name
         elif ISourcePackageName.providedBy(sourcepackage_or_name):
@@ -791,7 +790,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
     def publishedBinaryPackages(self, component=None):
         """See IDistroSeries."""
-        # XXX sabdfl 04/07/05 this can become a utility when that works
+        # XXX sabdfl 2005-07-04: This can become a utility when that works
         # this is used by the debbugs import process, mkdebwatches
         pubpkgset = getUtility(IPublishedPackageSet)
         result = pubpkgset.query(distroseries=self, component=component)
@@ -1059,9 +1058,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             default_clauses.append("""
             packageupload.pocket IN %s""" % sqlvalues(pocket))
 
-        # XXX cprov 20060606: We may reorganise this code, creating
-        # some new methods provided by IPackageUploadSet, as:
-        # getByStatus and getByName.
+        # XXX cprov 2006-06-06:
+        # We may reorganise this code, creating some new methods provided
+        # by IPackageUploadSet, as: getByStatus and getByName.
         if not status:
             assert not version and not exact_match
             return PackageUpload.select(
@@ -1378,23 +1377,15 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # a time, then performing an intermediate commit.  This avoids holding
         # too many locks for too long and disrupting regular database service.
 
-        if not self.hide_all_translations:
-            raise AssertionError("""
-_copyActiveTranslationsToNewRelease: hide_all_translations not set!
+        assert self.hide_all_translations, (
+            "hide_all_translations not set!"
+            " That would allow users to see and modify incomplete"
+            " translation state.")
 
-Attempted to populate translations for new distroseries while its
-translations are visible.  That would allow users to see and modify incomplete
-translation state.
-""")
-
-        if not self.defer_translation_imports:
-            raise AssertionError("""
-_copyActiveTranslationsToNewRelease: defer_translation_imports not set!
-
-Attempted to populate translations for new distroseries while translation
-import queue is enabled. That would corrupt our translation data mixing
-new imports with the information being copied.
-""")
+        assert self.defer_translation_imports, (
+            "defer_translation_imports not set!"
+            " That would corrupt translation data mixing new imports"
+            " with the information being copied.")
 
         # Clean up any remains from a previous run.  If we got here, that
         # means those remains are not salvagable.
@@ -1451,14 +1442,14 @@ new imports with the information being copied.
         # during its potentially huge updates.  We should see if we can batch
         # it into smaller chunks in order to reduce lock pressure.
 
-        # XXX: JeroenVermeulen 2007-05-03, This method should become
+        # XXX: JeroenVermeulen 2007-05-03: This method should become
         # unnecessary once the "translation multicast" spec is implemented:
         # https://launchpad.canonical.com/MulticastTranslations
 
         # The left outer join that obtains pf2 ensures that we only do the
         # copying for POFiles whose POTemplates don't have any POFiles yet.
 
-        # XXX: JeroenVermeulen 2007-04-27, We must be careful when batching
+        # XXX: JeroenVermeulen 2007-04-27: We must be careful when batching
         # this statement.  After one POFile is copied, pt2 will have a POFile
         # attached and its other POFiles will no longer qualify for copying.
 

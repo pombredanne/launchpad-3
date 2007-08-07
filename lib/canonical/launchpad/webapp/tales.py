@@ -52,16 +52,17 @@ import canonical.launchpad.pagetitles
 from canonical.lp import dbschema
 from canonical.launchpad.webapp import (
     canonical_url, nearest_context_with_adapter, nearest_adapter)
-from canonical.launchpad.webapp.enum import enumerated_type_registry
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.lazr import enumerated_type_registry
 
 
 class TraversalError(NotFoundError):
-    """XXX Remove this when we upgrade to a more recent Zope x3"""
-    # Steve Alexander, Tue Dec 14 13:07:38 UTC 2004
+    """Remove this when we upgrade to a more recent Zope x3."""
+    # XXX: Steve Alexander 2004-12-14:
+    # Remove this when we upgrade to a more recent Zope x3.
 
 
 class MenuAPI:
@@ -169,7 +170,7 @@ class EnumValueAPI:
 
         tal:condition="somevalue/enumvalue:BISCUITS"
 
-    Registered for canonical.launchpad.webapp.enum.Item.
+    Registered for canonical.lazr.enum.Item.
     """
     implements(ITraversable)
 
@@ -1143,7 +1144,7 @@ class FormattersAPI:
     def _linkify_substitution(match):
         if match.group('bug') is not None:
             bugnum = match.group('bugnum')
-            # XXX, Brad Bollenbach, 2006-04-10: Use a hardcoded url so
+            # XXX Brad Bollenbach 2006-04-10: Use a hardcoded url so
             # we still have a link for bugs that don't exist.
             url = '/bugs/%s' % bugnum
             # The text will have already been cgi escaped.

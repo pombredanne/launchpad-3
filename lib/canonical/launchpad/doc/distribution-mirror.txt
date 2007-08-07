@@ -8,10 +8,9 @@ to create a new mirror you should use the Distribution.newMirror method.
     >>> from canonical.launchpad.interfaces import (
     ...     IDistributionSet, IPersonSet, ICountrySet, IDistroSeriesSet,
     ...     IDistroArchSeriesSet, IDistributionMirrorSet,
-    ...     ILibraryFileAliasSet)
+    ...     ILibraryFileAliasSet, MirrorSpeed, MirrorContent, MirrorStatus)
     >>> from canonical.lp.dbschema import (
-    ...     PackagePublishingPocket, MirrorSpeed, MirrorContent,
-    ...     PackagePublishingStatus, MirrorStatus)
+    ...     PackagePublishingPocket, PackagePublishingStatus)
     >>> mirrorset = getUtility(IDistributionMirrorSet)
     >>> distroset = getUtility(IDistributionSet)
     >>> ubuntu = distroset.get(1)

@@ -15,10 +15,10 @@ from sqlobject import ForeignKey
 from canonical.database.sqlbase import SQLBase
 from canonical.database.enumcol import EnumCol
 
-from canonical.launchpad.interfaces import IMessage, IQuestionMessage
+from canonical.launchpad.interfaces import (
+    IMessage, IQuestionMessage, QuestionAction, QuestionStatus)
 
 from canonical.lp import decorates
-from canonical.lp.dbschema import QuestionAction, QuestionStatus
 
 
 class QuestionMessage(SQLBase):
