@@ -649,10 +649,6 @@ class ProductSet:
 
     def getProductsWithUserDevelopmentBranches(self):
         """See `IProductSet`."""
-        """Return products that have a user branch for the development series.
-
-        A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
-        """
         return Product.select('''
             Product.development_focus = ProductSeries.id and
             ProductSeries.user_branch = Branch.id and

@@ -11,7 +11,6 @@ __all__ = [
     ]
 
 from datetime import datetime
-import operator
 
 from zope.component import getUtility
 
@@ -19,14 +18,12 @@ from canonical.cachedproperty import cachedproperty
 from canonical.lp import decorates
 
 from canonical.launchpad.interfaces import (
-    IBazaarApplication, IBranchSet, ILaunchpadCelebrities,
-    IProduct, IProductSet, IProductSeriesSet)
+    IBazaarApplication, IBranchSet, IProduct, IProductSet, IProductSeriesSet)
 from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
-    ApplicationMenu, canonical_url, enabled_with_permission,
-    LaunchpadView, Link, Navigation, stepto)
-from canonical.launchpad.webapp.batching import BatchNavigator
+    ApplicationMenu, enabled_with_permission, LaunchpadView, Link, Navigation,
+    stepto)
 import canonical.launchpad.layers
 
 
