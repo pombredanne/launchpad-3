@@ -934,7 +934,8 @@ class Person(SQLBase, HasSpecificationsMixin):
         # Teams don't get Karma. Inactive accounts don't get Karma.
         # No warning, as we don't want to place the burden on callsites
         # to check this.
-        if not self.is_valid_person:
+        if (not self.is_valid_person
+            or self is getUtility(ILaunchpadCelebrities).launchpad_janitor):
             return None
 
         if product is not None:
