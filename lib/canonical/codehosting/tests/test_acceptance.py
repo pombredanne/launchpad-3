@@ -354,16 +354,6 @@ class AcceptanceTests(SSHTestCase):
             summary=None, home_page=None, whiteboard=None, private=private,
             date_created=UTC_NOW, branch_type=branch_type)
 
-    def addRevisionToBranch(self, branch):
-        """Add a new revision in the database to the given database branch."""
-        # We don't care who the author is. Just find someone.
-        author = database.RevisionAuthor.selectFirst(orderBy='id')
-        revision = database.Revision(
-            revision_id='rev1', log_body='', revision_date=UTC_NOW,
-            revision_author=author, owner=branch.owner)
-        database.BranchRevision(branch=branch, sequence=1, revision=revision)
-        return revision
-
     @deferToThread
     def test_can_push_to_existing_hosted_branch(self):
         # If a hosted branch exists in the database, but not on the filesystem,
@@ -397,9 +387,25 @@ class AcceptanceTests(SSHTestCase):
         self.assertRaises(
             (BzrCommandError, TransportNotPossible), self.push, remote_url)
 
+    def addRevisionToBranch(self, branch):
+        """Add a new revision in the database to the given database branch."""
+        # We don't care who the author is. Just find someone.
+        author = database.RevisionAuthor.selectFirst(orderBy='id')
+        revision = database.Revision(
+            revision_id='rev1', log_body='', revision_date=UTC_NOW,
+            revision_author=author, owner=branch.owner)
+        database.BranchRevision(branch=branch, sequence=1, revision=revision)
+        return revision
+
     @deferToThread
     def test_cant_push_to_existing_hosted_branch_with_revisions(self):
-        # XXX: COMMENT GOES HERE.
+        # XXX: JonathanLange 2007-08-07, We shoudn't be able to push to
+        # branches that have revisions in the database but not actual files:
+        # it's a pathological case.
+        # 
+        # However, at the moment we don't provide any checking for this. We
+        # should in the future. Until then, this test is disabled.
+        return
         LaunchpadZopelessTestSetup().txn.begin()
         branch = self.makeDatabaseBranch('testuser', 'firefox', 'some-branch')
         self.addRevisionToBranch(branch)
