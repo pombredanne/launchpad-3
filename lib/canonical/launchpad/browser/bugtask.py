@@ -695,30 +695,34 @@ class BugTaskEditView(LaunchpadEditFormView):
     # The field names that we use by default. This list will be mutated
     # depending on the current context and the permissions of the user viewing
     # the form.
-    field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
-                   'product', 'sourcepackagename', 'status',
-                   'statusexplanation']
+    default_field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
+                           'product', 'sourcepackagename', 'status',
+                           'statusexplanation']
     custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
     custom_widget('bugwatch', BugTaskBugWatchWidget)
     custom_widget('assignee', BugTaskAssigneeWidget)
 
     @property
+    def field_names(self):
+        field_names = list(self.default_field_names)
+
+        # The fields that we present to the users change based upon the
+        # current context and the user's permissions, so we update field_names
+        # with any fields that may need to be added.
+        for field in self._getEditableFieldNames():
+            if field not in field_names:
+                field_names.append(field)
+
+        return field_names
+
+    @property
     def next_url(self):
-        """See canonical.launchpad.webapp.launchpadform.LaunchpadFormView."""
+        """See `LaunchpadFormView`."""
         return canonical_url(self.context)
 
     @property
-    def initial_values(self):
-        """See canonical.launchpad.webapp.launchpadform.LaunchpadFormView."""
-        field_values = {}
-        for name in self.field_names:
-            field_values[name] = getattr(self.context, name)
-
-        return field_values
-
-    @property
     def prefix(self):
-        """Returns a prefix that can be used for this form.
+        """Return a prefix that can be used for this form.
 
         The prefix is constructed using the name of the bugtask's target so as
         to ensure that it's unique within the context of a bug. This is needed
@@ -752,20 +756,15 @@ class BugTaskEditView(LaunchpadEditFormView):
     def setUpFields(self):
         """Sets up the fields for the bug task edit form.
 
-        See canonical.launchpad.webapp.launchpadform.LaunchpadFormView.
+        See `LaunchpadFormView`.
         """
-        # The fields that we present to the users change based upon the
-        # current context and the user's permissions, so we update field_names
-        # with any fields that may need to be added.
-        for field in self._getEditableFieldNames():
-            if field not in self.field_names:
-                self.field_names.append(field)
-
-        LaunchpadFormView.setUpFields(self)
+        super(BugTaskEditView, self).setUpFields()
+        editable_field_names = self._getEditableFieldNames()
+        read_only_field_names = self._getReadOnlyFieldNames()
 
         # The status field is a special case because we alter the vocabulary
         # it uses based on the permissions of the user viewing form.
-        if 'status' in self._getEditableFieldNames():
+        if 'status' in editable_field_names:
             if self.user is None:
                 status_noshow = list(BugTaskStatus.items)
             else:
@@ -789,13 +788,13 @@ class BugTaskEditView(LaunchpadEditFormView):
             self.form_fields = self.form_fields.omit('status')
             self.form_fields += form.Fields(status_field)
 
-        for field in self._getReadOnlyFieldNames():
+        for field in read_only_field_names:
             self.form_fields[field].for_display = True
 
         # In cases where the status or importance fields are read only we give
         # them a custom widget so that they are rendered correctly.
         for field in ['status', 'importance']:
-            if field in self._getReadOnlyFieldNames():
+            if field in read_only_field_names:
                 self.form_fields[field].custom_widget = CustomWidgetFactory(
                     DBItemDisplayWidget)
 
@@ -812,7 +811,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         if self.context.target_uses_malone:
             # Don't edit self.field_names directly, because it's shared by all
             # BugTaskEditView instances.
-            editable_field_names = list(self.field_names)
+            editable_field_names = list(self.default_field_names)
 
             if 'bugwatch' in editable_field_names:
                 editable_field_names.remove('bugwatch')
