@@ -343,8 +343,10 @@
                   </tr>
                 </table>
               </td>
-              <td width="40%" tal:condition="view/shouldShowReporterWidget">
+              <td width="40%">
                 <table>
+
+                  <tal:render-if condition="view/shouldShowReporterWidget">
                   <tr>
                     <td>
                         <label for="field.bug_reporter">Reporter:</label>
@@ -367,6 +369,9 @@
                       </div>
                     </td>
                   </tr>
+                  </tal:render-if>
+
+                  <tal:render-if condition="view/shouldShowContactWidget">
                   <tr>
                     <td>
                         <label
@@ -392,6 +397,9 @@
                       </div>
                     </td>
                   </tr>
+                  </tal:render-if>
+
+                  <tal:render-if condition="view/shouldShowCommenterWidget">
                   <tr>
                     <td>
                         <label
@@ -416,6 +424,37 @@
                       </div>
                     </td>
                   </tr>
+                  </tal:render-if>
+
+                  <tal:render-if condition="view/shouldShowSubscriberWidget">
+                  <tr>
+                    <td>
+                        <label tal:attributes=
+                            "for view/widgets/subscriber/name">
+                          Bug subscriber:
+                        </label>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="white-space: nowrap"
+                        tal:define="error
+                        python:view.getWidgetError('subscriber')">
+                      <div class="field">
+                        <div tal:attributes="
+                            class python: error and 'error' or None">
+                          <tal:widget tal:content=
+                              "structure view/widgets/subscriber"
+                          />
+                          <div tal:condition="error"
+                              class="message"
+                              tal:content="error">
+                            An error on Bug subscriber widget
+                          </div>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+                  </tal:render-if>
 
                 </table>
               </td>
