@@ -98,7 +98,6 @@ from canonical.launchpad.interfaces.packagerelationship import *
 from canonical.launchpad.interfaces.packaging import *
 from canonical.launchpad.interfaces.pathlookup import *
 from canonical.launchpad.interfaces.person import *
-from canonical.launchpad.interfaces.poexport import *
 from canonical.launchpad.interfaces.pofile import *
 from canonical.launchpad.interfaces.poll import *
 from canonical.launchpad.interfaces.pomsgid import *

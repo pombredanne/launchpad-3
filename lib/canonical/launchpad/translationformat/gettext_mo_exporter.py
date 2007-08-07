@@ -58,7 +58,8 @@ class GettextMoExporter:
         """See `ITranslationFormatExporter`."""
         return [TranslationFileFormat.PO]
 
-    def exportTranslationFiles(self, translation_file_list):
+    def exportTranslationFiles(self, translation_file_list,
+                               ignore_obsolete=False, force_utf8=False):
         """See `ITranslationFormatExporter`."""
         assert len(translation_file_list) > 0, (
             'Got an empty list of files to export!')
@@ -72,7 +73,7 @@ class GettextMoExporter:
             # To generate MO files we need first its PO version and then,
             # generate the MO one.
             template_exported = gettext_po_exporter.exportTranslationFiles(
-                [translation_file])
+                [translation_file], ignore_obsolete, force_utf8)
             exported_file_content = template_exported.content_file.read()
             if translation_file.is_template:
                 # This exporter is not able to handle template files. In that

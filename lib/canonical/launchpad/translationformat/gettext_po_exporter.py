@@ -424,7 +424,8 @@ class GettextPoExporter:
             translation_file.header.comment)
         return header_translation_message
 
-    def exportTranslationFiles(self, translation_file_list):
+    def exportTranslationFiles(self, translation_file_list,
+                               ignore_obsolete=False, force_utf8=False):
         """See `ITranslationFormatExporter`."""
         assert len(translation_file_list) > 0, (
             'Got an empty list of files to export!')
@@ -451,14 +452,16 @@ class GettextPoExporter:
                         translation_file.language_code,
                         file_extension))
 
+            if force_utf8:
+                translation_file.header.charset = 'UTF-8'
             header_translation_message = self._getHeaderAsMessage(
                 translation_file)
             exported_header = export_translation_message(
                 header_translation_message)
             chunks = [exported_header.encode(translation_file.header.charset)]
             for message in translation_file.messages:
-                if message.is_obsolete and len(message.translations) == 0:
-                    # Ignore obsolete messages without translations.
+                if (message.is_obsolete and
+                    (ignore_obsolete or len(message.translations) == 0)):
                     continue
                 exported_message = export_translation_message(message)
                 try:

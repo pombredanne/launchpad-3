@@ -48,14 +48,18 @@ class ITranslationFormatExporter(Interface):
         "List of TranslationFileFormat entries that this exporter is able"
         " to convert from.")
 
-    def exportTranslationFiles(translation_file_list):
-        """Return file path and file like object with given list serialized.
+    def exportTranslationFiles(translation_file_list, ignore_obsolete=False,
+                               force_utf8=False):
+        """Return an IExportedTranslationFile representing the export.
 
         :param translation_file_list: A list of ITranslationFile objects to
             export.
-        :return: A tuple with a string noting the exported file path and a
-            file like object with 'translation_file_list' serialized. File
-            path would be None if the exporter cannot figure a value.
+        :param ignore_obsolete: Whether obsolete messages should not be
+            exported.
+        :param force_utf8: Whether the export should be forced to use UTF-8
+            encoding. This argument is only useful if the file format allows
+            different encodings.
+        :return: An IExportedTranslationFile representing the export.
         """
 
 

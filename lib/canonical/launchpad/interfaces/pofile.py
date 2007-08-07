@@ -214,12 +214,6 @@ class IPOFile(IRosettaStats):
     def export():
         """Export this PO file as a string."""
 
-    def exportToFileHandle(filehandle, included_obsolete=True):
-        """Export this PO file to the given filehandle.
-
-        If the included_obsolete argument is set to False, the export does not
-        include the obsolete messages."""
-
     def uncachedExport(included_obsolete=True, export_utf8=False):
         """Export this PO file as string without using any cache.
 

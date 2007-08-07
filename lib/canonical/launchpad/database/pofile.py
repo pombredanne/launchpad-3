@@ -19,6 +19,7 @@ from sqlobject import (
     )
 from zope.interface import implements
 from zope.component import getUtility
+from zope.proxy import removeAllProxies
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -36,7 +37,7 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 from canonical.launchpad.interfaces import (
     ILaunchpadCelebrities, ILibraryFileAliasSet, IPersonSet, IPOFile,
-    IPOFileSet, IPOTemplateExporter, ITranslationFile, ITranslationImporter,
+    IPOFileSet, ITranslationExporter, ITranslationFile, ITranslationImporter,
     IPOFileTranslator, IVPOExportSet, NotExportedFromLaunchpad, NotFoundError,
     OldTranslationImported, TranslationConstants,
     TranslationFormatSyntaxError, TranslationFormatInvalidInputError,
@@ -1110,12 +1111,17 @@ class POFile(SQLBase, POFileMixIn):
             alias_set = getUtility(ILibraryFileAliasSet)
             return alias_set[self.exportfile.id].read()
 
-    def uncachedExport(self, included_obsolete=True, force_utf8=False):
+    def uncachedExport(self, ignore_obsolete=False, force_utf8=False):
         """See `IPOFile`."""
-        exporter = IPOTemplateExporter(self.potemplate)
-        exporter.force_utf8 = force_utf8
-        return exporter.export_pofile(
-            self.language, self.variant, included_obsolete)
+        translation_exporter = getUtility(ITranslationExporter)
+        translation_format_exporter = (
+            translation_exporter.getTranslationFormatExporterByFileFormat(
+                self.potemplate.source_file_format))
+
+        translation_file = ITranslationFile(self)
+        exported_file = translation_format_exporter.exportTranslationFiles(
+            [translation_file], ignore_obsolete, force_utf8)
+        return removeAllProxies(exported_file.content_file).read()
 
     def export(self, included_obsolete=True):
         """See `IPOFile`."""
@@ -1155,12 +1161,6 @@ class POFile(SQLBase, POFileMixIn):
                     "Error uploading a cached file into librarian", exc_info=1)
 
         return contents
-
-    def exportToFileHandle(self, filehandle, included_obsolete=True):
-        """See `IPOFile`."""
-        exporter = IPOTemplateExporter(self.potemplate)
-        exporter.export_pofile_to_file(filehandle, self.language,
-            self.variant, included_obsolete)
 
     def invalidateCache(self):
         """See `IPOFile`."""
@@ -1372,11 +1372,7 @@ class DummyPOFile(POFileMixIn):
         """See `IPOFile`."""
         raise NotImplementedError
 
-    def exportToFileHandle(self, filehandle, included_obsolete=True):
-        """See `IPOFile`."""
-        raise NotImplementedError
-
-    def uncachedExport(self, included_obsolete=True, export_utf8=False):
+    def uncachedExport(self, ignore_obsolete=False, force_utf8=False):
         """See `IPOFile`."""
         raise NotImplementedError
 
