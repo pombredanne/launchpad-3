@@ -42,7 +42,7 @@ class DistributionSourcePackageSOP(StructuralObjectPresentation):
         return self.context.name
 
     def listChildren(self, num):
-        # XXX mpt 20061004: package releases, most recent first
+        # XXX mpt 2006-10-04: package releases, most recent first
         return self.context.releases
 
     def listAltChildren(self, num):

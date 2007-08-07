@@ -51,7 +51,8 @@ class TestKeyringTrustAnalyser(LaunchpadFunctionalTestCase):
         self.gpg_handler = getUtility(IGPGHandler)
 
     def tearDown(self):
-        #FIXME RBC: this should be a zope test cleanup thing per SteveA.
+        # XXX stub 2005-10-27: this should be a zope test cleanup
+        # thing per SteveA.
         self.gpg_handler.resetLocalState()
         LaunchpadFunctionalTestCase.tearDown(self)
 

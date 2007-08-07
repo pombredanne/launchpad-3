@@ -91,7 +91,7 @@ def urgency_from_numeric(n):
 
 
 def sign_changes(changes, dsc):
-    # XXX cprov 20070706: hardcoded file locations and parameters for
+    # XXX cprov 2007-07-06: hardcoded file locations and parameters for
     # production.
     temp_filename = "unsigned-changes"
     keyid = "0C12BDD7"
@@ -124,9 +124,11 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes, section,
                      origin):
     """Generate a .changes as a string"""
 
-    # [xxx] Changed-By can be extracted from most-recent changelog footer,
+    # XXX cprov 2007-07-03:
+    # Changed-By can be extracted from most-recent changelog footer,
     # but do we care?
-    # [xxx] 'Closes' but could be gotten from changelog, but we don't use them?
+    # XXX James Troup 2006-01-30:
+    # 'Closes' but could be gotten from changelog, but we don't use them?
 
     changes = ""
     changes += "Origin: %s/%s\n" % (origin["name"], origin["suite"])
@@ -136,7 +138,8 @@ def generate_changes(dsc, dsc_files, suite, changelog, urgency, closes, section,
     changes += "Binary: %s\n" % (dsc["binary"])
     changes += "Architecture: source\n"
     changes += "Version: %s\n"% (dsc["version"])
-    # XXX: 'suite' forced to string to avoid unicode-vs-str grudge match
+    # XXX: James Troup 2006-01-30:
+    # 'suite' forced to string to avoid unicode-vs-str grudge match
     changes += "Distribution: %s\n" % (str(suite))
     changes += "Urgency: %s\n" % (urgency)
     changes += "Maintainer: %s\n" % (dsc["maintainer"])
@@ -376,13 +379,13 @@ def import_dsc(dsc_filename, suite, previous_version, signing_rules,
                                section, priority, description, have_orig_tar_gz,
                                requested_by, origin)
 
-    # XXX Soyuz wants an unsigned changes
+    # XXX cprov 2007-07-03: Soyuz wants an unsigned changes
     #sign_changes(changes, dsc)
     output_filename = "%s_%s_source.changes" % (
         dsc["source"], dak_utils.re_no_epoch.sub('', dsc["version"]))
 
     filehandle = open(output_filename, 'w')
-    # XXX The Soyuz .changes parser requires the extra '\n'
+    # XXX cprov 2007-07-03: The Soyuz .changes parser requires the extra '\n'
     filehandle.write(changes+'\n')
     filehandle.close()
 
@@ -397,8 +400,8 @@ def read_current_source(distro_series, valid_components="", arguments=None):
     S = {}
     valid_components = dak_utils.split_args(valid_components)
 
-    # XXX FIXME: This searches all pockets of the distro_series which
-    #            is not what we want.
+    # XXX cprov 2007-07-10: This searches all pockets of the
+    #     distro_series which is not what we want.
     if Options.all:
         spp = distro_series.getSourcePackagePublishing(
             status=dbschema.PackagePublishingStatus.PUBLISHED,
@@ -438,14 +441,14 @@ def read_current_binaries(distro_series):
     """
     B = {}
 
-    # XXX FIXME: This searches all pockets of the distro_series which
-    #            is not what we want.
+    # XXX cprov 2007-07-10: This searches all pockets of the 
+    #     distro_series which is not what we want.
 
-    # XXX FIXME: this is insanely slow due to how SQLObject works.  It
-    #            can be limited, but only if we know what binaries we
-    #            want to check against, which we don't know till we
-    #            have the .dsc file and currently this function is
-    #            run well before that.
+    # XXX James Troup 2006-02-03: this is insanely slow due to how It
+    #     SQLObject works. Can be limited, but only if we know what
+    #     binaries we want to check against, which we don't know till
+    #     we have the .dsc file and currently this function is
+    #     run well before that.
     #
     #     for distroarchseries in distro_series.architectures:
     #         bpp = distroarchseries.getAllReleasesByStatus(
@@ -462,7 +465,7 @@ def read_current_binaries(distro_series):
     #                 if apt_pkg.VersionCompare(B[pkg][0], version) < 0:
     #                     B[pkg] = [version, component]
 
-    # XXX: so... let's fall back on raw SQL
+    # XXX James Troup 2006-02-22: so... let's fall back on raw SQL
     dar_ids = ", ".join([(str(dar.id)) for dar in distro_series.architectures])
     cur = cursor()
 
@@ -720,7 +723,7 @@ def options_setup():
                       default=True, action="store_false",
                       help="don't do anything")
 
-    # XXX FIXME: why the heck doesn't -v provide by logger provide
+    # XXX cprov 2007-07-03: Why the heck doesn't -v provide by logger provide
     # Options.verbose?
     parser.add_option("-V", "--moreverbose", dest="moreverbose",
                       default=False, action="store_true",
@@ -823,7 +826,7 @@ def init():
 
     # Blacklist
     Blacklisted = {}
-    # XXX cprov 20070706: hardcoded file location for production.
+    # XXX cprov 2007-07-06: hardcoded file location for production.
     blacklist_file = open("/srv/launchpad.net/dak/sync-blacklist.txt")
     for line in blacklist_file:
         try:

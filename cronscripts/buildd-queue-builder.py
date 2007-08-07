@@ -67,7 +67,7 @@ class QueueBuilder(LaunchpadCronScript):
 
         self.logger.info("Rebuilding Build Queue.")
 
-        # XXX cprov 20070321: In order to avoid the partial commits inside
+        # XXX cprov 2007-03-21: In order to avoid the partial commits inside
         # BuilddMaster to happen we pass a FakeZtm instance
         class _FakeZTM:
             """A fake transaction manager."""
