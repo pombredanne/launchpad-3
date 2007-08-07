@@ -38,10 +38,8 @@ from operator import attrgetter
 from zope.app.form import CustomWidgetFactory
 from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
-    IInputWidget, IDisplayWidget, InputErrors, WidgetsError, ConversionError)
-from zope.app.form.utility import (
-    setUpWidget, setUpWidgets, setUpDisplayWidgets, getWidgetsData,
-    applyWidgetsChanges)
+    IInputWidget, IDisplayWidget, InputErrors, WidgetsError)
+from zope.app.form.utility import setUpWidget, setUpWidgets
 from zope.component import getUtility, getMultiAdapter
 from zope.event import notify
 from zope.formlib import form
@@ -87,7 +85,6 @@ from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 
 from canonical.launchpad.webapp.authorization import check_permission
 from canonical.launchpad.webapp.batching import TableBatchNavigator
-from canonical.launchpad.webapp.generalform import GeneralFormView
 from canonical.launchpad.webapp.snapshot import Snapshot
 from canonical.launchpad.webapp.tales import PersonFormatterAPI
 from canonical.launchpad.webapp.vocabulary import vocab_factory
@@ -694,9 +691,6 @@ class BugTaskEditView(LaunchpadEditFormView):
     """The view class used for the task +editstatus page."""
 
     schema = IBugTask
-    custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
-    custom_widget('bugwatch', BugTaskBugWatchWidget)
-    custom_widget('assignee', BugTaskAssigneeWidget)
 
     # The field names that we use by default. This list will be mutated
     # depending on the current context and the permissions of the user viewing
@@ -704,6 +698,9 @@ class BugTaskEditView(LaunchpadEditFormView):
     field_names = ['assignee', 'bugwatch', 'importance', 'milestone',
                    'product', 'sourcepackagename', 'status',
                    'statusexplanation']
+    custom_widget('sourcepackagename', BugTaskSourcePackageNameWidget)
+    custom_widget('bugwatch', BugTaskBugWatchWidget)
+    custom_widget('assignee', BugTaskAssigneeWidget)
 
     @property
     def next_url(self):
