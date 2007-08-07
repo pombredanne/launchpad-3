@@ -942,7 +942,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         # Save the field names we extract from the form in a separate
         # list, because we modify this list of names later if the
         # bugtask is reassigned to a different product.
-        field_names = list(data)
+        field_names = data.keys()
         new_values = data.copy()
         data_to_apply = data.copy()
 
@@ -1039,7 +1039,6 @@ class BugTaskEditView(LaunchpadEditFormView):
                 #     thing would be to convert the bug watch's status to a
                 #     Launchpad status, but it's not trivial to do at the
                 #     moment. I will fix this later.
-                #     -- Bjorn Tillenius, 2006-03-01
                 context.transitionToStatus(
                     BugTaskStatus.UNKNOWN, self.user)
                 context.importance = BugTaskImportance.UNKNOWN
@@ -1062,8 +1061,14 @@ class BugTaskEditView(LaunchpadEditFormView):
 
         if context.sourcepackagename is not None:
             real_package_name = context.sourcepackagename.name
+
+            # We get entered_package_name directly from the form here, since
+            # validating the sourcepackagename field mutates its value in to
+            # the one already in real_package_name, which makes our comparison
+            # of the two below useless.
             entered_package_name = self.request.form.get(
                 self.widgets['sourcepackagename'].name)
+
             if real_package_name != entered_package_name:
                 # The user entered a binary package name which got
                 # mapped to a source package.
