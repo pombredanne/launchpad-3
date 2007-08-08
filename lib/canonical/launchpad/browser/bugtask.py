@@ -785,7 +785,8 @@ class BugTaskEditView(LaunchpadEditFormView):
                 editable_field_names += ['sourcepackagename']
             if self.context.bugwatch is None:
                 editable_field_names += ['status', 'assignee']
-                if self.userCanEditImportance():
+                if ('importance' in self.default_field_names
+                    and self.userCanEditImportance()):
                     editable_field_names += ["importance"]
 
         return editable_field_names
@@ -868,8 +869,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         product_or_distro = self._getProductOrDistro()
 
         return (
-            ("milestone" in self.field_names) and (
-                (product_or_distro.bugcontact and
+            ((product_or_distro.bugcontact and
                  self.user and
                  self.user.inTeam(product_or_distro.bugcontact)) or
                 check_permission("launchpad.Edit", product_or_distro)))
@@ -882,8 +882,7 @@ class BugTaskEditView(LaunchpadEditFormView):
         product_or_distro = self._getProductOrDistro()
 
         return (
-            ("importance" in self.field_names) and (
-                (product_or_distro.bugcontact and
+            ((product_or_distro.bugcontact and
                  self.user and
                  self.user.inTeam(product_or_distro.bugcontact)) or
                 check_permission("launchpad.Edit", product_or_distro)))
