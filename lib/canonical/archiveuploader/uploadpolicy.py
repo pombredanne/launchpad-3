@@ -8,6 +8,7 @@ __all__ = ["findPolicyByName", "findPolicyByOptions", "UploadPolicyError"]
 
 from zope.component import getUtility
 
+from canonical.archiveuploader.nascentuploadfile import UploadError
 from canonical.launchpad.interfaces import (
     IDistributionSet, ILaunchpadCelebrities)
 from canonical.lp.dbschema import (
@@ -150,7 +151,11 @@ class AbstractUploadPolicy:
             return
 
         for binary_package_file in upload.changes.binary_package_files:
-            spr = binary_package_file.findSourcePackageRelease()
+            try:
+                spr = binary_package_file.findSourcePackageRelease()
+            except UploadError:
+                # The binary has no source package.
+                continue
             if self.archive != spr.upload_archive:
                 upload.reject(
                     "Archive for binary differs to the source's archive.")
