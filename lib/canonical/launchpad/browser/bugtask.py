@@ -702,7 +702,7 @@ class BugTaskEditView(LaunchpadEditFormView):
     custom_widget('bugwatch', BugTaskBugWatchWidget)
     custom_widget('assignee', BugTaskAssigneeWidget)
 
-    @property
+    @cachedproperty
     def field_names(self):
         field_names = list(self.default_field_names)
 
@@ -714,44 +714,6 @@ class BugTaskEditView(LaunchpadEditFormView):
                 field_names.append(field)
 
         return field_names
-
-    @property
-    def next_url(self):
-        """See `LaunchpadFormView`."""
-        return canonical_url(self.context)
-
-    @property
-    def prefix(self):
-        """Return a prefix that can be used for this form.
-
-        The prefix is constructed using the name of the bugtask's target so as
-        to ensure that it's unique within the context of a bug. This is needed
-        in order to included multiple edit forms on the bug page, while still
-        keeping the field ids unique.
-        """
-        parts = []
-        if IUpstreamBugTask.providedBy(self.context):
-            parts.append(self.context.product.name)
-
-        elif IProductSeriesBugTask.providedBy(self.context):
-            parts.append(self.context.productseries.name)
-            parts.append(self.context.productseries.product.name)
-
-        elif IDistroBugTask.providedBy(self.context):
-            parts.append(self.context.distribution.name)
-            if self.context.sourcepackagename is not None:
-                parts.append(self.context.sourcepackagename.name)
-
-        elif IDistroSeriesBugTask.providedBy(self.context):
-            parts.append(self.context.distroseries.distribution.name)
-            parts.append(self.context.distroseries.name)
-
-            if self.context.sourcepackagename is not None:
-                parts.append(self.context.sourcepackagename.name)
-
-        else:
-            raise AssertionError("Unknown IBugTask: %r" % self.context)
-        return '_'.join(parts)
 
     @cachedproperty
     def editable_field_names(self):
@@ -790,6 +752,44 @@ class BugTaskEditView(LaunchpadEditFormView):
                     editable_field_names += ["importance"]
 
         return editable_field_names
+
+    @property
+    def next_url(self):
+        """See `LaunchpadFormView`."""
+        return canonical_url(self.context)
+
+    @property
+    def prefix(self):
+        """Return a prefix that can be used for this form.
+
+        The prefix is constructed using the name of the bugtask's target so as
+        to ensure that it's unique within the context of a bug. This is needed
+        in order to included multiple edit forms on the bug page, while still
+        keeping the field ids unique.
+        """
+        parts = []
+        if IUpstreamBugTask.providedBy(self.context):
+            parts.append(self.context.product.name)
+
+        elif IProductSeriesBugTask.providedBy(self.context):
+            parts.append(self.context.productseries.name)
+            parts.append(self.context.productseries.product.name)
+
+        elif IDistroBugTask.providedBy(self.context):
+            parts.append(self.context.distribution.name)
+            if self.context.sourcepackagename is not None:
+                parts.append(self.context.sourcepackagename.name)
+
+        elif IDistroSeriesBugTask.providedBy(self.context):
+            parts.append(self.context.distroseries.distribution.name)
+            parts.append(self.context.distroseries.name)
+
+            if self.context.sourcepackagename is not None:
+                parts.append(self.context.sourcepackagename.name)
+
+        else:
+            raise AssertionError("Unknown IBugTask: %r" % self.context)
+        return '_'.join(parts)
 
     def setUpFields(self):
         """Sets up the fields for the bug task edit form.
