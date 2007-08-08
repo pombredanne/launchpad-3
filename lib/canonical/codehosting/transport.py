@@ -129,10 +129,12 @@ class LaunchpadServer(Server):
         """
         path_segments = get_path_segments(virtual_path)
         if len(path_segments) != 3:
-            raise NoSuchFile(virtual_path)
+            raise NoSuchFile(
+                'This method only for creating branches: %s' % (virtual_path,))
         branch_id = self._make_branch(*path_segments)
         if branch_id == '':
-            raise NoSuchFile(virtual_path)
+            raise NoSuchFile(
+                'Cannot create branch: %s' % (virtual_path,))
         makedirs(self.backing_transport, branch_id_to_path(branch_id))
 
     def _make_branch(self, user, product, branch):
@@ -210,8 +212,7 @@ class LaunchpadServer(Server):
         """
         segments = get_path_segments(virtual_path)
         if (len(segments) == 4 and segments[-1] not in ALLOWED_DIRECTORIES):
-            raise NoSuchFile(path=segments[-1],
-                             extra=FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
+            raise NoSuchFile(FORBIDDEN_DIRECTORY_ERROR % (segments[-1],))
         
         # XXX: JonathanLange 2007-05-29, We could differentiate between
         # 'branch not found' and 'not enough information in path to figure out
