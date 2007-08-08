@@ -25,5 +25,5 @@ CREATE INDEX branchmergeproposal__dependent_branch__idx
    ON BranchMergeProposal USING btree(dependent_branch);
 
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 99, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 42, 0);
 
