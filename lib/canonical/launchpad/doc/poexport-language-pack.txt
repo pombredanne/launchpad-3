@@ -42,7 +42,6 @@ Try doing a base language pack export.
     ...     output_file=None,
     ...     email_addresses=['daf@canonical.com'],
     ...     logger=logger)
-    True
 
 Check that the log looks ok.
 

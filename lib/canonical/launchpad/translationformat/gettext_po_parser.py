@@ -773,7 +773,11 @@ class PoParser(object):
                 return
             # Record file references
             if l[:2] == '#:':
-                self._message.file_references += l[2:].strip() + '\n'
+                if self._message.file_references:
+                    # There is already a file reference, let's split it from
+                    # the new one with a new line char.
+                    self._message.file_references += '\n'
+                self._message.file_references += l[2:].strip()
                 return
             # Record source comments
             if l[:2] == '#.':

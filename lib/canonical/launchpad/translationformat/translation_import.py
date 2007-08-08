@@ -15,9 +15,9 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-    IPersonSet, ITranslationImporter, NotExportedFromLaunchpad,
-    OldTranslationImported, PersonCreationRationale, TranslationConflict,
-    TranslationConstants)
+    IPersonSet, ITranslationExporter, ITranslationImporter,
+    NotExportedFromLaunchpad, OldTranslationImported, PersonCreationRationale,
+    TranslationConflict, TranslationConstants)
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPoImporter)
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
@@ -104,6 +104,9 @@ class TranslationImporter:
 
         importer = self.getTranslationFormatImporter(
             translation_import_queue_entry.format)
+        exporter = getUtility(ITranslationExporter)
+        format_exporter = exporter.getTranslationFormatExporterByFileFormat(
+            importer.format)
 
         assert importer is not None, (
             'There is no importer available for %s files' % (
@@ -221,10 +224,12 @@ class TranslationImporter:
                         pomsgset = (
                             self.pofile.createMessageSetFromMessageSet(
                                 potmsgset))
+
                     # Add the pomsgset to the list of pomsgsets with errors.
                     error = {
                         'pomsgset': pomsgset,
-                        'pomessage': unicode(message),
+                        'pomessage': format_exporter.exportTranslationMessage(
+                            message),
                         'error-message': (
                             "The msgid_plural field has changed since the"
                             " last time this file was generated, please"
@@ -331,7 +336,8 @@ class TranslationImporter:
             except TranslationConflict:
                 error = {
                     'pomsgset': pomsgset,
-                    'pomessage': unicode(message),
+                    'pomessage': format_exporter.exportTranslationMessage(
+                        message),
                     'error-message': (
                         "This message was updated by someone else after you"
                         " got the translation file. This translation is now"
@@ -354,7 +360,8 @@ class TranslationImporter:
                 # Add the pomsgset to the list of pomsgsets with errors.
                 error = {
                     'pomsgset': pomsgset,
-                    'pomessage': unicode(message),
+                    'pomessage': format_exporter.exportTranslationMessage(
+                        message),
                     'error-message': unicode(e)
                 }
 

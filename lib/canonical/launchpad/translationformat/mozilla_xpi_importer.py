@@ -52,13 +52,15 @@ class MozillaHeader:
 
     def getLastTranslator(self):
         """See `ITranslationHeader.`"""
+        name = None
+        email = None
         for event, elem in cElementTree.iterparse(StringIO(self._raw_content)):
             if elem.tag == "{http://www.mozilla.org/2004/em-rdf#}contributor":
                 # This file would have more than one contributor, but
                 # we are only getting latest one.
                 name, email = parseaddr(elem.text)
 
-        return None, None
+        return name, email
 
     def setLastTranslator(self, email, name=None):
         """Set last translator information.
