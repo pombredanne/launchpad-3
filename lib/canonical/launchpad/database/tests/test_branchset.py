@@ -4,10 +4,14 @@
 
 __metaclass__ = type
 
+from datetime import datetime, timedelta
 from unittest import TestCase, TestLoader
+
+import pytz
 
 import transaction
 
+from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import cursor, sqlvalues
 
 from canonical.launchpad.ftests import login, logout, ANONYMOUS, syncUpdate
@@ -57,6 +61,16 @@ class TestBranchSet(TestCase):
         transaction.commit()
         self.assertEqual(
             [1], [branch.id for branch in self.branch_set.getPullQueue()])
+
+    def test_futureMirrorRequestTimeInQueue(self):
+        self.resetMirrorRequestTimes()
+        transaction.begin()
+        arbitrary_branch = self.branch_set.get(1)
+        tomorrow = datetime.now(pytz.timezone('UTC')) + timedelta(1)
+        arbitrary_branch.mirror_request_time = tomorrow
+        arbitrary_branch.syncUpdate()
+        transaction.commit()
+        self.assertEqual([], list(self.branch_set.getPullQueue()))
 
     def test_limitedByQuantity(self):
         """When getting the latest branches for a product, we can specify the

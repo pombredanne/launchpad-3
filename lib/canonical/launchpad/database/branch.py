@@ -767,36 +767,24 @@ class BranchSet:
         """See `IBranchSet`."""
         return Branch.select(
             AND(Branch.q.branch_type == BranchType.HOSTED,
-                Branch.q.mirror_request_time != None),
+                Branch.q.mirror_request_time < UTC_NOW),
             prejoins=['owner', 'product'])
 
     def getMirroredPullQueue(self):
         """See `IBranchSet`."""
-
         # The mirroring interval is 6 hours. we think this is a safe balance
         # between frequency of mirroring and not hammering servers with
         # requests to check whether mirror branches are up to date.
-
         return Branch.select(
             AND(Branch.q.branch_type == BranchType.MIRRORED,
-                Branch.q.mirror_request_time != None),
+                Branch.q.mirror_request_time < UTC_NOW),
             prejoins=['owner', 'product'])
 
     def getImportedPullQueue(self):
         """See `IBranchSet`."""
-        # XXX: JonathanLange 2007-07-19: Circular import.
-        from canonical.launchpad.database.productseries import ProductSeries
-        # Has been synced but not mirrored, or synced since the last mirror,
-        # or not synced but mirrored over a day ago.
         return Branch.select(
             AND(Branch.q.branch_type == BranchType.IMPORTED,
-                ProductSeries.q.import_branchID == Branch.q.id,
-                OR(AND(ProductSeries.q.datelastsynced != None,
-                       Branch.q.last_mirror_attempt == None),
-                   ProductSeries.q.datelastsynced > Branch.q.last_mirror_attempt,
-                   AND(ProductSeries.q.datelastsynced == None,
-                       UTC_NOW - Branch.q.last_mirror_attempt > '1 day'))),
-            clauseTables=['ProductSeries'],
+                Branch.q.mirror_request_time < UTC_NOW),
             prejoins=['owner', 'product'])
 
     def getPullQueue(self):
