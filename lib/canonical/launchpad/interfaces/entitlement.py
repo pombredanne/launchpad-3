@@ -5,11 +5,11 @@
 __metaclass__ = type
 
 __all__ = [
-'EntitlementState',
-'EntitlementType',
     'EntitlementInvalidError',
     'EntitlementQuota',
     'EntitlementQuotaExceededError',
+    'EntitlementState',
+    'EntitlementType',
     'IEntitlement',
     'IEntitlementSet',
     ]
