@@ -58,19 +58,14 @@ class BugJanitor:
         self._login()
         try:
             expired_count = 0
-            conjoined_slave_count = 0
             bugtask_set = getUtility(IBugTaskSet)
             incomplete_bugtasks = bugtask_set.findExpirableBugTasks(
                 self.days_before_expiration)
             self.log.info(
-                'Found %d bugtasks to expire.' % incomplete_bugtasks.count())
+                'Found %d bugtasks to expire.' % len(incomplete_bugtasks))
             for bugtask in incomplete_bugtasks:
                 # a slave bugtask, such as a DistroSeries, must be edited
                 # via its master, such as a Distribution.
-                conjoined_master = bugtask.conjoined_master
-                if conjoined_master is not None:
-                    bugtask = conjoined_master
-                    conjoined_slave_count += 1
                 bugtask.transitionToStatus(
                     BugTaskStatus.INVALID, self.janitor)
                 content = message_template % (
@@ -88,8 +83,6 @@ class BugJanitor:
                 transaction_manager.commit()
                 expired_count += 1
             self.log.info('Expired %d bugtasks.' % expired_count)
-            self.log.info('%d slave bugtasks were implicitly expired.' %
-                          conjoined_slave_count)
         finally:
             self._logout()
         self.log.info('Finished expiration run.')

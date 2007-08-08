@@ -174,7 +174,6 @@ database changes as the Bug Watch Updater user.
             the last 60 days for projects that use Malone.
     INFO    Found 2 bugtasks to expire.
     INFO    Expired 2 bugtasks.
-    INFO    1 slave bugtasks were implicitly expired.
     INFO    Finished expiration run.
     <BLANKLINE>
     >>> print out

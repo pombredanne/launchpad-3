@@ -634,7 +634,7 @@ class IBugTaskSet(Interface):
         """
 
     def findExpirableBugTasks(min_days_old):
-        """Find INCOMPLETE bug tasks that are min_days_old or older.
+        """Return a list of bugtasks that are at least min_days_old.
         
         An Expirable bug task is unassigned, in the INCOMPLETE status,
         and belongs to a Product or Distribtion that uses Malone.

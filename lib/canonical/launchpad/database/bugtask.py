@@ -1422,25 +1422,63 @@ class BugTaskSet:
         return bugtask
 
     def findExpirableBugTasks(self, min_days_old):
-        """See `IBugTaskSet`."""
+        """See `IBugTaskSet`.
+        
+        This implementation returns the master of the master-slave conjoined
+        pairs of bugtasks. Slave conjoined bugtasks are not included in the
+        list because they can only be expired by calling the master bugtask's
+        transitionToStatus() method.
+        """
         # XXX sinzui 2007-08-06:
         # Switch from BugTask.datecreated to BugTask.date_incomplete
-        return BugTask.select("""
+        common_contraints = dict(status_assignee_age="""
             BugTask.status = %s
             AND BugTask.assignee IS NULL
-            AND BugTask.datecreated < (
-                current_timestamp -interval '%s days')
-            AND EXISTS (
-                SELECT TRUE
-                FROM BugTask AS OtherBugTask
-                    LEFT OUTER JOIN Distribution
-                        ON OtherBugTask.distribution = Distribution.id
-                    LEFT OUTER JOIN Product AS Product
-                        ON OtherBugTask.product = Product.id
-                WHERE OtherBugTask.id = BugTask.id
-                    AND (Distribution.official_malone IS TRUE
-                        OR Product.official_malone IS TRUE))
+            AND BugTask.datecreated < (current_timestamp -interval '%s days')
             """ % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old))
+        all_bugtasks = BugTask.select("""
+            BugTask.id IN (
+                SELECT BugTask.id
+                FROM BugTask
+                    LEFT JOIN Distribution
+                        ON BugTask.distribution = Distribution.id
+                WHERE
+                    %(status_assignee_age)s
+                    AND Distribution.official_malone IS TRUE
+                UNION
+                SELECT BugTask.id
+                FROM BugTask
+                    LEFT JOIN Product
+                        ON BugTask.product = Product.id
+                WHERE
+                    %(status_assignee_age)s
+                    AND Product.official_malone IS TRUE
+                UNION
+                SELECT BugTask.id
+                FROM BugTask 
+                    LEFT JOIN DistroRelease
+                        ON BugTask.distrorelease = DistroRelease.id
+                    LEFT JOIN Distribution
+                        ON DistroRelease.distribution = Distribution.id
+                WHERE
+                    %(status_assignee_age)s
+                    AND Distribution.official_malone IS TRUE
+                UNION
+                SELECT BugTask.id
+                FROM BugTask 
+                    LEFT JOIN ProductSeries
+                        ON BugTask.productseries = ProductSeries.id
+                    LEFT JOIN Product
+                        ON ProductSeries.product = Product.id
+                WHERE
+                    %(status_assignee_age)s
+                    AND Product.official_malone IS TRUE
+            )""" % common_contraints)
+        bugtasks = []
+        for bugtask in all_bugtasks:
+            if bugtask.conjoined_master is None:
+                bugtasks.append(bugtask)
+        return bugtasks
 
     def maintainedBugTasks(self, person, minimportance=None,
                            showclosed=False, orderBy=None, user=None):
