@@ -487,11 +487,9 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
     upstream_page = ViewPageTemplateFile(
         '../templates/bugtask-requestfix-upstream.pt')
     _confirm_new_task = False
-    extracted_bug = None
-    extracted_bugtracker = None
-    bugtracker_found = None
-    unrecognized_bugtracker_URL = None
-    
+    remote_bug = None
+    bugtracker = None
+
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
         self.notifications = []
@@ -511,12 +509,22 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             for field_name in self.field_names
             if field_name not in target_field_names]
 
+    def _extractBugtrackerAndBug(self, bug_url):
+        bug_url = bug_url.strip()
+        try:
+            self.bugtracker, self.remote_bug = (
+                getUtility(IBugWatchSet).extractBugTrackerAndBug(bug_url))
+        except (NoBugTrackerFound, UnrecognizedBugTrackerURL):
+            pass
+
     @property
     def has_bug_url(self):
         return bool(self.request.form.get('field.bug_url'))
 
     def render_upstreamtask(self):
-        if self.has_bug_url and not self.bugtracker_found:
+        self._extractBugtrackerAndBug(
+            self.request.form.get('field.bug_url', ''))
+        if self.has_bug_url and self.bugtracker is None:
             # Delegate to another view which will ask the user if (s)he wants
             # to create the bugtracker now.
             return BugAlsoReportInWithBugTrackerCreationView(
@@ -560,7 +568,9 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         return self.render()
 
     def render_distrotask(self):
-        if self.has_bug_url and not self.bugtracker_found:
+        self._extractBugtrackerAndBug(
+            self.request.form.get('field.bug_url', ''))
+        if self.has_bug_url and self.bugtracker is None:
             # Delegate to another view which will ask the user if (s)he wants
             # to create the bugtracker now.
             return BugAlsoReportInWithBugTrackerCreationView(
@@ -593,27 +603,6 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                 'Either a product or distribution widget should be present'
                 ' in the form.')
         return target.displayname
-
-    def _extractBugTrackerAndBug(self, data):
-        """Extract the bugtracker and bug from the form data.
-
-        Tries to grab the `bug_url` field data from the form. If it
-        exists, normalizes and attempts to parse it and extract the
-        bugtracker url and the remote bug number, then store the
-        results as attributes of the view. Alternatively, any exceptions
-        raised are stored in the view as well.
-        """
-        bug_url = data.get('bug_url')
-        if ((bug_url is None) or (len(bug_url) == 0)):
-            return
-        bug_url = bug_url.strip()
-        try:
-            self.extracted_bugtracker, self.extracted_bug = (
-                getUtility(IBugWatchSet).extractBugTrackerAndBug(bug_url))
-        except NoBugTrackerFound, error:
-            self.bugtracker_found = error
-        except UnrecognizedBugTrackerURL, error:
-            self.unrecognized_bugtracker_URL = error
 
     def validate(self, data):
         """Validate the form.
@@ -670,7 +659,14 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             # using Malone.
             return
 
-        if self.unrecognized_bugtracker_URL:
+        try:
+            getUtility(IBugWatchSet).extractBugTrackerAndBug(bug_url)
+        except NoBugTrackerFound:
+            # Yeah, be permissive here as we know we have another view which
+            # knows how to create the bugtracker for us and we'll delegate
+            # this work to it.
+            pass
+        except UnrecognizedBugTrackerURL:
             self.setFieldError(
                 'bug_url',
                 "Launchpad doesn't know what kind of bug tracker"
@@ -794,14 +790,23 @@ class BugAlsoReportInWithBugTrackerCreationView(BugAlsoReportInView):
 
     @action('Yes, do it!', name='do_it')
     def create_task_and_bugtracker_action(self, action, data):
-        self._extractBugTrackerAndBug(data)
-        if (self.bugtracker_found is not None
-            and self.unrecognized_bugtracker_URL is None):
-            bugtracker_baseurl = self.bugtracker_found.base_url
-            bugtracker_type = self.bugtracker_found.bugtracker_type
+        bug_url = data.get('bug_url')
+        assert bug_url is not None and len(bug_url) != 0
+        bug_url = bug_url.strip()
+        try:
+            tracker, bug = getUtility(IBugWatchSet).extractBugTrackerAndBug(
+                bug_url)
+        except NoBugTrackerFound, error:
             getUtility(IBugTrackerSet).ensureBugTracker(
-                bugtracker_baseurl, self.user, bugtracker_type)
-            self._extractBugTrackerAndBug(data)
+                error.base_url, self.user, error.bugtracker_type)
+            tracker, bug = getUtility(IBugWatchSet).extractBugTrackerAndBug(
+                bug_url)
+        except UnrecognizedBugTrackerURL:
+            raise AssertionError(
+                "UnrecognizedBugTrackerURL errors must have been caught in "
+                "this view's validate() method")
+        self.extracted_bugtracker = tracker
+        self.extracted_bug = bug
         self.continue_action.success(data)
         self.request.response.redirect(canonical_url(self.context))
 
