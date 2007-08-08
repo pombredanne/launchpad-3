@@ -664,15 +664,6 @@ class ProductSet:
             ''' % quote((BranchType.HOSTED, BranchType.MIRRORED)),
             orderBy='name', clauseTables=['ProductSeries', 'Branch'])
 
-    def getProductsWithUserDevelopmentBranches(self):
-        """See `IProductSet`."""
-        return Product.select('''
-            Product.development_focus = ProductSeries.id and
-            ProductSeries.user_branch = Branch.id and
-            Branch.branch_type in %s
-            ''' % quote((BranchType.HOSTED, BranchType.MIRRORED)),
-            orderBy='name', clauseTables=['ProductSeries', 'Branch'])
-
     def createProduct(self, owner, name, displayname, title, summary,
                       description=None, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
