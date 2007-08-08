@@ -170,7 +170,7 @@ class TestMirroring(TestCase):
         branch.mirrorComplete('rev1')
         self.assertEqual(None, branch.mirror_request_time)
 
-    def test_mirroringResetsMirrorRequestForHostedBranches(self):
+    def test_mirroringResetsMirrorRequestForMirroredBranches(self):
         """Mirroring 'mirrored' branches sets their mirror request time to six
         hours in the future.
         """

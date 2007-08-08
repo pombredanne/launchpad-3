@@ -14,7 +14,7 @@ from zope.component import getUtility
 from sqlobject import (
     ForeignKey, IntCol, StringCol, BoolCol, SQLMultipleJoin, SQLRelatedJoin,
     SQLObjectNotFound)
-from sqlobject.sqlbuilder import AND, OR
+from sqlobject.sqlbuilder import AND
 
 from canonical.config import config
 from canonical.database.constants import DEFAULT, UTC_NOW

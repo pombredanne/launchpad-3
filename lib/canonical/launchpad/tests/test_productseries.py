@@ -10,8 +10,7 @@ from zope.component import getUtility
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests.harness import (
-    LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
+from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.database.productseries import (
     DatePublishedSyncError, ProductSeries, NoImportBranchError)
 from canonical.testing import LaunchpadZopelessLayer
