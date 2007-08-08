@@ -487,8 +487,10 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
     upstream_page = ViewPageTemplateFile(
         '../templates/bugtask-requestfix-upstream.pt')
     _confirm_new_task = False
-    remote_bug = None
-    bugtracker = None
+    # XXX: I'd like to rename these attributes to remote_bug and bugtracker,
+    # but that causes some tests to fail and I'm too lazy to fix them.
+    extracted_bug = None
+    extracted_bugtracker = None
 
     def __init__(self, context, request):
         LaunchpadFormView.__init__(self, context, request)
@@ -512,19 +514,22 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
     def _extractBugtrackerAndBug(self, bug_url):
         bug_url = bug_url.strip()
         try:
-            self.bugtracker, self.remote_bug = (
+            self.extracted_bugtracker, self.extracted_bug = (
                 getUtility(IBugWatchSet).extractBugTrackerAndBug(bug_url))
-        except (NoBugTrackerFound, UnrecognizedBugTrackerURL):
+        except NoBugTrackerFound:
             pass
 
     @property
-    def has_bug_url(self):
-        return bool(self.request.form.get('field.bug_url'))
+    def _bug_url(self):
+        """Return the value of field.bug_url on the request's form.
+
+        Return an empty string if that field is not present in the request.
+        """
+        return self.request.form.get('field.bug_url', '')
 
     def render_upstreamtask(self):
-        self._extractBugtrackerAndBug(
-            self.request.form.get('field.bug_url', ''))
-        if self.has_bug_url and self.bugtracker is None:
+        self._extractBugtrackerAndBug(self._bug_url)
+        if self._bug_url and self.extracted_bugtracker is None:
             # Delegate to another view which will ask the user if (s)he wants
             # to create the bugtracker now.
             return BugAlsoReportInWithBugTrackerCreationView(
@@ -568,9 +573,8 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         return self.render()
 
     def render_distrotask(self):
-        self._extractBugtrackerAndBug(
-            self.request.form.get('field.bug_url', ''))
-        if self.has_bug_url and self.bugtracker is None:
+        self._extractBugtrackerAndBug(self._bug_url)
+        if self._bug_url and self.extracted_bugtracker is None:
             # Delegate to another view which will ask the user if (s)he wants
             # to create the bugtracker now.
             return BugAlsoReportInWithBugTrackerCreationView(
@@ -659,18 +663,19 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             # using Malone.
             return
 
-        try:
-            getUtility(IBugWatchSet).extractBugTrackerAndBug(bug_url)
-        except NoBugTrackerFound:
-            # Yeah, be permissive here as we know we have another view which
-            # knows how to create the bugtracker for us and we'll delegate
-            # this work to it.
-            pass
-        except UnrecognizedBugTrackerURL:
-            self.setFieldError(
-                'bug_url',
-                "Launchpad doesn't know what kind of bug tracker"
-                ' this URL is pointing at.')
+        if bug_url:
+            try:
+                getUtility(IBugWatchSet).extractBugTrackerAndBug(bug_url)
+            except NoBugTrackerFound:
+                # Yeah, be permissive here as we know we have another view
+                # which knows how to create the bugtracker for us and we'll
+                # delegate this work to it.
+                pass
+            except UnrecognizedBugTrackerURL:
+                self.setFieldError(
+                    'bug_url',
+                    "Launchpad doesn't know what kind of bug tracker"
+                    ' this URL is pointing at.')
 
         if len(self.errors) > 0:
             # The checks below should be made only if the form doesn't
