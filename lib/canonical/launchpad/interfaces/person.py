@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'AccountStatus',
     'IAdminRequestPeopleMerge',
     'INewPerson',
     'IObjectReassignment',
@@ -46,6 +47,36 @@ from canonical.launchpad.interfaces.questioncollection import (
     IQuestionCollection, QUESTION_STATUS_DEFAULT_SEARCH)
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
+
+
+class AccountStatus(DBEnumeratedType):
+    """The status of a Launchpad account."""
+
+    NOACCOUNT = DBItem(10, """
+        No Launchpad account
+
+        There's no Launchpad account for this Person record.
+        """)
+
+    ACTIVE = DBItem(20, """
+        Active Launchpad account
+
+        There's an active Launchpad account associated with this Person.
+        """)
+
+    DEACTIVATED = DBItem(30, """
+        Deactivated Launchpad account
+
+        The account associated with this Person has been deactivated by the
+        Person himself.
+        """)
+
+    SUSPENDED = DBItem(40, """
+        Suspended Launchpad account
+
+        The account associated with this Person has been suspended by a
+        Launchpad admin.
+        """)
 
 
 class PersonCreationRationale(DBEnumeratedType):
@@ -338,9 +369,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "here.")
             )
     password = PasswordField(
-            title=_('Password'), required=True, readonly=False,
-            description=_("Enter the same password in each field.")
-            )
+            title=_('Password'), required=True, readonly=False)
     karma = Int(
             title=_('Karma'), readonly=False,
             description=_('The cached total karma for this person.')
@@ -457,6 +486,14 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             title=_("Key used to generate opaque OpenID identities."),
             readonly=True, required=False,
             )
+
+    account_status = Choice(
+        title=_("The status of this person's account"), required=False,
+        readonly=False, vocabulary=AccountStatus)
+
+    account_status_comment = Text(
+        title=_("Why are you deactivating your account?"), required=False,
+        readonly=False)
 
     # Properties of the Person object.
     karma_category_caches = Attribute(

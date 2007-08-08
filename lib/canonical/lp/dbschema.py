@@ -19,7 +19,6 @@ __metaclass__ = type
 # If you do not do this, from canonical.lp.dbschema import * will not
 # work properly, and the thing/lp:SchemaClass will not work properly.
 __all__ = (
-'AccountStatus',
 'ArchArchiveType',
 'ArchivePurpose',
 'BinaryPackageFileType',
@@ -99,36 +98,6 @@ __all__ = (
 
 from canonical.lazr import DBEnumeratedType as DBSchema
 from canonical.lazr import DBItem as Item
-
-
-class AccountStatus(DBSchema):
-    """The status of a Launchpad account."""
-
-    NOACCOUNT = Item(10, """
-        No Launchpad account
-
-        There's no Launchpad account for this Person record.
-        """)
-
-    ACTIVE = Item(20, """
-        Active Launchpad account
-
-        There's an active Launchpad account associated with this Person.
-        """)
-
-    DEACTIVATED = Item(30, """
-        Deactivated Launchpad account
-
-        The account associated with this Person has been deactivated by the
-        Person himself.
-        """)
-
-    SUSPENDED = Item(40, """
-        Suspended Launchpad account
-
-        The account associated with this Person has been suspended by a
-        Launchpad admin.
-        """)
 
 
 class ArchArchiveType(DBSchema):
