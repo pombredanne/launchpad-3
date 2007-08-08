@@ -346,6 +346,9 @@ class BranchAddView(LaunchpadFormView, BranchNameValidationMixin):
                 lifecycle_status=data['lifecycle_status'],
                 home_page=data['home_page'],
                 whiteboard=data['whiteboard'])
+            # XXX: JonathanLange 2007-08-08, There's no unit test for the
+            # following line.
+            self.branch.requestMirror()
         except BranchCreationForbidden:
             self.setForbiddenError(self.getProduct(data))
         else:
