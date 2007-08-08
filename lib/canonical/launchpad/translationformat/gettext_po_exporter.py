@@ -424,6 +424,10 @@ class GettextPoExporter:
             translation_file.header.comment)
         return header_translation_message
 
+    def exportTranslationMessage(self, translation_message):
+        """See `ITranslationFormatExporter`."""
+        return export_translation_message(translation_message)
+
     def exportTranslationFiles(self, translation_file_list,
                                ignore_obsolete=False, force_utf8=False):
         """See `ITranslationFormatExporter`."""

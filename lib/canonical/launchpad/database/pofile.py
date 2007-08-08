@@ -49,7 +49,8 @@ from canonical.launchpad.webapp import canonical_url
 from canonical.librarian.interfaces import (
     ILibrarianClient, UploadFailed)
 from canonical.lp.dbschema import (
-    RosettaImportStatus, TranslationPermission, TranslationValidationStatus)
+    RosettaImportStatus, TranslationFileFormat, TranslationPermission,
+    TranslationValidationStatus)
 
 
 def _check_translation_perms(permission, translators, person):
@@ -965,6 +966,13 @@ class POFile(SQLBase, POFileMixIn):
         elif len(errors):
             # There were some errors with translations.
             errorsdetails = ''
+            # XXX CarlosPerelloMarin 2007-08-08: All errors handled in our
+            # code for concrete messages are only for .po files. This code
+            # must be moved to the file format abstraction layer.
+            translation_exporter = getUtility(ITranslationExporter)
+            translation_format_exporter = (
+                translation_exporter.getTranslationFormatExporterByFileFormat(
+                    TranslationFileFormat.PO))
             for error in errors:
                 pomsgset = error['pomsgset']
                 pomessage = error['pomessage']
@@ -974,7 +982,8 @@ class POFile(SQLBase, POFileMixIn):
                     pomsgset.potmsgset.sequence,
                     pomsgset.sequence,
                     error_message,
-                    unicode(pomessage))
+                    translation_format_exporter.exportTranslationMessage(
+                        pomessage))
 
             replacements['numberoferrors'] = len(errors)
             replacements['errorsdetails'] = errorsdetails

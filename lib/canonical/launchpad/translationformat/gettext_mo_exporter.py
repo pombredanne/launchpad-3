@@ -58,6 +58,11 @@ class GettextMoExporter:
         """See `ITranslationFormatExporter`."""
         return [TranslationFileFormat.PO]
 
+    def exportTranslationMessage(self, translation_message):
+        """See `ITranslationFormatExporter`."""
+        # This file format doesn't allow to export a single message.
+        raise NotImplementedError
+
     def exportTranslationFiles(self, translation_file_list,
                                ignore_obsolete=False, force_utf8=False):
         """See `ITranslationFormatExporter`."""

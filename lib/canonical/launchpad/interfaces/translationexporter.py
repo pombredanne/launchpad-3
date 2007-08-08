@@ -48,6 +48,13 @@ class ITranslationFormatExporter(Interface):
         "List of TranslationFileFormat entries that this exporter is able"
         " to convert from.")
 
+    def exportTranslationMessage(translation_message):
+        """Return a unicode string representing translation_message.
+
+        :arg translation_message: ITranslationMessage to export.
+        :return: Unicode string representing given ITranslationMessage.
+        """
+
     def exportTranslationFiles(translation_file_list, ignore_obsolete=False,
                                force_utf8=False):
         """Return an IExportedTranslationFile representing the export.
