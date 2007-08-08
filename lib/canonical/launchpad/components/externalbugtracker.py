@@ -773,8 +773,12 @@ class Mantis(ExternalBugTracker):
 class Trac(ExternalBugTracker):
     """An ExternalBugTracker instance for handling Trac bugtrackers."""
 
+    ticket_url = 'ticket/%i?format=csv'
+    batch_url = 'query/?%s&order=id&format=csv'
+
     def __init__(self, baseurl):
         self.baseurl = baseurl
+        self.bugs = {}
 
     def initializeRemoteBugDB(self, bug_ids):
         """Do any initialization before each bug watch is updated.
@@ -782,6 +786,25 @@ class Trac(ExternalBugTracker):
         If the URL specified for the bugtracker is not valid a
         BugTrackerConnectError will be raised.
         """
+        # Trac offers two ways for us to get bug details from them in CSV
+        # format: individually or in groups. If we have less than ten
+        # bugwatches to update we get the remote bugs individually for the
+        # sake of trying to avoid placing a huge load on the server.
+        if len(bug_ids) < 10:
+            for bug_id in bug_ids:
+                # If we can't get the remote bug for any reason a
+                # BugTrackerConnectError will be raised at this point.
+                # We don't use _getPage at this point for the simple reason
+                # that it doesn't return a file-like object, so we can't use
+                # the csv module's helpful DictReader on its output.
+                try:
+                    csv_data = self.urlopen(
+                        "%s/%s" % (self.baseurl, self.ticket_url % bug_id))
+                except (urllib2.HTTPError, urllib2.URLError), val:
+                    raise BugTrackerConnectError(self.baseurl, val)
+
+                reader = csv.DictReader(csv_data)
+                self.bugs[bug_id] = reader.next()
 
     def getRemoteStatus(self, bug_id):
         """Return the remote status for the given bug id.
@@ -809,6 +832,9 @@ class Trac(ExternalBugTracker):
 
         elif remote_status == 'wontfix':
             return BugTaskStatus.WONTFIX
+
+        elif remote_status == UNKNOWN_REMOTE_STATUS:
+            return BugTaskStatus.UNKNOWN
 
         else:
             log.warn("Unknown status '%s'" % remote_status)

@@ -50,3 +50,22 @@ Unknown will be returned and a warning logged.
     >>> trac.convertRemoteStatus('eggs').title
     WARNING:...:Unknown status 'eggs'
     'Unknown'
+
+UNKNOWN_REMOTE_STATUS maps to Unknown without generating a
+warning. This handles the case where we've tried to probe for a bug
+but didn't succeed. For example, if the bug number was invalid.
+
+    >>> from canonical.launchpad.interfaces import UNKNOWN_REMOTE_STATUS
+    >>> trac.convertRemoteStatus(UNKNOWN_REMOTE_STATUS).title
+    'Unknown'
+
+
+== Initialization ==
+
+XXX REMOVE THIS
+
+    >>> trac = Trac('http://code.djangoproject.com')
+    >>> trac.initializeRemoteBugDB([1,2,3,4,5])
+    >>> trac.bugs
+
+
