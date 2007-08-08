@@ -175,7 +175,12 @@ class BranchView(LaunchpadView):
 
     def supermirror_url(self):
         """Public URL of the branch on the Supermirror."""
-        return config.launchpad.supermirror_root + self.context.unique_name
+        # Private branches are not available through anonymous http,
+        # so an appropriate bzr+ssh url should be shown.
+        if self.context.private:
+            return config.launchpad.smartserver_root + self.context.unique_name
+        else:
+            return config.launchpad.supermirror_root + self.context.unique_name
 
     def edit_link_url(self):
         """Target URL of the Edit link used in the actions portlet."""

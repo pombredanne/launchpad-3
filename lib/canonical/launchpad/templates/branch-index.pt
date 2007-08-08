@@ -46,14 +46,15 @@
           </td>
         </tr>
       </tal:not-junk-branch>
-    <tal:mirrored-branch tal:condition="context/url">
+    <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
       <tal:comment condition="nothing">
         <!-- This is a mirror branch, display two URLs -->
       </tal:comment>
         <tr><th>Location:</th><td tal:content="context/url" /></tr>
         <tr><th>Mirror:</th><td tal:content="view/supermirror_url" /></tr>
     </tal:mirrored-branch>
-    <tal:hosted-or-imported-branch tal:condition="not:context/url">
+    <tal:hosted-or-imported-branch 
+        tal:condition="not: context/branch_type/enumvalue:MIRRORED">
       <tal:comment condition="nothing">
         <!-- This is a hosted or import branch, one URL -->
       </tal:comment>

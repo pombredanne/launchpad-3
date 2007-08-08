@@ -213,3 +213,38 @@ Use a browser that is able to see the branch.
     Traceback (most recent call last):
     ...
     LinkNotFoundError
+
+
+== Hosted location ==
+
+In the details table there is a link to the branch location on the supermirror.
+
+For public branches this shows links to the codehosting using http, whereas
+private branches show bzr+ssh as they are not available over anonymous
+http, and anyone who can see the branch is able to access it using bzr+ssh.
+
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'branch-details-table'))
+    These URLs are intended for use with the Bazaar version control system.
+    ...
+    Hosted on Launchpad:
+    bzr+ssh://bazaar.launchpad.dev/~name12/gnome-terminal/scanned
+
+Mark the branch public again.
+
+    >>> login('test@canonical.com')
+    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    ...     '~name12/gnome-terminal/scanned')
+    >>> branch.private = False
+    >>> syncUpdate(branch)
+    >>> logout()
+
+Hosted URL now uses http.
+
+    >>> browser.reload()
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, 'branch-details-table'))
+    These URLs are intended for use with the Bazaar version control system.
+    ...
+    Hosted on Launchpad:
+    http://bazaar.launchpad.dev/~name12/gnome-terminal/scanned
