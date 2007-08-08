@@ -278,8 +278,8 @@ weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
     [u'canonical-releases', u'releases-mirror', u'releases-mirror2',
      u'unreachable-mirror']
 
-    The getMirrorsToProbe() method also accepts a ignore_last_probe argument,
-    that, if True, will ignore previous probe records for all mirrors.
+The getMirrorsToProbe() method also accepts an ignore_last_probe argument,
+that, if True, will ignore previous probe records for all mirrors.
 
     >>> mirrors = mirrorset.getMirrorsToProbe(
     ...     MirrorContent.ARCHIVE, ignore_last_probe=True)
@@ -287,6 +287,40 @@ weren't probed in the last 23 (the value of PROBE_INTERVAL) hours.
     [u'canonical-archive', u'archive-404-mirror', u'archive-mirror',
      u'archive-mirror2']
 
+It's also possible to limit the number of mirrors we want to probe by passing
+an extra limit= argument to mirrorset.getMirrorsToProbe().  If any limit is
+given, the mirrors which have never been probed will be given precedence,
+followed by the ones which have been probed longest ago.  Note that although
+we have this precedence when a limit is given, the actual results are not
+ordered by the date the mirrors were last probed as we don't care about it
+anyway.
+
+    >>> mirrors = mirrorset.getMirrorsToProbe(
+    ...     MirrorContent.ARCHIVE, ignore_last_probe=True)
+    >>> for mirror in mirrors:
+    ...     last_probe = mirror.last_probe_record
+    ...     last_probe_date = 'NEVER'
+    ...     if last_probe is not None:
+    ...         last_probe_date = last_probe.date_created.isoformat()
+    ...     print mirror.name, last_probe_date
+    canonical-archive NEVER
+    archive-404-mirror NEVER
+    archive-mirror 2007-08-08T17:50:02.228947+00:00
+    archive-mirror2 2006-05-24T17:12:03.714206+00:00
+
+    >>> mirrors = mirrorset.getMirrorsToProbe(
+    ...     MirrorContent.ARCHIVE, ignore_last_probe=True, limit=3)
+    >>> for mirror in mirrors:
+    ...     last_probe = mirror.last_probe_record
+    ...     last_probe_date = 'NEVER'
+    ...     if last_probe is not None:
+    ...         last_probe_date = last_probe.date_created.isoformat()
+    ...     print mirror.name, last_probe_date
+    canonical-archive NEVER
+    archive-404-mirror NEVER
+    archive-mirror2 2006-05-24T17:12:03.714206+00:00
+
+    
 If when we finish probing a mirror, that mirror doesn't have any
 MirrorDistroSeriesSource or MirrorDistroArchSeries, that mirror is marked as
 disabled and a notification is sent to its owner and to the distribution's
