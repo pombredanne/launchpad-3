@@ -386,16 +386,7 @@ class BuilddMaster:
                 msg += "%d " % score
                 break
 
-        # Score the package down if it has unsatisfiable build-depends
-        # in the hope that doing so will allow the depended on package
-        # to be built first.
-        if job.builddependsindep:
-            depindep_score, missing_deps = self._scoreAndCheckDependencies(
-                job.builddependsindep, job.archseries)
-            # sum dependency score
-            score += depindep_score
-
-        # store current score value
+        # Store current score value.
         job.lastscore = score
         self._logger.debug(msg + " = %d" % job.lastscore)
 

@@ -61,7 +61,6 @@ Let's start the run-time tests:
  * 1000 points for component 'main',
  * 15 points for urgency HIGH.
  * nothing for queue_time
- * -5 points for ONE satified dependency
 
   >>> time0 = LOCAL_NOW
   >>> bq0 = MockBuildQueue('Null', SourcePackageUrgency.HIGH, 'main',
@@ -71,89 +70,77 @@ see the tables in buildmaster/master.py in the scoreBuildQueueEntry()
 method.
 
   >>> bm.scoreBuildQueueEntry(bq0, LOCAL_NOW)
-  WARNING:root:MISSING DEP: [('mozilla-firefox', '0.9', '=')] in warty i386
   >>> bq0.name, bq0.lastscore
-  ('Null', 1005)
+  ('Null', 1015)
 
 
  * 1000 points for main components
  * 5 point for priority LOW
  * nothing for queue_time
- * -5 points for ONE satisfied dependency
 
   >>> time1 = LOCAL_NOW - datetime.timedelta(seconds=300)
   >>> bq1 = MockBuildQueue('Eins', SourcePackageUrgency.LOW, 'main',
   ...                      warty386, time1, 'mozilla-firefox (= 1.0)')
   >>> bm.scoreBuildQueueEntry(bq1, LOCAL_NOW)
   >>> bq1.name, bq1.lastscore
-  ('Eins', 1000)
+  ('Eins', 1005)
 
 
 * 250 points for universe component universe
 * 15 points for priority HIGH
 * 5 points for queue_time ( > 300 seconds)
-* -10 points for 1 unsatisfied dependency
 
   >>> time2 = LOCAL_NOW - datetime.timedelta(seconds=310)
   >>> bq2 = MockBuildQueue('Zwei', SourcePackageUrgency.HIGH,
   ...                      'universe', warty386, time2, 'foo (= 1.0)')
   >>> bm.scoreBuildQueueEntry(bq2, LOCAL_NOW)
-  WARNING:root:MISSING DEP: [('foo', '1.0', '=')] in warty i386
 
   >>> bq2.name, bq2.lastscore
-  ('Zwei', 260)
+  ('Zwei', 270)
 
 
 * nothing for component multiverse
 * 10 points for MEDIUM priority
 * 10 points for queue_time ( > 900 seconds)
-* -5 points for ONE satisfied dependency
 
   >>> time3 = LOCAL_NOW - datetime.timedelta(seconds=1000)
   >>> bq3 = MockBuildQueue('Drei', SourcePackageUrgency.MEDIUM,
   ...                      'multiverse', hoary386, time3, 'pmount (= 0.1-1)')
   >>> bm.scoreBuildQueueEntry(bq3, LOCAL_NOW)
   >>> bq3.name, bq3.lastscore
-  ('Drei', 15)
+  ('Drei', 20)
 
 
 * 1000 points for main component
 * 20 points for EMERGENCY priority
 * 15 points for queue_time ( > 1800 seconds)
-* -10 points for ONE unsatisfied dependency
-* -5 points for ONE satisfied dependency
 
   >>> time4 = LOCAL_NOW - datetime.timedelta(seconds=3600)
   >>> bq4 = MockBuildQueue('Vier', SourcePackageUrgency.EMERGENCY,
   ...                      'main', hoary386, time4,
   ...                      'mozilla-firefox (= 0.9), pmount (= 0.1-1)')
   >>> bm.scoreBuildQueueEntry(bq4, LOCAL_NOW)
-  WARNING:root:MISSING DEP: [('mozilla-firefox', '0.9', '=')] in hoary i386
 
   >>> bq4.name, bq4.lastscore
-  ('Vier', 1020)
+  ('Vier', 1035)
 
 * 750 points for restricted component
 * 5 points for LOW priority
 * 20 points for queue_time ( > 3600 seconds)
-* -10 points for ONE unsatisfied dependency
-* -5 points for ONE satisfied dependency
 
   >>> time5 = LOCAL_NOW - datetime.timedelta(seconds=4000)
   >>> bq5 = MockBuildQueue('Funf', SourcePackageUrgency.LOW,
   ...                      'restricted', warty386, time5,
   ...                      'mozilla-firefox (= 1.0), pmount (= 0.2-1)')
   >>> bm.scoreBuildQueueEntry(bq5, LOCAL_NOW)
-  WARNING:root:MISSING DEP: [('pmount', '0.2-1', '=')] in warty i386
 
   >>> bq5.name, bq5.lastscore
-  ('Funf', 760)
+  ('Funf', 775)
 
 
 * 1000 points for main component
 * 5 points for LOW priority
 * nothing for queue_time NOW
-* -5 points for ONE satisfied dependency
 
   >>> time6 = LOCAL_NOW
   >>> bq6 = MockBuildQueue('Sechs', SourcePackageUrgency.LOW,
@@ -161,7 +148,7 @@ method.
   ...                      'mozilla-firefox')
   >>> bm.scoreBuildQueueEntry(bq6, LOCAL_NOW)
   >>> bq6.name, bq6.lastscore
-  ('Sechs', 1000)
+  ('Sechs', 1005)
 
 
 By setting manual attribute of a BuildQueue entry we prevent it to be
