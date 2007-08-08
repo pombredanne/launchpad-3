@@ -220,17 +220,17 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         If the product doesn't have a bug tracker specified, return the
         project bug tracker instead.
         """
-        
+
     bugtracker = Choice(title=_('Bug Tracker'), required=False,
         vocabulary='BugTracker',
         description=_(
             "The external bug tracker this project uses, if it is not "
             "Launchpad."))
-            
-    official_answers = Bool(title=_('Uses Answers Officially'), 
+
+    official_answers = Bool(title=_('Uses Answers Officially'),
         required=True, description=_('Check this box to indicate that this '
             'project officially uses Launchpad for community support.'))
-            
+
     official_malone = Bool(title=_('Uses Bugs Officially'),
         required=True, description=_('Check this box to indicate that '
         'this application officially uses Launchpad for bug tracking '
@@ -362,6 +362,12 @@ class IProductSet(Interface):
     def getProductsWithBranches():
         """Return an iterator over all products that have branches."""
 
+    def getProductsWithUserDevelopmentBranches():
+        """Return products that have a user branch for the development series.
+
+        A user branch is one that is either HOSTED or MIRRORED, not IMPORTED.
+        """
+
     def createProduct(owner, name, displayname, title, summary,
                       description, project=None, homepageurl=None,
                       screenshotsurl=None, wikiurl=None,
@@ -430,7 +436,6 @@ class IProductSet(Interface):
         """Return the number of projects that have branches associated with
         them.
         """
-
 
 
 class IProductLaunchpadUsageForm(Interface):
