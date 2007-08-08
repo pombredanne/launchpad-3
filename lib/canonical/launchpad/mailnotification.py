@@ -28,16 +28,15 @@ from canonical.launchpad.event.interfaces import ISQLObjectModifiedEvent
 from canonical.launchpad.interfaces import (
     BranchSubscriptionDiffSize, BranchSubscriptionNotificationLevel,
     IBranch, IBugTask, IEmailAddressSet, INotificationRecipientSet, IPerson,
-    ISpecification, ITeamMembershipSet, IUpstreamBugTask, 
-    UnknownRecipientError)
+    ISpecification, ITeamMembershipSet, IUpstreamBugTask, QuestionAction,
+    TeamMembershipStatus, UnknownRecipientError)
 from canonical.launchpad.mail import (
     sendmail, simple_sendmail, simple_sendmail_from_person, format_address)
 from canonical.launchpad.components.bug import BugDelta
 from canonical.launchpad.helpers import (
     contactEmailAddresses, get_email_template, shortlist)
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import (
-    TeamMembershipStatus, QuestionAction)
+
 
 CC = "CC"
 
@@ -293,7 +292,8 @@ class BugNotificationRecipients(NotificationRecipientSet):
         reason = "Bug Contact (%s)" % distro.displayname
         # All displaynames in these reasons should be changed to bugtargetname
         # (as part of bug 113262) once bugtargetname is finalized for packages
-        # (bug 113258). Changing it before then would be excessively disruptive.
+        # (bug 113258). Changing it before then would be excessively
+        # disruptive.
         if person.isTeam():
             text = ("are a member of %s, which is the bug contact for %s" %
                 (person.displayname, distro.displayname))
@@ -384,10 +384,10 @@ def _send_bug_details_to_new_bugcontacts(
     if not to_addrs:
         return
 
-    # XXX: We send this notification as if it was from the bug owner. I
+    # XXX: kiko 2007-03-20 bug=94321:
+    # We send this notification as if it was from the bug owner. I
     # hope this isn't too confusing to people receiving this
-    # notification; it may be better to use a celebrity. See bug 94321.
-    #   -- kiko, 2007-03-20
+    # notification; it may be better to use a celebrity.
     from_addr = get_bugmail_from_address(bug.owner, bug)
     # Now's a good a time as any for this email; don't use the original
     # reported date for the bug as it will just confuse mailer and
@@ -428,18 +428,18 @@ def get_bugmail_from_address(person, bug):
     if person.preferredemail is not None:
         return format_address(person.displayname, person.preferredemail.email)
 
-    # XXX: The person doesn't have a preferred email set, but he
+    # XXX: Bjorn Tillenius 2006-04-05:
+    # The person doesn't have a preferred email set, but he
     # added a comment (either via the email UI, or because he was
     # imported as a deaf reporter). It shouldn't be possible to use the
     # email UI if you don't have a preferred email set, but work around
     # it for now by trying hard to find the right email address to use.
-    #   -- Bjorn Tillenius, 2006-04-05
     email_addresses = shortlist(
         getUtility(IEmailAddressSet).getByPerson(person))
     if not email_addresses:
-        # XXX: A user should always have at least one email
-        # address, but due to bug 33427, this isn't always the
-        # case. -- Bjorn Tillenius, 2006-05-21
+        # XXX: Bjorn Tillenius 2006-05-21:
+        # A user should always have at least one email address,
+        # but due to bug 33427, this isn't always the case.
         return format_address(person.displayname,
             "%s@%s" % (bug.id, config.launchpad.bugs_domain))
 
@@ -555,9 +555,10 @@ def generate_bug_add_email(bug, new_recipients=False):
                     "%(description)s\n\n%(bug_info)s")
         # The visibility appears mid-phrase so.. hack hack.
         visibility = visibility.lower()
-        # XXX: we should really have a centralized way of adding this
-        # footer, but right now we lack a INotificationRecipientSet for this
-        # particular situation. -- kiko, 2007-03-21
+        # XXX: kiko, 2007-03-21:
+        # We should really have a centralized way of adding this
+        # footer, but right now we lack a INotificationRecipientSet
+        # for this particular situation.
         contents += "\n-- \n%(bug_title)s\n%(bug_url)s"
     else:
         contents = ("%(visibility)s bug reported:\n\n"
@@ -1059,9 +1060,9 @@ def notify_invitation_to_join_team(event):
     The notification will include a link to a page in which any team admin can
     accept the invitation.
 
-    XXX: At some point we may want to extend this functionality to allow
-    invites to be sent to users as well, but for now we only use it for teams.
-    -- Guilherme Salgado, 2007-05-08
+    XXX: Guilherme Salgado 2007-05-08:
+    At some point we may want to extend this functionality to allow invites
+    to be sent to users as well, but for now we only use it for teams.
     """
     member = event.member
     assert member.isTeam()
@@ -1421,10 +1422,10 @@ class QuestionModifiedDefaultNotification(QuestionNotification):
         """Add a References header."""
         headers = QuestionNotification.getHeaders(self)
         if self.new_message:
-            # XXX flacoste 2007/02/02 The first message cannot contain
-            # a References because we don't create a Message instance
-            # for the question description, so we don't have a Message-ID.
-            # Bug #83846
+            # XXX flacoste 2007-02-02 bug=83846: 
+            # The first message cannot contain a References
+            # because we don't create a Message instance for the
+            # question description, so we don't have a Message-ID.
             index = list(self.question.messages).index(self.new_message)
             if index > 0:
                 headers['References'] = (
@@ -1638,10 +1639,10 @@ def notify_specification_modified(spec, event):
     """Notify the related people that a specification has been modifed."""
     spec_delta = spec.getDelta(event.object_before_modification, event.user)
     if spec_delta is None:
-        #XXX: Ideally, if an ISQLObjectModifiedEvent event is generated,
-        #     spec_delta shouldn't be None. I'm not confident that we
-        #     have enough test yet to assert this, though.
-        #     -- Bjorn Tillenius, 2006-03-08
+        # XXX: Bjorn Tillenius 2006-03-08:
+        #      Ideally, if an ISQLObjectModifiedEvent event is generated,
+        #      spec_delta shouldn't be None. I'm not confident that we
+        #      have enough test yet to assert this, though.
         return
 
     subject = specification_notification_subject(spec)

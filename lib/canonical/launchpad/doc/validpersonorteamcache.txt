@@ -19,7 +19,7 @@ cached list of Person.id that are considered 'valid'.
 
 Setup some constants we will use later
 
-    >>> from canonical.lp.dbschema import EmailAddressStatus
+    >>> from canonical.launchpad.interfaces import EmailAddressStatus
     >>> new = EmailAddressStatus.NEW.value
     >>> preferred = EmailAddressStatus.PREFERRED.value
     >>> validated = EmailAddressStatus.VALIDATED.value

@@ -31,10 +31,6 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import (
-    ShipItDistroSeries, ShipItArchitecture, ShipItFlavour,
-    ShippingService, ShippingRequestStatus)
-
 from canonical.launchpad.helpers import intOrZero, get_email_template
 from canonical.launchpad.datetimeutils import make_mondays_between
 from canonical.launchpad.webapp import canonical_url
@@ -45,7 +41,9 @@ from canonical.launchpad.interfaces import (
     IRequestedCDs, IShippingRequestSet, ILaunchpadCelebrities, IShipment,
     IShippingRun, IShippingRunSet, IShipmentSet, ShippingRequestPriority,
     IShipItReport, IShipItReportSet, ShipItConstants, ILibraryFileAliasSet,
-    SOFT_MAX_SHIPPINGRUN_SIZE, MAX_CDS_FOR_UNTRUSTED_PEOPLE)
+    SOFT_MAX_SHIPPINGRUN_SIZE, MAX_CDS_FOR_UNTRUSTED_PEOPLE,
+    ShipItDistroSeries, ShipItArchitecture, ShipItFlavour,
+    ShippingService, ShippingRequestStatus)
 from canonical.launchpad.database.country import Country
 
 
@@ -68,7 +66,7 @@ class ShippingRequest(SQLBase):
                              default=None)
 
     status = EnumCol(
-        schema=ShippingRequestStatus, notNull=True,
+        enum=ShippingRequestStatus, notNull=True,
         default=ShippingRequestStatus.PENDING)
     whoapproved = ForeignKey(dbName='whoapproved', foreignKey='Person',
                              default=None)
@@ -1128,9 +1126,9 @@ class ShippingRequestSet:
         csv_writer.writerow(header2)
         csv_writer.writerow(header3)
 
-        # XXX: I admit these names couldn't be worse, but they're only used
+        # XXX: Guilherme Salgado 2007-04-25:
+        # I admit these names couldn't be worse, but they're only used
         # a few lines below and I can't think of anything better.
-        # -- Guilherme Salgado, 2007-04-25
         cr = self._convert_results_to_dict_and_fill_gaps(
             current_series_request_distribution, row_numbers)
         cr = self._add_percentage_to_number_of_people(cr)
@@ -1197,9 +1195,9 @@ class RequestedCDs(SQLBase):
         dbName='request', foreignKey='ShippingRequest', notNull=True)
 
     distroseries = EnumCol(dbName='distrorelease',
-        schema=ShipItDistroSeries, notNull=True)
-    architecture = EnumCol(schema=ShipItArchitecture, notNull=True)
-    flavour = EnumCol(schema=ShipItFlavour, notNull=True)
+        enum=ShipItDistroSeries, notNull=True)
+    architecture = EnumCol(enum=ShipItArchitecture, notNull=True)
+    flavour = EnumCol(enum=ShipItFlavour, notNull=True)
 
     @property
     def description(self):
@@ -1225,7 +1223,7 @@ class StandardShipItRequest(SQLBase):
     quantityppc = IntCol(notNull=True)
     quantityamd64 = IntCol(notNull=True)
     isdefault = BoolCol(notNull=True, default=False)
-    flavour = EnumCol(schema=ShipItFlavour, notNull=True)
+    flavour = EnumCol(enum=ShipItFlavour, notNull=True)
 
     @property
     def description_without_flavour(self):
@@ -1322,7 +1320,7 @@ class Shipment(SQLBase):
 
     logintoken = StringCol(unique=True, notNull=True)
     dateshipped = UtcDateTimeCol(default=None)
-    shippingservice = EnumCol(schema=ShippingService, notNull=True)
+    shippingservice = EnumCol(enum=ShippingService, notNull=True)
     shippingrun = ForeignKey(dbName='shippingrun', foreignKey='ShippingRun',
                              notNull=True)
     request = ForeignKey(dbName='request', foreignKey='ShippingRequest',
@@ -1483,9 +1481,9 @@ class ShippingRun(SQLBase):
 
             row.append('"%s"' % request.shipment.logintoken.encode('ASCII'))
             row.append('"%s"' % request.shippingservice.title.encode('ASCII'))
-            # XXX: 'display' is some magic number that's used by the shipping
+            # XXX: Guilherme Salgado 2005-10-04:
+            # 'display' is some magic number that's used by the shipping
             # company. Need to figure out what's it for and use a better name.
-            # -- Guilherme Salgado, 2005-10-04
             if request.getTotalApprovedCDs() >= 100:
                 display = 1
             else:
