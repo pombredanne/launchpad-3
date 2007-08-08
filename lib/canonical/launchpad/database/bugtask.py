@@ -136,29 +136,15 @@ class BugTaskDelta:
         self.statusexplanation = statusexplanation
         self.bugwatch = bugwatch
 
-    @property
-    def targetname(self):
-        """See `IBugTaskDelta`."""
-        return self.bugtask.bugtargetname
-
-    @property
-    def bugtargetdisplayname(self):
-        """See `IBugTaskDelta`."""
-        return self.targetnamecache
-
 
 class BugTaskMixin:
     """Mix-in class for some property methods of IBugTask implementations."""
 
     @property
-    def title(self):
+    def bug_subscribers(self):
         """See `IBugTask`."""
-        if INullBugTask.providedBy(self):
-            return 'Bug #%s is not in %s: "%s"' % (
-                self.bug.id, self.bugtargetdisplayname, self.bug.title)
-        else:
-            return 'Bug #%s in %s: "%s"' % (
-                self.bug.id, self.bugtargetdisplayname, self.bug.title)
+        indirect_subscribers = self.bug.getIndirectSubscribers()
+        return self.bug.getDirectSubscribers() + indirect_subscribers
 
     @property
     def bugtargetdisplayname(self):
@@ -300,8 +286,6 @@ class NullBugTask(BugTaskMixin):
         # for it, and I don't think there's any point on designing for
         # that until we've encountered one.)
         self.id = None
-        self.datecreated = None
-        self.date_assigned = None
         self.age = None
         self.milestone = None
         self.status = None
@@ -313,13 +297,18 @@ class NullBugTask(BugTaskMixin):
         self.conjoined_master = None
         self.conjoined_slave = None
 
+        self.datecreated = None
+        self.date_assigned = None
+        self.date_confirmed = None
+        self.date_last_updated = None
+        self.date_inprogress = None
+        self.date_closed = None
+
     @property
-    def targetname(self):
+    def title(self):
         """See `IBugTask`."""
-        # For a INullBugTask, there is no targetname in the database, of
-        # course, so we fallback on calculating the targetname in
-        # Python.
-        return self.target.bugtargetname
+        return 'Bug #%s is not in %s: "%s"' % (
+            self.bug.id, self.bugtargetdisplayname, self.bug.title)
 
 
 def BugTaskToBugAdapter(bugtask):
@@ -378,18 +367,27 @@ class BugTask(SQLBase, BugTaskMixin):
     date_inprogress = UtcDateTimeCol(notNull=False, default=None)
     date_closed = UtcDateTimeCol(notNull=False, default=None)
     owner = ForeignKey(foreignKey='Person', dbName='owner', notNull=True)
-    # The targetnamecache is a value that is only supposed to be set when a
-    # bugtask is created/modified or by the update-bugtask-targetnamecaches
-    # cronscript. For this reason it's not exposed in the interface, and
-    # client code should always use the targetname read-only property.
+    # The targetnamecache is a value that is only supposed to be set
+    # when a bugtask is created/modified or by the
+    # update-bugtask-targetnamecaches cronscript. For this reason it's
+    # not exposed in the interface, and client code should always use
+    # the bugtargetname and bugtargetdisplayname properties.
+    #
+    # This field is actually incorrectly named, since it currently
+    # stores the bugtargetdisplayname.
     targetnamecache = StringCol(
         dbName='targetnamecache', notNull=False, default=None)
 
     @property
-    def bug_subscribers(self):
+    def title(self):
         """See `IBugTask`."""
-        indirect_subscribers = self.bug.getIndirectSubscribers()
-        return self.bug.getDirectSubscribers() + indirect_subscribers
+        return 'Bug #%s in %s: "%s"' % (
+            self.bug.id, self.bugtargetdisplayname, self.bug.title)
+
+    @property
+    def bugtargetdisplayname(self):
+        """See `IBugTask`."""
+        return self.targetnamecache
 
     @property
     def age(self):
@@ -410,9 +408,10 @@ class BugTask(SQLBase, BugTaskMixin):
     @property
     def is_complete(self):
         """See `IBugTask`.
-        
+
         Note that this should be kept in sync with the completeness_clause
-        above."""
+        above.
+        """
         return self.status in RESOLVED_BUGTASK_STATUSES
 
     def subscribe(self, person):

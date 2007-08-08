@@ -1276,7 +1276,8 @@ class PersonSpecFeedbackView(HasSpecificationsView):
 class ReportedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs reported by someone."""
 
-    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
 
     def search(self):
         # Specify both owner and bug_reporter to try to prevent the same
@@ -1476,7 +1477,8 @@ class BugContactPackageBugsSearchListingView(BugTaskSearchListingView):
 class PersonRelatedBugsView(BugTaskSearchListingView):
     """All bugs related to someone."""
 
-    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
 
     def search(self):
         """Return the open bugs related to a person."""
@@ -1524,7 +1526,8 @@ class PersonRelatedBugsView(BugTaskSearchListingView):
 class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs assigned to someone."""
 
-    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
 
     def search(self):
         """Return the open bugs assigned to a person."""
@@ -1560,7 +1563,8 @@ class PersonAssignedBugTaskSearchListingView(BugTaskSearchListingView):
 class PersonCommentedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs commented on by a Person."""
 
-    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
 
     def search(self):
         """Return the open bugs commented on by a person."""
@@ -1588,7 +1592,8 @@ class PersonCommentedBugTaskSearchListingView(BugTaskSearchListingView):
 class SubscribedBugTaskSearchListingView(BugTaskSearchListingView):
     """All bugs someone is subscribed to."""
 
-    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
 
     def search(self):
         return BugTaskSearchListingView.search(
