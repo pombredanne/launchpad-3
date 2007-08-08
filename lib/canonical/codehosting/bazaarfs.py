@@ -178,7 +178,7 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
                 self.avatar, branchID, childName, self)
             self.putChild(childName, branchDirectory)
             return branchDirectory
-        return deferred.addCallbacks(cb)
+        return deferred.addCallback(cb)
 
 
 class SFTPServerProductDirPlaceholder(adhoc.AdhocDirectory):
