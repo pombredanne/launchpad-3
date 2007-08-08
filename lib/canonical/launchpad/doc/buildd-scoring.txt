@@ -11,154 +11,171 @@ A summary:
  * urgency
  * priority/seed/component (BASE|DESKTOP|SUPPORTED) [PEND]
  * Overarching policy (SECURITY/UPDATES/RELEASE) [PEND]
- * Build Dependencies [PEND]
 
 
-We need to have a BuildMaster support class ready to use, see more
-details about its setup in buildd-queuebuilder.txt or buildd-slavescanner.txt
+    >>> import datetime
+    >>> import pytz
+    >>> LOCAL_NOW = datetime.datetime.now(pytz.timezone('UTC'))
 
-  >>> import datetime
-  >>> import pytz
-  >>> import transaction
-  >>> import logging
-
-  >>> from canonical.buildmaster.master import BuilddMaster
-  >>> bm = BuilddMaster(logging.getLogger(), transaction)
 
 Let's create a 'mock' class which emulate the real behaviour of
 BuildQueue entries.
 
-  >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> warty386 = getUtility(IDistributionSet)['ubuntu']['warty']['i386']
-  >>> warty386.title
-  u'The Warty Warthog Release for i386 (x86)'
-  >>> hoary386 = getUtility(IDistributionSet)['ubuntu']['hoary']['i386']
-  >>> hoary386.title
-  u'The Hoary Hedgehog Release for i386 (x86)'
+    >>> from canonical.launchpad.interfaces import IDistributionSet
 
-  >>> class MockBuild:
-  ...    title = 'No title yet'
+    >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
+    >>> hoary = ubuntu['hoary']
+    >>> hoary386 = hoary['i386']
+    >>> hoary386.title
+    u'The Hoary Hedgehog Release for i386 (x86)'
 
-  >>> class MockBuildQueue:
-  ...     def __init__(self, name, urgency, component_name, archseries,
-  ...                  created, builddependsindep, manual=False):
-  ...         self.name = name
-  ...         self.urgency = urgency
-  ...         self.component_name = component_name
-  ...         self.archseries = archseries
-  ...         self.lastscore = 0
-  ...         self.created = created
-  ...         self.builddependsindep = builddependsindep
-  ...         self.manual = manual
-  ...         self.build = MockBuild()
+    >>> pmount_sp = hoary.getSourcePackage('pmount')
+    >>> pmount_dsspr = pmount_sp.currentrelease
+    >>> pmount_current_publication = pmount_dsspr.current_published
+    >>> pmount_spr = pmount_dsspr.sourcepackagerelease
 
-  >>> from canonical.lp.dbschema import SourcePackageUrgency
 
-Let's start the run-time tests:
+    >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> comp_set = getUtility(IComponentSet)
+    >>> main_component = comp_set['main']
+    >>> restricted_component = comp_set['restricted']
+    >>> universe_component = comp_set['universe']
+    >>> multiverse_component = comp_set['multiverse']
 
-  >>> LOCAL_NOW = datetime.datetime.now(pytz.timezone('UTC'))
+
+
+    >>> from canonical.lp.dbschema import (
+    ...     SourcePackageUrgency, PackagePublishingPocket)
+    >>> from zope.security.proxy import removeSecurityProxy
+
+    >>> def createBuildQueue(
+    ...     component=main_component, urgency=SourcePackageUrgency.HIGH,
+    ...     date_created=LOCAL_NOW, manual=False):
+    ...
+    ...     naked_spr = removeSecurityProxy(pmount_spr)
+    ...     naked_spr.urgency = urgency
+    ...     naked_pub = removeSecurityProxy(pmount_current_publication)
+    ...     naked_pub.component = component
+    ...
+    ...     pocket = PackagePublishingPocket.RELEASE
+    ...     archive = hoary386.distroseries.main_archive
+    ...     build = naked_spr.createBuild(hoary386, pocket, archive)
+    ...
+    ...     build_queue = build.createBuildQueueEntry()
+    ...     build_queue.created = date_created
+    ...     build_queue.manual = manual
+    ...
+    ...     return build_queue
+
 
  * 1000 points for component 'main',
  * 15 points for urgency HIGH.
  * nothing for queue_time
 
-  >>> time0 = LOCAL_NOW
-  >>> bq0 = MockBuildQueue('Null', SourcePackageUrgency.HIGH, 'main',
-  ...                      warty386, time0, 'mozilla-firefox (= 0.9)')
-
-see the tables in buildmaster/master.py in the scoreBuildQueueEntry()
-method.
-
-  >>> bm.scoreBuildQueueEntry(bq0, LOCAL_NOW)
-  >>> bq0.name, bq0.lastscore
-  ('Null', 1015)
-
+    >>> bq0 = createBuildQueue()
+    >>> bq0.lastscore
+    0
+    >>> print bq0.score()
+    i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+15 C+1000  = 1015
+    >>> bq0.lastscore
+    1015
 
  * 1000 points for main components
  * 5 point for priority LOW
  * nothing for queue_time
 
-  >>> time1 = LOCAL_NOW - datetime.timedelta(seconds=300)
-  >>> bq1 = MockBuildQueue('Eins', SourcePackageUrgency.LOW, 'main',
-  ...                      warty386, time1, 'mozilla-firefox (= 1.0)')
-  >>> bm.scoreBuildQueueEntry(bq1, LOCAL_NOW)
-  >>> bq1.name, bq1.lastscore
-  ('Eins', 1005)
+    >>> time1 = LOCAL_NOW - datetime.timedelta(seconds=300)
+    >>> bq1 = createBuildQueue(
+    ...      urgency=SourcePackageUrgency.LOW, date_created=time1)
+    >>> bq1.lastscore
+    0
 
+    >>> print bq1.score()
+    i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+5 C+1000 = 1005
 
-* 250 points for universe component universe
-* 15 points for priority HIGH
-* 5 points for queue_time ( > 300 seconds)
+    >>> bq1.lastscore
+    1005
 
-  >>> time2 = LOCAL_NOW - datetime.timedelta(seconds=310)
-  >>> bq2 = MockBuildQueue('Zwei', SourcePackageUrgency.HIGH,
-  ...                      'universe', warty386, time2, 'foo (= 1.0)')
-  >>> bm.scoreBuildQueueEntry(bq2, LOCAL_NOW)
+ * 250 points for universe component universe
+ * 15 points for priority HIGH
+ * 5 points for queue_time ( > 300 seconds)
 
-  >>> bq2.name, bq2.lastscore
-  ('Zwei', 270)
+    >>> time2 = LOCAL_NOW - datetime.timedelta(seconds=310)
+    >>> bq2 = createBuildQueue(
+    ...      component=universe_component, urgency=SourcePackageUrgency.HIGH,
+    ...      date_created=time2)
+    >>> bq2.lastscore
+    0
 
+    >>> print bq2.score()
+    i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+15 C+250 270 = 270
 
-* nothing for component multiverse
-* 10 points for MEDIUM priority
-* 10 points for queue_time ( > 900 seconds)
+    >>> bq2.lastscore
+    270
 
-  >>> time3 = LOCAL_NOW - datetime.timedelta(seconds=1000)
-  >>> bq3 = MockBuildQueue('Drei', SourcePackageUrgency.MEDIUM,
-  ...                      'multiverse', hoary386, time3, 'pmount (= 0.1-1)')
-  >>> bm.scoreBuildQueueEntry(bq3, LOCAL_NOW)
-  >>> bq3.name, bq3.lastscore
-  ('Drei', 20)
+ * nothing for component multiverse
+ * 10 points for MEDIUM priority
+ * 10 points for queue_time ( > 900 seconds)
 
+    >>> time3 = LOCAL_NOW - datetime.timedelta(seconds=1000)
+    >>> bq3 = createBuildQueue(
+    ...      component=multiverse_component, urgency=SourcePackageUrgency.MEDIUM,
+    ...      date_created=time3)
+    >>> bq3.lastscore
+    0
 
-* 1000 points for main component
-* 20 points for EMERGENCY priority
-* 15 points for queue_time ( > 1800 seconds)
+    >>> print bq3.score()
+    i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+10 C+0 20 = 20
 
-  >>> time4 = LOCAL_NOW - datetime.timedelta(seconds=3600)
-  >>> bq4 = MockBuildQueue('Vier', SourcePackageUrgency.EMERGENCY,
-  ...                      'main', hoary386, time4,
-  ...                      'mozilla-firefox (= 0.9), pmount (= 0.1-1)')
-  >>> bm.scoreBuildQueueEntry(bq4, LOCAL_NOW)
+    >>> bq3.lastscore
+    20
 
-  >>> bq4.name, bq4.lastscore
-  ('Vier', 1035)
+ * 1000 points for main component
+ * 20 points for EMERGENCY priority
+ * 15 points for queue_time ( > 1800 seconds)
 
-* 750 points for restricted component
-* 5 points for LOW priority
-* 20 points for queue_time ( > 3600 seconds)
+    >>> time4 = LOCAL_NOW - datetime.timedelta(seconds=3600)
+    >>> bq4 = createBuildQueue(
+    ...      component=main_component, urgency=SourcePackageUrgency.EMERGENCY,
+    ...      date_created=time4)
+    >>> bq4.lastscore
+    0
 
-  >>> time5 = LOCAL_NOW - datetime.timedelta(seconds=4000)
-  >>> bq5 = MockBuildQueue('Funf', SourcePackageUrgency.LOW,
-  ...                      'restricted', warty386, time5,
-  ...                      'mozilla-firefox (= 1.0), pmount (= 0.2-1)')
-  >>> bm.scoreBuildQueueEntry(bq5, LOCAL_NOW)
+    >>> print bq4.score()
+    i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+20 C+1000 1035 = 1035
 
-  >>> bq5.name, bq5.lastscore
-  ('Funf', 775)
+    >>> bq4.lastscore
+    1035
 
+ * 750 points for restricted component
+ * 5 points for LOW priority
+ * 20 points for queue_time ( > 3600 seconds)
 
-* 1000 points for main component
-* 5 points for LOW priority
-* nothing for queue_time NOW
+    >>> time5 = LOCAL_NOW - datetime.timedelta(seconds=4000)
+    >>> bq5 = createBuildQueue(
+    ...      component=restricted_component, urgency=SourcePackageUrgency.LOW,
+    ...      date_created=time5)
+    >>> bq5.lastscore
+    0
 
-  >>> time6 = LOCAL_NOW
-  >>> bq6 = MockBuildQueue('Sechs', SourcePackageUrgency.LOW,
-  ...                      'main', warty386, time6,
-  ...                      'mozilla-firefox')
-  >>> bm.scoreBuildQueueEntry(bq6, LOCAL_NOW)
-  >>> bq6.name, bq6.lastscore
-  ('Sechs', 1005)
+    >>> print bq5.score()
+    i386 build of pmount 0.1-2 in ubuntu hoary RELEASE (0) -> U+5 C+750 775 = 775
+
+    >>> bq5.lastscore
+    775
 
 
 By setting manual attribute of a BuildQueue entry we prevent it to be
 rescored, which allows us to set an arbitrary value on it.
 
-  >>> time7 = LOCAL_NOW
-  >>> bq7 = MockBuildQueue('Sieben', SourcePackageUrgency.LOW,
-  ...                      'main', warty386, time7,
-  ...                      'mozilla-firefox', manual=True)
-  >>> bq7.lastscore = 5000
-  >>> bm.scoreBuildQueueEntry(bq7, LOCAL_NOW)
-  >>> bq7.name, bq7.lastscore
-  ('Sieben', 5000)
+    >>> time6 = LOCAL_NOW
+    >>> bq6 = createBuildQueue(
+    ...      urgency=SourcePackageUrgency.LOW, date_created=time6, manual=True)
+
+    >>> bq6.lastscore = 5000
+
+    >>> print bq6.score()
+    pmount (5000) MANUALLY RESCORED
+
+    >>> bq6.lastscore
+    5000
