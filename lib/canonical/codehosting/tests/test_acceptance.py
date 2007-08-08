@@ -6,6 +6,7 @@ __metaclass__ = type
 
 from StringIO import StringIO
 import os
+import sys
 import thread
 import unittest
 import xmlrpclib
@@ -367,6 +368,14 @@ class AcceptanceTests(SSHTestCase):
         remote_revision = self.getLastRevision(remote_url)
         self.assertEqual(self.local_branch.last_revision(), remote_revision)
 
+    def captureStderr(self, function, *args, **kwargs):
+        real_stderr, sys.stderr = sys.stderr, StringIO()
+        try:
+            ret = function(*args, **kwargs)
+        finally:
+            captured_stderr, sys.stderr = sys.stderr, real_stderr
+        return ret, captured_stderr.getvalue()
+
     @deferToThread
     def test_cant_push_to_existing_mirrored_branch(self):
         # Users cannot push to mirrored branches.
@@ -375,7 +384,11 @@ class AcceptanceTests(SSHTestCase):
             'testuser', 'firefox', 'some-branch', BranchType.MIRRORED)
         remote_url = self.getTransportURL(branch.unique_name)
         LaunchpadZopelessTestSetup().txn.commit()
-        self.assertRaises(
+        # The Bazaar client forwards the error from the SFTP server. We don't
+        # care about that error for this test, so just swallow it. The error we
+        # care about is the one that cmd_push raises.
+        self.captureStderr(
+            self.assertRaises,
             (BzrCommandError, TransportNotPossible), self.push, remote_url)
     
     @deferToThread
