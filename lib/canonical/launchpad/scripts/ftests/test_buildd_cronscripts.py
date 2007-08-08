@@ -90,17 +90,19 @@ class TestCronscriptBase(TestCase):
         """Check is buildd-queue-builder.py respect build-master lock."""
         self.assertLocked(runner=self.runBuilddQueueBuilder)
 
-    def testRunQueueBuilderLockedByCronDaily(self):
-        """Check if buildd-queue-builder respect cron.daily lock.
+    def testRunQueueBuilderNotLockedByCronDaily(self):
+        """Check if buildd-queue-builder doesn't respect cron.daily lock.
 
-        Additionally to the 0 (zero) exit code we also want to ensure that
-        no output is generated.
+        Respecting cron.daily lockfile is a deprecated requirement.
+
+        Possible missing build dependencies are handled properly by
+        the builders, there is not reason to suppress queue-builder
+        runs while cron.daily is also running.
         """
         lock = open(config.builddmaster.crondaily_lockfile, 'w')
         lock.write('Go away !')
         lock.close()
-        rc, out, err = self.assertRuns(runner=self.runBuilddQueueBuilder)
-        self.assertEqual('', err.strip(), "Output should be empty:\n%s" % err)
+        self.assertRuns(runner=self.runBuilddQueueBuilder)
         os.remove(config.builddmaster.crondaily_lockfile)
 
 
