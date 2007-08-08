@@ -150,7 +150,8 @@ branch was moved back to its original location.
   >>> browser.url
   'http://code.launchpad.dev/~name12/+junk/junk.dev'
 
-However, we cannot detach a team-owned branch from a product.
+However, we cannot detach a team-owned branch from a product, for the
+reasons given in xx-branch-reassign.txt.
 
   >>> browser.open('http://code.launchpad.dev/~landscape-developers/landscape/trunk')
   >>> browser.getLink('Change branch details').click()

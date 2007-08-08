@@ -81,12 +81,13 @@ will not let us have even that. -- David Allouche 2005-08-17
 
 == Preventing the assignment of a +junk branch to a team ==
 
-While individual users may have branches not assigned to any project,
-which in urls appear to be associated to the "+junk" pseudo-project),
-teams are not allowed to have such branches, as if one has gone to
-enough trouble to set up a team, one should set up a project too.  One
-of the ways of creating such a branch is to assign a +junk branch from
-yourself to a team.
++junk branches are a facility to host small snippets of code that do
+not call for collaboration features.  Once a team is needed to
+collaborate on a branch, we consider they also really want a project
+to support their collaboration.  And also, because Mark said so.
+
+One of two potential ways of creating a +junk team branch is to assign
+a +junk branch from yourself to a team.
 
     >>> browser.open('http://code.launchpad.dev/~name12/+junk/junk.contrib/+reassign')
     >>> browser.getControl(name='field.owner').value = 'simple-team'
