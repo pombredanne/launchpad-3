@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """This module is used by the Launchpad webapp to determine titles for pages.
 
@@ -860,6 +860,8 @@ productrelease_edit = ContextDisplayName('Edit details of %s in Launchpad')
 productrelease_index = ContextDisplayName('%s in Launchpad')
 
 products_index = 'Projects registered in Launchpad'
+
+productseries_export = ContextTitle('Download translations for "%s"')
 
 productseries_index = ContextTitle('Overview of %s')
 

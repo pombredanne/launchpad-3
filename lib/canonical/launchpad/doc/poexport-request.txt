@@ -199,10 +199,10 @@ And run the script.
   >>> (output, empty) = process.communicate()
   >>> print output
   INFO    creating lockfile
-  DEBUG   Exporting objects for Mark Shuttleworth, related to template pmount
-  in Ubuntu Hoary package "pmount"
   DEBUG   Exporting objects for Mark Shuttleworth, related to template
   evolution-2.2 in Evolution trunk
+  DEBUG   Exporting objects for Mark Shuttleworth, related to template pmount
+  in Ubuntu Hoary package "pmount"
   DEBUG   Removing lock file: /var/lock/launchpad-rosetta-export-queue.lock
   <BLANKLINE>
 

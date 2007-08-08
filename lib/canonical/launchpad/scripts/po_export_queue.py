@@ -127,11 +127,14 @@ format_handlers = {
     TranslationFileFormat.MO: MOFormatHandler,
 }
 
+
 class UnsupportedExportObject(Exception):
     pass
 
+
 class UnsupportedExportFormat(Exception):
     pass
+
 
 def get_handler(format, obj):
     """Get an export handler for the given format and object."""
@@ -143,6 +146,18 @@ def get_handler(format, obj):
         raise UnsupportedExportFormat
 
     return format_handlers[format](obj)
+
+
+def get_template(obj):
+    """Determine translation template that obj relates to.
+
+    :param obj: a translation file or translation template object.  If obj is
+        a template, then obj itself is returned.
+    """
+    if is_potemplate(obj):
+        return obj
+    return obj.potemplate
+
 
 class ExportResult:
     """The results of a PO export request.
@@ -297,12 +312,14 @@ class ExportResult:
         self.successes.append(name)
 
 
-def process_single_object_request(obj, format, logger):
+def process_single_object_request(person, obj, format, logger):
     """Process a request for a single object.
 
     Returns an ExportResult object. The object must be a PO template or a PO
     file.
     """
+    logger.debug('Exporting objects for %s, related to template %s' % (
+        person.displayname, get_template(obj).displayname))
 
     handler = get_handler(format, obj)
     name = handler.get_name()
@@ -331,7 +348,7 @@ def process_single_object_request(obj, format, logger):
         result.addSuccess(filename)
         return result
 
-def process_multi_object_request(objects, format, logger):
+def process_multi_object_request(person, objects, format, logger):
     """Process an export request for many objects.
 
     This function creates a tarball containing all of the objects requested,
@@ -346,8 +363,16 @@ def process_multi_object_request(objects, format, logger):
     filehandle = tempfile.TemporaryFile()
     archive = RosettaWriteTarFile(filehandle)
     result = ExportResult(name)
+    last_template_name = None
 
     for obj in objects:
+        template_name = get_template(obj).displayname
+        if template_name != last_template_name:
+            logger.debug(
+                'Exporting objects for %s, related to template %s'
+                % (person.displayname, template_name))
+            last_template_name = template_name
+
         handler = get_handler(format, obj)
         filename = handler.get_filename()
 
@@ -398,11 +423,13 @@ def process_request(person, objects, format, logger):
     """
 
     if len(objects) == 1:
-        result = process_single_object_request(objects[0], format, logger)
+        result = process_single_object_request(
+            person, objects[0], format, logger)
     else:
-        result = process_multi_object_request(objects, format, logger)
+        result = process_multi_object_request(person, objects, format, logger)
 
     result.notify(person)
+
 
 def process_queue(transaction_manager, logger):
     """Process each request in the PO export queue.
@@ -410,18 +437,11 @@ def process_queue(transaction_manager, logger):
     Each item is removed from the queue as it is processed, so the queue will
     be empty when this function returns.
     """
-
     request_set = getUtility(IPOExportRequestSet)
 
-    while True:
-        request = request_set.popRequest()
-
-        if request is None:
-            return
-
-        person, potemplate, objects, format = request
-        logger.debug('Exporting objects for %s, related to template %s' % (
-            person.displayname, potemplate.displayname))
+    request = request_set.popRequest()
+    while request is not None:
+        person, objects, format = request
 
         try:
             process_request(person, objects, format, logger)
@@ -441,4 +461,6 @@ def process_queue(transaction_manager, logger):
         # because files are not accessible in the same transaction as they're
         # created.
         transaction_manager.commit()
+
+        request = request_set.popRequest()
 

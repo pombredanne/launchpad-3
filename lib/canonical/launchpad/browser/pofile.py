@@ -23,8 +23,9 @@ from zope.publisher.browser import FileUpload
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.browser.pomsgset import (
     BaseTranslationView, POMsgSetView)
+from canonical.launchpad.browser.poexportrequest import BaseExportView
 from canonical.launchpad.browser.potemplate import (
-    BaseExportView, POTemplateSOP, POTemplateFacets)
+    POTemplateSOP, POTemplateFacets)
 from canonical.launchpad.interfaces import (
     IPOFile, ITranslationImporter, ITranslationImportQueue,
     UnexpectedFormData, NotFoundError)
@@ -409,4 +410,7 @@ class POExportView(BaseExportView):
         self.request_set.addRequest(
             self.user, pofiles=[self.context], format=format)
         self.nextURL()
+
+    def getDefaultFormat(self):
+        return self.context.potemplate.source_file_format
 
