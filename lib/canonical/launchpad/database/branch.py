@@ -501,7 +501,7 @@ class BranchSet:
             return branch
 
     def getBranchesToScan(self):
-        """See `IBranchSet`.getBranchesToScan()"""
+        """See `IBranchSet`"""
         # Return branches where the scanned and mirrored IDs don't match.
         # Branches with a NULL last_mirrored_id have never been
         # successfully mirrored so there is no point scanning them.

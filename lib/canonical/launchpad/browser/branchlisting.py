@@ -47,10 +47,13 @@ class BranchListingItem:
 
     @property
     def elapsed_time(self):
+        """How long since the branch's last commit."""
         return self.last_commit and (self._now - self.last_commit)
 
     @property
     def since_created(self):
+        """How long since the branch was created."""
+        # Need to make an TZ unaware date in order to subtract it.
         unaware_date = self.branch.date_created.replace(tzinfo=None)
         return self._now - unaware_date
 
@@ -186,8 +189,7 @@ class RecentlyRegisteredBranchesView(NoContextBranchListingView):
     page_title = 'Recently registered branches'
 
     def _branches(self):
-        # By setting the limit to zero, we get all branches, which
-        # is fine as the page is batched.
+        """Return the branches ordered by date created."""
         return getUtility(IBranchSet).getRecentlyRegisteredBranches(
             lifecycle_statuses=self.selected_lifecycle_status,
             visible_by_user=self.user)
@@ -200,8 +202,7 @@ class RecentlyImportedBranchesView(NoContextBranchListingView):
     extra_columns = ('product', 'date_created')
 
     def _branches(self):
-        # By setting the limit to zero, we get all branches, which
-        # is fine as the page is batched.
+        """Return imported branches ordered by last update."""
         return getUtility(IBranchSet).getRecentlyImportedBranches(
             lifecycle_statuses=self.selected_lifecycle_status,
             visible_by_user=self.user)
@@ -213,8 +214,7 @@ class RecentlyChangedBranchesView(NoContextBranchListingView):
     page_title = 'Recently changed branches'
 
     def _branches(self):
-        # By setting the limit to zero, we get all branches, which
-        # is fine as the page is batched.
+        """Return non-imported branches orded by last commit."""
         return getUtility(IBranchSet).getRecentlyChangedBranches(
             lifecycle_statuses=self.selected_lifecycle_status,
             visible_by_user=self.user)
