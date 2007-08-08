@@ -12,6 +12,7 @@ from canonical.testing import LaunchpadFunctionalLayer
 def test_suite():
     suite = DocFileSuite(
         'test_adapter.txt',
+        'adapter-serialization.txt',
         'reconnecting-adapter.txt',
         'reconnecting-adapter-zope-transaction.txt',
         optionflags=REPORT_NDIFF|NORMALIZE_WHITESPACE|ELLIPSIS)
