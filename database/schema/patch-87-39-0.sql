@@ -4,4 +4,4 @@ SET client_min_messages=ERROR;
 ALTER TABLE Question RENAME COLUMN dateanswered TO date_solved;
 ALTER TABLE QuestionReopening RENAME COLUMN dateanswered TO date_solved;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 97, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 39, 0);
