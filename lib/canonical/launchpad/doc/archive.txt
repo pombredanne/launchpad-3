@@ -278,20 +278,6 @@ archive.
   set(['commercial'])
   set(['commercial'])
 
-IArchiveSet.getByDistroComponent retrieves an IArchive given a distribution
-and a component name.  This is used when you want to override the archive
-based on the component.  If the component is unknown, None is returned.
-
-  >>> commercial_archive = getUtility(IArchiveSet).getByDistroComponent(
-  ...     ubuntutest, 'commercial')
-  >>> commercial_archive.description
-  u'Commercial archive'
-
-  >>> other_archive = getUtility(IArchiveSet).getByDistroComponent(
-  ...     ubuntutest, 'dodgycomponent')
-  >>> print other_archive
-  None
-
 
 Iteration over the own utility is performed against all archives,
 including the *main_archives*:

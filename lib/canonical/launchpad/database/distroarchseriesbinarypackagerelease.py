@@ -296,8 +296,8 @@ class DistroArchSeriesBinaryPackageRelease:
             return
 
         # See if the archive has changed by virtue of the component changing:
-        new_archive = getUtility(IArchiveSet).getByDistroComponent(
-            self.distribution, new_component.name)
+        new_archive = self.distribution.getArchiveByComponent(
+            new_component.name)
         if new_archive != None and new_archive != current.archive:
             raise ArchiveOverriderError(
                 "Overriding component to '%s' failed because it would "

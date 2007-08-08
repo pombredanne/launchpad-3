@@ -313,8 +313,8 @@ class SourcePackageRelease(SQLBase):
         if component is not None:
             self.component = component
             # See if the new component requires a new archive:
-            new_archive = getUtility(IArchiveSet).getByDistroComponent(
-                self.uploaddistroseries.distribution, component.name)
+            distribution = self.uploaddistroseries.distribution
+            new_archive = distribution.getArchiveByComponent(component.name)
             if new_archive is not None:
                 self.upload_archive = new_archive
             else:

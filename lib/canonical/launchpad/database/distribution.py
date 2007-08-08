@@ -982,6 +982,23 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         return src_archives.union(bin_archives)
 
+    def getArchiveByComponent(self, component_name):
+        """See `IDistribution`."""
+        if component_name == 'commercial':
+            return getUtility(IArchiveSet).getByDistroPurpose(self,
+                ArchivePurpose.COMMERCIAL)
+        # Other known components get the primary archive.
+        elif component_name in (
+            # XXX Julian 2007-08-08
+            # This should not be a hardcoded list but I expect this to
+            # change in the future when more archive types are in use.
+            'main', 'restricted', 'universe', 'multiverse'):
+            return getUtility(IArchiveSet).getByDistroPurpose(self,
+                ArchivePurpose.PRIMARY)
+        # Otherwise we defer to the caller.
+        else:
+            return None
+
 
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""

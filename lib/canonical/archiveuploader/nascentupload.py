@@ -964,9 +964,9 @@ class NascentUpload:
                 self.reject("Cannot mix commercial files with non-commercial.")
                 return
 
-            # Reset the archive in the policy to the commercial archive.
-            archive = getUtility(IArchiveSet).getByDistroComponent(
-                self.policy.distroseries.distribution, 
+            # See if there is an archive to override with.
+            distribution = self.policy.distroseries.distribution
+            archive = distribution.getByDistroComponent(
                 commercial_component_name
                 )
 
@@ -977,5 +977,6 @@ class NascentUpload:
                 self.reject("Commercial archive for distro '%s' not found" % 
                     self.policy.distroseries.distribution.name)
             else:
+                # Reset the archive in the policy to the commercial archive.
                 self.policy.archive = archive
 

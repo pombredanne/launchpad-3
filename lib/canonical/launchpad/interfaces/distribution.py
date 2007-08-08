@@ -318,7 +318,14 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getPendingPublicationPPAs(distribution=None):
         """Return only pending publication PPAs in this distribution."""
 
+    def getArchiveByComponent(component_name):
+        """Return the archive most appropriate for the component name.
 
+        Where different components may imply a different archive (e.g.
+        commercial), this method will return the archive for that component.
+
+        If the component_name supplied is unknown, None is returned.
+        """
 
 
 class IDistributionSet(Interface):

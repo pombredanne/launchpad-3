@@ -852,8 +852,9 @@ class QueueActionOverride(QueueAction):
                         break
                 # See if the new component requires a new archive on the build:
                 if component:
-                    new_archive = getUtility(IArchiveSet).getByDistroComponent(
-                        build.build.distroarchseries.distroseries.distribution,
+                    distribution = (
+                        build.build.distroarchseries.distroseries.distribution)
+                    new_archive = distribution.getArchiveByComponent(
                         self.component_name)
                     if(new_archive is not None and new_archive !=
                             build.build.archive):

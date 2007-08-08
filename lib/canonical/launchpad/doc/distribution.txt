@@ -475,3 +475,18 @@ for the distribution in question:
 
   >>> [archive.owner.name for archive in debian.getAllPPAs()]
   []
+
+== Distribution Archives ==
+
+`IDistribution.getArchiveByComponent` retrieves an IArchive given a component
+name.  If the component is unknown, None is returned.
+
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+  >>> commercial_archive = ubuntutest.getArchiveByComponent('commercial')
+  >>> commercial_archive.description
+  u'Commercial archive'
+
+  >>> other_archive = ubuntutest.getArchiveByComponent('dodgycomponent')
+  >>> print other_archive
+  None
+
