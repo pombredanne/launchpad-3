@@ -781,12 +781,20 @@ class BugAlsoReportInWithBugTrackerCreationView(BugAlsoReportInView):
     def render_distrotask(self):
         self._action_url = ("%s/+add-affected-distro-with-bugtracker"
                             % canonical_url(self.context))
-        return self._render_distrotask()
+        if not self.create_task_and_bugtracker_action.submitted():
+            return self._render_distrotask()
+        else:
+            # XXX: We should redirect to the newly added task, instead.
+            self.request.response.redirect(canonical_url(self.context))
 
     def render_upstreamtask(self):
         self._action_url = ("%s/+add-affected-product-with-bugtracker"
                             % canonical_url(self.context))
-        return self._render_upstreamtask()
+        if not self.create_task_and_bugtracker_action.submitted():
+            return self._render_upstreamtask()
+        else:
+            # XXX: We should redirect to the newly added task, instead.
+            self.request.response.redirect(canonical_url(self.context))
 
     @action('Yes, do it!', name='do_it')
     def create_task_and_bugtracker_action(self, action, data):
@@ -808,7 +816,6 @@ class BugAlsoReportInWithBugTrackerCreationView(BugAlsoReportInView):
         self.extracted_bugtracker = tracker
         self.extracted_bug = bug
         self.continue_action.success(data)
-        self.request.response.redirect(canonical_url(self.context))
 
 
 class BugEditViewBase(LaunchpadEditFormView):
