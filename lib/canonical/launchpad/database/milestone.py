@@ -20,9 +20,9 @@ from canonical.launchpad.database.specification import Specification
 class Milestone(SQLBase):
     implements(IMilestone)
 
-    # XXX: Milestones should be associated with productseries/distroseriess
-    # so these columns are not needed. See https://launchpad.net/bugs/40978
-    # for more details. -- Guilherme Salgado, 2007-03-27
+    # XXX: Guilherme Salgado 2007-03-27 bug=40978:
+    # Milestones should be associated with productseries/distroseriess
+    # so these columns are not needed.
     product = ForeignKey(dbName='product',
         foreignKey='Product', default=None)
     distribution = ForeignKey(dbName='distribution',

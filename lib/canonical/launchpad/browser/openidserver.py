@@ -27,11 +27,11 @@ from openid import oidutil
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.lp.dbschema import LoginTokenType, PersonCreationRationale
 from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, ILoginTokenSet, IOpenIdApplication,
-    IOpenIdAuthorizationSet, IPersonSet, NotFoundError, UnexpectedFormData)
+    IOpenIdAuthorizationSet, IPersonSet, LoginTokenType, NotFoundError,
+    PersonCreationRationale, UnexpectedFormData)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
@@ -58,7 +58,7 @@ oidutil.log = null_log
 
 rationale = PersonCreationRationale
 # Information about known trust roots
-# XXX: 2007-06-14 jamesh
+# XXX: jamesh 2007-06-14
 # Include more information about the trust roots, such as an icon.  We
 # should really maintain this data elsewhere, but this should be fine
 # for phase 1 of the implementation.
@@ -77,6 +77,17 @@ KNOWN_TRUST_ROOTS = {
                    'x_phone'],
              reason=None),
     'http://www.mmania.biz':
+        dict(title="The Ubuntu Store from Canonical",
+             logo="/+icing/canonical-logo.png",
+             sreg=['email', 'fullname', 'nickname',
+                   'x_address1', 'x_address2', 'x_organization',
+                   'x_city', 'x_province', 'country', 'postcode',
+                   'x_phone'],
+             reason=("For the Ubuntu Store, you need a Launchpad account "
+                     "so we can remember your order details and keep in "
+                     "touch with you about your orders."),
+             creation_rationale=rationale.OWNER_CREATED_UBUNTU_SHOP),
+    'https://testshop.canonical.com':
         dict(title="The Ubuntu Store from Canonical",
              logo="/+icing/canonical-logo.png",
              sreg=['email', 'fullname', 'nickname',
@@ -476,7 +487,7 @@ class LoginServiceBaseView(OpenIdMixin, LaunchpadFormView):
 
     def trashRequest(self):
         """Remove the OpenID request from the session."""
-        # XXX: 2007-06-22 jamesh
+        # XXX: jamesh 2007-06-22
         # Removing the OpenID request from the session leads to an
         # UnexpectedFormData exception if the user hits back and
         # submits the form again.  Not deleting the request allows
@@ -527,8 +538,9 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
         return self.renderOpenIdResponse(self.createFailedResponse())
 
     @action("I'm Someone Else", name='logout')
-    # XXX 20070618 mpt: "I'm" should use a typographical apostrophe
-    # XXX 20070618 mpt: "Someone Else" should be "Not" then the person's name
+    # XXX mpt 2007-06-18: "I'm" should use a typographical apostrophe.
+    # XXX mpt 2007-06-18: "Someone Else" should be "Not" then the
+    # person's name.
     def logout_action(self, action, data):
         # Log the user out and render the login page again.
         session = ISession(self.request)

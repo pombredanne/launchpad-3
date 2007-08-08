@@ -351,6 +351,76 @@ The search filter can also return bugs that are related to CVE reports:
     26 2 Ubuntu Blackhole Trash folder 1999-2345
 
 
+== Searching by bug commenter ==
+
+The 'bug_commenter' parameter allows you to search bugtasks on which a certain
+person has commented. No Privileges Person hasn't commented on any bugs, so no
+bugs are found for him:
+
+    >>> from canonical.launchpad.interfaces import IPersonSet
+    >>> import transaction
+    >>> transaction.abort()
+
+    >>> no_priv = getUtility(IPersonSet).getByName('no-priv')
+    >>> no_priv_bug_commenter = BugTaskSearchParams(
+    ...     user=None, bug_commenter=no_priv)
+    >>> found_bugtasks = bugtask_set.search(no_priv_bug_commenter)
+    >>> found_bugtasks.count()
+    0
+
+If No Privileges Person comments on some bugs, those bugs can then be found by
+a bug commenter search. There will be one bug task instance returned for each
+bug target that the task is registered against, so in the test below three
+comments will produce eight found bug tasks (three for bug 1, five for bug 2).
+
+    >>> bug_one = getUtility(IBugSet).get(1)
+    >>> bug_one.newMessage(no_priv, 'No subject', 'some comment')
+    <Message at ...>
+
+    >>> bug_two = getUtility(IBugSet).get(2)
+    >>> bug_two.newMessage(no_priv, 'No subject', 'another comment')
+    <Message at ...>
+
+    >>> bug_two.newMessage(no_priv, 'No subject', 'yet another comment')
+    <Message at ...>
+
+    >>> for (bug_id, target) in sorted((bugtask.bug.id, bugtask.bugtargetname)
+    ...                                for bugtask in found_bugtasks):
+    ...     print bug_id, target
+    1 firefox
+    1 mozilla-firefox (Debian)
+    1 mozilla-firefox (Ubuntu)
+    2 Ubuntu Hoary
+    2 mozilla-firefox (Debian Woody)
+    2 mozilla-firefox (Debian)
+    2 tomcat
+    2 ubuntu
+
+If No Privileges Person reports a bug and does not comment on it, that bug
+will not be included in the results returned by the bug commenter search.
+
+    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> from canonical.launchpad.interfaces import IProductSet
+
+    >>> firefox = getUtility(IProductSet).getByName('firefox')
+    >>> firefox.createBug(
+    ...     CreateBugParams(no_priv, "Some bug", "Some comment"))
+    <Bug at ...>
+
+    >>> for (bug_id, target) in sorted((bugtask.bug.id, bugtask.bugtargetname)
+    ...                                for bugtask in found_bugtasks):
+    ...     print bug_id, target
+    1 firefox
+    1 mozilla-firefox (Debian)
+    1 mozilla-firefox (Ubuntu)
+    2 Ubuntu Hoary
+    2 mozilla-firefox (Debian Woody)
+    2 mozilla-firefox (Debian)
+    2 tomcat
+    2 ubuntu
+
+
+
 == Search for BugTasks assigned to milestones ==
 
 BugTaskSet.search() can return bugtasks associated with milestones. 

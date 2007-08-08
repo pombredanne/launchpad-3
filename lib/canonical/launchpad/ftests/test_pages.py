@@ -119,8 +119,8 @@ def get_feedback_messages(browser):
     message_classes = ['message', 'informational message', 'error message']
     soup = BeautifulSoup(
         browser.contents,
-        parseOnlyThese=SoupStrainer('div', {'class': message_classes}))
-    return [div_tag.string for div_tag in soup]
+        parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
+    return [tag.string for tag in soup]
 
 
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
@@ -173,8 +173,9 @@ def extract_text(content):
     return text.strip()
 
 
-# XXX cprov 20070207: This function seems to be more specific to a particular
-# product (soyuz) than the rest. Maybe it belongs to somewhere else.
+# XXX cprov 2007-02-07: This function seems to be more specific to a
+# particular product (soyuz) than the rest. Maybe it belongs to
+# somewhere else.
 def parse_relationship_section(content):
     """Parser package relationship section.
 

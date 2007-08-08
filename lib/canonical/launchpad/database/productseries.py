@@ -382,7 +382,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         for pkg in self.sourcepackages:
             if pkg.distroseries == distroseries:
                 return pkg
-        # XXX sabdfl 23/06/05 this needs to search through the ancestry of
+        # XXX sabdfl 2005-06-23: This needs to search through the ancestry of
         # the distroseries to try to find a relevant packaging record
         raise NotFoundError(distroseries)
 

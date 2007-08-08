@@ -6,7 +6,7 @@
 # For more information on how to use this module, see
 # lib/canonical/launchpad/doc/buildd-dbnotes.txt
 
-# XXX dsilvers 20050701: Can we replace all uses of notes with
+# XXX dsilvers 2005-07-01: Can we replace all uses of notes with
 # foo.non_db_attribute = 'bar' and perhaps also with properties on the
 # instances which DTRT?
 

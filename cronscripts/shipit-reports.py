@@ -56,8 +56,9 @@ class ShipitReporter(LaunchpadCronScript):
         self.txn.commit()
 
         self.txn.begin()
-        # XXX: For now this will be hardcoded as the date when a new ShipIt is
-        # opened. -- Guilherme Salgado, 2005-11-24
+        # XXX: salgado 2005-11-24:
+        # For now this will be hardcoded as the date when a new ShipIt is
+        # opened.
         start_date = date(2007, 4, 5)
         csv_file = requestset.generateWeekBasedReport(start_date, date.today())
         reportset.new(self._createLibraryFileAlias(csv_file, 'OrdersByWeek'))

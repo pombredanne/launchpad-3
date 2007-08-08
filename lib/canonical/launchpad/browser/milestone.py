@@ -32,7 +32,7 @@ class MilestoneSetNavigation(GetitemNavigation):
     usedfor = IMilestoneSet
 
 
-# XXX: 20051214 jamesh
+# XXX: jamesh 2005-12-14:
 # This class is required in order to make use of a side effect of
 # Navigation.publishTraverse: adding context objects to
 # request.traversed_objects.
