@@ -260,6 +260,8 @@ class ProductSeriesTranslationsExportView(BaseExportView):
             return
 
         format = self.validateFileFormat(self.request.form.get('format'))
+        if format is None:
+            return
 
         pofiles = []
         for potemplate in self.context.potemplates:

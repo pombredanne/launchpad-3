@@ -32,12 +32,16 @@ class BaseExportView(LaunchpadView):
         self.request.response.redirect(canonical_url(self.context))
 
     def validateFileFormat(self, format_name):
-        try:
-            return TranslationFileFormat.items[format_name]
-        except KeyError:
-            self.request.response.addErrorNotification(_(
-                'Please select a valid format for download.'))
-            return
+        notice = _('Please select a valid format for download.')
+        valid_name = None
+        if format_name is not None:
+            try:
+                valid_name = TranslationFileFormat.items[format_name]
+            except KeyError:
+                pass
+        if format_name is None:
+            self.request.response.addErrorNotification(notice)
+        return valid_name
 
     def formats(self):
         """Return a list of formats available for translation exports."""

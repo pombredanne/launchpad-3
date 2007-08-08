@@ -365,7 +365,7 @@ class ProductTranslationsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'translations'
-    links = ['translators', 'edit']
+    links = ['translators', 'edit', 'translationdownload']
 
     def translators(self):
         text = 'Change translators'
@@ -375,6 +375,32 @@ class ProductTranslationsMenu(ApplicationMenu):
     def edit(self):
         text = 'Edit template names'
         return Link('+potemplatenames', text, icon='edit')
+
+    def translationdownload(self):
+        text = 'Download translations'
+        preferred_series = None
+        if self.context.primary_translatable is not None:
+            preferred_series = self.context.primary_translatable
+        else:
+            # There's no primary_translatable for this product series.  We'll
+            # have to wing it: pick what looks like the most appropriate
+            # series.  It's not disastrous--the user will end up on a "yes we
+            # have no translations" page anyway.
+            candidates = sorted_version_numbers(
+                self.context.serieses, key=attrgetter('name'))
+            if candidates is not None and len(candidates) > 0:
+                preferred_series = candidates[-1]
+
+        if preferred_series is not None:
+            link = '%s/+export' % preferred_series.name
+        else:
+            # Oh dear.  There are no series for this product at all.  Is this
+            # even possible?  There are currently no examples in the
+            # production database.  If it ever does happen, just loop back to
+            # the same page.
+            link = ''
+
+        return Link(link, text, icon='download')
 
 
 def _sort_distros(a, b):
