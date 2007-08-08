@@ -51,7 +51,7 @@ class POExportRequestSet:
 
         if not (potemplates or pofiles):
             raise ValueError(
-                "Can't add a request with no PO templates and no PO files")
+                "Can't add a request with no PO templates and no PO files.")
 
         for potemplate in potemplates:
             self._addRequestEntry(person, potemplate, None, format)
