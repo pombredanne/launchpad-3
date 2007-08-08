@@ -282,10 +282,7 @@ class Builder(SQLBase):
                     # Commercial is a very special case because the commercial
                     # component is only in the commercial archive, so we have
                     # to be careful with the sources.list archives.
-                    # Also note that "main" seems to be already in the chroot
-                    # and adding it again in this list makes the builder
-                    # go bang.
-                    ubuntu_components = 'restricted'
+                    ubuntu_components = 'main restricted'
                 ubuntu_source_line = (
                     'deb http://ftpmaster.internal/ubuntu %s %s'
                     % (dist_name, ubuntu_components))
