@@ -235,7 +235,7 @@ and slave bugtasks were expired.
 
     >>> message =  expirable_distroseries_bugtask.bug.messages[-1]
     >>> print message.owner.name
-    answer-tracker-janitor
+    launchpad-janitor
 
     >>> print message.text_contents
     [Expired for Ubuntu Hoary because there has been no activity for 60 days.]

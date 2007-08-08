@@ -932,10 +932,12 @@ class Person(SQLBase, HasSpecificationsMixin):
                     sourcepackagename=None):
         """See `IPerson`."""
         # Teams don't get Karma. Inactive accounts don't get Karma.
+        # The system user, launchpad-janitor, does not get karma.
         # No warning, as we don't want to place the burden on callsites
         # to check this.
         if (not self.is_valid_person
-            or self is getUtility(ILaunchpadCelebrities).launchpad_janitor):
+            or self.id is getUtility(
+                ILaunchpadCelebrities).launchpad_janitor.id):
             return None
 
         if product is not None:

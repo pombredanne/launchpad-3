@@ -55,7 +55,7 @@ We have the Launchpad Janitor which takes care of expiring old
 questions, team memberships when they reach their expiry date,
 and old incomplete bugtasks.
 
-    >>> launchpad_janitor = personset.getByName('answer-tracker-janitor')
+    >>> launchpad_janitor = personset.getByName('launchpad-janitor')
     >>> celebs.launchpad_janitor == launchpad_janitor
     True
 
