@@ -11,6 +11,7 @@ __all__ = [
     'INullBugTask',
     'IBugTaskSearch',
     'IAddBugTaskForm',
+    'IAddBugTaskWithBugTrackerForm',
     'IPersonBugTaskSearch',
     'IFrontPageBugTaskSearch',
     'IBugTaskDelta',
@@ -690,6 +691,10 @@ class IAddBugTaskForm(Interface):
     bug_url = StrippedTextLine(
         title=_('URL'), required=False,
         description=_("The URL of this bug in the remote bug tracker."))
+
+
+class IAddBugTaskWithBugTrackerForm(IAddBugTaskForm):
+
     register_bugtracker = Bool(
         title=_('Register bugtacker?'),
         default=False,
