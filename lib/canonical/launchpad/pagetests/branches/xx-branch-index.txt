@@ -162,3 +162,54 @@ context object that all the tabs apply to.
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, "structuralobjectheading"))
     Sample Person
+
+
+== Codebrowse link ==
+
+The codebrowse link only appears for branches that have revisions.
+
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
+    >>> browser.getLink('Browse code')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
+
+Update the branch so it thinks that it has revision.
+
+    >>> from canonical.launchpad.ftests import login, logout, syncUpdate
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from zope.component import getUtility
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchType, IBranchSet, IPersonSet, IProductSet)
+    >>> login('test@canonical.com')
+    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    ...     '~name12/gnome-terminal/scanned')
+    >>> branch.last_mirrored_id = 'Should be a revision id'
+    >>> syncUpdate(branch)
+    >>> logout()
+
+The browse code link is now show.
+
+    >>> browser.reload()
+    >>> print browser.getLink('Browse code').url
+    http://codebrowse.launchpad.dev/~name12/gnome-terminal/scanned
+
+If the branch is private, the browse code link is not shown.
+
+    >>> login('test@canonical.com')
+    >>> branch = getUtility(IBranchSet).getByUniqueName(
+    ...     '~name12/gnome-terminal/scanned')
+    >>> branch.private = True
+    >>> syncUpdate(branch)
+    >>> logout()
+
+Use a browser that is able to see the branch.
+
+    >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
+    >>> browser.getLink('Browse code')
+    Traceback (most recent call last):
+    ...
+    LinkNotFoundError
