@@ -76,6 +76,7 @@ class EntitlementState(DBEnumeratedType):
         The entitlement is approved in Launchpad or was imported in the
         active state.
         """)
+
     INACTIVE = DBItem(30, """
         The entitlement is inactive.
 
