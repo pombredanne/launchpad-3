@@ -40,7 +40,7 @@ class IQuestionReopening(Interface):
                 "the question."),
         required=True, readonly=True, schema=IPerson)
 
-    datesolved = Datetime(
+    date_solved = Datetime(
         title=_("The date it had previously been solved."), required=True,
         readonly=True)
 
