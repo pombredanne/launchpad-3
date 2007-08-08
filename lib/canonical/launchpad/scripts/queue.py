@@ -10,6 +10,7 @@ __metaclass__ = type
 __all__ = [
     'CommandRunner',
     'CommandRunnerError',
+    'QueueActionError',
     'name_queue_map'
     ]
 

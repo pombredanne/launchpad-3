@@ -38,6 +38,7 @@ from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
 from canonical.launchpad.database.publishing import (
     SourcePackagePublishingHistory)
+from canonical.launchpad.scripts.queue import QueueActionError
 
 
 class SourcePackageRelease(SQLBase):
@@ -316,6 +317,9 @@ class SourcePackageRelease(SQLBase):
                 self.uploaddistroseries.distribution, component.name)
             if new_archive is not None:
                 self.upload_archive = new_archive
+            else:
+                raise QueueActionError(
+                    "New component '%s' requires a non-existent archive.")
         if section is not None:
             self.section = section
         if urgency is not None:

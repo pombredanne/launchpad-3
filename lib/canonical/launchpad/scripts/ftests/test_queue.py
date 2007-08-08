@@ -10,14 +10,15 @@ from unittest import TestCase, TestLoader
 from sha import sha
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.sqlbase import READ_COMMITTED_ISOLATION
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPackageUploadSet)
+    IArchiveSet, IDistributionSet, IPackageUploadSet)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
-    CommandRunner, CommandRunnerError, name_queue_map)
+    CommandRunner, CommandRunnerError, QueueActionError, name_queue_map)
 from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.lp.dbschema import (
@@ -514,15 +515,15 @@ class TestQueueTool(TestQueueBase):
         that here.
         """
         # Set up.
-        breezy_autotest = getUtility(
-            IDistributionSet)['ubuntu']['breezy-autotest']
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+        breezy_autotest = ubuntu['breezy-autotest']
 
         # Test that it changes to commercial when required.
         queue_action = self.execute_command('override source alsa-utils',
             component_name='commercial')
         self.assertEqual(1, queue_action.items_size)
-        queue_item = breezy_autotest.getQueueItems(
-            status=PackageUploadStatus.NEW, name="alsa-utils")[0]
+        [queue_item] = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name="alsa-utils")
         [source] = queue_item.sources
         self.assertEqual(source.sourcepackagerelease.upload_archive.purpose,
             ArchivePurpose.COMMERCIAL)
@@ -531,11 +532,26 @@ class TestQueueTool(TestQueueBase):
         queue_action = self.execute_command('override source alsa-utils',
             component_name='main')
         self.assertEqual(1, queue_action.items_size)
-        queue_item = breezy_autotest.getQueueItems(
-            status=PackageUploadStatus.NEW, name="alsa-utils")[0]
+        [queue_item] = breezy_autotest.getQueueItems(
+            status=PackageUploadStatus.NEW, name="alsa-utils")
         [source] = queue_item.sources
         self.assertEqual(source.sourcepackagerelease.upload_archive.purpose,
             ArchivePurpose.PRIMARY)
+
+        # Test that overriding to a component that needs a non-existent
+        # archive fails properly.
+        # The "queued" user does not have permission to alter IArchive, so
+        # switch to a user that does.
+        LaunchpadZopelessLayer.switchDbUser("testadmin")
+        proxied_archive = getUtility(IArchiveSet).getByDistroPurpose(
+            ubuntu, ArchivePurpose.COMMERCIAL)
+        comm_archive = removeSecurityProxy(proxied_archive)
+        comm_archive.purpose = ArchivePurpose.EMBARGOED
+        LaunchpadZopelessLayer.txn.commit()
+        self.assertRaises(CommandRunnerError,
+                          self.execute_command, 
+                          'override source alsa-utils',
+                          component_name='commercial')
 
     def testOverrideBinary(self):
         """Check if overriding binaries works.
