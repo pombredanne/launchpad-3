@@ -42,12 +42,13 @@ from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 
 
-# XXX: Brad Bollenbach, 2005-12-02: In theory, INCOMPLETE belongs in
-# UNRESOLVED_BUGTASK_STATUSES, but the semantics of our current reports would
-# break if it were added to the list below. See
-# <https://launchpad.net/malone/bugs/5320>
-# XXX: matsubara, 2006-02-02: I added the INCOMPLETE as a short-term solution
-# to bug https://launchpad.net/products/malone/+bug/4201
+# XXX: Brad Bollenbach 2005-12-02 bugs=5320: 
+# In theory, INCOMPLETE belongs in UNRESOLVED_BUGTASK_STATUSES, but the
+# semantics of our current reports would break if it were added to the
+# list below.
+
+# XXX: matsubara 2006-02-02 bug=4201: 
+# I added the INCOMPLETE as a short-term solution.
 UNRESOLVED_BUGTASK_STATUSES = (
     dbschema.BugTaskStatus.NEW,
     dbschema.BugTaskStatus.INCOMPLETE,
@@ -88,12 +89,12 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         vocabulary='DistroSeries')
     milestone = Choice(
         title=_('Milestone'), required=False, vocabulary='Milestone')
-    # XXX: the status and importance's vocabularies do not
+    # XXX kiko 2006-03-23: 
+    # The status and importance's vocabularies do not
     # contain an UNKNOWN item in bugtasks that aren't linked to a remote
     # bugwatch; this would be better described in a separate interface,
     # but adding a marker interface during initialization is expensive,
     # and adding it post-initialization is not trivial.
-    #   -- kiko, 2006-03-23
     status = Choice(
         title=_('Status'), vocabulary='BugTaskStatus',
         default=dbschema.BugTaskStatus.NEW)
@@ -107,7 +108,8 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     bugtargetdisplayname = Text(
         title=_("The short, descriptive name of the target"), readonly=True)
     bugtargetname = Text(
-        title=_("The target as presented in mail notifications"), readonly=True)
+        title=_(
+            "The target as presented in mail notifications"), readonly=True)
     bugwatch = Choice(title=_("Remote Bug Details"), required=False,
         vocabulary='BugWatch', description=_("Select the bug watch that "
         "represents this task in the relevant bug tracker. If none of the "
@@ -139,8 +141,8 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
             "datecreated and now."))
     owner = Int()
     target = Attribute("The software in which this bug should be fixed")
-    target_uses_malone = Bool(title=_("Whether the bugtask's target uses Launchpad"
-                              "officially"))
+    target_uses_malone = Bool(
+        title=_("Whether the bugtask's target uses Launchpad officially"))
     targetname = Text(title=_("The short, descriptive name of the target"),
                       readonly=True)
     title = Text(title=_("The title of the bug related to this bugtask"),
@@ -156,13 +158,14 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
         "with this particular bug.")
     # This property does various database queries. It is a property so a
     # "snapshot" of its value will be taken when a bugtask is modified, which
-    # allows us to compare it to the current value and see if there are any new
-    # bugcontacts that should get an email containing full bug details (rather
-    # than just the standard change mail.) It is a property on IBugTask because
-    # we currently only ever need this value for events handled on IBugTask.
+    # allows us to compare it to the current value and see if there are any
+    # new bugcontacts that should get an email containing full bug details
+    # (rather than just the standard change mail.) It is a property on
+    # IBugTask because we currently only ever need this value for events
+    # handled on IBugTask.
     bug_subscribers = Field(
-        title=_("A list of IPersons subscribed to the bug, whether directly or "
-        "indirectly."), readonly=True)
+        title=_("A list of IPersons subscribed to the bug, whether directly "
+                "or indirectly."), readonly=True)
 
     conjoined_master = Attribute(
         "The series-specific bugtask in a conjoined relationship")
@@ -335,7 +338,8 @@ class IBugTaskSearchBase(Interface):
     has_cve = Bool(
         title=_('Show only bugs associated with a CVE'), required=False)
     bug_contact = Choice(
-        title=_('Bug contact'), vocabulary='ValidPersonOrTeam', required=False)
+        title=_('Bug contact'), vocabulary='ValidPersonOrTeam',
+        required=False)
     bug_commenter = Choice(
         title=_('Bug commenter'), vocabulary='ValidPersonOrTeam',
         required=False)
@@ -367,7 +371,7 @@ class IPersonBugTaskSearch(IBugTaskSearchBase):
 
 
 class IFrontPageBugTaskSearch(IBugTaskSearchBase):
-
+    """Additional search options for the front page of bugs."""
     scope = Choice(
         title=u"Search Scope", required=False,
         vocabulary="DistributionOrProductOrProject")
@@ -413,8 +417,8 @@ class IBugTaskDelta(Interface):
         """The change made to the importance of this task.
 
         The value is a dict like
-        {'old' : BugTaskImportance.FOO, 'new' : BugTaskImportance.BAR}, or None,
-        if no change was made to the importance.
+        {'old' : BugTaskImportance.FOO, 'new' : BugTaskImportance.BAR},
+        or None, if no change was made to the importance.
         """)
     assignee = Attribute(
         """The change made to the assignee of this task.
@@ -426,8 +430,8 @@ class IBugTaskDelta(Interface):
     bugwatch = Attribute("The bugwatch which governs this task.")
 
 
-# XXX, Brad Bollenbach, 2006-08-03: This interface should be
-# renamed. See https://launchpad.net/bugs/55089 .
+# XXX Brad Bollenbach 2006-08-03 bugs=55089: 
+# This interface should be renamed.
 class IUpstreamBugTask(IBugTask):
     """A bug needing fixing in a product."""
     product = Choice(title=_('Project'), required=True, vocabulary='Product')
@@ -445,7 +449,7 @@ class IDistroBugTask(IBugTask):
 
 
 class IDistroSeriesBugTask(IBugTask):
-    """A bug needing fixing in a distrorealease, possibly a specific package."""
+    """A bug needing fixing in a distrorealease, or a specific package."""
     sourcepackagename = Choice(
         title=_("Source Package Name"), required=True,
         vocabulary='SourcePackageName')
@@ -461,12 +465,14 @@ class IProductSeriesBugTask(IBugTask):
         vocabulary='ProductSeries')
 
 
-# XXX: Brad Bollenbach, 2005-02-03: This interface should be removed
-# when spiv pushes a fix upstream for the bug that makes this hackery
-# necessary:
-#
-#     https://launchpad.ubuntu.com/malone/bugs/121
+# XXX: Brad Bollenbach 2005-02-03 bugs=121: 
+# This interface should be removed when spiv pushes a fix upstream for
+# the bug that makes this hackery necessary.
 class ISelectResultsSlicable(ISelectResults):
+    """ISelectResults (from SQLOS) should be specifying __getslice__.
+    
+    This interface defines the missing __getslice__ method.
+    """
     def __getslice__(i, j):
         """Called to implement evaluation of self[i:j]."""
 
@@ -583,7 +589,7 @@ class BugTaskSearchParams:
 
 
 class IBugTaskSet(Interface):
-
+    """A utility to retrieving BugTasks."""
     title = Attribute('Title')
 
     def get(task_id):
@@ -621,7 +627,8 @@ class IBugTaskSet(Interface):
 
     def createTask(bug, product=None, productseries=None, distribution=None,
                    distroseries=None, sourcepackagename=None, status=None,
-                   importance=None, assignee=None, owner=None, milestone=None):
+                   importance=None, assignee=None, owner=None,
+                   milestone=None):
         """Create a bug task on a bug and return it.
 
         If the bug is public, bug contacts will be automatically
@@ -668,8 +675,8 @@ class IBugTaskSet(Interface):
         If the col_name is unrecognized, a KeyError is raised.
         """
 
-    # XXX: get rid of this kludge when we have proper security for
-    # scripts   -- kiko, 2006-03-23
+    # XXX kiko 2006-03-23: 
+    # get rid of this kludge when we have proper security for scripts.
     def dangerousGetAllTasks():
         """DO NOT USE THIS METHOD UNLESS YOU KNOW WHAT YOU ARE DOING
 
@@ -683,9 +690,18 @@ class IBugTaskSet(Interface):
 
 class IAddBugTaskForm(Interface):
     """Form for adding an upstream bugtask."""
-    product = IUpstreamBugTask['product']
-    distribution = IDistroBugTask['distribution']
-    sourcepackagename = IDistroBugTask['sourcepackagename']
+    # It is tempting to replace the first three attributes here with their
+    # counterparts from IUpstreamBugTask and IDistroBugTask.
+    # BUT: This will cause OOPSes with adapters, hence IAddBugTask reinvents
+    # the wheel somewhat. There is a test to ensure that this remains so.
+    product = Choice(title=_('Project'), required=True, vocabulary='Product')
+    distribution = Choice(
+        title=_("Distribution"), required=True, vocabulary='Distribution')
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=False,
+        description=_("The source package in which the bug occurs. "
+                      "Leave blank if you are not sure."),
+        vocabulary='SourcePackageName')
     bug_url = StrippedTextLine(
         title=_('URL'), required=False,
         description=_("The URL of this bug in the remote bug tracker."))

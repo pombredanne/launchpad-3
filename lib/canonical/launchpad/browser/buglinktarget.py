@@ -47,7 +47,7 @@ class BugLinkView(LaunchpadFormView):
         try:
             self.context.linkBug(bug)
         except Unauthorized:
-            # XXX flacoste 2006-08-23 Use proper _() once bug 57470 is fixed.
+            # XXX flacoste 2006-08-23: Use proper _() once bug 57470 is fixed.
             self.setFieldError(
                 'bug',
                 'You are not allowed to link to private bug #%d.'% bug.id)

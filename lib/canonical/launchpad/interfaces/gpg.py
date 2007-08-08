@@ -20,9 +20,9 @@ from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.validators.gpg import valid_fingerprint, valid_keyid
 
 
-##XXX: (gpg+dbschema) cprov 20041004
-## the data structure should be rearranged to support 4 field
-## needed: keynumber(1,16,17,20), keyalias(R,g,D,G), title and description
+# XXX: cprov 2004-10-04:
+# (gpg+dbschema) the data structure should be rearranged to support 4 field
+# needed: keynumber(1,16,17,20), keyalias(R,g,D,G), title and description
 class GPGKeyAlgorithm(DBEnumeratedType):
     """
     GPG Compilant Key Algorithms Types:

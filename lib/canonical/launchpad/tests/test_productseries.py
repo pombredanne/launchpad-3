@@ -69,14 +69,14 @@ class TestImportUpdated(ImportdTestCase):
     # the branch is out of date. Since this fails on the pessimistic side, this
     # is acceptable -- DavidAllouche 2006-12-12.
 
-    # XXX: This race condition can be avoided if the branch puller only runs
-    # for vcs-imports branches when importd_branch.last_mirrored <
-    # datelastsynced.  -- DavidAllouche 2006-12-21
+    # XXX DavidAllouche 2006-12-21: This race condition can be avoided if
+    # the branch puller only runs for vcs-imports branches when
+    # importd_branch.last_mirrored < datelastsynced.
 
-    # XXX: The race can be resolved if we record revision ids along with the
-    # datelastsynced and datepublishedsync timestamps. That will be easier to
-    # do when the status reporting is done from the importd slaves.
-    # -- DavidAllouche 2006-12-21.
+    # XXX DavidAllouche 2006-12-21: The race can be resolved if we record
+    # revision ids along with the datelastsynced and datepublishedsync
+    # timestamps. That will be easier to do when the status reporting is done
+    # from the importd slaves.
 
     def testLastMirroredIsNone(self):
         # If import_branch.last_mirrored is None, importUpdated just sets
@@ -113,14 +113,15 @@ class TestImportUpdated(ImportdTestCase):
         # published sync should be already recorded in datepublishedsync.
         # Then importUpdated just updates datelastsynced.
 
-        # XXX: If datepublishedsync is None, this means:
+        # XXX DavidAllouche 2006-12-13: 
+        # If datepublishedsync is None, this means:
         # * last_mirrored was None the last time importUpdated was called
         # * the last mirror started before the last call to importUpdated
         #
         # This means the race condition occured on the initial import. In this
         # case we do not really know what has been mirrored, and the import
         # should be treated as not-mirrored. So this case does not need to be
-        # treated specially. -- DavidAllouche 2006-12-13
+        # treated specially.
         series = self.series()
         UTC = pytz.timezone('UTC')
         datepublishedsync = datetime.datetime(2000, 1, 1, tzinfo=UTC)

@@ -1,4 +1,5 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+"""Classes that implement ICelebrity interfaces."""
 
 __metaclass__ = type
 __all__ = ['LaunchpadCelebrities']
@@ -78,7 +79,7 @@ class CelebrityDescriptor:
 
 
 class LaunchpadCelebrities:
-    """See ILaunchpadCelebrities"""
+    """See `ILaunchpadCelebrities`."""
     implements(ILaunchpadCelebrities)
 
     admin = CelebrityDescriptor(IPersonSet, 'admins')
@@ -104,6 +105,7 @@ class LaunchpadCelebrities:
 
     @property
     def ubuntu_archive_mirror(self):
+        """See `ILaunchpadCelebrities`."""
         mirror = getUtility(IDistributionMirrorSet).getByHttpUrl(
             'http://archive.ubuntu.com/ubuntu/')
         if mirror is None:
@@ -113,6 +115,7 @@ class LaunchpadCelebrities:
 
     @property
     def ubuntu_cdimage_mirror(self):
+        """See `ILaunchpadCelebrities`."""
         mirror = getUtility(IDistributionMirrorSet).getByHttpUrl(
             'http://releases.ubuntu.com/')
         if mirror is None:

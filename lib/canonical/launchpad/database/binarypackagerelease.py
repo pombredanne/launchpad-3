@@ -151,7 +151,7 @@ class BinaryPackageRelease(SQLBase):
     def publish(self, priority, status, pocket, embargo,
                 distroarchseries=None):
         """See `IBinaryPackageRelease`."""
-        # XXX: completely untested code
+        # XXX kiko 2005-11-02: Completely untested code.
         if not distroarchseries:
             distroarchseries = self.build.distroarchseries
 

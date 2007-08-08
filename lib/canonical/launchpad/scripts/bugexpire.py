@@ -16,6 +16,7 @@ from canonical.launchpad.webapp.interaction import (
 
 from canonical.lp.dbschema import BugTaskStatus
 
+
 class BugJanitor:
     """Expire Incomplete BugTasks that are older than a configurable period.
     
