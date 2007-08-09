@@ -56,7 +56,8 @@ if __name__ == '__main__':
 
     project = projects[0]
 
-    # XXX: https://bugzilla.warthogs.hbd.com/bugzilla/show_bug.cgi?id=1968
+    # XXX: daniels 2004-12-14:
+    # https://bugzilla.warthogs.hbd.com/bugzilla/show_bug.cgi?id=1968
     product = Product(owner=person.id, project=project.id,
                       name=options.name,
                       displayname=options.display, title=options.title,
