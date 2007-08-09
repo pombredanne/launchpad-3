@@ -171,9 +171,12 @@ easier you can use IBugWatchSet.fromText().
     MANTIS: 50
 
 The bug trackers in the text above were automatically created. If the
-bugwatch points to a bug tracker that already is registered in
-Launchpad, it won't be registered again. This is true even if the URL
-is slightly different, for example https instead of https.
+bugwatch points to a bug tracker that already is registered in Launchpad
+with the same URL, it won't be registered again. This is true even if
+the URL is slightly different, for example https instead of https. It
+doesn't handle the case where the same bug tracker is available through
+different URLs, for example where the host name is different (e.g.,
+bugs.gnome.org vs. bugzilla.gnome.org).
 
     >>> old_bugtracker_count = getUtility(IBugTrackerSet).search().count()
     >>> gnome_bugzilla = getUtility(IBugTrackerSet).queryByBaseURL(
