@@ -8,7 +8,6 @@ __metaclass__ = type
 
 import bisect
 import cgi
-from cookielib import domain_match
 from email.Utils import formatdate
 import math
 import os.path
@@ -57,6 +56,7 @@ from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
 
 
@@ -272,17 +272,9 @@ class RequestAPI:
         uri = URI(self.request.getURL())
         if uri.scheme == 'https':
             params += '; Secure'
-        # XXX: 20070206 jamesh
-        # This code to select the cookie domain comes from webapp/session.py
-        # It should probably be factored out.
-        for domain in config.launchpad.cookie_domains:
-            assert not domain.startswith('.'), \
-                   "domain should not start with '.'"
-            dotted_domain = '.' + domain
-            if (domain_match(uri.host, domain) or
-                domain_match(uri.host, dotted_domain)):
-                params += '; Domain=%s' % dotted_domain
-                break
+        domain = get_cookie_domain(uri.host)
+        if domain is not None:
+            params += '; Domain=%s' % domain
         return params
 
 

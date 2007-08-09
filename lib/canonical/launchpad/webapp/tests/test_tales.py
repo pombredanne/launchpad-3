@@ -59,23 +59,11 @@ def test_cookie_scope():
         >>> print cookie_scope('https://launchpad.net/')
         ; Path=/; Secure; Domain=.launchpad.net
 
-    Different domains from the same Launchpad instance are in the same
-    scope (this depends on the cookie_domains setting):
+    The domain parameter is omitted for domains that appear to be
+    separate from a Launchpad instance, such as shipit:
 
-        >>> print cookie_scope('https://launchpad.net/')
-        ; Path=/; Secure; Domain=.launchpad.net
-        >>> print cookie_scope('https://bugs.launchpad.net/')
-        ; Path=/; Secure; Domain=.launchpad.net
-
-        >>> print cookie_scope('https://demo.launchpad.net/')
-        ; Path=/; Secure; Domain=.demo.launchpad.net
-        >>> print cookie_scope('https://bugs.demo.launchpad.net/')
-        ; Path=/; Secure; Domain=.demo.launchpad.net
-
-        >>> print cookie_scope('http://launchpad.dev/')
-        ; Path=/; Domain=.launchpad.dev
-        >>> print cookie_scope('http://bugs.launchpad.dev/')
-        ; Path=/; Domain=.launchpad.dev
+        >>> print cookie_scope('https://shipit.ubuntu.com/')
+        ; Path=/; Secure
     """
 
 def test_dbschemaapi():
