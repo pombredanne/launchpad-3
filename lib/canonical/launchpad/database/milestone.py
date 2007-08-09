@@ -3,8 +3,7 @@
 __metaclass__ = type
 __all__ = ['Milestone',
            'MilestoneSet',
-           'ProjectMilestone',
-           'ProjectMilestoneSet']
+           'ProjectMilestone']
 
 from zope.interface import implements
 
@@ -13,18 +12,17 @@ from sqlobject import (
     SQLMultipleJoin)
 
 from canonical.launchpad.interfaces import (
-    IMilestone, IMilestoneSet, IProjectMilestone, IProjectMilestoneSet,
-    NotFoundError)
-from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
+    IMilestone, IMilestoneSet, IProjectMilestone, NotFoundError)
+from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.launchpad.database.specification import Specification
 
 
 class Milestone(SQLBase):
     implements(IMilestone)
 
-    # XXX: Milestones should be associated with productseries/distroseriess
-    # so these columns are not needed. See https://launchpad.net/bugs/40978
-    # for more details. -- Guilherme Salgado, 2007-03-27
+    # XXX: Guilherme Salgado 2007-03-27 bug=40978:
+    # Milestones should be associated with productseries/distroseriess
+    # so these columns are not needed.
     product = ForeignKey(dbName='product',
         foreignKey='Product', default=None)
     distribution = ForeignKey(dbName='distribution',
@@ -123,8 +121,6 @@ class ProjectMilestone:
 
     implements(IProjectMilestone)
 
-    is_project_milestone = True
-
     def __init__(self, target, name, dateexpected, visible):
         self.name = name
         self.id = None
@@ -154,44 +150,13 @@ class ProjectMilestone:
 
     @property
     def displayname(self):
-        """See `IMilestone`."""
-        return self.name
+        """See IMilestone."""
+        return "%s: %s" % (self.target.displayname, self.name)
 
     @property
     def title(self):
-        title = 'Milestone %s' % self.name
+        """See IMilestone."""
+        title = 'Milestone %s for %s' % (self.name, self.target.displayname)
         if self.dateexpected:
             title += ' due ' + self.dateexpected.strftime('%Y-%m-%d')
         return title
-
-
-class ProjectMilestoneSet:
-    implements(IProjectMilestoneSet)
-
-    def getMilestonesForProject(
-        self, project, only_visible=True, milestone_name=None):
-        """See `IProjectMilestoneSet`."""
-        having_clause = []
-        if only_visible:
-            having_clause.append("bool_or(Milestone.visible)=True")
-        if milestone_name is not None:
-            having_clause.append(
-                "Milestone.name=%s" % sqlvalues(milestone_name))
-        if having_clause:
-            having_clause = 'HAVING ' + ' AND '.join(having_clause)
-        else:
-            having_clause = ''
-        query = """
-            SELECT Milestone.name, min(Milestone.dateexpected),
-                bool_or(Milestone.visible)
-                FROM Milestone, Product
-                WHERE Product.project = %s
-                    AND Milestone.product = product.id
-                GROUP BY Milestone.name
-                %s
-                ORDER BY min(Milestone.dateexpected), Milestone.name
-            """ % (sqlvalues(project)[0], having_clause)
-        cur = cursor()
-        cur.execute(query)
-        result = cur.fetchall()
-        return [ProjectMilestone(project, *row) for row in result]

@@ -29,4 +29,7 @@
     <includeOverrides file="override-configure-normal.zcml" />
 
     <include file="securitypolicy.zcml" />
+
+    <!-- include request summarizer here so it only affects webapp -->
+    <include file="summarizerequests.zcml" />
 </configure>

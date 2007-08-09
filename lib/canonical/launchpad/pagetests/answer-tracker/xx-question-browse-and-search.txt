@@ -203,7 +203,9 @@ Joe observes under the search widget that there are checkboxes to select
 the question status to search. He notices that only some statuses are
 selected. He adds 'Invalid' to the selection, and run his search again.
 
-    >>> browser.getControl(name='field.status').value
+    >>> statuses = browser.getControl(name='field.status').displayValue
+    >>> # Print the label without the leading non-breaking space.
+    >>> [status[1:] for status in statuses]
     ['Open', 'Needs information', 'Answered', 'Solved']
     >>> browser.getControl('Invalid').selected = True
     >>> browser.getControl('Search').click()
@@ -225,7 +227,7 @@ The user must choose at least one status when searching questions. An
 error is displayed when the user forgets to select a status.
 
     >>> browser.open('http://launchpad.dev/ubuntu/+questions')
-    >>> browser.getControl(name='field.status').value = []
+    >>> browser.getControl(name='field.status').displayValue = []
     >>> browser.getControl('Search').click()
     >>> messages = find_tags_by_class(browser.contents, 'message')
     >>> print messages[0].renderContents()
@@ -322,7 +324,9 @@ questions.)
     >>> browser.getLink('Answered').click()
     >>> print browser.title
     Answered questions for Ubuntu
-    >>> browser.getControl(name='field.status').value
+    >>> statuses = browser.getControl(name='field.status').displayValue
+    >>> # Print the label without the leading non-breaking space.
+    >>> [status[1:] for status in statuses]
     ['Answered', 'Solved']
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'question'):
@@ -513,7 +517,8 @@ questions to a particular status:
     # goBack() doesn't work.
     >>> browser.open('http://launchpad.dev/~name16/+questions')
     >>> browser.getControl(name='field.search_text').value = 'Firefox'
-    >>> browser.getControl(name='field.status').value = ['Solved', 'Invalid']
+    >>> browser.getControl(name='field.status').displayValue = [
+    ...     'Solved', 'Invalid']
     >>> browser.getControl('Search').click()
     >>> questions = find_tag_by_id(browser.contents, 'question-listing')
     >>> for question in questions.fetch('td', 'question'):
@@ -698,7 +703,9 @@ there is an 'In' column displaying where the questions were filed.
 
 Only the default set of statuses is searched:
 
-    >>> browser.getControl(name='field.status').value
+    >>> statuses = browser.getControl(name='field.status').displayValue
+    >>> # Print the label without the leading non-breaking space.
+    >>> [status[1:] for status in statuses]
     ['Open', 'Needs information', 'Answered', 'Solved']
 
 When no results are found, a message informs the user of this fact:
@@ -760,8 +767,8 @@ to mimick the user clicking on it.)
     >>> [search_url] = re.findall(
     ...     "popup_window\('([^']*')", choose_link.url)
 
-    # XXX flacoste 2007/02/21 We should use directly search_url here but
-    # can't because of bug #
+    # XXX flacoste 2007-02-21 bug=51853:
+    # We should use directly search_url here but can't because of bug #51853.
     # >>> anon_browser.open(search_url)
     >>> anon_browser.open('http://answers.launchpad.dev/' + search_url)
     >>> print anon_browser.title

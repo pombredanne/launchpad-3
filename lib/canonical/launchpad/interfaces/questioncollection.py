@@ -13,7 +13,7 @@ __all__ = [
 
 from zope.interface import Interface, Attribute
 
-from canonical.lp.dbschema import QuestionStatus
+from canonical.launchpad.interfaces.questionenums import QuestionStatus
 
 
 QUESTION_STATUS_DEFAULT_SEARCH = (
