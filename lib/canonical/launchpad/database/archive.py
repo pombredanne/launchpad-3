@@ -228,7 +228,7 @@ class ArchiveSet:
         return Archive.get(archive_id)
 
     def getByDistroPurpose(self, distribution, purpose):
-        """See canonical.launchpad.interfaces.IArchiveSet."""
+        """See `IArchiveSet`."""
         return Archive.selectOneBy(distribution=distribution, purpose=purpose)
 
     def new(self, distribution=None, purpose=None, owner=None,
