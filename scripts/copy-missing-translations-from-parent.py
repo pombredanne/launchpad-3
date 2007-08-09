@@ -45,7 +45,7 @@ class TranslationsCopier(LaunchpadScript):
             sys.exit(1)
 
         self.logger.info('Starting...')
-        series.copyMissingTranslationsFromParent(self.txn)
+        series.copyMissingTranslationsFromParent(self.txn, self.logger)
 
         # We would like to update the DistroRelase statistics, but it takes
         # too long so this should be done after.
