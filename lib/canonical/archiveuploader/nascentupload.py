@@ -966,7 +966,7 @@ class NascentUpload:
 
             # See if there is an archive to override with.
             distribution = self.policy.distroseries.distribution
-            archive = distribution.getByDistroComponent(
+            archive = distribution.getArchiveByComponent(
                 commercial_component_name
                 )
 
