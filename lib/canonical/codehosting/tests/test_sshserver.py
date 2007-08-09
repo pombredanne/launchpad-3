@@ -68,6 +68,22 @@ class UserAuthServerMixin:
         self.transport = MockSSHTransport(self.portal)
         self.user_auth = sshserver.SSHUserAuthServer(self.transport)
 
+    def assertBannerSent(self, banner_message, expected_language='en'):
+        """Assert that 'banner_message' was sent as an SSH banner.
+
+        We actually check that 'banner_message' was sent with CR LF at the end.
+        """
+        # Check that we received a BANNER, then a FAILURE.
+        for packet_type, packet_content in self.transport.packets:
+            if packet_type == userauth.MSG_USERAUTH_BANNER:
+                bytes, language, empty = getNS(packet_content, 2)
+                self.assertEqual(banner_message + '\r\n', bytes.decode('UTF8'))
+                self.assertEqual(expected_language, language)
+                self.assertEqual('', empty)
+                break
+        else:
+            self.fail("No banner logged.")
+                
 
 class TestUserAuthServer(UserAuthServerMixin, unittest.TestCase):
 
@@ -82,12 +98,10 @@ class TestUserAuthServer(UserAuthServerMixin, unittest.TestCase):
         # See RFC 4252, Section 5.4.
         message = u"test message"
         self.user_auth.sendBanner(message, language='en-US')
-        [(messageType, payload)] = self.transport.packets
-        self.assertEqual(messageType, userauth.MSG_USERAUTH_BANNER)
-        bytes, language, empty = getNS(payload, 2)
-        self.assertEqual(bytes.decode('UTF8'), message + '\r\n')
-        self.assertEqual('en-US', language)
-        self.assertEqual('', empty)
+        self.assertBannerSent(message, 'en-US')
+        self.assertEqual(
+            1, len(self.transport.packets),
+            "More than just banner was sent: %r" % self.transport.packets)
 
     def test_sendBannerUsesCRLF(self):
         # sendBanner should make sure that any line breaks in the message are
@@ -175,11 +189,7 @@ class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
             self.assertEqual(
                 list(zip(*self.transport.packets)[0]),
                 [userauth.MSG_USERAUTH_BANNER, userauth.MSG_USERAUTH_FAILURE])
-
-            # Check that the banner message is informative.
-            bytes, language, empty = getNS(self.transport.packets[0][1], 2)
-            self.assertEqual(bytes.decode('UTF8'),
-                             MockChecker.error_message + u'\r\n')
+            self.assertBannerSent(MockChecker.error_message)
         return d.addCallback(check)
 
     def test_unsupportedAuthMethodNotLogged(self):
