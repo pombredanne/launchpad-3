@@ -47,16 +47,24 @@ class POSyntaxWarning(Warning):
 def parse_charset(string_to_parse, is_escaped=True):
     """Return charset used in the given string_to_parse."""
     # Scan for the charset in the same way that gettext does.
+    default_charset = 'UTF-8'
     pattern = r'charset=([^\s]+)'
     if is_escaped:
         pattern = r'charset=([^\s]+)\\n'
+
+    # Default to UTF-8 if the header still has the default value or
+    # is unknown.
+    charset = default_charset
     match = re.search(pattern, string_to_parse)
     if match is not None and match.group(1) != 'CHARSET':
-        return match.group(1).strip()
-    else:
-        # Default to UTF-8 if the header still has the default value or
-        # is unknown.
-        return 'UTF-8'
+        charset = match.group(1).strip()
+        try:
+            codecs.getencoder(charset)
+        except LookupError:
+            # The given codec is not valid, let's fallback to UTF-8.
+            charset = default_charset
+
+    return charset
 
 def get_header_dictionary(raw_header, handled_keys_order):
     """Return dictionary with all keys in raw_header.
