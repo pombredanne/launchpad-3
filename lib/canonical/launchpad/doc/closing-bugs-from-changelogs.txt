@@ -16,42 +16,46 @@ distribution package.
     >>> from canonical.launchpad.interfaces import (
     ...     CreateBugParams, IDistributionSet)
     >>> login('no-priv@canonical.com')
+
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
+
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> pmount_ubuntu = ubuntu.getSourcePackage('pmount')
+    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
+
     >>> bug_params = CreateBugParams(
     ...     getUtility(ILaunchBag).user, "Test bug", "Test bug.")
-    >>> pmount_bug = pmount_ubuntu.createBug(bug_params)
-    >>> pmount_bug_id = pmount_bug.id
 
 The package source uploads are represented as PackageUpload items
 that are associated with PackageUploadSource items and a changes
 file. The only thing in the changes file that is used to close the bug
 is the Launchpad-bugs-fixed header.
 
-    >>> from StringIO import StringIO
-    >>> from canonical.lp.dbschema import (
-    ...     PackageUploadStatus, PackagePublishingPocket)
-
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> ubuntu_hoary = ubuntu.getSeries('hoary')
-
-    >>> changes = changes_template % pmount_bug_id
-    >>> queue_item = ubuntu_hoary.createQueueEntry(
-    ...     archive=ubuntu_hoary.main_archive,
-    ...     pocket=PackagePublishingPocket.RELEASE,
-    ...     changesfilename='pmount.changes',
-    ...     changesfilecontent=changes)
-    >>> queue_item_id = queue_item.id
-
 The PackageUploadSource items are linked to SourcePackageRelease
 items, but for closing bugs the only thing that mattters is who uploaded
 it, what package name is it, and to what distribution series it was
 uploaded to.
 
-    >>> pmount_release = pmount_ubuntu.getVersion('0.1-1').sourcepackagerelease
-    >>> pmount_release_id = pmount_release.id
-    >>> source_queue = queue_item.addSource(pmount_release)
+    >>> from canonical.lp.dbschema import (
+    ...     PackageUploadStatus, PackagePublishingPocket)
+
+    >>> def upload(source_release, fixing_text,
+    ...            pocket=PackagePublishingPocket.RELEASE):
+    ...     changes = changes_template % fixing_text
+    ...     queue_item = ubuntu_hoary.createQueueEntry(
+    ...         archive=ubuntu_hoary.main_archive,
+    ...         pocket=pocket,
+    ...         changesfilename='%s.changes' % source_release.name,
+    ...         changesfilecontent=changes)
+    ...     source_queue = queue_item.addSource(source_release)
+    ...     return queue_item
+
+    >>> pmount_ubuntu = ubuntu.getSourcePackage('pmount')
+    >>> pmount_release = pmount_ubuntu.getVersion(
+    ...     '0.1-1').sourcepackagerelease
+
+    >>> pmount_bug_id = pmount_ubuntu.createBug(bug_params).id
+
+    >>> queue_item_id = upload(pmount_release, pmount_bug_id).id
 
     # Need to commit the transaction so that the changes file can be
     # downloaded from the Librarian.
@@ -65,14 +69,19 @@ will close the specified bug.
 
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
     >>> from canonical.launchpad.interfaces import IBugSet
-    >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
-    >>> [pmount_task] = pmount_bug.bugtasks
-    >>> pmount_task.status.name
+
+    >>> def print_single_task_status(bug_id):
+    ...     bug = getUtility(IBugSet).get(bug_id)
+    ...     [task] = bug.bugtasks
+    ...     return task.status.name
+
+    >>> print_single_task_status(pmount_bug_id)
     'NEW'
 
     >>> from canonical.launchpad.scripts.processaccepted import close_bugs
     >>> close_bugs([queue_item_id])
-    >>> pmount_task.status.name
+
+    >>> print_single_task_status(pmount_bug_id)
     'FIXRELEASED'
 
 The changelog associated with the SourcePackageRelease is automatically
@@ -133,77 +142,57 @@ further information:
 
     >>> cdrkit_ubuntu = ubuntu.getSourcePackage('cdrkit')
     >>> cdrkit_release = cdrkit_ubuntu.currentrelease.sourcepackagerelease
-    >>> cdrkit_bug = cdrkit_ubuntu.createBug(bug_params)
-    >>> cdrkit_bug_id = cdrkit_bug.id
 
-    >>> changes = changes_template % cdrkit_bug_id
-    >>> queue_item = ubuntu_hoary.createQueueEntry(
-    ...     archive=ubuntu_hoary.main_archive,
-    ...     pocket=PackagePublishingPocket.PROPOSED,
-    ...     changesfilename='cdrkit.changes',
-    ...     changesfilecontent=changes)
-    >>> queue_item_id = queue_item.id
-    >>> source_queue = queue_item.addSource(cdrkit_release)
+    >>> cdrkit_bug_id = cdrkit_ubuntu.createBug(bug_params).id
 
-    >>> cdrkit_bug = getUtility(IBugSet).get(cdrkit_bug_id)
-    >>> [cdrkit_task] = cdrkit_bug.bugtasks
-    >>> cdrkit_task.status.name
+    >>> queue_item_id = upload(cdrkit_release, cdrkit_bug_id, 
+    ...                        pocket=PackagePublishingPocket.PROPOSED).id
+
+    >>> print_single_task_status(cdrkit_bug_id)
     'NEW'
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
     >>> close_bugs([queue_item_id])
+
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
-    >>> cdrkit_bug = getUtility(IBugSet).get(cdrkit_bug_id)
-    >>> [cdrkit_task] = cdrkit_bug.bugtasks
-    >>> cdrkit_task.status.name
+    >>> print_single_task_status(cdrkit_bug_id)
     'NEW'
 
 It's possible to specify more than one bug in the Launchpad-bugs-fixed
 header, each will be marked as Fix Released. If a nonexistent bug is
 specified, it's ignored.
 
-    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> pmount_ubuntu = ubuntu.getSourcePackage('pmount')
-    >>> pmount_bug = pmount_ubuntu.createBug(bug_params)
-    >>> pmount_bug_id = pmount_bug.id
-    >>> another_pmount_bug = pmount_ubuntu.createBug(bug_params)
-    >>> another_pmount_bug_id = another_pmount_bug.id
+    >>> pmount_bug_id = pmount_ubuntu.createBug(bug_params).id
+    >>> another_pmount_bug_id = pmount_ubuntu.createBug(bug_params).id
 
-    >>> changes = changes_template % "%d nonexistent %d" % (
+    >>> fixing_text = "%d nonexistent %d" % (
     ...     pmount_bug_id, another_pmount_bug_id)
-    >>> queue_item = ubuntu_hoary.createQueueEntry(
-    ...     archive=ubuntu_hoary.main_archive,
-    ...     pocket=PackagePublishingPocket.RELEASE,
-    ...     changesfilename='pmount.changes',
-    ...     changesfilecontent=changes)
-    >>> queue_item_id = queue_item.id
-    >>> source_queue = queue_item.addSource(pmount_release)
 
-    >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
-    >>> [pmount_task] = pmount_bug.bugtasks
-    >>> pmount_task.status.name
+    >>> queue_item_id = upload(pmount_release, fixing_text).id
+
+    >>> print_single_task_status(pmount_bug_id)
     'NEW'
-    >>> another_pmount_bug = getUtility(IBugSet).get(another_pmount_bug_id)
-    >>> [another_pmount_task] = another_pmount_bug.bugtasks
-    >>> another_pmount_task.status.name
+
+    >>> print_single_task_status(another_pmount_bug_id)
     'NEW'
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+
     >>> close_bugs([queue_item_id])
+
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
-    >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
-    >>> [pmount_task] = pmount_bug.bugtasks
-    >>> pmount_task.status.name
+
+    >>> print_single_task_status(pmount_bug_id)
     'FIXRELEASED'
-    >>> another_pmount_bug = getUtility(IBugSet).get(another_pmount_bug_id)
-    >>> [another_pmount_task] = another_pmount_bug.bugtasks
-    >>> another_pmount_task.status.name
+
+    >>> print_single_task_status(another_pmount_bug_id)
     'FIXRELEASED'
 
 == process-accepted.py ==
@@ -214,25 +203,27 @@ queue items have been processed.
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser('launchpad')
 
-    >>> queue_item = ubuntu_hoary.createQueueEntry(
-    ...     archive=ubuntu_hoary.main_archive,
-    ...     pocket=PackagePublishingPocket.RELEASE,
-    ...     changesfilename='pmount.changes',
-    ...     changesfilecontent=changes)
+    >>> queue_item = upload(pmount_release, fixing_text)
     >>> queue_item.setAccepted()
-    >>> queue_item_id = queue_item.id
-    >>> source_queue = queue_item.addSource(pmount_release)
 
     >>> from canonical.lp.dbschema import BugTaskStatus
+
     >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
     >>> [pmount_task] = pmount_bug.bugtasks
     >>> pmount_task.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
+
     >>> another_pmount_bug = getUtility(IBugSet).get(another_pmount_bug_id)
     >>> [another_pmount_task] = another_pmount_bug.bugtasks
     >>> another_pmount_task.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, getUtility(ILaunchBag).user)
 
+
+    >>> print_single_task_status(pmount_bug_id)
+    'CONFIRMED'
+
+    >>> print_single_task_status(another_pmount_bug_id)
+    'CONFIRMED'
 
     >>> commit()
     >>> LaunchpadZopelessLayer.switchDbUser(test_dbuser)
@@ -249,11 +240,8 @@ queue items have been processed.
     >>> process.returncode
     0
 
-    >>> pmount_bug = getUtility(IBugSet).get(pmount_bug_id)
-    >>> [pmount_task] = pmount_bug.bugtasks
-    >>> pmount_task.status.name
+    >>> print_single_task_status(pmount_bug_id)
     'FIXRELEASED'
-    >>> another_pmount_bug = getUtility(IBugSet).get(another_pmount_bug_id)
-    >>> [another_pmount_task] = another_pmount_bug.bugtasks
-    >>> another_pmount_task.status.name
+
+    >>> print_single_task_status(another_pmount_bug_id)
     'FIXRELEASED'
