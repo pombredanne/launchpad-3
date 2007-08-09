@@ -1,3 +1,5 @@
+# Copyright 2007 Canonical Ltd.  All rights reserved.
+
 import unittest
 
 from canonical.launchpad.webapp.session import get_cookie_domain
