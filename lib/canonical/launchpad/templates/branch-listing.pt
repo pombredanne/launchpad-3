@@ -52,8 +52,9 @@ field.onchange = submit_filter;
              tal:content="branch/name/fmt:shorten/30">
                Name
           </a>
+          <img src="/@@/locked" alt="private branch" tal:condition="branch/private"/>
           <tal:bugbranch repeat="bugbranch branch/bugbranches">
-            <tal:visible 
+            <tal:visible
                 define="bug bugbranch/bug"
                 condition="bug/required:launchpad.View">
               <a tal:attributes="href bug/fmt:url;
@@ -99,7 +100,7 @@ field.onchange = submit_filter;
           <a tal:condition="branch/product"
              tal:attributes="href branch/product/fmt:url"
              tal:content="branch/product/name">
-               Product
+               Project
           </a>
         </td>
         <td tal:condition="context/show_column/role|nothing">

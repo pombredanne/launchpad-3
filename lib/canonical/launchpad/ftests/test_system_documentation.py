@@ -14,24 +14,20 @@ from zope.component import getUtility
 from zope.security.management import getSecurityPolicy, setSecurityPolicy
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.testing.doctest import DocFileSuite
-import sqlos.connection
 
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
 from canonical.config import config
-from canonical.database.sqlbase import flush_database_updates
-from canonical.functional import FunctionalDocFileSuite
+from canonical.database.sqlbase import (
+    flush_database_updates, READ_COMMITTED_ISOLATION)
+from canonical.functional import FunctionalDocFileSuite, StdoutHandler
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
-from canonical.launchpad.ftests.harness import (
-        LaunchpadTestSetup, LaunchpadZopelessTestSetup,
-        _disconnect_sqlos, _reconnect_sqlos
-        )
-from canonical.launchpad.interfaces import ILaunchBag, IOpenLaunchBag
-from canonical.launchpad.mail import stub
+from canonical.launchpad.interfaces import (
+    CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet, ILaunchBag,
+    IPersonSet)
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import (
-        LaunchpadZopelessLayer, LaunchpadFunctionalLayer, LibrarianLayer,
-        DatabaseLayer, ZopelessLayer, FunctionalLayer, LaunchpadLayer,
-        )
+        LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
+        FunctionalLayer)
 
 here = os.path.dirname(os.path.realpath(__file__))
 
@@ -58,40 +54,31 @@ def tearDown(test):
     logout()
 
 def poExportSetUp(test):
-    LaunchpadZopelessTestSetup(dbuser='poexport').setUp()
+    LaunchpadZopelessLayer.switchDbUser('poexport')
     setUp(test)
 
 def poExportTearDown(test):
     tearDown(test)
-    LaunchpadZopelessTestSetup().tearDown()
 
 def uploaderSetUp(test):
-    sqlos.connection.connCache = {}
-    LaunchpadZopelessTestSetup(dbuser='uploader').setUp()
-    setGlobs(test)
-    # Set up an anonymous interaction.
-    login(ANONYMOUS)
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser('uploader')
 
 def uploaderTearDown(test):
-    LaunchpadZopelessTestSetup().tearDown()
+    tearDown(test)
 
 def builddmasterSetUp(test):
-    sqlos.connection.connCache = {}
-    LaunchpadZopelessTestSetup(dbuser=config.builddmaster.dbuser).setUp()
+    LaunchpadZopelessLayer.alterConnection(
+        dbuser=config.builddmaster.dbuser,
+        isolation=READ_COMMITTED_ISOLATION)
     setGlobs(test)
-    login(ANONYMOUS)
 
-def builddmasterTearDown(test):
-    LaunchpadZopelessTestSetup().tearDown()
-
-def importdSetUp(test):
-    sqlos.connection.connCache = {}
-    LaunchpadZopelessTestSetup(dbuser='importd').setUp()
+def branchscannerSetUp(test):
+    LaunchpadZopelessLayer.switchDbUser('branchscanner')
     setUp(test)
 
-def importdTearDown(test):
+def branchscannerTearDown(test):
     tearDown(test)
-    LaunchpadZopelessTestSetup().tearDown()
 
 def answerTrackerSetUp(test):
     setGlobs(test)
@@ -105,8 +92,9 @@ def answerTrackerTearDown(test):
     setSecurityPolicy(test.old_security_policy)
 
 def peopleKarmaTearDown(test):
-    # We can't detect db changes made by the subprocess
-    LaunchpadTestSetup().force_dirty_database()
+    # We can't detect db changes made by the subprocess (yet).
+    DatabaseLayer.force_dirty_database()
+    tearDown(test)
 
 def branchStatusSetUp(test):
     test._authserver = AuthserverTacTestSetup()
@@ -116,33 +104,129 @@ def branchStatusTearDown(test):
     test._authserver.tearDown()
 
 def bugNotificationSendingSetUp(test):
-    sqlos.connection.connCache = {}
-    # XXX: Note that the DB is already setup by the layer - this call just
-    # reconnects us as a different user. This should use a more obvious API.
-    # Note that the layer still tears things down as necessary
-    # -- StuartBishop 20060712
-    LaunchpadZopelessTestSetup(
-        dbuser=config.malone.bugnotification_dbuser).setUp()
-    setGlobs(test)
-    login(ANONYMOUS)
+    LaunchpadZopelessLayer.switchDbUser(config.malone.bugnotification_dbuser)
+    setUp(test)
 
 def bugNotificationSendingTearDown(test):
-    logout()
-    LaunchpadZopelessTestSetup().tearDown()
+    tearDown(test)
 
 def statisticianSetUp(test):
-    sqlos.connection.connCache = {}
-    LaunchpadZopelessTestSetup(
-        dbuser=config.statistician.dbuser).setUp()
-    setGlobs(test)
-    login(ANONYMOUS)
+    setUp(test)
+    LaunchpadZopelessLayer.switchDbUser(config.statistician.dbuser)
 
 def statisticianTearDown(test):
+    tearDown(test)
+
+def distroseriesqueueSetUp(test):
+    setUp(test)
+    # The test requires that the umask be set to 022, and in fact this comment
+    # was made in irc on 13-Apr-2007:
+    #
+    # (04:29:18 PM) kiko: barry, cprov says that the local umask is controlled
+    # enough for us to rely on it
+    #
+    # Setting it here reproduces the environment that the doctest expects.
+    # Save the old umask so we can reset it in the tearDown().
+    test.old_umask = os.umask(022)
+
+def distroseriesqueueTearDown(test):
+    os.umask(test.old_umask)
+    tearDown(test)
+
+def uploadQueueSetUp(test):
+    test_dbuser = config.uploadqueue.dbuser
+    LaunchpadZopelessLayer.switchDbUser(test_dbuser)
+    setUp(test)
+    test.globs['test_dbuser'] = test_dbuser
+
+def uploadQueueTearDown(test):
     logout()
-    LaunchpadZopelessTestSetup().tearDown()
+
+def noPrivSetUp(test):
+    """Set up a test logged in as no-priv."""
+    setUp(test)
+    login('no-priv@canonical.com')
+
+def _createUbuntuBugTaskLinkedToQuestion():
+    """Get the id of an Ubuntu bugtask linked to a question.
+
+    The Ubuntu team is set as the answer contact for Ubuntu, and no-priv
+    is used as the submitter..
+    """
+    login('test@canonical.com')
+    sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+    ubuntu_team = getUtility(IPersonSet).getByName('ubuntu-team')
+    ubuntu_team.addLanguage(getUtility(ILanguageSet)['en'])
+    ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    ubuntu.addAnswerContact(ubuntu_team)
+    ubuntu_question = ubuntu.newQuestion(
+        sample_person, "Can't install Ubuntu",
+        "I insert the install CD in the CD-ROM drive, but it won't boot.")
+    no_priv = getUtility(IPersonSet).getByEmail('no-priv@canonical.com')
+    params = CreateBugParams(
+        owner=no_priv, title="Installer fails on a Mac PPC",
+        comment=ubuntu_question.description)
+    bug = ubuntu.createBug(params)
+    ubuntu_question.linkBug(bug)
+    [ubuntu_bugtask] = bug.bugtasks
+    bugtask_id = ubuntu_bugtask.id
+    login(ANONYMOUS)
+    return ubuntu_bugtask.id
+
+def bugLinkedToQuestionSetUp(test):
+    def get_bugtask_linked_to_question():
+        return getUtility(IBugTaskSet).get(bugtask_id)
+    setUp(test)
+    bugtask_id = _createUbuntuBugTaskLinkedToQuestion()
+    test.globs['get_bugtask_linked_to_question'] = (
+        get_bugtask_linked_to_question)
+    # Log in here, since we don't want to set up an non-anonymous
+    # interaction in the test.
+    login('no-priv@canonical.com')
+
+def uploaderBugLinkedToQuestionSetUp(test):
+    LaunchpadZopelessLayer.switchDbUser('launchpad')
+    bugLinkedToQuestionSetUp(test)
+    LaunchpadZopelessLayer.commit()
+    uploaderSetUp(test)
+    login(ANONYMOUS)
+
+def uploadQueueBugLinkedToQuestionSetUp(test):
+    LaunchpadZopelessLayer.switchDbUser('launchpad')
+    bugLinkedToQuestionSetUp(test)
+    LaunchpadZopelessLayer.commit()
+    uploadQueueSetUp(test)
+    login(ANONYMOUS)
+
 
 def LayeredDocFileSuite(*args, **kw):
     '''Create a DocFileSuite with a layer.'''
+    # Set stdout_logging keyword argument to True to make
+    # logging output be sent to stdout, forcing doctests to deal with it.
+    stdout_logging = kw.pop('stdout_logging', True)
+    stdout_logging_level = kw.pop('stdout_logging_level', logging.INFO)
+
+    kw_setUp = kw.get('setUp')
+    def setUp(test):
+        if kw_setUp is not None:
+            kw_setUp(test)
+        if stdout_logging:
+            log = StdoutHandler('')
+            log.setLoggerLevel(stdout_logging_level)
+            log.install()
+            test.globs['log'] = log
+            # Store as instance attribute so we can uninstall it.
+            test._stdout_logger = log
+    kw['setUp'] = setUp
+
+    kw_tearDown = kw.get('tearDown')
+    def tearDown(test):
+        if kw_tearDown is not None:
+            kw_tearDown(test)
+        if stdout_logging:
+            test._stdout_logger.uninstall()
+    kw['tearDown'] = tearDown
+
     layer = kw.pop('layer')
     suite = DocFileSuite(*args, **kw)
     suite.layer = layer
@@ -173,16 +257,18 @@ special = {
             ),
 
     # POExport stuff is Zopeless and connects as a different database user.
-    # poexport-distrorelease-(date-)tarball.txt is excluded, since they add
+    # poexport-distroseries-(date-)tarball.txt is excluded, since they add
     # data to the database as well.
     'poexport.txt': LayeredDocFileSuite(
             '../doc/poexport.txt',
             setUp=poExportSetUp, tearDown=poExportTearDown,
-            optionflags=default_optionflags, layer=ZopelessLayer
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
+            stdout_logging=False
             ),
     'poexport-template-tarball.txt': LayeredDocFileSuite(
             '../doc/poexport-template-tarball.txt',
-            setUp=poExportSetUp, tearDown=poExportTearDown, layer=ZopelessLayer
+            setUp=poExportSetUp, tearDown=poExportTearDown,
+            layer=LaunchpadZopelessLayer
             ),
     'poexport-queue.txt': FunctionalDocFileSuite(
             '../doc/poexport-queue.txt',
@@ -200,25 +286,32 @@ special = {
             '../doc/cve-update.txt',
             setUp=setUp, tearDown=tearDown, layer=LaunchpadFunctionalLayer
             ),
-    'nascentupload.txt': FunctionalDocFileSuite(
+    'nascentupload.txt': LayeredDocFileSuite(
             '../doc/nascentupload.txt',
             setUp=uploaderSetUp, tearDown=uploaderTearDown,
-            layer=LaunchpadFunctionalLayer
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
             ),
     'build-notification.txt': LayeredDocFileSuite(
             '../doc/build-notification.txt',
-            setUp=builddmasterSetUp, tearDown=builddmasterTearDown,
-            layer=ZopelessLayer, optionflags=default_optionflags
+            setUp=builddmasterSetUp,
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags
+            ),
+    'buildd-slavescanner.txt': LayeredDocFileSuite(
+            '../doc/buildd-slavescanner.txt',
+            setUp=builddmasterSetUp,
+            layer=LaunchpadZopelessLayer, optionflags=default_optionflags,
+            stdout_logging_level=logging.WARNING
             ),
     'revision.txt': LayeredDocFileSuite(
             '../doc/revision.txt',
-            setUp=importdSetUp, tearDown=importdTearDown,
-            optionflags=default_optionflags, layer=ZopelessLayer
+            setUp=branchscannerSetUp, tearDown=branchscannerTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
     'answer-tracker-emailinterface.txt': LayeredDocFileSuite(
             '../doc/answer-tracker-emailinterface.txt',
             setUp=answerTrackerSetUp, tearDown=answerTrackerTearDown,
-            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
+            stdout_logging=False
             ),
     'person-karma.txt': FunctionalDocFileSuite(
             '../doc/person-karma.txt',
@@ -229,12 +322,12 @@ special = {
     'bugnotification-sending.txt': LayeredDocFileSuite(
             '../doc/bugnotification-sending.txt',
             optionflags=default_optionflags,
-            layer=ZopelessLayer, setUp=bugNotificationSendingSetUp,
+            layer=LaunchpadZopelessLayer, setUp=bugNotificationSendingSetUp,
             tearDown=bugNotificationSendingTearDown
             ),
     'bugmail-headers.txt': LayeredDocFileSuite(
             '../doc/bugmail-headers.txt',
-            optionflags=default_optionflags, layer=ZopelessLayer,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer,
             setUp=bugNotificationSendingSetUp,
             tearDown=bugNotificationSendingTearDown),
     'branch-status-client.txt': LayeredDocFileSuite(
@@ -282,7 +375,71 @@ special = {
     'package-cache.txt': LayeredDocFileSuite(
             '../doc/package-cache.txt',
             setUp=statisticianSetUp, tearDown=statisticianTearDown,
-            optionflags=default_optionflags, layer=ZopelessLayer
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
+    'script-monitoring.txt': LayeredDocFileSuite(
+            '../doc/script-monitoring.txt',
+            setUp=setUp, tearDown=tearDown, optionflags=default_optionflags,
+            layer=LaunchpadZopelessLayer
+            ),
+    'distroseriesqueue-debian-installer.txt': FunctionalDocFileSuite(
+            '../doc/distroseriesqueue-debian-installer.txt',
+            setUp=distroseriesqueueSetUp, tearDown=distroseriesqueueTearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadFunctionalLayer
+            ),
+    'bug-set-status.txt': LayeredDocFileSuite(
+            '../doc/bug-set-status.txt',
+            setUp=uploadQueueSetUp,
+            tearDown=uploadQueueTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
+    'closing-bugs-from-changelogs.txt': LayeredDocFileSuite(
+            '../doc/closing-bugs-from-changelogs.txt',
+            setUp=uploadQueueSetUp,
+            tearDown=uploadQueueTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
+    'bugmessage.txt': LayeredDocFileSuite(
+            '../doc/bugmessage.txt',
+            setUp=noPrivSetUp, tearDown=tearDown,
+            optionflags=default_optionflags, layer=LaunchpadFunctionalLayer
+            ),
+    'bugmessage.txt-queued': LayeredDocFileSuite(
+            '../doc/bugmessage.txt',
+            setUp=uploadQueueSetUp,
+            tearDown=uploadQueueTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
+    'bugmessage.txt-uploader': LayeredDocFileSuite(
+            '../doc/bugmessage.txt',
+            setUp=uploaderSetUp,
+            tearDown=uploaderTearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
+    'bug-private-by-default.txt': LayeredDocFileSuite(
+            '../doc/bug-private-by-default.txt',
+            setUp=setUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags,
+            layer=LaunchpadZopelessLayer
+            ),
+    'answer-tracker-notifications-linked-bug.txt': LayeredDocFileSuite(
+            '../doc/answer-tracker-notifications-linked-bug.txt',
+            setUp=bugLinkedToQuestionSetUp, tearDown=tearDown,
+            optionflags=default_optionflags, layer=LaunchpadFunctionalLayer
+            ),
+    'answer-tracker-notifications-linked-bug.txt-uploader': LayeredDocFileSuite(
+            '../doc/answer-tracker-notifications-linked-bug.txt',
+            setUp=uploaderBugLinkedToQuestionSetUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
+            ),
+    'answer-tracker-notifications-linked-bug.txt-queued': LayeredDocFileSuite(
+            '../doc/answer-tracker-notifications-linked-bug.txt',
+            setUp=uploadQueueBugLinkedToQuestionSetUp,
+            tearDown=tearDown,
+            optionflags=default_optionflags, layer=LaunchpadZopelessLayer
             ),
     }
 

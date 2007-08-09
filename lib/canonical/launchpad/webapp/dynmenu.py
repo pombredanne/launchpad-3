@@ -15,6 +15,14 @@ from canonical.launchpad.webapp.interfaces import (
 from canonical.launchpad.webapp import canonical_url, LaunchpadView
 
 
+def neverempty(fn):
+    """Method decorator to declare that this menu will always have
+    at least one item.
+    """
+    fn.__dynmenu_neverempty__ = True
+    return fn
+
+
 class DynMenuLink:
 
     no_target_given = object()
@@ -94,12 +102,10 @@ class DynMenu(LaunchpadView):
             [name] = self.names
         else:
             name = ''
-
-        renderer_name = self.menus.get(name)
-        if renderer_name is None:
+        renderer = self.getSubmenuMethod(name)
+        if renderer is None:
             raise NotFoundError(name)
         else:
-            renderer = getattr(self, renderer_name)
             return self.renderMenu(renderer())
 
     def getBreadcrumbText(self, obj):
@@ -111,21 +117,26 @@ class DynMenu(LaunchpadView):
         else:
             return breadcrumbprovider.breadcrumb()
 
-    def getSubmenuMethod(self, context, submenu_name):
+    def getSubmenuMethod(self, submenu_name, context=None):
         """Return submenu method, or None if there isn't one."""
-        if context is self.context:
+        if context is None or context is self.context:
             submenu = self
         else:
             submenu = queryMultiAdapter(
                 (context, self.request), name='+menudata')
             if submenu is None:
                 return None
-        return getattr(submenu, submenu.menus[submenu_name], None)
+        method_name = submenu.menus.get(submenu_name)
+        if method_name is None:
+            return None
+        return getattr(submenu, method_name)
 
-    def submenuHasItems(self, context, submenu_name):
-        submenu_method = self.getSubmenuMethod(context, submenu_name)
+    def submenuHasItems(self, submenu_name, context=None):
+        submenu_method = self.getSubmenuMethod(submenu_name, context=context)
         if submenu_method is None:
             return False
+        if getattr(submenu_method, '__dynmenu_neverempty__', False):
+            return True
         submenu = submenu_method()
         assert submenu is not None, "submenu must be a generator"
         try:
@@ -138,7 +149,7 @@ class DynMenu(LaunchpadView):
     def makeBreadcrumbLink(self, context):
         text = self.getBreadcrumbText(context)
         assert text is not None
-        contextsubmenu = self.submenuHasItems(context, '')
+        contextsubmenu = self.submenuHasItems('', context)
         return DynMenuLink(
             context, '', text, contextsubmenu=contextsubmenu)
 
@@ -147,7 +158,7 @@ class DynMenu(LaunchpadView):
         if context is None:
             context = self.context
         if submenu is not None:
-            if not self.submenuHasItems(context, submenu):
+            if not self.submenuHasItems(submenu, context):
                 submenu = None
         return DynMenuLink(context, page, text, submenu=submenu, target=target)
 

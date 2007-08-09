@@ -1,3 +1,4 @@
+<!--*- mode: nxml; xml-child-indent: 4; indent-tabs-mode: nil -*-->
 <schema extends="../../zope/app/server/schema.xml">
 
     <!--
@@ -14,6 +15,39 @@
     -->
 
     <!-- First we define all the section types. -->
+
+    <sectiontype name="database_options">
+        <key name="dbhost" datatype="ipaddr-or-hostname" required="no" />
+        <key name="dbname" datatype="string" required="no" />
+        <key name="db_statement_timeout" datatype="integer" required="no">
+            <description>
+                SQL statement timeout in milliseconds. If a statement
+                takes longer than this to execute, then it will be aborted.
+                A value of 0 turns off the timeout. If this value is not set,
+                PostgreSQL's default setting is used.
+            </description>
+        </key>
+        <key name="db_statement_timeout_precision" datatype="integer"
+            required="no" default="5000">
+            <description>
+                The statement timeout will be updated after this many
+                ms of statements being executed, decreasing the statement
+                timeout while the request is being processed. We don't just
+                update the statement timeout after every query to control
+                the number of unnecessary db queries sent.
+            </description>
+        </key>
+        <key name="soft_request_timeout" datatype="integer" required="no">
+            <description>
+                A soft request timeout in milliseconds.  If a request
+                takes longer than this timeout, an oops will be logged.
+
+                If unset, requests will not cause soft timeouts.
+            </description>
+        </key>
+        <key name="randomise_select_results" datatype="boolean"
+             required="no" default="false" />
+    </sectiontype>
 
     <sectiontype name="launchpad_session">
         <key name="dbuser" datatype="string" default="session" />
@@ -54,6 +88,7 @@
     <sectiontype name="translations" extends="virtual_host" />
     <sectiontype name="bugs" extends="virtual_host" />
     <sectiontype name="answers" extends="virtual_host" />
+    <sectiontype name="openid" extends="virtual_host" />
     <sectiontype name="shipitubuntu" extends="virtual_host" />
     <sectiontype name="shipitkubuntu" extends="virtual_host" />
     <sectiontype name="shipitedubuntu" extends="virtual_host" />
@@ -72,6 +107,7 @@
         <section name="*" type="translations" attribute="translations" required="yes" />
         <section name="*" type="bugs" attribute="bugs" required="yes" />
         <section name="*" type="answers" attribute="answers" required="yes" />
+        <section name="*" type="openid" attribute="openid" required="yes" />
         <section name="*" type="shipitubuntu" attribute="shipitubuntu" required="yes" />
         <section name="*" type="shipitkubuntu" attribute="shipitkubuntu" required="yes" />
         <section name="*" type="shipitedubuntu" attribute="shipitedubuntu" required="yes" />
@@ -122,7 +158,7 @@ k            </description>
     </sectiontype>
 
 
-    <sectiontype name="launchpad">
+    <sectiontype name="launchpad" extends="database_options">
         <key name="dbuser" datatype="string" default="launchpad" />
         <key name="cookie_domains" datatype="canonical.config.commalist"
             default="demo.launchpad.net, staging.launchpad.net, launchpad.net, launchpad.dev">
@@ -152,20 +188,11 @@ k            </description>
                 no limit.
             </description>
         </key>
-        <key name="db_statement_timeout" datatype="integer" required="no">
+        <key name="max_productrelease_file_size" datatype="integer" required="no"
+            default="0">
             <description>
-                SQL statement timeout in milliseconds. If a statement
-                takes longer than this to execute, then it will be aborted.
-                A value of 0 turns off the timeout. If this value is not set,
-                PostgreSQL's default setting is used.
-            </description>
-        </key>
-        <key name="soft_request_timeout" datatype="integer" required="no">
-            <description>
-                A soft request timeout in milliseconds.  If a request
-                takes longer than this timeout, an oops will be logged.
-
-                If unset, requests will not cause soft timeouts.
+                Maximum size of product release download files in bytes. A value
+                of 0 means no limit.
             </description>
         </key>
         <key name="browser_notification_level" required="no"
@@ -224,6 +251,24 @@ k            </description>
             only launchpad admins may access the site.
             </description>
         </key>
+        <key name="http_proxy" datatype="string" default="http://squid.internal:3128/">
+            <description>
+                Proxy to be used when issuing HTTP requests.
+
+                XXX: This should be in the canonical section, not the
+                Launchpad section? At the moment, there are only scripts
+                using this. -- StuartBishop 20070609
+            </description>
+        </key>
+        <key name="is_demo" datatype="boolean" default="false">
+            <description>
+                If true, the main template will be styled so that it is
+                obvious to the end user that they are using a demo system
+                and that any changes they make will be lost at some point.
+                This should not be true for any systems talking to the
+                production database.
+            </description>
+        </key>
         <key name="site_message" datatype="string" default="">
             <description>
             If this is provided, the message given in the string will appear
@@ -240,6 +285,27 @@ k            </description>
                 If set, the host name to redirect beta testers to.
             </description>
             <example>beta.launchpad.net</example>
+        </key>
+        <key name="openid_users" datatype="string"
+            default="launchpad">
+            <description>
+                The team that can use Launchpad as an OpenID provider.
+                Set to 'all' for open access.
+            </description>
+        </key>
+        <key name="non_restricted_hostname" datatype="string"
+             default="launchpad.net">
+            <description>
+                If restrict_to_team is set (such as on the beta
+                website), then this indicates the hostname suffix for
+                the non-restricted version of Launchpad.  Replacing
+                config.launchpad.vhosts.mainsite.hostname with this
+                value in a URI should give a valid host.
+
+                This is intended to provide a way for non beta-testers
+                to get back to the production instance if they are
+                given a beta URL.
+            </description>
         </key>
     </sectiontype>
     <sectiontype name="gina_target">
@@ -353,10 +419,10 @@ k            </description>
 
     </sectiontype>
 
-    <sectiontype name="gina">
+    <sectiontype name="gina" extends="database_options">
         <key name="dbuser" datatype="string" default="gina">
             <description>
-                The database user wich will be used to make the
+                The database user which will be used to make the
                 package imports.
             </description>
         </key>
@@ -378,7 +444,7 @@ k            </description>
         <key name="logfile" datatype="string" required="no" default="-" />
     </sectiontype>
 
-    <sectiontype name="librarian_gc">
+    <sectiontype name="librarian_gc" extends="database_options">
         <key name="dbuser" datatype="string" default="librariangc">
             <description>
                 The user the librarian-gc.py garbage collection script connects
@@ -387,7 +453,7 @@ k            </description>
         </key>
     </sectiontype>
 
-    <sectiontype name="librarian">
+    <sectiontype name="librarian" extends="database_options">
         <key name="dbuser" datatype="string" default="librarian" />
 
         <key name="upload_port" datatype="port-number" required="yes">
@@ -466,7 +532,7 @@ k            </description>
         <key name="bugnotification_dbuser"
              datatype="string" required="no" default="bugnotification">
             <description>
-                The database user wich will be used to send bug
+                The database user which will be used to send bug
                 notifications.
             </description>
         </key>
@@ -490,16 +556,10 @@ k            </description>
         </key>
     </sectiontype>
 
-    <sectiontype name="shipit">
+    <sectiontype name="shipit" extends="database_options">
         <description>
             Shipit-specific configuration options.
         </description>
-        <key name="switch_to_edgy" datatype="boolean" default="false">
-            <description>
-                This key allows us to switch to edgy's shipit without having
-                to do a launchpad roll out.
-            </description>
-        </key>
         <key name="dbuser" datatype="string" default="shipit" />
         <key name="admins_email_address" datatype="string"
              default="info@shipit.ubuntu.com"/>
@@ -511,7 +571,7 @@ k            </description>
              default="noreply@shipit.kubuntu.com" />
     </sectiontype>
 
-    <sectiontype name="rosettaadmin">
+    <sectiontype name="rosettaadmin" extends="database_options">
         <description>
             Configuration for Rosetta admin tools
         </description>
@@ -521,17 +581,17 @@ k            </description>
                 From-address used in PO import, export and language pack
                 notifications.
             </description>
-	</key>
+        </key>
     </sectiontype>
 
-    <sectiontype name="poimport">
+    <sectiontype name="poimport" extends="database_options">
         <description>
             Configuration for cronscripts/rosetta-poimport
         </description>
         <key name="dbuser" datatype="string" default="poimport" />
     </sectiontype>
 
-    <sectiontype name="poattach">
+    <sectiontype name="poattach" extends="database_options">
         <description>
             Configuration for cronscripts/rosetta-package-po-attach
         </description>
@@ -588,22 +648,22 @@ k            </description>
         </key>
     </sectiontype>
 
-    <sectiontype name="statistician">
+    <sectiontype name="statistician" extends="database_options">
       <key name="dbuser" datatype="string" default="statistician" />
     </sectiontype>
 
-    <sectiontype name="productreleasefinder">
+    <sectiontype name="productreleasefinder" extends="database_options">
         <key name="dbuser" datatype="string" default="productreleasefinder" />
     </sectiontype>
 
-    <sectiontype name="distributionmirrorprober">
+    <sectiontype name="distributionmirrorprober" extends="database_options">
         <key name="dbuser" datatype="string" default="distributionmirror">
             <description>
-                The database user wich will be used to probe distribution
+                The database user which will be used to probe distribution
                 mirrors.
             </description>
         </key>
-        <key name="releases_file_list_url" datatype="string"
+        <key name="cdimage_file_list_url" datatype="string"
              default="http://releases.ubuntu.com/.manifest">
             <description>
                 The URL to the file containing the list of ISO images that a
@@ -616,6 +676,12 @@ k            </description>
                 reply.
             </description>
         </key>
+        <key name="use_proxy" datatype="boolean" default="true">
+            <description>
+                Should we set an http_proxy environment variable before
+                running the prober?
+            </description>
+        </key>
         <key name="localhost_only" datatype="boolean" default="false">
             <description>
                 If true, the mirror prober will only try to connect to
@@ -625,19 +691,19 @@ k            </description>
         </key>
     </sectiontype>
 
-    <sectiontype name="expiredmembershipsflagger">
+    <sectiontype name="expiredmembershipsflagger" extends="database_options">
         <key name="dbuser" datatype="string" default="teammembership">
             <description>
-                The database user wich will be used to flag expired team
+                The database user which will be used to flag expired team
                 memberships.
             </description>
         </key>
     </sectiontype>
 
-    <sectiontype name="karmacacheupdater">
+    <sectiontype name="karmacacheupdater" extends="database_options">
         <key name="dbuser" datatype="string" default="karma">
             <description>
-                The database user wich will be used to update the karmacache
+                The database user which will be used to update the karmacache
                 table.
             </description>
         </key>
@@ -651,34 +717,34 @@ k            </description>
         </key>
     </sectiontype>
 
-    <sectiontype name="targetnamecacheupdater">
+    <sectiontype name="targetnamecacheupdater" extends="database_options">
         <key name="dbuser" datatype="string" default="targetnamecacheupdater">
             <description>
-                The database user wich will be used to update the
+                The database user which will be used to update the
                 targetnamecache column of bugtasks.
             </description>
         </key>
     </sectiontype>
 
-    <sectiontype name="cveupdater">
+    <sectiontype name="cveupdater" extends="database_options">
         <key name="cve_db_url" datatype="string" required="no"
              default="http://cve.mitre.org/cve/downloads/allitems.xml.gz" />
         <key name="dbuser" datatype="string" default="cve">
             <description>
-                The database user wich will be used to update the CVE
+                The database user which will be used to update the CVE
                 database.
             </description>
         </key>
     </sectiontype>
 
-    <sectiontype name="answertracker">
-        <key name="dbuser" datatype="string" default="tickettracker">
+    <sectiontype name="answertracker" extends="database_options">
+        <key name="dbuser" datatype="string" default="answertracker">
             <description>
-                The database user wich will be used to expire tickets.
+                The database user which will be used to expire questions.
             </description>
         </key>
         <key name="email_domain" datatype="string"
-            default="support.launchpad.net" >
+            default="answers.launchpad.net" >
             <description>
                 The email domain, to which incomings emails should be
                 sent.
@@ -687,7 +753,7 @@ k            </description>
         <key name="days_before_expiration" datatype="integer"
              default="15">
             <description>
-                The number of days of inactivity required before a ticket in
+                The number of days of inactivity required before a question in
                 the open or needs information state is expired.
             </description>
         </key>
@@ -748,7 +814,7 @@ k            </description>
             attribute="jobs" required="no" />
     </sectiontype>
 
-    <sectiontype name="uploader">
+    <sectiontype name="uploader" extends="database_options">
         <key name="dbuser" datatype="string" required="yes" />
         <key name="default_recipient_name" datatype="string" required="yes" />
         <key name="default_sender_name" datatype="string" required="yes" />
@@ -757,11 +823,11 @@ k            </description>
         <key name="default_sender_address" datatype="string" required="yes" />
     </sectiontype>
 
-    <sectiontype name="uploadqueue">
+    <sectiontype name="uploadqueue" extends="database_options">
         <key name="dbuser" datatype="string" required="yes" />
     </sectiontype>
 
-    <sectiontype name="builddmaster">
+    <sectiontype name="builddmaster" extends="database_options">
         <key name="dbuser" datatype="string" required="yes">
             <description>
                 BuilddMaster Datatbase user.
@@ -819,7 +885,7 @@ k            </description>
     <sectiontype name="upload_puller_errorreports" extends="script_errorreports" />
     <sectiontype name="import_puller_errorreports" extends="script_errorreports" />
 
-    <sectiontype name="supermirror">
+    <sectiontype name="supermirror" extends="database_options">
         <key name="dbuser" datatype="string" default="supermirror" />
         <key name="branchesdest" datatype="string" default="/var/tmp/sm-ng/mirrors" />
         <key name="masterlock" datatype="string" default="/var/tmp/sm-ng/masterlock" />
@@ -845,7 +911,7 @@ k            </description>
             attribute="import_errorreports" required="no" />
     </sectiontype>
 
-    <sectiontype name="branchscanner">
+    <sectiontype name="branchscanner" extends="database_options">
         <key name="dbuser" datatype="string" default="branchscanner">
             <description>
                 The database user for the branch-scanner to update branches.
@@ -855,31 +921,75 @@ k            </description>
             required="no" />
     </sectiontype>
 
-    <sectiontype name="supermirrorsftp">
+    <sectiontype name="codehosting">
         <key name="authserver" datatype="string" />
+        <key name="upload_url_base" datatype="string"
+             default="sftp://%s@bazaar.launchpad.net" />
         <key name="host_key_pair_path" datatype="string" />
         <key name="branches_root" datatype="string" />
         <key name="port" datatype="string" default="tcp:5022" />
+        <key name="launch" datatype="boolean" required="no" default="no" />
+        <key name="spew" datatype="boolean" required="no" default="no" />
+        <key name="logfile" datatype="string" required="no" default="-" />
     </sectiontype>
 
-    <sectiontype name="authserver">
+    <sectiontype name="authserver" extends="database_options">
         <key name="dbuser" datatype="string" default="authserver" />
         <key name="port" datatype="string" default="tcp:8999" />
+        <key name="launch" datatype="boolean" required="no" default="no" />
+        <key name="spew" datatype="boolean" required="no" default="no" />
+        <key name="logfile" datatype="string" required="no" default="-" />
     </sectiontype>
 
-    <sectiontype name="importd">
+    <sectiontype name="production_errorreports" extends="script_errorreports" />
+    <sectiontype name="autotest_errorreports" extends="script_errorreports" />
+
+    <sectiontype name="importd" extends="database_options">
         <key name="dbuser" datatype="string">
             <description>
                 The database user for importd and associated scripts.
             </description>
         </key>
+        <section name="*" type="production_errorreports"
+            attribute="production_errorreports" required="no" />
+        <section name="*" type="autotest_errorreports"
+            attribute="autotest_errorreports" required="no" />
     </sectiontype>
 
-    <sectiontype name="canonical">
-        <key name="dbhost" datatype="ipaddr-or-hostname" required="no" />
-        <key name="dbname" datatype="string" required="yes" />
-        <key name="randomise_select_results" datatype="boolean"
-            required="no" default="false" />
+    <sectiontype name="personalpackagearchive">
+        <key name="root" datatype="string" required="yes">
+            <description>
+                Directory to be created to store PPAs.
+            </description>
+        </key>
+        <key name="base_url" datatype="string" required="no"
+             default="http://ppa.launchpad.dev">
+            <description>
+                External base URL for PPAs.
+            </description>
+        </key>
+    </sectiontype>
+
+    <sectiontype name="mailman-build"
+                 prefix="canonical.launchpad.mailman.config">
+        <key name="build"           datatype="boolean"      default="false" />
+        <key name="prefix"          datatype=".prefix"      default=""      />
+        <key name="var_dir"         datatype="string"
+             default="/var/mailman"  />
+        <key name="user_group"      datatype=".usergroup"   default="" />
+        <key name="site_list_owner" datatype=".siteowner"   default="" />
+        <key name="host_name"       datatype=".hostname"    default="" />
+    </sectiontype>
+
+    <sectiontype name="mailman" prefix="canonical.mailman.config">
+        <section name="*" type="mailman-build"
+                 attribute="build" required="yes" />
+
+        <key name="launch" datatype="boolean"  default="false" />
+        <key name="smtp"   datatype="inet-address"   default="localhost:25" />
+    </sectiontype>
+
+    <sectiontype name="canonical" extends="database_options">
         <key name="chunkydiff" datatype="boolean"
             required="no" default="true" />
         <key name="show_tracebacks" datatype="boolean"
@@ -902,7 +1012,7 @@ k            </description>
         <section name="*" type="zeca" attribute="zeca" />
         <section name="*" type="statistician" attribute="statistician" />
         <section name="*" type="productreleasefinder"
-		 attribute="productreleasefinder" />
+                 attribute="productreleasefinder" />
         <section name="*" type="gina" attribute="gina" />
         <section name="*" type="karmacacheupdater"
             attribute="karmacacheupdater" />
@@ -920,9 +1030,12 @@ k            </description>
         <section name="*" type="supermirror" attribute="supermirror" />
         <section name="*" type="branchscanner" attribute="branchscanner" />
         <section name="*" type="builddmaster" attribute="builddmaster" />
-        <section name="*" type="supermirrorsftp" attribute="supermirrorsftp" />
+        <section name="*" type="codehosting" attribute="codehosting" />
         <section name="*" type="authserver" attribute="authserver" />
         <section name="*" type="importd" attribute="importd" />
+        <section name="*" type="personalpackagearchive"
+            attribute="personalpackagearchive" />
+        <section name="*" type="mailman" attribute="mailman" />
     </sectiontype>
 
     <!-- Now specify where the section types may be rooted in the config file

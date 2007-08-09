@@ -1,0 +1,706 @@
+/*
+-----------------------------------------------
+Launchpad Marketing Master Style Sheet
+-----------------------------------------------
+*/
+
+
+body,div,dl,dt,dd,ul,ol,li,h1,h2,h3,h4,h5,h6,pre,form,fieldset,input,p,blockquote,th,td{margin:0;padding:0;}
+table{border-collapse:collapse;border-spacing:0;}
+fieldset,img{border:0;}
+address,caption,cite,code,dfn,em,strong,th,var{font-style:normal;font-weight:normal;}
+ol,ul {list-style:none;}
+caption,th {text-align:left;}
+h1,h2,h3,h4,h5,h6{font-size:100%;}
+q:before,q:after{content:'';}
+
+body {font:11px Trebuchet, Trebuchet MS, Helvetica, Lucida Grande, Lucida Sans Unicode, Lucida Console, arial,helvetica,clean,sans-serif;*font-size:small;*font:x-small;color:#666;}
+table {font-size:inherit;font:100%;}
+select, input, textarea {font-size:99%;}
+pre, code {font:115% monospace;*font-size:100%;}
+body * {line-height:1.6em;}
+
+body {
+	background: #fff url(bg-body.gif) top left repeat;
+	text-align: center;
+	padding-bottom: 30px;
+}
+
+/* Begin definitions copied from style.css */
+
+/* All pages begin with a global header or a topline. */
+#globalheader {
+  position: relative;
+  width: 100%;
+  height: 21px;
+  overflow: hidden;
+  margin: 0;
+  background-color: #EEE;
+  background-image:  url(globalheader_bg.gif);
+  background-repeat: repeat-x;
+  background-position: top center;
+}
+/* Home icon and link. */
+#globalheader a.home {
+  display: block;
+  margin: 0;
+  padding: 0;
+}
+#globalheader .sitemessage a {
+  color: #FFF;
+  text-decoration: underline;
+}
+/* Site-specific message. */
+#globalheader .sitemessage {
+  position: absolute;
+  top: 2px;
+  left: 10px;
+  display: inline;
+  color: #FFF;
+  font-size: 13px;
+}
+/* Small launchpad icon and rasterized text. */
+#globalheader img.launchpad {
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+/* End definitions copied from style.css */
+
+#breadcrumb {
+    height: 27px;
+    background: #AFDB1F url(bg-breadcrumb.gif) top left repeat-x;
+    text-align: left;
+    margin-bottom: 20px;
+    font-size: 11px;
+    font-weight: bold;
+}
+
+#breadcrumb dl dt,
+#breadcrumb dl dd {
+    display: inline;
+    height: 27px;
+    line-height: 25px;
+}
+
+#breadcrumb dl dt {
+    float: left;
+    margin-right: 15px;
+    margin-left: 10px;
+    color: #fff;
+}
+
+#breadcrumb dl dd ul {
+    display: inline;
+}
+
+#breadcrumb dl dd ul li {
+    display: block;
+    white-space: nowrap;
+    float: left;
+}
+
+#breadcrumb dl dd ul li.current {
+    display: block;
+    height: 27px;
+    line-height: 25px;
+    padding: 0 25px 0 5px;
+    background: url(bread-a2i.gif) top right no-repeat;
+    color: #000;
+}
+
+#breadcrumb dl dd ul li a {
+    display: block;
+    height: 27px;
+    line-height: 25px;
+    padding: 0 25px 0 5px;
+    background: url(bread-i2a.gif) top right no-repeat;
+    color: #000;
+    text-decoration: none;
+}
+
+#breadcrumb dl dd ul li a:hover {
+  text-decoration: underline;
+}
+
+#wrapper {
+	width: 824px;
+	margin: 0 auto;
+	text-align: left;
+}
+
+#header {
+  overflow: hidden;
+  width: 824px;
+  background: url(bg-header.gif) top left no-repeat;
+}
+
+#main {
+  float: left;
+  width: 764px;
+  padding: 30px 30px 10px 30px;
+  background-color: #fff;
+}
+
+#main #content {
+  padding: 0 20px;
+}
+
+#main #primary {
+  float: left;
+  width: 254px;
+}
+
+#main #secondary {
+  margin-left: 254px;
+  padding-left: 10px;
+}
+
+#footer {
+  clear: both;
+	width: 824px;
+	padding-top: 26px;
+  background: url(bg-footer.gif) top left no-repeat;
+  color: #fff;
+}
+
+#header h1 { float: left; }
+
+#header h1 a {
+  display: block;
+  width: 257px; height: 98px;
+  background: url(logo.gif) 32px 25px no-repeat;
+  text-indent: -1000em;
+}
+
+#header dl dt { display: none; }
+
+
+/* #navigation and #sub-navigation
+################################################ */
+
+#header dl#navigation ul {
+  height: 59px;
+}
+
+#header dl#sub-navigation ul {
+  float: left;
+  padding: 22px 0 0 34px;
+}
+
+#header dl#navigation ul li,
+#header dl#sub-navigation ul li {
+  display: inline;
+}
+
+
+/* #navigation
+################################################ */
+
+#header dl#navigation ul li a {
+  display: block;
+  float: left;
+  height: 32px;
+/*  line-height: 81px;*/
+padding-top: 27px;
+/*  text-indent: -1000em;*/
+  background-position: bottom left;
+  background-repeat: no-repeat;
+/*  background-color: red;*/
+  color: #fff;
+  text-decoration: none;
+  font-size: 1.45em;
+  font-weight: bold;
+}
+
+#header dl#navigation ul li a:hover,
+#header dl#navigation ul li a.current
+ {
+  background-position: top left;
+  color: #454545;
+}
+
+#header dl#navigation ul li#liHome a {
+  padding-left: 40px;
+  width: 149px;
+  background-image: url(liHome.gif);
+}
+
+#header dl#navigation ul li#liAccount a,
+#header dl#navigation ul li#liTour a { margin-left: 1px; }
+
+#header dl#navigation ul li#liAccount a {
+  padding-left: 20px;
+  width: 153px;
+  background-image: url(liAccount.gif);
+}
+
+#header dl#navigation ul li#liTour a {
+  padding-left: 20px;
+  width: 153px;
+  background-image: url(liTour.gif);
+}
+
+body#tour #header dl#navigation ul li#liTour a {
+  background-position: 0 -5px;
+  color: #454545;
+  padding-top: 22px;
+  height: 37px;
+}
+
+
+/* #sub-navigation
+################################################ */
+
+#header dl#sub-navigation ul li a {
+  display: block;
+  float: left;
+  height: 16px;
+  padding: 0 0 5px 15px;
+  margin: 0 15px 0 3px;
+/*  text-indent: -1000em;*/
+  border-bottom: solid 1px #fff;
+  background: url(bullet-arrow.gif) center left no-repeat;
+  text-decoration: none;
+  color: #333;
+  font-size: 1.2em;
+  white-space: nowrap;
+}
+
+#header dl#sub-navigation ul li a:hover {
+  color: #111;
+}
+
+#header dl#sub-navigation ul li.current a {
+  border-bottom: solid 1px #dbe9bb;
+}
+
+/* #sub-navigation ul#global
+################################################ */
+
+#header dl#sub-navigation ul#global {
+  float: right;
+  padding-right: 27px;
+  padding-left: 0px;
+}
+
+#header dl#sub-navigation ul#global li a {
+  display: block;
+  float: left;
+  height: 16px;
+  margin: 0;
+  padding: 0;
+  border-bottom: solid 1px #fff;
+  background: none;
+  color: #666;
+}
+
+#header dl#sub-navigation ul#global li a:hover {
+  color: #333;
+}
+
+#header dl#sub-navigation ul#global li#liContact a {
+  padding-left: 7px;
+  margin-left: 0px;
+  background: url(globaldivide.gif) bottom left no-repeat;
+}
+
+#main strong {
+  font-weight: bold;
+}
+
+#main em {
+  font-style: italic;
+}
+
+#main a:hover {
+  text-decoration: underline;
+}
+
+#faq #primary img {
+    float: right;
+}
+
+#main #primary h2 {
+  color: #159cc8;
+  font-size: 2.6em;
+  font-weight: normal;
+  line-height: 1.3em;
+  margin-bottom: 0;
+}
+
+#main #primary h3.byline {
+  margin-top: -2px;
+  color: #159cc8;
+  font-size: 1.1em;
+  font-weight: normal;
+}
+
+#main #primary ul#pane-selector {
+  margin: 135px 0 115px 0;
+}
+
+#main #primary ul#pane-selector li a {
+  display: block;
+  height: 37px;
+  line-height: 35px;
+  text-decoration: none;
+  margin-bottom: 4px;
+  padding-left: 12px;
+  color: #222;
+  font-size: 1.2em;
+  background: url(liSelector.gif) top left no-repeat;
+}
+
+#main #primary ul#pane-selector li.current a {
+  background-position: bottom left;
+  color: #000;
+}
+
+#main #primary ul#pane-selector li a:hover {
+  text-decoration: underline;
+}
+
+#main #primary .info {
+  padding: 0 30px 0 10px;
+}
+
+#main #primary  h5 {
+  color: #777;
+  font-size: 1.7em;
+  font-weight: normal;
+  margin-bottom: 5px;
+}
+
+#main #primary blockquote {
+  margin-top: 150px;
+  font-size: 1.7em;
+}
+
+#home h2,
+#main #secondary h4 {
+  width: 410px;
+  color: #159cc8;
+  font-size: 2.2em;
+  font-weight: normal;
+  line-height: 1.3em;
+  margin-bottom: 25px;
+}
+
+#tour #secondary h4#tour-headline {
+  color: #159cc8;
+  font-size: 1.8em;
+  font-weight: normal;
+  line-height: 1.3em;
+  margin-bottom: 25px;
+}
+
+#home h2 {
+  margin-left: 284px;
+  color: #698022;
+}
+
+#main .intro {
+  width: 450px;
+  margin-bottom: 40px;
+}
+
+/* Feature screenshots */
+
+#about h2.headline {
+  color: #159cc8;
+  font-size: 2.2em;
+  font-weight: normal;
+  line-height: 1.3em;
+  margin-bottom: 25px;
+  margin-left: 254px;
+}
+
+#features {
+    clear: both;
+    margin-bottom: 20px;
+}
+
+#features th {
+    width: 25%;
+    text-align: center;
+    color: #526d00;
+    font-size: 1.4em;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+#features th, #features td {
+    vertical-align: top;
+}
+
+#features tr.screenshots td {
+    width: 170px;
+    height: 170px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
+
+#features td {
+    padding-left: 5px;
+    padding-right: 5px;
+}
+
+#features img {
+    display: block;
+    border: 1px solid black;
+}
+
+#about #content {
+  clear: both;
+}
+
+#main ul#tools {
+  overflow: hidden;
+  width: 110%;
+  margin-bottom: 20px;
+  margin-left: -15px;
+}
+
+#main ul#tools li {
+    display: block;
+    float: left;
+    padding-left: 10px;
+    width: 146px;
+}
+
+#main ul#tools li a {
+  display: block;
+  height: 160px;
+  background-position: bottom left;
+  background-repeat: no-repeat;
+  text-indent: -1000em;
+}
+
+#main ul#tools li a:hover {
+  text-decoration: underline;
+}
+
+#tools #liCode a {
+    background-image: url(app-code.gif);
+    color: #BE7A35;
+}
+
+#tools #liBugs a {
+    background-image: url(app-bugs.gif);
+    color: #B43242;
+}
+
+#tools #liBlueprints a {
+    background-image: url(app-blueprints.gif);
+    color: #57A3C6;
+}
+
+#tools #liTranslations a {
+    background-image: url(app-translations.gif);
+    color: #A32377;
+}
+
+#tools #liAnswers a {
+    background-image: url(app-answers.gif);
+    color: #20209D;
+}
+
+#main h3.splash {
+  display: block;
+  width: 822px; height: 50px;
+  line-height: 49px;
+  margin: 0 -29px;
+  margin-bottom: 40px;
+  background: url(bg-home-h5-splash.gif) top left repeat-x;
+  color: #fff;
+  text-align: center;
+  font-size: 1.6em;
+  clear: both;
+}
+
+#main p { margin-bottom: 10px; }
+
+#main p.more a {
+  padding-left: 15px;
+  text-decoration: none;
+  color: #6e9101;
+  background: url(bullet-arrow.gif) center left no-repeat;
+}
+
+#main p.more a:hover {
+  color: #666;
+  text-decoration: underline;
+}
+
+#main h3 {
+  color: #526d00;
+  font-size: 1.5em;
+  font-weight: normal;
+  margin-bottom: 10px;
+}
+
+#main #secondary h5 {
+  color: #526d00;
+  margin-bottom: 10px;
+}
+
+#main #secondary p {
+  margin-bottom: 10px;
+}
+
+#main #secondary ul#faqs {
+  margin-bottom: 30px;
+}
+
+#main #secondary ul#faqs li {
+  background: url(bullet-q.gif) center left no-repeat;
+}
+
+#main #secondary ul#faqs li a {
+  display: block;
+  padding: 2px 5px;
+  margin-left: 20px;
+  border-bottom: solid 2px #ececec;
+  text-decoration: none;
+  color: #6e9101;
+}
+
+#main #secondary ul#faqs li a:hover {
+  background: #f5f5f5;
+}
+
+#main #secondary ul#faqs li a {display:inline-block;}
+#main #secondary ul#faqs li a {display:block;}
+
+#main #secondary p.backtotop a {
+  float: right;
+  margin-right: 70px;
+  padding-right: 13px;
+  text-decoration: none;
+  color: #6e9101;
+  background: url(bg-backtotop.gif) center right no-repeat;
+}
+
+#main #secondary p.backtotop a:hover {
+  color: #666;
+  text-decoration: underline;
+}
+
+#main #secondary p.backtotop {
+  margin-bottom: 30px;
+}
+
+/* Screen and callouts for application tour */
+
+#main #secondary #pane {
+    width: 506px;
+    margin-left: -10px;
+    background: #dadada url(bg-pane-bottom.png) bottom left no-repeat;
+    padding-bottom: 15px;
+    color: #000;
+}
+
+#main #secondary #pane #summary {
+    background: #dadada url(bg-pane-top.png) top left no-repeat;
+    padding: 15px;
+}
+
+#main #secondary #pane #screen {
+    text-align: center;
+}
+
+#main #secondary #pane #transition {
+    clear: left;
+    padding: 15px;
+}
+
+#main #secondary #pane ol.callouts,
+#main #secondary #pane ol.callouts li {
+  position: absolute;
+  width: 35px; height: 35px;
+  background-position: top left;
+  background-repeat: no-repeat;
+  text-indent: -1000em;
+}
+
+#main #secondary #pane .callouts #p1 { background-image: url(marker-1.gif); }
+#main #secondary #pane .callouts #p2 { background-image: url(marker-2.gif); }
+#main #secondary #pane .callouts #p3 { background-image: url(marker-3.gif); }
+#main #secondary #pane .callouts #p4 { background-image: url(marker-4.gif); }
+
+#main #secondary #pane ul.info {
+    text-align: left;
+    margin: 15px;
+}
+
+#main #secondary #pane ul.info li {
+    float: left;
+    width: 178px;
+    padding-left: 45px;
+    padding-bottom: 15px;
+    background-position: top left;
+    background-repeat: no-repeat;
+}
+
+#main #secondary #pane ul.info li.newline {
+    clear: left;
+}
+
+#main #secondary #pane ul.info li#point-1 {
+  background-image: url(marker-1.gif);
+}
+
+#main #secondary #pane ul.info li#point-2 {
+  background-image: url(marker-2.gif);
+}
+
+#main #secondary #pane ul.info li#point-3{
+  background-image: url(marker-3.gif);
+}
+
+#main #secondary #pane ul.info li#point-4{
+  background-image: url(marker-4.gif);
+}
+
+#main #secondary #pane a.button.next {
+    float: right;
+    display: block;
+    clear: both;
+    width: 84px; height: 27px;
+    background: url(button-next.gif) top left no-repeat;
+    text-indent: -1000em;
+    padding-right: 15px;
+}
+
+/* Footer */
+
+#applications-footer {
+    clear: both;
+    margin-top: 20px;
+    text-align: center;
+}
+
+#applications-footer a {
+    text-decoration: none;
+    font-size: 1.2em;
+}
+
+#applications-footer a:hover {
+    text-decoration: underline;
+}
+
+#footer { letter-spacing: 1px;}
+
+#footer p.left { float: left; }
+#footer p.right { float: right; }
+
+#footer a {
+  color: #fff;
+  text-decoration: none;
+}
+
+#footer a:hover {
+  text-decoration: underline;
+}

@@ -31,8 +31,10 @@ def getDeathRow(distroname, log, pool_root_override):
     else:
         pool_root = pubconf.poolroot
 
+    temp_root = pubconf.temproot
+
     log.debug("Preparing on-disk pool representation.")
-    dp = DiskPool(pool_root, logging.getLogger("DiskPool"))
+    dp = DiskPool(pool_root, temp_root, logging.getLogger("DiskPool"))
     # Set the diskpool's log level to INFO to suppress debug output
     dp.logger.setLevel(20)
 
@@ -57,7 +59,7 @@ def main():
     log = logger(options, "deathrow-distro")
 
     log.debug("Initialising zopeless.")
-    # XXX Change this when we fix up db security
+    # XXX kiko 2006-08-23: Change this when we fix up db security
     txn = initZopeless(dbuser='lucille')
     execute_zcml_for_scripts()
 

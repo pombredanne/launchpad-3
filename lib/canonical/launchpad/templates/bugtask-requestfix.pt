@@ -3,9 +3,6 @@
       metal:use-macro="context/@@main_template/master"
       i18n:domain="launchpad">
   <body>
-  <metal:leftportlets fill-slot="portlets_one">
-    <div tal:replace="structure context/bug/@@+portlet-details" />
-  </metal:leftportlets>
 
 <div metal:fill-slot="main">
 
@@ -44,7 +41,7 @@
 
       <p>
             If the bug has been reported in another bug tracker, you can
-            link to it in order to keep track of its status. Malone
+            link to it in order to keep track of its status. Launchpad
             synchronizes the status automatically for you.
       </p>
 

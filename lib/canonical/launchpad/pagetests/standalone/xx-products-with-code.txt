@@ -5,7 +5,7 @@ there are branches associated with products, and to entice them to click
 through to get lists of branches of products that interest them.
 
     >>> browser.open('http://code.launchpad.dev')
-    >>> browser.getLink('5 projects').click()
+    >>> browser.getLink('6 projects').click()
     >>> print browser.title
     Projects with active branches
 
@@ -19,10 +19,10 @@ This page hangs off the launchpad root site.
     >>> for anchor in contents.fetch('a'):
     ...     print anchor['href']
     /
-    http://code.launchpad.dev/evolution
-    http://code.launchpad.dev/firefox
-    http://code.launchpad.dev/gnome-terminal
-    http://code.launchpad.dev/iso-codes
-    http://code.launchpad.dev/thunderbird
+    /evolution
+    /firefox
+    /gnome-terminal
+    /iso-codes
+    /landscape
+    /thunderbird
 
-    

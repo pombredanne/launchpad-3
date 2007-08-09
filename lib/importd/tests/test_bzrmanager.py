@@ -112,7 +112,11 @@ class TestCreateImportTarget(BzrManagerTestCase):
         # the branch must have no history
         self.assertEqual(branch.last_revision(), None)
         # and the working tree must be empty
-        self.assertEqual(list(workingtree.list_files()), [])
+        workingtree.lock_read()
+        try:
+            self.assertEqual(list(workingtree.list_files()), [])
+        finally:
+            workingtree.unlock()
 
 
 class ProductSeriesHelper:

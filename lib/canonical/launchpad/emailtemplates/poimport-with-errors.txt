@@ -1,7 +1,6 @@
 Hello %(importer)s,
 
-On %(dateimport)s (%(elapsedtime)s), you uploaded %(numberofmessages)d
-%(language)s translations for %(template)s in Rosetta.
+On %(dateimport)s (%(elapsedtime)s), you uploaded %(numberofmessages)d %(language)s translations for %(template)s in Launchpad.
 
 There were problems with %(numberoferrors)d of these translations.
 
@@ -9,9 +8,8 @@ There were problems with %(numberoferrors)d of these translations.
 
 The other %(numberofcorrectmessages)d translations have been accepted.
 
-To fix these problems, please upload a file containing the corrected
-translations.
+To fix these problems, please upload a file containing the corrected translations.
 
-Thanks for using Rosetta.
+Thank you,
 
-The Rosetta SWAT Team
+The Launchpad team

@@ -11,14 +11,14 @@ AUTO-APPROVED, UNAPPROVED) and its destination pocket:
    sent after the upload gets reviewed by archive-admin at queue time).
 
  * AUTO-APPROVED to RELEASE (via insecure): submitter set receives an
-   'acceptance' warning and the target distrorelease changeslist
+   'acceptance' warning and the target distroseries changeslist
    address receives an 'announcement' message.
 
  * AUTO-APPROVED to BACKPORTS (via sync): submitter set receives an
    'acceptance' warning ('announcement' is skipped).
 
  * AUTO-APPROVED sources to SECURITY (via security): submitter set
-   receives an 'acceptance' warning and the target distrorelease
+   receives an 'acceptance' warning and the target distroseries
    changeslist address receives an 'announcement' message.
 
  * AUTO-APPROVED binaries to SECURITY (via security): submitter set
@@ -29,125 +29,178 @@ AUTO-APPROVED, UNAPPROVED) and its destination pocket:
    messages. Remembering that NEW and UNAPPROVED messages are also
    suppressed in 'queue' application.
 
+It's important to notice that all types of upload-notification
+contains the special header 'X-Katie', its presence is checked by
+third part application and also in our changeslist (gutsy-changes@).
+See further information in bug #121752.
+
 We need to be logged into the security model in order to get any further
 
   >>> login('foo.bar@canonical.com')
 
+Helper functions to examine emails that were sent:
+
+  >>> import email
+  >>> from canonical.launchpad.mail import stub
+  >>> def by_to_addrs(a, b):
+  ...     return cmp(a[1], b[1])
+  >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
+
 For the purpose of this test, hoary needs to be an open (development)
-distrorelease so that we can upload to it. Also adjust 'changeslist'
+distroseries so that we can upload to it. Also adjust 'changeslist'
 address:
 
   >>> from canonical.launchpad.interfaces import IDistributionSet
-  >>> from canonical.lp.dbschema import DistributionReleaseStatus
+  >>> from canonical.lp.dbschema import DistroSeriesStatus
   >>> ubuntu = getUtility(IDistributionSet)['ubuntu']
   >>> hoary = ubuntu['hoary']
-  >>> hoary.releasestatus = DistributionReleaseStatus.DEVELOPMENT
+  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
   >>> hoary.changeslist = "hoary-announce@lists.ubuntu.com"
 
-The policy we feed to to the nascent upload needs to have its command
-line options passed in and a local loggers:
-
-  >>> class MockOptions:
-  ...     distro = "ubuntu"
-  ...     distrorelease = "hoary"
-
-  >>> class MockLogger:
-  ...     def debug(self, s):
-  ...         print "DEBUG:", s
-
-  >>> class MockMunchyLogger:
-  ...     def debug(self, s):
-  ...         pass
-
 NEW source upload to RELEASE pocket via 'sync' policy (it presents
-the same behaviour than using insecure policy, apart of allowing
+the same behaviour than using insecure policy, apart from allowing
 unsigned changes):
 
-  >>> from canonical.archivepublisher.nascentupload import NascentUpload
-  >>> from canonical.archivepublisher.uploadpolicy import findPolicyByName
-  >>> from canonical.archivepublisher.tests import datadir
+  >>> from canonical.archiveuploader.nascentupload import NascentUpload
+  >>> from canonical.archiveuploader.tests import (
+  ...    datadir, getPolicy, mock_logger, mock_logger_quiet)
 
-  >>> netapplet_src = NascentUpload(
-  ...     findPolicyByName('sync'), datadir('suite/bar_1.0-1'),
-  ...     "bar_1.0-1_source.changes", MockMunchyLogger())
-  >>> netapplet_src.policy.setOptions(MockOptions())
-  >>> netapplet_src.process()
-  >>> netapplet_src.logger = MockLogger()
-  >>> result, msgs = netapplet_src.do_accept()
-  DEBUG: Building recipients list.
+  >>> sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
+
+  >>> bar_src = NascentUpload(
+  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src.process()
+
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
+  DEBUG: Creating queue entry
   ...
-  DEBUG: Creating a New queue entry
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: NEW: bar_1.0.orig.tar.gz
+  DEBUG: NEW: bar_1.0-1.diff.gz
+  DEBUG: NEW: bar_1.0-1.dsc
+  ...
+  DEBUG: above if files already exist in other distroseries.
+  ...
+  DEBUG: -- 
+  DEBUG: You are receiving this email because you are the uploader, maintainer or
+  DEBUG: signer of the above package.
 
-  >>> len(msgs)
-  1
+There is only one email generated:
 
-  >>> import email
-  >>> [email.message_from_string(str(m))['To'] for m in msgs]
-  ['Daniel Silverstone <daniel.silverstone@canonical.com>']
+  >>> [notification] = pop_notifications()
+
+  >>> notification['X-Katie']
+  'Launchpad actually'
+
+  >>> notification['To']
+  'Daniel Silverstone <daniel.silverstone@canonical.com>'
 
 Let's ACCEPT bar sources in order to make the next uploads of this
 series *known* in hoary:
 
-  >>> netapplet_src.queue_root.setAccepted()
-  >>> netapplet_src.queue_root.realiseUpload()
+  >>> bar_src.queue_root.setAccepted()
+  >>> bar_src.queue_root.realiseUpload()
 
 Make the uploaded orig file available to librarian lookups
 
   >>> import transaction
   >>> transaction.commit()
 
+Ensure the previous transaction is *really* in the database before the next
+test:
+
+  >>> from canonical.launchpad.ftests import syncUpdate
+  >>> syncUpdate(bar_src.queue_root)
+
+Uploading the same package again will result in a rejection email:
+
+  >>> bar_src = NascentUpload(
+  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src.process()
+
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
+  DEBUG: Creating queue entry
+  DEBUG: Setting it to ACCEPTED
+  ...
+  DEBUG: Sending rejection email.
+  ...
+  DEBUG: Rejected:
+  DEBUG: This sourcepackagerelease is already accepted in hoary.
+  ...
+
+  >>> [notification] = pop_notifications()
+
+  >>> notification['X-Katie']
+  'Launchpad actually'
+
+  >>> notification['To']
+  'Daniel Silverstone <daniel.silverstone@canonical.com>'
+
+
 NEW binary upload to RELEASE pocket via 'sync' policy (we need to
 override sync policy to allow binary uploads):
 
-  >>> netapplet_src = NascentUpload(
-  ...     findPolicyByName('sync'), datadir('suite/bar_1.0-1_binary'),
-  ...     "bar_1.0-1_i386.changes", MockMunchyLogger())
-  >>> netapplet_src.policy.setOptions(MockOptions())
-  >>> netapplet_src.policy.can_upload_binaries = True
-  >>> netapplet_src.process()
-  >>> netapplet_src.logger = MockLogger()
-  >>> result, msgs = netapplet_src.do_accept()
-  DEBUG: Building recipients list.
-  ...
-  DEBUG: Creating a New queue entry
+  >>> modified_sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
+  >>> modified_sync_policy.can_upload_binaries = True
 
-We simply ignores messages generated at this step because they are not
+  >>> bar_src = NascentUpload(
+  ...     datadir('suite/bar_1.0-1_binary/bar_1.0-1_i386.changes'),
+  ...     modified_sync_policy, mock_logger_quiet)
+  >>> bar_src.process()
+
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
+  DEBUG: Creating queue entry
+  ...
+  DEBUG: above if files already exist in other distroseries.
+  ...
+  DEBUG: -- 
+  DEBUG: You are receiving this email because you are the uploader, maintainer or
+  DEBUG: signer of the above package.
+
+We simply ignore messages generated at this step because they are not
 going to exist in production. We simply need this binary to be published
-in other test other features in post-release pockets.
+in order to test other features in post-release pockets.
+
+   >>> ignore = pop_notifications()
 
 Let's accept & publish bar binary in order to make the next uploads of
 this series *known* in hoary:
 
-  >>> netapplet_src.queue_root.setAccepted()
-  >>> netapplet_src.queue_root.realiseUpload()
+  >>> bar_src.queue_root.setAccepted()
+  >>> bar_src.queue_root.realiseUpload()
 
 
 NEW source uploads for 'translations' section via sync policy:
 
-  >>> lang_pack = NascentUpload(
-  ...     findPolicyByName('sync'), datadir('language-packs'),
-  ...     "language-pack-pt_1.0-1_source.changes", MockMunchyLogger())
-  >>> local_options = MockOptions()
-  >>> local_options.distrorelease = "hoary"
-  >>> lang_pack.policy.setOptions(local_options)
-  >>> lang_pack.process()
-  >>> lang_pack.rejected
-  False
+  >>> modified_sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
 
-  >>> lang_pack.logger = MockLogger()
-  >>> result, msgs = lang_pack.do_accept()
-  DEBUG: Building recipients list.
-  DEBUG: Changes file is unsigned, adding changer as recipient
-  DEBUG: Creating a New queue entry
+  >>> lang_pack = NascentUpload(
+  ...     datadir('language-packs/language-pack-pt_1.0-1_source.changes'),
+  ...     modified_sync_policy, mock_logger_quiet)
+  >>> lang_pack.process()
+
+  >>> lang_pack.logger = mock_logger
+  >>> result = lang_pack.do_accept()
+  DEBUG: Creating queue entry
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
 
   >>> lang_pack.queue_root.status.name
   'NEW'
 
-No messages were generated since this upload is targeted for
+No messages were generated since this upload is targeted for the
 'translation' section:
 
-  >>> len(msgs)
+  >>> transaction.commit()
+  >>> len(stub.test_emails)
   0
 
 Accept and publish this series:
@@ -158,37 +211,35 @@ Accept and publish this series:
 
 AUTO_APPROVED source uploads for 'translations' section:
 
-  >>> lang_pack = NascentUpload(
-  ...     findPolicyByName('sync'), datadir('language-packs'),
-  ...     "language-pack-pt_1.0-2_source.changes", MockMunchyLogger())
-  >>> local_options = MockOptions()
-  >>> local_options.distrorelease = "hoary"
-  >>> lang_pack.policy.setOptions(local_options)
-  >>> lang_pack.process()
-  >>> lang_pack.rejected
-  False
+  >>> modified_sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
 
-  >>> lang_pack.logger = MockLogger()
-  >>> result, msgs = lang_pack.do_accept()
-  DEBUG: Building recipients list.
-  DEBUG: Changes file is unsigned, adding changer as recipient
-  DEBUG: Creating a New queue entry
+  >>> lang_pack = NascentUpload(
+  ...     datadir('language-packs/language-pack-pt_1.0-2_source.changes'),
+  ...     modified_sync_policy, mock_logger_quiet)
+  >>> lang_pack.process()
+
+  >>> lang_pack.logger = mock_logger
+  >>> result = lang_pack.do_accept()
+  DEBUG: Creating queue entry
   DEBUG: Setting it to ACCEPTED
+  DEBUG: Creating PENDING publishing record.
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
 
   >>> lang_pack.queue_root.status.name
-  'ACCEPTED'
+  'DONE'
 
 Again, no messages were generated since this upload is targeted for
 'translation' section:
 
-  >>> len(msgs)
+  >>> transaction.commit()
+  >>> len(stub.test_emails)
   0
 
 
 Release hoary, enable uploads to post-release pockets:
 
-  >>> hoary.releasestatus = DistributionReleaseStatus.CURRENT
+  >>> hoary.status = DistroSeriesStatus.CURRENT
 
 
 Import the test keys to use 'insecure' policy.
@@ -199,21 +250,17 @@ Import the test keys to use 'insecure' policy.
 
 UNAPPROVED source uploads for 'translations' section via insecure:
 
-  >>> lang_pack = NascentUpload(
-  ...     findPolicyByName('insecure'), datadir('language-packs'),
-  ...     "language-pack-pt_1.0-3_source.changes", MockMunchyLogger())
-  >>> local_options = MockOptions()
-  >>> local_options.distrorelease = "hoary-updates"
-  >>> lang_pack.policy.setOptions(local_options)
-  >>> lang_pack.process()
-  >>> lang_pack.rejected
-  False
+  >>> insecure_policy = getPolicy(
+  ...     name='insecure', distro='ubuntu', distroseries=None)
+  >>> insecure_policy.setDistroSeriesAndPocket('hoary-updates')
 
-  >>> lang_pack.logger = MockLogger()
-  >>> result, msgs = lang_pack.do_accept()
-  DEBUG: Building recipients list.
-  ...
-  DEBUG: Creating a New queue entry
+  >>> lang_pack = NascentUpload(
+  ...     datadir('language-packs/language-pack-pt_1.0-3_source.changes'),
+  ...     insecure_policy, mock_logger_quiet)
+  >>> lang_pack.process()
+  >>> lang_pack.logger = mock_logger
+  >>> result = lang_pack.do_accept()
+  DEBUG: Creating queue entry
   DEBUG: Setting it to UNAPPROVED
   DEBUG: Skipping acceptance and announcement, it is a language-package upload.
 
@@ -223,31 +270,83 @@ UNAPPROVED source uploads for 'translations' section via insecure:
 UNAPPROVED message was also skipped for an upload targeted to
 'translation' section:
 
-  >>> len(msgs)
+  >>> transaction.commit()
+  >>> len(stub.test_emails)
   0
+
+
+An UNAPPROVED binary upload via insecure will send one email saying that
+the upload is waiting for approval:
+
+  >>> bar_src = NascentUpload(
+  ...     datadir('suite/bar_1.0-2/bar_1.0-2_source.changes'),
+  ...     insecure_policy, mock_logger_quiet)
+  >>> bar_src.process()
+
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
+  DEBUG: Creating queue entry
+  ...
+
+  >>> [notification] = pop_notifications()
+
+  >>> notification['X-Katie']
+  'Launchpad actually'
+
+  >>> notification['To']
+  'Foo Bar <foo.bar@canonical.com>,\n\tDaniel Silverstone <daniel.silverstone@canonical.com>'
+
+  >>> notification['Subject']
+  'Waiting for approval: bar 1.0-2 (source)'
 
 
 AUTO-APPROVED upload to BACKPORTS pocket via 'sync' policy:
 
-  >>> netapplet_src = NascentUpload(
-  ...     findPolicyByName('sync'), datadir('suite/bar_1.0-4'),
-  ...     "bar_1.0-4_source.changes", MockMunchyLogger())
-  >>> local_options = MockOptions()
-  >>> local_options.distrorelease = "hoary-backports"
-  >>> netapplet_src.policy.setOptions(local_options)
-  >>> netapplet_src.process()
-  >>> netapplet_src.logger = MockLogger()
-  >>> result, msgs = netapplet_src.do_accept()
+  >>> modified_sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distroseries=None)
+  >>> modified_sync_policy.setDistroSeriesAndPocket('hoary-backports')
+
+  >>> bar_src = NascentUpload(
+  ...     datadir('suite/bar_1.0-4/bar_1.0-4_source.changes'),
+  ...     modified_sync_policy, mock_logger_quiet)
+  >>> bar_src.process()
+
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
+  DEBUG: Creating queue entry
+  DEBUG: Setting it to ACCEPTED
+  DEBUG: Creating PENDING publishing record.
   DEBUG: Building recipients list.
   ...
-  DEBUG: Setting it to ACCEPTED
   DEBUG: Skipping announcement, it is a BACKPORT.
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: Accepted:
+  DEBUG:  OK: bar_1.0.orig.tar.gz
+  DEBUG:  OK: bar_1.0-4.diff.gz
+  DEBUG:  OK: bar_1.0-4.dsc
+  DEBUG:      -> Component: main Section: devel
+  ...
+  DEBUG: Announcing to hoary-announce@lists.ubuntu.com
+  DEBUG:
+  DEBUG: Thank you for your contribution to Ubuntu Linux.
+  ...
+  DEBUG: -- 
+  DEBUG: You are receiving this email because you are the uploader, maintainer or
+  DEBUG: signer of the above package.
 
-  >>> len(msgs)
-  1
+There is one email generated:
 
-  >>> [email.message_from_string(str(m))['To'] for m in msgs]
-  ['Celso Providelo <celso.providelo@canonical.com>']
+  >>> [notification] = pop_notifications()
+
+  >>> notification['X-Katie']
+  'Launchpad actually'
+
+  >>> notification['To']
+  'Celso Providelo <celso.providelo@canonical.com>'
+
+  >>> notification['Subject']
+  'Accepted bar 1.0-4 (source)'
 
 Remove orig.tar.gz pumped from librarian to disk during the upload
 checks:
@@ -258,33 +357,46 @@ checks:
 
 AUTO-APPROVED source upload to SECURITY pocket via 'security' policy:
 
-  >>> netapplet_src = NascentUpload(
-  ...     findPolicyByName('security'), datadir('suite/bar_1.0-2'),
-  ...     "bar_1.0-2_source.changes", MockMunchyLogger())
-  >>> local_options = MockOptions()
-  >>> local_options.distrorelease = "hoary-security"
-  >>> netapplet_src.policy.setOptions(local_options)
+  >>> security_policy = getPolicy(
+  ...     name='security', distro='ubuntu', distroseries=None)
+  >>> security_policy.setDistroSeriesAndPocket('hoary-security')
 
-  >>> netapplet_src.process()
-  >>> netapplet_src.rejected
-  False
+  >>> bar_src = NascentUpload(
+  ...     datadir('suite/bar_1.0-2/bar_1.0-2_source.changes'),
+  ...     security_policy, mock_logger_quiet)
+  >>> bar_src.process()
 
-  >>> netapplet_src.logger = MockLogger()
-  >>> result, msgs = netapplet_src.do_accept()
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept()
+  DEBUG: Creating queue entry
+  DEBUG: Setting it to ACCEPTED
+  DEBUG: Creating PENDING publishing record.
   DEBUG: Building recipients list.
   ...
-  DEBUG: Setting it to ACCEPTED
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: Accepted:
+  DEBUG:  OK: bar_1.0.orig.tar.gz
+  DEBUG:  OK: bar_1.0-2.diff.gz
+  DEBUG:  OK: bar_1.0-2.dsc
+  DEBUG:      -> Component: main Section: devel
+  ...
+  DEBUG: Announcing to hoary-announce@lists.ubuntu.com
+  ...
 
+  >>> import operator
+  >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
   >>> len(msgs)
   2
 
-  >>> [email.message_from_string(str(m))['To'] for m in msgs]
+  >>> [message['To'] for message in msgs]
   ['Daniel Silverstone <daniel.silverstone@canonical.com>', 'hoary-announce@lists.ubuntu.com']
 
-Let's publish security bar sources in order to allow its binaries to
-come:
+  >>> [message['Subject'] for message in msgs]
+  ['Accepted bar 1.0-2 (source)', 'Accepted bar 1.0-2 (source)']
 
-  >>> netapplet_src.queue_root.realiseUpload()
+  >>> [message['X-Katie'] for message in msgs]
+  ['Launchpad actually', 'Launchpad actually']
 
 Remove orig.tar.gz pumped from librarian to disk during the upload
 checks:
@@ -294,25 +406,113 @@ checks:
 
 AUTO-APPROVED binary upload to SECURITY pocket via 'security' policy:
 
-  >>> netapplet_bin = NascentUpload(
-  ...     findPolicyByName('security'), datadir('suite/bar_1.0-2_binary'),
-  ...     "bar_1.0-2_i386.changes", MockMunchyLogger())
-  >>> local_options = MockOptions()
-  >>> local_options.distrorelease = "hoary-security"
-  >>> netapplet_bin.policy.setOptions(local_options)
-  >>> netapplet_bin.process()
-  >>> netapplet_bin.rejected
-  False
+  >>> security_policy = getPolicy(
+  ...     name='security', distro='ubuntu', distroseries=None)
+  >>> security_policy.setDistroSeriesAndPocket('hoary-security')
 
-  >>> netapplet_bin.logger = MockLogger()
-  >>> result, msgs = netapplet_bin.do_accept()
+  >>> bar_bin = NascentUpload(
+  ...     datadir('suite/bar_1.0-2_binary/bar_1.0-2_i386.changes'),
+  ...     security_policy, mock_logger_quiet)
+  >>> bar_bin.process()
+
+  >>> bar_bin.logger = mock_logger
+  >>> result = bar_bin.do_accept()
+  DEBUG: Creating queue entry
+  DEBUG: Setting it to ACCEPTED
   DEBUG: Building recipients list.
   ...
-  DEBUG: Setting it to ACCEPTED
   DEBUG: Skipping announcement, it is a binary upload to SECURITY.
+  DEBUG: Sent a mail:
+  ...
+  DEBUG: Accepted:
+  DEBUG:  OK: bar_1.0-2_i386.deb
+  ...
+  DEBUG: Thank you for your contribution to Ubuntu Linux.
+  ...
+  DEBUG: -- 
+  DEBUG: You are receiving this email because you are the uploader, maintainer or
+  DEBUG: signer of the above package.
 
+One email generated:
+
+  >>> [notification] = pop_notifications()
+
+  >>> notification['X-Katie']
+  'Launchpad actually'
+
+  >>> notification['To']
+  'Daniel Silverstone <daniel.silverstone@canonical.com>'
+
+  >>> notification['Subject']
+  'Accepted bar 1.0-2 (i386)'
+
+
+Dry run uploads should not generate any emails.  Call do_accept with
+notify=False:
+
+  >>> sync_policy = getPolicy(
+  ...     name='sync', distro='ubuntu', distroseries='hoary')
+
+  >>> bar_src = NascentUpload(
+  ...     datadir('suite/bar_1.0-1/bar_1.0-1_source.changes'),
+  ...     sync_policy, mock_logger_quiet)
+  >>> bar_src.process()
+
+  >>> bar_src.logger = mock_logger
+  >>> result = bar_src.do_accept(notify=False)
+
+No emails generated:
+
+  >>> msgs = pop_notifications()
   >>> len(msgs)
-  1
+  0
 
-  >>> [email.message_from_string(str(m))['To'] for m in msgs]
-  ['Daniel Silverstone <daniel.silverstone@canonical.com>']
+Rejections with notify=False will also not generate any emails.
+
+  >>> result = bar_src.do_reject(notify=False)
+  >>> msgs = pop_notifications()
+  >>> len(msgs)
+  0
+
+
+Uploads with UTF-8 characters in email addresses in the changes file are 
+permitted, but converted to ASCII, which is a limitation of the mailer.
+However, UTF-8 in the mail content is preserved.
+
+  >>> hoary.status = DistroSeriesStatus.DEVELOPMENT
+  >>> anything_policy = getPolicy(
+  ...     name='anything', distro='ubuntu', distroseries='hoary')
+  >>> bar_upload = NascentUpload(
+  ...     datadir(
+  ...         'suite/bar_1.0-10_utf8_changesfile/bar_1.0-10_source.changes'),
+  ...     anything_policy, mock_logger_quiet)
+  >>> bar_upload.process()
+
+  >>> bar_upload.logger = mock_logger
+  >>> result = bar_upload.do_accept()
+  DEBUG: Creating queue entry
+  ...
+
+  >>> msgs = pop_notifications(sort_key=operator.itemgetter('To'))
+  >>> len(msgs)
+  2
+
+"Cihar" should actually be "Čihař" but the mailer will convert to ASCII.
+
+  >>> [message['From'] for message in msgs]
+  ['Root <root@localhost>', 'Non-ascii changed-by Cihar <daniel.silverstone@canonical.com>']
+
+UTF-8 text in the changes file that is sent on the email is preserved
+in the MIME encoding.
+
+  >>> print msgs[0].get_payload() # doctest: -NORMALIZE_WHITESPACE
+  Accepted:
+  ...
+  Maintainer: Non-ascii maintainer =C4=8Ciha=C5=99 <launchpad@lists.canonical=
+  .com>
+  Changed-By: Non-ascii changed-by =C4=8Ciha=C5=99 <daniel.silverstone@canoni=
+  cal.com>
+  ...
+     * Non-ascii text: =C4=8Ciha=C5=99
+  ...
+

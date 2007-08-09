@@ -1,0 +1,12 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+    lang="en"
+    metal:use-macro="context/@@main_template/master"
+    i18n:domain="launchpad">
+    <body>
+        <div metal:fill-slot="main">
+            This is the Launchpad login service.  This site allows you
+            to use your Launchpad account to log into other services
+            related to Canonical and Ubuntu.
+        </div>
+    </body>
+</html>

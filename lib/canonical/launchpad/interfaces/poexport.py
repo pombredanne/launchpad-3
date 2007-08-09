@@ -4,7 +4,7 @@ from zope.interface import Interface
 
 __metaclass__ = type
 
-__all__ = ('IPOFileOutput', 'IPOTemplateExporter', 'IDistroReleasePOExporter',
+__all__ = ('IPOFileOutput', 'IPOTemplateExporter', 'IDistroSeriesPOExporter',
            'IPOExport')
 
 class IPOFileOutput(Interface):
@@ -26,20 +26,24 @@ class IPOTemplateExporter(Interface):
         force_utf8=False):
         """Return the contents of the PO file as a string.
 
-        :language: The language that we want to export.
-        :variant: The variant for the given :language:.
-        :include_obsolete: Whether the obsolete entries are not exported.
-        :force_utf8: Whether the exported string should be encoded as UTF-8.
+        :param language: The language that we want to export.
+        :param variant: The variant for the given :language:.
+        :param include_obsolete: Whether the obsolete entries are not
+            exported.
+        :param force_utf8: Whether the exported string should be encoded as
+            UTF-8.
         """
 
     def export_pofile_to_file(filehandle, language, variant=None,
                               included_obsolete=True, force_utf8=False):
         """Return the contents of the PO file to a file handle.
 
-        :language: The language that we want to export.
-        :variant: The variant for the given :language:.
-        :include_obsolete: Whether the obsolete entries are not exported.
-        :force_utf8: Whether the exported string should be encoded as UTF-8.
+        :param language: The language that we want to export.
+        :param variant: The variant for the given :language:.
+        :param include_obsolete: Whether the obsolete entries are not
+            exported.
+        :param force_utf8: Whether the exported string should be encoded as
+            UTF-8.
         """
 
     def export_potemplate():
@@ -61,8 +65,8 @@ class IPOTemplateExporter(Interface):
         """Export all translation in a tarball to a file handle."""
 
 
-class IDistroReleasePOExporter(Interface):
-    """Export PO files in a distro release."""
+class IDistroSeriesPOExporter(Interface):
+    """Export PO files in a distro series."""
 
     def export_tarball():
         """Export all translations in a tarball.

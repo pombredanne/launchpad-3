@@ -4,36 +4,9 @@
       i18n:domain="launchpad">
 
   <body>
-
-  <tal:x condition="nothing">
-    This page uses the launchpad-addform.pt METAL.
-  </tal:x>
-
-  <div metal:fill-slot="main">
-
-  <div metal:use-macro="context/@@launchpad_addform/addform">
-
-        <h1 metal:fill-slot="heading">Select the new member</h1>
-
-        <div metal:fill-slot="extra_info" class="formHelp">
-
-        </div>
-
-        <div metal:fill-slot="extra_top"> 
-          <p class="informational message" tal:condition="view/addedMember">
-            <span tal:replace="string: ${view/addedMember/browsername} (${view/addedMember/name})" />
-            was added as a member of <span tal:replace="context/browsername" />.
-          </p>
-
-          <p class="error message" tal:condition="view/alreadyMember">
-            <span tal:replace="string: ${view/alreadyMember/browsername} (${view/alreadyMember/name})" />
-            is already a member of <span tal:replace="context/browsername" />.
-          </p>
-        </div>
-
-  </div>
-
-  </div>
+    <div metal:fill-slot="main">
+      <div metal:use-macro="context/@@launchpad_form/form" />
+    </div>
   </body>
 
 </html>

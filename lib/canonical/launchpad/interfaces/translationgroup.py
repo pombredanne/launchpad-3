@@ -5,18 +5,46 @@
 __metaclass__ = type
 
 __all__ = [
+    'IHasTranslationGroup',
     'ITranslationGroup',
     'ITranslationGroupSet',
     ]
 
-from zope.interface import Attribute
-from zope.schema import Datetime, Int, TextLine
+from zope.interface import Attribute, Interface
+from zope.schema import Choice, Datetime, Int, TextLine
 from zope.app.form.browser.interfaces import IAddFormCustomization
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Summary, Title
 from canonical.launchpad.validators.name import name_validator
-from canonical.launchpad.interfaces import IHasOwner
+from canonical.launchpad.interfaces.launchpad import IHasOwner
+
+
+class IHasTranslationGroup(Interface):
+    translationgroup = Choice(
+        title = _("Translation group"),
+        description = _("The translation group associated with this object."
+            " This group is made up of a set of translators for all the"
+            " languages approved by the group manager. These translators then"
+            " have permission to edit the groups translation files, based on"
+            " the permission system selected below."),
+        required=False,
+        vocabulary='TranslationGroup')
+
+    translationpermission = Choice(
+        title=_("Translation Permission System"),
+        description=_("The permissions this group requires for translators."
+            " If 'Open', then anybody can edit translations in any language."
+            " If 'Structured', only designated translators are able to edit"
+            " or confirm translations for those languages, other people can"
+            " only add suggestions for that languages and edit or confirm"
+            " translations for the other languages. If 'Restricted', then"
+            " anybody can make suggestions but only the designated"
+            " translators can edit or confirm translations. And if 'Closed'"
+            " then only the designated translation group will be able to"
+            " touch the translation files at all."),
+        required=True,
+        vocabulary='TranslationPermission')
 
 
 class ITranslationGroup(IHasOwner):
@@ -47,16 +75,14 @@ class ITranslationGroup(IHasOwner):
     datecreated = Datetime(
             title=_('Date Created'), required=True, readonly=True,
             )
-    ownerID = Int(
-            title=_('Owner'), required=True, readonly=True
-            )
-    owner = Attribute("The owner's IPerson")
+    owner = Choice(title=_('Owner'), required=True, vocabulary='ValidOwner',
+            description=_("The owner's IPerson"))
     # joins
     translators = Attribute('The set of translators for this group.')
     projects = Attribute('The projects for which this group translates.')
-    products = Attribute('The products to which this group is directly '
-        'appointed as a translator. There may be other products that are '
-        'part of projects for which the group also translates.')
+    products = Attribute('The projects to which this group is directly '
+        'appointed as a translator. There may be other projects that are '
+        'part of project groups for which the group also translates.')
     distributions = Attribute('The distros for which this group translates.')
 
     # accessing the translator list
@@ -95,3 +121,5 @@ class ITranslationGroupSet(IAddFormCustomization):
     def getByPerson(person):
         """Return the translation groups which that person is a member of."""
 
+    def getGroupsCount():
+        """Return the amount of translation groups available."""

@@ -14,9 +14,9 @@
         <li>
           <a href="/people/+me/+addbranch">
             <img
-              alt="Register a branch"
-              src="/+icing/but-lrg-registerabranch.gif"
-            />
+               alt="Register a branch"
+               src="/+icing/but-lrg-registerabranch.gif"
+               />
           </a>
         </li>
         <li>
@@ -28,7 +28,7 @@
           </a>
         </li>
       </ul>
-                        <form class="central" action="/products" method="get">
+                        <form class="central" action="/projects/" method="get">
                           <input
                             id="text"
                             type="text"
@@ -47,11 +47,11 @@
                           version control system &mdash; and can convert many
                           <abbr>CVS</abbr> and <abbr>SVN</abbr> projects,
                           so you can use Bazaar with those too.
-                          <a href="/+tour">Learn more&#8230;</a>
+                          <a href="/+about">Learn more&#8230;</a>
                         </p>
 
                         <div class="columns">
-                          <div class="three column left">
+                          <div class="three column left" id="recent-imports">
                             <h2>Recent imports</h2>
                             <ul class="branch">
                               <li tal:repeat="
@@ -59,26 +59,29 @@
                                 <a tal:attributes="href branch/fmt:url"
                                    tal:content="branch/displayname/fmt:shorten/40">
                                 Title Goes Here!</a>
+                                <img src="/@@/locked" alt="private branch" tal:condition="branch/private"/>
                               </li>
                             </ul>
                           </div>
-                          <div class="three column middle">
+                          <div class="three column middle" id="recently-registered">
                             <h2>Recently registered</h2>
                             <ul class="branch">
                               <li tal:repeat="branch view/recently_registered_branches">
                                 <a tal:attributes="href branch/fmt:url"
                                    tal:content="branch/displayname/fmt:shorten/40">
                                 Title Goes Here!</a>
+                                <img src="/@@/locked" alt="private branch" tal:condition="branch/private"/>
                               </li>
                             </ul>
                           </div>
-                          <div class="three column right">
+                          <div class="three column right" id="recently-changed">
                             <h2>Recently changed</h2>
                             <ul class="branch">
                               <li tal:repeat="branch view/recently_changed_branches">
                                 <a tal:attributes="href branch/fmt:url"
                                    tal:content="branch/displayname/fmt:shorten/40">
                                 Title Goes Here!</a>
+                                <img src="/@@/locked" alt="private branch" tal:condition="branch/private"/>
                               </li>
                             </ul>
                           </div>

@@ -23,17 +23,16 @@ from canonical.authserver.xmlrpc import (
 from canonical.authserver.database import (
     DatabaseUserDetailsStorage, DatabaseUserDetailsStorageV2,
     DatabaseBranchDetailsStorage)
-from canonical.launchpad.daemons.tachandler import ReadyService
 from canonical.config import config
 
 
 class AuthserverService(service.Service):
     """Twisted service to run the authserver."""
 
-    # XXX - This class' docstring should refer to some higher-level
+    # XXX Jonathan Lange 2007-03-06:
+    # This class' docstring should refer to some higher-level
     # documentation for the authserver, as it is likely to be one of the first
     # places a developer will look when trying to puzzle out the authserver.
-    # -- Jonathan Lange, 2007-03-06
 
     def __init__(self, dbpool=None, port=config.authserver.port):
         """Construct an AuthserverService.
@@ -92,4 +91,5 @@ class AuthserverService(service.Service):
 
     def stopService(self):
         service.Service.stopService(self)
-        self.service.stopService()
+        self.dbpool.close()
+        return self.service.stopService()

@@ -19,10 +19,10 @@ somebody are subject to expiration.
     # Sanity check in case somebody modifies the question sampledata and
     # forget to update this script.
     >>> from canonical.launchpad.database import Question
-    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> from canonical.launchpad.interfaces import QuestionStatus
     >>> Question.select('status IN (%i,%i)' % (
     ...     QuestionStatus.OPEN.value, QuestionStatus.NEEDSINFO.value)).count()
-    8
+    9
 
     # By default, all open and needs info question should expire. Make
     # sure that no new questions were recently added and will make this
@@ -85,7 +85,7 @@ somebody are subject to expiration.
     # Commit the current transaction because the script will run in
     # another transaction and thus it won't see the changes done on this
     # test unless we commit.
-    # XXX flacoste 20061003 bug 3989: Unecessary flush_database_updates
+    # XXX flacoste 2006-10-03 bug=3989: Unecessary flush_database_updates
     # required.
     >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
@@ -103,8 +103,8 @@ somebody are subject to expiration.
     INFO    creating lockfile
     INFO    Expiring OPEN and NEEDSINFO questions without activity for the
             last 15 days.
-    INFO    Found 5 questions to expire.
-    INFO    Expired 5 questions.
+    INFO    Found 6 questions to expire.
+    INFO    Expired 6 questions.
     INFO    Finished expiration run.
     <BLANKLINE>
     >>> print out
@@ -146,7 +146,7 @@ Answer Tracker Janitor celebrity:
     >>> print expiration_message.new_status.title
     Expired
     >>> print expiration_message.owner.name
-    support-tracker-janitor
+    answer-tracker-janitor
 
     >>> print expiration_message.text_contents
     This question was expired because it remained in the

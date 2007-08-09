@@ -56,11 +56,13 @@ from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.lazr import enumerated_type_registry
 
 
 class TraversalError(NotFoundError):
-    """XXX Remove this when we upgrade to a more recent Zope x3"""
-    # Steve Alexander, Tue Dec 14 13:07:38 UTC 2004
+    """Remove this when we upgrade to a more recent Zope x3."""
+    # XXX: Steve Alexander 2004-12-14:
+    # Remove this when we upgrade to a more recent Zope x3.
 
 
 class MenuAPI:
@@ -130,7 +132,8 @@ class MenuAPI:
         if selectedfacetname is None:
             # No facet menu is selected.  So, return empty list.
             return []
-        menu = queryAdapter(self._context, IApplicationMenu, selectedfacetname)
+        menu = queryAdapter(
+            self._context, IApplicationMenu, selectedfacetname)
         if menu is None:
             return []
         else:
@@ -161,13 +164,13 @@ class CountAPI:
 
 
 class EnumValueAPI:
-    """Namespace to test whether a DBSchema Item has a particular value.
+    """Namespace to test whether an EnumeratedType Item has a particular value.
 
     The value is given in the next path step.
 
         tal:condition="somevalue/enumvalue:BISCUITS"
 
-    Registered for canonical.lp.dbschema.Item.
+    Registered for canonical.lazr.enum.Item.
     """
     implements(ITraversable)
 
@@ -178,14 +181,14 @@ class EnumValueAPI:
         if self.item.name == name:
             return True
         else:
-            # Check whether this was an allowed value for this dbschema.
-            schema_items = self.item.schema_items
+            # Check whether this was an allowed value for this enumerated type.
+            enum = self.item.enum
             try:
-                schema_items[name]
-            except KeyError:
+                enum.getTermByToken(name)
+            except LookupError:
                 raise TraversalError(
-                    'The %s dbschema does not have a value %s.' %
-                    (self.item.schema_name, name))
+                    'The enumerated type %s does not have a value %s.' %
+                    (enum.name, name))
             return False
 
 
@@ -268,19 +271,13 @@ class DBSchemaAPI:
     """
     implements(ITraversable)
 
-    _all = {}
-    for name in dbschema.__all__:
-        schema = getattr(dbschema, name)
-        if (schema is not dbschema.DBSchema and
-            issubclass(schema, dbschema.DBSchema)):
-            _all[name] = schema
-
     def __init__(self, number):
         self._number = number
 
     def traverse(self, name, furtherPath):
-        if name in self._all:
-            return self._all[name].items[self._number].title
+        if name in enumerated_type_registry:
+            enum = enumerated_type_registry[name]
+            return enum.items[self._number].title
         else:
             raise TraversalError(name)
 
@@ -320,9 +317,9 @@ class NoneFormatter:
             if len(furtherPath) == 0:
                 raise TraversalError(
                     "you need to traverse a number after fmt:shorten")
-            maxlength = int(furtherPath.pop())
-            # XXX: why is maxlength not used here at all?
-            #       - kiko, 2005-08-24
+            # Remove the maxlength from the path as it is a parameter
+            # and not another traversal command.
+            furtherPath.pop()
             return ''
         elif name in self.allowed_names:
             return ''
@@ -341,12 +338,13 @@ class ObjectFormatterAPI:
 
     def url(self):
         request = get_current_browser_request()
-        return canonical_url(self._context, request)
+        return canonical_url(
+            self._context, request, path_only_if_possible=True)
 
 
 class ObjectImageDisplayAPI:
     """Base class for producing the HTML that presents objects
-    as an icon, a logo or a mugshot.
+    as an icon, a logo, a mugshot or a set of badges.
     """
 
     def __init__(self, context):
@@ -451,6 +449,20 @@ class ObjectImageDisplayAPI:
             </div>"""
         return mugshot % url
 
+    def badges(self):
+        raise NotImplementedError(
+            "Badge display not implemented for this item")
+
+
+class PillarSearchItemAPI(ObjectImageDisplayAPI):
+    """Provides image:icon for a PillarSearchItem."""
+
+    def mugshot(self):
+        raise NotImplementedError("A PillarSearchItem doesn't have a mugshot")
+
+    def logo(self):
+        raise NotImplementedError("A PillarSearchItem doesn't have a logo")
+
 
 class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
     """Adapter for IBugTask objects to a formatted string. This inherits
@@ -460,11 +472,11 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
     Used for image:icon.
     """
 
+    icon_template = (
+        '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
+
     def icon(self):
         # The icon displayed is dependent on the IBugTask.importance.
-        image_template = (
-            '<img height="14" width="14" alt="%s" title="%s" src="%s" />')
-
         if self._context.importance:
             importance = self._context.importance.title.lower()
             alt = "(%s)" % importance
@@ -479,12 +491,29 @@ class BugTaskImageDisplayAPI(ObjectImageDisplayAPI):
             title = ""
             src = "/@@/bug"
 
-        icon = image_template % (alt, title, src)
+        return self.icon_template % (alt, title, src)
 
+
+    def badges(self):
+
+        badges = ''
         if self._context.bug.private:
-            icon += image_template % ("", "Private", "/@@/locked")
+            badges += self.icon_template % (
+                "private", "Private","/@@/locked")
 
-        return icon
+        if self._context.bug.mentoring_offers.count() > 0:
+            badges += self.icon_template % (
+                "mentoring", "Mentoring offered", "/@@/mentoring")
+
+        if self._context.bug.bug_branches.count() > 0:
+            badges += self.icon_template % (
+                "branch", "Branch exists", "/@@/branch")
+
+        if self._context.bug.specifications.count() > 0:
+            badges += self.icon_template % (
+                "blueprint", "Related to a blueprint", "/@@/blueprint")
+
+        return badges
 
 
 class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
@@ -495,12 +524,11 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
     Used for image:icon.
     """
 
+    icon_template = """
+        <img height="14" width="14" alt="%s" title="%s" src="%s" />"""
+
     def icon(self):
         # The icon displayed is dependent on the IBugTask.importance.
-        image_template = """
-            <img height="14" width="14" alt="%s" title="%s" src="%s" />
-            """
-
         if self._context.priority:
             priority = self._context.priority.title.lower()
             alt = "(%s)" % priority
@@ -517,9 +545,26 @@ class SpecificationImageDisplayAPI(ObjectImageDisplayAPI):
             title = ""
             src = "/@@/blueprint"
 
-        icon = image_template % (alt, title, src)
+        return self.icon_template % (alt, title, src)
 
-        return icon
+
+    def badges(self):
+
+        badges = ''
+        if self._context.mentoring_offers.count() > 0:
+            badges += self.icon_template % (
+                "mentoring", "Mentoring offered", "/@@/mentoring")
+
+        if self._context.branch_links.count() > 0:
+            badges += self.icon_template % (
+                "branch", "Branch is available", "/@@/branch")
+
+        if self._context.informational:
+            badges += self.icon_template % (
+                "informational", "Blueprint is purely informational",
+                "/@@/info")
+
+        return badges
 
 
 class KarmaCategoryImageDisplayAPI(ObjectImageDisplayAPI):
@@ -532,7 +577,7 @@ class KarmaCategoryImageDisplayAPI(ObjectImageDisplayAPI):
         'bugs': '/@@/bug',
         'translations': '/@@/translation',
         'specs': '/@@/blueprint',
-        'support': '/@@/question'}
+        'answers': '/@@/question'}
 
     def icon(self):
         icon = self.icons_for_karma_categories[self._context.name]
@@ -556,12 +601,12 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
 
     Used for image:icon.
     """
+    icon_template = """
+        <img width="14" height="14" alt="%s" title="%s" src="%s" />
+        """
+
     def icon(self):
         """Return the appropriate <img> tag for the build icon."""
-        image_template = """
-            <img width="14" height="14" alt="%s" title="%s" src="%s" />
-            """
-
         icon_map = {
             dbschema.BuildStatus.NEEDSBUILD: "/@@/build-needed",
             dbschema.BuildStatus.FULLYBUILT: "/@@/build-success",
@@ -570,13 +615,14 @@ class BuildImageDisplayAPI(ObjectImageDisplayAPI):
             dbschema.BuildStatus.CHROOTWAIT: "/@@/build-chrootwait",
             dbschema.BuildStatus.SUPERSEDED: "/@@/build-superseded",
             dbschema.BuildStatus.BUILDING: "/@@/build-building",
+            dbschema.BuildStatus.FAILEDTOUPLOAD: "/@@/build-failedtoupload",
             }
 
         alt = '[%s]' % self._context.buildstate.name
         title = self._context.buildstate.title
         source = icon_map[self._context.buildstate]
 
-        return image_template % (alt, title, source)
+        return self.icon_template % (alt, title, source)
 
 
 class PersonFormatterAPI(ObjectFormatterAPI):
@@ -620,7 +666,8 @@ class NumberFormatterAPI:
 
     def bytes(self):
         """Render number as byte contractions according to IEC60027-2."""
-        # See http://en.wikipedia.org/wiki/Binary_prefixes#Specific_units_of_IEC_60027-2_A.2
+        # See http://en.wikipedia.org/wiki
+        # /Binary_prefixes#Specific_units_of_IEC_60027-2_A.2
         # Note that there is a zope.app.size.byteDisplay() function, but
         # it really limited and doesn't work well enough for us here.
         n = int(self._number)
@@ -1097,7 +1144,7 @@ class FormattersAPI:
     def _linkify_substitution(match):
         if match.group('bug') is not None:
             bugnum = match.group('bugnum')
-            # XXX, Brad Bollenbach, 2006-04-10: Use a hardcoded url so
+            # XXX Brad Bollenbach 2006-04-10: Use a hardcoded url so
             # we still have a link for bugs that don't exist.
             url = '/bugs/%s' % bugnum
             # The text will have already been cgi escaped.
@@ -1196,6 +1243,14 @@ class FormattersAPI:
     # Some allowed URI punctuation characters will be trimmed if they
     # appear at the end of the URI since they may be incidental in the
     # flow of the text.
+    #
+    # apport has at one time produced query strings containing sqaure
+    # braces (that are not percent-encoded). In RFC 2986 they seem to be
+    # allowed by section 2.2 "Reserved Characters", yet section 3.4
+    # "Query" appears to provide a strict definition of the query string
+    # that would forbid square braces. Either way, links with
+    # non-percent-encoded square braces are being used on Launchpad so
+    # it's probably best to accomodate them.
 
     # Match urls or bugs or oopses.
     _re_linkify = re.compile(r'''
@@ -1233,12 +1288,12 @@ class FormattersAPI:
         )
         (?: # query
           \?
-          [%(unreserved)s:@/\?]*
+          [%(unreserved)s:@/\?\[\]]*
         )?
         (?: # fragment
           \#
           [%(unreserved)s:@/\?]*
-        )?          
+        )?
       ) |
       (?P<bug>
         \bbug(?:\s|<br\s*/>)*(?:\#|report|number\.?|num\.?|no\.?)?(?:\s|<br\s*/>)*
@@ -1318,6 +1373,125 @@ class FormattersAPI:
                     % cgi.escape(self._stringtoformat)
                     )
 
+    # Match lines that start with the ':', '|', and '>' symbols
+    # commonly used for quoting passages from another email.
+    # the dpkg version is used for exceptional cases where it
+    # is better to not assume '|' is a start of a quoted passage.
+    _re_quoted = re.compile('^([:|]|&gt;|-----BEGIN PGP)')
+    _re_dpkg_quoted = re.compile('^([:]|&gt;|-----BEGIN PGP)')
+
+    # Match blocks that start as signatures, quoted passages, or PGP.
+    _re_block_include = re.compile('^<p>(--<br />|([:|]|&gt)|-----BEGIN PGP)')
+    # Match a line starting with '>' (implying text email or quoting by hand).
+    _re_quoted_line = re.compile('^&gt;')
+
+    def email_to_html(self):
+        """text_to_html and hide signatures and full-quoted emails.
+
+        This method wraps signatures and quoted passages with
+        <span class="foldable"></span> tags to identify them in presentation
+        layer. CSS and and JavaScript may use this markup to control the
+        content's display behavior.
+        """
+        start_fold_markup = '<span class="foldable">'
+        end_fold_markup = '%s\n</span></p>'
+        re_quoted = self._re_quoted
+        output = []
+        in_fold = False
+        in_quoted = False
+        in_false_paragraph = False
+        for line in self.text_to_html().split('\n'):
+            if 'Desired=<wbr></wbr>Unknown/' in line and not in_fold:
+                # When we see a evidence of dpkg output, we switch the
+                # quote matching rules. We do not assume lines that start
+                # with a pipe are quoted passages. dpkg output is often
+                # reformatted by users and tools. When we see the dpkg
+                # output header, we change the rules regardless of if the
+                # lines that follow are legitimate.
+                re_quoted = self._re_dpkg_quoted
+            elif not in_fold and self._re_block_include.match(line) is not None:
+                # Start a foldable paragraph for a signature or quote.
+                in_fold = True
+                line = '<p>%s%s' % (start_fold_markup, line[3:])
+            elif not in_fold and re_quoted.match(line) is not None:
+                # Start a foldable section for a quoted passage.
+                if self._re_quoted_line.match(line):
+                    in_quoted = True
+                in_fold = True
+                output.append(start_fold_markup)
+            else:
+                # The start of this line is not extraordinary.
+                pass
+
+            # We must test line starts and ends in separate blocks to
+            # close the rare single line that is foldable.
+            if in_fold and line.endswith('</p>'):
+                if not in_false_paragraph:
+                    # End the foldable section.
+                    in_fold = False
+                    in_quoted = False
+                    line = end_fold_markup % line[0:-4]
+                else:
+                    # Restore the line break to join with the next paragraph.
+                    line = '%s<br />\n<br />' %  line[0:-4]
+            elif in_quoted and self._re_quoted_line.match(line) is None:
+                # End fold early because paragraph contains mixed quoted 
+                # and reply text.
+                in_fold = False
+                in_quoted = False
+                output.append("</span>\n")
+            elif in_false_paragraph and line.startswith('<p>'):
+                # Remove the paragraph to join with the previous paragraph.
+                in_false_paragraph = False
+                line = line[3:]
+            else:
+                # The end of this line is not extraordinary.
+                pass
+
+            if in_fold and 'PGP SIGNATURE' in line:
+                # PGP signature blocks are split into two paragraphs
+                # by the text_to_html. The foldable feature works with
+                # a single paragraph, so we merge this paragraph with
+                # the next one.
+                in_false_paragraph = True
+
+            output.append(line)
+        return '\n'.join(output)
+
+    # This is a regular expression that matches email address embedded in
+    # text. It is not RFC 2821 compliant, nor does it need to be. This
+    # expression strives to identify probable email addresses so that they
+    # can be obfuscated when viewed by unauthenticated users. See
+    # http://www.email-unlimited.com/stuff/email_address_validator.htm
+    _re_email = re.compile(
+        # localnames do not have [&?%!@<>,;:`|{}()#*^~ ] in practice
+        # (regardless of RFC 2821) because they conflict with other systems.
+        # See https://lists.ubuntu.com
+        #     /mailman/private/launchpad-reviews/2007-June/006081.html
+        r"([\b]|[\"']?)[-/=0-9A-Z_a-z]" # first character of localname
+        r"[.\"'-/=0-9A-Z_a-z+]*@" # possible . and + in localname
+        r"[a-zA-Z]" # first character of host or domain
+        r"(-?[a-zA-Z0-9])*" # possible - and numbers in host or domain
+        r"(\.[a-zA-Z](-?[a-zA-Z0-9])*)+\b") # dot starts one or more domains.
+
+    def obfuscate_email(self):
+        """Obfuscate an email address as '<email address hidden>'.
+
+        This formatter is intended to hide possible email addresses from
+        unauthenticated users who view this text on the Web. Run this before
+        the text is converted to html because text-to-html and email-to-html
+        will insert markup into the address. eg.
+        foo/fmt:obfuscate-email/fmt:email-to-html
+
+        The pattern used to identify an email address is not 2822. It strives
+        to match any possible email address embedded in the text. For example,
+        mailto:person@domain.dom and http://person:password@domain.dom both
+        match, though the http match is in fact not an email address.
+        """
+        text = self._re_email.sub(
+            r'<email address hidden>', self._stringtoformat)
+        return text
+
     def shorten(self, maxlength):
         """Use like tal:content="context/foo/fmt:shorten/60"."""
         if len(self._stringtoformat) > maxlength:
@@ -1334,6 +1508,10 @@ class FormattersAPI:
             return self.text_to_html()
         elif name == 'nice_pre':
             return self.nice_pre()
+        elif name == 'email-to-html':
+            return self.email_to_html()
+        elif name == 'obfuscate-email':
+            return self.obfuscate_email()
         elif name == 'shorten':
             if len(furtherPath) == 0:
                 raise TraversalError(
@@ -1377,6 +1555,7 @@ class PageMacroDispatcher:
         view/macro:pagehas/applicationbuttons
         view/macro:pagehas/globalsearch
         view/macro:pagehas/heading
+        view/macro:pagehas/pageheading
         view/macro:pagehas/portlets
         view/macro:pagehas/structuralheaderobject
 
@@ -1439,6 +1618,7 @@ class PageMacroDispatcher:
             applicationbuttons=False,
             globalsearch=False,
             heading=False,
+            pageheading=True,
             portlets=False,
             structuralheaderobject=False,
             pagetypewasset=True
@@ -1451,8 +1631,8 @@ class PageMacroDispatcher:
     _pagetypes = {
         'unset':
             LayoutElements(
-                applicationtabs=True,
                 applicationborder=True,
+                applicationtabs=True,
                 globalsearch=True,
                 portlets=True,
                 structuralheaderobject=True,
@@ -1468,6 +1648,7 @@ class PageMacroDispatcher:
             LayoutElements(
                 applicationborder=True,
                 applicationbuttons=True,
+                pageheading=False,
                 globalsearch=False,
                 heading=True),
         'pillarindex':
@@ -1476,6 +1657,7 @@ class PageMacroDispatcher:
                 applicationbuttons=True,
                 globalsearch=False,
                 heading=True,
+                pageheading=False,
                 portlets=True),
         'freeform':
             LayoutElements(),

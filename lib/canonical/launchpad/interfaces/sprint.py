@@ -15,7 +15,7 @@ __all__ = [
 
 from zope.component import getUtility
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Choice, Text, TextLine
+from zope.schema import Datetime, Int, Choice, Text, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
@@ -39,6 +39,8 @@ class SprintNameField(ContentNameField):
 
 class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     """A sprint, or conference, or meeting."""
+
+    id = Int(title=_('The Sprint ID'))
 
     name = SprintNameField(
         title=_('Name'), required=True, description=_('A unique name '
@@ -69,7 +71,8 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
         default_image_resource='/@@/meeting',
         description=_(
             "A small image of exactly 14x14 pixels and at most 5kb in size, "
-            "that can be used to identify this meeting in listings."))
+            "that can be used to identify this meeting. The icon will be "
+            "displayed wherever we list and link to the meeting."))
     logo = LogoImageUpload(
         title=_("Logo"), required=False,
         default_image_resource='/@@/meeting-logo',
@@ -144,6 +147,15 @@ class ISprint(IHasOwner, IHasDrivers, IHasSpecifications):
     def unlinkSpecification(spec):
         """Remove this specification from the sprint spec list."""
 
+    def isDriver(user):
+        """Returns True if and only if the specified user
+        is a driver of this sprint.
+
+        A driver for a sprint is either the person in the
+        `driver` attribute, a person who is memeber of a team
+        in the `driver` attribute or an administrator.
+        """
+
 
 class IHasSprints(Interface):
     """An interface for things that have lists of sprints associated with
@@ -165,6 +177,8 @@ class ISprintSet(Interface):
     """A container for sprints."""
 
     title = Attribute('Title')
+
+    all = Attribute('All sprints, in reverse order of starting')
 
     def __iter__():
         """Iterate over all Sprints, in reverse time_start order."""

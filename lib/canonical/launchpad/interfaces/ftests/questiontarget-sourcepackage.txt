@@ -14,7 +14,7 @@ that of the DistributionSourcePackage (and not the SourcePackage):
     >>> from canonical.launchpad.interfaces import (
     ...     IPersonSet, IDistributionSet)
     >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
-    >>> firefox = ubuntu.currentrelease.getSourcePackage('mozilla-firefox')
+    >>> firefox = ubuntu.currentseries.getSourcePackage('mozilla-firefox')
 
     >>> question = firefox.getQuestion(3)
     >>> question.target == firefox
@@ -48,47 +48,47 @@ from its containing distribution.
 
     >>> list(ubuntu.answer_contacts)
     []
-    >>> list(firefox.answer_contacts)
+    >>> list(evolution.answer_contacts)
     []
 
     >>> ubuntu.addAnswerContact(sample_person)
     True
-    >>> [person.name for person in firefox.answer_contacts]
+    >>> [person.name for person in evolution.answer_contacts]
     [u'name16']
 
 It is possible to obtain the list of IPerson registed as support
 contacts specifically for the source package through the
 direct_answer_contacts attributes.
 
-    >>> [person.name for person in firefox.direct_answer_contacts]
+    >>> [person.name for person in evolution.direct_answer_contacts]
     []
 
 A user can still subscribe as support contact for specific sourcepackage
 even if he's already a support contact for the distribution.
 
-    >>> firefox.addAnswerContact(sample_person)
+    >>> evolution.addAnswerContact(sample_person)
     True
-    >>> [person.name for person in firefox.direct_answer_contacts]
+    >>> [person.name for person in evolution.direct_answer_contacts]
     [u'name16']
 
 But he's only listed once in the support contacts list.
 
-    >>> [person.name for person in firefox.answer_contacts]
+    >>> [person.name for person in evolution.answer_contacts]
     [u'name16']
 
 The removeAnswerContact() method can only be used to remove the user
 from the sourcepackage support contact list, not from the ubuntu
 distribution list:
 
-    >>> firefox.removeAnswerContact(sample_person)
+    >>> evolution.removeAnswerContact(sample_person)
     True
-    >>> [person.name for person in firefox.direct_answer_contacts]
+    >>> [person.name for person in evolution.direct_answer_contacts]
     []
-    >>> [person.name for person in firefox.answer_contacts]
+    >>> [person.name for person in evolution.answer_contacts]
     [u'name16']
-    >>> firefox.removeAnswerContact(sample_person)
+    >>> evolution.removeAnswerContact(sample_person)
     False
-    >>> [person.name for person in firefox.answer_contacts]
+    >>> [person.name for person in evolution.answer_contacts]
     [u'name16']
 
 The same principle applies to DistributionSourcePackage:

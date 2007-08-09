@@ -1,5 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+"""Browser views for sourcepackages."""
+
 __metaclass__ = type
 
 __all__ = [
@@ -24,18 +26,20 @@ from canonical.launchpad import helpers
 from canonical.launchpad.interfaces import (
     IPOTemplateSet, IPackaging, ICountry, ISourcePackage)
 from canonical.launchpad.webapp import canonical_url
+from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.interfaces import TranslationUnavailable
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.browser.packagerelationship import (
-    PackageRelationship, relationship_builder)
+    relationship_builder)
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetAnswersMenu)
-from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.browser.rosetta import TranslationsMixin
 
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, Link, ApplicationMenu, enabled_with_permission,
-    structured, GetitemNavigation, stepto, redirection)
+    GetitemNavigation, stepto, redirection)
 
 
 class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
@@ -48,9 +52,17 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
     @stepto('+pots')
     def pots(self):
         potemplateset = getUtility(IPOTemplateSet)
-        return potemplateset.getSubset(
-                   distrorelease=self.context.distrorelease,
-                   sourcepackagename=self.context.sourcepackagename)
+        sourcepackage_pots = potemplateset.getSubset(
+            distroseries=self.context.distroseries,
+            sourcepackagename=self.context.sourcepackagename)
+
+        if (self.context.distroseries.hide_all_translations and
+            not check_permission('launchpad.Admin', sourcepackage_pots)):
+            raise TranslationUnavailable(
+                'Translation updates are in progress. Only administrators '
+                'may view translations for this source package.')
+
+        return sourcepackage_pots
 
     @stepto('+filebug')
     def filebug(self):
@@ -62,31 +74,17 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         return redirection(canonical_url(distro_sourcepackage) + "/+filebug")
 
 
-def linkify_changelog(changelog, sourcepkgnametxt):
-    if changelog is None:
-        return changelog
-    changelog = cgi.escape(changelog)
-    # XXX cprov 20060207: use re.match and fmt:url instead of this nasty
-    # url builder. Also we need an specification describing the syntax for
-    # changelog linkification and processing (mostly bug interface),
-    # bug # 30817
-    changelog = re.sub(r'%s \(([^)]+)\)' % re.escape(sourcepkgnametxt),
-                       r'%s (<a href="\1">\1</a>)' % sourcepkgnametxt,
-                       changelog)
-    return changelog
-
-
 class SourcePackageSOP(StructuralObjectPresentation):
 
     def getIntroHeading(self):
         return self.context.distribution.displayname + ' ' + \
-               self.context.distrorelease.version + ' source package:'
+               self.context.distroseries.version + ' source package:'
 
     def getMainHeading(self):
         return self.context.sourcepackagename
 
     def listChildren(self, num):
-        # XXX mpt 20061004: Versions published, earliest first
+        # XXX mpt 2006-10-04: Versions published, earliest first.
         return []
 
     def countChildren(self):
@@ -125,17 +123,6 @@ class SourcePackageOverviewMenu(ApplicationMenu):
         return Link('+builds', text, icon='info')
 
 
-class SourcePackageBugsMenu(ApplicationMenu):
-
-    usedfor = ISourcePackage
-    facet = 'bugs'
-    links = ['reportbug']
-
-    def reportbug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='add')
-
-
 class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):
 
     usedfor = ISourcePackage
@@ -161,7 +148,7 @@ class SourcePackageTranslationsMenu(ApplicationMenu):
         return Link('+potemplatenames', 'Edit template names', icon='edit')
 
 
-class SourcePackageView(BuildRecordsView):
+class SourcePackageView(BuildRecordsView, TranslationsMixin):
 
     def initialize(self):
         # lets add a widget for the product series to which this package is
@@ -176,10 +163,6 @@ class SourcePackageView(BuildRecordsView):
         self.status_message = None
         self.processForm()
 
-    @property
-    def languages(self):
-        return helpers.request_languages(self.request)
-
     def processForm(self):
         # look for an update to any of the things we track
         form = self.request.form
@@ -191,7 +174,7 @@ class SourcePackageView(BuildRecordsView):
                 self.productseries_widget.setRenderedValue(new_ps)
                 self.status_message = 'Upstream link updated, thank you!'
             else:
-                self.status_message = 'Invalid product series given.'
+                self.status_message = 'Invalid series given.'
 
     def published_by_pocket(self):
         """This morfs the results of ISourcePackage.published_by_pocket into
@@ -210,14 +193,14 @@ class SourcePackageView(BuildRecordsView):
         """Format binary packages into binarypackagename and archtags"""
         results = {}
         all_arch = sorted([arch.architecturetag for arch in
-                           self.context.distrorelease.architectures])
+                           self.context.distroseries.architectures])
         for bin in self.context.currentrelease.binaries:
-            distroarchrelease = bin.build.distroarchrelease
+            distroarchseries = bin.build.distroarchseries
             if bin.name not in results:
                 results[bin.name] = []
 
             if bin.architecturespecific:
-                results[bin.name].append(distroarchrelease.architecturetag)
+                results[bin.name].append(distroarchseries.architecturetag)
             else:
                 results[bin.name] = all_arch
             results[bin.name].sort()
@@ -228,9 +211,9 @@ class SourcePackageView(BuildRecordsView):
         """Wrap the relationship_builder for SourcePackages.
 
         Define apt_pkg.ParseSrcDep as a relationship 'parser' and
-        IDistroRelease.getSourcePackage as 'getter'.
+        IDistroSeries.getBinaryPackage as 'getter'.
         """
-        getter = self.context.distrorelease.getSourcePackage
+        getter = self.context.distroseries.getBinaryPackage
         parser = ParseSrcDepends
         return relationship_builder(content, parser=parser, getter=getter)
 
@@ -248,10 +231,6 @@ class SourcePackageView(BuildRecordsView):
         if depends or depends_indep:
             return True
         return False
-
-    def linkified_changelog(self):
-        return linkify_changelog(
-            self.context.changelog, self.context.sourcepackagename.name)
 
     def requestCountry(self):
         return ICountry(self.request, None)

@@ -103,7 +103,7 @@ a widget.
     <td width="100%">
       ...
       <input ... name="field.official_rosetta" type="checkbox" ... />
-      <label for="field.official_rosetta">Uses Rosetta Officially</label>
+      <label for="field.official_rosetta">Uses Translations Officially</label>
       <p class="formHelp">...</p>
     </td>
   </tr>

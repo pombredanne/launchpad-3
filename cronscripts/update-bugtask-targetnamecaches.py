@@ -7,12 +7,12 @@ import _pythonpath
 
 from zope.component import getUtility
 
-from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 from canonical.launchpad.interfaces import IBugTaskSet
 from canonical.config import config
 
 
-class UpdateBugTaskTargetNameCaches(LaunchpadScript):
+class UpdateBugTaskTargetNameCaches(LaunchpadCronScript):
     """Update the targetnamecache for all IBugTasks.
 
     This ensures that the cache values are up-to-date even after, for
@@ -22,11 +22,11 @@ class UpdateBugTaskTargetNameCaches(LaunchpadScript):
         self.logger.info("Updating targetname cache of bugtasks.")
         bugtaskset = getUtility(IBugTaskSet)
         self.txn.begin()
-        # XXX: we use a special API here, which is kinda klunky, but which
+        # XXX: kiko 2006-03-23:
+        # We use a special API here, which is kinda klunky, but which
         # allows us to return all bug tasks (even private ones); this should
         # eventually be changed to a more elaborate permissions scheme,
-        # pending the infrastructure to do so
-        #   -- kiko, 2006-03-23
+        # pending the infrastructure to do so.
         bugtask_ids = [bugtask.id for bugtask in bugtaskset.dangerousGetAllTasks()]
         self.txn.commit()
         for bugtask_id in bugtask_ids:

@@ -149,3 +149,10 @@ class RequestExpiredView(SystemErrorView):
         # pay attention to it - it is just a hint.
         request.response.setHeader('Retry-After', 900)
 
+
+class TranslationUnavailableView(SystemErrorView):
+
+    response_code = 503
+
+    def __call__(self):
+        return self.index()

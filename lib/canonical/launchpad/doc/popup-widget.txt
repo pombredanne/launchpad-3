@@ -17,9 +17,9 @@ vocabulary. We also need to bind it to a context for things to work:
 
 We also need a request before we can initialise the widget:
 
-    >>> from zope.publisher.browser import TestRequest
+    >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> popup_widget = SinglePopupWidget(
-    ...     owner_field,  owner_field.vocabulary, TestRequest())
+    ...     owner_field,  owner_field.vocabulary, LaunchpadTestRequest())
     >>> print popup_widget()
     <input type="text" value="" id="field.owner"
            name="field.owner" size="20"
@@ -46,7 +46,8 @@ Let's supply a nonexistent value to the form:
 
     >>> form = {'field.owner': u'non-existant-value'}
     >>> popup_widget = SinglePopupWidget(
-    ...     owner_field,  owner_field.vocabulary, TestRequest(form=form))
+    ...     owner_field,  owner_field.vocabulary,
+    ...     LaunchpadTestRequest(form=form))
 
 Now hasInput() returns that there is a input value, but getInputValue()
 still fails:
@@ -64,7 +65,8 @@ expected:
 
     >>> form = {'field.owner': u'shipit-admins'}
     >>> popup_widget = SinglePopupWidget(
-    ...     owner_field,  owner_field.vocabulary, TestRequest(form=form))
+    ...     owner_field,  owner_field.vocabulary,
+    ...     LaunchpadTestRequest(form=form))
     >>> popup_widget.hasInput()
     True
     >>> shipit_admins = popup_widget.getInputValue()
@@ -76,7 +78,8 @@ vocabulary search returns a few matches, we don't have a valid input:
 
     >>> form = {'field.owner': u'shipit'}
     >>> popup_widget = SinglePopupWidget(
-    ...     owner_field,  owner_field.vocabulary, TestRequest(form=form))
+    ...     owner_field,  owner_field.vocabulary,
+    ...     LaunchpadTestRequest(form=form))
     >>> popup_widget.hasInput()
     True
     >>> shipit_admins = popup_widget.getInputValue()
@@ -93,7 +96,7 @@ There are a few situations which we need to be careful about.
 
     >>> from canonical.widgets.popup import SinglePopupView
     >>> from canonical.launchpad.webapp.publisher import rootObject
-    >>> request = TestRequest(
+    >>> request = LaunchpadTestRequest(
     ...     SERVER_URL='http://127.0.0.1/@@popup-window', form={})
     >>> SinglePopupView(rootObject, request)
     Traceback (most recent call last):
@@ -109,7 +112,7 @@ implement IHugeVocabulary.
     ...     DistributionVocabulary)
     >>> form = {
     ...     'vocabulary': 'Distribution', 'field':'field.distribution'}
-    >>> request = TestRequest(
+    >>> request = LaunchpadTestRequest(
     ...     SERVER_URL='http://127.0.0.1/@@popup-window', form=form)
     >>> popup_view = SinglePopupView(rootObject, request)
     >>> popup_view.vocabulary()
@@ -121,7 +124,7 @@ implement IHugeVocabulary.
 
     >>> form = {
     ...     'vocabulary': 'FooBar', 'field':'field.distribution'}
-    >>> request = TestRequest(
+    >>> request = LaunchpadTestRequest(
     ...     SERVER_URL='http://127.0.0.1/@@popup-window', form=form)
     >>> popup_view = SinglePopupView(rootObject, request)
     >>> popup_view.vocabulary()
@@ -133,7 +136,7 @@ implement IHugeVocabulary.
 
     >>> form = {
     ...     'vocabulary': '', 'field':'field.distribution'}
-    >>> request = TestRequest(
+    >>> request = LaunchpadTestRequest(
     ...     SERVER_URL='http://127.0.0.1/@@popup-window', form=form)
     >>> popup_view = SinglePopupView(rootObject, request)
     >>> popup_view.vocabulary()

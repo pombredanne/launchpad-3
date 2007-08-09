@@ -1,15 +1,17 @@
 # Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+"""Classes that implement LaunchpadStatistics."""
 
 __metaclass__ = type
-__all__ = ['LaunchpadStatistic', 'LaunchpadStatisticSet']
 
-from email.Utils import make_msgid
+__all__ = [
+    'LaunchpadStatistic',
+    'LaunchpadStatisticSet',
+    ]
 
 from zope.interface import implements
 from zope.component import getUtility
 
 from sqlobject import IntCol, StringCol
-from canonical.launchpad import _
 from canonical.database.constants import UTC_NOW
 from canonical.database.datetimecol import UtcDateTimeCol
 
@@ -17,17 +19,14 @@ from canonical.database.sqlbase import SQLBase, cursor, sqlvalues
 from canonical.launchpad.database.bug import Bug
 from canonical.launchpad.database.bugtask import BugTask
 from canonical.launchpad.database.language import Language
-from canonical.launchpad.database.person import Person
 from canonical.launchpad.database.potemplate import POTemplate
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.database.product import Product
 from canonical.launchpad.database.pomsgid import POMsgID
 from canonical.launchpad.database.question import Question
 
-from canonical.lp.dbschema import QuestionStatus
-
 from canonical.launchpad.interfaces import (
-    ILaunchpadStatistic, ILaunchpadStatisticSet, IPersonSet
+    ILaunchpadStatistic, ILaunchpadStatisticSet, IPersonSet, QuestionStatus
     )
 
 
@@ -37,6 +36,7 @@ class LaunchpadStatistic(SQLBase):
     implements(ILaunchpadStatistic)
 
     _table = 'LaunchpadStatistic'
+    _defaultOrder = 'name'
 
     # db field names
     name = StringCol(notNull=True, alternateID=True, unique=True)
@@ -48,6 +48,10 @@ class LaunchpadStatisticSet:
     """See canonical.launchpad.interfaces.ILaunchpadStatisticSet."""
 
     implements(ILaunchpadStatisticSet)
+
+    def __iter__(self):
+        """See ILaunchpadStatisticSet."""
+        return iter(LaunchpadStatistic.select(orderBy='name'))
 
     def update(self, name, value):
         """See ILaunchpadStatisticSet."""
@@ -74,8 +78,9 @@ class LaunchpadStatisticSet:
 
     def updateStatistics(self, ztm):
         """See ILaunchpadStatisticSet."""
-        self._updateRosettaStatistics(ztm)
         self._updateMaloneStatistics(ztm)
+        self._updateRegistryStatistics(ztm)
+        self._updateRosettaStatistics(ztm)
         self._updateQuestionStatistics(ztm)
         getUtility(IPersonSet).updateStatistics(ztm)
 
@@ -108,6 +113,43 @@ class LaunchpadStatisticSet:
             "                      AS temp WHERE places > 1")
         self.update("shared_bug_count", cur.fetchone()[0] or 0)
         ztm.commit()
+
+    def _updateRegistryStatistics(self, ztm):
+        self.update(
+            'active_products',
+            Product.select("active IS TRUE", distinct=True).count())
+        self.update(
+            'products_with_translations',
+            Product.select('''
+                POTemplate.productseries = ProductSeries.id AND
+                Product.id = ProductSeries.product AND
+                Product.active = TRUE
+                ''',
+                clauseTables=['ProductSeries', 'POTemplate'],
+                distinct=True).count())
+        self.update(
+            'products_with_blueprints',
+            Product.select(
+                "Specification.product=Product.id AND Product.active IS TRUE",
+                distinct=True, clauseTables=['Specification']).count())
+        self.update(
+            'products_with_branches',
+            Product.select(
+                "Branch.product=Product.id AND Product.active IS TRUE",
+                distinct=True, clauseTables=['Branch']).count())
+        self.update(
+            'products_with_bugs',
+            Product.select(
+                "BugTask.product=Product.id AND Product.active IS TRUE",
+                distinct=True, clauseTables=['BugTask']).count())
+        self.update(
+            'products_with_questions',
+            Product.select(
+                "Question.product=Product.id AND Product.active IS TRUE",
+                distinct=True, clauseTables=['Question']).count())
+        self.update(
+            'reviewed_products',
+            Product.selectBy(reviewed=True, active=True).count())
 
     def _updateRosettaStatistics(self, ztm):
         self.update(
@@ -165,7 +207,7 @@ class LaunchpadStatisticSet:
         cur = cursor()
         cur.execute(
             "SELECT COUNT(DISTINCT product) + COUNT(DISTINCT distribution) "
-            "FROM Ticket")
+            "FROM Question")
         self.update("projects_with_questions_count", cur.fetchone()[0] or 0)
         ztm.commit()
 

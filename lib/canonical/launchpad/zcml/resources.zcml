@@ -9,11 +9,6 @@
     <resource name="edubuntu-screen.css" file="../templates/edubuntu-screen.css" />
     <resource name="edubuntu-common.css" file="../templates/edubuntu-common.css" />
 
-    <!-- Javascript -->
-    <resource name="launchpad.js" file="../templates/launchpad.js" />
-    <resource name="lpmenu.js" file="../templates/lpmenu.js" />
-    <resource name="sorttable.js" file="../../../contrib/templates/sorttable.js" />
-
     <!-- Missing images -->
     <resource name="nyet-badge" file="../images/nyet-badge.png" />
     <resource name="nyet-icon" file="../images/nyet-icon.png" />
@@ -26,7 +21,7 @@
     <resource name="add-badge" file="../images/add-badge.png" />
     <resource name="add-large" file="../images/add-large.png" />
     <resource name="architecture" file="../images/architecture.png" />
-    <!-- arrowBlank is used in lib/contrib/templates/sorttable.js -->
+    <!-- arrowBlank is used in sorttable.js -->
     <resource name="arrowBlank" file="../images/arrowBlank.gif" />
     <resource name="arrowBottom" file="../images/arrowBottom.png" />
     <resource name="arrowDownAlternative" file="../images/arrowDownAlternative.gif" />
@@ -37,6 +32,7 @@
     <resource name="build-building" file="../images/build-building.gif" />
     <resource name="build-chrootwait" file="../images/build-chrootwait.png" />
     <resource name="build-depwait" file="../images/build-depwait.png" />
+    <resource name="build-failedtoupload" file="../images/build-failedtoupload.png" />
     <resource name="build-failure" file="../images/build-failure.png" />
     <resource name="build-needed" file="../images/build-needed.png" />
     <resource name="build-success" file="../images/build-success.png" />
@@ -51,6 +47,7 @@
     <resource name="blueprint-not" file="../images/blueprint-not.png" />
     <resource name="bounty" file="../images/bounty.png" />
     <resource name="branch" file="../images/branch.png" />
+    <resource name="branch-large" file="../images/branch-large.png" />
     <resource name="bug" file="../images/bug.png" />
     <resource name="bug-critical" file="../images/bug-critical.png" />
     <resource name="bug-high" file="../images/bug-high.png" />
@@ -59,6 +56,9 @@
     <resource name="bug-wishlist" file="../images/bug-wishlist.png" />
     <resource name="bug-undecided" file="../images/bug-undecided.png" />
     <resource name="bug-remote" file="../images/bug-remote.png" />
+    <resource name="bug-status-collapse"
+              file="../images/bug-status-collapse.png" />
+    <resource name="bug-status-expand" file="../images/bug-status-expand.png" />
     <resource name="bug-unknown" file="../images/bug.png" />
     <resource name="bullet" file="../images/bullet.png" />
     <resource name="copy" file="../images/copy.png" />
@@ -77,6 +77,7 @@
     <resource name="error" file="../images/error.png" />
     <resource name="error-badge" file="../images/error-badge.png" />
     <resource name="error-large" file="../images/error-large.png" />
+    <resource name="faq" file="../images/faq.png" />
     <resource name="favourite-yes" file="../images/fav-yes.png" />
     <resource name="favourite-no" file="../images/fav-no.png" />
     <resource name="green-bar" file="../images/green-bar.png" />
@@ -95,6 +96,8 @@
     <resource name="locked-large" file="../images/locked-large.png" />
     <resource name="mail" file="../images/mail.png" />
     <resource name="maybe" file="../images/maybe.png" />
+    <resource name="mentoring" file="../images/mentoring.png" />
+    <resource name="mentoring-large" file="../images/mentoring-large.png" />
     <resource name="milestone" file="../images/milestone.png" />
     <resource name="news" file="../images/news.png" />
     <resource name="no" file="../images/no.png" />
@@ -121,7 +124,7 @@
     <resource name="red-bar" file="../images/red-bar.png" />
     <resource name="remove" file="../images/remove.png" />
     <resource name="required" file="../images/required.gif" />
-    <!-- XXX mpt 20060822: Remove this once we use "(Optional)" instead -->
+    <!-- XXX mpt 2006-08-22: Remove this once we use "(Optional)" instead -->
     <resource name="retry" file="../images/retry.png" />
     <resource name="search" file="../images/search.png" />
     <resource name="sorry-closed" file="../images/sorry-closed.png" />

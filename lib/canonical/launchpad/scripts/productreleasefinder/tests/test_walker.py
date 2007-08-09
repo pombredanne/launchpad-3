@@ -371,6 +371,28 @@ Generated Wed, 06 Sep 2006 11:04:02 GMT by squid (squid/2.5.STABLE12)
         self.assertEqual(dirnames, ['dir/'])
         self.assertEqual(filenames, ['file2'])
 
+    def testNamedAnchors(self):
+        # Test that the directory listing parser code handles named anchors.
+        # These are <a> tags without an href attribute.
+        content = '''
+        <html>
+          <head>
+            <title>Listing</title>
+          </head>
+          <body>
+          <a name="top"></a>
+          <pre>
+          <a href="file1">file1</a>
+          <a href="dir1/">dir1/</a>
+          <a href="#top">Go to top</a>
+          </pre>
+        </html>
+        '''
+        walker = self.setUpWalker('http://example.com/foo/', content)
+        dirnames, filenames = walker.list('/foo/')
+        self.assertEqual(dirnames, ['dir1/'])
+        self.assertEqual(filenames, ['file1'])
+
     def testGarbageListing(self):
         # Make sure that garbage doesn't trip up the dir lister.
         content = '\x01\x02\x03\x00\xff\xf2\xablkjsdflkjsfkljfds'

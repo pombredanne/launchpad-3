@@ -3,10 +3,12 @@
 """Revision interfaces."""
 
 __metaclass__ = type
-__all__ = ['IRevision', 'IRevisionAuthor', 'IRevisionParent', 'IRevisionSet']
+__all__ = [
+    'IRevision', 'IRevisionAuthor', 'IRevisionParent', 'IRevisionProperty',
+    'IRevisionSet']
 
 from zope.interface import Interface, Attribute
-from zope.schema import Datetime, Int, Choice, Text, TextLine, Float
+from zope.schema import Datetime, Int, Choice, Text, TextLine
 
 from canonical.launchpad.interfaces import IHasOwner
 from canonical.launchpad import _
@@ -30,12 +32,17 @@ class IRevision(IHasOwner):
         required=True, readonly=True)
     parents = Attribute("The RevisionParents for this revision.")
     parent_ids = Attribute("The revision_ids of the parent Revisions.")
+    properties = Attribute("The `RevisionProperty`s for this revision.")
+
+    def getProperties():
+        """Return the revision properties as a dict."""
 
 
 class IRevisionAuthor(Interface):
     """Committer of a Bazaar revision."""
 
     name = TextLine(title=_("Revision Author Name"), required=True)
+    name_without_email = Attribute("Revision author name without email address")
 
 
 class IRevisionParent(Interface):
@@ -46,6 +53,14 @@ class IRevisionParent(Interface):
     parent_id = Attribute("The revision_id of the parent revision.")
 
 
+class IRevisionProperty(Interface):
+    """A property on a Bazaar revision."""
+
+    revision = Attribute("The revision which has this property.")
+    name = TextLine(title=_("The name of the property."), required=True)
+    value = Text(title=_("The value of the property."), required=True)
+
+
 class IRevisionSet(Interface):
     """The set of all revisions."""
 
@@ -54,5 +69,5 @@ class IRevisionSet(Interface):
         """
 
     def new(revision_id, log_body, revision_date, revision_author, owner,
-            parent_ids):
+            parent_ids, properties):
         """Create a new Revision with the given revision ID."""

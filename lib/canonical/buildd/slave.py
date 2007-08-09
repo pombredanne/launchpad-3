@@ -23,7 +23,7 @@ from twisted.web import xmlrpc
 devnull = open("/dev/null", "r")
 
 
-# XXX 20050628 cprov
+# XXX cprov 2005-06-28:
 # RunCapture can be replaced with a call to
 #
 #   twisted.internet.utils.getProcessOutputAndValue
@@ -140,7 +140,7 @@ class BuildManager(object):
         # 10 s ~ 40 s, and returns None as exit_code, instead of the normal
         # interger. See further info on DebianBuildermanager.iterate in
         # debian.py
-        # XXX cprov 20050902:
+        # XXX cprov 2005-09-02:
         # we may want to follow the canonical.tachandler kill process style,
         # which sends SIGTERM to the process wait a given timeout and if was
         # not killed sends a SIGKILL. IMO it only would be worth if we found
@@ -227,7 +227,7 @@ class BuildDSlave(object):
                     f = urllib2.urlopen(url)
                 except Exception, info:
                     extra_info = 'Error accessing Librarian: %s' % info
-                    self.log(extra_info, exc_info=True)
+                    self.log(extra_info)
                 else:
                     of = open(self.cachePath(sha1sum), "w")
                     # Upped for great justice to 256k
@@ -267,9 +267,9 @@ class BuildDSlave(object):
 
     def abort(self):
         """Abort the current build."""
-        # XXX: dsilvers: 2005/01/21: Current abort mechanism doesn't wait
+        # XXX: dsilvers: 2005-01-21: Current abort mechanism doesn't wait
         # for abort to complete. This is potentially an issue in a heavy
-        # load situation
+        # load situation.
         if self.builderstatus != BuilderStatus.BUILDING:
             raise ValueError("Slave is not BUILDING when asked to abort")
         self.manager.abort()
@@ -289,6 +289,7 @@ class BuildDSlave(object):
             os.remove(self.cachePath("buildlog"))
             self._log = None
         self.waitingfiles = {}
+        self.builddependencies = ""
         self.manager = None
         self.buildstatus = BuildStatus.OK
 

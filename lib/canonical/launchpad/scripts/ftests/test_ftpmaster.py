@@ -3,7 +3,7 @@
 
 __metaclass__ = type
 
-from unittest import TestCase, TestLoader
+from unittest import TestLoader
 import shutil
 import subprocess
 import os
@@ -22,7 +22,7 @@ from canonical.launchpad.scripts.ftpmaster import (
 from canonical.lp.dbschema import (
     PackagePublishingPocket, PackagePublishingPriority)
 
-# XXX cprov 20060515: {create, remove}TestArchive functions should be
+# XXX cprov 2006-05-15: {create, remove}TestArchive functions should be
 # moved to the publisher test domain as soon as we have it.
 def createTestArchive():
     """Creates a fresh test archive based on sampledata."""
@@ -85,7 +85,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             component_name='main', section_name='base', priority_name='extra')
         changer.initialize()
         self.assertEqual(self.ubuntu, changer.distro)
-        self.assertEqual(self.hoary, changer.distrorelease)
+        self.assertEqual(self.hoary, changer.distroseries)
         self.assertEqual(PackagePublishingPocket.RELEASE, changer.pocket)
         self.assertEqual(self.component_main, changer.component)
         self.assertEqual(self.section_base, changer.section)
@@ -166,12 +166,13 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
     def test_initialize_full_suite(self):
         """ArchiveOverrider accepts full suite name.
 
-        It split suite name into 'distrorelease' and 'pocket' attributes after
+        It split suite name into 'distroseries' and 'pocket' attributes after
         initialize().
         """
-        # XXX cprov 20060424: change-override API doesn't handle pockets
+        # XXX cprov 2006-04-24: change-override API doesn't handle pockets
         # properly yet. It may need a deep redesign on how we model the
-        # packages meta-classes (SourcePackage, DistributionSourcePackage, etc)
+        # packages meta-classes (SourcePackage, DistributionSourcePackage,
+        # etc)
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
             component_name='main', section_name='base', priority_name='extra')
@@ -222,7 +223,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         """Check processSourceChange method call.
 
         It simply wraps changeOverride method on
-        IDistroreleaseSourcePackageRelease, which is already tested in place.
+        IDistroSeriesSourcePackageRelease, which is already tested in place.
         Inspect the log to verify if the correct source was picked and correct
         arguments was passed.
         """
@@ -256,10 +257,10 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "ERROR: 'mozilla-firefox' source isn't published in hoary")
 
     def test_processBinaryChange_success(self):
-        """Check processBinaryChange() method call.
+        """Check if processBinaryChange() picks the correct binary.
 
         It simply wraps changeOverride method on
-        IDistroArchReleaseBinaryPackage, which is already tested in place.
+        IDistroArchSeriesBinaryPackage, which is already tested in place.
         Inspect the log messages, check if the correct binary was picked
         and correct argument was passed.
         """
@@ -292,7 +293,7 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
             "INFO: Override Priority to: 'EXTRA'\n"
-            "ERROR: 'evolution' binary not found in warty/hppa")
+            "ERROR: 'evolution' binary not found.")
 
     def test_processChildrenChange_success(self):
         """processChildrenChanges, modify the source and its binary children.
@@ -302,20 +303,20 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         Inspect the log and to ensure we are passing correct arguments and
         picking the correct source.
         """
-        # XXX cprov 20060424: this test needs to be extended to check the
-        # behaviour when there are published binaries (needs richer sampledata)
+        # XXX cprov 2006-04-24: this test needs to be extended to check the
+        # behaviour when there are published binaries (needs richer
+        # sampledata)
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='warty',
             component_name='main', section_name='base',
-            priority_name='important')
+            priority_name='extra')
         changer.initialize()
         changer.processChildrenChange('mozilla-firefox')
         self.assertEqual(
             self.log.read(),
             "INFO: Override Component to: 'main'\n"
             "INFO: Override Section to: 'base'\n"
-            "INFO: Override Priority to: 'IMPORTANT'\n"
-            "ERROR: 'mozilla-firefox' binary isn't published in warty/hppa\n"
+            "INFO: Override Priority to: 'EXTRA'\n"
             "INFO: 'mozilla-firefox/main/base/EXTRA' "
                 "binary overridden in warty/i386")
 
@@ -370,7 +371,7 @@ class TestArchiveCruftChecker(LaunchpadZopelessTestCase):
             archive_path=self.archive_path)
         checker.initialize()
         self.assertEqual(self.ubuntutest, checker.distro)
-        self.assertEqual(self.breezy_autotest, checker.distrorelease)
+        self.assertEqual(self.breezy_autotest, checker.distroseries)
         self.assertEqual(PackagePublishingPocket.RELEASE, checker.pocket)
         self.assertEqual(0, len(checker.nbs_to_remove))
         self.assertEqual(0, len(checker.real_nbs))

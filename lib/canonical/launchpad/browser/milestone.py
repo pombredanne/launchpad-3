@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 """Milestone views."""
 
@@ -16,7 +16,7 @@ __all__ = [
 from zope.component import getUtility
 
 from canonical.launchpad.interfaces import (ILaunchBag, IMilestone,
-    IMilestoneSet, IBugTaskSet, BugTaskSearchParams)
+    IMilestoneSet, IBugTaskSet, BugTaskSearchParams, IProjectMilestone)
 
 from canonical.cachedproperty import cachedproperty
 
@@ -32,7 +32,7 @@ class MilestoneSetNavigation(GetitemNavigation):
     usedfor = IMilestoneSet
 
 
-# XXX: 20051214 jamesh
+# XXX: jamesh 2005-12-14:
 # This class is required in order to make use of a side effect of
 # Navigation.publishTraverse: adding context objects to
 # request.traversed_objects.
@@ -64,12 +64,18 @@ class MilestoneContextMenu(ContextMenu):
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
         text = 'Change details'
-        return Link('+edit', text, icon='edit')
+        # ProjectMilestones are virtual milestones and do not have
+        # any properties which can be edited.
+        enabled = not IProjectMilestone.providedBy(self.context)
+        return Link('+edit', text, icon='edit', enabled=enabled)
 
     @enabled_with_permission('launchpad.Admin')
     def admin(self):
         text = 'Administer'
-        return Link('+admin', text, icon='edit')
+        # ProjectMilestones are virtual milestones and provide no details
+        # that can/must be administrated.
+        enabled = not IProjectMilestone.providedBy(self.context)
+        return Link('+admin', text, icon='edit', enabled=enabled)
 
 
 class MilestoneView(LaunchpadView):
@@ -88,11 +94,19 @@ class MilestoneView(LaunchpadView):
         tasks = getUtility(IBugTaskSet).search(params) 
         return list(tasks)
 
+    @property
+    def is_project_milestone(self):
+        """Check, if the current milestone is a project milestone.
+
+        Return true, if the current milestone is a project milestone,
+        else return False."""
+        return IProjectMilestone.providedBy(self.context)
+
 
 class MilestoneAddView:
     def create(self, name, dateexpected=None):
         """We will use the newMilestone method on the ProductSeries or
-        Distrorelease context to make the milestone."""
+        DistroSeries context to make the milestone."""
         return self.context.newMilestone(name, dateexpected=dateexpected)
 
     def add(self, content):

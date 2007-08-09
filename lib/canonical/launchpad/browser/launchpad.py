@@ -11,7 +11,6 @@ __all__ = [
     'RosettaContextMenu',
     'MaloneContextMenu',
     'LaunchpadRootNavigation',
-    'LaunchpadRootDynMenu',
     'MaloneApplicationNavigation',
     'SoftTimeoutView',
     'LaunchpadRootIndexView',
@@ -22,7 +21,6 @@ __all__ = [
     'StructuralHeaderPresentation',
     'StructuralObjectPresentation',
     'ApplicationButtons',
-    'SearchProjectsView',
     'DefaultShortLink',
     'BrowserWindowDimensions',
     ]
@@ -52,6 +50,7 @@ from zope.security.proxy import isinstance as zope_isinstance
 from BeautifulSoup import BeautifulStoneSoup, Comment
 
 import canonical.launchpad.layers
+from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
@@ -62,15 +61,19 @@ from canonical.launchpad.interfaces import (
     IBugSet,
     IBugTrackerSet,
     IBuilderSet,
+    ICodeImportSet,
     ICodeOfConductSet,
     ICveSet,
     IDistributionSet,
     IKarmaActionSet,
+    ILanguageSet,
     ILaunchBag,
     ILaunchpadCelebrities,
     ILaunchpadRoot,
+    ILaunchpadStatisticSet,
     ILoginTokenSet,
     IMaloneApplication,
+    IMentoringOfferSet,
     IPersonSet,
     IPillarNameSet,
     IPOTemplateNameSet,
@@ -92,14 +95,13 @@ from canonical.launchpad.components.cal import MergedCalendar
 from canonical.launchpad.webapp import (
     StandardLaunchpadFacets, ContextMenu, Link, LaunchpadView,
     LaunchpadFormView, Navigation, stepto, canonical_url, custom_widget)
-from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.webapp.publisher import RedirectionView
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
 
 
-# XXX SteveAlexander, 2005-09-22, this is imported here because there is no
+# XXX SteveAlexander 2005-09-22: this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
 #     be factored out into a generally available adapter for both this
 #     code and for TALES namespace code to use.
@@ -131,11 +133,12 @@ class MaloneApplicationNavigation(Navigation):
 
     @stepto('projects')
     def projects(self):
-        return getUtility(IProjectSet)
+        return getUtility(IProductSet)
 
     @stepto('products')
     def products(self):
-        return getUtility(IProductSet)
+        return self.redirectSubTree(
+            canonical_url(getUtility(IProductSet)), status=301)
 
     def traverse(self, name):
         # Make /bugs/$bug.id, /bugs/$bug.name /malone/$bug.name and
@@ -180,10 +183,8 @@ class Breadcrumbs(LaunchpadView):
         crumbs = list(self.request.breadcrumbs)
 
         L = []
-        firsturl = '/'
         firsttext = 'Home'
-        from canonical.launchpad.webapp.vhosts import allvhosts
-        rooturl = allvhosts.configs['mainsite'].rooturl
+        firsturl = allvhosts.configs['mainsite'].rooturl
 
         L.append(
             '<li lpm:mid="root" class="item">'
@@ -193,19 +194,7 @@ class Breadcrumbs(LaunchpadView):
 
         if crumbs:
 
-            #lastcrumb = crumbs.pop()
-
             for crumb in crumbs:
-                # XXX: SteveAlexander, 2006-06-09, this is putting the
-                #      full URL in as the lpm:mid.  We want just the path
-                #      here instead.
-                ##L.append('<li class="item" lpm:mid="%s/+menudata">'
-                ##         '<a href="%s">%s</a>'
-                ##         '</li>'
-                ##         % (crumb.url, crumb.url, cgi.escape(crumb.text)))
-
-                # Disable these menus for now.  To be re-enabled on the ui 1.0
-                # branch.
                 if crumb.has_menu:
                     menudata = ' lpm:mid="%s/+menudata"' % crumb.url
                     cssclass = 'breadcrumb container'
@@ -218,11 +207,6 @@ class Breadcrumbs(LaunchpadView):
                          % (menudata, crumb.url, cssclass,
                             cgi.escape(crumb.text)))
 
-            #L.append(
-            #    '<li class="item">'
-            #    '<a href="%s">%s</a>'
-            #    '</li>'
-            #    % (lastcrumb.url, cgi.escape(lastcrumb.text)))
         return u'\n'.join(L)
 
 
@@ -258,8 +242,7 @@ class MaintenanceMessage:
             try:
                 maintenancetime = parseDatetimetz(message)
             except DateTimeError:
-                # XXX log a warning here.
-                #     SteveAlexander, 2005-09-22
+                # XXX SteveAlexander 2005-09-22: log a warning here.
                 return ''
             nowtz = datetime.utcnow().replace(tzinfo=tzinfo(0))
             timeleft = maintenancetime - nowtz
@@ -327,7 +310,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
 
 class MaloneContextMenu(ContextMenu):
-    # XXX 20060327 mpt: No longer visible on Bugs front page.
+    # XXX mpt 2006-03-27: No longer visible on Bugs front page.
     usedfor = IMaloneApplication
     links = ['cvetracker']
 
@@ -337,12 +320,12 @@ class MaloneContextMenu(ContextMenu):
 
 
 class RosettaContextMenu(ContextMenu):
-    # XXX 20060327 mpt: No longer visible on Translations front page.
+    # XXX mpt 2006-03-27: No longer visible on Translations front page.
     usedfor = IRosettaApplication
     links = ['about', 'preferences', 'import_queue', 'translation_groups']
 
     def about(self):
-        text = 'About Rosetta'
+        text = 'About Launchpad Translations'
         rosetta_application = getUtility(IRosettaApplication)
         url = '/'.join([canonical_url(rosetta_application), '+about'])
         return Link(url, text)
@@ -443,32 +426,49 @@ class LaunchpadRootNavigation(Navigation):
 
     usedfor = ILaunchpadRoot
 
+    @stepto('support')
+    def redirect_support(self):
+        """Redirect /support to Answers root site."""
+        target_url= canonical_url(
+            getUtility(ILaunchpadRoot), rootsite='answers')
+        return self.redirectSubTree(target_url + 'questions', status=301)
+
     stepto_utilities = {
-        'products': IProductSet,
-        'people': IPersonSet,
-        'distros': IDistributionSet,
-        'sourcepackagenames': ISourcePackageNameSet,
         'binarypackagenames': IBinaryPackageNameSet,
-        'projects': IProjectSet,
-        'token': ILoginTokenSet,
-        'karmaaction': IKarmaActionSet,
-        'potemplatenames': IPOTemplateNameSet,
-        'codeofconduct': ICodeOfConductSet,
+        'bounties': IBountySet,
         'bugs': IMaloneApplication,
+        '+builds': IBuilderSet,
+        '+code': IBazaarApplication,
+        '+code-imports': ICodeImportSet,
+        'codeofconduct': ICodeOfConductSet,
+        'distros': IDistributionSet,
+        'karmaaction': IKarmaActionSet,
+        '+languages': ILanguageSet,
+        '+mentoring': IMentoringOfferSet,
+        'people': IPersonSet,
+        'potemplatenames': IPOTemplateNameSet,
+        'projects': IProductSet,
+        'projectgroups': IProjectSet,
         'registry': IRegistryApplication,
+        'sourcepackagenames': ISourcePackageNameSet,
         'specs': ISpecificationSet,
         'sprints': ISprintSet,
-        'support': IQuestionSet,
+        '+statistics': ILaunchpadStatisticSet,
+        'token': ILoginTokenSet,
+        '+groups': ITranslationGroupSet,
         'translations': IRosettaApplication,
-        '+builds': IBuilderSet,
-        'bounties': IBountySet,
-        '+code': IBazaarApplication,
+        'questions': IQuestionSet,
         # These three have been renamed, and no redirects done, as the old
         # urls now point to the product pages.
         #'bazaar': IBazaarApplication,
         #'malone': IMaloneApplication,
         #'rosetta': IRosettaApplication,
         }
+
+    @stepto('products')
+    def products(self):
+        return self.redirectSubTree(
+            canonical_url(getUtility(IProductSet)), status=301)
 
     def traverse(self, name):
         if name in self.stepto_utilities:
@@ -495,7 +495,7 @@ class LaunchpadRootNavigation(Navigation):
 
     @stepto('calendar')
     def calendar(self):
-        # XXX permission=launchpad.AnyPerson
+        # XXX SteveAlexander 2005-10-06: permission=launchpad.AnyPerson
         return MergedCalendar()
 
     def _getBetaRedirectionView(self):
@@ -547,26 +547,6 @@ class LaunchpadRootNavigation(Navigation):
         return Navigation.publishTraverse(self, request, name)
 
 
-class LaunchpadRootDynMenu(DynMenu):
-
-    menus = {
-        'contributions': 'contributionsMenu',
-        }
-
-    def contributionsMenu(self):
-        if self.user is not None:
-            L = [self.makeBreadcrumbLink(item)
-                 for item in self.user.iterTopProjectsContributedTo()]
-            L.sort(key=lambda item: item.text.lower())
-            if L:
-                for obj in L:
-                    yield obj
-            else:
-                yield self.makeLink(
-                    'Projects you contribute to go here.', target=None)
-            yield self.makeLink('See all projects...', target='/products')
-
-
 class SoftTimeoutView(LaunchpadView):
 
     def __call__(self):
@@ -600,7 +580,7 @@ class LaunchpadRootIndexView(LaunchpadView):
     def _getCookieParams(self):
         """Return a string containing the 'domain' and 'secure' parameters."""
         params = '; Path=/'
-        # XXX: 20070206 jamesh
+        # XXX: jamesh 2007-02-06:
         # This code to select the cookie domain comes from webapp/session.py
         # It should probably be factored out.
         uri = URI(self.request.getURL())
@@ -965,7 +945,7 @@ class Button:
             '  <img'
             '    width="64"'
             '    height="64"'
-            '    alt=""'
+            '    alt="%(buttonname)s"'
             '    src="/+icing/app-%(buttonname)s-sml-active.gif"'
             '    title="%(text)s"'
             '  />\n'
@@ -977,7 +957,7 @@ class Button:
             '  <img'
             '    width="64"'
             '    height="64"'
-            '    alt=""'
+            '    alt="%(buttonname)s"'
             '    src="/+icing/app-%(buttonname)s-sml.gif"'
             '    title="%(text)s"'
             '  />\n'
@@ -989,7 +969,7 @@ class Button:
             '  <img'
             '    width="146"'
             '    height="146"'
-            '    alt=""'
+            '    alt="%(buttonname)s"'
             '    src="/+icing/app-%(buttonname)s.gif"'
             '    title="%(text)s"'
             '  />\n'
@@ -1008,7 +988,7 @@ class ProductsButton(Button):
 
     def makeReplacementDict(self):
         return dict(
-            url='%sproducts/' % allvhosts.configs['mainsite'].rooturl,
+            url='%sprojects/' % allvhosts.configs['mainsite'].rooturl,
             buttonname=self.name,
             text=self.text)
 
@@ -1050,30 +1030,6 @@ class ApplicationButtons(LaunchpadView):
             raise AssertionError(
                 'Max of one path item after +applicationbuttons')
         return self
-
-
-class SearchProjectsView(LaunchpadView):
-    """The page where people can search for Projects/Products/Distros."""
-
-    results = None
-    search_string = ""
-    max_results_to_display = config.launchpad.default_batch_size
-
-    def initialize(self):
-        form = self.request.form
-        self.search_string = form.get('q')
-        if not self.search_string:
-            return
-
-        search_string = self.search_string.lower()
-        # We use a limit bigger than self.max_results_to_display so that we
-        # know when we had too many results and we can tell the user that some
-        # of them are not being displayed.
-        limit = self.max_results_to_display + 1
-        self.results = getUtility(IPillarNameSet).search(search_string, limit)
-
-    def tooManyResultsFound(self):
-        return len(self.results) > self.max_results_to_display
 
 
 class DefaultShortLink(LaunchpadView):

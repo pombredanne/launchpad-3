@@ -35,7 +35,7 @@ AnswerTrackerHandler.
     >>> def send_question_email(question_id, from_addr, subject, body):
     ...     login(from_addr)
     ...     lines = ['From: %s' % from_addr]
-    ...     to_addr = 'ticket%s@support.launchpad.net' % question_id
+    ...     to_addr = 'question%s@answers.launchpad.net' % question_id
     ...     lines.append('To: %s' % to_addr)
     ...     date = mktime_tz(now.next().utctimetuple() + (0, ))
     ...     lines.append('Date: %s' % formatdate(date))
@@ -52,7 +52,7 @@ AnswerTrackerHandler.
     ...         return None
 
 It only processes emails which are sent to an address of the form
-'ticket<ID>@support.launchpad.net', where <ID> is the question id. (The
+'question<ID>@answers.launchpad.net', where <ID> is the question id. (The
 domain is configured through the config.answertracker.email_domain
 configuration variable.)
 
@@ -146,7 +146,7 @@ For example, from the Open state:
 
 And from the Needs information state:
 
-    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> from canonical.launchpad.interfaces import QuestionStatus
     >>> setQuestionStatus(question, QuestionStatus.NEEDSINFO)
 
     >>> msgid =  send_question_email(
@@ -348,18 +348,22 @@ The general mail processor delegates all emails to the
 config.answertracker.email_domain to the AnswerTrackerHandler.
 
     >>> from canonical.config import config
-    >>> to_addr = 'ticket1@%s' % config.answertracker.email_domain
     >>> raw_msg = """From: test@canonical.com
-    ... X-Original-To: %(to_addr)s
+    ... X-Original-To: question1@answers.launchpad.net
     ... Subject: A new comment
     ... Message-Id: <comment1@localhost>
     ... Date: Mon, 02 Jan 2006 15:42:07 -0000
     ...
     ... This is a new comment.
-    ... """ % {'to_addr': to_addr}
+    ... """
     >>> from canonical.launchpad.interfaces import IQuestionSet
-    >>> from canonical.launchpad.mail.stub import test_emails
-    >>> test_emails.append(('test@canonical.com', [to_addr], raw_msg))
+    >>> from canonical.launchpad.mail import stub
+
+    # Clear email queue of outgoing notifications.
+    >>> stub.test_emails = []
+    >>> stub.test_emails.append((
+    ...     'test@canonical.com', ['question1@answers.launchpad.net'],
+    ...     raw_msg))
 
     >>> from canonical.launchpad.mail.incoming import handleMail
     >>> handleMail()
@@ -367,4 +371,26 @@ config.answertracker.email_domain to the AnswerTrackerHandler.
     >>> question_one = getUtility(IQuestionSet).get(1)
     >>> '<comment1@localhost>' in [
     ...     comment.rfc822msgid for comment in question_one.messages]
+    True
+
+For backward compatibility with notifications sent before the support
+tracker was renamed to Answer Tracker, we still accept emails sent
+to the old ticket<ID>@support.launchpad.net address:
+
+    >>> raw_msg = """From: test@canonical.com
+    ... X-Original-To: ticket11@support.launchpad.net
+    ... Subject: Another comment
+    ... Message-Id: <comment2@localhost>
+    ... Date: Mon, 23 Apr 2007 16:00:00 -0000
+    ...
+    ... This is another comment.
+    ... """
+    >>> stub.test_emails.append((
+    ...     'test@canonical.com', ['ticket11@support.launchpad.net'],
+    ...     raw_msg))
+    >>> handleMail()
+
+    >>> question_11 = getUtility(IQuestionSet).get(11)
+    >>> '<comment2@localhost>' in [
+    ...     comment.rfc822msgid for comment in question_11.messages]
     True

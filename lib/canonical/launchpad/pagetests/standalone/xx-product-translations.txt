@@ -22,7 +22,7 @@ for a distribution.
   ...Template "netapplet" in NetApplet trunk...
   ...
 
-If a product is not set up for translations in Rosetta, and you are its
+If a product is not set up for translations in Launchpad, and you are its
 registrant or an admin, the Translations page suggests that you set it up for
 translation, or link the product to a translatable package.
 
@@ -37,11 +37,11 @@ translation, or link the product to a translatable package.
     ...How to set up translations...
     ...
     >>> registrant.getLink(
-    ...     url=('http://translations.launchpad.dev/gnomebaker/trunk/'
+    ...     url=('/gnomebaker/trunk/'
     ...          '+translations-upload')) is not None
     True
     >>> registrant.getLink(
-    ...     url='http://translations.launchpad.dev/gnomebaker/+packages'
+    ...     url='/gnomebaker/+packages'
     ...     ) is not None
     True
 
@@ -63,11 +63,11 @@ contact the product's registrant.
 
 It omits the registrant-only links ...
 
-    >>> unprivileged.getLink(url='http://launchpad.dev/gnomebaker/trunk/+translations-upload')
+    >>> unprivileged.getLink(url='/gnomebaker/trunk/+translations-upload')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
-    >>> unprivileged.getLink(url='http://launchpad.dev/gnomebaker/+packages')
+    >>> unprivileged.getLink(url='/gnomebaker/+packages')
     Traceback (most recent call last):
     ...
     LinkNotFoundError

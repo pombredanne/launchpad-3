@@ -9,7 +9,7 @@ import re, sys
 first_re = re.compile(r"^([a-z0-9][a-z0-9\\+\\.\\-]+)\s+\(([^ ]+)\)")
 urgency_re = re.compile(r'(?:urgency|priority)=([^ ,;:.]+)')
 
-from sourcerer.deb.version import Version
+from canonical.archivepublisher.debversion import Version
 
 def parse_first_line(line):
     # SRCPKGNAME (VERSION).*((urgency|priority)=\S+)?
@@ -22,7 +22,7 @@ def parse_first_line(line):
     urgency = None
     match = urgency_re.search(line)
     if match:
-        # XXX: why do we do lower() here?
+        # XXX kiko 2005-11-05: Why do we do lower() here?
         urgency = match.group(1).lower()
 
     return (srcpkg, version, urgency)

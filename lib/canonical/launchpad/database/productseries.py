@@ -24,7 +24,7 @@ from canonical.database.sqlbase import (
 from canonical.lp.dbschema import (
     ImportStatus, PackagingType, RevisionControlSystems,
     SpecificationSort, SpecificationGoalStatus, SpecificationFilter,
-    SpecificationStatus)
+    SpecificationDefinitionStatus, SpecificationImplementationStatus)
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.launchpad.interfaces import (
@@ -106,6 +106,14 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                             orderBy=['-id'])
 
     @property
+    def release_files(self):
+        """See IProductSeries."""
+        files = set()
+        for release in self.releases:
+            files = files.union(release.files)
+        return files
+
+    @property
     def displayname(self):
         return self.name
 
@@ -122,9 +130,19 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             productseries=self, visible=True, orderBy=['dateexpected', 'name'])
 
     @property
+    def parent(self):
+        """See IProductSeries."""
+        return self.product
+
+    @property
+    def bugtargetdisplayname(self):
+        """See IBugTarget."""
+        return "%s %s" % (self.product.displayname, self.name)
+
+    @property
     def bugtargetname(self):
         """See IBugTarget."""
-        return "%s %s (upstream)" % (self.product.name, self.name)
+        return "%s/%s" % (self.product.name, self.name)
 
     @property
     def drivers(self):
@@ -134,6 +152,16 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         drivers = drivers.union(self.product.drivers)
         drivers.discard(None)
         return sorted(drivers, key=lambda x: x.browsername)
+
+    @property
+    def bugcontact(self):
+        """See IProductSeries."""
+        return self.product.bugcontact
+
+    @property
+    def security_contact(self):
+        """See IProductSeries."""
+        return self.product.security_contact
 
     @property
     def series_branch(self):
@@ -178,9 +206,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         from canonical.launchpad.database.sourcepackage import SourcePackage
         ret = Packaging.selectBy(productseries=self)
         ret = [SourcePackage(sourcepackagename=r.sourcepackagename,
-                             distrorelease=r.distrorelease)
+                             distroseries=r.distroseries)
                     for r in ret]
-        ret.sort(key=lambda a: a.distribution.name + a.distrorelease.version
+        ret.sort(key=lambda a: a.distribution.name + a.distroseries.version
                  + a.sourcepackagename.name)
         return ret
 
@@ -236,7 +264,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
-            order = ['-priority', 'status', 'name']
+            order = ['-priority', 'definition_status', 'name']
         elif sort == SpecificationSort.DATE:
             # we are showing specs for a GOAL, so under some circumstances
             # we care about the order in which the specs were nominated for
@@ -271,8 +299,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
-        
+            query += (' AND Specification.implementation_status = %s' %
+              quote(SpecificationImplementationStatus.INFORMATIONAL))
+
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
         completeness =  Specification.completeness_clause
@@ -297,9 +326,9 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationStatus.OBSOLETE,
-                          SpecificationStatus.SUPERSEDED)
+            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                          SpecificationDefinitionStatus.SUPERSEDED)
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -348,19 +377,19 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 return release
         return None
 
-    def getPackage(self, distrorelease):
+    def getPackage(self, distroseries):
         """See IProductSeries."""
         for pkg in self.sourcepackages:
-            if pkg.distrorelease == distrorelease:
+            if pkg.distroseries == distroseries:
                 return pkg
-        # XXX sabdfl 23/06/05 this needs to search through the ancestry of
-        # the distrorelease to try to find a relevant packaging record
-        raise NotFoundError(distrorelease)
+        # XXX sabdfl 2005-06-23: This needs to search through the ancestry of
+        # the distroseries to try to find a relevant packaging record
+        raise NotFoundError(distroseries)
 
-    def setPackaging(self, distrorelease, sourcepackagename, owner):
+    def setPackaging(self, distroseries, sourcepackagename, owner):
         """See IProductSeries."""
         for pkg in self.packagings:
-            if pkg.distrorelease == distrorelease:
+            if pkg.distroseries == distroseries:
                 # we have found a matching Packaging record
                 if pkg.sourcepackagename == sourcepackagename:
                     # and it has the same source package name
@@ -374,7 +403,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # ok, we didn't find a packaging record that matches, let's go ahead
         # and create one
-        pkg = Packaging(distrorelease=distrorelease,
+        pkg = Packaging(distroseries=distroseries,
             sourcepackagename=sourcepackagename, productseries=self,
             packaging=PackagingType.PRIME,
             owner=owner)
@@ -385,15 +414,62 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         """See IProductSeries."""
         history = []
         for pkging in self.packagings:
-            if pkging.distrorelease.distribution == distribution:
+            if pkging.distroseries.distribution == distribution:
                 history.append(pkging)
         return history
 
     def certifyForSync(self):
         """Enable the sync for processing."""
         self.dateprocessapproved = UTC_NOW
-        self.syncinterval = datetime.timedelta(1)
+        if self.rcstype == RevisionControlSystems.CVS:
+            self.syncinterval = datetime.timedelta(hours=12)
+        elif self.rcstype == RevisionControlSystems.SVN:
+            self.syncinterval = datetime.timedelta(hours=6)
+        else:
+            raise AssertionError('Unknown default sync interval for rcs type: %s'
+                                 % self.rcstype.title)
         self.importstatus = ImportStatus.PROCESSING
+
+    def markTestFailed(self):
+        """See `IProductSeriesSourceAdmin`."""
+        self.importstatus = ImportStatus.TESTFAILED
+        self.import_branch = None
+        self.dateautotested = None
+        self.dateprocessapproved = None
+        self.datesyncapproved = None
+        self.datelastsynced = None
+        self.syncinterval = None
+
+    def markDontSync(self):
+        """See `IProductSeriesSourceAdmin`."""
+        self.importstatus = ImportStatus.DONTSYNC
+        self.import_branch = None
+        self.dateautotested = None
+        self.dateprocessapproved = None
+        self.datesyncapproved = None
+        self.datelastsynced = None
+        self.datestarted = None
+        self.datefinished = None
+        self.syncinterval = None
+
+    def deleteImport(self):
+        """See `IProductSeriesSourceAdmin`."""
+        self.importstatus = None
+        self.import_branch = None
+        self.dateautotested = None
+        self.dateprocessapproved = None
+        self.datesyncapproved = None
+        self.datelastsynced = None
+        self.date_published_sync = None
+        self.syncinterval = None
+        self.datestarted = None
+        self.datefinished = None
+        self.rcstype = None
+        self.cvsroot = None
+        self.cvsmodule = None
+        self.cvsbranch = None
+        self.cvstarfileurl = None
+        self.svnrepository = None
 
     def syncCertified(self):
         """Return true or false indicating if the sync is enabled"""
@@ -404,7 +480,7 @@ class ProductSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         return self.importstatus == ImportStatus.SYNCING
 
     def enableAutoSync(self):
-        """Enable autosyncing?"""
+        """Enable autosyncing."""
         self.datesyncapproved = UTC_NOW
         self.importstatus = ImportStatus.SYNCING
 
@@ -521,7 +597,7 @@ class ProductSeriesSet:
             if ready is not None:
                 subqueries.append('Project.active IS TRUE')
                 subqueries.append('Project.reviewed IS TRUE')
-            queries.append('(Product.project IS NULL OR (%s))' % 
+            queries.append('(Product.project IS NULL OR (%s))' %
                            " AND ".join(subqueries))
 
             clauseTables.add('Project')
@@ -550,4 +626,3 @@ class ProductSeriesSet:
         if result is None:
             return default
         return result
-

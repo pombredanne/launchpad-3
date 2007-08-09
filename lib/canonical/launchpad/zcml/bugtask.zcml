@@ -27,44 +27,52 @@
     <content class="canonical.launchpad.database.BugTask">
         <allow attributes="id bug bugID target date_assigned datecreated
                            date_confirmed date_inprogress date_closed
-                           bug_subscribers" />
+                           bug_subscribers is_complete canTransitionToStatus
+                           isMentor canMentor isSubscribed" />
         <require
             permission="launchpad.View"
-            attributes="product productseries sourcepackagename distribution
-                        distrorelease milestone status statusexplanation
+            attributes="bugtargetname bugtargetdisplayname
+                        product productseries sourcepackagename distribution
+                        distroseries milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
                         title related_tasks other_affected_pillars
-                        asEmailHeaderValue getDelta
+                        asEmailHeaderValue getDelta pillar
                         target_uses_malone bugtask_branches
-                        conjoined_master conjoined_slave" />
+                        conjoined_master conjoined_slave subscribe" />
         <require
             permission="launchpad.Edit"
             attributes="setStatusFromDebbugs setImportanceFromDebbugs
                         updateTargetNameCache transitionToStatus
                         transitionToAssignee" />
 
-        <!-- XXX, Brad Bollenbach, 2006-09-29: The permission checking for
-        milestone and importance is further restricted in the browser view code
-        (BugTaskEditView). This is bad. See https://launchpad.net/bugs/63000 .
-        -->
+        <!-- XXX Brad Bollenbach 2006-09-29 bug=63000:
+        The permission checking for milestone and importance is further
+        restricted in the browser view code (BugTaskEditView). -->
         <require
             permission="launchpad.Edit"
             set_attributes="product productseries sourcepackagename distribution
-                            distrorelease milestone statusexplanation
+                            distroseries milestone statusexplanation
                             importance bugwatch datecreated
                             age owner targetname title related_tasks
                             statusdisplayhtml statuselsewhere
                             setStatusFromDebbugs setImportanceFromDebbugs" />
+        <require
+            permission="launchpad.AnyPerson"
+            attributes="offerMentoring retractMentoring"
+            />
     </content>
 
     <browser:defaultView
         for="canonical.launchpad.interfaces.IBugTask"
-        name="+index" />
+        name="+index"
+        />
 
     <browser:url
         for="canonical.launchpad.interfaces.IBugTask"
         path_expression="string:+bug/${bug/id}"
-        attribute_to_parent="target" />
+        attribute_to_parent="target"
+        rootsite="bugs"
+        />
 
     <browser:navigation
         module="canonical.launchpad.browser"
@@ -195,8 +203,8 @@
         name="+nominate"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugNominationView"
-        permission="launchpad.View"
-        template="../templates/bug-nominate-for-release.pt" />
+        permission="launchpad.Edit"
+        template="../templates/bug-nominate-for-series.pt" />
 
     <browser:generalform
         name="+addbranch"
@@ -378,12 +386,12 @@
     </browser:generalform>
 
     <browser:defaultView
-        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
+        for="canonical.launchpad.interfaces.IDistroSeriesBugTask"
         name="+index" />
 
     <browser:generalform
         name="+editstatus-page"
-        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
+        for="canonical.launchpad.interfaces.IDistroSeriesBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename milestone status importance assignee
@@ -402,7 +410,7 @@
 
     <browser:generalform
         name="+edit-form"
-        for="canonical.launchpad.interfaces.IDistroReleaseBugTask"
+        for="canonical.launchpad.interfaces.IDistroSeriesBugTask"
         class="canonical.launchpad.browser.bugtask.BugTaskEditView"
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename milestone status importance assignee
@@ -465,10 +473,5 @@
     </content>
 
   </facet>
-
-  <vocabulary
-    name="AdvancedBugTaskUpstreamStatus"
-    factory="canonical.launchpad.browser.upstream_status_vocabulary_factory"
-    />
 
 </configure>

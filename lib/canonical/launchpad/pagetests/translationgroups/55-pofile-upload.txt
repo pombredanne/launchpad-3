@@ -1,61 +1,36 @@
-
 First, make sure we can see the page.
 
 Try to get the page when unauthenticated.
 
-  >>> print http(r"""
-  ... GET /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
-  ... """)
-  HTTP/1.1 303 See Other
+  >>> browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/' +
+  ...         'evolution/+pots/evolution-2.2/af/+upload')
+  Traceback (most recent call last):
   ...
-  Location: http://localhost:9000/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload/+login
-  ...
-  <BLANKLINE>
+  Unauthorized:...
 
 And now with valid credentials.
 
-  >>> print http(r"""
-  ... GET /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Afrikaans (af) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
+  >>> admin_browser.open(
+  ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/' +
+  ...         'evolution/+pots/evolution-2.2/af/+upload')
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload
 
 Now hit the upload button, but without giving a file for upload. We get an
 error message back.
 
-  >>> print http(r"""
-  ... POST /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... Content-Type: multipart/form-data; boundary=---------------------------210878615045361411296034445
-  ... 
-  ... -----------------------------210878615045361411296034445
-  ... Content-Disposition: form-data; name="file"; filename=""
-  ... Content-Type: application/octet-stream
-  ... 
-  ... 
-  ... -----------------------------210878615045361411296034445
-  ... Content-Disposition: form-data; name="pofile_upload"
-  ... 
-  ... Upload
-  ... -----------------------------210878615045361411296034445--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Ignored your upload because you didn't select a file to upload...
-  ...
+  >>> admin_browser.getControl('Upload').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload
+  >>> for tag in find_tags_by_class(admin_browser.contents, 'error'):
+  ...     print tag.renderContents()
+  Ignored your upload because you didn't select a file to upload.
 
-Now let's upload one that is published.
+Uploading files with an unkown file format notifies the user that it cannot be handled.
 
-  >>> print http(r"""
-  ... POST /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
-  ... Content-Length: 1452
-  ... Content-Type: multipart/form-data; boundary=---------------------------107090301610607307082078743785
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... 
-  ... -----------------------------107090301610607307082078743785
-  ... Content-Disposition: form-data; name="file"; filename="af.po"
-  ... Content-Type: application/x-po
-  ... 
+  >>> from StringIO import StringIO
+  >>> af_file = '''
   ... # Afrikaans translation for Silky 
   ... # Copyright (C) 2004 Free Software Foundation, Inc.
   ... # This file is distributed under the same license as the silky package.
@@ -79,65 +54,38 @@ Now let's upload one that is published.
   ... #: hello.ycp:20
   ... #, ycp-format
   ... msgid "This program is running as process number %1."
-  ... msgstr "Hierdie program loop as prosesnommer %1."
-  ... 
-  ... -----------------------------107090301610607307082078743785
-  ... Content-Disposition: form-data; name="published"
-  ... 
-  ... on
-  ... -----------------------------107090301610607307082078743785
-  ... Content-Disposition: form-data; name="pofile_upload"
-  ... 
-  ... Upload
-  ... -----------------------------107090301610607307082078743785--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Thank you for your upload. The PO file content will be imported...
+  ... msgstr "Hierdie program loop as prosesnommer %1."'''
+
+  >>> upload = admin_browser.getControl('File')
+  >>> upload.add_file(StringIO(af_file), 'application/msword', 'af.doc')
+  >>> admin_browser.getControl('Upload').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload
+  >>> for tag in find_tags_by_class(admin_browser.contents, 'error'):
+  ...     print tag.renderContents()
+  Ignored your upload because the file you uploaded was not recognised as a file that can be imported.
+
+Now let's upload one that is published.
+
+
+  >>> upload = admin_browser.getControl('File')
+  >>> upload.add_file(StringIO(af_file), 'application/x-po', 'af.po')
+  >>> admin_browser.getControl(name='upload_type').value = ['upstream']
+  >>> admin_browser.getControl('Upload').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload
+  >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
+  ...     print tag.renderContents()
+  Thank you for your upload. The translation content will be imported...
 
 And one that is not published.
 
-  >>> print http(r"""
-  ... POST /ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload HTTP/1.1
-  ... Accept-Language: en-us,en;q=0.7,af;q=0.3
-  ... Content-Length: 1352
-  ... Content-Type: multipart/form-data; boundary=---------------------------14904033691485035791236536155
-  ... Authorization: Basic Y2FybG9zQGNhbm9uaWNhbC5jb206dGVzdA==
-  ... 
-  ... -----------------------------14904033691485035791236536155
-  ... Content-Disposition: form-data; name="file"; filename="af.po"
-  ... Content-Type: application/x-po
-  ... 
-  ... # Afrikaans translation for Silky 
-  ... # Copyright (C) 2004 Free Software Foundation, Inc.
-  ... # This file is distributed under the same license as the silky package.
-  ... # Hanlie Pretorius <hpretorius@pnp.co.za>, 2004.
-  ... #
-  ... msgid ""
-  ... msgstr ""
-  ... "Project-Id-Version: hello-pascal-0.13.1\n"
-  ... "Report-Msgid-Bugs-To: bug-gnu-gettext@gnu.org\n"
-  ... "PO-Revision-Date: 2003-12-31 10:30+2\n"
-  ... "Last-Translator: Ysbeer <ysbeer@af.org.za>\n"
-  ... "Language-Team: Afrikaans <i18n@af.org.za>\n"
-  ... "MIME-Version: 1.0\n"
-  ... "Content-Type: text/plain; charset=UTF-8\n"
-  ... "Content-Transfer-Encoding: 8bit\n"
-  ... 
-  ... #: hello.hello_world
-  ... msgid "Hello, world!"
-  ... msgstr "Hallo wêreld!"
-  ... 
-  ... #: hello.running_as
-  ... #, object-pascal-format
-  ... msgid "This program is running as process number %d."
-  ... msgstr "Hierdie program loop as prosesnommer %d."
-  ... 
-  ... -----------------------------14904033691485035791236536155
-  ... Content-Disposition: form-data; name="pofile_upload"
-  ... 
-  ... Upload
-  ... -----------------------------14904033691485035791236536155--
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Thank you for your upload. The PO file content will be imported...
-  ...Upload a new version of Afrikaans (af) translation of evolution-2.2 in Ubuntu Hoary package "evolution"...
+  >>> upload = admin_browser.getControl('File')
+  >>> upload.add_file(StringIO(af_file), 'application/x-po', 'af.po')
+  >>> admin_browser.getControl(name='upload_type').value = ['user']
+  >>> admin_browser.getControl('Upload').click()
+  >>> print admin_browser.url
+  http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/af/+upload
+  >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
+  ...     print tag.renderContents()
+  Thank you for your upload. The translation content will be imported...

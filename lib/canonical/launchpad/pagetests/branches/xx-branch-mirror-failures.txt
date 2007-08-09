@@ -1,29 +1,53 @@
 If a branch fails to mirror, that information is displayed in the mirror's
 page, together with the last failure message we got when mirroring.
 
-  >>> print http(r"""
-  ... GET /~jblack/+junk/devel-1.0 HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Launchpad could not mirror this branch...
-  ...I do not like Arch, so I am pretending it failed to mirror...
+    >>> anon_browser.open('http://launchpad.dev/~jblack/+junk/devel-1.0')
+    >>> content = anon_browser.contents
+    >>> mirror_failure_tag = find_tag_by_id(content, 'mirror-failure')
+    >>> print extract_text(mirror_failure_tag)
+    Launchpad could not mirror this branch on 2006-04-08.
+    The error was:
+    I do not like Arch, so I am pretending it failed to mirror.
 
 If a branch failed to mirror but no failure message was stored, we properly
 report the absence of an error message.
 
-  >>> print http(r"""
-  ... GET /~stevea/thunderbird/main HTTP/1.1
-  ... """)
-  HTTP/1.1 200 Ok
-  ...Launchpad could not mirror this branch...
-  ...No error message...
+    >>> anon_browser.open('http://launchpad.dev/~stevea/thunderbird/main')
+    >>> content = anon_browser.contents
+    >>> mirror_failure_tag = find_tag_by_id(content, 'mirror-failure')
+    >>> print extract_text(mirror_failure_tag)
+    Launchpad could not mirror this branch on 2006-04-08.
+    No error message was recorded.
+
+If a branch has a sftp or bzr+ssh URL, immediately display an error message
+(even before mirroring is attempted) and do not display the mirror failure
+message.
+
+XXX: We need to use flush_database_updates before every commit for the test
+browser to see the changes we make to the content object. See bug 3989.
+-- David Allouche 2007-03-23
+
+    >>> import transaction
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> from canonical.launchpad.database import BranchSet
+    >>> thunderbird_main = BranchSet().getByUniqueName(
+    ...     '~stevea/thunderbird/main')
+    >>> thunderbird_main.url = 'sftp://example.com/thunderbird'
+    >>> flush_database_updates()
+    >>> transaction.commit()
+    >>> anon_browser.open('http://launchpad.dev/~stevea/thunderbird/main')
+    >>> content = anon_browser.contents
+    >>> print find_tag_by_id(content, 'mirror-failure')
+    None
+    >>> mirror_of_ssh_tag = find_tag_by_id(content, 'mirror-of-ssh')
+    >>> print extract_text(mirror_of_ssh_tag)
+    Launchpad cannot mirror this branch because its URL uses sftp or bzr+ssh.
 
 
 Ultimately, if a branch was successfully mirrored, then we obviously won't
 display any failure-related information.
 
-  >>> gnome_terminal_page = str(http(r"""
-  ... GET /~name12/gnome-terminal/2.6 HTTP/1.1
-  ... """))
-  >>> "Launchpad could not mirror this branch" in gnome_terminal_page
-  False
+    >>> anon_browser.open('http://launchpad.dev/~name12/gnome-terminal/2.6')
+    >>> content = anon_browser.contents
+    >>> print find_tag_by_id(content, 'mirror-failure')
+    None

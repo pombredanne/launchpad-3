@@ -31,7 +31,10 @@ kbd {
   min-width: 1em;
   outline: 1px #666;
 }
-label {white-space: nowrap;}
+label {
+  white-space: nowrap;
+  font-weight: bold;
+}
 legend {font-weight: bold;}
 legend legend {font-weight: normal;}
 .listbox { /* a scrolling list of checkboxes or radio buttons */
@@ -61,10 +64,10 @@ thead th, tr.thead th {text-align: center;}
 
 html {
   position: relative;
-  font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
-  font-size: 8.5pt;
-  color: #505050;
-  background-color: #FFFFFF;
+  font-family: sans-serif;
+  font-size: 10pt;
+  color: #333;
+  background-color: #fff;
 }
 body {margin: 0; padding: 0;}
 
@@ -74,16 +77,15 @@ body {margin: 0; padding: 0;}
 :visited                      {color: #324c7f; text-decoration: none;}
 
 h1, h2, h3, h4, h5, h6 {background: none; color: #83ad23; font-weight: normal;}
-h1 {font-size: 2.8em;    margin: 0;              padding: 0px 0px 10px 0px;}
-h2 {font-size: 1.55em; margin: 1em 0 0.75em;   padding: 0;} /* FP; /products */
-h3 {font-size: 1.15em; margin: 1em 0 0.5em 0;  padding: 0;} /* +topcontributors */
+h1 {font-size: 2.2em;  margin: 0;              padding: 0px 0px 10px 0px;}
+h2 {font-size: 1.5em;  margin: 1em 0 0.75em;   padding: 0;} /* FP; /products */
+h3 {font-size: 1.1em;  margin: 1em 0 0.5em 0;  padding: 0;} /* +topcontributors */
 h4 {font-size: 1em;    margin: 0;              padding: 0px 0px 10px 0px;}
 h5 {font-size: 1em;    margin: 0;              padding: 0;}
 h6 {font-size: 1em;    margin: 0;              padding: 0;}
-h1:first-child, h2:first-child, h3:first-child, h4:first-child {margin-top: 0;}
 
 .exception {color: #cc0000;}
-.discreet, .lesser {font-size: smaller;}
+.discreet, .lesser {font-size: 80%;}
 .unavailable {color: #999; background: none;}
 .oopsid {color: #cc0000; font-weight: bold;}
 
@@ -102,10 +104,15 @@ h1:first-child, h2:first-child, h3:first-child, h4:first-child {margin-top: 0;}
   margin: 0.25em 0 0;
   padding: 0 0 0 25px;
   background: 0 0 no-repeat;
+  
 }
-.error {background-color: #f0cccc; color: black;}
+.error {color: #db1f22;}
 .error.message, .error .message {
   background-image: url(/@@/error);
+}
+td.error {
+  border: 1px solid #db1f22;
+  background-color: #ffffff;
 }
 .warning {background-color: #fcdd99; color: black;}
 .warning.message, .warning .message {
@@ -132,7 +139,7 @@ form {border: 0; margin: 0; padding: 0;}
 input, select, textarea {
   background-color: #fff;
   color: #656565;
-  font-family: "Trebuchet MS", "DejaVu Sans Condensed", "Tahoma", sans-serif;
+  font-family: sans-serif;
   margin: 0;
 }
 input[type="text"], input[type="submit"], input[type="reset"], textarea {
@@ -146,11 +153,19 @@ table.form {width: 100%;}
 
 /* --- Other --- */
 
+/* No border on images that are links. */
 a img {
   border: none;
 }
+/* No border on images that have link maps.
+ * There's nothing special for this, as the image and map
+ * may be separate.  So, just set no border for all images.
+ */
+img {
+  border: none;
+}
 
-/* see launchpad.js:activateCollapsables() */
+/* see launchpad.js:activateCollapsibles() */
 .collapsible legend a, .collapsible legend a:visited {
   text-decoration: none;
   color: #000088;
@@ -159,6 +174,8 @@ img.collapseIcon {text-decoration: none; margin-bottom: -3px;}
 .collapsible legend a span {text-decoration: underline;}
 .collapsible {padding: 0; margin: 0;}
 .collapsed {border: none; margin-bottom: 0;}
+fieldset .collapsed {display: none;}
+fieldset .expanded {display: block;}
 
 form.primary.search {
   margin-bottom: 2em;
@@ -170,7 +187,7 @@ form.primary.search {
   .notforscreen {display:none;}
 }
 
-.highlighted, tr.highlight {background: #eee; border: 1px solid #ddd;}
+.highlighted, tr.highlight {background: #ddd; border: 1px solid #ddd;}
 .highlighted {padding: 0.5em;}
 .highlighted h3 {margin-top: 0;}
 .unhighlighted {padding: 0 0.5em;}
@@ -264,7 +281,6 @@ hr {
 }
 /* Next is a location bar. */
 #locationbar {
-  float: left;
   width: 100%;
   height: 26px;
   margin: 0;
@@ -276,8 +292,13 @@ hr {
   color: #FFF;
 }
 ul#menuroot a#homebreadcrumb span {
-  background: url(home.gif) left top no-repeat;
-  padding-left: 15px;
+  background: url(home-low-high.gif) left top no-repeat;
+  padding-left: 16px; /* space between home icon and the word "Home" */
+}
+ul#menuroot li a#homebreadcrumb:hover span,
+ul#menuroot li.selected a#homebreadcrumb span {
+  background: url(home-low-high.gif) left -20px no-repeat;
+  padding-left: 16px;
 }
 /* The location bar contains menus. */
 ul#menuroot {
@@ -320,7 +341,8 @@ ul#menuroot a.breadcrumb {
   padding: 6px 0 6px 10px;
   margin-right: -1px;
 }
-* html #yourlocation {padding-bottom: 4px;} /* better than 6px in IE6 */
+/* IE6 specific rule to make the location bar look better. */
+* html #yourlocation {padding-bottom: 4px;}
 /* Display dyn menu items and breadcrumbs with black text and as blocks. */
 #locationbar li a,
 #locationbar li span {
@@ -389,6 +411,13 @@ ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
   padding-left: 0px;
   padding-right: 0px;
 }
+
+/* Because the menus are misplaced on IE6, we'll hide them for now. */
+* html ul#menuroot a.container.breadcrumb em {
+  background-image: url(locationbar_nodrop_em_bg.gif);
+}
+* html #locationbar ul.menu {display: none;}
+
 /* Inhibit underlines on all dyn menu items. */
 #locationbar li a:hover {
   text-decoration: none;
@@ -402,8 +431,18 @@ ul#menuroot a.container.breadcrumb em { /* should be changed to not need em */
 }
 /* Set the appearance of dyn menu items other than the breadcrumbs
  * when selected and potentially opened.
- */
-#locationbar ul#rootmenu ul.menu li.selected a {
+ * This works, but has the > that makes IE unhappy.
+ * #locationbar ul.menu li.selected>a {
+ *   background-color: #C8EF48;
+ *   color: #000;
+ * }
+ * So instead, we have the following two rules.
+*/
+#locationbar ul.menu li a {
+  background-color: #AFDB1F;
+  color: #000;
+}
+#locationbar ul.menu li.selected>a {
   background-color: #C8EF48;
   color: #000;
 }
@@ -467,82 +506,86 @@ ul#menuroot li.selected a.breadcrumb {
     color: #000000;
 }
 
-/*- Underneath the global header and location bar is a help panel. -*/
-
-#help_panel {
-  visibility: hidden; /* global.js reveals it if JavaScript is available */
-}
-#help_panel.open,
-#help_panel.closed {
+/* Under the location bar is a Help widget that expands when clicked. */
+#help {
+  clear: both;
   position: absolute;
-  float: left;
-  top: 47px;
-  left: 0px;
-  width: 350px;
+  top: 27px;
+  left: 0;
+  width: 300px;
   z-index: 100;
 }
-#help_panel.closed {
-  left: -318px !important;
+/* The widget has two parts. First, the tab itself. */
+#help-tab {
+  background: url(help-tab.gif);
+  color: #f7f7f7;
+  float: right;
+  font-size: 1px;
+  width: 32px;
+  height: 62px;
 }
-.help1 {
-  width: 350px;
-  background-color: #FFFFFF;
-  background-image: url(help_bg.gif);
-  background-repeat: repeat-y;
-  background-position: top right;
+/* Second, the help panel, which takes up the rest of the 300px. */
+#help-panel {float: left; width: 268px;}
+/* The help panel needs to be longer than the tab -- 70px will do. */
+#help-content {
+  background: #fff url(help_bg.gif) top right repeat-y;
+  margin: 0;
+  padding: 0;
+  min-height: 70px;
 }
-.help2 {
-  float: left;
-  width: 286px;
-  padding: 16px;
-}
-#help_panel.open .bottom,
-#help_panel.closed .bottom {
+/* IE6 and lower ignore "min-height", but treat "height" as min-height. */
+* html #help-content {height: 70px;}
+/* The "help-text" element exists only to provide padding. */
+/* The "1px" is because Gecko malfunctions if the top padding is 0. */
+#help-text {padding: 1px 14px 6px 10px;}
+/* The "help-bottom" element exists to provide the rounded bottom border. */
+#help-bottom {
   clear: both;
-  width: 350px;
-  height: 14px;
-  position: relative;
-  top: -2px;
-  background-color: transparent;
-  background-image: url(help_bottom_bg.gif);
-  background-repeat: no-repeat;
-  background-position: bottom right;
+  font-size: 1px;
+  height: 6px;
+  background: url(help-bottom.gif) bottom right no-repeat;
 }
-#help_panel.open a.open-close, #help_panel.closed a.open-close,
-a.open, a.closed {
-  float: left;
-  display: block;
-  width: 28px;
-  height: 120px;
-  text-indent: -9999px;
-  overflow: hidden;
-}
+/* When the tab is opened, the triangle in it swivels to show it's a toggle. */
+#help.open #help-tab {background: url(help-tab-open.gif);}
+/* When the tab is closed, the help panel is not displayed. */
+#help.closed {width: 32px;}
+#help.closed #help-panel {display: none;}
 
-#help_panel.open a.open-close, a.open {
-  background-image: url(help_ttl_open.gif);
-  background-repeat: no-repeat;
-  background-position: top left;
-}
+/*
+Showing the help panel all the time would be in the way,
+and there shouldn't be a "Help" tab that does nothing.
+So it's hidden initially, and then revealed if JavaScript is available. 
+*/
+#help {visibility: hidden;}
 
-#help_panel.closed a.open-close, a.closed {
-	background-image: url(help_ttl_closed.gif);
-	background-repeat: no-repeat;
-	background-position: 0px 0px;
+/* The rest of the page keeps clear of the collapsed help panel. */
+/* test: http://launchpad.dev/+logout */
+#nonhelp {
+  margin: 10px 20px 0 38px;
+  min-width: 752px; /* prevents search field from sliding under tabs */
 }
-
-/*- The rest of the page is indented to keep clear of the help panel. -*/
-#nonhelp {margin: 0 20px 0 38px;}
 
 /*- App home pages and pillar indexes both have a heading and app buttons, -*/
 table#applications {margin-bottom: -0.5em;}
-table#applications th, table#applications td {vertical-align: baseline;}
-table#applications th {padding-left: 60px; text-align: left;}
+table#applications th, table#applications td {vertical-align: bottom;}
+table#applications th {padding-top: 60px; padding-left: 60px; text-align: left;}
+table#applications th h1 {margin: 0; padding: 0;}
 table#applications td {text-align: right;}
+body.tab-branches #applications,
+body.tab-bugs #applications,
+body.tab-specifications #applications,
+body.tab-answers #applications,
+body.tab-translations #applications {
+  background-position: left bottom !important;
+}
 /* though the pillar indexes have no watermark, so no heading indenting. */
 body.pillarindex table#applications th {padding-left: 0;}
 
 /* Other page types have a global search field. */
-#globalsearch {float: right; margin-top: 12px; width: 220px;}
+#globalsearch {
+  float: right;
+  margin-top: 15px;
+}
 #globalsearch #q {border: 1px solid #a7c2ce; width: 170px;}
 #globalsearch #searchbutton {
   position: relative;
@@ -557,10 +600,10 @@ body.pillarindex table#applications th {padding-left: 0;}
 #globalsearchscope label {display: block; padding: 0 0 2px;}
 
 /* The last element is a standard footer. */
-#globalfooter {clear: both;}
+#globalfooter {clear: both; margin-left: -20px;}
 /* It has a top border if the page doesn't already have a rounded border. */
 body.freeform #globalfooter {
-  border-top: 1px solid #ccc;
+  border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
   padding-top: 0.5em;
 }
 
@@ -584,7 +627,8 @@ body.freeform #globalfooter {
   overflow: hidden;
 }
 ul#applicationchooser {
-  float: right;
+  position: absolute;
+  right: 0;
   width: 510px;
   height: 32px;
   overflow: hidden;
@@ -618,7 +662,7 @@ ul#applicationchooser li {
  * to ensure the whole tab area is clickable. */
 ul#applicationchooser li a {
   display: block;
-  padding: 8px 0px 0px 0px;
+  padding: 7px 0px 0px 0px;
   height: 40px;
 }
 
@@ -661,20 +705,22 @@ ul#applicationchooser li#applicationchooser_selected {
 }
 
 /* --- Portlets --- */
-
 #portlets {
+  position: relative;
+  display: inline;
   float: left;
   width: 200px;
   overflow: hidden;
-  margin: 0px 16px 0px 16px;
-  padding: 0;
+  margin: 0 0 20px -100%;
+  padding: 0 20px;
   list-style: none;
-  font-size: 11px;
+  right: 240px;
 }
-#portlets .portlet {
-  clear: both;
-  float: left;
-}
+/* IE6 and  lower ignore the left padding, so we add extra positioning. */
+* html #portlets {left: 20px;}
+/* IE7 gets the padding right but overcalculates the left margin, so we use
+a conditional comment in main-template.pt to work around the above rule. */
+#portlets .portlet {clear: both; float: left;}
 #portlets .portlet h2 {
   display: block;
   width: 180px;
@@ -688,6 +734,9 @@ ul#applicationchooser li#applicationchooser_selected {
   margin: 0px 0px 1px 0px;
   color: #FFFFFF;
   font-weight: bold;
+}
+#portlets .portlet.expanded h2 {
+  background-image: url(leftnav_bg_expanded.gif);
 }
 #portlets #actions h2 {
   background-image: url(leftnav_bg_uncollapsible.gif);
@@ -718,7 +767,7 @@ ul#applicationchooser li#applicationchooser_selected {
 #portlets .portlet,
 #portlets .portlet h2,
 #portlets .portlet li {
-  font-size: 11px !important;
+  font-size: 12px !important;
 }
 #portlets .portlet h2 {
   margin-top: 0 !important;
@@ -791,7 +840,6 @@ ul#applicationchooser li#applicationchooser_selected {
   background: none;
   color: black;
   float: left;
-  margin: 10px 0 0;
   width: 70%;
 }
 #structuralobjectheading img {
@@ -801,18 +849,18 @@ ul#applicationchooser li#applicationchooser_selected {
 #structuralobjectheading .main {
   font-weight: bold;
   margin: 1px 0 0 70px;
-  font-size: 2.3em;
+  font-size: 24px;
 }
 #structuralobjectheading .intro {
   margin: 2px 0 0 70px;
-  font-size: 1em;
+  font-size: 12px;
 }
 #structural-children {
   clear: both;
   font-size: 0.75em;
   margin-top: 2em;
   padding: 2em 0 0;
-  border-top: 1px dotted #ccc;
+  border-top: 1px dotted #cbcbcb; /* matches color of mainarea_* images */
 }
 #applicationchooser {
   clear: both;
@@ -825,24 +873,13 @@ ul#applicationchooser li#applicationchooser_selected {
   background-image: url(mainarea_bottom.gif);
   background-repeat: repeat-x;
   background-position: bottom left;
+  margin: 0 -20px 0 -38px; /* opposite of margin for #nonhelp */
   position: relative;
-  top: -20px; /*- reduces pillargotchi~tab gap -*/
+  top: -15px; /*- reduces logo~tab gap -*/
 }
 body.freeform #mainarea {top: 0;}
 * html #mainarea {top: 0;}
-body.freeform #mainarea {top: 20px;} /*- no pillargotchi on freeform pages -*/
-#mainarea div.t {
-  width: 100%;
-  background-image: url(mainarea_left.gif);
-  background-repeat: repeat-y;
-  background-position: top left;
-}
-#mainarea div.u {
-  width: 100%;
-  background-image: url(mainarea_right.gif);
-  background-repeat: repeat-y;
-  background-position: top right;
-}
+body.freeform #mainarea {top: 20px;} /*- no logo on freeform pages -*/
 #mainarea div.v {
   width: 100%;
   background-image: url(mainarea_bottomleft.gif);
@@ -876,6 +913,22 @@ body.freeform #mainarea {top: 20px;} /*- no pillargotchi on freeform pages -*/
 #singlecolumn div.z {
   padding: 0 0 20px; /* XXX Makes the top right corner disappear */
 }
+
+/* Some pages end with links to related items. */
+/* Examples: branch page, bug page. */
+.related {
+  margin-top: 4em;
+  border-top: 1px solid #cbcbcb; /* matches color of mainarea_* images */
+  padding-top: 1em;
+}
+.related ul {
+  list-style: none;
+  margin-left: 0 !important;
+  padding-left: 0 !important;
+  text-indent: 0.5em;
+}
+.related ul li:before {content: "\00BB \0020";}
+
 /* --- Various custom list formats --- */
 
 #maincontent ol, #maincontent ul, #singlecolumn ul, #singlecolumn ol {
@@ -891,9 +944,10 @@ ul.bug, li.bug                       {list-style-image: url(/@@/bug);}
 ul.bug.remote, li.bug.remote         {list-style-image: url(/@@/bug-remote);}
 ul.cve, li.cve                       {list-style-image: url(/@@/cve);}
 ul.distro, li.distro                 {list-style-image: url(/@@/distribution);}
-ul.distrorelease, li.distrorelease   {list-style-image: url(/@@/distribution);}
+ul.distroseries, li.distroseries   {list-style-image: url(/@@/distribution);}
 ul.download, li.download             {list-style-image: url(/@@/download);}
 ul.edit, li.edit                     {list-style-image: url(/@@/edit);}
+ul.faq, li.faq                       {list-style-image: url(/@@/faq);}
 ul.info, li.info                     {list-style-image: url(/@@/info);}
 ul.language, li.language             {list-style-image: url(/@@/language);}
 ul.locked, li.locked                 {list-style-image: url(/@@/locked);}
@@ -917,7 +971,8 @@ ul.webref, li.webref                 {list-style-image: url(/@@/link);}
 
 #application-footer strong {font-weight: normal;}
 
-.report, .boardComment {font-size: 1.125em;} /* bug descriptions/comments */
+.description, .report, .boardComment {font-size: 1.125em;}
+/* person/project/bug descriptions, bug comments */
 .report h2 {font-size: 1.4em;}
 .boardComment {border: 1px solid #ddd; margin: 1em 0 1.5em;}
 * html .boardComment {float: left; clear: both; width: 99%;} /* IE float bug */
@@ -971,6 +1026,11 @@ body.tab-overview #actions, body.tab-overview .results {
 }
 body.tab-overview #actions h2, body.tab-overview #actions h2:hover {
   background-color: #83ad23;
+}
+
+.tab-overview #application-footer strong {
+  background: none;
+  color: #83ad23;
 }
 
 .product.series, .project {margin-bottom: 1em;}
@@ -1083,19 +1143,24 @@ body.tab-bugs #actions h2, body.tab-bugs #actions h2:hover {
 }
 
 
-.statusUNCONFIRMED  { color: #993300; }
-.statusNEEDSINFO    { color: Red; }
+.statusNEW          { color: #993300; }
+.statusINCOMPLETE   { color: Red; }
 .statusCONFIRMED    { color: Red; }
+.statusTRIAGED      { color: Black; }
 .statusINPROGRESS   { color: Black; }
 .statusFIXRELEASED  { color: Black; }
 .statusFIXCOMMITTED { color: Black; }
-.statusREJECTED     { color: Gray; }
+.statusINVALID      { color: Gray; }
+.statusWONTFIX      { color: Gray; }
 .importanceCRITICAL  { color: Red; }
 .importanceHIGH      { color: #ff6600; }
 .importanceMEDIUM    { color: Green; }
 .importanceLOW       { color: Black; }
 .importanceWISHLIST  { color: Blue; }
 .importanceUNDECIDED { color: #999; }
+.status :link, .importance :link {color: inherit; text-decoration: none;}
+
+#bug-description {font-family: monospace;}
 
 /* --- Blueprints --- */
 
@@ -1173,6 +1238,7 @@ body.tab-specifications #actions h2, body.tab-specifications #actions h2:hover {
 .specdeliveryNEEDSREVIEW        {color: purple;}
 .specdeliveryAWAITINGDEPLOYMENT {color: red;}
 .specdeliveryIMPLEMENTED        {color: green;}
+.specdeliveryINFORMATIONAL      {color: green;}
 
 /* --- Translations --- */
 
@@ -1302,32 +1368,18 @@ ul#applicationchooser a, ul#applicationchooser a:hover {
 body {
   min-width: 480px;
 }
-#container {
-  padding-left: 240px;
-  padding-right: 20px;
-}
+#container {padding: 0 20px 0 240px; margin-top: 40px;}
 body.applicationhome #container {padding-left: 20px;}
 #singlecolumn #container {
   padding-left: 20px;
   padding-top: 50px;
 }
-#maincontent, #portlets {
-  display: inline;
-  float: left;
-  position: relative;
-}
 #maincontent {
   width: 100%;
   padding: 0 0 20px 0;
-}
-#portlets {
-  width: 200px;
-  margin: 0 0 20px -100%;
-  padding: 0 20px;
-  right: 240px;
-}
-* html #portlets { /* Works around Internet Explorer bug */
-  left: 20px;
+  display: inline;
+  float: left;
+  position: relative;
 }
 #portlets .portlet {
   width: 200px;
@@ -1350,12 +1402,11 @@ div#applications {padding: 1em 0; text-align: center;}
 }
 .central {
   clear: left; /* Bugs FP */
-  font-size: 1.5em;
+  font-size: 1.125em;
   margin: 0 auto 1em;
   padding: 0.5em 0; /* FP should fit in ~750px; Bugs FP */
   width: auto;
 }
-.tab-unknown .central {font-size: 1.75em;}
 .central input {
   font-size: 1em;
 }
@@ -1364,8 +1415,8 @@ div#applications {padding: 1em 0; text-align: center;}
   font-size: 1.2em;
 }
 #application-summary, #application-footer {
-  font-size: 1.5em;
-  line-height: 1.5em;
+  font-size: 1.2em;
+  line-height: 1.4em;
   margin-top: 0;
 }
 #application-footer {
@@ -1399,7 +1450,7 @@ div.left, div.right {width: 50%;}
 div.left {clear: both; float: left;}
 div.right {clear: right; float: right;}
 div.left div.portlet, div.right div.portlet {
-  border: dotted #ccc;
+  border: dotted #cbcbcb; /* matches color of mainarea_* images */
   border-width: 1px 0 0 0;
   margin-top: 1em;
   padding-top: 1em;
@@ -1437,7 +1488,7 @@ li {
 }
 */
 
-.bug-summary {
+.bug-summary, .summary {
   font-weight: bold;
 }
 
@@ -1454,7 +1505,7 @@ table.summary {float: right; margin: 0 0 1em 1em;}
 table.listing table.summary {margin-top: 0.5em;}
 table.summary caption {font-style: italic; margin-left: 1em;}
 div.right table.summary {float: none; margin: 1em auto;}
-table.summary tr {border: dotted #ccc; border-width: 1px 0;}
+table.summary tr {border: dotted #cbcbcb; border-width: 1px 0;}
 table.summary td {padding-left: 0.5em;}
 table.summary ul, table.summary ul li {
   list-style-position: inside;
@@ -1469,6 +1520,7 @@ th.nowrap, td.nowrap {white-space: nowrap;}
 tfoot th, table.contributions th {text-align: left;}
 table.contributions, table.contributions th, table.contributions td {
   border: 1px solid #e6e6e6;}
+table.contributions th {font-weight: normal;}
 table.contributions tr.odd {background-color: #fff; color: inherit;}
 table.contributions tr.even {background-color: #f6f6f6; color: inherit;}
 table.contributions th, table.contributions td {padding: 0.5em 0.75em;}
@@ -1476,7 +1528,7 @@ table.contributions td {vertical-align: middle; width: 16px;}
 
 /* --- Listing tables --- */
 
-table.listing {margin: 0; width: 100%;}
+table.listing {margin: 0; width: 100%; font-size: 8.5pt;}
 table.listing, table.listing tbody {border-bottom: 1px solid #d2d2d2;}
 table.listing thead, table.listing thead th, table.listing tfoot tr {
   border: 1px solid #d2d2d2;
@@ -1488,6 +1540,8 @@ tr.highlight {background-color: #ff9;}
 table.listing tr.note {font-size: smaller;}
 tr.amount, td.amount {text-align: right;}
 table.listing th, table.listing td {padding: 0.25em;}
+/* We don't want extra padding on nested tables, such as batch navigation. */
+table.listing table th, table.listing table td {padding: 0;}
 table.listing th {font-size: 1.125em; white-space: nowrap;}
 table.listing td {border: 1px #d2d2d2; border-style: dotted none none none;}
 table.listing tr.note td {border-style: none;}
@@ -1525,7 +1579,7 @@ th.descending {
 .sortkey, .revsortkey {display: none;}
 
 /* Clouds of links. */
-.cloud-size-small { 
+.cloud-size-small {
   font-size: 1em;
 }
 .cloud-size-medium {
@@ -1534,12 +1588,28 @@ th.descending {
 .cloud-size-large {
   font-size: 1.7em;
 }
-.cloud-shade-dark { 
+.cloud-shade-dark {
   color: #00f;
 }
-.cloud-shade-medium { 
+.cloud-shade-medium {
   color: #7878ff;
 }
 .cloud-shade-light {
   color: #b8b8ff;
+}
+.cloud-highlight-dark {
+  color: #00c500;
+}
+.cloud-highlight-medium {
+  color: #90e090;
+}
+.cloud-highlight-light {
+  color: #b8ffb8;
+}
+
+.vcsimportSUCCESS {} /* inherited text color */
+.vcsimportFAILURE {color: Red;}
+
+.lowerCaseText {
+  text-transform: lowercase
 }

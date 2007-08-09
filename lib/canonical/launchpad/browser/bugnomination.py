@@ -33,7 +33,7 @@ class BugNominationView(LaunchpadFormView):
 
     schema = IBugNominationForm
     initial_focus_widget = None
-    custom_widget('nominatable_releases', LabeledMultiCheckBoxWidget)
+    custom_widget('nominatable_serieses', LabeledMultiCheckBoxWidget)
 
     def __init__(self, context, request):
         self.current_bugtask = context
@@ -53,9 +53,9 @@ class BugNominationView(LaunchpadFormView):
         The label returned depends on the user's privileges.
         """
         if self.userIsReleaseManager():
-            return "Target bug #%d to releases" % self.context.bug.id
+            return "Target bug #%d to series" % self.context.bug.id
         else:
-            return "Nominate bug #%d for releases" % self.context.bug.id
+            return "Nominate bug #%d for series" % self.context.bug.id
 
     def userIsReleaseManager(self):
         """Does the current user have release management privileges?"""
@@ -70,10 +70,11 @@ class BugNominationView(LaunchpadFormView):
 
     def getReleaseManager(self):
         """Return the IPerson or ITeam that does release management."""
-        # XXX: Ignoring the "drivers" attribute for now, which includes the
+        # XXX: Brad Bollenbach 2006-10-31:
+        # Ignoring the "drivers" attribute for now, which includes the
         # project-wide driver for upstreams because I'm guessing it's
         # hardly used, and would make displaying release managers a
-        # little harder. -- Brad Bollenbach, 2006-10-31
+        # little harder.
         return self.getReleaseContext().driver
 
     def getReleaseContext(self):
@@ -83,31 +84,31 @@ class BugNominationView(LaunchpadFormView):
 
     @action(_("Submit"), name="submit")
     def nominate(self, action, data):
-        """Nominate distro releases or product series for this bug."""
-        releases = data["nominatable_releases"]
-        nominated_releases = []
+        """Nominate bug for series."""
+        serieses = data["nominatable_serieses"]
+        nominated_serieses = []
         approved_nominations = []
 
-        for release in releases:
+        for series in serieses:
             nomination = self.context.bug.addNomination(
-                target=release, owner=self.user)
+                target=series, owner=self.user)
 
-            # If the user has the permission to approve or decline the
-            # nomination, then approve the nomination right now.
-            if check_permission("launchpad.Driver", nomination):
-                nomination.approve(self.user)
-                approved_nominations.append(nomination.target.bugtargetname)
+            # If the user has the permission to approve the nomination,
+            # then nomination was approved automatically.
+            if nomination.isApproved():
+                approved_nominations.append(
+                    nomination.target.bugtargetdisplayname)
             else:
-                nominated_releases.append(release.bugtargetname)
+                nominated_serieses.append(series.bugtargetdisplayname)
 
         if approved_nominations:
             self.request.response.addNotification(
                 "Targeted bug to: %s" %
                 ", ".join(approved_nominations))
-        if nominated_releases:
+        if nominated_serieses:
             self.request.response.addNotification(
                 "Added nominations for: %s" %
-                ", ".join(nominated_releases))
+                ", ".join(nominated_serieses))
 
     @property
     def next_url(self):
@@ -191,11 +192,13 @@ class BugNominationEditView(LaunchpadView):
         if approve_nomination:
             self.context.approve(self.user)
             self.request.response.addNotification(
-                "Approved nomination for %s" % self.context.target.bugtargetname)
+                "Approved nomination for %s" %
+                    self.context.target.bugtargetdisplayname)
         elif decline_nomination:
             self.context.decline(self.user)
             self.request.response.addNotification(
-                "Declined nomination for %s" % self.context.target.bugtargetname)
+                "Declined nomination for %s" %
+                    self.context.target.bugtargetdisplayname)
 
         self.request.response.redirect(
             canonical_url(getUtility(ILaunchBag).bugtask))

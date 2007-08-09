@@ -25,13 +25,13 @@
 
 	<ul>
 
-      <li><a href="/products/">Find Project</a>: find your open source
+      <li><a href="/projects/">Find Project</a>: find your open source
       project if it has been registered in The Launchpad.</li>
 
-      <li><a href="/products/+new">Register Project</a>: register an open
+      <li><a href="/projects/+new">Register Project</a>: register an open
       source project with The Launchpad.</li>
 
-      <li><a href="/products/+all">All Projects</a>: see a complete list
+      <li><a href="/projects/+all">All Projects</a>: see a complete list
       of all open source projects registered with The Launchpad.</li>
 
 	</ul>

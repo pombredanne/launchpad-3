@@ -48,17 +48,7 @@ to retrieve files from the slave. Verify it works...
   >>> hw_str == helloworld
   True
 
-Tested, time to shutdown
-
-  >>> BuilddSlaveTestSetup().tearDown()
-
-  >>> s = xmlrpclib.Server('http://localhost:8221/rpc/')
-  >>> s.info()
-  Traceback (most recent call last):
-  ...
-  error: (111, 'Connection refused')
-
-# XXX cprov 20050630
+# XXX cprov 2005-06-30
 # As soon as we have better control of the environment we can try to
 # simulate the some certified build job, maybe the historical 'at'
 # that build even 'under the water'.
@@ -97,3 +87,14 @@ What follows are "out-of-place" tests of some of the buildd slave code...
   >>> makeLog(2049)
   >>> len(s.getLogTail())
   2048
+
+
+Tested, time to shutdown
+
+  >>> BuilddSlaveTestSetup().tearDown()
+
+  >>> s = xmlrpclib.Server('http://localhost:8221/rpc/')
+  >>> s.info()
+  Traceback (most recent call last):
+  ...
+  error: (111, 'Connection refused')

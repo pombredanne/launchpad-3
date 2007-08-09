@@ -11,17 +11,15 @@ __metaclass__ = type
 import unittest
 from zope.component import getUtility
 from zope.component.exceptions import ComponentLookupError
-from zope.component.servicenames import Utilities
-from zope.component import getService
 from zope.app.rdb.interfaces import IZopeDatabaseAdapter
 from sqlos.interfaces import IConnectionName
 
 from canonical.testing import (
         BaseLayer, LibrarianLayer, FunctionalLayer, LaunchpadZopelessLayer,
         )
-from canonical.ftests.pgsql import PgTestSetup, ConnectionWrapper
+from canonical.ftests.pgsql import PgTestSetup
 from canonical.functional import FunctionalTestSetup
-from canonical.config import config
+from canonical.config import dbconfig
 from canonical.database.revision import confirm_dbrevision
 from canonical.database.sqlbase import (
         cursor, SQLBase, ZopelessTransactionManager,
@@ -29,7 +27,6 @@ from canonical.database.sqlbase import (
 from canonical.lp import initZopeless
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.launchpad.webapp.interfaces import ILaunchpadDatabaseAdapter
-from canonical.testing import reset_logging
 
 import sqlos
 from sqlos.connection import connCache
@@ -67,14 +64,12 @@ def _disconnect_sqlos():
         del connCache[key]
     sqlos.connection.connCache.clear()
 
-def _reconnect_sqlos(dbuser=None):
+def _reconnect_sqlos(dbuser=None, database_config_section='launchpad'):
     _disconnect_sqlos()
-    da = None
+    dbconfig.setConfigSection(database_config_section)
     name = getUtility(IConnectionName).name
     da = getUtility(IZopeDatabaseAdapter, name)
-    if dbuser is None:
-        dbuser = config.launchpad.dbuser
-    da.connect(dbuser)
+    da.switchUser(dbuser)
 
     # Confirm that the database adapter *really is* connected.
     assert da.isConnected(), 'Failed to reconnect'
@@ -151,8 +146,8 @@ class LaunchpadTestCase(unittest.TestCase):
     dbuser = LaunchpadTestSetup.dbuser
     dbname = LaunchpadTestSetup.dbname
     template = LaunchpadTestSetup.template
-    # XXX: Should be Launchpad, but we need to specify how to change the
-    # db user to connect as. -- StuartBishop 20060713
+    # XXX StuartBishop 2006-07-13: Should be Launchpad, but we need to
+    # specify how to change the db user to connect as.
     layer = LibrarianLayer
 
     def setUp(self):
@@ -171,8 +166,8 @@ class LaunchpadTestCase(unittest.TestCase):
 
 
 class LaunchpadFunctionalTestCase(unittest.TestCase):
-    # XXX: Should be LaunchpadFunctional, but we first need to implement
-    # a way of specifying the dbuser to connect as. -- StuartBishop 20060713
+    # XXX StuartBishop 2006-07-13: Should be LaunchpadFunctional, but we
+    # first need to implement a way of specifying the dbuser to connect as.
     layer = FunctionalLayer
     dbuser = None
     def login(self, user=None):

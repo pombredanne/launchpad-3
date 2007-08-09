@@ -6,10 +6,10 @@
 
     <div class="portletContent">
 
-      <ul tal:condition="view/languages">
+      <ul tal:condition="view/translatable_languages">
           <li class="language"
               tal:content="lang/englishname"
-              tal:repeat="lang view/languages">
+              tal:repeat="lang view/translatable_languages">
             A Language</li>
       </ul>
 

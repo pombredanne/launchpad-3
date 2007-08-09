@@ -40,9 +40,8 @@ Genuine (not connection related) errors still work normally, too.
     >>> cur.execute("SELECT garbage invalid sql;")
     Traceback (most recent call last):
     ...
-    ProgrammingError: ERROR:  syntax error at or near "invalid" at character 16
-    <BLANKLINE>
-    SELECT garbage invalid sql;
+    ProgrammingError: ERROR:  syntax error at or near "invalid"
+    ...
 
 Break the connection by stopping the proxy.
 
@@ -93,12 +92,11 @@ Also, using our connection should still work.
     1
 
 
-XXX: Test that interrupting a transaction still fails -- spiv
+XXX: spiv 2004-12-08: Test that interrupting a transaction still fails.
 
 Clean up the proxy.
 
     >>> portforward.tearDown()
-    >>> os.remove(portforward.logfile)
 
 Close our connection
 

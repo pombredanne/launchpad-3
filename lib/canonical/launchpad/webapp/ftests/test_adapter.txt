@@ -13,11 +13,11 @@ Imports and test setup:
     >>> from zope.app.rdb.interfaces import IZopeDatabaseAdapter
     >>> from sqlos.interfaces import IConnectionName
     >>> from canonical.config import config
+    >>> import canonical.launchpad.webapp.adapter
     >>> from canonical.launchpad.webapp.adapter import *
-
-    >>> from canonical.launchpad.ftests.harness import (
-    ...     LaunchpadFunctionalTestSetup)
-    >>> LaunchpadFunctionalTestSetup().setUp()
+    >>> orig_db_statement_timeout = config.launchpad.db_statement_timeout
+    >>> orig_db_statement_timeout_precision = (
+    ...     config.launchpad.db_statement_timeout_precision)
 
 
 The Launchpad database connection is created by getting the
@@ -31,6 +31,15 @@ SQLOS uses:
     True
 
 
+The database adapter is a reconnecting database adapter, so handles
+connection drops (as tested elsewhere):
+
+    >>> from canonical.launchpad.webapp.adapter import (
+    ...     ReconnectingDatabaseAdapter)
+    >>> isinstance(da, ReconnectingDatabaseAdapter)
+    True
+
+
 Statement Timeout
 =================
 
@@ -40,28 +49,98 @@ which corresponds to no timeout:
     >>> print config.launchpad.db_statement_timeout
     None
 
+
 Connections created with the database adapter will use this timeout as
 the Postgres statement timeout (a value of zero means no timeout):
 
+    >>> def current_statement_timeout(cursor):
+    ...     cursor.execute('SHOW statement_timeout')
+    ...     return cursor.fetchone()[0]
+    ...
+
+    >>> set_request_started()
     >>> conn = da()
     >>> cursor = conn.cursor()
-    >>> cursor.execute('SHOW statement_timeout')
-    >>> print cursor.fetchone()[0]
+    >>> print current_statement_timeout(cursor)
     0
     >>> da.disconnect()
+    >>> clear_request_started()
 
 
-Using the custom sleep_for_testing() function, we can trigger the
+Using the builtin pg_sleep() function, we can trigger the
 timeout by sleeping for 200ms with a 100ms statement timeout:
 
     >>> config.launchpad.db_statement_timeout = 100
     >>> conn = da()
     >>> cursor = conn.cursor()
-    >>> cursor.execute('SELECT sleep_for_testing(0.200)')
+    >>> set_request_started()
+    >>> print current_statement_timeout(cursor)
+    100ms
+    >>> cursor.execute('SELECT pg_sleep(0.200)')
     Traceback (most recent call last):
       ...
-    RequestStatementTimedOut: SELECT sleep_for_testing(0.200)
+    RequestStatementTimedOut: SELECT pg_sleep(0.200)
     >>> da.disconnect()
+    >>> clear_request_started()
+
+
+The statement_timeout will be adjusted during the transaction, within
+a certain precision. To test this reliably, we need a time machine to
+avoid random failures under load. Lets build one and plug it in:
+
+    >>> _now = 0
+    >>> def fake_time():
+    ...     return float(_now)
+    >>> def time_travel(delta):
+    ...     global _now
+    ...     _now += delta
+    >>> canonical.launchpad.webapp.adapter.time = fake_time # Monkey patch
+
+
+Now issue three statements, the first one taking less than the precision
+time but the second going over the threshold. We use the time machine
+to fake how long things take.
+
+    >>> config.launchpad.db_statement_timeout = 10000
+    >>> config.launchpad.db_statement_timeout_precision = 1000
+    >>> conn = da()
+    >>> cursor = conn.cursor()
+    >>> set_request_started()
+
+    >>> cursor.execute('SELECT TRUE')
+    >>> print current_statement_timeout(cursor)
+    10s
+    >>> time_travel(0.5) # Forward in time 0.5 seconds
+
+    >>> cursor.execute('SELECT TRUE')
+    >>> print current_statement_timeout(cursor)
+    10s
+    >>> time_travel(0.6) # Forward in time 0.6 seconds, now over precision
+
+This invokation, the PostgreSQL statement timeout will be updated before
+issuing the SQL command as we have exceeded the precision period:
+
+    >>> cursor.execute('SELECT TRUE')
+    >>> print current_statement_timeout(cursor)
+    8900ms
+    >>> time_travel(8.89) # 0.01s remaining before hard timeout
+
+
+This final invokation, we will actually sleep to ensure that the
+timeout being reported by PostgreSQL is actually working:
+
+    >>> cursor.execute('SELECT pg_sleep(0.2)')
+    Traceback (most recent call last):
+      ...
+    RequestStatementTimedOut: SELECT pg_sleep(0.2)
+    >>> da.disconnect()
+    >>> clear_request_started()
+
+
+Turn off the timemachine so nobody hurts themselves:
+
+    >>> import time
+    >>> canonical.launchpad.webapp.adapter.time = time.time
 
 
 Set the timeout to 5000ms for the next tests:
@@ -69,9 +148,10 @@ Set the timeout to 5000ms for the next tests:
     >>> config.launchpad.db_statement_timeout = 5000
     >>> conn = da()
     >>> cursor = conn.cursor()
-    >>> cursor.execute('SHOW statement_timeout')
-    >>> print cursor.fetchone()[0]
+    >>> set_request_started()
+    >>> print current_statement_timeout(cursor)
     5s
+    >>> clear_request_started()
 
 
 Request Timeout
@@ -121,7 +201,7 @@ transaction will be doomed, and future queries will fail:
     ...     print str(e)
     ERROR:  current transaction is aborted, commands ignored until end of transaction block
     <BLANKLINE>
-    /*...*/ SELECT 1
+    SELECT 1
 
 Cleanup:
 
@@ -203,8 +283,8 @@ Now begin a request, and issue a number of statements:
     >>> cursor.execute('SELECT 2')
     >>> for starttime, endtime, statement in get_request_statements():
     ...     print statement
-    /*...*/ SELECT 1
-    /*...*/ SELECT 2
+    SELECT 1
+    SELECT 2
 
 After we complete the request, the statement log is cleared:
 
@@ -289,178 +369,10 @@ So you need to explicity set the user back:
     True
 
 
-Deadlocks & Serialization errors
-================================
+Reset out config:
 
-The Psycopg Database Adapter will catch serialization, deadlock
-and integrity exceptions and reraise them as Retry exceptions. A
-serialization exception occurs when a connection is running in the
-SERIALIZABLE transaction isolation level and PostgreSQL is detects
-that your connections reads are now inconsistant due to a concurrent
-update. Retrying the transaction is the documented way of handling this
-case. A deadlock occurs when two connections are waiting on locks both
-held by the other connection. The best way of handling this for a web
-application seems also to be to retry the transaction.
-
-This is not being tested upstream in the SVN PsycopgDA branch, as testing
-requires access to a PostgreSQL database and I can't write a suitably
-generic test harness at this time. So we test here in Launchpad to catch
-regressions, which I expect will occur with PostgreSQL and psycopg version
-changes. Also, the Retry exception being raised on IntegrityViolations is
-a Launchpad specific hack - I am unsure if all users of psycopgda would
-want this functionality.
-
-In order to catch the psycopg connections, Psycopgda needs to return
-wrapped ZopeConnection and ZopeCursor instances (the wrapped connection
-is only needed to make the cursor() method return a wrapped cursor).
-
-    >>> from psycopgda.adapter import PsycopgConnection, PsycopgCursor
-    >>> con = da()
-    >>> cur = con.cursor()
-    >>> isinstance(con, PsycopgConnection)
-    True
-    >>> isinstance(cur, PsycopgCursor)
-    True
-
-Test integrity violations. This one is easy. Note that the exception
-raised is a subclass of both IntegrityError and Retry, to allow the
-publishing machinery to handle the Retry exception without modification
-and to allow existing code that handles IntegrityErrors themselves to
-continue functioning as normal.
-
-    >>> from zope.publisher.interfaces import Retry
-    >>> cur.execute("UPDATE JabberID SET jabberid='dupe' WHERE id=1")
-    >>> try:
-    ...     cur.execute("UPDATE JabberID SET jabberid='dupe' WHERE id=2")
-    ... except Retry, error:
-    ...     print '%s raised' % error.__class__
-    ...     print str(error)
-    canonical.launchpad.webapp.adapter.RetryPsycopgIntegrityError raised
-    ERROR:  duplicate key violates unique constraint "jabberid_jabberid_key"
-    <BLANKLINE>
-    /*...*/ UPDATE JabberID SET jabberid='dupe' WHERE id=2
-
-Early versions of psycopg would raise some integrity violations as
-ProgrammingErrors. We should confirm we are running a version of psycopg
-that does not have this problem.
-
-    >>> con.rollback()
-    >>> cur = con.cursor()
-    >>> try:
-    ...     cur.execute("""
-    ...         INSERT INTO JabberID (person, jabberid)
-    ...         VALUES (1, 'markshuttleworth@jabber.org')
-    ...         """)
-    ... except Retry, error:
-    ...     print '%s raised' % error.__class__
-    canonical.launchpad.webapp.adapter.RetryPsycopgIntegrityError raised
+    >>> config.launchpad.db_statement_timeout = orig_db_statement_timeout
+    >>> config.launchpad.db_statement_timeout_precision = (
+    ...     orig_db_statement_timeout_precision)
 
 
-To trigger a serialization exception using the database adapter, we need
-to use two threads that are synchronized to ensure the querys occur in the
-correct order.
-
-    >>> import traceback
-    >>> from threading import Thread, Event
-    >>> steps = [Event(), Event()]
-    >>> class STask1(Thread):
-    ...     def run(self):
-    ...         try:
-    ...             self.traceback = None
-    ...             con = da()
-    ...             cur = con.cursor()
-    ...             cur.execute("SELECT name FROM Person WHERE id=22")
-    ...             self.traceback = repr(list(cur.fetchall()))
-    ...             steps[0].set()
-    ...             steps[1].wait()
-    ...             cur.execute("UPDATE Person SET name='argh' WHERE id=22")
-    ...             transaction.commit()
-    ...             self.traceback = None
-    ...         except:
-    ...             self.traceback = traceback.format_exc()
-    ...             steps[0].set()
-    ...         con.close()
-
-    >>> class STask2(threading.Thread):
-    ...     def run(self):
-    ...         try:
-    ...             self.traceback = None
-    ...             con = da()
-    ...             cur = con.cursor()
-    ...             steps[0].wait()
-    ...             cur.execute("UPDATE Person SET name='whatever' WHERE id=22")
-    ...             transaction.commit()
-    ...         except Exception:
-    ...             self.traceback = traceback.format_exc()
-    ...         steps[1].set()
-    ...         con.close()
-
-    >>> task1 = STask1()
-    >>> task2 = STask2()
-    >>> task1.start()
-    >>> task2.start()
-    >>> task1.join()
-    >>> task2.join()
-
-    Only one thread raised an exception, and that exception is a
-    Retry exception.
-
-    >>> bool(task1.traceback and task2.traceback)
-    False
-    >>> print task1.traceback or task2.traceback
-    Traceback (most recent call last):
-    ...
-    Retry: ...
-
-
-Deadlocks can be tested for the same way as serialization exceptions.
-
-    >>> steps = [Event(), Event()]
-    >>> class DTask1(Thread):
-    ...     def run(self):
-    ...         try:
-    ...             self.traceback = None
-    ...             con = da()
-    ...             cur = con.cursor()
-    ...             cur.execute("LOCK Person IN ACCESS EXCLUSIVE MODE")
-    ...             steps[0].set()
-    ...             steps[1].wait()
-    ...             cur.execute("LOCK Bug IN ACCESS EXCLUSIVE MODE")
-    ...         except:
-    ...             self.traceback = traceback.format_exc()
-    ...             steps[0].set()
-
-    >>> class DTask2(threading.Thread):
-    ...     def run(self):
-    ...         try:
-    ...             self.traceback = None
-    ...             con = da()
-    ...             cur = con.cursor()
-    ...             steps[0].wait()
-    ...             cur.execute("LOCK Bug IN ACCESS EXCLUSIVE MODE")
-    ...             steps[1].set()
-    ...             cur.execute("LOCK Person IN ACCESS EXCLUSIVE MODE")
-    ...         except Exception:
-    ...             self.traceback = traceback.format_exc()
-    ...             steps[1].set()
-
-    >>> task1 = DTask1()
-    >>> task2 = DTask2()
-    >>> task1.start()
-    >>> task2.start()
-    >>> task1.join()
-    >>> task2.join()
-
-Only one of the threads will have raised a Retry exception; the other
-thread will have succeeded.
-
-    >>> bool(task1.traceback and task2.traceback)
-    False
-    >>> print task1.traceback or task2.traceback
-    Traceback (most recent call last):
-    ...
-    Retry: ...
-
-Cleanup:
-
-    >>> LaunchpadFunctionalTestSetup().tearDown()

@@ -1,40 +1,56 @@
 <html xmlns="http://www.w3.org/1999/xhtml"
-    xml:lang="en"
-    lang="en"
-    metal:use-macro="context/@@main_template/master"
-    i18n:domain="launchpad">
-<body>
+      xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
 
-<div metal:fill-slot="main">
-
-    <h1>PO file export</h1>
-
-    <form action="" method="post">
-        <div class="field">
-            <label>
-            Format:
-                <select name="format">
-                    <option
-                        tal:repeat="format view/formats"
-                        tal:content="format/title"
-                        tal:attributes="value format/value">PO format</option>
-                </select>
-            </label>
+  <body>
+    <div metal:fill-slot="main">
+      <div>
+        <a tal:attributes="href context/potemplate/fmt:url"
+           tal:content="context/potemplate/title">
+          evolution 2.10 template
+        </a>
+      </div>
+      <h1>
+        Download
+        <tal:language replace="context/language/englishname">
+          Spanish
+        </tal:language>
+        translation
+      </h1>
+      <form action="" method="post">
+        <div class="field" tal:repeat="format view/formats">
+          <label>
+            <input type="radio" name="format"
+                   tal:attributes="
+                     value format/value;
+                     checked format/is_default" />
+            <span tal:content="format/title">translation format</span>
+          </label>
         </div>
-        <p>
-          Once you complete this form, the file will be exported,
-          and you will be notified by e-mail to
-          <code
-            tal:content="view/user/preferredemail/email"
-          >user@domain</code>.
-        </p>
-
+        <div>
         <div class="formControls">
-            <input type="submit" value="Confirm Export" />
+          <input type="submit" value="Confirm Download" />
         </div>
-    </form>
-
-</div>
-
-</body>
+      </form>
+    </div>
+    <div metal:fill-slot="help">
+      <p>
+        From this form, you can request file downloading with the
+        translations available in Launchpad.
+      </p>
+      <p>
+        Export process would be quite slow and thus, most of the time, you
+        will need to wait until the system process your request and sends you
+        a notification email to
+        <code tal:content="view/user/preferredemail/email">user@domain</code>
+        with a link where you will be able to get the exported file.
+      </p>
+      <p>
+        However, as an optimisation to this process, if we already have
+        available the requested file, the system will send you it directly.
+      </p>
+    </div>
+  </body>
 </html>

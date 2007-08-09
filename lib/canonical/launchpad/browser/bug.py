@@ -50,11 +50,12 @@ from canonical.launchpad.interfaces import (
     NoBugTrackerFound,
     NotFoundError,
     UnrecognizedBugTrackerURL,
-    valid_distrotask,
+    validate_new_distrotask,
     valid_upstreamtask,
     )
 from canonical.launchpad.browser.editview import SQLObjectEditView
 from canonical.launchpad.event import SQLObjectCreatedEvent
+from canonical.launchpad.validators import LaunchpadValidationError
 
 from canonical.launchpad.webapp import (
     custom_widget, action, canonical_url, ContextMenu,
@@ -107,11 +108,9 @@ class BugSetNavigation(Navigation):
 
     usedfor = IBugSet
 
-    # XXX
+    # XXX Daf 2006-02-01 bug=30238:
     # The browser:page declaration should be sufficient, but the traversal
     # takes priority. This is a workaround.
-    # https://launchpad.net/products/launchpad/+bug/30238
-    # -- Daf 2006/02/01
 
     @stepthrough('+text')
     def text(self, name):
@@ -134,8 +133,8 @@ class BugContextMenu(ContextMenu):
     usedfor = IBug
     links = ['editdescription', 'markduplicate', 'visibility', 'addupstream',
              'adddistro', 'subscription', 'addsubscriber', 'addcomment',
-             'nominate', 'addbranch', 'linktocve', 'unlinkcve', 'filebug',
-             'activitylog']
+             'nominate', 'addbranch', 'linktocve', 'unlinkcve',
+             'offermentoring', 'retractmentoring', 'activitylog']
 
     def __init__(self, context):
         # Always force the context to be the current bugtask, so that we don't
@@ -219,11 +218,19 @@ class BugContextMenu(ContextMenu):
         text = 'Remove CVE link'
         return Link('+unlinkcve', text, icon='remove', enabled=enabled)
 
-    def filebug(self):
-        bugtarget = self.context.target
-        linktarget = '%s/%s' % (canonical_url(bugtarget), '+filebug')
-        text = 'Report a bug in %s' % bugtarget.displayname
-        return Link(linktarget, text, icon='add')
+    def offermentoring(self):
+        text = 'Offer mentorship'
+        user = getUtility(ILaunchBag).user
+        enabled = self.context.bug.canMentor(user)
+        return Link('+mentor', text, icon='add', enabled=enabled)
+
+    def retractmentoring(self):
+        text = 'Retract mentorship'
+        user = getUtility(ILaunchBag).user
+        enabled = (self.context.bug.isMentor(user) and
+                   not self.context.bug.is_complete and
+                   user)
+        return Link('+retractmentoring', text, icon='remove', enabled=enabled)
 
     def activitylog(self):
         text = 'View activity log'
@@ -281,15 +288,15 @@ class MaloneView(LaunchpadFormView):
         search_params = BugTaskSearchParams(
             self.user, status=BugTaskStatus.FIXRELEASED,
             orderby='-date_closed')
-        fixed_bugtasks = getUtility(IBugTaskSet).search(search_params) 
-        # XXX: We might end up returning less than :limit: bugs, but in
+        fixed_bugtasks = getUtility(IBugTaskSet).search(search_params)
+        # XXX: Bjorn Tillenius 2006-12-13:
+        #      We might end up returning less than :limit: bugs, but in
         #      most cases we won't, and '4*limit' is here to prevent
         #      this page from timing out in production. Later I'll fix
         #      this properly by selecting bugs instead of bugtasks.
         #      If fixed_bugtasks isn't sliced, it will take a long time
         #      to iterate over it, even over just 10, because
         #      Transaction.iterSelect() listifies the result.
-        #      -- Bjorn Tillenius, 2006-12-13
         for bugtask in fixed_bugtasks[:4*limit]:
             if bugtask.bug not in fixed_bugs:
                 fixed_bugs.append(bugtask.bug)
@@ -397,12 +404,12 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
 
     schema = IUpstreamBugTask
     field_names = ['product']
-    label = u"Add affected product to bug"
+    label = u"Add affected project to bug"
 
     def _getUpstream(self, distro_package):
         """Return the upstream if there is a packaging link."""
-        for distrorelease in distro_package.distribution.releases:
-            source_package = distrorelease.getSourcePackage(
+        for distroseries in distro_package.distribution.serieses:
+            source_package = distroseries.getSourcePackage(
                 distro_package.sourcepackagename)
             if source_package.direct_packaging is not None:
                 return source_package.direct_packaging.productseries.product
@@ -417,9 +424,9 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
         elif IDistributionSourcePackage.providedBy(bugtask.target):
             upstream = self._getUpstream(bugtask.target)
             if upstream is None:
-                distrorelease = bugtask.distribution.currentrelease
-                if distrorelease is not None:
-                    sourcepackage = distrorelease.getSourcePackage(
+                distroseries = bugtask.distribution.currentseries
+                if distroseries is not None:
+                    sourcepackage = distroseries.getSourcePackage(
                         bugtask.sourcepackagename)
                     self.request.response.addInfoNotification(
                         'Please select the appropriate upstream project.'
@@ -427,7 +434,7 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
                         ' <a href="%(package_url)s/+edit-packaging">updating'
                         ' the packaging information for'
                         ' %(full_package_name)s</a>.',
-                        full_package_name=bugtask.targetname,
+                        full_package_name=bugtask.bugtargetdisplayname,
                         package_url=canonical_url(sourcepackage))
             else:
                 try:
@@ -455,7 +462,7 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
                 search_url = self.widgets['product'].popupHref()
                 self.setFieldError(
                     'product',
-                    'There is no product in Launchpad named "%s". You may'
+                    'There is no project in Launchpad named "%s". You may'
                     ' want to <a href="%s">search for it</a>, or'
                     ' <a href="%s">register it</a> if you can\'t find it.' % (
                         cgi.escape(entered_product),
@@ -501,7 +508,7 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
             if field_name not in target_field_names]
 
     def render_upstreamtask(self):
-        self.setUpLabelAndWidgets("Add affected product to bug", ['product'])
+        self.setUpLabelAndWidgets("Add affected project to bug", ['product'])
         self.index = self.upstream_page
 
         # It's not possible to enter the product on this page, so
@@ -595,13 +602,10 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                         cgi.escape(filebug_url, quote=True)))
             else:
                 try:
-                    valid_distrotask(
-                        self.context.bug, distribution, sourcepackagename,
-                        on_create=True)
-                except WidgetsError, errors:
-                    for error in errors:
-                        self.setFieldError(
-                            'sourcepackagename', error.snippet())
+                    validate_new_distrotask(
+                        self.context.bug, distribution, sourcepackagename)
+                except LaunchpadValidationError, error:
+                    self.setFieldError('sourcepackagename', error.snippet())
         else:
             # Validation failed for either the product or distribution,
             # no point in trying to validate further.
@@ -610,9 +614,9 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         bug_url = data.get('bug_url')
         if bug_url and target.official_malone:
             self.addError(
-                "Bug watches can not be added for %s, as it uses Malone"
+                "Bug watches can not be added for %s, as it uses Launchpad"
                 " as its official bug tracker. Alternatives are to add a"
-                " watch for another product, or a comment containing a"
+                " watch for another project, or a comment containing a"
                 " URL to the related bug report." % cgi.escape(
                     target.displayname))
 
@@ -631,9 +635,9 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                 self.extracted_bugtracker, self.extracted_bug = (
                     bugwatch_set.extractBugTrackerAndBug(bug_url))
             except NoBugTrackerFound, error:
-                # XXX: The user should be able to press a button here in
+                # XXX: Bjorn Tillenius 2006-09-26:
+                #      The user should be able to press a button here in
                 #      order to register the tracker.
-                #      -- Bjorn Tillenius, 2006-09-26
                 self.setFieldError(
                     'bug_url',
                     "The bug tracker at %s isn't registered in Launchpad."
@@ -661,11 +665,12 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
                 '<input style="font-size: smaller" type="submit"'
                 ' value="%s" name="%s" />' % (
                     confirm_action.label, confirm_action.__name__))
-            #XXX: This text should be re-written to be more compact. I'm not
+            #XXX: Bjorn Tillenius 2006-09-13:
+            #     This text should be re-written to be more compact. I'm not
             #     doing it now, though, since it might go away completely
-            #     soon. -- Bjorn Tillenius, 2006-09-13
+            #     soon.
             self.notifications.append(
-                "%s doesn't use Malone as its bug tracker. If you don't add"
+                "%s doesn't use Launchpad as its bug tracker. If you don't add"
                 " a bug watch now you have to keep track of the status"
                 " manually. You can however link to an external bug tracker"
                 " at a later stage in order to get automatic status updates."
@@ -718,7 +723,8 @@ class BugAlsoReportInView(LaunchpadFormView, BugAlsoReportInBaseView):
         if not target.official_malone and taskadded.bugwatch is not None:
             # A remote bug task gets its from a bug watch, so we want
             # its status to be None when created.
-            taskadded.transitionToStatus(BugTaskStatus.UNKNOWN)
+            taskadded.transitionToStatus(
+                BugTaskStatus.UNKNOWN, self.user)
             taskadded.importance = BugTaskImportance.UNKNOWN
 
         notify(SQLObjectCreatedEvent(taskadded))
@@ -790,7 +796,7 @@ class BugEditView(BugEditViewBase):
             self.notifications.append(
                 'The tag "%s" hasn\'t yet been used by %s before.'
                 ' Is this a new tag? %s' % (
-                    new_tag, bugtarget.bugtargetname, confirm_button))
+                    new_tag, bugtarget.bugtargetdisplayname, confirm_button))
             self._confirm_new_tags = True
 
     @action('Change', name='change')
@@ -901,7 +907,7 @@ class BugTextView(LaunchpadView):
 
     def bugtask_text(self, task):
         text = []
-        text.append('task: %s' % task.targetname)
+        text.append('task: %s' % task.bugtargetname)
         text.append('status: %s' % task.status.title)
         text.append('reporter: %s' % self.person_text(task.owner))
 
@@ -931,7 +937,7 @@ class BugURL:
     implements(ICanonicalUrlData)
 
     inside = None
-    rootsite = 'mainsite'
+    rootsite = 'bugs'
 
     def __init__(self, context):
         self.context = context

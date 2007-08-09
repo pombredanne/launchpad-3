@@ -187,9 +187,16 @@ class LaunchpadView(UserAttributeCache):
         """
         return self.template()
 
+    def _isRedirected(self):
+        """Return True if a redirect was requested.
+
+        Check if the response status is one of 301, 302, 303 or 307.
+        """
+        return self.request.response.getStatus() in [301, 302, 303, 307]
+
     def __call__(self):
         self.initialize()
-        if self.request.response.getStatus() in [301, 302, 303, 307]:
+        if self._isRedirected():
             # Don't render the page on redirects.
             return u''
         else:
@@ -249,7 +256,8 @@ def canonical_url_iterator(obj):
             yield urldata.inside
 
 
-def canonical_url(obj, request=None, rootsite=None):
+def canonical_url(
+    obj, request=None, rootsite=None, path_only_if_possible=False):
     """Return the canonical URL string for the object.
 
     If the canonical url configuration for the given object binds it to a
@@ -320,10 +328,16 @@ def canonical_url(obj, request=None, rootsite=None):
                     "Shipit canonical urls must be used only with request "
                     "== None or a request providing one of the ShipIt Layers")
         else:
-            raise AssertionError(
-                "rootsite is %s.  Must be 'launchpad', 'blueprint' or 'shipit'."
-                % rootsite)
-    return unicode(root_url + u'/'.join(reversed(urlparts)))
+            raise AssertionError("rootsite is %s.  Must be in %r." % (
+                    rootsite, sorted(allvhosts.configs.keys())
+                    ))
+    path = u'/'.join(reversed(urlparts))
+    if (path_only_if_possible and
+        request is not None and
+        root_url.startswith(request.getApplicationURL())
+        ):
+        return unicode('/' + path)
+    return unicode(root_url + path)
 
 
 def get_current_browser_request():
@@ -462,9 +476,12 @@ class Navigation:
         # If self.context has a view called +menudata, it has a menu.
         menuview = queryMultiAdapter(
             (self.context, self.request), name="+menudata")
-        has_menu = menuview is not None
+        if menuview is None:
+            has_menu = False
+        else:
+            has_menu = menuview.submenuHasItems('')
         self.request.breadcrumbs.append(
-            Breadcrumb(self.request.getURL(1, path_only=True), text, has_menu))
+            Breadcrumb(self.request.getURL(1, path_only=False), text, has_menu))
 
     def _handle_next_object(self, nextobj, request, name):
         """Do the right thing with the outcome of traversal.

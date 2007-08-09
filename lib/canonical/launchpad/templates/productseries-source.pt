@@ -19,7 +19,7 @@
     <p metal:fill-slot="extra_info" tal:condition="not:view/errors">
       Once you enter the details of the
       <abbr title="revision control system">RCS</abbr> you use for
-      this product series, Launchpad Administrators will attempt to import that
+      this release series, Launchpad Administrators will attempt to import that
       code and publish it as a Bazaar branch.
     </p>
 

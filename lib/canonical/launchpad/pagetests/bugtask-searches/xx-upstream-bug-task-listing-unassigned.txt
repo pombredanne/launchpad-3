@@ -1,7 +1,7 @@
 View the unassigned bug tasks listing as user Sample Person.
 
   >>> print http(r"""
-  ... GET /firefox/+bugs?searchtext=&field.milestone-empty-marker=1&field.status%3Alist=Unconfirmed&field.status%3Alist=Confirmed&field.status-empty-marker=1&field.importance-empty-marker=1&assignee_option=none&field.assignee=&field.milestone-empty-marker=1&search=Search HTTP/1.1
+  ... GET /firefox/+bugs?searchtext=&field.milestone-empty-marker=1&field.status%3Alist=New&field.status%3Alist=Confirmed&field.status-empty-marker=1&field.importance-empty-marker=1&assignee_option=none&field.assignee=&field.milestone-empty-marker=1&search=Search HTTP/1.1
   ... Authorization: Basic dGVzdEBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 200 Ok

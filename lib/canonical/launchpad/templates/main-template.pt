@@ -1,49 +1,82 @@
 <metal:page define-macro="master"><metal:doctype define-slot="doctype"><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"></metal:doctype>
 <metal:block define-slot="top_slot" />
-<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lpm="http://ns.launchpad.net/lpm" xml:lang="en" lang="en"
-    tal:attributes="lang default_language|default;
-                    xml:lang default_language|default;"
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:lpm="http://ns.launchpad.net/lpm" xml:lang="en" lang="en" dir="ltr"
+    tal:attributes="lang view/lang|default_language|default;
+                    xml:lang view/lang|default_language|default;
+                    dir view/dir|string:ltr"
     tal:define="
+        icingrev string:117;
         rooturl modules/canonical.launchpad.webapp.vhosts/allvhosts/configs/mainsite/rooturl;
-        site_message modules/canonical.config/config/launchpad/site_message">
+        icingroot string:${rooturl}+icing/rev${icingrev};
+        site_message modules/canonical.config/config/launchpad/site_message;
+        devmode modules/canonical.config/config/devmode;
+        is_demo modules/canonical.config/config/launchpad/is_demo">
   <head>
     <title tal:content="CONTEXTS/fmt:pagetitle">Launchpad</title>
     <!-- Launchpad style sheet -->
     <style
       type="text/css"
       media="screen, print"
-      tal:content="string:@import url(${rooturl}+icing/rev2/style.css);"/>
+      tal:condition="not: devmode"
+      tal:content="string:@import url(${icingroot}/+style-slimmer.css);"/>
     <style
-      tal:define="dbname modules/canonical.config/config/dbname"
-      tal:condition="python: False and dbname!='launchpad_prod'"
       type="text/css"
+      media="screen, print"
+      tal:condition="devmode"
+      tal:content="string:@import url(${icingroot}/style.css);"/>
+    <style tal:condition="is_demo" type="text/css"
     >html, body {background: #ddd url(/@@/demo) !important;}</style>
-    <style tal:condition="not: site_message" type="text/css"
-    >#help_panel {top: 28px !important;}</style>
-    <!-- Launchpad JS code -->
-    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/MochiKit/MochiKit.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/launchpad.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/lpmenu.js"></script>
-    <script type="text/javascript" tal:attributes="src string:${rooturl}@@/sorttable.js"></script>
-    <link rel="shortcut icon" tal:attributes="href string:${rooturl}@@/launchpad" />
+    <style tal:condition="site_message" type="text/css"
+    >#help {top: 47px !important;}</style>
+    <!--[if IE 7]>
+      <style type="text/css">#portlets {left: 20px;}</style>
+    <![endif]-->
+
+    <tal:comment condition="nothing">
+      This CSS collapses portlets and the contents of collapsible fieldsets,
+      without the flashing that would result from doing it in JavaScript.
+      activateCollapsibles() removes the class="collapsed" from fieldsets, to
+      re-show their divs, once the children themselves have been collapsed.
+    </tal:comment>
+    <style type="text/css">
+      #portlets .portletBody, fieldset.collapsed div,
+      fieldset div.collapsed {display: none;}
+    </style>
+    <noscript>
+      <style type="text/css">
+        #portlets .portletBody, fieldset.collapsible div,
+        fieldset div.collapsed {display: block;}
+      </style>
+    </noscript>
+
+    <script type="text/javascript" tal:attributes="src string:${icingroot}/MochiKit.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${icingroot}/launchpad.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${icingroot}/lpmenu.js"></script>
+    <script type="text/javascript" tal:attributes="src string:${icingroot}/sorttable.js"></script>
+    <script type="text/javascript">
+      function onLoadFunction() {
+        lpmenu.initialize(['menuroot'], '/', 'menupreload',
+                           [], '1.3em', 16, true);
+        sortables_init();
+        initHelpPanel();
+        initPortlets();
+      }
+      registerLaunchpadFunction(onLoadFunction);
+    </script>
+    <link rel="shortcut icon" tal:attributes="href string:${icingroot}/launchpad.png" />
     <metal:block define-slot="head_epilogue"></metal:block>
   </head>
   <body
-    onload="
-      lpmenu.initialize(['menuroot'], '/', 'menupreload', [], '1.3em', 16, true);
-      sortables_init();
-      initHelpPanel();
-      initPortlets();
-    "
     id="document"
     tal:attributes="class string:tab-${CONTEXTS/menu:selectedfacetname} ${view/macro:pagetype}"
   >
-    <div id="globalheader" tal:condition="site_message">
+    <div id="globalheader"  xml:lang="en" lang="en" dir="ltr"
+      tal:condition="site_message">
       <div class="sitemessage" tal:content="structure site_message"/>
       <img class="launchpad" width="90" height="20" tal:attributes="src string:${rooturl}+icing/globalheader_launchpad_bg.gif" alt="Launchpad"/>
     </div>
     <div id="topline" tal:condition="not: site_message"></div>
-    <div id="locationbar">
+    <div id="locationbar" xml:lang="en" lang="en" dir="ltr">
       <strong id="yourlocation">Your location:</strong>
       <ul id="menuroot">
         <tal:hierarchy content="structure context/@@+breadcrumbs" />
@@ -58,7 +91,7 @@
       <tal:maintenance replace="structure context/@@+maintenancemessage" />
       <table
         tal:condition="view/macro:pagehas/applicationbuttons"
-        id="applications"
+        id="applications" xml:lang="en" lang="en" dir="ltr"
       >
         <tbody>
           <tr>
@@ -75,7 +108,7 @@
         </tbody>
       </table>
       <div
-        id="structuralobject"
+        id="structuralobject" xml:lang="en" lang="en" dir="ltr"
         tal:define="structuralheaderobject CONTEXTS/lp:structuralheaderobject"
         tal:condition="view/macro:pagehas/structuralheaderobject"
       >
@@ -88,15 +121,16 @@
       </div>
       <form
         tal:condition="view/macro:pagehas/globalsearch"
-        id="globalsearch"
-        action="/+search"
+        id="globalsearch" xml:lang="en" lang="en" dir="ltr"
+        action="/projects/"
         method="get"
+        accept-charset="UTF-8"
       >
         <div>
           <input
             type="text"
-            id="q"
-            name="q"
+            id="text"
+            name="text"
             value="Search"
             onfocus="if(this.value=='Search'){this.value='';};"
           />
@@ -109,8 +143,7 @@
         </div>
       </form>
       <div tal:condition="view/macro:pagehas/applicationborder" id="mainarea">
-        <div class="t">
-          <div class="u">
+
             <div class="v">
               <div class="w">
                 <div class="x">
@@ -125,6 +158,7 @@
                       >
                         <ul
                           id="applicationchooser"
+                          xml:lang="en" lang="en" dir="ltr"
                           tal:define="facetmenu CONTEXTS/menu:facet"
                           tal:condition="facetmenu"
                         >
@@ -165,11 +199,18 @@
                           </tal:facet>
                         </ul>
                       </tal:applicationtabs>
-                      <br class="clear" />
+                      <!-- this br is conditional so that it does not show
+                           on applicationhomes, where it causes a large
+                           white space at the top of the page content area
+                           -->
+                      <br class="clear"
+                          tal:condition="view/macro:pagehas/pageheading"/>
                       <div id="container">
                         <div id="maincontent">
-                          <div class="pageheading"><!-- XXX obsolete -->
+                           <div class="pageheading"
+                                tal:condition="view/macro:pagehas/pageheading">
                             <metal:block define-slot="pageheading">
+                              <!-- XXX Mark Shuttleworth 2007-04-30: Obsolete -->
                             </metal:block>
                           </div>
                           <tal:notifications
@@ -188,7 +229,7 @@
                           </tal:no_children>
                         </div>
                         <div
-                          id="portlets"
+                          id="portlets" xml:lang="en" lang="en" dir="ltr"
                           tal:condition="view/macro:pagehas/portlets"
                         >
                           <tal:menu replace="structure CONTEXTS/@@+menubox" />
@@ -204,8 +245,7 @@
                 </div><!--id="x"-->
               </div><!--id="w"-->
             </div><!--id="v"-->
-          </div><!--id="u"-->
-        </div><!--id="t"-->
+
       </div><!--id="mainarea"-->
       <tal:noborder condition="not:view/macro:pagehas/applicationborder">
         <tal:notifications
@@ -221,7 +261,7 @@
           top margin for a cleared item is ignored.
         </tal:comment>
       </tal:noborder>
-      <div id="globalfooter">
+      <div id="globalfooter" xml:lang="en" lang="en" dir="ltr">
         <div id="applications-footer"
           tal:define="vhosts modules/canonical.launchpad.webapp.vhosts/allvhosts/configs"
           tal:replace="nothing">
@@ -239,14 +279,18 @@
           <a href="/faq">FAQ</a>
         </div>
         <div id="copyright">
-          Copyright&nbsp;2004-2007&nbsp;<a href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
-          <tal:block define="revno modules/canonical.launchpad.versioninfo/revno">
+            Copyright&nbsp;2004-2007&nbsp;<a
+                href="http://canonical.com/">Canonical&nbsp;Ltd.</a>
+          <tal:block
+              define="revno modules/canonical.launchpad.versioninfo/revno">
               | build
               <tal:block condition="revno" replace="revno" />
               <tal:block condition="not: revno">unknown</tal:block>
           </tal:block>
+          <tal:devmode condition="devmode">| DEVMODE</tal:devmode>
+          <tal:demo condition="is_demo">| DEMO</tal:demo>
         </div>
-        <ul style="clear: both;" tal:condition="nothing">
+        <ul style="clear: both; margin-top:20px;" tal:condition="nothing">
             <li>Facet name:
               <tal:block tal:replace="CONTEXTS/menu:selectedfacetname" />
             </li>
@@ -271,26 +315,29 @@
         </ul>
       </div><!--id="globalfooter"-->
     </div><!--id="nonhelp"-->
-    <div id="help_panel" class="closed">
-      <div class="help1">
-        <div class="help2">
-          <p metal:define-slot="help">
-            Sorry, help isn&rsquo;t available for this page.
-          </p>
+    <div id="help" class="closed" xml:lang="en" lang="en" dir="ltr">
+      <h2 id="help-tab">Help</h2>
+      <div id="help-panel">
+        <div id="help-content">
+          <div id="help-text">
+            <p metal:define-slot="help">
+              Sorry, help isn&rsquo;t available for this page.
+            </p>
+          </div>
         </div>
-        <a href="#" class="open-close">Help</a>
-        <br class="clear" />
+        <div id="help-bottom">&nbsp;</div>
       </div>
-      <div class="bottom">&nbsp;</div>
     </div>
-    <div id="menupreload" style="visibility:hidden">
+    <div id="menupreload" style="visibility:hidden" 
+      xml:lang="en" lang="en" dir="ltr">
       <ul class="menu" lpm:mid="root">
         <tal:condition condition="request/lp:person">
-          <li class="item" lpm:mid="/+menudata/contributions"><a
-          class="container" href="/products">Projects</a></li>
+          <li class="item"
+              tal:attributes="lpm:mid string:/~${request/lp:person/name}/+menudata/contributions"><a
+          class="container" href="/projects">Projects</a></li>
         </tal:condition>
         <tal:condition condition="not: request/lp:person">
-          <li class="item"><a href="/products">Projects</a></li>
+          <li class="item"><a href="/projects">Projects</a></li>
         </tal:condition>
         <li class="item"><a href="/distros">Distributions</a></li>
         <li class="item"><a href="/people">People</a></li>
@@ -298,5 +345,9 @@
     </div>
   </body>
 </html>
+<tal:requestlog
+    define="log modules/canonical.launchpad.webapp.adapter/summarize_requests"
+    replace="structure string:<!-- at least ${log} -->" />
 </metal:page>
 <!-- 1-0 inprogress Help panel wrong in IE/Win; portlets wrong in IE/Mac -->
+

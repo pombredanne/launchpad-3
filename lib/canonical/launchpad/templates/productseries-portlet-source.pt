@@ -28,7 +28,8 @@
         </tal:block>
 
         <b>Import status:</b>
-        <span tal:replace="context/importstatus/title">Syncing</span><br />
+        <span tal:condition="context/importstatus"
+              tal:replace="context/importstatus/title">Syncing</span><br />
         <tal:block condition="context/datestarted">
           <b>Last sync started:</b>
           <span

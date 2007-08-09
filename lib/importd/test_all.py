@@ -50,6 +50,8 @@ import unittest
 lp_root = os.path.realpath(os.path.join(__file__, '..', '..', '..'))
 sys.path[:] = [p for p in sys.path if os.path.abspath(p) != lp_root]
 
+from canonical.launchpad.scripts import execute_zcml_for_scripts
+from canonical.testing.layers import is_ca_available
 from importd.tests.testutil import TestVisitor, TestSuite
 
 
@@ -141,6 +143,17 @@ def main(argv):
     visitor=filteringVisitor(pattern)
     test_suite().visit(visitor)
     runner=ParameterisableTextTestRunner(verbosity=2).resultFactory(earlyStopFactory)
+
+    # XXX: DavidAllouche 2007-04-27: 
+    # jobsFromSeries uses canonical_url. This requires the zope component
+    # architecture to be set up. Since the CA cannot be tore down, and this
+    # test runner does not know about layers (and does not know to run tests
+    # that do not require the CA before it is setup), we run
+    # execute_zcml_for_scripts in the initialization of the test runner.
+    execute_zcml_for_scripts()
+    assert is_ca_available(), (
+        "Component architecture not loaded by execute_zcml_for_scripts")
+
     if not runner.run(visitor.suite()).wasSuccessful(): return 1
     return 0
 

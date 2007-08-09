@@ -13,6 +13,7 @@ __all__ = [
     'ITranslationImportQueueEntry',
     'ITranslationImportQueue',
     'IEditTranslationImportQueueEntry',
+    'IHasTranslationImports',
     ]
 
 class ITranslationImportQueueEntry(Interface):
@@ -31,7 +32,7 @@ class ITranslationImportQueueEntry(Interface):
         title=_("Importer"),
         required=True,
         description=_(
-            "The person that imported this file in Rosetta."),
+            "The person that imported this file in Launchpad."),
         vocabulary="ValidOwner")
 
     dateimported = Datetime(
@@ -39,14 +40,14 @@ class ITranslationImportQueueEntry(Interface):
         required=True)
 
     productseries = Choice(
-        title=_("Product Branch or Series"),
+        title=_("Series"),
         required=False,
         vocabulary="ProductSeries")
 
-    distrorelease = Choice(
-        title=_("Distribution Release"),
+    distroseries = Choice(
+        title=_("Series"),
         required=False,
-        vocabulary="DistroRelease")
+        vocabulary="DistroSeries")
 
     sourcepackagename = Choice(
         title=_("Source Package Name"),
@@ -66,8 +67,6 @@ class ITranslationImportQueueEntry(Interface):
         "An ILibraryFileAlias reference with the file content. Must be not"
         " None.")
 
-    # XXX CarlosPerelloMarin 20060301: We are using Choice instead of Attribute
-    # due bug #34103
     status = Choice(
         title=_("The status of the import."),
         values=RosettaImportStatus.items,
@@ -86,14 +85,10 @@ class ITranslationImportQueueEntry(Interface):
     import_into = Attribute("The Object where this entry will be imported. Is"
         " None if we don't know where to import it.")
 
-    # XXX CarlosPerelloMarin 20060301: We are using Field instead of Attribute
-    # due bug #34103
     pofile = Field(
         title=_("The IPOfile where this entry should be imported."),
         required=False)
 
-    # XXX CarlosPerelloMarin 20060301: We are using Field instead of Attribute
-    # due bug #34103
     potemplate = Field(
         title=_("The IPOTemplate associated with this entry."),
         description=_("The IPOTemplate associated with this entry. If path"
@@ -144,8 +139,8 @@ class ITranslationImportQueue(Interface):
         """Iterate over all entries in the queue that need review."""
 
     def addOrUpdateEntry(path, content, is_published, importer,
-        sourcepackagename=None, distrorelease=None, productseries=None,
-        potemplate=None, pofile=None):
+        sourcepackagename=None, distroseries=None, productseries=None,
+        potemplate=None, pofile=None, format=None):
         """Return a new or updated entry of the import queue.
 
         :arg path: is the path, with the filename, of the file imported.
@@ -155,17 +150,18 @@ class ITranslationImportQueue(Interface):
         :arg importer: is the person that did the import.
         :arg sourcepackagename: is the link of this import with source
             package.
-        :arg distrorelease: is the link of this import with a distribution.
+        :arg distroseries: is the link of this import with a distribution.
         :arg productseries: is the link of this import with a product branch.
         :arg potemplate: is the link of this import with an IPOTemplate.
         :arg pofile: is the link of this import with an IPOFile.
+        :arg format: a TranslationFileFormat.
 
-        sourcepackagename + distrorelease and productseries are exclusive, we
+        sourcepackagename + distroseries and productseries are exclusive, we
         must have only one combination of them.
         """
 
     def addOrUpdateEntriesFromTarball(content, is_published, importer,
-        sourcepackagename=None, distrorelease=None, productseries=None,
+        sourcepackagename=None, distroseries=None, productseries=None,
         potemplate=None):
         """Add all .po or .pot files from the tarball at :content:.
 
@@ -175,11 +171,11 @@ class ITranslationImportQueue(Interface):
         :arg importer: is the person that did the import.
         :arg sourcepackagename: is the link of this import with source
             package.
-        :arg distrorelease: is the link of this import with a distribution.
+        :arg distroseries: is the link of this import with a distribution.
         :arg productseries: is the link of this import with a product branch.
         :arg potemplate: is the link of this import with an IPOTemplate.
 
-        sourcepackagename + distrorelease and productseries are exclusive, we
+        sourcepackagename + distroseries and productseries are exclusive, we
         must have only one combination of them.
 
         Return the number of files attached.
@@ -208,12 +204,17 @@ class ITranslationImportQueue(Interface):
         """Return the first entry of the queue ready to be imported."""
 
     def getEntriesWithPOTExtension(
-        distrorelease=None, sourcepackagename=None, productseries=None):
+        distroseries=None, sourcepackagename=None, productseries=None):
         """Return all entries with the '.pot' extension in the path field.
 
-        distrorelease, sourcepackagename and productseries can be used for
+        distroseries, sourcepackagename and productseries can be used for
         filtering purposes.
         """
+
+    def getPillarObjectsWithApprovedImports():
+        """Return list of Product's and DistroSeries's with pending imports.
+
+        All returned items must implement IHasTranslationImports."""
 
     def executeOptimisticApprovals(ztm):
         """Try to move entries from the Needs Review status to Approved one.
@@ -281,3 +282,15 @@ class IEditTranslationImportQueueEntry(Interface):
             "The path to this file inside the source tree. If it's empty, we"
             " use the one from the queue entry."),
         required=False)
+
+
+class IHasTranslationImports(Interface):
+    """A set of files to be imported into Rosetta.
+
+    Implemented separately for a distroseries or product, allowing a single
+    queue per each.
+    """
+
+    def getFirstEntryToImport():
+        """Return the first entry of the queue ready to be imported."""
+

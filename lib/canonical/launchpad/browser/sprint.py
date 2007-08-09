@@ -4,21 +4,22 @@
 
 __metaclass__ = type
 __all__ = [
-    'SprintFacets',
-    'SprintNavigation',
-    'SprintsMixinDynMenu',
-    'SprintOverviewMenu',
-    'SprintSpecificationsMenu',
-    'SprintSetFacets',
-    'SprintSetContextMenu',
-    'SprintSetNavigation',
-    'SprintSetSOP',
-    'SprintView',
     'SprintAddView',
     'SprintBrandingView',
     'SprintEditView',
-    'SprintTopicSetView',
+    'SprintFacets',
     'SprintMeetingExportView',
+    'SprintNavigation',
+    'SprintOverviewMenu',
+    'SprintSetContextMenu',
+    'SprintSetFacets',
+    'SprintSetNavigation',
+    'SprintSetSOP',
+    'SprintSetView',
+    'SprintsMixinDynMenu',
+    'SprintSpecificationsMenu',
+    'SprintTopicSetView',
+    'SprintView',
     ]
 
 import pytz
@@ -37,12 +38,14 @@ from canonical.launchpad.webapp import (
     LaunchpadFormView, LaunchpadView, Link, Navigation,
     StandardLaunchpadFacets, action, canonical_url, custom_widget,
     enabled_with_permission)
+from canonical.launchpad.webapp.batching import BatchNavigator
+from canonical.launchpad.webapp.dynmenu import neverempty
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation)
 from canonical.lp.dbschema import (
     SpecificationFilter, SpecificationPriority, SpecificationSort,
-    SpecificationStatus)
+    SpecificationDefinitionStatus)
 from canonical.widgets.textwidgets import LocalDateTimeWidget
 
 
@@ -55,7 +58,7 @@ class SprintFacets(StandardLaunchpadFacets):
     def specifications(self):
         text = 'Blueprints'
         summary = 'Topics for discussion at %s' % self.context.title
-        return Link('+specs', text, summary)
+        return Link('', text, summary)
 
 
 class SprintNavigation(Navigation):
@@ -68,6 +71,7 @@ class SprintNavigation(Navigation):
 
 class SprintsMixinDynMenu:
 
+    @neverempty
     def meetingsMenu(self):
         coming_sprints = shortlist(self.context.coming_sprints, 20)
         if coming_sprints:
@@ -112,7 +116,7 @@ class SprintSpecificationsMenu(ApplicationMenu):
 
     usedfor = ISprint
     facet = 'specifications'
-    links = ['assignments', 'declined', 'settopics', 'roadmap']
+    links = ['assignments', 'declined', 'settopics', 'roadmap', 'addspec']
 
     def assignments(self):
         text = 'Assignments'
@@ -134,6 +138,11 @@ class SprintSpecificationsMenu(ApplicationMenu):
         text = 'Roadmap'
         summary = 'Suggest a sequence of implementation for these features'
         return Link('+roadmap', text, summary, icon='info')
+
+    def addspec(self):
+        text = 'Register a blueprint'
+        summary = 'Register a new blueprint for this meeting'
+        return Link('+addspec', text, summary, icon='info')
 
 
 class SprintSetNavigation(GetitemNavigation):
@@ -169,14 +178,18 @@ class SprintSetSOP(StructuralObjectPresentation):
 class SprintSetContextMenu(ContextMenu):
 
     usedfor = ISprintSet
-    links = ['products', 'distributions', 'people', 'sprints', 'new']
+    links = ['products', 'distributions', 'people', 'sprints', 'all', 'new']
+
+    def all(self):
+        text = 'List all meetings'
+        return Link('+all', text)
 
     def new(self):
         text = 'Register a meeting'
         return Link('+new', text, icon='add')
 
     def products(self):
-        return Link('/products/', 'View projects')
+        return Link('/projects/', 'View projects')
 
     def distributions(self):
         return Link('/distros/', 'View distributions')
@@ -281,6 +294,7 @@ class SprintAddView(LaunchpadFormView):
             time_zone=data['time_zone'],
             time_starts=data['time_starts'],
             time_ends=data['time_ends'],
+            address=data['address'],
             )
         self.request.response.addInfoNotification('Sprint created.')
 
@@ -441,9 +455,10 @@ class SprintMeetingExportView(LaunchpadView):
                 spec.priority < SpecificationPriority.LOW):
                 continue
 
-            if spec.status not in [SpecificationStatus.NEW,
-                                   SpecificationStatus.DISCUSSION,
-                                   SpecificationStatus.DRAFT]:
+            if (spec.definition_status not in
+                [SpecificationDefinitionStatus.NEW,
+                 SpecificationDefinitionStatus.DISCUSSION,
+                 SpecificationDefinitionStatus.DRAFT]):
                 continue
 
             # get the list of attendees that will attend the sprint
@@ -469,3 +484,10 @@ class SprintMeetingExportView(LaunchpadView):
                                         'application/xml;charset=utf-8')
         body = LaunchpadView.render(self)
         return body.encode('utf-8')
+
+
+class SprintSetView(LaunchpadView):
+
+    def all_batched(self):
+        return BatchNavigator(self.context.all, self.request)
+

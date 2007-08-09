@@ -173,14 +173,14 @@ class DummyLaunchBag:
         self.user = user
 
 
-def test_request_languages():
+def test_preferred_or_request_languages():
     '''
     >>> from zope.app.testing.placelesssetup import setUp, tearDown
     >>> from zope.app.tests import ztapi
     >>> from zope.i18n.interfaces import IUserPreferredLanguages
     >>> from canonical.launchpad.interfaces import IRequestPreferredLanguages
     >>> from canonical.launchpad.interfaces import IRequestLocalLanguages
-    >>> from canonical.launchpad.helpers import request_languages
+    >>> from canonical.launchpad.helpers import preferred_or_request_languages
 
     First, test with a person who has a single preferred language.
 
@@ -190,7 +190,7 @@ def test_request_languages():
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
-    >>> languages = request_languages(DummyRequest())
+    >>> languages = preferred_or_request_languages(DummyRequest())
     >>> len(languages)
     1
     >>> languages[0].code
@@ -206,7 +206,7 @@ def test_request_languages():
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestPreferredLanguages, adaptRequestToLanguages)
     >>> ztapi.provideAdapter(IBrowserRequest, IRequestLocalLanguages, adaptRequestToLanguages)
 
-    >>> languages = request_languages(DummyRequest())
+    >>> languages = preferred_or_request_languages(DummyRequest())
     >>> len(languages)
     6
     >>> languages[0].code
@@ -215,10 +215,37 @@ def test_request_languages():
     >>> tearDown()
     '''
 
+
+class TruncateTextTest(unittest.TestCase):
+
+    def test_leaves_shorter_text_unchanged(self):
+        """When the text is shorter than the length, nothing is truncated."""
+        self.assertEqual('foo', helpers.truncate_text('foo', 10))
+
+    def test_single_very_long_word(self):
+        """When the first word is longer than the truncation then that word is
+        included.
+        """
+        self.assertEqual('foo', helpers.truncate_text('foooo', 3))
+
+    def test_words_arent_split(self):
+        """When the truncation would leave only half of the last word, then the
+        whole word is removed.
+        """
+        self.assertEqual('foo', helpers.truncate_text('foo bar', 5))
+
+    def test_whitespace_is_preserved(self):
+        """The whitespace between words is preserved in the truncated text."""
+        text = 'foo  bar\nbaz'
+        self.assertEqual(text, helpers.truncate_text(text, len(text)))
+
+
 def test_suite():
     suite = unittest.TestSuite()
     suite.addTest(DocTestSuite())
     suite.addTest(DocTestSuite(helpers))
+    suite.addTest(
+        unittest.TestLoader().loadTestsFromTestCase(TruncateTextTest))
     return suite
 
 if __name__ == '__main__':

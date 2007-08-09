@@ -1,4 +1,4 @@
-# Copyright 2005 Canonical Ltd.  All rights reserved.
+# Copyright 2005-2007 Canonical Ltd.  All rights reserved.
 
 """Browser views for ITranslationImportQueue."""
 
@@ -83,25 +83,22 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             field_values['language'] = self.context.pofile.language
             field_values['variant'] = self.context.pofile.variant
         else:
-            # It's not a template, we try to guess the language based on its
-            # file name.
+            # The entries that are translations usually have the language code
+            # as its filename. We try to get it to use as a suggestion.
             language_set = getUtility(ILanguageSet)
             filename = os.path.basename(self.context.path)
             guessed_language, file_ext = filename.split(u'.', 1)
-            if file_ext == 'po':
-                # The entry is a .po file so its filename would be a language
-                # code.
-                (language, variant) = (
-                    language_set.getLanguageAndVariantFromString(guessed_language))
-                if language is not None:
-                    field_values['language'] = language
-                    # Need to warn the user that we guessed the language
-                    # information.
-                    self.request.response.addWarningNotification(
-                        "Review the language selection as we guessed it and"
-                        " could not be accurated.")
-                if variant is not None:
-                    field_values['variant'] = variant
+            (language, variant) = (
+                language_set.getLanguageAndVariantFromString(guessed_language))
+            if language is not None:
+                field_values['language'] = language
+                # Need to warn the user that we guessed the language
+                # information.
+                self.request.response.addWarningNotification(
+                    "Review the language selection as we guessed it and"
+                    " could not be accurated.")
+            if variant is not None:
+                field_values['variant'] = variant
 
         return field_values
 
@@ -121,12 +118,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             # useful here.
             self.field_names.remove('sourcepackagename')
 
-        if self.context.path.endswith('.pot'):
-            # It's template file, we don't need to choose the language and
-            # variant.
-            self.field_names.remove('language')
-            self.field_names.remove('variant')
-
         # Execute default initialisation.
         LaunchpadFormView.initialize(self)
 
@@ -137,10 +128,10 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
             # The Rosetta Expert decided to change the path of the file.
             # Before accepting such change, we should check first whether is
             # already another entry with that path in the same context
-            # (sourcepackagename/distrorelease or productseries).
+            # (sourcepackagename/distroseries or productseries).
             pofile_set = getUtility(IPOFileSet)
             existing_pofile = pofile_set.getPOFileByPathAndOrigin(
-                path, self.context.productseries, self.context.distrorelease,
+                path, self.context.productseries, self.context.distroseries,
                 self.context.sourcepackagename)
             if existing_pofile is None:
                 # There is no other pofile in the given path for this context,
@@ -168,11 +159,11 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
                 sourcepackagename.id != self.context.sourcepackagename.id):
                 # Got another sourcepackagename from the form, we will use it.
                 potemplate_subset = potemplate_set.getSubset(
-                    distrorelease=self.context.distrorelease,
+                    distroseries=self.context.distroseries,
                     sourcepackagename=sourcepackagename)
             else:
                 potemplate_subset = potemplate_set.getSubset(
-                    distrorelease=self.context.distrorelease,
+                    distroseries=self.context.distroseries,
                     sourcepackagename=self.context.sourcepackagename)
         else:
             potemplate_subset = potemplate_set.getSubset(
@@ -180,9 +171,6 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
         try:
             potemplate = potemplate_subset[potemplatename.name]
         except NotFoundError:
-            # The POTemplate does not exist. In this case we don't care if
-            # the file is a .pot or a .po file, we can use either as the base
-            # template.
             potemplate = potemplate_subset.new(
                 potemplatename,
                 self.context.path,
@@ -193,15 +181,10 @@ class TranslationImportQueueEntryView(LaunchpadFormView):
 
         if language is None:
             # We are importing an IPOTemplate file.
-            if self.context.path.endswith('.po'):
-                # The original import was a .po file but the admin decided to
-                # import it as a .pot file, we update the path changing the
-                # file extension from .po to .pot to reflect this fact.
-                self.context.path = '%st' % self.context.path
             if (self.context.sourcepackagename is not None and
                 potemplate.sourcepackagename is not None and
-                self.context.sourcepackagename.id !=
-                potemplate.sourcepackagename.id):
+                self.context.sourcepackagename != potemplate.sourcepackagename
+                ):
                 # We got the template from a different package than the one
                 # selected by the user where the import should done, so we
                 # note it here.

@@ -64,30 +64,46 @@
                           community support network and knowledge base for
                           your project. Encourage new users to ask questions
                           rather than file bugs!
-                          <a href="/+tour">Learn more&#8230;</a>
+                          <a href="/+about">Learn more&#8230;</a>
                         </p>
-                        <div id="latest-questions-asked" class="left">
 
-      <h2 i18n:translate="">Latest questions asked</h2>
-      <table>
-        <tal:question
-          repeat="question view/latest_questions_asked"
-          content="structure question/@@+listing-detailed"
-        />
-      </table>
+      <div class="columns">
+        <div id="most-active-projects" class="three column left">
+          <h2 i18n:translate="">Most active projects</h2>
 
-                        </div>
-                        <div id="latest-questions-solved" class="right">
+          <ul tal:define="projects view/most_active_projects"
+              tal:condition="projects"
+              style="list-style: none;">
+            <li tal:repeat="project projects">
+              <a href="#"
+                 tal:attributes="href project/fmt:url">
+                <img alt="" tal:replace="structure project/image:icon" />
+                <span tal:replace="project/displayname" />
+              </a>
+            </li>
+          </ul>
+        </div>
 
-      <h2 i18n:translate="">Latest questions solved</h2>
-      <table>
-        <tal:question
-          repeat="question view/latest_questions_solved"
-          content="structure question/@@+listing-detailed"
-        />
-      </table>
-
-                        </div>
+        <div id="latest-questions-asked" class="three column middle">
+          <h2 i18n:translate="">Latest questions asked</h2>
+          <table>
+            <tal:question
+              repeat="question view/latest_questions_asked"
+              content="structure question/@@+listing-detailed"
+            />
+          </table>
+        </div>
+      
+        <div id="latest-questions-solved" class="three column right">
+          <h2 i18n:translate="">Latest questions solved</h2>
+          <table>
+            <tal:question
+              repeat="question view/latest_questions_solved"
+              content="structure question/@@+listing-detailed"
+            />
+          </table>
+        </div>
+      </div>
                         <div id="application-footer" i18n:translate="">
                           <div>
                             <strong
@@ -124,6 +140,9 @@
     <p>To post a new question, navigate to the project
       you are having a problem with and use the <emph>Ask a Question</emph>
       button.
+    </p>
+    <p>You can enter a question id in the search text field to quickly
+      navigate to the question.
     </p>
     <p><a href="https://help.launchpad.net/AnswerTrackerDocumentation">Extensive
         documention</a> for the Answer Tracker application is available in the

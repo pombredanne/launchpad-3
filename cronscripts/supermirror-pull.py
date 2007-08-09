@@ -13,9 +13,26 @@ import bzrlib.repository
 
 
 def shut_up_deprecation_warning():
-    # XXX: quick hack to disable the deprecation warning for old repository
-    # formats -- DavidAllouche 2006-01-29
+    # XXX DavidAllouche 2006-01-29:
+    # Quick hack to disable the deprecation warning for old repository
+    # formats.
     bzrlib.repository._deprecation_warning_done = True
+
+def force_bzr_to_use_urllib():
+    # These lines prevent bzr from using pycurl to connect to http: urls.  We
+    # want this for two reasons:
+    # 1) pycurl rejects self signed certificates, which prevents a significant
+    #    number of mirror branchs from updating, and
+    # 2) the script sometimes hangs inside pycurl, preventing all mirrors from
+    #    being updated until the script is restarted.
+    # There is no test for this (it would involve a great number of moving
+    # parts) but it has been verified to work on production.  Also see
+    # https://bugs.launchpad.net/bzr/+bug/82086
+    from bzrlib.transport import register_lazy_transport
+    register_lazy_transport('http://', 'bzrlib.transport.http._urllib',
+                            'HttpTransport_urllib')
+    register_lazy_transport('https://', 'bzrlib.transport.http._urllib',
+                            'HttpTransport_urllib')
 
 
 if __name__ == '__main__':
@@ -47,5 +64,6 @@ if __name__ == '__main__':
     log = logger(options, 'branch-puller')
 
     shut_up_deprecation_warning()
+    force_bzr_to_use_urllib()
     mirror(log, manager_class)
 

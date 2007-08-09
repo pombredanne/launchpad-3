@@ -6,27 +6,25 @@
                     development is focused.
   </tal:comment>
 
-  <h3>
-    <a tal:attributes="href series/fmt:url" tal:content="series/name" >1.0</a>
-  </h3>
-  <div>
-    <strong>Releases:</strong>
-    <tal:none condition="not:series/releases">None</tal:none>
+  <strong><a tal:attributes="href series/fmt:url"
+             tal:content="series/name" >
+      1.0
+    </a>
+  </strong>
+  <i tal:condition="is_focus">Current development focus</i>
+  <div tal:condition="series/releases">
+    Releases:
     <tal:release repeat="release series/releases">
       <a tal:attributes="href release/fmt:url" tal:content="release/version"
         >version</a><tal:comma condition="not:repeat/release/end">,</tal:comma>
     </tal:release>
   </div>
-  <div>
-    <strong>Milestones:</strong>
-    <tal:none condition="not:series/milestones">None</tal:none>
+  <div tal:condition="series/milestones">
+    Milestones:
     <tal:milestone repeat="milestone series/milestones">
       <a tal:attributes="href milestone/fmt:url" tal:content="milestone/name"
         >name</a><tal:comma condition="not:repeat/milestone/end">,</tal:comma>
     </tal:milestone>
   </div>
   <metal:extra define-slot="extra" />
-  <div tal:condition="is_focus" style="font-style: italic;">
-    Current development focus
-  </div>
 </metal:detailed_display>

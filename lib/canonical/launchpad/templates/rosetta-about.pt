@@ -15,37 +15,36 @@
 
     <div metal:fill-slot="main">
 
-      <h1>About Rosetta</h1>
+      <h1>About Launchpad Translations</h1>
 
-      <p>
-        Rosetta is a Web-based system for translating open source software into
+      <p>Launchpad Translations is a Web-based system for translating open source software into
         any language. All you need to start translating is a Web browser, a good
         knowledge of the application you are translating, and a knowledge of
         English.
       </p>
 
-      <h2>How do I get my software translated in Rosetta?</h2>
+      <h2>How do I get my software translated in Launchpad?</h2>
       <p>
-        Rosetta can let people translate any open-source software that uses the
+        Launchpad can let people translate any open-source software that uses the
         <a href="http://www.gnu.org/software/gettext/"
         ><abbr>GNU</abbr> gettext</a> system for internationalization.
         For more information, see the
-        <a href="https://help.launchpad.net/RosettaNewImportPolicy">import
+        <a href="https://help.launchpad.net/TranslationsImportPolicy">import
         policy</a>.
       </p>
 
-      <h2>Join the Rosetta community</h2>
+      <h2>Join the Launchpad Translations community</h2>
 
       <p>
-        To participate in the development and testing of Rosetta, join the <a
-        href="http://lists.canonical.com/mailman/listinfo/rosetta-users">Rosetta
-        users mailing list</a>, where we discuss new features, bugs and other
-        issues.
+        To participate in the development and testing of Launchpad Translations,        join the <a
+        href="http://lists.canonical.com/mailman/listinfo/launchpad-users">
+	Launchpad users mailing list</a>, where we discuss new 
+        features, bugs and other issues.
       </p>
 
       <ul class="info">
         <li>
-          <a href="https://help.launchpad.net/RosettaFAQ">More about Rosetta</a>
+          <a href="https://help.launchpad.net/LaunchpadTranslationsFAQ">More about Launchpad Translations</a>
         </li>
       </ul>
 
@@ -53,8 +52,8 @@
     <div metal:fill-slot="help">
       <p>
         From this page, you will be able to find resources about how to start
-        using Rosetta. Either to help translating applications or to get your
-        application translated by others.
+	using Launchpad Translations. Either to help translating applications 
+	or to get your application translated by others.
       </p>
     </div>
   </body>

@@ -1,6 +1,6 @@
 = IQuestionTarget Interface =
 
-Launchpad includes a support request tracker. Questions are associated to
+Launchpad includes an answer tracker. Questions are associated to
 objects implementing IQuestionTarget. This file documents that interface
 and can be used to validate implementation of this interface on a
 particular object. (This object is made available through the 'target'
@@ -175,7 +175,7 @@ word appears in the title.)
 
 The searchQuestions() method can also filter questions by status:
 
-    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> from canonical.launchpad.interfaces import QuestionStatus
     >>> for t in target.searchQuestions(status=QuestionStatus.OPEN):
     ...     print t.title
     Another question
@@ -212,7 +212,7 @@ order).
 
 You can sort also from oldest to newest using the OLDEST_FIRST constant:
 
-    >>> from canonical.lp.dbschema import QuestionSort
+    >>> from canonical.launchpad.interfaces import QuestionSort
 
     >>> for t in target.searchQuestions(search_text='new',
     ...                               sort=QuestionSort.OLDEST_FIRST):
@@ -332,6 +332,15 @@ OPEN state are also included.
     Needs information Question title1 Foo Bar
     Open Question title0 Sample Person
 
+=== unsupported ===
+
+The 'unsupported' criteria is used to select questions that are in a
+language that is not spoken by any of the Support Contacts.
+
+    >>> for t in target.searchQuestions(unsupported=True):
+    ...     print t.title
+    De l'aide S.V.P.
+
 == findSimilarQuestions() ==
 
 The method findSimilarQuestions() can be use to find questions similar to a
@@ -347,25 +356,25 @@ In this case, it returned the same results than with the search 'new' because
 all other words in the sentence are either common ('question', 'title') or stop
 words ('with', 'a').
 
-== Support contacts ==
+== Answer contacts ==
 
-Target can have support contacts. The list of support contacts for a
+Target can have answer contacts. The list of answer contacts for a
 target is available through the answer_contacts attribute.
 
     >>> list(target.answer_contacts)
     []
 
 There is also a direct_answer_contacts which includes only the
-support contacts registered explicitely on the question target. (In
+answer contacts registered explicitly on the question target. (In
 general, it will be equal to answer_contacts attribute, but some
-IQuestionTarget implementations may inherit support contacts
+IQuestionTarget implementations may inherit answer contacts
 from other context. In these cases, that attribute would only contain
-the support contacts defined in the current IQuestionTarget context.)
+the answer contacts defined in the current IQuestionTarget context.)
 
     >>> list(target.direct_answer_contacts)
     []
 
-You add a support contact by using the addAnswerContact method. This
+You add an answer contact by using the addAnswerContact method. This
 is only available to registered users.
 
     >>> name18 = getUtility(IPersonSet).getByName('name18')
@@ -387,9 +396,20 @@ False when it was already on the list:
     >>> target.addAnswerContact(name18)
     False
 
-Support contacts can be removed by using the removeAnswerContact()
-method. Like its counterpart, it returns True when the support contact
-was removed and False when the person wasn't on the support contact
+An answer contact must have at least one language among his
+preferred languages.
+
+    >>> sample_person = getUtility(IPersonSet).getByName('name12')
+    >>> sample_person.languages.count()
+    0
+    >>> target.addAnswerContact(sample_person)
+    Traceback (most recent call last):
+      ...
+    AssertionError: An Answer Contact must speak a language...
+
+Answer contacts can be removed by using the removeAnswerContact()
+method. Like its counterpart, it returns True when the answer contact
+was removed and False when the person wasn't on the answer contact
 list.
 
     >>> target.removeAnswerContact(name18)
@@ -401,7 +421,7 @@ list.
     >>> target.removeAnswerContact(name18)
     False
 
-Only registered users can remove a support contact:
+Only registered users can remove an answer contact:
 
     >>> login(ANONYMOUS)
     >>> target.removeAnswerContact(name18)
@@ -413,39 +433,57 @@ Only registered users can remove a support contact:
 
 The supported languages for a given IQuestionTarget are given by
 getSupportedLanguages(). The supported languages of a question target
-include English plus all languages spoken by at least one of its support
-contacts (with the exception of all English variations).
+include all languages spoken by at least one of its answer contacts,
+with the exception of all English variations. English is the assumed
+language for support when there are no answer contacts.
 
     >>> [lang.code for lang in target.getSupportedLanguages()]
     [u'en']
 
-Let's add some support contacts which speak different languages.
-
-    >>> login('daf@canonical.com')
-    >>> daf = getUtility(IPersonSet).getByName('daf')
-    >>> target.addAnswerContact(daf)
-    True
+Let's add some answer contacts which speak different languages.
 
     >>> login('carlos@canonical.com')
     >>> carlos = getUtility(IPersonSet).getByName('carlos')
+    >>> [lang.code for lang in carlos.languages]
+    [u'ca', u'en', u'es']
     >>> target.addAnswerContact(carlos)
     True
 
-    >>> [lang.code for lang in carlos.languages]
-    [u'ca', u'es']
-
 Note that daf has en_GB as one of his preferred languages...
 
+    >>> login('daf@canonical.com')
+    >>> daf = getUtility(IPersonSet).getByName('daf')
     >>> [lang.code for lang in daf.languages]
     [u'en_GB', u'ja', u'cy']
+    >>> target.addAnswerContact(daf)
+    True
 
 ... but en_GB is not included in the target's supported languages,
-because we ignore all English variants.
+because we convert all English variants to English.
 
     >>> import operator
     >>> [lang.code for lang in sorted(target.getSupportedLanguages(),
     ...                               key=operator.attrgetter('code'))]
     [u'ca', u'cy', u'en', u'es', u'ja']
+
+
+== getAnswerContactsForLanguage() ==
+
+Continuing from the previous section with Carlos and Daf, the
+getAnswerContactsForLanguage() method returns a list of answer contacts
+who support the specified language in their preferred languages. Daf
+is in the list because he speaks an English variant, which is treated
+as English.
+
+    >>> spanish = getUtility(ILanguageSet)['es']
+    >>> answer_contacts = target.getAnswerContactsForLanguage(spanish)
+    >>> sorted([person.name for person in answer_contacts])
+    [u'carlos']
+
+    >>> answer_contacts = target.getAnswerContactsForLanguage(english)
+    >>> sorted([person.name for person in answer_contacts])
+    [u'carlos', u'daf']
+
 
 == getQuestionLanguages() ==
 

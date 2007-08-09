@@ -1,36 +1,98 @@
-Validation
-==========
+= Validation =
 
 The validation interface contains different kinds of validation functions.
 
-The valid_distrotask() function is used to guarantee that distribution
+== validate_distrotask() ==
+
+The validate_distrotask() function is used to guarantee that distribution
 bugtasks are unique per bug.
 
     >>> from canonical.launchpad.interfaces import (
     ...     IBugSet, IDistributionSet, ISourcePackageNameSet,
-    ...     valid_distrotask)
+    ...     validate_distrotask)
     >>> bug_two = getUtility(IBugSet).get(2)
     >>> debian = getUtility(IDistributionSet).getByName('debian')
     >>> mozilla_firefox = getUtility(
     ...     ISourcePackageNameSet).queryByName('mozilla-firefox')
     >>> evolution = getUtility(ISourcePackageNameSet).queryByName('evolution')
 
-We aren't allowed to add a distrotask with the same sourcepackage
+We aren't allowed to have two distrotasks with the same sourcepackage.
 
-    >>> valid_distrotask(bug_two, debian, mozilla_firefox, on_create=True)
+    >>> validate_distrotask(bug_two, debian, mozilla_firefox)
     Traceback (most recent call last):
       ...
-    WidgetsError: LaunchpadValidationError: ...
+    LaunchpadValidationError: ...
 
-But it's legal to have two bugtasks with different sourcepackages
+But it's legal to have two bugtasks with different sourcepackages.
 
-    >>> valid_distrotask(bug_two, debian, evolution)
+    >>> validate_distrotask(bug_two, debian, evolution)
 
-We also can't add a task on just the distribution, because it doesn't
+If the bug already has a distribution task with no source package, it's
+not possible to add a another one.
+
+    >>> from canonical.launchpad.interfaces import (
+    ...     CreateBugParams, IDistributionSet)
+
+    >>> login('no-priv@canonical.com')
+    >>> no_priv = getUtility(ILaunchBag).user
+    >>> ubuntu = getUtility(IDistributionSet).getByName('ubuntu')
+    >>> ubuntu_bug_no_sourcepackage = ubuntu.createBug(
+    ...     CreateBugParams(no_priv, 'Test Bug', 'This is a test'))
+    >>> validate_distrotask(ubuntu_bug_no_sourcepackage, ubuntu, None)
+    Traceback (most recent call last):
+      ...
+    LaunchpadValidationError: ...
+
+Adding a task with a source package is still possible.
+
+    >>> validate_distrotask(ubuntu_bug_no_sourcepackage, ubuntu, evolution)
+
+
+== validate_new_distrotask() ==
+
+The validate_new_distrotask() function does the same checks as
+validate_distrotask(), but it does some extra checks as well.
+
+We can't add a task on just the distribution, because it doesn't
 make sense to have tasks open on just the distribution and also packages
 in that distribution on the same bug.
 
-    >>> valid_distrotask(bug_two, debian, None, on_create=True)
+    >>> from canonical.launchpad.interfaces import validate_new_distrotask
+    >>> validate_new_distrotask(bug_two, debian, None)
     Traceback (most recent call last):
       ...
-    WidgetsError: LaunchpadValidationError: ...
+    LaunchpadValidationError: ...
+
+If the bug already has a distribution with no package, we can't add
+another distribution task with a source package (the task with no
+package should be edited instead).
+
+    >>> validate_new_distrotask(ubuntu_bug_no_sourcepackage, ubuntu, evolution)
+    Traceback (most recent call last):
+      ...
+    LaunchpadValidationError: ...
+
+
+== LaunchpadValidationError ==
+
+LaunchpadValidationError is the standard exception used for custom
+validators upon a validation error. Rendering one is done by getting
+an IWidgetInputErrorView:
+
+    >>> from canonical.launchpad.validators import (
+    ...     LaunchpadValidationError)
+    >>> from canonical.launchpad.webapp.servers import (
+    ...     LaunchpadTestRequest)
+    >>> from zope.app.form.browser.interfaces import (
+    ...     IWidgetInputErrorView)
+    >>> from zope.app import zapi
+
+    >>> error = LaunchpadValidationError('lp validation error')
+    >>> request = LaunchpadTestRequest()
+    >>> view = zapi.getMultiAdapter((error, request),
+    ...     IWidgetInputErrorView)
+
+    >>> IWidgetInputErrorView.providedBy(view)
+    True
+    >>> view.snippet()
+    'lp validation error'

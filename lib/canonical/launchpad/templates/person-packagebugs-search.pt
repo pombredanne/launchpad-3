@@ -1,6 +1,6 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
       lang="en"
-      metal:use-macro="context/@@main_template_2col/master"
+      metal:use-macro="context/@@main_template/master"
       i18n:domain="malone"
 >
   <body>
@@ -56,8 +56,8 @@
         <div tal:define="advanced_search_url view/getBugContactPackageAdvancedSearchURL">
           <div metal:use-macro="context/@@+bugtarget-macros-search/simple-search-form">
             <div metal:fill-slot="extra-search-widgets">
-              <tal:widget content="structure view/distribution_widget/hidden" />
-              <tal:widget content="structure view/sourcepackagename_widget/hidden" />
+              <tal:widget content="structure view/widgets/distribution/hidden" />
+              <tal:widget content="structure view/widgets/sourcepackagename/hidden" />
             </div>
           </div>
         </div>

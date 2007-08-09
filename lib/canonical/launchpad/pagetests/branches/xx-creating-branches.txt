@@ -7,29 +7,20 @@ We should be able to create a new branch from a product.
 First, check that the +addbranch link is visible on product overview page and
 the product code facet page.
 
-  >>> print http(r"""
-  ... GET /applets/ HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ..."http://.../applets/+addbranch"...
+  >>> user_browser.open('http://launchpad.dev/applets')
+  >>> link = user_browser.getLink('Register branch')
+  >>> print link.url
+  http://launchpad.dev/applets/+addbranch
 
-  >>> print http(r"""
-  ... GET /applets/+branches HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ..."http://.../applets/+addbranch"...
+  >>> user_browser.getLink('Code').click()
+  >>> print user_browser.url
+  http://code.launchpad.dev/applets/
 
 Let's make sure we can load the branch creation form on a product.
 
-  >>> print http(r"""
-  ... GET /applets/+addbranch HTTP/1.1
-  ... Host: launchpad.dev
-  ... Authorization: Basic Zm9vLmJhckBjYW5vbmljYWwuY29tOnRlc3Q=
-  ... """)
-  HTTP/1.1 200 Ok
-  ...
+  >>> user_browser.getLink('Register branch').click()
+  >>> print user_browser.url
+  http://code.launchpad.dev/applets/+addbranch
 
 
 == Adding a branch to a product ==
@@ -52,7 +43,7 @@ can test the context links on the new branch page.
 
   >>> user_browser.getControl('Name').value = 'main'
   >>> user_browser.getControl('Title').value = 'Gnome Panel Applets Mainline'
-  >>> user_browser.getControl(name='field.lifecycle_status').value = ['Development']
+  >>> user_browser.getControl('Status').displayValue = ['Development']
   >>> user_browser.getControl('Summary').value = 'Main branch of development for GNOME Panel Applets.'
   >>> user_browser.getControl('Add Branch').click()
 
@@ -81,12 +72,10 @@ with that product, and a link to other branches maintained by that person.
 We can also create a branch from a person's page. First, check that the
 +addbranch link is present in the code facet of a person.
 
-  >>> print http(r"""
-  ... GET /~lifeless/+branches HTTP/1.1
-  ... Host: launchpad.dev
-  ... """)
-  HTTP/1.1 200 Ok
-  ..."http://.../~lifeless/+addbranch"...
+  >>> user_browser.open('http://launchpad.dev/~lifeless')
+  >>> user_browser.getLink('Code').click()
+  >>> print user_browser.getLink('Register branch').url
+  http://code.launchpad.dev/~lifeless/+addbranch
 
 
 == Adding a branch to a person ==
@@ -168,7 +157,7 @@ same error message.
   >>> browser.url
   'http://launchpad.dev/%7Ename12/+addbranch'
   >>> browser.getControl('Name').value = 'main'
-  >>> browser.getControl('Product').value = 'gnome-terminal'
+  >>> browser.getControl('Project').value = 'gnome-terminal'
   >>> browser.getControl('Add Branch').click()
   >>> browser.url
   'http://launchpad.dev/%7Ename12/+addbranch'
@@ -181,7 +170,7 @@ If the user enters an invalid product name they will get an error
 message about that, but no error about the branch name since we don't
 know if it conflicts or not:
 
-  >>> browser.getControl('Product').value = 'no-such-product'
+  >>> browser.getControl('Project').value = 'no-such-product'
   >>> browser.getControl('Add Branch').click()
   >>> browser.url
   'http://launchpad.dev/%7Ename12/+addbranch'
@@ -217,3 +206,44 @@ URL validation should check that the entered URL is not from Launchpad.
   ...     print element.renderContents()
   There is 1 error.
   Don't manually register a bzr branch on <code>code.launchpad.dev</code>...
+
+
+== Attempting to create a branch in a forbidden project ==
+
+The branch visibility policy for a product may specify that certain
+groups of people cannot create branches.  An example of this in the
+sample data is the landscape project.  Only landscape developers can
+create branches for landscape.
+
+XXX: thumper 2007-06-12
+Following the current indentation of the doctest.  Given the discussions
+on the launchpad mailing list, the indentation guidelines may change.
+
+When registering a branch from the product pages, there is no product widget,
+so errors are set at the page level.
+
+  >>> user_browser.open('http://code.launchpad.dev/landscape')
+  >>> user_browser.getLink('Register branch').click()
+  >>> user_browser.getControl('Branch URL').value = 'http://foo.com/bar'
+  >>> user_browser.getControl('Name').value = 'landscape1'
+  >>> user_browser.getControl('Add Branch').click()
+  >>> messages = find_tags_by_class(user_browser.contents, 'message')
+  >>> for element in messages:
+  ...     print element.renderContents()
+  There is 1 error.
+  You are not allowed to create branches in The Landscape Project.
+
+When registering the branch from the person context, there is a
+product widget, so the error is associated with the product widget.
+
+  >>> user_browser.open('http://code.launchpad.dev/~no-priv')
+  >>> user_browser.getLink('Register branch').click()
+  >>> user_browser.getControl('Project').value = 'landscape'
+  >>> user_browser.getControl('Branch URL').value = 'http://foo.com/bar'
+  >>> user_browser.getControl('Name').value = 'landscape1'
+  >>> user_browser.getControl('Add Branch').click()
+  >>> messages = find_tags_by_class(user_browser.contents, 'message')
+  >>> for element in messages:
+  ...     print element.renderContents()
+  There is 1 error.
+  You are not allowed to create branches in The Landscape Project.

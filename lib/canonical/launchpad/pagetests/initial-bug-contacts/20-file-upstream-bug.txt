@@ -13,7 +13,7 @@ well.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://launchpad.dev/firefox/+bug/13
+    http://bugs.launchpad.dev/firefox/+bug/13
 
 Now sabdfl, because he's the bug reporter, and guadamen, because they
 are the product bug contact are subscribed to this bug:
@@ -53,7 +53,7 @@ subscribed, because Firefox does not have a security contact.
     >>> browser.getControl("Submit Bug Report").click()
 
     >>> print browser.url
-    http://launchpad.dev/firefox/+bug/14
+    http://bugs.launchpad.dev/firefox/+bug/14
 
     >>> logout()
     >>> login("mark@hbd.com")

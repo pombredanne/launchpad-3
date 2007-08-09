@@ -8,10 +8,10 @@ from zope.component import getUtility
 from canonical.config import config
 from canonical.lp import AUTOCOMMIT_ISOLATION
 from canonical.launchpad.interfaces import IKarmaCacheManager, NotFoundError
-from canonical.launchpad.scripts.base import LaunchpadScript
+from canonical.launchpad.scripts.base import LaunchpadCronScript
 
 
-class KarmaCacheUpdater(LaunchpadScript):
+class KarmaCacheUpdater(LaunchpadCronScript):
     def main(self):
         """Update the KarmaCache table for all valid Launchpad users.
 
@@ -118,8 +118,9 @@ class KarmaCacheUpdater(LaunchpadScript):
         self.cur.execute("""VACUUM KarmaTotalCache""")
 
         # Insert new records into the KarmaTotalCache table. 
-        
-        # XXX: If deadlocks ever become a problem, first LOCK the
+
+        # XXX: salgado 2007-02-06:
+        # If deadlocks ever become a problem, first LOCK the
         # corresponding rows in the Person table so the bulk insert cannot
         # fail. We don't bother at the moment as this would involve granting
         # UPDATE rights on the Person table to the karmacacheupdater user.

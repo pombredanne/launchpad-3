@@ -12,8 +12,8 @@ from zope.schema import Choice, Field
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces.message import IMessage
-
-from canonical.lp.dbschema import QuestionAction, QuestionStatus
+from canonical.launchpad.interfaces.questionenums import (
+    QuestionAction, QuestionStatus)
 
 
 class IQuestionMessage(IMessage):
@@ -22,7 +22,8 @@ class IQuestionMessage(IMessage):
     It adds attributes to the IMessage interface.
     """
     # This is really an Object field with schema=IQuestion, but that
-    # would create a circular dependency between IQuestion and IQuestionMessage
+    # would create a circular dependency between IQuestion
+    # and IQuestionMessage
     question = Field(
         title=_("The question related to this message."),
         description=_("An IQuestion object."), required=True, readonly=True)
@@ -30,12 +31,12 @@ class IQuestionMessage(IMessage):
     action = Choice(
         title=_("Action operated on the question by this message."),
         required=True, readonly=True, default=QuestionAction.COMMENT,
-        vocabulary="QuestionAction")
+        vocabulary=QuestionAction)
 
     new_status = Choice(
         title=_("Question status after message"),
         description=_("The status of the question after the transition "
         "related the action operated by this message."), required=True,
         readonly=True, default=QuestionStatus.OPEN,
-        vocabulary='QuestionStatus')
+        vocabulary=QuestionStatus)
 

@@ -4,13 +4,13 @@
     i18n_domain="zope">
 
     <mail:stubMailer
-        name="stub" from_addr="launchpad@localhost"
-        to_addr="launchpad@localhost"
+        name="stub" from_addr="launchpad@dogfood.launchpad.net"
+        to_addr="launchpad@dogfood.launchpad.net"
         />
 
     <!-- Development configuration to avoid spamming innocent people -->
     <mail:queuedDelivery name="Mail" permission="zope.SendMail"
-        queuePath="/var/tmp/launchpad_mailqueue" mailer="stub" />
+        queuePath="/srv/launchpad.net/launchpad_mailqueue" mailer="stub" />
 
 
 </configure>
