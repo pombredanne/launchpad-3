@@ -8,7 +8,7 @@ screen-scraping tools:
   http://effbot.org/zone/sandbox-sourceforge.htm
 """
 
-# XXX: 20070110 jamesh
+# XXX: jamesh 2007-01-10:
 # It would be good to change this code so that it generates an XML
 # dump suitable for use with the bug-import.py script.  This would
 # reduce the number of bug importers we need to manage.

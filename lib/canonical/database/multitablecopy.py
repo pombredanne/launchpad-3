@@ -157,7 +157,7 @@ class MultiTableCopy:
     that rows that the data refers to by foreign keys must not be deleted
     while the multi-table copy is running, for instance.
     """
-    # XXX: JeroenVermeulen 2007-05-24, More quoting, fewer assumptions!
+    # XXX: JeroenVermeulen 2007-05-24: More quoting, fewer assumptions!
 
     def __init__(self, name, tables, seconds_per_batch=2.0,
             minimum_batch_size=500):
