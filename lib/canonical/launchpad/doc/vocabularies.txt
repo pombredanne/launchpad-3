@@ -878,7 +878,7 @@ anything, as we only match against the beginning of an email address.
 
 A person with a single and unvalidated email address can be merged.
 
-    >>> from canonical.lp.dbschema import PersonCreationRationale
+    >>> from canonical.launchpad.interfaces import PersonCreationRationale
     >>> fooperson, email = getUtility(IPersonSet).createPersonAndEmail(
     ...     'foobaz@bar.com', PersonCreationRationale.UNKNOWN,
     ...     name='foobaz', displayname='foo baz')
@@ -892,7 +892,8 @@ But any person without a single email address can't.
     False
 
 Any person that's already merged is not part of this vocabulary:
-# XXX: Here we cheat because IPerson.merged is a readonly attribute.
+# XXX kiko 2007-01-18: Here we cheat because IPerson.merged is a
+# readonly attribute.
 
     >>> from zope.security.proxy import removeSecurityProxy
     >>> removeSecurityProxy(fooperson).merged = 1
@@ -1436,4 +1437,5 @@ or fallbacks to a full text search.
     >>> list(vocab.search('third')) == [spec_c]
     True
 
-XXX: document more vocabularies here, particularly when they break!
+# XXX Tom Berger 2007-07-05: document more vocabularies here, particularly
+# when they break!

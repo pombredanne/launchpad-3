@@ -90,8 +90,8 @@
         class="canonical.launchpad.browser.openidserver.ProtocolErrorView"
         />
 
-    <!-- http://openid.launchpad.dev/$Person.name identity URLs
-       XXX: May be dropped - in discussion. StuartBishop 20070613 
+    <!-- XXX: StuartBishop 2007-06-13: May be dropped - in discussion.
+      http://openid.launchpad.dev/$Person.name identity URLs
     -->
     <content
         class="canonical.launchpad.browser.openidserver.OpenIdIdentityView">

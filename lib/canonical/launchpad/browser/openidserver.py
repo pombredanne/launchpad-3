@@ -27,12 +27,12 @@ from openid import oidutil
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad import _
-from canonical.lp.dbschema import LoginTokenType
 from canonical.launchpad.interfaces import (
     ILaunchpadOpenIdStoreFactory, ILoginServiceAuthorizeForm,
     ILoginServiceLoginForm, ILoginTokenSet, IOpenIdApplication,
     IOpenIdAuthorizationSet, IOpenIDRPConfigSet, IPersonSet,
-    NotFoundError, UnexpectedFormData)
+    LoginTokenType, NotFoundError, PersonCreationRationale,
+    UnexpectedFormData)
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, LaunchpadFormView, LaunchpadView)
@@ -414,7 +414,7 @@ class LoginServiceBaseView(OpenIdMixin, LaunchpadFormView):
 
     def trashRequest(self):
         """Remove the OpenID request from the session."""
-        # XXX: 2007-06-22 jamesh
+        # XXX: jamesh 2007-06-22
         # Removing the OpenID request from the session leads to an
         # UnexpectedFormData exception if the user hits back and
         # submits the form again.  Not deleting the request allows
@@ -462,8 +462,9 @@ class LoginServiceAuthorizeView(LoginServiceBaseView):
         return self.renderOpenIdResponse(self.createFailedResponse())
 
     @action("I'm Someone Else", name='logout')
-    # XXX 20070618 mpt: "I'm" should use a typographical apostrophe
-    # XXX 20070618 mpt: "Someone Else" should be "Not" then the person's name
+    # XXX mpt 2007-06-18: "I'm" should use a typographical apostrophe.
+    # XXX mpt 2007-06-18: "Someone Else" should be "Not" then the
+    # person's name.
     def logout_action(self, action, data):
         # Log the user out and render the login page again.
         session = ISession(self.request)

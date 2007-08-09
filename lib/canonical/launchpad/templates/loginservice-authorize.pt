@@ -23,7 +23,7 @@
             <li tal:repeat="field fields"
                 tal:content="python:field[1]" />
             <li tal:condition="not:fields">
-              <!-- XXX: 2007-07-03 jamesh
+              <!-- XXX: jamesh 2007-07-03
                    This text should be friendlier -->
               <em>Only your identity URL</em>
             </li>

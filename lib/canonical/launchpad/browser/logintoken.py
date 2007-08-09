@@ -25,10 +25,6 @@ from canonical.database.sqlbase import flush_database_updates
 
 from canonical.widgets import PasswordChangeWidget
 
-from canonical.lp.dbschema import (
-    EmailAddressStatus, GPGKeyAlgorithm, LoginTokenType,
-    PersonCreationRationale)
-
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import IPlacelessLoginSource
 from canonical.launchpad.webapp.login import logInPerson
@@ -42,7 +38,8 @@ from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, ILoginTokenSet, IPerson, ILoginToken,
     IGPGKeySet, IGPGHandler, GPGVerificationError, GPGKeyNotFoundError,
     ShipItConstants, UBUNTU_WIKI_URL, UnexpectedFormData,
-    IGPGKeyValidationForm, IOpenIDRPConfigSet)
+    IGPGKeyValidationForm, IOpenIDRPConfigSet, EmailAddressStatus,
+    GPGKeyAlgorithm, LoginTokenType, PersonCreationRationale)
 
 UTC = pytz.timezone('UTC')
 
@@ -168,11 +165,10 @@ class ClaimProfileView(BaseLoginTokenView, LaunchpadFormView):
         # The user is not yet logged in, but we need to set some
         # things on his new account, so we need to remove the security
         # proxy from it.
-        # XXX: We should be able to login with this person and set the
+        # XXX: Guilherme Salgado 2006-09-27 bug=62674:
+        # We should be able to login with this person and set the
         # password, to avoid removing the security proxy, but it didn't
         # work, so I'm leaving this hack for now.
-        # https://launchpad.net/bugs/62674
-        # -- Guilherme Salgado, 2006-09-27
         from zope.security.proxy import removeSecurityProxy
         naked_person = removeSecurityProxy(email.person)
         naked_person.displayname = data['displayname']
@@ -219,14 +215,14 @@ class ResetPasswordView(BaseLoginTokenView, LaunchpadFormView):
         emailaddress = emailset.getByEmail(self.context.email)
         person = emailaddress.person
 
-        # XXX: It should be possible to do the login before this and avoid
+        # XXX: Guilherme Salgado 2006-09-27 bug=62674:
+        # It should be possible to do the login before this and avoid
         # this hack. In case the user doesn't want to be logged in
         # automatically we can log him out after doing what we want.
-        # https://launchpad.net/bugs/62674
-        # XXX: Steve Alexander, 2005-03-18
-        #      Local import, because I don't want this import copied elsewhere!
-        #      This code is to be removed when the UpgradeToBusinessClass
-        #      specification is implemented.
+        # XXX: Steve Alexander 2005-03-18:
+        #      Local import, because I don't want this import copied
+        #      elsewhere! This code is to be removed when the
+        #      UpgradeToBusinessClass specification is implemented.
         from zope.security.proxy import removeSecurityProxy
         naked_person = removeSecurityProxy(person)
         #      end of evil code.
@@ -616,11 +612,10 @@ class NewAccountView(BaseLoginTokenView, LaunchpadFormView):
             # The user is not yet logged in, but we need to set some
             # things on his new account, so we need to remove the security
             # proxy from it.
-            # XXX: We should be able to login with this person and set the
+            # XXX: Guilherme Salgado 2006-09-27 bug=62674:
+            # We should be able to login with this person and set the
             # password, to avoid removing the security proxy, but it didn't
             # work, so I'm leaving this hack for now.
-            # https://launchpad.net/bugs/62674
-            # -- Guilherme Salgado, 2006-09-27
             from zope.security.proxy import removeSecurityProxy
             naked_person = removeSecurityProxy(person)
             naked_person.displayname = data['displayname']

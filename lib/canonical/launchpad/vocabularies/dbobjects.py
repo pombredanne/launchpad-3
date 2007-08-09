@@ -71,7 +71,7 @@ from canonical.launchpad.webapp.vocabulary import (
     CountableIterator, IHugeVocabulary, NamedSQLObjectHugeVocabulary, 
     NamedSQLObjectVocabulary, SQLObjectVocabularyBase)
 from canonical.launchpad.helpers import shortlist
-from canonical.lp.dbschema import EmailAddressStatus, DistroSeriesStatus
+from canonical.lp.dbschema import DistroSeriesStatus
 from canonical.database.sqlbase import SQLBase, quote_like, quote, sqlvalues
 from canonical.launchpad.database import (
     Distribution, DistroSeries, Person, SourcePackageRelease, Branch,
@@ -85,7 +85,7 @@ from canonical.launchpad.interfaces import (
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask, IFAQ, IFAQTarget,
     IEmailAddressSet, ILaunchBag, IMilestoneSet, IPerson, IPersonSet,
     IPillarName, IProduct, IProject, ISourcePackage, ISpecification, ITeam,
-    IUpstreamBugTask)
+    IUpstreamBugTask, EmailAddressStatus)
 
 
 class BasePersonVocabulary:
@@ -208,7 +208,7 @@ class BugVocabulary(SQLObjectVocabularyBase):
 class BountyVocabulary(SQLObjectVocabularyBase):
 
     _table = Bounty
-    # XXX: no _orderBy?
+    # XXX kiko 2006-02-20: no _orderBy?
 
 
 class BugTrackerVocabulary(SQLObjectVocabularyBase):
@@ -300,8 +300,8 @@ class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
     _orderBy = 'name'
 
 
-# XXX: any reason why this can't be an NamedSQLObjectHugeVocabulary?
-#   -- kiko, 2007-01-18
+# XXX kiko 2007-01-18: any reason why this can't be an
+# NamedSQLObjectHugeVocabulary?
 class ProductVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
@@ -346,8 +346,8 @@ class ProductVocabulary(SQLObjectVocabularyBase):
         return self.emptySelectResults()
 
 
-# XXX: any reason why this can't be an NamedSQLObjectHugeVocabulary?
-#   -- kiko, 2007-01-18
+# XXX kiko 2007-01-18: any reason why this can't be an
+# NamedSQLObjectHugeVocabulary?
 class ProjectVocabulary(SQLObjectVocabularyBase):
     implements(IHugeVocabulary)
 
@@ -562,9 +562,8 @@ class ValidPersonOrTeamVocabulary(
             ircid_match_query,
             clauseTables=['ValidPersonOrTeamCache', 'IRCId'])
 
-        # XXX: We have to explicitly provide an orderBy here as a workaround
-        # for https://launchpad.net/products/launchpad/+bug/30053
-        # -- Guilherme Salgado, 2006-01-30
+        # XXX Guilherme Salgado 2006-01-30 bug=30053: 
+        # We have to explicitly provide an orderBy here as a workaround
         return name_matches.union(ircid_matches).union(
             email_matches, orderBy=['displayname', 'name'])
 
@@ -708,11 +707,10 @@ class ProductReleaseVocabulary(SQLObjectVocabularyBase):
 
     displayname = 'Select a Product Release'
     _table = ProductRelease
-    # XXX carlos Perello Marin 2005-05-16:
+    # XXX carlos Perello Marin 2005-05-16 bugs=687:
     # Sorting by version won't give the expected results, because it's just a
     # text field.  e.g. ["1.0", "2.0", "11.0"] would be sorted as ["1.0",
     # "11.0", "2.0"].
-    # See https://launchpad.ubuntu.com/malone/bugs/687
     _orderBy = [Product.q.name, ProductSeries.q.name,
                 ProductRelease.q.version]
     _clauseTables = ['Product', 'ProductSeries']
@@ -930,7 +928,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             # to it.
             target = None
 
-        # XXX, Brad Bollenbach, 2006-02-24: Listifying milestones is
+        # XXX: Brad Bollenbach 2006-02-24: Listifying milestones is
         # evil, but we need to sort the milestones by a non-database
         # value, for the user to find the milestone they're looking
         # for (particularly when showing *all* milestones on the
@@ -1023,7 +1021,7 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
 
     The current spec is not included.
     """
-    
+
     implements(IHugeVocabulary)
 
     _table = Specification
@@ -1031,8 +1029,8 @@ class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
     displayname = 'Select a blueprint'
 
     def _filter_specs(self, specs):
-        # XXX: is 100 a reasonable count before starting
-        #   to warn?  -- intellectronica, 2007-07-05
+        # XXX intellectronica 2007-07-05: is 100 a reasonable count before
+        # starting to warn?
         speclist = shortlist(specs, 100)
         return [spec for spec in speclist
                 if (spec != self.context and

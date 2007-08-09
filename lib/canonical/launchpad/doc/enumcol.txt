@@ -25,8 +25,7 @@ DBEnumeratedType, with items that are instances of DBItem.
 Attempting to use a normal enumerated type for an enumcol will
 result in an error.
 
-    >>> from canonical.launchpad.webapp.enum import (
-    ...     EnumeratedType, Item)
+    >>> from canonical.lazr import EnumeratedType, Item
     >>> class PlainFooType(EnumeratedType):
     ...     """Enumerated type for the foo column."""
     ...     ONE = Item("One")
@@ -40,10 +39,9 @@ result in an error.
     Traceback (most recent call last):
     ...
     TypeError: enum must be a DBEnumeratedType:
-    <class 'canonical.launchpad.webapp.enum.MetaEnum'>
+    <class 'canonical.lazr.enum.MetaEnum'>
 
-    >>> from canonical.launchpad.webapp.enum import (
-    ...     DBEnumeratedType, DBItem)
+    >>> from canonical.lazr import DBEnumeratedType, DBItem
     >>> class FooType(DBEnumeratedType):
     ...     """Enumerated type for the foo column."""
     ...     ONE = DBItem(1, """

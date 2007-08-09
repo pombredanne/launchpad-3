@@ -25,13 +25,13 @@ settings.  The function also sends the email to the list of
 recipients.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBranchSet
+    >>> from canonical.launchpad.interfaces import (
+    ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize,
+    ...     IBranchSet)
     >>> from canonical.launchpad.mail import stub
     >>> from canonical.launchpad.mailnotification import (
     ...     email_branch_modified_notifications)
     >>> from canonical.launchpad.tests.mail_helpers import pop_notifications
-    >>> from canonical.lp.dbschema import (
-    ...     BranchSubscriptionNotificationLevel, BranchSubscriptionDiffSize)
     >>> branch = getUtility(IBranchSet).getByUniqueName('~name12/firefox/main')
     >>> subscription = branch.subscribe(
     ...     branch.owner,
@@ -482,3 +482,101 @@ something like this:
     You are receiving this branch notification because you are subscribed to it.
     To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
     efox/new-name/+edit-subscription.
+
+
+== Unicode in emails ==
+
+All the text fields of a branch are considered unicode, so the email
+must also handle the unicode.
+
+    >>> before_modification = Snapshot(branch, providing=IBranch)
+
+    >>> branch.title = u'New \ua000 title '
+    >>> branch.summary = u'A new \ua000 summary'
+    >>> updated_fields = ['title','summary']
+    >>> notify(SQLObjectModifiedEvent(
+    ...     branch, before_modification, updated_fields))
+
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
+    1
+    >>> print_email_details(notifications.pop())
+    To: test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: =?utf-8?q?=5BBranch_=7Ename12/firefox/new-name=5D_New_=EA=80=80_ti?=
+             =?utf-8?q?tle_?=
+        Title: New title =3D> New =EA=80=80 title =
+    <BLANKLINE>
+    Summary changed to:
+    <BLANKLINE>
+    A new =EA=80=80 summary
+    <BLANKLINE>
+    --
+    New =EA=80=80 title =
+    http://code.launchpad.dev/~name12/firefox/new-name
+    <BLANKLINE>
+    You are receiving this branch notification because you are subscribed to it.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
+    efox/new-name/+edit-subscription.
+
+
+== Blank titles ==
+
+If the title of the branch is None then the subject line just contains
+the unique name in square brackets.  This happens if the branch was created
+by pushing the branch to launchpad.
+
+    >>> branch.title = None
+    >>> before_modification = Snapshot(branch, providing=IBranch)
+
+    >>> branch.name = 'foo'
+    >>> updated_fields = ['name']
+    >>> notify(SQLObjectModifiedEvent(
+    ...     branch, before_modification, updated_fields))
+
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
+    1
+    >>> print_email_details(notifications.pop())
+    To: test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Branch ~name12/firefox/foo]
+        Name: new-name =3D> foo
+    <BLANKLINE>
+    --
+    <BLANKLINE>
+    http://code.launchpad.dev/~name12/firefox/foo
+    <BLANKLINE>
+    You are receiving this branch notification because you are subscribed to it.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
+    efox/foo/+edit-subscription.
+
+
+== Overwriting Nones  ==
+
+If the branch was created by pushing, then some of the fields are None.
+We don't want to show None in the email, so we show (not set) instead.
+
+    >>> before_modification = Snapshot(branch, providing=IBranch)
+
+    >>> branch.title = 'A new title'
+    >>> updated_fields = ['title']
+    >>> notify(SQLObjectModifiedEvent(
+    ...     branch, before_modification, updated_fields))
+
+    >>> notifications = pop_notifications()
+    >>> len(notifications)
+    1
+    >>> print_email_details(notifications.pop())
+    To: test@canonical.com
+    From: Sample Person <test@canonical.com>
+    Subject: [Branch ~name12/firefox/foo] A new title
+        Title: (not set) =3D> A new title
+    <BLANKLINE>
+    --
+    A new title
+    http://code.launchpad.dev/~name12/firefox/foo
+    <BLANKLINE>
+    You are receiving this branch notification because you are subscribed to it.
+    To unsubscribe from this branch go to http://code.launchpad.dev/~name12/fir=
+    efox/foo/+edit-subscription.
