@@ -15,6 +15,8 @@ from canonical.launchpad import _
 class ISpecificationSubscription(Interface):
     """A subscription for a person to a specification."""
 
+    id = Int(
+        title=_('ID'), required=True, readonly=True)
     person = Choice(
             title=_('Subscriber'), required=True,
             vocabulary='ValidPersonOrTeam', readonly=True,
