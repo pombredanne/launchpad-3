@@ -5,9 +5,13 @@
 __metaclass__ = type
 __all__ = ['TestBranchView', 'test_suite']
 
+from datetime import datetime
 import unittest
 
+import pytz
+
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.launchpad.browser.branch import BranchAddView, BranchView
 from canonical.launchpad.ftests.harness import login, logout, ANONYMOUS
@@ -65,7 +69,15 @@ class TestBranchView(unittest.TestCase):
                 'product': arbitrary_product
                 }
             add_view.add_action.success(data)
-            self.assertEqual(None, add_view.branch.mirror_request_time)
+            # Make sure that mirror_request_time is a datetime, not an
+            # sqlbuilder expression.
+            removeSecurityProxy(add_view.branch).sync()
+            now = datetime.now(pytz.timezone('UTC'))
+            self.assertNotEqual(None, add_view.branch.mirror_request_time)
+            self.assertTrue(
+                add_view.branch.mirror_request_time < now,
+                "mirror_request_time not set to UTC_NOW: %s < %s"
+                % (add_view.branch.mirror_request_time, now))
         finally:
             logout()
 
