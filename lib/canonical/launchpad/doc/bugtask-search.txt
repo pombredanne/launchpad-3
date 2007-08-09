@@ -419,3 +419,34 @@ will not be included in the results returned by the bug commenter search.
     2 tomcat
     2 ubuntu
 
+
+== Bugs with commercial packages ==
+
+Bugs may also be targeted to commercial packages.  First turn "cdrkit" into
+a commercial package:
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> from canonical.launchpad.interfaces import IComponentSet
+    >>> proxied_cdrkit = ubuntu.getSourcePackage("cdrkit")
+    >>> cdrkit = removeSecurityProxy(proxied_cdrkit)
+    >>> cdrkit.component = getUtility(IComponentSet)['commercial']
+    >>> cdrkit.archive = ubuntu.getArchiveByComponent('commercial')
+    >>> transaction.commit()
+
+It starts off with no bugs:
+
+    >>> cdrkit_bugs = cdrkit.searchTasks(all_public)
+    >>> cdrkit_bugs.count()
+    0
+
+We can file a bug against it and see that show up in a search:
+
+    >>> from canonical.database.sqlbase import ZopelessTransactionManager
+    >>> from canonical.launchpad.interfaces import CreateBugParams
+    >>> bug = cdrkit.createBug(
+    ...     CreateBugParams(owner=no_priv, title='Bug to be fixed in trunk',
+    ...                     comment='Something'))
+    >>> cdrkit_bugs = cdrkit.searchTasks(all_public)
+    >>> cdrkit_bugs.count()
+    1
+
