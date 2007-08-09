@@ -21,14 +21,14 @@ import gpgme
 import gpgme.editutil
 
 from canonical.config import config
-from canonical.lp.dbschema import GPGKeyAlgorithm
 
 from canonical.launchpad.validators.email import valid_email
 from canonical.launchpad.validators.gpg import valid_fingerprint
 
 from canonical.launchpad.interfaces import (
     IGPGHandler, IPymeSignature, IPymeKey, IPymeUserId, GPGVerificationError,
-    MoreThanOneGPGKeyFound, GPGKeyNotFoundError, SecretGPGKeyImportDetected)
+    MoreThanOneGPGKeyFound, GPGKeyNotFoundError, SecretGPGKeyImportDetected,
+    GPGKeyAlgorithm)
 
 
 class GPGHandler:
@@ -155,7 +155,7 @@ class GPGHandler:
             except gpgme.GpgmeError, e:
                 raise GPGVerificationError(e.message)
 
-        # XXX 20060131 jamesh
+        # XXX jamesh 2006-01-31:
         # We raise an exception if we don't get exactly one signature.
         # If we are verifying a clear signed document, multiple signatures
         # may indicate two differently signed sections concatenated
@@ -163,7 +163,7 @@ class GPGHandler:
         # Multiple signatures for the same signed block of data is possible,
         # but uncommon.  If people complain, we'll need to examine the issue
         # again.
-        
+
         # if no signatures were found, raise an error:
         if len(signatures) == 0:
             raise GPGVerificationError('No signatures found')
@@ -271,7 +271,7 @@ class GPGHandler:
 
     def retrieveKey(self, fingerprint):
         """See IGPGHandler."""
-        # XXX cprov 20050705
+        # XXX cprov 2005-07-05:
         # Integrate it with the furure proposal related 
         # synchronization of the local key ring with the 
         # global one. It should basically consists of be
@@ -336,7 +336,7 @@ class GPGHandler:
 
     def _grabPage(self, action, fingerprint):
         """Wrapper to collect KeyServer Pages."""
-        # XXX cprov 20050516
+        # XXX cprov 2005-05-16:
         # What if something went wrong ?
         # 1 - Not Found
         # 2 - Revoked Key

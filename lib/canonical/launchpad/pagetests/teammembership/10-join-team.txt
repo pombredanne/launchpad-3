@@ -47,7 +47,7 @@ approved, though.
 
     >>> from zope.testbrowser.testing import Browser
     >>> from canonical.launchpad.database import Person
-    >>> from canonical.lp.dbschema import TeamSubscriptionPolicy
+    >>> from canonical.launchpad.interfaces import TeamSubscriptionPolicy
     >>> myemail = Person.selectOneBy(name='myemail')
     >>> myemail.subscriptionpolicy = TeamSubscriptionPolicy.MODERATED
     >>> myemail.syncUpdate()

@@ -58,7 +58,7 @@
   ...
   Unauthorized: ...
 
-  # XXX: This is a workaround for https://launchpad.net/bugs/45226
+  # XXX Guilherme Salgado 2006-05-24 bug=45226: This is a workaround.
   >>> from zope.testbrowser.testing import Browser
   >>> browser = Browser()
   >>> browser.handleErrors = False
@@ -78,7 +78,7 @@
   And yet another page to list the non-official mirrors, which can be seen
   only by the distro owners, mirror admins of the distro or launchpad admins.
 
-  # XXX: This is a workaround for https://launchpad.net/bugs/45226
+  # XXX Guilherme Salgado 2006-05-24 bug=45226: This is a workaround.
   >>> browser = Browser()
   >>> browser.handleErrors = False
 
@@ -88,7 +88,7 @@
   ...
   Unauthorized: ...
 
-  # XXX: This is a workaround for https://launchpad.net/bugs/45226
+  # XXX Guilherme Salgado 2006-05-24 bug=45226: This is a workaround.
   >>> browser = Browser()
   >>> browser.handleErrors = False
 

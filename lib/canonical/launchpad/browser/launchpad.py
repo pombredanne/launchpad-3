@@ -99,7 +99,7 @@ from canonical.launchpad.webapp.vhosts import allvhosts
 from canonical.widgets.project import ProjectScopeWidget
 
 
-# XXX SteveAlexander, 2005-09-22, this is imported here because there is no
+# XXX SteveAlexander 2005-09-22: this is imported here because there is no
 #     general timedelta to duration format adapter available.  This should
 #     be factored out into a generally available adapter for both this
 #     code and for TALES namespace code to use.
@@ -240,8 +240,7 @@ class MaintenanceMessage:
             try:
                 maintenancetime = parseDatetimetz(message)
             except DateTimeError:
-                # XXX log a warning here.
-                #     SteveAlexander, 2005-09-22
+                # XXX SteveAlexander 2005-09-22: log a warning here.
                 return ''
             nowtz = datetime.utcnow().replace(tzinfo=tzinfo(0))
             timeleft = maintenancetime - nowtz
@@ -309,7 +308,7 @@ class LaunchpadRootFacets(StandardLaunchpadFacets):
 
 
 class MaloneContextMenu(ContextMenu):
-    # XXX 20060327 mpt: No longer visible on Bugs front page.
+    # XXX mpt 2006-03-27: No longer visible on Bugs front page.
     usedfor = IMaloneApplication
     links = ['cvetracker']
 
@@ -319,7 +318,7 @@ class MaloneContextMenu(ContextMenu):
 
 
 class RosettaContextMenu(ContextMenu):
-    # XXX 20060327 mpt: No longer visible on Translations front page.
+    # XXX mpt 2006-03-27: No longer visible on Translations front page.
     usedfor = IRosettaApplication
     links = ['about', 'preferences', 'import_queue', 'translation_groups']
 
@@ -494,7 +493,7 @@ class LaunchpadRootNavigation(Navigation):
 
     @stepto('calendar')
     def calendar(self):
-        # XXX permission=launchpad.AnyPerson
+        # XXX SteveAlexander 2005-10-06: permission=launchpad.AnyPerson
         return MergedCalendar()
 
     def _getBetaRedirectionView(self):
