@@ -150,9 +150,8 @@
                     tal:content="structure script" />
 
             <div class="actions">
-              <input tal:repeat="action view/actions"
-                     tal:replace="structure action/render"
-              />
+              <input tal:replace="structure view/change_status_action/render" />
+            </div>
           </form>
         </tal:block>
       </div>

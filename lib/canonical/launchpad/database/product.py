@@ -53,10 +53,10 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 from canonical.launchpad.database.cal import Calendar
 from canonical.launchpad.interfaces import (
-    BranchType, get_supported_languages, ICalendarOwner, IFAQTarget, IHasIcon,
-    IHasLogo, IHasMugshot, IHasTranslationImports, ILaunchpadCelebrities,
-    ILaunchpadStatisticSet, IPersonSet, IProduct, IProductSet,
-    IQuestionTarget, NotFoundError, QUESTION_STATUS_DEFAULT_SEARCH)
+    BranchType, ICalendarOwner, IFAQTarget, IHasIcon, IHasLogo, IHasMugshot,
+    IHasTranslationImports, ILaunchpadCelebrities, ILaunchpadStatisticSet,
+    IPersonSet, IProduct, IProductSet, IQuestionTarget, NotFoundError,
+    QUESTION_STATUS_DEFAULT_SEARCH)
 
 
 class Product(SQLBase, BugTargetBase, HasSpecificationsMixin, HasSprintsMixin,

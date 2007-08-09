@@ -36,6 +36,7 @@ class HasTranslationImportsView(LaunchpadFormView):
 
     custom_widget('filter_status', DropdownWidget, cssClass='inlined-widget')
     custom_widget('filter_extension', DropdownWidget, cssClass='inlined-widget')
+    custom_widget('status', DropdownWidget, cssClass='inlined-widget')
 
     def initialize(self):
         """Set form label depending on the context."""
@@ -79,7 +80,7 @@ class HasTranslationImportsView(LaunchpadFormView):
                 __name__='status_%d' % entry.id,
                 source=EntryImportStatusVocabularyFactory(entry),
                 title=_('Select import status')),
-            custom_widget=self.custom_widgets['filter_status'],
+            custom_widget=self.custom_widgets['status'],
             render_context=self.render_context)
 
     def setUpFields(self):
@@ -106,7 +107,7 @@ class HasTranslationImportsView(LaunchpadFormView):
         # anything, although I'm not sure whether just using 'pass' is enough.
         pass
 
-    @action("Change status")
+    @action("Change status", name='change_status')
     def change_status_action(self, action, data):
         """Handle a queue submission changing the status of its entries."""
         # The user must be logged in.
