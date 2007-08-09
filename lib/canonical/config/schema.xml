@@ -923,6 +923,8 @@ k            </description>
 
     <sectiontype name="codehosting">
         <key name="authserver" datatype="string" />
+        <key name="upload_url_base" datatype="string"
+             default="sftp://%s@bazaar.launchpad.net" />
         <key name="host_key_pair_path" datatype="string" />
         <key name="branches_root" datatype="string" />
         <key name="port" datatype="string" default="tcp:5022" />

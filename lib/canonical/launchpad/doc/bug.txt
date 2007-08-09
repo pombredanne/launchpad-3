@@ -9,7 +9,7 @@ Architecture.
 Bugs are created and retrieved via IBugSet.
 
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import IBugSet
+    >>> from canonical.launchpad.interfaces import IBugSet, IBug
     >>> bugset = getUtility(IBugSet)
 
 To retrieve a specific Bug, use IBugSet.get:
@@ -37,6 +37,17 @@ raised:
       ...
     NotFoundError: 'Unable to locate bug with nickname +bugs.'
 
+== Interface check ==
+
+It is guaranteed to implement the correct interface, too:
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.database import Bug
+    >>> verifyObject(IBug, Bug.get(6))
+    True
+
+(We grab the object directly from the database here to avoid it being
+security proxied, which doesn't make sense to test here.)
 
 == Searching for Bugs ==
 
@@ -120,7 +131,7 @@ Now we can mark bug #6 private:
     ...     SQLObjectModifiedEvent, SQLObjectToBeModifiedEvent,
     ...     SQLObjectCreatedEvent)
     >>> from canonical.launchpad.interfaces import (
-    ...     IPersonSet, IBug)
+    ...     IPersonSet)
     >>> from canonical.launchpad.webapp.snapshot import Snapshot
 
     >>> new_values = {"private" : True}

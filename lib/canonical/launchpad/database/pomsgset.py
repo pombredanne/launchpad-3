@@ -82,7 +82,7 @@ class POMsgSetMixIn:
                 POTMsgSet.primemsgid = %(primemsgid)s
             """ % parameters
 
-        # XXX: JeroenVermeulen 2007-016-17: Pre-join potranslations!
+        # XXX: JeroenVermeulen 2007-06-17: Pre-join potranslations!
         return POSubmission.select(
             query, clauseTables=joins, orderBy='-datecreated', distinct=True)
 
@@ -373,7 +373,7 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
         active = {}
         published = {}
-        # XXX: JeroenVermeulen 2007-016-17: Prejoin potranslations!
+        # XXX: JeroenVermeulen 2007-06-17: Prejoin potranslations!
         query = "pomsgset = %s AND (active OR published)" % quote(self)
         for submission in POSubmission.select(query):
             pluralform = submission.pluralform
