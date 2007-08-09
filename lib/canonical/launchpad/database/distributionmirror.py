@@ -129,12 +129,12 @@ class DistributionMirror(SQLBase):
 
     def getOverallStatus(self):
         """See IDistributionMirror"""
-        # XXX: We shouldn't be using MirrorStatus to represent the overall
+        # XXX Guilherme Salgado 2006-08-16: 
+        # We shouldn't be using MirrorStatus to represent the overall
         # status of a mirror, but for now it'll do the job and we'll use the
         # UNKNOWN status to represent a mirror without any content (which may
         # mean the mirror was never verified or it was verified and no content
         # was found).
-        # -- Guilherme Salgado, 2006-08-16
         if self.content == MirrorContent.RELEASE:
             if self.cdimage_serieses:
                 return MirrorStatus.UP
@@ -350,9 +350,9 @@ class DistributionMirror(SQLBase):
             for pocket, suffix in pocketsuffix.items():
                 for component in series.components:
                     for arch_series in series.architectures:
-                        # XXX: This hack is a cheap attempt to try and avoid
-                        # https://launchpad.net/bugs/54791 from biting us.
-                        # -- Guilherme Salgado, 2006-08-01
+                        # XXX Guilherme Salgado 2006-08-01 bug=54791: 
+                        # This hack is a cheap attempt to try and avoid
+                        # bug 54791 from biting us.
                         if arch_series.architecturetag in ('hppa', 'ia64'):
                             continue
 

@@ -84,7 +84,7 @@ class SourcePackageSOP(StructuralObjectPresentation):
         return self.context.sourcepackagename
 
     def listChildren(self, num):
-        # XXX mpt 20061004: Versions published, earliest first
+        # XXX mpt 2006-10-04: Versions published, earliest first.
         return []
 
     def countChildren(self):

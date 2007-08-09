@@ -164,18 +164,17 @@ validate_shipit_phone = ShipItAddressValidator('phone number', 16)
 
 validate_shipit_province = ShipItAddressValidator('province', 30)
 
-# XXX: For now we only check if the postcode is valid ascii, as we haven't
+# XXX Guilherme Salgado 2006-05-22: 
+# For now we only check if the postcode is valid ascii, as we haven't
 # heard back from MediaMotion on the length constraint.
-# -- Guilherme Salgado, 2006-05-22
 def validate_shipit_postcode(value):
     _validate_ascii_printable_text(value)
     return True
 
 
-# XXX matsubara 2006-03-15: The validations functions that deals with URLs
-# should be in validators/ and we should have them as separete constraints in
-# trusted.sql.
-# https://launchpad.net/products/launchpad/+bug/35077
+# XXX matsubara 2006-03-15 bug=35077: 
+# The validations functions that deals with URLs should be in 
+# validators/ and we should have them as separete constraints in trusted.sql.
 def validate_url(url, valid_schemes):
     """Returns a boolean stating whether 'url' is a valid URL.
 
@@ -417,9 +416,9 @@ def valid_upstreamtask(bug, product):
         raise WidgetsError(errors)
 
 
-# XXX: Not sure if this is the best place for this, but it'll sit here for
+# XXX Guilherme Salgado 2006-04-25: 
+# Not sure if this is the best place for this, but it'll sit here for
 # now, as it's not used anywhere else.
-# Guilherme Salgado, 2006-04-25
 _countries_where_postcode_is_required = """
     AT Austria
     DZ Algeria

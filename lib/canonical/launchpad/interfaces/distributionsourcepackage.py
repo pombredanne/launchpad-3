@@ -34,7 +34,7 @@ class IDistributionSourcePackage(IBugTarget):
     displayname = Attribute("Display name for this package.")
     title = Attribute("Title for this package.")
 
-    # XXX sabdfl 16/10/2005
+    # XXX sabdfl 2005-10-16:
     distro = Attribute("The distribution.")
 
     by_distroseries = Attribute(

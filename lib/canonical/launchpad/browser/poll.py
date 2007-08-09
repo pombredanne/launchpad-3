@@ -187,9 +187,10 @@ class PollView(BasePollView):
 
     def getPairwiseMatrixWithHeaders(self):
         """Return the pairwise matrix with headers being the option's names."""
-        # XXX: The list() call here is necessary because, lo and behold,
+        # XXX: kiko 2006-03-13:
+        # The list() call here is necessary because, lo and behold,
         # it gives us a non-security-proxied list object! Someone come
-        # in and fix this! -- kiko, 2006-03-13
+        # in and fix this!
         pairwise_matrix = list(self.context.getPairwiseMatrix())
         headers = [None]
         for idx, option in enumerate(self.context.getAllOptions()):
@@ -292,9 +293,10 @@ class PollVoteView(BasePollView):
             try:
                 preference = int(form.get('option_%d' % option.id))
             except ValueError:
-                # XXX: User tried to specify a value which we can't convert to
+                # XXX: Guilherme Salgado 2005-09-14:
+                # User tried to specify a value which we can't convert to
                 # an integer. Better thing to do would be to notify the user
-                # and ask him to fix it. -- Guilherme Salgado 2005-09-14
+                # and ask him to fix it.
                 preference = None
             newvotes[option] = preference
 
