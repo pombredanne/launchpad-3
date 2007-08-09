@@ -3,6 +3,7 @@
 A bugtask's status, assignee, package name, milestone, etc., can be
 modified on its +editstatus page.
 
+
 == Edit the Status ==
 
 Let's start simple and edit the status of a bug task logged in as Sample
@@ -32,6 +33,7 @@ Person:
     >>> edit_view.initialize()
     >>> ubuntu_thunderbird_task.status.title
     'In Progress'
+
 
 == Edit the Package ==
 
@@ -231,7 +233,7 @@ The distribution owner gets an edit widget for the distribution task.
 
     >>> IInputWidget.providedBy(bugtask_edit_view.widgets['milestone'])
     True
-    
+
 But an unprivileged user does not.
 
     >>> from zope.app.form.browser import ItemDisplayWidget
@@ -252,7 +254,7 @@ contact.
     >>> login("foo.bar@canonical.com")
     >>> ubuntu = getUtility(IDistributionSet).getByName("ubuntu")
     >>> ubuntu.bugcontact = getUtility(IPersonSet).getByName("no-priv")
-    
+
 Unlike before, no-priv can now edit the milestone.
 
     >>> bugtask_edit_view = getView(ubuntu_task, "+editstatus-page", request)
