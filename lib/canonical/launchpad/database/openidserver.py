@@ -22,8 +22,8 @@ from canonical.database.enumcol import EnumCol
 from canonical.database.sqlbase import cursor, SQLBase, sqlvalues
 from canonical.launchpad.interfaces import (
     IOpenIdAuthorization, IOpenIdAuthorizationSet, IOpenIDRPConfig,
-    IOpenIDRPConfigSet, ILaunchpadOpenIdStoreFactory)
-from canonical.lp.dbschema import PersonCreationRationale
+    IOpenIDRPConfigSet, ILaunchpadOpenIdStoreFactory,
+    PersonCreationRationale)
 
 class OpenIdAuthorization(SQLBase):
     implements(IOpenIdAuthorization)

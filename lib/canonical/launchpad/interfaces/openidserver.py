@@ -20,7 +20,8 @@ from zope.schema.vocabulary import SimpleTerm, SimpleVocabulary
 from canonical.launchpad import _
 from canonical.launchpad.fields import PasswordField
 from canonical.launchpad.interfaces.librarian import ILibraryFileAlias
-from canonical.lp.dbschema import PersonCreationRationale
+from canonical.launchpad.interfaces.person import PersonCreationRationale
+
 
 class IOpenIdAuthorization(Interface):
     id = Int(title=u'ID', required=True)
