@@ -3,7 +3,6 @@
 
 import apt_pkg
 import os
-import shutil
 import tempfile
 from unittest import TestLoader
 

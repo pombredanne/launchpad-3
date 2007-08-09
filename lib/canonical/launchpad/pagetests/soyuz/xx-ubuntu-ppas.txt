@@ -47,7 +47,7 @@ We have a checkbox to allow inactive PPA results.
     0
     0
 
-This checkbox value is propagated to susequent searches:
+This checkbox value is propagated to subsequent searches:
 
     >>> browser.getControl(name="show_inactive").value
     True

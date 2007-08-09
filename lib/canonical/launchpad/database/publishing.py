@@ -11,11 +11,10 @@ __all__ = ['SourcePackageFilePublishing', 'BinaryPackageFilePublishing',
            ]
 
 from warnings import warn
-import operator
 import os
 
 from zope.interface import implements
-from sqlobject import ForeignKey, StringCol, BoolCol, IntCol
+from sqlobject import ForeignKey, StringCol, BoolCol
 
 from canonical.database.sqlbase import SQLBase, sqlvalues
 from canonical.database.constants import UTC_NOW

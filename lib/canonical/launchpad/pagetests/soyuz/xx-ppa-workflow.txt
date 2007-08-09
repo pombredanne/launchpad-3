@@ -22,7 +22,7 @@ presented in cprov's page:
     LinkNotFoundError
 
 Instead, a 'Show Personal Package Archive' link is presented which
-drives to user to their Personal Package Archive page:
+drives the user to their Personal Package Archive page:
 
     >>> cprov_browser.getLink("Show Personal Package Archive").click()
     >>> cprov_browser.title
@@ -30,7 +30,7 @@ drives to user to their Personal Package Archive page:
     >>> cprov_browser.url
     'http://launchpad.dev/~cprov/+archive'
 
-If, by any chance the user tries to access the Personal Package
+If, by any chance, the user tries to access the Personal Package
 Archive activation page for already activated PPA (hand-made or save
 URLs) it will get redirected to the PPA page automatically:
 

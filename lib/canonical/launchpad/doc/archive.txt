@@ -27,7 +27,7 @@ An Archive models a Debian Archive ...
 Useful properties:
 
   >>> cprov_archive.title
-  u'PPA for Celso Providelo'
+  u'Celso Providelo Personal Package Archive'
 
   >>> cprov_archive.archive_url
   u'http://ppa.launchpad.dev/cprov'
@@ -74,7 +74,7 @@ Let's inspect binaires:
   0
 
 'getPublishedBinaries' returns only unique publications, i.e., it
-excludes architecture_independent duplications which is necessary for
+excludes architecture-independent duplications which is necessary for
 having correct publication counters and archive size.
 
   >>> from canonical.launchpad.database.publishing import (
@@ -88,7 +88,7 @@ having correct publication counters and archive size.
   ...         pub_arch = pub.distroarchseries.architecturetag
   ...         print "%s (%s) -> %s" % (title, arch_spec, pub_arch)
 
-The cprov's PPA contain 3 binary publications, however 'pmount' is a
+The PPA for cprov contain 3 binary publications, however 'pmount' is
 'architecture independent', which means that the same binary (DB) is
 published for all available architectures, i386 & hppa:
 
@@ -114,7 +114,7 @@ published for all available architectures, i386 & hppa:
 == Package Counters ==
 
 IArchive provides properties to calculate the number and the size of
-the packages (source and binaries) present in the archive. They are
+the packages (sources and binaries) present in the archive. They are
 based in the publication lookup methods.
 
   >>> cprov_archive.number_of_sources
