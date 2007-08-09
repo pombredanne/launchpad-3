@@ -195,7 +195,7 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProductSeries
     facet = 'specifications'
-    links = ['listall', 'roadmap', 'table', 'setgoals', 'listdeclined']
+    links = ['listall', 'roadmap', 'table', 'setgoals', 'listdeclined', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -228,6 +228,11 @@ class ProductSeriesSpecificationsMenu(ApplicationMenu):
         text = 'Roadmap'
         summary = 'Show the sequence in which specs should be implemented'
         return Link('+roadmap', text, summary, icon='info')
+
+    def new(self):
+        text = 'Register a blueprint'
+        summary = 'Register a new blueprint for %s' % self.context.title
+        return Link('+addspec', text, summary, icon='add')
 
 
 class ProductSeriesTranslationMenu(ApplicationMenu):
@@ -332,7 +337,7 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
                       ]
         if len(dispatch_to) == 0:
             # None of the know forms have been submitted.
-            # XXX 2005-11-29  CarlosPerelloMarin bug=5244:
+            # XXX CarlosPerelloMarin 2005-11-29 bug=5244:
             # This 'if' should be removed.
             return
         if len(dispatch_to) != 1:

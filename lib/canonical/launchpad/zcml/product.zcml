@@ -117,6 +117,15 @@
     />
 
   <browser:page
+    name="+addspec"
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.NewSpecificationFromProductView"
+    facet="specifications"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+  />
+
+  <browser:page
     for="canonical.launchpad.interfaces.IProduct"
     name="+bugs-index"
     class="canonical.launchpad.browser.BugTargetBugsView"
@@ -324,13 +333,11 @@
     template="../templates/object-branding.pt"
     />
 
-  <browser:editform
+  <browser:page
     name="+bugcontact"
     for="canonical.launchpad.interfaces.IProduct"
-    schema="canonical.launchpad.interfaces.IProduct"
     facet="bugs"
     class="canonical.launchpad.browser.ProductBugContactEditView"
-    fields="bugcontact"
     permission="launchpad.Edit"
     template="../templates/product-bugcontact.pt"
     />
