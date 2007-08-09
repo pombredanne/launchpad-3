@@ -1070,7 +1070,7 @@ class BugTaskSet:
                 # product.
                 extra_clauses.append("BugTask.product IS NOT null")
             else:
-                where_cond = search_value_to_where_condition(arg_value)
+                where_cond = search_value_to_where_condition(params.milestone)
             extra_clauses.append("BugTask.milestone %s" % where_cond)
 
         if params.project:
