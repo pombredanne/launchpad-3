@@ -19,7 +19,7 @@ tests = [
     ('ISchemaSet', 'SchemaSet'),
     ('ISchema', 'Schema'),
     ('ILabel', 'Label'),
-# XXX: Commented until we restart their use
+# XXX daniels 2004-12-14: Commented until we restart their use
 #    ('ICategory', 'RosettaCategory'),
 #    ('ITranslationEffort', 'RosettaTranslationEffort'),
 #    ('ITranslationEffortPOTemplate', 'RosettaTranslationEffortPOTemplate'),

@@ -159,7 +159,7 @@ class BranchURIField(URIField):
 
         super(BranchURIField, self)._validate(value)
 
-        # XXX thumper 2007-06-12
+        # XXX thumper 2007-06-12:
         # Move this validation code into IBranchSet so it can be
         # reused in the XMLRPC code, and the Authserver.
         # This also means we could get rid of the imports above.
@@ -599,7 +599,7 @@ class IBranchSet(Interface):
         visible_by_user=None):
         """Branches associated with person with appropriate lifecycle.
 
-        XXX: thumper 2007-03-23
+        XXX: thumper 2007-03-23:
         The intent here is to just show interesting branches for the
         person.
         Following a chat with lifeless we'd like this to be listed and
@@ -754,9 +754,9 @@ class IBranchDelta(Interface):
     last_scanned_id = Attribute("The revision id of the tip revision.")
 
 
-# XXX: thumper 2007-07-23
+# XXX: thumper 2007-07-23 bug=66950:
 # Both BranchLifecycleStatusFilter and IBranchLifecycleFilter
-# are used only in browser/branchlisting.py, see bug 66950.
+# are used only in browser/branchlisting.py.
 class BranchLifecycleStatusFilter(EnumeratedType):
     """Branch Lifecycle Status Filter
 
