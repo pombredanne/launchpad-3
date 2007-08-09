@@ -2,7 +2,7 @@
 
 An Archive models a Debian Archive ...
 
-  >>> from zope.interface.verify import verifyObject
+  >>> from canonical.launchpad.webapp.testing import verifyObject
   >>> from canonical.lp.dbschema import ArchivePurpose
   >>> from canonical.launchpad.interfaces import (
   ...     IPerson, IPersonSet, IArchiveSet, IArchive,

@@ -27,7 +27,7 @@ Bazaar model does not forbid users from replacing the history of a branch.
 
 == Interfaces ==
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     BranchType, IBranch, IBranchSet, IBranchSubscription)
     >>> from canonical.launchpad.database import (
@@ -108,7 +108,7 @@ date_created values from the database.
 
 Branches must implement the IBranch interface.
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import IBranch
     >>> verifyObject(IBranch, gterm_dev)
     True

@@ -149,7 +149,7 @@ don't issue many queries to the database.
 
 The view batches the results.  The method that returns the batch is 'branches'.
 
->>> from zope.interface.verify import verifyObject
+>>> from canonical.launchpad.webapp.testing import verifyObject
 >>> from canonical.launchpad.interfaces import IBranchBatchNavigator
 >>> branches = view.branches()
 >>> verifyObject(IBranchBatchNavigator, branches)

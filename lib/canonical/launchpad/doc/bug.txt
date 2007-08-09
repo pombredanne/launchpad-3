@@ -41,9 +41,8 @@ raised:
 
 It is guaranteed to implement the correct interface, too:
 
-    >>> from zope.interface.verify import verifyObject
-    >>> from canonical.launchpad.database import Bug
-    >>> verifyObject(IBug, Bug.get(6))
+    >>> from canonical.launchpad.webapp.testing import verifyObject
+    >>> verifyObject(IBug, firefox_crashes)
     True
 
 (We grab the object directly from the database here to avoid it being

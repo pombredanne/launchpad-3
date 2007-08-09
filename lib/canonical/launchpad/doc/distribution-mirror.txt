@@ -132,7 +132,7 @@ distribution owner can see them and mark the ones that should be official.
 
 It's possible to retrieve a mirror by its name:
 
-    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.webapp.testing import verifyObject
     >>> from canonical.launchpad.interfaces import IDistributionMirror
     >>> example_mirror = mirrorset.getByName('archive-mirror')
     >>> verifyObject(IDistributionMirror, example_mirror)
