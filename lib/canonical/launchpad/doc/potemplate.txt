@@ -257,45 +257,57 @@ Templates can be exported to its native format.
     "MIME-Version: 1.0\n"
     "Content-Type: text/plain; charset=ASCII\n"
     "Content-Transfer-Encoding: 8bit\n"
-    "X-Generator: Launchpad (build Unknown)\n"
+    "X-Generator: Launchpad (build ...)\n"
     <BLANKLINE>
     #: a11y/addressbook/ea-addressbook-view.c:94
     #: a11y/addressbook/ea-addressbook-view.c:103
+    #: a11y/addressbook/ea-minicard-view.c:119
     msgid "evolution addressbook"
     msgstr ""
     <BLANKLINE>
+    #: a11y/addressbook/ea-minicard-view.c:101
     msgid "current addressbook folder"
     msgstr ""
     <BLANKLINE>
+    #: a11y/addressbook/ea-minicard-view.c:102
     msgid "have "
     msgstr ""
     <BLANKLINE>
+    #: a11y/addressbook/ea-minicard-view.c:102
     msgid "has "
     msgstr ""
     <BLANKLINE>
+    #: a11y/addressbook/ea-minicard-view.c:104
     msgid " cards"
     msgstr ""
     <BLANKLINE>
+    #: a11y/addressbook/ea-minicard-view.c:104
     msgid " card"
     msgstr ""
     <BLANKLINE>
+    #: a11y/addressbook/ea-minicard-view.c:105
     msgid "contact's header: "
     msgstr ""
     <BLANKLINE>
+    #: a11y/addressbook/ea-minicard.c:166
     msgid "evolution minicard"
     msgstr ""
     <BLANKLINE>
+    #: addressbook/addressbook-errors.xml.h:2
     msgid "This addressbook could not be opened."
     msgstr ""
     <BLANKLINE>
+    #: addressbook/addressbook-errors.xml.h:4
     msgid ""
     "This addressbook server might unreachable or the server name may be "
     "misspelled or your network connection could be down."
     msgstr ""
     <BLANKLINE>
+    #: addressbook/addressbook-errors.xml.h:6
     msgid "Failed to authenticate with LDAP server."
     msgstr ""
     <BLANKLINE>
+    #: addressbook/addressbook-errors.xml.h:8
     msgid ""
     "Check to make sure your password is spelled correctly and that you are using "
     "a supported login method. Remember that many passwords are case sensitive; "
@@ -303,10 +315,12 @@ Templates can be exported to its native format.
     msgstr ""
     <BLANKLINE>
     #: addressbook/gui/component/addressbook-migrate.c:124
+    #: calendar/gui/migration.c:188 mail/em-migrate.c:1201
     #, c-format
     msgid "Migrating `%s':"
     msgstr ""
     <BLANKLINE>
+    #: addressbook/gui/component/addressbook-migrate.c:1123
     msgid ""
     "The location and hierarchy of the Evolution contact folders has changed "
     "since Evolution 1.x.\n"
@@ -314,12 +328,14 @@ Templates can be exported to its native format.
     "Please be patient while Evolution migrates your folders..."
     msgstr ""
     <BLANKLINE>
+    #: addressbook/gui/widgets/e-addressbook-model.c:151
     #, c-format
     msgid "%d contact"
     msgid_plural "%d contacts"
     msgstr[0] ""
     msgstr[1] ""
     <BLANKLINE>
+    #: addressbook/gui/widgets/eab-gui-util.c:275
     #, c-format
     msgid ""
     "Opening %d contact will open %d new window as well.\n"
@@ -330,19 +346,23 @@ Templates can be exported to its native format.
     msgstr[0] ""
     msgstr[1] ""
     <BLANKLINE>
+    #: addressbook/gui/widgets/foo.c:345
     #, c-format
     msgid "%d foo"
     msgid_plural "%d bars"
     msgstr[0] ""
     msgstr[1] ""
     <BLANKLINE>
+    #: encfs/FileUtils.cpp:1044
     msgid "EncFS Password: "
     msgstr ""
     <BLANKLINE>
+    #: encfs/main.cpp:340
     msgid ""
     "When specifying daemon mode, you must use absolute paths (beginning with '/')"
     msgstr ""
     <BLANKLINE>
+    #: encfs/FileUtils.cpp:535
     #, c-format
     msgid ""
     "Please select a key size in bits.  The cipher you have chosen\n"
@@ -350,12 +370,14 @@ Templates can be exported to its native format.
     "For example: "
     msgstr ""
     <BLANKLINE>
+    #: encfs/encfsctl.cpp:346
     #, c-format
     msgid "Found %i invalid file."
     msgid_plural "Found %i invalid files."
     msgstr[0] ""
     msgstr[1] ""
     <BLANKLINE>
+    #: modules/aggregator.module:15
     msgid ""
     "\n"
     "      <p>Thousands of sites (particularly news sites and weblogs) publish "
@@ -477,7 +499,7 @@ Templates can be exported to its native format.
     "      <p>If a feed is permanently moved to a new location Drupal will "
     "automatically update the feed URL to the new address.</p>"
     msgstr ""
-    <BLANKLINE>
+
 
 == exportWithTranslations() ==
 

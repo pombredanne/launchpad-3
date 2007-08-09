@@ -58,7 +58,7 @@ def comments_text_representation(translation_message):
             for line in translation_message.source_comment.split('\n')[:-1]:
                 text.append(u'#. ' + line)
         if translation_message.file_references:
-            for line in translation_message.file_references.split('\n')[:-1]:
+            for line in translation_message.file_references.split('\n'):
                 text.append(u'#: ' + line)
     if translation_message.flags:
         flags = list(translation_message.flags)

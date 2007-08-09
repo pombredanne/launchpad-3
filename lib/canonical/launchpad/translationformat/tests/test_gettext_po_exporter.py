@@ -27,7 +27,8 @@ class GettextPoExporterTestCase(unittest.TestCase):
         # Remove X-Launchpad-Export-Date line to prevent time bombs in tests.
         export_lines = [
             line for line in export_file.split('\n')
-            if not line.startswith('"X-Launchpad-Export-Date:')]
+            if (not line.startswith('"X-Launchpad-Export-Date:') and
+                not line.startswith('"X-Generator: Launchpad'))]
 
         for i in range(len(import_lines)):
             self.assertEqual(
@@ -52,7 +53,7 @@ class GettextPoExporterTestCase(unittest.TestCase):
             "Content-Transfer-Encoding: 8bit\\n"
             "Plural-Forms: nplurals=4; plural=n==1 ? 0 : n==2 ? 1 : (n != 8 || n != 11) ? "
             "2 : 3;\\n"
-            %s
+
             msgid "foo"
             msgid_plural "foos"
             msgstr[0] "cy-F001"
@@ -77,7 +78,7 @@ class GettextPoExporterTestCase(unittest.TestCase):
             #~ msgid "zot"
             #~ msgstr "zat"
             ''')
-        cy_translation_file = self.parser.parse(pofile_cy % '\n')
+        cy_translation_file = self.parser.parse(pofile_cy)
         cy_translation_file.is_template = False
         cy_translation_file.language_code = 'cy'
         cy_translation_file.path = 'po/cy.po'
@@ -86,9 +87,7 @@ class GettextPoExporterTestCase(unittest.TestCase):
             [cy_translation_file])
 
         self._compareImportAndExport(
-            pofile_cy.strip() % (
-                '"X-Generator: Launchpad (build Unknown)\\n"\n'),
-            exported_cy_file.content_file.read().strip())
+            pofile_cy.strip(), exported_cy_file.content_file.read().strip())
 
     def testEncodingExport(self):
         """Test that PO headers specifying character sets are respected."""
@@ -97,7 +96,7 @@ class GettextPoExporterTestCase(unittest.TestCase):
             "Compare the original text with the exported one."""
             # This is the word 'Japanese' in Japanese, in Unicode.
             nihongo_unicode = u'\u65e5\u672c\u8a9e'
-            translation_file = self.parser.parse(pofile % '\n')
+            translation_file = self.parser.parse(pofile)
             translation_file.is_template = False
             translation_file.language_code = 'ja'
             translation_file.path = 'po/ja.po'
@@ -114,9 +113,7 @@ class GettextPoExporterTestCase(unittest.TestCase):
                 [translation_file])
 
             self._compareImportAndExport(
-                pofile.strip() % (
-                    '"X-Generator: Launchpad (build Unknown)\\n"\n'),
-                exported_file.content_file.read().strip())
+                pofile.strip(), exported_file.content_file.read().strip())
 
         # File representing the same PO file three times. Each is identical
         # except for the charset declaration in the header.
@@ -133,7 +130,7 @@ class GettextPoExporterTestCase(unittest.TestCase):
                 "MIME-Version: 1.0\\n"
                 "Content-Type: text/plain; charset=UTF-8\\n"
                 "Content-Transfer-Encoding: 8bit\\n"
-                %s
+
                 msgid "Japanese"
                 msgstr "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e"
                 '''),
@@ -149,7 +146,7 @@ class GettextPoExporterTestCase(unittest.TestCase):
                 "MIME-Version: 1.0\\n"
                 "Content-Type: text/plain; charset=Shift-JIS\\n"
                 "Content-Transfer-Encoding: 8bit\\n"
-                %s
+
                 msgid "Japanese"
                 msgstr "\x93\xfa\x96\x7b\x8c\xea"
                 '''),
@@ -165,7 +162,7 @@ class GettextPoExporterTestCase(unittest.TestCase):
                 "MIME-Version: 1.0\\n"
                 "Content-Type: text/plain; charset=EUC-JP\\n"
                 "Content-Transfer-Encoding: 8bit\\n"
-                %s
+
                 msgid "Japanese"
                 msgstr "\xc6\xfc\xcb\xdc\xb8\xec"
                 ''')
@@ -194,12 +191,12 @@ class GettextPoExporterTestCase(unittest.TestCase):
             "MIME-Version: 1.0\\n"
             "Content-Type: text/plain; charset=%s\\n"
             "Content-Transfer-Encoding: 8bit\\n"
-            %s
+
             msgid "a"
             msgstr "%s"
             ''')
         translation_file = self.parser.parse(
-            pofile % ('ISO-8859-15', '\n', '\xe1'))
+            pofile % ('ISO-8859-15', '\xe1'))
         translation_file.is_template = False
         translation_file.language_code = 'es'
         translation_file.path = 'po/es.po'
@@ -214,7 +211,6 @@ class GettextPoExporterTestCase(unittest.TestCase):
         self._compareImportAndExport(
             pofile.strip() % (
                 'UTF-8',
-                '"X-Generator: Launchpad (build Unknown)\\n"\n',
                 '\xc3\xa1'),
             exported_file.content_file.read().strip())
 
@@ -234,12 +230,12 @@ class GettextPoExporterTestCase(unittest.TestCase):
             "Content-Type: text/plain; charset=UTF-8\\n"
             "Content-Transfer-Encoding: 8bit\\n"
             "Plural-Forms: nplurals=2; plural=(n != 1);\\n"
-            %s
+
             msgid "1 dead horse"
             msgid_plural "%%d dead horses"
             msgstr[0] "ning\xc3\xban caballo muerto"
             %s''')
-        translation_file = self.parser.parse(pofile % ('\n', ''))
+        translation_file = self.parser.parse(pofile % (''))
         translation_file.is_template = False
         translation_file.language_code = 'es'
         translation_file.path = 'po/es.po'
@@ -248,9 +244,7 @@ class GettextPoExporterTestCase(unittest.TestCase):
             [translation_file])
 
         self._compareImportAndExport(
-            pofile.strip() % (
-                '"X-Generator: Launchpad (build Unknown)\\n"\n',
-                'msgstr[1] ""'),
+            pofile.strip() % 'msgstr[1] ""',
             exported_file.content_file.read().strip())
 
 

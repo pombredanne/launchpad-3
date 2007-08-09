@@ -1089,6 +1089,15 @@ class POFile(SQLBase, POFileMixIn):
                 self.potemplate.source_file_format))
 
         translation_file = ITranslationFile(self)
+        if (self.last_touched_pomsgset is not None and
+            self.last_touched_pomsgset.reviewer is not None):
+            reviewer = self.last_touched_pomsgset.reviewer
+            preferredemail = reviewer.preferredemail
+            email = 'Unknown'
+            if preferredemail is not None:
+                email = preferredemail.email
+            displayname = reviewer.displayname
+            translation_file.header.setLastTranslator(email, name=displayname)
         exported_file = translation_format_exporter.exportTranslationFiles(
             [translation_file], ignore_obsolete, force_utf8)
         return removeAllProxies(exported_file.content_file).read()

@@ -119,14 +119,12 @@ class VPOExportSet:
 
         if date is not None:
             join += '''
-                  JOIN POMsgSet ON POMsgSet.pofile = POFile.id
+                  JOIN POMsgSet ON
+                    POMsgSet.pofile = POFile.id AND
+                    POMsgSet.date_reviewed > %s
                   JOIN POSubmission ON
                     POSubmission.pomsgset = POMsgset.id AND
-                    POSubmission.active IS TRUE'''
-
-            where += ''' AND
-                  POSubmission.datecreated > %s
-                ''' % sqlvalues(date)
+                    POSubmission.active IS TRUE''' % sqlvalues(date)
 
         if component is not None:
             join += '''
@@ -240,15 +238,14 @@ class VPOExportSet:
             join = [
                 'POFile ON POFile.id = POExport.pofile',
                 'POTemplate ON POFile.potemplate = POTemplate.id',
-                'POMsgSet ON POMsgSet.pofile = POFile.id',
+                'POMsgSet ON '
+                    'POMsgSet.pofile = POFile.id AND '
+                    'POMsgSet.date_reviewed > %s' % sqlvalues(date),
                 'POSubmission ON '
-                    'POSubmission.pomsgset = POMsgSet.id AND'
+                    'POSubmission.pomsgset = POMsgSet.id AND '
                     'POSubmission.active IS TRUE',
             ]
-            where = '''
-                 POSubmission.datecreated > %s AND
-                 POTemplate.distrorelease = %s
-            ''' % sqlvalues(date, series.id)
+            where = 'POTemplate.distrorelease = %s' % sqlvalues(series)
 
         return self._select(join=join, where=where)
 

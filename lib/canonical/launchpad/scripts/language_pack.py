@@ -72,6 +72,7 @@ def export(distribution_name, series_name, component, update, force_utf8,
 
     logger.debug("Selecting PO files for export")
 
+    date = None
     if update:
         if series.datelastlangpack is None:
             # It's the first language pack for this series so the update must
@@ -79,8 +80,6 @@ def export(distribution_name, series_name, component, update, force_utf8,
             date = series.datereleased
         else:
             date = series.datelastlangpack
-    else:
-        date = series.datereleased
 
     pofile_count = export_set.get_distroseries_pofiles_count(
         series, date, component, languagepack=True)
@@ -182,7 +181,6 @@ def export_language_pack(distribution_name, series_name, component, update,
                          force_utf8, output_file, email_addresses, logger):
 
     # Export the translations to a tarball.
-
     try:
         filehandle, size = export(
             distribution_name, series_name, component, update, force_utf8,

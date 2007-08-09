@@ -206,7 +206,7 @@ class POBasicTestCase(unittest.TestCase):
             u'Content-Type: text/plain; charset=UTF-8',
             u'Content-Transfer-Encoding: 8bit',
             u'X-Launchpad-Export-Date: ...',
-            u'X-Generator: Launchpad (build Unknown)',
+            u'X-Generator: Launchpad (build ...)',
             u'foo: bar'
             ]
         for index in range(len(expected)):
@@ -219,6 +219,10 @@ class POBasicTestCase(unittest.TestCase):
             elif lines[index].startswith('X-Launchpad-Export-Date'):
                 self.assertEqual(
                     expected[index].startswith('X-Launchpad-Export-Date'),
+                    True)
+            elif lines[index].startswith('X-Generator: Launchpad'):
+                self.assertEqual(
+                    expected[index].startswith('X-Generator: Launchpad'),
                     True)
             else:
                 self.assertEqual(lines[index], expected[index])
