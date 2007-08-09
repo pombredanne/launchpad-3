@@ -297,16 +297,22 @@ anyway.
 
     >>> mirrors = mirrorset.getMirrorsToProbe(
     ...     MirrorContent.ARCHIVE, ignore_last_probe=True)
+    >>> import pytz
+    >>> utc = pytz.timezone('UTC')
+    >>> now = datetime.now(utc)
     >>> for mirror in mirrors:
     ...     last_probe = mirror.last_probe_record
     ...     last_probe_date = 'NEVER'
     ...     if last_probe is not None:
-    ...         last_probe_date = last_probe.date_created.isoformat()
+    ...         if (now - last_probe.date_created).days < 1:
+    ...             last_probe_date = 'TODAY'
+    ...         else:
+    ...             last_probe_date = last_probe.date_created.isoformat()
     ...     print mirror.name, last_probe_date
     canonical-archive NEVER
     archive-404-mirror NEVER
-    archive-mirror 2007-08-08T17:50:02.228947+00:00
-    archive-mirror2 2006-05-24T17:12:03.714206+00:00
+    archive-mirror TODAY
+    archive-mirror2 2006-05-24...
 
     >>> mirrors = mirrorset.getMirrorsToProbe(
     ...     MirrorContent.ARCHIVE, ignore_last_probe=True, limit=3)
@@ -318,7 +324,7 @@ anyway.
     ...     print mirror.name, last_probe_date
     canonical-archive NEVER
     archive-404-mirror NEVER
-    archive-mirror2 2006-05-24T17:12:03.714206+00:00
+    archive-mirror2 2006-05-24...
 
     
 If when we finish probing a mirror, that mirror doesn't have any
@@ -463,8 +469,6 @@ On the warty release, component 'main' and pocket RELEASE , we had two uploads
 between 2005-09-15 and 2005-09-17, so at that time we could've checked if 
 that mirror's last sync was in the last one or two days.
 
-    >>> import pytz
-    >>> utc = pytz.timezone('UTC')
     >>> when = datetime(2005, 9, 17, tzinfo=utc)
     >>> urls = warty_mirror.getURLsToCheckUpdateness(when=when)
     >>> [(status.name, url) for (status, url) in urls.items()]
