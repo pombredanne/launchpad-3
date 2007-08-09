@@ -22,7 +22,7 @@
 
         <p metal:define-slot="extra_info" tal:replace="nothing">
           This is the description of the form.
-          This text will be in bold, beneath the title of the add form,
+          This text will be in bold, beneath the title of the form,
           and should give any introductory information required.
           Don't use it to state the bleeding obvious!
         </p>
@@ -114,8 +114,7 @@
           </th>
         </tr>
         <tr>
-          <td>&nbsp;</td>
-          <td tal:attributes="class error_class">
+          <td colspan="2" tal:attributes="class error_class">
             <div tal:content="structure widget">
               <input type="text" style="width: 100%" />
             </div>

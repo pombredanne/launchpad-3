@@ -5,18 +5,23 @@
 __metaclass__ = type
 
 __all__ = [
-    'IPerson',
-    'ITeam',
-    'IPersonSet',
-    'IRequestPeopleMerge',
+    'AccountStatus',
     'IAdminRequestPeopleMerge',
+    'INewPerson',
     'IObjectReassignment',
-    'ITeamReassignment',
-    'ITeamCreation',
     'IPersonChangePassword',
     'IPersonClaim',
-    'INewPerson',
+    'IPersonSet',
+    'IPerson',
+    'IRequestPeopleMerge',
+    'ITeamCreation',
+    'ITeamReassignment',
+    'ITeam',
     'JoinNotAllowed',
+    'PersonCreationRationale',
+    'TeamMembershipRenewalPolicy',
+    'TeamMembershipStatus',
+    'TeamSubscriptionPolicy',
     ]
 
 
@@ -27,14 +32,10 @@ from zope.interface.interface import invariant
 from zope.component import getUtility
 
 from canonical.launchpad import _
+from canonical.lazr import DBEnumeratedType, DBItem
 from canonical.launchpad.fields import (
-    BlacklistableContentNameField,
-    IconImageUpload,
-    LogoImageUpload,
-    MugshotImageUpload,
-    PasswordField,
-    StrippedTextLine,
-    )
+    BlacklistableContentNameField, IconImageUpload, LogoImageUpload,
+    MugshotImageUpload, PasswordField, StrippedTextLine)
 from canonical.launchpad.validators.name import name_validator
 from canonical.launchpad.interfaces.mentoringoffer import (
     IHasMentoringOffers)
@@ -47,9 +48,259 @@ from canonical.launchpad.interfaces.questioncollection import (
 from canonical.launchpad.interfaces.validation import (
     validate_new_team_email, validate_new_person_email)
 
-from canonical.lp.dbschema import (
-    PersonCreationRationale, TeamMembershipRenewalPolicy,
-    TeamMembershipStatus, TeamSubscriptionPolicy)
+
+class AccountStatus(DBEnumeratedType):
+    """The status of a Launchpad account."""
+
+    NOACCOUNT = DBItem(10, """
+        No Launchpad account
+
+        There's no Launchpad account for this Person record.
+        """)
+
+    ACTIVE = DBItem(20, """
+        Active Launchpad account
+
+        There's an active Launchpad account associated with this Person.
+        """)
+
+    DEACTIVATED = DBItem(30, """
+        Deactivated Launchpad account
+
+        The account associated with this Person has been deactivated by the
+        Person himself.
+        """)
+
+    SUSPENDED = DBItem(40, """
+        Suspended Launchpad account
+
+        The account associated with this Person has been suspended by a
+        Launchpad admin.
+        """)
+
+
+class PersonCreationRationale(DBEnumeratedType):
+    """The rationale for the creation of a given person.
+
+    Launchpad automatically creates user accounts under certain
+    circumstances. The owners of these accounts may discover Launchpad
+    at a later date and wonder why Launchpad knows about them, so we
+    need to make it clear why a certain account was automatically created.
+    """
+
+    UNKNOWN = DBItem(1, """
+        Unknown
+
+        The reason for the creation of this person is unknown.
+        """)
+
+    BUGIMPORT = DBItem(2, """
+        Existing user in another bugtracker from which we imported bugs.
+
+        A bugzilla import or sf.net import, for instance. The bugtracker from
+        which we were importing should be described in
+        Person.creation_comment.
+        """)
+
+    SOURCEPACKAGEIMPORT = DBItem(3, """
+        This person was mentioned in a source package we imported.
+
+        When gina imports source packages, it has to create Person entries for
+        the email addresses that are listed as maintainer and/or uploader of
+        the package, in case they don't exist in Launchpad.
+        """)
+
+    POFILEIMPORT = DBItem(4, """
+        This person was mentioned in a POFile imported into Rosetta.
+
+        When importing POFiles into Rosetta, we need to give credit for the
+        translations on that POFile to its last translator, which may not
+        exist in Launchpad, so we'd need to create it.
+        """)
+
+    KEYRINGTRUSTANALYZER = DBItem(5, """
+        Created by the keyring trust analyzer.
+
+        The keyring trust analyzer is responsible for scanning GPG keys
+        belonging to the strongly connected set and assign all email addresses
+        registered on those keys to the people representing their owners in
+        Launchpad. If any of these people doesn't exist, it creates them.
+        """)
+
+    FROMEMAILMESSAGE = DBItem(6, """
+        Created when parsing an email message.
+
+        Sometimes we parse email messages and want to associate them with the
+        sender, which may not have a Launchpad account. In that case we need
+        to create a Person entry to associate with the email.
+        """)
+
+    SOURCEPACKAGEUPLOAD = DBItem(7, """
+        This person was mentioned in a source package uploaded.
+
+        Some uploaded packages may be uploaded with a maintainer that is not
+        registered in Launchpad, and in these cases, soyuz may decide to
+        create the new Person instead of complaining.
+        """)
+
+    OWNER_CREATED_LAUNCHPAD = DBItem(8, """
+        Created by the owner himself, coming from Launchpad.
+
+        Somebody was navigating through Launchpad and at some point decided to
+        create an account.
+        """)
+
+    OWNER_CREATED_SHIPIT = DBItem(9, """
+        Created by the owner himself, coming from Shipit.
+
+        Somebody went to one of the shipit sites to request Ubuntu CDs and was
+        directed to Launchpad to create an account.
+        """)
+
+    OWNER_CREATED_UBUNTU_WIKI = DBItem(10, """
+        Created by the owner himself, coming from the Ubuntu wiki.
+
+        Somebody went to the Ubuntu wiki and was directed to Launchpad to
+        create an account.
+        """)
+
+    USER_CREATED = DBItem(11, """
+        Created by a user to represent a person which does not uses Launchpad.
+
+        A user wanted to reference a person which is not a Launchpad user, so
+        he created this "placeholder" profile.
+        """)
+
+    OWNER_CREATED_UBUNTU_SHOP = DBItem(12, """
+        Created by the owner himself, coming from the Ubuntu Shop.
+
+        Somebody went to the Ubuntu Shop and was directed to Launchpad to
+        create an account.
+        """)
+
+    OWNER_CREATED_UNKNOWN_TRUSTROOT = DBItem(13, """
+        Created by the owner himself, coming from unknown OpenID consumer.
+
+        Somebody went to an OpenID consumer we don't know about and was
+        directed to Launchpad to create an account.
+        """)
+
+
+class TeamMembershipRenewalPolicy(DBEnumeratedType):
+    """TeamMembership Renewal Policy.
+
+    How Team Memberships can be renewed on a given team.
+    """
+
+    NONE = DBItem(10, """
+        invite them to apply for renewal
+
+        Memberships can be renewed only by team administrators or by going
+        through the normal workflow for joining the team.
+        """)
+
+    ONDEMAND = DBItem(20, """
+        invite them to renew their own membership
+
+        Memberships can be renewed by the members themselves a few days before
+        it expires. After it expires the member has to go through the normal
+        workflow for joining the team.
+        """)
+
+    AUTOMATIC = DBItem(30, """
+        renew their membership automatically, also notifying the admins
+
+        Memberships are automatically renewed when they expire and a note is
+        sent to the member and to team admins.
+        """)
+
+
+class TeamMembershipStatus(DBEnumeratedType):
+    """TeamMembership Status
+
+    According to the policies specified by each team, the membership status of
+    a given member can be one of multiple different statuses. More information
+    can be found in the TeamMembership spec.
+    """
+
+    PROPOSED = DBItem(1, """
+        Proposed
+
+        You are a proposed member of this team. To become an active member your
+        subscription has to be approved by one of the team's administrators.
+        """)
+
+    APPROVED = DBItem(2, """
+        Approved
+
+        You are an active member of this team.
+        """)
+
+    ADMIN = DBItem(3, """
+        Administrator
+
+        You are an administrator of this team.
+        """)
+
+    DEACTIVATED = DBItem(4, """
+        Deactivated
+
+        Your subscription to this team has been deactivated.
+        """)
+
+    EXPIRED = DBItem(5, """
+        Expired
+
+        Your subscription to this team is expired.
+        """)
+
+    DECLINED = DBItem(6, """
+        Declined
+
+        Your proposed subscription to this team has been declined.
+        """)
+
+    INVITED = DBItem(7, """
+        Invited
+
+        You have been invited as a member of this team. In order to become an
+        actual member, you have to accept the invitation.
+        """)
+
+    INVITATION_DECLINED = DBItem(8, """
+        Invitation declined
+
+        You have been invited as a member of this team but the invitation has
+        been declined.
+        """)
+
+
+class TeamSubscriptionPolicy(DBEnumeratedType):
+    """Team Subscription Policies
+
+    The policies that apply to a team and specify how new subscriptions must
+    be handled. More information can be found in the TeamMembershipPolicies
+    spec.
+    """
+
+    MODERATED = DBItem(1, """
+        Moderated Team
+
+        All subscriptions for this team are subjected to approval by one of
+        the team's administrators.
+        """)
+
+    OPEN = DBItem(2, """
+        Open Team
+
+        Any user can join and no approval is required.
+        """)
+
+    RESTRICTED = DBItem(3, """
+        Restricted Team
+
+        New members can only be added by one of the team's administrators.
+        """)
 
 
 class PersonNameField(BlacklistableContentNameField):
@@ -118,9 +369,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "here.")
             )
     password = PasswordField(
-            title=_('Password'), required=True, readonly=False,
-            description=_("Enter the same password in each field.")
-            )
+            title=_('Password'), required=True, readonly=False)
     karma = Int(
             title=_('Karma'), readonly=False,
             description=_('The cached total karma for this person.')
@@ -215,9 +464,10 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             "exception to this is when we allow users to create Launchpad "
             "profiles through the /people/+newperson page."),
         required=False, readonly=False)
-    # XXX: We can't use a Choice field here because we don't have a vocabulary
+    # XXX Guilherme Salgado 2006-11-10: 
+    # We can't use a Choice field here because we don't have a vocabulary
     # which contains valid people but not teams, and we don't really need one
-    # appart from here. -- Guilherme Salgado, 2006-11-10
+    # appart from here.
     registrant = Attribute('The user who created this profile.')
     # bounty relations
     ownedBounties = Attribute('Bounties issued by this person.')
@@ -236,6 +486,14 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
             title=_("Key used to generate opaque OpenID identities."),
             readonly=True, required=False,
             )
+
+    account_status = Choice(
+        title=_("The status of this person's account"), required=False,
+        readonly=False, vocabulary=AccountStatus)
+
+    account_status_comment = Text(
+        title=_("Why are you deactivating your account?"), required=False,
+        readonly=False)
 
     # Properties of the Person object.
     karma_category_caches = Attribute(
@@ -381,7 +639,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     subscriptionpolicy = Choice(
         title=_('Subscription Policy'),
-        required=True, vocabulary='TeamSubscriptionPolicy',
+        required=True, vocabulary=TeamSubscriptionPolicy,
         default=TeamSubscriptionPolicy.MODERATED,
         description=_(
             "'Moderated' means all subscriptions must be approved. 'Open' "
@@ -391,7 +649,7 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
     renewal_policy = Choice(
         title=_("When someone's membership is about to expire, Launchpad "
                 "should notify them and"),
-        required=True, vocabulary='TeamMembershipRenewalPolicy',
+        required=True, vocabulary=TeamMembershipRenewalPolicy,
         default=TeamMembershipRenewalPolicy.NONE)
 
     merged = Int(
@@ -426,13 +684,13 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
 
     @invariant
     def personCannotHaveIcon(person):
-        # XXX: This invariant is busted! The person parameter provided to this
+        # XXX Guilherme Salgado 2007-05-28: 
+        # This invariant is busted! The person parameter provided to this
         # method will always be an instance of zope.formlib.form.FormData
         # containing only the values of the fields included in the POSTed
         # form. IOW, person.inTeam() will raise a NoInputData just like
         # person.teamowner would as it's not present in most of the
         # person-related forms.
-        # -- Guilherme Salgado, 2007-05-28
         if person.icon is not None and not person.isTeam():
             raise Invalid('Only teams can have an icon.')
 
@@ -627,7 +885,6 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         False otherwise.
         """
 
-
     def validateAndEnsurePreferredEmail(email):
         """Ensure this person has a preferred email.
 
@@ -789,16 +1046,6 @@ class IPerson(IHasSpecifications, IHasMentoringOffers, IQuestionCollection,
         If the given language is not present, nothing  will happen.
         """
 
-    def getSupportedLanguages():
-        """Return a set containing the languages in which support is provided.
-
-        For a person, this is equal to the list of known languages minus
-        the dialects.
-        For a team that doesn't have any explicit known languages set, this
-        will be equal to union of all the languages known by its members
-        minus dialects.
-        """
-
     def getDirectAnswerQuestionTargets():
         """Return a list of IQuestionTargets that a person is subscribed to.
 
@@ -899,7 +1146,7 @@ class IPersonSet(Interface):
         The comment must be of the following form: "when %(action_details)s"
         (e.g. "when the foo package was imported into Ubuntu Breezy").
 
-        XXX sabdfl 14/06/05 this should be extended to be similar or
+        XXX sabdfl 2005-06-14: this should be extended to be similar or
         identical to the other person creation argument lists, so we can
         call it and create a full person if needed. Email would remain the
         deciding factor, we would not try and guess if someone existed based

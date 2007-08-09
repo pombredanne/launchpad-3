@@ -11,6 +11,7 @@ __all__ = [
     'DistributionFacets',
     'DistributionSpecificationsMenu',
     'DistributionView',
+    'DistributionPPAView',
     'DistributionAllPackagesView',
     'DistributionBrandingView',
     'DistributionEditView',
@@ -41,32 +42,33 @@ from zope.security.interfaces import Unauthorized
 
 from canonical.cachedproperty import cachedproperty
 from canonical.launchpad.interfaces import (
-    IDistribution, IDistributionSet, IPublishedPackageSet, ILaunchBag,
-    IArchiveSet, NotFoundError, IDistributionMirrorSet)
+    IDistributionMirrorSet, IDistributionSet, IDistribution, ILaunchBag,
+    IPublishedPackageSet, MirrorContent, NotFoundError)
 from canonical.launchpad.browser.branding import BrandingChangeView
 from canonical.launchpad.browser.bugtask import BugTargetTraversalMixin
 from canonical.launchpad.browser.build import BuildRecordsView
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.launchpad import StructuralObjectPresentation
 from canonical.launchpad.components.request_country import request_country
 from canonical.launchpad.browser.questiontarget import (
     QuestionTargetFacetMixin, QuestionTargetTraversalMixin)
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu,
-    enabled_with_permission,
-    GetitemNavigation, LaunchpadEditFormView, LaunchpadView, Link,
-    redirection, Navigation, StandardLaunchpadFacets,
-    stepthrough, stepto, LaunchpadFormView)
+    enabled_with_permission, GetitemNavigation, LaunchpadEditFormView,
+    LaunchpadFormView, LaunchpadView, Link, Navigation, redirection,
+    StandardLaunchpadFacets, stepthrough, stepto)
 from canonical.launchpad.browser.seriesrelease import (
     SeriesOrReleasesMixinDynMenu)
 from canonical.launchpad.browser.sprint import SprintsMixinDynMenu
 from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.launchpad.webapp.batching import BatchNavigator
-from canonical.lp.dbschema import DistroSeriesStatus, MirrorContent
+from canonical.lp.dbschema import DistroSeriesStatus
 
 
 class DistributionNavigation(
-    GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin):
+    GetitemNavigation, BugTargetTraversalMixin, QuestionTargetTraversalMixin,
+    FAQTargetNavigationMixin):
 
     usedfor = IDistribution
 
@@ -301,15 +303,11 @@ class DistributionBugsMenu(ApplicationMenu):
 
     usedfor = IDistribution
     facet = 'bugs'
-    links = ['new', 'bugcontact', 'securitycontact', 'cve_list']
+    links = ['bugcontact', 'securitycontact', 'cve_list']
 
     def cve_list(self):
         text = 'CVE reports'
         return Link('+cve', text, icon='cve')
-
-    def new(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='add')
 
     @enabled_with_permission('launchpad.Edit')
     def bugcontact(self):
@@ -362,8 +360,9 @@ class DistributionSpecificationsMenu(ApplicationMenu):
             icon='info')
 
     def new(self):
-        text = 'Register new blueprint'
-        return Link('+addspec', text, icon='add')
+        text = 'Register a blueprint'
+        summary = 'Register a new blueprint for %s' % self.context.title
+        return Link('+addspec', text, summary, icon='add')
 
 
 class DistributionTranslationsMenu(ApplicationMenu):
@@ -440,9 +439,15 @@ class DistributionView(BuildRecordsView):
         return sorted(serieses, key=operator.attrgetter('version'),
                       reverse=True)
 
-    def getAllPPAs(self):
-        """Return alls Personal Package Archive available."""
-        return getUtility(IArchiveSet).getAllPPAs()
+
+class DistributionPPAView(LaunchpadView):
+
+    def initialize(self):
+        """Setup a batched `IArchive` list."""
+        self.name_filter = self.request.get('name_filter', None)
+        ppas = self.context.searchPPAs(text=self.name_filter)
+        self.batchnav = BatchNavigator(ppas, self.request)
+        self.search_results = self.batchnav.currentBatch()
 
 
 class DistributionAllPackagesView(LaunchpadView):
@@ -511,7 +516,6 @@ class DistributionAddView(LaunchpadFormView):
 
     @action("Save", name='save')
     def save_action(self, action, data):
-        archive = getUtility(IArchiveSet).new()
         distribution = getUtility(IDistributionSet).new(
             name=data['name'],
             displayname=data['displayname'],
@@ -521,7 +525,6 @@ class DistributionAddView(LaunchpadFormView):
             domainname=data['domainname'],
             members=data['members'],
             owner=self.user,
-            main_archive=archive,
             )
         notify(ObjectCreatedEvent(distribution))
         self.next_url = canonical_url(distribution)
@@ -651,11 +654,11 @@ class DistributionMirrorsAdminView(DistributionMirrorsView):
         """Raise an Unauthorized exception if the user is not a member of this
         distribution's mirror_admin team.
         """
-        # XXX: We don't want these pages to be public but we can't protect
+        # XXX: Guilherme Salgado 2006-06-16:
+        # We don't want these pages to be public but we can't protect
         # them with launchpad.Edit because that would mean only people with
         # that permission on a Distribution would be able to see them. That's
         # why we have to do the permission check here.
-        # -- Guilherme Salgado, 2006-06-16
         if not (self.user and self.user.inTeam(self.context.mirror_admin)):
             raise Unauthorized('Forbidden')
 

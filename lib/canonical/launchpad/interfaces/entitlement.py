@@ -8,15 +8,19 @@ __all__ = [
     'EntitlementInvalidError',
     'EntitlementQuota',
     'EntitlementQuotaExceededError',
+    'EntitlementState',
+    'EntitlementType',
     'IEntitlement',
+    'IEntitlementSet',
     ]
 
-import sys
 from zope.interface import Attribute, Interface
-from zope.schema import Choice, Datetime, Int
+from zope.schema import Bool, Choice, Datetime, Int
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import Whiteboard
+from canonical.lazr import DBEnumeratedType, DBItem
+
 
 class EntitlementQuotaExceededError(Exception):
     """The quota has been exceeded for the entitlement."""
@@ -24,6 +28,60 @@ class EntitlementQuotaExceededError(Exception):
 
 class EntitlementInvalidError(Exception):
     """The entitlement is not valid."""
+
+
+class EntitlementType(DBEnumeratedType):
+    """The set of features supported via entitlements.
+
+    The listed features may be enabled by the granting of an entitlement.
+    """
+
+    PRIVATE_BRANCHES = DBItem(10, """
+        Private Branches
+
+        The ability to create branches which are only visible to the team.
+        """)
+
+    PRIVATE_BUGS = DBItem(20, """
+        Private Bugs
+
+        The ability to create private bugs which are only visible to the team.
+        """)
+
+    PRIVATE_TEAMS = DBItem(30, """
+        Private Teams
+
+        The ability to create private teams which are only visible to parent
+        teams.
+        """)
+
+
+class EntitlementState(DBEnumeratedType):
+    """States for an entitlement.
+
+    The entitlement may start life as a REQUEST that is then granted and
+    made ACTIVE.  At some point the entitlement may be revoked by marking
+    as INACTIVE.
+    """
+
+    REQUESTED = DBItem(10, """
+        Entitlement has been requested.
+
+        The entitlement is inactive in this state.
+        """)
+
+    ACTIVE = DBItem(20, """
+        The entitlement is active.
+
+        The entitlement is approved in Launchpad or was imported in the
+        active state.
+        """)
+
+    INACTIVE = DBItem(30, """
+        The entitlement is inactive.
+
+        The entitlement has be deactivated.
+        """)
 
 
 class IEntitlement(Interface):
@@ -53,11 +111,11 @@ class IEntitlement(Interface):
     date_starts = Datetime(
         title=_("Date Starts"),
         description=_("The date on which this entitlement starts."),
-        readonly=True)
+        readonly=False)
     date_expires = Datetime(
         title=_("Date Expires"),
         description=_("The date on which this entitlement expires."),
-        readonly=True)
+        readonly=False)
     entitlement_type = Choice(
         title=_("Type of entitlement."),
         required=True,
@@ -98,6 +156,12 @@ class IEntitlement(Interface):
     whiteboard = Whiteboard(title=_('Whiteboard'), required=False,
         description=_('Notes on the current status of the entitlement.'))
 
+    is_dirty = Bool(
+        title=_("Dirty?"),
+        description=_(
+            "Is the entitlement 'dirty', i.e. has been written since the "
+            "most recent update to an external system?"))
+
     is_valid = Attribute(
         "Is this entitlement valid?")
 
@@ -109,6 +173,53 @@ class IEntitlement(Interface):
 
     def incrementAmountUsed():
         """Add one to the amount used."""
+
+
+class IEntitlementSet(Interface):
+    """Interface representing a set of Entitlements."""
+
+    def __getitem__(entitlement_id):
+        """Return the entitlement with the given id.
+
+        Raise NotFoundError if there is no such entitlement.
+        """
+
+    def __iter__():
+        """Return an iterator that will go through all entitlements."""
+
+    def count():
+        """Return the number of entitlements in the database."""
+
+    def get(entitlement_id, default=None):
+        """Return the entitlement with the given id.
+
+        Return the default value if there is no such entitlement.
+        """
+
+    def getForPerson(person):
+        """Return the entitlements for the person or team.
+
+        Get all entitlements for a person.
+        """
+
+    def getValidForPerson(person):
+        """Return a list of valid entitlements for the person or team.
+
+        Get all valid entitlements for a person.  None is returned if no valid
+        entitlements are found.
+        """
+
+    def getDirty():
+        """Return the entitlements that have the dirty bit set.
+
+        Get all entitlements that are marked as dirty.
+        """
+
+    def new(person, quota, entitlement_type, state,
+            is_dirty=True, date_created=None, date_expires=None,
+            date_starts=None, amount_used=None, registrant=None,
+            approved_by=None):
+        """Create a new entitlement."""
 
 
 class EntitlementQuota:

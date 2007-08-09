@@ -20,12 +20,10 @@ __all__ = [
     'BaseLayer', 'DatabaseLayer', 'LibrarianLayer', 'FunctionalLayer',
     'LaunchpadLayer', 'ZopelessLayer', 'LaunchpadFunctionalLayer',
     'LaunchpadZopelessLayer', 'LaunchpadScriptLayer', 'PageTestLayer',
-    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer',
-    'BzrlibZopelessLayer', 'BzrlibLayer'
+    'LayerConsistencyError', 'LayerIsolationError', 'TwistedLayer'
     ]
 
-import shutil
-import sys
+import time
 from urllib import urlopen
 
 import psycopg
@@ -34,8 +32,6 @@ from zope.component import getUtility, getGlobalSiteManager
 from zope.component.interfaces import ComponentLookupError
 from zope.security.management import getSecurityPolicy
 from zope.security.simplepolicies import PermissiveSecurityPolicy
-
-from bzrlib.tests import TestCaseInTempDir, TestCaseWithMemoryTransport
 
 from canonical.config import config
 from canonical.database.sqlbase import ZopelessTransactionManager
@@ -91,9 +87,9 @@ class BaseLayer:
     test isolation checks to ensure that tests to not leave global
     resources in a mess.
 
-    XXX: Unit tests (tests with no layer) will not get this checks.
-    The Z3 test runner should be updated so that a layer can be specified
-    to use for unit tests. -- StuartBishop 20060712
+    XXX: StuartBishop 2006-07-12: Unit tests (tests with no layer) will not
+    get this checks. The Z3 test runner should be updated so that a layer
+    can be specified to use for unit tests.
     """
     # Set to True when we are running tests in this layer.
     isSetUp = False
@@ -531,9 +527,9 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
     def setUp(cls):
         # Make a TestMailBox available
         # This is registered via ZCML in the LaunchpadFunctionalLayer
-        # XXX flacoste 2006/10/25 This should be configured from ZCML
-        # but execute_zcml_for_scripts() doesn't cannot support a different
-        # testing configuration (bug #68189).
+        # XXX flacoste 2006-10-25 bug=68189: This should be configured
+        # from ZCML but execute_zcml_for_scripts() doesn't cannot support
+        # a different testing configuration.
         getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
 
     @classmethod
@@ -603,15 +599,15 @@ class LaunchpadZopelessLayer(ZopelessLayer, LaunchpadLayer):
 
 class LaunchpadScriptLayer(ZopelessLayer, LaunchpadLayer):
     """Testing layer for scripts using the main Launchpad database adapter"""
-    
+
     @classmethod
     @profiled
     def setUp(cls):
         # Make a TestMailBox available
         # This is registered via ZCML in the LaunchpadFunctionalLayer
-        # XXX flacoste 2006/10/25 This should be configured from ZCML
-        # but execute_zcml_for_scripts() doesn't cannot support a different
-        # testing configuration (bug #68189).
+        # XXX flacoste 2006-10-25 bug=68189: This should be configured from
+        # ZCML but execute_zcml_for_scripts() doesn't cannot support a
+        # different testing configuration.
         getGlobalSiteManager().provideUtility(IMailBox, TestMailBox())
 
     @classmethod
@@ -725,40 +721,3 @@ class TwistedLayer(LaunchpadZopelessLayer):
             if pool is not None:
                 reactor.threadpool.stop()
                 reactor.threadpool = None
-
-
-class BzrlibLayer(BaseLayer):
-    """Clean up the test directory created by TestCaseInTempDir tests."""
-
-    @classmethod
-    @profiled
-    def setUp(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def tearDown(cls):
-        # Remove the test directory created by TestCaseInTempDir.
-        # Copied from bzrlib.tests.TextTestRunner.run.
-        test_root = TestCaseInTempDir.TEST_ROOT
-        if test_root is not None:
-            test_root = test_root.encode(sys.getfilesystemencoding())
-            shutil.rmtree(test_root)
-        TestCaseWithMemoryTransport.TEST_ROOT = None
-
-
-    @classmethod
-    @profiled
-    def testSetUp(cls):
-        pass
-
-    @classmethod
-    @profiled
-    def testTearDown(cls):
-        pass
-
-
-# XXX: JonathanLange 2007-06-13, It seems that this layer behaves erroneously
-# if it is a subclass of (LaunchpadZopelessLayer, BzrlibLayer).
-class BzrlibZopelessLayer(BzrlibLayer, LaunchpadZopelessLayer):
-    """Clean up the test directory created by TestCaseInTempDir tests."""

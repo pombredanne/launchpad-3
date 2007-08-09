@@ -26,8 +26,9 @@ class Launchpad:
     def __init__(self):
         self.requests = []
 
-    def createBranch(self, userID, productID, branchName):
-        self.requests.append(('createBranch', userID, productID, branchName))
+    def createBranch(self, loginID, userName, productName, branchName):
+        self.requests.append(
+            ('createBranch', loginID, userName, productName, branchName))
         return defer.succeed(6)
 
     def fetchProductID(self, productName):
@@ -81,7 +82,8 @@ class TestPushDoneNotification(AvatarTestCase):
             branchID = branchDir.branchID
             # check for no events yet
             self.assertEqual(
-                [('createBranch', self.avatar.lpid, '3', 'some-branch')],
+                [('createBranch', self.avatar.lpname, self.avatar.lpname,
+                  'some-product', 'some-branch')],
                 self.launchpad.requests)
             self.launchpad.requests = []
             # dirty it
@@ -113,7 +115,7 @@ class WriteLoggingDirectory(unittest.TestCase):
     def test_listener(self):
         # Children of a WriteLoggingDirectory should maintain a reference
         # to the top-level WriteLoggingDirectory.
-        # XXX - whitebox test (jml, 2007-02-15)
+        # XXX jml 2007-02-15: Whitebox test
         self.assertEqual(self.flagAsDirty, self.directory._flagAsDirty)
         self.assertEqual(self.flagAsDirty,
                          self.directory.createDirectory('foo')._flagAsDirty)
@@ -187,7 +189,7 @@ class WriteLoggingFile(unittest.TestCase):
 
     def test_file_has_listener(self):
         # The created file should refer to the listener of its parent directory.
-        # XXX - whitebox test (jml, 2007-02-15)
+        # XXX jml 2007-02-15: Whitebox test.
         self.assertEqual(self.flagAsDirty, self.file._flagAsDirty)
 
     def test_writeChunk(self):

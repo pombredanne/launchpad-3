@@ -103,7 +103,7 @@ user agent is automatically redirected to an updated location:
     field.status:list=Rejected --> field.status:list=Invalid
 
     >>> print_bugtasks(anon_browser.contents)
-     1  Firefox does not support SVG  firefox (upstream)  Low  New
+     1  Firefox does not support SVG  Mozilla Firefox  Low  New
 
 Just as with assigned bugs, searching for reported bugs takes the user
 agent to a corrected location:

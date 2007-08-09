@@ -68,8 +68,13 @@ def find_tag_by_id(content, id):
             'Found %d elements with id %r' % (len(elements_with_id), id))
 
 
-def find_tags_by_class(content, class_):
-    """Find and return the tags matching the given class(s)"""
+def first_tag_by_class(content, class_):
+    """Find and return the first tag matching the given class(es)"""
+    return find_tags_by_class(content, class_, True)
+
+
+def find_tags_by_class(content, class_, only_first=False):
+    """Find and return one or more tags matching the given class(es)"""
     match_classes = set(class_.split())
     def class_matcher(value):
         if value is None: return False
@@ -77,7 +82,11 @@ def find_tags_by_class(content, class_):
         return match_classes.issubset(classes)
     soup = BeautifulSoup(
         content, parseOnlyThese=SoupStrainer(attrs={'class': class_matcher}))
-    return soup.findAll(attrs={'class': class_matcher})
+    if only_first:
+        find=BeautifulSoup.find
+    else:
+        find=BeautifulSoup.findAll
+    return find(soup, attrs={'class': class_matcher})
 
 
 def find_portlet(content, name):
@@ -110,8 +119,8 @@ def get_feedback_messages(browser):
     message_classes = ['message', 'informational message', 'error message']
     soup = BeautifulSoup(
         browser.contents,
-        parseOnlyThese=SoupStrainer('div', {'class': message_classes}))
-    return [div_tag.string for div_tag in soup]
+        parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
+    return [tag.string for tag in soup]
 
 
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]
@@ -164,8 +173,9 @@ def extract_text(content):
     return text.strip()
 
 
-# XXX cprov 20070207: This function seems to be more specific to a particular
-# product (soyuz) than the rest. Maybe it belongs to somewhere else.
+# XXX cprov 2007-02-07: This function seems to be more specific to a
+# particular product (soyuz) than the rest. Maybe it belongs to
+# somewhere else.
 def parse_relationship_section(content):
     """Parser package relationship section.
 
@@ -226,6 +236,7 @@ def setUpGlobs(test):
         auth="Basic foo.bar@canonical.com:test")
 
     test.globs['find_tag_by_id'] = find_tag_by_id
+    test.globs['first_tag_by_class'] = first_tag_by_class
     test.globs['find_tags_by_class'] = find_tags_by_class
     test.globs['find_portlet'] = find_portlet
     test.globs['find_main_content'] = find_main_content

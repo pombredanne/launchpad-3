@@ -3,15 +3,23 @@
 # TODO:
 #  - exercise a bit more of the authUser interface
 
+import datetime
 import unittest
 import xmlrpclib
+
+import pytz
 
 from twisted.application import strports
 from canonical.authserver.interfaces import WRITABLE
 from canonical.authserver.ftests.harness import AuthserverTacTestSetup
-from canonical.launchpad.ftests.harness import LaunchpadTestCase
+from canonical.launchpad.ftests.harness import (
+    LaunchpadTestCase, LaunchpadTestSetup)
 from canonical.launchpad.webapp.authentication import SSHADigestEncryptor
 from canonical.config import config
+
+
+UTC = pytz.timezone('UTC')
+
 
 def _getPort():
     portDescription = config.authserver.port
@@ -27,7 +35,9 @@ class XMLRPCv1TestCase(LaunchpadTestCase):
         self.server = xmlrpclib.Server('http://localhost:%s/' % _getPort())
 
     def tearDown(self):
+        """Tear down the test and reset the database."""
         AuthserverTacTestSetup().tearDown()
+        LaunchpadTestSetup().force_dirty_database()
         LaunchpadTestCase.tearDown(self)
 
     def test_getUser(self):
@@ -89,7 +99,7 @@ class XMLRPCv1TestCase(LaunchpadTestCase):
 
     def test_getSSHKeys(self):
         # Unknown users have no SSH keys, of course.
-        self.assertEqual([], self.server.getSSHKeys('unknown@user'))
+        self.assertEqual([], self.server.getSSHKeys('nosuchuser'))
 
         # Check that the SSH key in the sample data can be retrieved
         # successfully.
@@ -111,7 +121,9 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
         self.server = xmlrpclib.Server('http://localhost:%s/v2/' % _getPort())
 
     def tearDown(self):
+        """Tear down the test and reset the database."""
         AuthserverTacTestSetup().tearDown()
+        LaunchpadTestSetup().force_dirty_database()
         LaunchpadTestCase.tearDown(self)
 
     def test_getUser(self):
@@ -138,7 +150,8 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
         self.failUnless('test@canonical.com' in result['emailaddresses'])
 
     def test_getBranchesForUser(self):
-        # XXX: justs check that it doesn't error, should also check the result.
+        # XXX: Andrew Bennetts 2005-12-13:
+        # Justs check that it doesn't error, should also check the result.
         self.server.getBranchesForUser(12)
 
     def test_fetchProductID(self):
@@ -146,15 +159,15 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
         self.assertEqual('', self.server.fetchProductID('xxxxx'))
 
     def test_createBranch(self):
-        # XXX: This test just checks that createBranch doesn't error.  This test
+        # XXX Andrew Bennetts, 2007-01-24:
+        # This test just checks that createBranch doesn't error.  This test
         # should also check the result.
-        #   - Andrew Bennetts, 2007-01-24
-        self.server.createBranch(12, 4, 'new-branch')
+        self.server.createBranch(12, 'name12', 'firefox', 'new-branch')
 
     def test_requestMirror(self):
-        # XXX: Only checks that requestMirror doesn't error. Should instead
+        # XXX Andrew Bennetts, 2007-01-24:
+        # Only checks that requestMirror doesn't error. Should instead
         # check the result.
-        #   - Andrew Bennetts, 2007-01-24
         hosted_branch_id = 25
         self.server.requestMirror(hosted_branch_id)
 
@@ -179,7 +192,9 @@ class BranchAPITestCase(LaunchpadTestCase):
                                        % _getPort())
 
     def tearDown(self):
+        """Tear down the test and reset the database."""
         self.tac.tearDown()
+        LaunchpadTestSetup().force_dirty_database()
         LaunchpadTestCase.tearDown(self)
 
     def testGetBranchPullQueue(self):
@@ -200,6 +215,14 @@ class BranchAPITestCase(LaunchpadTestCase):
         # Ensure that a unicode doesn't cause mirrorFailed to raise an
         # exception.
         self.server.mirrorFailed(18, u'it broke\N{INTERROBANG}')
+
+    def testRecordSuccess(self):
+        started = datetime.datetime(2007, 07, 05, 19, 32, 1, tzinfo=UTC)
+        completed = datetime.datetime(2007, 07, 05, 19, 34, 24, tzinfo=UTC)
+        started_tuple = tuple(started.utctimetuple())
+        completed_tuple = tuple(completed.utctimetuple())
+        self.server.recordSuccess(
+            'test-recordsuccess', 'vostok', started_tuple, completed_tuple)
 
 
 def test_suite():

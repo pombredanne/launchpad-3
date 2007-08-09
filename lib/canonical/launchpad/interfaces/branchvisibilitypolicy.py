@@ -5,6 +5,7 @@
 __metaclass__ = type
 
 __all__ = [
+    'BranchVisibilityRule',
     'IHasBranchVisibilityPolicy',
     'IBranchVisibilityTeamPolicy',
     ]
@@ -13,9 +14,37 @@ from zope.interface import Interface, Attribute
 
 from zope.schema import Choice
 
-from canonical.lp.dbschema import BranchVisibilityRule
-
 from canonical.launchpad import _
+from canonical.lazr import DBEnumeratedType, DBItem
+
+
+class BranchVisibilityRule(DBEnumeratedType):
+    """Branch Visibility Rules for defining branch visibility policy."""
+
+    PUBLIC = DBItem(1, """
+        Public
+
+        Branches are public by default.
+        """)
+
+    PRIVATE = DBItem(2, """
+        Private
+
+        Branches are private by default.
+        """)
+
+    PRIVATE_ONLY = DBItem(3, """
+        Private only
+
+        Branches are private by default. Branch owners are not able
+        to change the visibility of the branches to public.
+        """)
+
+    FORBIDDEN = DBItem(4, """
+        Forbidden
+
+        Users are not able to create branches in the context.
+        """)
 
 
 class IHasBranchVisibilityPolicy(Interface):
@@ -32,6 +61,19 @@ class IHasBranchVisibilityPolicy(Interface):
 
         If there is no explicit team policy set for the team, return None.
         """
+
+    def getBranchVisibilityRuleForBranch(branch):
+        """Return the most specific visibility rule for a branch.
+
+        The owner of the branch is used to determine the team that the rule
+        applies to.  If there is a rule defined for the actual branch owner
+        then that rule is used in preference to other rules only applicable
+        through team membership.
+
+        If there are a number of rules that apply for the owner of the branch
+        then the most restrictive rule is retuned.
+        """
+
 
     def isUsingInheritedBranchVisibilityPolicy():
         """Return True if using policy from the inherited context.
@@ -72,7 +114,7 @@ class IBranchVisibilityTeamPolicy(Interface):
                       "If None then the policy applies to everyone."))
 
     rule = Choice(
-        title=_('Rule'), vocabulary='BranchVisibilityRule',
+        title=_('Rule'), vocabulary=BranchVisibilityRule,
         default=BranchVisibilityRule.PUBLIC,
         description=_(
         "The visibility rule defines the default branch visibility for "

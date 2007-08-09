@@ -15,15 +15,16 @@ from zope.interface import implements
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.interfaces import (
-        IPersonSet, ITranslationImporter, NotExportedFromLaunchpad,
-        OldTranslationImported, TranslationConflict, TranslationConstants)
+    IPersonSet, ITranslationImporter, NotExportedFromLaunchpad,
+    OldTranslationImported, PersonCreationRationale, TranslationConflict,
+    TranslationConstants)
 from canonical.launchpad.translationformat.gettext_po_importer import (
     GettextPoImporter)
 from canonical.launchpad.translationformat.mozilla_xpi_importer import (
     MozillaXpiImporter)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
-    PersonCreationRationale, RosettaImportStatus, TranslationFileFormat)
+    RosettaImportStatus, TranslationFileFormat)
 
 importers = {
     TranslationFileFormat.PO: GettextPoImporter(),
@@ -114,6 +115,7 @@ class TranslationImporter:
         # the English strings to show instead of arbitrary IDs.
         english_pofile = None
         self.pofile = translation_import_queue_entry.pofile
+        lock_timestamp = None
         if translation_import_queue_entry.pofile is None:
             self.potemplate = translation_import_queue_entry.potemplate
         else:
@@ -138,18 +140,18 @@ class TranslationImporter:
             self.potemplate.date_last_updated = datetime.datetime.now(UTC)
         else:
             # We are importing a translation.
-            # Check whether we are importing a new version.
-            if (importer.header is not None and
-                self.pofile.isPORevisionDateOlder(importer.header)):
-                # The new imported file is older than latest one imported, we
-                # don't import it, just ignore it as it could be a mistake and
-                # it would make us lose translations.
-                raise OldTranslationImported(
-                    'Previous imported file is newer than this one.')
-
-            # Get the timestamp when this file was exported from Launchpad. If
-            # it was not exported from Launchpad, it will be None.
-            lock_timestamp = importer.header.getLaunchpadExportDate()
+            if importer.header is not None:
+                # Check whether we are importing a new version.
+                if self.pofile.isPORevisionDateOlder(importer.header):
+                    # The new imported file is older than latest one imported,
+                    # we don't import it, just ignore it as it could be a
+                    # mistake and it would make us lose translations.
+                    raise OldTranslationImported(
+                        'Previous imported file is newer than this one.')
+                # Get the timestamp when this file was exported from
+                # Launchpad. If it was not exported from Launchpad, it will be
+                # None.
+                lock_timestamp = importer.header.getLaunchpadExportDate()
 
             if (not translation_import_queue_entry.is_published and
                 lock_timestamp is None):
@@ -206,11 +208,11 @@ class TranslationImporter:
                     # template, that's broken and not usual, so we raise an
                     # exception to log the issue. It needs to be fixed
                     # manually in the imported translation file.
-                    # XXX CarlosPerelloMarin 20070423: Gettext doesn't allow
-                    # two plural messages with the same msgid but different
-                    # msgid_plural so I think is safe enough to just go ahead
-                    # and import this translation here but setting the fuzzy
-                    # flag. See bug #109393 for more info.
+                    # XXX CarlosPerelloMarin 2007-04-23 bug=109393:
+                    # Gettext doesn't allow two plural messages with the
+                    # same msgid but different msgid_plural so I think is
+                    # safe enough to just go ahead and import this translation
+                    # here but setting the fuzzy flag.
                     pomsgset = potmsgset.getPOMsgSet(
                         self.pofile.language.code, self.pofile.variant)
                     if pomsgset is None:

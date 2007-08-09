@@ -70,10 +70,11 @@ class BugNominationView(LaunchpadFormView):
 
     def getReleaseManager(self):
         """Return the IPerson or ITeam that does release management."""
-        # XXX: Ignoring the "drivers" attribute for now, which includes the
+        # XXX: Brad Bollenbach 2006-10-31:
+        # Ignoring the "drivers" attribute for now, which includes the
         # project-wide driver for upstreams because I'm guessing it's
         # hardly used, and would make displaying release managers a
-        # little harder. -- Brad Bollenbach, 2006-10-31
+        # little harder.
         return self.getReleaseContext().driver
 
     def getReleaseContext(self):
@@ -95,9 +96,10 @@ class BugNominationView(LaunchpadFormView):
             # If the user has the permission to approve the nomination,
             # then nomination was approved automatically.
             if nomination.isApproved():
-                approved_nominations.append(nomination.target.bugtargetname)
+                approved_nominations.append(
+                    nomination.target.bugtargetdisplayname)
             else:
-                nominated_serieses.append(series.bugtargetname)
+                nominated_serieses.append(series.bugtargetdisplayname)
 
         if approved_nominations:
             self.request.response.addNotification(
@@ -190,11 +192,13 @@ class BugNominationEditView(LaunchpadView):
         if approve_nomination:
             self.context.approve(self.user)
             self.request.response.addNotification(
-                "Approved nomination for %s" % self.context.target.bugtargetname)
+                "Approved nomination for %s" %
+                    self.context.target.bugtargetdisplayname)
         elif decline_nomination:
             self.context.decline(self.user)
             self.request.response.addNotification(
-                "Declined nomination for %s" % self.context.target.bugtargetname)
+                "Declined nomination for %s" %
+                    self.context.target.bugtargetdisplayname)
 
         self.request.response.redirect(
             canonical_url(getUtility(ILaunchBag).bugtask))

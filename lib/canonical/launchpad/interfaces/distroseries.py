@@ -53,6 +53,8 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         description=_("The distribution for which this is a series."))
     parent = Attribute('The structural parent of this series - the distro')
     components = Attribute("The series components.")
+    upload_components = Attribute("The series components that can be "
+                                  "uploaded to.")
     sections = Attribute("The series sections.")
     status = Choice(
         title=_("Status"), required=True,
@@ -217,8 +219,9 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getPublishedReleases(sourcepackage_or_name, pocket=None, version=None,
                              include_pending=False, exclude_pocket=None,
                              archive=None):
-        """Given a SourcePackageName, return a list of the currently
-        published SourcePackageReleases as SourcePackagePublishing records.
+        """Return the SourcePackagePublishingHistory(s)
+
+        Given a ISourcePackageName or name.
 
         If pocket is not specified, we look in all pockets.
 
@@ -236,7 +239,17 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """
 
     def getSourcesPublishedForAllArchives():
-        """Return all sourcepackage published across all the archives.
+        """Return all sourcepackages published across all the archives.
+
+        It's only used in the buildmaster/master.py context for calculating
+        the publication that are still missing build records.
+
+        It will consider all publishing records in PENDING or PUBLISHED status
+        as part of the 'build-unpublished-source' specification.
+
+        For 'main_archive' candidates it will automatically exclude RELEASE
+        pocket records of released distroseries (ensuring that we won't waste
+        time with records that can't be accepted).
 
         Return a SelectResult of SourcePackagePublishingHistory.
         """
@@ -308,9 +321,6 @@ class IDistroSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         Raise NotFoundError if the section is not in the permitted section
         list for this distroseries.
         """
-
-    def addComponent(component):
-        """SQLObject provided method to fill a related join key component."""
 
     def addSection(section):
         """SQLObject provided method to fill a related join key section."""

@@ -47,13 +47,22 @@
   <adapter
     for="canonical.launchpad.interfaces.IDistroSeries"
     provides="canonical.launchpad.interfaces.IQuestionTarget"
-    factory="canonical.launchpad.components.question.series_to_questiontarget"
+    factory="canonical.launchpad.components.answertracker.series_to_questiontarget"
     />
 
   <browser:navigation
     module="canonical.launchpad.browser"
     classes="DistroSeriesNavigation"
     />
+
+  <browser:page
+    name="+addspec"
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    class="canonical.launchpad.browser.NewSpecificationFromDistroSeriesView"
+    facet="specifications"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+  />
 
   <browser:page
       for="canonical.launchpad.interfaces.IDistroSeries"

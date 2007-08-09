@@ -14,6 +14,11 @@
 
 <div metal:fill-slot="main">
 
+  <metal:not_uses_malone
+      use-macro="context/@@+filebug-macros/not_uses_malone" />
+
+  <tal:uses_malone tal:condition="view/contextUsesMalone">
+
   <div metal:use-macro="context/@@launchpad_form/form">
 
     <div metal:fill-slot="extra_info">
@@ -35,10 +40,10 @@
         </div>
       </div>
 
-      <table width="100%" tal:condition="view/similar_bugs">
+      <table class="form" tal:condition="view/similar_bugs">
         <tbody>
 
-          <tal:similar-bugs>
+          <tal:similar-bugs condition="view/contextUsesMalone">
             <tr>
               <td>
                 <input type="radio" id="bug-already-reported-yes"
@@ -56,19 +61,50 @@
               <td></td>
               <td>
                 <div id="similar_bugs_form">
-                  <ul id="similar-bugs" style="list-style: none">
+                  <ul id="similar-bugs" style="list-style: none; margin-left: 0">
                     <li tal:repeat="bug view/similar_bugs"
                         tal:attributes="title bug/description/fmt:shorten/500"
                         title="bug description goes here">
-                      <label style="font-weight: normal">
-                        <input type="radio" name="field.bug_already_reported_as"
-                               tal:attributes="value string:${bug/id};
-                                               checked repeat/bug/start|nothing" />
-                        <a tal:attributes="href bug/fmt:url" href="#"
-                           tal:content="string:#${bug/id}: ${bug/title}">
-                          #1: Firefox does not support SVG
-                        </a>
-                      </label>
+                      <table tal:define="bugtask python:view.getRelevantBugTask(bug)">
+                        <tbody>
+                          <tr>
+                            <td>
+                              <input type="radio" name="field.bug_already_reported_as"
+                                     tal:attributes="id string:bug-already-reported-as-${bug/id};
+                                                     value string:${bug/id};
+                                                     checked repeat/bug/start|nothing" />
+                            </td>
+                            <td>
+                              <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
+                                     tal:condition="bugtask"
+                                     tal:content="structure bugtask/image:icon" />
+                              <img alt="" src="/@@/bug" tal:condition="not:bugtask" />
+                            </td>
+                            <td>
+                              <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
+                                     style="font-weight: normal">
+                                <div>
+                                  #<tal:bug-id replace="bug/id">4</tal:bug-id>
+                                  <a tal:attributes="href bug/fmt:url"
+                                     tal:content="bug/title">Bug title here</a>
+                                </div>
+                                <div class="lesser" tal:condition="bugtask">
+                                  <tal:status replace="bugtask/status/title" />,
+                                  last updated
+                                  <tal:last-updated content="bug/date_last_updated/fmt:approximatedate">
+                                    2007-07-03
+                                  </tal:last-updated>
+                                </div>
+                                <div class="lesser" tal:condition="not:bugtask">
+                                  <tal:closed condition="bug/is_complete">Closed,</tal:closed>
+                                  <tal:open condition="not:bug/is_complete">Open,</tal:open>
+                                  last updated <tal:when replace="bug/date_last_updated/fmt:approximatedate" />
+                                </div>
+                              </label>
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
                     </li>
                   </ul>
 
@@ -81,7 +117,12 @@
           </tal:similar-bugs>
 
           <tal:submit-new-bug>
-            <tr>
+             <tal:comment replace="nothing">
+               We hide this next row if the context doesn't use malone because
+               in that situation we're showing the form after an error message
+               and in that context the radio button makes no sense.
+             </tal:comment>
+             <tr tal:condition="view/contextUsesMalone">
               <td>
                 <input type="radio" id="bug-already-reported-no"
                        name="field.bug_already_reported" value="off"
@@ -193,6 +234,8 @@
     </div>
 
   </div>
+
+  </tal:uses_malone>
 
 </div>
 

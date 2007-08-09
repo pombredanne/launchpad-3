@@ -37,6 +37,7 @@ __all__ = [
     'PillarSearchItem',
     ]
 
+import cgi
 from operator import attrgetter
 from warnings import warn
 
@@ -47,6 +48,7 @@ from zope.app.form.browser import TextAreaWidget, TextWidget
 from zope.app.event.objectevent import ObjectCreatedEvent
 from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.interface import alsoProvides, implements
+from zope.app.form.interfaces import WidgetsError
 
 from canonical.cachedproperty import cachedproperty
 from canonical.config import config
@@ -65,6 +67,7 @@ from canonical.launchpad.browser.bugtask import (
     BugTargetTraversalMixin, get_buglisting_search_filter_url)
 from canonical.launchpad.browser.cal import CalendarTraversalMixin
 from canonical.launchpad.browser.editview import SQLObjectEditView
+from canonical.launchpad.browser.faqtarget import FAQTargetNavigationMixin
 from canonical.launchpad.browser.person import ObjectReassignmentView
 from canonical.launchpad.browser.launchpad import (
     StructuralObjectPresentation, DefaultShortLink)
@@ -84,11 +87,13 @@ from canonical.launchpad.webapp.dynmenu import DynMenu, neverempty
 from canonical.librarian.interfaces import ILibrarianClient
 from canonical.widgets.product import ProductBugTrackerWidget
 from canonical.widgets.textwidgets import StrippedTextWidget
+from canonical.launchpad.validators import LaunchpadValidationError
+from canonical.launchpad.interfaces import ITeam
 
 
 class ProductNavigation(
     Navigation, BugTargetTraversalMixin, CalendarTraversalMixin,
-    QuestionTargetTraversalMixin):
+    FAQTargetNavigationMixin, QuestionTargetTraversalMixin):
 
     usedfor = IProduct
 
@@ -283,11 +288,7 @@ class ProductBugsMenu(ApplicationMenu):
 
     usedfor = IProduct
     facet = 'bugs'
-    links = ['filebug', 'bugcontact', 'securitycontact', 'cve']
-
-    def filebug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='add')
+    links = ['bugcontact', 'securitycontact', 'cve']
 
     def cve(self):
         return Link('+cve', 'CVE reports', icon='cve')
@@ -344,7 +345,7 @@ class ProductSpecificationsMenu(ApplicationMenu):
         return Link('+assignments', text, summary, icon='info')
 
     def new(self):
-        text = 'Register blueprint'
+        text = 'Register a blueprint'
         summary = 'Register a new blueprint for %s' % self.context.title
         return Link('+addspec', text, summary, icon='add')
 
@@ -950,11 +951,17 @@ class ProductAddView(LaunchpadFormView):
         return canonical_url(self.product)
 
 
-class ProductBugContactEditView(SQLObjectEditView):
+class ProductBugContactEditView(LaunchpadEditFormView):
     """Browser view class for editing the product bug contact."""
 
-    def changed(self):
+    schema = IProduct
+    field_names = ['bugcontact']
+
+    @action('Change', name='change')
+    def change_action(self, action, data):
         """Redirect to the product page with a success message."""
+        self.updateContextFromData(data)
+
         product = self.context
 
         bugcontact = product.bugcontact
@@ -982,6 +989,48 @@ class ProductBugContactEditView(SQLObjectEditView):
                 "project. You can set the bug contact again at any time.")
 
         self.request.response.redirect(canonical_url(product))
+
+    def validate(self, data):
+        """Validates the new bug contact for the product.
+
+        The following values are valid as bug contacts:
+            * None, indicating that the bug contact field for the product
+              should be cleard in change_action().
+            * A valid Person (email address or launchpad id).
+            * A valid Team of which the current user is an administrator.
+
+        If the the bug contact entered does not meet any of the above criteria
+        then the submission will fail and the user will be notified of the
+        error.
+        """
+        # data will not have a bugcontact entry in cases where the bugcontact
+        # the user entered is valid according to the ValidPersonOrTeam
+        # vocabulary (i.e. is not a Person, Team or None).
+        if not data.has_key('bugcontact'):
+            self.setFieldError(
+                'bugcontact',
+                'You must choose a valid person or team to be the bug contact'
+                ' for %s.' %
+                cgi.escape(self.context.displayname))
+
+            return
+
+        contact = data['bugcontact']
+
+        if (contact is not None and contact.isTeam() and
+            contact not in self.user.getAdministratedTeams()):
+            error = (
+                "You cannot set %(team)s as the bug contact for "
+                "%(project)s because you are not an administrator of that "
+                "team.<br />If you believe that %(team)s should be the bug"
+                " contact for %(project)s, please notify one of the "
+                "<a href=\"%(url)s\">%(team)s administrators</a>."
+
+                % {'team': cgi.escape(contact.displayname),
+                   'project': cgi.escape(self.context.displayname),
+                   'url': canonical_url(contact, rootsite='mainsite')
+                          + '/+members'})
+            self.setFieldError('bugcontact', error)
 
 
 class ProductReassignmentView(ObjectReassignmentView):

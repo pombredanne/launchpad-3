@@ -9,7 +9,6 @@ __all__ = [
     'SourcePackageSOP',
     'SourcePackageFacets',
     'SourcePackageView',
-    'linkify_changelog'
     ]
 
 # Python standard library imports
@@ -75,20 +74,6 @@ class SourcePackageNavigation(GetitemNavigation, BugTargetTraversalMixin):
         return redirection(canonical_url(distro_sourcepackage) + "/+filebug")
 
 
-def linkify_changelog(changelog, sourcepkgnametxt):
-    if changelog is None:
-        return changelog
-    changelog = cgi.escape(changelog)
-    # XXX cprov 20060207: use re.match and fmt:url instead of this nasty
-    # url builder. Also we need an specification describing the syntax for
-    # changelog linkification and processing (mostly bug interface),
-    # bug # 30817
-    changelog = re.sub(r'%s \(([^)]+)\)' % re.escape(sourcepkgnametxt),
-                       r'%s (<a href="\1">\1</a>)' % sourcepkgnametxt,
-                       changelog)
-    return changelog
-
-
 class SourcePackageSOP(StructuralObjectPresentation):
 
     def getIntroHeading(self):
@@ -99,7 +84,7 @@ class SourcePackageSOP(StructuralObjectPresentation):
         return self.context.sourcepackagename
 
     def listChildren(self, num):
-        # XXX mpt 20061004: Versions published, earliest first
+        # XXX mpt 2006-10-04: Versions published, earliest first.
         return []
 
     def countChildren(self):
@@ -136,17 +121,6 @@ class SourcePackageOverviewMenu(ApplicationMenu):
     def builds(self):
         text = 'Show builds'
         return Link('+builds', text, icon='info')
-
-
-class SourcePackageBugsMenu(ApplicationMenu):
-
-    usedfor = ISourcePackage
-    facet = 'bugs'
-    links = ['reportbug']
-
-    def reportbug(self):
-        text = 'Report a bug'
-        return Link('+filebug', text, icon='add')
 
 
 class SourcePackageAnswersMenu(QuestionTargetAnswersMenu):

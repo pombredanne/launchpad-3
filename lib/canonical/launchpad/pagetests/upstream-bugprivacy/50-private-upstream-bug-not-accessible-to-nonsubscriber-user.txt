@@ -24,7 +24,7 @@ This is also true if no-privs tries to access the bug from another
 context.
 
   >>> print http(r"""
-  ... GET /ubuntu-product/+bug/13 HTTP/1.1
+  ... GET /tomcat/+bug/13 HTTP/1.1
   ... Authorization: Basic bm8tcHJpdkBjYW5vbmljYWwuY29tOnRlc3Q=
   ... """)
   HTTP/1.1 403 Forbidden

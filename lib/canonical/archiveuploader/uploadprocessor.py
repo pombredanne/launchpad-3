@@ -57,7 +57,7 @@ from canonical.archiveuploader.nascentupload import (
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, IArchiveSet, NotFoundError)
+    IDistributionSet, IPersonSet, NotFoundError)
 
 from contrib.glock import GlobalLock
 
@@ -292,7 +292,7 @@ class UploadProcessor:
                 self.log.exception("Unhandled exception processing upload")
                 upload.reject("Unhandled exception processing upload: %s" % e)
 
-            # XXX julian 2007-05-25
+            # XXX julian 2007-05-25 bug=29744:
             # When bug #29744 is fixed (zopeless mails should only be sent
             # when transaction is committed) this will cause any emails sent
             # sent by do_reject to be lost.
@@ -310,6 +310,11 @@ class UploadProcessor:
                     self.log.info("Rejection during accept. "
                                   "Aborting partial accept.")
                     self.ztm.abort()
+
+            if upload.is_rejected:
+                self.log.warn("Upload was rejected:")
+                for msg in upload.rejections:
+                    self.log.warn("\t%s" % msg)
 
             if self.options.dryrun:
                 self.log.info("Dry run, aborting transaction.")
@@ -417,10 +422,19 @@ class UploadProcessor:
                 raise UploadPathError(
                     "Could not find distribution '%s'" % distribution_name)
 
-            archive = getUtility(IArchiveSet).ensure(owner=person)
+            archive = person.archive
             if archive is None:
                 raise UploadPathError(
                     "Could not find PPA for '%s'" % person_name)
+
+            if not archive.enabled:
+                raise UploadPathError(
+                    "%s is disabled" % archive.title)
+
+            if archive.distribution != distribution:
+                raise UploadPathError(
+                    "%s only supports uploads to '%s'"
+                    % (archive.title, archive.distribution.name))
 
             if len(parts) > 2:
                 suite_name = parts[2]

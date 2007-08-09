@@ -12,6 +12,8 @@ from sqlobject import (
     SQLObjectNotFound)
 from sqlobject.sqlbuilder import AND, OR, SQLConstant
 
+from canonical.cachedproperty import cachedproperty
+
 from canonical.database.sqlbase import quote, quote_like, SQLBase, sqlvalues
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
@@ -20,9 +22,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.launchpad.database.bugtarget import BugTargetBase
 
 from canonical.launchpad.database.karma import KarmaContextMixin
+from canonical.launchpad.database.archive import Archive
 from canonical.launchpad.database.bug import (
     BugSet, get_bug_tags, get_bug_tags_open_count)
 from canonical.launchpad.database.bugtask import BugTask, BugTaskSet
+from canonical.launchpad.database.faq import FAQ, FAQSearch
 from canonical.launchpad.database.mentoringoffer import MentoringOffer
 from canonical.launchpad.database.milestone import Milestone
 from canonical.launchpad.database.question import (
@@ -55,26 +59,28 @@ from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp.url import urlparse
 
 from canonical.lp.dbschema import (
-    BugTaskStatus, DistroSeriesStatus, MirrorContent,
-    TranslationPermission, SpecificationSort, SpecificationFilter,
-    SpecificationStatus, PackagePublishingStatus)
+    ArchivePurpose, BugTaskStatus, DistroSeriesStatus,
+    PackagePublishingStatus, PackageUploadStatus,
+    SpecificationDefinitionStatus, SpecificationFilter,
+    SpecificationImplementationStatus, SpecificationSort,
+    TranslationPermission)
 
 from canonical.launchpad.interfaces import (
-    IBuildSet, IDistribution, IDistributionSet, IHasBuildRecords,
-    ILaunchpadCelebrities, ISourcePackageName, IQuestionTarget, NotFoundError,
-    QUESTION_STATUS_DEFAULT_SEARCH,\
-    IHasLogo, IHasMugshot, IHasIcon)
+    IArchiveSet, IBuildSet, IDistribution, IDistributionSet, IFAQTarget,
+    IHasBuildRecords, IHasIcon, IHasLogo, IHasMugshot, ILaunchpadCelebrities,
+    IQuestionTarget, ISourcePackageName, MirrorContent, NotFoundError,
+    QUESTION_STATUS_DEFAULT_SEARCH)
 
 from canonical.archivepublisher.debversion import Version
 
-from canonical.launchpad.validators.name import valid_name, sanitize_name
+from canonical.launchpad.validators.name import sanitize_name, valid_name
 
 
 class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                    HasSprintsMixin, KarmaContextMixin, QuestionTargetMixin):
     """A distribution of an operating system, e.g. Debian GNU/Linux."""
     implements(
-        IDistribution, IHasBuildRecords, IQuestionTarget,
+        IDistribution, IFAQTarget, IHasBuildRecords, IQuestionTarget,
         IHasLogo, IHasMugshot, IHasIcon)
 
     _table = 'Distribution'
@@ -135,8 +141,20 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                                             orderBy="name",
                                             prejoins=['sourcepackagename'])
     date_created = UtcDateTimeCol(notNull=False, default=UTC_NOW)
-    main_archive = ForeignKey(dbName='main_archive',
-        foreignKey='Archive', notNull=True)
+
+    @cachedproperty
+    def main_archive(self):
+        """See IDistribution."""
+        return Archive.selectOneBy(distribution=self,
+                                   purpose=ArchivePurpose.PRIMARY)
+
+    @cachedproperty
+    def all_distro_archives(self):
+        """See `IDistribution`."""
+        return Archive.select("""
+            Distribution = %s AND
+            Purpose != %s""" % sqlvalues(self.id, ArchivePurpose.PPA)
+            )
 
     @property
     def all_milestones(self):
@@ -245,9 +263,14 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return via_specs.union(via_bugs, orderBy=['-date_created', '-id'])
 
     @property
+    def bugtargetdisplayname(self):
+        """See IBugTarget."""
+        return self.displayname
+
+    @property
     def bugtargetname(self):
         """See `IBugTarget`."""
-        return self.displayname
+        return self.name
 
     def _getBugTaskContextWhereClause(self):
         """See BugTargetBase."""
@@ -314,8 +337,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
     @property
     def currentseries(self):
         """See `IDistribution`."""
-        # XXX: this should be just a selectFirst with a case in its
-        # order by clause -- kiko, 2006-03-18
+        # XXX kiko 2006-03-18:
+        # This should be just a selectFirst with a case in its
+        # order by clause.
 
         serieses = self.serieses
         # If we have a frozen one, return that.
@@ -452,7 +476,7 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # sort by priority descending, by default
         if sort is None or sort == SpecificationSort.PRIORITY:
             order = (
-                ['-priority', 'Specification.status', 'Specification.name'])
+                ['-priority', 'Specification.definition_status', 'Specification.name'])
         elif sort == SpecificationSort.DATE:
             order = ['-Specification.datecreated', 'Specification.id']
 
@@ -466,7 +490,8 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         query = base
         # look for informational specs
         if SpecificationFilter.INFORMATIONAL in filter:
-            query += ' AND Specification.informational IS TRUE'
+            query += (' AND Specification.implementation_status = %s ' %
+                quote(SpecificationImplementationStatus.INFORMATIONAL))
 
         # filter based on completion. see the implementation of
         # Specification.is_complete() for more details
@@ -480,9 +505,9 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # Filter for validity. If we want valid specs only then we should
         # exclude all OBSOLETE or SUPERSEDED specs
         if SpecificationFilter.VALID in filter:
-            query += ' AND Specification.status NOT IN ( %s, %s ) ' % \
-                sqlvalues(SpecificationStatus.OBSOLETE,
-                          SpecificationStatus.SUPERSEDED)
+            query += ' AND Specification.definition_status NOT IN ( %s, %s ) ' % \
+                sqlvalues(SpecificationDefinitionStatus.OBSOLETE,
+                          SpecificationDefinitionStatus.SUPERSEDED)
 
         # ALL is the trump card
         if SpecificationFilter.ALL in filter:
@@ -537,6 +562,26 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             return False
         return True
 
+    def newFAQ(self, owner, title, content, keywords=None, date_created=None):
+        """See `IFAQTarget`."""
+        return FAQ.new(
+            owner=owner, title=title, content=content, keywords=keywords,
+            date_created=date_created, distribution=self)
+
+    def findSimilarFAQs(self, summary):
+        """See `IFAQTarget`."""
+        return FAQ.findSimilar(summary, distribution=self)
+
+    def getFAQ(self, id):
+        """See `IFAQCollection`."""
+        return FAQ.getForTarget(id, self)
+
+    def searchFAQs(self, search_text=None, owner=None, sort=None):
+        """See `IFAQCollection`."""
+        return FAQSearch(
+            search_text=search_text, owner=owner, sort=sort,
+            distribution=self).getResults()
+    
     def ensureRelatedBounty(self, bounty):
         """See `IDistribution`."""
         for curr_bounty in self.bounties:
@@ -697,10 +742,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
         # Get the sets of binary package names, summaries, descriptions.
 
-        # XXX This bit of code needs fixing up, it is doing stuff that
+        # XXX Julian 2007-04-03:
+        # This bit of code needs fixing up, it is doing stuff that
         # really needs to be done in SQL, such as sorting and uniqueness.
         # This would also improve the performance.
-        # Julian 2007-04-03
         binpkgnames = set()
         binpkgsummaries = set()
         binpkgdescriptions = set()
@@ -771,11 +816,11 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
         # the current distroseries and then across the whole
         # distribution.
         #
-        # XXX: note that the strategy of falling back to previous
+        # XXX kiko 2006-07-28: 
+        # Note that the strategy of falling back to previous
         # distribution series might be revisited in the future; for
         # instance, when people file bugs, it might actually be bad for
         # us to allow them to be associated with obsolete packages.
-        #   -- kiko, 2006-07-28
 
         sourcepackagename = SourcePackageName.selectOneBy(name=pkgname)
         if sourcepackagename:
@@ -806,11 +851,10 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
                     orderBy=['-id'])
                 if publishedpackage is None:
                     # Try any release next.
-                    # XXX could we just do this first? I'm just
+                    # XXX Gavin Panella 2007-04-18:
+                    # Could we just do this first? I'm just
                     # following the pattern that was here before
-                    # (e.g. see the search for a binary package
-                    # below).
-                    #   -- Gavin Panella, 2007-04-18
+                    # (e.g. see the search for a binary package below).
                     publishedpackage = PublishedPackage.selectFirstBy(
                         sourcepackagename=sourcepackagename.name,
                         binarypackagename=sourcepackagename.name,
@@ -861,6 +905,74 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             raise NotFoundError('Package %s not published in %s'
                                 % (pkgname, self.displayname))
 
+    def getAllPPAs(self):
+        """See `IDistribution`"""
+        return Archive.selectBy(
+            purpose=ArchivePurpose.PPA, distribution=self, orderBy=['id'])
+
+    def searchPPAs(self, text=None):
+        """See `IDistribution`."""
+        clauses = ["""
+        Archive.purpose = %s AND
+        Archive.distribution = %s AND
+        Person.id = Archive.owner
+        """ % sqlvalues(ArchivePurpose.PPA, self)]
+
+        clauseTables = ['Person']
+        orderBy = ['Person.name']
+
+        if text:
+            clauses.append("""
+            ((Person.fti @@ ftq(%s) OR
+            Archive.description LIKE '%%' || %s || '%%'))
+            """ % (quote(text), quote_like(text)))
+
+        query = ' AND '.join(clauses)
+        return Archive.select(
+            query, orderBy=orderBy, clauseTables=clauseTables)
+
+    def getPendingAcceptancePPAs(self):
+        """See `IDistribution`."""
+        query = """
+        Archive.purpose = %s AND
+        Archive.distribution = %s AND
+        PackageUpload.archive = Archive.id AND
+        PackageUpload.status = %s
+        """ % sqlvalues(ArchivePurpose.PPA, self,
+                        PackageUploadStatus.ACCEPTED)
+
+        return Archive.select(
+            query, clauseTables=['PackageUpload'],
+            orderBy=['archive.id'], distinct=True)
+
+    def getPendingPublicationPPAs(self):
+        """See `IDistribution`."""
+        src_query = """
+        Archive.purpose = %s AND
+        Archive.distribution = %s AND
+        SourcePackagePublishingHistory.archive = archive.id AND
+        SourcePackagePublishingHistory.status = %s
+         """ % sqlvalues(ArchivePurpose.PPA, self,
+                         PackagePublishingStatus.PENDING)
+
+        src_archives = Archive.select(
+            src_query, clauseTables=['SourcePackagePublishingHistory'],
+            orderBy=['archive.id'], distinct=True)
+
+        bin_query = """
+        Archive.purpose = %s AND
+        Archive.distribution = %s AND
+        BinaryPackagePublishingHistory.archive = archive.id AND
+        BinaryPackagePublishingHistory.status = %s
+        """ % sqlvalues(ArchivePurpose.PPA, self,
+                        PackagePublishingStatus.PENDING)
+
+        bin_archives = Archive.select(
+            bin_query, clauseTables=['BinaryPackagePublishingHistory'],
+            orderBy=['archive.id'], distinct=True)
+
+        return src_archives.union(bin_archives)
+
 
 class DistributionSet:
     """This class is to deal with Distribution related stuff"""
@@ -905,9 +1017,9 @@ class DistributionSet:
             return None
 
     def new(self, name, displayname, title, description, summary, domainname,
-            members, owner, main_archive, mugshot=None, logo=None, icon=None):
+            members, owner, mugshot=None, logo=None, icon=None):
         """See `IDistributionSet`."""
-        return Distribution(
+        distro = Distribution(
             name=name,
             displayname=displayname,
             title=title,
@@ -917,7 +1029,9 @@ class DistributionSet:
             members=members,
             mirror_admin=owner,
             owner=owner,
-            main_archive=main_archive,
             mugshot=mugshot,
             logo=logo,
             icon=icon)
+        archive = getUtility(IArchiveSet).new(distribution=distro,
+            purpose=ArchivePurpose.PRIMARY)
+        return distro

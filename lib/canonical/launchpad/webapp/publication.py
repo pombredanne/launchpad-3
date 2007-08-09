@@ -125,9 +125,9 @@ class LaunchpadBrowserPublication(
         # connection cache at the start of a transaction. This shouldn't
         # affect performance much, as psycopg does connection pooling.
         #
-        # XXX: Move this to SQLOS, in a method that is subscribed to the
-        # transaction begin event rather than hacking it into traversal.
-        # -- Steve Alexander, Tue Dec 14 13:15:06 UTC 2004
+        # XXX Steve Alexander 2004-12-14: Move this to SQLOS, in a method
+        # that is subscribed to the transaction begin event rather than
+        # hacking it into traversal.
         name = getUtility(IConnectionName).name
         key = (thread.get_ident(), name)
         cache = sqlos.connection.connCache
@@ -272,13 +272,12 @@ class LaunchpadBrowserPublication(
         referrer = request.getHeader('referer') # match HTTP spec misspelling
         if not referrer:
             return
-        # XXX: 20070426 jamesh
+        # XXX: jamesh 2007-04-26 bug=98437:
         # The Zope testing infrastructure sets a default (incorrect)
         # referrer value of "localhost" or "localhost:9000" if no
         # referrer is included in the request.  We let it pass through
         # here for the benefits of the tests.  Web browsers send full
         # URLs so this does not open us up to extra XSRF attacks.
-        #     https://bugs.launchpad.net/zope3/+bug/98437
         if referrer in ['localhost', 'localhost:9000']:
             return
         # Extract the hostname from the referrer URI

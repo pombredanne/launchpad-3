@@ -28,9 +28,9 @@ from canonical.archiveuploader.nascentuploadfile import (
     BaseBinaryUploadFile)
 from canonical.launchpad.interfaces import (
     ISourcePackageNameSet, IBinaryPackageNameSet, ILibraryFileAliasSet,
-    NotFoundError, IDistributionSet, QueueInconsistentStateError)
+    NotFoundError, IDistributionSet, IArchiveSet, QueueInconsistentStateError)
 from canonical.launchpad.scripts.processaccepted import closeBugsForQueueItem
-from canonical.lp.dbschema import PackagePublishingPocket
+from canonical.lp.dbschema import PackagePublishingPocket, ArchivePurpose
 
 
 class FatalUploadError(Exception):
@@ -100,7 +100,7 @@ class NascentUpload:
             # We can't run reject() because unfortunately we don't have
             # the address of the uploader to notify -- we broke in that
             # exact step.
-            # XXX cprov 20070326: we should really be emailing this
+            # XXX cprov 2007-03-26: we should really be emailing this
             # rejection to the archive admins. For now, this will end
             # up in the script log.
             raise FatalUploadError(str(e))
@@ -168,7 +168,7 @@ class NascentUpload:
             # Apply the overrides from the database. This needs to be done
             # before doing component verifications because the component
             # actually comes from overrides for packages that are not NEW.
-            # XXX cprov 20070611: temporally disabling 'auto-overrides' for
+            # XXX cprov 2007-06-11: temporally disabling 'auto-overrides' for
             # PPAs, because users can't perform post-publications overrides
             # by themselves yet. It's better to assume that they will get
             # the attributes right when packaging the source then to block
@@ -181,7 +181,10 @@ class NascentUpload:
             # check rights for OLD packages, the NEW ones goes straight to queue
             self.verify_acl(signer_components)
 
-        # Perform policy checks
+        # Override archive location if necessary.
+        self.overrideArchive()
+
+        # Perform policy checks.
         self.policy.checkUpload(self)
 
         # That's all folks.
@@ -393,15 +396,13 @@ class NascentUpload:
     @property
     def is_ppa(self):
         """Whether or not the current upload is target for a PPA."""
-        # XXX julian 2007-05-29 When self.policy.distroseries is None, this
-        # will causes a rejection for the wrong reasons (a code exception
-        # instead of a bad distro).  Bug reported as #117557.
+        # XXX julian 2007-05-29 bug=117557: When self.policy.distroseries
+        # is None, this will causes a rejection for the wrong reasons
+        # (a code exception instead of a bad distro).
         if not self.policy.distroseries:
             # Greasy hack until above bug is fixed.
             return False
-        if self.policy.archive.id != self.policy.distroseries.main_archive.id:
-            return True
-        return False
+        return self.policy.archive.purpose == ArchivePurpose.PPA
 
     def reject(self, msg):
         """Add the provided message to the rejection message."""
@@ -580,7 +581,7 @@ class NascentUpload:
         else:
             archtag = uploaded_file.architecture
 
-        # XXX cprov 20070213: it raises NotFoundError for unknown
+        # XXX cprov 2007-02-13: it raises NotFoundError for unknown
         # architectures. For now, it is treated in find_and_apply_overrides().
         # But it should be refactored ASAP.
         dar = self.policy.distroseries[archtag]
@@ -687,7 +688,7 @@ class NascentUpload:
                 ancestry = self.getSourceAncestry(uploaded_file)
                 if ancestry is not None:
                     self.checkSourceVersion(uploaded_file, ancestry)
-                    # XXX cprov 20070212: The current override mechanism is
+                    # XXX cprov 2007-02-12: The current override mechanism is
                     # broken, since it modifies original contents of SPR/BPR.
                     # We could do better by having a specific override table
                     # that relates a SPN/BPN to a specific DR/DAR and carries
@@ -713,7 +714,7 @@ class NascentUpload:
                                    uploaded_file.architecture))
                     ancestry = None
                 if ancestry is not None:
-                    # XXX cprov 20070212: see above.
+                    # XXX cprov 2007-02-12: see above.
                     self.overrideBinary(uploaded_file, ancestry)
                     uploaded_file.new = False
                     # For binary versions verification we should only
@@ -926,3 +927,44 @@ class NascentUpload:
             else:
                 self.logger.debug("Setting it to UNAPPROVED")
                 self.queue_root.setUnapproved()
+
+    def overrideArchive(self):
+        """Override the archive set on the policy as necessary.
+
+        In some circumstances we may wish to change the archive that the
+        uploaded package is placed into based on various criteria.  This
+        includes decisions such as moving the package to the commercial
+        archive if the package's component is 'commercial'.
+
+        PPA uploads with commercial files and normal uploads with a mixture 
+        of commercial and non-commercial files will be rejected.
+        """
+
+        # Get a set of the components used in this upload:
+        components = set(file.component_name for file in self.changes.files)
+
+        if 'commercial' in components:
+            # Reject commercial uploads to PPAs.
+            if self.is_ppa:
+                self.reject("PPA does not support commercial uploads.")
+
+            # All files in the upload must be commercial if any one of them is.
+            if len(components) != 1:
+                self.reject("Cannot mix commercial files with non-commercial.")
+                return
+
+            # Reset the archive in the policy to the commercial archive.
+            archive = getUtility(IArchiveSet).getByDistroPurpose(
+                self.policy.distroseries.distribution, 
+                ArchivePurpose.COMMERCIAL
+                )
+
+            # Check for data problems:
+            if not archive:
+                # Don't override the archive to None here or the rest of the
+                # processing will throw exceptions.
+                self.reject("Commercial archive for distro '%s' not found" % 
+                    self.policy.distroseries.distribution.name)
+            else:
+                self.policy.archive = archive
+

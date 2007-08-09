@@ -9,7 +9,7 @@ from twisted.vfs.ivfs import PermissionError, NotFoundError
 from canonical.codehosting.sshserver import LaunchpadAvatar
 from canonical.codehosting.bazaarfs import (
     SFTPServerRoot, SFTPServerBranch, SFTPServerProductDir,
-    SFTPServerProductDirPlaceholder, WriteLoggingDirectory)
+    SFTPServerProductDirPlaceholder, NameRestrictedWriteLoggingDirectory)
 from canonical.codehosting.tests.helpers import AvatarTestCase
 
 
@@ -35,14 +35,12 @@ class FakeLaunchpad:
         else:
             return defer.succeed(None)
 
-    def createBranch(self, userID, productID, branchName):
-        """Check the given parameters and return a fake branch ID.
-
-        If not given 1, '123' and 'new-branch' as parameters, then raise an
-        AssertionError.
+    def createBranch(self, loginID, userName, productName, branchName):
+        """Check the given parameters and return a fake branch ID in a
+        Deferred.
         """
-        self.test.assertEqual(1, userID)
-        self.test.assertEqual('123', productID)
+        self.test.assertEqual('alice', userName)
+        self.test.assertEqual('mozilla-firefox', productName)
         self.test.assertEqual('new-branch', branchName)
         return defer.succeed(0xabcdef12)
 
@@ -114,21 +112,31 @@ class UserDirsTestCase(AvatarTestCase):
         root = avatar.makeFileSystem().root
         userDir = root.child('~alice')
 
+        d = defer.maybeDeferred(userDir.createDirectory, 'no-such-product')
+
         # We expect PermissionError from a userDir.createDirectory:
-        return self.assertFailure(
-            defer.maybeDeferred(userDir.createDirectory, 'no-such-product'),
-            PermissionError)
+        d = self.assertFailure(d, PermissionError)
+
+        # And we check that the message is the one we expected:
+        def check_message(exception):
+            self.assertEqual(
+                str(exception),
+                'Directories directly under a user directory must be named '
+                'after a project name registered in Launchpad '
+                '<https://launchpad.net/>.')
+
+        return d.addCallback(check_message)
 
     def testInitialBranches(self):
         # Check that already existing branches owned by a user appear as
         # expected.
-        self.bobUserDict['teams'][0]['initialBranches'] = [ # bob
-            (1, 'mozilla-firefox', [(1, 'branch-one'), (2, 'branch-two')]),
-            (2, 'product-x', [(3, 'branch-y')]),
-        ]
-        self.bobUserDict['teams'][1]['initialBranches'] = [ # test-team
-            (3, 'thing', [(4, 'another-branch')]),
-        ]
+        self.bobUserDict['initialBranches'] = [
+            # bob
+            (2, [((1, 'mozilla-firefox'),
+                  [(1, 'branch-one'), (2, 'branch-two')]),
+                 ((2, 'product-x'), [(3, 'branch-y')])]),
+            # test team
+            (3, [((3, 'thing'), [(4, 'another-branch')])])]
         avatar = LaunchpadAvatar('bob', self.tmpdir, self.bobUserDict, None)
         root = avatar.makeFileSystem().root
 
@@ -285,9 +293,10 @@ class TestSFTPServerBranch(AvatarTestCase):
     def testCreateBazaarDirectoryWorks(self):
         """Creating a '.bzr' directory underneath a branch directory works."""
         directory = self.server_branch.createDirectory('.bzr')
-        self.failUnless(isinstance(directory, WriteLoggingDirectory),
-                        "%r not instance of WriteLoggingDirectory (%r)"
-                        % (directory, type(directory)))
+        self.failUnless(
+            isinstance(directory, NameRestrictedWriteLoggingDirectory),
+            "%r not instance of _RenameProtectionDecorator (%r)"
+            % (directory, type(directory)))
 
     def testCreateNonBazaarDirectoryFails(self):
         """Creating a non-'.bzr' directory fails.
@@ -296,6 +305,14 @@ class TestSFTPServerBranch(AvatarTestCase):
         branch directories and putting branches in those deep directories.
         """
         d = defer.maybeDeferred(self.server_branch.createDirectory, 'foo')
+        return self.assertFailure(d, PermissionError)
+
+    def testCreateFileFails(self):
+        """Creating a file in a branch fails.
+
+        We only allow Bazaar control directories.
+        """
+        d = defer.maybeDeferred(self.server_branch.createFile, '.bzr')
         return self.assertFailure(d, PermissionError)
 
 

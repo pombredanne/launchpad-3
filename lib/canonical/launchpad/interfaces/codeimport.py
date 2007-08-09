@@ -9,14 +9,13 @@ __all__ = [
     'ICodeImportSet',
     ]
 
-from zope.interface import Attribute, Interface
+from zope.interface import Interface
 from zope.schema import Datetime, Choice, Int, TextLine
 
 from canonical.launchpad import _
 from canonical.launchpad.fields import URIField
 from canonical.launchpad.interfaces.productseries import (
     validate_cvs_module, validate_cvs_root)
-from canonical.launchpad.validators.name import name_validator
 from canonical.lp.dbschema import CodeImportReviewStatus
 
 
@@ -26,9 +25,16 @@ class ICodeImport(Interface):
     id = Int(readonly=True, required=True)
     date_created = Datetime(
         title=_("Date Created"), required=True, readonly=True)
+
+    # XXX DavidAllouche 2007-07-04: 
+    # Branch should really be readonly, but there is a corner case of the
+    # code-import-sync script where we have a need to change it. The readonly
+    # parameter should be set back to True after the transition to the new
+    # code import system is complete.
     branch = Choice(
-        title=_('Branch'), required=True, readonly=True, vocabulary='Branch',
+        title=_('Branch'), required=True, readonly=False, vocabulary='Branch',
         description=_("The Bazaar branch produced by the import system."))
+
     registrant = Choice(
         title=_('Registrant'), required=True, readonly=True,
         vocabulary='ValidPersonOrTeam',
@@ -70,10 +76,13 @@ class ICodeImport(Interface):
         constraint=validate_cvs_root,
         description=_("The CVSROOT. "
             "Example: :pserver:anonymous@anoncvs.gnome.org:/cvs/gnome"))
+
     cvs_module = TextLine(title=_("Module"), required=False,
         constraint=validate_cvs_module,
         description=_("The path to import within the repository."
             " Usually, it is the name of the project."))
+
+    date_last_successful = Datetime(title=_("Last successful"), required=False)
 
 
 class ICodeImportSet(Interface):
@@ -82,6 +91,15 @@ class ICodeImportSet(Interface):
     def new(registrant, branch, rcs_type, svn_branch_url=None,
             cvs_root=None, cvs_module=None):
         """Create a new CodeImport."""
+
+    # XXX DavidAllouche 2007-07-05: 
+    # newWithId is only needed for code-import-sync-script. This method
+    # should be removed after the transition to the new code import system is
+    # complete.
+
+    def newWithId(id, registrant, branch, rcs_type, svn_branch_url=None,
+            cvs_root=None, cvs_module=None):
+        """Create a new CodeImport with a specified database id."""
 
     def getAll():
         """Return an iterable of all CodeImport objects."""
@@ -94,6 +112,9 @@ class ICodeImportSet(Interface):
 
     def getByBranch(branch):
         """Get the CodeImport, if any, associated to a Branch."""
+
+    def delete(id):
+        """Delete a CodeImport given its id."""
 
     def search(review_status):
         """Find the CodeImports of the given status.

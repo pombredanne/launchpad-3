@@ -71,10 +71,9 @@ class DistroArchSeriesBinaryPackageRelease:
             self.distribution,
             self.build.sourcepackagerelease)
 
-    # XXX: I'd like to rename this to
+    # XXX: kiko, 2006-02-01: I'd like to rename this to
     # current_published_publishing_record, because that's what it
     # returns, but I don't want to do that right now.
-    #   -- kiko, 2006-02-01
     @property
     def current_publishing_record(self):
         """See IDistroArchSeriesBinaryPackageRelease."""
@@ -264,4 +263,54 @@ class DistroArchSeriesBinaryPackageRelease:
             embargo=False
         )
         return copy
+
+    def changeOverride(self, new_component=None, new_section=None,
+                       new_priority=None):
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
+
+        # Check we have been asked to do something
+        if (new_component is None and new_section is None
+            and new_priority is None):
+            raise AssertionError("changeOverride must be passed a new"
+                                 "component, section and/or priority.")
+
+        # Retrieve current publishing info
+        current = self.current_publishing_record
+
+        # Check there is a change to make
+        if new_component is None:
+            new_component = current.component
+        if new_section is None:
+            new_section = current.section
+        if new_priority is None:
+            new_priority = current.priority
+
+        if (new_component == current.component and
+            new_section == current.section and
+            new_priority == current.priority):
+            return
+
+        # Append the modified package publishing entry
+        SecureBinaryPackagePublishingHistory(
+            binarypackagerelease=self.binarypackagerelease,
+            distroarchseries=self.distroarchseries,
+            status=PackagePublishingStatus.PENDING,
+            datecreated=UTC_NOW,
+            embargo=False,
+            pocket=current.pocket,
+            component=new_component,
+            section=new_section,
+            priority=new_priority,
+            archive=current.archive
+            )
+
+    def supersede(self):
+        """See `IDistroArchSeriesBinaryPackageRelease`."""
+        # Retrieve current publishing info
+        current = self.current_publishing_record
+        current = SecureBinaryPackagePublishingHistory.get(current.id)
+        current.status = PackagePublishingStatus.SUPERSEDED
+        current.datesuperseded = UTC_NOW
+
+        return current
 

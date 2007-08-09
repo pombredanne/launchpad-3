@@ -6,7 +6,7 @@ __metaclass__ = type
 __all__ = [
     'AvatarTestCase', 'CodeHostingTestProviderAdapter',
     'CodeHostingRepositoryTestProviderAdapter', 'FakeLaunchpad',
-    'ServerTestCase', 'TwistedBzrlibLayer', 'adapt_suite', 'deferToThread']
+    'ServerTestCase', 'adapt_suite', 'deferToThread']
 
 import os
 import shutil
@@ -14,7 +14,6 @@ import signal
 import threading
 import unittest
 
-from canonical.testing import TwistedLayer, BzrlibLayer
 from canonical.tests.test_twisted import TwistedTestCase
 
 from twisted.internet import defer, threads
@@ -35,7 +34,8 @@ class AvatarTestCase(TwistedTestCase):
         self.aliceUserDict = {
             'id': 1,
             'name': 'alice',
-            'teams': [{'id': 1, 'name': 'alice', 'initialBranches': []}],
+            'teams': [{'id': 1, 'name': 'alice'}],
+            'initialBranches': [(1, [])]
         }
 
         # An slightly more complex user dict for a user, 'bob', who is also a
@@ -43,8 +43,9 @@ class AvatarTestCase(TwistedTestCase):
         self.bobUserDict = {
             'id': 2,
             'name': 'bob',
-            'teams': [{'id': 2, 'name': 'bob', 'initialBranches': []},
-                      {'id': 3, 'name': 'test-team', 'initialBranches': []}],
+            'teams': [{'id': 2, 'name': 'bob'},
+                      {'id': 3, 'name': 'test-team'}],
+            'initialBranches': [(2, []), (3, [])]
         }
 
     def tearDown(self):
@@ -95,10 +96,6 @@ class ServerTestCase(TrialTestCase):
         return self.server.getTransport(relpath)
 
 
-class TwistedBzrlibLayer(TwistedLayer, BzrlibLayer):
-    """Use the Twisted reactor and Bazaar's temporary directory logic."""
-
-
 def deferToThread(f):
     """Run the given callable in a separate thread and return a Deferred which
     fires when the function completes.
@@ -132,11 +129,11 @@ class FakeLaunchpad:
             2: dict(name='thunderbird'),
             }
         self._branch_set = {}
-        self.createBranch(1, 1, 'baz')
-        self.createBranch(1, 1, 'qux')
-        self.createBranch(1, '', 'random')
-        self.createBranch(2, 1, 'qux')
-        self.createBranch(3, '', 'junk.dev')
+        self.createBranch(None, 'testuser', 'firefox', 'baz')
+        self.createBranch(None, 'testuser', 'firefox', 'qux')
+        self.createBranch(None, 'testuser', '+junk', 'random')
+        self.createBranch(None, 'testteam', 'firefox', 'qux')
+        self.createBranch(None, 'name12', '+junk', 'junk.dev')
         self._request_mirror_log = []
 
     def _lookup(self, item_set, item_id):
@@ -149,8 +146,16 @@ class FakeLaunchpad:
         item_set[new_id] = item_dict
         return new_id
 
-    def createBranch(self, user_id, product_id, branch_name):
+    def createBranch(self, login_id, user, product, branch_name):
         """See IHostedBranchStorage.createBranch."""
+        for user_id, user_info in self._person_set.iteritems():
+            if user_info['name'] == user:
+                break
+        else:
+            return ''
+        product_id = self.fetchProductID(product)
+        if product_id is None:
+            return ''
         new_branch = dict(
             name=branch_name, user_id=user_id, product_id=product_id)
         for branch in self._branch_set.values():
@@ -227,9 +232,10 @@ class CodeHostingTestProviderAdapter:
     def __init__(self, servers):
         self._servers = servers
 
-    def adaptForServer(self, test, server):
+    def adaptForServer(self, test, serverFactory):
         from copy import deepcopy
         new_test = deepcopy(test)
+        server = serverFactory()
         new_test.installServer(server)
         def make_new_test_id():
             new_id = "%s(%s)" % (new_test.id(), server._schema)
@@ -243,26 +249,6 @@ class CodeHostingTestProviderAdapter:
             new_test = self.adaptForServer(test, server)
             result.addTest(new_test)
         return result
-
-
-class CodeHostingRepositoryTestProviderAdapter(CodeHostingTestProviderAdapter):
-    """Test adapter to run a single RepositoryTest against many codehosting
-    servers.
-    """
-
-    def __init__(self, format, servers):
-        self._repository_format = format
-        CodeHostingTestProviderAdapter.__init__(self, servers)
-
-    def adaptForServer(self, test, server):
-        from bzrlib.tests import default_transport
-        new_test = CodeHostingTestProviderAdapter.adaptForServer(
-            self, test, server)
-        new_test.transport_server = default_transport
-        new_test.transport_readonly_server = None
-        new_test.bzrdir_format = self._repository_format._matchingbzrdir
-        new_test.repository_format = self._repository_format
-        return new_test
 
 
 def adapt_suite(adapter, base_suite):

@@ -31,7 +31,8 @@
                            isMentor canMentor isSubscribed" />
         <require
             permission="launchpad.View"
-            attributes="product productseries sourcepackagename distribution
+            attributes="bugtargetname bugtargetdisplayname
+                        product productseries sourcepackagename distribution
                         distroseries milestone status statusexplanation
                         importance assignee bugwatch age owner targetname
                         title related_tasks other_affected_pillars
@@ -44,10 +45,9 @@
                         updateTargetNameCache transitionToStatus
                         transitionToAssignee" />
 
-        <!-- XXX, Brad Bollenbach, 2006-09-29: The permission checking for
-        milestone and importance is further restricted in the browser view code
-        (BugTaskEditView). This is bad. See https://launchpad.net/bugs/63000 .
-        -->
+        <!-- XXX Brad Bollenbach 2006-09-29 bug=63000:
+        The permission checking for milestone and importance is further
+        restricted in the browser view code (BugTaskEditView). -->
         <require
             permission="launchpad.Edit"
             set_attributes="product productseries sourcepackagename distribution
@@ -203,7 +203,7 @@
         name="+nominate"
         for="canonical.launchpad.interfaces.IBugTask"
         class="canonical.launchpad.browser.BugNominationView"
-        permission="launchpad.View"
+        permission="launchpad.Edit"
         template="../templates/bug-nominate-for-series.pt" />
 
     <browser:generalform

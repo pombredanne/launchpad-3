@@ -18,9 +18,7 @@ The IDistributionSet utility is accessed in the usual fashion:
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
     ...     IDistribution, IDistributionSet)
-    >>> from canonical.lp.dbschema import (
-    ...     PackagePublishingPocket, MirrorSpeed, MirrorContent,
-    ...     MirrorPulseType)
+    >>> from canonical.lp.dbschema import PackagePublishingPocket
     >>> distroset = getUtility(IDistributionSet)
 
 To retrieve a specific distribution, use IDistributionSet.get:
@@ -419,14 +417,14 @@ We can filter for specifications that contain specific text:
 
 We can get only valid specs (those that are not obsolete or superseded):
 
- >>> from canonical.lp.dbschema import SpecificationStatus
+ >>> from canonical.lp.dbschema import SpecificationDefinitionStatus
  >>> from canonical.launchpad.ftests import login
  >>> login('mark@hbd.com')
  >>> for spec in kubuntu.specifications():
  ...     if spec.name in ['cluster-installation', 'revu']:
- ...         spec.status = SpecificationStatus.OBSOLETE
+ ...         spec.definition_status = SpecificationDefinitionStatus.OBSOLETE
  ...     if spec.name in ['krunch-desktop-plan']:
- ...         spec.status = SpecificationStatus.SUPERSEDED
+ ...         spec.definition_status = SpecificationDefinitionStatus.SUPERSEDED
  ...     shim = spec.updateLifecycleStatus(spec.owner)
  >>> flush_database_updates()
  >>> for spec in kubuntu.valid_specifications:
@@ -466,3 +464,14 @@ To get all milestones of a given distro we have the .all_milestones property.
     >>> [milestone.name for milestone in debian.all_milestones]
     [u'woody-rc1', u'3.1-rc1', u'3.1']
 
+
+== Personal Package Archives ==
+
+`IDistribution.getAllPPAs` provides all present *personal* archives
+for the distribution in question:
+
+  >>> [archive.owner.name for archive in ubuntu.getAllPPAs()]
+  [u'cprov', u'sabdfl', u'no-priv']
+
+  >>> [archive.owner.name for archive in debian.getAllPPAs()]
+  []

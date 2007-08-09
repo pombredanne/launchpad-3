@@ -1,5 +1,4 @@
-Distro Releases
-===============
+= Distro Releases =
 
 From the DerivationOverview spec
 <https://launchpad.canonical.com/DerivationOverview>:
@@ -145,8 +144,7 @@ the upload will have to wait for manual approval anyway:
    True
 
 
-Package searching
------------------
+== Package searching ==
 
 You can search through binary packages publishing in a distribution
 release by using the searchPackages method, which uses magical fti:
@@ -165,8 +163,7 @@ through fti, and even for substrings:
     1
 
 
-DistroSeriess have components and sections
--------------------------------------------
+== DistroSeriess have components and sections ==
 
 A distroseries has some number of components and/or sections which
 are valid for that distroseries. These selections are used by (among
@@ -188,17 +185,14 @@ other things) the uploader for validating incoming uploads.
 
    >>> from canonical.launchpad.interfaces import (
    ...    IComponentSet, ISectionSet)
-   >>> univ = getUtility(IComponentSet).ensure('universe')
    >>> python = getUtility(ISectionSet).ensure('python')
 
-   >>> hoary.addComponent(univ)
    >>> hoary.addSection(python)
 
    >>> for c in hoary.components:
    ...     print c.name
    main
    restricted
-   universe
 
    >>> for s in hoary.sections:
    ...     print s.name
@@ -210,9 +204,29 @@ other things) the uploader for validating incoming uploads.
    python
    translations
 
+Breezy-autotest has got a commercial component, which is not reported:
 
-DistroSeriess can be initialised from their parents
-----------------------------------------------------
+    >>> breezyautotest = distroseriesset.queryByName(ubuntu, "breezy-autotest")
+    >>> for c in breezyautotest.components:
+    ...     print c.name
+    main
+    restricted
+    universe
+    multiverse
+
+The upload_components property, however, reports all the available
+components since commercial is allowed for upload:
+
+    >>> for c in breezyautotest.upload_components:
+    ...     print c.name
+    main
+    restricted
+    universe
+    multiverse
+    commercial
+
+
+== DistroSeries can be initialised from their parents ==
 
 When a distroseries is derived from another distroseries (be it a
 derivative distribution, or simply the next release in a sequence from
@@ -301,8 +315,7 @@ the SPR returns all build records for it.
    >>> bumpy_firefox_sp.currentrelease.sourcepackagerelease.builds.count()
    3
 
-Translatable Packages and Packaging
------------------------------------
+== Translatable Packages and Packaging ==
 
 You can easily find out what packages are translatable in a
 distribution release:
@@ -339,8 +352,7 @@ From the results above you can notice that neither mozilla-firefox nor
 netapplet are translatable in Hoary.
 
 
-DistroSeries can build meta objects for packages
--------------------------------------------------
+== DistroSeries can build meta objects for packages ==
 
    >>> from canonical.launchpad.interfaces import (
    ...     ISourcePackage,
@@ -439,49 +451,53 @@ We need to flush cached values.
    ('SUPERSEDED', CURRENT_TIMESTAMP AT TIME ZONE 'UTC')
 
 
-DistroSeries Translations migration
-------------------------------------
+== DistroSeries Translations migration ==
 
 We have several ways to copy translations between distro series.  We bring a
 transaction manager (in this case a fake one) to make these work.
 
-   >>> class FakeTransactionManager:
-   ...     def begin(self):
-   ...         pass
-   ...     def commit(self):
-   ...         pass
-   >>> transaction_stub = FakeTransactionManager()
+    >>> class FakeTransactionManager:
+    ...     def begin(self):
+    ...         pass
+    ...     def commit(self):
+    ...         pass
+    >>> transaction_stub = FakeTransactionManager()
 
-The main one is to clone what we have in its parent distribution.  This will
-only work if we keep the new distroseries's translations hidden from the
-public:
+=== Preconditions to migrate translations between distro series. ===
 
-   >>> humpy.hide_all_translations = False
-   >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
-   Traceback (most recent call last):
-   ...
-   AssertionError:
-   _copyActiveTranslationsToNewRelease: hide_all_translations not set!
-   ...
+Before we are able to migrate translations, there are a set of preconditions
+that should be meet:
 
-Also, while this happens, and until an administrator changes this, no
-templates or translations are accepted from the translation import queue:
+First one is that we should keep the new distroseries's translations hidden
+from the public:
 
-   # We need to set this fiel to true so the other check is executed.
-   >>> humpy.hide_all_translations = True
-   >>> humpy.defer_translation_imports = False
-   >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
-   Traceback (most recent call last):
-   ...
-   AssertionError:
-   _copyActiveTranslationsToNewRelease: defer_translation_imports not set!
-   ...
+    >>> humpy.hide_all_translations = False
+    >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
+    Traceback (most recent call last):
+    ...
+    AssertionError: hide_all_translations not set!...
 
-When both fields are set, the script doesn't complain.
+    # Set the field to TRUE so we meet this precondition for following
+    # tests.
+    >>> humpy.hide_all_translations = True
 
-   >>> humpy.hide_all_translations
-   True
-   >>> humpy.defer_translation_imports = True
+And the other one is that import queue should be stopped while doing this.
+
+    >>> humpy.defer_translation_imports = False
+    >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
+    Traceback (most recent call last):
+    ...
+    AssertionError: defer_translation_imports not set!...
+
+    # Set the field to TRUE so we meet this precondition for following
+    # tests.
+    >>> humpy.defer_translation_imports = True
+
+
+=== Translation Migration taks ===
+
+The main way to migrate translations is to clone what we have in its parent
+distribution.
 
    >>> humpy.copyMissingTranslationsFromParent(transaction_stub)
 
@@ -714,9 +730,50 @@ the same values:
     >>> pofile_es_hoary.rosettaCount() == pofile_es_humpy.rosettaCount()
     True
 
+Finally, prepare a new distro series to do the copy using an external script
+to do the translation migration to this new distro series.
 
-SourcePackagePublishingHistory
-------------------------------
+    >>> testing_series = distroseriesset.new(
+    ...     ubuntu, 'testing', 'Testing Test', 'The Testing Test', 'Fat',
+    ...     'Yo Momma', '99.4',hoary, hoary.owner)
+    >>> len(testing_series.potemplates)
+    0
+
+The script is executed in its own transaction, so we need to commit here
+to be sure the new series will be available in the script.
+
+    >>> import transaction
+    >>> import subprocess
+    >>> import sys
+    >>> transaction.commit()
+
+Now, we execute the script that will migrate/copy all current templates and
+translations from testing_series' parent distro series (hoary)
+
+    >>> process = subprocess.Popen([
+    ...     sys.executable, 'scripts/copy-missing-translations-from-parent.py',
+    ...     '--distribution=ubuntu', '--series=testing', '-v'],
+    ...     stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+    ...     stderr=subprocess.STDOUT)
+    >>> (output, empty) = process.communicate()
+    >>> print output
+    INFO    creating lockfile
+    INFO    Starting...
+    INFO    Done...
+    DEBUG   Removing lock file: /var/lock/launchpad-copy-missing-translations-ubuntu-testing.lock
+
+Once the script finished, new distro series does have templates.
+
+    >>> len(testing_series.potemplates) > 0
+    True
+
+And all current templates were copied.
+
+    >>> len(hoary.currentpotemplates) == len(testing_series.currentpotemplates)
+    True
+
+
+== SourcePackagePublishingHistory ==
 
 IDistroSeries.getSourcePackagePublishing returns all the ISPPH
 records for a given status in a given pocket. It makes easy to
@@ -784,6 +841,8 @@ allows the callsite to specify one and then the result will be
 restricted to it.
 
    >>> debian_archive = getUtility(IDistributionSet)['debian'].main_archive
+   >>> print debian_archive.purpose.title
+   Primary Archive.
 
    >>> hoary.getSourcePackagePublishing(
    ...     PackagePublishingStatus.PUBLISHED,
@@ -897,8 +956,7 @@ parameter for result restriction:
 
 
 
-Specification Listings
-======================
+= Specification Listings =
 
 We should be able to get lists of specifications in different states
 related to a distroseries.
@@ -987,8 +1045,7 @@ We can filter for specifications that contain specific text:
  thinclient-local-devices
 
 
-Drivers
-=======
+= Drivers =
 
 Distributions have drivers, who are people that have permission to approve
 bugs and features for specific releases. The rules are that:

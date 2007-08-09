@@ -44,6 +44,7 @@ from canonical.launchpad.interfaces.build import *
 from canonical.launchpad.interfaces.builder import *
 from canonical.launchpad.interfaces.buildqueue import *
 from canonical.launchpad.interfaces.codeimport import *
+from canonical.launchpad.interfaces.codeimportmachine import *
 from canonical.launchpad.interfaces.codeofconduct import *
 from canonical.launchpad.interfaces.component import *
 from canonical.launchpad.interfaces.country import *
@@ -66,6 +67,9 @@ from canonical.launchpad.interfaces.distroseriessourcepackagerelease import *
 from canonical.launchpad.interfaces.emailaddress import *
 from canonical.launchpad.interfaces.entitlement import *
 from canonical.launchpad.interfaces.externalbugtracker import *
+from canonical.launchpad.interfaces.faq import *
+from canonical.launchpad.interfaces.faqcollection import *
+from canonical.launchpad.interfaces.faqtarget import *
 from canonical.launchpad.interfaces.files import *
 from canonical.launchpad.interfaces.geoip import *
 from canonical.launchpad.interfaces.gpg import *
@@ -81,6 +85,7 @@ from canonical.launchpad.interfaces.librarian import *
 from canonical.launchpad.interfaces.logintoken import *
 from canonical.launchpad.interfaces.mail import *
 from canonical.launchpad.interfaces.mailbox import *
+from canonical.launchpad.interfaces.mailinglist import *
 from canonical.launchpad.interfaces.manifestancestry import *
 from canonical.launchpad.interfaces.manifestentry import *
 from canonical.launchpad.interfaces.manifest import *
@@ -142,6 +147,7 @@ from canonical.launchpad.interfaces.translationformat import *
 from canonical.launchpad.interfaces.question import *
 from canonical.launchpad.interfaces.questionbug import *
 from canonical.launchpad.interfaces.questioncollection import *
+from canonical.launchpad.interfaces.questionenums import *
 from canonical.launchpad.interfaces.questionmessage import *
 from canonical.launchpad.interfaces.questionreopening import *
 from canonical.launchpad.interfaces.questionsubscription import *

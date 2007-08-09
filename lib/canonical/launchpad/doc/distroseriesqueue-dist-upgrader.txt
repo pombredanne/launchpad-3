@@ -290,13 +290,16 @@ files in the respective PPA location.
 
   >>> from canonical.launchpad.interfaces import (
   ...     IPersonSet, IArchiveSet, ILaunchpadCelebrities)
+  >>> from canonical.lp.dbschema import ArchivePurpose
 
   >>> beta_testers = getUtility(ILaunchpadCelebrities).launchpad_beta_testers
   >>> admin = getUtility(ILaunchpadCelebrities).admin
   >>> name16 = getUtility(IPersonSet).getByName("name16")
   >>> beta_testers.addMember(name16, admin)
 
-  >>> foobar_archive = getUtility(IArchiveSet).new(owner=name16)
+  >>> foobar_archive = getUtility(IArchiveSet).new(
+  ...     distribution=ubuntutest, purpose=ArchivePurpose.PPA,
+  ...     owner=name16)
 
   >>> insecure_policy.archive = foobar_archive
 
