@@ -10,10 +10,9 @@ from sqlobject import ForeignKey, StringCol
 from canonical.database.sqlbase import quote, SQLBase
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import EmailAddressStatus
-
 from canonical.launchpad.interfaces import (
-    EmailAddressAlreadyTaken, IEmailAddress, IEmailAddressSet)
+    EmailAddressAlreadyTaken, IEmailAddress, IEmailAddressSet,
+    EmailAddressStatus)
 
 
 class EmailAddress(SQLBase):

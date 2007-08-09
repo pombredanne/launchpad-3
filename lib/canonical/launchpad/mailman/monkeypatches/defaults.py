@@ -26,7 +26,8 @@ QRUNNERS = [
     ('OutgoingRunner', 1), # outgoing messages to the smtpd
     ('VirginRunner',   1), # internally crafted (virgin birth) messages
     ('RetryRunner',    1), # retry temporarily failed deliveries
-    # Non-standard runners we've added.  XXX BarryWarsaw: not yet implemented.
+    # XXX BarryWarsaw 2007-03-29: not yet implemented.
+    # Non-standard runners we've added.
 ##     ('POPRunner',      1), # POP new messages to us
 ##     ('XMLRPCRunner',   1), # Poll for XMLRPC requests
     ]

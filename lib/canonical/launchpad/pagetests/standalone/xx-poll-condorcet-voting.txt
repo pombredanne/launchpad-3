@@ -1,5 +1,5 @@
-# XXX: Merge this test with team-polls/xx-votepoll.txt
-# -- Guilherme Salgado, 2006-01-19
+# XXX Guilherme Salgado, 2006-01-19: 
+# Merge this test with team-polls/xx-votepoll.txt
 
   Go to a condorcet-style poll (which is still open) and check that apart
   from seeing our vote we can also change it.

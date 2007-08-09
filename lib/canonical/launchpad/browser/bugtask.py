@@ -36,7 +36,7 @@ import urllib
 from operator import attrgetter
 
 from zope.app.form import CustomWidgetFactory
-from zope.app.form.browser.itemswidgets import MultiCheckBoxWidget, RadioWidget
+from zope.app.form.browser.itemswidgets import RadioWidget
 from zope.app.form.interfaces import (
     IInputWidget, IDisplayWidget, InputErrors, WidgetsError, ConversionError)
 from zope.app.form.utility import (
@@ -56,6 +56,7 @@ from canonical.config import config
 from canonical.lp import dbschema, decorates
 from canonical.launchpad import _
 from canonical.cachedproperty import cachedproperty
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import (
     action, canonical_url, custom_widget, GetitemNavigation, LaunchpadFormView,
     LaunchpadView, Navigation, redirection, stepthrough)
@@ -68,7 +69,7 @@ from canonical.launchpad.interfaces import (
     IFrontPageBugTaskSearch, ILaunchBag, INullBugTask, IPerson,
     IPersonBugTaskSearch, IProduct, IProject, ISourcePackage,
     IUpstreamBugTask, NotFoundError, RESOLVED_BUGTASK_STATUSES,
-    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, valid_distrotask,
+    UnexpectedFormData, UNRESOLVED_BUGTASK_STATUSES, validate_distrotask,
     valid_upstreamtask, IProductSeriesBugTask, IBugNominationSet,
     IProductSeries, INominationsReviewTableBatchNavigator)
 
@@ -789,8 +790,8 @@ class BugTaskEditView(GeneralFormView):
             editable_field_names = list(self.fieldNames)
             editable_field_names.remove('bugwatch')
 
-            # XXX, Brad Bollenbach, 2006-09-29: Permission checking
-            # doesn't belong here! See https://launchpad.net/bugs/63000
+            # XXX: Brad Bollenbach 2006-09-29 bug=63000:
+            # Permission checking doesn't belong here.
             if not self.userCanEditMilestone():
                 editable_field_names.remove("milestone")
 
@@ -799,12 +800,12 @@ class BugTaskEditView(GeneralFormView):
         else:
             editable_field_names = ['bugwatch']
             if not IUpstreamBugTask.providedBy(self.context):
-                #XXX: Should be possible to edit the product as well,
+                #XXX: Bjorn Tillenius 2006-03-01:
+                #     Should be possible to edit the product as well,
                 #     but that's harder due to complications with bug
                 #     watches. The new product might use Launchpad
                 #     officially, thus we need to handle that case.
                 #     Let's deal with that later.
-                #     -- Bjorn Tillenius, 2006-03-01
                 editable_field_names += ['sourcepackagename']
             if self.context.bugwatch is None:
                 editable_field_names += ['status', 'assignee']
@@ -899,20 +900,22 @@ class BugTaskEditView(GeneralFormView):
             distro = bugtask.distribution
         sourcename = bugtask.sourcepackagename
         product = bugtask.product
-        # XXX: this set of try/except blocks is to ensure that the
+        # XXX: kiko 2007-03-26:
+        # This set of try/except blocks is to ensure that the
         # widget gets the correct error message assigned to it. It's
         # rather unfortunate that this is done this way but we need to
         # convert over to a LaunchpadFormView to fix this the right way.
         # It would also fix, incidentally, the fact that this hook is
         # only called after all widget errors are solved (which causes
         # the errors here to be hidden until widget errors are solved).
-        #   -- kiko, 2007-03-26
         if distro is not None and sourcename != data['sourcepackagename']:
             try:
-                valid_distrotask(bugtask.bug, distro, data['sourcepackagename'])
-            except WidgetsError, errors:
-                self.sourcepackagename_widget._error = ConversionError(str(errors.args[0]))
-                raise errors
+                validate_distrotask(
+                    bugtask.bug, distro, data['sourcepackagename'])
+            except LaunchpadValidationError, error:
+                self.sourcepackagename_widget._error = ConversionError(
+                    str(error))
+                raise WidgetsError(error)
         if (product is not None and
             'product' in data and product != data['product']):
             try:
@@ -1003,11 +1006,11 @@ class BugTaskEditView(GeneralFormView):
                     IBugTask['status'].default, self.user)
                 bugtask.importance = IBugTask['importance'].default
             else:
-                #XXX: Reset the bug task's status information. The right
+                #XXX: Bjorn Tillenius 2006-03-01:
+                #     Reset the bug task's status information. The right
                 #     thing would be to convert the bug watch's status to a
                 #     Launchpad status, but it's not trivial to do at the
                 #     moment. I will fix this later.
-                #     -- Bjorn Tillenius, 2006-03-01
                 bugtask.transitionToStatus(
                     BugTaskStatus.UNKNOWN, self.user)
                 bugtask.importance = BugTaskImportance.UNKNOWN
@@ -1117,7 +1120,7 @@ class BugTaskListingView(LaunchpadView):
         bugtask = self.context
 
         if INullBugTask.providedBy(bugtask):
-            return u"Not reported in %s" % bugtask.targetname
+            return u"Not reported in %s" % bugtask.bugtargetname
 
         assignee = bugtask.assignee
         status = bugtask.status
@@ -1386,12 +1389,11 @@ class NominatedBugListingBatchNavigator(BugListingBatchNavigator):
 
 
 class BugTaskSearchListingView(LaunchpadFormView):
-    """Base class for bug listings.
+    """Base class for bug listings."""
 
-    Subclasses should define getExtraSearchParams() to filter the
-    search.
-    """
-
+    # These widgets are customised so as to keep the presentation of this view
+    # and its descendants consistent after refactoring to use
+    # LaunchpadFormView as a parent.
     custom_widget('searchtext', NewLineToSpacesWidget)
     custom_widget('status_upstream', LabeledMultiCheckBoxWidget)
     custom_widget('tag', BugTagsWidget)
@@ -1423,7 +1425,8 @@ class BugTaskSearchListingView(LaunchpadFormView):
         # We call self._validate() here because LaunchpadFormView only
         # validates the form if an action is submitted but, because this form
         # can be called through a query string, we don't want to require an
-        # action.
+        # action. We pass an empty dict to _validate() because all the data
+        # needing validation is already available internally to self.
         self._validate(None, {})
 
     @property
@@ -1492,9 +1495,8 @@ class BugTaskSearchListingView(LaunchpadFormView):
         convert the old string parameter into a list.
         """
         old_upstream_status_values_to_new_values = {
-            'pending_bugwatch': 'pending_bugwatch',
-            'hide_upstream': 'hide_upstream',
             'only_resolved_upstream': 'resolved_upstream'}
+
         status_upstream = self.request.get('field.status_upstream')
         if status_upstream in old_upstream_status_values_to_new_values.keys():
             self.request.form['field.status_upstream'] = [
@@ -1523,6 +1525,8 @@ class BugTaskSearchListingView(LaunchpadFormView):
         """Build the BugTaskSearchParams object for the given arguments and
         values specified by the user on this form's widgets.
         """
+        # Calling _validate populates the data dictionary as a side-effect
+        # of validation.
         data = {}
         self._validate(None, data)
 
@@ -1697,10 +1701,10 @@ class BugTaskSearchListingView(LaunchpadFormView):
                 str(self.request.URL), colname)
             return sortlink
 
-        # XXX: is it not possible to get the exact request supplied and
+        # XXX: kiko 2005-08-23:
+        # Is it not possible to get the exact request supplied and
         # just sneak a "-" in front of the orderby argument, if it
         # exists? If so, the code below could be a lot simpler.
-        #       -- kiko, 2005-08-23
 
         # There is search criteria to preserve.
         sortlink = str(self.request.URL) + "?"
@@ -1781,9 +1785,9 @@ class BugTaskSearchListingView(LaunchpadFormView):
     def validateVocabulariesAdvancedForm(self):
         """Provides a meaningful message for vocabulary validation errors."""
         error_message = _(
-            "There's no person with the name or email address '%s'")
+            "There's no person with the name or email address '%s'.")
 
-        for name in ('assignee', 'bug_reporter', 'bug_contact', 
+        for name in ('assignee', 'bug_reporter', 'bug_contact',
                      'bug_commenter'):
             if self.getWidgetError(name):
                 self.setFieldError(
@@ -2116,7 +2120,8 @@ class BugTaskTableRowView(LaunchpadView):
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     """Search all bug reports."""
 
-    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
     schema = IFrontPageBugTaskSearch
     custom_widget('scope', ProjectScopeWidget)
 

@@ -47,9 +47,9 @@ class ILibraryFileAlias(Interface):
                 ''')
             )
 
-    # XXX: We can't use TextLine here because they return
-    # byte strings.  -- Guilherme Salgado, 2007-01-18
-    # (https://beta.launchpad.net/launchpad/+bug/80487)
+    # XXX Guilherme Salgado, 2007-01-18 bug=80487: 
+    # We can't use TextLine here because they return
+    # byte strings.
     http_url = Attribute(_("The http URL to this file"))
     https_url = Attribute(_("The https URL to this file"))
 

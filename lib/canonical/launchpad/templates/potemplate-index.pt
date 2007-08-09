@@ -45,8 +45,8 @@
       <tal:relatives_by_name repeat="pot context/relatives_by_name">
         <tal:product condition="pot/productseries">
           <a href=""
-            tal:attributes="href pot/fmt:url">
-            content="string:${pot/productseries/product/displayname}
+            tal:attributes="href pot/fmt:url"
+            tal:content="string:${pot/productseries/product/displayname}
                             ${pot/productseries/displayname}">
               A Product and ProductSeries
           </a>.
