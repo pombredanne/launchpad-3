@@ -7,14 +7,16 @@ import pytz
 from unittest import TestCase, TestLoader
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.database.constants import UTC_NOW
-from canonical.launchpad.ftests.harness import (
-    LaunchpadZopelessTestCase, LaunchpadZopelessTestSetup)
 from canonical.launchpad.database.productseries import (
     DatePublishedSyncError, ProductSeries, NoImportBranchError)
-from canonical.testing import LaunchpadZopelessLayer
+from canonical.launchpad.ftests import login
+from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
+from canonical.launchpad.interfaces import IProductSeriesSet
+from canonical.testing import LaunchpadZopelessLayer, LaunchpadFunctionalLayer
 from canonical.launchpad.interfaces import IProductSet
 from canonical.lp.dbschema import RevisionControlSystems
 
@@ -25,6 +27,30 @@ class ImportdTestCase(TestCase):
 
     def setUp(self):
         LaunchpadZopelessLayer.switchDbUser(config.importd.dbuser)
+
+
+class TestDeleteImport(TestCase):
+
+    layer = LaunchpadFunctionalLayer
+
+    def testClearLastPublishedSync(self):
+        """ProductSeries.deleteImport must clear datepublishedsync."""
+        # We need to be a members of vcs-imports or admin to use deleteImport.
+        login('david.allouche@canonical.com')
+
+        series = getUtility(IProductSeriesSet)[3]
+
+        # Ideally, we woud implement a realistic scenario to set this
+        # attribute, but it would be too complicated for the purpose of this
+        # simple test.
+        removeSecurityProxy(series).datepublishedsync = UTC_NOW
+        self.failIf(series.datepublishedsync is None,
+            'series.datepublishesync is %r' % (series.datepublishedsync))
+
+        series.deleteImport()
+        self.failUnless(series.datepublishedsync is None,
+            'series.datepublishesync is %r' % (series.datepublishedsync))
+        self.assertEqual(series.datepublishedsync, None)
 
 
 class TestImportUpdated(ImportdTestCase):
