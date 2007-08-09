@@ -32,7 +32,7 @@ class MilestoneSetNavigation(GetitemNavigation):
     usedfor = IMilestoneSet
 
 
-# XXX: 20051214 jamesh
+# XXX: jamesh 2005-12-14:
 # This class is required in order to make use of a side effect of
 # Navigation.publishTraverse: adding context objects to
 # request.traversed_objects.
@@ -93,6 +93,14 @@ class MilestoneView(LaunchpadView):
                     orderby=['-importance', 'datecreated', 'id'])
         tasks = getUtility(IBugTaskSet).search(params) 
         return list(tasks)
+
+    @property
+    def is_project_milestone(self):
+        """Check, if the current milestone is a project milestone.
+
+        Return true, if the current milestone is a project milestone,
+        else return False."""
+        return IProjectMilestone.providedBy(self.context)
 
 
 class MilestoneAddView:
