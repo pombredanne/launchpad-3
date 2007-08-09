@@ -1408,6 +1408,20 @@ class FormattersAPI:
             return (not line.startswith(python_block)
                 and re_quoted.match(line) is not None)
 
+        def after_paragraph(line):
+            """Return the characters after the paragraph mark (<p>).
+            
+            The caller must be certain the line starts with a paragraph mark.
+            """
+            return (line[3:])
+
+        def before_break(line):
+            """Return the characters before the line break mark (<br />).
+            
+            The caller must be certain the line ends with a line break mark.
+            """
+            return line[0:-4]
+
         for line in self.text_to_html().split('\n'):
             if 'Desired=<wbr></wbr>Unknown/' in line and not in_fold:
                 # When we see a evidence of dpkg output, we switch the
@@ -1420,11 +1434,12 @@ class FormattersAPI:
             elif not in_fold and re_include.match(line) is not None:
                 # Start a foldable paragraph for a signature or PGP inclusion.
                 in_fold = True
-                line = '<p>%s%s' % (start_fold_markup, line[3:])
-            elif not in_fold and is_quoted(line[3:], re_quoted):
+                line = '<p>%s%s' % (start_fold_markup, after_paragraph(line))
+            elif not in_fold and is_quoted(after_paragraph(line), re_quoted):
                 # Start a foldable quoted paragraph.
                 in_fold = True
-                line = '<p>%s%s' % (start_fold_quoted_markup, line[3:])
+                line = '<p>%s%s' % (
+                    start_fold_quoted_markup, after_paragraph(line))
             elif not in_fold and is_quoted(line, re_quoted):
                 # Start foldable quoted lines in a paragraph.
                 in_quoted = True
@@ -1436,23 +1451,20 @@ class FormattersAPI:
 
             # We must test line starts and ends in separate blocks to
             # close the rare single line that is foldable.
-            if in_fold and line.endswith('</p>'):
-                if not in_false_paragraph:
-                    # End the foldable section.
-                    if in_quoted and self._re_quoted.match(line) is None:
-                        # The last line of the paragraph is not quoted.
-                        if output[-2].startswith('<span'):
-                            # This line is the only quoted line.
-                            output.append("</span>\n")
-                        else:
-                            # Quoted lines preceeded this line.
-                            output.append("</span><br />\n")
-                    in_fold = False
-                    in_quoted = False
-                    line = end_fold_markup % line[0:-4]
-                else:
-                    # Restore the line break to join with the next paragraph.
-                    line = '%s<br />\n<br />' %  line[0:-4]
+            if in_fold and line.endswith('</p>') and in_false_paragraph:
+                # Restore the line break to join with the next paragraph.
+                line = '%s<br />\n<br />' %  before_break(line)
+            elif (in_quoted and line.endswith('</p>')
+                and self._re_quoted.match(line) is None):
+                # The last line of the paragraph is not quoted.
+                output.append("</span><br />\n")
+                in_fold = False
+                in_quoted = False
+            elif in_fold and line.endswith('</p>'):
+                # End the foldable section.
+                in_fold = False
+                in_quoted = False
+                line = end_fold_markup % before_break(line)
             elif in_quoted and re_quoted.match(line) is None:
                 # End fold early because paragraph contains mixed quoted 
                 # and reply text.
@@ -1462,7 +1474,7 @@ class FormattersAPI:
             elif in_false_paragraph and line.startswith('<p>'):
                 # Remove the paragraph to join with the previous paragraph.
                 in_false_paragraph = False
-                line = line[3:]
+                line = after_paragraph(line)
             else:
                 # The end of this line is not extraordinary.
                 pass

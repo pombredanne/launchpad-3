@@ -148,53 +148,6 @@ wrapped in markup to hide them:
     ...         'normally--no markup to hide it from view.\n'
     ...         'Raise your hand if you can read this.\n'
     ...         '\n')
-    >>> quoted_text = ('Somebody said sometime ago:\n'
-    ...                '> 1. Remove the letters  c, j, q, x, w\n'
-    ...                '>    from the English Language.\n'
-    ...                '> 2. Remove the penny from US currency.\n'
-    ...                '\n')
-    >>> bar_quoted_text = ('Someone said sometime ago:\n'
-    ...                    '| Quote passages are folded.\n'
-    ...                    '\n')
-    >>> mixed_quoted_text = ('Mister X wrote:\n'
-    ...                      '> This is a quoted line\n'
-    ...                      'This is a reply to the line above.\n'
-    ...                      'This is a continuation line.'
-    ...                      '\n')
-    >>> weird_quoted_text = ('Ms. Y wrote:\n'
-    ...                      '>> This is a double quoted line\n'
-    ...                      '>> > This is a triple quoted line.\n'
-    ...                      '\n')
-    >>> dpkg = ('dpkg -l libdvdread3\n'
-    ...         'Desired=Unknown/Install/Remove/Purge/Hold\n'
-    ...         '| Status=Not/Installed/Config-files/Unpacked/Failed-co\n'
-    ...         '|/ Err?=(none)/Hold/Reinst-required/X=both-problems\n'
-    ...         '||/ Name Version Description\n'
-    ...         '+++-==============-==============-====================\n'
-    ...         'ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs\n'
-    ...         '\n')
-    >>> bad_dpkg = ('When dpkg output is in text, possibly tampered with,\n'
-    ...             "we must take care to identify '|' quoted passages.\n"
-    ...             '$ Desired=Unknown/Install/Remove/Purge/Hold\n'
-    ...             '|\n'
-    ...             ' Status=Not/Installed/Config-files/Unpacked/Failed-co\n'
-    ...             '|/ Err?=(none)/Hold/Reinst-required/X=both-problems\n'
-    ...             '||/ Name Version Description\n'
-    ...             '+++-==============-==============-==================\n'
-    ...             'ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs\n'
-    ...             '\n')
-    >>> quoted_text_all = ('> continuing from a previous thought.\n'
-    ...                    '> 3. Get new handwriting.\n'
-    ...                    '> 4. Add Year Zero to the calendar.\n'
-    ...                    '\n')
-    >>> python = ('>>> tz = pytz.timezone("Asia/Calcutta")\n'
-    ...           '>>> mydate = datetime.datetime(2007, 2, 18, 15, 35)\n'
-    ...           '>>> print tz.localize(mydate)\n'
-    ...           '2007-02-18 15:35:00+05:30\n'
-    ...           '\n')
-    >>> not_python = ('> This line really is a quoted passage.\n'
-    ...               '>>> This does not invoke an exception rule.\n'
-    ...               '\n')
     >>> signature = ('-- \n'
     ...              '__C U R T I S  C.  H O V E Y_______\n'
     ...              'sinzui.is@example.org\n'
@@ -277,6 +230,15 @@ example of the main paragraph and the quoted paragraph, only the
 lines that start with the quote identifier ('> ' in this case) are
 wrapped with the foldable-quoted span.
 
+    >>> quoted_text = ('Somebody said sometime ago:\n'
+    ...                '> 1. Remove the letters  c, j, q, x, w\n'
+    ...                '>    from the English Language.\n'
+    ...                '> 2. Remove the penny from US currency.\n'
+    ...                '\n')
+    >>> quoted_text_all = ('> continuing from a previous thought.\n'
+    ...                    '> 3. Get new handwriting.\n'
+    ...                    '> 4. Add Year Zero to the calendar.\n'
+    ...                    '\n')
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo='\n'.join([text, quoted_text, quoted_text_all]))
     <p>Top quoting is simply bad netiquette.<br />
@@ -315,6 +277,11 @@ The reverse order works too:
 
 Paragraphs that mix quoted and reply text fold only the quoted lines.
 
+    >>> mixed_quoted_text = ('Mister X wrote:\n'
+    ...                      '> This is a quoted line\n'
+    ...                      'This is a reply to the line above.\n'
+    ...                      'This is a continuation line.'
+    ...                      '\n')
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo='\n'.join([mixed_quoted_text, text]))
     <p>Mister X wrote:<br />
@@ -328,10 +295,66 @@ Paragraphs that mix quoted and reply text fold only the quoted lines.
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
 
-Quoting style vary between email clients, and how the user starts the
+There is an exception rule for ending the fold when the last line
+of the paragraph follows a quoted passage. This rule supersedes the
+end of paragraph rule for quoted text.
+
+    >>> quoted_remark_text = ('Attribution line\n'
+    ...                       '> quoted_line\n'
+    ...                       'Remark line.\n'
+    ...                       '\n')
+    >>> print test_tales('foo/fmt:email-to-html', foo=quoted_remark_text)
+    <p>Attribution line<br />
+    <span class="foldable-quoted">
+    &gt; quoted_line<br />
+    </span><br />
+    Remark line.</p>
+
+Paragraphs with nested quoting fold all the quoted lines. There
+is no distinction between the nested levels of quoting.
+
+    >>> nested_quoting = ('>>>> four\n'
+    ...                   '>>> three\n'
+    ...                   '>> two\n'
+    ...                   '> one\n')
+    >>> print test_tales('foo/fmt:email-to-html', foo=nested_quoting)
+    <p><span class="foldable-quoted">&gt;&gt;&gt;&gt; four<br />
+    &gt;&gt;&gt; three<br />
+    &gt;&gt; two<br />
+    &gt; one
+    </span></p>
+
+The output from the Python interpreter is not quoted text. Passages
+of text that start with '>>> ' are exempted from the 'foldable-quoted'
+rules. Note that when '>>> ' occurs inside an existing quoted passage
+it will be folded because they are a continuation of a quote (see
+the preceding nested quoting test).
+
+    >>> python = ('>>> tz = pytz.timezone("Asia/Calcutta")\n'
+    ...           '>>> mydate = datetime.datetime(2007, 2, 18, 15, 35)\n'
+    ...           '>>> print tz.localize(mydate)\n'
+    ...           '2007-02-18 15:35:00+05:30\n'
+    ...           '\n')
+    >>> not_python = ('> This line really is a quoted passage.\n'
+    ...               '>>> This does not invoke an exception rule.\n'
+    ...               '\n')
+    >>> print test_tales('foo/fmt:email-to-html',
+    ...                  foo='\n'.join([python, not_python]))
+    <p>&gt;&gt;&gt; tz = pytz.timezone(<wbr></wbr>"Asia/Calcutta"...
+    &gt;&gt;&gt; mydate = datetime.<wbr></wbr>datetime(<wbr></wbr>2007, 2, ...
+    2007-02-18 15:35:00+05:30</p>
+    <p><span class="foldable-quoted">&gt; This line really is a quoted ...
+    &gt;&gt;&gt; This does not invoke an exception rule.
+    </span></p>
+
+Quoting styles vary between email clients, and how the user starts the
 quote. Starting runs like '>> ' are as valid as '> ', so they are
 wrapped in a foldable-quoted span.
 
+    >>> weird_quoted_text = ('Ms. Y wrote:\n'
+    ...                      '>> This is a double quoted line\n'
+    ...                      '>> > This is a triple quoted line.\n'
+    ...                      '\n')
     >>> print test_tales('foo/fmt:email-to-html', foo=weird_quoted_text)
     <p>Ms. Y wrote:<br />
     <span class="foldable-quoted">
@@ -345,6 +368,9 @@ fold lines that start with a '|'. We sometimes receive bad dpkg output
 where the lines are broken, and we must take care to identify that
 output and not fold it.
 
+    >>> bar_quoted_text = ('Someone said sometime ago:\n'
+    ...                    '| Quote passages are folded.\n'
+    ...                    '\n')
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo='\n'.join([text, bar_quoted_text]))
     <p>Top quoting is simply bad netiquette.<br />
@@ -356,6 +382,14 @@ output and not fold it.
     | Quote passages are folded.
     </span></p>
 
+    >>> dpkg = ('dpkg -l libdvdread3\n'
+    ...         'Desired=Unknown/Install/Remove/Purge/Hold\n'
+    ...         '| Status=Not/Installed/Config-files/Unpacked/Failed-co\n'
+    ...         '|/ Err?=(none)/Hold/Reinst-required/X=both-problems\n'
+    ...         '||/ Name Version Description\n'
+    ...         '+++-==============-==============-====================\n'
+    ...         'ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs\n'
+    ...         '\n')
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo='\n'.join([text, dpkg]))
     <p>Top quoting is simply bad netiquette.<br />
@@ -370,6 +404,16 @@ output and not fold it.
     +++-===<wbr></wbr>=======<wbr></wbr>====-==<wbr></wbr>=======...
     ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs</p>
 
+    >>> bad_dpkg = ('When dpkg output is in text, possibly tampered with,\n'
+    ...             "we must take care to identify '|' quoted passages.\n"
+    ...             '$ Desired=Unknown/Install/Remove/Purge/Hold\n'
+    ...             '|\n'
+    ...             ' Status=Not/Installed/Config-files/Unpacked/Failed-co\n'
+    ...             '|/ Err?=(none)/Hold/Reinst-required/X=both-problems\n'
+    ...             '||/ Name Version Description\n'
+    ...             '+++-==============-==============-==================\n'
+    ...             'ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs\n'
+    ...             '\n')
     >>> print test_tales('foo/fmt:email-to-html',
     ...                  foo='\n'.join([bad_dpkg]))
     <p>When dpkg output is in text, possibly tampered with,<br />
@@ -382,19 +426,6 @@ output and not fold it.
     +++-===<wbr></wbr>=======<wbr></wbr>====-==<wbr></wbr>=======...
     ii libdvdread3 0.9.7-2ubuntu1 library for reading DVDs</p>
 
-The output from the Python interpreter is not quoted text. Passages
-of text that start with '>>> ' are exempted from the 'foldable-quoted'
-rules. Note that when '>>> ' occurs inside an existing quoted passage
-it will be folded because they are a continuation of a quote.
-
-    >>> print test_tales('foo/fmt:email-to-html',
-    ...                  foo='\n'.join([python, not_python]))
-    <p>&gt;&gt;&gt; tz = pytz.timezone(<wbr></wbr>"Asia/Calcutta"...
-    &gt;&gt;&gt; mydate = datetime.<wbr></wbr>datetime(<wbr></wbr>2007, 2, ...
-    2007-02-18 15:35:00+05:30</p>
-    <p><span class="foldable-quoted">&gt; This line really is a quoted ...
-    &gt;&gt;&gt; This does not invoke an exception rule.
-    </span></p>
 
 The formatter is indifferent to the number and kinds of paragraphs
 it must markup. We can format the three examples at the same time.
