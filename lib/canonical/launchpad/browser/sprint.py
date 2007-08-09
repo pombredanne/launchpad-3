@@ -110,7 +110,7 @@ class SprintOverviewMenu(ApplicationMenu):
         text = 'Change branding'
         summary = 'Modify the imagery used to represent this meeting'
         return Link('+branding', text, summary, icon='edit')
-    
+
 
 class SprintSpecificationsMenu(ApplicationMenu):
 
@@ -140,7 +140,7 @@ class SprintSpecificationsMenu(ApplicationMenu):
         return Link('+roadmap', text, summary, icon='info')
 
     def addspec(self):
-        text = 'Register blueprint'
+        text = 'Register a blueprint'
         summary = 'Register a new blueprint for this meeting'
         return Link('+addspec', text, summary, icon='info')
 

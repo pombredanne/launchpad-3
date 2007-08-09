@@ -483,12 +483,12 @@ class LaunchpadCursor(ReconnectingCursor):
         try:
             starttime = time()
             if os.environ.get("LP_DEBUG_SQL_EXTRA"):
-                sys.stderr.write("-" * 70 + "\n")
                 traceback.print_stack()
                 sys.stderr.write("." * 70 + "\n")
             if (os.environ.get("LP_DEBUG_SQL_EXTRA") or 
                 os.environ.get("LP_DEBUG_SQL")):
                 sys.stderr.write(statement + "\n")
+                sys.stderr.write("-" * 70 + "\n")
             try:
                 return super(LaunchpadCursor, self).execute(
                         statement, *args, **kwargs)

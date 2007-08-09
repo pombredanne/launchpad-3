@@ -119,8 +119,8 @@ def get_feedback_messages(browser):
     message_classes = ['message', 'informational message', 'error message']
     soup = BeautifulSoup(
         browser.contents,
-        parseOnlyThese=SoupStrainer('div', {'class': message_classes}))
-    return [div_tag.string for div_tag in soup]
+        parseOnlyThese=SoupStrainer(['div', 'p'], {'class': message_classes}))
+    return [tag.string for tag in soup]
 
 
 IGNORED_ELEMENTS = [Comment, Declaration, ProcessingInstruction]

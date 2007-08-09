@@ -605,6 +605,17 @@ class Bug(SQLBase):
             # production is never the same, it can be in the test suite.
             orderBy=["Message.datecreated", "Message.id",
                      "MessageChunk.sequence"])
+        chunks = list(chunks)
+
+        # Since we can't prejoin, cache all people at once so we don't
+        # have to do it while rendering, which is a big deal for bugs
+        # with a million comments.
+        owner_ids = set()
+        for chunk in chunks:
+            if chunk.message.ownerID:
+                owner_ids.add(str(chunk.message.ownerID))
+        list(Person.select("ID in (%s)" % ",".join(owner_ids)))
+
         return chunks
 
     def getNullBugTask(self, product=None, productseries=None,
