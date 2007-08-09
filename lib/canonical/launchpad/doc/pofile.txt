@@ -2,6 +2,8 @@
 
 Get evolution template for Ubuntu Hoary
 
+>>> import datetime
+>>> import pytz
 >>> from zope.component import getUtility
 >>> from zope.interface.verify import verifyObject
 >>> from canonical.launchpad.interfaces import (
@@ -16,6 +18,7 @@ Get evolution template for Ubuntu Hoary
 >>> potemplatesubset = potemplateset.getSubset(
 ...     distroseries=series, sourcepackagename=sourcepackagename)
 >>> potemplate = potemplatesubset['evolution-2.2']
+>>> UTC = pytz.timezone('UTC')
 
 Get Xhosa translation
 
@@ -62,91 +65,61 @@ Get the set of POTMsgSets that are untranslated.
 >>> len(potmsgsets)
 13
 
-Test that the header is updated.
+== updateHeader() ==
 
->>> from canonical.launchpad.translationformat import POHeader
+This method is used to update the header of the POFile to a newer version.
 
-This is the comment.
+This is the new header we are going to apply.
 
->>> comment = ' This is the top comment.'
+    >>> new_header_string = '''Project-Id-Version: es
+    ... POT-Creation-Date: 2004-08-18 11:10+0200
+    ... PO-Revision-Date: 2005-08-18 13:22+0000
+    ... Last-Translator: Carlos Perell\xc3\xb3 Mar\xc3\xadn <carlos@canonical.com>
+    ... Language-Team: Spanish <traductores@es.gnome.org>
+    ... MIME-Version: 1.0
+    ... Content-Type: text/plain; charset=UTF-8
+    ... Content-Transfer-Encoding: 8bit
+    ... Report-Msgid-Bugs-To: serrador@hispalinux.es'''
 
-This is the new header.
+We can get an ITranslationHeader from the file format importer.
 
->>> msgstr = '''Project-Id-Version: es
-... POT-Creation-Date: 2004-08-18 11:10+0200
-... PO-Revision-Date: 2005-08-18 13:22+0000
-... Last-Translator: Carlos Perelló Marín <carlos@canonical.com>
-... Language-Team: Spanish <traductores@es.gnome.org>
-... MIME-Version: 1.0
-... Content-Type: text/plain; charset=UTF-8
-... Content-Transfer-Encoding: 8bit
-... Report-Msgid-Bugs-To: serrador@hispalinux.es
-... Plural-Forms: nplurals=2; plural=n != 1;'''
+    >>> from canonical.launchpad.interfaces import ITranslationImporter
+    >>> translation_importer = getUtility(ITranslationImporter)
+    >>> format_importer = translation_importer.getTranslationFormatImporter(
+    ...     pofile.potemplate.source_file_format)
+    >>> new_header = format_importer.getHeaderFromString(new_header_string)
+    >>> new_header.comment = ' This is the top comment.'
 
-Now, get a POHeader object with that information.
+Before doing any change, we can see what's right now in the database:
 
->>> new_header = POHeader(comment=comment, msgstr=msgstr)
->>> new_header.updateDict()
+    >>> pofile.topcomment.splitlines()[:2]
+    [u' traducci\xf3n de es.po al Spanish',
+     u' translation of es.po to Spanish']
 
-We check that the plural forms expression is correctly parsed:
+    >>> print pofile.header
+    Project-Id-Version: es
+    POT-Creation-Date: 2004-08-17 11:10+0200
+    PO-Revision-Date: 2005-04-07 13:22+0000
+    ...
+    Plural-Forms: nplurals=2; plural=(n != 1);
 
->>> new_header.getPluralFormExpression() == 'n != 1'
-True
+Let's update the header with the new one.
 
-To be sure the new header is being applied, here we have the old values:
+    >>> pofile.updateHeader(new_header)
 
->>> print pofile.topcomment.encode('utf-8')
-traducción de es.po al Spanish
-translation of es.po to Spanish
-...
+The new comment is now applied.
 
->>> print pofile.header.encode('utf-8')
-Project-Id-Version: es
-POT-Creation-Date: 2004-08-17 11:10+0200
-PO-Revision-Date: 2005-04-07 13:22+0000
-...
-Plural-Forms: nplurals=2; plural=(n != 1);
+    >>> pofile.topcomment
+    u' This is the top comment.'
 
->>> pofile.fuzzyheader
-True
+And the new header contains the new string.
 
-Now, is time to change the old header with the new one.
-
->>> pofile.updateHeader(new_header)
-
-And the new values:
-
->>> pofile.topcomment
-u' This is the top comment.'
-
->>> print pofile.header.encode('utf-8')
-Project-Id-Version: es
-POT-Creation-Date: 2004-08-18 11:10+0200
-PO-Revision-Date: 2005-08-18 13:22+0000
-...
-Plural-Forms: nplurals=2; plural=n != 1;
-
->>> pofile.fuzzyheader
-False
-
-Now I'm going to test creating a header with invalid plural-forms and
-trying to parse the number and type of plural forms it has.
-
->>> msgstr = '''Project-Id-Version: es
-... POT-Creation-Date: 2004-08-18 11:10+0200
-... PO-Revision-Date: 2005-08-18 13:22+0000
-... Last-Translator: Carlos Perelló Marín <carlos@canonical.com>
-... Language-Team: Spanish <traductores@es.gnome.org>
-... MIME-Version: 1.0
-... Content-Type: text/plain; charset=UTF-8
-... Content-Transfer-Encoding: 8bit
-... Report-Msgid-Bugs-To: serrador@hispalinux.es
-... Plural-Forms: n != 1'''
->>> new_header = POHeader(msgstr=msgstr)
->>> new_header.updateDict()
-WARNING:root:The plural form header has an unknown error. Using the default value...
->>> new_header.getPluralFormExpression() == None
-True
+    >>> print pofile.header
+    Project-Id-Version: es
+    Report-Msgid-Bugs-To: serrador@hispalinux.es
+    POT-Creation-Date: 2004-08-18 11:10+0200
+    PO-Revision-Date: 2005-08-18 13:22+0000
+    ...
 
 
 == isTranslationRevisionDateOlder ==
@@ -157,29 +130,26 @@ method, for instance, to know if a new imported PO file should be ignored
 because we already have a newer one.
 
 This test is to be sure that the date comparation is working and that two
-headers with the same date will always be set as newer because lazy
-translators forget to update that field from time to time and sometimes we
+headers with the same date will always be set as newer, because lazy
+translators forget to update that field from time to time and, sometimes, we
 were losing translations because we were ignoring those imports too.
 
-    >>> print pofile.header.encode('utf-8')
+    >>> print pofile.header
     Project-Id-Version: es
     ...
     PO-Revision-Date: 2005-08-18 13:22+0000
     ...
+    >>> header = pofile.getHeader()
 
-First, we check with the same date.
+First, with the same date, we don't consider it older.
 
-    >>> header = POHeader(msgstr=u'PO-Revision-Date: 2005-08-18 13:22+0000')
-    >>> header.updateDict()
-    WARNING:root:PO file header entry has no content-type field
     >>> pofile.isTranslationRevisionDateOlder(header)
     False
 
-Now, we check with a date that is in the past.
+Now, we can see how we detect that it's older with an older date.
 
-    >>> header = POHeader(msgstr=u'PO-Revision-Date: 2005-08-18 13:21+0000')
-    >>> header.updateDict()
-    WARNING:root:PO file header entry has no content-type field
+    >>> header.translation_revision_date = datetime.datetime(
+    ...     2005, 8, 18, 13, 21, tzinfo=UTC)
     >>> pofile.isTranslationRevisionDateOlder(header)
     True
 
@@ -431,13 +401,19 @@ Now, let's export it with its default encoding.
 
 The header is not changed.
 
-    >>> stream_list[23]
-    '"Content-Type: text/plain; charset=EUC-JP\\n"'
+    >>> for i in range(len(stream_list)):
+    ...     if stream_list[i].startswith('"Content-Type:'):
+    ...         print stream_list[i]
+    "Content-Type: text/plain; charset=EUC-JP\n"
 
 And checking one of the translations, we can see that it's using the EUC-JP
 encoding.
 
-    >>> stream_list[30]
+    >>> for i in range(len(stream_list)):
+    ...     if (stream_list[i].startswith('msgstr') and
+    ...         'prefs.js' in stream_list[i]):
+    ...         break
+    >>> stream_list[i]
     'msgstr "\xc0\xdf\xc4\xea\xa4\xce\xa5\xab\xa5\xb9\xa5\xbf\xa5\xde\xa5\xa4\xa5\xba\xa4\xcb /etc/mozilla/prefs.js \xa4\xac\xcd\xf8\xcd\xd1\xa4\xc7\xa4\xad\xa4\xde\xa4\xb9\xa1\xa3"'
 
 
@@ -448,12 +424,18 @@ Now, let's force the UTF-8 encoding.
 
 We can see that the header has been updated to have UTF-8
 
-    >>> stream_list[23]
-    '"Content-Type: text/plain; charset=UTF-8\\n"'
+    >>> for i in range(len(stream_list)):
+    ...     if stream_list[i].startswith('"Content-Type:'):
+    ...         print stream_list[i]
+    "Content-Type: text/plain; charset=UTF-8\n"
 
 And the encoding used is also using UTF-8 chars.
 
-    >>> stream_list[30]
+    >>> for i in range(len(stream_list)):
+    ...     if (stream_list[i].startswith('msgstr') and
+    ...         'prefs.js' in stream_list[i]):
+    ...         break
+    >>> stream_list[i]
     'msgstr "\xe8\xa8\xad\xe5\xae\x9a\xe3\x81\xae\xe3\x82\xab\xe3\x82\xb9\xe3\x82\xbf\xe3\x83\x9e\xe3\x82\xa4\xe3\x82\xba\xe3\x81\xab /etc/mozilla/prefs.js \xe3\x81\x8c\xe5\x88\xa9\xe7\x94\xa8\xe3\x81\xa7\xe3\x81\x8d\xe3\x81\xbe\xe3\x81\x99\xe3\x80\x82"'
 
 == getPOTMsgSetUntranslated ==
@@ -592,9 +574,6 @@ invalidates the cache.
   >>> msgset = pofile.getPOMsgSet(msgid)
   >>> print msgset.active_texts
   [None]
-  >>> import datetime
-  >>> import pytz
-  >>> UTC = pytz.timezone('UTC')
 
 If we update it with the same untranslated message, the cache is not
 invalidated.
@@ -815,9 +794,6 @@ Lets get a single untranslated POTMsgSet.
 
 Now, lets provide a translation for it.
 
-  >>> import datetime
-  >>> import pytz
-  >>> UTC = pytz.timezone('UTC')
   >>> pomsgset.updateTranslationSet(
   ...     pofile_changed.owner, {0: u'sample translation'}, fuzzy=False,
   ...     published=False, lock_timestamp=datetime.datetime.now(UTC))

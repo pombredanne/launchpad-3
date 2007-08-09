@@ -38,6 +38,34 @@ It must implement ITranslationHeader.
     >>> verifyObject(ITranslationHeader, PoHeader(content))
     True
 
+Creating a new PoHeader with broken plural forms still gives us a valid
+PoHeader.
+
+    >>> new_header_string = '''Project-Id-Version: es
+    ... POT-Creation-Date: 2004-08-18 11:10+0200
+    ... PO-Revision-Date: 2005-08-18 13:22+0000
+    ... Last-Translator: Carlos Perell\xc3\xb3 Mar\xc3\xadn <carlos@canonical.com>
+    ... Language-Team: Spanish <traductores@es.gnome.org>
+    ... MIME-Version: 1.0
+    ... Content-Type: text/plain; charset=UTF-8
+    ... Content-Transfer-Encoding: 8bit
+    ... Report-Msgid-Bugs-To: serrador@hispalinux.es
+    ... Plural-Forms: n != 1'''
+    >>> new_header = PoHeader(new_header_string)
+
+Plural forms are now the default ones. No plural forms.
+
+    >>> print new_header.plural_form_expression
+    0
+    >>> new_header.number_plural_forms
+    1
+
+And the translation_revision_date is exactly the one in the header string.
+
+    >>> print new_header.translation_revision_date
+    2005-08-18 13:22:00+00:00
+
+
 === translation_revision_date ===
 
 This attribute gives you a datetime object representing the

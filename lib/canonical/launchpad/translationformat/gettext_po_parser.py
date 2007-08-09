@@ -185,7 +185,7 @@ class PoHeader:
                             POSyntaxWarning(
                                 msg=("The plural form header has an unknown"
                                     " error. Using the default value...")))
-                        self.number_plural_forms = 2
+                        self.number_plural_forms = 1
                     self.plural_form_expression = parts.get('plural', '0')
             elif key == 'pot-creation-date':
                 try:
