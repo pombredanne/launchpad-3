@@ -174,6 +174,7 @@
 
   <tal:landing-targets condition="view/landing_targets">
     <h2>Landing Targets</h2>
+    <div id="landing-targets">
     <div tal:repeat="mergeproposal view/landing_targets">
       <tal:target replace="structure mergeproposal/target_branch/fmt:link" />
       <tal:show-registrant condition="mergeproposal/show_registrant">
@@ -204,10 +205,12 @@
         </div>
       </div>
     </div>
+    </div>
   </tal:landing-targets>
 
   <tal:dependent-branches condition="context/dependent_branches">
     <h2>Dependent Branches</h2>
+    <div id="dependent-branches">
     <div tal:repeat="mergeproposal context/dependent_branches">
       <tal:source replace="structure mergeproposal/source_branch/fmt:link" />
       <a tal:condition="mergeproposal/required:launchpad.Edit"
@@ -221,12 +224,15 @@
         </div>
       </div>
     </div>
+    </div>
   </tal:dependent-branches>
 
   <tal:landing-candidates condition="view/latest_landing_candidates">
     <h2>Landing Candidates</h2>
+    <div id="landing-candicates">
     <div tal:repeat="mergeproposal view/latest_landing_candidates">
       <metal:landing-candidate use-macro="context/@@+macros/landing-candidate"/>
+    </div>
     </div>
   </tal:landing-candidates>
 
