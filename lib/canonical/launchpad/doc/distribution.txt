@@ -478,10 +478,18 @@ for the distribution in question:
 
 == Distribution Archives ==
 
+`IDistribution.all_distro_archives` returns all archives associated with
+the distribution.  This list does not, therefore, include PPAs.
+
+  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
+  >>> for archive in ubuntutest.all_distro_archives:
+  ...     print archive.purpose.title
+  Primary Archive.
+  Commercial Archive.
+
 `IDistribution.getArchiveByComponent` retrieves an IArchive given a component
 name.  If the component is unknown, None is returned.
 
-  >>> ubuntutest = getUtility(IDistributionSet)['ubuntutest']
   >>> commercial_archive = ubuntutest.getArchiveByComponent('commercial')
   >>> commercial_archive.description
   u'Commercial archive'
