@@ -97,6 +97,8 @@ class BranchSetAPI(LaunchpadXMLRPCView):
                 name=branch_name, creator=owner, owner=owner, product=product,
                 url=branch_url, title=branch_title,
                 summary=branch_description, author=author)
+            if branch_type == BranchType.MIRRORED:
+                branch.requestMirror()
         except BranchCreationForbidden:
             return faults.BranchCreationForbidden(product.displayname)
 
