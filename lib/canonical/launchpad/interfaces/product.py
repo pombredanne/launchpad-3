@@ -17,9 +17,10 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Description, ProductBugTracker, Summary, Title, URIField)
 from canonical.launchpad.interfaces import (
-    IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
-    ISpecificationTarget, IHasSecurityContact, IKarmaContext,
-    PillarNameField, IHasLogo, IHasMugshot, IHasIcon, IHasBranchVisibilityPolicy)
+    IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy, IHasDrivers,
+    IHasIcon, IHasLogo, IHasMilestones, IHasMugshot, IHasOwner,
+    IHasSecurityContact, IKarmaContext, ISpecificationTarget,
+    PillarNameField)
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
@@ -36,10 +37,11 @@ class ProductNameField(PillarNameField):
         return IProduct
 
 
-class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-               ISpecificationTarget, IHasSecurityContact, IKarmaContext,
-               IHasSprints, IHasMentoringOffers, IHasLogo, IHasMugshot,
-               IHasIcon, IHasBranchVisibilityPolicy, IHasTranslationGroup):
+class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
+               IHasDrivers, IHasIcon, IHasLogo, IHasMentoringOffers,
+               IHasMilestones, IHasMugshot, IHasOwner, IHasSecurityContact,
+               IHasSprints, IHasTranslationGroup, IKarmaContext,
+               ISpecificationTarget):
     """A Product.
 
     The Launchpad Registry describes the open source world as Projects and
@@ -267,13 +269,6 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     branches = Attribute(_("""An iterator over the Bazaar branches that are
     related to this product."""))
 
-    milestones = Attribute(_(
-        "The visible milestones associated with this product, "
-        "ordered by date expected."))
-    all_milestones = Attribute(_(
-        "All milestones associated with this product, ordered by "
-        "date expected."))
-
     bounties = Attribute(_("The bounties that are related to this product."))
 
     translatable_packages = Attribute(
@@ -302,11 +297,6 @@ class IProduct(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
 
     def getPackage(distroseries):
         """Return a package in that distroseries for this product."""
-
-    def getMilestone(name):
-        """Return a milestone with the given name for this product, or
-        None.
-        """
 
     def newSeries(owner, name, summary, branch=None):
         """Creates a new ProductSeries for this product."""
