@@ -48,6 +48,7 @@ __all__ = [
     'SpecificationDependenciesVocabulary',
     'SpecificationDepCandidatesVocabulary',
     'SprintVocabulary',
+    'TranslatableLanguageVocabulary',
     'TranslationGroupVocabulary',
     'UserTeamsParticipationVocabulary',
     'ValidPersonOrTeamVocabulary',
@@ -89,7 +90,7 @@ from canonical.launchpad.interfaces import (
 
 
 class BasePersonVocabulary:
-    """This is a base class to be used by all different Person Vocabularies."""
+    """This is a base class used by all different Person Vocabularies."""
 
     _table = Person
 
@@ -243,7 +244,7 @@ class FAQVocabulary:
     def __contains__(self, value):
         """See `IVocabulary`."""
         if not IFAQ.providedBy(value):
-           return False
+            return False
         return self.context.getFAQ(value.id) is not None
 
     def getTerm(self, value):
@@ -274,6 +275,7 @@ class FAQVocabulary:
 
 
 class LanguageVocabulary(SQLObjectVocabularyBase):
+    """All the translatable languages known by Launchpad."""
 
     _table = Language
     _orderBy = 'englishname'
@@ -292,6 +294,34 @@ class LanguageVocabulary(SQLObjectVocabularyBase):
         except SQLObjectNotFound:
             raise LookupError(token)
         return self.getTerm(found_language)
+
+
+class TranslatableLanguageVocabulary(LanguageVocabulary):
+    """All the translatable languages known by Launchpad.
+    
+    English is not a translatable language. It is excluded from the terms.
+    """
+
+    def __contains__(self, language):
+        """See `IVocabulary`."""
+        if language.code == 'en':
+            return False
+        return super(
+            TranslatableLanguageVocabulary, self).__contains__(language)
+
+    def __iter__(self):
+        """See `IVocabulary`."""
+        languages = self._table.select(
+            "Language.code != 'en'", orderBy=self._orderBy)
+        for language in languages:
+            yield self.toTerm(language)
+
+    def getTermByToken(self, token):
+        """See `IVocabulary`."""
+        if token == 'en':
+            raise LookupError(token)
+        return super(
+            TranslatableLanguageVocabulary, self).getTermByToken(token)
 
 
 class KarmaCategoryVocabulary(NamedSQLObjectVocabulary):
@@ -527,7 +557,8 @@ class ValidPersonOrTeamVocabulary(
 
         if not text:
             query = 'Person.id = ValidPersonOrTeamCache.id' + extra_clause
-            return Person.select(query, clauseTables=['ValidPersonOrTeamCache'])
+            return Person.select(
+                query, clauseTables=['ValidPersonOrTeamCache'])
 
         name_match_query = """
             Person.id = ValidPersonOrTeamCache.id
@@ -696,7 +727,7 @@ def person_team_participations_vocabulary_factory(context):
     participate in.
     """
     assert context is not None
-    person= IPerson(context)
+    person = IPerson(context)
     return SimpleVocabulary([
         SimpleTerm(team, team.name, title=team.displayname)
         for team in person.teams_participated_in])
@@ -984,7 +1015,8 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
             target = distribution
 
         if target is not None:
-            for spec in sorted(target.specifications(), key=lambda a: a.title):
+            for spec in sorted(
+                target.specifications(), key=lambda a: a.title):
                 # we will not show the current specification in the
                 # launchbag
                 if spec == launchbag.specification:
@@ -1169,7 +1201,8 @@ class DistributionUsingMaloneVocabulary:
         return SimpleTerm(obj, obj.name, obj.displayname)
 
     def getTermByToken(self, token):
-        found_dist = Distribution.selectOneBy(name=token, official_malone=True)
+        found_dist = Distribution.selectOneBy(
+            name=token, official_malone=True)
         if found_dist is None:
             raise LookupError(token)
         return self.getTerm(found_dist)
@@ -1297,7 +1330,8 @@ class BugNominatableSeriesVocabularyBase(NamedSQLObjectVocabulary):
         raise NotImplementedError
 
 
-class BugNominatableProductSeriesVocabulary(BugNominatableSeriesVocabularyBase):
+class BugNominatableProductSeriesVocabulary(
+    BugNominatableSeriesVocabularyBase):
     """The product series for which a bug can be nominated."""
 
     _table = ProductSeries
@@ -1315,7 +1349,8 @@ class BugNominatableProductSeriesVocabulary(BugNominatableSeriesVocabularyBase):
         return self.product.getSeries(name)
 
 
-class BugNominatableDistroSeriesVocabulary(BugNominatableSeriesVocabularyBase):
+class BugNominatableDistroSeriesVocabulary(
+    BugNominatableSeriesVocabularyBase):
     """The distribution series for which a bug can be nominated."""
 
     _table = DistroSeries
