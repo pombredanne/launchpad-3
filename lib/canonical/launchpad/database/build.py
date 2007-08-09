@@ -331,10 +331,6 @@ class Build(SQLBase):
                 fromaddress, toaddress, subject, message,
                 headers=extra_headers)
 
-    def overrideArchive(self, archive):
-        """ See `IBuild`."""
-        self.archive = archive
-
 
 class BuildSet:
     implements(IBuildSet)
