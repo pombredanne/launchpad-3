@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import (
     IArchiveSet, IPersonSet)
 from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, PackagePublishingPocket)
+    ArchivePurpose, PackagePublishingStatus)
 
 class TestPublishDistro(TestNativePublishingBase):
     """Test the publish-distro.py script works properly."""
@@ -94,9 +94,16 @@ class TestPublishDistro(TestNativePublishingBase):
             sourcename='baz', filecontent='baz', archive=cprov.archive)
 
         name16 = getUtility(IPersonSet).getByName('name16')
-        getUtility(IArchiveSet).new(owner=name16)
+        getUtility(IArchiveSet).new(purpose=ArchivePurpose.PPA, owner=name16)
         pub_source3 = self.getPubSource(
             sourcename='bar', filecontent='bar', archive=name16.archive)
+
+        # Override PPAs distributions
+        from zope.security.proxy import removeSecurityProxy
+        naked_archive = removeSecurityProxy(cprov.archive)
+        naked_archive.distribution = self.ubuntutest
+        naked_archive = removeSecurityProxy(name16.archive)
+        naked_archive.distribution = self.ubuntutest
 
         self.layer.txn.commit()
 

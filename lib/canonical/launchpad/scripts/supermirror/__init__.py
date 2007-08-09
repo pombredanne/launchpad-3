@@ -1,11 +1,14 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
 
-import urllib
+import datetime
 
-from canonical.config import config
-from canonical.launchpad.scripts.supermirror.jobmanager import (
-    JobManager, LockError)
+import pytz
+
+from canonical.launchpad.scripts.supermirror.jobmanager import LockError
 from canonical.authserver.client.branchstatus import BranchStatusClient
+
+
+UTC = pytz.timezone('UTC')
 
 
 def mirror(logger, managerClass):
@@ -20,8 +23,11 @@ def mirror(logger, managerClass):
         return 0
 
     try:
+        date_started = datetime.datetime.now(UTC)
         mymanager.addBranches(client)
         mymanager.run(logger)
+        date_completed = datetime.datetime.now(UTC)
+        mymanager.recordActivity(client, date_started, date_completed)
     finally:
         mymanager.unlock()
     return 0

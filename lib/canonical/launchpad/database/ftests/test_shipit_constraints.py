@@ -1,14 +1,21 @@
 # Copyright 2006 Canonical Ltd.  All rights reserved.
+"""Shipping constraint tests."""
 
 __metaclass__ = type
 
 import unittest
 import psycopg
 
-from canonical.lp.dbschema import ShippingRequestStatus
-from canonical.launchpad.ftests.harness import LaunchpadFunctionalTestCase
+from canonical.database.sqlbase import quote
+from canonical.launchpad.interfaces import ShippingRequestStatus
+from canonical.launchpad.ftests.harness import (
+    LaunchpadFunctionalTestCase, LaunchpadTestSetup)
+
 
 class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
+    # XXX sinzui 2007-07-12 bug=125569
+    # This test should subclass unittest.TestCase. Some reworking
+    # is required to migrate this test.
     def shipped(self, cur, id):
         cur.execute("""
             SELECT shipped IS NOT NULL FROM ShippingRequest WHERE id=%(id)s
@@ -53,7 +60,7 @@ class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
             """)
 
         # Create some denied orders
-        denied = ShippingRequestStatus.DENIED
+        denied = quote(ShippingRequestStatus.DENIED)
         for i in range(0, 3):
             disallowed_id = self.insert(cur)
             cur.execute("""
@@ -62,7 +69,7 @@ class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
                 """, vars())
 
         # Create some cancelled orders
-        cancelled = ShippingRequestStatus.CANCELLED
+        cancelled = quote(ShippingRequestStatus.CANCELLED)
         for i in range(0, 3):
             cancelled_id = self.insert(cur)
             cur.execute("""
@@ -80,7 +87,7 @@ class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
         # second should still fail.
         cur.execute("SAVEPOINT attempt2")
         req1_id = self.insert(cur)
-        approved = ShippingRequestStatus.APPROVED
+        approved = quote(ShippingRequestStatus.APPROVED)
         cur.execute("""
             UPDATE ShippingRequest SET status=%(approved)s, whoapproved=1
             WHERE id = %(req1_id)s
@@ -88,7 +95,15 @@ class ShipitConstraintsTestCase(LaunchpadFunctionalTestCase):
         self.failUnlessRaises(psycopg.Error, self.insert, cur)
         cur.execute("ROLLBACK TO SAVEPOINT attempt2")
 
+    def tearDown(self):
+        """Tear down this test and recycle the database."""
+        # XXX sinzui 2007-07-12 bug=125569
+        # Use the DatabaseLayer mechanism to tear this test down.
+        LaunchpadTestSetup().force_dirty_database()
+        LaunchpadFunctionalTestCase.tearDown(self)
+
 
 def test_suite():
+    """Create the test suite.."""
     return unittest.makeSuite(ShipitConstraintsTestCase)
 

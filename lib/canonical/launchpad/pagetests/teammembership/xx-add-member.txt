@@ -43,7 +43,7 @@ On the other hand, if the member is among the inactive/proposed members of
 the team, we'll simply change the membership's status and say that it was
 successfully added.
 
-    >>> from canonical.lp.dbschema import TeamMembershipStatus
+    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
     >>> cprov_landscape_membership.setStatus(
     ...     TeamMembershipStatus.DEACTIVATED, landscape_team.teamowner)
     >>> cprov_landscape_membership.syncUpdate()
@@ -155,6 +155,60 @@ Warty Security Team:
     >>> print extract_text(
     ...     find_tags_by_class(browser.contents, 'informational')[0])
     Declined the invitation to join Ubuntu Team
+
+== Corner cases ==
+
+Given that team can have more than one admin, it's possible that at the time
+one admin is browsing the invitation page, another admin might be doing the
+same. When an admin accepts or declines an invitation, the other admin can't
+take action on that invitation anymore.
+
+First invite ubuntu-team to be member of the name21 team.
+
+    >>> browser.open('http://launchpad.dev/~name21/+addmember')
+    >>> browser.getControl('New member:').value = 'ubuntu-team'
+    >>> browser.getControl('Add Member').click()
+
+    >>> for tag in find_tags_by_class(browser.contents,
+    ...                               'informational message'):
+    ...     print tag.renderContents()
+    Ubuntu Team (ubuntu-team) has been invited to join this team.
+
+Open the invitations page with one admin browser.
+
+    >>> browser.open('http://launchpad.dev/~ubuntu-team/+invitation/name21')
+
+Open the same page with another admin browser.
+
+    >>> second_browser = Browser()
+    >>> second_browser.handleErrors = False
+    >>> second_browser.addHeader(
+    ...     'Authorization', 'Basic foo.bar@canonical.com:test')
+    >>> second_browser.open(
+    ...     'http://launchpad.dev/~ubuntu-team/+invitation/name21')
+
+Accept the invitation in the first browser.
+
+    >>> browser.getControl('Accept').click()
+    >>> browser.url
+    'http://launchpad.dev/~ubuntu-team'
+
+    >>> for tag in find_tags_by_class(browser.contents,
+    ...                               'informational message'):
+    ...     print tag.renderContents()
+    This team is now a member of Hoary Gnome Team
+
+Accepting the invitation in the second browser, redirects to the team page
+and a message is displayed.
+
+    >>> second_browser.getControl('Accept').click()
+    >>> second_browser.url
+    'http://launchpad.dev/~ubuntu-team'
+
+    >>> for tag in find_tags_by_class(second_browser.contents,
+    ...                               'informational message'):
+    ...     print tag.renderContents()
+    This invitation has already been processed.
 
 == Evil workarounds ==
 

@@ -9,7 +9,7 @@ PO files.
 See IPOTemplateExporter and IDistroSeriesPOExporter.
 """
 
-# XXX
+# XXX Dafydd Harries 2005-04-07:
 # A note about tarballs, StringIO and unicode. SQLObject returns unicode
 # values for columns which are declared as StringCol. We have to be careful
 # not to pass unicode instances to the tarfile module, because when the
@@ -18,7 +18,6 @@ See IPOTemplateExporter and IDistroSeriesPOExporter.
 # buffers. This is why the tarball code is sprinkled with ".encode('ascii')".
 # If we get separate StringCol and UnicodeCol column types, we won't need this
 # any longer.
-#  -- Dafydd Harries, 2005/04/07.
 
 __metaclass__ = type
 
@@ -121,7 +120,7 @@ class RosettaWriteTarFile:
     def add_files(self, files):
         """Add a number of files to the archive.
 
-        :files: A dictionary mapping file names to file contents.
+        :param files: A dictionary mapping file names to file contents.
         """
 
         for filename in sorted(files.keys()):
@@ -345,7 +344,7 @@ def export_rows(rows, pofile_output, force_utf8=False):
         if row.language != language or row.variant != variant:
             new_pofile = True
 
-        # If the PO file has changed, we have to outptut its last message set.
+        # If the PO file has changed, we have to output its last message set.
 
         if new_pofile:
             new_msgset = True

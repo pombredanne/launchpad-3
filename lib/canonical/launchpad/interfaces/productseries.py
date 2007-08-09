@@ -8,6 +8,8 @@ __all__ = [
     'IProductSeries',
     'IProductSeriesSet',
     'IProductSeriesSourceAdmin',
+    'validate_cvs_root',
+    'validate_cvs_module',
     ]
 
 import re
@@ -79,7 +81,7 @@ def validate_release_glob(value):
 class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
                      ISpecificationGoal):
     """A series of releases. For example '2.0' or '1.3' or 'dev'."""
-    # XXX Mark Shuttleworth 14/10/04 would like to get rid of id in
+    # XXX Mark Shuttleworth 2004-10-14: Would like to get rid of id in
     # interfaces, as soon as SQLobject allows using the object directly
     # instead of using object.id.
     id = Int(title=_('ID'))
@@ -148,7 +150,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     security_contact = Attribute(
         'Currently just a reference to the Product security contact.')
 
-    # XXX: 2006-09-05 jamesh
+    # XXX: jamesh 2006-09-05:
     # While it would be more sensible to call this ProductSeries.branch,
     # I've used this name to make sure code that works with the
     # vcs-imports branch (which used to be called branch) doesn't use
@@ -214,8 +216,7 @@ class IProductSeries(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     rcstype = Choice(title=_("Type of RCS"),
         required=False, vocabulary='RevisionControlSystems',
         description=_("The type of revision control used for "
-        "the upstream branch of this series. Can be CVS, SVN, BK or "
-        "Arch."))
+        "the upstream branch of this series. Can be CVS or Subversion."))
     cvsroot = TextLine(title=_("Repository"), required=False,
         constraint=validate_cvs_root,
         description=_('The CVSROOT. '

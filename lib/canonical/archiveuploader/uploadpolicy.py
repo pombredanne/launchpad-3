@@ -119,7 +119,7 @@ class AbstractUploadPolicy:
                 upload.reject(
                     "PPA uploads must be for the RELEASE pocket.")
         else:
-            # XXX julian 2005-05-29
+            # XXX julian 2005-05-29 bug=117557:
             # This is a greasy hack until bug #117557 is fixed.
             if (self.distroseries and
                 not self.distroseries.canUploadToPocket(self.pocket)):
@@ -180,8 +180,8 @@ class AbstractUploadPolicy:
         policy.setOptions(options)
         return policy
 
-# XXX: dsilvers: 20051019: use the component architecture for these instead
-# of reinventing the registration/finder again? bug 3373
+# XXX: dsilvers 2005-10-19 bug=3373: use the component architecture for
+# these instead of reinventing the registration/finder again?
 # Nice shiny top-level policy finder
 findPolicyByName = AbstractUploadPolicy.findPolicyByName
 findPolicyByOptions = AbstractUploadPolicy.findPolicyByOptions
@@ -199,13 +199,13 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         """Insecure policy allows PPA upload."""
         return False
 
-    def checksignerIsUbuntero(self, upload):
+    def checkSignerIsUbuntero(self, upload):
         """Reject the upload if the upload signer is not an 'ubuntero'."""
         if not upload.changes.signer.is_ubuntero:
             upload.reject(
                 "PPA uploads must be signed by an 'ubuntero'.")
 
-    def checksignerIsBetaTester(self, upload):
+    def checkSignerIsBetaTester(self, upload):
         """Reject the upload if the upload signer is not a 'beta-tester'.
 
         For being a 'beta-tester' a person must be a valid member of
@@ -225,13 +225,13 @@ class InsecureUploadPolicy(AbstractUploadPolicy):
         'ubuntero' and if it is member of 'launchpad-beta-tests'.
         """
         if upload.is_ppa:
-            # XXX cprov 20070613: checks for PPA uploads are not yet
+            # XXX cprov 2007-06-13: checks for PPA uploads are not yet
             # established. We may decide for only one of the checks.
             # Either in a specific team or having a ubuntero (or similar
             # flag). This code will be revisited before releasing PPA
             # publicly.
-            self.checksignerIsUbuntero(upload)
-            self.checksignerIsBetaTester(upload)
+            self.checkSignerIsUbuntero(upload)
+            self.checkSignerIsBetaTester(upload)
         else:
             if self.pocket == PackagePublishingPocket.SECURITY:
                 upload.reject(
@@ -272,8 +272,8 @@ class BuildDaemonUploadPolicy(AbstractUploadPolicy):
 
     def policySpecificChecks(self, upload):
         """The buildd policy should enforce that the buildid matches."""
-        # XXX: dsilvers: 20051014: Implement this to check the buildid etc.
-        # bug 3135
+        # XXX: dsilvers 2005-10-14 bug=3135:
+        # Implement this to check the buildid etc.
         pass
 
     def rejectPPAUploads(self, upload):
@@ -299,8 +299,8 @@ class SyncUploadPolicy(AbstractUploadPolicy):
 
     def policySpecificChecks(self, upload):
         """Perform sync specific checks."""
-        # XXX: dsilvers: 20051014: Implement this to check the sync
-        # bug 3135
+        # XXX: dsilvers 2005-10-14 bug=3135:
+        # Implement this to check the sync
         pass
 
 AbstractUploadPolicy._registerPolicy(SyncUploadPolicy)

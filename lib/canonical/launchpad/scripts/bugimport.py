@@ -34,12 +34,11 @@ from zope.app.content_types import guess_content_type
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
     IBugSet, IBugActivitySet, IBugAttachmentSet, IBugExternalRefSet,
-    ICveSet, IEmailAddressSet, ILaunchpadCelebrities,
+    ICveSet, IEmailAddressSet, ILaunchpadCelebrities, PersonCreationRationale,
     ILibraryFileAliasSet, IMessageSet, IPersonSet, CreateBugParams)
 from canonical.launchpad.scripts.bugexport import BUGS_XMLNS
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType,
-    PersonCreationRationale)
+    BugTaskImportance, BugTaskStatus, BugAttachmentType)
 
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugimport')
@@ -207,7 +206,7 @@ class BugImporter:
     def haveImportedBug(self, bugnode):
         """Return True if the given bug has been imported already."""
         bug_id = int(bugnode.get('id'))
-        # XXX: 20070316 jamesh
+        # XXX: jamesh 2007-03-16:
         # This should be extended to cover other cases like identity
         # based on bug nickname.
         return bug_id in self.bug_id_map
@@ -271,7 +270,7 @@ class BugImporter:
 
         # Remaining setup for first comment
         self.createAttachments(bug, msg, commentnode)
-        bug.findCvesInText(msg.text_contents)
+        bug.findCvesInText(msg.text_contents, bug.owner)
 
         # Process remaining comments
         for commentnode in comments:
@@ -279,7 +278,6 @@ class BugImporter:
                                      defaulttitle=bug.followup_subject())
             bug.linkMessage(msg)
             self.createAttachments(bug, msg, commentnode)
-            bug.findCvesInText(msg.text_contents)
 
         # set up bug
         bug.private = get_value(bugnode, 'private') == 'True'
@@ -301,7 +299,7 @@ class BugImporter:
             if cve is None:
                 raise BugXMLSyntaxError('Unknown CVE: %s' %
                                         get_text(cvenode))
-            bug.linkCVE(cve)
+            bug.linkCVE(cve, self.bug_importer)
 
         tags = []
         for tagnode in get_all(bugnode, 'tags/tag'):

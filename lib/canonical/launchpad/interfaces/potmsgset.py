@@ -1,4 +1,4 @@
-# Copyright 2004-2005 Canonical Ltd.  All rights reserved.
+# Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
 from zope.interface import Interface, Attribute
 from zope.schema import Field, Int
@@ -67,15 +67,17 @@ class IPOTMsgSet(Interface):
     def getPOMsgSet(language, variant=None):
         """Return the IPOMsgSet corresponding to this IPOTMsgSet or None.
 
-        :language: The language associated with the IPOMsgSet that we want.
-        :variant: The language variant.
+        :param language: The language associated with the IPOMsgSet that we
+            want.
+        :param variant: The language variant.
         """
 
     def getDummyPOMsgSet(language, variant=None):
         """Return a Dummy IPOMsgSet corresponding to this IPOTMsgSet.
 
-        :language: The language associated with the IPOMsgSet that we want.
-        :variant: The language variant.
+        :param language: The language associated with the IPOMsgSet that we
+            want.
+        :param variant: The language variant.
 
         We should not have already a POMsgSet for the given arguments.
         """
@@ -97,7 +99,7 @@ class IPOTMsgSet(Interface):
           self.normalizeWhitespaces
           self.normalizeNewLines
 
-        :arg unicode_text: A unicode text that needs to be checked.
+        :param unicode_text: A unicode text that needs to be checked.
         """
 
     def convertDotToSpace(unicode_text):
@@ -128,3 +130,18 @@ class IPOTMsgSet(Interface):
         Messages that are likely to contain email addresses
         are shown only to logged-in users, and not to anonymous users.
         """)
+
+    is_translation_credit = Attribute(
+        """Whether this is a message set for crediting translators.""")
+
+    def makeHTMLId(suffix=None):
+        """Unique name for this `POTMsgSet` for use in HTML element ids.
+
+        The name is an underscore-separated sequence of:
+         * the string 'msgset'
+         * unpadded, numerical `id`
+         * optional caller-supplied suffix.
+
+        :param suffix: an optional suffix to be appended.  Must be suitable
+            for use in HTML element ids.
+        """

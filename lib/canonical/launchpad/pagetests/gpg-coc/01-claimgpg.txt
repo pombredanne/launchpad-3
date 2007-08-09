@@ -115,7 +115,7 @@ Get redirected to +validategpg, and confirm token:
 
   >>> print browser.url
   http://launchpad.dev/token/.../+validategpg
-  >>> browser.getControl(name='VALIDATE').click()
+  >>> browser.getControl('Continue').click()
 
 Get redirected to the user's homepage with a greeting:
 

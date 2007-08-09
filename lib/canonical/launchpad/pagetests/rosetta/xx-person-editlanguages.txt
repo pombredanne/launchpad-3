@@ -19,6 +19,8 @@ his +editlanguages page.
     >>> browser.getLink('Select Languages...').click()
     >>> browser.url
     'http://launchpad.dev/~carlos/+editlanguages'
+    >>> print extract_text(find_main_content(browser.contents).find('h1'))
+    Your language preferences
 
 So far, he has Spanish selected as one of his preferred languages, but
 not Welsh. English is checked but it is not a translatable language.
@@ -51,7 +53,7 @@ displays his translatable languages.
     Added Welsh to your preferred languages.
     Removed Spanish from your preferred languages.
 
-    # XXX: salgado 2006-11-21 bug 98437
+    # XXX: salgado 2006-11-21 bug 98437:
     # This test is commented out because redirects will not work
     # because the HTTP_REFFERER is localhost.
     #>>> browser.url
@@ -114,9 +116,8 @@ For backwards compatibility we keep do a redirect from the old
 /rosetta/prefs page to the new one. Note that this is a permanent
 redirect, since the old page has been deprecated.
 
-    # XXX: Should use an absolute URL on the Location header here, once
-    # https://launchpad.net/bugs/72849 is fixed.
-    # -- Guilherme Salgado, 2006-11-22
+    # XXX Guilherme Salgado 2006-11-22 bugs=72849: 
+    # Should use an absolute URL on the Location header here.
     >>> print http(r"""
     ... GET /translations/prefs HTTP/1.1
     ... Host: launchpad.dev
@@ -124,3 +125,50 @@ redirect, since the old page has been deprecated.
     HTTP/1.1 301 Moved Permanently
     ...
     Location: /+editmylanguages
+
+
+== Adding languages to teams ==
+
+Team admins may set their team's preferred languages to select the
+which languages they support in the Answer Tracker. Sample Person
+is the admin for Landscape Developers. He decides he wants the team
+to support Spanish questions for Ubuntu, so he sets the team's
+preferred languages.
+
+    >>> browser.addHeader('Authorization', 'Basic test@canonical.com:test')
+    >>> browser.open('http://launchpad.dev/~landscape-developers')
+    >>> browser.title
+    'Landscape Developers in Launchpad'
+
+    >>> browser.getLink('Set preferred languages').click()
+    >>> print extract_text(find_main_content(browser.contents).find('h1'))
+    Landscape Developers's language preferences
+
+    >>> browser.getControl('Spanish').selected = True
+    >>> browser.getControl('Save').click()
+    >>> for message in find_tags_by_class(browser.contents, 'message'):
+    ...     print extract_text(message)
+    Added Spanish to Landscape Developers's preferred languages.
+
+
+== Admins may set a Person's languages ==
+
+Admins can change a user's language settings if needed. Foo Bar, a
+Launchpad Admin has a question from No Privileges Person claiming that
+he cannot add Esperanto to his languages. Foo Bar visits No Privileges
+Person's page to do it himself.
+
+    >>> admin_browser.open('http://launchpad.dev/~no-priv')
+    >>> admin_browser.title
+    'No Privileges Person in Launchpad'
+
+    >>> admin_browser.getLink('Set preferred languages').click()
+    >>> print extract_text(
+    ...     find_main_content(admin_browser.contents).find('h1'))
+    No Privileges Person's language preferences
+
+    >>> admin_browser.getControl('Esperanto').selected = True
+    >>> admin_browser.getControl('Save').click()
+    >>> for message in find_tags_by_class(admin_browser.contents, 'message'):
+    ...     print extract_text(message)
+    Added Esperanto to No Privileges Person's preferred languages.    

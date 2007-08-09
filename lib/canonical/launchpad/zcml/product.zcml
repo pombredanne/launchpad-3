@@ -44,6 +44,15 @@
       permission="launchpad.AnyPerson"
       attributes="newQuestion addAnswerContact removeAnswerContact"
       />
+    <!-- IFAQTarget -->
+    <allow
+      interface="canonical.launchpad.interfaces.IFAQCollection"
+      attributes="findSimilarFAQs"
+      />
+    <require
+      permission="launchpad.Moderate"
+      attributes="newFAQ"
+      />
   </content>
 
   <browser:defaultView
@@ -86,7 +95,8 @@
         "
         />
 
-  <!-- XXX ProductBugsMenu undeclared until layout bug is fixed -->
+  <!-- XXX: Steve Alexander 2005-09-21:
+            ProductBugsMenu undeclared until layout bug is fixed -->
 
   <browser:navigation
     module="canonical.launchpad.browser"
@@ -105,6 +115,15 @@
     path_expression="name"
     parent_utility="canonical.launchpad.interfaces.ILaunchpadRoot"
     />
+
+  <browser:page
+    name="+addspec"
+    for="canonical.launchpad.interfaces.IProduct"
+    class="canonical.launchpad.browser.NewSpecificationFromProductView"
+    facet="specifications"
+    permission="launchpad.AnyPerson"
+    template="../templates/specification-add.pt"
+  />
 
   <browser:page
     for="canonical.launchpad.interfaces.IProduct"
@@ -241,15 +260,10 @@
       name="+portlet-aboutcve"
       template="../templates/portlet-aboutcve.pt"
       />
-  </browser:pages>
-
-  <browser:pages
-    for="canonical.launchpad.interfaces.IProduct"
-    permission="zope.Public">
-      <browser:page
-        name="+portlet-latestbranches"
-        template="../templates/product-portlet-latestbranches.pt"
-        />
+    <browser:page
+      name="+portlet-latestbranches"
+      template="../templates/product-portlet-latestbranches.pt"
+      />
   </browser:pages>
 
   <browser:page
@@ -328,13 +342,11 @@
     template="../templates/object-branding.pt"
     />
 
-  <browser:editform
+  <browser:page
     name="+bugcontact"
     for="canonical.launchpad.interfaces.IProduct"
-    schema="canonical.launchpad.interfaces.IProduct"
     facet="bugs"
     class="canonical.launchpad.browser.ProductBugContactEditView"
-    fields="bugcontact"
     permission="launchpad.Edit"
     template="../templates/product-bugcontact.pt"
     />

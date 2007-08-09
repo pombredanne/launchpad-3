@@ -7,15 +7,22 @@ arrangement or through a grant that applies to everyone.
 
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     EntitlementQuota, IPersonSet, IEntitlement)
+    ...     EntitlementQuota, EntitlementState, EntitlementType,
+    ...     IEntitlement, IEntitlementSet, IPersonSet)
     >>> from canonical.launchpad.database import Entitlement
     >>> from canonical.launchpad.ftests import login
-    >>> from canonical.lp.dbschema import EntitlementState, EntitlementType
     >>> from canonical.database.sqlbase import flush_database_updates
 
-Be an admin in order to change the quota.
+The logged in user must be an admin in order to change the quota.
 
+    >>> from canonical.launchpad.interfaces import ILaunchpadCelebrities
     >>> login("foo.bar@canonical.com")
+    >>> foobar = getUtility(ILaunchBag).user
+    >>> lp_admins = getUtility(ILaunchpadCelebrities).admin
+    >>> foobar.inTeam(lp_admins)
+    True
+    >>> entitlements = getUtility(IEntitlementSet)
+    >>> entitlements_in_sample_data = entitlements.count()
 
 Find a team with an entitlement.
 
@@ -28,19 +35,24 @@ entitlement_type is the feature being enabled.  The 'person' is the
 person or team being granted the right.  The state for a granted
 entitlement is ACTIVE and the expiration and start dates can be specified.
 
-    >>> entitlement = Entitlement(
+    >>> entitlement = getUtility(IEntitlementSet).new(
     ...     quota=5,
     ...     entitlement_type=EntitlementType.PRIVATE_BUGS,
     ...     person=ubuntu_team,
     ...     state=EntitlementState.ACTIVE,
-    ...     date_expires="2038-06-11 00:00:00")
-
+    ...     date_expires="2038-06-11 00:00:00",
+    ...     amount_used=0)
     >>> verifyObject(IEntitlement, entitlement)
     True
 
+The person can be accessed and shown to be correct.
+
+    >>> print entitlement.person.name
+    ubuntu-team
+
 If the current date is after the start date (if not None) or before
 the expiration date (if not None) then the in_date_range test will
-pass. 
+pass.
 
     >>> entitlement.in_date_range
     True
@@ -83,7 +95,7 @@ true and the entitlement is no longer valid.
 
 If the quota is UNLIMITED the exceeded quota test is false even when
 using a really large value for amount used.  The entitlement remains
-valid. 
+valid.
 
     >>> import sys
     >>> entitlement.quota = EntitlementQuota.UNLIMITED
@@ -118,13 +130,13 @@ the amount used will cause an error.
       ...
     EntitlementInvalidError: ...
 
-    
+
 == Date range checking ==
 
 The 'in_date_range' attribute can be used to tell whether the
 entitlement is valid with respect to the start date and expires date.
 When the current date is out of range the entitlement is considered
-invalid. 
+invalid.
 
 When the entitlement does not have a start date or an expiration date
 then those values are not checked.  If no start date is given the
@@ -133,7 +145,7 @@ expiration date are None then no date range checking is performed and
 the entitlement is valid with respect to dates.
 
 Remove the start and expiration dates and the date range will be
-valid. 
+valid.
 
     >>> entitlement.state = EntitlementState.ACTIVE
     >>> entitlement.date_starts = None
@@ -197,9 +209,12 @@ the date range is again satisfied and the entitlement is valid.
     >>> entitlement.is_valid
     True
 
+
+== Security ==
+
 Viewing the entitlement's attributes is restricted to the
 entitlement's owner, the entitlement's registrant (or to a member of
-these teams), and to Launchpad administrators. 
+these teams), and to Launchpad administrators.
 
 If logged in as an anonymous user the entitlement values cannot be
 viewed.  A security-wrapped entitlement must be used to exercise the
@@ -240,7 +255,7 @@ Add the current user to the team and the user can now access
 attributes.  Since ubuntu-team is restricted, an administrator must be
 listed as a reviewer for the membership to go through.
 
-    >>> from canonical.lp.dbschema import TeamMembershipStatus
+    >>> from canonical.launchpad.interfaces import TeamMembershipStatus
     >>> nopriv = getUtility(ILaunchBag).user
     >>> sabdfl = personset.getByName('sabdfl')
     >>> nopriv.join(ubuntu_team)
@@ -257,4 +272,50 @@ listed as a reviewer for the membership to go through.
     Traceback (most recent call last):
       ...
     Unauthorized: (<Entitlement..., 'quota', 'launchpad.Admin')
-    
+
+
+= EntitlementSet =
+
+All of the entitlements can be obtained using IEntitlementSet.
+
+    >>> login("foo.bar@canonical.com")
+    >>> entitlements = getUtility(IEntitlementSet)
+
+One entitlement was created in the previous examples.
+
+    >>> entitlements.count() - entitlements_in_sample_data
+    1
+
+To look up an entitlement from the set, simply use the 'get' with the id.
+
+    >>> entitlement2 = entitlements.get(entitlement.id)
+    >>> entitlement2.id == entitlement.id
+    True
+
+Get all of the valid entitlements for ubuntu_team.
+
+    >>> valid_list = getUtility(IEntitlementSet).getValidForPerson(ubuntu_team)
+    >>> len(valid_list)
+    1
+
+A new entitlement for the ubuntu_team can be created, increasing the
+number of valid entitlements.
+
+    >>> entitlement = getUtility(IEntitlementSet).new(
+    ...     quota=50,
+    ...     entitlement_type=EntitlementType.PRIVATE_BRANCHES,
+    ...     person=ubuntu_team,
+    ...     state=EntitlementState.ACTIVE,
+    ...     date_expires="2038-06-11 00:00:00",
+    ...     amount_used=0)
+    >>> valid_list = getUtility(IEntitlementSet).getValidForPerson(ubuntu_team)
+    >>> len(valid_list)
+    2
+
+Setting the original entitlement to INACTIVE will now reduce the
+number of valid entitlements.
+
+    >>> entitlement.state = EntitlementState.INACTIVE
+    >>> valid_list = getUtility(IEntitlementSet).getValidForPerson(ubuntu_team)
+    >>> len(valid_list)
+    1

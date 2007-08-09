@@ -8,11 +8,17 @@ Currently assumes twisted.vfs as of SVN revision 15836.
 
 __metaclass__ = type
 
-from twisted.internet import defer
-from twisted.vfs.backends import adhoc, osfs
-from twisted.vfs.ivfs import VFSError, NotFoundError, PermissionError
-
 import os
+
+from twisted.vfs.backends import adhoc, osfs
+from twisted.vfs.ivfs import NotFoundError, PermissionError
+
+
+# The directories allowed directly beneath a branch directory. These are the
+# directories that Bazaar creates as part of regular operation.
+ALLOWED_DIRECTORIES = ('.bzr', '.bzr.backup')
+FORBIDDEN_DIRECTORY_ERROR = (
+    "Cannot create '%s'. Only Bazaar branches are allowed.")
 
 
 class SFTPServerRoot(adhoc.AdhocDirectory):  # was SFTPServerForPushMirrorUser
@@ -72,18 +78,19 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
                     % (productName,))
 
             self.putChild(productName,
-                          SFTPServerProductDir(avatar, lpid, productID,
+                          SFTPServerProductDir(avatar, lpname, productID,
                                                productName, branches, self))
 
         # Make sure +junk exists if this is a user dir, even if there are no
         # branches in there yet.
         if junkAllowed and not self.exists('+junk'):
             self.putChild('+junk',
-                          SFTPServerProductDir(avatar, lpid, None, '+junk',
+                          SFTPServerProductDir(avatar, lpname, None, '+junk',
                                                [], self))
 
         self.avatar = avatar
         self.userID = lpid
+        self.userName = lpname
         self.junkAllowed = junkAllowed
 
     def rename(self, newName):
@@ -105,13 +112,12 @@ class SFTPServerUserDir(adhoc.AdhocDirectory):
         def cb(productID):
             if productID is None:
                 raise PermissionError(
-                    "Directories directly under a user directory must be named "
-                    "after a product name registered in Launchpad "
+                    "Directories directly under a user directory must be "
+                    "named after a project name registered in Launchpad "
                     "<https://launchpad.net/>.")
             productID = str(productID)
-            productDir = SFTPServerProductDir(self.avatar, self.userID,
-                                              productID, childName, [],
-                                              self)
+            productDir = SFTPServerProductDir(
+                self.avatar, self.userName, productID, childName, [], self)
             self.putChild(childName, productDir)
             return productDir
         deferred.addCallback(cb)
@@ -141,11 +147,11 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
     Inside a product dir there can only be directories, which will be
     SFTPServerBranch instances.
     """
-    def __init__(self, avatar, userID, productID, productName, branches,
+    def __init__(self, avatar, userName, productID, productName, branches,
                  parent):
         adhoc.AdhocDirectory.__init__(self, name=productName, parent=parent)
         self.avatar = avatar
-        self.userID = userID
+        self.userName = userName
         self.productID = productID
         self.productName = productName
 
@@ -159,20 +165,17 @@ class SFTPServerProductDir(adhoc.AdhocDirectory):
         # XXX AndrewBennetts 2006-02-06: Same comment as
         # SFTPServerUserDir.createDirectory (see
         # http://twistedmatrix.com/bugs/issue1223)
-        # XXX AndrewBennetts 2006-03-01: We should ensure that if createBranch
-        # fails for some reason (e.g. invalid name), that we report a useful
-        # error to the client.  See
-        # https://launchpad.net/products/launchpad/+bug/33223
+        # XXX AndrewBennetts 2006-03-01 bug=33223:
+        # We should ensure that if createBranch fails for some reason
+        # (e.g. invalid name),that we report a useful error to the client.
         if self.exists(childName):
-            # "mkdir failed" is the magic string that bzrlib will interpret to
-            # mean "already exists".
-            raise VFSError("mkdir failed")
-        deferred = self.avatar.createBranch(self.userID, self.productID,
-                                            childName)
+            return self.child(childName)
+        deferred = self.avatar.createBranch(
+            self.avatar.avatarId, self.userName, self.productName, childName)
         def cb(branchID):
             branchID = str(branchID)
-            branchDirectory = SFTPServerBranch(self.avatar, branchID, childName,
-                                               self)
+            branchDirectory = SFTPServerBranch(
+                self.avatar, branchID, childName, self)
             self.putChild(childName, branchDirectory)
             return branchDirectory
         return deferred.addCallback(cb)
@@ -286,12 +289,33 @@ class WriteLoggingFile(osfs.OSFile):
         osfs.OSFile.writeChunk(self, offset, data)
 
 
+class NameRestrictedWriteLoggingDirectory(WriteLoggingDirectory):
+    """`WriteLoggingDirectory` that is restricted to a small list of names.
+
+    In particular, a NameRestrictedWriteLoggingDirectory can only have one of
+    the names in `ALLOWED_DIRECTORIES`.
+    """
+
+    def __init__(self, flagAsDirty, path, name=None, parent=None):
+        self._checkName(name)
+        WriteLoggingDirectory.__init__(self, flagAsDirty, path, name, parent)
+
+    def _checkName(self, name):
+        if name not in ALLOWED_DIRECTORIES:
+            raise PermissionError(FORBIDDEN_DIRECTORY_ERROR % (name,))
+
+    def rename(self, new_name):
+        self._checkName(new_name)
+        return WriteLoggingDirectory.rename(self, new_name)
+
+
 class SFTPServerBranch(WriteLoggingDirectory):
     """For /~username/product/branch, and below.
 
-    Only allows '.bzr' directories to be made directly. Underneath that,
-    anything goes.
+    Direct children are restricted by name. See
+    `NameRestrictedWriteLoggingDirectory`.
     """
+
     def __init__(self, avatar, branchID, branchName, parent):
         self.branchID = branchID
         # XXX AndrewBennetts 2006-02-06: this snippet is duplicated in a few
@@ -307,6 +331,17 @@ class SFTPServerBranch(WriteLoggingDirectory):
         if not os.path.exists(self.realPath):
             os.makedirs(self.realPath)
 
+    def childDirFactory(self):
+        def childWithListener(path, name, parent):
+            return NameRestrictedWriteLoggingDirectory(
+                self._flagAsDirty, path, name, parent)
+        return childWithListener
+
+    def createFile(self, name, exclusive=True):
+        raise PermissionError(
+            "Can only create Bazaar control directories directly beneath a "
+            "branch directory.")
+    
     def remove(self):
         raise PermissionError(
             "removing branch directory %r is not allowed." % self.name)
@@ -317,16 +352,9 @@ class SFTPServerBranch(WriteLoggingDirectory):
             # product, the next is the username and the third is the root of
             # the SFTP server.
 
-            # XXX - this is an awkward way of finding the root. Replace with
-            # something that is clearer and requires fewer comments.
-            # -- jml, 2007-02-14
+            # XXX jml 2007-02-14: This is an awkward way of finding the root.
+            # Replace with something that is clearer and requires fewer
+            #  comments.
             root = self.parent.parent.parent
             self._listener = root.listenerFactory(self.branchID)
         self._listener()
-
-    def createDirectory(self, name):
-        if name != '.bzr':
-            raise PermissionError(
-                "Can only create .bzr directories in branch directories: %s"
-                % (name,))
-        return WriteLoggingDirectory.createDirectory(self, name)

@@ -72,6 +72,7 @@ class LanguageSetView:
         else:
             return 0
 
+
 # There is no easy way to remove an ILanguage from the database due all the
 # dependencies that ILanguage would have. That's the reason why we don't have
 # such functionality here.
@@ -103,8 +104,8 @@ class LanguageAddView(LaunchpadFormView):
         return canonical_url(self.language)
 
     def validate(self, data):
-        # XXX CarlosPerelloMarin 20070404: Pluralform expression should be
-        # validated. See bug #102898 for more info.
+        # XXX CarlosPerelloMarin 2007-04-04 bug=102898:
+        # Pluralform expression should be validated.
         new_code = data.get('code')
         language_set = getUtility(ILanguageSet)
         if language_set.getLanguageByCode(new_code) is not None:
@@ -170,3 +171,4 @@ class LanguageAdminView(LaunchpadEditFormView):
         if language_set.getLanguageByCode(new_code) is not None:
             self.setFieldError(
                 'code', 'There is already a language with that code.')
+

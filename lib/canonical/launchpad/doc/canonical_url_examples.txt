@@ -149,8 +149,8 @@ The IProjectSet.
 
 An IProject.
 
-    >>> canonical_url(getUtility(IProjectSet)['ubuntu-project'])
-    u'http://launchpad.dev/ubuntu-project'
+    >>> canonical_url(getUtility(IProjectSet)['apache'])
+    u'http://launchpad.dev/apache'
 
 The IProductSet.
 

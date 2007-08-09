@@ -45,17 +45,17 @@ user to refine his search.
     ...     image_td, description_td = tr('td')
     ...     print description_td.a.renderContents()
     Ubuntu Linux
-    Ubuntu
-    The Ubuntu Project
     Ubuntu Test
     The Evolution Groupware Application
+    Tomcat
+    The Gnome Panel Applets
 
 We can follow one of these links to go straight to the
 Product/Project/Distribution.
 
-    >>> browser.getLink('The Ubuntu Project').click()
+    >>> browser.getLink('Tomcat').click()
     >>> browser.url
-    'http://launchpad.dev/ubuntu-project'
+    'http://launchpad.dev/tomcat'
 
 
 If the user tries to do a search without any search terms, we ask him to enter
@@ -81,9 +81,10 @@ URL, saving them a page load.
     ...     image_td, description_td = tr('td')
     ...     print description_td.a.renderContents()
     Ubuntu Linux
-    Ubuntu
-    The Ubuntu Project
-    ...
+    Ubuntu Test
+    The Evolution Groupware Application
+    Tomcat
+    The Gnome Panel Applets
 
 == Showing icons ==
 
@@ -96,9 +97,10 @@ standard images used for products/projects/distributions.
     ...     image_td, description_td = tr('td')
     ...     print image_td.img['src'], description_td.a.renderContents()
     /@@/distribution Ubuntu Linux
-    /@@/product Ubuntu
-    /@@/project The Ubuntu Project
-    ...
+    /@@/distribution Ubuntu Test
+    /@@/product The Evolution Groupware Application
+    /@@/product Tomcat
+    /@@/product The Gnome Panel Applets
 
 If the project has specified an icon, that is shown in the listing
 instead.
@@ -124,9 +126,10 @@ instead.
     ...     image_td, description_td = tr('td')
     ...     print image_td.img['src'], description_td.a.renderContents()
     http://.../ubuntu-icon.png Ubuntu Linux
-    /@@/product Ubuntu
-    /@@/project The Ubuntu Project
-    ...
+    /@@/distribution Ubuntu Test
+    /@@/product The Evolution Groupware Application
+    /@@/product Tomcat
+    /@@/product The Gnome Panel Applets
 
 == Robustness ==
 

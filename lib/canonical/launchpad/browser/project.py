@@ -50,7 +50,7 @@ from canonical.launchpad.browser.questiontarget import (
 from canonical.launchpad.webapp import (
     action, ApplicationMenu, canonical_url, ContextMenu, custom_widget,
     enabled_with_permission, LaunchpadEditFormView, Link, LaunchpadFormView,
-    Navigation, StandardLaunchpadFacets, structured)
+    Navigation, StandardLaunchpadFacets, stepthrough, structured)
 from canonical.launchpad.webapp.dynmenu import DynMenu
 from canonical.launchpad.helpers import shortlist
 
@@ -62,11 +62,12 @@ class ProjectNavigation(Navigation, CalendarTraversalMixin):
     def breadcrumb(self):
         return self.context.displayname
 
-    def breadcrumb(self):
-        return self.context.displayname
-
     def traverse(self, name):
         return self.context.getProduct(name)
+
+    @stepthrough('+milestone')
+    def traverse_milestone(self, name):
+        return self.context.getMilestone(name)
 
 
 class ProjectDynMenu(DynMenu):
@@ -111,7 +112,7 @@ class ProjectDynMenu(DynMenu):
                 if product != excludeproduct:
                     yield self.makeBreadcrumbLink(product)
         else:
-            # XXX: SteveAlexander, 2007-03-27.
+            # XXX: SteveAlexander 2007-03-27:
             # Use a database API for products-with-releases that prejoins.
             count = 0
             for product in products:
@@ -120,7 +121,8 @@ class ProjectDynMenu(DynMenu):
                     count += 1
                     if count >= self.MAX_SUB_PROJECTS:
                         break
-            yield self.makeLink('See all %s related projects...' % num_products)
+            yield self.makeLink(
+                'See all %s related projects...' % num_products)
 
 
 class ProjectSetNavigation(Navigation):
@@ -147,7 +149,7 @@ class ProjectSOP(StructuralObjectPresentation):
         return self.context.title
 
     def listChildren(self, num):
-        # XXX mpt 20061004: Products, alphabetically
+        # XXX mpt 2006-10-04: Products, alphabetically
         return list(self.context.products[:num])
 
     def listAltChildren(self, num):
@@ -184,6 +186,30 @@ class ProjectFacets(QuestionTargetFacetMixin, StandardLaunchpadFacets):
         enabled = ICalendarOwner(self.context).calendar is not None
         return Link(target, text, enabled=enabled)
 
+    def bugs(self):
+        site = 'bugs'
+        text = 'Bugs'
+
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
+
+    def answers(self):
+        site = 'answers'
+        text = 'Answers'
+
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
+
+    def specifications(self):
+        site = 'blueprints'
+        text = 'Blueprints'
+
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
+
+    def translations(self):
+        site = 'translations'
+        text = 'Translations'
+
+        return Link('', text, enabled=self.context.hasProducts(), site=site)
+
 
 class ProjectOverviewMenu(ApplicationMenu):
 
@@ -191,7 +217,7 @@ class ProjectOverviewMenu(ApplicationMenu):
     facet = 'overview'
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
-        'mentorship', 'administer', 'rdf']
+        'mentorship', 'administer', 'branch_visibility', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -220,7 +246,12 @@ class ProjectOverviewMenu(ApplicationMenu):
 
     def mentorship(self):
         text = 'Mentoring available'
-        return Link('+mentoring', text, icon='info')
+
+        # We disable this link if the project has no products. This is for
+        # consistency with the way the overview buttons behave in the same
+        # circumstances.
+        return Link('+mentoring', text, icon='info', 
+                    enabled=self.context.hasProducts())
 
     def rdf(self):
         text = structured(
@@ -232,6 +263,11 @@ class ProjectOverviewMenu(ApplicationMenu):
     def administer(self):
         text = 'Administer'
         return Link('+review', text, icon='edit')
+
+    @enabled_with_permission('launchpad.Admin')
+    def branch_visibility(self):
+        text = 'Define branch visibility'
+        return Link('+branchvisibility', text, icon='edit')
 
 
 class ProjectBountiesMenu(ApplicationMenu):
@@ -253,7 +289,7 @@ class ProjectSpecificationsMenu(ApplicationMenu):
 
     usedfor = IProject
     facet = 'specifications'
-    links = ['listall', 'doc', 'roadmap', 'assignments',]
+    links = ['listall', 'doc', 'roadmap', 'assignments', 'new']
 
     def listall(self):
         text = 'List all blueprints'
@@ -272,6 +308,10 @@ class ProjectSpecificationsMenu(ApplicationMenu):
         text = 'Assignments'
         return Link('+assignments', text, icon='info')
 
+    def new(self):
+        text = 'Register a blueprint'
+        summary = 'Register a new blueprint for %s' % self.context.title
+        return Link('+addspec', text, summary, icon='add')
 
 class ProjectAnswersMenu(QuestionCollectionAnswersMenu):
     """Menu for the answers facet of projects."""

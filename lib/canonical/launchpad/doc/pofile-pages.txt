@@ -14,7 +14,7 @@ First, we need some imports.
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.database.sqlbase import flush_database_updates
 
-All the tests will be submitted as comming from the No Privilege person.
+All the tests will be submitted as coming from the No Privilege person.
 
     >>> login('no-priv@canonical.com')
 
@@ -34,13 +34,13 @@ Now it's time to test the initialisation of the view class.
     >>> pofile_view = getView(pofile_es, '+translate', request)
     >>> pofile_view.initialize()
 
-Check to know the plural forms that this IPOFile has.
+An IPOFile knows (or sometimes has to guess) its number of pluralforms.  In
+this case it's 2, the most common number.
 
     >>> pofile_es.language.pluralforms
     2
 
-And thus, the view class should know that it doesn't lacks the plural forms
-information.
+Thus the view class also knows about the plural forms information.
 
     >>> pofile_view.has_plural_form_information
     True
@@ -188,7 +188,35 @@ And check again.
     >>> pofile_es.rosettaCount()
     1
 
-Also, we can see that we got redirected to next batch.
+The messages displayed on the +translate page are always in ascending order of
+their POTMsgSets' sequence numbers.
+
+    >>> for potmsgset in pofile_view._getSelectedPOTMsgSets():
+    ...     print potmsgset.sequence
+    1
+    2
+    3
+    4
+    5
+    6
+    7
+    8
+    9
+    10
+    11
+    12
+    13
+    14
+    15
+    16
+    17
+    18
+    19
+    20
+    21
+    22
+
+Also, we get redirected to the next batch.
 
     >>> pofile_view.request.response.getHeader('Location')
     'http://127.0.0.1?start=10'
@@ -234,8 +262,8 @@ And we can see that we didn't get errors.
     >>> pofile_view.errors
     {}
 
-The view will have pre-populated the internal relevant submissions caches of
-the POMsgSets it shows.  We pick one with a nice list of POSubmissions and see
+The view pre-populates the internal "relevant submissions" caches of the
+POMsgSets it shows.  We pick one with a nice list of POSubmissions and see
 what's inside.
 
     >>> pomsgset = POMsgSet.get(604)

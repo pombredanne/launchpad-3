@@ -47,20 +47,17 @@ above, failed being worst).
 
 __metaclass__ = type
 
-from email import message_from_string
 import os
 import shutil
 
 from zope.component import getUtility
 
-from canonical.launchpad.mail import sendmail
-from canonical.encoding import ascii_smash
 from canonical.archiveuploader.nascentupload import (
     NascentUpload, FatalUploadError)
 from canonical.archiveuploader.uploadpolicy import (
     findPolicyByOptions, UploadPolicyError)
 from canonical.launchpad.interfaces import (
-    IDistributionSet, IPersonSet, IArchiveSet, NotFoundError)
+    IDistributionSet, IPersonSet, NotFoundError)
 
 from contrib.glock import GlobalLock
 
@@ -295,7 +292,7 @@ class UploadProcessor:
                 self.log.exception("Unhandled exception processing upload")
                 upload.reject("Unhandled exception processing upload: %s" % e)
 
-            # XXX julian 2007-05-25
+            # XXX julian 2007-05-25 bug=29744:
             # When bug #29744 is fixed (zopeless mails should only be sent
             # when transaction is committed) this will cause any emails sent
             # sent by do_reject to be lost.
@@ -313,6 +310,11 @@ class UploadProcessor:
                     self.log.info("Rejection during accept. "
                                   "Aborting partial accept.")
                     self.ztm.abort()
+
+            if upload.is_rejected:
+                self.log.warn("Upload was rejected:")
+                for msg in upload.rejections:
+                    self.log.warn("\t%s" % msg)
 
             if self.options.dryrun:
                 self.log.info("Dry run, aborting transaction.")
@@ -352,32 +354,6 @@ class UploadProcessor:
             self.log.debug("Moving distro file %s to %s" % (distro_filename,
                                                             target_path))
             shutil.move(distro_filename, target_path)
-
-    def sendMails(self, mails):
-        """Send the mails provided using the launchpad mail infrastructure."""
-        for mail_text in mails:
-            mail_message = message_from_string(ascii_smash(mail_text))
-
-            if mail_message['To'] is None:
-                self.log.debug("Missing recipient: empty 'To' header")
-                print repr(mail_text)
-                continue
-
-            mail_message['X-Katie'] = "Launchpad actually"
-
-            logger = self.log.debug
-            if self.options.dryrun or self.options.nomails:
-                logger = self.log.info
-                logger("Would be sending a mail:")
-            else:
-                sendmail(mail_message)
-                logger("Sent a mail:")
-
-            logger("   Subject: %s" % mail_message['Subject'])
-            logger("   Recipients: %s" % mail_message['To'])
-            logger("   Body:")
-            for line in mail_message.get_payload().splitlines():
-                logger(line)
 
     def orderFilenames(self, fnames):
         """Order filenames, sorting *_source.changes before others.
@@ -446,10 +422,19 @@ class UploadProcessor:
                 raise UploadPathError(
                     "Could not find distribution '%s'" % distribution_name)
 
-            archive = getUtility(IArchiveSet).ensure(owner=person)
+            archive = person.archive
             if archive is None:
                 raise UploadPathError(
                     "Could not find PPA for '%s'" % person_name)
+
+            if not archive.enabled:
+                raise UploadPathError(
+                    "%s is disabled" % archive.title)
+
+            if archive.distribution != distribution:
+                raise UploadPathError(
+                    "%s only supports uploads to '%s'"
+                    % (archive.title, archive.distribution.name))
 
             if len(parts) > 2:
                 suite_name = parts[2]

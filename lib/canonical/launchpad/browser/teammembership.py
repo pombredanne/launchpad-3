@@ -14,10 +14,10 @@ from zope.component import getUtility
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp import canonical_url
-from canonical.lp.dbschema import TeamMembershipStatus
 
 from canonical.launchpad.interfaces import (
-    ILaunchBag, ILaunchpadCelebrities, UnexpectedFormData)
+    ILaunchBag, ILaunchpadCelebrities, TeamMembershipStatus,
+    UnexpectedFormData)
 from canonical.launchpad.browser.launchpad import (
     StructuralHeaderPresentation)
 
@@ -108,15 +108,12 @@ class TeamMembershipEditView:
 
     def canChangeExpirationDate(self):
         """Return True if the logged in user can change the expiration date of
-        this membership. Team administrators can't change the expiration date
-        of their own membership."""
-        if self.userIsTeamOwnerOrLPAdmin():
-            return True
-
-        if self.user.id == self.context.person.id:
-            return False
-        else:
-            return True
+        this membership.
+        
+        Team administrators can't change the expiration date of their own
+        membership.
+        """
+        return self.context.canChangeExpirationDate(self.user)
 
     def membershipExpires(self):
         """Return True if this membership is scheduled to expire one day."""
@@ -162,7 +159,7 @@ class TeamMembershipEditView:
                 new_status = TeamMembershipStatus.APPROVED
             elif (form.get('admin') == "yes" and
                   context.status == TeamMembershipStatus.APPROVED
-                  # XXX: salgado, 2005-03-15: The clause below is a hack
+                  # XXX: salgado 2005-03-15: The clause below is a hack
                   # to make sure only the teamowner can promote a given
                   # member to admin, while we don't have a specific
                   # permission setup for this.
@@ -237,11 +234,9 @@ class TeamMembershipEditView:
         else:
             expires = self.context.dateexpires
 
-        team = self.context.team
-        member = self.context.person
-        comment = self.request.form.get('comment')
-        team.setMembershipData(member, status, reviewer=self.user,
-                               expires=expires, comment=comment)
+        self.context.setExpirationDate(expires, self.user)
+        self.context.setStatus(
+            status, self.user, self.request.form_ng.getOne('comment'))
         return True
 
     def _getExpirationDate(self):
@@ -283,10 +278,10 @@ class TeamMembershipEditView:
     def dateChooserWithCurrentExpirationSelected(self):
         return self._buildDateChooser(self.context.dateexpires)
 
-    # XXX: salgado, 2005-03-15: This will be replaced as soon as we have
+    # XXX: salgado 2005-03-15: This will be replaced as soon as we have
     # browser:form.
     def _buildDateChooser(self, selected=None):
-        # XXX: get form values and use them as the selected value
+        # Get form values and use them as the selected value.
         html = '<select name="day">'
         html += '<option value="0"></option>'
         for day in range(1, 32):
@@ -308,7 +303,7 @@ class TeamMembershipEditView:
                          (month, monthname))
         html += '</select>'
 
-        # XXX: salgado, 2005-03-16: We need to define it somewhere else, but
+        # XXX: salgado 2005-03-16: We need to define it somewhere else, but
         # it's not that urgent, so I'll leave it here for now.
         max_year = 2050
         html += '<select name="year">'

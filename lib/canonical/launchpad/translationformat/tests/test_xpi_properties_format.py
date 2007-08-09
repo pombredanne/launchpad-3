@@ -158,6 +158,24 @@ ucci\u00F3n
                    for message in property_file.messages])
         self.assertEquals(expected, parsed)
 
+    def test_InvalidLinePropertyFileTest(self):
+        """Test whether an invalid line is ignored."""
+        content = '''
+            # Foo bar comment.
+            default-first-title-mac = blah
+
+            # This comment should be ignored.
+            crappy-contnet
+            foo = bar
+            '''
+
+        property_file = PropertyFile('test.properties', dedent(content))
+        expected = {u'default-first-title-mac': u'Foo bar comment.',
+                    u'foo': None}
+        parsed = dict([(message.msgid, message.source_comment)
+                   for message in property_file.messages])
+        self.assertEquals(expected, parsed)
+
 
 def test_suite():
     return unittest.defaultTestLoader.loadTestsFromName(__name__)

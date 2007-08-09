@@ -62,9 +62,9 @@ class LookUp(Resource):
     def __init__(self, root):
         Resource.__init__(self)
         self.root = root
-    
+
     def render_GET(self, request):
-        # XXX cprov 20050513
+        # XXX cprov 2005-05-13:
         # WTF is that way to recover the HTTP GET attributes
         try:
             action = request.args['op'][0]
@@ -73,7 +73,7 @@ class LookUp(Resource):
             return 'Invalid Arguments %s' % request.args
 
         return self.processRequest(action, keyid)
-    
+
     def processRequest(self, action, keyid):
         if (action not in self.permitted_actions) or not keyid:
             return 'Forbidden: "%s" on ID "%s"' % (action, keyid)
