@@ -774,11 +774,10 @@ class Trac(ExternalBugTracker):
     """An ExternalBugTracker instance for handling Trac bugtrackers."""
 
     ticket_url = 'ticket/%i?format=csv'
-    batch_url = 'query/?%s&order=id&format=csv'
+    batch_url = 'query?%s&order=id&format=csv'
 
     def __init__(self, baseurl):
         self.baseurl = baseurl
-        self.bugs = {}
 
     def initializeRemoteBugDB(self, bug_ids):
         """Do any initialization before each bug watch is updated.
@@ -786,6 +785,7 @@ class Trac(ExternalBugTracker):
         If the URL specified for the bugtracker is not valid a
         BugTrackerConnectError will be raised.
         """
+        self.bugs = {}
         # Trac offers two ways for us to get bug details from them in CSV
         # format: individually or in groups. If we have less than ten
         # bugwatches to update we get the remote bugs individually for the
@@ -805,6 +805,30 @@ class Trac(ExternalBugTracker):
 
                 reader = csv.DictReader(csv_data)
                 self.bugs[bug_id] = reader.next()
+            return
+
+        # Otherwise we try to get the bugs as a group.
+        # The latest versions of Trac support querying for a set of bugs by ID
+        # as well as by status. However this functionality is not, at the
+        # moment, widely deployed. Luckily, when given a set of query
+        # arguments that it can't understand, Trac will simply return ALL of
+        # its tickets. Obviously, for large projects, this amounts to a lot of
+        # data, which is why we deal in individual requests for small sets
+        # of bugs above.
+        id_string = '&'.join(['id=%i' % id for id in bug_ids])
+        query_url = "%s/%s" % (self.baseurl, self.batch_url % id_string)
+        try:
+            csv_data = self.urlopen(query_url)
+        except (urllib2.HTTPError, urllib2.URLError), val:
+            raise BugTrackerConnectError(query_url, val)
+
+        remote_bugs = csv.DictReader(csv_data)
+        for remote_bug in remote_bugs:
+            # We're only interested in the bug if it's one of the ones in
+            # bug_ids, just in case we get all the tickets in the Trac
+            # instance back instead of only the ones we want.
+            if int(remote_bug['id']) in bug_ids:
+                self.bugs[int(remote_bug['id'])] = remote_bug
 
     def getRemoteStatus(self, bug_id):
         """Return the remote status for the given bug id.
@@ -812,7 +836,15 @@ class Trac(ExternalBugTracker):
         Raise BugNotFound if the bug can't be found.
         Raise InvalidBugId if the bug id has an unexpected format.
         """
-        raise NotImplementedError(self.getRemoteStatus)
+        try:
+            bug_id = int(bug_id)
+        except ValueError:
+            raise InvalidBugId("bug_id must be an integer: " + str(bug_id))
+
+        if not self.bugs.has_key(bug_id):
+            raise BugNotFound(bug_id)
+
+        return self.bugs[bug_id]['status']
 
     def convertRemoteStatus(self, remote_status):
         """See IExternalBugTracker"""

@@ -185,16 +185,15 @@ class TestTrac(Trac):
 
     trace_calls = False
     ticket_export_re = re.compile('ticket/[0-9]+\?format=csv')
+    batch_export_re = re.compile('query\?id=[0-9]+.*format=csv')
 
-    def _getPage(self, page):
+    def urlopen(self, url):
         if self.trace_calls:
-            print "CALLED _getPage(%r)" % (page,)
-        if ticket_export_re.match(page):
+            print "CALLED urlopen(%r)" % (url,)
+        if self.ticket_export_re.match(url):
             return read_test_file('trac_example_single_ticket_export.csv')
+        elif self.batch_export_re.match(url):
+            return read_test_file('trac_example_multi_ticket_export.csv')
         else:
             return ''
 
-    def _postPage(self, page, form):
-        if self.trace_calls:
-            print "CALLED _postPage(%r, ...)" % (page,)
-        return ''
