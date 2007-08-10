@@ -3,6 +3,7 @@
 __all__ = ['Publisher', 'pocketsuffix', 'suffixpocket', 'getPublisher']
 
 
+import apt_pkg
 from datetime import datetime
 import gzip
 import logging
@@ -12,7 +13,6 @@ from sha import sha
 import stat
 import tempfile
 
-from Crypto.Hash.SHA256 import new as sha256
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
@@ -45,6 +45,18 @@ Origin: %s
 Label: %s
 Architecture: %s
 """
+
+class sha256(object):
+    """Emulates PEP-247 hash class from apt_pkg.sha256sum
+
+    It's a work around for broken Crypto.Hash.SHA256. See further information
+    in bug #131503.
+    """
+    def __init__(self, content):
+        self._sum = apt_pkg.sha256sum(content)
+
+    def hexdigest(self):
+	return self._sum
 
 
 def reorder_components(components):
