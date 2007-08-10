@@ -42,6 +42,7 @@ from canonical.launchpad.webapp import (
     canonical_url, ContextMenu, Link, enabled_with_permission,
     LaunchpadView, Navigation, stepto, stepthrough, LaunchpadFormView,
     LaunchpadEditFormView, action)
+from canonical.launchpad.webapp.tales import DateTimeFormatterAPI
 from canonical.launchpad.webapp.uri import URI
 
 
@@ -219,6 +220,15 @@ class BranchView(LaunchpadView):
             return message
         return truncate_text(
             message, self.MAXIMUM_STATUS_MESSAGE_LENGTH) + ' ...'
+
+    def mirror_disabled(self):
+        """Has mirroring this branch been disabled?"""
+        return self.context.mirror_request_time is None
+
+    def mirror_in_future(self):
+        """Is the branch going to be mirrored in the future?"""
+        return (not self.mirror_disabled()
+                and self.context.mirror_request_time > datetime.now(pytz.UTC))
 
 
 class BranchInPersonView(BranchView):
