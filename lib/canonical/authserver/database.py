@@ -411,6 +411,9 @@ class DatabaseUserDetailsStorageV2(UserDetailsStorageMixin):
         if (requester.inTeam(branch.owner)
             and branch.branch_type == BranchType.HOSTED):
             return branch_id, WRITABLE
+        elif branch.branch_type == BranchType.REMOTE:
+            # Can't even read remote branches.
+            return '', ''
         else:
             return branch_id, READ_ONLY
 
@@ -446,11 +449,14 @@ class DatabaseBranchDetailsStorage:
             # another RCS system such as CVS.
             prefix = config.launchpad.bzr_imports_root_url
             pull_url = urlappend(prefix, '%08x' % branch.id)
-        else:
+        elif branch.branch_type == BranchType.HOSTED:
             # This is a push branch, hosted on the supermirror
             # (pushed there by users via SFTP).
             prefix = config.codehosting.branches_root
             pull_url = os.path.join(prefix, split_branch_id(branch.id))
+        else:
+            raise AssertionError(
+                'Remote branches should never be in the pull queue.')
         return (branch.id, pull_url, branch.unique_name[1:])
 
     def getBranchPullQueue(self):

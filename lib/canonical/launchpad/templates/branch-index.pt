@@ -31,8 +31,10 @@
 
   <table id="branch-details-table">
     <caption style="margin-top:1ex" class="discreet">
+      <div style="white-space: nowrap">
       These URLs are intended for use with the
       <a href="http://www.bazaar-vcs.org/">Bazaar</a> version control system.
+      </div>
     </caption>
     <tbody>
       <tal:not-junk-branch tal:condition="context/product">
@@ -46,22 +48,27 @@
           </td>
         </tr>
       </tal:not-junk-branch>
-    <tal:mirrored-branch tal:condition="context/url">
-      <tal:comment condition="nothing">
-        <!-- This is a mirror branch, display two URLs -->
-      </tal:comment>
+      <tal:mirrored-branch tal:condition="context/branch_type/enumvalue:MIRRORED">
         <tr><th>Location:</th><td tal:content="context/url" /></tr>
         <tr><th>Mirror:</th><td tal:content="view/supermirror_url" /></tr>
-    </tal:mirrored-branch>
-    <tal:hosted-or-imported-branch tal:condition="not:context/url">
-      <tal:comment condition="nothing">
-        <!-- This is a hosted or import branch, one URL -->
-      </tal:comment>
-      <tr>
-        <th>Hosted on Launchpad:</th>
-        <td tal:content="view/supermirror_url" />
-      </tr>
-    </tal:hosted-or-imported-branch>
+      </tal:mirrored-branch>
+      <tal:remote-branch tal:condition="context/branch_type/enumvalue:REMOTE">
+        <tr>
+          <th>Location:</th>
+          <td tal:condition="context/url" tal:content="context/url" />
+          <td tal:condition="not: context/url" >Not specified</td>
+        </tr>
+      </tal:remote-branch>
+      <tal:hosted-branch tal:condition="context/branch_type/enumvalue:HOSTED">
+        <tr>
+          <th>Hosted on Launchpad:</th><td tal:content="view/supermirror_url" />
+        </tr>
+      </tal:hosted-branch>
+      <tal:imported-branch tal:condition="context/branch_type/enumvalue:IMPORTED">
+        <tr>
+          <th>Hosted on Launchpad:</th><td tal:content="view/supermirror_url" />
+        </tr>
+      </tal:imported-branch>
     </tbody>
   </table>
 

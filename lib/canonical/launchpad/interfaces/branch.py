@@ -11,12 +11,14 @@ __all__ = [
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchType',
+    'BranchTypeError',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
     'IBranchDelta',
     'IBranchBatchNavigator',
     'IBranchLifecycleFilter',
+    'UICreatableBranchType',
     ]
 
 from zope.interface import Interface, Attribute
@@ -122,6 +124,18 @@ class BranchType(DBEnumeratedType):
         control system into bzr and are made available through the supermirror.
         """)
 
+    REMOTE = DBItem(4, """
+        Remote
+
+        Remote branches are those that are registered in Launchpad
+        with an external location, but are not to be mirrored.
+        """)
+
+
+class UICreatableBranchType(EnumeratedType):
+    """The types of branches that can be created through the web UI."""
+    use_template(BranchType, exclude='IMPORTED')
+
 
 DEFAULT_BRANCH_STATUS_IN_LISTING = (
     BranchLifecycleStatus.NEW,
@@ -147,6 +161,15 @@ class BranchCreatorNotMemberOfOwnerTeam(BranchCreationException):
 
     Raised when a user is attempting to create a branch and set the owner of
     the branch to a team that they are not a member of.
+    """
+
+
+class BranchTypeError(Exception):
+    """An operation cannot be performed for a particular branch type.
+
+    Some branch operations are only valid for certain types of branches.  The
+    BranchTypeError exception is raised if one of these operations is called
+    with a branch of the wrong type.
     """
 
 
@@ -202,11 +225,14 @@ class IBranch(IHasOwner):
 
     id = Int(title=_('ID'), readonly=True, required=True)
     branch_type = Choice(
-        title=_("Branch type"), required=True, vocabulary=BranchType,
+        title=_("Branch Type"), required=True,
+        vocabulary=UICreatableBranchType,
         description=_("Hosted branches have Launchpad code hosting as the "
                       "primary location and can be pushed to.  Mirrored "
                       "branches are pulled from the remote location "
-                      "specified and cannot be pushed to."))
+                      "specified and cannot be pushed to.  Remote branches "
+                      "are not mirrored by Launchpad, nor can they be "
+                      "pushed to."))
     name = TextLine(
         title=_('Name'), required=True, description=_("Keep very "
         "short, unique, and descriptive, because it will be used in URLs. "
@@ -221,7 +247,7 @@ class IBranch(IHasOwner):
         "single-paragraph description of the branch. This will be "
         "displayed on the branch page."))
     url = BranchURIField(
-        title=_('Branch URL'), required=True,
+        title=_('Branch URL'), required=False,
         allowed_schemes=['http', 'https', 'ftp', 'sftp', 'bzr+ssh'],
         allow_userinfo=False,
         allow_query=False,
