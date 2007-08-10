@@ -143,8 +143,6 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     target = Attribute("The software in which this bug should be fixed")
     target_uses_malone = Bool(title=_("Whether the bugtask's target uses Launchpad"
                               "officially"))
-    targetname = Text(title=_("The short, descriptive name of the target"),
-                      readonly=True)
     title = Text(title=_("The title of the bug related to this bugtask"),
                          readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "

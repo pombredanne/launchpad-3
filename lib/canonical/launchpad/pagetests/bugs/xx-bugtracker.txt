@@ -1,15 +1,18 @@
-First, let's make sure we can see the page listing all registered remote bug
-trackers.
+= External bug trackers =
 
-  >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/')
+Launchpad can link to bugs in external bug trackers. The list of bug
+trackers Launchpad knows about is accessible from the Bugs front page.
+
+  >>> user_browser.open('http://bugs.launchpad.dev/')
+  >>> user_browser.getLink('bug trackers').click()
   >>> user_browser.title
   'Bug trackers registered in Launchpad'
 
-Now we are going to add a bug tracker. First, can we see the form?
+Anyone logged in is able to register a new bug tracker.
 
   >>> user_browser.getLink('Register bug tracker').click()
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers/+newbugtracker'
+  'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
 
   >>> user_browser.title
   'Register an external bug tracker'
@@ -28,8 +31,8 @@ and SourceForge because there is only one instance (SourceForge.net).
   Trac
   Mantis
 
-We're not allowed to enter a name with invalid characters, if we do so, we
-get a nice error message.
+The bug tracker name is used in URLs and certain characters (like '!')
+aren't allowed.
 
   >>> user_browser.getControl('Name').value = 'testttrac!'
   >>> user_browser.getControl('Bug Tracker Type').getControl('Trac').click()
@@ -40,22 +43,37 @@ get a nice error message.
   >>> user_browser.getControl('Contact details').value = 'blah blah'
   >>> user_browser.getControl('Add').click()
 
-  >>> from BeautifulSoup import BeautifulSoup
-  >>> soup = BeautifulSoup(user_browser.contents)
-  >>> print soup('div', {'class': 'message'})[0].renderContents()
-  Invalid name 'testttrac!'. Names must start with a letter or
-  number and be lowercase. The characters <samp>+</samp>,
-  <samp>-</samp> and <samp>.</samp> are also allowed after the
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
+  >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+  ...     print extract_text(message)
+  An error occurred.
+  Invalid name 'testttrac!'. Names must start with a letter or number
+  and be lowercase. The characters +, - and . are also allowed after the
   first character.
 
-Now, let's POST to the form. We expect to be redirected to the page for the
-new tracker.
+If a bug tracker is already registered with the same URL, the user is
+informed about it.
 
   >>> user_browser.getControl('Name').value = 'testtrac'
+  >>> user_browser.getControl('Base URL').value = 'http://bugzilla.mozilla.org/'
   >>> user_browser.getControl('Add').click()
 
   >>> user_browser.url
-  'http://launchpad.dev/bugs/bugtrackers/testtrac'
+  'http://bugs.launchpad.dev/bugs/bugtrackers/+newbugtracker'
+  >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+  ...     print extract_text(message)
+  An error occurred.
+  http://bugzilla.mozilla.org/ is already registered in Launchpad.
+
+After successfully registering the bug tracker, the user is redirect to
+the bug tracker page.
+
+  >>> user_browser.getControl('Base URL').value = url
+  >>> user_browser.getControl('Add').click()
+
+  >>> user_browser.url
+  'http://bugs.launchpad.dev/bugs/bugtrackers/testtrac'
 
   >>> user_browser.title
   'Bug tracker \xe2\x80\x9cTest Trac Tracker\xe2\x80\x9d'
@@ -130,6 +148,27 @@ And lets see if we can edit the newly added bugtracker.
   >>> user_browser.getControl('Bug Tracker Type').getControl('Bugzilla').click()
   >>> user_browser.getControl(
   ...     'Summary').value = 'This is used to be a test TRAC bug tracker.'
+
+It's not possible to change the base URL to something that another bug
+tracker uses.
+
+  >>> user_browser.getControl('Base URL').value = 'http://bugzilla.mozilla.org/'
+  >>> user_browser.getControl('Change').click()
+
+  >>> user_browser.url
+  'http://launchpad.dev/bugs/bugtrackers/testtrac/+edit'
+  >>> for message in find_tags_by_class(user_browser.contents, 'message'):
+  ...     print extract_text(message)
+  An error occurred.
+  There is a problem with the information you entered.
+  Please fix it and try again.
+  http://bugzilla.mozilla.org/ is already registered in Launchpad.
+
+
+After successfully editing the bug tracker information, the user is
+redirect to the bug tracker page.
+
+  >>> user_browser.getControl('Base URL').value = url
   >>> user_browser.getControl('Change').click()
 
   >>> user_browser.url

@@ -82,9 +82,4 @@
         <allow interface="canonical.launchpad.interfaces.IProjectMilestone" />
     </content>
 
-    <securedutility
-        class="canonical.launchpad.database.ProjectMilestoneSet"
-        provides="canonical.launchpad.interfaces.IProjectMilestoneSet">
-        <allow interface="canonical.launchpad.interfaces.IProjectMilestoneSet" />
-    </securedutility>
 </configure>
