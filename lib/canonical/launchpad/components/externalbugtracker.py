@@ -774,7 +774,7 @@ class Trac(ExternalBugTracker):
     """An ExternalBugTracker instance for handling Trac bugtrackers."""
 
     ticket_url = 'ticket/%i?format=csv'
-    batch_url = 'query?%s&order=id&format=csv'
+    batch_url = 'query?%s&order=resolution&format=csv'
 
     def __init__(self, baseurl):
         # Trac can be really finicky about slashes in URLs, so we strip any
@@ -826,14 +826,15 @@ class Trac(ExternalBugTracker):
         except (urllib2.HTTPError, urllib2.URLError), val:
             raise BugTrackerConnectError(query_url, val)
 
-        import pdb; pdb.set_trace()
         remote_bugs = csv.DictReader(csv_data)
         for remote_bug in remote_bugs:
             # We're only interested in the bug if it's one of the ones in
             # bug_ids, just in case we get all the tickets in the Trac
             # instance back instead of only the ones we want.
-            if remote_bug['id'] in bug_ids:
-                self.bugs[int(remote_bug['id'])] = remote_bug
+            if remote_bug['id'] not in bug_ids:
+                continue
+
+            self.bugs[int(remote_bug['id'])] = remote_bug
 
     def getRemoteStatus(self, bug_id):
         """Return the remote status for the given bug id.
@@ -849,10 +850,10 @@ class Trac(ExternalBugTracker):
         if not self.bugs.has_key(bug_id):
             raise BugNotFound(bug_id)
 
-        # If the bug has a resolution as well as a status then we return that,
-        # since it's more informative than the status field on its own.
-        if (self.bug[bug_id].has_key('resolution') and
-            self.bug[bug_id]['resolution']):
+        # If the bug has a valid resolution as well as a status then we return
+        # that, since it's more informative than the status field on its own.
+        if (self.bugs[bug_id].has_key('resolution') and
+            self.bugs[bug_id]['resolution'] not in ['', '--', None]):
             return self.bugs[bug_id]['resolution']
         else:
             return self.bugs[bug_id]['status']

@@ -128,12 +128,12 @@ We'll add some more watches now.
     {1: u'open'}
 
     >>> remote_bugs = [
-    ...     (143, 'closed'),
+    ...     (143, 'fixed'),
     ...     (144, 'assigned'),
     ...     (145, 'assigned'),
     ...     (146, 'closed'),
-    ...     (147, 'closed'),
-    ...     (148, 'closed'),
+    ...     (147, 'fixed'),
+    ...     (148, 'fixed'),
     ...     (149, 'assigned'),
     ...     (150, 'new'),
     ...     (151, 'new'),
@@ -153,4 +153,5 @@ for them all at once.
 
     >>> trac.trace_calls = True
     >>> trac.updateBugWatches(example_bug_tracker.watches)
+    CALLED urlopen(u'http://bugs.example.com/query?id=...
 
