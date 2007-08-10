@@ -58,7 +58,7 @@ bug's project uses an external bug tracker.
     >>> assigned_bugtask = bugtaskset.get(2)
     >>> assigned_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)
-    >>> #assigned_bugtask.incomplete_date = old_age_days_ago
+    >>> assigned_bugtask.date_incomplete = old_age_days_ago
     >>> print assigned_bugtask.bugtargetdisplayname
     Mozilla Firefox
 
@@ -66,6 +66,7 @@ bug's project uses an external bug tracker.
     >>> confirmed_bugtask = bugtaskset.get(30)
     >>> confirmed_bugtask.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, sample_person)
+    >>> confirmed_bugtask.date_confirmed = old_age_days_ago
     >>> print confirmed_bugtask.bugtargetdisplayname
     Jokosher
 
@@ -73,7 +74,7 @@ bug's project uses an external bug tracker.
     >>> expirable_distroseries_bugtask = bugtaskset.get(28)
     >>> expirable_distroseries_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)
-    >>> #expirable_distroseries_bugtask.incomplete_date = old_age_days_ago
+    >>> expirable_distroseries_bugtask.date_incomplete = old_age_days_ago
     >>> starting_bug_messages_count =(
     ...     expirable_distroseries_bugtask.bug.messages.count())
     >>> starting_bug_messages_count
@@ -93,6 +94,7 @@ bug's project uses an external bug tracker.
     >>> expirable_product_bugtask = bugtaskset.get(31)
     >>> expirable_product_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)    
+    >>> expirable_product.date_incomplete = old_age_days_ago
     >>> print expirable_product_bugtask.bugtargetdisplayname
     Jokosher
     
@@ -101,17 +103,15 @@ bug's project uses an external bug tracker.
     >>> external_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)
     >>> external_bugtask.transitionToAssignee(None)
-    >>> #external_bugtask.incomplete_date = old_age_days_ago
+    >>> external_bugtask.date_incomplete = old_age_days_ago
     >>> print external_bugtask.bugtargetdisplayname
     mozilla-firefox (Debian)
 
-    # A bugtask that is not expirable because it has recently changed.
-    # XXX sinzui 2007-08-02:
     # Switch from bugtask.datecreated -> bugtask.date_incomplete.
     >>> recent_bugtask = bugtaskset.get(23)
     >>> recent_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)
-    >>> recent_bugtask.datecreated = fourteen_days_ago
+    >>> recent_bugtask.date_incomplete = fourteen_days_ago
     >>> print recent_bugtask.bugtargetdisplayname
     thunderbird (Ubuntu)
 
@@ -121,16 +121,18 @@ the status of INVALID. Ubuntu Hoary as a conjoined slave bugtask for
 Ubuntu. The slave bugtask's status is implicily set to INVALID when
 the master is set INVALID.
 
-    # XXX sinzui 2007-08-02:
-    # Switch from bugtask.bug.date_last_updated -> bugtask.date_incomplete.
     >>> def summarize_bugtask(bugtasks):
     ...     print 'ROLE  BUG  BUGTASK  UNASSIGNED  IS_OLD  STATUS  MALONE'
     ...     for role in sorted(bugtasks.keys()):
     ...         bugtask = bugtasks[role]
+    ...         if bugtask.date_incomplete is not None:
+    ...             status_date = bugtask.date_incomplete
+    ...         else:
+    ...             status_date = bugtask.date_confirmed
     ...         print ('%s  %s  %s  %s  %s  %s  %s' %
     ...             (role, 
     ...              bugtask.bug.id, bugtask.id, bugtask.assignee is None,
-    ...              bugtask.datecreated <= old_age_days_ago,
+    ...              status_date <= old_age_days_ago,
     ...              bugtask.status.title, bugtask.target_uses_malone))
     >>> bugtasks = dict(
     ...     assigned=assigned_bugtask,

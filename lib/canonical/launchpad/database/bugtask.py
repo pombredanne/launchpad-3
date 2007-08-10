@@ -1463,12 +1463,11 @@ class BugTaskSet:
         list because they can only be expired by calling the master bugtask's
         transitionToStatus() method.
         """
-        # XXX sinzui 2007-08-06:
-        # Switch from BugTask.datecreated to BugTask.date_incomplete
         common_contraints = dict(status_assignee_age="""
             BugTask.status = %s
             AND BugTask.assignee IS NULL
-            AND BugTask.datecreated < (current_timestamp -interval '%s days')
+            AND BugTask.date_incomplete < (
+                current_timestamp -interval '%s days')
             """ % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old))
         all_bugtasks = BugTask.select("""
             BugTask.id IN (
