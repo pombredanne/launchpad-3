@@ -90,8 +90,9 @@ class MilestoneView(LaunchpadView):
     def bugtasks(self):
         user = getUtility(ILaunchBag).user
         params = BugTaskSearchParams(user, milestone=self.context,
-                    orderby=['-importance', 'datecreated', 'id'])
-        tasks = getUtility(IBugTaskSet).search(params) 
+                    orderby=['-importance', 'datecreated', 'id'],
+                    omit_dupes=True)
+        tasks = getUtility(IBugTaskSet).search(params)
         return list(tasks)
 
 
