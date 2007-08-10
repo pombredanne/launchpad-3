@@ -7,13 +7,12 @@ lib/canonical/launchpad/translationformat/doc.
 import unittest
 import logging
 import os
-import transaction
 from zope.testing.doctest import REPORT_NDIFF, NORMALIZE_WHITESPACE, ELLIPSIS
 from zope.testing.doctest import DocFileSuite
 
 from canonical.functional import FunctionalDocFileSuite
 from canonical.launchpad.ftests.test_system_documentation import (
-    setGlobs, LayeredDocFileSuite, setUp, tearDown)
+    setUp, tearDown)
 from canonical.testing import LaunchpadFunctionalLayer
 
 here = os.path.dirname(os.path.realpath(__file__))
