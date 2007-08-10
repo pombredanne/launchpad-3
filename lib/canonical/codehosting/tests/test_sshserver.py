@@ -151,11 +151,11 @@ class MockChecker(SSHPublicKeyDatabase):
     error_message = u'error message'
 
     def requestAvatarId(self, credentials):
-        if self.error_message is not None:
+        if credentials.username == 'success':
+            return credentials.username
+        else:
             return failure.Failure(
                 sshserver.UserDisplayedUnauthorizedLogin(self.error_message))
-        else:
-            return credentials.username
 
 
 class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
@@ -174,8 +174,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
 
     def setUp(self):
         UserAuthServerMixin.setUp(self)
-        self.checker = MockChecker()
-        self.portal.registerChecker(self.checker)
+        self.portal.registerChecker(MockChecker())
         self.user_auth.serviceStarted()
         self.key_data = self._makeKey()
 
@@ -193,10 +192,8 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
         # No banner is printed when the user authenticates successfully.
         self.assertEqual(None, config.codehosting.banner)
 
-        # The checker will pass if there's no error message.
-        self.checker.error_message = None
         d = self.user_auth.ssh_USERAUTH_REQUEST(
-            NS('jml') + NS('') + NS('publickey') + self.key_data)
+            NS('success') + NS('') + NS('publickey') + self.key_data)
         def check(ignored):
             # Check that no banner was sent to the user.
             self.assertEqual(
@@ -208,9 +205,8 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
         # If a banner is set in the codehosting config then we always send it
         # to the user.
         config.codehosting.banner = "banner"
-        self.checker.error_message = None
         d = self.user_auth.ssh_USERAUTH_REQUEST(
-            NS('jml') + NS('') + NS('publickey') + self.key_data)
+            NS('success') + NS('') + NS('publickey') + self.key_data)
         def check(ignored):
             # Check that no banner was sent to the user.
             self.assertEqual(
@@ -226,7 +222,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
         # When there's an authentication failure, we display an informative
         # error message through the SSH authentication protocol 'banner'.
         d = self.user_auth.ssh_USERAUTH_REQUEST(
-            NS('jml') + NS('') + NS('publickey') + self.key_data)
+            NS('failure') + NS('') + NS('publickey') + self.key_data)
 
         def check(ignored):
             # Check that we received a BANNER, then a FAILURE.
@@ -242,7 +238,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
         # client with warnings about this, as whenever it becomes a problem, we
         # can rely on the SSH client itself to report it to the user.
         d = self.user_auth.ssh_USERAUTH_REQUEST(
-            NS('jml') + NS('') + NS('none') + NS(''))
+            NS('failure') + NS('') + NS('none') + NS(''))
 
         def check(ignored):
             # Check that we received only a FAILRE.
