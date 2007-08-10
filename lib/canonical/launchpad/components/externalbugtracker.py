@@ -93,6 +93,8 @@ def get_external_bugtracker(bugtracker, version=None):
         return DebBugs()
     elif bugtrackertype == BugTrackerType.MANTIS:
         return Mantis(bugtracker.baseurl)
+    elif bugtrackertype == BugTrackerType.TRAC:
+        return Trac(bugtracker.baseurl)
     else:
         raise UnknownBugTrackerTypeError(bugtrackertype.name,
             bugtracker.name)
