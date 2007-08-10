@@ -96,6 +96,14 @@ class MilestoneView(LaunchpadView):
         # Do not display generic bug tasks from conjoined relationships:
         return [task for task in tasks if task.conjoined_master is None]
 
+    @property
+    def is_project_milestone(self):
+        """Check, if the current milestone is a project milestone.
+
+        Return true, if the current milestone is a project milestone,
+        else return False."""
+        return IProjectMilestone.providedBy(self.context)
+
 
 class MilestoneAddView:
     def create(self, name, dateexpected=None):

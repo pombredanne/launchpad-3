@@ -5,15 +5,13 @@
 __metaclass__ = type
 
 __all__ = [
-    'CodeImportSetNavigation',
     'CodeImportSetView',
     'CodeImportView',
     ]
 
 
 from canonical.launchpad import _
-from canonical.launchpad.interfaces import ICodeImportSet, NotFoundError
-from canonical.launchpad.webapp import LaunchpadView, Navigation
+from canonical.launchpad.webapp import LaunchpadView
 from canonical.launchpad.webapp.batching import BatchNavigator
 from canonical.widgets import LaunchpadDropdownWidget
 
@@ -23,28 +21,6 @@ from zope.app.form.utility import setUpWidget
 from zope.schema import Choice
 
 import operator
-
-
-class CodeImportSetNavigation(Navigation):
-    """Navigation from the CodeImportSet page.
-
-    CodeImports objects live at http://code.launchpad.dev/+code-imports/$id
-    and the breadcrumb links back to the code imports page.
-    """
-
-    usedfor = ICodeImportSet
-
-    def breadcrumb(self):
-        """See `Navigation.breadcrumb`."""
-        return "Code Imports"
-
-    def traverse(self, id):
-        """See `Navigation.traverse`."""
-        try:
-            id = int(id)
-        except ValueError:
-            raise NotFoundError(id)
-        return self.context.get(id)
 
 
 class ReviewStatusDropdownWidget(LaunchpadDropdownWidget):
