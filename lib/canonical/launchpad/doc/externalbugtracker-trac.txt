@@ -113,7 +113,7 @@ And have a Trac instance process them:
     >>> trac.updateBugWatches(example_bug_tracker.watches)
     >>> for bug_watch in example_bug_tracker.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
-    1: open
+    1: fixed
 
 We'll add some more watches now.
 
@@ -125,13 +125,13 @@ We'll add some more watches now.
     ...     for bug_watch in example_bug_tracker.watches)
 
     >>> expected_remote_statuses
-    {1: u'open'}
+    {1: u'fixed'}
 
     >>> remote_bugs = [
     ...     (143, 'fixed'),
     ...     (144, 'assigned'),
     ...     (145, 'assigned'),
-    ...     (146, 'closed'),
+    ...     (146, 'invalid'),
     ...     (147, 'fixed'),
     ...     (148, 'fixed'),
     ...     (149, 'assigned'),
@@ -155,3 +155,72 @@ for them all at once.
     >>> trac.updateBugWatches(example_bug_tracker.watches)
     CALLED urlopen(u'http://bugs.example.com/query?id=...
 
+    >>> remote_statuses = dict(
+    ...     (int(bug_watch.remotebug), bug_watch.remotestatus)
+    ...     for bug_watch in example_bug_tracker.watches)
+
+    >>> for remote_bug_id in set(remote_statuses).union(
+    ...     expected_remote_statuses):
+    ...     remote_status = remote_statuses[remote_bug_id]
+    ...     expected_remote_status = expected_remote_statuses[remote_bug_id]
+    ...     print 'Remote bug %d' % (remote_bug_id,)
+    ...     print ' * Expected << %s >>' % (expected_remote_status,)
+    ...     print ' *      Got << %s >>' % (remote_status,)
+    Remote bug 1
+     * Expected << fixed >>
+     *      Got << fixed >>
+    Remote bug 143
+     * Expected << fixed >>
+     *      Got << fixed >>
+    Remote bug 144
+     * Expected << assigned >>
+     *      Got << assigned >>
+    Remote bug 145
+     * Expected << assigned >>
+     *      Got << assigned >>
+    Remote bug 146
+     * Expected << invalid >>
+     *      Got << invalid >>
+    Remote bug 147
+     * Expected << fixed >>
+     *      Got << fixed >>
+    Remote bug 148
+     * Expected << fixed >>
+     *      Got << fixed >>
+    Remote bug 149
+     * Expected << assigned >>
+     *      Got << assigned >>
+    Remote bug 150
+     * Expected << new >>
+     *      Got << new >>
+    Remote bug 151
+     * Expected << new >>
+     *      Got << new >>
+    Remote bug 152
+     * Expected << new >>
+     *      Got << new >>
+    Remote bug 153
+     * Expected << new >>
+     *      Got << new >>
+
+updateBugWatches() updates the lastchecked attribute on the watches, so
+now no bug watches are in need of updating:
+
+    >>> from canonical.database.sqlbase import flush_database_updates
+    >>> flush_database_updates()
+    >>> example_bug_tracker.getBugWatchesNeedingUpdate(23).count()
+    0
+
+If the status isn't different, the lastchanged attribute doesn't get
+updated:
+
+    >>> import pytz
+    >>> from datetime import datetime, timedelta
+    >>> bug_watch = example_bug_tracker.watches[0]
+    >>> now = datetime.now(pytz.timezone('UTC'))
+    >>> bug_watch.lastchanged = now - timedelta(weeks=2)
+    >>> old_last_changed = bug_watch.lastchanged
+    >>> trac.trace_calls = False
+    >>> trac.updateBugWatches(example_bug_tracker.watches)
+    >>> bug_watch.lastchanged == old_last_changed
+    True
