@@ -212,18 +212,21 @@ class HasTranslationImportsView(LaunchpadFormView):
         """Return the entries in the queue for this context."""
         file_extension = None
         status = None
-        if 'filter_extension' in self.widgets:
-            file_extension = self.widgets['filter_extension'].getInputValue()
+        filter_extension_widget = self.widgets.get('filter_extension')
+        if filter_extension_widget.hasValidInput():
+            file_extension = filter_extension_widget.getInputValue()
             if file_extension == 'all':
                 file_extension = None
-        if 'filter_status' in self.widgets:
-            status = self.widgets['filter_status'].getInputValue()
+        filter_status_widget = self.widgets.get('filter_status')
+        if filter_status_widget.hasValidInput():
+            status = filter_status_widget.getInputValue()
             if status == 'all':
                 status = None
             else:
                 status = RosettaImportStatus.items[status]
-        return self.context.getTranslationImportQueueEntries(
-            status=status, file_extension=file_extension)
+        return IHasTranslationImports(
+            self.context).getTranslationImportQueueEntries(
+                status=status, file_extension=file_extension)
 
     @property
     def has_entries(self):

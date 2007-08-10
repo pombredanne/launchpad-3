@@ -132,7 +132,7 @@ class ITranslationImportQueue(Interface):
         raised.
         """
 
-    def entryCount(self):
+    def entryCount():
         """Return the number of TranslationImportQueueEntry records."""
 
     def iterNeedReview():
@@ -188,20 +188,24 @@ class ITranslationImportQueue(Interface):
     def getAllEntries(target=None, status=None, file_extension=None):
         """Return all entries this import queue has
 
-        :arg target: Whether it's a 'distro' entry or a 'product' one.
+        :arg target: IPerson, IProduct, IProductSeries, IDistribution,
+            IDistroSeries or ISourcePackage the import entries are attached to
+            or None to get all entries available.
         :arg status: RosettaImportStatus entry.
         :arg file_extension: String with the file type extension, usually 'po'
             or 'pot'.
 
-        If either target, status or file_extension are given, the returned
+        If any of target, status or file_extension are given, the returned
         entries are filtered based on those values.
         """
 
-    def getEntryByProductSeries(self, productseries):
-        """Return all entries of the given product series."""
+    def getFirstEntryToImport(target=None):
+        """Return the first entry of the queue ready to be imported.
 
-    def getFirstEntryToImport():
-        """Return the first entry of the queue ready to be imported."""
+        :arg target: IPerson, IProduct, IProductSeries, IDistribution,
+            IDistroSeries or ISourcePackage the import entries are attached to
+            or None to get all entries available.
+        """
 
     def getEntriesWithPOTExtension(
         distroseries=None, sourcepackagename=None, productseries=None):

@@ -258,6 +258,16 @@
     layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
+  <browser:page
+    for="canonical.launchpad.interfaces.IDistroSeries"
+    name="+imports"
+    class="canonical.launchpad.browser.HasTranslationImportsView"
+    facet="translations"
+    permission="zope.Public"
+    template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
+    />
+
   <!-- NB DO NOT CHANGE WITHOUT THINKING
        Do not allow people to change the details of the distro series that
        will affect the way Soyuz publishes the distroseries. Check with

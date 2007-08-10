@@ -155,12 +155,13 @@
     />
 
   <browser:page
-    for="canonical.launchpad.interfaces.IHasTranslationImports"
+    for="canonical.launchpad.interfaces.IProduct"
     name="+imports"
     class="canonical.launchpad.browser.HasTranslationImportsView"
-    permission="zope.Public"
     facet="translations"
+    permission="zope.Public"
     template="../templates/hastranslationimports-index.pt"
+    layer="canonical.launchpad.layers.TranslationsLayer"
     />
 
   <browser:pages
