@@ -1433,7 +1433,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # Now pour the holding tables back into the originals
         copier.pour(ztm)
 
-    def _copyActiveTranslationsAsUpdate_new(self, ztm):
+    def _copyActiveTranslationsAsUpdate(self, ztm):
         """Receive active, updated translations from parent series."""
         full_name = "%s_%s" % (self.distribution.name, self.name)
         tables = ['POFile', 'POMsgSet', 'POSubmission']
@@ -1451,8 +1451,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 (pt1.sourcepackagename = pt2.sourcepackagename OR
                  (pt1.sourcepackagename IS NULL AND
                   pt2.sourcepackagename IS NULL)) AND
-                pt1.distrorelease = %d AND
-                pt2.distrorelease = %d
+                pt1.distrorelease = %s AND
+                pt2.distrorelease = %s
             """ % sqlvalues(self.parent, self))
         cur.execute(
             "CREATE UNIQUE INDEX equiv_template_pkey ON equiv_template(id)")
@@ -1473,7 +1473,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                   ptms2.alternative_msgid IS NULL))
             """)
         cur.execute(
-            "CREATE UNIQUE INDEX equiv_template_pkey ON equiv_template(id)")
+            "CREATE UNIQUE INDEX equiv_potmsgset_pkey ON equiv_template(id)")
 
         holding_tables = {
             'pofile': copier.getHoldingTableName('POFile'),
@@ -1482,9 +1482,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             }
 
         query_parameters = {
-            'pofile_holding_table' = holding_tables['pofile'],
-            'pomsgset_holding_table' = holding_tables['pomsgset'],
-            'posubmission_holding_table' = holding_tables['posubmission'],
+            'pofile_holding_table': holding_tables['pofile'],
+            'pomsgset_holding_table': holding_tables['pomsgset'],
+            'posubmission_holding_table': holding_tables['posubmission'],
             }
 
         # ### POFile ###
@@ -1533,8 +1533,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         copier.extract(
             'POFile',
-            "potemplate = equiv_template.id",
-            inert_pofiles,
+            where_clause="potemplate = equiv_template.id",
+            inert_where=inert_pofiles,
             prepare_batch=prepare_pofile_batch,
             external_joins=['equiv_template'])
         cur = cursor()
@@ -1582,8 +1582,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 pf1.language = pf2.language AND
                 COALESCE(pf1.variant, ''::text) =
                     COALESCE(pf2.variant, ''::text) AND
-                new_id IS NULL
-            """)
+                pf1.new_id IS NULL
+            """ % query_parameters)
         cur.execute(
             "CREATE UNIQUE INDEX equiv_pofile_pkey ON equiv_pofile (id)")
 
@@ -1595,9 +1595,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             WHERE holding.id = equiv_pofile.id
             """ % query_parameters)
 
-        # XXX: JeroenVermeulen 2007-07-16, Fix POFile.last_touched_pomsgset
-        # somehow!  Can't do that here because we'd be pouring POFiles with
-        # foreign keys that pointed to POMsgSets that hadn't been poured yet.
+        # XXX: JeroenVermeulen 2007-07-16 bug=124410: Fix up
+        # POFile.last_touched_pomsgset!  Can't do that here because we'd be
+        # pouring POFiles with foreign keys that pointed to POMsgSets that
+        # hadn't been poured yet.
 
         # ### POMsgSet ###
 
@@ -1706,7 +1707,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # Where corresponding POMsgSets already exist but are not complete,
         # and parent's version is complete, update review-related status.
-        # XXX: JeroenVermeulen 2007-07-16, Rewrite this to use a LoopTuner.
         class UpdatePOMsgSets:
             """Loop body for LoopTuner: update incomplet POMsgSets in child.
             """
@@ -1730,6 +1730,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 batch_size = int(batch_size)
 
                 # Figure out what id lies exactly batch_size rows ahead.
+                # There could be huge holes in the numbering here, so we can't
+                # just do fixed-size batches of id sequence.
                 self.cur.execute("""
                     SELECT id
                     FROM inert_pomsgsets
@@ -1774,7 +1776,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             holding_table, source_table, batch_size, start_id, end_id):
             """Prepare pouring of a batch of POSubmissions.
 
-            Deletes any POSubmissions in the batch that already have 
+            Deletes any POSubmissions in the batch that already have
             equivalents in the source table (same potranslation, pomsgset, and
             pluralform; or active and same pomsgset and pluralform).  Any such
             equivalents must have been added or made active after the
@@ -1810,25 +1812,52 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 """ % (holding_table, sqlvalues(start_id, end_id)))
 
 
-        # XXX: JeroenVermeulen 2007-07-06, Exclude POSubmissions for which an
-        # equivalent (potranslation, pomsgset, pluralform) or equivalent
-        # active one (active and same pomsgset, pluralform) already exists.
-        # XXX: JeroenVermeulen 2007-07-06, Extraction condition must also
-        # check for corresponding POSubmissions in self that have greater
-        # datecreated.
+        # Exclude POSubmissions for which an equivalent (potranslation,
+        # pomsgset, pluralform), or we'd be introducing needless duplicates;
+        # don't offer replacements for active submissions, i.e. ones with
+        # active set and the same (pomsgset, pluralform); nor for message sets
+        # that the child has newer submissions for, i.e. ones with the same
+        # (pomsgset, pluralform) but greater datecreated.
+        # The MultiTableCopy does not allow us to join with the source table
+        # for our extraction condition, so we make these unnecessary rows
+        # inert instead, and after extraction, delete them from the holding
+        # table.
+        have_better = """
+            EXISTS (
+                SELECT *
+                FROM POSubmission better
+                WHERE
+                    better.pomsgset = holding.new_pomsgset AND
+                    better.pluralform = holding.pluralfom AND
+                    (better.potranslation = holding.potranslation OR
+                     better.active OR
+                     better.datecreated > holding.datecreated)
+            )
+            """
         copier.extract(
             'POSubmission', "active AND NOT published", joins=['pomsgset'],
-            prepare_batch=prepare_posubmission_batch)
+            prepare_batch=prepare_posubmission_batch, inert_where=have_better)
         cur = cursor()
+        cur.execute(
+            "DELETE FROM %s WHERE new_id IS NULL"
+                % holding_tables['posubmission'])
 
         # Update existing incomplete POMsgSets that need not be replaced by
         # copies from parent, but whose parents are complete.
-        # XXX: JeroenVermeulen 2007-07-16, this may still be a "hole" in the
+        # XXX: JeroenVermeulen 2007-07-16: this may still be a "hole" in the
         # algorithm.  We're marking POMsgSets as complete, which really won't
         # be true until after pouring.  Can we close it?  Do something safe?
         # Problem is we need information from a holding table.
         updater = UpdatePOMsgSets(holding_tables['pomsgset'], ztm)
         LoopTuner(updater, 2, 500).run()
+
+        # Remember which POFiles we will affect, so we can update their stats
+        # later.
+        cur.execute(
+            "CREATE TEMP TABLE changed_pofiles AS SELECT new_id AS id FROM %s"
+            % holding_tables['pofile'])
+        cur.execute(
+            "CREATE UNIQUE INDEX changed_pofiles_pkey ON changed_pofiles(id)")
 
         # Now get rid of those inert rows whose new_ids we messed with, or
         # horrible things will happen during pouring.
@@ -1841,347 +1870,19 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             WHERE id IN (SELECT id FROM inert_pomsgsets)
             """ % query_parameters)
 
+
         # Pour copied rows back to source tables.  Contrary to appearances,
         # this is where the real work happens.
-        # XXX: JeroenVermeulen 2007-07-06, implement retry logic to deal with
-        # unique constraints that were broken in the meantime.
         copier.pour()
-
-    def _copyActiveTranslationsAsUpdate(self):
-        """Receive active, updated translations from parent series."""
-
-        # This method was extracted as one of two cases from a huge
-        # _copy_active_translations() method.  It's likely to cause problems
-        # to other users while running, locking them out of the database
-        # during its potentially huge updates.  We should see if we can batch
-        # it into smaller chunks in order to reduce lock pressure.
-
-        # XXX: JeroenVermeulen 2007-05-03: This method should become
-        # unnecessary once the "translation multicast" spec is implemented:
-        # https://launchpad.canonical.com/MulticastTranslations
-
-        # The left outer join that obtains pf2 ensures that we only do the
-        # copying for POFiles whose POTemplates don't have any POFiles yet.
-
-        # XXX: JeroenVermeulen 2007-04-27: We must be careful when batching
-        # this statement.  After one POFile is copied, pt2 will have a POFile
-        # attached and its other POFiles will no longer qualify for copying.
-
-        logging.info('Filling POFile table...')
-        cur = cursor()
-        cur.execute('''
-            INSERT INTO POFile (
-                potemplate, language, description, topcomment, header,
-                fuzzyheader, lasttranslator, currentcount, updatescount,
-                rosettacount, lastparsed, owner, variant, path, exportfile,
-                exporttime, datecreated, last_touched_pomsgset,
-                from_sourcepackagename)
-            SELECT
-                pt2.id AS potemplate,
-                pf1.language AS language,
-                pf1.description AS description,
-                pf1.topcomment AS topcomment,
-                pf1.header AS header,
-                pf1.fuzzyheader AS fuzzyheader,
-                pf1.lasttranslator AS lasttranslator,
-                pf1.currentcount AS currentcount,
-                pf1.updatescount AS updatescount,
-                pf1.rosettacount AS rosettacount,
-                pf1.lastparsed AS lastparsed,
-                pf1.owner AS owner,
-                pf1.variant AS variant,
-                pf1.path AS path,
-                pf1.exportfile AS exportfile,
-                pf1.exporttime AS exporttime,
-                pf1.datecreated AS datecreated,
-                pf1.last_touched_pomsgset AS last_touched_pomsgset,
-                pf1.from_sourcepackagename AS from_sourcepackagename
-            FROM
-                POTemplate AS pt1
-                JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
-                JOIN POTemplate AS pt2 ON
-                    pt2.potemplatename = pt1.potemplatename AND
-                    pt2.sourcepackagename = pt1.sourcepackagename AND
-                    pt2.distrorelease = %s
-                LEFT OUTER JOIN POFile AS pf2 ON
-                    pf2.potemplate = pt2.id AND
-                    pf2.language = pf1.language AND
-                    COALESCE(pf2.variant, ''::text) =
-                        COALESCE(pf1.variant, ''::text)
-            WHERE
-                pt1.distrorelease = %s AND
-                pf2.id IS NULL''' % sqlvalues(self, self.parentseries))
-
-        logging.info('Updating POMsgSet table...')
-        cur.execute('''
-            UPDATE POMsgSet SET
-                iscomplete = pms1.iscomplete,
-                isfuzzy = pms1.isfuzzy,
-                isupdated = pms1.isupdated,
-                reviewer = pms1.reviewer,
-                date_reviewed = pms1.date_reviewed
-            FROM
-                POTemplate AS pt1
-                JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
-                JOIN POTemplate AS pt2 ON
-                    pt2.potemplatename = pt1.potemplatename AND
-                    pt2.sourcepackagename = pt1.sourcepackagename AND
-                    pt2.distrorelease = %s
-                JOIN POFile AS pf2 ON
-                    pf2.potemplate = pt2.id AND
-                    pf2.language = pf1.language AND
-                    COALESCE(pf2.variant, ''::text) =
-                        COALESCE(pf1.variant, ''::text)
-                JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
-                JOIN POMsgSet AS pms1 ON
-                    pms1.potmsgset = ptms1.id AND
-                    pms1.pofile = pf1.id
-                JOIN POTMsgSet AS ptms2 ON
-                    ptms2.potemplate = pt2.id AND
-                    ptms2.primemsgid = ptms1.primemsgid
-            WHERE
-                pt1.distrorelease = %s AND
-                POMsgSet.potmsgset = ptms2.id AND
-                POMsgSet.pofile = pf2.id AND
-                POMsgSet.iscomplete = FALSE AND
-                pms1.iscomplete = TRUE
-                ''' % sqlvalues(self, self.parentseries))
-
-        logging.info('Filling POMsgSet table...')
-        cur.execute('''
-            INSERT INTO POMsgSet (
-                sequence, pofile, iscomplete, obsolete, isfuzzy, commenttext,
-                potmsgset, publishedfuzzy, publishedcomplete, isupdated)
-            SELECT
-                pms1.sequence AS sequence,
-                pf2.id AS pofile,
-                pms1.iscomplete AS iscomplete,
-                pms1.obsolete AS obsolete,
-                pms1.isfuzzy AS isfuzzy,
-                pms1.commenttext AS commenttext,
-                ptms2.id AS potmsgset,
-                pms1.publishedfuzzy AS publishedfuzzy,
-                pms1.publishedcomplete AS publishedcomplete,
-                pms1.isupdated AS isupdated
-            FROM
-                POTemplate AS pt1
-                JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
-                JOIN POTemplate AS pt2 ON
-                    pt2.potemplatename = pt1.potemplatename AND
-                    pt2.sourcepackagename = pt1.sourcepackagename AND
-                    pt2.distrorelease = %s
-                JOIN POFile AS pf2 ON
-                    pf2.potemplate = pt2.id AND
-                    pf2.language = pf1.language AND
-                    COALESCE(pf2.variant, ''::text) =
-                        COALESCE(pf1.variant, ''::text)
-                JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
-                JOIN POMsgSet AS pms1 ON
-                    pms1.potmsgset = ptms1.id AND
-                    pms1.pofile = pf1.id
-                JOIN POTMsgSet AS ptms2 ON
-                    ptms2.potemplate = pt2.id AND
-                    ptms2.primemsgid = ptms1.primemsgid
-                LEFT OUTER JOIN POMsgSet AS pms2 ON
-                    pms2.potmsgset = ptms2.id AND
-                    pms2.pofile = pf2.id
-            WHERE
-                pt1.distrorelease = %s AND
-                pms2.id IS NULL''' % sqlvalues(self, self.parentseries))
-
-        # At this point, we need to know the list of POFiles that we are
-        # going to modify so we can recalculate later its statistics. We
-        # do this before copying POSubmission table entries because
-        # otherwise we will not know exactly which one are being updated.
-        logging.info('Getting the list of POFiles with changes...')
-        cur.execute('''
-            SELECT
-                DISTINCT pf2.id
-            FROM
-                POTemplate AS pt1
-                JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
-                JOIN POTemplate AS pt2 ON
-                    pt2.potemplatename = pt1.potemplatename AND
-                    pt2.sourcepackagename = pt1.sourcepackagename AND
-                    pt2.distrorelease = %s
-                JOIN POFile AS pf2 ON
-                    pf2.potemplate = pt2.id AND
-                    pf2.language = pf1.language AND
-                    COALESCE(pf2.variant, ''::text) =
-                        COALESCE(pf1.variant, ''::text)
-                JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
-                JOIN POMsgSet AS pms1 ON
-                    pms1.potmsgset = ptms1.id AND
-                    pms1.pofile = pf1.id
-                JOIN POTMsgSet AS ptms2 ON
-                    ptms2.potemplate = pt2.id AND
-                    ptms2.primemsgid = ptms1.primemsgid
-                JOIN POMsgSet AS pms2 ON
-                    pms2.potmsgset = ptms2.id AND
-                    pms2.pofile = pf2.id
-                JOIN POSubmission AS ps1 ON
-                    ps1.pomsgset = pms1.id AND
-                    ps1.active
-                LEFT OUTER JOIN POSubmission AS ps2 ON
-                    ps2.pomsgset = pms2.id AND
-                    ps2.pluralform = ps1.pluralform AND
-                    ps2.potranslation = ps1.potranslation AND
-                    ((ps2.published AND ps2.active) OR ps2.active = FALSE)
-            WHERE
-                pt1.distrorelease = %s AND ps2.id IS NULL
-                ''' % sqlvalues(self, self.parentseries))
-
-        pofile_rows = cur.fetchall()
-        pofile_ids = [row[0] for row in pofile_rows]
-
-        replacements = sqlvalues(
-            series=self, parentseries=self.parentseries)
-
-        logging.info( 'Filling POSubmission table with active rows...')
-        replacements['published'] = u'FALSE'
-        replacements['active'] = u'FALSE'
-
-        cur.execute('''
-            INSERT INTO POSubmission (
-                pomsgset, pluralform, potranslation, origin, datecreated,
-                person, validationstatus, active, published)
-            SELECT
-                pms2.id AS pomsgset,
-                ps1.pluralform AS pluralform,
-                ps1.potranslation AS potranslation,
-                ps1.origin AS origin,
-                ps1.datecreated AS datecreated,
-                ps1.person AS person,
-                ps1.validationstatus AS validationstatus,
-                %(active)s,
-                %(published)s
-            FROM
-                POTemplate AS pt1
-                JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
-                JOIN POTemplate AS pt2 ON
-                    pt2.potemplatename = pt1.potemplatename AND
-                    pt2.sourcepackagename = pt1.sourcepackagename AND
-                    pt2.distrorelease = %(series)s
-                JOIN POFile AS pf2 ON
-                    pf2.potemplate = pt2.id AND
-                    pf2.language = pf1.language AND
-                    COALESCE(pf2.variant, ''::text) =
-                        COALESCE(pf1.variant, ''::text)
-                JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
-                JOIN POMsgSet AS pms1 ON
-                    pms1.potmsgset = ptms1.id AND
-                    pms1.pofile = pf1.id
-                JOIN POTMsgSet AS ptms2 ON
-                    ptms2.potemplate = pt2.id AND
-                    ptms2.primemsgid = ptms1.primemsgid
-                JOIN POMsgSet AS pms2 ON
-                    pms2.potmsgset = ptms2.id AND
-                    pms2.pofile = pf2.id
-                JOIN POSubmission AS ps1 ON
-                    ps1.pomsgset = pms1.id AND
-                    (ps1.active OR %(published)s)
-                LEFT OUTER JOIN POSubmission AS ps2 ON
-                    ps2.pomsgset = pms2.id AND
-                    ps2.pluralform = ps1.pluralform AND
-                    ps2.potranslation = ps1.potranslation
-            WHERE
-                pt1.distrorelease = %(parentseries)s AND ps2.id IS NULL
-            ''' % replacements)
-
-        # This query will be only useful if when we already have some
-        # initial translations before this method call, because is the
-        # only situation when we could have POSubmission rows to update.
-        logging.info(
-            'Updating previous existing POSubmission rows...')
-        cur.execute('''
-            UPDATE POSubmission
-                SET active = FALSE
-                FROM
-                    POTemplate AS pt1
-                    JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
-                    JOIN POTemplate AS pt2 ON
-                        pt2.potemplatename = pt1.potemplatename AND
-                        pt2.sourcepackagename = pt1.sourcepackagename AND
-                        pt2.distrorelease = %s
-                    JOIN POFile AS pf2 ON
-                        pf2.potemplate = pt2.id AND
-                        pf2.language = pf1.language AND
-                        COALESCE(pf2.variant, ''::text) =
-                            COALESCE(pf1.variant, ''::text)
-                    JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
-                    JOIN POMsgSet AS pms1 ON
-                        pms1.potmsgset = ptms1.id AND
-                        pms1.pofile = pf1.id AND
-                        pms1.iscomplete = TRUE
-                    JOIN POTMsgSet AS ptms2 ON
-                        ptms2.potemplate = pt2.id AND
-                        ptms2.primemsgid = ptms1.primemsgid
-                    JOIN POMsgSet AS pms2 ON
-                        pms2.potmsgset = ptms2.id AND
-                        pms2.pofile = pf2.id
-                    JOIN POSubmission AS ps1 ON
-                        ps1.pomsgset = pms1.id AND
-                        ps1.active
-                    LEFT JOIN POSubmission AS newactive_ps2 ON
-                        newactive_ps2.pomsgset = pms2.id AND
-                        newactive_ps2.pluralform = ps1.pluralform AND
-                        newactive_ps2.potranslation = ps1.potranslation
-                WHERE
-                    pt1.distrorelease = %s AND
-                    POSubmission.pomsgset = pms2.id AND
-                    POSubmission.pluralform = ps1.pluralform AND
-                    POSubmission.potranslation <> ps1.potranslation AND
-                    POSubmission.active AND POSubmission.published AND
-                    newactive_ps2 IS NOT NULL
-                ''' % sqlvalues(self, self.parentseries))
-
-        cur.execute('''
-            UPDATE POSubmission
-                SET active = TRUE
-                FROM
-                    POTemplate AS pt1
-                    JOIN POFile AS pf1 ON pf1.potemplate = pt1.id
-                    JOIN POTemplate AS pt2 ON
-                        pt2.potemplatename = pt1.potemplatename AND
-                        pt2.sourcepackagename = pt1.sourcepackagename AND
-                        pt2.distrorelease = %s
-                    JOIN POFile AS pf2 ON
-                        pf2.potemplate = pt2.id AND
-                        pf2.language = pf1.language AND
-                        COALESCE(pf2.variant, ''::text) =
-                            COALESCE(pf1.variant, ''::text)
-                    JOIN POTMsgSet AS ptms1 ON ptms1.potemplate = pt1.id
-                    JOIN POMsgSet AS pms1 ON
-                        pms1.potmsgset = ptms1.id AND
-                        pms1.pofile = pf1.id AND
-                        pms1.iscomplete = TRUE
-                    JOIN POTMsgSet AS ptms2 ON
-                        ptms2.potemplate = pt2.id AND
-                        ptms2.primemsgid = ptms1.primemsgid
-                    JOIN POMsgSet AS pms2 ON
-                        pms2.potmsgset = ptms2.id AND
-                        pms2.pofile = pf2.id
-                    JOIN POSubmission AS ps1 ON
-                        ps1.pomsgset = pms1.id AND
-                        ps1.active
-                    LEFT JOIN POSubmission AS active_ps2 ON
-                        active_ps2.pomsgset = pms2.id AND
-                        active_ps2.pluralform = ps1.pluralform AND
-                        active_ps2.active
-                WHERE
-                    pt1.distrorelease = %s AND
-                    POSubmission.pomsgset = pms2.id AND
-                    POSubmission.pluralform = ps1.pluralform AND
-                    POSubmission.potranslation = ps1.potranslation AND
-                    NOT POSubmission.active AND
-                    active_ps2 IS NULL
-                ''' % sqlvalues(self, self.parentseries))
 
         # Update the statistics cache for every POFile we touched.
         logging.info("Updating POFile's statistics")
-        for pofile_id in pofile_ids:
-            pofile = POFile.get(pofile_id)
+        # XXX: Jeroen Vermeulen 2007-08-10: Use LoopTuner!
+        affected_pofiles = POFile.selectBy(
+            "id IN (SELECT id FROM changed_pofiles")
+        for pofile in affected_pofiles:
             pofile.updateStatistics()
+        ztm.commit()
 
     def _copy_active_translations(self, ztm):
         """Copy active translations from the parent into this one.
@@ -2221,7 +1922,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             copier.pour(ztm)
         else:
             # Incremental copy of updates from parent distroseries
-            self._copyActiveTranslationsAsUpdate()
+            self._copyActiveTranslationsAsUpdate(ztm)
 
     def copyMissingTranslationsFromParent(self, ztm):
         """See IDistroSeries."""
