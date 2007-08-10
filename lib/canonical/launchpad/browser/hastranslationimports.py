@@ -49,9 +49,6 @@ class HasTranslationImportsView(LaunchpadFormView):
         self._initial_values = {}
         LaunchpadFormView.initialize(self)
 
-        if not self.filter_action.submitted():
-            self.setUpEntriesWidgets()
-
     def createFilterStatusField(self):
         """Create a field with a vocabulary to filter by import status.
 
@@ -105,6 +102,12 @@ class HasTranslationImportsView(LaunchpadFormView):
             self.createFilterStatusField() +
             self.createFilterFileExtensionField() +
             self.form_fields)
+
+    def setUpWidgets(self):
+        LaunchpadFormView.setUpWidgets(self)
+
+        if not self.filter_action.submitted():
+            self.setUpEntriesWidgets()
 
     def setUpEntriesWidgets(self):
         # Prepare entries fields.
@@ -207,14 +210,18 @@ class HasTranslationImportsView(LaunchpadFormView):
     @property
     def entries(self):
         """Return the entries in the queue for this context."""
-        file_extension = self.widgets['filter_extension'].getInputValue()
-        if file_extension == 'all':
-            file_extension = None
-        status = self.widgets['filter_status'].getInputValue()
-        if status == 'all':
-            status = None
-        else:
-            status = RosettaImportStatus.items[status]
+        file_extension = None
+        status = None
+        if 'filter_extension' in self.widgets:
+            file_extension = self.widgets['filter_extension'].getInputValue()
+            if file_extension == 'all':
+                file_extension = None
+        if 'filter_status' in self.widgets:
+            status = self.widgets['filter_status'].getInputValue()
+            if status == 'all':
+                status = None
+            else:
+                status = RosettaImportStatus.items[status]
         return self.context.getTranslationImportQueueEntries(
             status=status, file_extension=file_extension)
 
