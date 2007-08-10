@@ -24,6 +24,7 @@ from twisted.vfs.adapters import sftp
 
 from canonical.codehosting.bazaarfs import SFTPServerRoot
 from canonical.codehosting.smartserver import launch_smart_server
+from canonical.config import config
 
 from zope.interface import implements
 
@@ -194,6 +195,11 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         self.transport.sendPacket(userauth.MSG_USERAUTH_BANNER,
                                   NS(bytes) + NS(language))
 
+    def _sendConfiguredBanner(self, passed_through):
+        if config.codehosting.banner is not None:
+            self.sendBanner(config.codehosting.banner)
+        return passed_through
+
     # XXX Jonathan Lange 2007-03-19: Copied from
     # twisted/conch/ssh/userauth.py, with modifications noted.
     # In Twisted r19857 and earlier, this method does not return a Deferred,
@@ -209,6 +215,7 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         if not d:
             self._ebBadAuth(failure.Failure(ConchError('auth returned none')))
             return
+        d.addBoth(self._sendConfiguredBanner)
         d.addCallbacks(self._cbFinishedAuth)
         d.addErrback(self._ebMaybeBadAuth)
         # The following line does not appear in the original Twisted source.

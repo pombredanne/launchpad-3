@@ -189,8 +189,9 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
                                    'ssh_host_key_rsa.pub'), 'rb').read())
         return chr(0) + NS('rsa') + NS(public_key)
 
-    def test_bannerEmptyOnSuccess(self):
+    def test_bannerNotSentOnSuccess(self):
         # No banner is printed when the user authenticates successfully.
+        self.assertEqual(None, config.codehosting.banner)
 
         # The checker will pass if there's no error message.
         self.checker.error_message = None
@@ -202,6 +203,24 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
                 list(zip(*self.transport.packets)[0]),
                 [userauth.MSG_USERAUTH_SUCCESS])
         return d.addCallback(check)
+
+    def test_bannerSentOnSuccessWhenConfigured(self):
+        # If a banner is set in the codehosting config then we always send it
+        # to the user.
+        config.codehosting.banner = "banner"
+        self.checker.error_message = None
+        d = self.user_auth.ssh_USERAUTH_REQUEST(
+            NS('jml') + NS('') + NS('publickey') + self.key_data)
+        def check(ignored):
+            # Check that no banner was sent to the user.
+            self.assertEqual(
+                list(zip(*self.transport.packets)[0]),
+                [userauth.MSG_USERAUTH_BANNER, userauth.MSG_USERAUTH_SUCCESS])
+            self.assertBannerSent(config.codehosting.banner + '\r\n')
+        def cleanup(ignored):
+            config.codehosting.banner = None
+            return ignored
+        return d.addCallback(check).addBoth(cleanup)
 
     def test_loggedToBanner(self):
         # When there's an authentication failure, we display an informative
