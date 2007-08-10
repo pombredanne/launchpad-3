@@ -66,24 +66,14 @@ Calling initializeRemoteBugDB() on our Trac instance and passing it a set of
 remote bug IDs will fetch those bug IDs from the server and file them in a
 local variable for later use.
 
-    >>> trac = Trac('http://code.djangoproject.com')
-    >>> trac.initializeRemoteBugDB([1,2,3,4,5])
+    >>> trac = TestTrac('http://test.trac')
+    >>> trac.initializeRemoteBugDB([1])
     >>> sorted(trac.bugs.keys())
-    [1, 2, 3, 4, 5]
+    [1]
 
 If we initialise with a different set of keys we overwrite the first set:
 
     >>> trac.initializeRemoteBugDB([6,7,8,9,10,11,12])
     >>> sorted(trac.bugs.keys())
     [6, 7, 8, 10, 11, 12]
-
-If we try and initialize against a non-existant Trac we get a
-BugTrackerConnectError:
-
-    >>> trac = Trac('http://code.foobar.com')
-    >>> trac.initializeRemoteBugDB([6,7,8,9,10,11,12])
-    Traceback (most recent call last):
-    ...
-    BugTrackerConnectError...
-
 

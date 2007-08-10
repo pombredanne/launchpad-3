@@ -183,17 +183,21 @@ class TestTrac(Trac):
     Trac instance isn't needed.
     """
 
-    trace_calls = False
+    trace_calls = True
     ticket_export_re = re.compile('ticket/[0-9]+\?format=csv')
     batch_export_re = re.compile('query\?id=[0-9]+.*format=csv')
 
     def urlopen(self, url):
+        file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
+
         if self.trace_calls:
             print "CALLED urlopen(%r)" % (url,)
         if self.ticket_export_re.match(url):
-            return read_test_file('trac_example_single_ticket_export.csv')
+            return open(
+                file_path + '/' + 'trac_example_single_ticket_export.csv', 'r')
         elif self.batch_export_re.match(url):
-            return read_test_file('trac_example_multi_ticket_export.csv')
+            return open(
+                file_path + '/' + 'trac_example_multi_ticket_export.csv', 'r')
         else:
             return ''
 
