@@ -41,9 +41,9 @@ function to create these branches makes the tests below easier to
 read.
 
     >>> from canonical.launchpad.interfaces import (
-    ...     IBranchSet, ILaunchpadCelebrities, IPersonSet, IProductSet)
+    ...     BranchType, IBranchSet, ILaunchpadCelebrities, IPersonSet,
+    ...     IProductSet)
     >>> vcs_imports = getUtility(ILaunchpadCelebrities).vcs_imports
-    >>> from canonical.lp.dbschema import BranchType
     >>> def new_import_branch(name):
     ...     product = getUtility(IProductSet).getByName('firefox')
     ...     return getUtility(IBranchSet).new(
@@ -171,11 +171,13 @@ site:
     >>> print canonical_url(code_import_set)
     http://code.launchpad.dev/+code-imports
 
-Each code import can be found at '<url of ICodeImportSet>/<id of
-import>':
+The code imports themselves are viewed under the branch's URL,
+however.
 
-    >>> print canonical_url(code_import_set.get(1))
-    http://code.launchpad.dev/+code-imports/1
+    >>> print canonical_url(svn_import.branch)
+    http://code.launchpad.dev/~vcs-imports/firefox/trunk-svn
+    >>> print canonical_url(svn_import)
+    http://code.launchpad.dev/~vcs-imports/firefox/trunk-svn/+code-import
 
 
 == Security ==

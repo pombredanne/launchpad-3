@@ -82,32 +82,12 @@ associated with that milestone for products of this project.
     >>> anon_browser.getLink('1.1').click()
     >>> specs = find_tag_by_id(anon_browser.contents, 'milestone_specs')
     >>> print extract_text(specs)
-    Priority Product Specification Assignee Delivery
-    111 Essential gnomebaker Test specification 3 for gnomebaker
-        Sample Person 90 Unknown
-    110 High gnomebaker Test specification 2 for gnomebaker
-        Foo Bar 90 Unknown
-    109 Medium Evolution Test specification 1 for evolution
-        One Membership 90 Unknown
-    109 Medium Gnome Applets Test specification 5 for applets
-        One Membership 90 Unknown
-    108 Low Evolution Test specification 0 for evolution
-        No Privileges Person 90 Unknown
-    108 Low Gnome Applets Test specification 4 for applets
-        No Privileges Person 90 Unknown
+    Priority Product Specification Assignee Delivery ...
+    High Evolution Title evolution specification ... Unknown ...
+    High gnomebaker Title gnomebaker specification ... Unknown
 
     >>> bugtasks = find_tag_by_id(anon_browser.contents, 'milestone_bugtasks')
     >>> print extract_text(bugtasks)
-    Report Product Importance Assignee Status
-    16 16 Milestone test bug 1 for gnomebaker gnomebaker
-      285 Critical Foo Bar 275 Incomplete
-    15 15 Milestone test bug 0 for gnomebaker gnomebaker
-      286 High One Membership 280 In Progress
-    14 14 Milestone test bug 1 for evolution Evolution
-      287 Medium No Privileges Person 279 Triaged
-    13 13 Milestone test bug 0 for evolution Evolution
-      288 Low Sample Person 278 Confirmed
-    18 18 Milestone test bug 1 for applets Gnome Applets
-      288 Low No Privileges Person 282 Fix Released
-     17 17 Milestone test bug 0 for applets Gnome Applets
-      289 Wishlist Sample Person 281 Fix Committed
+    Report Product Importance Assignee Status ...
+    Milestone test bug for evolution Evolution ... Undecided ... Confirmed ...
+    Milestone test bug for gnomebaker gnomebaker ... Undecided ... Confirmed

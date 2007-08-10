@@ -10,7 +10,7 @@ import sqlobject.constraints as consts
 
 from canonical.database.constants import DEFAULT
 
-from canonical.launchpad.webapp.enum import DBEnumeratedType, DBItem
+from canonical.lazr import DBEnumeratedType, DBItem
 
 __all__ = [
 'EnumCol',
@@ -21,7 +21,7 @@ class SODBSchemaEnumCol(SOCol):
     enum = None
 
     def __init__(self, **kw):
-        # XXX: thumper 2007-03-23
+        # XXX: thumper 2007-03-23:
         # While it would be great to just switch everything over at once,
         # in reality it just isn't feasible, so look initially for a key
         # enum, and fall back to schema.

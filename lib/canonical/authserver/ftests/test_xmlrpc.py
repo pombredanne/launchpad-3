@@ -99,7 +99,7 @@ class XMLRPCv1TestCase(LaunchpadTestCase):
 
     def test_getSSHKeys(self):
         # Unknown users have no SSH keys, of course.
-        self.assertEqual([], self.server.getSSHKeys('unknown@user'))
+        self.assertEqual([], self.server.getSSHKeys('nosuchuser'))
 
         # Check that the SSH key in the sample data can be retrieved
         # successfully.
@@ -150,7 +150,8 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
         self.failUnless('test@canonical.com' in result['emailaddresses'])
 
     def test_getBranchesForUser(self):
-        # XXX: justs check that it doesn't error, should also check the result.
+        # XXX: Andrew Bennetts 2005-12-13:
+        # Justs check that it doesn't error, should also check the result.
         self.server.getBranchesForUser(12)
 
     def test_fetchProductID(self):
@@ -158,15 +159,15 @@ class XMLRPCv2TestCase(LaunchpadTestCase):
         self.assertEqual('', self.server.fetchProductID('xxxxx'))
 
     def test_createBranch(self):
-        # XXX: This test just checks that createBranch doesn't error.  This test
+        # XXX Andrew Bennetts, 2007-01-24:
+        # This test just checks that createBranch doesn't error.  This test
         # should also check the result.
-        #   - Andrew Bennetts, 2007-01-24
         self.server.createBranch(12, 'name12', 'firefox', 'new-branch')
 
     def test_requestMirror(self):
-        # XXX: Only checks that requestMirror doesn't error. Should instead
+        # XXX Andrew Bennetts, 2007-01-24:
+        # Only checks that requestMirror doesn't error. Should instead
         # check the result.
-        #   - Andrew Bennetts, 2007-01-24
         hosted_branch_id = 25
         self.server.requestMirror(hosted_branch_id)
 
