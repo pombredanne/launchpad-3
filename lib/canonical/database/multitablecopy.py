@@ -247,7 +247,7 @@ class MultiTableCopy:
         """
         return foreign_key
 
-    def extract( self, source_table, joins=None, where_clause=None,
+    def extract(self, source_table, joins=None, where_clause=None,
         id_sequence=None, inert_where=None, prepare_batch=None,
         external_joins=None):
         """Extract (selected) rows from source_table into a holding table.
@@ -320,7 +320,7 @@ class MultiTableCopy:
             joins = []
 
         if prepare_batch is not None:
-            self.prepare_functions[table] = prepare_batch
+            self.prepare_functions[source_table] = prepare_batch
 
         if external_joins is None:
             external_joins = []
@@ -416,7 +416,7 @@ class MultiTableCopy:
             # rows that do not match the "inert_where" condition.
             cur.execute('''
                 CREATE %(temp)s TABLE %(holding_table)s AS
-                SELECT %(columns)s, NULL AS new_id
+                SELECT %(columns)s, NULL::integer AS new_id
                 FROM %(source_tables)s
                 %(where)s''' % table_creation_parameters)
             cur.execute('''
@@ -612,20 +612,23 @@ class MultiTableCopy:
         We've been asked to retarget a foreign key while copying.  Check that
         the table it refers to has already been copied.
         """
+        lower_name = referenced_table.lower()
+        lower_tables = self.lower_tables
         try:
-            target_number = self.lower_tables.index(referenced_table.lower())
-            if target_number > self.last_extracted_table:
-                raise AssertionError(
-                    "Foreign key '%s' refers to table '%s' "
-                    "which is to be copied later" % (fk, referenced_table))
-            if target_number == self.last_extracted_table:
-                raise AssertionError(
-                    "Foreign key '%s' in table '%s' "
-                    "is a self-reference" % (fk, referenced_table))
+            target_number = lower_tables.index(lower_name)
         except ValueError:
             raise AssertionError(
                 "Foreign key '%s' refers to table '%s' "
                 "which is not being copied" % (fk, referenced_table))
+
+        if target_number > self.last_extracted_table:
+            raise AssertionError(
+                "Foreign key '%s' refers to table '%s' "
+                "which is to be copied later" % (fk, referenced_table))
+        if target_number == self.last_extracted_table:
+            raise AssertionError(
+                "Foreign key '%s' in table '%s' "
+                "is a self-reference" % (fk, referenced_table))
 
     def _commit(self, transaction_manager):
         """Commit our transaction and create replacement cursor.
