@@ -777,7 +777,10 @@ class Trac(ExternalBugTracker):
     batch_url = 'query?%s&order=id&format=csv'
 
     def __init__(self, baseurl):
-        self.baseurl = baseurl
+        # Trac can be really finicky about slashes in URLs, so we strip any
+        # trailing slashes to ensure we don't incur its wrath in the form of
+        # a 404.
+        self.baseurl = baseurl.rstrip('/')
 
     def initializeRemoteBugDB(self, bug_ids):
         """Do any initialization before each bug watch is updated.
@@ -816,19 +819,20 @@ class Trac(ExternalBugTracker):
         # its tickets. Obviously, for large projects, this amounts to a lot of
         # data, which is why we deal in individual requests for small sets
         # of bugs above.
-        id_string = '&'.join(['id=%i' % id for id in bug_ids])
+        id_string = '&'.join(['id=%i' % int(id) for id in bug_ids])
         query_url = "%s/%s" % (self.baseurl, self.batch_url % id_string)
         try:
             csv_data = self.urlopen(query_url)
         except (urllib2.HTTPError, urllib2.URLError), val:
             raise BugTrackerConnectError(query_url, val)
 
+        import pdb; pdb.set_trace()
         remote_bugs = csv.DictReader(csv_data)
         for remote_bug in remote_bugs:
             # We're only interested in the bug if it's one of the ones in
             # bug_ids, just in case we get all the tickets in the Trac
             # instance back instead of only the ones we want.
-            if int(remote_bug['id']) in bug_ids:
+            if remote_bug['id'] in bug_ids:
                 self.bugs[int(remote_bug['id'])] = remote_bug
 
     def getRemoteStatus(self, bug_id):
@@ -845,7 +849,13 @@ class Trac(ExternalBugTracker):
         if not self.bugs.has_key(bug_id):
             raise BugNotFound(bug_id)
 
-        return self.bugs[bug_id]['status']
+        # If the bug has a resolution as well as a status then we return that,
+        # since it's more informative than the status field on its own.
+        if (self.bug[bug_id].has_key('resolution') and
+            self.bug[bug_id]['resolution']):
+            return self.bugs[bug_id]['resolution']
+        else:
+            return self.bugs[bug_id]['status']
 
     def convertRemoteStatus(self, remote_status):
         """See IExternalBugTracker"""
@@ -854,10 +864,11 @@ class Trac(ExternalBugTracker):
             return BugTaskStatus.INVALID
 
         elif remote_status in ['assigned', 'duplicate']:
-            # XXX: 2007-08-06 gmb: We should follow dupes if possible.
+            # XXX: 2007-08-06 Graham Binns:
+            #      We should follow dupes if possible.
             return BugTaskStatus.CONFIRMED
 
-        elif remote_status == 'open':
+        elif remote_status in ['new', 'open']:
             return BugTaskStatus.NEW
 
         elif remote_status == 'fixed':

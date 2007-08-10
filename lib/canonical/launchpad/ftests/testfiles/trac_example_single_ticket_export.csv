@@ -1,2 +1,2 @@
-id,summary,reporter,owner,description,status,component,version,resolution,keywords,cc,stage,has_patch,needs_docs,needs_tests,needs_better_patch
-1,Create architecture for anonymous sessions,adrian,jacob,We need an architecture for anonymous sessions. Right now we have django.models.auth.sessions_ but that only handles registered users' sessions. We need a system that automatically creates and manages sessions for anonymous users.\r\n\r\nHere's one idea for this:\r\n\r\n * In the settings file_ you define a {{{SESSION_MODULE}}} string_ like the {{{AUTH_PROFILE_MODULE}}}_ which points to the model to use for sessions.\r\n * Using this_ httpwrappers automatically creates a request.session object which is persistant across requests based on cookies_ etc.,open,Core framework,,fixed,,frido.ferdinand@gmail.com,Unreviewed,0,0,0,0
+id,summary,owner,type,status,priority,milestone
+1,Cannot specify extra name->address mappings,somebody,enhancement,open,minor,Avahi 0.6.7

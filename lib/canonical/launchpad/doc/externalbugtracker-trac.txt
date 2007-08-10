@@ -88,7 +88,7 @@ First, we create some bug watches to test with:
     ...     name="example-bugs",
     ...     title="Example.com Trac",
     ...     bugtrackertype=BugTrackerType.TRAC,
-    ...     baseurl="http://bugs.example.com/",
+    ...     baseurl="http://bugs.example.com",
     ...     summary="Contains bugs for Example.com",
     ...     contactdetails="foo.bar@example.com",
     ...     owner=sample_person)
@@ -114,4 +114,43 @@ And have a Trac instance process them:
     >>> for bug_watch in example_bug_tracker.watches:
     ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
     1: open
+
+We'll add some more watches now.
+
+    >>> from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
+
+    >>> bug_watch_set = getUtility(IBugWatchSet)
+    >>> expected_remote_statuses = dict(
+    ...     (int(bug_watch.remotebug), bug_watch.remotestatus)
+    ...     for bug_watch in example_bug_tracker.watches)
+
+    >>> expected_remote_statuses
+    {1: u'open'}
+
+    >>> remote_bugs = [
+    ...     (143, 'closed'),
+    ...     (144, 'assigned'),
+    ...     (145, 'assigned'),
+    ...     (146, 'closed'),
+    ...     (147, 'closed'),
+    ...     (148, 'closed'),
+    ...     (149, 'assigned'),
+    ...     (150, 'new'),
+    ...     (151, 'new'),
+    ...     (152, 'new'),
+    ...     (153, 'new'),
+    ... ]
+
+    >>> for remote_bug_id, remote_status in remote_bugs:
+    ...     bug_watch = bug_watch_set.createBugWatch(
+    ...         bug=example_bug, owner=sample_person,
+    ...         bugtracker=example_bug_tracker,
+    ...         remotebug=str(remote_bug_id))
+    ...     expected_remote_statuses[remote_bug_id] = remote_status
+
+Because we're updating more than ten bugs our Trac code will ask the server
+for them all at once.
+
+    >>> trac.trace_calls = True
+    >>> trac.updateBugWatches(example_bug_tracker.watches)
 

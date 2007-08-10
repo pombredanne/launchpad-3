@@ -196,7 +196,8 @@ class TestTrac(Trac):
                 file_path + '/' + 'trac_example_single_ticket_export.csv', 'r')
         elif self.batch_export_re.match(url):
             return open(
-                file_path + '/' + 'trac_example_multi_ticket_export.csv', 'r')
+                file_path + '/' + 'trac_example_multiple_ticket_export.csv', 
+                'r')
         else:
             return ''
 
