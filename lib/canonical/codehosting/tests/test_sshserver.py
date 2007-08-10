@@ -223,7 +223,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
             self.assertMessageOrder([userauth.MSG_USERAUTH_SUCCESS])
         return d.addCallback(check)
 
-    def test_bannerSentOnSuccessWhenConfigured(self):
+    def test_configuredBannerSentOnSuccess(self):
         # If a banner is set in the codehosting config then we send it to the
         # user when they log in.
         config.codehosting.banner = "banner"
@@ -236,8 +236,8 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
             config.codehosting.banner = None
             return ignored
         return d.addCallback(check).addBoth(cleanup)
-
-    def test_bannerSentOnlyOnce(self):
+    
+    def test_configuredBannerSentOnlyOnce(self):
         # We don't send the banner on each authentication attempt, just on the
         # first one. It is usual for there to be many authentication attempts
         # per SSH session.
@@ -257,7 +257,24 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
             config.codehosting.banner = None
             return ignored
         return d.addCallback(check).addBoth(cleanup)
-        
+
+    def test_configuredBannerNotSentOnFailure(self):
+        # Failed authentication attempts do not get the configured banner sent.
+        config.codehosting.banner = 'banner'
+
+        d = self.requestFailedAuthentication()
+
+        def check(ignored):
+            self.assertMessageOrder(
+                [userauth.MSG_USERAUTH_BANNER, userauth.MSG_USERAUTH_FAILURE])
+            self.assertBannerSent(MockChecker.error_message + '\r\n')
+
+        def cleanup(ignored):
+            config.codehosting.banner = None
+            return ignored
+
+        return d.addCallback(check).addBoth(cleanup)
+
     def test_loggedToBanner(self):
         # When there's an authentication failure, we display an informative
         # error message through the SSH authentication protocol 'banner'.
