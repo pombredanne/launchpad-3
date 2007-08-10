@@ -14,9 +14,10 @@ from zope.interface import implements
 from canonical.launchpad.interfaces import (
     BugTaskSearchParams, IBazaarApplication, IBranchSet, IBugExternalRefSet,
     IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet, IDistroSeriesSet,
-    ILanguageSet, ILaunchBag, ILaunchpadStatisticSet, IMaloneApplication,
-    IOpenIdApplication, IProductSet, IRegistryApplication,
-    IRosettaApplication, IShipItApplication, ITranslationGroupSet)
+    IHWDBApplication, ILanguageSet, ILaunchBag, ILaunchpadStatisticSet,
+    IMaloneApplication, IOpenIdApplication, IProductSet,
+    IRegistryApplication, IRosettaApplication, IShipItApplication,
+    ITranslationGroupSet)
 
 
 class RegistryApplication:
@@ -156,3 +157,5 @@ class RosettaApplication:
         return stats.value('translator_count')
 
 
+class HWDBApplication:
+    implements(IHWDBApplication)

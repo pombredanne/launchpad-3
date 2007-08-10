@@ -43,7 +43,7 @@ class HWDBSubmission(SQLBase):
     owner = ForeignKey(dbName='owner', foreignKey='Person')
     emailaddress = StringCol(notNull=True)
     distroarchrelease = ForeignKey(dbName='distroarchrelease',
-                                   foreignKey='Distroarchrelease')
+                                   foreignKey='DistroArchSeries')
     raw_submission = ForeignKey(dbName='raw_submission',
                                 foreignKey='LibraryFileAlias')
     system = ForeignKey(dbName='system', foreignKey='HWDBSystemFingerprint')
@@ -165,6 +165,11 @@ class HWDBSubmissionSet:
             orderBy=['HWDBSystemFingerprint.fingerprint',
                      'date_submitted',
                      'submission_id'])
+
+    def submissionIdExists(self, submission_id):
+        """See `IHWDBSubmissionSet`."""
+        rows = HWDBSubmission.selectBy(submission_id=submission_id)
+        return rows.count() > 0
 
 
 class HWDBSystemFingerprint(SQLBase):
