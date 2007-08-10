@@ -183,21 +183,12 @@ class TestTrac(Trac):
     """
 
     trace_calls = False
-    ticket_export_re = re.compile('.+ticket/[0-9]+\?format=csv$')
-    batch_export_re = re.compile('.+query\?id=[0-9]+.*format=csv$')
 
     def urlopen(self, url):
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
 
         if self.trace_calls:
             print "CALLED urlopen(%r)" % (url,)
-        if self.ticket_export_re.match(url):
-            return open(
-                file_path + '/' + 'trac_example_single_ticket_export.csv', 'r')
-        elif self.batch_export_re.match(url):
-            return open(
-                file_path + '/' + 'trac_example_multiple_ticket_export.csv', 
-                'r')
-        else:
-            return ''
+
+        return open(file_path + '/' + 'trac_example_ticket_export.csv', 'r')
 
