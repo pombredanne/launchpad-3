@@ -89,11 +89,24 @@
 
   <tal:is-project condition="view/contextIsProject">
 
-    <p class="informational message">
+    <p class="informational message"
+      condition="not: view/required:launchpad.Edit"
+    >
       There are no projects registered for
       <span tal:replace="context/displayname">project displayname</span>
       that use Launchpad to track bugs.
     </p>
+
+    <tal:admin-warning condition="view/required:launchpad.Edit">
+      <p tal:condition="not: context/products" class="warning message">
+        There are no projects registered for
+        <span tal:replace="context/displayname">project displayname</span>.
+        <br />
+        You need to <a href="+newproduct">register another project that is
+        part of <tal:project replace="context/displayname" /></a> or
+        associate an existing project with it.
+      </p>
+    </tal:admin-warning>
 
     <tal:has-products condition="context/products">
 
@@ -121,7 +134,7 @@
       <tal:singular condition="python:context.products.count() == 1">
         <p>
           There is 1 project registered as part of
-          <tal:project replace="context/displayname">Project</tal:project>.
+          <tal:project replace="context/displayname">Project</tal:project>
           but it does not use Launchpad as its bug tracker.
         </p>
         <p>
@@ -133,10 +146,13 @@
       </tal:singular>
       <ul tal:repeat="product context/products">
         <li>
-          <a tal:attributes="href product/fmt:url"
-              tal:content="product/displayname">
+          <img src="/@@product" tal:replace="structure product/image:icon" />
+          <strong>
+            <a tal:attributes="href product/fmt:url"
+                tal:content="product/displayname"
+            >
               Sample Product
-          </a>.
+            </a></strong>
 
           <ul id="product-bug-options">
             <tal:external-tracker
@@ -167,8 +183,9 @@
                       <span tal:replace="package/distribution/displayname" />
                       <span tal:replace="package/sourcepackagename" />
                     </a>
-
-                    (<a tal:attributes="href string:${package/fmt:url}/+filebug">File a bug here</a>)
+                    (<a
+                       tal:attributes="href string:${package/fmt:url}/+filebug"
+                     >File a bug here</a>)
                   </li>
                 </ul>
               </li>
@@ -185,22 +202,7 @@
         </li>
       </ul>
 
-      <script type="text/javascript">
-        product_bug_options = concat(
-          getElementsByTagAndClassName('ul', null, 'product-bug-options'));
-
-        forEach(product_bug_options, function(element) {
-          element.style.display = 'none';
-          element.style.visibility = 'hidden';
-        });
-      </script>
     </tal:has-products>
-
-    <p tal:condition="nothing" class="warning message">
-      You need to <a href="+newproduct">register another project that is
-      part of <tal:project replace="context/displayname" /></a> or
-      associate an existing project with it.
-    </p>
 
  </tal:is-project>
 
