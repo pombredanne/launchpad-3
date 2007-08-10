@@ -1,0 +1,41 @@
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+      lang="en"
+      metal:use-macro="context/@@main_template/master"
+      i18n:domain="launchpad">
+  <head>
+  </head>
+  <body>
+    <metal:pageheading fill-slot="pageheading">
+      Submissions to the Hardware Database
+    </metal:pageheading>
+
+    <div metal:fill-slot="main">
+      <tal:definition tal:define="submissions view/getSubmissions;
+                                  show_private view/userIsOwner">
+        <table class="listing"
+               tal:condition="submissions">
+          <tr>
+            <th>System</th>
+            <th>Submitted</th>
+            <th>Download submitted data</th>
+            <th tal:condition="show_private">Private</th>
+          </tr>
+          <tr tal:repeat="submission submissions">
+            <td tal:content="submission/system/fingerprint" />
+            <td tal:content="submission/date_submitted/fmt:datetime" />
+            <td><a href tal:attributes="href submission/raw_submission/http_url"
+                        tal:content="submission/raw_submission/filename" />
+            </td>
+            <td tal:condition="show_private">
+              <span tal:condition="submission/private">yes</span>
+              <span tal:condition="not:submission/private">no</span>
+            </td>
+          </tr>
+        </table>
+        <div tal:condition="not: submissions">
+          There are no submissions.
+        </div>
+      </tal:definition>
+    </div>
+  </body>
+</html>

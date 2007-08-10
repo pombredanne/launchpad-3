@@ -486,6 +486,10 @@ def hasspecifications_specs(context, view):
 
 hassprints_sprints = ContextTitle("Events related to %s")
 
+hwdb_submit_hardware_data = 'Submit New Data to the Launchpad Hardware Database'
+hwdb_submissions_person = ContextDisplayName(
+    "Hardware Database submissions by %s")
+
 karmaaction_index = 'Karma actions'
 
 karmaaction_edit = 'Edit karma action'
