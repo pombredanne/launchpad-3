@@ -189,6 +189,7 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
 
     def __init__(self, transport=None):
         self.transport = transport
+        self._configured_banner_sent = False
 
     def sendBanner(self, text, language='en'):
         bytes = '\r\n'.join(text.encode('UTF8').splitlines() + [''])
@@ -196,7 +197,9 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
                                   NS(bytes) + NS(language))
 
     def _sendConfiguredBanner(self, passed_through):
-        if config.codehosting.banner is not None:
+        if (not self._configured_banner_sent
+            and config.codehosting.banner is not None):
+            self._configured_banner_sent = True
             self.sendBanner(config.codehosting.banner)
         return passed_through
 
