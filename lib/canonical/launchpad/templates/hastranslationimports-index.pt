@@ -39,7 +39,7 @@
         <form method="get" action="" tal:attributes="action request/URL">
           <label>Show:</label>
           <tal:status tal:replace="structure view/widgets/filter_status" />
-          <tal:status tal:replace="structure view/widgets/file_extension" />
+          <tal:status tal:replace="structure view/widgets/filter_extension" />
           <input tal:replace="structure view/filter_action/render" />
         </form>
       </div>
@@ -70,7 +70,7 @@
             <tal:status
                  tal:replace="structure view/widgets/filter_status/hidden" />
             <tal:status
-                 tal:replace="structure view/widgets/file_extension/hidden" />
+                 tal:replace="structure view/widgets/filter_extension/hidden" />
             <tal:navigation
                  replace="structure view/batchnav/@@+navigation-links-upper" />
 

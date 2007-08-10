@@ -38,23 +38,33 @@ class HasTranslationImportsView(LaunchpadFormView):
     custom_widget('filter_extension', DropdownWidget, cssClass='inlined-widget')
     custom_widget('status', DropdownWidget, cssClass='inlined-widget')
 
+    @property
+    def initial_values(self):
+        return self._initial_values
+
     def initialize(self):
         """Set form label depending on the context."""
         self.label = 'Translation files waiting to be imported for %s' % (
             self.context.displayname)
+        self._initial_values = {}
         LaunchpadFormView.initialize(self)
+
+        if not self.filter_action.submitted():
+            self.setUpEntriesWidgets()
 
     def createFilterStatusField(self):
         """Create a field with a vocabulary to filter by import status.
 
         :return: A form.Fields instance containing the status field.
         """
+        name = 'filter_status'
+        self._initial_values[name] = 'all'
         return form.Fields(
             Choice(
-                __name__='filter_status',
-                source=RosettaImportStatusVocabularyFactory(),
+                __name__=name,
+                source=TranslationImportStatusVocabularyFactory(),
                 title=_('Choose which status to show')),
-            custom_widget=self.custom_widgets['filter_status'],
+            custom_widget=self.custom_widgets[name],
             render_context=self.render_context)
 
     def createFilterFileExtensionField(self):
@@ -62,12 +72,14 @@ class HasTranslationImportsView(LaunchpadFormView):
 
         :return: A form.Fields instance containing the file extension field.
         """
+        name = 'filter_extension'
+        self._initial_values[name] = 'all'
         return form.Fields(
             Choice(
-                __name__='file_extension',
+                __name__=name,
                 source=TranslationImportFileExtensionVocabularyFactory(),
                 title=_('Show entries with this extension')),
-            custom_widget=self.custom_widgets['filter_extension'],
+            custom_widget=self.custom_widgets[name],
             render_context=self.render_context)
 
     def createEntryStatusField(self, entry):
@@ -75,9 +87,11 @@ class HasTranslationImportsView(LaunchpadFormView):
 
         :return: A form.Fields instance containing the status field.
         """
+        name = 'status_%d' % entry.id
+        self._initial_values[name] = entry.status.name
         return form.Fields(
             Choice(
-                __name__='status_%d' % entry.id,
+                __name__=name,
                 source=EntryImportStatusVocabularyFactory(entry),
                 title=_('Select import status')),
             custom_widget=self.custom_widgets['status'],
@@ -92,20 +106,32 @@ class HasTranslationImportsView(LaunchpadFormView):
             self.createFilterFileExtensionField() +
             self.form_fields)
 
+    def setUpEntriesWidgets(self):
         # Prepare entries fields.
+        fields = None
         for entry in self.batchnav.currentBatch():
-            self.form_fields = (
-                self.createEntryStatusField(entry) +
-                self.form_fields)
+            if fields is None:
+                fields = self.createEntryStatusField(entry)
+            else:
+                fields = (self.createEntryStatusField(entry) + fields)
+
+        if fields is not None:
+            self.form_fields = (fields + self.form_fields)
+
+            self.widgets += form.setUpWidgets(
+                fields, self.prefix, self.context, self.request,
+                data=self.initial_values, ignore_request=False)
 
     @safe_action
     @action('Filter', name='filter')
     def filter_action(self, action, data):
         """Handle a filter action."""
-        # XXX CarlosPerelloMarin 20070615: Is there anything we should do
-        # here? It's a GET form submission, so we are not supposed to do
-        # anything, although I'm not sure whether just using 'pass' is enough.
-        pass
+        # Redirect to the filtered URL.
+        self.next_url = (
+            '%s?field.filter_status=%s&field.filter_extension=%s' % (
+                self.request.URL,
+                self.widgets['filter_status'].getInputValue(),
+                self.widgets['filter_extension'].getInputValue()))
 
     @action("Change status", name='change_status')
     def change_status_action(self, action, data):
@@ -115,13 +141,13 @@ class HasTranslationImportsView(LaunchpadFormView):
 
         number_of_changes = 0
         for form_item in data:
-            if not form_item.startswith('field.status-'):
+            if not form_item.startswith('status_'):
                 # We are not interested on this form_item.
                 continue
 
             # It's an form_item to handle.
             try:
-                common, id_string = form_item.split('-')
+                common, id_string = form_item.split('_')
                 # The id is an integer
                 id = int(id_string)
             except ValueError:
@@ -181,8 +207,16 @@ class HasTranslationImportsView(LaunchpadFormView):
     @property
     def entries(self):
         """Return the entries in the queue for this context."""
-        return self.context.getTranslationImportQueueEntries()
-        #    status=self.status, file_extension=self.type)
+        file_extension = self.widgets['filter_extension'].getInputValue()
+        if file_extension == 'all':
+            file_extension = None
+        status = self.widgets['filter_status'].getInputValue()
+        if status == 'all':
+            status = None
+        else:
+            status = RosettaImportStatus.items[status]
+        return self.context.getTranslationImportQueueEntries(
+            status=status, file_extension=file_extension)
 
     @property
     def has_entries(self):
@@ -236,7 +270,7 @@ class EntryImportStatusVocabularyFactory:
         return SimpleVocabulary(terms)
 
 
-class RosettaImportStatusVocabularyFactory:
+class TranslationImportStatusVocabularyFactory:
     """Factory for a vocabulary containing a list of import status."""
 
     implements(IContextSourceBinder)
