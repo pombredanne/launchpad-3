@@ -11,6 +11,8 @@ First we mark a bug as private:
     ...         'debian/+source/mozilla-firefox/+bug/8/+secrecy')
     >>> admin_browser.getControl('Keep bug confidential').selected = True
     >>> admin_browser.getControl('Change').click()
+    >>> print admin_browser.url
+    http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/8
 
     >>> from BeautifulSoup import BeautifulSoup
     >>> page_soup = BeautifulSoup(admin_browser.contents)
@@ -35,9 +37,15 @@ duplicate bug page:
     ...     print tag.renderContents()
     This report is a duplicate of ...Printing doesn't work...
 
-But when accessing it as an unpriveleged user the title of the private
+But when accessing it as an unprivileged user the title of the private
 bug cannot be found in the duplicate bug page:
 
     >>> user_browser.open(admin_browser.url)
     >>> "Printing doesn't work" in user_browser.contents
+    False
+
+The same is true when viewing the duplicate bug anonymously:
+
+    >>> anon_browser.open(admin_browser.url)
+    >>> "Printing doesn't work" in anon_browser.contents
     False
