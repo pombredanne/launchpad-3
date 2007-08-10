@@ -340,10 +340,16 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """
         return self.products.count() != 0
 
-    def allProductsUseMalone(self):
-        """Returns True if all the Products in this Project use Malone for bug
-        tracking, otherwise returns False.
+    def noProductsUseMalone(self):
+        """Returns True if none of the Products in this Project use Malone for
+        bug tracking, otherwise returns False.
         """
+        no_products_use_malone = True
+        for product in self.products:
+            no_products_use_malone = (
+                not product.official_malone and no_products_use_malone)
+
+        return no_products_use_malone
 
     @property
     def milestones(self):

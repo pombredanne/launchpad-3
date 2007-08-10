@@ -196,9 +196,9 @@ class IProject(IHasAppointedDriver, IHasOwner, IBugTarget, IHasSpecifications,
         otherwise.
         """
 
-    def allProductsUseMalone():
-        """Returns True if all the products in the Project use Malone for bug
-        tracking, False otherwise."""
+    def noProductsUseMalone():
+        """Returns True if none of the products in the Project use Malone for
+        bug tracking, False otherwise."""
 
     milestones = Attribute(_(
         "The visible milestones associated with this project, "

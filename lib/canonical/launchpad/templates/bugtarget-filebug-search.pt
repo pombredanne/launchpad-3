@@ -87,7 +87,8 @@
     </tal:most-common-bugs>
   </tal:uses_malone>
 
-  <tal:is-project condition="view/contextIsProject">
+  <tal:is-project
+    condition="python: view.contextIsProject() and context.noProductsUseMalone()">
 
     <p class="informational message"
       condition="not: view/required:launchpad.Edit"
