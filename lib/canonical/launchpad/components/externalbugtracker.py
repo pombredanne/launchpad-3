@@ -871,7 +871,7 @@ class Trac(ExternalBugTracker):
             #      We should follow dupes if possible.
             return BugTaskStatus.CONFIRMED
 
-        elif remote_status in ['new', 'open']:
+        elif remote_status in ['new', 'open', 'reopened']:
             return BugTaskStatus.NEW
 
         elif remote_status == 'fixed':

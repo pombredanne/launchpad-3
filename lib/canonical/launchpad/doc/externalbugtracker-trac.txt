@@ -130,11 +130,11 @@ We'll add some more watches now.
     >>> remote_bugs = [
     ...     (143, 'fixed'),
     ...     (144, 'assigned'),
-    ...     (145, 'assigned'),
+    ...     (145, 'duplicate'),
     ...     (146, 'invalid'),
-    ...     (147, 'fixed'),
-    ...     (148, 'fixed'),
-    ...     (149, 'assigned'),
+    ...     (147, 'worksforme'),
+    ...     (148, 'wontfix'),
+    ...     (149, 'reopened'),
     ...     (150, 'new'),
     ...     (151, 'new'),
     ...     (152, 'new'),
@@ -176,20 +176,20 @@ for them all at once.
      * Expected << assigned >>
      *      Got << assigned >>
     Remote bug 145
-     * Expected << assigned >>
-     *      Got << assigned >>
+     * Expected << duplicate >>
+     *      Got << duplicate >>
     Remote bug 146
      * Expected << invalid >>
      *      Got << invalid >>
     Remote bug 147
-     * Expected << fixed >>
-     *      Got << fixed >>
+     * Expected << worksforme >>
+     *      Got << worksforme >>
     Remote bug 148
-     * Expected << fixed >>
-     *      Got << fixed >>
+     * Expected << wontfix >>
+     *      Got << wontfix >>
     Remote bug 149
-     * Expected << assigned >>
-     *      Got << assigned >>
+     * Expected << reopened >>
+     *      Got << reopened >>
     Remote bug 150
      * Expected << new >>
      *      Got << new >>
