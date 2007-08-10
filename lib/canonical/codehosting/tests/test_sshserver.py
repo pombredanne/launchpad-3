@@ -78,6 +78,17 @@ class UserAuthServerMixin:
         self.transport = MockSSHTransport(self.portal)
         self.user_auth = sshserver.SSHUserAuthServer(self.transport)
 
+    def _getMessageName(self, message_type):
+        """Get the name of the message for the given message type constant."""
+        return userauth.messages[message_type]
+
+    def assertMessageOrder(self, message_types):
+        """Assert that the given message types were sent in the order given."""
+        self.assertEqual(
+            [userauth.messages[msg_type] for msg_type in message_types],
+            [userauth.messages[packet_type]
+             for packet_type, contents in self.transport.packets])
+
     def assertBannerSent(self, banner_message, expected_language='en'):
         """Assert that 'banner_message' was sent as an SSH banner."""
         # Check that we received a BANNER, then a FAILURE.
@@ -209,20 +220,16 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
         d = self.requestSuccessfulAuthentication()
         def check(ignored):
             # Check that no banner was sent to the user.
-            self.assertEqual(
-                list(zip(*self.transport.packets)[0]),
-                [userauth.MSG_USERAUTH_SUCCESS])
+            self.assertMessageOrder([userauth.MSG_USERAUTH_SUCCESS])
         return d.addCallback(check)
 
     def test_bannerSentOnSuccessWhenConfigured(self):
-        # If a banner is set in the codehosting config then we always send it
-        # to the user.
+        # If a banner is set in the codehosting config then we send it to the
+        # user when they log in.
         config.codehosting.banner = "banner"
         d = self.requestSuccessfulAuthentication()
         def check(ignored):
-            # Check that no banner was sent to the user.
-            self.assertEqual(
-                list(zip(*self.transport.packets)[0]),
+            self.assertMessageOrder(
                 [userauth.MSG_USERAUTH_BANNER, userauth.MSG_USERAUTH_SUCCESS])
             self.assertBannerSent(config.codehosting.banner + '\r\n')
         def cleanup(ignored):
@@ -241,9 +248,8 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
         
         def check(ignored):
             # Check that no banner was sent to the user.
-            self.assertEqual(
-                list(zip(*self.transport.packets)[0]),
-                [userauth.MSG_USERAUTH_BANNER, userauth.MSG_USERAUTH_FAILURE,
+            self.assertMessageOrder(
+                [userauth.MSG_USERAUTH_FAILURE, userauth.MSG_USERAUTH_BANNER,
                  userauth.MSG_USERAUTH_SUCCESS])
             self.assertBannerSent(config.codehosting.banner + '\r\n')
 
@@ -258,8 +264,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
         d = self.requestFailedAuthentication()
         def check(ignored):
             # Check that we received a BANNER, then a FAILURE.
-            self.assertEqual(
-                list(zip(*self.transport.packets)[0]),
+            self.assertMessageOrder(
                 [userauth.MSG_USERAUTH_BANNER, userauth.MSG_USERAUTH_FAILURE])
             self.assertBannerSent(MockChecker.error_message + '\r\n')
         return d.addCallback(check)
@@ -272,8 +277,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
         d = self.requestUnsupportedAuthentication()
         def check(ignored):
             # Check that we received only a FAILRE.
-            [(message_type, data)] = self.transport.packets
-            self.assertEqual(message_type, userauth.MSG_USERAUTH_FAILURE)
+            self.assertMessageOrder([userauth.MSG_USERAUTH_FAILURE])
         return d.addCallback(check)
 
 

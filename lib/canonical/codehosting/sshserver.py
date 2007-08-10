@@ -218,7 +218,7 @@ class SSHUserAuthServer(userauth.SSHUserAuthServer):
         if not d:
             self._ebBadAuth(failure.Failure(ConchError('auth returned none')))
             return
-        d.addBoth(self._sendConfiguredBanner)
+        d.addCallback(self._sendConfiguredBanner)
         d.addCallbacks(self._cbFinishedAuth)
         d.addErrback(self._ebMaybeBadAuth)
         # The following line does not appear in the original Twisted source.
