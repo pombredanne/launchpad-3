@@ -229,7 +229,7 @@
 
   <tal:landing-candidates condition="view/latest_landing_candidates">
     <h2>Landing Candidates</h2>
-    <div id="landing-candicates">
+    <div id="landing-candidates">
     <div tal:repeat="mergeproposal view/latest_landing_candidates">
       <metal:landing-candidate use-macro="context/@@+macros/landing-candidate"/>
     </div>
