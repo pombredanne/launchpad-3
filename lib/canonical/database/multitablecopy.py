@@ -10,7 +10,8 @@ import time
 from zope.interface import implements
 
 from canonical.database import postgresql
-from canonical.database.sqlbase import cursor, quoteIdentifier
+from canonical.database.sqlbase import (
+    cursor, quote, quoteIdentifier, sqlvalues)
 from canonical.launchpad.interfaces.looptuner import ITunableLoop
 from canonical.launchpad.utilities.looptuner import LoopTuner
 
@@ -50,17 +51,17 @@ class PouringLoop:
         self.cur.execute("""
             SELECT id
             FROM %s
-            WHERE id >= %d
+            WHERE id >= %s
             ORDER BY id
-            OFFSET %d
+            OFFSET %s
             LIMIT 1
-            """ % (self.from_table, sqlvalues(self.lowest_id, batch_size)))
-        end_id = cur.fetchone()
+            """ % (self.from_table, quote(self.lowest_id), quote(batch_size)))
+        end_id = self.cur.fetchone()
 
         if end_id is not None:
             next = end_id[0]
         else:
-            next = highest_id
+            next = self.highest_id
 
         next += 1
 
@@ -84,7 +85,7 @@ class PouringLoop:
         self.transaction_manager.begin()
         self.cur = cursor()
 
-    def prepareBatch(self, batch_size, begin_id, end_id):
+    def prepareBatch(self, from_table, to_table, batch_size, begin_id, end_id):
         pass
 
 
@@ -387,19 +388,19 @@ class MultiTableCopy:
         table_creation_parameters = {
             'columns': ','.join(select),
             'holding_table': holding_table,
-            'id_sequence': "nextval('%s'::regclass)" % sid_sequence,
+            'id_sequence': "nextval('%s'::regclass)" % id_sequence,
             'inert_where': inert_where,
             'source_tables': ','.join(from_list),
             'where': where_text,
             'temp': '',
             }
-        if self.restartable:
+        if not self.restartable:
             table_creation_parameters['temp'] = 'TEMP'
 
         cur = cursor()
 
         # Create holding table directly from select result.
-        if inert_when is None:
+        if inert_where is None:
             # We'll be pouring all rows from this table.  To avoid a costly
             # second write pass (which would rewrite all records in the
             # holding table), we assign new_ids right in the same query.
