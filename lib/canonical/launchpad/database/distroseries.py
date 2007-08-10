@@ -1887,7 +1887,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             pofile.updateStatistics()
 
         # Clean up after ourselves, in case we get called again this session.
-        postgresql.drop_tables(cursor(), [
+        drop_tables(cursor(), [
             'equiv_template', 'equiv_potmsgset', 'equiv_pofile',
             'inert_pofiles', 'inert_pomsgsets', 'changed_pofiles'])
 
