@@ -797,6 +797,7 @@ class Trac(ExternalBugTracker):
                 # We don't use _getPage at this point for the simple reason
                 # that it doesn't return a file-like object, so we can't use
                 # the csv module's helpful DictReader on its output.
+                bug_id = int(bug_id)
                 try:
                     csv_data = self.urlopen(
                         "%s/%s" % (self.baseurl, self.ticket_url % bug_id))

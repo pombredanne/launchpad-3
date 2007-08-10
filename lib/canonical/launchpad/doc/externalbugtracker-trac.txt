@@ -13,22 +13,13 @@ bug watches on Trac bug trackers is externalbugtracker.Trac.
     >>> Trac('http://trac.foo.com')
     <canonical.launchpad.components.externalbugtracker.Trac object at...>
 
-We use a test-oriented implementation for the purposes of these tests, so that
-we don't have to rely on a working network connection.
-
-    >>> from canonical.launchpad.ftests.externalbugtracker import TestTrac
-    >>> from canonical.launchpad.components.externalbugtracker import (
-    ...     get_external_bugtracker)
-    >>> from canonical.launchpad.interfaces import IBugTrackerSet
-    >>> # XXX: FIX THIS!
-
 
 == Status Conversion ==
 
 The basic Trac ticket statuses map to Launchpad bug statuses.
 Trac.convertRemoteStatus() handles the conversion.
 
-    >>> trac = TestTrac('http://foo.bar')
+    >>> trac = Trac('http://foo.bar')
     >>> trac.convertRemoteStatus('open').title
     'New'
     >>> trac.convertRemoteStatus('assigned').title
@@ -66,6 +57,10 @@ Calling initializeRemoteBugDB() on our Trac instance and passing it a set of
 remote bug IDs will fetch those bug IDs from the server and file them in a
 local variable for later use.
 
+We use a test-oriented implementation for the purposes of these tests, so that
+we don't have to rely on a working network connection.
+
+    >>> from canonical.launchpad.ftests.externalbugtracker import TestTrac
     >>> trac = TestTrac('http://test.trac')
     >>> trac.initializeRemoteBugDB([1])
     >>> sorted(trac.bugs.keys())
@@ -75,5 +70,48 @@ If we initialise with a different set of keys we overwrite the first set:
 
     >>> trac.initializeRemoteBugDB([6,7,8,9,10,11,12])
     >>> sorted(trac.bugs.keys())
-    [6, 7, 8, 10, 11, 12]
+    [6, 7, 8, 9, 10, 11, 12]
+
+
+== Updating Bug Watches ==
+
+First, we create some bug watches to test with:
+
+    >>> from canonical.launchpad.database import BugTracker
+    >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
+    >>> from canonical.launchpad.ftests.externalbugtracker import TestMantis
+    >>> from canonical.lp.dbschema import BugTrackerType
+
+    >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
+
+    >>> example_bug_tracker = BugTracker(
+    ...     name="example-bugs",
+    ...     title="Example.com Trac",
+    ...     bugtrackertype=BugTrackerType.TRAC,
+    ...     baseurl="http://bugs.example.com/",
+    ...     summary="Contains bugs for Example.com",
+    ...     contactdetails="foo.bar@example.com",
+    ...     owner=sample_person)
+
+    >>> login('foo.bar@canonical.com')
+
+    >>> example_bug = getUtility(IBugSet).get(10)
+    >>> example_bugwatch = example_bug.addWatch(
+    ...     example_bug_tracker, 1, sample_person)
+
+    >>> login('no-priv@canonical.com')
+
+Collect the Example.com watches:
+
+    >>> for bug_watch in example_bug_tracker.watches:
+    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    1: None
+
+And have a Trac instance process them:
+
+    >>> trac = TestTrac(example_bug_tracker.baseurl)
+    >>> trac.updateBugWatches(example_bug_tracker.watches)
+    >>> for bug_watch in example_bug_tracker.watches:
+    ...     print "%s: %s" % (bug_watch.remotebug, bug_watch.remotestatus)
+    1: open
 

@@ -179,13 +179,12 @@ class TestMantis(Mantis):
 class TestTrac(Trac):
     """Trac ExternalBugTracker for testing purposes.
 
-    It overrides _getPage and _postPage, so that access to a real
-    Trac instance isn't needed.
+    It overrides urlopen, so that access to a real Trac instance isn't needed.
     """
 
-    trace_calls = True
-    ticket_export_re = re.compile('ticket/[0-9]+\?format=csv')
-    batch_export_re = re.compile('query\?id=[0-9]+.*format=csv')
+    trace_calls = False
+    ticket_export_re = re.compile('.+ticket/[0-9]+\?format=csv$')
+    batch_export_re = re.compile('.+query\?id=[0-9]+.*format=csv$')
 
     def urlopen(self, url):
         file_path = os.path.join(os.path.dirname(__file__), 'testfiles')
