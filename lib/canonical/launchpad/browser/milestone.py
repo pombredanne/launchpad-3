@@ -93,7 +93,8 @@ class MilestoneView(LaunchpadView):
                     orderby=['-importance', 'datecreated', 'id'],
                     omit_dupes=True)
         tasks = getUtility(IBugTaskSet).search(params)
-        return list(tasks)
+        # Do not display generic bug tasks from conjoined relationships:
+        return [task for task in tasks if task.conjoined_master is None]
 
 
 class MilestoneAddView:
