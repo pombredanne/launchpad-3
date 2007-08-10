@@ -180,9 +180,9 @@ The exact same batch of messages is shown again, but with the error.
 
   >>> for tag in find_tags_by_class(user_browser.contents, 'error'):
   ...     print tag.renderContents()
-  There is an error in a translation you provided. Please correct it before continuing.
-  ...
-  Error in translation:
-  ...
+  There is an error in a translation you provided.
+  Please correct it before continuing.
+  ...Error in Translation:...
   number of format specifications in 'msgid' and 'msgstr' does not match
+  ...
 
