@@ -22,6 +22,7 @@ from sqlobject import (
 from canonical.cachedproperty import cachedproperty
 
 from canonical.database.multitablecopy import MultiTableCopy
+from canonical.database.postgresql import drop_tables
 from canonical.database.sqlbase import (cursor, flush_database_caches,
     flush_database_updates, quote_like, quote, SQLBase, sqlvalues)
 from canonical.database.datetimecol import UtcDateTimeCol
@@ -39,6 +40,7 @@ from canonical.launchpad.interfaces import (
     IHasBuildRecords, IHasQueueItems, IHasTranslationImports,
     ILibraryFileAliasSet, IPublishedPackageSet, IPublishing, ISourcePackage,
     ISourcePackageName, ISourcePackageNameSet, NotFoundError)
+from canonical.launchpad.interfaces.looptuner import ITunableLoop
 
 from canonical.launchpad.database.bugtarget import BugTargetBase
 from canonical.database.constants import DEFAULT, UTC_NOW
@@ -78,6 +80,7 @@ from canonical.launchpad.database.translationimportqueue import (
     TranslationImportQueueEntry)
 from canonical.launchpad.database.pofile import POFile
 from canonical.launchpad.helpers import shortlist
+from canonical.launchpad.utilities.looptuner import LoopTuner
 
 
 class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
@@ -1574,7 +1577,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # distroseries.
         cur.execute("""
             CREATE TEMP TABLE equiv_pofile AS
-            SELECT pf1.id, pf2.id
+            SELECT pf1.id, pf2.id AS new_id
             FROM %(pofile_holding_table)s pf1, POFile pf2, equiv_template
             WHERE
                 pf1.potemplate = equiv_template.id AND
@@ -1659,13 +1662,13 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             """ % query_parameters
 
         copier.extract(
-            'POMsgSet', pomsgset_where_clause, joins=['pofile'],
-            inert_where=inert_pomsgsets, prepare_batch=prepare_pomsgset_batch)
+            'POMsgSet', joins=['POFile'], inert_where=inert_pomsgsets,
+            prepare_batch=prepare_pomsgset_batch)
         cur = cursor()
 
         cur.execute("""
             UPDATE %(pomsgset_holding_table)s
-            SET datereviewed = NULL, reviewer = NULL
+            SET date_reviewed = NULL, reviewer = NULL
             WHERE new_id IS NOT NULL
             """ % query_parameters)
 
@@ -1674,8 +1677,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # included POTMsgSet in the copy operation.
         cur.execute("""
             UPDATE %(pomsgset_holding_table)s AS holding
-            FROM equiv_potmsgset
             SET potmsgset = equiv_potmsgset.new_id
+            FROM equiv_potmsgset
             WHERE
                 holding.potmsgset = equiv_potmsgset.id AND
                 holding.new_id IS NOT NULL
@@ -1701,7 +1704,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 holding.pofile = pfh.id AND
                 pms.pofile = pfh.new_id AND
                 holding.potmsgset = equiv_potmsgset.id AND
-                pms.potmsgset = equiv_potmsgset.new_id
+                pms.potmsgset = equiv_potmsgset.new_id AND
                 holding.new_id IS NULL
             """ % query_parameters)
 
@@ -1828,15 +1831,16 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 FROM POSubmission better
                 WHERE
                     better.pomsgset = holding.new_pomsgset AND
-                    better.pluralform = holding.pluralfom AND
+                    better.pluralform = holding.pluralform AND
                     (better.potranslation = holding.potranslation OR
                      better.active OR
                      better.datecreated > holding.datecreated)
             )
             """
         copier.extract(
-            'POSubmission', "active AND NOT published", joins=['pomsgset'],
-            prepare_batch=prepare_posubmission_batch, inert_where=have_better)
+            'POSubmission', where_clause="active AND NOT published",
+            joins=['POMsgSet'], prepare_batch=prepare_posubmission_batch,
+            inert_where=have_better)
         cur = cursor()
         cur.execute(
             "DELETE FROM %s WHERE new_id IS NULL"
@@ -1870,18 +1874,23 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             WHERE id IN (SELECT id FROM inert_pomsgsets)
             """ % query_parameters)
 
-
         # Pour copied rows back to source tables.  Contrary to appearances,
         # this is where the real work happens.
-        copier.pour()
+        copier.pour(ztm)
 
         # Update the statistics cache for every POFile we touched.
         logging.info("Updating POFile's statistics")
         # XXX: Jeroen Vermeulen 2007-08-10: Use LoopTuner!
-        affected_pofiles = POFile.selectBy(
-            "id IN (SELECT id FROM changed_pofiles")
+        affected_pofiles = POFile.select(
+            "id IN (SELECT id FROM changed_pofiles)")
         for pofile in affected_pofiles:
             pofile.updateStatistics()
+
+        # Clean up after ourselves, in case we get called again this session.
+        postgresql.drop_tables(cursor(), [
+            'equiv_template', 'equiv_potmsgset', 'equiv_pofile',
+            'inert_pofiles', 'inert_pomsgsets', 'changed_pofiles'])
+
         ztm.commit()
 
     def _copy_active_translations(self, ztm):

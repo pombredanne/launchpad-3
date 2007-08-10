@@ -390,6 +390,7 @@ class MultiTableCopy:
             'holding_table': holding_table,
             'id_sequence': "nextval('%s'::regclass)" % id_sequence,
             'inert_where': inert_where,
+            'main': source_table,
             'source_tables': ','.join(from_list),
             'where': where_text,
             'temp': '',
@@ -406,7 +407,8 @@ class MultiTableCopy:
             # holding table), we assign new_ids right in the same query.
             cur.execute('''
                 CREATE %(temp)s TABLE %(holding_table)s AS
-                SELECT DISTINCT ON (id) %(columns)s, %(id_sequence)s AS new_id
+                SELECT DISTINCT ON (%(main)s.id)
+                    %(columns)s, %(id_sequence)s AS new_id
                 FROM %(source_tables)s
                 %(where)s''' % table_creation_parameters)
         else:
@@ -416,7 +418,8 @@ class MultiTableCopy:
             # rows that do not match the "inert_where" condition.
             cur.execute('''
                 CREATE %(temp)s TABLE %(holding_table)s AS
-                SELECT %(columns)s, NULL::integer AS new_id
+                SELECT DISTINCT ON (%(main)s.id)
+                    %(columns)s, NULL::integer AS new_id
                 FROM %(source_tables)s
                 %(where)s''' % table_creation_parameters)
             cur.execute('''
