@@ -52,6 +52,12 @@
       </tal:comment>
         <tr><th>Location:</th><td tal:content="context/url" /></tr>
         <tr><th>Mirror:</th><td tal:content="view/supermirror_url" /></tr>
+        <tal:mirrored-yet tal:condition="context/last_mirrored">
+          <tr>
+            <th>Last mirrored:</th>
+            <td tal:attributes="title context/last_mirrored/fmt:datetime"
+                tal:content="context/last_mirrored/fmt:approximatedate"/></tr>
+        </tal:mirrored-yet>
     </tal:mirrored-branch>
     <tal:hosted-or-imported-branch tal:condition="not:context/url">
       <tal:comment condition="nothing">
