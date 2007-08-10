@@ -188,12 +188,25 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
                                    'ssh_host_key_rsa.pub'), 'rb').read())
         return chr(0) + NS('rsa') + NS(public_key)
 
+    def requestFailedAuthentication(self):
+        return self.user_auth.ssh_USERAUTH_REQUEST(
+            NS('failure') + NS('') + NS('publickey') + self.key_data)
+
+    def requestSuccessfulAuthentication(self):
+        return self.user_auth.ssh_USERAUTH_REQUEST(
+            NS('success') + NS('') + NS('publickey') + self.key_data)
+
+    def requestUnsupportedAuthentication(self):
+        # Note that it doesn't matter how the checker responds -- the server
+        # doesn't get that far.
+        return self.user_auth.ssh_USERAUTH_REQUEST(
+            NS('success') + NS('') + NS('none') + NS(''))
+
     def test_bannerNotSentOnSuccess(self):
         # No banner is printed when the user authenticates successfully.
         self.assertEqual(None, config.codehosting.banner)
 
-        d = self.user_auth.ssh_USERAUTH_REQUEST(
-            NS('success') + NS('') + NS('publickey') + self.key_data)
+        d = self.requestSuccessfulAuthentication()
         def check(ignored):
             # Check that no banner was sent to the user.
             self.assertEqual(
@@ -205,8 +218,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
         # If a banner is set in the codehosting config then we always send it
         # to the user.
         config.codehosting.banner = "banner"
-        d = self.user_auth.ssh_USERAUTH_REQUEST(
-            NS('success') + NS('') + NS('publickey') + self.key_data)
+        d = self.requestSuccessfulAuthentication()
         def check(ignored):
             # Check that no banner was sent to the user.
             self.assertEqual(
@@ -221,9 +233,7 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
     def test_loggedToBanner(self):
         # When there's an authentication failure, we display an informative
         # error message through the SSH authentication protocol 'banner'.
-        d = self.user_auth.ssh_USERAUTH_REQUEST(
-            NS('failure') + NS('') + NS('publickey') + self.key_data)
-
+        d = self.requestFailedAuthentication()
         def check(ignored):
             # Check that we received a BANNER, then a FAILURE.
             self.assertEqual(
@@ -237,14 +247,11 @@ class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
         # operation of the SSH authentication protocol. We should not spam the
         # client with warnings about this, as whenever it becomes a problem, we
         # can rely on the SSH client itself to report it to the user.
-        d = self.user_auth.ssh_USERAUTH_REQUEST(
-            NS('failure') + NS('') + NS('none') + NS(''))
-
+        d = self.requestUnsupportedAuthentication()
         def check(ignored):
             # Check that we received only a FAILRE.
             [(message_type, data)] = self.transport.packets
             self.assertEqual(message_type, userauth.MSG_USERAUTH_FAILURE)
-
         return d.addCallback(check)
 
 
