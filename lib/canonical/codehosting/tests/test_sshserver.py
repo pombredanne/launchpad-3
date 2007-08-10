@@ -34,8 +34,14 @@ class MockRealm:
 
     implements(IRealm)
 
-    def requestAvatar(self, avatar, mind, *interfaces):
-        raise NotImplementedError("This should not be called")
+    def requestAvatar(self, avatarId, mind, *interfaces):
+        user_dict = {
+            'id': avatarId, 'name': avatarId, 'teams': [],
+            'initialBranches': []}
+        return (
+            interfaces[0],
+            sshserver.LaunchpadAvatar(avatarId, None, user_dict, None),
+            lambda: None)
 
 
 class MockSSHTransport(SSHServerTransport):
@@ -51,7 +57,8 @@ class MockSSHTransport(SSHServerTransport):
     """
 
     class Factory:
-        pass
+        def getService(self, transport, nextService):
+            return lambda: None
 
     def __init__(self, portal):
         self.packets = []
@@ -61,6 +68,9 @@ class MockSSHTransport(SSHServerTransport):
     def sendPacket(self, messageType, payload):
         self.packets.append((messageType, payload))
 
+    def setService(self, service):
+        pass
+
 
 class UserAuthServerMixin:
     def setUp(self):
@@ -69,15 +79,12 @@ class UserAuthServerMixin:
         self.user_auth = sshserver.SSHUserAuthServer(self.transport)
 
     def assertBannerSent(self, banner_message, expected_language='en'):
-        """Assert that 'banner_message' was sent as an SSH banner.
-
-        We actually check that 'banner_message' was sent with CR LF at the end.
-        """
+        """Assert that 'banner_message' was sent as an SSH banner."""
         # Check that we received a BANNER, then a FAILURE.
         for packet_type, packet_content in self.transport.packets:
             if packet_type == userauth.MSG_USERAUTH_BANNER:
                 bytes, language, empty = getNS(packet_content, 2)
-                self.assertEqual(banner_message + '\r\n', bytes.decode('UTF8'))
+                self.assertEqual(banner_message, bytes.decode('UTF8'))
                 self.assertEqual(expected_language, language)
                 self.assertEqual('', empty)
                 break
@@ -98,7 +105,7 @@ class TestUserAuthServer(UserAuthServerMixin, unittest.TestCase):
         # See RFC 4252, Section 5.4.
         message = u"test message"
         self.user_auth.sendBanner(message, language='en-US')
-        self.assertBannerSent(message, 'en-US')
+        self.assertBannerSent(message + '\r\n', 'en-US')
         self.assertEqual(
             1, len(self.transport.packets),
             "More than just banner was sent: %r" % self.transport.packets)
@@ -137,18 +144,21 @@ class TestUserAuthServer(UserAuthServerMixin, unittest.TestCase):
 class MockChecker(SSHPublicKeyDatabase):
     """A very simple public key checker which rejects all offered credentials.
 
-    Used by TestAuthenticationErrorDisplay to test that errors raised by
+    Used by TestAuthenticationBannerDisplay to test that errors raised by
     checkers are sent to SSH clients.
     """
 
     error_message = u'error message'
 
     def requestAvatarId(self, credentials):
-        return failure.Failure(
-            sshserver.UserDisplayedUnauthorizedLogin('error message'))
+        if self.error_message is not None:
+            return failure.Failure(
+                sshserver.UserDisplayedUnauthorizedLogin(self.error_message))
+        else:
+            return credentials.username
 
 
-class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
+class TestAuthenticationBannerDisplay(UserAuthServerMixin, TrialTestCase):
     """Check that auth error information is passed through to the client.
 
     Normally, SSH servers provide minimal information on failed authentication.
@@ -164,7 +174,8 @@ class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
 
     def setUp(self):
         UserAuthServerMixin.setUp(self)
-        self.portal.registerChecker(MockChecker())
+        self.checker = MockChecker()
+        self.portal.registerChecker(self.checker)
         self.user_auth.serviceStarted()
         self.key_data = self._makeKey()
 
@@ -178,6 +189,20 @@ class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
                                    'ssh_host_key_rsa.pub'), 'rb').read())
         return chr(0) + NS('rsa') + NS(public_key)
 
+    def test_bannerEmptyOnSuccess(self):
+        # No banner is printed when the user authenticates successfully.
+
+        # The checker will pass if there's no error message.
+        self.checker.error_message = None
+        d = self.user_auth.ssh_USERAUTH_REQUEST(
+            NS('jml') + NS('') + NS('publickey') + self.key_data)
+        def check(ignored):
+            # Check that no banner was sent to the user.
+            self.assertEqual(
+                list(zip(*self.transport.packets)[0]),
+                [userauth.MSG_USERAUTH_SUCCESS])
+        return d.addCallback(check)
+
     def test_loggedToBanner(self):
         # When there's an authentication failure, we display an informative
         # error message through the SSH authentication protocol 'banner'.
@@ -189,7 +214,7 @@ class TestAuthenticationErrorDisplay(UserAuthServerMixin, TrialTestCase):
             self.assertEqual(
                 list(zip(*self.transport.packets)[0]),
                 [userauth.MSG_USERAUTH_BANNER, userauth.MSG_USERAUTH_FAILURE])
-            self.assertBannerSent(MockChecker.error_message)
+            self.assertBannerSent(MockChecker.error_message + '\r\n')
         return d.addCallback(check)
 
     def test_unsupportedAuthMethodNotLogged(self):
