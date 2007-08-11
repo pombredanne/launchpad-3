@@ -26,7 +26,6 @@ __all__ = [
     'ProductAddSeriesView',
     'ProductBugContactEditView',
     'ProductReassignmentView',
-    'ProductLaunchpadUsageEditView',
     'ProductRdfView',
     'ProductSetFacets',
     'ProductSetSOP',
@@ -54,7 +53,7 @@ from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    ILaunchpadCelebrities, IProduct, IProductLaunchpadUsageForm,
+    ILaunchpadCelebrities, IProduct,
     ICountry, IProductSet, IProductSeries, IProject, ISourcePackage,
     ICalendarOwner, ITranslationImportQueue, NotFoundError,
     IBranchSet, RESOLVED_BUGTASK_STATUSES,
@@ -650,7 +649,8 @@ class ProductEditView(LaunchpadEditFormView):
     schema = IProduct
     label = "Edit details"
     field_names = [
-        "project", "displayname", "title", "summary", "description",
+        "displayname", "title", "summary", "description", "project",
+        "bugtracker", "official_rosetta", "official_answers",
         "homepageurl", "sourceforgeproject",
         "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
         "programminglang", "development_focus"]
@@ -666,6 +666,12 @@ class ProductEditView(LaunchpadEditFormView):
         else:
             return canonical_url(getUtility(IProductSet))
 
+    custom_widget('bugtracker', ProductBugTrackerWidget)
+
+#    @property
+#    def adapters(self):
+#        return {self.schema: self.context}
+
 
 class ProductChangeTranslatorsView(ProductEditView):
     label = "Change translation group"
@@ -676,26 +682,6 @@ class ProductReviewView(ProductEditView):
     label = "Administer project details"
     field_names = ["name", "owner", "active", "autoupdate", "reviewed",
                    "private_bugs"]
-
-
-class ProductLaunchpadUsageEditView(LaunchpadEditFormView):
-    """View class for defining Launchpad usage."""
-
-    schema = IProductLaunchpadUsageForm
-    label = "Describe Launchpad usage"
-    custom_widget('bugtracker', ProductBugTrackerWidget)
-
-    @action("Change", name='change')
-    def change_action(self, action, data):
-        self.updateContextFromData(data)
-
-    @property
-    def next_url(self):
-        return canonical_url(self.context)
-
-    @property
-    def adapters(self):
-        return {self.schema: self.context}
 
 
 class ProductAddSeriesView(LaunchpadFormView):

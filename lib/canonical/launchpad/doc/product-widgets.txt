@@ -20,10 +20,10 @@ Let's take Firefox as an example, it uses Launchpad as its bug tracker.
 If we render the widget, it will have the 'No bug tracker' option
 selected, since that's what the custom field's missing value represent.
 
-    >>> from canonical.launchpad.interfaces import IProductLaunchpadUsageForm 
+    >>> from canonical.launchpad.interfaces import IProduct 
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> from canonical.widgets.product import ProductBugTrackerWidget
-    >>> product_bugtracker = IProductLaunchpadUsageForm['bugtracker'].bind(
+    >>> product_bugtracker = IProduct['bugtracker'].bind(
     ...     firefox)
     >>> widget = ProductBugTrackerWidget(
     ...     product_bugtracker, product_bugtracker.vocabulary,
