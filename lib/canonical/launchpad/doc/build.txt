@@ -327,11 +327,12 @@ For sourcepackage:
 For a given distribution as well:
 
   >>> ubuntu.getBuildRecords().count()
-  17
+  18
 
   >>> L = ubuntu.getBuildRecords(status=BuildStatus.FULLYBUILT)
   >>> for l in L:
   ...     print l.datebuilt, l.id, l.buildstate.value
+  2007-08-09 23:59:59+00:00 27 1
   2005-03-25 00:00:01+00:00 19 1
   2005-03-25 00:00:01+00:00 16 1
   2005-03-25 00:00:01+00:00 7 1
