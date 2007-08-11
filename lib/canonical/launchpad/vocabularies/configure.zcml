@@ -46,11 +46,6 @@
     />
 
   <vocabulary
-    name="BugRef"
-    factory="canonical.launchpad.vocabularies.BugRefVocabulary"
-    />
-
-  <vocabulary
     name="BugTaskStatus"
     factory="canonical.launchpad.vocabularies.BugTaskStatusVocabulary"
     />

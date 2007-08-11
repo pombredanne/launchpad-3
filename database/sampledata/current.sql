@@ -560,9 +560,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -944,13 +941,6 @@ INSERT INTO bugcve (id, bug, cve, date_created) VALUES (2, 2, 2, '2006-10-16 18:
 
 
 ALTER TABLE bugcve ENABLE TRIGGER ALL;
-
-
-ALTER TABLE bugexternalref DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE bugexternalref ENABLE TRIGGER ALL;
 
 
 ALTER TABLE bugmessage DISABLE TRIGGER ALL;

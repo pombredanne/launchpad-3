@@ -63,7 +63,7 @@ from canonical.launchpad.webapp import (
 from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.interfaces import (
     IBug, IBugBranchSet, BugTaskSearchParams, IBugAttachmentSet,
-    IBugExternalRefSet, IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
+    IBugSet, IBugTask, IBugTaskSet, IBugTaskSearch,
     IDistribution, IDistributionSourcePackage,
     IDistroBugTask, IDistroSeries, IDistroSeriesBugTask,
     IFrontPageBugTaskSearch, ILaunchBag, INullBugTask, IPerson,
@@ -301,11 +301,6 @@ class BugTaskNavigation(Navigation):
     def traverse_attachments(self, name):
         if name.isdigit():
             return getUtility(IBugAttachmentSet)[name]
-
-    @stepthrough('references')
-    def traverse_references(self, name):
-        if name.isdigit():
-            return getUtility(IBugExternalRefSet)[name]
 
     @stepthrough('comments')
     def traverse_comments(self, name):

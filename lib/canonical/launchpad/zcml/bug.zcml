@@ -124,9 +124,6 @@
           name="+portlet-questions"
           template="../templates/bug-portlet-questions.pt" />
       <browser:page
-          name="+portlet-reference"
-          template="../templates/bug-portlet-reference.pt" />
-      <browser:page
           name="+portlet-duplicates"
           template="../templates/bug-portlet-duplicates.pt" />
       <browser:page

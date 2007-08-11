@@ -29,7 +29,7 @@ import pytz
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IPersonSet, IEmailAddressSet, IBugSet, IBugTaskSet,
-    IBugExternalRefSet, IBugAttachmentSet, IMessageSet,
+    IBugAttachmentSet, IMessageSet,
     ILibraryFileAliasSet, ICveSet, IBugWatchSet, PersonCreationRationale,
     ILaunchpadCelebrities, NotFoundError, CreateBugParams)
 from canonical.launchpad.webapp import canonical_url
@@ -291,7 +291,6 @@ class Bugzilla:
         self.bugtaskset = getUtility(IBugTaskSet)
         self.bugwatchset = getUtility(IBugWatchSet)
         self.cveset = getUtility(ICveSet)
-        self.extrefset = getUtility(IBugExternalRefSet)
         self.personset = getUtility(IPersonSet)
         self.emailset = getUtility(IEmailAddressSet)
         self.person_mapping = {}
@@ -447,6 +446,9 @@ class Bugzilla:
         msgset = getUtility(IMessageSet)
         who, when, text = comments.pop(0)
         text = self._bug_re.sub(self.replaceBugRef, text)
+        # if an URL is associated with the bug, add it:
+        if bug.bug_file_loc:
+            text.join(text, '\n\n',bug.bug_file_loc)
         # the initial comment can't be empty
         if not text.strip():
             text = '<empty comment>'
@@ -459,6 +461,7 @@ class Bugzilla:
             owner=self.person(bug.reporter))
         params.setBugTarget(**target)
         lp_bug = self.bugset.createBug(params)
+
 
         # add the bug watch:
         lp_bug.addWatch(self.bugtracker, bug.bug_id, lp_bug.owner)
@@ -476,12 +479,6 @@ class Bugzilla:
             lp_bug.subscribe(self.person(bug.qa_contact))
         for cc in bug.ccs:
             lp_bug.subscribe(self.person(cc))
-
-        # if a URL is associated with the bug, add it:
-        if bug.bug_file_loc:
-            self.extrefset.createBugExternalRef(lp_bug, bug.bug_file_loc,
-                                                bug.bug_file_loc,
-                                                lp_bug.owner)
 
         # translate bugzilla status and severity to LP equivalents
         task = lp_bug.bugtasks[0]

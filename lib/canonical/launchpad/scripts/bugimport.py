@@ -33,7 +33,7 @@ from zope.app.content_types import guess_content_type
 
 from canonical.database.constants import UTC_NOW
 from canonical.launchpad.interfaces import (
-    IBugSet, IBugActivitySet, IBugAttachmentSet, IBugExternalRefSet,
+    IBugSet, IBugActivitySet, IBugAttachmentSet,
     ICveSet, IEmailAddressSet, ILaunchpadCelebrities, PersonCreationRationale,
     ILibraryFileAliasSet, IMessageSet, IPersonSet, CreateBugParams)
 from canonical.launchpad.scripts.bugexport import BUGS_XMLNS
@@ -286,13 +286,6 @@ class BugImporter:
         description = get_value(bugnode, 'description')
         if description:
             bug.description = description
-
-        for urlnode in get_all(bugnode, 'urls/url'):
-            getUtility(IBugExternalRefSet).createBugExternalRef(
-                bug=bug,
-                url=urlnode.get('href'),
-                title=get_text(urlnode),
-                owner=bug.owner)
 
         for cvenode in get_all(bugnode, 'cves/cve'):
             cve = getUtility(ICveSet)[get_text(cvenode)]

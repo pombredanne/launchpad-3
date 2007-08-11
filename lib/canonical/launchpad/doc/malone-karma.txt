@@ -49,14 +49,6 @@ Change the description of a bug:
     >>> notify(SQLObjectModifiedEvent(bug, old_bug, ['description']))
     Karma added: action=bugdescriptionchanged, distribution=debian
 
-Add a web link to a bug:
-
-    >>> from canonical.launchpad.interfaces import IBugExternalRefSet
-    >>> link = getUtility(IBugExternalRefSet).createBugExternalRef(
-    ...     bug, "http://www.com/", "Some link", foo_bar)
-    >>> notify(SQLObjectCreatedEvent(link))
-    Karma added: action=bugextrefadded, distribution=debian
-
 Add a CVE reference to a bug:
 
     >>> from canonical.launchpad.interfaces import ICveSet

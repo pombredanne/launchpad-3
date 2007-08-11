@@ -12,7 +12,7 @@ from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
-    BugTaskSearchParams, IBazaarApplication, IBranchSet, IBugExternalRefSet,
+    BugTaskSearchParams, IBazaarApplication, IBranchSet,
     IBugSet, IBugTaskSet, IBugTrackerSet, IBugWatchSet, IDistroSeriesSet,
     ILanguageSet, ILaunchBag, ILaunchpadStatisticSet, IMaloneApplication,
     IOpenIdApplication, IProductSet, IRegistryApplication,
@@ -45,10 +45,6 @@ class MaloneApplication:
     @property
     def bugwatch_count(self):
         return getUtility(IBugWatchSet).search().count()
-
-    @property
-    def bugextref_count(self):
-        return getUtility(IBugExternalRefSet).search().count()
 
     @property
     def bugtask_count(self):
