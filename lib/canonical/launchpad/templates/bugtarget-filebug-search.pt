@@ -145,8 +145,9 @@
           your bug, please contact the administrator of
           <tal:project replace="context/displayname">Project</tal:project>.
       </tal:singular>
+
       <ul tal:repeat="product context/products">
-        <li>
+        <li condition="product/official_malone">
           <img src="/@@product" tal:replace="structure product/image:icon" />
           <strong>
             <a tal:attributes="href product/fmt:url"
