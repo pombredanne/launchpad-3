@@ -178,11 +178,13 @@
             <tal:packages define="packages product/distrosourcepackages">
 
               <li tal:condition="packages">
-                <ul class="source package" tal:repeat="package packages">
-                  <li>
+                <ul tal:repeat="package packages">
+                  <li class="source package">
+                    Source package:
                     <a tal:attributes="href package/fmt:url">
-                      <span tal:replace="package/distribution/displayname" />
-                      <span tal:replace="package/sourcepackagename" />
+                      <tal:displayname 
+                          replace="package/distribution/displayname" />
+                      <tal:packagename replace="package/sourcepackagename" />
                     </a>
                     (<a
                        tal:attributes="href string:${package/fmt:url}/+filebug"
