@@ -112,6 +112,7 @@
     <resource name="person-inactive-logo" file="../images/person-inactive-logo.png" />
     <resource name="person-inactive-mugshot" file="../images/person-inactive-mugshot.png" />
     <resource name="private" file="../images/do-not-disturb.png" />
+    <resource name="private-bg" file="../images/private-bg.png" />
     <resource name="private-large" file="../images/do-not-disturb-large.png" />
     <resource name="product" file="../images/product.png" />
     <resource name="product-badge" file="../images/product-badge.png" />

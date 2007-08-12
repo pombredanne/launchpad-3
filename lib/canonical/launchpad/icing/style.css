@@ -561,8 +561,9 @@ So it's hidden initially, and then revealed if JavaScript is available.
 /* The rest of the page keeps clear of the collapsed help panel. */
 /* test: http://launchpad.dev/+logout */
 #nonhelp {
-  margin: 10px 20px 0 38px;
+  margin: 0 20px 0 38px;
   min-width: 752px; /* prevents search field from sliding under tabs */
+  padding-top: 10px;
 }
 
 /*- App home pages and pillar indexes both have a heading and app buttons, -*/

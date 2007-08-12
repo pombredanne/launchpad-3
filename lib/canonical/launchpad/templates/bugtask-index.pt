@@ -30,8 +30,9 @@
       <div id="bug-properties" style="float: right;">
         <img
           tal:condition="context/bug/security_related"
-          alt="(Security-related)"
+          alt="(Security vulnerability)"
           src="/@@/security-large"
+          title="This bug report is about a security vulnerability"
         />
         <img src="/@@/mentoring-large" title="(Mentoring available)"
              tal:condition="context/bug/mentoring_offers/count" />
