@@ -93,7 +93,10 @@ class MilestoneView(LaunchpadView):
                     orderby=['-importance', 'datecreated', 'id'],
                     omit_dupes=True)
         tasks = getUtility(IBugTaskSet).search(params)
-        # Do not display generic bug tasks from conjoined relationships:
+        # Bug tasks that are explicitly targeted to a development focus series
+        # exist in a conjoined master-slave relationship. To prevent such bugs
+        # from appearing twice in the listing, we remove all bug tasks with a
+        # conjoined master:
         return [task for task in tasks if task.conjoined_master is None]
 
     @property
