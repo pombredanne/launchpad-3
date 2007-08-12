@@ -421,68 +421,6 @@ will not be included in the results returned by the bug commenter search.
     2 ubuntu
 
 
-== Searching incomplete bugs ==
-
-Bugs marked `Incomplete` can be searched using special pseudo-statuses,
-`Incomplete (without response)` (bugs that have been marked incomplete
-and have no new comments since then) and `Incomplete (with response)`
-(incomplete bugs with new information in the form of comments).
-
-    >>> from canonical.launchpad.interfaces import BugTaskStatusSearch
-    >>> import transaction
-    >>> incomplete_params = BugTaskSearchParams(
-    ...     user=None, status=BugTaskStatus.INCOMPLETE)
-    >>> firefox.searchTasks(incomplete_params).count()
-    0
-
-We create a new bug in the firefox product and set its status to `Incomplete`.
-
-    >>> incomplete_bug = firefox.createBug(CreateBugParams(
-    ...     owner=no_priv, title='An incomplete bug',
-    ...     comment='not enough info'))
-    >>> incomplete_bugtask = incomplete_bug.setStatus(
-    ...     firefox, BugTaskStatus.INCOMPLETE, no_priv)
-
-We flush and commit, so that we can search the database.
-
-    >>> flush_database_updates()
-    >>> transaction.commit()
-
-Searching for incomplete bugs in firefox now returns 1 bug.
-
-    >>> firefox.searchTasks(incomplete_params).count()
-    1
-
-Since no new information was supplied (in a comment) since we marked the
-bug `Incomplete`, searching for `Incomplete (without response)` in the
-firefox product should return the same lonely bug. Searching for
-`Incomplete (with response)` bugs shuold return no bugs at all.
-
-    >>> incomplete_without_response_params = BugTaskSearchParams(
-    ...     user=None, status=BugTaskStatusSearch.INCOMPLETE_WITHOUT_RESPONSE)
-    >>> firefox.searchTasks(incomplete_without_response_params).count()
-    1
-    >>> incomplete_with_response_params = BugTaskSearchParams(
-    ...     user=None, status=BugTaskStatusSearch.INCOMPLETE_WITH_RESPONSE)
-    >>> firefox.searchTasks(incomplete_with_response_params).count()
-    0
-
-We create a new comment for the bug.
-
-    >>> message = incomplete_bug.newMessage(no_priv, 'No subject', 'more info')
-    >>> flush_database_updates()
-    >>> transaction.commit()
-
-Now searching for `Incomplete (with response)` should return this bug.
-
-    >>> firefox.searchTasks(incomplete_with_response_params).count()
-    1
-
-And searching for `Incomplete (without response)` should return nothing.
-
-    >>> firefox.searchTasks(incomplete_without_response_params).count()
-    0
-
 
 == Search for BugTasks assigned to milestones ==
 
