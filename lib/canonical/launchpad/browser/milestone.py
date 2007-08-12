@@ -81,7 +81,7 @@ class MilestoneContextMenu(ContextMenu):
 class MilestoneView(LaunchpadView):
 
     # Listify and cache the specifications and bugtasks to avoid making
-    # the same query over and over again when evaluting in the template.
+    # the same query over and over again when evaluating in the template.
     @cachedproperty
     def specifications(self):
         return list(self.context.specifications)
