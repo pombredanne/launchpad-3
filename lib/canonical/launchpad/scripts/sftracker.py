@@ -346,7 +346,7 @@ class TrackerImporter:
         # it off the list.
         date, userid, text = comments.pop(0)
         # create a back reference to the original SourceForge bug report
-        text.join(text, '\n\n[', item.url, ']')
+        text = text + '\n\n[' + item.url + ']'
         msg = self.createMessage(item.title, date, userid, text)
         comments_by_date_and_user[(date, userid)] = msg
 

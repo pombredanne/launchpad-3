@@ -448,8 +448,8 @@ class Bugzilla:
         text = self._bug_re.sub(self.replaceBugRef, text)
         # if an URL is associated with the bug, add it:
         if bug.bug_file_loc:
-            text.join(text, '\n\n',bug.bug_file_loc)
-        # the initial comment can't be empty
+            text = text + '\n\n' + bug.bug_file_loc
+        # the initial comment can't be empty:
         if not text.strip():
             text = '<empty comment>'
         msg = msgset.fromText(bug.short_desc, text, self.person(who), when)
