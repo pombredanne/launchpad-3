@@ -172,3 +172,122 @@ Now observe that only the first bug is listed in the 1.0 milestone listing:
         ...
     LinkNotFoundError
 
+If we change our mind and clear the duplicate status of the second bug, then
+both bugs are listed in the 1.0 milestone listing once again:
+
+    >>> duplicate_url = 'http://bugs.launchpad.dev/firefox/+bug/16/+duplicate'
+    >>> admin_browser.open(duplicate_url)
+    >>> admin_browser.getControl('Duplicate').value = ''
+    >>> admin_browser.getControl('Change').click()
+
+    >>> admin_browser.open('http://launchpad.dev/firefox/+milestone/1.0')
+
+    >>> print admin_browser.getLink('Test Bug 1')
+    <Link text='Test Bug 1' url='http://bugs.launchpad.dev/bugs/15'>
+
+    >>> print admin_browser.getLink('Test Bug 2')
+    <Link text='Test Bug 2' url='http://bugs.launchpad.dev/bugs/16'>
+
+
+=== Bugs targeted to multiple series ===
+
+Bugs targeted to the same milestone across more than one series will result in
+duplicate entries in the milestone listing (one for each series target).
+
+To demonstrate this, we'll begin by creating a new series "2.0" for the
+Mozilla Firefox product, to complement the existing series "1.0":
+
+    >>> add_series_url = 'http://launchpad.dev/firefox/+addseries'
+    >>> admin_browser.open(add_series_url)
+    >>> admin_browser.getControl('Name').value = '2.0'
+    >>> admin_browser.getControl('Summary').value = 'The Firefox 2.0 Series'
+    >>> admin_browser.getControl('Register Series').click()
+
+We'll also create a new test milestone within the "trunk" series:
+
+    >>> add_milestone_url = 'http://launchpad.dev/firefox/trunk/+addmilestone'
+    >>> admin_browser.open(add_milestone_url)
+    >>> admin_browser.getControl('Name').value = 'test-milestone'
+    >>> admin_browser.getControl('Date Targeted').value = '2100-08-08'
+    >>> admin_browser.getControl('Add').click()
+
+Let's target an existing bug to both series "1.0" and series "2.0":
+
+    >>> nominate_url = 'http://bugs.launchpad.dev/firefox/+bug/15/+nominate'
+    >>> admin_browser.open(nominate_url)
+    >>> admin_browser.getControl('1.0').selected = True
+    >>> admin_browser.getControl('2.0').selected = True
+    >>> admin_browser.getControl('Submit').click()
+
+Now we'll add each bug target to the same test milestone, but using different
+levels of importance:
+
+    >>> milestone_value = ['test-milestone']
+
+    >>> edit_url = 'http://bugs.launchpad.dev/firefox/1.0/+bug/15/+editstatus'
+    >>> admin_browser.open(edit_url)
+    >>> admin_browser.getControl('Milestone').displayValue = milestone_value
+    >>> admin_browser.getControl('Importance').value = ['Critical']
+    >>> admin_browser.getControl('Save Changes').click()
+
+    >>> edit_url = 'http://bugs.launchpad.dev/firefox/2.0/+bug/15/+editstatus'
+    >>> admin_browser.open(edit_url)
+    >>> admin_browser.getControl('Milestone').displayValue = milestone_value
+    >>> admin_browser.getControl('Importance').value = ['High']
+    >>> admin_browser.getControl('Save Changes').click()
+
+Observe that both bug targets are now listed in the test milestone listing:
+
+    >>> url = 'http://launchpad.dev/firefox/+milestone/test-milestone'
+    >>> admin_browser.open(url)
+
+    >>> print extract_text(find_tag_by_id(admin_browser.contents,
+    ...                                   'milestone_bugtasks'))
+    Report...Importance...
+    15...Test Bug 1...Critical...
+    15...Test Bug 1...High...
+
+
+=== Bugs targeted to development focus series ===
+
+When a bug is raised for a product or distribution, it is implicitly targeted
+to the development focus series for that product or distribution ("trunk" by
+default).
+
+Ordinarily, targeting a bug to a milestone causes the bug to appear in that
+milestone's bug listing:
+
+    >>> edit_url = 'http://bugs.launchpad.dev/firefox/+bug/16/+editstatus'
+    >>> admin_browser.open(edit_url)
+    >>> milestone_value = ['test-milestone']
+    >>> admin_browser.getControl('Milestone').displayValue = milestone_value
+    >>> admin_browser.getControl('Save Changes').click()
+
+    >>> url = 'http://launchpad.dev/firefox/+milestone/test-milestone'
+    >>> admin_browser.open(url)
+
+    >>> print extract_text(find_tag_by_id(admin_browser.contents,
+    ...                                   'milestone_bugtasks'))
+    Report...Importance...
+    16...Test Bug 2...
+
+When we explicitly target the bug to the development focus series, the bug
+still appears in the milestone's bug listing:
+
+    >>> nominate_url = 'http://bugs.launchpad.dev/firefox/+bug/16/+nominate'
+    >>> admin_browser.open(nominate_url)
+    >>> admin_browser.getControl('Trunk').selected = True
+    >>> admin_browser.getControl('Submit').click()
+
+    >>> url = 'http://launchpad.dev/firefox/+milestone/test-milestone'
+    >>> admin_browser.open(url)
+    >>> bugtasks = extract_text(find_tag_by_id(admin_browser.contents,
+    ...                                        'milestone_bugtasks'))
+    >>> print bugtasks
+    Report...Importance...
+    16...Test Bug 2...
+
+Moreover, the bug appears only once in the listing:
+
+    >>> print bugtasks.count('Test Bug 2')
+    1
