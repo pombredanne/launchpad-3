@@ -446,7 +446,7 @@ class Bugzilla:
         msgset = getUtility(IMessageSet)
         who, when, text = comments.pop(0)
         text = self._bug_re.sub(self.replaceBugRef, text)
-        # if an URL is associated with the bug, add it:
+        # If a URL is associated with the bug, add it to the description:
         if bug.bug_file_loc:
             text = text + '\n\n' + bug.bug_file_loc
         # the initial comment can't be empty:
@@ -461,7 +461,6 @@ class Bugzilla:
             owner=self.person(bug.reporter))
         params.setBugTarget(**target)
         lp_bug = self.bugset.createBug(params)
-
 
         # add the bug watch:
         lp_bug.addWatch(self.bugtracker, bug.bug_id, lp_bug.owner)
