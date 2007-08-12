@@ -63,7 +63,7 @@ bug tracker to track its bugs.
     >>> print_items(widget())
     In Launchpad NOT SELECTED
     In a registered bug tracker: NOT SELECTED
-    In the <a...>project</a> bug tracker: <a...>GnomeGBug GTracker</a>
+    In the <a...>project</a> bug tracker (<a...>GnomeGBug GTracker</a>)
     SELECTED
 
 And if Firefox wouldn't have a project at all, "No bug tracker" is once
