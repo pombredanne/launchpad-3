@@ -34,7 +34,10 @@
     <style tal:condition="site_message" type="text/css"
     >#help {top: 47px !important;}</style>
     <!--[if IE 7]>
-      <style type="text/css">#portlets {left: 20px;}</style>
+      <style type="text/css">
+        #container {margin-top: 48px;}
+        #portlets {left: 20px;}
+      </style>
     <![endif]-->
 
     <tal:comment condition="nothing">
@@ -152,8 +155,11 @@
       </form>
       <div tal:condition="view/macro:pagehas/applicationborder" id="mainarea">
 
+            <div class="v">
+              <div class="w">
                 <div class="x">
-
+                  <div class="y">
+                    <div class="z">
                       <div
                         tal:condition="not:view/macro:pagehas/applicationtabs"
                         id="noapplicationchooser"
@@ -245,8 +251,11 @@
                         </div>
                         <div class="clear"></div>
                       </div><!--id="container"-->
-
+                    </div><!--id="z"-->
+                  </div><!--id="y"-->
                 </div><!--id="x"-->
+              </div><!--id="w"-->
+            </div><!--id="v"-->
 
       </div><!--id="mainarea"-->
       <tal:noborder condition="not:view/macro:pagehas/applicationborder">
