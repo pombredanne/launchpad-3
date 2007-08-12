@@ -74,8 +74,8 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
             project_bugtracker_caption = "Somewhere else"
         else:
             project_bugtracker_caption = (
-                'The <a href="%s">project</a> bug tracker:'
-                ' <a href="%s">%s</a></label>' % (
+                'In the <a href="%s">project</a> bug tracker'
+                ' (<a href="%s">%s</a>)</label>' % (
                     canonical_url(project),
                     canonical_url(project.bugtracker),
                     cgi.escape(project.bugtracker.title)))
@@ -85,7 +85,7 @@ class ProductBugTrackerWidget(LaunchpadRadioWidget):
         # The bugtracker widget can't be within the <label> tag, since
         # Firefox doesn't cope with it well.
         external_bugtracker_text = "%s %s" % (
-            self._renderLabel("In a separate bug tracker:", 2),
+            self._renderLabel("In a registered bug tracker:", 2),
             self.bugtracker_widget())
         external_bugtracker_arguments = dict(
             index=2, text=external_bugtracker_text,

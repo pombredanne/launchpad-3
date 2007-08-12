@@ -77,7 +77,7 @@ Now let's go back and choose to use a specific bug tracker.
     >>> registrant_browser.getControl('Somewhere else').selected
     True
     >>> registrant_browser.getControl(
-    ...     'In a separate bug tracker:').selected = True
+    ...     'In a registered bug tracker:').selected = True
     >>> registrant_browser.getControl(
     ...     name='field.bugtracker.bugtracker').displayValue = [
     ...         'GnomeGBug GTracker']
@@ -97,7 +97,7 @@ Now let's go back and choose to use a specific bug tracker.
 Let's reset it to the way it was before.
 
     >>> registrant_browser.getLink('Change details').click()
-    >>> registrant_browser.getControl('In a separate bug tracker').selected
+    >>> registrant_browser.getControl('In a registered bug tracker:').selected
     True
     >>> registrant_browser.getControl('In Launchpad').selected = True
     >>> registrant_browser.getControl('Change').click()
