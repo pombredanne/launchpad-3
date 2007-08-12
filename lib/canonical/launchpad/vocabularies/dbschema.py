@@ -21,8 +21,6 @@ __all__ = [
     'CodeImportReviewStatusVocabulary',
     'CveStatusVocabulary',
     'DistroSeriesStatusVocabulary',
-    'EntitlementStateVocabulary',
-    'EntitlementTypeVocabulary',
     'InfestationStatusVocabulary',
     'PackagePublishingPocketVocabulary',
     'PackagingTypeVocabulary',
@@ -66,8 +64,6 @@ CodeImportReviewStatusVocabulary = vocab_factory(
     dbschema.CodeImportReviewStatus)
 CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
 DistroSeriesStatusVocabulary = vocab_factory(dbschema.DistroSeriesStatus)
-EntitlementStateVocabulary = vocab_factory(dbschema.EntitlementState)
-EntitlementTypeVocabulary = vocab_factory(dbschema.EntitlementType)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 PackagePublishingPocketVocabulary = vocab_factory(
     dbschema.PackagePublishingPocket)

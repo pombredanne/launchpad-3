@@ -13,8 +13,9 @@ import bzrlib.repository
 
 
 def shut_up_deprecation_warning():
-    # XXX: quick hack to disable the deprecation warning for old repository
-    # formats -- DavidAllouche 2006-01-29
+    # XXX DavidAllouche 2006-01-29:
+    # Quick hack to disable the deprecation warning for old repository
+    # formats.
     bzrlib.repository._deprecation_warning_done = True
 
 def force_bzr_to_use_urllib():

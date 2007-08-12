@@ -11,7 +11,6 @@ __all__ = [
     ]
 
 from datetime import datetime
-import operator
 
 from zope.component import getUtility
 
@@ -19,14 +18,12 @@ from canonical.cachedproperty import cachedproperty
 from canonical.lp import decorates
 
 from canonical.launchpad.interfaces import (
-    IBazaarApplication, IBranchSet, ILaunchpadCelebrities,
-    IProduct, IProductSet, IProductSeriesSet)
+    IBazaarApplication, IBranchSet, IProduct, IProductSet, IProductSeriesSet)
 from canonical.lp.dbschema import ImportStatus
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.webapp import (
-    ApplicationMenu, canonical_url, enabled_with_permission,
-    LaunchpadView, Link, Navigation, stepto)
-from canonical.launchpad.webapp.batching import BatchNavigator
+    ApplicationMenu, enabled_with_permission, LaunchpadView, Link, Navigation,
+    stepto)
 import canonical.launchpad.layers
 
 
@@ -113,29 +110,39 @@ class ProductInfo:
 
     decorates(IProduct, 'product')
 
-    def __init__(self, product, num_branches, branch_size, elapsed):
+    def __init__(self, product, num_branches, branch_size, elapsed, important):
         self.product = product
         self.num_branches = num_branches
         self.branch_size = branch_size
         self.elapsed_since_commit = elapsed
+        self.important = important
 
     @property
     def branch_class(self):
         return "cloud-size-%s" % self.branch_size
 
     @property
-    def time_class(self):
+    def time_darkness(self):
         if self.elapsed_since_commit is None:
-            return "cloud-shade-light"
+            return "light"
         if self.elapsed_since_commit.days < 7:
-            return "cloud-shade-dark"
+            return "dark"
         if self.elapsed_since_commit.days < 31:
-            return "cloud-shade-medium"
-        return "cloud-shade-light"
+            return "medium"
+        return "light"
+
+    @property
+    def branch_highlight(self):
+        """Return 'highlight' or 'shade'."""
+        if self.important:
+            return 'highlight'
+        else:
+            return 'shade'
 
     @property
     def html_class(self):
-        return "%s %s" % (self.branch_class, self.time_class)
+        return "%s cloud-%s-%s" % (
+            self.branch_class, self.branch_highlight, self.time_darkness)
 
     @property
     def html_title(self):
@@ -167,9 +174,16 @@ class BazaarProductView:
         # As far as query efficiency goes, constructing 1k products is
         # sub-second, and the query to get the branch count and last commit
         # time runs in approximately 50ms on a vacuumed branch table.
-        products = shortlist(getUtility(IProductSet).getProductsWithBranches(),
-                             1500, hardlimit=2000)
-        
+        product_set = getUtility(IProductSet)
+        products = shortlist(product_set.getProductsWithBranches(),
+                             2000, hardlimit=3000)
+        # Any product that has a defined user branch for the development
+        # product series is shown in another colour.  Given the above
+        # query, all the products will be in the cache anyway.
+        user_branch_products = set(
+            [product.id for product in
+             product_set.getProductsWithUserDevelopmentBranches()])
+
         branchset = getUtility(IBranchSet)
         branch_summaries = branchset.getActiveUserBranchSummaryForProducts(
             products)
@@ -180,7 +194,7 @@ class BazaarProductView:
         small_count = counts[len(counts)/2]
         # Top 20% are big.
         large_count = counts[-(len(counts)/5)]
-        
+
         items = []
         now = datetime.today()
         for product in products:
@@ -204,9 +218,11 @@ class BazaarProductView:
                 branch_size = 'large'
             else:
                 branch_size = 'medium'
-            
+
+            important = product.id in user_branch_products
+
             items.append(ProductInfo(
-                product, num_branches, branch_size, elapsed))
+                product, num_branches, branch_size, elapsed, important))
 
         return items
-    
+

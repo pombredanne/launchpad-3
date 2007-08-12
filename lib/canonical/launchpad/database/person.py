@@ -39,8 +39,7 @@ from canonical.launchpad.event.team import JoinTeamEvent, TeamInvitationEvent
 from canonical.launchpad.helpers import contactEmailAddresses, shortlist
 
 from canonical.lp.dbschema import (
-    BugTaskImportance, ShippingRequestStatus,
-    SpecificationFilter, SpecificationDefinitionStatus,
+    BugTaskImportance, SpecificationFilter, SpecificationDefinitionStatus,
     SpecificationImplementationStatus, SpecificationSort)
 
 from canonical.launchpad.interfaces import (

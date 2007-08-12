@@ -1121,7 +1121,7 @@ class BugTaskListingView(LaunchpadView):
         bugtask = self.context
 
         if INullBugTask.providedBy(bugtask):
-            return u"Not reported in %s" % bugtask.targetname
+            return u"Not reported in %s" % bugtask.bugtargetname
 
         assignee = bugtask.assignee
         status = bugtask.status
@@ -2127,7 +2127,8 @@ class BugTaskTableRowView(LaunchpadView):
 class BugsBugTaskSearchListingView(BugTaskSearchListingView):
     """Search all bug reports."""
 
-    columns_to_show = ["id", "summary", "targetname", "importance", "status"]
+    columns_to_show = ["id", "summary", "bugtargetdisplayname",
+                       "importance", "status"]
     schema = IFrontPageBugTaskSearch
     custom_widget('scope', ProjectScopeWidget)
 
