@@ -25,7 +25,7 @@ source record) PPAs are presented.
     Celso Providelo
     packages to help my friends.
     3
-    2
+    3
 
 We have a checkbox to allow inactive PPA results.
 
@@ -37,7 +37,7 @@ We have a checkbox to allow inactive PPA results.
     Celso Providelo
     packages to help my friends.
     3
-    2
+    3
     No Privileges Person
     I am not allowed to say, I have no privs.
     0
@@ -84,7 +84,7 @@ and estimated size).
     >>> print text
     3 Sources
     (9.5 MiB)
-    2 Binaries
+    3 Binaries
     (3 bytes)
     Estimated archive size:
     9.5 MiB

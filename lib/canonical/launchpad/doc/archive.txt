@@ -42,7 +42,7 @@ returning I{Source, Binary}PackagePublishingHistory objects.
   3
 
   >>> cprov_archive.getPublishedBinaries().count()
-  2
+  3
 
 This lookup also support 'name' restriction (as in SQL
 "LIKE '%%' || NAME || '%%'").
@@ -99,6 +99,7 @@ published for all available architectures, i386 & hppa:
   mozilla-firefox-1.0 (True) -> i386
   pmount-0.1-1 (False) -> i386
   pmount-0.1-1 (False) -> hppa
+  mozilla-firefox-1.0 (True) -> hppa
 
 'getPublishedBinaries' automatically filters multiple publications of
 'pmount' considering only the publication to the 'nominatedarchindep'
@@ -109,7 +110,7 @@ published for all available architectures, i386 & hppa:
   >>> check_bin_pubs(unique_cprov_bin_pubs)
   mozilla-firefox-1.0 (True) -> i386
   pmount-0.1-1 (False) -> i386
-
+  mozilla-firefox-1.0 (True) -> hppa
 
 == Package Counters ==
 
@@ -120,7 +121,7 @@ based in the publication lookup methods.
   >>> cprov_archive.number_of_sources
   3
   >>> cprov_archive.number_of_binaries
-  2
+  3
   >>> cprov_archive.sources_size
   9923399
   >>> cprov_archive.binaries_size
@@ -130,8 +131,20 @@ Additionally we have another property to sum up the sources and the
 binaries size and a pre-defined increment related to the files created
 in the archive (+1kbytes for each publication)
 
-  >>> cprov_archive.estimated_size
-  9928522
+  >>> pool_size = (
+  ...     cprov_archive.sources_size + cprov_archive.binaries_size)
+
+  >>> number_of_publications = (
+  ...     cprov_archive.number_of_sources + cprov_archive.number_of_binaries)
+  >>> indexes_size = number_of_publications * 1024
+
+  >>> estimated_size = cprov_archive.estimated_size
+
+  >>> estimated_size == pool_size + indexes_size
+  True
+
+  >>> estimated_size
+  9929546
 
 
 == Build Lookup ==
@@ -161,7 +174,7 @@ Or return build records in a specific status:
 
   >>> from canonical.lp.dbschema import BuildStatus
   >>> cprov_archive.getBuildRecords(status=BuildStatus.FULLYBUILT).count()
-  2
+  3
 
   >>> cprov_archive.getBuildRecords(status=BuildStatus.FAILEDTOBUILD).count()
   1
@@ -174,7 +187,7 @@ And finally build records target to a given pocket:
   >>> from canonical.lp.dbschema import PackagePublishingPocket
   >>> cprov_archive.getBuildRecords(
   ...     pocket=PackagePublishingPocket.RELEASE).count()
-  3
+  4
 
   >>> cprov_archive.getBuildRecords(
   ...     pocket=PackagePublishingPocket.UPDATES).count()

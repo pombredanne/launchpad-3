@@ -313,7 +313,8 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         """Return all PPAs matching the given text in this distribution.
 
         'text', when passed, will restrict results to Archives with matching
-        description (SQL LIKE) or matching Archive.owner (fti/ftq).
+        description (using substring) or matching Archive.owner (using
+        available person fti/ftq).
 
         'show_inactive', when False, will restrict results to Archive with
         at least one source publication in PENDING or PUBLISHED status.

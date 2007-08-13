@@ -444,10 +444,20 @@ class DistributionPPASearchView(LaunchpadView):
     """Search PPAs belonging to the Distribution in question."""
 
     def initialize(self):
-        self.name_filter = self.request.get('name_filter', None)
-        self.show_inactive = self.request.get('show_inactive', None)
+        self.name_filter = self.request.get('name_filter')
+        self.show_inactive = self.request.get('show_inactive')
+
+        # Preserve self.show_inactive state because it's used in the
+        # template and build a boolean field to be passed for
+        # searchPPAs.
+        if self.show_inactive is None:
+            show_inactive = False
+        else:
+            show_inactive = True
+
         ppas = self.context.searchPPAs(
-            text=self.name_filter, show_inactive=self.show_inactive)
+            text=self.name_filter, show_inactive=show_inactive)
+
         self.batchnav = BatchNavigator(ppas, self.request)
         self.search_results = self.batchnav.currentBatch()
 
