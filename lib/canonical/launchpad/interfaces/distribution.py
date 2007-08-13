@@ -14,9 +14,6 @@ from zope.schema import (
 from zope.interface import (
     Interface, Attribute)
 
-from canonical.launchpad.interfaces.milestone import IMilestone
-
-
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Title, Summary, Description)

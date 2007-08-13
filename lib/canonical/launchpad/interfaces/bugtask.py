@@ -11,7 +11,6 @@ __all__ = [
     'INullBugTask',
     'IBugTaskSearch',
     'IAddBugTaskForm',
-    'IAddBugTaskWithBugTrackerForm',
     'IPersonBugTaskSearch',
     'IFrontPageBugTaskSearch',
     'IBugTaskDelta',
@@ -26,6 +25,7 @@ __all__ = [
     'UNRESOLVED_BUGTASK_STATUSES',
     'BUG_CONTACT_BUGTASK_STATUSES']
 
+from zope.component import getUtility
 from zope.interface import Attribute, Interface
 from zope.schema import (
     Bool, Choice, Datetime, Int, Text, TextLine, List, Field)
@@ -40,6 +40,7 @@ from canonical.launchpad.interfaces.component import IComponent
 from canonical.launchpad.interfaces.launchpad import IHasDateCreated, IHasBug
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.sourcepackage import ISourcePackage
+from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp.interfaces import ITableBatchNavigator
 
 
@@ -672,6 +673,20 @@ class IBugTaskSet(Interface):
         update-bugtask-targetnamecaches.
         """
 
+
+def valid_remote_bug_url(value):
+    from canonical.launchpad.interfaces.bugwatch import (
+        IBugWatchSet, NoBugTrackerFound, UnrecognizedBugTrackerURL)
+    try:
+        tracker, bug = getUtility(IBugWatchSet).extractBugTrackerAndBug(value)
+    except NoBugTrackerFound:
+        pass
+    except UnrecognizedBugTrackerURL:
+        raise LaunchpadValidationError(
+            "Launchpad does not recognize the bug tracker at this URL.")
+    return True
+
+
 class IAddBugTaskForm(Interface):
     """Form for adding an upstream bugtask."""
     # It is tempting to replace the first three attributes here with their
@@ -687,18 +702,8 @@ class IAddBugTaskForm(Interface):
                       "Leave blank if you are not sure."),
         vocabulary='SourcePackageName')
     bug_url = StrippedTextLine(
-        title=_('URL'), required=False,
+        title=_('URL'), required=False, constraint=valid_remote_bug_url,
         description=_("The URL of this bug in the remote bug tracker."))
-
-
-class IAddBugTaskWithBugTrackerForm(IAddBugTaskForm):
-
-    register_bugtracker = Bool(
-        title=_('Register bugtacker?'),
-        default=False,
-        required=False,
-        description=_("This bug tracker isn't registered in Launchpad. "
-                      "Would you like to register it now?"))
 
 
 class INominationsReviewTableBatchNavigator(ITableBatchNavigator):

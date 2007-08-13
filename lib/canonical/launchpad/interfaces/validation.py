@@ -585,3 +585,4 @@ def validate_date_interval(start_date, end_date, error_msg=None):
         errors.append(LaunchpadValidationError(error_msg))
     if errors:
         raise WidgetsError(errors)
+

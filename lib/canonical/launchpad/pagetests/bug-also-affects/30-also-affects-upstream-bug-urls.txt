@@ -63,7 +63,7 @@ tracker type it is), an error message is displayed.
     >>> for message in find_tags_by_class(user_browser.contents, 'message'):
     ...     print message.renderContents()
     There is 1 error.
-    Launchpad doesn't know what kind of bug tracker this URL is pointing at.
+    Launchpad does not recognize the bug tracker at this URL.
 
 If the URL can be recognised as a valid bug URL, but no such tracker is
 registered in Launchpad, the user will be prompted to register it first.
@@ -73,17 +73,14 @@ registered in Launchpad, the user will be prompted to register it first.
     >>> user_browser.url
     'http://bugs.launchpad.dev/firefox/+bug/4/+add-affected-product'
 
-    >>> for message in find_tags_by_class(user_browser.contents, 'message'):
-    ...     print message.renderContents()
-    There is 1 error.
-    The bug tracker at http://new.trac/ isn't registered in Launchpad. To register it now, please select 'Register bugtracker?' (below) and submit again.
+    >>> print get_feedback_messages(user_browser)
+    [u'The bugtracker with the given URL is not registered in Launchpad. Do
+     you want to register it now?']
 
-Let's selelect the `Register bugtracker?` checkbox and submit again,
-the bugtracker will be automatically registered, and the bug watch
-will be assigned using the newly registered bugtracker.
+Now the user confirms he wants us to register the bug tracker for him and we
+do that before creating the new bug watch.
 
-    >>> user_browser.getControl(name='field.register_bugtracker').value = True
-    >>> user_browser.getControl('Indicate bug in alsa-utils').click()
+    >>> user_browser.getControl('Yes, Register Bug Tracker').click()
 
 The bugtracker is now registered, the bug watch is linked, and we're
 redirected to the bug's page.

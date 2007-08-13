@@ -25,7 +25,7 @@ from canonical.launchpad import _
 from canonical.launchpad.fields import (ContentNameField, Summary,
     Title)
 from canonical.launchpad.validators import LaunchpadValidationError
-from canonical.launchpad.interfaces import IHasOwner, IProject
+from canonical.launchpad.interfaces.launchpad import IHasOwner
 from canonical.launchpad.interfaces.mentoringoffer import ICanBeMentored
 from canonical.launchpad.interfaces.validation import valid_webref
 from canonical.launchpad.interfaces.sprint import ISprint
@@ -53,6 +53,7 @@ class SpecNameField(ContentNameField):
         specification can be found within that namespace. Returns None
         otherwise.
         """
+        from canonical.launchpad.interfaces.project import IProject
         if ISpecificationSet.providedBy(self.context):
             # The context is the set of all specifications. Since this
             # set corresponds to multiple specification namespaces, we
