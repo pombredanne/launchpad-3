@@ -2,6 +2,7 @@
 
 __all__ = ['Publisher', 'pocketsuffix', 'suffixpocket', 'getPublisher']
 
+__metaclass__ = type
 
 import apt_pkg
 from datetime import datetime
@@ -46,8 +47,11 @@ Label: %s
 Architecture: %s
 """
 
-class sha256(object):
-    """Emulates PEP-247 hash class from apt_pkg.sha256sum
+class sha256:
+    """Encapsulates apt_pkg.sha256sum as expected by publishing.
+
+    It implements '__init__' and 'hexdigest' methods from PEP-247, which are
+    the only ones required in soyuz-publishing-system.
 
     It's a work around for broken Crypto.Hash.SHA256. See further information
     in bug #131503.
@@ -56,7 +60,8 @@ class sha256(object):
         self._sum = apt_pkg.sha256sum(content)
 
     def hexdigest(self):
-	return self._sum
+        """Return the hexdigest produced by apt_pkg.sha256sum."""
+        return self._sum
 
 
 def reorder_components(components):
