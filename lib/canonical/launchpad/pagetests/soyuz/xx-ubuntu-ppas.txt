@@ -5,7 +5,7 @@ The Ubuntu Linux page contains a link to get to the Personal Package Archives.
     >>> browser.open("http://launchpad.dev/ubuntu")
     >>> browser.getLink("Personal Package Archives").click()
     >>> browser.title
-    'Personal Package Archives for Ubuntu Linux'
+    'Ubuntu Linux Personal Package Archives'
 
 == PPA main page ==
 
@@ -74,7 +74,7 @@ In the table rows, the "Owner" is a clickable link to his PPA page.
 
     >>> browser.getLink("Celso Providelo").click()
     >>> browser.title
-    'Celso Providelo Personal Package Archive'
+    'Personal Package Archive for Celso Providelo'
 
 The page also shows some stats about Celso's PPA (number of sources. binaries
 and estimated size).
@@ -152,7 +152,7 @@ allow Ubuntu PPAs, thus 'ubuntutest' PPAs page should be empty:
     >>> browser.open("http://launchpad.dev/ubuntutest")
     >>> browser.getLink("Personal Package Archives").click()
     >>> browser.title
-    'Personal Package Archives for Ubuntu Test'
+    'Ubuntu Test Personal Package Archives'
 
     >>> len(find_tags_by_class(browser.contents, 'ppa_batch_row'))
     0

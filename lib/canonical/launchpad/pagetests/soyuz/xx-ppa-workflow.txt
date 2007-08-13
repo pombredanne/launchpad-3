@@ -26,7 +26,7 @@ drives the user to their Personal Package Archive page:
 
     >>> cprov_browser.getLink("Show Personal Package Archive").click()
     >>> cprov_browser.title
-    'Celso Providelo Personal Package Archive'
+    'Personal Package Archive for Celso Providelo'
     >>> cprov_browser.url
     'http://launchpad.dev/~cprov/+archive'
 

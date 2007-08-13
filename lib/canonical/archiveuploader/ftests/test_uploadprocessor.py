@@ -554,7 +554,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
 
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
-            "Andrew Bennetts Personal Package Archive is disabled"]
+            "Personal Package Archive for Andrew Bennetts is disabled"]
         self.assertEmail(contents)
 
     def testPPADistroSeriesOverrides(self):
@@ -697,7 +697,7 @@ class TestUploadProcessorPPA(TestUploadProcessorBase):
 
         contents = [
             "Subject: bar_1.0-1_source.changes rejected",
-            "Celso Providelo Personal Package Archive only "
+            "Personal Package Archive for Celso Providelo only "
             "supports uploads to 'ubuntu'"]
         self.assertEmail(contents)
 

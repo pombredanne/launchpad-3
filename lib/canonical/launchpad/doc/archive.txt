@@ -27,7 +27,7 @@ An Archive models a Debian Archive ...
 Useful properties:
 
   >>> cprov_archive.title
-  u'Celso Providelo Personal Package Archive'
+  u'Personal Package Archive for Celso Providelo'
 
   >>> cprov_archive.archive_url
   u'http://ppa.launchpad.dev/cprov'
