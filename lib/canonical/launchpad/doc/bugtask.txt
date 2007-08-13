@@ -89,9 +89,26 @@ Next, we need to grab some values to provide for importance and status.
     >>> IDistroSeriesBugTask.providedBy(distro_series_task)
     True
 
-XXX: Brad Bollenbach 2005-02-24: See the bottom of this file for a chunk of
-test documentation that is missing from here, due to problems with resetting
-the connection after a ProgrammingError is raised. ARGH.
+The created bugtasks are guaranteed to implement the correct interface.
+(We need to refetch them from the database to ensure we get
+non-security-proxied objects.)
+
+    >>> from zope.interface.verify import verifyObject
+    >>> from canonical.launchpad.database.bugtask import BugTask
+    >>> verifyObject(IDistroSeriesBugTask,
+    ...              BugTask.get(distro_series_task.id))
+    True
+    >>> verifyObject(IDistroBugTask,
+    ...              BugTask.get(distro_task.id))
+    True
+    >>> verifyObject(IUpstreamBugTask,
+    ...              BugTask.get(upstream_task.id))
+    True
+
+
+# XXX: Brad Bollenbach 2005-02-24: See the bottom of this file for a chunk of
+# test documentation that is missing from here, due to problems with resetting
+# the connection after a ProgrammingError is raised. ARGH.
 
 
 Bug Task Targets
@@ -658,7 +675,7 @@ like these, use the NullBugTask object.
     True
     >>> null_bugtask.target == netapplet
     True
-    >>> null_bugtask.targetname
+    >>> null_bugtask.bugtargetname
     u'netapplet'
     >>> expected_related_task_ids = [
     ...     task.id for task in null_bugtask.related_tasks]
@@ -951,7 +968,8 @@ Of course, it's also computed and set when a bugtask is created.
     >>> process.returncode
     0
 
-    # XXX: If we don't call flush_database_caches() here, we won't see the
+    # XXX Guilherme Salgado 2005-11-07:
+    # If we don't call flush_database_caches() here, we won't see the
     # changes made by the cronscript in objects we already have cached.
     >>> from canonical.database.sqlbase import flush_database_caches
     >>> flush_database_caches()
