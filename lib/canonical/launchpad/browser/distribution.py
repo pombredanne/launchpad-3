@@ -450,10 +450,7 @@ class DistributionPPASearchView(LaunchpadView):
         # Preserve self.show_inactive state because it's used in the
         # template and build a boolean field to be passed for
         # searchPPAs.
-        if self.show_inactive is None:
-            show_inactive = False
-        else:
-            show_inactive = True
+        show_inactive = (self.show_inactive == 'on')
 
         ppas = self.context.searchPPAs(
             text=self.name_filter, show_inactive=show_inactive)
