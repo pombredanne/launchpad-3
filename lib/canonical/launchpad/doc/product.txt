@@ -7,7 +7,8 @@ software. It can be part of a Project or it can be standalone.
     >>> from zope.component import getUtility
     >>> from zope.interface.verify import verifyObject
     >>> from canonical.launchpad.interfaces import (
-    ...     IProductSet, IProduct, IPersonSet, NotFoundError)
+    ...     IHasTranslationImports, IProductSet, IProduct, IPersonSet,
+    ...     NotFoundError)
     >>> from canonical.launchpad.ftests import login
     >>> from canonical.database.sqlbase import flush_database_updates
 
@@ -26,9 +27,19 @@ Verify that p (a Product object) correctly implements IProduct.
     >>> verifyObject(IProduct, p)
     True
 
+and IHasTranslationImports.
+
+    >>> verifyObject(IHasTranslationImports, p)
+    True
+
 Make sure that a product provides the IProduct interface.
 
     >>> IProduct.providedBy(p)
+    True
+
+and the IHasTranslationImports.
+
+    >>> IHasTranslationImports.providedBy(p)
     True
 
 Let's get a product from the sample data. We happen to know that product
