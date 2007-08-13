@@ -310,14 +310,14 @@ For sourcepackage:
   >>> firefox = warty.getSourcePackage('mozilla-firefox')
 
   >>> firefox.getBuildRecords().count()
-  3
+  4
 
   >>> firefox.getBuildRecords(status=BuildStatus.FULLYBUILT).count()
-  2
+  3
 
   >>> firefox.getBuildRecords(
   ...     pocket=PackagePublishingPocket.RELEASE).count()
-  3
+  4
 
   >>> firefox.getBuildRecords(
   ...     pocket=PackagePublishingPocket.UPDATES).count()
@@ -388,7 +388,7 @@ Check IHasBuildRecords when implemented by Builder:
 
   >>> bob_builds = bob.getBuildRecords()
   >>> bob_builds.count()
-  15
+  16
 
   >>> bob_failed_builds = bob.getBuildRecords(status=BuildStatus.FAILEDTOBUILD)
   >>> bob_failed_builds.count()
