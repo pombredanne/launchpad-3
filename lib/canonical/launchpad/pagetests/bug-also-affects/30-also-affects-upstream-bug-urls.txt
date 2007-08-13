@@ -32,7 +32,7 @@ base URL is HTTP.
 
     >>> user_browser.getControl('URL').value = (
     ...     u'https://bugzilla.gnome.org/bugs/show_bug.cgi?id=84')
-    >>> user_browser.getControl('Indicate bug').click()
+    >>> user_browser.getControl('Add to Bug Report').click()
     >>> user_browser.url
     'http://bugs.launchpad.dev/netapplet/+bug/4'
 

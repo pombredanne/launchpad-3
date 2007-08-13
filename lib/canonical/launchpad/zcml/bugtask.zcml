@@ -275,7 +275,7 @@
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         fields="product milestone status importance assignee
                 bugwatch statusexplanation"
-        label="Edit fix request"
+        label="Change bug status"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt">
         <browser:widget
@@ -290,7 +290,7 @@
         schema="canonical.launchpad.interfaces.IUpstreamBugTask"
         fields="product milestone status importance assignee
                 bugwatch statusexplanation"
-        label="Edit fix request"
+        label="Change bug status"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit-form.pt">
         <browser:widget
@@ -305,7 +305,7 @@
         schema="canonical.launchpad.interfaces.IProductSeriesBugTask"
         fields="milestone status importance assignee bugwatch
                 statusexplanation"
-        label="Edit fix request"
+        label="Change bug status"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt">
         <browser:widget
@@ -320,7 +320,7 @@
         schema="canonical.launchpad.interfaces.IProductSeriesBugTask"
         fields="milestone status importance assignee bugwatch
                 statusexplanation"
-        label="Edit fix request"
+        label="Change bug status"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit-form.pt">
         <browser:widget
@@ -354,7 +354,7 @@
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename milestone status importance assignee
                 bugwatch statusexplanation"
-        label="Edit fix request"
+        label="Change bug status"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt">
         <browser:widget
@@ -373,7 +373,7 @@
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename milestone status importance assignee
                 bugwatch statusexplanation"
-        label="Edit fix request"
+        label="Change bug status"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit-form.pt">
         <browser:widget
@@ -396,7 +396,7 @@
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename milestone status importance assignee
                 bugwatch statusexplanation"
-        label="Edit fix request"
+        label="Change bug status"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit.pt">
         <browser:widget
@@ -415,7 +415,7 @@
         schema="canonical.launchpad.interfaces.IBugTask"
         fields="sourcepackagename milestone status importance assignee
                 bugwatch statusexplanation"
-        label="Edit fix request"
+        label="Change bug status"
         permission="launchpad.Edit"
         template="../templates/bugtask-edit-form.pt">
         <browser:widget
