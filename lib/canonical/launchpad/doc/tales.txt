@@ -295,9 +295,9 @@ Paragraphs that mix quoted and reply text fold only the quoted lines.
     normally--no markup to hide it from view.<br />
     Raise your hand if you can read this.</p>
 
-There is an exception rule for ending the fold when the last line
-of the paragraph follows a quoted passage. This rule supersedes the
-end of paragraph rule for quoted text.
+A quoted section is folded without affecting the display of the
+surrounding paragraph, even if there are no blank lines to separate
+the quoted section from the paragraph.
 
     >>> quoted_remark_text = ('Attribution line\n'
     ...                       '> quoted_line\n'
@@ -307,7 +307,7 @@ end of paragraph rule for quoted text.
     <p>Attribution line<br />
     <span class="foldable-quoted">
     &gt; quoted_line<br />
-    </span><br />
+    </span>
     Remark line.</p>
 
 Paragraphs with nested quoting fold all the quoted lines. There
@@ -329,6 +329,10 @@ of text that start with '>>> ' are exempted from the 'foldable-quoted'
 rules. Note that when '>>> ' occurs inside an existing quoted passage
 it will be folded because they are a continuation of a quote (see
 the preceding nested quoting test).
+# XXX sinzui 2007-08-13 bug=132263:
+# Passages may be wrongly be interpreted as Python because they start
+# with '>>> '. The formatter does not check that next and previous
+# lines of text consistently uses '>>> ' as Python would.
 
     >>> python = ('>>> tz = pytz.timezone("Asia/Calcutta")\n'
     ...           '>>> mydate = datetime.datetime(2007, 2, 18, 15, 35)\n'
@@ -620,6 +624,8 @@ do with 'None/fmt:foo'.
     >>> test_tales('foo/fmt:pagetitle', foo=None)
     ''
     >>> test_tales('foo/fmt:text-to-html', foo=None)
+    ''
+    >>> test_tales('foo/fmt:email-to-html', foo=None)
     ''
     >>> test_tales('foo/fmt:url', foo=None)
     ''

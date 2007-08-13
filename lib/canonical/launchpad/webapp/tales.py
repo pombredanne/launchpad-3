@@ -306,6 +306,7 @@ class NoneFormatter:
         'approximateduration',
         'pagetitle',
         'text-to-html',
+        'email-to-html',
         'url',
         ])
 
@@ -1388,10 +1389,12 @@ class FormattersAPI:
     def email_to_html(self):
         """text_to_html and hide signatures and full-quoted emails.
 
-        This method wraps signatures and quoted passages with
-        <span class="foldable"></span> tags to identify them in presentation
-        layer. CSS and and JavaScript may use this markup to control the
-        content's display behavior.
+        This method wraps inclusions like signatures and PGP blocks in
+        <span class="foldable"></span> tags. Quoted passages are wrapped
+        <span class="foldable-quoted"></span> tags. The tags identify the
+        extra content in the message to the presentation layer. CSS and
+        JavaScript may use this markup to control the content's display
+        behaviour.
         """
         start_fold_markup = '<span class="foldable">'
         start_fold_quoted_markup = '<span class="foldable-quoted">'
@@ -1403,25 +1406,35 @@ class FormattersAPI:
         in_quoted = False
         in_false_paragraph = False
 
-        def is_quoted(line, re):
-            """Test that a line is a quote and not Python."""
+        def is_quoted(line):
+            """Test that a line is a quote and not Python.
+            
+            Note that passages may be wrongly be interpreted as Python
+            because they start with '>>> '. The function does not check
+            that next and previous lines of text consistently uses '>>> '
+            as Python would.
+            """
             python_block = '&gt;&gt;&gt; '
             return (not line.startswith(python_block)
                 and re_quoted.match(line) is not None)
 
-        def after_paragraph(line):
+        def strip_leading_p_tag(line):
             """Return the characters after the paragraph mark (<p>).
             
             The caller must be certain the line starts with a paragraph mark.
             """
-            return (line[3:])
+            assert line.startswith('<p>'), (
+                "The line must start with a paragraph mark (<p>).")
+            return line[3:]
 
-        def before_break(line):
-            """Return the characters before the line break mark (<br />).
+        def strip_trailing_p_tag(line):
+            """Return the characters before the line paragraph mark (</p>).
             
-            The caller must be certain the line ends with a line break mark.
+            The caller must be certain the line ends with a paragraph mark.
             """
-            return line[0:-4]
+            assert line.endswith('</p>'), (
+                "The line must end with a paragraph mark (</p>).")
+            return line[:-4]
 
         for line in self.text_to_html().split('\n'):
             if 'Desired=<wbr></wbr>Unknown/' in line and not in_fold:
@@ -1433,51 +1446,54 @@ class FormattersAPI:
                 # lines that follow are legitimate.
                 re_quoted = self._re_dpkg_quoted
             elif not in_fold and re_include.match(line) is not None:
-                # Start a foldable paragraph for a signature or PGP inclusion.
+                # This line is a paragraph with a signature or PGP inclusion.
+                # Start a foldable paragraph.
                 in_fold = True
-                line = '<p>%s%s' % (start_fold_markup, after_paragraph(line))
-            elif not in_fold and is_quoted(after_paragraph(line), re_quoted):
+                line = '<p>%s%s' % (start_fold_markup, strip_leading_p_tag(line))
+            elif (not in_fold and line.startswith('<p>')
+                and is_quoted(strip_leading_p_tag(line))):
+                # The paragraph starts with quoted marks.
                 # Start a foldable quoted paragraph.
                 in_fold = True
                 line = '<p>%s%s' % (
-                    start_fold_quoted_markup, after_paragraph(line))
-            elif not in_fold and is_quoted(line, re_quoted):
+                    start_fold_quoted_markup, strip_leading_p_tag(line))
+            elif not in_fold and is_quoted(line):
+                # This line in the paragraph is quoted.
                 # Start foldable quoted lines in a paragraph.
                 in_quoted = True
                 in_fold = True
                 output.append(start_fold_quoted_markup)
             else:
-                # The start of this line is not extraordinary.
+                # This line is continues the current state.
+                # This line is not a transition.
                 pass
 
             # We must test line starts and ends in separate blocks to
             # close the rare single line that is foldable.
             if in_fold and line.endswith('</p>') and in_false_paragraph:
+                # The line ends with a false paragraph in a PGP signature.
                 # Restore the line break to join with the next paragraph.
-                line = '%s<br />\n<br />' %  before_break(line)
-            elif (in_quoted and line.endswith('</p>')
-                and self._re_quoted.match(line) is None):
-                # The last line of the paragraph is not quoted.
-                output.append("</span><br />\n")
-                in_fold = False
-                in_quoted = False
-            elif in_fold and line.endswith('</p>'):
-                # End the foldable section.
-                in_fold = False
-                in_quoted = False
-                line = end_fold_markup % before_break(line)
-            elif in_quoted and re_quoted.match(line) is None:
-                # End fold early because paragraph contains mixed quoted 
-                # and reply text.
+                line = '%s<br />\n<br />' %  strip_trailing_p_tag(line)
+            elif (in_quoted and self._re_quoted.match(line) is None):
+                # The line is not quoted like the previous line.
+                # End fold before we append this line.
                 in_fold = False
                 in_quoted = False
                 output.append("</span>\n")
+            elif in_fold and line.endswith('</p>'):
+                # The line is quoted or an inclusion, and ends the paragraph.
+                # End the fold before the close paragraph mark.
+                in_fold = False
+                in_quoted = False
+                line = end_fold_markup % strip_trailing_p_tag(line)
             elif in_false_paragraph and line.startswith('<p>'):
+                # This line continues a PGP signature, but starts a paragraph.
                 # Remove the paragraph to join with the previous paragraph.
                 in_false_paragraph = False
-                line = after_paragraph(line)
+                line = strip_leading_p_tag(line)
             else:
-                # The end of this line is not extraordinary.
+                # This line is continues the current state.
+                # This line is not a transition.
                 pass
 
             if in_fold and 'PGP SIGNATURE' in line:
