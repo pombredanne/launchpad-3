@@ -160,17 +160,14 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
     uploaders = Attribute(_(
         "DistroComponentUploader records associated with this distribution."))
     official_answers = Bool(
-        title=_('Uses Answers Officially'), required=True, 
-        description=_("Check this box to indicate that this distribution "
-            "officially uses Launchpad for community support."))
+        title=_('People can ask questions in Launchpad Answers'),
+        required=True)
     official_malone = Bool(
-        title=_('Uses Bugs Officially'), required=True, 
-        description=_("Check this box to indicate that this distribution "
-            "officially uses Launchpad for bug tracking."))
+        title=_('Bugs in this distribution are tracked in Launchpad'),
+        required=True)
     official_rosetta = Bool(
-        title=_('Uses Translations Officially'), required=True, 
-        description=_("Check this box to indicate that this distribution "
-            "officially uses Launchpad for translation."))
+        title=_('Translations for this distribution are done in Launchpad'),
+        required=True)
 
     # properties
     currentseries = Attribute(

@@ -102,7 +102,7 @@ specifying whether your project uses Launchpad Translations.
     <td width="100%">
       ...
       <input ... name="field.official_rosetta" type="checkbox" ... />
-      <label for="field.official_rosetta">This project uses Launchpad Translations</label>
+      <label for="field.official_rosetta">Translations...</label>
     </td>
   </tr>
   ...

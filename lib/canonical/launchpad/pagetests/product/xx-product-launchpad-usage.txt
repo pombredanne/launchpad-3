@@ -44,7 +44,7 @@ Firefox is currently marked as using Bugs. Let's specify that it
 doesn't use any bug tracker at all.
 
     >>> registrant_browser.getControl(
-    ...     'This project uses Launchpad Translations').selected
+    ...     'Translations for this project are done in Launchpad').selected
     False
     >>> registrant_browser.getControl(
     ...     'Let people use Launchpad Answers to ask questions').selected

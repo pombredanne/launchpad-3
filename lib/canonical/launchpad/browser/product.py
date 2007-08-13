@@ -209,8 +209,7 @@ class ProductOverviewMenu(ApplicationMenu):
     links = [
         'edit', 'branding', 'driver', 'reassign', 'top_contributors',
         'mentorship', 'distributions', 'packages', 'files', 'branch_add',
-        'series_add', 'launchpad_usage', 'administer', 'branch_visibility',
-        'rdf']
+        'series_add', 'administer', 'branch_visibility', 'rdf']
 
     @enabled_with_permission('launchpad.Edit')
     def edit(self):
@@ -260,11 +259,6 @@ class ProductOverviewMenu(ApplicationMenu):
     def branch_add(self):
         text = 'Register branch'
         return Link('+addbranch', text, icon='add')
-
-    @enabled_with_permission('launchpad.Edit')
-    def launchpad_usage(self):
-        text = 'Define Launchpad usage'
-        return Link('+launchpad', text, icon='edit')
 
     def rdf(self):
         text = structured(
