@@ -759,6 +759,15 @@ class BugTaskEditView(LaunchpadEditFormView):
         return canonical_url(self.context)
 
     @property
+    def initial_values(self):
+        """See `LaunchpadFormView.`"""
+        field_values = {}
+        for name in self.field_names:
+            field_values[name] = getattr(self.context, name)
+
+        return field_values
+
+    @property
     def prefix(self):
         """Return a prefix that can be used for this form.
 
