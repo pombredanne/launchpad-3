@@ -32,7 +32,7 @@ have had no message activity for 60 days.
 There are no INVALID Bugtasks in sampledata.
 
     >>> from canonical.launchpad.database import BugTask
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> BugTask.selectBy(status=BugTaskStatus.INVALID).count()
     0
 
@@ -85,6 +85,7 @@ bug's project uses an external bug tracker.
     # A expirable bugtask. It will be expired because its conjoined
     # master bugtask 28 is expirable.
     >>> slave_bugtask = bugtaskset.get(26)
+    >>> slave_bugtask.date_incomplete = old_age_days_ago
     >>> expirable_distroseries_bugtask.bug.id == slave_bugtask.bug.id
     True
     >>> print slave_bugtask.bugtargetdisplayname
@@ -94,7 +95,7 @@ bug's project uses an external bug tracker.
     >>> expirable_product_bugtask = bugtaskset.get(31)
     >>> expirable_product_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)    
-    >>> expirable_product.date_incomplete = old_age_days_ago
+    >>> expirable_product_bugtask.date_incomplete = old_age_days_ago
     >>> print expirable_product_bugtask.bugtargetdisplayname
     Jokosher
     

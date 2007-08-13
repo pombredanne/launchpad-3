@@ -9,12 +9,11 @@ from logging import getLogger
 from zope.component import getUtility
 
 from canonical.config import config
-from canonical.launchpad.interfaces import ILaunchpadCelebrities, IBugTaskSet
+from canonical.launchpad.interfaces import (
+    BugTaskStatus, ILaunchpadCelebrities, IBugTaskSet)
 from canonical.launchpad.webapp.interfaces import IPlacelessAuthUtility
 from canonical.launchpad.webapp.interaction import (
     setupInteraction, endInteraction)
-
-from canonical.lp.dbschema import BugTaskStatus
 
 
 class BugJanitor:

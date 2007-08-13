@@ -42,7 +42,8 @@ to access those other objects:
 
 Next, we need to grab some values to provide for importance and status.
 
-    >>> from canonical.lp.dbschema import (BugTaskStatus, BugTaskImportance)
+    >>> from canonical.lp.dbschema import BugTaskImportance
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> STATUS_NEW = BugTaskStatus.NEW
     >>> STATUS_CONFIRMED = BugTaskStatus.CONFIRMED
     >>> STATUS_FIXRELEASED = BugTaskStatus.FIXRELEASED
@@ -1023,11 +1024,15 @@ Let's make some bugtasks that qualify for expiration. A jokosher
 bugtask and a conjoined pair of ubuntu_hoary and ubuntu bugtasks
 will suffice.
 
+    >>> from datetime import datetime
+    >>> from pytz import UTC
+    >>> now = datetime.now(UTC)    
+    
     # ubuntu_hoary_bugtask has a conjoined slave, Bugtask 26.
     >>> ubuntu_hoary_bugtask = bugtaskset.get(28)
     >>> ubuntu_hoary_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)
-    >>> #ubuntu_hoary_bugtask.incomplete_date = old_age_days_ago
+    >>> ubuntu_hoary_bugtask.date_incomplete = now - timedelta(days=351)
 
     # ubuntu_bugtask is a conjoined slave to Bugtask 26.
     >>> ubuntu_bugtask = bugtaskset.get(26)
@@ -1036,24 +1041,21 @@ will suffice.
     >>> jokosher_bugtask = bugtaskset.get(31)
     >>> jokosher_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)
-    >>> #jokosher_bugtask.incomplete_date = old_age_days_ago
+    >>> jokosher_bugtask.date_incomplete = now - timedelta(days=145)
 
-    >>> from datetime import datetime
-    >>> from pytz import UTC
-    >>> now = datetime.now(UTC)
     >>> def summarize_bugtask(bugtasks):
     ...     print 'AFFECTS  BUGTASK  UNASSIGNED  DAYS_OLD  STATUS  MALONE'
     ...     for bugtask in bugtasks:
     ...         print ('%s  %s  %s  %s  %s  %s' %
     ...             (bugtask.bugtargetdisplayname,
     ...              bugtask.id, bugtask.assignee is None,
-    ...              (now - bugtask.datecreated).days,
+    ...              (now - bugtask.date_incomplete).days,
     ...              bugtask.status.title, bugtask.target_uses_malone))
     >>> bugtasks = [ubuntu_hoary_bugtask, ubuntu_bugtask, jokosher_bugtask]
     >>> summarize_bugtask(bugtasks)
     AFFECTS       BUGTASK  UNASSIGNED  DAYS_OLD  STATUS      MALONE
     Ubuntu Hoary  28       True        351       Incomplete  True
-    Ubuntu        26       True        1290      Incomplete  True
+    Ubuntu        26       True        351       Incomplete  True
     Jokosher      31       True        145       Incomplete  True
 
     # Flush the caches so that the bugtasks defined above get
@@ -1066,8 +1068,8 @@ The ubuntu_bugtask is never returned; it is a conjoined slave to the
 ubuntu_hoary_bugtask. Slave bugtasks cannot be directly expired because
 only the master bugtask can change the status.
 
-    # The ubuntu_bugtask is older than 1289 days.
-    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(1289)
+    # No bugtask is older than 351 days.
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(165)
     >>> len(expirable_bugtasks)
     0
 
