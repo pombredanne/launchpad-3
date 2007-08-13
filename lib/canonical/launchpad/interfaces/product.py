@@ -237,11 +237,11 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         required=True)
 
     official_malone = Bool(
-        title=_('Use Launchpad Bugs for tracking bugs in this project'),
+        title=_('This project uses Launchpad for tracking bugs'),
         required=True)
 
     official_rosetta = Bool(
-        title=_('Use Launchpad Translations for localizing this project'),
+        title=_('This project uses Launchpad Translations'),
         required=True)
 
     sourcepackages = Attribute(_("List of packages for this product"))

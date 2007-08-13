@@ -8,7 +8,7 @@ request a fix for these releases.
 
 Gentoo is currently using Launchpad.
 
-    >>> admin_browser.open('http://launchpad.dev/gentoo/+edit')
+    >>> admin_browser.open('http://launchpad.dev/gentoo/+launchpad')
     >>> admin_browser.getControl('Uses Bugs Officially').selected
     True
 
