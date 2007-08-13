@@ -1,8 +1,8 @@
 = Showing a duplicate of a private bug =
 
 When showing a duplicate of a private bug, the title of the private
-bug should not be included in the page if the user does not have
-permission to view the private bug.
+bug is not included in the page if the user does not have permission
+to view the private bug.
 
 First we mark a bug as private:
 
@@ -14,12 +14,11 @@ First we mark a bug as private:
     >>> print admin_browser.url
     http://bugs.launchpad.dev/debian/+source/mozilla-firefox/+bug/8
 
-    >>> from BeautifulSoup import BeautifulSoup
-    >>> page_soup = BeautifulSoup(admin_browser.contents)
+    >>> print admin_browser.title
+    Bug #8 ...Printing doesn't work...
 
-    >>> print page_soup.h1.string
-    Printing doesn't work
-    >>> print page_soup.find(attrs={'id': 'bug-properties'}).img['title']
+    >>> print find_tag_by_id(
+    ...     admin_browser.contents, 'bug-properties').img['title']
     Private
 
 Next we mark another bug as a duplicate of the private bug:
