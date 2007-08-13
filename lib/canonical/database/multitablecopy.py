@@ -22,10 +22,11 @@ class PouringLoop:
     """
     implements(ITunableLoop)
 
-    def __init__(self, from_table, to_table, transaction_manager):
+    def __init__(self, from_table, to_table, transaction_manager, logger):
         self.from_table = str(from_table)
         self.to_table = str(to_table)
         self.transaction_manager = transaction_manager
+        self.logger = logger
         self.cur = cursor()
 
         # We batch simply by breaking the range of ids in our table down
@@ -41,8 +42,8 @@ class PouringLoop:
             self.lowest_id = 1
             self.highest_id = 0
 
-        logging.info("Up to %d rows in holding table"
-                     % (self.highest_id + 1 - self.lowest_id))
+        self.logger.debug("Up to %d rows in holding table"
+                         % (self.highest_id + 1 - self.lowest_id))
 
     def isDone(self):
         return self.lowest_id > self.highest_id
@@ -52,8 +53,8 @@ class PouringLoop:
         batch_size = int(batch_size)
         next = self.lowest_id + batch_size
 
-        logging.info("pouring %s: %d rows (%d-%d)"
-                     % (self.from_table, batch_size, self.lowest_id, next))
+        self.logger.debug("pouring %s: %d rows (%d-%d)" % (
+            self.from_table, batch_size, self.lowest_id, next))
 
         self.cur.execute("INSERT INTO %s (SELECT * FROM %s WHERE id < %d)"
                          % (self.to_table, self.from_table, next))
@@ -157,10 +158,10 @@ class MultiTableCopy:
     that rows that the data refers to by foreign keys must not be deleted
     while the multi-table copy is running, for instance.
     """
-    # XXX: JeroenVermeulen 2007-05-24, More quoting, fewer assumptions!
+    # XXX: JeroenVermeulen 2007-05-24: More quoting, fewer assumptions!
 
     def __init__(self, name, tables, seconds_per_batch=2.0,
-            minimum_batch_size=500):
+            minimum_batch_size=500, logger=None):
         """Define a MultiTableCopy, including an in-order list of tables.
 
         The name parameter is a unique identifier for this MultiTableCopy
@@ -183,6 +184,10 @@ class MultiTableCopy:
         self.seconds_per_batch = seconds_per_batch
         self.minimum_batch_size = minimum_batch_size
         self.last_extracted_table = None
+        if logger is not None:
+            self.logger = logger
+        else:
+            self.logger = logging
 
     def dropHoldingTables(self):
         """Drop any holding tables that may exist for this MultiTableCopy."""
@@ -267,7 +272,7 @@ class MultiTableCopy:
 
         holding_table = self.getHoldingTableName(source_table)
 
-        logging.info('Extracting from %s into %s...' % (
+        self.logger.info('Extracting from %s into %s...' % (
             source_table,holding_table))
 
         starttime = time.time()
@@ -281,7 +286,8 @@ class MultiTableCopy:
         # Now that our new holding table is in a stable state, index its id
         self._indexIdColumn(holding_table, source_table, cur)
 
-        logging.info('...Extracted in %.3f seconds' % (time.time()-starttime))
+        self.logger.debug(
+            '...Extracted in %.3f seconds' % (time.time()-starttime))
 
     def _selectToHolding(self, source_table, joins, where_clause,
             holding_table, id_sequence):
@@ -341,7 +347,7 @@ class MultiTableCopy:
         gets the name of the holding table with "_id" appended.
         """
         source_table = str(source_table)
-        logging.info("Indexing %s" % holding_table)
+        self.logger.debug("Indexing %s" % holding_table)
         cur.execute('''
             CREATE UNIQUE INDEX %s
             ON %s (id)
@@ -357,10 +363,10 @@ class MultiTableCopy:
         columns = [join.lower() for join in joins]
         fk_updates = ['%s = new_%s' % (column, column) for column in columns]
         updates = ', '.join(fk_updates)
-        logging.info("Redirecting foreign keys: %s" % updates)
+        self.logger.debug("Redirecting foreign keys: %s" % updates)
         cur.execute("UPDATE %s SET %s" % (holding_table, updates))
         for column in columns:
-            logging.info("Dropping foreign-key column %s" % column)
+            self.logger.debug("Dropping foreign-key column %s" % column)
             cur.execute("ALTER TABLE %s DROP COLUMN new_%s"
                         % (holding_table, column))
 
@@ -384,11 +390,11 @@ class MultiTableCopy:
         # Assume the data was not ready for pouring.
         first_holding_table = self.getRawHoldingTableName(self.tables[0])
         if postgresql.table_has_column(cur, first_holding_table, 'new_id'):
-            logging.info(
+            self.logger.info(
                 "Previous run aborted too early for recovery; redo all")
             return False
 
-        logging.info("Recoverable data found")
+        self.logger.info("Recoverable data found")
         return True
 
     def pour(self, transaction_manager):
@@ -428,7 +434,7 @@ class MultiTableCopy:
                 continue
 
             holding_table = self.getHoldingTableName(table)
-            logging.info("Pouring %s back into %s..."
+            self.logger.info("Pouring %s back into %s..."
                          % (holding_table, table))
 
             tablestarttime = time.time()
@@ -440,7 +446,7 @@ class MultiTableCopy:
                 holding_table, table, has_new_id, transaction_manager)
             postgresql.drop_tables(cursor(), holding_table)
 
-            logging.info(
+            self.logger.debug(
                 "Pouring %s took %.3f seconds."
                 % (holding_table, time.time()-tablestarttime))
 
@@ -460,7 +466,7 @@ class MultiTableCopy:
             cur.execute("UPDATE %s SET id=new_id" % holding_table)
             # Restore table to original schema
             cur.execute("ALTER TABLE %s DROP COLUMN new_id" % holding_table)
-            logging.info("...rearranged ids...")
+            self.logger.debug("...rearranged ids...")
 
         # Now pour holding table's data into its source table.  This is where
         # we start writing to tables that other clients will be reading, and
@@ -469,7 +475,8 @@ class MultiTableCopy:
         # rows.  The goal is to have these transactions running no longer than
         # five seconds or so each; we aim for four just to be sure.
 
-        pourer = PouringLoop(holding_table, table, transaction_manager)
+        pourer = PouringLoop(
+            holding_table, table, transaction_manager, self.logger)
         LoopTuner(
             pourer, self.seconds_per_batch, self.minimum_batch_size).run()
 
@@ -534,7 +541,7 @@ class MultiTableCopy:
         """
         start = time.time()
         transaction_manager.commit()
-        logging.info("Committed in %.3f seconds" % (time.time() - start))
+        self.logger.debug("Committed in %.3f seconds" % (time.time() - start))
         transaction_manager.begin()
         return cursor()
 

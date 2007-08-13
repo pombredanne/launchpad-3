@@ -143,7 +143,7 @@ also receives karma.
 We do not grant karma for status change made outside of workflow:
 
     >>> login('foo.bar@canonical.com')
-    >>> from canonical.lp.dbschema import QuestionStatus
+    >>> from canonical.launchpad.interfaces import QuestionStatus
     >>> msg = firefox_question.setStatus(
     ...     foo_bar, QuestionStatus.OPEN, 'That rejection was an error.',
     ...     datecreated=now.next())

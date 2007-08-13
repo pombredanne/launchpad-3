@@ -100,8 +100,9 @@ class LibraryFileUpload(object):
         # Verify the digest matches what the client sent us
         dstDigest = self.shaDigester.hexdigest()
         if self.srcDigest is not None and dstDigest != self.srcDigest:
-            # TODO: Write test that checks that the file really is removed or
-            # renamed, and can't possibly be left in limbo
+            # XXX: Andrew Bennetts 2004-09-20: Write test that checks that
+            # the file really is removed or renamed, and can't possibly be
+            # left in limbo
             os.remove(self.tmpfilepath)
             raise DigestMismatchError, (self.srcDigest, dstDigest)
 

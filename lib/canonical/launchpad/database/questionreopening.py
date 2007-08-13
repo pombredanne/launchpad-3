@@ -18,10 +18,8 @@ from canonical.database.constants import DEFAULT
 from canonical.database.datetimecol import UtcDateTimeCol
 from canonical.database.enumcol import EnumCol
 
-from canonical.lp.dbschema import QuestionStatus
-
 from canonical.launchpad.event import SQLObjectCreatedEvent
-from canonical.launchpad.interfaces import IQuestionReopening
+from canonical.launchpad.interfaces import IQuestionReopening, QuestionStatus
 
 
 class QuestionReopening(SQLBase):
@@ -41,7 +39,7 @@ class QuestionReopening(SQLBase):
     dateanswered = UtcDateTimeCol(notNull=False, default=None)
     priorstate = EnumCol(schema=QuestionStatus, notNull=True)
 
-# XXX flacoste 2006/10/25 The QuestionReopening is probably not that useful
+# XXX flacoste 2006-10-25 The QuestionReopening is probably not that useful
 # anymore since the question history is nearly completely tracked in the
 # question message trails. (Only missing information is the previous recorded
 # answer.) If we decide to still keep that class, this subscriber should

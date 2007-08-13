@@ -36,6 +36,10 @@
       set_schema="canonical.launchpad.interfaces.IPerson"
       />
     <require
+      permission="launchpad.Special"
+      attributes="deactivateAccount"
+      />
+    <require
       permission="launchpad.Edit"
       attributes="acceptInvitationToBeMemberOf declineInvitationToBeMemberOf
                   renewTeamMembership"
@@ -291,6 +295,15 @@
     />
 
   <browser:page
+    name="+commentedbugs"
+    for="canonical.launchpad.interfaces.IPerson"
+    facet="bugs"
+    class="canonical.launchpad.browser.PersonCommentedBugTaskSearchListingView"
+    permission="zope.Public"
+    template="../templates/buglisting-embedded-advanced-search.pt"
+    />
+
+  <browser:page
     name="+packagebugs-search"
     for="canonical.launchpad.interfaces.IPerson"
     facet="bugs"
@@ -330,6 +343,23 @@
     template="../templates/buglisting-embedded-advanced-search.pt"
     />
 
+  <browser:page
+    name="+activate-ppa"
+    for="canonical.launchpad.interfaces.IPerson"
+    facet="overview"
+    class="canonical.launchpad.browser.ArchiveActivateView"
+    permission="launchpad.Edit"
+    template="../templates/archive-activate.pt"
+    />
+
+  <browser:page
+    name="+ppa-tos"
+    facet="overview"
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="zope.Public"
+    template="../templates/archive-ppa-tos.pt"
+    />
+
 
   <!-- Adding SSH keys is the only possibly harmful thing that can be done
   without the user's password, so we use a special permission here to make
@@ -342,6 +372,14 @@
     permission="launchpad.Special"
     class="canonical.launchpad.browser.PersonEditSSHKeysView"
     template="../templates/person-editsshkeys.pt" 
+    />
+
+  <browser:page
+    name="+deactivate-account"
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="launchpad.Special"
+    class="canonical.launchpad.browser.PersonDeactivateAccountView"
+    template="../templates/person-deactivate-account.pt" 
     />
 
   <browser:page

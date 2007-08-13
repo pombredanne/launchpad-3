@@ -33,8 +33,7 @@ from canonical.archiveuploader.tagfiles import parse_tagfile
 from canonical.database.sqlbase import sqlvalues
 
 from canonical.lp.dbschema import (
-    PackagePublishingStatus, BuildStatus, SourcePackageFormat,
-    PersonCreationRationale)
+    PackagePublishingStatus, BuildStatus, SourcePackageFormat)
 
 from canonical.launchpad.scripts import log
 from canonical.launchpad.scripts.gina.library import getLibraryAlias
@@ -49,7 +48,8 @@ from canonical.launchpad.database import (Distribution, DistroSeries,
     Component, Section, SourcePackageReleaseFile,
     SecureSourcePackagePublishingHistory, BinaryPackageFile)
 
-from canonical.launchpad.interfaces import IPersonSet, IBinaryPackageNameSet
+from canonical.launchpad.interfaces import (
+    IPersonSet, IBinaryPackageNameSet, PersonCreationRationale)
 from canonical.launchpad.helpers import getFileType, getBinaryPackageFormat
 
 
@@ -65,14 +65,14 @@ def check_not_in_librarian(files, archive_root, directory):
         fname = i[-1]
         path = os.path.join(archive_root, directory)
         if not os.path.exists(os.path.join(path, fname)):
-            # XXX: untested
+            # XXX kiko 2005-10-22: Untested
             raise PoolFileNotFound('Package %s not found in archive '
                                    '%s' % (fname, path))
-        # XXX: <stub> Until I or someone else completes
+        # XXX kiko 2005-10-23: <stub> Until I or someone else completes
         # LibrarianGarbageCollection (the first half of which is
         # awaiting review)
         #if checkLibraryForFile(path, fname):
-        #    # XXX: untested
+        #    # XXX kiko 2005-10-23: Untested
         #    raise LibrarianHasFileError('File %s already exists in the '
         #                                'librarian' % fname)
         to_upload.append((fname, path))
@@ -155,8 +155,8 @@ class ImporterHandler:
             raise DataSetupError("Error finding distroarchseries for %s/%s"
                                  % (self.distroseries.name, archtag))
 
-        # XXX: is this really a selectOneBy? Can't there be multiple
-        # proessors per family?
+        # XXX kiko 2005-11-07: Is this really a selectOneBy? Can't there
+        # be multiple proessors per family?
         processor = Processor.selectOneBy(familyID=dar.processorfamily.id)
         if not processor:
             raise DataSetupError("Unable to find a processor from the "
@@ -258,7 +258,7 @@ class ImporterHandler:
         sourcepackage = self.locate_sourcepackage(binarypackagedata,
                                                   distroseries)
         if not sourcepackage:
-            # XXX: untested
+            # XXX kiko 2005-10-23: Untested
             # If the sourcepackagerelease is not imported, not way to import
             # this binarypackage. Warn and giveup.
             raise NoSourcePackageError("No source package %s (%s) found "
@@ -313,9 +313,10 @@ class ImporterHandler:
                       version, binarypackagedata.package,
                       binarypackagedata.version))
 
-            # XXX: I question whether binarypackagedata.section here is
-            # actually correct -- but where can we obtain this
-            # information from introspecting the archive?
+            # XXX kiko 2005-11-03: I question whether
+            # binarypackagedata.section here is actually correct -- but
+            # where can we obtain this information from introspecting
+            # the archive?
             sourcepackage = self.sphandler.findUnlistedSourcePackage(
                 binarypackagedata.source, version,
                 binarypackagedata.component, binarypackagedata.section,
@@ -326,7 +327,8 @@ class ImporterHandler:
             log.warn("Nope, couldn't find it. Could it be a "
                      "bin-only-NMU? Checking version %s" % version)
 
-            # XXX: testing a third cycle of this loop isn't done
+            # XXX kiko 2005-11-03: Testing a third cycle of this loop
+            # isn't done.
 
         return None
 
@@ -470,8 +472,8 @@ class SourcePackageHandler:
             return None
         if not dsc_contents['files'].endswith("\n"):
             dsc_contents['files'] += "\n"
-        # XXX: Why do we hack the md5sum and size of the DSC? Should
-        # probably calculate it properly.
+        # XXX kiko 2005-10-21: Why do we hack the md5sum and size of the DSC?
+        # Should probably calculate it properly.
         dsc_contents['files'] += "xxx 000 %s" % dsc_name
 
         # SourcePackageData requires capitals
@@ -497,13 +499,12 @@ class SourcePackageHandler:
 
     def _getSource(self, sourcepackagename, version, distroseries):
         """Returns a sourcepackagerelease by its name and version."""
-        # XXX: we use the source package publishing tables here, but I
-        # think that's a bit flawed. We should have a way of saying "my
-        # distroseries overlays the version namespace of that
+        # XXX kiko 2005-11-05: we use the source package publishing tables
+        # here, but I think that's a bit flawed. We should have a way of
+        # saying "my distroseries overlays the version namespace of that
         # distroseries" and use that to decide on whether we've seen
         # this package before or not. The publishing tables may be
         # wrong, for instance, in the context of proper derivation.
-        #   -- kiko, 2005-XX-XX
 
         # Check here to see if this release has ever been published in
         # the distribution, no matter what status.
@@ -535,7 +536,7 @@ class SourcePackageHandler:
         maintainer = ensure_person(
             displayname, emailaddress, src.package, distroseries.displayname)
 
-        # XXX: Check it later -- Debonzi 20050516
+        # XXX Debonzi 2005-05-16: Check it later.
         #         if src.dsc_signing_key_owner:
         #             key = self.getGPGKey(src.dsc_signing_key, 
         #                                  *src.dsc_signing_key_owner)
@@ -702,7 +703,7 @@ class BinaryPackageHandler:
             bpr = BinaryPackageRelease.selectOne(query,
                                                  clauseTables=clauseTables)
         except SQLObjectMoreThanOneResultError:
-            # XXX: untested
+            # XXX kiko 2005-10-27: Untested
             raise MultiplePackageReleaseError("Found more than one "
                     "entry for %s (%s) for %s in %s" %
                     (binaryname.name, version, architecture,
@@ -714,7 +715,7 @@ class BinaryPackageHandler:
         if licence:
             return licence
 
-        # XXX: untested
+        # XXX kiko 2005-11-03: Untested
         # Couldn't find the licence in the cache; let's trigger a
         # read_dsc to see if we can find it.
         try:
@@ -805,13 +806,13 @@ class BinaryPackageHandler:
         distribution = distroarchseries.distroseries.distribution
         clauseTables = ["Build", "DistroArchRelease", "DistroRelease"]
 
-        # XXX: this method doesn't work for real bin-only NMUs that are
+        # XXX kiko 2006-02-03: 
+        # This method doesn't work for real bin-only NMUs that are
         # new versions of packages that were picked up by Gina before.
         # The reason for that is that these bin-only NMUs' corresponding
         # source package release will already have been built at least
         # once, and the two checks below will of course blow up when
         # doing it the second time.
-        #   -- kiko, 2006-02-03
 
         query = ("Build.sourcepackagerelease = %d AND "
                  "Build.distroarchrelease = DistroArchRelease.id AND " 
@@ -826,20 +827,20 @@ class BinaryPackageHandler:
         try:
             build = Build.selectOne(query, clauseTables)
         except SQLObjectMoreThanOneResultError:
-            # XXX: untested
+            # XXX kiko 2005-10-27: Untested.
             raise MultipleBuildError("More than one build was found "
                 "for package %s (%s)" % (binary.package, binary.version))
 
         if build:
             for bpr in build.binarypackages:
                 if bpr.binarypackagename.name == binary.package:
-                    # XXX: untested
+                    # XXX kiko 2005-10-27: Untested.
                     raise MultipleBuildError("Build %d was already found "
                         "for package %s (%s)" %
                         (build.id, binary.package, binary.version))
         else:
 
-            # XXX: Check it later -- Debonzi 20050516
+            # XXX Debonzi 2005-05-16: Check it later
             #         if bin.gpg_signing_key_owner:
             #             key = self.getGPGKey(bin.gpg_signing_key, 
             #                                  *bin.gpg_signing_key_owner)

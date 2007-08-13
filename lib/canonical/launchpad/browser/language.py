@@ -104,8 +104,8 @@ class LanguageAddView(LaunchpadFormView):
         return canonical_url(self.language)
 
     def validate(self, data):
-        # XXX CarlosPerelloMarin 20070404: Pluralform expression should be
-        # validated. See bug #102898 for more info.
+        # XXX CarlosPerelloMarin 2007-04-04 bug=102898:
+        # Pluralform expression should be validated.
         new_code = data.get('code')
         language_set = getUtility(ILanguageSet)
         if language_set.getLanguageByCode(new_code) is not None:

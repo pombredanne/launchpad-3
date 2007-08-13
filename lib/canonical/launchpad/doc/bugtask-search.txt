@@ -350,6 +350,7 @@ The search filter can also return bugs that are related to CVE reports:
     17 1 mozilla-firefox (Ubuntu) Firefox does not support SVG 1999-8979
     26 2 Ubuntu Blackhole Trash folder 1999-2345
 
+
 == Searching by bug commenter ==
 
 The 'bug_commenter' parameter allows you to search bugtasks on which a certain
@@ -418,3 +419,46 @@ will not be included in the results returned by the bug commenter search.
     2 tomcat
     2 ubuntu
 
+
+
+== Search for BugTasks assigned to milestones ==
+
+BugTaskSet.search() can return bugtasks associated with milestones. 
+No BugTask is associated yet with firefox milestone 1.0.
+
+    >>> product_milestone = firefox.getMilestone('1.0')
+    >>> params = BugTaskSearchParams(milestone=product_milestone, user=None)
+    >>> milestone_tasks = bugtask_set.search(params)
+    >>> print milestone_tasks.count()
+    0
+
+Similary, no BugTasks are associated with the project firexfox belongs to.
+
+    >>> mozilla = firefox.project
+    >>> project_milestone = mozilla.getMilestone('1.0')
+    >>> params = BugTaskSearchParams(milestone=project_milestone, user=None)
+    >>> milestone_tasks = bugtask_set.search(params)
+    >>> print milestone_tasks.count()
+    0
+
+When a BugTask is associated with a milestone, it is returned in a search
+for bugs of this milestone.
+
+    >>> bugtask = firefox.searchTasks(BugTaskSearchParams(user=None))[0]
+    >>> print bugTaskInfo(bugtask)
+    2 1 Mozilla Firefox Firefox does not support SVG
+    >>> bugtask.milestone = product_milestone
+    >>> syncUpdate(bugtask)
+    >>> params = BugTaskSearchParams(milestone=product_milestone, user=None)
+    >>> milestone_tasks = bugtask_set.search(params)
+    >>> for bugtask in milestone_tasks:
+    ...     print bugTaskInfo(bugtask)
+    2 1 Mozilla Firefox Firefox does not support SVG
+
+This BugTask is also a BugTask of the milestone of the mozilla project.
+
+    >>> params = BugTaskSearchParams(milestone=project_milestone, user=None)
+    >>> milestone_tasks = bugtask_set.search(params)
+    >>> for bugtask in milestone_tasks:
+    ...     print bugTaskInfo(bugtask)
+    2 1 Mozilla Firefox Firefox does not support SVG

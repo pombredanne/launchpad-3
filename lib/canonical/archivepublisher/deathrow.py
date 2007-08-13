@@ -3,17 +3,17 @@
 Processes removals of packages that are scheduled for deletion.
 """
 
+import datetime
+import pytz
 import os
 
 from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
-from canonical.lp.dbschema import PackagePublishingStatus
-
-from canonical.launchpad.interfaces import NotInPool
-
 from canonical.launchpad.database.publishing import (
     SourcePackageFilePublishing, BinaryPackageFilePublishing)
+from canonical.launchpad.interfaces import NotInPool
+from canonical.lp.dbschema import PackagePublishingStatus
 
 
 class DeathRow:
@@ -75,6 +75,46 @@ class DeathRow:
             orderBy="id")
         return (source_files, binary_files)
 
+    def canRemove(self, publication_class, filename):
+        """Whether or not a filename can be remove of the archive pool.
+
+        Check the archive reference-counter implemented in:
+        `SourcePackageFilePublishing` or `BinaryPackageFilePublishing`.
+
+        Only allow removal of unnecessary files.
+        """
+        # 'prejoin'ing {S,B}PPH would help here if we face performance
+        # problems, but we can not do it dynamically due to the hack
+        # performed by IArchiveFilePublishing.publishing_record which
+        # 'magically' decided what is the respective publishing record
+        # needs to be retrieved. Something in direction of:
+        # "default_prejoins = 'SPPH' or 'BPPH'" would work very
+        # well for Source/BinaryPackageFilePublishing classes in this case.
+        # However we are still able to decide what to 'prejoin' here, in the
+        # callsite by testing what is the interface implemented by the
+        # publication_class.
+        all_publications = publication_class.select("""
+           libraryfilealiasfilename = %s AND
+           distribution = %s AND
+           archive = %s
+        """ % sqlvalues(filename, self.distribution,
+                        self.distribution.main_archive))
+
+        right_now = datetime.datetime.now(pytz.timezone('UTC'))
+
+        for file_pub in all_publications:
+            # Deny removal if any reference is still active.
+            if (file_pub.publishingstatus !=
+                PackagePublishingStatus.PENDINGREMOVAL):
+                return False
+            # Deny removal if any reference is still in 'quarantine'.
+            # See PubConfig.pendingremovalduration value.
+            if (file_pub.publishing_record.scheduleddeletiondate >
+                right_now):
+                return False
+
+        return True
+
     def _tryRemovingFromDisk(self, condemned_source_files,
                              condemned_binary_files):
         """Take the list of publishing records provided and unpublish them.
@@ -83,84 +123,50 @@ class DeathRow:
         this will result in the files being removed if they're not otherwise
         in use.
         """
-
-        def updateDetails(p, details):
-            fn = p.libraryfilealiasfilename
-            sn = p.sourcepackagename
-            cn = p.componentname
-            filename = self.diskpool.pathFor(cn, sn, fn)
-            details.setdefault(filename, [cn, sn, fn])
-            return filename
-
         bytes = 0
-        live_files = set()
         condemned_files = set()
         condemned_records = set()
         details = {}
 
-        live_source_files = SourcePackageFilePublishing.select(
-            """
-            distribution = %s AND
-            SourcePackagePublishingHistory.archive = %s AND
-            publishingstatus != %s AND
-            SourcePackagePublishingHistory.id =
-            SourcePackageFilePublishing.sourcepackagepublishing AND
-            (publishingstatus != %s OR
-             SourcePackagePublishingHistory.scheduleddeletiondate > %s)
-            """ % sqlvalues(self.distribution,
-                            self.distribution.main_archive,
-                            PackagePublishingStatus.REMOVED,
-                            PackagePublishingStatus.PENDINGREMOVAL,
-                            UTC_NOW),
-            clauseTables = ["SourcePackagePublishingHistory"],
-            orderBy="id")
-        live_binary_files = BinaryPackageFilePublishing.select(
-            """
-            distribution = %s AND
-            BinaryPackagePublishingHistory.archive = %s AND
-            publishingstatus != %s AND
-            BinaryPackagePublishingHistory.id =
-            BinaryPackageFilePublishing.binarypackagepublishing AND
-            (publishingstatus != %s OR
-             BinaryPackagePublishingHistory.scheduleddeletiondate > %s)
-             """ % sqlvalues(self.distribution,
-                             self.distribution.main_archive,
-                             PackagePublishingStatus.REMOVED,
-                             PackagePublishingStatus.PENDINGREMOVAL,
-                             UTC_NOW),
-            clauseTables = ["BinaryPackagePublishingHistory"],
-            orderBy="id")
+        content_files = (
+            (SourcePackageFilePublishing, condemned_source_files),
+            (BinaryPackageFilePublishing, condemned_binary_files),)
 
-        for p in live_source_files:
-            filename = updateDetails(p, details)
-            live_files.add(filename)
-        for p in live_binary_files:
-            filename = updateDetails(p, details)
-            live_files.add(filename)
-        for p in condemned_source_files:
-            filename = updateDetails(p, details)
-            condemned_files.add(filename)
-            condemned_records.add(p.sourcepackagepublishing)
-        for p in condemned_binary_files:
-            filename = updateDetails(p, details)
-            condemned_files.add(filename)
-            condemned_records.add(p.binarypackagepublishing)
+        for publication_class, pub_files in content_files:
+            for pub_file in pub_files:
+                # Check if the removal is allowed, if not continue.
+                if not self.canRemove(
+                    publication_class, pub_file.libraryfilealiasfilename):
+                    continue
+                # Update local containers, in preparation to file removal.
+                pub_file_details = (
+                    pub_file.libraryfilealiasfilename,
+                    pub_file.sourcepackagename,
+                    pub_file.componentname,
+                    )
+                file_path = self.diskpool.pathFor(*pub_file_details)
+                details.setdefault(file_path, pub_file_details)
+                condemned_files.add(file_path)
+                condemned_records.add(pub_file.publishing_record)
 
-        remove_files = condemned_files - live_files
-        self.logger.info("Removing %s files marked for reaping" %
-                         len(remove_files))
-        for f in remove_files:
+        self.logger.info(
+            "Removing %s files marked for reaping" % len(condemned_files))
+
+        for condemened_file in sorted(condemned_files, reverse=True):
+            file_name, source_name, component_name = details[condemened_file]
             try:
-                cn, sn, fn = details[f]
-                bytes += self._removeFile(cn, sn, fn)
+                bytes += self._removeFile(
+                    component_name, source_name, file_name)
             except NotInPool:
                 # It's safe for us to let this slide because it means that
                 # the file is already gone.
-                self.logger.debug("File to remove %s %s/%s is not in pool, "
-                                  "skipping" % (cn, sn, fn))
+                self.logger.debug(
+                    "File to remove %s %s/%s is not in pool, skipping" %
+                    (component_name, source_name, file_name))
             except:
-                self.logger.exception("Removing file %s %s/%s generated "
-                                      "exception, continuing" % (cn, sn, fn))
+                self.logger.exception(
+                    "Removing file %s %s/%s generated exception, continuing" %
+                    (component_name, source_name, file_name))
 
         self.logger.info("Total bytes freed: %s" % bytes)
 
