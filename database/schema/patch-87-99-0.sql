@@ -21,7 +21,7 @@ UPDATE Branch
 SET mirror_request_time = CURRENT_TIMESTAMP AT TIME ZONE 'UTC'
 WHERE last_mirror_attempt IS NULL
 AND mirror_request_time IS NULL
-AND (branch_type = 1 OR branch_type = 2);
+AND branch_type IN (1, 2);
 
 -- MIRRORED branches were mirrored when last_mirror_attempt was six hours in
 -- the past. The equivalent is a mirror_request_time set six hours after
