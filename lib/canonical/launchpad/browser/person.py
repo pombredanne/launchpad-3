@@ -1188,9 +1188,8 @@ class RedirectToEditLanguagesView(LaunchpadView):
 
     This view should always be registered with a launchpad.AnyPerson
     permission, to make sure the user is logged in. It exists so that
-    we can keep the /rosetta/prefs link working and also provide a link
-    for non logged in users that will require them to login and them send
-    them straight to the page they want to go.
+    we provide a link for non logged in users that will require them to login
+    and them send them straight to the page they want to go.
     """
 
     def initialize(self):
