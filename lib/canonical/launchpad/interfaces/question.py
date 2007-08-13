@@ -53,7 +53,7 @@ class IQuestion(IHasOwner):
     priority = Choice(
         title=_('Priority'), vocabulary=QuestionPriority,
         default=QuestionPriority.NORMAL)
-    # XXX flacoste 2006/10/28 It should be more precise to define a new
+    # XXX flacoste 2006-10-28: It should be more precise to define a new
     # vocabulary that excludes the English variants.
     language = Choice(
         title=_('Language'), vocabulary='Language',
