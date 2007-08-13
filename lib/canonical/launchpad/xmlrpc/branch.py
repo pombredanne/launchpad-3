@@ -5,8 +5,6 @@
 __metaclass__ = type
 __all__ = ['IBranchSetAPI', 'BranchSetAPI']
 
-import xmlrpclib
-
 from zope.component import getUtility
 from zope.interface import Interface, implements
 
@@ -15,9 +13,7 @@ from canonical.launchpad.interfaces import (
     ILaunchBag, IPersonSet, IProductSet, NotFoundError)
 from canonical.launchpad.validators import LaunchpadValidationError
 from canonical.launchpad.webapp import LaunchpadXMLRPCView, canonical_url
-from canonical.launchpad.webapp.uri import URI, InvalidURIError
 from canonical.launchpad.xmlrpc import faults
-from canonical.lp.dbschema import BugBranchStatus
 
 
 class IBranchSetAPI(Interface):
