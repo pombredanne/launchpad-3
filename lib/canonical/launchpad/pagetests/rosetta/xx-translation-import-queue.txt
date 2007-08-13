@@ -1,14 +1,14 @@
 Uploading templates
 ===================
 
-An upstream maintainer can use Rosetta to submit their initial template uploads.
+An upstream maintainer can use Launchpad to submit their initial template uploads.
 
     >>> from zope.testbrowser.testing import Browser
 
     >>> ff_owner_browser = Browser()
     >>> ff_owner_browser.addHeader('Authorization', 'Basic test@canonical.com:test')
     >>> ff_owner_browser.open(
-    ...     'http://launchpad.dev/firefox/1.0/+translations-upload')
+    ...     'http://translations.launchpad.dev/firefox/1.0/+translations-upload')
     >>> 'Upload either a single file' in ff_owner_browser.contents
     True
 
@@ -26,19 +26,31 @@ The upload consists of a tarball containing templates and/or translations.
     >>> upload.add_file(tarball, 'application/x-gzip', test_file_name)
     >>> ff_owner_browser.getControl('Request Upload').click()
     >>> ff_owner_browser.url
-    'http://launchpad.dev/firefox/1.0/+translations-upload'
+    'http://translations.launchpad.dev/firefox/1.0/+translations-upload'
     >>> 'Upload new translation resources' in ff_owner_browser.contents
     True
-    >>> 'Thank you for your upload. 1 files from the tarball will be reviewed' in ff_owner_browser.contents
-    True
+    >>> for tag in find_tags_by_class(ff_owner_browser.contents,
+    ...                               'informational message'):
+    ...     print tag.renderContents()
+    Thank you for your upload. 1 files from the tarball will be reviewed soon
+    by an admin and then imported into Launchpad. You can track its status
+    from the <a ...>Translation Import Queue</a>
+
+The confirmation form shows the user the link where they could track the
+import status:
+
+    >>> ff_owner_browser.getLink('Translation Import Queue').click()
+    >>> print ff_owner_browser.url
+    http://translations.launchpad.dev/firefox/1.0/+imports
 
 Once the upload has completed, its templates and translations show up on the
 translation import queue page.  If we're not logged in, status is shown as
 static HTML.
 
-    >>> anon_browser.open('http://launchpad.dev/translations/imports')
-    >>> anon_browser.url
-    'http://launchpad.dev/translations/imports'
+    >>> anon_browser.open(
+    ...     'http://translations.launchpad.dev/firefox/1.0/+imports')
+    >>> print anon_browser.url
+    http://translations.launchpad.dev/firefox/1.0/+imports
     >>> 'po/es.po' in anon_browser.contents
     True
     >>> 'Mozilla Firefox Series' in anon_browser.contents

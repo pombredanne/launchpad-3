@@ -423,9 +423,9 @@ class ProductSeriesView(LaunchpadView, TranslationsMixin):
                     'Thank you for your upload. %d files from the tarball'
                     ' will be reviewed soon by an admin and then imported'
                     ' into Launchpad. You can track its status from the'
-                    ' <a href="%s">Translation Import Queue</a>' % (
+                    ' <a href="%s/+imports">Translation Import Queue</a>' % (
                         num,
-                        canonical_url(translation_import_queue_set)))
+                        canonical_url(self.context)))
             else:
                 self.request.response.addWarningNotification(
                     "Nothing has happened. The tarball you uploaded does not"

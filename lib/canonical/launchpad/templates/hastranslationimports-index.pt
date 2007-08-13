@@ -74,16 +74,16 @@
             <tal:navigation
                  replace="structure view/batchnav/@@+navigation-links-upper" />
 
-            <!--<div metal:use-macro="context/@@launchpad_form/widget_rows" />-->
-
-            <table class="listing" width="100%">
+            <table id='import-entries-list' class="listing" width="100%">
               <tal:loop repeat="entry view/batchnav/currentBatch">
                 <tr>
                   <tal:comment replace="nothing">
-                    XXX: CarlosPerelloMarin 20060309:
-                    We are using here condition="entry/import_into/title|nothing"
-                    because, sometimes, entry/import_into evaluates as false when
-                    it should not. See bug #34213 for more information.
+                    XXX: CarlosPerelloMarin 2006-03-09:
+                    We are using here
+                    condition="entry/import_into/title|nothing" because,
+                    sometimes, entry/import_into evaluates as false because
+                    __len__ method returns 0. See bug #34213 for more
+                    information.
                   </tal:comment>
                   <td tal:condition="entry/import_into/title|nothing" rowspan="3">
                     <img alt="" src="/@@/download.png" />
@@ -126,10 +126,12 @@
                   </td>
                 </tr>
                 <tal:comment replace="nothing">
-                  XXX: CarlosPerelloMarin 20060309:
-                  We are using here condition="entry/import_into/title|nothing"
-                  because, sometimes, entry/import_into evaluates as false when
-                  it should not. See bug #34213 for more information.
+                  XXX: CarlosPerelloMarin 2006-03-09:
+                  We are using here
+                  condition="entry/import_into/title|nothing" because,
+                  sometimes, entry/import_into evaluates as false because
+                  __len__ method returns 0. See bug #34213 for more
+                  information.
                 </tal:comment>
                 <tr tal:condition="entry/import_into/title|nothing" class="discreet secondary">
                   <td colspan="3">
