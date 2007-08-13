@@ -276,11 +276,6 @@ We need the commit to see the upload.
 
    >>> transaction.commit()
 
-Before the upload, the queue should be empty.
-
-   >>> translation_import_queue.getAllEntries(target='distros').count()
-   0
-
 Now we do the upload. It's necessary to retrive an ILibraryFileAlias
 correspondent to the alias (long) we already have.
 
@@ -290,6 +285,13 @@ correspondent to the alias (long) we already have.
    >>> spr_test = SourcePackageRelease.get(20)
    >>> spr_test.name
    u'pmount'
+
+Before the final upload, the queue should be empty.
+
+   >>> translation_import_queue.getAllEntries(
+   ...     target=spr_test.sourcepackage).count()
+   0
+
    >>> spr_test.attachTranslationFiles(file_alias, True)
 
 The commit is needed to see the new entries
@@ -298,7 +300,8 @@ The commit is needed to see the new entries
 
 And the queue should have a new entry.
 
-   >>> translation_import_queue.getAllEntries(target='distros').count()
+   >>> translation_import_queue.getAllEntries(
+   ...     target=spr_test.sourcepackage).count()
    1
 
 Now, we need to do the final import. It's done as a two steps procedure.

@@ -737,30 +737,17 @@ class TranslationImportQueue:
         if (IDistribution.providedBy(target) or
             IDistroSeries.providedBy(target) or
             ISourcePackage.providedBy(target)):
-            # If the Distribution series has active the option to defer
+            # If the Distribution series has actived the option to defer
             # translation imports, we ignore those entries.
             if 'DistroRelease' not in clause_tables:
                 clause_tables.append('DistroRelease')
                 queries.append('distrorelease = DistroRelease.id')
-                queries.append('NOT defer_translation_imports')
+
+            queries.append('defer_translation_imports IS FALSE')
 
         return TranslationImportQueueEntry.selectFirst(
             " AND ".join(queries), clauseTables=clause_tables,
             orderBy=['dateimported'])
-
-    def getEntriesWithPOTExtension(self, distroseries=None,
-        sourcepackagename=None, productseries=None):
-        """See ITranslationImportQueue."""
-        queries = ["path LIKE '%%.pot'"]
-        if distroseries is not None:
-            queries.append('distrorelease = %s' % sqlvalues(distroseries.id))
-        if sourcepackagename is not None:
-            queries.append('sourcepackagename = %s' %
-                sqlvalues(sourcepackagename.id))
-        if productseries is not None:
-            queries.append('productseries = %s' % sqlvalues(productseries.id))
-
-        return TranslationImportQueueEntry.select(" AND ".join(queries))
 
     def getPillarObjectsWithApprovedImports(self):
         """See ITranslationImportQueue."""
@@ -790,7 +777,7 @@ class TranslationImportQueue:
         for product in products:
             if IHasTranslationImports.providedBy(product):
                 results.add(product)
-        for distroseries in distroseries:
+        for distroseries in distroseriess:
             if IHasTranslationImports.providedBy(distroseries):
                 results.add(distroseries)
         return sorted(results, key=pillar_sort_key)
@@ -905,7 +892,7 @@ class HasTranslationImportsMixin:
     def getFirstEntryToImport(self):
         """See `IHasTranslationImports`."""
         translation_import_queue = TranslationImportQueue()
-        return translation_import_queue.getFirstEntryToImport(self)
+        return translation_import_queue.getFirstEntryToImport(target=self)
 
     def getTranslationImportQueueEntries(self, status=None,
                                          file_extension=None):

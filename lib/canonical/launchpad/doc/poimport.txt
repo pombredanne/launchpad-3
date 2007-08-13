@@ -693,7 +693,7 @@ caring that imports are deferred.  The entry still gets approved as normal:
 Since imports for warty are suspended, and the only entry we happen to have
 waiting right now is for warty, the queue has no importable entries for us.
 
-    >>> translation_import_queue.getFirstEntryToImport() is None
+    >>> warty.getFirstEntryToImport() is None
     True
 
 So if we try to import now, nothing happens.  Our request remains on the queue,

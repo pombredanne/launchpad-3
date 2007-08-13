@@ -32,14 +32,12 @@ Now, lets upload this file.
   ...     print tag.renderContents()
   Thank you for your upload. The file content will be reviewed soon by an
   admin and then imported into Launchpad. You can track its status from the
-  <a href="http://translations.launchpad.dev/translations/imports">Translation
+  <a href="http://translations.launchpad.dev/firefox/trunk/+imports">Translation
   Import Queue</a>
 
 Lets check the import queue to edit this entry and set potemplatename.
 
   >>> browser.getLink('Translation Import Queue').click()
-  >>> print browser.url
-  http://translations.launchpad.dev/translations/imports
   >>> print browser.getLink(url='en-US.xpi').url
   http://localhost:58000/.../en-US.xpi
   >>> browser.getLink(url='imports/3').click()

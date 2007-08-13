@@ -207,14 +207,6 @@ class ITranslationImportQueue(Interface):
             or None to get all entries available.
         """
 
-    def getEntriesWithPOTExtension(
-        distroseries=None, sourcepackagename=None, productseries=None):
-        """Return all entries with the '.pot' extension in the path field.
-
-        distroseries, sourcepackagename and productseries can be used for
-        filtering purposes.
-        """
-
     def getPillarObjectsWithApprovedImports():
         """Return list of Product's and DistroSeries's with pending imports.
 
