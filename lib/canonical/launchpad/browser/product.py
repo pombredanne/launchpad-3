@@ -668,10 +668,6 @@ class ProductEditView(LaunchpadEditFormView):
 
     custom_widget('bugtracker', ProductBugTrackerWidget)
 
-#    @property
-#    def adapters(self):
-#        return {self.schema: self.context}
-
 
 class ProductChangeTranslatorsView(ProductEditView):
     label = "Change translation group"

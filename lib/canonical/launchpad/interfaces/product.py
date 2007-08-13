@@ -222,12 +222,6 @@ class IProduct(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         project bug tracker instead.
         """
 
-#    bugtracker = Choice(title=_('Bug Tracker'), required=False,
-#        vocabulary='BugTracker',
-#        description=_(
-#            "The external bug tracker this project uses, if it is not "
-#            "Launchpad."))
-
     bugtracker = ProductBugTracker(
         title=_('Bugs are tracked'),
         vocabulary="BugTracker")
