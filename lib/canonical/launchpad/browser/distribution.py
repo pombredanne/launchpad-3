@@ -666,11 +666,11 @@ class DistributionMirrorsAdminView(DistributionMirrorsView):
         """Raise an Unauthorized exception if the user is not a member of this
         distribution's mirror_admin team.
         """
-        # XXX: We don't want these pages to be public but we can't protect
+        # XXX: Guilherme Salgado 2006-06-16:
+        # We don't want these pages to be public but we can't protect
         # them with launchpad.Edit because that would mean only people with
         # that permission on a Distribution would be able to see them. That's
         # why we have to do the permission check here.
-        # -- Guilherme Salgado, 2006-06-16
         if not (self.user and self.user.inTeam(self.context.mirror_admin)):
             raise Unauthorized('Forbidden')
 

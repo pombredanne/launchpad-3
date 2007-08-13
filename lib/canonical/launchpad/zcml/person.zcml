@@ -36,6 +36,10 @@
       set_schema="canonical.launchpad.interfaces.IPerson"
       />
     <require
+      permission="launchpad.Special"
+      attributes="deactivateAccount"
+      />
+    <require
       permission="launchpad.Edit"
       attributes="acceptInvitationToBeMemberOf declineInvitationToBeMemberOf
                   renewTeamMembership"
@@ -368,6 +372,14 @@
     permission="launchpad.Special"
     class="canonical.launchpad.browser.PersonEditSSHKeysView"
     template="../templates/person-editsshkeys.pt" 
+    />
+
+  <browser:page
+    name="+deactivate-account"
+    for="canonical.launchpad.interfaces.IPerson"
+    permission="launchpad.Special"
+    class="canonical.launchpad.browser.PersonDeactivateAccountView"
+    template="../templates/person-deactivate-account.pt" 
     />
 
   <browser:page

@@ -112,7 +112,7 @@ class ProjectDynMenu(DynMenu):
                 if product != excludeproduct:
                     yield self.makeBreadcrumbLink(product)
         else:
-            # XXX: SteveAlexander, 2007-03-27.
+            # XXX: SteveAlexander 2007-03-27:
             # Use a database API for products-with-releases that prejoins.
             count = 0
             for product in products:
@@ -149,7 +149,7 @@ class ProjectSOP(StructuralObjectPresentation):
         return self.context.title
 
     def listChildren(self, num):
-        # XXX mpt 20061004: Products, alphabetically
+        # XXX mpt 2006-10-04: Products, alphabetically
         return list(self.context.products[:num])
 
     def listAltChildren(self, num):
