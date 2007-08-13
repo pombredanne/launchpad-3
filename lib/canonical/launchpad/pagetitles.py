@@ -249,15 +249,16 @@ bugtarget_filebug_search = bugtarget_filebug_advanced
 
 bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
-bugtask_choose_affected_product = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_choose_affected_product = LaunchbagBugID(
+    'Bug #%d - Also affects a project')
 
 bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()
 
-bugtask_requestfix = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_requestfix = LaunchbagBugID('Bug #%d - Also affects')
 
-bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Request a fix')
+bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Confirm project')
 
 bugtask_view = BugTaskPageTitle()
 

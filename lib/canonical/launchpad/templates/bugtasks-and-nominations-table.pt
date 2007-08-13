@@ -38,7 +38,7 @@
       <img src="/@@/add" alt="+" />
       <a tal:attributes="href string:${current_bugtask/fmt:url}/+choose-affected-product"
          title="Mark this bug as occurring upstream">
-        Upstream&hellip;
+        Project&hellip;
       </a>
   </span>
 
@@ -46,7 +46,7 @@
       <img src="/@@/add" alt="+" />
       <a tal:attributes="href string:${current_bugtask/fmt:url}/+distrotask"
          title="Mark this bug as occurring in a distro package">
-        Distribution&hellip;
+        Distribution/Package&hellip;
       </a>
   </span>
 
