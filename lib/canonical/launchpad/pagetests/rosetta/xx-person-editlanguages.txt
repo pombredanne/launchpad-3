@@ -112,20 +112,6 @@ direct non-logged in users to edit their preferred languages.
     >>> anon_browser.url
     'http://launchpad.dev/~no-priv/+editlanguages'
 
-For backwards compatibility we keep do a redirect from the old
-/rosetta/prefs page to the new one. Note that this is a permanent
-redirect, since the old page has been deprecated.
-
-    # XXX Guilherme Salgado 2006-11-22 bugs=72849: 
-    # Should use an absolute URL on the Location header here.
-    >>> print http(r"""
-    ... GET /translations/prefs HTTP/1.1
-    ... Host: launchpad.dev
-    ... """)
-    HTTP/1.1 301 Moved Permanently
-    ...
-    Location: /+editmylanguages
-
 
 == Adding languages to teams ==
 
