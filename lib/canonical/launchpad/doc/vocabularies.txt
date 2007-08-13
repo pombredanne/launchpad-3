@@ -637,8 +637,6 @@ to LanguageVocabulary in tests when the language is not English.
 
     >>> translatable_language_vocabulary = vocabulary_registry.get(
     ...     None, 'TranslatableLanguage')
-    >>> len(translatable_language_vocabulary)
-    558
 
     >>> es = language_set['es']
     >>> term = translatable_language_vocabulary.getTerm(es)
@@ -665,6 +663,15 @@ to LanguageVocabulary in tests when the language is not English.
 
 English is not in TranslatableLanguageVocabulary. The vocabulary will
 return a LookupError when it is passed the English.
+
+    >>> translatable_languages = set(
+    ...     t.token for t in translatable_language_vocabulary)
+    >>> languages = set(l.token for l in language_vocabulary)
+    >>> difference = list(languages - translatable_languages)
+    >>> len(difference)
+    1
+    >>> difference
+    ['en']
 
     >>> english = language_set['en']
     >>> english in translatable_language_vocabulary

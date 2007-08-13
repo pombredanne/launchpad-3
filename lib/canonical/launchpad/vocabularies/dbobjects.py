@@ -275,7 +275,7 @@ class FAQVocabulary:
 
 
 class LanguageVocabulary(SQLObjectVocabularyBase):
-    """All the translatable languages known by Launchpad."""
+    """All the languages known by Launchpad."""
 
     _table = Language
     _orderBy = 'englishname'
@@ -869,7 +869,7 @@ class FilteredDistroSeriesVocabulary(SQLObjectVocabularyBase):
             distribution = launchbag.distribution
             serieses = self._table.selectBy(
                 distributionID=distribution.id, **kw)
-            for series in sorted(serieses, key=lambda x: x.sortkey):
+            for series in sorted(serieses, key=attrgetter('sortkey')):
                 yield self.toTerm(series)
 
 
@@ -992,7 +992,7 @@ class MilestoneVocabulary(SQLObjectVocabularyBase):
             # ensure that the +editstatus page doesn't break.
             visible_milestones.append(milestone_context.milestone)
 
-        for ms in sorted(visible_milestones, key=lambda m: m.displayname):
+        for ms in sorted(visible_milestones, key=attrgetter('displayname')):
             yield self.toTerm(ms)
 
 
@@ -1016,7 +1016,7 @@ class SpecificationVocabulary(NamedSQLObjectVocabulary):
 
         if target is not None:
             for spec in sorted(
-                target.specifications(), key=lambda a: a.title):
+                target.specifications(), key=attrgetter('title')):
                 # we will not show the current specification in the
                 # launchbag
                 if spec == launchbag.specification:
@@ -1042,7 +1042,8 @@ class SpecificationDependenciesVocabulary(NamedSQLObjectVocabulary):
         curr_spec = launchbag.specification
 
         if curr_spec is not None:
-            for spec in sorted(curr_spec.dependencies, key=lambda a: a.title):
+            for spec in sorted(
+                curr_spec.dependencies, key=attrgetter('title')):
                 yield SimpleTerm(spec, spec.name, spec.title)
 
 class SpecificationDepCandidatesVocabulary(SQLObjectVocabularyBase):
@@ -1218,7 +1219,7 @@ class DistroSeriesVocabulary(NamedSQLObjectVocabulary):
         serieses = self._table.select(
             DistroSeries.q.distributionID==Distribution.q.id,
             orderBy=self._orderBy, clauseTables=self._clauseTables)
-        for series in sorted(serieses, key=lambda x: x.sortkey):
+        for series in sorted(serieses, key=attrgetter('sortkey')):
             yield self.toTerm(series)
 
     def toTerm(self, obj):
