@@ -157,15 +157,15 @@ class TestMirroring(TestCase):
         # We run these in separate transactions so as to have the times set to
         # different values. This is closer to what happens in production.
         branch = self.getArbitraryBranch()
-        branch_id = branch.id
-        getUtility(IBranchSet).get(branch_id).startMirroring()
-        branch = getUtility(IBranchSet).get(branch_id)
+        branch.startMirroring()
+        transaction.commit()
         branch.requestMirror()
+        removeSecurityProxy(branch).sync()
+        self.assertNotEqual(
+            branch.last_mirror_attempt, branch.mirror_request_time)
         mirror_request_time = branch.mirror_request_time
-        getUtility(IBranchSet).get(branch_id).mirrorComplete('rev1')
-        self.assertEqual(
-            mirror_request_time,
-            getUtility(IBranchSet).get(branch_id).mirror_request_time)
+        branch.mirrorComplete('rev1')
+        self.assertEqual(mirror_request_time, branch.mirror_request_time)
 
     def test_mirrorCompleteRemovesFromPullQueue(self):
         """Completing the mirror removes the branch from the pull queue."""
