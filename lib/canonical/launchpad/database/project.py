@@ -343,15 +343,10 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         return self.products.count() != 0
 
     def noProductsUseMalone(self):
-        """Returns True if none of the Products in this Project use Malone for
-        bug tracking, otherwise returns False.
-        """
-        no_products_use_malone = True
-        for product in self.products:
-            no_products_use_malone = (
-                not product.official_malone and no_products_use_malone)
-
-        return no_products_use_malone
+        """See `IProject`."""
+        products_using_malone = [
+            product for product in self.products if product.official_malone]
+        return len(products_using_malone) == 0
 
     def _getMilestones(self, only_visible):
         """Return a list of milestones for this project.
