@@ -14,6 +14,9 @@ from zope.schema import (
 from zope.interface import (
     Interface, Attribute)
 
+from canonical.launchpad.interfaces.milestone import IMilestone
+
+
 from canonical.launchpad import _
 from canonical.launchpad.fields import (
     Title, Summary, Description)
@@ -21,8 +24,9 @@ from canonical.launchpad.interfaces.archive import IArchive
 from canonical.launchpad.interfaces.karma import IKarmaContext
 from canonical.launchpad.interfaces.mentoringoffer import IHasMentoringOffers
 from canonical.launchpad.interfaces import (
-    IHasAppointedDriver, IHasOwner, IHasDrivers, IBugTarget,
-    ISpecificationTarget, IHasSecurityContact, PillarNameField)
+    IBugTarget, IHasAppointedDriver, IHasDrivers, IHasOwner,
+    IHasSecurityContact, ISpecificationTarget, PillarNameField)
+from canonical.launchpad.interfaces.milestone import IHasMilestones
 from canonical.launchpad.interfaces.sprint import IHasSprints
 from canonical.launchpad.interfaces.translationgroup import (
     IHasTranslationGroup)
@@ -37,11 +41,9 @@ class DistributionNameField(PillarNameField):
     def _content_iface(self):
         return IDistribution
 
-
-class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
-                    ISpecificationTarget, IHasSecurityContact,
-                    IKarmaContext, IHasMentoringOffers, IHasSprints,
-                    IHasTranslationGroup):
+class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
+    IHasMentoringOffers, IHasMilestones, IHasOwner, IHasSecurityContact,
+    IHasSprints, IHasTranslationGroup, IKarmaContext, ISpecificationTarget):
     """An operating system distribution."""
 
     id = Attribute("The distro's unique number.")
@@ -142,12 +144,6 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     serieses = Attribute("DistroSeries'es inside this Distribution")
     bounties = Attribute(_("The bounties that are related to this distro."))
     bugCounter = Attribute("The distro bug counter")
-    milestones = Attribute(_(
-        "The visible milestones associated with this distribution, "
-        "ordered by date expected."))
-    all_milestones = Attribute(_(
-        "All milestones associated with this distribution, ordered "
-        "by date expected."))
     source_package_caches = Attribute("The set of all source package "
         "info caches for this distribution.")
     is_read_only = Attribute(
@@ -230,11 +226,6 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
         order to create a mirror.
         """
 
-    def getMilestone(name):
-        """Return a milestone with the given name for this distribution, or
-        None.
-        """
-
     def getSourcePackage(name):
         """Return a DistributionSourcePackage with the given name for this
         distribution, or None.
@@ -309,8 +300,16 @@ class IDistribution(IHasAppointedDriver, IHasDrivers, IHasOwner, IBugTarget,
     def getAllPPAs():
         """Return all PPAs for this distribution."""
 
-    def searchPPAs(text=None):
-        """Return all PPAs matching the given text in this distribution."""
+    def searchPPAs(text=None, show_inactive=False):
+        """Return all PPAs matching the given text in this distribution.
+
+        'text', when passed, will restrict results to Archives with matching
+        description (using substring) or matching Archive.owner (using
+        available person fti/ftq).
+
+        'show_inactive', when False, will restrict results to Archive with
+        at least one source publication in PENDING or PUBLISHED status.
+        """
 
     def getPendingAcceptancePPAs():
         """Return only pending acceptance PPAs in this distribution."""
