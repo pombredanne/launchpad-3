@@ -156,7 +156,20 @@ who would navigate to the page in that manner we test it here.
     >>> for message in find_tags_by_class(user_browser.contents, 
     ...     'informational message'):
     ...     print message.renderContents()
-    There are no projects registered for Test Group that use Launchpad...
+    There are no projects registered for Test Group that use Launchpad to
+    track bugs.
+
+If the project registrant visits the filebug page they will see an additional
+message:
+
+    >>> admin_browser.open('http://launchpad.dev/test-group/+filebug')
+
+    >>> for message in find_tags_by_class(admin_browser.contents,
+    ...     'warning message'):
+    ...     print message.renderContents()
+    There are no projects registered for Test Group. <br />
+    You need to <a href="+newproduct">register another project that is
+    part of Test Group</a> or associate an existing project with it.
 
 
 == Projects With no Products Using Launchpad Bugs ==
