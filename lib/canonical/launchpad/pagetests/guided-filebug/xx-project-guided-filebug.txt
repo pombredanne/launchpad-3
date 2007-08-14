@@ -201,6 +201,11 @@ Testy Product doesn't use define an external bug tracker and isn't registered
 in any source packages and the user is told this.
 
     >>> print extract_text(find_tag_by_id(user_browser.contents,
+    ...     'product-list-summary'))
+    There is 1 project registered as part of Test Group but it does not use
+    Launchpad as its bug tracker.
+
+    >>> print extract_text(find_tag_by_id(user_browser.contents,
     ...     'product-list'))
     Testy Product
     Testy Product does not use an external bug tracker.
@@ -223,13 +228,19 @@ in the Test Group's filebug page.
 
 And on the filebug page...
 
-    >>> user_browser.open('http://launchpad.dev/test-group/+filebug')
-    >>> print user_browser.contents
-    <!DOCTYPE...
+    >>> user_browser.reload()
+    >>> print extract_text(find_tag_by_id(user_browser.contents,
+    ...     'product-list-summary'))
     There is 1 project registered as part of Test Group but it does not use
-    Launchpad as its bug tracker...
-    ...External bug tracker...Debian Bug tracker...
-    ...Testy Product is not registered with any source packages...
+    Launchpad as its bug tracker.
+
+    >>> print extract_text(find_tag_by_id(user_browser.contents,
+    ...     'product-list'))
+    Testy Product
+    External bug tracker: Debian Bug tracker.
+    Testy Product is not registered with any source packages. You can help by
+    linking them for us.
+
 
 Finally, we add Testy Product to a source package:
 

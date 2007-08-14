@@ -112,7 +112,7 @@
     <tal:has-products condition="context/products">
 
       <tal:plural condition="python:context.products.count() > 1">
-        <p>
+        <p id="product-list-summary">
           There are <tal:count replace="context/products/count" /> projects
           registered as part of <tal:project replace="context/displayname" />
           but none of them use Launchpad as their bug tracker.
@@ -133,7 +133,7 @@
         </p>
       </tal:plural>
       <tal:singular condition="python:context.products.count() == 1">
-        <p>
+        <p id="product-list-summary">
           There is 1 project registered as part of
           <tal:project replace="context/displayname">Project</tal:project>
           but it does not use Launchpad as its bug tracker.
