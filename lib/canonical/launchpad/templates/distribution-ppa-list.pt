@@ -1,39 +1,43 @@
-<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
-      lang="en"
-      metal:use-macro="context/@@main_template/master"
-      i18n:domain="launchpad"
->
-  <body>
+<html 
+  xmlns="http://www.w3.org/1999/xhtml" xml:lang="en"
+  lang="en"
+  metal:use-macro="context/@@main_template/master"
+  i18n:domain="launchpad"
+  >
+<body>
 
-    <metal:portlets fill-slot="portlets">
-    </metal:portlets>
+  <metal:portlets fill-slot="portlets" />
 
-    <metal:heading fill-slot="pageheading">
-
-      <h1>Personal Package Archives for
-          <span tal:replace="context/title" /></h1>
-    </metal:heading>
+  <metal:heading fill-slot="pageheading">
+    <h1>Personal Package Archives for
+        <span tal:replace="context/title" /></h1>
+  </metal:heading>
 
   <div metal:fill-slot="main">
 
-     <p>Personal Package Archives (PPA) allow you to upload Ubuntu source
-        packages to be built and published as an apt repository by
-        Launchpad. You can find out more about PPAs and how to use them in our
-        <a href="https://help.launchpad.net/PPAQuickStart"
-        >quick-start guide</a>.</p>
+    <p>Personal Package Archives (PPA) allow you to upload Ubuntu source
+       packages to be built and published as an apt repository by
+       Launchpad. You can find out more about PPAs and how to use them in our
+       <a href="https://help.launchpad.net/PPAQuickStart"
+       >quick-start guide</a>.</p>
 
-     <p>You can search for <i>PPA</i> by the owner name or by any word
-     in its description.</p>
+    <p>You can search for a PPA by the owner name or by any word
+       in its description.</p>
 
-      <form name="ppa_search" action="" method="GET">
-         <label for="name">PPAs containing:</label>
-         <input id="name" title="Filter" size="20"
-                type="text" name="name_filter"
-                tal:attributes="value view/name_filter"/>
-         <input type="submit" value="Search" />
-      </form>
+    <form name="ppa_search" action="" method="GET">
+      <label for="name">PPAs containing:</label>
+      <input id="name" title="Filter" size="20"
+             type="text" name="name_filter"
+             tal:attributes="value view/name_filter"/>
+      <label for="inactive">Show Inactive</label>
+      <input id="inactive" title="Show Inactive"
+             type="checkbox" name="show_inactive"
+             tal:attributes="checked view/show_inactive"/>
+      <input type="submit" value="Search" />
+    </form>
 
-      <tal:batch define="batch view/search_results">
+    <tal:batch define="batch view/search_results">
+
       <tal:navigation_top
            replace="structure view/batchnav/@@+navigation-links-upper" />
 
@@ -47,34 +51,29 @@
           </tr>
         </thead>
         <tbody>
-        <tr tal:repeat="ppa batch" class="ppa_batch_row">
-           <td><a tal:content="ppa/owner/browsername"
-                  tal:attributes="href ppa/fmt:url">FooBar</a></td>
-           <td tal:content="ppa/description/fmt:shorten/65" />
-           <td tal:content="ppa/number_of_sources" />
-           <td tal:content="ppa/number_of_binaries" />
-        </tr>
+          <tr tal:repeat="ppa batch" tal:replace="structure ppa/@@+ppa-row" />
         </tbody>
       </table>
-
+ 
       <tal:navigation_bottom
            replace="structure view/batchnav/@@+navigation-links-lower" />
-
+ 
       <div id="empty-result" tal:condition="not: batch">
-           <tal:has_filter condition="view/name_filter">
-              No matching Personal Package Archive
-              for '<span tal:replace="view/name_filter" />'.
-           </tal:has_filter>
+        <tal:has_filter condition="view/name_filter">
+           No matching Personal Package Archive
+           for '<span tal:replace="view/name_filter" />'.
+        </tal:has_filter>
       </div>
+ 
+    </tal:batch>
 
-      </tal:batch>
   </div>
 
   <p metal:fill-slot="help">
-     You can browse for any interesting <i>PPA</i> by accessing its page
+     You can browse for any interesting PPA by accessing its page
      or even create your own
      <a tal:attributes="href string:${view/user/fmt:url}/+activate-ppa"
-     >here</a>. Currently we only support <i>PPAs</i> for Ubuntu Linux.
+     >here</a>. Currently we only support PPAs for Ubuntu Linux.
   </p>
 
 </body>
