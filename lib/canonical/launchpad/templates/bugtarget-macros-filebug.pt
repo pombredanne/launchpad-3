@@ -257,7 +257,7 @@
             <tal:project replace="context/displayname">Project</tal:project>.
         </tal:singular>
 
-        <ul id="product-list" tal:repeat="product context/products">
+        <ul class="product-bug-options" tal:repeat="product context/products">
           <li condition="product/official_malone">
             <img src="/@@product" tal:replace="structure product/image:icon" />
             <strong>
