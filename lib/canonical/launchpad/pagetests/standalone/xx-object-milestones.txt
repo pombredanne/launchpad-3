@@ -115,80 +115,124 @@ To demonstrate this, we'll begin by filing a couple of bugs for the Mozilla
 Firefox product:
 
     >>> browser = setupBrowser(auth='Basic test@canonical.com:test')
+    >>> browser.open('http://bugs.launchpad.dev/firefox/')
+    >>> browser.getLink('Report a bug').click()
+    >>> browser.getLink('complicated bug filing form').click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Report a new bug...
+    >>> file_bug_url = browser.url
 
-    >>> file_bug_url = 'http://bugs.launchpad.dev/firefox/+filebug-advanced'
-    >>> browser.open(file_bug_url)
     >>> browser.getControl('Summary').value = 'Test Bug 1'
     >>> browser.getControl('Further information').value = 'Test Bug 1'
     >>> browser.getControl('Submit').click()
-    >>> print browser.url
-    http://bugs.launchpad.dev/firefox/+bug/15
+    >>> print extract_text(find_main_content(browser.contents))
+    Thank you for your bug report...
+    >>> test_bug_1_url = browser.url
 
     >>> browser.open(file_bug_url)
     >>> browser.getControl('Summary').value = 'Test Bug 2'
     >>> browser.getControl('Further information').value = 'Test Bug 2'
     >>> browser.getControl('Submit').click()
-    >>> print browser.url
-    http://bugs.launchpad.dev/firefox/+bug/16
+    >>> print extract_text(find_main_content(browser.contents))
+    Thank you for your bug report...
+    >>> test_bug_2_url = browser.url
 
 Next, we'll target each bug to the 1.0 milestone:
 
     >>> milestone_value = ['Mozilla Firefox: 1.0']
 
-    >>> edit_url = 'http://bugs.launchpad.dev/firefox/+bug/15/+editstatus'
-    >>> browser.open(edit_url)
-    >>> browser.getControl('Milestone').displayValue = milestone_value
-    >>> browser.getControl('Save Changes').click()
+    >>> browser.open(test_bug_1_url)
+    >>> browser.getLink('[edit]').click()
+    >>> print browser.url
+    http://bugs.launchpad.dev/firefox/+bug/.../+editstatus
 
-    >>> edit_url = 'http://bugs.launchpad.dev/firefox/+bug/16/+editstatus'
-    >>> browser.open(edit_url)
     >>> browser.getControl('Milestone').displayValue = milestone_value
     >>> browser.getControl('Save Changes').click()
+    >>> browser.url == test_bug_1_url
+    True
+
+    >>> browser.open(test_bug_2_url)
+    >>> browser.getLink('[edit]').click()
+    >>> print browser.url
+    http://bugs.launchpad.dev/firefox/+bug/.../+editstatus
+
+    >>> browser.getControl('Milestone').displayValue = milestone_value
+    >>> browser.getControl('Save Changes').click()
+    >>> browser.url == test_bug_2_url
+    True
 
 Observe that both bugs are listed in the 1.0 milestone listing:
 
-    >>> browser.open('http://launchpad.dev/firefox/+milestone/1.0')
+    >>> browser.open('http://launchpad.dev/firefox')
+    >>> browser.getLink('All milestones').click()
+    >>> browser.getLink('1.0').click()
+    >>> print browser.title
+    Milestone 1.0 for Mozilla Firefox...
+    >>> milestone_url = browser.url
 
-    >>> print browser.getLink('Test Bug 1')
-    <Link text='Test Bug 1' url='http://bugs.launchpad.dev/bugs/15'>
+    >>> browser.getLink('Test Bug 1').click()
+    >>> browser.url == test_bug_1_url
+    True
 
-    >>> print browser.getLink('Test Bug 2')
-    <Link text='Test Bug 2' url='http://bugs.launchpad.dev/bugs/16'>
+    >>> browser.open(milestone_url)
+    >>> browser.getLink('Test Bug 2').click()
+    >>> browser.url == test_bug_2_url
+    True
 
 We'll mark the second bug as a duplicate of the first:
 
-    >>> duplicate_url = 'http://bugs.launchpad.dev/firefox/+bug/16/+duplicate'
-    >>> browser.open(duplicate_url)
+    >>> browser.open(test_bug_2_url)
+    >>> browser.getLink('Mark as duplicate').click()
+    >>> print browser.title
+    Bug...Mark as duplicate...
+
     >>> browser.getControl('Duplicate').value = '15'
     >>> browser.getControl('Change').click()
+    >>> browser.url == test_bug_2_url
+    True
 
-Now observe that only the first bug is listed in the 1.0 milestone listing:
+    >>> print extract_text(find_main_content(browser.contents))
+    Bug...This report is a duplicate...
 
-    >>> browser.open('http://launchpad.dev/firefox/+milestone/1.0')
+Now only the first bug is listed in the 1.0 milestone listing:
 
-    >>> print browser.getLink('Test Bug 1')
-    <Link text='Test Bug 1' url='http://bugs.launchpad.dev/bugs/15'>
+    >>> browser.open(milestone_url)
+    >>> browser.getLink('Test Bug 1').click()
+    >>> browser.url == test_bug_1_url
+    True
 
+    >>> browser.open(milestone_url)
     >>> print browser.getLink('Test Bug 2')
     Traceback (most recent call last):
         ...
     LinkNotFoundError
 
-If we change our mind and clear the duplicate status of the second bug, then
-both bugs are listed in the 1.0 milestone listing once again:
+However, it's also possible to clear the duplicate status of our second bug:
 
-    >>> duplicate_url = 'http://bugs.launchpad.dev/firefox/+bug/16/+duplicate'
-    >>> browser.open(duplicate_url)
+    >>> browser.open(test_bug_2_url)
+    >>> browser.getLink('Mark as duplicate').click()
+    >>> print browser.title
+    Bug...Mark as duplicate...
+
     >>> browser.getControl('Duplicate').value = ''
     >>> browser.getControl('Change').click()
+    >>> browser.url == test_bug_2_url
+    True
 
-    >>> browser.open('http://launchpad.dev/firefox/+milestone/1.0')
+    >>> 'This report is a duplicate' in find_main_content(browser.contents)
+    False
 
-    >>> print browser.getLink('Test Bug 1')
-    <Link text='Test Bug 1' url='http://bugs.launchpad.dev/bugs/15'>
+Now both bugs are listed in the 1.0 milestone listing once again:
 
-    >>> print browser.getLink('Test Bug 2')
-    <Link text='Test Bug 2' url='http://bugs.launchpad.dev/bugs/16'>
+    >>> browser.open(milestone_url)
+    >>> browser.getLink('Test Bug 1').click()
+    >>> browser.url == test_bug_1_url
+    True
+
+    >>> browser.open(milestone_url)
+    >>> browser.getLink('Test Bug 2').click()
+    >>> browser.url == test_bug_2_url
+    True
 
 
 === Bugs targeted to multiple series ===
