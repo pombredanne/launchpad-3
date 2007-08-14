@@ -8,7 +8,6 @@ __all__ = [
     'LoginStatus',
     'MaintenanceMessage',
     'MenuBox',
-    'RosettaContextMenu',
     'MaloneContextMenu',
     'LaunchpadRootNavigation',
     'MaloneApplicationNavigation',
@@ -316,36 +315,6 @@ class MaloneContextMenu(ContextMenu):
     def cvetracker(self):
         text = 'CVE tracker'
         return Link('cve/', text, icon='cve')
-
-
-class RosettaContextMenu(ContextMenu):
-    # XXX mpt 2006-03-27: No longer visible on Translations front page.
-    usedfor = IRosettaApplication
-    links = ['about', 'preferences', 'import_queue', 'translation_groups']
-
-    def about(self):
-        text = 'About Launchpad Translations'
-        rosetta_application = getUtility(IRosettaApplication)
-        url = '/'.join([canonical_url(rosetta_application), '+about'])
-        return Link(url, text)
-
-    def preferences(self):
-        text = 'Translation preferences'
-        rosetta_application = getUtility(IRosettaApplication)
-        url = '/'.join([canonical_url(rosetta_application), 'prefs'])
-        return Link(url, text)
-
-    def import_queue(self):
-        text = 'Import queue'
-        import_queue = getUtility(ITranslationImportQueue)
-        url = canonical_url(import_queue)
-        return Link(url, text)
-
-    def translation_groups(self):
-        text = 'Translation groups'
-        translation_group_set = getUtility(ITranslationGroupSet)
-        url = canonical_url(translation_group_set)
-        return Link(url, text)
 
 
 class LoginStatus:
