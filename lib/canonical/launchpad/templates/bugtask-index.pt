@@ -65,7 +65,7 @@
 
   <tal:duplicate-of define="duplicateof context/bug/duplicateof"
                     condition="duplicateof">
-    <p tal:condition="duplicateof" class="informational message">
+    <p class="informational message">
       This report is a duplicate of
       <a tal:condition="duplicateof/required:launchpad.View"
          tal:attributes="href duplicateof/fmt:url; title duplicateof/title"
