@@ -207,8 +207,10 @@ class ITranslationImportQueue(Interface):
             or None to get all entries available.
         """
 
-    def getPillarObjectsWithApprovedImports():
+    def getPillarObjectsWithImports(status=None):
         """Return list of Product's and DistroSeries's with pending imports.
+
+        :arg status: Filter by RosettaImportStatus.
 
         All returned items must implement IHasTranslationImports."""
 

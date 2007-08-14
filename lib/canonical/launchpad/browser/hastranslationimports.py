@@ -11,6 +11,7 @@ __all__ = [
 import datetime
 import pytz
 from zope.app.form.browser import DropdownWidget
+from zope.app.pagetemplate import ViewPageTemplateFile
 from zope.component import getUtility
 from zope.formlib import form
 from zope.interface import implements
@@ -20,7 +21,8 @@ from zope.schema.vocabulary import SimpleVocabulary, SimpleTerm
 
 from canonical.launchpad import _
 from canonical.launchpad.interfaces import (
-    IHasTranslationImports, ITranslationImportQueue, UnexpectedFormData)
+    IHasTranslationImports, IPillarNameSet, ITranslationImportQueue,
+    UnexpectedFormData)
 from canonical.launchpad.webapp import (
     LaunchpadFormView, action, custom_widget, safe_action)
 from canonical.launchpad.webapp.authorization import check_permission
@@ -34,9 +36,14 @@ class HasTranslationImportsView(LaunchpadFormView):
     schema = IHasTranslationImports
     field_names = []
 
+    custom_widget('filter_target', DropdownWidget, cssClass='inlined-widget')
     custom_widget('filter_status', DropdownWidget, cssClass='inlined-widget')
-    custom_widget('filter_extension', DropdownWidget, cssClass='inlined-widget')
+    custom_widget(
+        'filter_extension', DropdownWidget, cssClass='inlined-widget')
     custom_widget('status', DropdownWidget, cssClass='inlined-widget')
+
+    translation_import_queue_macros = ViewPageTemplateFile(
+        '../templates/translation-import-queue-macros.pt')
 
     @property
     def initial_values(self):
@@ -48,6 +55,17 @@ class HasTranslationImportsView(LaunchpadFormView):
             self.context.displayname)
         self._initial_values = {}
         LaunchpadFormView.initialize(self)
+
+    def createFilterTargetField(self):
+        """Create a field with a vocabulary to filter by target.
+
+        By default this option is empty. It's useful for
+        ITranslationImportQueue view which inherite from this class and
+        provides content for this method.
+
+        :return: A form.Fields instance containing the target field or None.
+        """
+        return None
 
     def createFilterStatusField(self):
         """Create a field with a vocabulary to filter by import status.
@@ -98,6 +116,10 @@ class HasTranslationImportsView(LaunchpadFormView):
         """Set up the form_fields from custom_widgets."""
         LaunchpadFormView.setUpFields(self)
         # setup filter fields.
+        target_field = self.createFilterTargetField()
+        if target_field is not None:
+            self.form_fields = (target_field + self.form_fields)
+
         self.form_fields = (
             self.createFilterStatusField() +
             self.createFilterFileExtensionField() +
@@ -129,10 +151,16 @@ class HasTranslationImportsView(LaunchpadFormView):
     @action('Filter', name='filter')
     def filter_action(self, action, data):
         """Handle a filter action."""
+        target_option = ''
+        if self.has_target_filter:
+            target_option = 'field.filter_target=%s&' % (
+                self.widgets['filter_target'].getInputValue())
+
         # Redirect to the filtered URL.
         self.next_url = (
-            '%s?field.filter_status=%s&field.filter_extension=%s' % (
+            '%s?%sfield.filter_status=%s&field.filter_extension=%s' % (
                 self.request.URL,
+                target_option,
                 self.widgets['filter_status'].getInputValue(),
                 self.widgets['filter_extension'].getInputValue()))
 
@@ -207,11 +235,20 @@ class HasTranslationImportsView(LaunchpadFormView):
             self.request.response.addInfoNotification(
                 "Changed the status of %d queue entries." % number_of_changes)
 
-    @property
-    def entries(self):
-        """Return the entries in the queue for this context."""
+    def getEntriesFilteringOptions(self):
+        """Return the options applied by the filtering."""
+        target = None
         file_extension = None
         status = None
+        filter_target_widget = self.widgets.get('filter_target')
+        if (filter_target_widget is not None and
+            filter_target_widget.hasValidInput()):
+            target = filter_target_widget.getInputValue()
+            if target == 'all':
+                target = None
+            else:
+                pillar_name_set = getUtility(IPillarNameSet)
+                target = pillar_name_set.getByName(target)
         filter_extension_widget = self.widgets.get('filter_extension')
         if filter_extension_widget.hasValidInput():
             file_extension = filter_extension_widget.getInputValue()
@@ -224,6 +261,21 @@ class HasTranslationImportsView(LaunchpadFormView):
                 status = None
             else:
                 status = RosettaImportStatus.items[status]
+        return target, file_extension, status
+
+    @property
+    def translation_import_queue_content(self):
+        """Macro displaying the import queue content."""
+        macros = self.translation_import_queue_macros.macros
+        return macros['translation-import-queue-content']
+
+    @property
+    def entries(self):
+        """Return the entries in the queue for this context."""
+        target, file_extension, status = self.getEntriesFilteringOptions()
+        assert target is None, (
+            'Inherite from this view class if target filter is being used.')
+
         return IHasTranslationImports(
             self.context).getTranslationImportQueueEntries(
                 status=status, file_extension=file_extension)
@@ -232,6 +284,11 @@ class HasTranslationImportsView(LaunchpadFormView):
     def has_entries(self):
         """Whether there are entries in the queue."""
         return self.entries.count() > 0
+
+    @property
+    def has_target_filter(self):
+        """Whether the form should show the target filter."""
+        return self.widgets.get('filter_target') is not None
 
     @property
     def batchnav(self):
@@ -305,3 +362,5 @@ class TranslationImportFileExtensionVocabularyFactory:
             title = 'Only %s files' % extension
             terms.append(SimpleTerm(extension, extension, title))
         return SimpleVocabulary(terms)
+
+

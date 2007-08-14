@@ -749,29 +749,38 @@ class TranslationImportQueue:
             " AND ".join(queries), clauseTables=clause_tables,
             orderBy=['dateimported'])
 
-    def getPillarObjectsWithApprovedImports(self):
+    def getPillarObjectsWithImports(self, status=None):
         """See ITranslationImportQueue."""
         # XXX DaniloSegan 2007-05-22: When imported on the module level,
         # it errs out with: "ImportError: cannot import name Person"
         from canonical.launchpad.database.distroseries import DistroSeries
         from canonical.launchpad.database.product import Product
 
+        query = []
+        query.append('ProductSeries.product=Product.id')
+        query.append(
+            'TranslationImportQueueEntry.productseries=ProductSeries.id')
+        if status is not None:
+            query.append('TranslationImportQueueEntry.status=%s' % sqlvalues(
+                status))
+
         products = Product.select(
-            """ProductSeries.product=Product.id AND
-            TranslationImportQueueEntry.productseries=ProductSeries.id AND
-            TranslationImportQueueEntry.status=%s""" % sqlvalues(
-            RosettaImportStatus.APPROVED),
+            ' AND '.join(query),
             clauseTables=['ProductSeries', 'TranslationImportQueueEntry'],
             distinct=True)
 
+        query = []
+        query.append('TranslationImportQueueEntry.distrorelease IS NOT NULL')
+        query.append(
+            'TranslationImportQueueEntry.distrorelease=DistroRelease.id')
+        query.append('DistroRelease.defer_translation_imports IS FALSE')
+        if status is not None:
+            query.append('TranslationImportQueueEntry.status=%s' % sqlvalues(
+                status))
+
         distroseriess = DistroSeries.select(
-            """TranslationImportQueueEntry.distrorelease IS NOT NULL AND
-            TranslationImportQueueEntry.distrorelease=DistroRelease.id AND
-            DistroRelease.defer_translation_imports IS FALSE AND
-            TranslationImportQueueEntry.status=%s""" % sqlvalues(
-            RosettaImportStatus.APPROVED),
-            clauseTables=['TranslationImportQueueEntry'],
-            distinct=True)
+            ' AND '.join(query),
+            clauseTables=['TranslationImportQueueEntry'], distinct=True)
 
         results = set()
         for product in products:

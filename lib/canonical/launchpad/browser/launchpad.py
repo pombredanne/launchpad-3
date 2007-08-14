@@ -50,7 +50,6 @@ from zope.security.proxy import isinstance as zope_isinstance
 from BeautifulSoup import BeautifulStoneSoup, Comment
 
 import canonical.launchpad.layers
-from canonical.cachedproperty import cachedproperty
 from canonical.config import config
 from canonical.launchpad.helpers import intOrZero
 from canonical.launchpad.interfaces import (
@@ -443,6 +442,7 @@ class LaunchpadRootNavigation(Navigation):
         'codeofconduct': ICodeOfConductSet,
         'distros': IDistributionSet,
         'karmaaction': IKarmaActionSet,
+        '+imports': ITranslationImportQueue,
         '+languages': ILanguageSet,
         '+mentoring': IMentoringOfferSet,
         'people': IPersonSet,

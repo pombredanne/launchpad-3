@@ -18,7 +18,7 @@ from zope.component import getUtility
 from canonical.launchpad.interfaces import (
     IRequestPreferredLanguages, ICountry, ILaunchpadCelebrities,
     IRosettaApplication, ILanguageSet, ILaunchpadRoot,
-    IProductSet, ITranslationImportQueue)
+    IProductSet)
 from canonical.launchpad import helpers
 import canonical.launchpad.layers
 from canonical.launchpad.webapp import (
@@ -112,8 +112,12 @@ class RosettaApplicationNavigation(Navigation):
             target_url + '+groups', status=301)
 
     @stepto('imports')
-    def imports(self):
-        return getUtility(ITranslationImportQueue)
+    def redirect_imports(self):
+        """Redirect /translations/imports to Translations root site."""
+        target_url = canonical_url(
+            getUtility(ILaunchpadRoot), rootsite='translations')
+        return self.redirectSubTree(
+            target_url + '+imports', status=301)
 
     @stepto('projects')
     def projects(self):

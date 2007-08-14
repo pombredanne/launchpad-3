@@ -486,8 +486,7 @@ def hasspecifications_specs(context, view):
 
 hassprints_sprints = ContextTitle("Events related to %s")
 
-hastranslationimports_index = ContextTitle(
-    'Translation import queue for %s')
+hastranslationimports_index = 'Translation import queue'
 
 karmaaction_index = 'Karma actions'
 
