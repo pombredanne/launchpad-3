@@ -136,7 +136,7 @@ database ID for the milestone, so we find the ID:
   ... 
   ... 1
   ... -----------------------------3354718323763093901439946724
-  ... Content-Disposition: form-data; name="FORM_SUBMIT"
+  ... Content-Disposition: form-data; name="ubuntu_mozilla-firefox.actions.save"
   ... 
   ... Save Changes
   ... -----------------------------3354718323763093901439946724--
