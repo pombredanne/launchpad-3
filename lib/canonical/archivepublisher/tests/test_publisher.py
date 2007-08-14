@@ -354,7 +354,7 @@ class TestPublisher(TestNativePublishingBase):
 
         self.assertEqual(
             ['Package: foo-bin',
-             'Priority: Standard',
+             'Priority: standard',
              'Section: base',
              'Installed-Size: 100',
              'Maintainer: Foo Bar <foo@bar.com>',
