@@ -153,7 +153,7 @@ who would navigate to the page in that manner we test it here.
     >>> user_browser.url
     'http://launchpad.dev/test-group/+filebug'
 
-    >>> for message in find_tags_by_class(user_browser.contents, 
+    >>> for message in find_tags_by_class(user_browser.contents,
     ...     'informational message'):
     ...     print message.renderContents()
     There are no projects registered for Test Group that use Launchpad to
@@ -190,22 +190,23 @@ displayed.
 The user will now see the new product on the project's +filebug page, but will
 not be able to file a bug against it.
 
-    >>> user_browser.open('http://launchpad.dev/test-group/+filebug')
+    >>> user_browser.reload()
     >>> for message in find_tags_by_class(user_browser.contents, 
     ...     'informational message'):
     ...     print message.renderContents()
-    There are no projects registered for Test Group that use Launchpad...
+    There are no projects registered for Test Group that use Launchpad to
+    track bugs.
 
 Testy Product doesn't use define an external bug tracker and isn't registered
 in any source packages and the user is told this.
 
-    >>> print user_browser.contents
-    <!DOCTYPE...
-    There is 1 project registered as part of Test Group but it does not use
-    Launchpad as its bug tracker...
-    Testy Product does not use an external bug tracker...
-    Testy Product is not registered with any source packages...
-    
+    >>> print extract_text(find_tag_by_id(user_browser.contents,
+    ...     'product-list'))
+    Testy Product
+    Testy Product does not use an external bug tracker.
+    Testy Product is not registered with any source packages. You can help by
+    linking them for us.
+
 The user will also be presented with a link to the product's overview page:
 
     >>> user_browser.getLink('Testy Product').url

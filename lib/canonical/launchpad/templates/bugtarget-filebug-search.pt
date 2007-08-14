@@ -146,7 +146,7 @@
           <tal:project replace="context/displayname">Project</tal:project>.
       </tal:singular>
 
-      <ul tal:repeat="product context/products">
+      <ul id="product-list" tal:repeat="product context/products">
         <li condition="product/official_malone">
           <img src="/@@product" tal:replace="structure product/image:icon" />
           <strong>
@@ -156,7 +156,7 @@
               Sample Product
             </a></strong>
 
-          <ul id="product-bug-options">
+          <ul>
             <tal:external-tracker
                 define="bugtracker product/getExternalBugTracker">
 
@@ -198,7 +198,8 @@
                 <tal:product replace="product/displayname">
                   Project
                 </tal:product>
-                is not registered with any source packages.
+                is not registered with any source packages. You can help by
+                <a tal:attributes="href string:${product/development_focus/fmt:url}/+ubuntupkg">linking them for us.</a>
               </li>
 
             </tal:packages>
