@@ -174,8 +174,12 @@
           $('field.actions.this_is_my_bug').disabled = !bug_already_reported;
         }
 
-        // For use as an event handler.
-        var arrangeBugFormHandler = partial(arrangeBugForm, undefined);
+        /*
+         * arrangeBugForm wrapped for use as an event handler.
+         */
+        function arrangeBugFormHandler(event) {
+          return arrangeBugForm();
+        }
 
         /*
          * On-load, make sure that the 'No' stuff is displayed correctly.
