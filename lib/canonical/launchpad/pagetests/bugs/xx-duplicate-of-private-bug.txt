@@ -32,19 +32,27 @@ Next we mark another bug as a duplicate of the private bug:
 As a privileged user the title of the private bug can be found in the
 duplicate bug page:
 
-    >>> for tag in find_tags_by_class(admin_browser.contents, 'message'):
-    ...     print tag.renderContents()
-    This report is a duplicate of ...Printing doesn't work...
+    >>> def print_messages(browser):
+    ...     for tag in find_tags_by_class(browser.contents, 'message'):
+    ...         print tag.renderContents()
+
+    >>> print_messages(admin_browser)
+    This report is a duplicate of
+      <a href="/bugs/8" title="Printing doesn't work">bug #8</a>
+    Remember, this bug report is a duplicate. Comment here only if you
+    think the duplicate status is wrong.
 
 But when accessing it as an unprivileged user the title of the private
-bug cannot be found in the duplicate bug page:
+bug cannot be found in the messages on the duplicate bug page:
 
     >>> user_browser.open(admin_browser.url)
-    >>> "Printing doesn't work" in user_browser.contents
-    False
+    >>> print_messages(user_browser)
+    This report is a duplicate of bug #8
+    Remember, this bug report is a duplicate. Comment here only if you
+    think the duplicate status is wrong.
 
 The same is true when viewing the duplicate bug anonymously:
 
     >>> anon_browser.open(admin_browser.url)
-    >>> "Printing doesn't work" in anon_browser.contents
-    False
+    >>> print_messages(anon_browser)
+    This report is a duplicate of bug #8
