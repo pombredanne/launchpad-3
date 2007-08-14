@@ -520,8 +520,10 @@ class IBranchSet(Interface):
         visible_by_user=None):
         """Return a result set of branches that have been recently updated.
 
+        Only HOSTED and MIRRORED branches are returned in the result set.
+
         If branch_count is specified, the result set will contain at most
-        branch_count items, and excludes IMPORTED branches.
+        branch_count items.
 
         If lifecycle_statuses evaluates to False then branches
         of any lifecycle_status are returned, otherwise only branches
@@ -530,7 +532,7 @@ class IBranchSet(Interface):
 
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
+        only visible by the owner, subscribers, and LP admins.
 
         If None is passed in for the visible_by_user parameter
         only public branches are returned.
@@ -541,8 +543,10 @@ class IBranchSet(Interface):
         visible_by_user=None):
         """Return a result set of branches that have been recently imported.
 
+        The result set only contains IMPORTED branches.
+
         If branch_count is specified, the result set will contain at most
-        branch_count items, and only has IMPORTED branches.
+        branch_count items.
 
         If lifecycle_statuses evaluates to False then branches
         of any lifecycle_status are returned, otherwise only branches
@@ -551,7 +555,7 @@ class IBranchSet(Interface):
 
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
+        only visible by the owner, subscribers, and LP admins.
 
         If None is passed in for the visible_by_user parameter
         only public branches are returned.
@@ -572,7 +576,7 @@ class IBranchSet(Interface):
 
         The visible_by_user parameter is used to filter out the branches
         that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
+        only visible by the owner, subscribers, and LP admins.
 
         If None is passed in for the visible_by_user parameter
         only public branches are returned.

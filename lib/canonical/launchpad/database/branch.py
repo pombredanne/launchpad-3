@@ -597,7 +597,7 @@ class BranchSet:
         """See `IBranchSet`."""
         lifecycle_clause = self._lifecycleClause(lifecycle_statuses)
         # Since the lifecycle_clause may or may not contain anything,
-        # We need something that is valid if the lifecycle clause starts
+        # we need something that is valid if the lifecycle clause starts
         # with 'AND', so we choose true.
         query = 'true %s' % lifecycle_clause
         results = Branch.select(
