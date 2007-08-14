@@ -1096,11 +1096,14 @@ class BugTaskStatusView(LaunchpadView):
             field_names += ['milestone']
             self.bugwatch_widget = None
 
-        if not IUpstreamBugTask.providedBy(self.context):
+        if IUpstreamBugTask.providedBy(self.context):
+            self.label = 'Bug %s status in %s' % (
+                self.context.bug.id, self.context.product.displayname)
+        else:
             field_names += ['sourcepackagename']
+            self.label = 'Bug %s status in %s' % (
+                self.context.bug.id, self.context.sourcepackagename)
 
-        self.label = 'Bug %s status in %s' % (
-            self.context.bug.id, self.context.displayname)
         self.assignee_widget = CustomWidgetFactory(AssigneeDisplayWidget)
         self.status_widget = CustomWidgetFactory(DBItemDisplayWidget)
         self.importance_widget = CustomWidgetFactory(DBItemDisplayWidget)
