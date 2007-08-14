@@ -11,4 +11,4 @@ DROP TABLE BranchMessage;
 DROP TABLE BranchRelationship;
 DROP TABLE ProductBranchRelationship;
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 95, 0);
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 38, 0);
