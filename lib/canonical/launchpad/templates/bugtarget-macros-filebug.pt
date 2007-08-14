@@ -283,7 +283,8 @@
                    <tal:product replace="product/displayname">
                      Project
                    </tal:product>
-                   does not use an external bug tracker.
+                   does not use an external bug tracker or has not registered
+                   it with launchpad.
                 </li>
               </tal:external-tracker>
 
