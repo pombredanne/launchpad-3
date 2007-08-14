@@ -243,27 +243,54 @@ duplicate entries in the milestone listing (one for each series target).
 To demonstrate this, we'll begin by creating a new series "2.0" for the
 Mozilla Firefox product, to complement the existing series "1.0":
 
-    >>> add_series_url = 'http://launchpad.dev/firefox/+addseries'
-    >>> browser.open(add_series_url)
+    >>> browser.open('http://launchpad.dev/firefox')
+    >>> browser.getLink('Register a series').click()
+    >>> print browser.title
+    Register a new Mozilla Firefox release series
+
     >>> browser.getControl('Name').value = '2.0'
     >>> browser.getControl('Summary').value = 'The Firefox 2.0 Series'
     >>> browser.getControl('Register Series').click()
+    >>> print browser.title
+    Overview of Mozilla Firefox Series: 2.0
 
 We'll also create a new test milestone within the "trunk" series:
 
-    >>> add_milestone_url = 'http://launchpad.dev/firefox/trunk/+addmilestone'
-    >>> browser.open(add_milestone_url)
+    >>> browser.open('http://launchpad.dev/firefox')
+    >>> browser.getLink('trunk').click()
+    >>> print browser.title
+    Overview of Mozilla Firefox Series: trunk
+
+    >>> browser.getLink('Add milestone').click()
+    >>> print browser.title
+    Add new milestone for Mozilla Firefox Series: trunk
+
     >>> browser.getControl('Name').value = 'test-milestone'
     >>> browser.getControl('Date Targeted').value = '2100-08-08'
     >>> browser.getControl('Add').click()
+    >>> print browser.title
+    Overview of Mozilla Firefox Series: trunk
+
+    >>> print extract_text(find_portlet(browser.contents,
+    ...                                 'Active milestones'))
+    Active milestones...
+    test-milestone...
 
 Let's target an existing bug to both series "1.0" and series "2.0":
 
-    >>> nominate_url = 'http://bugs.launchpad.dev/firefox/+bug/15/+nominate'
-    >>> browser.open(nominate_url)
+    >>> browser.open(test_bug_1_url)
+    >>> print browser.title
+    Bug...in Mozilla Firefox
+
+    >>> browser.getLink('Target to release').click()
+    >>> print browser.title
+    Target bug...to series
+
     >>> browser.getControl('1.0').selected = True
     >>> browser.getControl('2.0').selected = True
     >>> browser.getControl('Submit').click()
+    >>> browser.url == test_bug_1_url
+    True
 
 Now we'll add each bug target to the same test milestone, but using different
 levels of importance:
