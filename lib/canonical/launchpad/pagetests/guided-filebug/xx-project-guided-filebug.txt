@@ -266,6 +266,13 @@ And this is also shown on the filebug page:
     External bug tracker: Debian Bug tracker.
     Source package: Ubuntu thunderbird (File a bug here)
 
+We should be able to follow the link to the Ubuntu thunderbird source package
+to file a bug:
+
+    >>> user_browser.getLink('File a bug here').click()
+    >>> user_browser.url
+    'http://launchpad.dev/ubuntu/+source/thunderbird/+filebug'
+
 If we add a second product to the project, this too will be shown on the
 filebug page:
 
@@ -278,7 +285,7 @@ filebug page:
     >>> admin_browser.url
     'http://launchpad.dev/second-test'
 
-    >>> user_browser.reload()
+    >>> user_browser.open('http://launchpad.dev/test-group/+filebug')
     >>> print extract_text(find_tag_by_id(user_browser.contents,
     ...     'product-list-summary'))
     There are 2 projects registered as part of Test Group but none of them use
