@@ -17,7 +17,8 @@ from zope.component import getUtility
 from canonical.lp import dbschema
 
 from canonical.launchpad import _
-from canonical.launchpad.fields import ContentNameField, StrippedTextLine
+from canonical.launchpad.fields import (
+    ContentNameField, StrippedTextLine, UniqueField)
 from canonical.launchpad.validators.name import name_validator
 
 
@@ -31,7 +32,27 @@ class BugTrackerNameField(ContentNameField):
 
     def _getByName(self, name):
         return getUtility(IBugTrackerSet).getByName(name)
-    
+
+
+class BugTrackerBaseURL(UniqueField):
+    """A bug tracker base URL that's not used by any other bug trackers.
+
+    When checking if the URL is already registered with another
+    bugtracker, it takes into account that the URL may differ slightly,
+    i.e. it could end with a slash or be https instead of http.
+    """
+
+    errormessage = _("%s is already registered in Launchpad.")
+    attribute = 'baseurl'
+
+    @property
+    def _content_iface(self):
+        return IBugTracker
+
+    def _getByAttribute(self, base_url):
+        """See `UniqueField`."""
+        return getUtility(IBugTrackerSet).queryByBaseURL(base_url)
+
 
 class IBugTracker(Interface):
     """A remote a bug system."""
