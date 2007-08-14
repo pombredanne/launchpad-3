@@ -328,7 +328,7 @@ class BugTask(SQLBase, BugTaskMixin):
     _CONJOINED_ATTRIBUTES = (
         "status", "importance", "assignee", "milestone",
         "date_assigned", "date_confirmed", "date_inprogress",
-        "date_closed")
+        "date_closed", "date_incomplete")
     _NON_CONJOINED_STATUSES = (BugTaskStatus.WONTFIX,)
 
     bug = ForeignKey(dbName='bug', foreignKey='Bug', notNull=True)
@@ -550,6 +550,10 @@ class BugTask(SQLBase, BugTaskMixin):
     def _set_date_closed(self, value):
         """Set date_closed, and update conjoined BugTask."""
         self._setValueAndUpdateConjoinedBugTask("date_closed", value)
+
+    def _set_date_incomplete(self, value):
+        """Set date_incomplete, and update conjoined BugTask."""
+        self._setValueAndUpdateConjoinedBugTask("date_incomplete", value)
 
     def _setValueAndUpdateConjoinedBugTask(self, colname, value):
         """Set a value, and update conjoined BugTask."""
