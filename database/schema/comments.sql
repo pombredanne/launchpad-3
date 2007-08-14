@@ -1573,5 +1573,5 @@ COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation ration
 
 
 -- ProductSubscription
-COMMENT ON TABLE ProductSubscription IS 'Defines the support contacts for a given product. The support contacts will be automatically subscribed to every support request filed on the product.';
+-- COMMENT ON TABLE ProductSubscription IS 'Defines the support contacts for a given product. The support contacts will be automatically subscribed to every support request filed on the product.';
 
