@@ -36,15 +36,15 @@
               metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
         </table>
         <div class="actions">
-          <input tal:replace="structure view/actions/field.actions.submit_bug/render" />
+          <input tal:replace="structure view/submit_bug_action/render" />
         </div>
       </div>
 
       <div tal:condition="view/similar_bugs">
 
         <tal:similar-bugs condition="view/contextUsesMalone">
-          <ul id="similar-bugs" style="list-style: none; margin-left: 0">
 
+          <ul id="similar-bugs" style="list-style: none; margin-left: 0">
             <li tal:repeat="bug view/similar_bugs"
                 tal:attributes="title bug/description/fmt:shorten/500"
                 title="bug description goes here" class="similar-bug">
@@ -55,8 +55,9 @@
                       <input type="radio" name="field.bug_already_reported_as"
                              tal:attributes="id string:bug-already-reported-as-${bug/id};
                                              value string:${bug/id};
-                                             checked python: not path('view/submit_bug_action/submitted')
-                                                             and path('repeat/bug/start')" />
+                                             checked python: path('repeat/bug/start') and not (
+                                                 path('view/this_is_my_bug_action/submitted') or
+                                                 path('view/submit_bug_action/submitted'))" />
                     </td>
                     <td>
                       <label tal:attributes="for string:bug-already-reported-as-${bug/id}"
@@ -96,14 +97,16 @@
                 </tbody>
               </table>
             </li>
+          </ul>
 
-            <li style="margin-top: 0.5em; margin-bottom: 1em">
-              <div class="actions">
-                <input tal:replace="structure view/actions/field.actions.this_is_my_bug/render" />
+          <p tal:define="error_message view/widget_errors/bug_already_reported_as|nothing"
+             tal:condition="error_message" tal:content="error_message" class="error message" />
 
-              </div>
-            </li>
+          <div class="actions" style="margin-top: 0.5em; margin-bottom: 1em">
+            <input tal:replace="structure view/this_is_my_bug_action/render" />
+          </div>
 
+          <ul style="list-style: none; margin-left: 0">
             <li style="margin-top: 1em">
               <tal:comment replace="nothing">
                 We hide this next paragraph if the context doesn't use
@@ -128,8 +131,8 @@
                 </tbody>
               </table>
             </li>
-
           </ul>
+
         </tal:similar-bugs>
 
         <tal:submit-new-bug>
@@ -139,7 +142,7 @@
                   metal:use-macro="context/@@+filebug-macros/basic_filebug_widgets" />
             </table>
             <div class="actions">
-              <input tal:replace="structure view/actions/field.actions.submit_bug/render" />
+              <input tal:replace="structure view/submit_bug_action/render" />
             </div>
           </div>
         </tal:submit-new-bug>
@@ -190,6 +193,7 @@
           function(element) {
             connect(element, 'onclick', arrangeBugFormHandler);
           });
+        connect('bug-not-already-reported', 'onclick', arrangeBugFormHandler);
       </script>
 
     </metal:widgets>
