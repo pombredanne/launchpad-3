@@ -11,8 +11,11 @@ from canonical.database.constants import UTC_NOW
 from canonical.database.sqlbase import sqlvalues
 
 from canonical.launchpad.database.publishing import (
-    SourcePackageFilePublishing, BinaryPackageFilePublishing)
-from canonical.launchpad.interfaces import NotInPool
+    SourcePackageFilePublishing, SecureSourcePackagePublishingHistory,
+    BinaryPackageFilePublishing, SecureBinaryPackagePublishingHistory)
+from canonical.launchpad.interfaces import (
+    NotInPool, ISecureSourcePackagePublishingHistory,
+    ISecureBinaryPackagePublishingHistory)
 from canonical.lp.dbschema import PackagePublishingStatus
 
 
@@ -76,38 +79,61 @@ class DeathRow:
 
         return (source_files, binary_files)
 
-    def canRemove(self, publication_class, filename):
-        """Check if given filename can be removed from the archive pool.
+    def canRemove(self, publication_class, file_md5):
+        """Check if given MD5 can be removed from the archive pool.
 
         Check the archive reference-counter implemented in:
-        `SourcePackageFilePublishing` or `BinaryPackageFilePublishing`.
+        `SecureSourcePackagePublishingHistory` or
+        `SecureBinaryPackagePublishingHistory`.
 
         Only allow removal of unnecessary files.
         """
-        # 'prejoin'ing {S,B}PPH would help here if we face performance
-        # problems, but we can not do it dynamically due to the hack
-        # performed by IArchiveFilePublishing.publishing_record which
-        # 'magically' decided what is the respective publishing record
-        # needs to be retrieved. Something in direction of:
-        # "default_prejoins = 'SPPH' or 'BPPH'" would work very
-        # well for Source/BinaryPackageFilePublishing classes in this case.
-        # However we are still able to decide what to 'prejoin' here, in the
-        # callsite by testing what is the interface implemented by the
-        # publication_class.
-        all_publications = publication_class.select("""
-           libraryfilealiasfilename = %s AND archive = %s
-        """ % sqlvalues(filename, self.distribution.main_archive))
+        clauses = []
+        clauseTables = []
+
+        if ISecureSourcePackagePublishingHistory.implementedBy(
+            publication_class):
+            clauses.append("""
+                SecureSourcePackagePublishingHistory.status != %s AND
+                SecureSourcePackagePublishingHistory.archive = %s AND
+                SecureSourcePackagePublishingHistory.sourcepackagerelease =
+                    SourcePackageReleaseFile.sourcepackagerelease AND
+                SourcePackageReleaseFile.libraryfile = LibraryFileAlias.id
+            """ % sqlvalues(PackagePublishingStatus.REMOVED,
+                            self.distribution.main_archive))
+            clauseTables.append('SourcePackageReleaseFile')
+        elif ISecureBinaryPackagePublishingHistory.implementedBy(
+            publication_class):
+            clauses.append("""
+                SecureBinaryPackagePublishingHistory.status != %s AND
+                SecureBinaryPackagePublishingHistory.archive = %s AND
+                SecureBinaryPackagePublishingHistory.binarypackagerelease =
+                    BinaryPackageFile.binarypackagerelease AND
+                BinaryPackageFile.libraryfile = LibraryFileAlias.id
+            """ % sqlvalues(PackagePublishingStatus.REMOVED,
+                            self.distribution.main_archive))
+            clauseTables.append('BinaryPackageFile')
+        else:
+            raise AssertionError("%r is not supported." % publication_class)
+
+        clauses.append("""
+           LibraryFileAlias.content = LibraryFileContent.id AND
+           LibraryFileContent.md5 = %s
+        """ % sqlvalues(file_md5))
+        clauseTables.extend(
+            ['LibraryFileAlias', 'LibraryFileContent'])
+
+        all_publications = publication_class.select(
+            " AND ".join(clauses), clauseTables=clauseTables)
 
         right_now = datetime.datetime.now(pytz.timezone('UTC'))
-        for file_pub in all_publications:
+        for pub in all_publications:
             # Deny removal if any reference is still active.
-            if (file_pub.publishingstatus !=
-                PackagePublishingStatus.PENDINGREMOVAL):
+            if (pub.status != PackagePublishingStatus.PENDINGREMOVAL):
                 return False
             # Deny removal if any reference is still in 'quarantine'.
             # See PubConfig.pendingremovalduration value.
-            if (file_pub.publishing_record.scheduleddeletiondate >
-                right_now):
+            if (pub.scheduleddeletiondate > right_now):
                 return False
 
         return True
@@ -123,24 +149,25 @@ class DeathRow:
         bytes = 0
         condemned_files = set()
         condemned_records = set()
-        considered_filenames = set()
+        considered_md5s = set()
         details = {}
 
         content_files = (
-            (SourcePackageFilePublishing, condemned_source_files),
-            (BinaryPackageFilePublishing, condemned_binary_files),)
+            (SecureSourcePackagePublishingHistory, condemned_source_files),
+            (SecureBinaryPackagePublishingHistory, condemned_binary_files),)
 
         for publication_class, pub_files in content_files:
             for pub_file in pub_files:
-                filename = pub_file.libraryfilealiasfilename
+                file_md5 = pub_file.libraryfilealias.content.md5
                 # Check if the LibraryFileAlias in question was already
                 # verified. If it was, continue.
-                if filename in considered_filenames:
+                if file_md5 in considered_md5s:
                     continue
-                considered_filenames.add(filename)
+                considered_md5s.add(file_md5)
 
+                filename = pub_file.libraryfilealiasfilename
                 # Check if the removal is allowed, if not continue.
-                if not self.canRemove(publication_class, filename):
+                if not self.canRemove(publication_class, file_md5):
                     continue
 
                 # Update local containers, in preparation to file removal.
