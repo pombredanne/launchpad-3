@@ -1024,7 +1024,7 @@ Let's make some bugtasks that qualify for expiration. A jokosher
 bugtask and a conjoined pair of ubuntu_hoary and ubuntu bugtasks
 will suffice.
 
-    >>> from datetime import datetime
+    >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
     >>> now = datetime.now(UTC)    
     
@@ -1069,7 +1069,7 @@ ubuntu_hoary_bugtask. Slave bugtasks cannot be directly expired because
 only the master bugtask can change the status.
 
     # No bugtask is older than 351 days.
-    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(165)
+    >>> expirable_bugtasks = bugtaskset.findExpirableBugTasks(351)
     >>> len(expirable_bugtasks)
     0
 

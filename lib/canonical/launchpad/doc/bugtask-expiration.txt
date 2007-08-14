@@ -85,7 +85,6 @@ bug's project uses an external bug tracker.
     # A expirable bugtask. It will be expired because its conjoined
     # master bugtask 28 is expirable.
     >>> slave_bugtask = bugtaskset.get(26)
-    >>> slave_bugtask.date_incomplete = old_age_days_ago
     >>> expirable_distroseries_bugtask.bug.id == slave_bugtask.bug.id
     True
     >>> print slave_bugtask.bugtargetdisplayname
@@ -128,8 +127,12 @@ the master is set INVALID.
     ...         bugtask = bugtasks[role]
     ...         if bugtask.date_incomplete is not None:
     ...             status_date = bugtask.date_incomplete
-    ...         else:
+    ...         elif bugtask.date_confirmed is not None:
     ...             status_date = bugtask.date_confirmed
+    ...         else:
+    ...             # Invalid does not have a date. The date must be now
+    ...             # because a test process changes the status.
+    ...             status_date = now
     ...         print ('%s  %s  %s  %s  %s  %s  %s' %
     ...             (role, 
     ...              bugtask.bug.id, bugtask.id, bugtask.assignee is None,
@@ -199,15 +202,15 @@ The assigned, confirmed, external, and recent bugtasks are unchanged.
     ROLE              BUG  BUGTASK  UNASSIGNED  IS_OLD  STATUS      MALONE
     assigned           1    2       False       True    Incomplete  True
     confirmed         11   30       True        True    Confirmed   True
-    expirable_distros  2   28       True        True    Invalid     True
-    expirable_product 12   31       True        True    Invalid     True
+    expirable_distros  2   28       True        False   Invalid     True
+    expirable_product 12   31       True        False   Invalid     True
     external           2    5       True        True    Incomplete  False
     recent             9   23       True        False   Incomplete  True
-    slave              2   26       True        True    Invalid     True
+    slave              2   26       True        False   Invalid     True
     
-There are two bugtask in in launchpad that has the status of Invalid.
+There are three bugtask in Launchpad that have the status of Invalid.
 Slave bugtasks, for distributions like Ubuntu, are updated with their
-master bugtasks, distroseries like Ubuntu Hoary.
+master bugtasks, distroseries like Ubuntu Hoary. 
 
     >>> invalid_bugtasks = BugTask.selectBy(status=BugTaskStatus.INVALID)
     >>> invalid_bugtasks.count()

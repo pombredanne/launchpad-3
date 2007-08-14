@@ -64,8 +64,6 @@ class BugJanitor:
             self.log.info(
                 'Found %d bugtasks to expire.' % len(incomplete_bugtasks))
             for bugtask in incomplete_bugtasks:
-                # a slave bugtask, such as a DistroSeries, must be edited
-                # via its master, such as a Distribution.
                 bugtask.transitionToStatus(
                     BugTaskStatus.INVALID, self.janitor)
                 content = message_template % (
