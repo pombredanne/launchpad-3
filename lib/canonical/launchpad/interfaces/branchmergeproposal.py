@@ -8,7 +8,7 @@ __all__ = [
     'IBranchMergeProposal',
     ]
 
-from zope.interface import Interface
+from zope.interface import Interface, Attribute
 from zope.schema import Choice, Datetime, Int
 
 from canonical.launchpad import _
@@ -64,10 +64,13 @@ class IBranchMergeProposal(Interface):
         description=_("The date that the source branch was merged into the "
                       "target branch"))
 
+    merge_reporter = Attribute(
+        "The user that marked the branch as merged.")
+
     date_created = Datetime(
         title=_('Date Created'), required=True, readonly=True)
 
-    def markAsMerged(merged_revno=None, date_merged=None):
+    def markAsMerged(merged_revno=None, date_merged=None, merge_reporter=None):
         """Mark the branch merge proposal as merged.
 
         If the `merged_revno` is supplied, then the `BranchRevision` is checked
@@ -86,4 +89,7 @@ class IBranchMergeProposal(Interface):
 
         :param date_merged: The date/time that the merge took place.
         :type merged_revno: ``datetime`` or a stringified date time value.
+
+        :param merge_reporter: The user that is marking the branch as merged.
+        :type merge_reporter: ``Person``
         """

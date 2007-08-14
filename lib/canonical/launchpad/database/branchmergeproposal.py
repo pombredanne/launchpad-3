@@ -44,9 +44,14 @@ class BranchMergeProposal(SQLBase):
     date_merged = UtcDateTimeCol(default=None)
     merged_revno = IntCol(default=None)
 
+    merge_reporter = ForeignKey(
+        dbName='merge_reporter', foreignKey='Person', notNull=False,
+        default=None)
+
     date_created = UtcDateTimeCol(notNull=True, default=DEFAULT)
 
-    def markAsMerged(self, merged_revno=None, date_merged=None):
+    def markAsMerged(self, merged_revno=None, date_merged=None,
+                     merge_reporter=None):
         """See `IBranchMergeProposal`."""
         self.merged_revno = merged_revno
         if merged_revno is not None:
@@ -59,3 +64,4 @@ class BranchMergeProposal(SQLBase):
         if date_merged is None:
             date_merged = UTC_NOW
         self.date_merged = date_merged
+        self.merge_reporter = merge_reporter

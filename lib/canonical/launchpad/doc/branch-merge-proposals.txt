@@ -96,10 +96,15 @@ the associated `Revision` is used as the merge date.  This allows branches
 that are not necessarily available to launchpad to manually mark the merge
 proposals as merged.
 
+The user that marked the branch as merged can also be recorded.
+
     >>> merge_proposal = branch.landing_targets[0]
-    >>> merge_proposal.markAsMerged(1234, now.next())
+    >>> reporter = person_set.getByName('sabdfl')
+    >>> merge_proposal.markAsMerged(1234, now.next(), reporter)
     >>> merge_proposal.merged_revno
     1234
+    >>> print merge_proposal.merge_reporter.browsername
+    Mark Shuttleworth
     >>> flush_database_updates()
 
 The merged proposal is no longer listed amongst the target's candidates.
