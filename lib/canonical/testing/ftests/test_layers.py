@@ -183,6 +183,27 @@ class LibrarianNoResetTestCase(unittest.TestCase):
         self.failIfEqual(data, self.sample_data)
 
 
+class LibrarianHideTestCase(unittest.TestCase):
+    layer = LaunchpadLayer
+
+    def testHideLibrarian(self):
+        # First perform a successful upload:
+        client = LibrarianClient()
+        data = 'foo'
+        client.remoteAddFile(
+            'foo', len(data), StringIO(data), 'text/plain')
+
+        # Hide the librarian, and show that the upload fails:
+        LibrarianLayer.hide()
+        self.assertRaises(UploadFailed, client.remoteAddFile,
+                          'foo', len(data), StringIO(data), 'text/plain')
+
+        # Reveal the librarian again, allowing uploads:
+        LibrarianLayer.reveal()
+        client.remoteAddFile(
+            'foo', len(data), StringIO(data), 'text/plain')
+
+
 class DatabaseTestCase(BaseTestCase):
     layer = DatabaseLayer
 
