@@ -53,7 +53,7 @@
             permission="launchpad.Edit"
             set_attributes="product productseries sourcepackagename distribution
                             distroseries milestone statusexplanation
-                            importance bugwatch datecreated date_confirmed date_incomplete
+                            importance bugwatch datecreated
                             age owner targetname title related_tasks
                             statusdisplayhtml statuselsewhere
                             setStatusFromDebbugs setImportanceFromDebbugs" />

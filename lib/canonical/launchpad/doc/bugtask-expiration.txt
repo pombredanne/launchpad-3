@@ -1,18 +1,18 @@
 = Bugtask Expiration =
 
-Old unassigned INCOMPETE bugtasks clutter Malone's search results,
+Old unassigned INCOMPLETE bugtasks clutter Malone's search results,
 making the bug staff's job difficult. A script is run daily to
-locate unassigned INCOMPETE bugtasks that have not been updated in
-2 months, and sets their status to INVALID. Only bugtaks for projects
+locate unassigned INCOMPLETE bugtasks that have not been updated in
+2 months, and sets their status to INVALID. Only bugtasks for projects
 that use Malone will be expired; this rule does not apply to Bugs
-imported from upstream bug trakers. The four preconditions are:
+imported from upstream bug trackers. The four preconditions are:
 
 1. The bugtask belongs to a project that uses Malone to track bugs.
 2. The last message on the Bug is older than 60 days.
 3. The bugtask has the status INCOMPLETE.
 4. The bugtask is not assigned to anyone.
 
-Bugtasks cannot transtion to INVALID automatically unless they meet
+Bugtasks cannot transition to INVALID automatically unless they meet
 all the rules stated above.
 
 The expiration period is set using the
@@ -38,8 +38,17 @@ There are no INVALID Bugtasks in sampledata.
 
 To see the four constraints tested, five bugtasks are need to represent
 expirable (all conditions met), is assigned, status is not INCOMPLETE,
-the bug has been in INCOMPETE status for less than 60 days, or the
+the bug has been in INCOMPLETE status for less than 60 days, or the
 bug's project uses an external bug tracker.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> # date_incomplete and date_confirmed are guarded by bugtasks's
+    >>> # transition logic and ZCML. This function will change the
+    >>> # underlying SQLObject's value for a column.
+    >>> def set_so_attr(bugtask, colname, value):
+    ...     attr_setter = getattr(
+    ...         removeSecurityProxy(bugtask), '_SO_set_%s' % colname)
+    ...     attr_setter(value)
 
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
@@ -49,8 +58,8 @@ bug's project uses an external bug tracker.
     
     >>> from canonical.launchpad.interfaces import IBugTaskSet, ILaunchBag
     >>> bugtaskset = getUtility(IBugTaskSet)
-    >>> # Sample Person is a bug contact for Ubuntu and may update
-    >>> # the BugTasks.
+
+    # Sample Person is a bug contact for Ubuntu and may update the BugTasks.
     >>> login('test@canonical.com')
     >>> sample_person = getUtility(ILaunchBag).user
 
@@ -58,7 +67,7 @@ bug's project uses an external bug tracker.
     >>> assigned_bugtask = bugtaskset.get(2)
     >>> assigned_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)
-    >>> assigned_bugtask.date_incomplete = old_age_days_ago
+    >>> set_so_attr(assigned_bugtask, 'date_incomplete', old_age_days_ago)
     >>> print assigned_bugtask.bugtargetdisplayname
     Mozilla Firefox
 
@@ -66,7 +75,7 @@ bug's project uses an external bug tracker.
     >>> confirmed_bugtask = bugtaskset.get(30)
     >>> confirmed_bugtask.transitionToStatus(
     ...     BugTaskStatus.CONFIRMED, sample_person)
-    >>> confirmed_bugtask.date_confirmed = old_age_days_ago
+    >>> set_so_attr(confirmed_bugtask, 'date_confirmed', old_age_days_ago)
     >>> print confirmed_bugtask.bugtargetdisplayname
     Jokosher
 
@@ -74,7 +83,8 @@ bug's project uses an external bug tracker.
     >>> expirable_distroseries_bugtask = bugtaskset.get(28)
     >>> expirable_distroseries_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)
-    >>> expirable_distroseries_bugtask.date_incomplete = old_age_days_ago
+    >>> set_so_attr(expirable_distroseries_bugtask,
+    ...     'date_incomplete', old_age_days_ago)
     >>> starting_bug_messages_count =(
     ...     expirable_distroseries_bugtask.bug.messages.count())
     >>> starting_bug_messages_count
@@ -87,6 +97,9 @@ bug's project uses an external bug tracker.
     >>> slave_bugtask = bugtaskset.get(26)
     >>> expirable_distroseries_bugtask.bug.id == slave_bugtask.bug.id
     True
+    >>> # This date change is required because the setup bypasses the
+    >>> # bugtask conjoined slave synchronisation rules.
+    >>> set_so_attr(slave_bugtask, 'date_incomplete', old_age_days_ago)
     >>> print slave_bugtask.bugtargetdisplayname
     Ubuntu
     
@@ -94,7 +107,8 @@ bug's project uses an external bug tracker.
     >>> expirable_product_bugtask = bugtaskset.get(31)
     >>> expirable_product_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)    
-    >>> expirable_product_bugtask.date_incomplete = old_age_days_ago
+    >>> set_so_attr(expirable_product_bugtask,
+    ...     'date_incomplete', old_age_days_ago)
     >>> print expirable_product_bugtask.bugtargetdisplayname
     Jokosher
     
@@ -103,7 +117,7 @@ bug's project uses an external bug tracker.
     >>> external_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)
     >>> external_bugtask.transitionToAssignee(None)
-    >>> external_bugtask.date_incomplete = old_age_days_ago
+    >>> set_so_attr(external_bugtask, 'date_incomplete', old_age_days_ago)
     >>> print external_bugtask.bugtargetdisplayname
     mozilla-firefox (Debian)
 
@@ -111,14 +125,14 @@ bug's project uses an external bug tracker.
     >>> recent_bugtask = bugtaskset.get(23)
     >>> recent_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)
-    >>> recent_bugtask.date_incomplete = fourteen_days_ago
+    >>> set_so_attr(recent_bugtask, 'date_incomplete', fourteen_days_ago)
     >>> print recent_bugtask.bugtargetdisplayname
     thunderbird (Ubuntu)
 
 Only the expirable bug for Ubuntu Hoary now meets all four conditions
 to be expired; it is the only bugtask that can be automatically set to
 the status of INVALID. Ubuntu Hoary as a conjoined slave bugtask for
-Ubuntu. The slave bugtask's status is implicily set to INVALID when
+Ubuntu. The slave bugtask's status is implicitly set to INVALID when
 the master is set INVALID.
 
     >>> def summarize_bugtask(bugtasks):

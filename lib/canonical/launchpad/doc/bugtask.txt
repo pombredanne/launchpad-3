@@ -1020,9 +1020,18 @@ There are no expirable bugtasks in the sampledata.
     >>> len(expirable_bugtasks)
     0
 
-Let's make some bugtasks that qualify for expiration. A jokosher
+Let's make some bugtasks that qualify for expiration. A Jokosher
 bugtask and a conjoined pair of ubuntu_hoary and ubuntu bugtasks
 will suffice.
+
+    >>> from zope.security.proxy import removeSecurityProxy
+    >>> # date_incomplete and date_confirmed are guarded by bugtasks's
+    >>> # transition logic and ZCML. This function will change the
+    >>> # underlying SQLObject's value for a column.
+    >>> def set_so_attr(bugtask, colname, value):
+    ...     attr_setter = getattr(
+    ...         removeSecurityProxy(bugtask), '_SO_set_%s' % colname)
+    ...     attr_setter(value)
 
     >>> from datetime import datetime, timedelta
     >>> from pytz import UTC
@@ -1032,16 +1041,20 @@ will suffice.
     >>> ubuntu_hoary_bugtask = bugtaskset.get(28)
     >>> ubuntu_hoary_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)
-    >>> ubuntu_hoary_bugtask.date_incomplete = now - timedelta(days=351)
+    >>> set_so_attr(ubuntu_hoary_bugtask,
+    ...     'date_incomplete', now - timedelta(days=351))
 
     # ubuntu_bugtask is a conjoined slave to Bugtask 26.
     >>> ubuntu_bugtask = bugtaskset.get(26)
+    >>> set_so_attr(ubuntu_bugtask,
+    ...     'date_incomplete', now - timedelta(days=351))
 
     # A bugtask for a product that is expirable.
     >>> jokosher_bugtask = bugtaskset.get(31)
     >>> jokosher_bugtask.transitionToStatus(
     ...     BugTaskStatus.INCOMPLETE, sample_person)
-    >>> jokosher_bugtask.date_incomplete = now - timedelta(days=145)
+    >>> set_so_attr(jokosher_bugtask,
+    ...     'date_incomplete', now - timedelta(days=145))
 
     >>> def summarize_bugtask(bugtasks):
     ...     print 'AFFECTS  BUGTASK  UNASSIGNED  DAYS_OLD  STATUS  MALONE'
