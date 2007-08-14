@@ -67,7 +67,7 @@ class HWDBSubmissionSet:
                 'A submission with this ID already exists')
         
         owner = getUtility(IPersonSet).getByEmail(emailaddress)
-
+        
         fingerprint = HWDBSystemFingerprint.selectOneBy(fingerprint=system)
         if fingerprint is None:
             fingerprint = HWDBSystemFingerprint(fingerprint=system)
@@ -158,6 +158,7 @@ class HWDBSubmissionSet:
                 AND (not private OR owner=%s)
                 AND HWDBSystemFingerprint.id = HWDBSubmission.system
                 """ % sqlvalues(owner, user)
+
         return HWDBSubmission.select(
             query,
             clauseTables=['HWDBSystemFingerprint'],
