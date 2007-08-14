@@ -278,9 +278,10 @@ We'll also create a new test milestone within the "trunk" series:
 
 Let's target an existing bug to both series "1.0" and series "2.0":
 
+    >>> from canonical.launchpad.helpers import backslashreplace
     >>> browser.open(test_bug_1_url)
-    >>> print browser.title
-    Bug...in Mozilla Firefox
+    >>> print backslashreplace(browser.title)
+    Bug...in Mozilla Firefox...
 
     >>> browser.getLink('Target to release').click()
     >>> print browser.title
@@ -291,6 +292,11 @@ Let's target an existing bug to both series "1.0" and series "2.0":
     >>> browser.getControl('Submit').click()
     >>> browser.url == test_bug_1_url
     True
+
+    >>> print extract_text(first_tag_by_class(browser.contents, 'listing'))
+    Affects Status Importance ...
+    1.0     New    Undecided  ...
+    2.0     New    Undecided  ...
 
 Now we'll add each bug target to the same test milestone, but using different
 levels of importance:
@@ -303,11 +309,19 @@ levels of importance:
     >>> browser.getControl('Importance').value = ['Critical']
     >>> browser.getControl('Save Changes').click()
 
+    >>> print extract_text(first_tag_by_class(browser.contents, 'listing'))
+    Affects Status Importance ...
+    1.0     New    Critical   ...
+
     >>> edit_url = 'http://bugs.launchpad.dev/firefox/2.0/+bug/15/+editstatus'
     >>> browser.open(edit_url)
     >>> browser.getControl('Milestone').displayValue = milestone_value
     >>> browser.getControl('Importance').value = ['High']
     >>> browser.getControl('Save Changes').click()
+
+    >>> print extract_text(first_tag_by_class(browser.contents, 'listing'))
+    Affects Status Importance ...
+    2.0     New    High       ...
 
 Observe that both bug targets are now listed in the test milestone listing:
 
@@ -316,9 +330,9 @@ Observe that both bug targets are now listed in the test milestone listing:
 
     >>> print extract_text(find_tag_by_id(browser.contents,
     ...                                   'milestone_bugtasks'))
-    Report...Importance...
-    15...Test Bug 1...Critical...
-    15...Test Bug 1...High...
+    Report         Importance ...
+    Test Bug 1 ... Critical   ...
+    Test Bug 1 ... High       ...
 
 
 === Bugs targeted to development focus series ===
@@ -330,35 +344,41 @@ default).
 Ordinarily, targeting a bug to a milestone causes the bug to appear in that
 milestone's bug listing:
 
-    >>> edit_url = 'http://bugs.launchpad.dev/firefox/+bug/16/+editstatus'
-    >>> browser.open(edit_url)
-    >>> milestone_value = ['test-milestone']
-    >>> browser.getControl('Milestone').displayValue = milestone_value
+    >>> browser.open(test_bug_2_url)
+    >>> browser.getLink('[edit]').click()
+    >>> print browser.url
+    http://bugs.launchpad.dev/firefox/+bug/.../+editstatus
+
+    >>> milestone = 'test-milestone'
+    >>> browser.getControl('Milestone').displayValue = [milestone]
     >>> browser.getControl('Save Changes').click()
 
-    >>> url = 'http://launchpad.dev/firefox/+milestone/test-milestone'
-    >>> browser.open(url)
-
+    >>> browser.open('http://launchpad.dev/firefox/')
+    >>> browser.getLink('All milestones').click()
+    >>> browser.getLink(milestone).click()
+    >>> milestone_url = browser.url
     >>> print extract_text(find_tag_by_id(browser.contents,
     ...                                   'milestone_bugtasks'))
-    Report...Importance...
-    16...Test Bug 2...
+    Report...
+    Test Bug 2...
 
 When we explicitly target the bug to the development focus series, the bug
 still appears in the milestone's bug listing:
 
-    >>> nominate_url = 'http://bugs.launchpad.dev/firefox/+bug/16/+nominate'
-    >>> browser.open(nominate_url)
+    >>> browser.open(test_bug_2_url)
+    >>> browser.getLink('Target to release').click()
+    >>> print browser.url
+    http://bugs.launchpad.dev/firefox/+bug/.../+nominate
+
     >>> browser.getControl('Trunk').selected = True
     >>> browser.getControl('Submit').click()
 
-    >>> url = 'http://launchpad.dev/firefox/+milestone/test-milestone'
-    >>> browser.open(url)
+    >>> browser.open(milestone_url)
     >>> bugtasks = extract_text(find_tag_by_id(browser.contents,
     ...                                        'milestone_bugtasks'))
     >>> print bugtasks
-    Report...Importance...
-    16...Test Bug 2...
+    Report...
+    Test Bug 2...
 
 Moreover, the bug appears only once in the listing:
 
