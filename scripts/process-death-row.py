@@ -59,7 +59,7 @@ def main():
     log = logger(options, "deathrow-distro")
 
     log.debug("Initialising zopeless.")
-    # XXX Change this when we fix up db security
+    # XXX kiko 2006-08-23: Change this when we fix up db security
     txn = initZopeless(dbuser='lucille')
     execute_zcml_for_scripts()
 

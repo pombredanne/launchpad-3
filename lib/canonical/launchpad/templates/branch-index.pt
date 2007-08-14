@@ -146,9 +146,9 @@
   </tal:hosted-branch>
 
   <tal:comment condition="nothing">
-    <!-- XXX This style attribute is evil, but bold text makes the mirror error
-    difficult to read. Checked with mpt about that.
-    - David Allouche 2006-04-09 -->
+    <!-- XXX This David Allouche 2006-04-09
+         Style attribute is evil, but bold text makes the mirror error
+         difficult to read. Checked with mpt about that. -->
   </tal:comment>
   <p tal:condition="view/mirror_of_ssh" id="mirror-of-ssh"
        class="warning message" style="font-weight: normal">

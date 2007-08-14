@@ -22,8 +22,6 @@ __all__ = [
     'CodeImportReviewStatusVocabulary',
     'CveStatusVocabulary',
     'DistroSeriesStatusVocabulary',
-    'EntitlementStateVocabulary',
-    'EntitlementTypeVocabulary',
     'InfestationStatusVocabulary',
     'PackagePublishingPocketVocabulary',
     'PackagingTypeVocabulary',
@@ -32,7 +30,6 @@ __all__ = [
     'RemoteBugTaskImportanceVocabulary',
     'RemoteBugTaskStatusVocabulary',
     'RevisionControlSystemsVocabulary',
-    'ShipItFlavourVocabulary',
     'SpecificationImplementationStatusVocabulary',
     'SpecificationPriorityVocabulary',
     'SpecificationDefinitionStatusVocabulary',
@@ -46,10 +43,7 @@ __all__ = [
 
 from canonical.lp import dbschema
 
-from canonical.launchpad.interfaces import (
-    QuestionAction, QuestionPriority, QuestionSort, QuestionStatus)
-from canonical.launchpad.webapp.vocabulary import (
-    sortkey_ordered_vocab_factory, vocab_factory)
+from canonical.launchpad.webapp.vocabulary import vocab_factory
 
 
 # DB Schema Vocabularies
@@ -72,8 +66,6 @@ CodeImportReviewStatusVocabulary = vocab_factory(
     dbschema.CodeImportReviewStatus)
 CveStatusVocabulary = vocab_factory(dbschema.CveStatus)
 DistroSeriesStatusVocabulary = vocab_factory(dbschema.DistroSeriesStatus)
-EntitlementStateVocabulary = vocab_factory(dbschema.EntitlementState)
-EntitlementTypeVocabulary = vocab_factory(dbschema.EntitlementType)
 InfestationStatusVocabulary = vocab_factory(dbschema.BugInfestationStatus)
 PackagePublishingPocketVocabulary = vocab_factory(
     dbschema.PackagePublishingPocket)
@@ -84,7 +76,6 @@ RemoteBugTaskStatusVocabulary = vocab_factory(dbschema.BugTaskStatus)
 RemoteBugTaskImportanceVocabulary = vocab_factory(dbschema.BugTaskImportance)
 RevisionControlSystemsVocabulary = vocab_factory(
     dbschema.RevisionControlSystems)
-ShipItFlavourVocabulary = vocab_factory(dbschema.ShipItFlavour)
 SpecificationImplementationStatusVocabulary =  vocab_factory(dbschema.SpecificationImplementationStatus)
 SpecificationPriorityVocabulary = vocab_factory(dbschema.SpecificationPriority)
 SpecificationDefinitionStatusVocabulary =  vocab_factory(dbschema.SpecificationDefinitionStatus)

@@ -139,7 +139,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         self.distroseries = distroseries
 
     def _get_ubuntu(self):
-        # XXX: Ideally, it would be possible to just do
+        # XXX: kiko 2006-03-20: Ideally, it would be possible to just do
         # ubuntu = getUtility(ILaunchpadCelebrities).ubuntu
         # and not need this method. However, importd currently depends
         # on SourcePackage methods that require the ubuntu celebrity,
@@ -494,7 +494,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
                         self.distroseries.main_archive,
                         PackagePublishingStatus.PUBLISHED)]
 
-        # XXX cprov 20060925: It would be nice if we could encapsulate
+        # XXX cprov 2006-09-25: It would be nice if we could encapsulate
         # the chunk of code below (which deals with the optional paramenters)
         # and share it with IBuildSet.getBuildsByArchIds()
 
@@ -529,7 +529,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         # Fallback to ordering by -id as a tie-breaker.
         orderBy.append("-id")
 
-        # End of duplication (see XXX cprov 20060925 above).
+        # End of duplication (see XXX cprov 2006-09-25 above).
 
         return Build.select(' AND '.join(condition_clauses),
                             clauseTables=clauseTables, orderBy=orderBy)

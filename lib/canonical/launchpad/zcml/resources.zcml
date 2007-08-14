@@ -127,7 +127,7 @@
     <resource name="red-bar" file="../images/red-bar.png" />
     <resource name="remove" file="../images/remove.png" />
     <resource name="required" file="../images/required.gif" />
-    <!-- XXX mpt 20060822: Remove this once we use "(Optional)" instead -->
+    <!-- XXX mpt 2006-08-22: Remove this once we use "(Optional)" instead -->
     <resource name="retry" file="../images/retry.png" />
     <resource name="search" file="../images/search.png" />
     <resource name="security" file="../images/locked.png" />

@@ -11,6 +11,7 @@ import tempfile
 import unittest
 
 from zope.component import getUtility
+from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher.diskpool import DiskPool
 from canonical.config import config
@@ -18,11 +19,21 @@ from canonical.launchpad.tests.test_publishing import TestNativePublishingBase
 from canonical.launchpad.interfaces import (
     IArchiveSet, IDistributionSet, IPersonSet)
 from canonical.lp.dbschema import (
-    ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket, 
+    ArchivePurpose, DistroSeriesStatus, PackagePublishingPocket,
     PackagePublishingStatus)
 
 
 class TestPublisher(TestNativePublishingBase):
+
+    def setUp(self):
+        """Override cprov PPA distribution to 'ubuntutest'."""
+        TestNativePublishingBase.setUp(self)
+
+        # Override cprov's PPA distribution, because we can't publish
+        # 'ubuntu' in the current sampledata.
+        cprov = getUtility(IPersonSet).getByName('cprov')
+        naked_archive = removeSecurityProxy(cprov.archive)
+        naked_archive.distribution = self.ubuntutest
 
     def assertDirtyPocketsContents(self, expected, dirty_pockets):
         contents = [(str(dr_name), pocket.name) for dr_name, pocket in
@@ -32,7 +43,7 @@ class TestPublisher(TestNativePublishingBase):
     def testInstantiate(self):
         """Publisher should be instantiatable"""
         from canonical.archivepublisher.publishing import Publisher
-        Publisher(self.logger, self.config, self.disk_pool, self.ubuntutest,
+        Publisher(self.logger, self.config, self.disk_pool,
                   self.ubuntutest.main_archive)
 
     def testPublishing(self):
@@ -42,7 +53,7 @@ class TestPublisher(TestNativePublishingBase):
         """
         from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
-            self.logger, self.config, self.disk_pool, self.ubuntutest,
+            self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
         pub_source = self.getPubSource(filecontent='Hello world')
@@ -65,7 +76,7 @@ class TestPublisher(TestNativePublishingBase):
         """
         from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
-            self.logger, self.config, self.disk_pool, self.ubuntutest,
+            self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive,
             allowed_suites=[('hoary-test', PackagePublishingPocket.RELEASE)])
 
@@ -89,7 +100,7 @@ class TestPublisher(TestNativePublishingBase):
         """
         from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
-            self.logger, self.config, self.disk_pool, self.ubuntutest,
+            self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive,
             allowed_suites=[('breezy-autotest',
                              PackagePublishingPocket.UPDATES)])
@@ -120,7 +131,7 @@ class TestPublisher(TestNativePublishingBase):
         """
         from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
-            self.logger, self.config, self.disk_pool, self.ubuntutest,
+            self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
         pub_source = self.getPubSource(
@@ -142,7 +153,7 @@ class TestPublisher(TestNativePublishingBase):
         """
         from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
-            self.logger, self.config, self.disk_pool, self.ubuntutest,
+            self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
         pub_source = self.getPubSource(
@@ -167,7 +178,7 @@ class TestPublisher(TestNativePublishingBase):
         """
         from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
-            self.logger, self.config, self.disk_pool, self.ubuntutest,
+            self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
         test_archive = getUtility(IArchiveSet).new(
@@ -191,13 +202,15 @@ class TestPublisher(TestNativePublishingBase):
         from canonical.archivepublisher.publishing import Publisher
 
         test_archive = getUtility(IArchiveSet).new(
+            distribution=self.ubuntutest,
             purpose=ArchivePurpose.EMBARGOED)
+
         test_pool_dir = tempfile.mkdtemp()
         test_temp_dir = tempfile.mkdtemp()
         test_disk_pool = DiskPool(test_pool_dir, test_temp_dir, self.logger)
 
         publisher = Publisher(
-            self.logger, self.config, test_disk_pool, self.ubuntutest,
+            self.logger, self.config, test_disk_pool,
             test_archive)
 
         pub_source = self.getPubSource(
@@ -235,8 +248,8 @@ class TestPublisher(TestNativePublishingBase):
         distsroot = None
 
         distro_publisher = getPublisher(
-            self.ubuntutest.main_archive, self.ubuntutest,
-            allowed_suites, self.logger, distsroot)
+            self.ubuntutest.main_archive, allowed_suites, self.logger,
+            distsroot)
 
         # check the publisher context, pointing to the 'main_archive'
         self.assertEqual(
@@ -250,9 +263,8 @@ class TestPublisher(TestNativePublishingBase):
 
         # lets setup an Archive Publisher
         cprov = getUtility(IPersonSet).getByName('cprov')
-
         archive_publisher = getPublisher(
-            cprov.archive, self.ubuntutest, allowed_suites, self.logger)
+            cprov.archive, allowed_suites, self.logger)
 
         # check the publisher context, pointing to the given PPA archive
         self.assertEqual(
@@ -274,27 +286,27 @@ class TestPublisher(TestNativePublishingBase):
         person_set = getUtility(IPersonSet)
         ubuntu = getUtility(IDistributionSet)['ubuntu']
 
-        cprov = person_set.getByName('cprov')
-        cprov_archive = archive_set.ensure(cprov, ubuntu, 
-            ArchivePurpose.PPA)
+        spiv = person_set.getByName('spiv')
+        spiv_archive = archive_set.ensure(
+            spiv, ubuntu, ArchivePurpose.PPA)
         name16 = person_set.getByName('name16')
-        name16_archive = archive_set.ensure(name16, ubuntu, 
-            ArchivePurpose.PPA)
+        name16_archive = archive_set.ensure(
+            name16, ubuntu, ArchivePurpose.PPA)
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
-            status=PackagePublishingStatus.PENDING, archive=cprov.archive)
+            status=PackagePublishingStatus.PENDING, archive=spiv.archive)
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
             status=PackagePublishingStatus.PUBLISHED, archive=name16.archive)
 
-        self.assertEqual(3, archive_set.getAllPPAs().count())
+        self.assertEqual(4, ubuntu.getAllPPAs().count())
 
-        pending_archives = archive_set.getPendingPublicationPPAs()
+        pending_archives = ubuntu.getPendingPublicationPPAs()
         self.assertEqual(1, pending_archives.count())
         pending_archive = pending_archives[0]
-        self.assertEqual(cprov.archive.id, pending_archive.id)
+        self.assertEqual(spiv.archive.id, pending_archive.id)
 
     def testPPAArchiveIndex(self):
         """Building Archive Indexes from PPA publications."""
@@ -305,7 +317,7 @@ class TestPublisher(TestNativePublishingBase):
         cprov = getUtility(IPersonSet).getByName('cprov')
 
         archive_publisher = getPublisher(
-            cprov.archive, self.ubuntutest, allowed_suites, self.logger)
+            cprov.archive, allowed_suites, self.logger)
 
         pub_source = self.getPubSource(
             sourcename="foo", filename="foo.dsc", filecontent='Hello world',
@@ -342,7 +354,7 @@ class TestPublisher(TestNativePublishingBase):
 
         self.assertEqual(
             ['Package: foo-bin',
-             'Priority: Standard',
+             'Priority: standard',
              'Section: base',
              'Installed-Size: 100',
              'Maintainer: Foo Bar <foo@bar.com>',
@@ -388,7 +400,7 @@ class TestPublisher(TestNativePublishingBase):
         """
         from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
-            self.logger, self.config, self.disk_pool, self.ubuntutest,
+            self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
         pub_source = self.getPubSource(
@@ -416,7 +428,7 @@ class TestPublisher(TestNativePublishingBase):
         """
         from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
-            self.logger, self.config, self.disk_pool, self.ubuntutest,
+            self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
         self.ubuntutest['breezy-autotest'].status = (
@@ -458,7 +470,7 @@ class TestPublisher(TestNativePublishingBase):
         """
         from canonical.archivepublisher.publishing import Publisher
         publisher = Publisher(
-            self.logger, self.config, self.disk_pool, self.ubuntutest,
+            self.logger, self.config, self.disk_pool,
             self.ubuntutest.main_archive)
 
         pub_source = self.getPubSource(filecontent='Hello world')
@@ -535,7 +547,7 @@ class TestPublisher(TestNativePublishingBase):
         allowed_suites = []
         cprov = getUtility(IPersonSet).getByName('cprov')
         archive_publisher = getPublisher(
-            cprov.archive, self.ubuntutest, allowed_suites, self.logger)
+            cprov.archive, allowed_suites, self.logger)
 
         pub_source = self.getPubSource(
             filecontent='Hello world', archive=cprov.archive)
