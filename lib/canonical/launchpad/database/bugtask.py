@@ -1466,6 +1466,7 @@ class BugTaskSet:
         common_contraints = dict(status_assignee_age="""
             BugTask.status = %s
             AND BugTask.assignee IS NULL
+            AND BugTask.bugwatch IS NULL
             AND BugTask.date_incomplete < (
                 current_timestamp -interval '%s days')
             """ % sqlvalues(BugTaskStatus.INCOMPLETE, min_days_old))
