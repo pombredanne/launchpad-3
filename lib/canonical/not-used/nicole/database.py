@@ -100,7 +100,7 @@ class SQLThing:
             #print query
         except:
             print "Bad things happened, data was %s" % data
-            raise 
+            raise
 
 # XXX: cprov 2005-01-26:
 # This class needs a lot of Love, it is fitting and cleaning data
@@ -218,8 +218,8 @@ class Doap(SQLThing):
                                   (product_id, package_id))
 
     def getSourcePackageByName(self, name, distroname):
-        # XXX cprov
-        # if distroname wasn't provided use Ubuntu
+        # XXX cprov 2005-01-26:
+        # If distroname wasn't provided use Ubuntu.
         if not distroname:
             distroname = 'ubuntu'
 

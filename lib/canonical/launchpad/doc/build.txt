@@ -199,7 +199,7 @@ collection of builds.
 We can find builds given a source package release and architecture tag.
 
   >>> bs.getBuildBySRAndArchtag(20,'i386').count()
-  5
+  6
 
 IHasBuildRecords uses a base method provided by IBuildSet,
 getBuildsByArchIds():
@@ -306,14 +306,14 @@ For sourcepackage:
   >>> firefox = warty.getSourcePackage('mozilla-firefox')
 
   >>> firefox.getBuildRecords().count()
-  3
+  4
 
   >>> firefox.getBuildRecords(status=BuildStatus.FULLYBUILT).count()
-  2
+  3
 
   >>> firefox.getBuildRecords(
   ...     pocket=PackagePublishingPocket.RELEASE).count()
-  3
+  4
 
   >>> firefox.getBuildRecords(
   ...     pocket=PackagePublishingPocket.UPDATES).count()
@@ -384,7 +384,7 @@ Check IHasBuildRecords when implemented by Builder:
 
   >>> bob_builds = bob.getBuildRecords()
   >>> bob_builds.count()
-  14
+  16
 
   >>> bob_failed_builds = bob.getBuildRecords(status=BuildStatus.FAILEDTOBUILD)
   >>> bob_failed_builds.count()
@@ -392,12 +392,12 @@ Check IHasBuildRecords when implemented by Builder:
 
   >>> bob_pmount_builds = bob.getBuildRecords(name='pmount')
   >>> bob_pmount_builds.count()
-  4
+  5
 
   >>> bob_pmount_ok_builds = bob.getBuildRecords(
   ...    status=BuildStatus.FULLYBUILT, name='pmount')
   >>> bob_pmount_ok_builds.count()
-  3
+  4
 
 
 == AssertionErrors in IBuild ==
