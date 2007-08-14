@@ -342,12 +342,6 @@ class Project(SQLBase, BugTargetBase, HasSpecificationsMixin,
         """
         return self.products.count() != 0
 
-    def noProductsUseMalone(self):
-        """See `IProject`."""
-        products_using_malone = [
-            product for product in self.products if product.official_malone]
-        return len(products_using_malone) == 0
-
     def _getMilestones(self, only_visible):
         """Return a list of milestones for this project.
 

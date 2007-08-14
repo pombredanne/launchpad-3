@@ -196,10 +196,6 @@ class IProject(IBugTarget, IHasAppointedDriver, IHasBranchVisibilityPolicy,
         otherwise.
         """
 
-    def noProductsUseMalone():
-        """Return True if none of the products in the Project use Malone for
-        bug tracking, False otherwise."""
-
 
 # Interfaces for set
 
