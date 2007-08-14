@@ -369,9 +369,9 @@ def _send_bug_details_to_new_bugcontacts(
     bug, previous_subscribers, current_subscribers):
     """Send an email containing full bug details to new bug subscribers.
 
-    This function is designed to handle situations where bugtasks get reassigned
-    to new products or sourcepackages, and the new bugcontacts need to be
-    notified of the bug.
+    This function is designed to handle situations where bugtasks get
+    reassigned to new products or sourcepackages, and the new bugcontacts
+    need to be notified of the bug.
     """
     prev_subs_set = set(previous_subscribers)
     cur_subs_set = set(current_subscribers)
@@ -392,10 +392,19 @@ def _send_bug_details_to_new_bugcontacts(
     # recipient.
     email_date = datetime.datetime.now()
 
-    subject, contents = generate_bug_add_email(bug, new_recipients=True)
+    # The new subscriber email is effectively the initial message regarding
+    # a new bug. The bug's initial message is used in the References
+    # header to establish the message's context in the email client.
+    references = [bug.initial_message.rfc822msgid]
+    recipients = bug.getBugNotificationRecipients()
+
     for to_addr in sorted(to_addrs):
-        msg = construct_bug_notification(bug, from_addr, to_addr,
-                                         contents, subject, email_date)
+        reason, rationale_header = recipients.getReason(to_addr)
+        subject, contents = generate_bug_add_email(
+            bug, new_recipients=True, reason=reason)
+        msg = construct_bug_notification(
+            bug, from_addr, to_addr, contents, subject, email_date,
+            rationale_header=rationale_header, references=references)
         sendmail(msg)
 
 
@@ -515,7 +524,7 @@ def notify_errors_list(message, file_alias_url):
         )
 
 
-def generate_bug_add_email(bug, new_recipients=False):
+def generate_bug_add_email(bug, new_recipients=False, reason=None):
     """Generate a new bug notification from the given IBug.
 
     If new_recipients is supplied we generate a notification explaining
@@ -534,7 +543,7 @@ def generate_bug_add_email(bug, new_recipients=False):
     bug_info = []
     # Add information about the affected upstreams and packages.
     for bugtask in bug.bugtasks:
-        bug_info.append(u"** Affects: %s" % bugtask.target.bugtargetname)
+        bug_info.append(u"** Affects: %s" % bugtask.bugtargetname)
         bug_info.append(u"     Importance: %s" % bugtask.importance.title)
 
         if bugtask.assignee:
@@ -557,7 +566,8 @@ def generate_bug_add_email(bug, new_recipients=False):
         # We should really have a centralized way of adding this
         # footer, but right now we lack a INotificationRecipientSet
         # for this particular situation.
-        contents += "\n-- \n%(bug_title)s\n%(bug_url)s"
+        contents += (
+            "\n-- \n%(bug_title)s\n%(bug_url)s\n%(notification_rationale)s")
     else:
         contents = ("%(visibility)s bug reported:\n\n"
                     "%(description)s\n\n%(bug_info)s")
@@ -565,7 +575,8 @@ def generate_bug_add_email(bug, new_recipients=False):
     contents = contents % {
         'visibility' : visibility, 'bug_url' : canonical_url(bug),
         'bug_info': "\n".join(bug_info), 'bug_title': bug.title,
-        'description': mailwrapper.format(bug.description)}
+        'description': mailwrapper.format(bug.description),
+        'notification_rationale': reason}
 
     contents = contents.rstrip()
 
@@ -725,7 +736,7 @@ def get_bug_edit_notification_texts(bug_delta):
             bugtask_deltas = [bugtask_deltas]
         for bugtask_delta in bugtask_deltas:
             change_info = u"** Changed in: %s\n" % (
-                bugtask_delta.targetname)
+                bugtask_delta.bugtask.bugtargetname)
 
             for fieldname, displayattrname in (
                 ("product", "displayname"), ("sourcepackagename", "name"),
@@ -772,11 +783,11 @@ def get_bug_edit_notification_texts(bug_delta):
         for added_bugtask in added_bugtasks:
             if added_bugtask.bugwatch:
                 change_info = u"** Also affects: %s via\n" % (
-                    added_bugtask.target.bugtargetname)
+                    added_bugtask.bugtargetname)
                 change_info += u"   %s\n" % added_bugtask.bugwatch.url
             else:
                 change_info = u"** Also affects: %s\n" % (
-                    added_bugtask.target.bugtargetname)
+                    added_bugtask.bugtargetname)
             change_info += u"%13s: %s\n" % (u"Importance",
                 added_bugtask.importance.title)
             if added_bugtask.assignee:
