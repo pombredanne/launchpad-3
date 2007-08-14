@@ -1,10 +1,8 @@
 = Submissions to the hardware database =
 
-Submissions to the hardware database are done at the URL xxx
+Submissions to the hardware database are done at the following URL:
 
-    >>> browser.open('http://launchpad.dev/submit-hardware-data')
-
-xxx form fields "zeigen"
+    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
 
 All form fields must be filled with valid values.
 
@@ -13,7 +11,7 @@ All form fields must be filled with valid values.
     ...     'Date Created:': '2007-01-01',
     ...     'Format Version:': ['VERSION_1'],
     ...     'Unique Submission ID:': 'unique id 1',
-    ...     'Email address:': 'test@canoncial.com',
+    ...     'Email address:': 'test@canonical.com',
     ...     'Distribution:': 'ubuntu',
     ...     'Distribution Release:': '5.04',
     ...     'Processor Architecture:': 'x86',
@@ -25,7 +23,8 @@ All form fields must be filled with valid values.
     ...     'Data from Live CD': False
     ... }
     >>> submit_file = StringIO('some data')
-    >>> def fill_form(browser, submit_data, submit_data_checkboxes, filedata):
+    >>> def fill_form(
+    ...     browser, submit_data, submit_data_checkboxes, filedata, filename):
     ...     for label in submit_data.keys():
     ...         control = browser.getControl(label)
     ...         control.value = submit_data[label]
@@ -35,8 +34,10 @@ All form fields must be filled with valid values.
     ...     if filedata is not None:
     ...         filedata.seek(0)
     ...         control = browser.getControl('Submission data:')
-    ...         control.add_file(filedata, 'text/plain', 'test.txt')
-    >>> fill_form(browser, submit_data, submit_data_checkboxes, submit_file)
+    ...         control.add_file(filedata, 'text/plain', filename)
+    >>> fill_form(
+    ...     browser, submit_data, submit_data_checkboxes, submit_file,
+    ...     'test.txt')
     >>> browser.getControl('Upload').click()
 
 For easy error checks by the HWDB client, an extra header is added, if the
@@ -57,9 +58,6 @@ Human users get a message too.
     ...     print tag
     <div class="informational message">Thank you for your submission.</div>
 
-The data is stored in HWDBSubmission. XXX test later, when we can access
-the user submission lists and download a subm.
-
 If fields are not set, the response contains a header explaining this
 error.
 
@@ -70,9 +68,10 @@ error.
     ...               'Unique Submission ID:'):
     ...     wrong_data = submit_data.copy()
     ...     del wrong_data[field]
-    ...     browser.open('http://launchpad.dev/submit-hardware-data')
+    ...     browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
     ...     fill_form(
-    ...         browser, wrong_data,  submit_data_checkboxes, submit_file)
+    ...         browser, wrong_data, submit_data_checkboxes, submit_file,
+    ...         'test.txt')
     ...     browser.getControl('Upload').click()
     ...     print "--- missing field", field
     ...     print browser.headers
@@ -112,10 +111,11 @@ error.
     X-Lphwdb-Submission_id: Error - Required input is missing.
     ...
 
-The file with the hardware must also be provided.
+The file with the test data must also be provided.
 
-    >>> browser.open('http://launchpad.dev/submit-hardware-data')
-    >>> fill_form(browser, wrong_data,  submit_data_checkboxes, None)
+    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> fill_form(
+    ...     browser, wrong_data, submit_data_checkboxes, None, 'test.txt')
     >>> browser.getControl('Upload').click()
     >>> print browser.headers
     Status: 200 Ok
@@ -128,8 +128,10 @@ is rejected and an explaining header is added to the response.
 
     >>> wrong_data = submit_data.copy()
     >>> wrong_data['Unique Submission ID:'] = 'unique id 1'
-    >>> browser.open('http://launchpad.dev/submit-hardware-data')
-    >>> fill_form(browser, wrong_data,  submit_data_checkboxes, submit_file)
+    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> fill_form(
+    ...     browser, wrong_data, submit_data_checkboxes, submit_file,
+    ...     'test.txt')
     >>> browser.getControl('Upload').click()
     >>> print browser.headers
     Status: 200 Ok
@@ -141,8 +143,10 @@ The field "Date Created" must contain a valid timestamp.
 
     >>> wrong_data = submit_data.copy()
     >>> wrong_data['Date Created:'] = 'no timestamp'
-    >>> browser.open('http://launchpad.dev/submit-hardware-data')
-    >>> fill_form(browser, wrong_data,  submit_data_checkboxes, submit_file)
+    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> fill_form(
+    ...     browser, wrong_data, submit_data_checkboxes, submit_file,
+    ...     'test.txt')
     >>> browser.getControl('Upload').click()
     >>> print browser.headers
     Status: 200 Ok
@@ -154,8 +158,10 @@ The field "Submission ID" may contain only ASCII characters.
 
     >>> wrong_data = submit_data.copy()
     >>> wrong_data['Unique Submission ID:'] = u'wrong id \xc0'.encode('utf8')
-    >>> browser.open('http://launchpad.dev/submit-hardware-data')
-    >>> fill_form(browser, wrong_data,  submit_data_checkboxes, submit_file)
+    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> fill_form(
+    ...     browser, wrong_data, submit_data_checkboxes, submit_file,
+    ...     'test.txt')
     >>> browser.getControl('Upload').click()
     >>> print browser.headers
     Status: 200 Ok
@@ -167,12 +173,13 @@ The field "Email address:" musr contain a valid email address.
 
     >>> wrong_data = submit_data.copy()
     >>> wrong_data['Email address:'] = 'no email'
-    >>> browser.open('http://launchpad.dev/submit-hardware-data')
-    >>> fill_form(browser, wrong_data,  submit_data_checkboxes, submit_file)
+    >>> browser.open('http://launchpad.dev/hwdb/submit-hardware-data')
+    >>> fill_form(
+    ...     browser, wrong_data, submit_data_checkboxes, submit_file,
+    ...     'test.txt')
     >>> browser.getControl('Upload').click()
     >>> print browser.headers
     Status: 200 Ok
     ...
     X-Lphwdb-Emailaddress: Error - no email isn't a valid email address.
     ...
-

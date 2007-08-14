@@ -3,19 +3,22 @@
 __metaclass__ = type
 
 __all__ = [
+    'HWDBFingerprintSetView',
+    'HWDBSubmissionSetNavigation',
     'HWDBPersonSubmissionsView',
     'HWDBUploadView']
 
-from datetime import datetime
-from StringIO import StringIO
-
+from zope.app.pagetemplate.viewpagetemplatefile import ViewPageTemplateFile
 from zope.component import getUtility
+from zope.interface import implements
+from zope.publisher.interfaces.browser import IBrowserPublisher
 
-from canonical.launchpad.interfaces import (IDistributionSet,
-    IHWDBSubmissionForm, IHWDBSubmissionSet, IHWDBSystemFingerprintSet,
-    NotFoundError)
+from canonical.launchpad.interfaces import (
+    IDistributionSet, IHWDBApplication, IHWDBSubmissionForm,
+    IHWDBSubmissionSet, IHWDBSystemFingerprintSet, NotFoundError)
 from canonical.launchpad.webapp import (
-    action, LaunchpadView, LaunchpadFormView)
+    action, LaunchpadView, LaunchpadFormView, Navigation, stepthrough)
+from canonical.launchpad.webapp.batching import BatchNavigator
 
 
 class HWDBUploadView(LaunchpadFormView):
@@ -48,11 +51,8 @@ class HWDBUploadView(LaunchpadFormView):
         filesize = len(data['submission_data'])
         file_ = self.request.form[self.widgets['submission_data'].name]
         file_.seek(0)
-        # xxxxxxxxxx testen!
         filename = file_.filename.replace('/', '-')
 
-        #xxx print "xxxxx errors", self.errors
-        #xxx self.errors.append('asdf') #xxxxxxxxx
         hwdb_submissionset = getUtility(IHWDBSubmissionSet)
         hwdb_submissionset.createSubmission(
             date_created=data['date_created'],
@@ -93,11 +93,52 @@ class HWDBUploadView(LaunchpadFormView):
 class HWDBPersonSubmissionsView(LaunchpadView):
     """View class for preseting HWDB submissions by a person."""
 
-    def getSubmissions(self):
-        """Return the list of HWDB submissions made by this user"""
+    def getAllBatched(self):
+        """Return the list of HWDB submissions made by this person."""
         hwdb_submissionset = getUtility(IHWDBSubmissionSet)
-        return hwdb_submissionset.getByOwner(self.context, self.user)
+        submissions = hwdb_submissionset.getByOwner(self.context, self.user)
+        return BatchNavigator(submissions, self.request)
 
     def userIsOwner(self):
         """Return true, if self.context == self.user"""
         return self.context == self.user
+
+
+class HWDBSubmissionSetNavigation(Navigation):
+    """Navigation class for HWDBSubmissionSet."""
+
+    usedfor = IHWDBApplication
+
+    @stepthrough('+hwdb-fingerprint')
+    def traverse_hwdb_fingerprint(self, name):
+        return HWDBFingerprintSetView(self.context, self.request, name)
+
+
+class HWDBFingerprintSetView(LaunchpadView):
+    """View class for lists of HWDB submissions for a system fingerprint."""
+
+    implements(IBrowserPublisher)
+
+    template = ViewPageTemplateFile(
+        '../templates/hwdb-submissions-fingerprint.pt')
+    
+    def __init__(self, context,  request, system_name):
+        LaunchpadView.__init__(self, context, request)
+        self.system_name = system_name
+
+    def getAllBatched(self):
+        """A BatchNavigator instance with the submissions."""
+        submissions = getUtility(IHWDBSubmissionSet).getByFingerprintName(
+            self.system_name, self.user)
+        return BatchNavigator(submissions, self.request)
+
+    def browserDefault(self, request):
+        """See `IBrowserPublisher`."""
+        return self, ()
+
+    def showOwner(self, submission):
+        """Check if the owner can be shown in the list.
+        """
+        return (submission.owner is not None
+                and (submission.contactable
+                     or (submission.owner == self.user)))

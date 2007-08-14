@@ -490,6 +490,8 @@ hwdb_submit_hardware_data = 'Submit New Data to the Launchpad Hardware Database'
 hwdb_submissions_person = ContextDisplayName(
     "Hardware Database submissions by %s")
 
+hwdb_submissions_fingerprint = "Hardware Database submissions for a fingerprint"
+
 karmaaction_index = 'Karma actions'
 
 karmaaction_edit = 'Edit karma action'

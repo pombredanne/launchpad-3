@@ -24,7 +24,7 @@ The POST data consists of the following fields:
     >>> from StringIO import StringIO
     >>> from zope.app.zapi import getView
     >>> from zope.component import getUtility
-    >>> from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
+    >>> from canonical.launchpad.interfaces import IHWDBApplication
     >>> from canonical.launchpad.webapp.servers import LaunchpadTestRequest
     >>> data = StringIO('some data.')
     >>> data.filename = 'hardware-info'
@@ -42,7 +42,7 @@ The POST data consists of the following fields:
     ...       'field.submission_data': data,
     ...       'field.actions.upload':  u'Upload'}
     >>> request = LaunchpadTestRequest(method='POST', form=form)
-    >>> app = getUtility(ILaunchpadApplication)
+    >>> app = getUtility(IHWDBApplication)
     >>> submit_view = getView(app, 'submit-hardware-data', request)
     >>> submit_view.initialize()
     >>> submit_view.errors
@@ -83,7 +83,6 @@ Each submission must have a distinct submission_id, hence an attempt to submit
 identical data a second time leads to an error.
 
     >>> request = LaunchpadTestRequest(method='POST', form=form)
-    >>> app = getUtility(ILaunchpadApplication)
     >>> submit_view = getView(app, 'submit-hardware-data', request)
     >>> submit_view.initialize()
     >>> [error.doc() for error in submit_view.errors]
@@ -146,11 +145,6 @@ HWDBSubmissionFormat.
 
 The field `submission_id` may contain only ASCII data.
 
-XXX If u'wrong id \x81' below is replaced by 'wrong id \x81'. we would get a
-UnicodeDecodeError in zope.app.form.browser.textwidgets._toFieldValue.
-This exception is not caught, but should IMHO be handled in Zope's from
-machinery or in LaunchpadFormView._validate. Abel Deuring 2007-08-08
-
     >>> invalid_form = form.copy()
     >>> invalid_form['field.submission_id'] = u'wrong id \x81'
     >>> request = LaunchpadTestRequest(method='POST', form=invalid_form)
@@ -194,14 +188,3 @@ All fields are required.
     {'architecture': 'Required field is missing'}
     {'system': 'Required field is missing'}
     {'submission_data': 'Required field is missing'}
-
- 
-The data is in most cases not submitted by an ordinary web browser, but by
-the hardware databse client. In order to allow the client to easily detect
-errors returned by the server, we use the HTTP status 201 ("created") for
-successful uploads, and 4xx, if an error occurs.
-
-xxx
-einfaches Fehlerparsing plus display fuer user.
-
-
