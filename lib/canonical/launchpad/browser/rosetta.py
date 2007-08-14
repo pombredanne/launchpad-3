@@ -99,10 +99,6 @@ class RosettaApplicationNavigation(Navigation):
 
     newlayer = canonical.launchpad.layers.TranslationsLayer
 
-    # DEPRECATED: Support bookmarks to the old rosetta prefs page.
-    redirection('prefs', '/+editmylanguages',
-                status=httplib.MOVED_PERMANENTLY)
-
     @stepto('groups')
     def redirect_groups(self):
         """Redirect /translations/+groups to Translations root site."""

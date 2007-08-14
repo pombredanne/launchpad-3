@@ -754,7 +754,7 @@ class CommonMenuLinks:
     @enabled_with_permission('launchpad.Edit')
     def activate_ppa(self):
         target = "+activate-ppa"
-        text = 'Activate PPA'
+        text = 'Activate Personal Package Archive'
         summary = ('Acknowledge terms of service for Launchpad Personal '
                    'Package Archive.')
         enable_link = (self.context.archive is None)
@@ -762,7 +762,7 @@ class CommonMenuLinks:
 
     def show_ppa(self):
         target = '+archive'
-        text = 'Show PPA'
+        text = 'Show Personal Package Archive'
         summary = 'Browse Personal Package Archive packages.'
         enable_link = (self.context.archive is not None)
         return Link(target, text, summary, icon='info', enabled=enable_link)
@@ -1199,9 +1199,8 @@ class RedirectToEditLanguagesView(LaunchpadView):
 
     This view should always be registered with a launchpad.AnyPerson
     permission, to make sure the user is logged in. It exists so that
-    we can keep the /rosetta/prefs link working and also provide a link
-    for non logged in users that will require them to login and them send
-    them straight to the page they want to go.
+    we provide a link for non logged in users that will require them to login
+    and them send them straight to the page they want to go.
     """
 
     def initialize(self):
