@@ -155,6 +155,10 @@ bug 112308).
 The user submits a bad translation, one that lacks conversion specifications
 the original message has, and is shown an error.
 
+  >>> print find_tag_by_id(
+  ...     user_browser.contents, 'msgset_142_singular').renderContents()
+  Migrating ...%s...
+
   >>> user_browser.getControl(
   ...     name='msgset_142_es_translation_0_radiobutton').value = [
   ...         'msgset_142_es_translation_0_new']
