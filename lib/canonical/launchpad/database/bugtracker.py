@@ -48,19 +48,6 @@ class BugTracker(SQLBase):
     watches = SQLMultipleJoin('BugWatch', joinColumn='bugtracker',
                               orderBy='-datecreated', prejoins=['bug'])
 
-    def _get_title(self):
-        """Bugtracker title.
-
-        SQLObject property get handler for the bugtracker's
-        `title` attribute. Returns the title recorded in the
-        database, or if no title is recorded a title constructed
-        from the bugtracker's baseurl.
-        """
-        dbtitle = self._SO_get_title()
-        if dbtitle is None:
-            dbtitle = quote('Bug tracker at %s' % self.baseurl)
-        return dbtitle
-
     @property
     def latestwatches(self):
         """See IBugTracker"""
@@ -189,6 +176,8 @@ class BugTrackerSet:
             scheme, host = urllib.splittype(baseurl)
             host, path = urllib.splithost(host)
             name = 'auto-%s' % host
+        if title is None:
+            title = ('Bug tracker at %s' % baseurl)
         bugtracker = BugTracker(name=name,
             bugtrackertype=bugtrackertype,
             title=title, summary=summary, baseurl=baseurl,
