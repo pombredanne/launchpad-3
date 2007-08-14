@@ -37,6 +37,7 @@ COMMENT ON COLUMN BranchMergeProposal.dependent_branch IS 'If the source branch 
 COMMENT ON COLUMN BranchMergeProposal.date_created IS 'When the registrant created the merge proposal.';
 COMMENT ON COLUMN BranchMergeProposal.whiteboard IS 'Used to write other information about the branch, like test URLs.';
 COMMENT ON COLUMN BranchMergeProposal.merged_revno IS 'This is the revision number of the revision on the target branch that includes the merge from the source branch.';
+COMMENT ON COLUMN BranchMergeProposal.merge_reporter IS 'This is the user that marked the proposal as merged.';
 COMMENT ON COLUMN BranchMergeProposal.date_merged IS 'This is the date that merge occurred.';
 
 -- BranchSubscription

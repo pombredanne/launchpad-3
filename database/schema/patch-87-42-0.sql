@@ -10,6 +10,7 @@ CREATE TABLE BranchMergeProposal
    whiteboard TEXT,
    date_merged TIMESTAMP WITHOUT TIME ZONE,
    merged_revno INT,
+   merge_reporter INT REFERENCES Person,
    date_created TIMESTAMP WITHOUT TIME ZONE NOT NULL
        DEFAULT timezone('UTC'::text, now()),
    CONSTRAINT different_branches CHECK (source_branch != target_branch),
@@ -23,7 +24,8 @@ CREATE INDEX branchmergeproposal__target_branch__idx
    ON BranchMergeProposal USING btree(target_branch);
 CREATE INDEX branchmergeproposal__dependent_branch__idx
    ON BranchMergeProposal USING btree(dependent_branch);
-
+CREATE INDEX branchmergeproposal__merge_reporter__idx
+   ON BranchMergeProposal (merge_reporter) WHERE merge_reporter IS NOT NULL;
 
 INSERT INTO LaunchpadDatabaseRevision VALUES (87, 42, 0);
 
