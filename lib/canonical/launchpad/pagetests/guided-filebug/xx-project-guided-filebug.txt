@@ -144,7 +144,10 @@ user some feedback in this regard. We need to create a new project first.
     >>> admin_browser.url
     'http://launchpad.dev/test-group'
 
-A user navigating to the filebug page will see an information message:
+A user navigating to the filebug page will see an information message. The
+user can only get to the filebug page by entering its URL directly because all
+links to the page are disabled for empty project groups. Since there are users
+who would navigate to the page in that manner we test it here.
 
     >>> user_browser.open('http://launchpad.dev/test-group/+filebug')
     >>> user_browser.url
