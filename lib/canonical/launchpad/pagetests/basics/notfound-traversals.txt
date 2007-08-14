@@ -61,6 +61,10 @@ status is returned.
 
 >>> check("/translations/+about")
 
+>>> check("/+imports", host='translations.launchpad.dev')
+>>> check("/+imports/1/+index", auth=True, host='translations.launchpad.dev')
+>>> check_not_found("/+imports/foo", host='translations.launchpad.dev')
+
 >>> check("/+languages", host='translations.launchpad.dev')
 >>> check("/+languages/+add", auth=True, host='translations.launchpad.dev')
 >>> check("/+languages/es", host='translations.launchpad.dev')
@@ -431,6 +435,7 @@ sabdfl owns many packages, so he's a better test for some pages:
 >>> check("/translations/@@")
 >>> check("//translations/@@")
 >>> check_redirect("/translations/groups/", status=301)
+>>> check_redirect("/translations/imports/", status=301)
 
 >>> check_not_found("/@@/launchpad_brokenlink.png")
 >>> check_not_found("//@@/launchpad_brokenlink.png")
