@@ -1,13 +1,10 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-"""tales.py doc and unit tests."""
+"""tales.py doctests."""
 
-import re
-from timeit import Timer
+
 import unittest
 
 from zope.testing.doctestunit import DocTestSuite
-
-from canonical.launchpad.webapp.tales import FormattersAPI
 
 
 def test_requestapi():
@@ -164,52 +161,6 @@ def test_break_long_words():
     """
 
 
-class testObfuscateEmail(unittest.TestCase):
-    """Show that the current re is faster than the previous re."""
-    def re_time_check(self, pattern, text):
-        """Return the time the re takes to complete in CPU seconds. """
-        # The pattern may be a verbose multiline string. Timer cannot
-        # handle multiline strings.
-        lines = []
-        for line in pattern.split('\n'):
-            pattern_fragment = line.split('#')[0]
-            lines.append(pattern_fragment.strip())
-        # Timer is performing a complile on the statement and setup;
-        # indentation must be correct.
-        setup = (
-            """import re\n"""
-            """test_re = re.compile('''%s''')\n""" % ''.join(lines))
-        statement = ("test_re.sub(r'<email address hidden>', '%s')" % text)
-        return Timer(stmt=statement, setup=setup).timeit(1)
-
-    def test_time(self):
-        """Test that the current _re_email is faster than the original."""
-        # This is string was extracted from an actual message that hung
-        # the server as it waited for the re to complete its sub().
-        bad_address = (
-            'b "medi-cal.wei@sa-raSpinning...............................'
-            '............................................................'
-            '............................................................'
-            '............................................................'
-            '............................................................'
-            '.........................................................not')
-        # This version of _re_email was created in response to bad_address.
-        orginal_pattern = r"""
-            ([\b]|[\"']?)[-/=0-9A-Z_a-z]     # First character of localname.
-            [.\"'-/=0-9A-Z_a-z+]*@           # Remainder of the localname.
-            [a-zA-Z]                         # First character of hostname.
-            (-?[a-zA-Z0-9])*                 # Remainder of the hosename.
-            (\.[a-zA-Z](-?[a-zA-Z0-9])*)+\b  # Dot starts one or more domains.
-            """
-        current_pattern = FormattersAPI._re_email.pattern
-
-        orginal_time = self.re_time_check(orginal_pattern, bad_address)
-        current_time = self.re_time_check(current_pattern, bad_address)
-        self.failIf(orginal_time < current_time,
-                    'original_re is faster than the current email_re: '
-                    '%s < %s' % (orginal_time, current_time))
-
-
 def test_suite():
     """Return this module's doctest Suite. Unit tests are not run."""
     suite = DocTestSuite()
@@ -217,5 +168,4 @@ def test_suite():
 
 
 if __name__ == '__main__':
-    # Run unit tests, eg. testObfuscateEmail().
     unittest.main()
