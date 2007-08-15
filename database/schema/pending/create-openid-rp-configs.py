@@ -16,7 +16,7 @@ from canonical.launchpad.interfaces import (
     ILibraryFileAliasSet, IOpenIDRPConfigSet)
 from canonical.launchpad.scripts import execute_zcml_for_scripts
 from canonical.lp import initZopeless
-from canonical.lp.dbschema import PersonCreationRationale as PCR
+from canonical.launchpad.interfaces import PersonCreationRationale as PCR
 
 execute_zcml_for_scripts()
 ztm = initZopeless()
@@ -31,7 +31,8 @@ logo = getUtility(ILibraryFileAliasSet).create(
 
 # Create RP configs
 for trust_root in ['http://pdl-dev.co.uk', 'http://www.mmania.biz',
-                   'http://shop.canonical.com', 'https://shop.canonical.com']:
+                   'http://shop.canonical.com', 'https://shop.canonical.com',
+                   'https://testshop.canonical.com']:
     rpconfig = getUtility(IOpenIDRPConfigSet).new(
         trust_root=trust_root,
         displayname="The Ubuntu Store from Canonical",
