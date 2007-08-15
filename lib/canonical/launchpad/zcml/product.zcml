@@ -333,13 +333,11 @@
     template="../templates/object-branding.pt"
     />
 
-  <browser:editform
+  <browser:page
     name="+bugcontact"
     for="canonical.launchpad.interfaces.IProduct"
-    schema="canonical.launchpad.interfaces.IProduct"
     facet="bugs"
     class="canonical.launchpad.browser.ProductBugContactEditView"
-    fields="bugcontact"
     permission="launchpad.Edit"
     template="../templates/product-bugcontact.pt"
     />
