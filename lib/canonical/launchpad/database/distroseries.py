@@ -1742,45 +1742,47 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
             def __call__(self, chunk_size):
                 """See `ITunableLoop`."""
-                batch_size = int(batch_size)
+                chunk_size = int(chunk_size)
 
                 # Figure out what id lies exactly batch_size rows ahead.
                 # There could be huge holes in the numbering here, so we can't
                 # just do fixed-size batches of id sequence.
-                self.cur.execute("""
+                cur = cursor()
+                cur.execute("""
                     SELECT id
                     FROM inert_pomsgsets
-                    WHERE id >= %d
+                    WHERE id >= %s
                     ORDER BY id
-                    OFFSET %d
+                    OFFSET %s
                     LIMIT 1
-                    """ % (sqlvalues(self.lowest_id, batch_size)))
+                    """ % (sqlvalues(self.lowest_id, chunk_size)))
                 end_id = cur.fetchone()
                 if end_id is not None:
                     next = end_id[0]
                 else:
-                    next = highest_id
+                    next = self.highest_id
 
                 next += 1
 
-                cursor().execute("""
+                cur.execute("""
                     UPDATE POMsgSet AS target
-                    FROM %s original, inert_pomsgsets
                     SET
                         iscomplete = TRUE,
                         isfuzzy = original.isfuzzy,
-                        updated = original.updated,
+                        isupdated = original.isupdated,
                         reviewer = original.reviewer,
-                        date_reviewed = original.date_reviewed,
+                        date_reviewed = original.date_reviewed
+                    FROM %s original, inert_pomsgsets
                     WHERE
                         original.id = inert_pomsgsets.id AND
                         original.new_id = target.id AND
                         target.id = original.new_id AND
                         original.iscomplete AND
                         NOT target.iscomplete AND
-                        inert_pomsgsets.id >= %d AND
-                        inert_pomsgsets.id < %d
-                    """ % (self.holding_table, sqlvalues(self.lowest_id, next)))
+                        inert_pomsgsets.id >= %s AND
+                        inert_pomsgsets.id < %s
+                    """ % (
+                    self.holding_table, quote(self.lowest_id), quote(next)))
 
                 self.transaction_manager.commit()
                 self.transaction_manager.begin()
