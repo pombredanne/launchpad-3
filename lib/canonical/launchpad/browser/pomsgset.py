@@ -1,5 +1,7 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
 
+"""View classes for POMsgSet classes."""
+
 __metaclass__ = type
 __all__ = [
     'BaseTranslationView',
@@ -44,6 +46,7 @@ from canonical.launchpad.webapp import (
     ApplicationMenu, Link, LaunchpadView, canonical_url)
 from canonical.launchpad.webapp import urlparse
 from canonical.launchpad.webapp.batching import BatchNavigator
+
 
 #
 # Translation-related formatting functions
@@ -592,9 +595,12 @@ class BaseTranslationView(LaunchpadView):
         second_lang_code = self.request.form.get("field.alternative_language")
 
         fallback_language = self.pofile.language.alt_suggestion_language
-        if second_lang_code is None and fallback_language is not None:
+        if (second_lang_code is None
+            and fallback_language is not None 
+            and fallback_language.code != 'en'):
             # If there's a standard alternative language and no user-specified
-            # language was provided, preselect it.
+            # language was provided, preselect it (so long as it is not
+            # English).
             second_lang_code = fallback_language.code
 
         if second_lang_code:
@@ -678,7 +684,8 @@ class BaseTranslationView(LaunchpadView):
         self.form_posted_needsreview[pomsgset] = (
             msgset_ID_LANGCODE_needsreview in form)
 
-        # Note the trailing underscore: we append the plural form number later.
+        # Note the trailing underscore: we append the plural form
+        # number later.
         msgset_ID_LANGCODE_translation_ = 'msgset_%d_%s_translation_' % (
             potmsgset_ID, language_code)
 
@@ -1127,8 +1134,9 @@ class POMsgSetView(LaunchpadView):
             alt_submissions = []
             title = None
         else:
-            alt_submissions = self.second_lang_potmsgset.getCurrentSubmissions(
-                self.sec_lang, index)
+            alt_submissions = (
+                self.second_lang_potmsgset.getCurrentSubmissions(
+                    self.sec_lang, index))
             title = self.sec_lang.englishname
         # What a relief -- no need to do pruning here for alternative
         # languages as they are highly unlikely to collide.
@@ -1148,22 +1156,22 @@ class POMsgSetView(LaunchpadView):
             self.user_is_official_translator, self.form_is_writeable)
 
     def getOfficialTranslation(self, index, published = False):
-         """Return active or published translation for pluralform 'index'."""
-         assert index in self.pluralform_indices, (
-             'There is no plural form #%d for %s language' % (
-                 index, self.context.pofile.language.displayname))
+        """Return active or published translation for pluralform 'index'."""
+        assert index in self.pluralform_indices, (
+            'There is no plural form #%d for %s language' % (
+                index, self.context.pofile.language.displayname))
 
-         if published:
-             translation = self.context.published_texts[index]
-         else:
-             translation = self.context.active_texts[index]
-         # We store newlines as '\n', '\r' or '\r\n', depending on the
-         # msgid but forms should have them as '\r\n' so we need to change
-         # them before showing them.
-         if translation is not None:
-             return convert_newlines_to_web_form(translation)
-         else:
-             return None
+        if published:
+            translation = self.context.published_texts[index]
+        else:
+            translation = self.context.active_texts[index]
+        # We store newlines as '\n', '\r' or '\r\n', depending on the
+        # msgid but forms should have them as '\r\n' so we need to change
+        # them before showing them.
+        if translation is not None:
+            return convert_newlines_to_web_form(translation)
+        else:
+            return None
 
     def getActiveTranslation(self, index):
         """Return the active translation for the pluralform 'index'."""
