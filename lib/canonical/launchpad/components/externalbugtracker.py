@@ -821,7 +821,7 @@ class Trac(ExternalBugTracker):
         # its tickets. Obviously, for large projects, this amounts to a lot of
         # data, which is why we deal in individual requests for small sets
         # of bugs above.
-        id_string = '&'.join(['id=%i' % int(id) for id in bug_ids])
+        id_string = '&'.join(['id=%s' % id for id in bug_ids])
         query_url = "%s/%s" % (self.baseurl, self.batch_url % id_string)
         try:
             csv_data = self.urlopen(query_url)
@@ -847,42 +847,38 @@ class Trac(ExternalBugTracker):
         try:
             bug_id = int(bug_id)
         except ValueError:
-            raise InvalidBugId("bug_id must be an integer: " + str(bug_id))
+            raise InvalidBugId(
+                "bug_id must be convertable an integer: %s" + str(bug_id))
 
-        if not self.bugs.has_key(bug_id):
+        try:
+            remote_bug = self.bugs[bug_id]
+        except KeyError:
             raise BugNotFound(bug_id)
 
         # If the bug has a valid resolution as well as a status then we return
         # that, since it's more informative than the status field on its own.
-        if (self.bugs[bug_id].has_key('resolution') and
-            self.bugs[bug_id]['resolution'] not in ['', '--', None]):
-            return self.bugs[bug_id]['resolution']
+        if (remote_bug.has_key('resolution') and
+            remote_bug['resolution'] not in ['', '--', None]):
+            return remote_bug['resolution']
         else:
-            return self.bugs[bug_id]['status']
+            return remote_bug['status']
 
     def convertRemoteStatus(self, remote_status):
         """See IExternalBugTracker"""
+        status_map = {
+            'assigned': BugTaskStatus.CONFIRMED,
+            'duplicate': BugTaskStatus.CONFIRMED,
+            'fixed': BugTaskStatus.FIXRELEASED,
+            'invalid': BugTaskStatus.INVALID,
+            'new': BugTaskStatus.NEW,
+            'open': BugTaskStatus.NEW,
+            'wontfix': BugTaskStatus.WONTFIX,
+            'worksforme': BugTaskStatus.INVALID,
+            UNKNOWN_REMOTE_STATUS: BugTaskStatus.UNKNOWN,
+        }
 
-        if remote_status in ['invalid', 'worksforme']:
-            return BugTaskStatus.INVALID
-
-        elif remote_status in ['assigned', 'duplicate']:
-            # XXX: 2007-08-06 Graham Binns:
-            #      We should follow dupes if possible.
-            return BugTaskStatus.CONFIRMED
-
-        elif remote_status in ['new', 'open']:
-            return BugTaskStatus.NEW
-
-        elif remote_status == 'fixed':
-            return BugTaskStatus.FIXRELEASED
-
-        elif remote_status == 'wontfix':
-            return BugTaskStatus.WONTFIX
-
-        elif remote_status == UNKNOWN_REMOTE_STATUS:
-            return BugTaskStatus.UNKNOWN
-
-        else:
+        try:
+            return status_map[remote_status]
+        except KeyError:
             log.warn("Unknown status '%s'" % remote_status)
             return BugTaskStatus.UNKNOWN

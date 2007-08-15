@@ -7,11 +7,18 @@ bugwatches.
 == Basics ==
 
 The ExternalBugTracker descendant class which implements methods for updating
-bug watches on Trac bug trackers is externalbugtracker.Trac.
+bug watches on Trac bug trackers is externalbugtracker.Trac, which implements
+IExternalBugTracker.
 
     >>> from canonical.launchpad.components.externalbugtracker import Trac
     >>> Trac('http://trac.foo.com')
     <canonical.launchpad.components.externalbugtracker.Trac object at...>
+
+    >>> from canonical.launchpad.interfaces.externalbugtracker import (
+    ...     IExternalBugtracker)
+    >>> from zope.interface.verify import verifyObject
+    >>> verifyObject(IExternalBugtracker, Trac('http://trac.foo.com'))
+    True
 
 
 == Status Conversion ==
@@ -22,6 +29,8 @@ Trac.convertRemoteStatus() handles the conversion.
     >>> trac = Trac('http://foo.bar')
     >>> trac.convertRemoteStatus('open').title
     'New'
+    >>> trac.convertRemoteStatus('new').title
+    'New'
     >>> trac.convertRemoteStatus('assigned').title
     'Confirmed'
     >>> trac.convertRemoteStatus('fixed').title
@@ -30,7 +39,7 @@ Trac.convertRemoteStatus() handles the conversion.
     'Invalid'
     >>> trac.convertRemoteStatus('wontfix').title
     "Won't Fix"
-    >>> trac.convertRemoteStatus('duplicate').title # XXX: Fix this, too!
+    >>> trac.convertRemoteStatus('duplicate').title
     'Confirmed'
     >>> trac.convertRemoteStatus('worksforme').title
     'Invalid'
@@ -57,8 +66,9 @@ Calling initializeRemoteBugDB() on our Trac instance and passing it a set of
 remote bug IDs will fetch those bug IDs from the server and file them in a
 local variable for later use.
 
-We use a test-oriented implementation for the purposes of these tests, so that
-we don't have to rely on a working network connection.
+We use a test-oriented implementation for the purposes of these tests, which 
+overrides ExternalBugTracker.urlopen() so that we don't have to rely on a
+working network connection.
 
     >>> from canonical.launchpad.ftests.externalbugtracker import TestTrac
     >>> trac = TestTrac('http://test.trac')
@@ -79,7 +89,6 @@ First, we create some bug watches to test with:
 
     >>> from canonical.launchpad.database import BugTracker
     >>> from canonical.launchpad.interfaces import IBugSet, IPersonSet
-    >>> from canonical.launchpad.ftests.externalbugtracker import TestMantis
     >>> from canonical.lp.dbschema import BugTrackerType
 
     >>> sample_person = getUtility(IPersonSet).getByEmail('test@canonical.com')
@@ -90,10 +99,10 @@ First, we create some bug watches to test with:
     ...     bugtrackertype=BugTrackerType.TRAC,
     ...     baseurl="http://bugs.example.com",
     ...     summary="Contains bugs for Example.com",
-    ...     contactdetails="foo.bar@example.com",
+    ...     contactdetails="test@example.com",
     ...     owner=sample_person)
 
-    >>> login('foo.bar@canonical.com')
+    >>> login('test@canonical.com')
 
     >>> example_bug = getUtility(IBugSet).get(10)
     >>> example_bugwatch = example_bug.addWatch(
@@ -163,50 +172,24 @@ for them all at once.
     ...     expected_remote_statuses):
     ...     remote_status = remote_statuses[remote_bug_id]
     ...     expected_remote_status = expected_remote_statuses[remote_bug_id]
-    ...     print 'Remote bug %d' % (remote_bug_id,)
-    ...     print ' * Expected << %s >>' % (expected_remote_status,)
-    ...     print ' *      Got << %s >>' % (remote_status,)
-    Remote bug 1
-     * Expected << fixed >>
-     *      Got << fixed >>
-    Remote bug 143
-     * Expected << fixed >>
-     *      Got << fixed >>
-    Remote bug 144
-     * Expected << assigned >>
-     *      Got << assigned >>
-    Remote bug 145
-     * Expected << assigned >>
-     *      Got << assigned >>
-    Remote bug 146
-     * Expected << invalid >>
-     *      Got << invalid >>
-    Remote bug 147
-     * Expected << fixed >>
-     *      Got << fixed >>
-    Remote bug 148
-     * Expected << fixed >>
-     *      Got << fixed >>
-    Remote bug 149
-     * Expected << assigned >>
-     *      Got << assigned >>
-    Remote bug 150
-     * Expected << new >>
-     *      Got << new >>
-    Remote bug 151
-     * Expected << new >>
-     *      Got << new >>
-    Remote bug 152
-     * Expected << new >>
-     *      Got << new >>
-    Remote bug 153
-     * Expected << new >>
-     *      Got << new >>
+    ...     print 'Remote bug %d: %s' % (
+    ...         remote_bug_id, expected_remote_status)
+    Remote bug 1: fixed
+    Remote bug 143: fixed
+    Remote bug 144: assigned
+    Remote bug 145: assigned
+    Remote bug 146: invalid
+    Remote bug 147: fixed
+    Remote bug 148: fixed
+    Remote bug 149: assigned
+    Remote bug 150: new
+    Remote bug 151: new
+    Remote bug 152: new
+    Remote bug 153: new
 
 updateBugWatches() updates the lastchecked attribute on the watches, so
 now no bug watches are in need of updating:
 
-    >>> from canonical.database.sqlbase import flush_database_updates
     >>> flush_database_updates()
     >>> example_bug_tracker.getBugWatchesNeedingUpdate(23).count()
     0
