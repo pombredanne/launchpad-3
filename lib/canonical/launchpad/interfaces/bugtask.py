@@ -142,8 +142,6 @@ class IBugTask(IHasDateCreated, IHasBug, ICanBeMentored):
     target = Attribute("The software in which this bug should be fixed")
     target_uses_malone = Bool(title=_("Whether the bugtask's target uses Launchpad"
                               "officially"))
-    targetname = Text(title=_("The short, descriptive name of the target"),
-                      readonly=True)
     title = Text(title=_("The title of the bug related to this bugtask"),
                          readonly=True)
     related_tasks = Attribute("IBugTasks related to this one, namely other "
@@ -678,9 +676,18 @@ class IBugTaskSet(Interface):
 
 class IAddBugTaskForm(Interface):
     """Form for adding an upstream bugtask."""
-    product = IUpstreamBugTask['product']
-    distribution = IDistroBugTask['distribution']
-    sourcepackagename = IDistroBugTask['sourcepackagename']
+    # It is tempting to replace the first three attributes here with their
+    # counterparts from IUpstreamBugTask and IDistroBugTask.
+    # BUT: This will cause OOPSes with adapters, hence IAddBugTask reinvents
+    # the wheel somewhat. There is a test to ensure that this remains so.
+    product = Choice(title=_('Project'), required=True, vocabulary='Product')
+    distribution = Choice(
+        title=_("Distribution"), required=True, vocabulary='Distribution')
+    sourcepackagename = Choice(
+        title=_("Source Package Name"), required=False,
+        description=_("The source package in which the bug occurs. "
+                      "Leave blank if you are not sure."),
+        vocabulary='SourcePackageName')
     bug_url = StrippedTextLine(
         title=_('URL'), required=False,
         description=_("The URL of this bug in the remote bug tracker."))
