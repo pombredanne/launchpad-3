@@ -31,6 +31,8 @@ Trac.convertRemoteStatus() handles the conversion.
     'New'
     >>> trac.convertRemoteStatus('new').title
     'New'
+    >>> trac.convertRemoteStatus('reopened').title
+    'New'
     >>> trac.convertRemoteStatus('assigned').title
     'Confirmed'
     >>> trac.convertRemoteStatus('fixed').title
@@ -99,7 +101,7 @@ First, we create some bug watches to test with:
     ...     bugtrackertype=BugTrackerType.TRAC,
     ...     baseurl="http://bugs.example.com",
     ...     summary="Contains bugs for Example.com",
-    ...     contactdetails="test@example.com",
+    ...     contactdetails="foo.bar@example.com",
     ...     owner=sample_person)
 
     >>> login('test@canonical.com')
