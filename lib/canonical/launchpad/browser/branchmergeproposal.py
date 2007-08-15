@@ -94,7 +94,7 @@ class BranchMergeProposalMergedView(LaunchpadEditFormView):
     def mark_merged_action(self, action, data):
         """Update the whiteboard and go back to the source branch."""
         revno = data['merged_revno']
-        self.context.markAsMerged(revno)
+        self.context.markAsMerged(revno, merge_reporter=self.user)
         # Now go back to the source branch.
         self.next_url = canonical_url(self.context.source_branch)
 
