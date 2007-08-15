@@ -1667,7 +1667,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                     holding.potmsgset = equiv_potmsgset.id AND
                     equiv_potmsgset.new_id = pms.potmsgset AND
                     holding.pofile = pfh.id AND
-                    pms.id = pfh.new_id
+                    pms.pofile = pfh.new_id
                 )
             """ % query_parameters
 
@@ -1740,7 +1740,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 return (self.lowest_id is None or
                     self.lowest_id > self.highest_id)
 
-            def __call__(self):
+            def __call__(self, chunk_size):
                 """See `ITunableLoop`."""
                 batch_size = int(batch_size)
 
@@ -1807,10 +1807,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                 DELETE FROM %s AS holding
                 USING POSubmission ps
                 WHERE
-                    (ps.active OR
-                        holding.potranslation = ps.potranslation) AND
                     holding.pomsgset = ps.pomsgset AND
                     holding.pluralform = ps.pluralform AND
+                    (ps.active OR
+                        holding.potranslation = ps.potranslation) AND
                     holding.id >= %s AND
                     holding.id < %s
                 """ % (holding_table, quote(start_id), quote(end_id)))
@@ -1825,7 +1825,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                     holding.id >= %s AND
                     holding.id < %s
                 """ % (holding_table, quote(start_id), quote(end_id)))
-
 
         # Exclude POSubmissions for which an equivalent (potranslation,
         # pomsgset, pluralform), or we'd be introducing needless duplicates;
@@ -1884,7 +1883,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         cur.execute("""
             DELETE FROM %(pomsgset_holding_table)s AS holding
             USING POMsgSet
-            WHERE holding.id=POMsgSet.id
+            WHERE holding.new_id=POMsgSet.id
             """ % query_parameters)
 
         # Pour copied rows back to source tables.  Contrary to appearances,
