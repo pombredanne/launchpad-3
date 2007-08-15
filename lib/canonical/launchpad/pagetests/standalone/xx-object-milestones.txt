@@ -120,85 +120,106 @@ Firefox product:
     >>> browser.getLink('complicated bug filing form').click()
     >>> print extract_text(find_main_content(browser.contents))
     Report a new bug...
-    >>> file_bug_url = browser.url
+    >>> report_bug_url = browser.url
 
     >>> browser.getControl('Summary').value = 'Test Bug 1'
     >>> browser.getControl('Further information').value = 'Test Bug 1'
     >>> browser.getControl('Submit').click()
     >>> print extract_text(find_main_content(browser.contents))
     Thank you for your bug report...
-    >>> test_bug_1_url = browser.url
+    >>> bug_1_url = browser.url
 
-    >>> browser.open(file_bug_url)
+    >>> browser.open(report_bug_url)
     >>> browser.getControl('Summary').value = 'Test Bug 2'
     >>> browser.getControl('Further information').value = 'Test Bug 2'
     >>> browser.getControl('Submit').click()
     >>> print extract_text(find_main_content(browser.contents))
     Thank you for your bug report...
-    >>> test_bug_2_url = browser.url
+    >>> bug_2_url = browser.url
+
+To make it easy to refer to the bugs, we'll give each bug a nickname:
+
+    >>> bug_1_nickname = 'test-bug-1'
+    >>> browser.open(bug_1_url)
+    >>> browser.getLink('Edit description/tags').click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Bug...Edit bug description...
+    >>> browser.getControl('Nickname').value = bug_1_nickname
+    >>> browser.getControl('Change').click()
+    >>> browser.url == bug_1_url
+    True
+
+    >>> bug_2_nickname = 'test-bug-2'
+    >>> browser.open(bug_2_url)
+    >>> browser.getLink('Edit description/tags').click()
+    >>> print extract_text(find_main_content(browser.contents))
+    Bug...Edit bug description...
+    >>> browser.getControl('Nickname').value = bug_2_nickname
+    >>> browser.getControl('Change').click()
+    >>> browser.url == bug_2_url
+    True
 
 Next, we'll target each bug to the 1.0 milestone:
 
-    >>> milestone_value = ['Mozilla Firefox: 1.0']
+    >>> milestone = '1.0'
 
-    >>> browser.open(test_bug_1_url)
+    >>> browser.open(bug_1_url)
     >>> browser.getLink('[edit]').click()
     >>> print browser.url
     http://bugs.launchpad.dev/firefox/+bug/.../+editstatus
-
-    >>> browser.getControl('Milestone').displayValue = milestone_value
+    >>> browser.getControl('Milestone').displayValue = [milestone]
     >>> browser.getControl('Save Changes').click()
-    >>> browser.url == test_bug_1_url
+    >>> browser.url == bug_1_url
     True
 
-    >>> browser.open(test_bug_2_url)
+    >>> browser.open(bug_2_url)
     >>> browser.getLink('[edit]').click()
     >>> print browser.url
     http://bugs.launchpad.dev/firefox/+bug/.../+editstatus
-
-    >>> browser.getControl('Milestone').displayValue = milestone_value
+    >>> browser.getControl('Milestone').displayValue = [milestone]
     >>> browser.getControl('Save Changes').click()
-    >>> browser.url == test_bug_2_url
+    >>> browser.url == bug_2_url
     True
 
 Observe that both bugs are listed in the 1.0 milestone listing:
 
     >>> browser.open('http://launchpad.dev/firefox')
     >>> browser.getLink('All milestones').click()
-    >>> browser.getLink('1.0').click()
+    >>> browser.getLink(milestone).click()
     >>> print browser.title
     Milestone 1.0 for Mozilla Firefox...
     >>> milestone_url = browser.url
 
     >>> browser.getLink('Test Bug 1').click()
-    >>> browser.url == test_bug_1_url
+    >>> browser.url == bug_1_url
     True
 
     >>> browser.open(milestone_url)
     >>> browser.getLink('Test Bug 2').click()
-    >>> browser.url == test_bug_2_url
+    >>> browser.url == bug_2_url
     True
 
-We'll mark the second bug as a duplicate of the first:
+Now we'll mark the second bug as a duplicate of the first:
 
-    >>> browser.open(test_bug_2_url)
+    >>> browser.open(bug_2_url)
     >>> browser.getLink('Mark as duplicate').click()
     >>> print browser.title
     Bug...Mark as duplicate...
 
-    >>> browser.getControl('Duplicate').value = '15'
+    >>> browser.getControl('Duplicate').value = bug_1_nickname
     >>> browser.getControl('Change').click()
-    >>> browser.url == test_bug_2_url
+    >>> browser.url == bug_2_url
     True
 
     >>> print extract_text(find_main_content(browser.contents))
     Bug...This report is a duplicate...
 
-Now only the first bug is listed in the 1.0 milestone listing:
+Since duplicate bugs are not listed in milestone listings, only our first bug
+is listed in the 1.0 milestone listing:
 
     >>> browser.open(milestone_url)
     >>> browser.getLink('Test Bug 1').click()
-    >>> browser.url == test_bug_1_url
+    >>> browser.url == bug_1_url
     True
 
     >>> browser.open(milestone_url)
@@ -209,14 +230,14 @@ Now only the first bug is listed in the 1.0 milestone listing:
 
 However, it's also possible to clear the duplicate status of our second bug:
 
-    >>> browser.open(test_bug_2_url)
+    >>> browser.open(bug_2_url)
     >>> browser.getLink('Mark as duplicate').click()
     >>> print browser.title
     Bug...Mark as duplicate...
 
     >>> browser.getControl('Duplicate').value = ''
     >>> browser.getControl('Change').click()
-    >>> browser.url == test_bug_2_url
+    >>> browser.url == bug_2_url
     True
 
     >>> 'This report is a duplicate' in find_main_content(browser.contents)
@@ -226,12 +247,12 @@ Now both bugs are listed in the 1.0 milestone listing once again:
 
     >>> browser.open(milestone_url)
     >>> browser.getLink('Test Bug 1').click()
-    >>> browser.url == test_bug_1_url
+    >>> browser.url == bug_1_url
     True
 
     >>> browser.open(milestone_url)
     >>> browser.getLink('Test Bug 2').click()
-    >>> browser.url == test_bug_2_url
+    >>> browser.url == bug_2_url
     True
 
 
@@ -265,7 +286,8 @@ We'll also create a new test milestone within the "trunk" series:
     >>> print browser.title
     Add new milestone for Mozilla Firefox Series: trunk
 
-    >>> browser.getControl('Name').value = 'test-milestone'
+    >>> milestone = 'test-milestone'
+    >>> browser.getControl('Name').value = milestone
     >>> browser.getControl('Date Targeted').value = '2100-08-08'
     >>> browser.getControl('Add').click()
     >>> print browser.title
@@ -276,10 +298,15 @@ We'll also create a new test milestone within the "trunk" series:
     Active milestones...
     test-milestone...
 
+    >>> browser.getLink('test-milestone').click()
+    >>> print browser.title
+    Milestone test-milestone for Mozilla Firefox...
+    >>> milestone_url = browser.url
+
 Let's target an existing bug to both series "1.0" and series "2.0":
 
     >>> from canonical.launchpad.helpers import backslashreplace
-    >>> browser.open(test_bug_1_url)
+    >>> browser.open(bug_1_url)
     >>> print backslashreplace(browser.title)
     Bug...in Mozilla Firefox...
 
@@ -290,7 +317,7 @@ Let's target an existing bug to both series "1.0" and series "2.0":
     >>> browser.getControl('1.0').selected = True
     >>> browser.getControl('2.0').selected = True
     >>> browser.getControl('Submit').click()
-    >>> browser.url == test_bug_1_url
+    >>> browser.url == bug_1_url
     True
 
     >>> print extract_text(first_tag_by_class(browser.contents, 'listing'))
@@ -301,11 +328,9 @@ Let's target an existing bug to both series "1.0" and series "2.0":
 Now we'll add each bug target to the same test milestone, but using different
 levels of importance:
 
-    >>> milestone_value = ['test-milestone']
-
     >>> edit_url = 'http://bugs.launchpad.dev/firefox/1.0/+bug/15/+editstatus'
     >>> browser.open(edit_url)
-    >>> browser.getControl('Milestone').displayValue = milestone_value
+    >>> browser.getControl('Milestone').displayValue = [milestone]
     >>> browser.getControl('Importance').value = ['Critical']
     >>> browser.getControl('Save Changes').click()
 
@@ -315,7 +340,7 @@ levels of importance:
 
     >>> edit_url = 'http://bugs.launchpad.dev/firefox/2.0/+bug/15/+editstatus'
     >>> browser.open(edit_url)
-    >>> browser.getControl('Milestone').displayValue = milestone_value
+    >>> browser.getControl('Milestone').displayValue = [milestone]
     >>> browser.getControl('Importance').value = ['High']
     >>> browser.getControl('Save Changes').click()
 
@@ -325,9 +350,7 @@ levels of importance:
 
 Observe that both bug targets are now listed in the test milestone listing:
 
-    >>> url = 'http://launchpad.dev/firefox/+milestone/test-milestone'
-    >>> browser.open(url)
-
+    >>> browser.open(milestone_url)
     >>> print extract_text(find_tag_by_id(browser.contents,
     ...                                   'milestone_bugtasks'))
     Report         Importance ...
@@ -344,19 +367,15 @@ default).
 Ordinarily, targeting a bug to a milestone causes the bug to appear in that
 milestone's bug listing:
 
-    >>> browser.open(test_bug_2_url)
+    >>> browser.open(bug_2_url)
     >>> browser.getLink('[edit]').click()
     >>> print browser.url
     http://bugs.launchpad.dev/firefox/+bug/.../+editstatus
 
-    >>> milestone = 'test-milestone'
     >>> browser.getControl('Milestone').displayValue = [milestone]
     >>> browser.getControl('Save Changes').click()
 
-    >>> browser.open('http://launchpad.dev/firefox/')
-    >>> browser.getLink('All milestones').click()
-    >>> browser.getLink(milestone).click()
-    >>> milestone_url = browser.url
+    >>> browser.open(milestone_url)
     >>> print extract_text(find_tag_by_id(browser.contents,
     ...                                   'milestone_bugtasks'))
     Report...
@@ -365,13 +384,16 @@ milestone's bug listing:
 When we explicitly target the bug to the development focus series, the bug
 still appears in the milestone's bug listing:
 
-    >>> browser.open(test_bug_2_url)
+    >>> browser.open(bug_2_url)
     >>> browser.getLink('Target to release').click()
     >>> print browser.url
     http://bugs.launchpad.dev/firefox/+bug/.../+nominate
 
     >>> browser.getControl('Trunk').selected = True
     >>> browser.getControl('Submit').click()
+    >>> print extract_text(first_tag_by_class(browser.contents, 'listing'))
+    Affects            Status                  ...
+    Mozilla Firefox    Status tracked in Trunk ...
 
     >>> browser.open(milestone_url)
     >>> bugtasks = extract_text(find_tag_by_id(browser.contents,
