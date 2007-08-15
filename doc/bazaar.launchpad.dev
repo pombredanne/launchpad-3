@@ -1,6 +1,5 @@
 <VirtualHost 127.0.0.89:80>
-  Servername bazaar.launchpad.dev
-  LogLevel debug
+  ServerName bazaar.launchpad.dev
 
   ProxyRequests off
   <Proxy *>
