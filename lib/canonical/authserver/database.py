@@ -481,6 +481,8 @@ class DatabaseBranchDetailsStorage:
         branch = getUtility(IBranchSet).get(branchID)
         if branch is None:
             return False
+        # The puller runs as no user and may pull private branches. We need to
+        # bypass Zope's security proxy to set the mirroring information.
         removeSecurityProxy(branch).startMirroring()
         return True
 
@@ -498,6 +500,7 @@ class DatabaseBranchDetailsStorage:
         branch = getUtility(IBranchSet).get(branchID)
         if branch is None:
             return False
+        # See comment in _startMirroringInteraction.
         removeSecurityProxy(branch).mirrorComplete(lastRevisionID)
         return True
 
@@ -514,6 +517,7 @@ class DatabaseBranchDetailsStorage:
         branch = getUtility(IBranchSet).get(branchID)
         if branch is None:
             return False
+        # See comment in _startMirroringInteraction.
         removeSecurityProxy(branch).mirrorFailed(reason)
         return True
 
