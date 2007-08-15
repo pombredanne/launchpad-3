@@ -175,6 +175,7 @@
 
   <h2 style="clear: both;">Recent revisions</h2>
 
+  <div id="recent-revisions">
   <p tal:condition="not:context/revision_count">
     <tal:not-mirrored condition="not:context/last_mirrored">
       <tal:mirror condition="context/url">
@@ -225,6 +226,7 @@
     </li>
   </ol>
   </tal:history-available>
+  </div>
 
   <tal:related-bugs condition="context/related_bugs">
     <h2>Related Bugs</h2>

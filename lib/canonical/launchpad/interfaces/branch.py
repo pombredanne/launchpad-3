@@ -360,6 +360,9 @@ class IBranch(IHasOwner):
     def revisions_since(timestamp):
         """Revisions in the history that are more recent than timestamp."""
 
+    code_is_browseable = Attribute(
+        "Is the code in this branch accessable through codebrowse?")
+
     # subscription-related methods
     def subscribe(person, notification_level, max_diff_lines):
         """Subscribe this person to the branch.

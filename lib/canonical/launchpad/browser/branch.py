@@ -105,8 +105,7 @@ class BranchContextMenu(ContextMenu):
         text = 'Browse code'
         # Only enable the link if we've ever mirrored the branch.
         # Don't enable if the branch is private.
-        enabled = (self.context.last_mirrored_id is not None and
-                   not self.context.private)
+        enabled = self.context.code_is_browseable
         url = config.launchpad.codebrowse_root + self.context.unique_name
         return Link(url, text, icon='info', enabled=enabled)
 

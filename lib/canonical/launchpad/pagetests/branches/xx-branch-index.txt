@@ -170,45 +170,32 @@ The codebrowse link only appears for branches that have revisions.
 
     >>> browser.open(
     ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, "recent-revisions"))
+    This branch is empty.
     >>> browser.getLink('Browse code')
     Traceback (most recent call last):
     ...
     LinkNotFoundError
 
-Update the branch so it thinks that it has revision.
+Sample Person's junk branch has some revisions, so the 'Browse code'
+link is shown.
 
-    >>> from canonical.launchpad.ftests import login, logout, syncUpdate
-    >>> from canonical.database.sqlbase import flush_database_updates
-    >>> from zope.component import getUtility
-    >>> from canonical.launchpad.interfaces import (
-    ...     BranchType, IBranchSet, IPersonSet, IProductSet)
-    >>> login('test@canonical.com')
-    >>> branch = getUtility(IBranchSet).getByUniqueName(
-    ...     '~name12/gnome-terminal/scanned')
-    >>> branch.last_mirrored_id = 'Should be a revision id'
-    >>> syncUpdate(branch)
-    >>> logout()
-
-The browse code link is now show.
-
-    >>> browser.reload()
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/+junk/junk.dev')
+    >>> print extract_text(find_tag_by_id(
+    ...     browser.contents, "recent-revisions"))
+    By foo... fix bug in bar...
     >>> print browser.getLink('Browse code').url
-    http://codebrowse.launchpad.dev/~name12/gnome-terminal/scanned
+    http://codebrowse.launchpad.dev/~name12/+junk/junk.dev
 
 If the branch is private, the browse code link is not shown.
-
-    >>> login('test@canonical.com')
-    >>> branch = getUtility(IBranchSet).getByUniqueName(
-    ...     '~name12/gnome-terminal/scanned')
-    >>> branch.private = True
-    >>> syncUpdate(branch)
-    >>> logout()
-
-Use a browser that is able to see the branch.
+In order to see the private branch, we need to log in as a user that
+is able to see the branch.
 
     >>> browser = setupBrowser(auth="Basic test@canonical.com:test")
     >>> browser.open(
-    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
+    ...     'http://code.launchpad.dev/~landscape-developers/landscape/trunk')
     >>> browser.getLink('Browse code')
     Traceback (most recent call last):
     ...
@@ -228,20 +215,12 @@ http, and anyone who can see the branch is able to access it using bzr+ssh.
     These URLs are intended for use with the Bazaar version control system.
     ...
     Hosted on Launchpad:
-    bzr+ssh://bazaar.launchpad.dev/~name12/gnome-terminal/scanned
+    bzr+ssh://bazaar.launchpad.dev/~landscape-developers/landscape/trunk
 
-Mark the branch public again.
+Public branches use http.
 
-    >>> login('test@canonical.com')
-    >>> branch = getUtility(IBranchSet).getByUniqueName(
-    ...     '~name12/gnome-terminal/scanned')
-    >>> branch.private = False
-    >>> syncUpdate(branch)
-    >>> logout()
-
-Hosted URL now uses http.
-
-    >>> browser.reload()
+    >>> browser.open(
+    ...     'http://code.launchpad.dev/~name12/gnome-terminal/scanned')
     >>> print extract_text(find_tag_by_id(
     ...     browser.contents, 'branch-details-table'))
     These URLs are intended for use with the Bazaar version control system.

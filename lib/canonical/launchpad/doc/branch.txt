@@ -165,7 +165,7 @@ branches and bugs.
 
 The IBranchSet methods getRecentlyChangedBranches, getRecentlyImportedBranches,
 and getRecentlyRegisteredBranches are used to give summary information that
-is to be displayed on the code.launchpad.net page to entice the 
+is to be displayed on the code.launchpad.net page to entice the
 user to click through.
 
 Changed branches are branches that are owned by real people or groups (as
@@ -236,11 +236,11 @@ It is possible to find a branch by URL. Either using the pull URL:
 Or using the Supermirror URL of the same branch:
 
     >>> gterm_dev_supermirror = \
-    ...     u'http://bazaar.launchpad.net/~ddaa/gnome-terminal/dev'
+    ...     u'http://bazaar.launchpad.dev/~ddaa/gnome-terminal/dev'
     >>> branchset.getByUrl(gterm_dev_supermirror) == gterm_dev
     True
     >>> junkcode_supermirror = \
-    ...     u'http://bazaar.launchpad.net/~ddaa/+junk/junkcode'
+    ...     u'http://bazaar.launchpad.dev/~ddaa/+junk/junkcode'
     >>> branchset.getByUrl(junkcode_supermirror) == junkcode or \
     ...     ('failed', branchset.getByUrl(junkcode_supermirror))
     True
@@ -573,6 +573,47 @@ used to identify when a scan is needed for a branch.
     initial import (empty)
 
 
+== Codebrowse and branches ==
+
+Most branches are able to be browsed using the loggerhead codebrowse
+instance at http://codebrowse.launchpad.net.  Branches that have no
+revisions or private branches are not able to be viewed using code
+browse.
+
+The link to codebrowse is shown on the action context menu for branches.
+The enabling of this link is controlled using the branch property
+`code_is_browseable`.
+
+For a public branch with revisions, the link is enabled.
+
+    >>> branch = branchset.getByUniqueName('~name12/+junk/junk.dev')
+    >>> print branch.private
+    False
+    >>> print branch.revision_count
+    6
+    >>> print branch.code_is_browseable
+    True
+
+For a public branch without revisions, the link is disabled.
+
+    >>> branch = branchset.getByUniqueName('~name12/gnome-terminal/main')
+    >>> print branch.private
+    False
+    >>> print branch.revision_count
+    0
+    >>> print branch.code_is_browseable
+    False
+
+Private branches are not browseable at all.
+
+    >>> branch = branchset.getByUniqueName(
+    ...     '~landscape-developers/landscape/trunk')
+    >>> print branch.private
+    True
+    >>> print branch.code_is_browseable
+    False
+
+
 == Branch Scan List ==
 
 To speed up the branch scanning process, we only want to scan those
@@ -580,6 +621,7 @@ branches that have new information available to be scanned.
 
 This accomplished by making the branch puller and branch scanner
 record the last revision IDs in the branch that they saw.
+
 
 If the last mirrored and last scanned revision IDs differ for a
 branch, then they will be included in the scan list:
