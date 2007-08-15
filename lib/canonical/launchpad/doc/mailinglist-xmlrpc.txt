@@ -6,81 +6,60 @@ initiated by Mailman in all cases; in other words, Mailman polls Launchpad to
 see if there is any work for Mailman to do.
 
     >>> # Note that this test is run multiple times, with the harness
-    >>> # providing the `mailinglist_api` object to make the calls against.
-    >>> from zope.interface.verify import verifyObject
+    >>> # providing several globals including `mailinglist_api`,
+    >>> # `print_actions`, `new_team`, and `commit`.
 
 
-== Set up ==
+== Registered lists ==
 
-Let's start by seeding the database with some sample teams and their mailing
-lists.
+When there's nothing for Mailman to do, we'll just get an empty dictionary
+back from the XMLRPC call.
 
     >>> from canonical.launchpad.ftests import login, ANONYMOUS
-    >>> from canonical.launchpad.interfaces import (
-    ...     IMailingListSet, IPersonSet, MailingListStatus,
-    ...     TeamSubscriptionPolicy)
     >>> login(ANONYMOUS)
-    >>> personset = getUtility(IPersonSet)
-    >>> ddaa = personset.getByName('ddaa')
-    >>> def new_team(team_name):
-    ...     displayname = ' '.join(word.capitalize()
-    ...                            for word in team_name.split('-'))
-    ...     # XXX BarryWarsaw Set the team's subscription policy to OPEN
-    ...     # because of bug 125505.  See related comment below.
-    ...     policy = TeamSubscriptionPolicy.OPEN
-    ...     return personset.newTeam(ddaa, team_name, displayname,
-    ...                              subscriptionpolicy=policy)
+    >>> mailinglist_api.getPendingActions()
+    {}
+
+Mailing lists are always tied -- one-to-one -- to teams.
 
     >>> team_one = new_team('team-one')
     >>> team_two = new_team('team-two')
     >>> commit()
 
+A team owner must register the mailing list for team, but Mailman will not be
+told to create mailing lists in the REGISTERED state.  We'll register one of
+the lists with a custom welcome message.
+
+    >>> from canonical.launchpad.interfaces import IMailingListSet
     >>> list_set = getUtility(IMailingListSet)
     >>> list_one = list_set.new(team_one)
     >>> list_one.welcome_message = u'Welcome to Team One'
     >>> list_two = list_set.new(team_two)
     >>> commit()
-
-
-Here's a helper function for printing the pending actions data structure.
-
-    >>> def print_actions(pending_actions):
-    ...     for action in sorted(pending_actions):
-    ...         for team in sorted(pending_actions[action]):
-    ...             if action in ('create', 'modify'):
-    ...                 team, modification = team
-    ...                 # Further, we must coerce all values in the
-    ...                 # modification dict to unicode, so as to handle the
-    ...                 # fact that this doctest is called both via an
-    ...                 # internal view and through an XMLRPC proxy.  The
-    ...                 # former returns unicode values natively, the latter
-    ...                 # strs.  The keys are the same in both cases.
-    ...                 modification = dict((k, unicode(v))
-    ...                                     for k, v in modification.items())
-    ...                 print team, '-->', action, modification
-    ...             else:
-    ...                 print team, '-->', action
-
-
-== Registered lists ==
-
-Mailing lists start out in a state called 'REGISTERED'.  These are mailing
-lists that have been requested by team owners.  However before Mailman can
-create the lists, they must be approved by a Launchpad administrator.  Before
-that, there is nothing for Mailman to do.
-
+    >>> list_one.status.name
+    'REGISTERED'
+    >>> list_two.status.name
+    'REGISTERED'
     >>> mailinglist_api.getPendingActions()
     {}
 
-Once a few lists have been approved by the Launchpad administrators (and one
-of the lists has an initial welcome message)...
+A mailing list in the REGISTERED state must be reviewed and approved by a
+Launchpad administrator before Mailman will be told to create it.
 
+    >>> from canonical.launchpad.interfaces import (
+    ...     IPersonSet, MailingListStatus)
+    >>> personset = getUtility(IPersonSet)
     >>> carlos = personset.getByName('carlos')
     >>> list_one.review(carlos, MailingListStatus.APPROVED)
     >>> list_two.review(carlos, MailingListStatus.APPROVED)
     >>> commit()
+    >>> list_one.status.name
+    'APPROVED'
+    >>> list_two.status.name
+    'APPROVED'
 
-...the next time Mailman polls XMLRPC, there will be things for it to do.
+The next time Mailman polls the XMLRPC interface, there will be mailing lists
+for it to create.
 
     >>> pending_actions = mailinglist_api.getPendingActions()
     >>> commit()
@@ -91,10 +70,19 @@ of the lists has an initial welcome message)...
 In the database, the state of both lists should now be CONSTRUCTING to
 indicate that Mailman is in the process of creating the lists.
 
+    >>> list_one = list_set.get('team-one')
     >>> list_one.status.name
     'CONSTRUCTING'
+    >>> list_two = list_set.get('team-two')
     >>> list_two.status.name
     'CONSTRUCTING'
+
+Should Mailman poll the actions again before it completes creating these
+lists, there will be nothing to do because lists in the CONSTRUCTING state
+don't show up as needing to be created.
+
+    >>> mailinglist_api.getPendingActions()
+    {}
 
 
 == Creating the mailing lists ==
@@ -147,6 +135,7 @@ Let's create another team mailing list and request its deactivation, to show
 what happens if a deactivation fails.  First, set things up behind the
 scenes.
 
+    >>> ddaa = personset.getByName('ddaa')
     >>> team_three = personset.newTeam(ddaa, 'team-three', 'Team Three')
     >>> list_three = list_set.new(team_three)
     >>> list_three.review(carlos, MailingListStatus.APPROVED)
@@ -177,8 +166,10 @@ deactivation failed for some reason.
     ...     'team-three': 'failure',
     ...     })
     True
+    >>> list_one = list_set.get('team-one')
     >>> list_one.status.name
     'INACTIVE'
+    >>> list_three = list_set.get('team-three')
     >>> list_three.status.name
     'FAILED'
 
@@ -220,6 +211,16 @@ modification action the next time it polls.
     team-five --> modify {'welcome_message': u'Welcome to Team Five'}
     team-four --> modify {'welcome_message': u'Welcome to Team Four'}
 
+And at this point, the lists are in the MODIFIED state, awaiting a status
+report from Mailman.
+
+    >>> list_four = list_set.get('team-four')
+    >>> list_four.status.name
+    'UPDATING'
+    >>> list_five = list_set.get('team-five')
+    >>> list_five.status.name
+    'UPDATING'
+
 Let's say that the change was successful for one of the lists, but failed for
 the other...
 
@@ -231,8 +232,10 @@ the other...
 
 ...this is reflected in the status of the mailing lists in the database.
 
+    >>> list_four = list_set.get('team-four')
     >>> list_four.status.name
     'ACTIVE'
+    >>> list_five = list_set.get('team-five')
     >>> list_five.status.name
     'FAILED'
 
@@ -247,54 +250,59 @@ method.
 
 One possibility is that a bad team name is passed in the statuses dictionary.
 
-    >>> # Note that if we were going through the XMLRPC server instead of
-    >>> # talking to the view directly, the Fault instances returned here
-    >>> # would be turned into tracebacks by the XMLRPC machinery.
-
     >>> mailinglist_api.reportStatus({'bogus team': 'success'})
     Traceback (most recent call last):
     ...
-    Fault: <Fault 110: 'No such team: bogus team'>
+    Fault: <Fault 140: 'No such team mailing list: bogus team'>
 
 Similarly we could pass in the name of a person that is not a team.
 
     >>> mailinglist_api.reportStatus({'carlos': 'success'})
     Traceback (most recent call last):
     ...
-    Fault: <Fault 110: 'No such team: carlos'>
+    Fault: <Fault 140: 'No such team mailing list: carlos'>
 
 We could also pass in a success or failure status to a list that is not
 expecting it.  In this case, list_four is active so it is not expecting a
 status report, either success...
 
+    >>> list_four.status.name
+    'ACTIVE'
     >>> mailinglist_api.reportStatus({'team-four': 'success'})
     Traceback (most recent call last):
     ...
-    Fault: <Fault 120: 'Unexpected status report "success" for team: team-four'>
+    Fault: <Fault 150: 'Unexpected status report "success"
+            for team: team-four'>
 
 ...or failure.
 
     >>> mailinglist_api.reportStatus({'team-four': 'failure'})
     Traceback (most recent call last):
     ...
-    Fault: <Fault 120: 'Unexpected status report "failure" for team: team-four'>
+    Fault: <Fault 150: 'Unexpected status report "failure"
+            for team: team-four'>
 
 This is also true of lists in the failed state.
 
+    >>> list_five.status.name
+    'FAILED'
     >>> mailinglist_api.reportStatus({'team-five': 'success'})
     Traceback (most recent call last):
     ...
-    Fault: <Fault 120: 'Unexpected status report "success" for team: team-five'>
+    Fault: <Fault 150: 'Unexpected status report "success"
+            for team: team-five'>
 
     >>> mailinglist_api.reportStatus({'team-five': 'failure'})
     Traceback (most recent call last):
     ...
-    Fault: <Fault 120: 'Unexpected status report "failure" for team: team-five'>
+    Fault: <Fault 150: 'Unexpected status report "failure"
+            for team: team-five'>
 
 Finally, for a list that is expecting a status report, we could pass in a
 bogus status string.  To illustrate, let's begin the process of deactivating
 an active list.
 
+    >>> list_four = list_set.get('team-four')
     >>> list_four.deactivate()
     >>> commit()
     >>> pending_actions = mailinglist_api.getPendingActions()
@@ -306,11 +314,12 @@ Status strings are case-sensitive.
     >>> mailinglist_api.reportStatus({'team-four': 'SUCCESS'})
     Traceback (most recent call last):
     ...
-    Fault: <Fault 130: 'Bad status string "SUCCESS" for team: team-four'>
+    Fault: <Fault 160: 'Bad status string "SUCCESS" for team: team-four'>
 
 And of course, entirely bogus status strings aren't accepted either.
 
     >>> mailinglist_api.reportStatus({'team-four': 'entirely-bogus'})
     Traceback (most recent call last):
     ...
-    Fault: <Fault 130: 'Bad status string "entirely-bogus" for team: team-four'>
+    Fault: <Fault 160: 'Bad status string "entirely-bogus"
+            for team: team-four'>

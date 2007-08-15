@@ -56,7 +56,7 @@
     <require like_class="xmlrpclib.Fault" />
   </class>
 
-  <class class="canonical.launchpad.xmlrpc.faults.NoSuchTeam">
+  <class class="canonical.launchpad.xmlrpc.faults.NoSuchTeamMailingList">
     <require like_class="xmlrpclib.Fault" />
   </class>
 

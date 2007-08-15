@@ -30,14 +30,28 @@ attrmap = {
     }
 
 
-def logexc():
+def log_exception():
+    """Write the current exception stacktrace into the Mailman log file.
+
+    This is really just a convenience function for a refactored chunk of
+    common code.
+    """
     out_file = StringIO()
     traceback.print_exc(file=out_file)
     syslog('xmlrpc', out_file.getvalue())
 
 
 class XMLRPCRunner(Runner):
-    def __init__(self, slice=None, numslices=1):
+    """A Mailman 'queue runner' for talking to the Launchpad XMLRPC service."""
+
+    def __init__(self, slice=None, numslices=None):
+        """Create a faux runner which checks into Launchpad occasionally.
+
+        Every XMLRPC_SLEEPTIME number of seconds, this runner wakes up and
+        connects to a Launchpad XMLRPC service to see if there's anything for
+        it to do.  slice and numslices are ignored, but required by the
+        Mailman queue runner framework.
+        """
         self.SLEEPTIME = mm_cfg.XMLRPC_SLEEPTIME
         # Instead of calling the superclass's __init__() method, just
         # initialize the two attributes that are actually used.  The reason
@@ -50,12 +64,21 @@ class XMLRPCRunner(Runner):
         self._stop = False
 
     def _oneloop(self):
+        """Check to see if there's anything for Mailman to do.
+
+        Mailman makes an XMLRPC connection to Launchpad to see if there are
+        any mailing lists to create, modify or deactivate.  This method is
+        called periodically by the base class's main loop.
+
+        This method always returns 0 to indicate to the base class's main loop
+        that it should sleep for a while after calling this method.
+        """
         # See if Launchpad has anything for us to do.
         proxy = xmlrpclib.ServerProxy(mm_cfg.XMLRPC_URL)
         try:
             actions = proxy.getPendingActions()
-        except xmlrpclib.ProtocolError, e:
-            syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', e)
+        except xmlrpclib.ProtocolError, error:
+            syslog('xmlrpc', 'Cannot talk to Launchpad:\n%s', error)
             return 0
         if actions:
             syslog('xmlrpc', 'Got some things to do: %s',
@@ -93,11 +116,20 @@ class XMLRPCRunner(Runner):
         return 0
 
     def _create(self, actions, statuses):
+        """Process mailing list creation actions.
+
+        actions is a sequence of (team_name, initializer) tuples where the
+        team_name is the name of the mailing list to create and initializer is
+        a dictionary of initial custom values to set on the new mailing list.
+
+        statuses is a dictionary mapping team names to one of the strings
+        'success' or 'failure'.
+        """
         for team_name, initializer in actions:
             # This is a set of attributes defining the defaults for lists
-            # created under Launchpad's control.  XXX Figure out other
-            # defaults and where to keep them -- in Launchpad's configuration
-            # files?  Probably not.
+            # created under Launchpad's control.  We need to map attribute
+            # names as Launchpad sees them to attribute names on the MailList
+            # object.
             list_defaults = {}
             # Verify that the initializer variables are what we expect.
             for key in attrmap:
@@ -126,7 +158,7 @@ class XMLRPCRunner(Runner):
                 except:
                     syslog('xmlrpc',
                            'List creation error for team: %s', team_name)
-                    logexc()
+                    log_exception()
                     statuses[team_name] = 'failure'
                 else:
                     # Apply defaults.
@@ -145,6 +177,15 @@ class XMLRPCRunner(Runner):
                 mlist.Unlock()
 
     def _modify(self, actions, statuses):
+        """Process mailing list modification actions.
+
+        actions is a sequence of (team_name, modifications) tuples where the
+        team_name is the name of the mailing list to create and modifications
+        is a dictionary of values to set on the mailing list.
+
+        statuses is a dictionary mapping team names to one of the strings
+        'success' or 'failure'.
+        """
         for team_name, modifications in actions:
             # First, validate the modification keywords.
             list_settings = {}
@@ -155,7 +196,7 @@ class XMLRPCRunner(Runner):
             if modifications:
                 statuses[team_name] = 'failure'
                 syslog('xmlrpc', 'Unexpected modify settings: %s',
-                       COMMASPACE.join(initializer.keys()))
+                       COMMASPACE.join(modifications.keys()))
                 continue
             try:
                 try:
@@ -170,7 +211,7 @@ class XMLRPCRunner(Runner):
             except:
                 syslog('xmlrpc',
                        'List modification error for team: %s', team_name)
-                logexc()
+                log_exception()
                 statuses[team_name] = 'failure'
             else:
                 syslog('xmlrpc', 'Successfully modified list: %s',
@@ -178,6 +219,14 @@ class XMLRPCRunner(Runner):
                 statuses[team_name] = 'success'
 
     def _deactivate(self, actions, statuses):
+        """Process mailing list deactivation actions.
+
+        actions is a sequence of team names for the mailing lists to
+        deactivate.
+
+        statuses is a dictionary mapping team names to one of the strings
+        'success' or 'failure'.
+        """
         for team_name in actions:
             try:
                 mlist = MailList(team_name, lock=False)
@@ -208,7 +257,7 @@ class XMLRPCRunner(Runner):
             # exceptions that Mailman can raise.
             except:
                 syslog('xmlrpc', 'List deletion error for team: %s', team_name)
-                logexc()
+                log_exception()
                 statuses[team_name] = 'failure'
             else:
                 syslog('xmlrpc', 'Successfully deleted list: %s', team_name)

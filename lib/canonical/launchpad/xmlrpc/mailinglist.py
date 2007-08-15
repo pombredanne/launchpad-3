@@ -57,6 +57,7 @@ class RequestedMailingListAPI(LaunchpadXMLRPCView):
             changes = (mailing_list.team.name,
                        dict(welcome_message=mailing_list.welcome_message))
             modified.append(changes)
+            mailing_list.startUpdating()
         if modified:
             response['modify'] = modified
         return response
@@ -64,26 +65,28 @@ class RequestedMailingListAPI(LaunchpadXMLRPCView):
     def reportStatus(self, statuses):
         """See `IRequestedMailingListActions`."""
         list_set = getUtility(IMailingListSet)
-        for team_name, status in statuses.items():
+        for team_name, action_status in statuses.items():
             mailing_list = list_set.get(team_name)
             if mailing_list is None:
-                return faults.NoSuchTeam(team_name)
-            if status == 'failure':
+                return faults.NoSuchTeamMailingList(team_name)
+            if action_status == 'failure':
                 if mailing_list.status in (MailingListStatus.CONSTRUCTING,
-                                           MailingListStatus.MODIFIED,
+                                           MailingListStatus.UPDATING,
                                            MailingListStatus.DEACTIVATING):
                     mailing_list.transitionToStatus(MailingListStatus.FAILED)
                 else:
-                    return faults.UnexpectedStatusReport(team_name, status)
-            elif status == 'success':
+                    return faults.UnexpectedStatusReport(
+                        team_name, action_status)
+            elif action_status == 'success':
                 if mailing_list.status in (MailingListStatus.CONSTRUCTING,
-                                           MailingListStatus.MODIFIED):
+                                           MailingListStatus.UPDATING):
                     mailing_list.transitionToStatus(MailingListStatus.ACTIVE)
                 elif mailing_list.status == MailingListStatus.DEACTIVATING:
                     mailing_list.transitionToStatus(MailingListStatus.INACTIVE)
                 else:
-                    return faults.UnexpectedStatusReport(team_name, status)
+                    return faults.UnexpectedStatusReport(
+                        team_name, action_status)
             else:
-                return faults.BadStatus(team_name, status)
+                return faults.BadStatus(team_name, action_status)
         # Everything was fine.
         return True

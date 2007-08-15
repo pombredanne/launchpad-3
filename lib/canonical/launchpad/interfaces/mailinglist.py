@@ -13,7 +13,7 @@ __all__ = [
 
 
 from zope.interface import Interface
-from zope.schema import Choice, Datetime, Int, Object, Set, Text
+from zope.schema import Choice, Datetime, Object, Set, Text
 
 from canonical.launchpad import _
 from canonical.launchpad.webapp.interfaces import ILaunchpadApplication
@@ -94,7 +94,13 @@ class MailingListStatus(DBEnumeratedType):
         to be communicated to Mailman.
         """)
 
-    DEACTIVATING = DBItem(9, """
+    UPDATING = DBItem(9, """
+        Updating
+
+        A modified mailing list is being updated by Mailman.
+        """)
+
+    DEACTIVATING = DBItem(10, """
         Deactivating
 
         The mailing list has been flagged for deactivation by the team owner.
@@ -187,6 +193,16 @@ class IMailingList(Interface):
 
         :raises AssertionError: When prior to constructing, the status of the
             mailing list is not `MailingListStatus.APPROVED`.
+        """
+
+    def startUpdating():
+        """Set the status to the `MailingListStatus.UPDATING` state.
+
+        This state change happens when Mailman pulls the list of modified
+        mailing lists and begins updating them.
+
+        :raises AssertionError: When prior to updating, the status if the
+            mailing list is not `MailingListStatus.MODIFIED`.
         """
 
     def transitionToStatus(target_state):

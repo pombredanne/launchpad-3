@@ -23,7 +23,7 @@ from canonical.functional import FunctionalDocFileSuite, StdoutHandler
 from canonical.launchpad.ftests import login, ANONYMOUS, logout
 from canonical.launchpad.interfaces import (
     CreateBugParams, IBugTaskSet, IDistributionSet, ILanguageSet, ILaunchBag,
-    IPersonSet)
+    IPersonSet, TeamSubscriptionPolicy)
 from canonical.launchpad.webapp.authorization import LaunchpadSecurityPolicy
 from canonical.testing import (
         LaunchpadZopelessLayer, LaunchpadFunctionalLayer,DatabaseLayer,
@@ -199,6 +199,51 @@ def uploadQueueBugLinkedToQuestionSetUp(test):
     login(ANONYMOUS)
 
 
+def mailingListPrintActions(pending_actions):
+    """A helper function for the mailinglist-xmlrpc.txt doctest.
+
+    This helps print the data structure returned from .getPendingActions() in
+    a more succinct way to produce a more readable doctest.  It also helps
+    fuzz the difference in output between running the doctest against both the
+    XMLRPC proxy (where values will be non-prefixed 8-bit strings) and the
+    XMLRPC view (where values will be unicodes).
+    """
+    for action in sorted(pending_actions):
+        for team in sorted(pending_actions[action]):
+            if action in ('create', 'modify'):
+                team, modification = team
+                # Further, we must coerce all values in the modification dict
+                # to unicode, so as to handle the fact that this doctest is
+                # called both via an internal view and through an XMLRPC
+                # proxy.  The former returns unicode values natively, the
+                # latter strs.  The keys are the same in both cases.
+                modification = dict((k, unicode(v))
+                                    for k, v in modification.items())
+                print team, '-->', action, modification
+            else:
+                print team, '-->', action
+
+
+def mailingListNewTeam(team_name):
+    """A helper function for the mailinglist-xmlrpc.txt doctest.
+
+    This just provides a convenience function for creating the kinds of teams
+    we need to use in the doctest.
+    """
+    displayname = ' '.join(word.capitalize() for word in team_name.split('-'))
+    # XXX BarryWarsaw Set the team's subscription policy to OPEN because of
+    # bug 125505.
+    policy = TeamSubscriptionPolicy.OPEN
+    personset = getUtility(IPersonSet)
+    ddaa = personset.getByName('ddaa')
+    return personset.newTeam(ddaa, team_name, displayname,
+                             subscriptionpolicy=policy)
+
+
+# XXX BarryWarsaw 15-Aug-2007: See bug 132784 as a placeholder for improving
+# the harness for the mailinglist-xmlrpc.txt tests, or improving things so
+# that all this cruft isn't necessary.
+
 def mailingListXMLRPCInternalSetUp(test):
     setUp(test)
     # Use the direct API view instance, not retrieved through the component
@@ -235,8 +280,12 @@ def mailingListXMLRPCInternalSetUp(test):
         @adapter
         def reportStatus(self, statuses):
             return super(ImpedenceMatchingView, self).reportStatus(statuses)
-    mailinglist_api = ImpedenceMatchingView('a_context', 'a_view')
+    # Expose in the doctest's globals, the view as the thing with the
+    # IRequestedMailingListAPI interface.  Also expose the helper functions.
+    mailinglist_api = ImpedenceMatchingView(context=None, request=None)
     test.globs['mailinglist_api'] = mailinglist_api
+    test.globs['print_actions'] = mailingListPrintActions
+    test.globs['new_team'] = mailingListNewTeam
     # Expose different commit() functions to handle the 'external' case below
     # where there is more than one connection.  The 'internal' case here has
     # just one coneection so the flush is all we need.
@@ -258,14 +307,9 @@ def mailingListXMLRPCExternalSetUp(test):
     # tests, but if we're able to resolve the big XXX above the
     # mailinglist-xmlrpc.txt-external declaration below, I suspect that these
     # two globals will end up being different functions.
+    test.globs['print_actions'] = mailingListPrintActions
+    test.globs['new_team'] = mailingListNewTeam
     test.globs['commit'] = flush_database_updates
-
-
-def mailingListXMLRPCExternalTearDown(test):
-    from zope.security.management import setSecurityPolicy
-    from zope.security.simplepolicies import PermissiveSecurityPolicy
-    setSecurityPolicy(PermissiveSecurityPolicy)
-    tearDown(test)
 
 
 def LayeredDocFileSuite(*args, **kw):
@@ -517,45 +561,12 @@ special = {
             optionflags=default_optionflags,
             layer=LaunchpadFunctionalLayer
             ),
-    # XXX BarryWarsaw 27-Jul-2007.  There are two things that suck about this.
-    # First, that we are forced to use LaunchpadZopelessLayer when we /should/
-    # be able to use LaunchpadFunctionalLayer like all other XMLRPC tests.
-    # The second is that we're forced to use a special teardown method that
-    # resets the security policy to PermissiveSecurityPolicy.  The latter is a
-    # direct result of the former though because something in the twisty maze
-    # of setups changes the security policy and the LaunchpadZopelessLayer
-    # will complain bitterly if the test doesn't leave the policy in
-    # PermissiveSecurityPolicy.  When you figure out the former, you can
-    # remove the latter.
-    #
-    # So why do we use LaunchpadZopelessLayer here?  Well, because that's what
-    # works!  Seriously, I have no idea what the right thing do to otherwise
-    # is, and if you figure it out, I will owe you a beer.  Without using the
-    # LaunchpadZopelessLayer, the tests won't work because after the XMLRPC
-    # call, the checks of the internal object states will not see the
-    # updates.  No amount of flush_database_updates(),
-    # flush_database_caches(), transaction.commit(), or sqlbase.commit() seems
-    # to make any difference.  I've tried every combination and location of
-    # those calls that I can come up with, but nothing else works.  Why does
-    # LaunchpadZopelessLayer work when nothing else does?  Answer that and
-    # you've probably resolved this XXX.  stub posits in IRC that there are
-    # two connections here, one going through XMLRPC and the other using the
-    # direct database objects.  If that's the case, then both connections
-    # would have to get committed, but I can't figure out how to do that.
-    #
-    # stub also mentions this, which might be a clue <wink>: And to make
-    # things worse, the appserver (and thus the *Functional* test stuff) runs
-    # in SERIALIZABLE transaction isolation level.  This means that the
-    # connection sees a snapshot of the database from the time a query was
-    # first issued on the transaction.  So *both* connections need to be
-    # committed (or the one making the changes commit, and the one trying to
-    # see the changes rollback).
     'mailinglist-xmlrpc.txt-external': FunctionalDocFileSuite(
             '../doc/mailinglist-xmlrpc.txt',
             setUp=mailingListXMLRPCExternalSetUp,
-            tearDown=mailingListXMLRPCExternalTearDown,
+            tearDown=tearDown,
             optionflags=default_optionflags,
-            layer=LaunchpadZopelessLayer
+            layer=LaunchpadFunctionalLayer,
             ),
     }
 
