@@ -54,3 +54,16 @@ supporting Javascript, the statistics are displayed as normal text:
     0 Triaged bugs
     0 In Progress bugs
     0 Fix Committed bugs
+
+== Tags and Filters ==
+
+There's also portlets for easy searching by tags and filters.
+
+    >>> anon_browser.open('http://bugs.launchpad.dev/firefox')
+    >>> print find_portlet(anon_browser.contents, 'Tags')
+    <div class="portlet"...>
+    <h2>Tags</h2>...
+    >>> print find_portlet(anon_browser.contents, 'Filters')
+    <div class="portlet"...>
+    <h2>Filters</h2>...
+
