@@ -167,6 +167,7 @@
             hideElement('bug_reporting_form');
           } else {
             showElement('bug_reporting_form');
+            /* Try and get the whole bug form into view. */
             $('field.actions.submit_bug').focus();
             $('field.comment').focus();
           }
