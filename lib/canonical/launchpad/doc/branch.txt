@@ -622,7 +622,6 @@ branches that have new information available to be scanned.
 This accomplished by making the branch puller and branch scanner
 record the last revision IDs in the branch that they saw.
 
-
 If the last mirrored and last scanned revision IDs differ for a
 branch, then they will be included in the scan list:
 
