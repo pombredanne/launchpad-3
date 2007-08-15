@@ -15,12 +15,29 @@ Owner, Description, Sources and Binaries, the latter two being a count.
 The sample data contains three PPAs.  Only Celso has any packages, with two
 sources and one binary.
 
+== Searching PPAs ==
+
+By default only active (those with, at least one, PENDING or PUBLISHED
+source record) PPAs are presented.
+
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_batch_row'):
     ...    print extract_text(ppa_row)
     Celso Providelo
     packages to help my friends.
-    2
-    1
+    3
+    3
+
+We have a checkbox to allow inactive PPA results.
+
+    >>> browser.getControl(name="show_inactive").value = True
+    >>> browser.getControl("Search").click()
+
+    >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_batch_row'):
+    ...    print extract_text(ppa_row)
+    Celso Providelo
+    packages to help my friends.
+    3
+    3
     No Privileges Person
     I am not allowed to say, I have no privs.
     0
@@ -30,7 +47,10 @@ sources and one binary.
     0
     0
 
-== Searching PPAs ==
+This checkbox value is propagated to subsequent searches:
+
+    >>> browser.getControl(name="show_inactive").value
+    True
 
 No data matches the non-existent search string "bustmybuffers".
 
@@ -54,7 +74,7 @@ In the table rows, the "Owner" is a clickable link to his PPA page.
 
     >>> browser.getLink("Celso Providelo").click()
     >>> browser.title
-    'PPA for Celso Providelo'
+    'Personal Package Archive for Celso Providelo'
 
 The page also shows some stats about Celso's PPA (number of sources. binaries
 and estimated size).
@@ -62,9 +82,9 @@ and estimated size).
     >>> results = find_tag_by_id(browser.contents,'package_counters')
     >>> text = extract_text(results)
     >>> print text
-    2 Sources
+    3 Sources
     (9.5 MiB)
-    1 Binaries
+    3 Binaries
     (3 bytes)
     Estimated archive size:
     9.5 MiB
@@ -81,6 +101,13 @@ will be presented to user containing:
 
     >>> for ppa_row in find_tags_by_class(browser.contents, 'ppa_package_row'):
     ...    print extract_text(ppa_row)
+    pmount - 0.1-1
+    2007-07-09
+    Published
+    hoary
+    Release
+    main
+    editors
     iceweasel - 1.0
     2007-07-09
     Published

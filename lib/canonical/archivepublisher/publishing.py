@@ -2,7 +2,9 @@
 
 __all__ = ['Publisher', 'pocketsuffix', 'suffixpocket', 'getPublisher']
 
+__metaclass__ = type
 
+import apt_pkg
 from datetime import datetime
 import gzip
 import logging
@@ -12,7 +14,6 @@ from sha import sha
 import stat
 import tempfile
 
-from Crypto.Hash.SHA256 import new as sha256
 from zope.security.proxy import removeSecurityProxy
 
 from canonical.archivepublisher import HARDCODED_COMPONENT_ORDER
@@ -45,6 +46,22 @@ Origin: %s
 Label: %s
 Architecture: %s
 """
+
+class sha256:
+    """Encapsulates apt_pkg.sha256sum as expected by publishing.
+
+    It implements '__init__' and 'hexdigest' methods from PEP-247, which are
+    the only ones required in soyuz-publishing-system.
+
+    It's a work around for broken Crypto.Hash.SHA256. See further information
+    in bug #131503.
+    """
+    def __init__(self, content):
+        self._sum = apt_pkg.sha256sum(content)
+
+    def hexdigest(self):
+        """Return the hexdigest produced by apt_pkg.sha256sum."""
+        return self._sum
 
 
 def reorder_components(components):
@@ -99,7 +116,7 @@ def getPublisher(archive, allowed_suites, log, distsroot=None):
         log.error(info)
         raise
 
-    # XXX cprov 20070103: remove security proxy of the Config instance
+    # XXX cprov 2007-01-03: remove security proxy of the Config instance
     # returned by IArchive. This is kinda of a hack because Config doesn't
     # have any interface yet.
     pubconf = removeSecurityProxy(pubconf)
@@ -349,7 +366,7 @@ class Publisher(object):
 
     def _writeDistroRelease(self, distroseries, pocket):
         """Write out the Release files for the provided distroseries."""
-        # XXX: untested method -- kiko, 2006-08-24
+        # XXX: kiko 2006-08-24: Untested method.
 
         # As we generate file lists for apt-ftparchive we record which
         # distroseriess and so on we need to generate Release files for.
@@ -413,11 +430,11 @@ class Publisher(object):
     def _writeDistroArchRelease(self, distroseries, pocket, component,
                                 architecture, all_files):
         """Write out a Release file for a DAR."""
-        # XXX: untested method -- kiko, 2006-08-24
+        # XXX kiko 2006-08-24: Untested method.
 
         full_name = distroseries.name + pocketsuffix[pocket]
 
-        # XXX cprov 20070711: it will be affected by CommercialRepo changes
+        # XXX cprov 2007-07-11: it will be affected by CommercialRepo changes.
         if self.archive == self.distro.main_archive:
             index_suffixes = ('', '.gz', '.bz2')
         else:

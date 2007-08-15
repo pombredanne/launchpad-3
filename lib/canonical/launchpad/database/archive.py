@@ -53,7 +53,7 @@ class Archive(SQLBase):
     def title(self):
         """See `IArchive`."""
         if self.owner is not None:
-            return 'PPA for %s' % self.owner.displayname
+            return 'Personal Package Archive for %s' % self.owner.displayname
         return '%s main archive' % self.distribution.title
 
     @property
@@ -96,11 +96,11 @@ class Archive(SQLBase):
 
         if name is not None:
             clauses.append("""
-            SourcePackagePublishingHistory.sourcepackagerelease =
-                SourcePackageRelease.id AND
-            SourcePackageRelease.sourcepackagename =
-                SourcePackageName.id AND
-            SourcePackageName.name LIKE '%%' || %s || '%%'
+                SourcePackagePublishingHistory.sourcepackagerelease =
+                    SourcePackageRelease.id AND
+                SourcePackageRelease.sourcepackagename =
+                    SourcePackageName.id AND
+                SourcePackageName.name LIKE '%%' || %s || '%%'
             """ % quote_like(name))
             clauseTables.extend(
                 ['SourcePackageRelease', 'SourcePackageName'])
@@ -118,9 +118,10 @@ class Archive(SQLBase):
     def sources_size(self):
         """See `IArchive`."""
         query = """
-        LibraryFileContent.id=LibraryFileAlias.content AND
-        LibraryFileAlias.id=SourcePackageFilePublishing.libraryfilealias AND
-        SourcePackageFilePublishing.archive=%s
+            LibraryFileContent.id=LibraryFileAlias.content AND
+            LibraryFileAlias.id=
+                SourcePackageFilePublishing.libraryfilealias AND
+            SourcePackageFilePublishing.archive=%s
         """ % sqlvalues(self)
 
         clauseTables = ['LibraryFileAlias', 'SourcePackageFilePublishing']
@@ -133,24 +134,56 @@ class Archive(SQLBase):
 
     def getPublishedBinaries(self, name=None):
         """See `IArchive`."""
-        clauses = [
-            'BinaryPackagePublishingHistory.archive = %s' % sqlvalues(self)]
-        clauseTables = []
+        base_clauses = ["""
+            BinaryPackagePublishingHistory.archive = %s AND
+            BinaryPackagePublishingHistory.distroarchrelease =
+                DistroArchRelease.id AND
+            DistroArchRelease.distrorelease = DistroRelease.id AND
+            BinaryPackagePublishingHistory.binarypackagerelease =
+                BinaryPackageRelease.id
+        """ % sqlvalues(self)]
+        clauseTables = [
+            'DistroArchRelease', 'DistroRelease', 'BinaryPackageRelease']
 
         if name is not None:
-            clauses.append("""
-            BinaryPackagePublishingHistory.binarypackagerelease =
-                BinaryPackageRelease.id AND
-            BinaryPackageRelease.binarypackagename =
-                BinaryPackageName.id AND
-            BinaryPackageName.name LIKE '%%' || %s || '%%'
+            base_clauses.append("""
+                BinaryPackageRelease.binarypackagename =
+                    BinaryPackageName.id AND
+                BinaryPackageName.name LIKE '%%' || %s || '%%'
             """ % quote_like(name))
-            clauseTables.extend(
-                ['BinaryPackageRelease', 'BinaryPackageName'])
+            clauseTables.extend(['BinaryPackageName'])
 
-        query = ' AND '.join(clauses)
-        return BinaryPackagePublishingHistory.select(
-            query, orderBy='-id', clauseTables=clauseTables)
+        # Retrieve only the binaries published for the 'nominated architecture
+        # independent' (usually i386) in the distroseries in question.
+        # It includes all architecture-independent binaries only once and the
+        # architecture-specific built for 'nominatedarchindep'.
+        nominated_arch_independent_clause = ["""
+            DistroRelease.nominatedarchindep =
+                BinaryPackagePublishingHistory.distroarchrelease
+        """]
+        nominated_arch_independent_query = ' AND '.join(
+            base_clauses + nominated_arch_independent_clause)
+        nominated_arch_independents = BinaryPackagePublishingHistory.select(
+            nominated_arch_independent_query, orderBy='-id',
+            clauseTables=clauseTables)
+
+        # Retrieve all architecture-specific binary publications except
+        # 'nominatedarchindep' (already included in the previous query).
+        no_nominated_arch_independent_clause = ["""
+            DistroRelease.nominatedarchindep !=
+                BinaryPackagePublishingHistory.distroarchrelease AND
+            BinaryPackageRelease.architecturespecific = true
+        """]
+        no_nominated_arch_independent_query = ' AND '.join(
+            base_clauses + no_nominated_arch_independent_clause)
+        no_nominated_arch_independents = BinaryPackagePublishingHistory.select(
+            no_nominated_arch_independent_query, orderBy='-id',
+            clauseTables=clauseTables)
+
+        unique_binary_publications = nominated_arch_independents.union(
+            no_nominated_arch_independents)
+
+        return unique_binary_publications
 
     @property
     def number_of_binaries(self):
@@ -161,9 +194,10 @@ class Archive(SQLBase):
     def binaries_size(self):
         """See `IArchive`."""
         query = """
-        LibraryFileContent.id=LibraryFileAlias.content AND
-        LibraryFileAlias.id=BinaryPackageFilePublishing.libraryfilealias AND
-        BinaryPackageFilePublishing.archive=%s
+             LibraryFileContent.id=LibraryFileAlias.content AND
+             LibraryFileAlias.id=
+                 BinaryPackageFilePublishing.libraryfilealias AND
+             BinaryPackageFilePublishing.archive=%s
         """ % sqlvalues(self)
 
         clauseTables = ['LibraryFileAlias', 'BinaryPackageFilePublishing']
