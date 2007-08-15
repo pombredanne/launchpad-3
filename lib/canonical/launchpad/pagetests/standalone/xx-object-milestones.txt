@@ -328,8 +328,11 @@ Let's target an existing bug to both series "1.0" and series "2.0":
 Now we'll add each bug target to the same test milestone, but using different
 levels of importance:
 
-    >>> edit_url = 'http://bugs.launchpad.dev/firefox/1.0/+bug/15/+editstatus'
-    >>> browser.open(edit_url)
+    >>> import re
+    >>> browser.open(bug_1_url)
+
+    >>> edit_status_url = re.compile('1.0/\\+bug/[0-9]+/\\+editstatus')
+    >>> browser.getLink(url=edit_status_url).click()
     >>> browser.getControl('Milestone').displayValue = [milestone]
     >>> browser.getControl('Importance').value = ['Critical']
     >>> browser.getControl('Save Changes').click()
@@ -338,8 +341,8 @@ levels of importance:
     Affects Status Importance ...
     1.0     New    Critical   ...
 
-    >>> edit_url = 'http://bugs.launchpad.dev/firefox/2.0/+bug/15/+editstatus'
-    >>> browser.open(edit_url)
+    >>> edit_status_url = re.compile('2.0/\\+bug/[0-9]+/\\+editstatus')
+    >>> browser.getLink(url=edit_status_url).click()
     >>> browser.getControl('Milestone').displayValue = [milestone]
     >>> browser.getControl('Importance').value = ['High']
     >>> browser.getControl('Save Changes').click()
