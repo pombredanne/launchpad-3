@@ -340,12 +340,9 @@ class POFileMixIn(RosettaStats):
                 # so it's relevant to any POMsgSets that refer to the same
                 # primemsgid, including the POMsgSet it itself is attached to.
 
-                # XXX: JeroenVermeulen 2007-08-02, this assertion may still
-                # trigger the unnecessary queries.  Remove it after testing
-                # with production data!  (bug ?????)
-                # XXX: JeroenVermeulen 2007-08-02, when landing this, register
-                # a bug reminding me to remove the assertion, and add it to
-                # the XXX above.
+                # XXX: JeroenVermeulen 2007-08-02 bug=132660: this assertion
+                # may still trigger the unnecessary queries.  Remove it after
+                # testing with production data!
                 assert (not submission.pomsgset.isfuzzy,
                         "Submission %d from fuzzy POMsgSet %d fetched as a "
                         "suggestion."
