@@ -867,11 +867,14 @@ class Trac(ExternalBugTracker):
         """See IExternalBugTracker"""
         status_map = {
             'assigned': BugTaskStatus.CONFIRMED,
+            # XXX: 2007-08-06 Graham Binns:
+            #      We should follow dupes if possible.
             'duplicate': BugTaskStatus.CONFIRMED,
             'fixed': BugTaskStatus.FIXRELEASED,
             'invalid': BugTaskStatus.INVALID,
             'new': BugTaskStatus.NEW,
             'open': BugTaskStatus.NEW,
+            'reopened': BugTaskStatus.NEW,
             'wontfix': BugTaskStatus.WONTFIX,
             'worksforme': BugTaskStatus.INVALID,
             UNKNOWN_REMOTE_STATUS: BugTaskStatus.UNKNOWN,
