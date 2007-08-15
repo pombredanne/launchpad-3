@@ -39,16 +39,14 @@ number of queries issued is relatively low.  Mileage may vary, but consider
 this test a tripwire for the number potentially getting out of hand.
 
     >>> anon_browser.open(
-    ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
     ...     '+pots/evolution-2.2/es/+translate')
     >>> anon_browser.url
-    'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
+    'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
     >>> print anon_browser.contents
     <...
     >>> statement_count = query_counter.count
-    >>> statement_count > 0
-    True
-    >>> statement_count < 100
+    >>> 0 < statement_count < 100
     True
 
 === Reviewing and translating ===
@@ -58,16 +56,14 @@ option to make suggestions, but existing suggestions as well.  It takes more
 queries, but it still shouldn't run in the hundreds.
 
     >>> admin_browser.open(
-    ...     'http://launchpad.dev/ubuntu/hoary/+source/evolution/'
+    ...     'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/'
     ...     '+pots/evolution-2.2/es/+translate')
     >>> admin_browser.url
-    'http://launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
+    'http://translations.launchpad.dev/ubuntu/hoary/+source/evolution/+pots/evolution-2.2/es/+translate'
 
-    >>> query_counter.count > statement_count
+    >>> statement_count < query_counter.count < 150
     True
-    >>> query_counter.count < 150
-    True
-
 
     >>> # Cleanup.
     >>> query_counter.unregister()
+

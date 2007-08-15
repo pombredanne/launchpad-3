@@ -161,17 +161,17 @@ class POFileMixIn(RosettaStats):
     submissions caches.  That machinery is needed even for `DummyPOFile`s.
     """
 
-    def getMsgSetsForPOTMsgSets(self, for_potmsgsets):
+    def getMsgSetsForPOTMsgSets(self, potmsgsets):
         """See `IPOFile`."""
-        if for_potmsgsets is None:
+        if potmsgsets is None:
             return {}
-        for_potmsgsets = list(for_potmsgsets)
-        if not for_potmsgsets:
+        potmsgsets = list(potmsgsets)
+        if not potmsgsets:
             return {}
 
-        # Retrieve existing POMsgSets matching for_potmsgsets (one each).
+        # Retrieve existing POMsgSets matching potmsgsets (one each).
         ids_as_sql = ','.join(
-            quote(potmsgset) for potmsgset in for_potmsgsets)
+            quote(potmsgset) for potmsgset in potmsgsets)
         existing_msgsets = []
         if self.id is not None:
             existing_msgsets = POMsgSet.select(
@@ -184,7 +184,7 @@ class POFileMixIn(RosettaStats):
         dummies = {}
         language_code = self.language.code
         variant = self.variant
-        for potmsgset in for_potmsgsets:
+        for potmsgset in potmsgsets:
             if not potmsgset in result:
                 dummy = potmsgset.getDummyPOMsgSet(language_code, variant)
                 dummies[potmsgset] = dummy
