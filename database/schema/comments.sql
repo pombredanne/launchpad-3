@@ -899,6 +899,7 @@ COMMENT ON TABLE ProjectBounty IS 'This table records a simple link between a bo
 
 -- Messaging subsytem
 COMMENT ON TABLE BugMessage IS 'This table maps a message to a bug. In other words, it shows that a particular message is associated with a particular bug.';
+COMMENT ON COLUMN BugMessage.bugwatch IS 'The external bug this bug comment was imported from.';
 COMMENT ON TABLE Message IS 'This table stores a single RFC822-style message. Messages can be threaded (using the parent field). These messages can then be referenced from elsewhere in the system, such as the BugMessage table, integrating messageboard facilities with the rest of The Launchpad.';
 COMMENT ON COLUMN Message.parent IS 'A "parent message". This allows for some level of threading in Messages.';
 COMMENT ON COLUMN Message.subject IS 'The title text of the message, or the subject if it was an email.';
@@ -1561,4 +1562,17 @@ COMMENT ON COLUMN Entitlement.whiteboard IS 'A place for administrator notes.';
 COMMENT ON COLUMN Entitlement.state IS 'The state (REQUESTED, ACTIVE, INACTIVE) of the entitlement.';
 COMMENT ON COLUMN Entitlement.is_dirty IS 'This entitlement has been modified and the state needst to be updated on the external system.';
 
+
+-- OpenIdRealmConfig
+COMMENT ON TABLE OpenIdRPConfig IS 'Configuration information for OpenID Relying Parties';
+COMMENT ON COLUMN OpenIdRPConfig.trust_root IS 'The trust root for this RP';
+COMMENT ON COLUMN OpenIdRPConfig.displayname IS 'The human readable name for this RP';
+COMMENT ON COLUMN OpenIDRPConfig.description IS 'A description of the RP.  Should indicate why the RP wants the user to log in';
+COMMENT ON COLUMN OpenIdRPConfig.logo IS 'A reference to the logo for this RP';
+COMMENT ON COLUMN OpenIdRPConfig.allowed_sreg IS 'A comma separated list of fields that can be sent to the RP via openid.sreg.  The field names should not have the "openid.sreg." prefix';
+COMMENT ON COLUMN OpenIdRPConfig.creation_rationale IS 'A person creation rationale to use for users who create an account while logging in to this RP';
+
+
+-- ProductSubscription
+-- COMMENT ON TABLE ProductSubscription IS 'Defines the support contacts for a given product. The support contacts will be automatically subscribed to every support request filed on the product.';
 
