@@ -160,17 +160,17 @@ class POFileMixIn(RosettaStats):
     submissions caches.  That machinery is needed even for `DummyPOFile`s.
     """
 
-    def getMsgSetsForPOTMsgSets(self, for_potmsgsets):
+    def getMsgSetsForPOTMsgSets(self, potmsgsets):
         """See `IPOFile`."""
-        if for_potmsgsets is None:
+        if potmsgsets is None:
             return {}
-        for_potmsgsets = list(for_potmsgsets)
-        if not for_potmsgsets:
+        potmsgsets = list(potmsgsets)
+        if not potmsgsets:
             return {}
 
-        # Retrieve existing POMsgSets matching for_potmsgsets (one each).
+        # Retrieve existing POMsgSets matching potmsgsets (one each).
         ids_as_sql = ','.join(
-            quote(potmsgset) for potmsgset in for_potmsgsets)
+            quote(potmsgset) for potmsgset in potmsgsets)
         existing_msgsets = []
         if self.id is not None:
             existing_msgsets = POMsgSet.select(
@@ -183,7 +183,7 @@ class POFileMixIn(RosettaStats):
         dummies = {}
         language_code = self.language.code
         variant = self.variant
-        for potmsgset in for_potmsgsets:
+        for potmsgset in potmsgsets:
             if not potmsgset in result:
                 dummy = potmsgset.getDummyPOMsgSet(language_code, variant)
                 dummies[potmsgset] = dummy
@@ -298,6 +298,9 @@ class POFileMixIn(RosettaStats):
         for submission in relevant_submissions:
             # There is a bit of special treatment for POSubmissions belonging
             # to fuzzy POMsgSets, since we don't accept those as suggestions.
+            # Step 1 doesn't retrieve such POSubmissions as suggestions, but
+            # it does retrieve whatever POSubmissions are directly attached to
+            # stored_pomsgsets, regardless of fuzziness.
             # That means that if we retrieve a submission for a fuzzy
             # POMsgSet, it must be because that POMsgSet is one of the
             # stored_pomsgsets.
@@ -314,20 +317,24 @@ class POFileMixIn(RosettaStats):
             owner_id = submission.pomsgsetID
             primemsgid = available[submission.id]
             assert (owner_id is not None,
-                    "POSubmission in database has no POMsgSet.")
+                    "POSubmission %d has no POMsgSet." % submission.id)
 
             if owner_id in pomsgset_ids and submission.pomsgset.isfuzzy:
                 # This is a POMsgSet that we've fetched (so we can access it
                 # without causing an additional database fetch) and it turns
                 # out to be fuzzy.  That implies that none of our pomsgsets
                 # are expecting it as a useful suggestion, though we do need
-                # to present it to its owning pomsgset.
-                of_pomsgset = submission.pomsgset
-                assert (of_pomsgset in takers_for_primemsgid[primemsgid],
-                        "Fuzzy POMsgSet submission retrieved for no purpose.")
-                assert (of_pomsgset in result,
-                        "Fetched submission for unexpected, fuzzy POMsgSet.")
-                result[of_pomsgset].append(submission)
+                # to include it in the cacheable data for the POMsgSet it is
+                # attached to.
+                attached_msgset = submission.pomsgset
+                assert (attached_msgset in takers_for_primemsgid[primemsgid],
+                        "Fuzzy POMsgSet submission %d retrieved for no "
+                        "apparent purpose." % submission.id)
+                assert (attached_msgset in result,
+                        "Fetched submission %d of unexpected, fuzzy "
+                        "POMsgSet %d."
+                        % (submission.id, submission.pomsgset.id))
+                result[attached_msgset].append(submission)
             else:
                 # Any other POSubmission we see here has to be non-fuzzy, and
                 # so it's relevant to any POMsgSets that refer to the same
@@ -340,7 +347,9 @@ class POFileMixIn(RosettaStats):
                 # a bug reminding me to remove the assertion, and add it to
                 # the XXX above.
                 assert (not submission.pomsgset.isfuzzy,
-                        "Fuzzy POMsgSet submission fetched as a suggestion.")
+                        "Submission %d from fuzzy POMsgSet %d fetched as a "
+                        "suggestion."
+                        % (submission.id, submission.pomsgset.id))
                 for recipient in takers_for_primemsgid[primemsgid]:
                     result[recipient].append(submission)
 

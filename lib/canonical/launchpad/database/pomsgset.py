@@ -125,8 +125,9 @@ class POMsgSetMixIn:
 
         # Now that we know what our active posubmissions are, filter out any
         # suggestions that refer to the same potranslations.
-        # XXX: JeroenVermeulen 2007-08-02, can we move this into SQL to speed
-        # up the big expensive queries on POSubmission?  (bug 30602)
+        # XXX: JeroenVermeulen 2007-08-02, can we move this selection into SQL
+        # to speed up the big expensive queries on POSubmission by making them
+        # return less data?  (bug 30602)
         for pluralform in self.suggestions.keys():
             active = self.getActiveSubmission(pluralform)
             if active is not None and active.potranslation is not None:

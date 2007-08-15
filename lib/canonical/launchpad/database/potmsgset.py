@@ -34,7 +34,7 @@ class POTMsgSet(SQLBase):
     sourcecomment = StringCol(dbName='sourcecomment', notNull=False)
     flagscomment = StringCol(dbName='flagscomment', notNull=False)
 
-    have_cached_msgid_plural = False
+    has_cached_msgid_plural = False
 
     @property
     def msgid(self):
@@ -44,7 +44,7 @@ class POTMsgSet(SQLBase):
     @property
     def msgid_plural(self):
         """See IPOTMsgSet."""
-        if self.have_cached_msgid_plural:
+        if self.has_cached_msgid_plural:
             return self.cached_msgid_plural
 
         self.cached_msgid_plural = None
@@ -59,7 +59,7 @@ class POTMsgSet(SQLBase):
         if plural is not None:
             self.cached_msgid_plural = plural.msgid
 
-        self.have_cached_msgid_plural = True
+        self.has_cached_msgid_plural = True
         return self.cached_msgid_plural
 
     @property
@@ -231,7 +231,7 @@ class POTMsgSet(SQLBase):
         elif pluralForm == TranslationConstants.PLURAL_FORM:
             # We may have had this cached, and it just changed.  Don't bother
             # updating cached value, just note we need to re-fetch it.
-            self.have_cached_msgid_plural = False
+            self.has_cached_msgid_plural = False
 
         if existing is None:
             return POMsgIDSighting(
