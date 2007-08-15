@@ -156,6 +156,11 @@
     />
 
   <vocabulary
+    name="TranslatableLanguage"
+    factory="canonical.launchpad.vocabularies.TranslatableLanguageVocabulary"
+    />
+
+  <vocabulary
     name="Milestone"
     factory="canonical.launchpad.vocabularies.MilestoneVocabulary"
     />

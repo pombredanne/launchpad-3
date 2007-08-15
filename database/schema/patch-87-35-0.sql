@@ -15,4 +15,7 @@ CREATE TABLE OpenIdRPConfig (
 CREATE UNIQUE INDEX openidrpconfig__trust_root__key
   ON OpenIdRPConfig(trust_root);
 
-INSERT INTO LaunchpadDatabaseRevision VALUES (87, 95, 0);
+-- Index for librarian garbage collection
+CREATE INDEX openidrpconfig__logo__idx ON OpenIdRPConfig(logo);
+
+INSERT INTO LaunchpadDatabaseRevision VALUES (87, 35, 0);
