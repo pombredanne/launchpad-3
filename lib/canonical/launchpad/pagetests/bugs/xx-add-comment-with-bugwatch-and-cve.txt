@@ -38,11 +38,11 @@ added to the bugwatches resp CVEs related to this bug
   auto-some.bugzilla #9876
 
 When extracting the remote bug URLs, we can use whatever text we want and
-place the URLs anywhere within this text, only valid URIs will be
-extracted, and only ones that look like remote bugs. Here, for example,
-we include two URLs in a comment, both on the same line, one surrounded
-by non-ascii characters. One of these URLs looks like a remote bugzilla
-bug, the other is not the url of a remote bug.
+place the URLs anywhere within this text. Only valid URIs that look like
+remote bugs will be extracted. Here, for example, we include two URLs in
+a comment, both on the same line, one surrounded by non-ascii characters.
+One of these URLs looks like a remote bugzilla bug, the other is not the
+url of a remote bug.
 
   >>> user_browser.getControl('Subject').value = (
   ...     'Test Comment Subject')
