@@ -1332,7 +1332,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             FROM SectionSelection AS ss WHERE ss.distrorelease = %s
             ''' % sqlvalues(self.id, self.parentseries.id))
 
-    def _copyActiveTranslationsToNewRelease(self, ztm, copier):
+    def _copyActiveTranslationsToNewRelease(self, ztm, copier, logger):
         """We're a new series; inherit translations from parent.
 
         This method uses MultiTableCopy to copy data.
@@ -1352,6 +1352,9 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         already in the process of being copied back to its origin table.  In
         that case the sensible thing to do is probably to continue copying it.
         """
+        logger.info(
+            "Populating blank distroseries %s with translations from %s." %
+            sqlvalues(self, self.parent))
 
         # This method was extracted as one of two cases from a huge
         # _copy_active_translations() method.  Because it only deals with the
@@ -1391,7 +1394,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             " with the information being copied.")
 
         # Clean up any remains from a previous run.  If we got here, that
-        # means those remains are not salvagable.
+        # means that any such remains are unsalvagable.
         copier.dropHoldingTables()
 
         # Copy relevant POTemplates from existing series into a holding
@@ -1436,7 +1439,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # Now pour the holding tables back into the originals
         copier.pour(ztm)
 
-    def _copyActiveTranslationsAsUpdate(self, ztm):
+    def _copyActiveTranslationsAsUpdate(self, ztm, logger):
         """Receive active, updated translations from parent series."""
         full_name = "%s_%s" % (self.distribution.name, self.name)
         tables = ['POFile', 'POMsgSet', 'POSubmission']
@@ -1903,7 +1906,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         ztm.commit()
 
-    def _copy_active_translations(self, ztm):
+    def _copy_active_translations(self, ztm, logger):
         """Copy active translations from the parent into this one.
 
         This method is used in two scenarios: when a new distribution series
@@ -1935,20 +1938,23 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         if len(self.potemplates) == 0:
             # We're a new distroseries; copy from scratch
-            self._copyActiveTranslationsToNewRelease(ztm, copier)
+            self._copyActiveTranslationsToNewRelease(ztm, copier, logger)
         elif copier.needsRecovery():
             # Recover data from previous, abortive run
+            logger.info("A copy was already running.  Resuming...")
             copier.pour(ztm)
         else:
             # Incremental copy of updates from parent distroseries
-            self._copyActiveTranslationsAsUpdate(ztm)
+            self._copyActiveTranslationsAsUpdate(ztm, logger)
 
-    def copyMissingTranslationsFromParent(self, ztm):
+    def copyMissingTranslationsFromParent(self, ztm, logger=None):
         """See IDistroSeries."""
+        if logger is None:
+            logger = logging
         flush_database_updates()
         flush_database_caches()
         # Request the translation copy.
-        self._copy_active_translations(ztm)
+        self._copy_active_translations(ztm, logger)
 
     def getPendingPublications(self, archive, pocket, is_careful):
         """See IPublishing."""
