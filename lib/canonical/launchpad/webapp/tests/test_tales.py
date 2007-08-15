@@ -1,8 +1,11 @@
 # Copyright 2004 Canonical Ltd.  All rights reserved.
-#
+"""tales.py doctests."""
+
 
 import unittest
+
 from zope.testing.doctestunit import DocTestSuite
+
 
 def test_requestapi():
     """
@@ -157,7 +160,9 @@ def test_break_long_words():
       <tag>1234567890123456</tag>
     """
 
+
 def test_suite():
+    """Return this module's doctest Suite. Unit tests are not run."""
     suite = DocTestSuite()
     return suite
 
