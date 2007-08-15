@@ -481,7 +481,7 @@ class DatabaseBranchDetailsStorage:
         branch = getUtility(IBranchSet).get(branchID)
         if branch is None:
             return False
-        branch.startMirroring()
+        removeSecurityProxy(branch).startMirroring()
         return True
 
     def mirrorComplete(self, branchID, lastRevisionID):
@@ -498,7 +498,7 @@ class DatabaseBranchDetailsStorage:
         branch = getUtility(IBranchSet).get(branchID)
         if branch is None:
             return False
-        branch.mirrorComplete(lastRevisionID)
+        removeSecurityProxy(branch).mirrorComplete(lastRevisionID)
         return True
 
     def mirrorFailed(self, branchID, reason):
@@ -514,7 +514,7 @@ class DatabaseBranchDetailsStorage:
         branch = getUtility(IBranchSet).get(branchID)
         if branch is None:
             return False
-        branch.mirrorFailed(reason)
+        removeSecurityProxy(branch).mirrorFailed(reason)
         return True
 
     def recordSuccess(self, name, hostname, date_started, date_completed):
