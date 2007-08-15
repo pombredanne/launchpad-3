@@ -283,11 +283,13 @@ class Branch(SQLBase):
         self.last_mirrored = self.last_mirror_attempt
         self.mirror_failures = 0
         self.mirror_status_message = None
-        if self.branch_type == BranchType.MIRRORED:
-            self.mirror_request_time = (
-                datetime.now(pytz.timezone('UTC')) + timedelta(hours=6))
-        else:
-            self.mirror_request_time = None
+        if self.last_mirror_attempt > self.mirror_request_time:
+            # No mirror was requested since we started mirroring.
+            if self.branch_type == BranchType.MIRRORED:
+                self.mirror_request_time = (
+                    datetime.now(pytz.timezone('UTC')) + timedelta(hours=6))
+            else:
+                self.mirror_request_time = None
         self.last_mirrored_id = last_revision_id
         self.syncUpdate()
 
