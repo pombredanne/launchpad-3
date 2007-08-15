@@ -5,7 +5,6 @@
 __metaclass__ = type
 
 import os
-import re
 
 from canonical.launchpad.components.externalbugtracker import (
     Bugzilla, Mantis, Trac)
