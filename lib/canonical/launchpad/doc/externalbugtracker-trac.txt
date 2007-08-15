@@ -157,9 +157,6 @@ We'll add some more watches now.
     ...         remotebug=str(remote_bug_id))
     ...     expected_remote_statuses[remote_bug_id] = remote_status
 
-Because we're updating more than ten bugs our Trac code will ask the server
-for them all at once.
-
     >>> trac.trace_calls = True
     >>> trac.updateBugWatches(example_bug_tracker.watches)
     CALLED urlopen(u'http://bugs.example.com/query?id=...
@@ -195,7 +192,9 @@ now no bug watches are in need of updating:
     0
 
 If the status isn't different, the lastchanged attribute doesn't get
-updated:
+updated. If we set a bug watch's lastchanged timestamp manually and call
+update, lastchanged shouldn't be affected because the remote status of the bug
+watch hasn't altered:
 
     >>> import pytz
     >>> from datetime import datetime, timedelta

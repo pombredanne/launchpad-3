@@ -179,8 +179,11 @@ class TestTrac(Trac):
     """Trac ExternalBugTracker for testing purposes.
 
     It overrides urlopen, so that access to a real Trac instance isn't needed.
+    Also, it overrides the default batch_query_threshold for the sake of
+    making test data sane.
     """
 
+    batch_query_threshold = 10.
     trace_calls = False
 
     def urlopen(self, url):
