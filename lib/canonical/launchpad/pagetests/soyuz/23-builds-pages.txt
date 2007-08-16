@@ -193,7 +193,9 @@ doesn't have any builds.
 Builds of commercial packages show up on the builds page as any other package
 from the primary archive.
 
-  >>> browser.open("http://launchpad.dev/ubuntu//+builds?build_text=commercialpackage&build_state=built")
+  >>> browser.open(
+  ...    "http://launchpad.dev/ubuntu//+builds?build_text="
+  ...    "commercialpackage&build_state=built")
   >>> print extract_text(find_tags_by_class(browser.contents, 'listing')[0])
   i386 build of commercialpackage 1.0-1 in ubuntu breezy-autotest RELEASE
   ...

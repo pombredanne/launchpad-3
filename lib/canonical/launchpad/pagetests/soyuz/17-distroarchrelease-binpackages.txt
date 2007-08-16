@@ -133,17 +133,14 @@ in the previous section of this page.
 This page provides the publishing history of this BinaryPackage within
 this architecture:
 
-  >>> print find_tag_by_id(browser.contents, 'publishings')
-  <div id="publishings">
-  <b>
+  >>> print extract_text(find_tag_by_id(browser.contents, 'publishings'))
   breezy-autotest
   i386
-  Release</b>:
+  Release:
   Published
   version 1.0-1
   in component commercial
   and section devel
-  ...
 
 
 It also provides a link to the currently published version:
@@ -161,16 +158,17 @@ $LP/ubuntu/$DISTRORELEASE/$ARCHTAG/$BINARYNAME/$VERSION
 
 It's also reachable in a more natural way, starting from distribution page:
 
-  >>> browser.open(
-  ...     'http://launchpad.dev/ubuntu')
+  >>> browser.open('http://launchpad.dev/ubuntu')
 
 Then we get to the DistroSeries page:
 
-  >>> browser.getLink(url='/ubuntu/breezy-autotest').click()
+browser.getLink(url='/ubuntu/breezy-autotest').click()
+  >>> browser.getLink('6.6.6 (Breezy Badger Autotest)').click()
 
 Then the DistroArchSeries page:
 
-  >>> browser.getLink(url='/ubuntu/breezy-autotest/i386').click()
+browser.getLink(url='/ubuntu/breezy-autotest/i386').click()
+  >>> browser.getLink('breezy-autotest i386 (official)').click()
 
 Now we are able to use the search box in this page:
 
@@ -187,21 +185,13 @@ This page represents an IDistroArchSeriesBinaryPackageRelease and is
 able to point the user to the IDistroSeriesSourcePackageRelease which
 originated itself:
 
-  >>> print find_tag_by_id(browser.contents, 'source')
-  <div id="source">
-    <ul>
-      <li class="source package">
-        <a href="/ubuntu/+source/commercialpackage/1.0-1">commercialpackage 1.0-1 (source) in Test Distro</a>
-      </li>
-    </ul>
-  </div>
+  >>> print extract_text(find_tag_by_id(browser.contents, 'source'))
+  commercialpackage 1.0-1 (source) in Test Distro
 
 Also provide a section with the contained files, including respective
 librarian URL and size:
 
-  >>> print find_tag_by_id(browser.contents, 'files')
-  <div id="files">
-  ...
-  <a href="http://localhost:58000/70/commercialpackage_1.0-1_i386.deb">commercialpackage_1.0-1_i386.deb</a>
-  ...
+  >>> print extract_text(find_tag_by_id(browser.contents, 'files'))
+  commercialpackage_1.0-1_i386.deb
+  (652 bytes)
 

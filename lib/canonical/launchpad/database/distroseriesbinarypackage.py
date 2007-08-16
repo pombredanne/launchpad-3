@@ -84,11 +84,11 @@ class DistroSeriesBinaryPackage:
                 BinaryPackageRelease.id AND
             BinaryPackageRelease.binarypackagename = %s AND
             BinaryPackagePublishingHistory.status != %s
-            """ % sqlvalues(self.distroseries,
-                            [archive.id for archive in
-                                self.distroseries.all_distro_archives],
-                            self.binarypackagename,
-                            PackagePublishingStatus.REMOVED),
+            """ % sqlvalues(
+                    self.distroseries,
+                    self.distroseries.distribution.all_distro_archive_ids,
+                    self.binarypackagename,
+                    PackagePublishingStatus.REMOVED),
             orderBy=['-datecreated'],
             clauseTables=['DistroArchRelease', 'BinaryPackageRelease'])
         return sorted(ret, key=lambda a: (

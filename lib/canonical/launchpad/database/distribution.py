@@ -156,6 +156,18 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
             Purpose != %s""" % sqlvalues(self.id, ArchivePurpose.PPA)
             )
 
+    @cachedproperty
+    def all_distro_archive_ids(self):
+        """See `IDistribution`."""
+        return [archive.id for archive in self.all_distro_archives]
+
+    def archiveIdList(self, archive=None):
+        """See `IDistribution`."""
+        if archive is None:
+            return self.all_distro_archive_ids
+        else:
+            return [archive.id]
+
     @property
     def all_milestones(self):
         """See `IDistribution`."""
@@ -992,19 +1004,22 @@ class Distribution(SQLBase, BugTargetBase, HasSpecificationsMixin,
 
     def getArchiveByComponent(self, component_name):
         """See `IDistribution`."""
-        if component_name == 'commercial':
+        # XXX Julian 2007-08-16
+        # These component names should be Soyuz-wide constants.
+        componentMapToArchivePurpose = {
+            'main' : ArchivePurpose.PRIMARY,
+            'restricted' : ArchivePurpose.PRIMARY,
+            'universe' : ArchivePurpose.PRIMARY,
+            'multiverse' : ArchivePurpose.PRIMARY,
+            'commercial' : ArchivePurpose.COMMERCIAL,
+            }
+
+        try:
+            # Map known components.
             return getUtility(IArchiveSet).getByDistroPurpose(self,
-                ArchivePurpose.COMMERCIAL)
-        # Other known components get the primary archive.
-        elif component_name in (
-            # XXX Julian 2007-08-08
-            # This should not be a hardcoded list but I expect this to
-            # change in the future when more archive types are in use.
-            'main', 'restricted', 'universe', 'multiverse'):
-            return getUtility(IArchiveSet).getByDistroPurpose(self,
-                ArchivePurpose.PRIMARY)
-        # Otherwise we defer to the caller.
-        else:
+                componentMapToArchivePurpose[component_name])
+        except KeyError:
+            # Otherwise we defer to the caller.
             return None
 
 

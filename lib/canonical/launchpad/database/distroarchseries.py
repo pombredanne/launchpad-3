@@ -32,7 +32,7 @@ from canonical.launchpad.database.binarypackagerelease import (
     BinaryPackageRelease)
 from canonical.launchpad.helpers import shortlist
 from canonical.lp.dbschema import (
-    PackagePublishingPocket, PackagePublishingStatus)
+    ArchivePurpose, PackagePublishingPocket, PackagePublishingStatus)
 
 class DistroArchSeries(SQLBase):
     implements(IDistroArchSeries, IHasBuildRecords, IPublishing)
@@ -93,7 +93,7 @@ class DistroArchSeries(SQLBase):
             BinaryPackagePublishingHistory.pocket = %s
             """ % sqlvalues(
                     self,
-                    [archive.id for archive in self.all_distro_archives],
+                    self.distroseries.distribution.all_distro_archive_ids,
                     PackagePublishingStatus.PUBLISHED,
                     PackagePublishingPocket.RELEASE
                  )
@@ -145,7 +145,7 @@ class DistroArchSeries(SQLBase):
 
     def searchBinaryPackages(self, text):
         """See IDistroArchSeries."""
-        archives = [archive.id for archive in self.all_distro_archives]
+        archives = self.distroseries.distribution.archiveIdList()
         bprs = BinaryPackageRelease.select("""
             BinaryPackagePublishingHistory.distroarchrelease = %s AND
             BinaryPackagePublishingHistory.archive IN %s AND
@@ -221,11 +221,7 @@ class DistroArchSeries(SQLBase):
             queries.append("status=%s" % sqlvalues(
                 PackagePublishingStatus.PUBLISHED))
 
-        archives = []
-        if archive is None:
-            archives = [archive.id for archive in self.all_distro_archives]
-        else:
-            archives = [archive.id]
+        archives = self.distroseries.distribution.archiveIdList(archive)
         queries.append("archive IN %s" % sqlvalues(archives))
 
         published = BinaryPackagePublishingHistory.select(
@@ -260,7 +256,7 @@ class DistroArchSeries(SQLBase):
         # exclude RELEASE pocket if the distroseries was already released,
         # since it should not change.
         if (not self.distroseries.isUnstable() and
-            archive in self.all_distro_archives):
+            archive.purpose != ArchivePurpose.PPA):
             queries.append(
             'pocket != %s' % sqlvalues(PackagePublishingPocket.RELEASE))
 
@@ -288,10 +284,6 @@ class DistroArchSeries(SQLBase):
     @property
     def main_archive(self):
         return self.distroseries.distribution.main_archive
-
-    @property
-    def all_distro_archives(self):
-        return self.distroseries.distribution.all_distro_archives
 
 
 class DistroArchSeriesSet:

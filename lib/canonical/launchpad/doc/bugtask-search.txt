@@ -484,7 +484,6 @@ It starts off with no bugs:
 
 We can file a bug against it and see that show up in a search:
 
-    >>> from canonical.database.sqlbase import ZopelessTransactionManager
     >>> from canonical.launchpad.interfaces import CreateBugParams
     >>> bug = cdrkit.createBug(
     ...     CreateBugParams(owner=no_priv, title='Bug to be fixed in trunk',

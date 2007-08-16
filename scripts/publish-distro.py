@@ -80,7 +80,7 @@ def main():
             clear_current_connection_cache()
             gc.collect()
         except:
-            log.exception("Bad muju while %s" % description)
+            log.exception("Unexpected exception while %s" % description)
             txn.abort()
             raise
 

@@ -5,12 +5,10 @@ __metaclass__ = type
 
 from unittest import TestCase, TestLoader
 import os
-import sys
 import tempfile
 
 from zope.component import getUtility
 
-from canonical.config import config
 from canonical.database.sqlbase import commit
 from canonical.launchpad.interfaces import IDistributionSet
 from canonical.launchpad.scripts.ftpmaster import (

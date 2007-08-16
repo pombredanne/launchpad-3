@@ -311,8 +311,8 @@ use to retrieve files from it.
   >>> sandbox_archive.archive_url
   u'http://ppa.launchpad.dev/name16/ubuntu'
 
-  >>> getUtility(IArchiveSet).getByDistroPurpose(ubuntutest,
-  ...     ArchivePurpose.PRIMARY).archive_url
+  >>> getUtility(IArchiveSet).getByDistroPurpose(
+  ...     ubuntutest, ArchivePurpose.PRIMARY).archive_url
   u'http://launchpad.dev/ubuntutest'
 
 
@@ -323,9 +323,7 @@ archive.
   >>> comm_pubconf = removeSecurityProxy(
   ...     commercial_archive.getPubConfig())
   >>> for distroseries in comm_pubconf._distroserieses.keys():
-  ...     components = set(
-  ...         comm_pubconf._distroserieses[distroseries]['components'])
-  ...     print components
+  ...     print set(comm_pubconf._distroserieses[distroseries]['components'])
   set(['commercial'])
   set(['commercial'])
 

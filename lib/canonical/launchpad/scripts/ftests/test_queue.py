@@ -18,7 +18,7 @@ from canonical.launchpad.interfaces import (
     IArchiveSet, IDistributionSet, IPackageUploadSet)
 from canonical.launchpad.mail import stub
 from canonical.launchpad.scripts.queue import (
-    CommandRunner, CommandRunnerError, QueueActionError, name_queue_map)
+    CommandRunner, CommandRunnerError, name_queue_map)
 from canonical.librarian.ftests.harness import (
     fillLibrarianFile, cleanupLibrarianFiles)
 from canonical.lp.dbschema import (
@@ -538,10 +538,14 @@ class TestQueueTool(TestQueueBase):
         self.assertEqual(source.sourcepackagerelease.upload_archive.purpose,
             ArchivePurpose.PRIMARY)
 
-        # Test that overriding to a component that needs a non-existent
-        # archive fails properly.
-        # The "queued" user does not have permission to alter IArchive, so
-        # switch to a user that does.
+    def testOverrideSourceWithNonexistentArchiveChange(self):
+        """Check that overriding to a non-existent archive fails properly.
+
+        When overriding the component, the archive may change to a
+        non-existent one so ensure if fails.
+        """
+        ubuntu = getUtility(IDistributionSet)['ubuntu']
+
         LaunchpadZopelessLayer.switchDbUser("testadmin")
         proxied_archive = getUtility(IArchiveSet).getByDistroPurpose(
             ubuntu, ArchivePurpose.COMMERCIAL)
@@ -606,7 +610,6 @@ class TestQueueTool(TestQueueBase):
         When overriding the component, the archive may change, so we check
         that here and make sure it's disallowed.
         """
-        # Set up.
         breezy_autotest = getUtility(
             IDistributionSet)['ubuntu']['breezy-autotest']
         # Test that it changes to commercial when required.

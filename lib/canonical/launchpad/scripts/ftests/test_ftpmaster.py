@@ -10,21 +10,18 @@ import os
 import sys
 
 from zope.component import getUtility
-from zope.security.proxy import removeSecurityProxy
 
 from canonical.config import config
 from canonical.testing import LaunchpadZopelessLayer
 from canonical.launchpad.ftests.harness import LaunchpadZopelessTestCase
 from canonical.launchpad.database.component import ComponentSelection
-from canonical.launchpad.database.distroarchseriesbinarypackage import (
-    DistroArchSeriesBinaryPackage)
 from canonical.launchpad.interfaces import (
-    IBinaryPackageNameSet, IDistributionSet, IComponentSet, ISectionSet)
+    IDistributionSet, IComponentSet, ISectionSet)
 from canonical.launchpad.scripts.ftpmaster import (
     ArchiveOverrider, ArchiveOverriderError, ArchiveCruftChecker,
     ArchiveCruftCheckerError)
 from canonical.lp.dbschema import (
-    ArchivePurpose, PackagePublishingPocket, PackagePublishingPriority)
+    PackagePublishingPocket, PackagePublishingPriority)
 
 # XXX cprov 2006-05-15: {create, remove}TestArchive functions should be
 # moved to the publisher test domain as soon as we have it.
@@ -264,8 +261,9 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
             component_name='commercial', section_name='base', 
             priority_name='extra')
         changer.initialize()
-        self.assertRaises(ArchiveOverriderError,
-            changer.processSourceChange, 'mozilla-firefox')
+        self.assertRaises(
+            ArchiveOverriderError, changer.processSourceChange,
+            'mozilla-firefox')
 
     def test_processSourceChange_error(self):
         """processSourceChange warns the user about an unpublished source.
@@ -315,11 +313,11 @@ class TestArchiveOverrider(LaunchpadZopelessTestCase):
         # Apply the override.
         changer = ArchiveOverrider(
             self.log, distro_name='ubuntu', suite='hoary',
-            component_name='commercial', section_name='base', 
+            component_name='commercial', section_name='base',
             priority_name='extra')
         changer.initialize()
-        self.assertRaises(ArchiveOverriderError,
-            changer.processBinaryChange, 'pmount')
+        self.assertRaises(
+            ArchiveOverriderError, changer.processBinaryChange, 'pmount')
 
     def test_processBinaryChange_error(self):
         """processBinaryChange warns the user about an unpublished binary.

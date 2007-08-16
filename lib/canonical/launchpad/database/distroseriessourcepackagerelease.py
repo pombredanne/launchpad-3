@@ -8,7 +8,6 @@ __all__ = [
     'DistroSeriesSourcePackageRelease',
     ]
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.database.constants import UTC_NOW
@@ -20,7 +19,7 @@ from canonical.launchpad.database.publishing import (
     SecureSourcePackagePublishingHistory, SourcePackagePublishingHistory)
 from canonical.launchpad.database.queue import PackageUpload
 from canonical.launchpad.interfaces import (
-    IArchiveSet, IDistroSeriesSourcePackageRelease, ISourcePackageRelease)
+    IDistroSeriesSourcePackageRelease, ISourcePackageRelease)
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
 from canonical.lp import decorates
 from canonical.lp.dbschema import (
@@ -98,10 +97,10 @@ class DistroSeriesSourcePackageRelease:
             distrorelease = %s AND
             archive IN %s AND
             sourcepackagerelease = %s
-            """ % sqlvalues(self.distroseries,
-                            [archive.id for archive in
-                                self.distroseries.all_distro_archives],
-                            self.sourcepackagerelease),
+            """ % sqlvalues(
+                    self.distroseries,
+                    self.distroseries.distribution.all_distro_archive_ids,
+                    self.sourcepackagerelease),
             orderBy='-datecreated')
 
     @property
@@ -143,8 +142,7 @@ class DistroSeriesSourcePackageRelease:
         BinaryPackagePublishingHistory.archive IN %s AND
         Build.sourcepackagerelease=%s
         """ % sqlvalues(self.distroseries,
-                        [archive.id for archive in
-                            self.distroseries.all_distro_archives],
+                        self.distroseries.distribution.all_distro_archive_ids,
                         self.sourcepackagerelease)
 
         return BinaryPackageRelease.select(
@@ -190,8 +188,7 @@ class DistroSeriesSourcePackageRelease:
         sourcepackagerelease = %s AND
         status = %s
         """ % sqlvalues(self.distroseries,
-                        [archive.id for archive in
-                            self.distroseries.all_distro_archives],
+                        self.distroseries.distribution.all_distro_archive_ids,
                         self.sourcepackagerelease,
                         PackagePublishingStatus.PUBLISHED),
             orderBy='-datecreated')

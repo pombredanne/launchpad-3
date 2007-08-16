@@ -164,9 +164,10 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
                    SourcePackageRelease.sourcepackagename = %s AND
                    SourcePackagePublishingHistory.distrorelease = %s AND
                    SourcePackagePublishingHistory.archive IN %s
-                """ % sqlvalues(self.sourcepackagename, self.distroseries,
-                                [archive.id for archive in
-                                    self.distroseries.all_distro_archives]))
+                """ % sqlvalues(
+                        self.sourcepackagename,
+                        self.distroseries,
+                        self.distribution.all_distro_archive_ids))
         if version:
             clauses.append(
                 "SourcePackageRelease.version = %s" % sqlvalues(version))
@@ -296,8 +297,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
                 SourcePackageRelease.id
             ''' % sqlvalues(self.sourcepackagename,
                             self.distribution,
-                            [archive.id for archive in
-                                self.distribution.all_distro_archives],
+                            self.distribution.all_distro_archive_ids,
                             PackagePublishingStatus.REMOVED),
             clauseTables=['DistroRelease', 'SourcePackagePublishingHistory'],
             selectAlso="%s" % (SQLConstant(order_const)),
@@ -493,8 +493,7 @@ class SourcePackage(BugTargetBase, SourcePackageQuestionTargetMixin):
         SourcePackageRelease.id
         """ % sqlvalues(self.sourcepackagename,
                         self.distroseries,
-                        [archive.id for archive in
-                            self.distroseries.all_distro_archives],
+                        self.distribution.all_distro_archive_ids,
                         PackagePublishingStatus.PUBLISHED)]
 
         # XXX cprov 2006-09-25: It would be nice if we could encapsulate

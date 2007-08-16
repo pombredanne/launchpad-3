@@ -399,8 +399,7 @@ class TestUploadProcessor(TestUploadProcessorBase):
         # Fudge the sourcepackagerelease for foocomm so that it's not
         # in the commercial archive.  We can then test that uploading
         # a binary package must match the source's archive.
-        removeSecurityProxy(
-            foocomm_spr).upload_archive = self.ubuntu.main_archive
+        foocomm_spr.upload_archive = self.ubuntu.main_archive
         self.layer.txn.commit()
         upload_dir = self.queueUpload("foocomm_1.0-1_binary")
         self.processUpload(uploadprocessor, upload_dir)
@@ -447,11 +446,11 @@ class TestUploadProcessor(TestUploadProcessorBase):
         distro archives.  This can be done by two commercial package
         uploads, as commercial packages have their archive overridden.
         """
-        # Extra setup for breezy
+        # Extra setup for breezy.
         self.setupBreezy()
         self.layer.txn.commit()
 
-        # Set up the uploadprocessor with appropriate options and logger
+        # Set up the uploadprocessor with appropriate options and logger.
         self.options.context = 'absolutely-anything'
         uploadprocessor = UploadProcessor(
             self.options, self.layer.txn, self.log)

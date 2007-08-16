@@ -30,9 +30,8 @@ from canonical.librarian.interfaces import ILibrarianClient
 from canonical.launchpad.helpers import shortlist
 from canonical.launchpad.searchbuilder import any
 from canonical.launchpad.interfaces import (
-    IArchiveSet, ISourcePackageRelease, ILaunchpadCelebrities, 
-    ITranslationImportQueue,
-    BugTaskSearchParams, UNRESOLVED_BUGTASK_STATUSES
+    BugTaskSearchParams, ILaunchpadCelebrities, ISourcePackageRelease,
+    ITranslationImportQueue, UNRESOLVED_BUGTASK_STATUSES
     )
 from canonical.launchpad.database.build import Build
 from canonical.launchpad.database.files import SourcePackageReleaseFile
@@ -231,9 +230,8 @@ class SourcePackageRelease(SQLBase):
                BinaryPackageRelease.id AND
             BinaryPackageRelease.build = Build.id AND
             Build.sourcepackagerelease = %d
-            """ % (distroseries, 
-                   [archive.id for archive in
-                       distroseries.all_distro_archives],
+            """ % (distroseries,
+                   distroseries.distribution.all_distro_archive_ids,
                    self),
             clauseTables=clauseTables))
 

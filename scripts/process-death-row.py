@@ -3,7 +3,6 @@
 
 import _pythonpath
 
-import logging
 from optparse import OptionParser
 
 from canonical.lp import initZopeless
@@ -11,7 +10,7 @@ from canonical.launchpad.database import Distribution
 from canonical.launchpad.scripts import (execute_zcml_for_scripts,
                                          logger, logger_options)
 
-from canonical.archivepublisher.deathrow import DeathRow, getDeathRow
+from canonical.archivepublisher.deathrow import getDeathRow
 
 
 def main():
@@ -53,9 +52,10 @@ def main():
                 log.debug("Committing")
                 txn.commit()
         except:
-            log.exception("Bad muju while doing death-row unpublish")
+            log.exception("Unexpected exception while doing death-row "
+                          "unpublish")
             txn.abort()
-            raise
+            # Continue with other archives.
 
 
 if __name__ == "__main__":

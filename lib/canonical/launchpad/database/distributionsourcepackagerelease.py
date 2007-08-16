@@ -68,8 +68,7 @@ class DistributionSourcePackageRelease:
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.sourcepackagerelease = %s
             """ % sqlvalues(self.distribution,
-                            [archive.id for archive in
-                                self.distribution.all_distro_archives],
+                            self.distribution.all_distro_archive_ids,
                             self.sourcepackagerelease),
             clauseTables=['DistroRelease'],
             orderBy='-datecreated')
@@ -114,8 +113,7 @@ class DistributionSourcePackageRelease:
             BinaryPackageRelease.build = Build.id AND
             Build.sourcepackagerelease = %s
             """ % sqlvalues(self.distribution,
-                            [archive.id for archive in 
-                                self.distribution.all_distro_archives],
+                            self.distribution.all_distro_archive_ids,
                             self.sourcepackagerelease),
             distinct=True,
             orderBy=['-datecreated'],

@@ -19,8 +19,6 @@ from canonical.database.datetimecol import UtcDateTimeCol
 
 from canonical.lp import dbschema
 
-from canonical.launchpad.database.publishing import (
-    SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.database.files import BinaryPackageFile
 from canonical.launchpad.helpers import shortlist
 
@@ -126,11 +124,11 @@ class BinaryPackageRelease(SQLBase):
         BinaryPackagePublishingHistory.distroarchrelease = %s AND
         BinaryPackagePublishingHistory.archive IN %s AND
         BinaryPackagePublishingHistory.status = %s
-        """ % sqlvalues(self.binarypackagename,
-                        self.build.distroarchseries,
-                        [archive.id for archive in 
-                            self.build.distroarchseries.all_distro_archives],
-                        dbschema.PackagePublishingStatus.SUPERSEDED)
+        """ % sqlvalues(
+            self.binarypackagename,
+            self.build.distroarchseries,
+            self.build.distroarchseries.distribution.all_distro_archive_ids,
+            dbschema.PackagePublishingStatus.SUPERSEDED)
 
         return shortlist(BinaryPackageRelease.select(
             query, clauseTables=clauseTables, distinct=True))
@@ -227,9 +225,9 @@ class BinaryPackageReleaseSet:
         BinaryPackageRelease.binarypackagename =
            BinaryPackageName.id AND
         BinaryPackagePublishingHistory.status != %s
-        """ % sqlvalues([archive.id for archive in 
-                            distroseries.all_distro_archives], 
-                        distroseries, dbschema.PackagePublishingStatus.REMOVED)
+        """ % sqlvalues(distroseries.distribution.all_distro_archive_ids,
+                        distroseries,
+                        dbschema.PackagePublishingStatus.REMOVED)
 
         clauseTables = ['BinaryPackagePublishingHistory', 'DistroArchRelease',
                         'BinaryPackageRelease', 'BinaryPackageName']

@@ -82,9 +82,8 @@ class Archive(SQLBase):
         pubconf = PubConfig(self.distribution)
 
         if self.purpose == ArchivePurpose.PRIMARY:
-            return pubconf
-
-        if self.purpose == ArchivePurpose.PPA:
+            pass
+        elif self.purpose == ArchivePurpose.PPA:
             pubconf.distroroot = config.personalpackagearchive.root
             pubconf.archiveroot = os.path.join(
                 pubconf.distroroot, self.owner.name, self.distribution.name)
@@ -93,9 +92,7 @@ class Archive(SQLBase):
             pubconf.overrideroot = None
             pubconf.cacheroot = None
             pubconf.miscroot = None
-            return pubconf
-
-        if self.purpose == ArchivePurpose.COMMERCIAL:
+        elif self.purpose == ArchivePurpose.COMMERCIAL:
             # Reset the list of components to commercial only.  This prevents
             # any publisher runs from generating components not related to
             # the commercial archive.
@@ -111,11 +108,12 @@ class Archive(SQLBase):
             pubconf.overrideroot = None
             pubconf.cacheroot = None
             pubconf.miscroot = None
-            return pubconf
+        else:
+            raise AssertionError(
+                "Unknown archive purpose %s when getting publisher config.",
+                self.purpose)
 
-        raise AssertionError(
-            "Unknown archive purpose %s when getting publisher config.",
-            self.purpose)
+        return pubconf
 
     def getBuildRecords(self, status=None, name=None, pocket=None):
         """See IHasBuildRecords"""
@@ -279,15 +277,14 @@ class ArchiveSet:
 
     def ensure(self, owner, distribution, purpose):
         """See `IArchiveSet`."""
-        archive = None
-        if owner:
+        if owner is not None:
             archive = owner.archive
             if archive is None:
                 archive = self.new(distribution=distribution, purpose=purpose,
-                    owner=owner)
+                                   owner=owner)
         else:
             archive = self.getByDistroPurpose(distribution, purpose)
-            if not archive:
+            if archive is None:
                 archive = self.new(distribution, purpose)
         return archive
 

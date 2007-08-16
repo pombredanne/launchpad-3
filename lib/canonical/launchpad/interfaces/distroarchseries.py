@@ -55,8 +55,6 @@ class IDistroArchSeries(IHasOwner):
         )
     main_archive = Attribute('Main Archive')
 
-    all_distro_archives = Attribute('All archives for the distribution.')
-
     def updatePackageCount():
         """Update the cached binary package count for this distro arch
         series.

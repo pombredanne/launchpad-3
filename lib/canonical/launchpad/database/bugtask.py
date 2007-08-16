@@ -1140,10 +1140,9 @@ class BugTaskSet:
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.component IN %s AND
             SourcePackagePublishingHistory.status = %s
-            """ % sqlvalues(distroseries, 
-                            [archive.id for archive in 
-                                distroseries.all_distro_archives],
-                            component_ids, 
+            """ % sqlvalues(distroseries,
+                            distroseries.distribution.all_distro_archive_ids,
+                            component_ids,
                             PackagePublishingStatus.PUBLISHED)])
 
         upstream_clause = self._buildUpstreamClause(params)

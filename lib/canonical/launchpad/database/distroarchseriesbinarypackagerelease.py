@@ -9,7 +9,6 @@ __all__ = [
     'DistroArchSeriesBinaryPackageRelease',
     ]
 
-from zope.component import getUtility
 from zope.interface import implements
 
 from canonical.launchpad.interfaces import (
@@ -25,7 +24,6 @@ from canonical.launchpad.database.distributionsourcepackagerelease import (
 from canonical.launchpad.database.publishing import (
     BinaryPackagePublishingHistory, SecureBinaryPackagePublishingHistory)
 from canonical.launchpad.scripts.ftpmaster import ArchiveOverriderError
-from canonical.launchpad.interfaces import IArchiveSet
 
 class DistroArchSeriesBinaryPackageRelease:
 
@@ -87,10 +85,10 @@ class DistroArchSeriesBinaryPackageRelease:
     def _latest_publishing_record(self, status=None):
         query = ("binarypackagerelease = %s AND distroarchrelease = %s "
                  "AND archive IN %s"
-                 % sqlvalues(self.binarypackagerelease,
-                             self.distroarchseries,
-                             [archive.id for archive in
-                                self.distroarchseries.all_distro_archives]))
+                 % sqlvalues(
+                    self.binarypackagerelease,
+                    self.distroarchseries,
+                    self.distribution.all_distro_archive_ids))
         if status is not None:
             query += " AND status = %s" % sqlvalues(status)
 
@@ -104,10 +102,10 @@ class DistroArchSeriesBinaryPackageRelease:
             distroarchrelease = %s AND
             archive IN %s AND
             binarypackagerelease = %s
-            """ % sqlvalues(self.distroarchseries,
-                            [archive.id for archive in
-                                self.distroarchseries.all_distro_archives],
-                            self.binarypackagerelease),
+            """ % sqlvalues(
+                    self.distroarchseries,
+                    self.distribution.all_distro_archive_ids,
+                    self.binarypackagerelease),
             orderBy='-datecreated')
 
     @property

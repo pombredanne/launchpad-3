@@ -8,7 +8,6 @@ __all__ = [
     'DistributionSourcePackage',
     ]
 
-from sqlobject import SQLObjectNotFound
 from sqlobject.sqlbuilder import SQLConstant
 
 from zope.interface import implements
@@ -33,7 +32,6 @@ from canonical.launchpad.database.sourcepackagerelease import (
     SourcePackageRelease)
 from canonical.launchpad.database.sourcepackage import (
     SourcePackage, SourcePackageQuestionTargetMixin)
-from canonical.launchpad.helpers import shortlist
 
 
 class DistributionSourcePackage(BugTargetBase,
@@ -92,10 +90,10 @@ class DistributionSourcePackage(BugTargetBase,
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s AND
             SourcePackageRelease.version = %s
-            """ % sqlvalues(self.distribution, 
-                            [archive.id for archive in 
-                                self.distribution.all_distro_archives],
-                            self.sourcepackagename, version),
+            """ % sqlvalues(self.distribution,
+                            self.distribution.all_distro_archive_ids,
+                            self.sourcepackagename,
+                            version),
             orderBy='-datecreated',
             prejoinClauseTables=['SourcePackageRelease'],
             clauseTables=['DistroRelease', 'SourcePackageRelease'])
@@ -119,9 +117,9 @@ class DistributionSourcePackage(BugTargetBase,
             DistroRelease.distribution = %s AND
             SourcePackagePublishingHistory.archive IN %s AND
             SourcePackagePublishingHistory.status != %s
-            """ % sqlvalues(self.sourcepackagename, self.distribution,
-                            [archive.id for archive in 
-                                self.distribution.all_distro_archives],
+            """ % sqlvalues(self.sourcepackagename,
+                            self.distribution,
+                            self.distribution.all_distro_archive_ids,
                             PackagePublishingStatus.REMOVED),
             clauseTables=['SourcePackagePublishingHistory', 'DistroRelease'],
             orderBy=[SQLConstant(order_const),
@@ -240,8 +238,7 @@ class DistributionSourcePackage(BugTargetBase,
                 SourcePackageRelease.id AND
             SourcePackageRelease.sourcepackagename = %s
             """ % sqlvalues(self.distribution,
-                            [archive.id for archive in 
-                                self.distribution.all_distro_archives],
+                            self.distribution.all_distro_archive_ids,
                             self.sourcepackagename)
 
         if status is not None:
@@ -265,8 +262,7 @@ class DistributionSourcePackage(BugTargetBase,
                 sourcepackagerelease.id AND
             sourcepackagerelease.sourcepackagename = %s
             """ % sqlvalues(self.distribution,
-                            [archive.id for archive in 
-                                self.distribution.all_distro_archives],
+                            self.distribution.all_distro_archive_ids,
                             self.sourcepackagename),
             orderBy='-datecreated',
             clauseTables=['distrorelease', 'sourcepackagerelease'])

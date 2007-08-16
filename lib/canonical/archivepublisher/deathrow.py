@@ -23,11 +23,11 @@ from canonical.lp.dbschema import PackagePublishingStatus
 def getDeathRow(archive, log, pool_root_override):
     """Return a Deathrow object for the archive supplied.
 
-    :archive: Use the publisher config for this archive to derive the
-              DeathRow object.
-    :log: Use this logger for script debug logging.
-    :pool_root_override: Use this pool root for the archive instead of
-                         its publisher configured value.
+    :param archive: Use the publisher config for this archive to derive the
+                    DeathRow object.
+    :param log: Use this logger for script debug logging.
+    :param pool_root_override: Use this pool root for the archive instead of
+                               its publisher configured value.
     """
     log.debug("Grab Lucille config.")
     try:
@@ -52,7 +52,12 @@ def getDeathRow(archive, log, pool_root_override):
 
 
 class DeathRow:
-    """A Distribution Archive Removal Processor."""
+    """A Distribution Archive Removal Processor.
+
+    DeathRow will remove archive files from disk if they are marked for
+    removal in the publisher tables, and if they are no longer referenced
+    by other packages.
+    """
     def __init__(self, archive, diskpool, logger):
         self.archive = archive
         self.distribution = archive.distribution
@@ -92,7 +97,7 @@ class DeathRow:
                  SourcePackageFilePublishing.sourcepackagepublishing AND
             SourcePackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
-                            self.distribution, 
+                            self.distribution,
                             self.archive,
                             UTC_NOW),
             clauseTables=['SourcePackagePublishingHistory'],
@@ -106,7 +111,7 @@ class DeathRow:
                  BinaryPackageFilePublishing.binarypackagepublishing AND
             BinaryPackagePublishingHistory.scheduleddeletiondate <= %s
             """ % sqlvalues(PackagePublishingStatus.PENDINGREMOVAL,
-                            self.distribution, 
+                            self.distribution,
                             self.archive,
                             UTC_NOW),
             clauseTables=['BinaryPackagePublishingHistory'],
