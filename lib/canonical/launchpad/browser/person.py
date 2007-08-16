@@ -127,7 +127,8 @@ from canonical.launchpad.interfaces import (
     BugTaskStatus, BugTaskSearchParams, IBranchSet, ITeamMembership,
     DAYS_BEFORE_EXPIRATION_WARNING_IS_SENT, LoginTokenType, SSHKeyType,
     EmailAddressStatus, TeamMembershipStatus, TeamSubscriptionPolicy,
-    PersonCreationRationale, TeamMembershipRenewalPolicy)
+    PersonCreationRationale, TeamMembershipRenewalPolicy,
+    QuestionParticipation)
 
 from canonical.launchpad.browser.bugtask import (
     BugListingBatchNavigator, BugTaskSearchListingView)
