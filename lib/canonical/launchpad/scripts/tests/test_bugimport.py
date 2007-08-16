@@ -64,7 +64,7 @@ class UtilsTestCase(unittest.TestCase):
         # Test that the get_enum_value() function returns the
         # appropriate enum value, or raises BugXMLSyntaxError if it is
         # not found.
-        from canonical.lp.dbschema import BugTaskStatus
+        from canonical.launchpad.interfaces import BugTaskStatus
         self.assertEqual(bugimport.get_enum_value(BugTaskStatus,
                                                   'FIXRELEASED'),
                          BugTaskStatus.FIXRELEASED)

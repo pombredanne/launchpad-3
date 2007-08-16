@@ -148,10 +148,10 @@ Distro sourcepackages know how to compare to each other:
 You can search for bugs in an IDistroSourcePackage using the
 .searchTasks method:
 
-    >>> from canonical.launchpad.interfaces import BugTaskSearchParams
-    >>> from canonical.lp import dbschema
+    >>> from canonical.launchpad.interfaces import (
+    ...     BugTaskSearchParams, BugTaskStatus)
     >>> params = BugTaskSearchParams(
-    ...     status=dbschema.BugTaskStatus.NEW, user=None)
+    ...     status=BugTaskStatus.NEW, user=None)
     >>> tasks = ubuntu_firefox.searchTasks(params)
     >>> tasks.count()
     1

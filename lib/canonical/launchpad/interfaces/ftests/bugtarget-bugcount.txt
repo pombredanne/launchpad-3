@@ -22,7 +22,7 @@ anonymous user, i.e. no private bugs will be included in the counts.
 
 It's possible to limit which statuses to return.
 
-    >>> from canonical.lp.dbschema import BugTaskStatus
+    >>> from canonical.launchpad.interfaces import BugTaskStatus
     >>> bug_counts = bugtarget.getBugCounts(
     ...     None, [BugTaskStatus.NEW, BugTaskStatus.CONFIRMED])
     >>> for status in sorted(bug_counts.keys()):

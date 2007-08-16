@@ -28,13 +28,13 @@ import pytz
 
 from zope.component import getUtility
 from canonical.launchpad.interfaces import (
-    IPersonSet, IEmailAddressSet, IBugSet, IBugTaskSet,
-    IBugExternalRefSet, IBugAttachmentSet, IMessageSet,
-    ILibraryFileAliasSet, ICveSet, IBugWatchSet, PersonCreationRationale,
-    ILaunchpadCelebrities, NotFoundError, CreateBugParams)
+    BugTaskStatus, IPersonSet, IEmailAddressSet, IBugSet, IBugTaskSet,
+    IBugExternalRefSet, IBugAttachmentSet, IMessageSet, ILibraryFileAliasSet,
+    ICveSet, IBugWatchSet, PersonCreationRationale, ILaunchpadCelebrities,
+    NotFoundError, CreateBugParams)
 from canonical.launchpad.webapp import canonical_url
 from canonical.lp.dbschema import (
-    BugTaskImportance, BugTaskStatus, BugAttachmentType)
+    BugTaskImportance, BugAttachmentType)
 
 logger = logging.getLogger('canonical.launchpad.scripts.bugzilla')
 
