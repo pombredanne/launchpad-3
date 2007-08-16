@@ -38,7 +38,7 @@ aren't allowed.
   >>> user_browser.getControl('Bug Tracker Type').getControl('Trac').click()
   >>> user_browser.getControl('Title').value = 'Test Trac Tracker'
   >>> user_browser.getControl('Summary').value = 'This is a test TRAC tracker.'
-  >>> url = 'http://trac.example.org/tickets'
+  >>> url = 'http://trac.testing.org/tickets'
   >>> user_browser.getControl('Base URL').value = url
   >>> user_browser.getControl('Contact details').value = 'blah blah'
   >>> user_browser.getControl('Add').click()
@@ -83,25 +83,17 @@ the bug tracker page.
   >>> 'This is a test TRAC tracker.' in user_browser.contents
   True
 
-The `Title`, `Summary` and `Contact Details` fields are optional -
-creating a bugtracker without them is acceptable.
+The `Summary` and `Contact Details` fields are optional - creating a
+bugtracker without them is acceptable.
 
   >>> user_browser.open('http://launchpad.dev/bugs/bugtrackers/+newbugtracker')
   >>> user_browser.getControl('Name').value = 'test-bugzilla'
+  >>> user_browser.getControl('Title').value = 'Test Bugzilla'
   >>> user_browser.getControl('Bug Tracker Type').value = ['Bugzilla']
   >>> user_browser.getControl('Base URL').value = 'http://bugzilla.example.org/'
   >>> user_browser.getControl('Add').click()
   >>> user_browser.url
   'http://launchpad.dev/bugs/bugtrackers/test-bugzilla'
-
-When the title isn't submitted, it is rendered dynamically, referencing
-the bugtracker URL.
-
-  >>> print extract_text(
-  ...     find_tags_by_class(user_browser.contents, 'pageheading')[0])
-  'Bug tracker at http://bugzilla.example.org/'
-  overview 
-
 
   >>> from zope.component import getUtility
   >>> from canonical.lp.dbschema import BugTrackerType

@@ -70,14 +70,13 @@ class IBugTracker(Interface):
     title = TextLine(
         title=_('Title'),
         description=_(
-            'A descriptive label for this tracker to show in listings.'),
-        required=False)
+            'A descriptive label for this tracker to show in listings.'))
     summary = Text(
         title=_('Summary'),
         description=_(
             'A brief introduction or overview of this bug tracker instance.'),
         required=False)
-    baseurl = TextLine(
+    baseurl = BugTrackerBaseURL(
         title=_('Base URL'),
         description=_(
             'The top-level URL for the bug tracker. This must be accurate '

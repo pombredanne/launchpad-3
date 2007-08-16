@@ -177,7 +177,7 @@ class BugTrackerSet:
             host, path = urllib.splithost(host)
             name = 'auto-%s' % host
         if title is None:
-            title = ('Bug tracker at %s' % baseurl)
+            title = quote('Bug tracker at %s' % baseurl)
         bugtracker = BugTracker(name=name,
             bugtrackertype=bugtrackertype,
             title=title, summary=summary, baseurl=baseurl,
