@@ -44,6 +44,19 @@ registered branches first.
     >>> browser.getLink(url='recently-registered-branches').click()
     >>> print browser.title
     Recently registered branches
+
+Since the view contains branches across different projects, the project
+is also shown in the listing.  And since the date that the branch was
+registered is the ordering, the registered date is also shown.
+
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.thead.fetch('tr'):
+    ...     print extract_text(row)
+    Name      Author    Status    Last Commit    Registered    Project
+    >>> links = find_tag_by_id(browser.contents, 'branch-batch-links')
+    >>> links.renderContents()
+    '...1...&rarr;...6...of...28 results...'
+
     >>> browser.goBack()
 
 
@@ -59,6 +72,12 @@ recent commits first.
     >>> browser.getLink(url='recently-changed-branches').click()
     >>> print browser.title
     Recently changed branches
+
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.thead.fetch('tr'):
+    ...     print extract_text(row)
+    Name      Author    Status    Last Commit   Registered    Project
+
     >>> browser.goBack()
 
 
@@ -74,3 +93,12 @@ imported branches.
     >>> browser.getLink(url='recently-imported-branches').click()
     >>> print browser.title
     Recently imported branches
+
+Since imported branches are all owned by vcs-imports, and the authors
+of the branches are not normally set, the Author column is not shown for
+imported branch listings.
+
+    >>> table = find_tag_by_id(browser.contents, 'branchtable')
+    >>> for row in table.thead.fetch('tr'):
+    ...     print extract_text(row)
+    Name     Status    Last Commit  Registered   Project

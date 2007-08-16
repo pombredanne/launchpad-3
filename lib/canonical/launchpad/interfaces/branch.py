@@ -530,12 +530,12 @@ class IBranchSet(Interface):
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, subscribers, and LP admins.
-
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
     def getRecentlyImportedBranches(
@@ -553,12 +553,12 @@ class IBranchSet(Interface):
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, subscribers, and LP admins.
-
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
     def getRecentlyRegisteredBranches(
@@ -574,12 +574,12 @@ class IBranchSet(Interface):
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, subscribers, and LP admins.
-
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
     def getLastCommitForBranches(branches):
@@ -612,12 +612,12 @@ class IBranchSet(Interface):
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
-
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
     def getBranchesAuthoredByPerson(
@@ -632,12 +632,12 @@ class IBranchSet(Interface):
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
-
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
     def getBranchesRegisteredByPerson(
@@ -653,12 +653,12 @@ class IBranchSet(Interface):
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
-
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
     def getBranchesSubscribedByPerson(
@@ -674,12 +674,12 @@ class IBranchSet(Interface):
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
-
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
     def getBranchesForProduct(
@@ -692,12 +692,12 @@ class IBranchSet(Interface):
         with a lifecycle_status of one of the lifecycle_statuses
         are returned.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
-
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
     def getHostedBranchesForPerson(person):
@@ -710,12 +710,12 @@ class IBranchSet(Interface):
         merged or abandoned don't appear in the results -- only branches that
         match `DEFAULT_BRANCH_STATUS_IN_LISTING`.
 
-        The visible_by_user parameter is used to filter out the branches
-        that the user is not entitled to see.  Private branches are
-        only visible by the owner, and subscribers.
-
-        If None is passed in for the visible_by_user parameter
-        only public branches are returned.
+        :param visible_by_user: If a person is not supplied, only public
+            branches are returned.  If a person is supplied both public
+            branches, and the private branches that the person is entitled to
+            see are returned.  Private branches are only visible to the owner
+            and subscribers of the branch, and to LP admins.
+        :type visible_by_user: `IPerson` or None
         """
 
     def getHostedPullQueue():

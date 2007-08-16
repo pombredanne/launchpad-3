@@ -40,7 +40,7 @@ field.onchange = submit_filter;
           Registered
         </th>
         <th tal:condition="context/show_column/product|nothing">
-          Product
+          Project
         </th>
         <th tal:condition="context/show_column/role|nothing">
           Role
