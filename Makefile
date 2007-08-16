@@ -126,6 +126,16 @@ run_all: inplace stop bzr_version_info
 		 $(PYTHON) -t $(STARTSCRIPT) -r librarian,buildsequencer,authserver,sftp,mailman \
 		 -C $(CONFFILE)
 
+pull: bzr_version_info
+	$(PYTHON) cronscripts/supermirror-pull.py upload
+
+rewritemap:
+	mkdir -p /var/tmp/sm-ng/config
+	$(PYTHON) cronscripts/supermirror_rewritemap.py /var/tmp/sm-ng/config/launchpad-lookup.txt
+
+scan:
+	$(PYTHON) cronscripts/branch-scanner.py
+
 bzr_version_info:
 	rm -f bzr-version-info.py bzr-version-info.pyc
 	if which bzr > /dev/null  && test -x `which bzr`; \
@@ -198,5 +208,5 @@ tags:
 .PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
 		ftest_build ftest_inplace test_build test_inplace pagetests \
 		check importdcheck check_merge schema default launchpad.pot \
-		check_launchpad_on_merge check_merge_ui
+		check_launchpad_on_merge check_merge_ui pull rewritemap scan
 
