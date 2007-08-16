@@ -128,12 +128,13 @@ We'll add some more watches now.
     >>> from canonical.launchpad.interfaces import IBugSet, IBugWatchSet
 
     >>> bug_watch_set = getUtility(IBugWatchSet)
-    >>> expected_remote_statuses = dict(
-    ...     (int(bug_watch.remotebug), bug_watch.remotestatus)
+    >>> bug_watches = dict(
+    ...     (int(bug_watch.remotebug), bug_watch)
     ...     for bug_watch in example_bug_tracker.watches)
 
-    >>> expected_remote_statuses
-    {1: u'fixed'}
+    >>> for remote_bug, bug_watch in bug_watches.items():
+    ...     print "%s: %s" % (remote_bug, bug_watch.remotestatus)
+    1: fixed
 
     >>> remote_bugs = [
     ...     (143, 'fixed'),
@@ -154,18 +155,14 @@ We'll add some more watches now.
     ...         bug=example_bug, owner=sample_person,
     ...         bugtracker=example_bug_tracker,
     ...         remotebug=str(remote_bug_id))
-    ...     expected_remote_statuses[remote_bug_id] = remote_status
+    ...     bug_watches[remote_bug_id] = bug_watch
 
     >>> trac.trace_calls = True
     >>> trac.updateBugWatches(example_bug_tracker.watches)
     CALLED urlopen(u'http://bugs.example.com/query?id=...
 
-    >>> remote_statuses = dict(
-    ...     (int(bug_watch.remotebug), bug_watch.remotestatus)
-    ...     for bug_watch in example_bug_tracker.watches)
-
-    >>> for remote_bug_id in sorted(expected_remote_statuses.keys()):
-    ...     remote_status = remote_statuses[remote_bug_id]
+    >>> for remote_bug_id in sorted(bug_watches.keys()):
+    ...     remote_status = bug_watches[remote_bug_id].remotestatus
     ...     print 'Remote bug %d: %s' % (remote_bug_id, remote_status)
     Remote bug 1: fixed
     Remote bug 143: fixed

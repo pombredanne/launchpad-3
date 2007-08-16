@@ -777,7 +777,7 @@ class Trac(ExternalBugTracker):
 
     ticket_url = 'ticket/%i?format=csv'
     batch_url = 'query?%s&order=resolution&format=csv'
-    batch_query_threshold = 100
+    batch_query_threshold = 10
 
     def __init__(self, baseurl):
         # Trac can be really finicky about slashes in URLs, so we strip any
@@ -813,29 +813,31 @@ class Trac(ExternalBugTracker):
                     continue
 
                 self.bugs[int(remote_bug['id'])] = remote_bug
-            return
 
-        # The default behaviour is for us to make one request per bug id to
-        # the remote bug tracker, which (providing it's a reasonably
-        # up-to-date Trac instance) will give us a CSV export of the ticket we
-        # ask for. If it doesn't, we can safely assume that it either doesn't
-        # support this functionality or has this functionality deliberately
-        # disabled; either way there is little we can do about it.
-        for bug_id in bug_ids:
-            # If we can't get the remote bug for any reason a
-            # BugTrackerConnectError will be raised at this point.
-            # We don't use _getPage at this point for the simple reason
-            # that it doesn't return a file-like object, so we can't use
-            # the csv module's helpful DictReader on its output.
-            bug_id = int(bug_id)
-            try:
-                csv_data = self.urlopen(
-                    "%s/%s" % (self.baseurl, self.ticket_url % bug_id))
-            except (urllib2.HTTPError, urllib2.URLError), val:
-                raise BugTrackerConnectError(self.baseurl, val)
+        else:
+            # When there aren't more than batch_query_threshold bugs to update
+            # we make one request per bug id to the remote bug tracker, which
+            # (providing it's a reasonably up-to-date Trac instance) will give
+            # us a CSV export of the ticket we ask for. If it doesn't, we can
+            # safely assume that it either doesn't support this functionality
+            # or has this functionality deliberately disabled; either way
+            # there is little
+            # we can do about it.
+            for bug_id in bug_ids:
+                # If we can't get the remote bug for any reason a
+                # BugTrackerConnectError will be raised at this point.
+                # We don't use _getPage at this point for the simple reason
+                # that it doesn't return a file-like object, so we can't use
+                # the csv module's helpful DictReader on its output.
+                bug_id = int(bug_id)
+                try:
+                    csv_data = self.urlopen(
+                        "%s/%s" % (self.baseurl, self.ticket_url % bug_id))
+                except (urllib2.HTTPError, urllib2.URLError), val:
+                    raise BugTrackerConnectError(self.baseurl, val)
 
-            reader = csv.DictReader(csv_data)
-            self.bugs[bug_id] = reader.next()
+                reader = csv.DictReader(csv_data)
+                self.bugs[bug_id] = reader.next()
 
 
     def getRemoteStatus(self, bug_id):
