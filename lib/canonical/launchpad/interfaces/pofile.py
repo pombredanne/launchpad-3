@@ -288,7 +288,7 @@ class IPOFileAlternativeLanguage(Interface):
         title=u'Alternative language',
         description=(u'Language from where we could get alternative'
                      u' translations for this PO file.'),
-        vocabulary='Language',
+        vocabulary='TranslatableLanguage',
         required=False)
 
 
