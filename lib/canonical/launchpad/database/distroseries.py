@@ -1815,10 +1815,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # Exclude POSubmissions for which an equivalent (potranslation,
         # pomsgset, pluralform) exists, or we'd be introducing needless
-        # duplicates; don't offer replacements for active submissions, i.e.
-        # ones with active set and the same (pomsgset, pluralform); nor for
-        # message sets that the child has newer submissions for, i.e. ones
-        # with the same (pomsgset, pluralform) but greater datecreated.
+        # duplicates.  Don't offer replacements for message sets that the
+        # child has newer submissions for, i.e. ones with the same (pomsgset,
+        # pluralform) whose datecreated is no older than the one the parent
+        # has to offer.
         # The MultiTableCopy does not allow us to join with the source table
         # for our extraction condition, so we make these unnecessary rows
         # inert instead, and after extraction, delete them from the holding
@@ -1831,8 +1831,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
                     better.pomsgset = holding.new_pomsgset AND
                     better.pluralform = holding.pluralform AND
                     (better.potranslation = holding.potranslation OR
-                     (better.active AND
-                      better.datecreated >= holding.datecreated))
+                     better.datecreated >= holding.datecreated)
             )
             """
         copier.extract(
