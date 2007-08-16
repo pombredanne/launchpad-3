@@ -176,6 +176,23 @@ COMMENT ON COLUMN CodeImport.svn_branch_url IS 'The URL of the Subversion branch
 COMMENT ON COLUMN CodeImport.cvs_root IS 'The $CVSROOT details, probably of the form :pserver:user@host:/path.';
 COMMENT ON COLUMN CodeImport.cvs_module IS 'The module in cvs_root to import, often the name of the project.';
 COMMENT ON COLUMN CodeImport.date_last_successful IS 'When this code import last succeeded. NULL if this import has never succeeded.';
+COMMENT ON COLUMN CodeImport.modified_by IS 'The user modifying the CodeImport.  This column is never actually set in the database -- it is only present to communicate to the trigger that creates the event, which will intercept and remove the value for this column.';
+
+-- CodeImportEvent
+
+COMMENT ON TABLE CodeImportEvent IS 'A record of events in the code import system.  Rows in this table are created by triggers on other code import tables.';
+COMMENT ON COLUMN CodeImportEvent.entry_type IS 'The type of event that is recorded by this entry. Legal values are defined by the CodeImportEventType enumeration.';
+COMMENT ON COLUMN CodeImportEvent.code_import IS 'The code import that was associated to this event, if any and if it has not been deleted.';
+COMMENT ON COLUMN CodeImportEvent.log_file IS 'The log file in the Librarian associated to some events, such as import completion.';
+COMMENT ON COLUMN CodeImportEvent.person IS 'The user who caused the event, if the event is not automatically generated.';
+COMMENT ON COLUMN CodeImportEvent.machine IS 'The code import machine that was concerned by this event, if any.';
+
+-- CodeImportEventData
+
+COMMENT ON TABLE CodeImportEventData IS 'Additional data associated to a particular code import event.';
+COMMENT ON COLUMN CodeImportEventData.event IS 'The event the data is associated to.';
+COMMENT ON COLUMN CodeImportEventData.data_type IS 'The type of additional data, from the CodeImportEventDataType enumeration.';
+COMMENT ON COLUMN CodeImportEventData.data_value IS 'The value of the additional data.  A string.';
 
 -- CodeImportJobCurrent
 
@@ -200,12 +217,16 @@ COMMENT ON COLUMN CodeImportJobPast.log_file IS 'A partial log of the job for us
 COMMENT ON COLUMN CodeImportJobPast.log_excerpt IS 'The last few lines of the partial log, in case it is set.';
 COMMENT ON COLUMN CodeImportJobPast.status IS 'How the job ended. Success, some kind of failure, or some kind of interruption before completion.';
 COMMENT ON COLUMN CodeImportJobPast.date_started IS 'When the job started to run (date_created is when it finished).';
+COMMENT ON COLUMN CodeImportJobPast.killing_user IS 'The user who killed the job.';
 
 -- CodeImportMachine
 
 COMMENT ON TABLE CodeImportMachine IS 'The record of a machine capable of performing jobs for the code import system.';
 COMMENT ON COLUMN CodeImportMachine.hostname IS 'The (unique) hostname of the machine.';
 COMMENT ON COLUMN CodeImportMachine.online IS 'Whether the machine is capable of performing jobs at this time.';
+COMMENT ON COLUMN CodeImportMachine.quiescing_requested_by IS 'The user who put this machine in the quiescing state.';
+COMMENT ON COLUMN CodeImportMachine.quiescing_message IS 'The reason for the quiescing request.';
+COMMENT ON COLUMN CodeImportMachine.offline_reason IS 'The reason the machine was taken offline, from the CodeImportMachineOfflineReason enumeration.';
 
 -- CVE
 
