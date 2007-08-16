@@ -183,6 +183,9 @@ class FileBugViewBase(LaunchpadFormView):
     def contextIsProduct(self):
         return IProduct.providedBy(self.context)
 
+    def contextIsProject(self):
+        return IProject.providedBy(self.context)
+
     def getPackageNameFieldCSSClass(self):
         """Return the CSS class for the packagename field."""
         if self.widget_errors.get("packagename"):
