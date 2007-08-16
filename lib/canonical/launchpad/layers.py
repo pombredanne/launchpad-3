@@ -1,6 +1,8 @@
 # Copyright 2004-2007 Canonical Ltd.  All rights reserved.
-"""Module that defines the layers used in launchpad, and also utilities
-to do with manipulating layers.
+
+"""Define the layers used in Launchpad.
+
+Also define utilities that manipulate layers.
 """
 
 __metaclass__ = type
@@ -90,11 +92,3 @@ class ShipItKUbuntuLayer(ShipItLayer):
 
 class ShipItEdUbuntuLayer(ShipItLayer):
     """The `ShipIt` for EdUbuntu layer."""
-
-
-class PrivateAPILayer(Interface):
-    """The private API layer.
-
-    This is used for XML-RPC and REST calls that are only available to
-    internal systems on private ports.
-    """

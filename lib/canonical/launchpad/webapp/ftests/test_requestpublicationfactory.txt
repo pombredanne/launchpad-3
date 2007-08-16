@@ -67,10 +67,6 @@ These are parsed into webapp.vhost.allvhosts.
     rooturl: http://launchpad.dev/
     althosts:
     ----
-    xmlrpc_private @ xmlrpc-private.launchpad.dev
-    rooturl: http://xmlrpc-private.launchpad.dev/
-    althosts:
-    ----
 
 
 The hostnames and alternative hostnames for all virtual hosts are
@@ -90,7 +86,6 @@ hostname is handled by this Launchpad instance:
     shipit.kubuntu.dev
     shipit.ubuntu.dev
     translations.launchpad.dev
-    xmlrpc-private.launchpad.dev
     xmlrpc.launchpad.dev
 
 

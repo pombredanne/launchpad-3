@@ -191,8 +191,6 @@ class LaunchpadRequestPublicationFactory:
             ShipItPublication))
         vhrps.append(VHRP('xmlrpc',
                           PublicXMLRPCRequest, PublicXMLRPCPublication))
-        vhrps.append(VHRP('xmlrpc_private',
-                          PrivateXMLRPCRequest, PrivateXMLRPCPublication))
         # Done with using the short form of VirtualHostRequestPublication, so
         # clean up, as we won't need to use it again later.
         del VHRP
@@ -756,23 +754,6 @@ class PublicXMLRPCResponse(XMLRPCResponse):
                             xmlrpclib.Fault(-1, request.oopsid),
                             None)
         XMLRPCResponse.handleException(self, exc_info)
-
-
-class PrivateXMLRPCPublication(PublicXMLRPCPublication):
-    """The publication used for private XML-RPC requests."""
-
-
-class PrivateXMLRPCRequest(PublicXMLRPCRequest):
-    """Request type for doing private XML-RPC in Launchpad."""
-
-    implements(canonical.launchpad.layers.PrivateAPILayer)
-
-    def _createResponse(self):
-        return PrivateXMLRPCResponse()
-
-
-class PrivateXMLRPCResponse(PublicXMLRPCResponse):
-    """Response type for doing private XML-RPC in Launchpad."""
 
 
 # ---- openid
