@@ -1,4 +1,4 @@
-<div class="portlet"
+<div class="portlet" id="portlet-release-critical-bugs"
      tal:define="series_buglistings view/series_buglistings">
 
   <h2>Release-critical bugs</h2>

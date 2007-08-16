@@ -56,6 +56,7 @@ from canonical.launchpad.webapp.uri import URI
 from canonical.launchpad.webapp.publisher import (
     get_current_browser_request, nearest)
 from canonical.launchpad.webapp.authorization import check_permission
+from canonical.launchpad.webapp.session import get_cookie_domain
 from canonical.lazr import enumerated_type_registry
 
 
@@ -249,6 +250,7 @@ class IRequestAPI(Interface):
     """Launchpad lp:... API available for an IApplicationRequest."""
 
     person = Attribute("The IPerson for the request's principal.")
+    cookie_scope = Attribute("The scope parameters for cookies.")
 
 
 class RequestAPI:
@@ -260,9 +262,20 @@ class RequestAPI:
     def __init__(self, request):
         self.request = request
 
+    @property
     def person(self):
         return IPerson(self.request.principal, None)
-    person = property(person)
+
+    @property
+    def cookie_scope(self):
+        params = '; Path=/'
+        uri = URI(self.request.getURL())
+        if uri.scheme == 'https':
+            params += '; Secure'
+        domain = get_cookie_domain(uri.host)
+        if domain is not None:
+            params += '; Domain=%s' % domain
+        return params
 
 
 class DBSchemaAPI:
