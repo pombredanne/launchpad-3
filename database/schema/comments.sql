@@ -177,6 +177,30 @@ COMMENT ON COLUMN CodeImport.cvs_root IS 'The $CVSROOT details, probably of the 
 COMMENT ON COLUMN CodeImport.cvs_module IS 'The module in cvs_root to import, often the name of the project.';
 COMMENT ON COLUMN CodeImport.date_last_successful IS 'When this code import last succeeded. NULL if this import has never succeeded.';
 
+-- CodeImportJobCurrent
+
+COMMENT ON TABLE CodeImportJobCurrent IS 'A pending or active code import job.  There is always such a row for any active import, but it will not run until date_due is in the past.';
+COMMENT ON COLUMN CodeImportJobCurrent.code_import IS 'The code import that is being worked upon.';
+COMMENT ON COLUMN CodeImportJobCurrent.machine IS 'The machine job is currently scheduled to run on, or where the job is currently running.';
+COMMENT ON COLUMN CodeImportJobCurrent.date_due IS 'When the import should happen.';
+COMMENT ON COLUMN CodeImportJobCurrent.state IS 'One of PENDING (waiting until its due or a machine is online), SCHEDULED (assigned to a machine, but not yet running) or RUNNING (actually in the process of being imported now).';
+COMMENT ON COLUMN CodeImportJobCurrent.reason IS 'Why the import is being run.  One of INTERVAL (the default "update every N hours" case) or REQUEST (a user has requested this import be run as soon as possible).';
+COMMENT ON COLUMN CodeImportJobCurrent.requesting_user IS 'The user who requested the import, if any. Set if and only if reason = REQUEST.';
+COMMENT ON COLUMN CodeImportJobCurrent.ordering IS 'A measure of how urgent the job is -- queue entries with lower "ordering" should be processed first, or in other works "ORDER BY ordering" returns the most import jobs first.';
+COMMENT ON COLUMN CodeImportJobCurrent.heartbeat IS 'While the job is running, this field should be updated frequently to indicate that the import job hasn''t crashed.';
+COMMENT ON COLUMN CodeImportJobCurrent.logtail IS 'The last few lines of output produced by the running job. It should be updated at the same time as the heartbeat.';
+COMMENT ON COLUMN CodeImportJobCurrent.date_started IS 'When the import began to be processed.';
+
+-- CodeImportJobPast
+
+COMMENT ON TABLE CodeImportJobPast IS 'A completed code import job.';
+COMMENT ON COLUMN CodeImportJobPast.code_import IS 'The code import for which the job was run.';
+COMMENT ON COLUMN CodeImportJobPast.machine IS 'The machine the job ran on.';
+COMMENT ON COLUMN CodeImportJobPast.log_file IS 'A partial log of the job for users to see. It is normally only recorded if the job failed in a step that interacts with the remote repository. If a job was successful, or failed in a houskeeping step, the log file would not contain information useful to the user.';
+COMMENT ON COLUMN CodeImportJobPast.log_excerpt IS 'The last few lines of the partial log, in case it is set.';
+COMMENT ON COLUMN CodeImportJobPast.status IS 'How the job ended. Success, some kind of failure, or some kind of interruption before completion.';
+COMMENT ON COLUMN CodeImportJobPast.date_started IS 'When the job started to run (date_created is when it finished).';
+
 -- CodeImportMachine
 
 COMMENT ON TABLE CodeImportMachine IS 'The record of a machine capable of performing jobs for the code import system.';
