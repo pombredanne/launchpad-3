@@ -404,7 +404,7 @@ class ChooseAffectedProductView(LaunchpadFormView, BugAlsoReportInBaseView):
 
     schema = IUpstreamBugTask
     field_names = ['product']
-    label = u"Also affects a project"
+    label = u"Record as affecting another project"
 
     def _getUpstream(self, distro_package):
         """Return the upstream if there is a packaging link."""

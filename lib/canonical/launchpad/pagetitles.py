@@ -250,13 +250,14 @@ bugtarget_filebug_search = bugtarget_filebug_advanced
 bugtarget_filebug_submit_bug = bugtarget_filebug_advanced
 
 bugtask_choose_affected_product = LaunchbagBugID(
-    'Bug #%d - Also affects a project')
+    'Bug #%d - Record as affecting another project')
 
 bugtask_edit = BugTaskPageTitle()
 
 bugtask_index = BugTaskPageTitle()
 
-bugtask_requestfix = LaunchbagBugID('Bug #%d - Also affects')
+bugtask_requestfix = LaunchbagBugID(
+    'Bug #%d - Record as affecting another distribution/package')
 
 bugtask_requestfix_upstream = LaunchbagBugID('Bug #%d - Confirm project')
 
