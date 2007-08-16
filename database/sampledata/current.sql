@@ -554,18 +554,6 @@ SET search_path = public, pg_catalog;
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 ALTER TABLE answercontact DISABLE TRIGGER ALL;
 
 INSERT INTO answercontact (id, product, distribution, sourcepackagename, person, date_created) VALUES (1, NULL, 1, 1, 16, '2007-03-14 20:07:25.233772');
@@ -575,20 +563,6 @@ INSERT INTO answercontact (id, product, distribution, sourcepackagename, person,
 
 
 ALTER TABLE answercontact ENABLE TRIGGER ALL;
-
-
-ALTER TABLE archconfig DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE archconfig ENABLE TRIGGER ALL;
-
-
-ALTER TABLE archconfigentry DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE archconfigentry ENABLE TRIGGER ALL;
 
 
 ALTER TABLE archive DISABLE TRIGGER ALL;
@@ -640,18 +614,18 @@ ALTER TABLE binarypackagename ENABLE TRIGGER ALL;
 
 ALTER TABLE binarypackagerelease DISABLE TRIGGER ALL;
 
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (6, 6, '1.0', 'foobar is bad', 'foobar should be removed', 6, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, NULL, '2006-12-01 17:50:10.878712');
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'firefox-gnome-support (= 1.0.7-0ubuntu20), latex-xft-fonts, xprint', 'firefox, mozilla-web-browser', 'gnome-mozilla-browser', 'mozilla-firefox', false, NULL, NULL, NULL, true, NULL, '2005-10-19 17:50:10.874189');
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, 'at (>= 3.14156), linux-2.6.12, tramp-package', NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, NULL, '2005-10-19 17:50:10.878712');
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (16, 14, '2.6.12.20', 'the kernel of boom', 'this kernel is like the crystal method: a temple of boom', 14, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, NULL, '2005-10-19 17:50:10.878712');
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (17, 15, '3.14156', 'at the mountains of madness', 'lovecraft long before enunciated that the mountains were not safe, but you did not believe him', 15, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, NULL, '2005-10-19 17:50:10.878712');
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (18, 13, '2:1.9-1', 'pmount shortdesc', 'pmount description', 16, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, NULL, '2005-10-19 17:50:10.878712');
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (19, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 18, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'firefox-gnome-support (= 1.0.7-0ubuntu20), latex-xft-fonts, xprint', 'firefox, mozilla-web-browser', 'gnome-mozilla-browser', 'mozilla-firefox', false, NULL, NULL, NULL, true, NULL, '2005-10-19 17:50:10.874189');
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (20, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 19, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, NULL, '2005-10-19 17:50:10.878712');
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (21, 16, '1.0', 'cdrkit is nice', 'cdrkit should be kept', 21, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, NULL, '2006-12-01 17:50:10.878712');
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (22, 8, '1.0', 'ff from iceweasel', 'iceweasel huh ?', 23, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, true, NULL, '2006-04-11 12:50:10.878712');
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (23, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 27, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, false, NULL, '2007-07-24 17:50:10.878712');
-INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, copyright, licence, architecturespecific, fti, datecreated) VALUES (24, 8, '1.0', 'ff from iceweasel', 'iceweasel huh ?', 28, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, NULL, NULL, true, NULL, '2006-08-10 12:50:10.878712');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated) VALUES (6, 6, '1.0', 'foobar is bad', 'foobar should be removed', 6, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2006-12-01 17:50:10.878712');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated) VALUES (12, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 2, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'firefox-gnome-support (= 1.0.7-0ubuntu20), latex-xft-fonts, xprint', 'firefox, mozilla-web-browser', 'gnome-mozilla-browser', 'mozilla-firefox', false, NULL, true, NULL, '2005-10-19 17:50:10.874189');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated) VALUES (15, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 7, 1, 1, 1, 40, NULL, 'at (>= 3.14156), linux-2.6.12, tramp-package', NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated) VALUES (16, 14, '2.6.12.20', 'the kernel of boom', 'this kernel is like the crystal method: a temple of boom', 14, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated) VALUES (17, 15, '3.14156', 'at the mountains of madness', 'lovecraft long before enunciated that the mountains were not safe, but you did not believe him', 15, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated) VALUES (18, 13, '2:1.9-1', 'pmount shortdesc', 'pmount description', 16, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated) VALUES (19, 8, '0.9', 'Mozilla Firefox Web Browser', 'Mozilla Firefox Web Browser is .....', 18, 1, 1, 1, 10, NULL, 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'gcc-3.4-base, libc6 (>= 2.3.2.ds1-4), gcc-3.4 (>= 3.4.1-4sarge1), gcc-3.4 (<< 3.4.2), libstdc++6-dev (>= 3.4.1-4sarge1)', 'firefox-gnome-support (= 1.0.7-0ubuntu20), latex-xft-fonts, xprint', 'firefox, mozilla-web-browser', 'gnome-mozilla-browser', 'mozilla-firefox', false, NULL, true, NULL, '2005-10-19 17:50:10.874189');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated) VALUES (20, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 19, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2005-10-19 17:50:10.878712');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated) VALUES (21, 16, '1.0', 'cdrkit is nice', 'cdrkit should be kept', 21, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2006-12-01 17:50:10.878712');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated) VALUES (22, 8, '1.0', 'ff from iceweasel', 'iceweasel huh ?', 23, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, true, NULL, '2006-04-11 12:50:10.878712');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated) VALUES (23, 13, '0.1-1', 'pmount shortdesc', 'pmount description', 27, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, false, NULL, '2007-07-24 17:50:10.878712');
+INSERT INTO binarypackagerelease (id, binarypackagename, version, summary, description, build, binpackageformat, component, section, priority, shlibdeps, depends, recommends, suggests, conflicts, replaces, provides, essential, installedsize, architecturespecific, fti, datecreated) VALUES (24, 8, '1.0', 'ff from iceweasel', 'iceweasel huh ?', 28, 1, 1, 1, 40, NULL, NULL, NULL, NULL, NULL, NULL, NULL, false, NULL, true, NULL, '2006-08-10 12:50:10.878712');
 
 
 ALTER TABLE binarypackagerelease ENABLE TRIGGER ALL;
@@ -752,20 +726,6 @@ INSERT INTO branch (id, title, summary, "owner", product, author, name, home_pag
 
 
 ALTER TABLE branch ENABLE TRIGGER ALL;
-
-
-ALTER TABLE branchmessage DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE branchmessage ENABLE TRIGGER ALL;
-
-
-ALTER TABLE branchrelationship DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE branchrelationship ENABLE TRIGGER ALL;
 
 
 ALTER TABLE branchrevision DISABLE TRIGGER ALL;
@@ -960,32 +920,32 @@ ALTER TABLE bugexternalref ENABLE TRIGGER ALL;
 
 ALTER TABLE bugmessage DISABLE TRIGGER ALL;
 
-INSERT INTO bugmessage (id, bug, message) VALUES (1, 2, 1);
-INSERT INTO bugmessage (id, bug, message) VALUES (2, 1, 3);
-INSERT INTO bugmessage (id, bug, message) VALUES (3, 1, 4);
-INSERT INTO bugmessage (id, bug, message) VALUES (4, 2, 5);
-INSERT INTO bugmessage (id, bug, message) VALUES (5, 2, 6);
-INSERT INTO bugmessage (id, bug, message) VALUES (6, 4, 7);
-INSERT INTO bugmessage (id, bug, message) VALUES (7, 5, 8);
-INSERT INTO bugmessage (id, bug, message) VALUES (8, 6, 9);
-INSERT INTO bugmessage (id, bug, message) VALUES (9, 3, 10);
-INSERT INTO bugmessage (id, bug, message) VALUES (10, 7, 11);
-INSERT INTO bugmessage (id, bug, message) VALUES (11, 8, 14);
-INSERT INTO bugmessage (id, bug, message) VALUES (12, 9, 15);
-INSERT INTO bugmessage (id, bug, message) VALUES (13, 10, 17);
-INSERT INTO bugmessage (id, bug, message) VALUES (14, 10, 16);
-INSERT INTO bugmessage (id, bug, message) VALUES (15, 11, 24);
-INSERT INTO bugmessage (id, bug, message) VALUES (16, 11, 25);
-INSERT INTO bugmessage (id, bug, message) VALUES (17, 11, 26);
-INSERT INTO bugmessage (id, bug, message) VALUES (18, 11, 27);
-INSERT INTO bugmessage (id, bug, message) VALUES (19, 11, 28);
-INSERT INTO bugmessage (id, bug, message) VALUES (20, 11, 29);
-INSERT INTO bugmessage (id, bug, message) VALUES (21, 11, 30);
-INSERT INTO bugmessage (id, bug, message) VALUES (22, 12, 31);
-INSERT INTO bugmessage (id, bug, message) VALUES (23, 12, 33);
-INSERT INTO bugmessage (id, bug, message) VALUES (24, 12, 34);
-INSERT INTO bugmessage (id, bug, message) VALUES (25, 12, 35);
-INSERT INTO bugmessage (id, bug, message) VALUES (26, 12, 36);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (1, 2, 1, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (2, 1, 3, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (3, 1, 4, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (4, 2, 5, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (5, 2, 6, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (6, 4, 7, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (7, 5, 8, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (8, 6, 9, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (9, 3, 10, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (10, 7, 11, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (11, 8, 14, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (12, 9, 15, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (13, 10, 17, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (14, 10, 16, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (15, 11, 24, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (16, 11, 25, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (17, 11, 26, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (18, 11, 27, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (19, 11, 28, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (20, 11, 29, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (21, 11, 30, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (22, 12, 31, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (23, 12, 33, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (24, 12, 34, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (25, 12, 35, NULL);
+INSERT INTO bugmessage (id, bug, message, bugwatch) VALUES (26, 12, 36, NULL);
 
 
 ALTER TABLE bugmessage ENABLE TRIGGER ALL;
@@ -8055,13 +8015,6 @@ INSERT INTO productbounty (id, bounty, product, date_created) VALUES (2, 4, 5, '
 
 
 ALTER TABLE productbounty ENABLE TRIGGER ALL;
-
-
-ALTER TABLE productbranchrelationship DISABLE TRIGGER ALL;
-
-
-
-ALTER TABLE productbranchrelationship ENABLE TRIGGER ALL;
 
 
 ALTER TABLE productcvsmodule DISABLE TRIGGER ALL;
