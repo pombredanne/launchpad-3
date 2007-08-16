@@ -125,7 +125,7 @@ class BinaryPackageRelease(SQLBase):
         """ % sqlvalues(
             self.binarypackagename,
             self.build.distroarchseries,
-            self.build.distroarchseries.distribution.all_distro_archive_ids,
+            self.build.distribution.all_distro_archive_ids,
             dbschema.PackagePublishingStatus.SUPERSEDED)
 
         return shortlist(BinaryPackageRelease.select(
@@ -223,7 +223,8 @@ class BinaryPackageReleaseSet:
         BinaryPackageRelease.binarypackagename =
            BinaryPackageName.id AND
         BinaryPackagePublishingHistory.status != %s
-        """ % sqlvalues(distroseries.distribution.all_distro_archive_ids,
+        """ % sqlvalues([archive.id for archive in
+                            distroseries.distribution.all_distro_archives],
                         distroseries,
                         dbschema.PackagePublishingStatus.REMOVED)
 

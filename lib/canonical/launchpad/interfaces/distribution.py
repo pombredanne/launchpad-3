@@ -202,7 +202,7 @@ class IDistribution(IBugTarget, IHasAppointedDriver, IHasDrivers,
         with a SelectResults object.
         """
 
-    def archive_id_list(archive=None):
+    def archiveIdList(archive=None):
         """Return a list of archive IDs suitable for sqlvalues() or quote().
 
         If the archive param is supplied, just its ID will be returned in
