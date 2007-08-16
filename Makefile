@@ -127,14 +127,21 @@ run_all: inplace stop bzr_version_info
 		 -C $(CONFFILE)
 
 pull: bzr_version_info
+	# Mirror the hosted branches in the development upload area to the
+	# mirrored area.
 	$(PYTHON) cronscripts/supermirror-pull.py upload
 
 rewritemap:
+	# Build to rewrite map that maps friendly branch names to IDs. Necessary
+	# for http access to branches and for the branch scanner.
 	mkdir -p /var/tmp/sm-ng/config
 	$(PYTHON) cronscripts/supermirror_rewritemap.py /var/tmp/sm-ng/config/launchpad-lookup.txt
 
-scan:
+scan: rewritemap
+	# Scan branches from the filesystem into the database.
 	$(PYTHON) cronscripts/branch-scanner.py
+
+sync_branches: pull scan
 
 bzr_version_info:
 	rm -f bzr-version-info.py bzr-version-info.pyc
@@ -208,5 +215,6 @@ tags:
 .PHONY: check tags TAGS zcmldocs realclean clean debug stop start run \
 		ftest_build ftest_inplace test_build test_inplace pagetests \
 		check importdcheck check_merge schema default launchpad.pot \
-		check_launchpad_on_merge check_merge_ui pull rewritemap scan
+		check_launchpad_on_merge check_merge_ui pull rewritemap scan \
+		sync_branches
 
