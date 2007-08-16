@@ -1476,16 +1476,19 @@ class FormattersAPI:
     # expression strives to identify probable email addresses so that they
     # can be obfuscated when viewed by unauthenticated users. See
     # http://www.email-unlimited.com/stuff/email_address_validator.htm
-    _re_email = re.compile(
-        # localnames do not have [&?%!@<>,;:`|{}()#*^~ ] in practice
-        # (regardless of RFC 2821) because they conflict with other systems.
-        # See https://lists.ubuntu.com
-        #     /mailman/private/launchpad-reviews/2007-June/006081.html
-        r"([\b]|[\"']?)[-/=0-9A-Z_a-z]" # first character of localname
-        r"[.\"'-/=0-9A-Z_a-z+]*@" # possible . and + in localname
-        r"[a-zA-Z]" # first character of host or domain
-        r"(-?[a-zA-Z0-9])*" # possible - and numbers in host or domain
-        r"(\.[a-zA-Z](-?[a-zA-Z0-9])*)+\b") # dot starts one or more domains.
+
+    # localnames do not have [&?%!@<>,;:`|{}()#*^~ ] in practice
+    # (regardless of RFC 2821) because they conflict with other systems.
+    # See https://lists.ubuntu.com
+    #     /mailman/private/launchpad-reviews/2007-June/006081.html
+
+    # This verson of the re is more than 5x faster that the orginal
+    # version used in ftest/test_tales.testObfuscateEmail.
+    _re_email = re.compile(r"""
+        \b[a-zA-Z0-9._/="'+-]{1,64}@  # The localname.
+        [a-zA-Z][a-zA-Z0-9-]{1,63}    # The hostname.
+        \.[a-zA-Z0-9.-]{1,251}\b      # Dot starts one or more domains.
+        """, re.VERBOSE)
 
     def obfuscate_email(self):
         """Obfuscate an email address as '<email address hidden>'.

@@ -10,8 +10,8 @@
     Zope3 environment - Zopeless scripts have email turned off.
     -->
     <mail:stubMailer 
-        name="stub" from_addr="staging@launchpad.net"
-        to_addr="staging@launchpad.net"
+        name="stub" from_addr="staging@mail.canonical.com"
+        to_addr="staging@mail.canonical.com"
         />
     <!-- Development configuration to avoid spamming innocent people -->
     <mail:queuedDelivery name="Mail" permission="zope.SendMail"
