@@ -109,8 +109,6 @@ given build record entry.
   >>> provides = None
   >>> essential = False
   >>> installedsize = 0
-  >>> copyright = None
-  >>> licence = None
   >>> architecturespecific = False
 
 Invoke createBinaryPackageRelease with all required arguments.
@@ -123,7 +121,6 @@ Invoke createBinaryPackageRelease with all required arguments.
   ...                                 depends, recommends, suggests,
   ...                                 conflicts, replaces, provides,
   ...                                 essential, installedsize,
-  ...                                 copyright, licence,
   ...                                 architecturespecific)
 
   >>> from canonical.launchpad.interfaces import IBinaryPackageRelease
@@ -159,7 +156,6 @@ Emulate a huge list of binaries for 'pmount':
   ...                                 depends, recommends, suggests,
   ...                                 conflicts, replaces, provides,
   ...                                 essential, installedsize,
-  ...                                 copyright, licence,
   ...                                 architecturespecific)
 
 

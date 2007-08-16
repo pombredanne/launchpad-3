@@ -63,11 +63,13 @@ def print_bugs_list(content, list_id):
 
 def print_bugtasks(text):
     """Print all the bugtasks in the text."""
+    print '\n'.join(extract_bugtasks(text))
+
+
+def extract_bugtasks(text):
+    """Extracts a list of strings for all the bugtasks in the text."""
     main_content = find_main_content(text)
     table = main_content.find('table', {'id': 'buglisting'})
     if table is None:
-        return
-    for tr in table('tr'):
-        if not tr.td:
-            continue
-        print extract_text(tr)
+        return []
+    return [extract_text(tr) for tr in table('tr') if tr.td is not None]

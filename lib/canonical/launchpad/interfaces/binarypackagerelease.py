@@ -37,8 +37,6 @@ class IBinaryPackageRelease(Interface):
     provides = Text(required=False)
     essential = Bool(required=False)
     installedsize = Int(required=False)
-    copyright = Text(required=False)
-    licence = Text(required=False)
     architecturespecific = Bool(required=True)
     datecreated = Datetime(required=True, readonly=True)
 
