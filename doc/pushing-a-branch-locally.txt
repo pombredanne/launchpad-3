@@ -16,7 +16,7 @@ Run the puller:
 Build the rewrite map:
   $ mkdir -p /var/tmp/sm-ng/config
   $ ./cronscripts/supermirror_rewritemap.py \
-      /var/tmp/sm-ng/config/launchpad-lookup.txt
+        /var/tmp/sm-ng/config/launchpad-lookup.txt
 
 Run the scanner:
   $ ./cronscripts/branch-scanner.py
@@ -30,4 +30,4 @@ Run the scanner:
  - supermirror_rewritemap.py assumes location shared by apache config.
  - Get apache config into rf-setup
  - 'upload' sucks, say 'hosted' instead.
- 
+ - Pushing via smartserver doesn't work if top-level directory doesn't exist.
