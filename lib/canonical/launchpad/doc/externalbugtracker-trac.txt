@@ -11,9 +11,6 @@ bug watches on Trac bug trackers is externalbugtracker.Trac, which implements
 IExternalBugTracker.
 
     >>> from canonical.launchpad.components.externalbugtracker import Trac
-    >>> Trac('http://trac.foo.com')
-    <canonical.launchpad.components.externalbugtracker.Trac object at...>
-
     >>> from canonical.launchpad.interfaces.externalbugtracker import (
     ...     IExternalBugtracker)
     >>> from zope.interface.verify import verifyObject
@@ -167,12 +164,9 @@ We'll add some more watches now.
     ...     (int(bug_watch.remotebug), bug_watch.remotestatus)
     ...     for bug_watch in example_bug_tracker.watches)
 
-    >>> for remote_bug_id in set(remote_statuses).union(
-    ...     expected_remote_statuses):
+    >>> for remote_bug_id in sorted(expected_remote_statuses.keys()):
     ...     remote_status = remote_statuses[remote_bug_id]
-    ...     expected_remote_status = expected_remote_statuses[remote_bug_id]
-    ...     print 'Remote bug %d: %s' % (
-    ...         remote_bug_id, expected_remote_status)
+    ...     print 'Remote bug %d: %s' % (remote_bug_id, remote_status)
     Remote bug 1: fixed
     Remote bug 143: fixed
     Remote bug 144: assigned
