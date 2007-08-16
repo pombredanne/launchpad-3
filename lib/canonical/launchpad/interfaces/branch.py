@@ -11,6 +11,7 @@ __all__ = [
     'BranchLifecycleStatus',
     'BranchLifecycleStatusFilter',
     'BranchType',
+    'CannotDeleteBranch',
     'DEFAULT_BRANCH_STATUS_IN_LISTING',
     'IBranch',
     'IBranchSet',
@@ -132,6 +133,10 @@ DEFAULT_BRANCH_STATUS_IN_LISTING = (
 
 class BranchCreationException(Exception):
     """Base class for branch creation exceptions."""
+
+
+class CannotDeleteBranch(Exception):
+    """The branch cannot be deleted at this time."""
 
 
 class BranchCreationForbidden(BranchCreationException):
@@ -363,6 +368,22 @@ class IBranch(IHasOwner):
     code_is_browseable = Attribute(
         "Is the code in this branch accessable through codebrowse?")
 
+    def canBeDeleted():
+        """Can this branch be deleted in its current state.
+
+        A branch is considered deletable if it has no revisions, is not
+        linked to any bugs, specs, productseries, or code imports, and
+        has no subscribers.
+        """
+
+    def associatedProductSeries():
+        """Return the product series that this branch is associated with.
+
+        A branch may be associated with a product series as either a
+        user_branch or import_branch.  Also a branch can be associated
+        with more than one product series as a user_branch.
+        """
+
     # subscription-related methods
     def subscribe(person, notification_level, max_diff_lines):
         """Subscribe this person to the branch.
@@ -485,6 +506,9 @@ class IBranchSet(Interface):
         Raises BranchCreationForbidden if the creator is not allowed
         to create a branch for the specified product.
         """
+
+    def delete(branch):
+        """Delete the specified branch."""
 
     def getByUniqueName(unique_name, default=None):
         """Find a branch by its ~owner/product/name unique name.

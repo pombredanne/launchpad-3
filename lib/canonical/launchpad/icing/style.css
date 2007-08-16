@@ -1579,7 +1579,7 @@ th.descending {
 .sortkey, .revsortkey {display: none;}
 
 /* Clouds of links. */
-.cloud-size-small { 
+.cloud-size-small {
   font-size: 1em;
 }
 .cloud-size-medium {
@@ -1588,14 +1588,23 @@ th.descending {
 .cloud-size-large {
   font-size: 1.7em;
 }
-.cloud-shade-dark { 
+.cloud-shade-dark {
   color: #00f;
 }
-.cloud-shade-medium { 
+.cloud-shade-medium {
   color: #7878ff;
 }
 .cloud-shade-light {
   color: #b8b8ff;
+}
+.cloud-highlight-dark {
+  color: #00c500;
+}
+.cloud-highlight-medium {
+  color: #90e090;
+}
+.cloud-highlight-light {
+  color: #b8ffb8;
 }
 
 .vcsimportSUCCESS {} /* inherited text color */
