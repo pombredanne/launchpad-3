@@ -1655,14 +1655,6 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             prepare_batch=prepare_pomsgset_batch)
         cur = cursor()
 
-        # XXX: Jeroen Vermeulen 2007-08-15: Is this needed?  Or was it just an
-        # omission in the old code not to copy these values?
-        #cur.execute("""
-        #    UPDATE %(pomsgset_holding_table)s
-        #    SET date_reviewed = NULL, reviewer = NULL
-        #    WHERE new_id IS NOT NULL
-        #    """ % query_parameters)
-
         # Set potmsgset to point to equivalent POTMsgSet in copy's POFile.
         # This is similar to what MultiTableCopy would have done for us had we
         # included POTMsgSet in the copy operation.
