@@ -1446,8 +1446,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         copier = MultiTableCopy(full_name, tables, restartable=False)
 
         drop_tables(cursor(), [
-            'equiv_template', 'equiv_potmsgset', 'equiv_pofile',
-            'inert_pofiles', 'inert_pomsgsets', 'changed_pofiles'])
+            'equiv_template', 'equiv_potmsgset', 'inert_pomsgsets',
+            'changed_pofiles'])
 
         # Map parent POTemplates to corresponding POTemplates in self.  This
         # will come in handy later.
@@ -1572,40 +1572,19 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # pointing to the already-existing equivalent POFiles in the child
         # distroseries.  MultiTableCopy.extract initialized these to null for
         # us.  We're going to set them here to make the next extract() pick up
-        # the new foreign key values.  We'll simply delete those rows before
-        # the pouring stage to avoid confusing MultiTableCopy.
-
-        # Remember which rows we'll need to delete from the holding table.
-        cur.execute("""
-            CREATE TEMP TABLE inert_pofiles AS
-            SELECT id FROM %(pofile_holding_table)s
-            WHERE new_id IS NULL
-            """ % query_parameters)
-
-        # Since we have that information anyway, map POFiles of the parent
-        # that need not be copied to their equivalents in the child
-        # distroseries.
-        cur.execute("""
-            CREATE TEMP TABLE equiv_pofile AS
-            SELECT pf1.id AS id, pf2.id AS new_id
-            FROM %(pofile_holding_table)s pf1, POFile pf2, equiv_template
-            WHERE
-                pf1.potemplate = equiv_template.id AND
-                pf2.potemplate = equiv_template.new_id AND
-                pf1.language = pf2.language AND
-                COALESCE(pf1.variant, ''::text) =
-                    COALESCE(pf2.variant, ''::text) AND
-                pf1.new_id IS NULL
-            """ % query_parameters)
-        cur.execute(
-            "CREATE UNIQUE INDEX equiv_pofile_pkey ON equiv_pofile (id)")
-
-        # Now re-map our holding table's new_ids.
+        # the new foreign-key values.  We'll simply delete those rows before
+        # they can be poured so as to avoid confusing MultiTableCopy.
         cur.execute("""
             UPDATE %(pofile_holding_table)s AS holding
-            SET new_id = equiv_pofile.new_id
-            FROM equiv_pofile
-            WHERE holding.id = equiv_pofile.id
+            SET new_id = pf.id
+            FROM POFile pf, equiv_template
+            WHERE
+                holding.potemplate = equiv_template.id AND
+                pf.potemplate = equiv_template.new_id AND
+                holding.language = pf.language AND
+                COALESCE(holding.variant, ''::text) =
+                    COALESCE(pf.variant, ''::text) AND
+                holding.new_id IS NULL
             """ % query_parameters)
 
         # XXX: JeroenVermeulen 2007-07-16 bug=124410: Fix up
@@ -1632,12 +1611,10 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             cur = cursor()
             cur.execute("""
                 DELETE FROM %s AS holding
-                USING equiv_pofile, equiv_potmsgset, POMsgSet pms
+                USING POMsgSet pms
                 WHERE
-                    holding.potmsgset = equiv_potmsgset.id AND
-                    pms.potmsgset = equiv_potmsgset.new_id AND
-                    holding.pofile = equiv_pofile.id AND
-                    pms.pofile = equiv_pofile.new_id AND
+                    holding.potmsgset = pms.potmsgset AND
+                    holding.pofile = pms.pofile AND
                     holding.id >= %s AND
                     holding.id < %s
                 """ % (holding_table, quote(start_id), quote(end_id)))
@@ -1660,14 +1637,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             EXISTS (
                 SELECT *
                 FROM
+                    %(pofile_holding_table)s pfh,
                     equiv_potmsgset,
-                    POMsgSet pms,
-                    %(pofile_holding_table)s pfh
+                    POMsgSet pms
                 WHERE
                     holding.potmsgset = equiv_potmsgset.id AND
                     equiv_potmsgset.new_id = pms.potmsgset AND
                     holding.pofile = pfh.id AND
-                    pms.pofile = pfh.new_id
+                    pfh.new_id = pms.pofile
                 )
             """ % query_parameters
 
@@ -1691,9 +1668,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
             UPDATE %(pomsgset_holding_table)s AS holding
             SET potmsgset = equiv_potmsgset.new_id
             FROM equiv_potmsgset
-            WHERE
-                holding.potmsgset = equiv_potmsgset.id AND
-                holding.new_id IS NOT NULL
+            WHERE holding.potmsgset = equiv_potmsgset.id
             """ % query_parameters)
 
         # Prepare to remove inert POMsgSets from holding before pouring...
@@ -1711,13 +1686,11 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         cur.execute("""
             UPDATE %(pomsgset_holding_table)s AS holding
             SET new_id = pms.id
-            FROM %(pofile_holding_table)s pfh, equiv_potmsgset, POMsgSet pms
+            FROM %(pofile_holding_table)s pfh, POMsgSet pms
             WHERE
-                holding.pofile = pfh.id AND
-                pms.pofile = pfh.new_id AND
-                holding.potmsgset = equiv_potmsgset.id AND
-                pms.potmsgset = equiv_potmsgset.new_id AND
-                holding.new_id IS NULL
+                holding.new_id IS NULL AND
+                holding.potmsgset = pms.potmsgset AND
+                holding.pofile = pms.pofile
             """ % query_parameters)
 
         # Where corresponding POMsgSets already exist but are not complete,
@@ -1786,6 +1759,7 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
                 self.transaction_manager.commit()
                 self.transaction_manager.begin()
+                self.lowest_id = next
 
         # ### POSubmission ###
 
@@ -1879,13 +1853,14 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
         # Now get rid of those inert rows whose new_ids we messed with, or
         # horrible things will happen during pouring.
         cur.execute("""
-            DELETE FROM %(pofile_holding_table)s
-            WHERE id IN (SELECT id FROM inert_pofiles)
+            DELETE FROM %(pofile_holding_table)s AS holding
+            USING POFile
+            WHERE holding.id = POFile.id
             """ % query_parameters)
         cur.execute("""
             DELETE FROM %(pomsgset_holding_table)s AS holding
             USING POMsgSet
-            WHERE holding.new_id=POMsgSet.id
+            WHERE holding.new_id = POMsgSet.id
             """ % query_parameters)
 
         # Pour copied rows back to source tables.  Contrary to appearances,
@@ -1902,8 +1877,8 @@ class DistroSeries(SQLBase, BugTargetBase, HasSpecificationsMixin):
 
         # Clean up after ourselves, in case we get called again this session.
         drop_tables(cursor(), [
-            'equiv_template', 'equiv_potmsgset', 'equiv_pofile',
-            'inert_pofiles', 'inert_pomsgsets', 'changed_pofiles'])
+            'equiv_template', 'equiv_potmsgset', 'inert_pomsgsets',
+            'changed_pofiles'])
 
         ztm.commit()
 
