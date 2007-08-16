@@ -648,6 +648,7 @@ class ProductEditView(LaunchpadEditFormView):
         "homepageurl", "sourceforgeproject",
         "freshmeatproject", "wikiurl", "screenshotsurl", "downloadurl",
         "programminglang", "development_focus"]
+    custom_widget('bugtracker', ProductBugTrackerWidget)
 
     @action("Change", name='change')
     def change_action(self, action, data):
@@ -659,8 +660,6 @@ class ProductEditView(LaunchpadEditFormView):
             return canonical_url(self.context)
         else:
             return canonical_url(getUtility(IProductSet))
-
-    custom_widget('bugtracker', ProductBugTrackerWidget)
 
 
 class ProductChangeTranslatorsView(ProductEditView):

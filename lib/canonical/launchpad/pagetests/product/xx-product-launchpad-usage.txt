@@ -1,4 +1,4 @@
-= Distribution Launchpad usage =
+= Product Launchpad usage =
 
 The launchpad usage flags (whether the product uses Bugs, Answers or
 Translations officially) are found on the +edit page. 
