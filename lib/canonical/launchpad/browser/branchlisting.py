@@ -6,9 +6,9 @@ __metaclass__ = type
 
 __all__ = [
     'BranchListingView',
-    'RecentlyRegisteredBranchesView',
-    'RecentlyImportedBranchesView',
     'RecentlyChangedBranchesView',
+    'RecentlyImportedBranchesView',
+    'RecentlyRegisteredBranchesView',
     ]
 
 from datetime import datetime

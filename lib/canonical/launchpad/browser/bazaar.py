@@ -15,6 +15,7 @@ from datetime import datetime
 from zope.component import getUtility
 
 from canonical.cachedproperty import cachedproperty
+from canonical.config import config
 from canonical.lp import decorates
 
 from canonical.launchpad.interfaces import (
@@ -97,7 +98,8 @@ class BazaarApplicationView(LaunchpadView):
     @cachedproperty
     def short_product_tag_cloud(self):
         """Show a preview of the product tag cloud."""
-        return BazaarProductView().products(num_products=120)
+        return BazaarProductView().products(
+            num_products=config.launchpad.code_homepage_product_cloud_size)
 
 
 class BazaarApplicationNavigation(Navigation):
