@@ -41,7 +41,6 @@ class POMsgSetMixIn:
     @property
     def pluralforms(self):
         """See `IPOMsgSet`."""
-
         if self.potmsgset.plural_text is not None:
             if self.pofile.language.pluralforms is not None:
                 entries = self.pofile.language.pluralforms
@@ -60,7 +59,6 @@ class POMsgSetMixIn:
         This retrieves all POSubmissions that form useful suggestions for self
         from the database, as well as any POSubmissions that are already
         attached to self, all in new-to-old order of datecreated."""
-
         # An SQL clause matching a POMsgSet to our own identity.  It goes into
         # an OR expression, so default is false.
         match_self_sql = 'false'
@@ -82,13 +80,11 @@ class POMsgSetMixIn:
                 POTMsgSet.primemsgid = %(primemsgid)s
             """ % parameters
 
-        # XXX: JeroenVermeulen 2007-06-17: Pre-join potranslations!
         return POSubmission.select(
             query, clauseTables=joins, orderBy='-datecreated', distinct=True)
 
     def initializeSubmissionsCaches(self, related_submissions=None):
-        """See `IPOMsgSet`."""
-
+        """See `IPOMsgSet`.""" 
         if self._hasSubmissionsCaches():
             return
 
@@ -112,7 +108,10 @@ class POMsgSetMixIn:
                 "POMsgSet's incoming submission cache data not ordered "
                 "from newest to oldest")
             pluralform = submission.pluralform
-            if submission.pomsgset == self:
+            # Compare foreign-key value to our primary key, rather than
+            # comparing objects, to avoid fetching submission.pomsgset from
+            # database.
+            if submission.pomsgsetID == self.id:
                 self.attached_submissions.setdefault(pluralform, [])
                 self.attached_submissions[pluralform].append(submission)
                 if submission.active:
@@ -126,13 +125,16 @@ class POMsgSetMixIn:
 
         # Now that we know what our active posubmissions are, filter out any
         # suggestions that refer to the same potranslations.
+        # XXX: JeroenVermeulen 2007-08-02, can we move this selection into SQL
+        # to speed up the big expensive queries on POSubmission by making them
+        # return less data?  (bug 30602)
         for pluralform in self.suggestions.keys():
             active = self.getActiveSubmission(pluralform)
             if active is not None and active.potranslation is not None:
                 self.suggestions[pluralform] = [
                     submission
                     for submission in self.suggestions.get(pluralform)
-                    if submission.potranslation != active.potranslation]
+                    if submission.potranslationID != active.potranslationID]
 
         assert self._hasSubmissionsCaches(), (
             "Failed to set up POMsgSet's submission caches")
@@ -256,13 +258,15 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
     @property
     def published_texts(self):
         """See `IPOMsgSet`."""
-        self._fetchActiveAndPublishedSubmissions()
+        if self.published_submissions is None:
+            self._fetchActiveAndPublishedSubmissions()
         return self._extractTranslations(self.published_submissions)
 
     @property
     def active_texts(self):
         """See `IPOMsgSet`."""
-        self._fetchActiveAndPublishedSubmissions()
+        if self.active_submissions is None:
+            self._fetchActiveAndPublishedSubmissions()
         return self._extractTranslations(self.active_submissions)
 
     def isNewerThan(self, timestamp):
@@ -370,10 +374,9 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
         bigger job with lots of other byproducts that may not turn out to be
         needed.
         """
-
         active = {}
         published = {}
-        # XXX: JeroenVermeulen 2007-06-17: Prejoin potranslations!
+
         query = "pomsgset = %s AND (active OR published)" % quote(self)
         for submission in POSubmission.select(query):
             pluralform = submission.pluralform
@@ -392,7 +395,6 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def getActiveSubmission(self, pluralform):
         """See `IPOMsgSet`."""
-
         if self.active_submissions is None:
             if self.id is None:
                 return None
@@ -401,7 +403,6 @@ class POMsgSet(SQLBase, POMsgSetMixIn):
 
     def getPublishedSubmission(self, pluralform):
         """See `IPOMsgSet`."""
-
         if self.published_submissions is None:
             if self.id is None:
                 return None
