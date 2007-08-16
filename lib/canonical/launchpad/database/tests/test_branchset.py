@@ -131,7 +131,7 @@ class TestMirroring(TestCase):
         cur.execute(id_query)
         [branch_id] = cur.fetchone()
         return self.branch_set.get(branch_id)
-    
+
     def getNow(self):
         """Return a datetime representing 'now' in UTC."""
         return datetime.now(pytz.timezone('UTC'))
@@ -148,6 +148,24 @@ class TestMirroring(TestCase):
         branch = self.getArbitraryBranch()
         branch.requestMirror()
         self.assertEqual(UTC_NOW, branch.mirror_request_time)
+
+    def test_requestMirrorDuringPull(self):
+        """Branches can have mirrors requested while they are being mirrored.
+        If so, they should not be removed from the pull queue when the mirror
+        is complete.
+        """
+        # We run these in separate transactions so as to have the times set to
+        # different values. This is closer to what happens in production.
+        branch = self.getArbitraryBranch()
+        branch.startMirroring()
+        transaction.commit()
+        branch.requestMirror()
+        removeSecurityProxy(branch).sync()
+        self.assertNotEqual(
+            branch.last_mirror_attempt, branch.mirror_request_time)
+        mirror_request_time = branch.mirror_request_time
+        branch.mirrorComplete('rev1')
+        self.assertEqual(mirror_request_time, branch.mirror_request_time)
 
     def test_mirrorCompleteRemovesFromPullQueue(self):
         """Completing the mirror removes the branch from the pull queue."""
@@ -192,7 +210,7 @@ class TestMirroring(TestCase):
         self.assertBetween(
             before_request, branch.mirror_request_time - timedelta(hours=6),
             after_request)
-        
+
     def test_mirrorFailureResetsMirrorRequestForImportedBranches(self):
         before_request = self.getNow()
         branch = self.getArbitraryBranch(BranchType.IMPORTED)
@@ -202,7 +220,7 @@ class TestMirroring(TestCase):
         self.assertBetween(
             before_request, branch.mirror_request_time - timedelta(hours=6),
             after_request)
-        
+
     def test_mirrorFailureResetsMirrorRequestForMirroredBranches(self):
         before_request = self.getNow()
         branch = self.getArbitraryBranch(BranchType.MIRRORED)
@@ -212,7 +230,7 @@ class TestMirroring(TestCase):
         self.assertBetween(
             before_request, branch.mirror_request_time - timedelta(hours=6),
             after_request)
-        
+
     def test_pullQueueEmpty(self):
         """Branches with no mirror_request_time are not in the pull queue."""
         self.assertEqual([], list(self.branch_set.getPullQueue()))
@@ -238,7 +256,7 @@ class TestMirroring(TestCase):
         transaction.commit()
         self.assertEqual([], list(self.branch_set.getPullQueue()))
 
-            
+
 class BranchVisibilityPolicyTestCase(TestCase):
     """Base class for tests to make testing of branch visibility easier."""
 
@@ -851,7 +869,7 @@ class JunkBranches(BranchVisibilityPolicyTestCase):
         as public branches.
         """
         self.assertPublic(self.albert, self.albert)
-        # XXX: thumper 2007-06-22 bug=120501 
+        # XXX: thumper 2007-06-22 bug=120501
         # Bug 120501 is about whether or not users are able to create junk
         # branches in the team namespace.
         self.assertPublic(self.albert, self.xray)
