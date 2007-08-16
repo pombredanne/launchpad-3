@@ -51,6 +51,16 @@ for hostname in code.launchpad.dev answers.launchpad.dev blueprints.launchpad.de
   dev_host;
 done
 
+grep -q "^127.0.0.89" /etc/hosts
+if [ $? -ne 0 ]; then
+  echo "Adding development hosts on local machine"
+  echo "
+# Launchpad virtual domains. This should be on one line.
+127.0.0.89      bazaar.launchpad.dev
+" | sudo tee -a /etc/hosts > /dev/null
+  echo "bazaar.launchpad.dev added to /etc/hosts"
+fi
+
 # Enable relevant Ubuntu package repositories
 grep -q "^deb http:.* ${DISTRIB_CODENAME} .*universe" /etc/apt/sources.list
 if [ $? -ne 0 ]; then
@@ -191,6 +201,57 @@ echo "
 </VirtualHost>
 " | sudo tee /etc/apache2/sites-available/launchpad.dev > /dev/null
 
+echo "
+<VirtualHost 127.0.0.89:80>
+  ServerName bazaar.launchpad.dev
+
+  ProxyRequests off
+  <Proxy *>
+    Order deny,allow
+    Allow from localhost 127.0.0.0/255.0.0.0
+  </Proxy>
+  ProxyTimeout 20
+
+  # The ACLs here are... complex:
+
+  # (1) People hitting the frontpage (i.e. /) are redirected to the Launchpad frontpage
+  # (2) Anything mapped in the launchpad-lookup.txt file is public, so we proxy it
+  # (3) Anything of the form /+branches/nnnnnnnn/ is only allowed from the branch scanner and proxied
+  # (4) Anything of the form /nn/nn/nn/nn/ is only allowed from ourselves (i.e. via a proxy from the above 2 rules)
+  # (5) The /robots.txt file is served normally.
+  # (6) Everything else is redirected to a non-existent page to give the user a 404
+
+  RewriteEngine On
+  RewriteMap branch-list txt:/var/tmp/sm-ng/config/launchpad-lookup.txt
+
+  # (1) / -> Launchpad frontpage
+  RewriteRule ^/$ http://launchpad.dev [L]
+
+  # (2) This turns things like ~mdz/branches/branchname into the actual dir
+  RewriteRule ^/(~[^/]+/[^/]+/[^/]+)(|/.*)$ /${branch-list:$1|notfound}$2 [L,P]
+
+  # (3) This is for e.g. http://bazaar.launchpad.net/+branches/0000f22a from the branch scanner
+  RewriteRule ^/\+branches/([[:xdigit:]]{2})([[:xdigit:]]{2})([[:xdigit:]]{2})([[:xdigit:]]{2})/(.*) /$1/$2/$3/$4/$5 [L,P]
+
+  # (4) Proxied access to the directory structure (4 levels of 2 digit hex directories)
+  RewriteRule ^/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/[[:xdigit:]]{2}/.*$ - [L]
+
+  # (5) The /robots.txt file is served normally.
+  RewriteRule ^/robots.txt$ - [L]
+
+  # (6) Anything else is not allowed
+  RewriteRule ^.*$ /notfound [L]
+
+  DocumentRoot /var/tmp/sm-ng/mirrors
+  <Directory /var/tmp/sm-ng/mirrors/>
+    Options SymLinksIfOwnerMatch
+    AllowOverride None
+    Options Indexes
+  </Directory>
+
+</VirtualHost>
+" | sudo tee /etc/apache2/sites-available/bazaar.launchpad.dev > /dev/null
+
 sudo a2enmod proxy > /dev/null
 if [ $? -ne 0 ]; then
   echo "ERROR: Unable to enable proxy module in Apache2"
@@ -203,7 +264,19 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+sudo a2enmod rewrite > /dev/null
+if [ $? -ne 0 ]; then
+  echo "ERROR: Unable to enable rewrite module in Apache2"
+  exit 1
+fi
+
 sudo a2ensite launchpad.dev > /dev/null
+if [ $? -ne 0 ]; then
+  echo "ERROR: Unable to enable launchpad.dev"
+  exit 1
+fi
+
+sudo a2ensite bazaar.launchpad.dev > /dev/null
 if [ $? -ne 0 ]; then
   echo "ERROR: Unable to enable launchpad.dev"
   exit 1
