@@ -1003,8 +1003,6 @@ ALTER TABLE bugnomination ENABLE TRIGGER ALL;
 
 ALTER TABLE bugnotification DISABLE TRIGGER ALL;
 
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (1, 13, 37, true, NULL);
-INSERT INTO bugnotification (id, bug, message, is_comment, date_emailed) VALUES (2, 13, 38, true, NULL);
 
 
 ALTER TABLE bugnotification ENABLE TRIGGER ALL;
