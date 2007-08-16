@@ -142,22 +142,14 @@ To make it easy to refer to the bugs, we'll give each bug a nickname:
     >>> bug_1_nickname = 'test-bug-1'
     >>> browser.open(bug_1_url)
     >>> browser.getLink('Edit description/tags').click()
-    >>> print extract_text(find_main_content(browser.contents))
-    Bug...Edit bug description...
     >>> browser.getControl('Nickname').value = bug_1_nickname
     >>> browser.getControl('Change').click()
-    >>> browser.url == bug_1_url
-    True
 
     >>> bug_2_nickname = 'test-bug-2'
     >>> browser.open(bug_2_url)
     >>> browser.getLink('Edit description/tags').click()
-    >>> print extract_text(find_main_content(browser.contents))
-    Bug...Edit bug description...
     >>> browser.getControl('Nickname').value = bug_2_nickname
     >>> browser.getControl('Change').click()
-    >>> browser.url == bug_2_url
-    True
 
 Next, we'll target each bug to the 1.0 milestone:
 
@@ -165,21 +157,13 @@ Next, we'll target each bug to the 1.0 milestone:
 
     >>> browser.open(bug_1_url)
     >>> browser.getLink('[edit]').click()
-    >>> print browser.url
-    http://bugs.launchpad.dev/firefox/+bug/.../+editstatus
     >>> browser.getControl('Milestone').displayValue = [milestone]
     >>> browser.getControl('Save Changes').click()
-    >>> browser.url == bug_1_url
-    True
 
     >>> browser.open(bug_2_url)
     >>> browser.getLink('[edit]').click()
-    >>> print browser.url
-    http://bugs.launchpad.dev/firefox/+bug/.../+editstatus
     >>> browser.getControl('Milestone').displayValue = [milestone]
     >>> browser.getControl('Save Changes').click()
-    >>> browser.url == bug_2_url
-    True
 
 Observe that both bugs are listed in the 1.0 milestone listing:
 
@@ -203,14 +187,8 @@ Now we'll mark the second bug as a duplicate of the first:
 
     >>> browser.open(bug_2_url)
     >>> browser.getLink('Mark as duplicate').click()
-    >>> print browser.title
-    Bug...Mark as duplicate...
-
     >>> browser.getControl('Duplicate').value = bug_1_nickname
     >>> browser.getControl('Change').click()
-    >>> browser.url == bug_2_url
-    True
-
     >>> print extract_text(find_main_content(browser.contents))
     Bug...This report is a duplicate...
 
@@ -232,14 +210,8 @@ However, it's also possible to clear the duplicate status of our second bug:
 
     >>> browser.open(bug_2_url)
     >>> browser.getLink('Mark as duplicate').click()
-    >>> print browser.title
-    Bug...Mark as duplicate...
-
     >>> browser.getControl('Duplicate').value = ''
     >>> browser.getControl('Change').click()
-    >>> browser.url == bug_2_url
-    True
-
     >>> 'This report is a duplicate' in find_main_content(browser.contents)
     False
 
@@ -317,22 +289,29 @@ Let's target an existing bug to both series "1.0" and series "2.0":
     >>> browser.getControl('1.0').selected = True
     >>> browser.getControl('2.0').selected = True
     >>> browser.getControl('Submit').click()
-    >>> browser.url == bug_1_url
-    True
+
+The bug page now lists a bug task for each series:
 
     >>> print extract_text(first_tag_by_class(browser.contents, 'listing'))
     Affects Status Importance ...
     1.0     New    Undecided  ...
     2.0     New    Undecided  ...
 
-Now we'll add each bug target to the same test milestone, but using different
-levels of importance:
+Now we'll add each bug task to the same test milestone. Each bug task has a
+link to an "edit status" form that can be used to choose the milestone we're
+interested in. However, we need to be careful when matching these links, as
+they may contain the same text as other links. We'll use a specific URL
+pattern to avoid matching unrelated URLs.
+
+Let's start with the first bug task:
 
     >>> import re
-    >>> browser.open(bug_1_url)
-
     >>> edit_status_url = re.compile('1.0/\\+bug/[0-9]+/\\+editstatus')
     >>> browser.getLink(url=edit_status_url).click()
+
+Completing the "edit status" form allows us to add the bug task to the
+milestone:
+
     >>> browser.getControl('Milestone').displayValue = [milestone]
     >>> browser.getControl('Importance').value = ['Critical']
     >>> browser.getControl('Save Changes').click()
@@ -340,6 +319,9 @@ levels of importance:
     >>> print extract_text(first_tag_by_class(browser.contents, 'listing'))
     Affects Status Importance ...
     1.0     New    Critical   ...
+
+Now we'll add the second bug task to the test milestone, using the same
+method. However this time we'll use a different importance:
 
     >>> edit_status_url = re.compile('2.0/\\+bug/[0-9]+/\\+editstatus')
     >>> browser.getLink(url=edit_status_url).click()
@@ -351,7 +333,7 @@ levels of importance:
     Affects Status Importance ...
     2.0     New    High       ...
 
-Observe that both bug targets are now listed in the test milestone listing:
+Observe that both bug tasks are now listed in the test milestone listing:
 
     >>> browser.open(milestone_url)
     >>> print extract_text(find_tag_by_id(browser.contents,
