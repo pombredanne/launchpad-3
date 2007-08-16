@@ -154,32 +154,21 @@
          * Arrange the bug form for either the state where the user is selecting
          * an existing bug report, or for where they're filing a new bug.
          */
-        function arrangeBugForm(bug_already_reported) {
+        function arrangeBugForm(event) {
           var no_radiobtn = $('bug-not-already-reported');
 
-          if (bug_already_reported == undefined) {
-            bug_already_reported = !no_radiobtn.checked;
-          } else {
-            no_radiobtn.checked = !bug_already_reported;
-          }
-
-          if (bug_already_reported) {
-            hideElement('bug_reporting_form');
-          } else {
+          if (no_radiobtn.checked) {
             showElement('bug_reporting_form');
-            /* Try and get the whole bug form into view. */
+            // Try to get the whole bug form into view.
             $('field.actions.submit_bug').focus();
             $('field.comment').focus();
           }
+          else {
+            hideElement('bug_reporting_form');
+          }
 
-          $('field.actions.this_is_my_bug').disabled = !bug_already_reported;
-        }
-
-        /*
-         * arrangeBugForm wrapped for use as an event handler.
-         */
-        function arrangeBugFormHandler(event) {
-          return arrangeBugForm();
+          // Disable "Subscribe to This Bug" button to avoid accidental use.
+          $('field.actions.this_is_my_bug').disabled = no_radiobtn.checked;
         }
 
         /*
@@ -188,7 +177,7 @@
          * events. Some browsers (e.g. Firefox) refill the form when a page
          * is refreshed and you don't get onchange/onkeypress events.
          */
-        connect(window, 'onload', arrangeBugFormHandler);
+        connect(window, 'onload', arrangeBugForm);
 
         /*
          * Arrange the form if any of the radio buttons are clicked.
@@ -196,9 +185,9 @@
         forEach(
           getElementsByTagAndClassName('input', null, 'similar-bugs'),
           function(element) {
-            connect(element, 'onclick', arrangeBugFormHandler);
+            connect(element, 'onclick', arrangeBugForm);
           });
-        connect('bug-not-already-reported', 'onclick', arrangeBugFormHandler);
+        connect('bug-not-already-reported', 'onclick', arrangeBugForm);
       </script>
 
     </metal:widgets>
